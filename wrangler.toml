@@ -1,0 +1,22 @@
+# Gilwell Media · Wrangler configuration
+# Used for local development with: wrangler pages dev .
+# Production settings (D1 binding, secrets) are configured
+# in the Cloudflare Pages dashboard, not here.
+
+name = "gilwell-media"
+compatibility_date = "2024-09-23"
+
+# Output directory for Cloudflare Pages (static files)
+pages_build_output_dir = "."
+
+# ── D1 Database binding (local dev) ──────────────────────────
+# Replace database_id with your actual D1 database ID after
+# running: wrangler d1 create gilwell-posts
+[[d1_databases]]
+binding     = "DB"
+database_name = "gilwell-posts"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+
+# ── Local secrets for development ────────────────────────────
+# Copy .dev.vars.example to .dev.vars and fill in values.
+# Never commit .dev.vars to git.

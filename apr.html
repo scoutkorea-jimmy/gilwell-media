@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>APR — 길웰 미디어</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- ── MASTHEAD ── -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <h1>길웰 미디어</h1>
+        <div class="sub">The BP Post · bpmedia.net</div>
+      </div>
+      <div class="masthead-tagline">Independent Scout Media</div>
+    </div>
+    <nav class="nav">
+      <a href="index.html">홈</a>
+      <a href="korea.html">Korea</a>
+      <a href="apr.html" class="active">APR</a>
+      <a href="worm.html">Worm</a>
+    </nav>
+  </header>
+
+  <!-- ── TICKER ── -->
+  <div class="ticker">
+    <div class="ticker-inner">
+      <span>◆</span> 아시아태평양 스카우트 지역 동향 — APR
+      <span>◆</span> 길웰 미디어 · The BP Post · bpmedia.net
+      <span>◆</span> 아시아태평양 스카우트 지역 동향 — APR
+      <span>◆</span> 길웰 미디어 · The BP Post · bpmedia.net
+    </div>
+  </div>
+
+  <!-- ── BOARD BANNER ── -->
+  <div class="board-banner">
+    <div class="board-banner-text">
+      <span class="category-tag tag-apr" style="margin-bottom:16px;">APR</span>
+      <h2>아시아태평양 지역</h2>
+      <p>아시아태평양 스카우트 지역의 동향과 소식을 전합니다.</p>
+    </div>
+    <div class="board-banner-count" id="board-count">—</div>
+  </div>
+
+  <!-- ── BOARD GRID ── -->
+  <div class="board-container">
+    <div class="board-grid" id="board-grid">
+      <div class="loading-state">
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <button class="load-more-btn" id="load-more-btn" style="display:none;">
+      더 보기
+    </button>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div>
+      <h4>길웰 미디어</h4>
+      <p>스카우트 운동을 관찰하는 독립 미디어</p>
+      <p style="margin-top:8px;">The BP Post · bpmedia.net</p>
+    </div>
+    <div>
+      <h4>섹션</h4>
+      <a href="korea.html">Korea — 한국스카우트연맹</a>
+      <a href="apr.html">APR — 아시아태평양</a>
+      <a href="worm.html">Worm — 세계스카우트연맹</a>
+    </div>
+    <div>
+      <h4>안내</h4>
+      <p>길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 매체가 아닙니다.</p>
+    </div>
+  </footer>
+  <div class="footer-bottom">
+    <p>© 2026 길웰 미디어 / The BP Post · bpmedia.net</p>
+    <p>Independent Scout Media · Not affiliated with KSA or WOSM</p>
+  </div>
+
+  <!-- ── POST DETAIL MODAL ── -->
+  <div class="modal-overlay" id="post-modal">
+    <div class="modal"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/board.js"></script>
+  <script>
+    var board = new GW.Board({ category: 'apr' });
+    board.init();
+  </script>
+</body>
+</html>

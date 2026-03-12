@@ -1,0 +1,11 @@
+# Local secrets — NEVER commit
+.dev.vars
+
+# macOS
+.DS_Store
+
+# Node (if you ever run npm install)
+node_modules/
+
+# Wrangler cache
+.wrangler/

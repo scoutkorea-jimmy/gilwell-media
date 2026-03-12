@@ -1,0 +1,13 @@
+# Copy this file to .dev.vars for local development.
+# NEVER commit .dev.vars to git — it contains secrets.
+#
+# For production, set these as Cloudflare Pages secrets:
+#   wrangler pages secret put ADMIN_PASSWORD
+#   wrangler pages secret put ADMIN_SECRET
+
+# The admin login password (you choose this)
+ADMIN_PASSWORD=change-me-to-a-strong-password
+
+# A long random string used to sign session tokens.
+# Generate one with: openssl rand -hex 32
+ADMIN_SECRET=replace-with-a-random-64-char-hex-string
