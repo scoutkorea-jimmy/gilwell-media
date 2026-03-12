@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>길웰 미디어 · 관리자</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #0a0a0a;
+      --white: #f5f3ee;
+      --ink: #1a1a1a;
+      --muted: #6b6560;
+      --accent: #b5432a;
+      --border: #d8d3cc;
+      --bg: #f5f3ee;
+      --tag-ksa: #1a3a5c;
+      --tag-wosm: #2d5a27;
+      --tag-apr: #5a3a1a;
+      --tag-people: #3a1a5a;
+      --tag-events: #5a1a2d;
+      --success: #2d5a27;
+      --danger: #b5432a;
+    }
+
+    body {
+      background: #eceae4;
+      color: var(--ink);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--black);
+    }
+
+    .login-box {
+      background: var(--bg);
+      padding: 48px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-box .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .login-box .sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .login-box label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 14px;
+      color: var(--ink);
+      margin-bottom: 20px;
+      outline: none;
+      transition: border 0.15s;
+    }
+
+    .login-box input:focus { border-color: var(--black); }
+
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .login-btn:hover { background: var(--accent); }
+
+    .login-error {
+      margin-top: 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--danger);
+      text-align: center;
+      display: none;
+    }
+
+    /* ── ADMIN LAYOUT ── */
+    .admin-screen { display: none; }
+
+    .admin-header {
+      background: var(--black);
+      color: var(--white);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .admin-header .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .admin-header .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      background: var(--accent);
+      padding: 3px 10px;
+      margin-left: 12px;
+      text-transform: uppercase;
+    }
+
+    .admin-header .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .admin-header a {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: rgba(245,243,238,0.6);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+
+    .admin-header a:hover { color: var(--white); }
+
+    .logout-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      background: none;
+      border: 1px solid var(--accent);
+      padding: 5px 14px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+
+    .logout-btn:hover { background: var(--accent); color: var(--white); }
+
+    .admin-body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* ── WRITE PANEL ── */
+    .panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+
+    .panel-header {
+      padding: 20px 28px;
+      border-bottom: 2px solid var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .panel-header .count {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
+    .panel-body { padding: 28px; }
+
+    .form-group { margin-bottom: 20px; }
+
+    .form-group label {
+      display: block;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--ink);
+      outline: none;
+      transition: border 0.15s;
+      resize: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { border-color: var(--black); }
+
+    .form-group textarea { min-height: 180px; line-height: 1.7; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+
+    .submit-btn:hover { background: var(--accent); }
+
+    .submit-btn.editing { background: var(--tag-apr); }
+    .submit-btn.editing:hover { background: var(--accent); }
+
+    /* ── CATEGORY SELECT COLORS ── */
+    .cat-preview {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      color: var(--white);
+      margin-top: 6px;
+    }
+
+    /* ── ARTICLE LIST ── */
+    .article-list { display: flex; flex-direction: column; gap: 0; }
+
+    .article-item {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: background 0.15s;
+    }
+
+    .article-item:last-child { border-bottom: none; }
+    .article-item:hover { background: rgba(0,0,0,0.02); }
+
+    .article-item-content { flex: 1; min-width: 0; }
+
+    .article-item h4 {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      color: var(--black);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .article-item .item-meta {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .article-item .item-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .btn-edit, .btn-delete {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border: 1px solid;
+      cursor: pointer;
+      background: none;
+      transition: all 0.15s;
+    }
+
+    .btn-edit {
+      border-color: var(--ink);
+      color: var(--ink);
+    }
+
+    .btn-edit:hover {
+      background: var(--ink);
+      color: var(--white);
+    }
+
+    .btn-delete {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .btn-delete:hover {
+      background: var(--danger);
+      color: var(--white);
+    }
+
+    /* ── EMPTY STATE ── */
+    .list-empty {
+      padding: 40px 28px;
+      text-align: center;
+      color: var(--muted);
+      font-family: 'Noto Serif KR', serif;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--black);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 14px 24px;
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.25s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-item {
+      padding: 16px 28px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .stat-item:last-child { border-right: none; }
+
+    .stat-item .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--black);
+      display: block;
+    }
+
+    .stat-item .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── CANCEL BTN ── */
+    .cancel-btn {
+      width: 100%;
+      padding: 10px;
+      background: none;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 8px;
+      display: none;
+      transition: all 0.15s;
+    }
+
+    .cancel-btn:hover { border-color: var(--ink); color: var(--ink); }
+    .cancel-btn.visible { display: block; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .admin-body { grid-template-columns: 1fr; padding: 24px; }
+      .form-row { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-screen" id="login-screen">
+    <div class="login-box">
+      <div class="logo">길웰 미디어</div>
+      <div class="sub">Admin · The BP Post</div>
+      <label>비밀번호</label>
+      <input type="password" id="pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()" />
+      <button class="login-btn" onclick="doLogin()">관리자 입장</button>
+      <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다</div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="admin-screen" id="admin-screen">
+
+    <header class="admin-header">
+      <div>
+        <span class="logo">길웰 미디어</span>
+        <span class="badge">Admin</span>
+      </div>
+      <div class="header-right">
+        <a href="index.html" target="_blank">← 홈페이지 보기</a>
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="admin-body">
+
+      <!-- LEFT: WRITE -->
+      <div>
+        <!-- WRITE PANEL -->
+        <div class="panel" style="margin-bottom:24px;">
+          <div class="panel-header">
+            <h2 id="form-title">새 기사 작성</h2>
+          </div>
+          <div class="stats-row" id="stats-row">
+            <div class="stat-item">
+              <span class="stat-num" id="stat-total">0</span>
+              <span class="stat-label">전체</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-num" id="stat-ksa">0</span>
+              <span class="stat-label">KSA</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-num" id="stat-wosm">0</span>
+              <span class="stat-label">WOSM</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-num" id="stat-apr">0</span>
+              <span class="stat-label">APR / Events</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <input type="hidden" id="edit-id" value="" />
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>카테고리</label>
+                <select id="art-category" onchange="updateCatPreview()">
+                  <option value="ksa">KSA — 한국스카우트연맹</option>
+                  <option value="apr">APR — 아시아태평양</option>
+                  <option value="wosm">WOSM — 세계스카우트연맹</option>
+                  <option value="events">Events — 행사</option>
+                </select>
+                <span class="cat-preview tag-ksa" id="cat-preview">KSA</span>
+              </div>
+              <div class="form-group">
+                <label>날짜</label>
+                <input type="date" id="art-date" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>제목</label>
+              <input type="text" id="art-title" placeholder="기사 제목을 입력하세요" />
+            </div>
+
+            <div class="form-group">
+              <label>요약 (선택)</label>
+              <input type="text" id="art-summary" placeholder="한 줄 요약 — 홈페이지 카드에 표시됩니다" />
+            </div>
+
+            <div class="form-group">
+              <label>본문</label>
+              <textarea id="art-body" placeholder="기사 본문을 작성하세요..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>원문 링크 (선택)</label>
+              <input type="url" id="art-link" placeholder="https://..." />
+            </div>
+
+            <button class="submit-btn" id="submit-btn" onclick="saveArticle()">기사 게재</button>
+            <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">작성 취소</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: ARTICLE LIST -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>게재된 기사</h2>
+          <span class="count" id="article-count">0건</span>
+        </div>
+        <div class="article-list" id="article-list">
+          <div class="list-empty">아직 게재된 기사가 없습니다</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── CONFIG ──
+    const ADMIN_PW = 'gilwell2026'; // 비밀번호 여기서 변경
+
+    // ── STORAGE KEY ──
+    const STORAGE_KEY = 'gilwell_articles';
+
+    // ── STATE ──
+    let articles = [];
+    let editingId = null;
+
+    // ── LOGIN ──
+    function doLogin() {
+      const pw = document.getElementById('pw-input').value;
+      if (pw === ADMIN_PW) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-screen').style.display = 'block';
+        loadArticles();
+        setTodayDate();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+      }
+    }
+
+    function doLogout() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('admin-screen').style.display = 'none';
+      document.getElementById('pw-input').value = '';
+    }
+
+    // ── DATE ──
+    function setTodayDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('art-date').value = today;
+    }
+
+    // ── STORAGE ──
+    function loadArticles() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      articles = raw ? JSON.parse(raw) : [];
+      renderList();
+      updateStats();
+    }
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(articles));
+      // Also export for index.html
+      exportForIndex();
+    }
+
+    // ── CATEGORY ──
+    const catColors = {
+      ksa: '#1a3a5c',
+      wosm: '#2d5a27',
+      apr: '#5a3a1a',
+      events: '#5a1a2d'
+    };
+
+    const catLabels = {
+      ksa: 'KSA',
+      wosm: 'WOSM',
+      apr: 'APR',
+      events: 'Events'
+    };
+
+    function updateCatPreview() {
+      const cat = document.getElementById('art-category').value;
+      const preview = document.getElementById('cat-preview');
+      preview.textContent = catLabels[cat];
+      preview.style.background = catColors[cat];
+    }
+
+    // ── SAVE ──
+    function saveArticle() {
+      const title = document.getElementById('art-title').value.trim();
+      const category = document.getElementById('art-category').value;
+      const date = document.getElementById('art-date').value;
+      const summary = document.getElementById('art-summary').value.trim();
+      const body = document.getElementById('art-body').value.trim();
+      const link = document.getElementById('art-link').value.trim();
+
+      if (!title) { showToast('제목을 입력해주세요', 'error'); return; }
+      if (!date) { showToast('날짜를 선택해주세요', 'error'); return; }
+
+      if (editingId) {
+        // EDIT
+        const idx = articles.findIndex(a => a.id === editingId);
+        if (idx !== -1) {
+          articles[idx] = { ...articles[idx], title, category, date, summary, body, link };
+        }
+        showToast('기사가 수정됐습니다', 'success');
+        cancelEdit();
+      } else {
+        // NEW
+        const article = {
+          id: Date.now().toString(),
+          title, category, date, summary, body, link,
+          createdAt: new Date().toISOString()
+        };
+        articles.unshift(article);
+        showToast('기사가 게재됐습니다', 'success');
+        clearForm();
+      }
+
+      saveToStorage();
+      renderList();
+      updateStats();
+    }
+
+    // ── DELETE ──
+    function deleteArticle(id) {
+      if (!confirm('이 기사를 삭제할까요?')) return;
+      articles = articles.filter(a => a.id !== id);
+      saveToStorage();
+      renderList();
+      updateStats();
+      showToast('기사가 삭제됐습니다', 'success');
+    }
+
+    // ── EDIT ──
+    function editArticle(id) {
+      const a = articles.find(a => a.id === id);
+      if (!a) return;
+      editingId = id;
+
+      document.getElementById('art-title').value = a.title;
+      document.getElementById('art-category').value = a.category;
+      document.getElementById('art-date').value = a.date;
+      document.getElementById('art-summary').value = a.summary || '';
+      document.getElementById('art-body').value = a.body || '';
+      document.getElementById('art-link').value = a.link || '';
+
+      updateCatPreview();
+
+      document.getElementById('form-title').textContent = '기사 수정';
+      document.getElementById('submit-btn').textContent = '수정 완료';
+      document.getElementById('submit-btn').classList.add('editing');
+      document.getElementById('cancel-btn').classList.add('visible');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+      editingId = null;
+      clearForm();
+      document.getElementById('form-title').textContent = '새 기사 작성';
+      document.getElementById('submit-btn').textContent = '기사 게재';
+      document.getElementById('submit-btn').classList.remove('editing');
+      document.getElementById('cancel-btn').classList.remove('visible');
+    }
+
+    function clearForm() {
+      document.getElementById('art-title').value = '';
+      document.getElementById('art-summary').value = '';
+      document.getElementById('art-body').value = '';
+      document.getElementById('art-link').value = '';
+      document.getElementById('art-category').value = 'ksa';
+      setTodayDate();
+      updateCatPreview();
+    }
+
+    // ── RENDER LIST ──
+    function renderList() {
+      const list = document.getElementById('article-list');
+      document.getElementById('article-count').textContent = `${articles.length}건`;
+
+      if (articles.length === 0) {
+        list.innerHTML = '<div class="list-empty">아직 게재된 기사가 없습니다</div>';
+        return;
+      }
+
+      list.innerHTML = articles.map(a => `
+        <div class="article-item">
+          <div class="article-item-content">
+            <div style="margin-bottom:6px;">
+              <span style="display:inline-block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:${catColors[a.category]};">${catLabels[a.category]}</span>
+            </div>
+            <h4>${escapeHtml(a.title)}</h4>
+            <div class="item-meta">${formatDate(a.date)}</div>
+          </div>
+          <div class="item-actions">
+            <button class="btn-edit" onclick="editArticle('${a.id}')">수정</button>
+            <button class="btn-delete" onclick="deleteArticle('${a.id}')">삭제</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── STATS ──
+    function updateStats() {
+      document.getElementById('stat-total').textContent = articles.length;
+      document.getElementById('stat-ksa').textContent = articles.filter(a => a.category === 'ksa').length;
+      document.getElementById('stat-wosm').textContent = articles.filter(a => a.category === 'wosm').length;
+      document.getElementById('stat-apr').textContent =
+        articles.filter(a => a.category === 'apr' || a.category === 'events').length;
+    }
+
+    // ── EXPORT FOR INDEX ──
+    function exportForIndex() {
+      // Generates a JSON blob that index.html can read
+      const blob = new Blob([JSON.stringify(articles, null, 2)], { type: 'application/json' });
+      // Store in localStorage so index.html can read it
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(articles));
+    }
+
+    // ── TOAST ──
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => t.className = 'toast', 2500);
+    }
+
+    // ── UTILS ──
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일`;
+    }
+
+    // ── INIT ──
+    updateCatPreview();
+  </script>
+</body>
+</html>
