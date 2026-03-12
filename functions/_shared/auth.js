@@ -1,0 +1,113 @@
+/**
+ * Gilwell Media · Auth Utilities
+ * Works inside Cloudflare Workers (Web Crypto API).
+ *
+ * Token format: <base64url-header>.<base64url-payload>.<base64url-sig>
+ * (A minimal JWT-like structure using HMAC-SHA256.)
+ */
+
+// ── Token lifecycle ───────────────────────────────────────────
+
+/**
+ * Create a signed session token valid for 24 hours.
+ * @param {string} secret  ADMIN_SECRET environment variable value
+ * @returns {Promise<string>} token string
+ */
+export async function createToken(secret) {
+  const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = b64url(JSON.stringify({
+    sub: 'admin',
+    exp: Date.now() + 86_400_000, // 24 h in ms
+  }));
+  const data = `${header}.${payload}`;
+  const key  = await importKey(secret, ['sign']);
+  const sigBuf = await crypto.subtle.sign('HMAC', key, enc(data));
+  return `${data}.${bufToB64url(sigBuf)}`;
+}
+
+/**
+ * Verify a session token.
+ * @param {string} token   Token from Authorization header
+ * @param {string} secret  ADMIN_SECRET environment variable value
+ * @returns {Promise<boolean>}
+ */
+export async function verifyToken(token, secret) {
+  try {
+    if (!token || typeof token !== 'string') return false;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+
+    const [header, payload, sig] = parts;
+    const parsed = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+
+    // Check expiry
+    if (!parsed.exp || parsed.exp < Date.now()) return false;
+    // Check subject
+    if (parsed.sub !== 'admin') return false;
+
+    // Verify signature
+    const key = await importKey(secret, ['verify']);
+    const sigBuf = b64urlToBuf(sig);
+    return await crypto.subtle.verify('HMAC', key, sigBuf, enc(`${header}.${payload}`));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Extract the Bearer token from a request's Authorization header.
+ * @param {Request} request
+ * @returns {string|null}
+ */
+export function extractToken(request) {
+  const auth = request.headers.get('Authorization') || '';
+  return auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+}
+
+/**
+ * Timing-safe string comparison (prevents timing-based brute-force).
+ * @param {string} a
+ * @param {string} b
+ * @returns {boolean}
+ */
+export function safeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  // Always iterate over the longer string so length difference doesn't leak
+  const len = Math.max(a.length, b.length);
+  let result = a.length ^ b.length; // non-zero if lengths differ
+  for (let i = 0; i < len; i++) {
+    result |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  }
+  return result === 0;
+}
+
+// ── Internal helpers ──────────────────────────────────────────
+
+function enc(str) {
+  return new TextEncoder().encode(str);
+}
+
+function b64url(str) {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function bufToB64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function b64urlToBuf(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64);
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+
+async function importKey(secret, usages) {
+  return crypto.subtle.importKey(
+    'raw',
+    enc(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    usages
+  );
+}
