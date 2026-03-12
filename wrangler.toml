@@ -15,7 +15,7 @@ pages_build_output_dir = "."
 [[d1_databases]]
 binding     = "DB"
 database_name = "gilwell-posts"
-database_id = "YOUR_D1_DATABASE_ID_HERE"
+database_id = "619e542b-e3b1-4500-b474-7e9fd87e1169"
 
 # ── Local secrets for development ────────────────────────────
 # Copy .dev.vars.example to .dev.vars and fill in values.
