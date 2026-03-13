@@ -30,6 +30,8 @@
     this.hasMore       = true;
     this._searchQuery  = '';
     this._selectedTag  = null;
+    this._loginTurnstileWidgetId = null;
+    this._loginTurnstileToken = '';
   }
 
   // ── Initialise ────────────────────────────────────────────
@@ -312,6 +314,7 @@
         '<div class="board-pw-header">글쓰기</div>' +
         '<p class="board-pw-desc">관리자 비밀번호를 입력하세요</p>' +
         '<input type="password" id="board-pw-input" placeholder="비밀번호" autocomplete="current-password" />' +
+        '<div id="board-pw-turnstile" style="margin:12px 0;"></div>' +
         '<div id="board-pw-error" class="board-pw-error">관리자만 글을 쓸 수 있습니다</div>' +
         '<div class="board-pw-actions">' +
           '<button id="board-pw-submit">확인</button>' +
@@ -522,12 +525,28 @@
   };
 
   Board.prototype._showPasswordModal = function () {
+    var self = this;
     var overlay = document.getElementById('board-pw-overlay');
     if (!overlay) return;
     document.getElementById('board-pw-input').value             = '';
     document.getElementById('board-pw-error').style.display     = 'none';
+    this._loginTurnstileToken = '';
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+    GW.loadTurnstile(function () {
+      if (window.turnstile && GW.TURNSTILE_SITE_KEY) {
+        if (self._loginTurnstileWidgetId == null) {
+          self._loginTurnstileWidgetId = window.turnstile.render('#board-pw-turnstile', {
+            sitekey: GW.TURNSTILE_SITE_KEY,
+            theme: 'light',
+            callback: function (token) { self._loginTurnstileToken = token; },
+            'expired-callback': function () { self._loginTurnstileToken = ''; },
+          });
+        } else {
+          window.turnstile.reset(self._loginTurnstileWidgetId);
+        }
+      }
+    });
     setTimeout(function () { document.getElementById('board-pw-input').focus(); }, 50);
   };
 
@@ -535,6 +554,10 @@
     var overlay = document.getElementById('board-pw-overlay');
     if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';
+    this._loginTurnstileToken = '';
+    if (window.turnstile && this._loginTurnstileWidgetId != null) {
+      window.turnstile.reset(this._loginTurnstileWidgetId);
+    }
   };
 
   Board.prototype._checkPassword = function () {
@@ -544,6 +567,11 @@
     var error     = document.getElementById('board-pw-error');
     var pw        = (input.value || '').trim();
     if (!pw) return;
+    if (GW.TURNSTILE_SITE_KEY && !this._loginTurnstileToken) {
+      error.textContent = 'CAPTCHA를 완료해주세요';
+      error.style.display = 'block';
+      return;
+    }
 
     submitBtn.disabled    = true;
     submitBtn.textContent = '확인 중…';
@@ -551,17 +579,25 @@
 
     GW.apiFetch('/api/admin/login', {
       method: 'POST',
-      body:   JSON.stringify({ password: pw }),
+      body:   JSON.stringify({
+        password: pw,
+        cf_turnstile_response: this._loginTurnstileToken || undefined,
+      }),
     })
       .then(function (data) {
         GW.setToken(data.token);
         self._closePasswordModal();
         self._showWriteForm();
       })
-      .catch(function () {
+      .catch(function (err) {
+        error.textContent = err && err.message ? err.message : '관리자만 글을 쓸 수 있습니다';
         error.style.display = 'block';
         input.value = '';
         input.focus();
+        self._loginTurnstileToken = '';
+        if (window.turnstile && self._loginTurnstileWidgetId != null) {
+          window.turnstile.reset(self._loginTurnstileWidgetId);
+        }
       })
       .finally(function () {
         submitBtn.disabled    = false;
