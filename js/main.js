@@ -11,7 +11,7 @@
   GW.CATEGORIES = {
     korea: { label: 'Korea', tagClass: 'tag-korea', color: '#0094B4' },
     apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#FF5655' },
-    worm:  { label: 'Worm',  tagClass: 'tag-worm',  color: '#248737' },
+    worm:  { label: 'WOSM',  tagClass: 'tag-worm',  color: '#248737' },
   };
 
   // ── Date formatting ───────────────────────────────────────
@@ -225,7 +225,7 @@
     'nav.home':   { ko: '홈',    en: 'Home' },
     'nav.korea':  { ko: 'Korea', en: 'Korea' },
     'nav.apr':    { ko: 'APR',   en: 'APR' },
-    'nav.worm':   { ko: 'Worm',  en: 'Worm' },
+    'nav.worm':   { ko: 'WOSM',  en: 'WOSM' },
 
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
     'hero.title':   { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
@@ -253,7 +253,7 @@
     },
     'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
     'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },
-    'link.worm':  { ko: 'Worm — 세계스카우트연맹',  en: 'Worm — World Scout Organization' },
+    'link.worm':  { ko: 'WOSM — 세계스카우트연맹',  en: 'WOSM — World Scout Organization' },
 
     'board.korea.banner': { ko: 'Korea / KSA',     en: 'Korea / KSA' },
     'board.korea.title':  { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
@@ -261,7 +261,7 @@
     'board.apr.banner':   { ko: 'APR',              en: 'APR' },
     'board.apr.title':    { ko: '아시아태평양 지역', en: 'Asia-Pacific Region' },
     'board.apr.desc':     { ko: '아시아태평양 스카우트 지역의 동향과 소식을 전합니다.', en: 'Trends and news from the Asia-Pacific Scout Region.' },
-    'board.worm.banner':  { ko: 'Worm / WOSM',      en: 'Worm / WOSM' },
+    'board.worm.banner':  { ko: 'WOSM',             en: 'WOSM' },
     'board.worm.title':   { ko: '세계스카우트연맹',  en: 'World Scout Organization (WOSM)' },
     'board.worm.desc':    { ko: '세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.', en: 'Global news and trends from WOSM.' },
 
