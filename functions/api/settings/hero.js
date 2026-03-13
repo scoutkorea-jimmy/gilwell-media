@@ -5,10 +5,12 @@
  * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N], interval_ms } (up to 5)
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { serializePostImage } from '../../_shared/images.js';
 
 // ── GET /api/settings/hero ────────────────────────────────────
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   try {
+    const origin = new URL(request.url).origin;
     const [row, intervalRow] = await Promise.all([
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
@@ -34,7 +36,7 @@ export async function onRequestGet({ env }) {
       const post = await env.DB.prepare(
         `SELECT id, category, title, subtitle, image_url, created_at FROM posts WHERE id = ? AND published = 1`
       ).bind(id).first();
-      if (post) posts.push(post);
+      if (post) posts.push(serializePostImage(post, origin));
     }
 
     return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value) });

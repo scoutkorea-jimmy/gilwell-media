@@ -14,23 +14,13 @@ export async function recordSiteVisit(request, env, payload) {
   const referrer = sanitizeUrl(payload && payload.referrer);
   const referrerHost = deriveReferrerHost(referrer, request.url);
 
-  const existing = await env.DB.prepare(
-    `SELECT 1
-       FROM site_visits
-      WHERE viewer_key = ?
-        AND path = ?
-        AND visited_at > datetime('now', '-${VISIT_WINDOW_MINUTES} minutes')
-      LIMIT 1`
-  ).bind(viewerKey, path).first();
+  const visitBucket = String(Math.floor(Date.now() / (VISIT_WINDOW_MINUTES * 60 * 1000)));
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO site_visits (viewer_key, path, referrer_host, referrer_url, visited_bucket)
+     VALUES (?, ?, ?, ?, ?)`
+  ).bind(viewerKey, path, referrerHost, referrer, visitBucket).run();
 
-  if (existing) return { recorded: false, viewer_key: viewerKey };
-
-  await env.DB.prepare(
-    `INSERT INTO site_visits (viewer_key, path, referrer_host, referrer_url)
-     VALUES (?, ?, ?, ?)`
-  ).bind(viewerKey, path, referrerHost, referrer).run();
-
-  return { recorded: true, viewer_key: viewerKey };
+  return { recorded: !!insert.meta?.changes, viewer_key: viewerKey };
 }
 
 export function sanitizePath(path) {

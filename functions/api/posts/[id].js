@@ -8,6 +8,7 @@
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
+import { serializePostImage } from '../../_shared/images.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -41,7 +42,8 @@ export async function onRequestGet({ params, env, request }) {
     post.likes = likeStats.likes;
     post.liked = likeStats.liked;
 
-    return json({ post });
+    const origin = new URL(request.url).origin;
+    return json({ post: isAdmin ? post : serializePostImage(post, origin) });
   } catch (err) {
     console.error('GET /api/posts/:id error:', err);
     return json({ error: 'Database error' }, 500);

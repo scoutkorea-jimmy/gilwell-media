@@ -14,21 +14,15 @@ export async function getViewerKey(request, env) {
 
 export async function recordUniqueView(env, postId, viewerKey) {
   if (!viewerKey) return false;
-  const existing = await env.DB.prepare(
-    `SELECT 1
-       FROM post_views
-      WHERE post_id = ?
-        AND viewer_key = ?
-        AND viewed_at > datetime('now', '-12 hours')
-      LIMIT 1`
-  ).bind(postId, viewerKey).first();
+  const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO post_views (post_id, viewer_key, viewed_bucket)
+     VALUES (?, ?, ?)`
+  ).bind(postId, viewerKey, viewBucket).run();
 
-  if (existing) return false;
+  if (!insert.meta?.changes) return false;
 
-  await Promise.all([
-    env.DB.prepare(`INSERT INTO post_views (post_id, viewer_key) VALUES (?, ?)`).bind(postId, viewerKey).run(),
-    env.DB.prepare(`UPDATE posts SET views = views + 1 WHERE id = ?`).bind(postId).run(),
-  ]);
+  await env.DB.prepare(`UPDATE posts SET views = views + 1 WHERE id = ?`).bind(postId).run();
   return true;
 }
 

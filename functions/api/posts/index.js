@@ -7,6 +7,7 @@
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
+import { serializePostImage } from '../../_shared/images.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 const PAGE_SIZE = 20;
@@ -16,6 +17,7 @@ const PAGE_SIZE = 20;
 // id, category, title, image_url, created_at for card display).
 export async function onRequestGet({ request, env }) {
   const url          = new URL(request.url);
+  const origin       = url.origin;
   const category     = url.searchParams.get('category') || null;
   const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const offset       = (page - 1) * PAGE_SIZE;
@@ -72,7 +74,8 @@ export async function onRequestGet({ request, env }) {
     const total = countRows[0]?.total ?? 0;
     const pageSize = allRequested && isAdmin ? total : PAGE_SIZE;
 
-    return json({ posts, total, page, pageSize });
+    const hydrated = (posts || []).map((post) => serializePostImage(post, origin));
+    return json({ posts: hydrated, total, page, pageSize });
   } catch (err) {
     console.error('GET /api/posts error:', err);
     return json({ error: 'Database error' }, 500);
