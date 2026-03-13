@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>APR — BP미디어</title>
+  <title>도움을 주신 분들 — BP미디어</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,9 +16,9 @@
     <div class="masthead-top">
       <div class="masthead-date" id="today-date"></div>
       <div class="masthead-logo">
-        <a href="index.html">
+        <a href="/index.html">
           <h1>BP미디어</h1>
-          <div class="sub">The BP Post · bpmedia.net</div>
+          <div class="sub">bpmedia.net</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -34,48 +34,45 @@
       </div>
     </div>
     <nav class="nav">
-      <a href="/contributors.html" data-i18n="nav.contributors">도움을 주신 분들</a>
-      <a href="index.html" data-i18n="nav.home">홈</a>
-      <a href="korea.html" data-i18n="nav.korea">Korea</a>
-      <a href="apr.html" class="active" data-i18n="nav.apr">APR</a>
-      <a href="worm.html" data-i18n="nav.worm">Worm</a>
+      <a href="/contributors.html" class="active" data-i18n="nav.contributors">도움을 주신 분들</a>
+      <a href="/index.html" data-i18n="nav.home">홈</a>
+      <a href="/korea.html" data-i18n="nav.korea">Korea</a>
+      <a href="/apr.html" data-i18n="nav.apr">APR</a>
+      <a href="/worm.html" data-i18n="nav.worm">Worm</a>
     </nav>
   </header>
 
   <!-- ── TICKER ── -->
   <div class="ticker">
     <div class="ticker-inner" id="ticker-inner">
-      아시아태평양 스카우트 지역 동향 — APR
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      아시아태평양 스카우트 지역 동향 — APR
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
     </div>
   </div>
 
-  <!-- ── BOARD BANNER ── -->
+  <!-- ── BANNER ── -->
   <div class="board-banner">
     <div class="board-banner-text">
-      <span class="category-tag tag-apr" style="margin-bottom:16px;" data-i18n="board.apr.banner">APR</span>
-      <h2 data-i18n="board.apr.title">아시아태평양 지역</h2>
-      <p data-i18n="board.apr.desc">아시아태평양 스카우트 지역의 동향과 소식을 전합니다.</p>
+      <span class="category-tag" style="background:#622599;margin-bottom:16px;">감사</span>
+      <h2>도움을 주신 분들</h2>
+      <p>도움을 주신 모든 분들께 진심으로 감사드립니다.</p>
     </div>
-    <div class="board-banner-count" id="board-count">—</div>
   </div>
 
-  <!-- ── BOARD GRID ── -->
-  <div class="board-container">
-    <div class="board-grid" id="board-grid">
+  <!-- ── CONTRIBUTORS LIST ── -->
+  <div class="contributors-wrap">
+    <div class="contributors-thank">
+      <p>BP미디어는 스카우트 정신을 담아 자발적인 봉사로 운영됩니다.<br>
+      아래 분들의 소중한 도움 덕분에 이 공간이 지속될 수 있습니다.</p>
+    </div>
+
+    <div class="contributors-list" id="contributors-list">
       <div class="loading-state">
         <div class="loading-dots"><span></span><span></span><span></span></div>
       </div>
     </div>
-    <button class="load-more-btn" id="load-more-btn" style="display:none;" data-i18n="loadmore.btn">
-      더 보기
-    </button>
   </div>
 
   <!-- ── FOOTER ── -->
@@ -99,28 +96,44 @@
     </div>
   </footer>
 
-  <!-- ── POST DETAIL MODAL ── -->
-  <div class="modal-overlay" id="post-modal">
-    <div class="modal"></div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
   <script src="/js/main.js"></script>
-  <script src="/js/board.js"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
     GW.loadTicker('ticker-inner');
     GW.loadStats();
     GW.loadTranslations();
-    var board = new GW.Board({ category: 'apr' });
-    board.init();
     (function(){
       var inp=document.getElementById('mh-search-input'),btn=document.getElementById('mh-search-btn');
       function go(){var q=(inp.value||'').trim();if(q)window.location.href='/search.html?q='+encodeURIComponent(q);}
       btn.addEventListener('click',go);inp.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
     })();
+
+    // Load contributors
+    fetch('/api/settings/contributors')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        var list = document.getElementById('contributors-list');
+        var items = data.items || [];
+        if (!items.length) {
+          list.innerHTML = '<p class="contributors-empty">아직 등록된 분들이 없습니다.</p>';
+          return;
+        }
+        list.innerHTML = items.map(function(c) {
+          return (
+            '<div class="contributor-card">' +
+              '<span class="contributor-name">' + GW.escapeHtml(c.name) + '</span>' +
+              (c.note ? '<span class="contributor-note">' + GW.escapeHtml(c.note) + '</span>' : '') +
+            '</div>'
+          );
+        }).join('');
+      })
+      .catch(function() {
+        document.getElementById('contributors-list').innerHTML =
+          '<p class="contributors-empty">불러오지 못했습니다.</p>';
+      });
   </script>
 </body>
 </html>

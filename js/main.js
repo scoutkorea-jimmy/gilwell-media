@@ -184,6 +184,7 @@
 
   // ── Translation strings (i18n) ────────────────────────────
   GW.STRINGS = {
+    'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
     'nav.home':   { ko: '홈',    en: 'Home' },
     'nav.korea':  { ko: 'Korea', en: 'Korea' },
     'nav.apr':    { ko: 'APR',   en: 'APR' },

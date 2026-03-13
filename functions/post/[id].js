@@ -98,6 +98,7 @@ export async function onRequestGet({ params, env, request }) {
       </div>
     </div>
     <nav class="nav">
+      <a href="/contributors.html" data-i18n="nav.contributors">도움을 주신 분들</a>
       <a href="/" data-i18n="nav.home">홈</a>
       <a href="/korea.html" data-i18n="nav.korea">Korea</a>
       <a href="/apr.html" data-i18n="nav.apr">APR</a>
@@ -151,6 +152,11 @@ export async function onRequestGet({ params, env, request }) {
         ${keywords ? `<div class="post-page-tags"><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
+
+        <div class="post-byline">
+          ${post.author ? `<span class="post-byline-author">작성자 · ${escapeHtml(post.author)}</span>` : ''}
+          <span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>
+        </div>
 
       </div>
 
