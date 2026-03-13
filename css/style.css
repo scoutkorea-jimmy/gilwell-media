@@ -1233,6 +1233,15 @@ footer p, footer a {
   display:         block;
 }
 
+.footer-build {
+  margin-top:      8px;
+  font-family:     'DM Mono', monospace;
+  font-size:       10px;
+  letter-spacing:  0.12em;
+  text-transform:  uppercase;
+  color:           rgba(255,255,255,0.55);
+}
+
 footer a:hover { color: #ffffff; }
 
 /* Bottom disclaimer bar */
