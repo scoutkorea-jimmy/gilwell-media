@@ -17,6 +17,17 @@
   var _tagSettings    = GW.normalizeTagSettings(null);
   var _dragTagValue   = '';
   var _dragTagSource  = '';
+  var _siteMeta       = {
+    pages: {
+      home: { title: '', description: '' },
+      korea: { title: '', description: '' },
+      apr: { title: '', description: '' },
+      worm: { title: '', description: '' },
+      contributors: { title: '', description: '' },
+      search: { title: '', description: '' },
+    },
+    image_url: null,
+  };
 
   // Pagination state
   var _listPage     = 1;
@@ -111,6 +122,7 @@
     loadTranslationsAdmin();
     loadAiDisclaimerAdmin();
     loadContributorsAdmin();
+    loadSiteMetaAdmin();
     loadAdminList();
     loadDashboard();
     _ensureAdminWriteTurnstile();
@@ -191,6 +203,32 @@
               _adminCoverImg = null; preview.innerHTML = '';
             });
           }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function _uploadImageAsDataUrl(done) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = function () {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var canvas = document.createElement('canvas');
+          var maxW = 1600;
+          var ratio = Math.min(maxW / img.width, 1);
+          canvas.width = Math.round(img.width * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          done(canvas.toDataURL('image/jpeg', 0.82));
         };
         img.src = e.target.result;
       };
@@ -981,6 +1019,96 @@
     GW.apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: items }) })
       .then(function () { GW.showToast('티커가 저장됐습니다', 'success'); })
       .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
+  };
+
+  function loadSiteMetaAdmin() {
+    fetch('/api/settings/site-meta', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _siteMeta = data || _siteMeta;
+        _renderSiteMetaManager();
+      })
+      .catch(function () {
+        _renderSiteMetaManager();
+      });
+  }
+
+  function _renderSiteMetaManager() {
+    var container = document.getElementById('site-meta-manager');
+    if (container) {
+      var defs = [
+        ['home', '홈 / index'],
+        ['korea', 'Korea'],
+        ['apr', 'APR'],
+        ['worm', 'WOSM'],
+        ['contributors', '도움을 주신 분들'],
+        ['search', '검색'],
+      ];
+      container.innerHTML = defs.map(function (entry) {
+        var key = entry[0];
+        var label = entry[1];
+        var page = (_siteMeta.pages && _siteMeta.pages[key]) || { title: '', description: '' };
+        return '<div class="share-meta-card">' +
+          '<div class="share-meta-card-head">' + label + '</div>' +
+          '<label>공유 제목</label>' +
+          '<input type="text" data-site-meta-page="' + key + '" data-site-meta-field="title" value="' + GW.escapeHtml(page.title || '') + '" maxlength="120" />' +
+          '<label>공유 설명</label>' +
+          '<textarea data-site-meta-page="' + key + '" data-site-meta-field="description" rows="4" maxlength="260">' + GW.escapeHtml(page.description || '') + '</textarea>' +
+        '</div>';
+      }).join('');
+    }
+    _renderSiteMetaImagePreview();
+  }
+
+  function _renderSiteMetaImagePreview() {
+    var preview = document.getElementById('site-meta-image-preview');
+    if (!preview) return;
+    if (_siteMeta.image_url) {
+      var src = _siteMeta.image_url.startsWith('http') ? GW.escapeHtml(_siteMeta.image_url) : _siteMeta.image_url;
+      preview.innerHTML = '<img src="' + src + '" class="cover-preview-img">' +
+        '<div style="margin-top:8px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">일반 페이지 공유 대표 이미지</div>';
+      return;
+    }
+    preview.innerHTML = '<div class="tag-admin-empty">설정된 이미지 없음</div>';
+  }
+
+  window.uploadSiteMetaImage = function () {
+    _uploadImageAsDataUrl(function (dataUrl) {
+      _siteMeta.image_url = dataUrl;
+      _renderSiteMetaImagePreview();
+      GW.showToast('공유 대표 이미지가 준비됐습니다', 'success');
+    });
+  };
+
+  window.removeSiteMetaImage = function () {
+    _siteMeta.image_url = null;
+    _renderSiteMetaImagePreview();
+  };
+
+  window.saveSiteMeta = function () {
+    var inputs = document.querySelectorAll('[data-site-meta-page][data-site-meta-field]');
+    var pages = {};
+    inputs.forEach(function (input) {
+      var page = input.getAttribute('data-site-meta-page');
+      var field = input.getAttribute('data-site-meta-field');
+      if (!pages[page]) pages[page] = {};
+      pages[page][field] = (input.value || '').trim();
+    });
+    GW.apiFetch('/api/settings/site-meta', {
+      method: 'PUT',
+      body: JSON.stringify({
+        pages: pages,
+        image_url: _siteMeta.image_url || null,
+      }),
+    })
+      .then(function (data) {
+        _siteMeta = data || _siteMeta;
+        _renderSiteMetaManager();
+        GW.showToast('공유 설정이 저장됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
   };
 
   // ─── Translations admin ───────────────────────────────────

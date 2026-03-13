@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BP미디어 · 관리자</title>
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.002.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.003.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -292,6 +293,25 @@
           </div>
         </div>
 
+        <div class="panel" style="margin-bottom:24px;">
+          <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
+          <div class="panel-body">
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">평균적으로 반영 확인까지 1~10분 정도 걸릴 수 있으며, 카카오톡·페이스북·X 같은 플랫폼은 자체 캐시 때문에 더 오래 보일 수 있습니다.</p>
+
+            <div class="share-meta-grid" id="site-meta-manager"></div>
+
+            <div style="margin-top:18px;">
+              <label style="display:block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">공유 대표 이미지</label>
+              <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin:0;" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
+              <button class="cancel-btn visible" type="button" style="width:auto;padding:10px 18px;margin:0 0 0 8px;" onclick="removeSiteMetaImage()">이미지 제거</button>
+              <div id="site-meta-image-preview" style="margin-top:12px;"></div>
+            </div>
+
+            <button class="submit-btn" style="margin-top:18px;" onclick="saveSiteMeta()">공유 설정 저장</button>
+          </div>
+        </div>
+
         <!-- Ticker -->
         <div class="panel" style="margin-bottom:24px;">
           <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
@@ -362,8 +382,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.002.00"></script>
-  <script src="/js/admin.js?v=0.002.00"></script>
+  <script src="/js/main.js?v=0.003.00"></script>
+  <script src="/js/admin.js?v=0.003.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
