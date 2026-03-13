@@ -1,9 +1,20 @@
 {
   "items": [
     {
-      "version": "0.013.00",
+      "version": "0.013.01",
       "date": "2026-03-14",
       "commit": "local build",
+      "type": "build",
+      "summary": "애드센스 메타 반영 직후 버전 문자열을 정합성 있게 재정렬했습니다.",
+      "changes": [
+        "js/main.js 내부 APP_VERSION과 정적 자산 쿼리 버전을 0.013.01로 다시 맞췄습니다.",
+        "기능 변경 없이 배포 식별 문자열만 정리했습니다."
+      ]
+    },
+    {
+      "version": "0.013.00",
+      "date": "2026-03-14",
+      "commit": "1384888",
       "type": "feature",
       "summary": "구글 애드센스 계정 메타를 전체 페이지 head에 반영했습니다.",
       "changes": [
