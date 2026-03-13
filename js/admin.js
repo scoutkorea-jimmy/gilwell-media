@@ -14,6 +14,7 @@
   var _adminTurnstileToken = '';
   var _reorderDirty   = false; // drag-and-drop changed order
   var _heroPostIds    = [];   // current hero post IDs (up to 5)
+  var _heroIntervalMs = 3000;
   var _tagSettings    = GW.normalizeTagSettings(null);
   var _dragTagValue   = '';
   var _dragTagSource  = '';
@@ -1150,6 +1151,9 @@
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
       _heroPostIds = (data.posts || []).map(function(p){ return p.id; });
+      _heroIntervalMs = data.interval_ms || 3000;
+      var intervalEl = document.getElementById('hero-interval-input');
+      if (intervalEl) intervalEl.value = String(Math.round(_heroIntervalMs / 1000));
       renderHeroSlots(data.posts || []);
     }).catch(function(){});
   }
@@ -1205,10 +1209,23 @@
     document.getElementById('hero-search-input').value = '';
   };
 
+  window.saveHeroSettings = function () {
+    _saveHeroIds();
+  };
+
   function _saveHeroIds() {
-    GW.apiFetch('/api/settings/hero', { method: 'PUT', body: JSON.stringify({ post_ids: _heroPostIds }) })
+    var intervalEl = document.getElementById('hero-interval-input');
+    var intervalSeconds = intervalEl ? parseInt(intervalEl.value, 10) : 3;
+    if (!Number.isFinite(intervalSeconds)) intervalSeconds = 3;
+    intervalSeconds = Math.min(15, Math.max(2, intervalSeconds));
+    if (intervalEl) intervalEl.value = String(intervalSeconds);
+    _heroIntervalMs = intervalSeconds * 1000;
+    GW.apiFetch('/api/settings/hero', {
+      method: 'PUT',
+      body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: _heroIntervalMs }),
+    })
       .then(function(data){
-        GW.showToast('히어로 기사가 저장됐습니다', 'success');
+        GW.showToast('히어로 설정이 저장됐습니다', 'success');
         loadHeroAdmin();
       })
       .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
