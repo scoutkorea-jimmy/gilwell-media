@@ -6,6 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
+  GW.APP_VERSION = '0.001.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
 
   // ── Category metadata ─────────────────────────────────────
