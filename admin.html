@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.008.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.009.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -95,6 +95,54 @@
               <span class="dash-action-icon">🌐</span>
               <span class="dash-action-label">홈페이지</span>
             </a>
+          </div>
+
+          <div class="panel" style="margin-bottom:24px;">
+            <div class="panel-header"><h2>방문자수 대시보드</h2></div>
+            <div class="panel-body">
+              <div class="dash-stats-row analytics-stats-row">
+                <div class="dash-stat-card">
+                  <div class="dash-stat-num" id="analytics-today-unique">—</div>
+                  <div class="dash-stat-label">오늘 순방문자</div>
+                </div>
+                <div class="dash-stat-card">
+                  <div class="dash-stat-num" id="analytics-today-visits">—</div>
+                  <div class="dash-stat-label">오늘 방문 수</div>
+                </div>
+                <div class="dash-stat-card">
+                  <div class="dash-stat-num" id="analytics-yesterday-unique">—</div>
+                  <div class="dash-stat-label">어제 순방문자</div>
+                </div>
+                <div class="dash-stat-card">
+                  <div class="dash-stat-num" id="analytics-last7-unique">—</div>
+                  <div class="dash-stat-label">최근 7일 순방문자</div>
+                </div>
+                <div class="dash-stat-card">
+                  <div class="dash-stat-num" id="analytics-last7-visits">—</div>
+                  <div class="dash-stat-label">최근 7일 방문 수</div>
+                </div>
+              </div>
+              <p class="analytics-note" id="analytics-tracking-note">유입 경로를 확인하는 중…</p>
+            </div>
+          </div>
+
+          <div class="dashboard-2col">
+            <div class="panel">
+              <div class="panel-header"><h2>유입 경로</h2></div>
+              <div class="panel-body">
+                <div id="analytics-referrers" class="analytics-list">
+                  <div class="list-empty">로드 중…</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h2>인기 유입 페이지</h2></div>
+              <div class="panel-body">
+                <div id="analytics-paths" class="analytics-list">
+                  <div class="list-empty">로드 중…</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Recent posts -->
@@ -404,8 +452,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.008.00"></script>
-  <script src="/js/admin.js?v=0.008.00"></script>
+  <script src="/js/main.js?v=0.009.00"></script>
+  <script src="/js/admin.js?v=0.009.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

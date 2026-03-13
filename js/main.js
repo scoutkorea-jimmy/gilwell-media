@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.008.00';
+  GW.APP_VERSION = '0.009.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm'];
 
@@ -258,6 +258,27 @@
     return data;
   };
 
+  GW.trackPageVisit = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    var path = window.location.pathname || '/';
+    if (!path || path === '/admin.html' || path.indexOf('/api/') === 0) return;
+    var key = 'gw_visit_tracked_' + path;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch (_) {}
+
+    fetch('/api/analytics/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path: path,
+        referrer: document.referrer || '',
+      }),
+      keepalive: true,
+    }).catch(function () {});
+  };
+
   // ── Cloudflare Turnstile ──────────────────────────────────
   /**
    * Set this to your Cloudflare Turnstile Site Key.
@@ -265,6 +286,14 @@
    * Leave empty ('') to disable CAPTCHA until you're ready to configure it.
    */
   GW.TURNSTILE_SITE_KEY = ''; // ← Replace with your Turnstile Site Key
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      GW.trackPageVisit();
+    }, { once: true });
+  } else {
+    GW.trackPageVisit();
+  }
 
   /** Lazily load the Turnstile script once, then call cb(). */
   GW.loadTurnstile = function (cb) {

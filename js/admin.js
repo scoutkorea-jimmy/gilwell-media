@@ -1286,6 +1286,14 @@
       if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.worm||0));
     }).catch(function(){});
 
+    GW.apiFetch('/api/admin/analytics')
+      .then(function (data) {
+        renderAnalyticsDashboard(data);
+      })
+      .catch(function () {
+        renderAnalyticsDashboard(null);
+      });
+
     // Load 5 most recent posts
     fetch('/api/posts?page=1')
       .then(function(r){ return r.json(); })
@@ -1306,6 +1314,60 @@
           '</div>';
         }).join('');
       }).catch(function(){});
+  }
+
+  function renderAnalyticsDashboard(data) {
+    var fallback = {
+      visitors: {
+        today_unique: '—',
+        today_visits: '—',
+        yesterday_unique: '—',
+        last7_unique: '—',
+        last7_visits: '—',
+      },
+      top_paths: [],
+      referrers: [],
+      tracking_note: '방문자 대시보드를 불러오지 못했습니다.',
+    };
+    var payload = data || fallback;
+    setText('analytics-today-unique', payload.visitors.today_unique);
+    setText('analytics-today-visits', payload.visitors.today_visits);
+    setText('analytics-yesterday-unique', payload.visitors.yesterday_unique);
+    setText('analytics-last7-unique', payload.visitors.last7_unique);
+    setText('analytics-last7-visits', payload.visitors.last7_visits);
+    setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
+    renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
+      return {
+        title: item.referrer_host || 'direct',
+        meta: '최근 7일 · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+      };
+    }, '아직 유입 경로 데이터가 없습니다');
+    renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
+      return {
+        title: item.path || '/',
+        meta: '최근 7일 · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+      };
+    }, '아직 방문 페이지 데이터가 없습니다');
+  }
+
+  function renderAnalyticsList(id, items, mapFn, emptyText) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="list-empty">' + GW.escapeHtml(emptyText) + '</div>';
+      return;
+    }
+    el.innerHTML = items.map(function (item) {
+      var view = mapFn(item);
+      return '<div class="analytics-item">' +
+        '<div><strong>' + GW.escapeHtml(view.title) + '</strong><span>' + GW.escapeHtml(view.meta) + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
   }
 
   function loadVersionHistory() {
