@@ -81,7 +81,10 @@ export async function onRequestGet({ params, env, request }) {
       <div class="masthead-date" id="today-date"></div>
       <div class="masthead-logo">
         <a href="/">
-          <h1>BP미디어</h1>
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <h1>BP미디어</h1>
+          </div>
           <div class="sub">bpmedia.net</div>
         </a>
       </div>

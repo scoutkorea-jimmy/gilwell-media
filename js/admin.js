@@ -813,6 +813,7 @@
 
   // ─── Contributors admin ───────────────────────────────────
   var _contributors = [];
+  var _editingContributorIdx = null;
 
   function loadContributorsAdmin() {
     fetch('/api/settings/contributors')
@@ -835,38 +836,71 @@
         '<div style="flex:1;">' +
           '<strong style="font-size:13px;">' + GW.escapeHtml(c.name) + '</strong>' +
           (c.note ? '<span style="font-size:11px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.note) + '</span>' : '') +
+          (c.date ? '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.date) + '</span>' : '') +
         '</div>' +
+        '<button onclick="editContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">수정</button>' +
         '<button onclick="deleteContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">삭제</button>' +
       '</div>';
     }).join('');
   }
 
-  window.addContributor = function () {
+  window.editContributor = function (index) {
+    var c = _contributors[index]; if (!c) return;
+    _editingContributorIdx = index;
+    document.getElementById('contrib-name-input').value = c.name || '';
+    document.getElementById('contrib-note-input').value = c.note || '';
+    document.getElementById('contrib-date-input').value = c.date || '';
+    document.getElementById('contrib-form-label').textContent = '수정 중';
+    document.getElementById('contrib-submit-btn').textContent = '수정 완료';
+    document.getElementById('contrib-cancel-btn').style.display = '';
+    document.getElementById('contrib-name-input').focus();
+  };
+
+  window.cancelEditContributor = function () {
+    _editingContributorIdx = null;
+    document.getElementById('contrib-name-input').value = '';
+    document.getElementById('contrib-note-input').value = '';
+    document.getElementById('contrib-date-input').value = '';
+    document.getElementById('contrib-form-label').textContent = '새 분 추가';
+    document.getElementById('contrib-submit-btn').textContent = '추가';
+    document.getElementById('contrib-cancel-btn').style.display = 'none';
+  };
+
+  window.submitContributor = function () {
     var nameEl = document.getElementById('contrib-name-input');
     var noteEl = document.getElementById('contrib-note-input');
+    var dateEl = document.getElementById('contrib-date-input');
     var name = (nameEl.value || '').trim();
     var note = (noteEl.value || '').trim();
+    var date = (dateEl.value || '').trim();
     if (!name) { GW.showToast('이름을 입력해주세요', 'error'); return; }
-    _contributors.push({ name: name, note: note });
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: _contributors }) })
+    var updated = _contributors.slice();
+    var entry = { name: name, note: note, date: date };
+    if (_editingContributorIdx !== null) {
+      updated[_editingContributorIdx] = entry;
+    } else {
+      updated.push(entry);
+    }
+    var wasEditing = _editingContributorIdx !== null;
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
       .then(function (data) {
-        _contributors = data.items || _contributors;
+        _contributors = data.items || updated;
         renderContributorsAdmin();
-        nameEl.value = ''; noteEl.value = '';
-        GW.showToast('추가됐습니다', 'success');
+        cancelEditContributor();
+        GW.showToast(wasEditing ? '수정됐습니다' : '추가됐습니다', 'success');
       })
       .catch(function (err) {
-        _contributors.pop();
         GW.showToast(err.message || '저장 실패', 'error');
       });
   };
 
   window.deleteContributor = function (index) {
     if (!confirm('삭제할까요?')) return;
-    _contributors.splice(index, 1);
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: _contributors }) })
+    var updated = _contributors.slice();
+    updated.splice(index, 1);
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
       .then(function (data) {
-        _contributors = data.items || _contributors;
+        _contributors = data.items || updated;
         renderContributorsAdmin();
         GW.showToast('삭제됐습니다', 'success');
       })
