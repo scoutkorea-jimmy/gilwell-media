@@ -78,7 +78,7 @@ wrangler d1 create gilwell-posts
 # Copy the database_id printed above into wrangler.toml
 # [[d1_databases]] database_id = "abc123..."
 
-# Apply the schema
+# Apply the current schema snapshot for a fresh database
 wrangler d1 execute gilwell-posts --file=./db/schema.sql
 
 # Start local dev server (serves static files + runs Functions)
@@ -157,6 +157,12 @@ wrangler d1 execute gilwell-posts --remote --file=./db/schema.sql
 ```
 
 After creation, copy the `database_id` into `wrangler.toml` for local dev, and bind it in the Cloudflare Pages dashboard for production.
+
+### Upgrading an existing database
+
+`db/schema.sql` is a full snapshot for fresh installs.
+If your production database already exists, do not re-run `db/schema.sql`.
+Instead, apply only the missing files from `db/migration_001.sql` onward, in order.
 
 ---
 
