@@ -9,6 +9,7 @@ import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -53,6 +54,7 @@ export async function onRequestGet({ params, env, request }) {
 // ── PUT /api/posts/:id ────────────────────────────────────────
 // Updates an existing post. Requires valid admin token.
 export async function onRequestPut({ params, request, env }) {
+  const origin = new URL(request.url).origin;
   const token = extractToken(request);
   if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
@@ -60,6 +62,11 @@ export async function onRequestPut({ params, request, env }) {
 
   const id = parseId(params.id);
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
+
+  let currentPost = null;
+  try {
+    currentPost = await env.DB.prepare(`SELECT image_url FROM posts WHERE id = ?`).bind(id).first();
+  } catch (_) {}
 
   let body;
   try {
@@ -88,8 +95,20 @@ export async function onRequestPut({ params, request, env }) {
   if (category  !== undefined) { fields.push('category = ?');   values.push(category); }
   if (title     !== undefined) { fields.push('title = ?');       values.push(title.trim()); }
   if (subtitle  !== undefined) { fields.push('subtitle = ?');    values.push(subtitle ? subtitle.trim().slice(0, 300) : null); }
-  if (content   !== undefined) { fields.push('content = ?');     values.push(content.trim()); }
-  if (image_url !== undefined) { fields.push('image_url = ?');   values.push(sanitizeUrl(image_url)); }
+  if (content   !== undefined) {
+    const upgradedContent = await upgradeEditorContentImages(content.trim(), env, origin, 'inline');
+    fields.push('content = ?');
+    values.push(upgradedContent);
+  }
+  let oldImageToDelete = '';
+  if (image_url !== undefined) {
+    const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
+    fields.push('image_url = ?');
+    values.push(storedCover.url);
+    if (currentPost && currentPost.image_url && currentPost.image_url !== storedCover.url) {
+      oldImageToDelete = currentPost.image_url;
+    }
+  }
   if (image_caption !== undefined) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
   if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
@@ -115,6 +134,9 @@ export async function onRequestPut({ params, request, env }) {
     ).bind(...values).all();
 
     if (!results.length) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (oldImageToDelete) {
+      await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
+    }
     return json({ post: results[0] });
   } catch (err) {
     console.error('PUT /api/posts/:id error:', err);

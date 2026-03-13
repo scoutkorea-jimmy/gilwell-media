@@ -8,6 +8,7 @@ import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 const PAGE_SIZE = 20;
@@ -85,6 +86,7 @@ export async function onRequestGet({ request, env }) {
 // ── POST /api/posts ───────────────────────────────────────────
 // Creates a new post. Requires valid admin token.
 export async function onRequestPost({ request, env }) {
+  const origin = new URL(request.url).origin;
   // Verify admin token
   const token = extractToken(request);
   if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
@@ -119,7 +121,9 @@ export async function onRequestPost({ request, env }) {
     return json({ error: '내용을 입력해주세요' }, 400);
   }
 
-  const safeImageUrl  = sanitizeUrl(image_url);
+  const upgradedContent = await upgradeEditorContentImages(content.trim(), env, origin, 'inline');
+  const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
+  const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
   const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
@@ -155,8 +159,8 @@ export async function onRequestPost({ request, env }) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          RETURNING *`;
     const bindings = useRawDate
-      ? [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
-      : [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
+      ? [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
+      : [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     return json({ post: results[0] }, 201);
