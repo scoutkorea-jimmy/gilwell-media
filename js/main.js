@@ -9,9 +9,9 @@
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
-    korea: { label: 'Korea', tagClass: 'tag-korea', color: '#1a3a5c' },
-    apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#5a3a1a' },
-    worm:  { label: 'Worm',  tagClass: 'tag-worm',  color: '#2d5a27' },
+    korea: { label: 'Korea', tagClass: 'tag-korea', color: '#0094B4' },
+    apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#FF5655' },
+    worm:  { label: 'Worm',  tagClass: 'tag-worm',  color: '#248737' },
   };
 
   // ── Date formatting ───────────────────────────────────────
@@ -23,14 +23,21 @@
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
   };
 
-  /** Set today's date in the masthead element. */
+  /** Set today's date + live clock in the masthead element. */
   GW.setMastheadDate = function (id) {
     const el = document.getElementById(id || 'today-date');
     if (!el) return;
-    const d    = new Date();
     const days = ['일', '월', '화', '수', '목', '금', '토'];
-    el.textContent =
-      `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+    function update() {
+      const d = new Date();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      const s = String(d.getSeconds()).padStart(2, '0');
+      el.innerHTML =
+        `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})<span class="masthead-time">${h}:${m}:${s}</span>`;
+    }
+    update();
+    setInterval(update, 1000);
   };
 
   // ── XSS protection ────────────────────────────────────────
@@ -44,15 +51,76 @@
       .replace(/'/g, '&#39;');
   };
 
-  /** Render plain text with line breaks preserved (safe). */
+  /** Render content: Editor.js JSON, Quill HTML, or plain text. */
   GW.renderText = function (str) {
+    if (!str) return '';
+    const trimmed = str.trim();
+
+    // Editor.js JSON: {"time":...,"blocks":[...],"version":...}
+    if (trimmed.charAt(0) === '{') {
+      try {
+        const doc = JSON.parse(trimmed);
+        if (Array.isArray(doc.blocks)) {
+          return doc.blocks.map(function (b) {
+            switch (b.type) {
+              case 'paragraph':
+                return '<p>' + (b.data.text || '') + '</p>';
+              case 'header': {
+                var lvl = b.data.level || 2;
+                return '<h' + lvl + '>' + (b.data.text || '') + '</h' + lvl + '>';
+              }
+              case 'list': {
+                var tag = b.data.style === 'ordered' ? 'ol' : 'ul';
+                var items = (b.data.items || []).map(function (i) {
+                  var txt = typeof i === 'string' ? i : (i.content || '');
+                  return '<li>' + txt + '</li>';
+                }).join('');
+                return '<' + tag + '>' + items + '</' + tag + '>';
+              }
+              case 'quote':
+                return '<blockquote>' + (b.data.text || '') + '</blockquote>';
+              case 'image': {
+                var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
+                var cap = GW.escapeHtml(b.data.caption || '');
+                var html = '<img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:12px 0;">';
+                if (cap) html += '<p class="img-caption">' + cap + '</p>';
+                return html;
+              }
+              default: return '';
+            }
+          }).join('');
+        }
+      } catch (e) { /* fall through */ }
+    }
+
+    // Quill HTML output starts with a block tag
+    if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) {
+      return str;
+    }
     return GW.escapeHtml(str).replace(/\n/g, '<br>');
   };
 
-  /** Truncate a string to maxLen chars, appending "…". */
+  /** Strip HTML/JSON and truncate plain text for excerpts. */
   GW.truncate = function (str, maxLen) {
     if (!str) return '';
-    return str.length <= maxLen ? str : str.slice(0, maxLen).trimEnd() + '…';
+    // Handle Editor.js JSON
+    if (str.trim().charAt(0) === '{') {
+      try {
+        const doc = JSON.parse(str.trim());
+        if (Array.isArray(doc.blocks)) {
+          str = doc.blocks.map(function (b) {
+            if (b.type === 'paragraph' || b.type === 'header') return b.data.text || '';
+            if (b.type === 'list') return (b.data.items || []).map(function (i) {
+              return typeof i === 'string' ? i : (i.content || '');
+            }).join(' ');
+            if (b.type === 'quote') return b.data.text || '';
+            return '';
+          }).join(' ');
+        }
+      } catch (e) { /* fall through */ }
+    }
+    var plain = str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
   };
 
   // ── Toast notifications ───────────────────────────────────
@@ -72,9 +140,9 @@
   };
 
   // ── Session token ─────────────────────────────────────────
-  GW.getToken  = function () { return sessionStorage.getItem('admin_token'); };
-  GW.setToken  = function (t) { sessionStorage.setItem('admin_token', t); };
-  GW.clearToken = function () { sessionStorage.removeItem('admin_token'); };
+  GW.getToken  = function () { return localStorage.getItem('admin_token'); };
+  GW.setToken  = function (t) { localStorage.setItem('admin_token', t); };
+  GW.clearToken = function () { localStorage.removeItem('admin_token'); };
 
   // ── API fetch ─────────────────────────────────────────────
   /**
@@ -112,6 +180,225 @@
         a.classList.add('active');
       }
     });
+  };
+
+  // ── Translation strings (i18n) ────────────────────────────
+  GW.STRINGS = {
+    'nav.home':   { ko: '홈',    en: 'Home' },
+    'nav.korea':  { ko: 'Korea', en: 'Korea' },
+    'nav.apr':    { ko: 'APR',   en: 'APR' },
+    'nav.worm':   { ko: 'Worm',  en: 'Worm' },
+
+    'hero.eyebrow': { ko: 'Scout Media · bpmedia.net', en: 'Scout Media · bpmedia.net' },
+    'hero.title':   { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
+    'hero.sub':     { ko: '한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다', en: 'Delivering Scout news through volunteer effort.' },
+    'hero.cta':     { ko: '소식 읽기 →', en: 'Read More →' },
+
+    'section.popular': { ko: '인기 게시글',    en: 'Popular Posts' },
+    'section.picks':   { ko: '에디터 추천',    en: "Editor's Picks" },
+    'home.more':       { ko: '더보기 →',       en: 'More →' },
+
+    'footer.title':    { ko: '길웰 미디어',    en: 'Gilwell Media' },
+    'footer.sections': { ko: '섹션',           en: 'Sections' },
+    'footer.join':     { ko: '봉사자 모집',    en: 'Join Us' },
+    'footer.join.text': {
+      ko: '길웰 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다. 함께 글을 작성해 주실 봉사자를 모집하고 있습니다. 관심 있으신 분들은 이메일로 연락해 주세요.',
+      en: 'Gilwell Media is operated by Scout network volunteers. We are looking for contributors. Please contact us by email.',
+    },
+    'footer.copyright': {
+      ko: '© 2026 길웰 미디어 / The BP Post · bpmedia.net',
+      en: '© 2026 Gilwell Media / The BP Post · bpmedia.net',
+    },
+    'footer.disclaimer': {
+      ko: '길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+      en: 'Gilwell Media is not an official channel of KSA or WOSM. Operated by volunteer contributors.',
+    },
+    'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
+    'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },
+    'link.worm':  { ko: 'Worm — 세계스카우트연맹',  en: 'Worm — World Scout Organization' },
+
+    'board.korea.banner': { ko: 'Korea / KSA',     en: 'Korea / KSA' },
+    'board.korea.title':  { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
+    'board.korea.desc':   { ko: '국내 스카우트 운동의 소식과 기록을 전합니다.', en: 'News and records from domestic Scout activities.' },
+    'board.apr.banner':   { ko: 'APR',              en: 'APR' },
+    'board.apr.title':    { ko: '아시아태평양 지역', en: 'Asia-Pacific Region' },
+    'board.apr.desc':     { ko: '아시아태평양 스카우트 지역의 동향과 소식을 전합니다.', en: 'Trends and news from the Asia-Pacific Scout Region.' },
+    'board.worm.banner':  { ko: 'Worm / WOSM',      en: 'Worm / WOSM' },
+    'board.worm.title':   { ko: '세계스카우트연맹',  en: 'World Scout Organization (WOSM)' },
+    'board.worm.desc':    { ko: '세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.', en: 'Global news and trends from WOSM.' },
+
+    'write.btn':    { ko: '✏ 글쓰기', en: '✏ Write' },
+    'loadmore.btn': { ko: '더 보기',  en: 'Load More' },
+
+    'stat.korea': { ko: '한국소식',        en: 'Korea' },
+    'stat.apr':   { ko: 'APR소식',         en: 'APR' },
+    'stat.worm':  { ko: 'WOSM소식',        en: 'WOSM' },
+    'stat.today': { ko: '오늘 공유된 소식', en: 'Today' },
+    'stat.unit':  { ko: '건', en: '' },
+  };
+
+  GW.lang = localStorage.getItem('gw_lang') || 'ko';
+
+  /** Return the translated string for the current language. */
+  GW.t = function (key) {
+    var custom = GW._customStrings || {};
+    var lang   = GW.lang;
+    var entry  = (custom[key]) ? custom[key] : (GW.STRINGS[key] || {});
+    return entry[lang] !== undefined ? entry[lang] : (entry.ko || key);
+  };
+
+  /** Switch language and reload (guarantees consistent state). */
+  GW.setLang = function (lang) {
+    localStorage.setItem('gw_lang', lang);
+    location.reload();
+  };
+
+  /** Apply translations to all [data-i18n] elements in the DOM. */
+  GW.applyLang = function () {
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key  = el.getAttribute('data-i18n');
+      var text = GW.t(key);
+      if (el.hasAttribute('data-i18n-html')) {
+        el.innerHTML = GW.escapeHtml(text).replace(/\n/g, '<br>');
+      } else {
+        el.textContent = text;
+      }
+    });
+    // Sync lang button active states
+    ['ko', 'en'].forEach(function (l) {
+      var btn = document.getElementById('lang-btn-' + l);
+      if (btn) btn.classList.toggle('active', l === GW.lang);
+    });
+    document.documentElement.lang = GW.lang === 'en' ? 'en' : 'ko';
+  };
+
+  /** Load custom translation overrides from API then apply. */
+  GW.loadTranslations = function () {
+    fetch('/api/settings/translations')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        GW._customStrings = data.strings || {};
+        GW.applyLang();
+        // Re-render stats if already loaded
+        if (GW._statsData) GW._renderStats();
+      })
+      .catch(function () { GW.applyLang(); });
+  };
+
+  /** Fetch article counts and show in masthead stats bar. */
+  GW.loadStats = function () {
+    fetch('/api/stats')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        GW._statsData = d;
+        GW._renderStats();
+      })
+      .catch(function () {});
+  };
+
+  GW._renderStats = function () {
+    var d   = GW._statsData;
+    if (!d) return;
+    var el  = document.getElementById('masthead-stats');
+    if (!el) return;
+    var u   = GW.t('stat.unit');
+    el.innerHTML =
+      GW.t('stat.korea') + ' <strong>' + d.korea + u + '</strong>' +
+      '<span class="stat-sep">·</span>' +
+      GW.t('stat.apr')   + ' <strong>' + d.apr   + u + '</strong>' +
+      '<span class="stat-sep">·</span>' +
+      GW.t('stat.worm')  + ' <strong>' + d.worm  + u + '</strong>' +
+      '<span class="stat-sep">·</span>' +
+      GW.t('stat.today') + ' <strong>' + d.today + u + '</strong>';
+  };
+
+  // ── Ticker loader ─────────────────────────────────────────
+  /**
+   * Load ticker items from API and build a seamless looping ticker.
+   * innerId = id of the .ticker-inner element.
+   */
+  GW.loadTicker = function (innerId) {
+    var inner = document.getElementById(innerId || 'ticker-inner');
+    if (!inner) return;
+
+    fetch('/api/settings/ticker')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var items = (data.items && data.items.length) ? data.items : [
+          '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
+          '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
+          'The BP Post · bpmedia.net',
+        ];
+        // Build one run of items separated by diamonds
+        var sep  = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
+        var run  = items.map(function (t) { return GW.escapeHtml(t); }).join(sep);
+        // Two identical runs → animate translateX(-50%) for a seamless infinite loop
+        inner.innerHTML = run + sep + run + sep;
+        // Adjust speed: ~8s per item, minimum 20s
+        var dur = Math.max(20, items.length * 8);
+        inner.style.animationDuration = dur + 's';
+      })
+      .catch(function () { /* keep static fallback */ });
+  };
+
+
+  // ── Shared Editor.js Image Tool ───────────────────────────
+  GW.makeEditorImageTool = function () {
+    function ImageTool(opts) {
+      this._data = opts.data || {};
+      this._api  = opts.api;
+    }
+    ImageTool.toolbox = {
+      title: '이미지',
+      icon: '<svg width="17" height="15" viewBox="0 0 336 276" xmlns="http://www.w3.org/2000/svg"><path d="M291 150V79c0-19-15-34-34-34H79c-19 0-34 15-34 34v42l67-44 81 72 56-29 42 30zm0 52l-43-30-56 29-81-72-66 44v46c0 19 15 34 34 34h178c17 0 31-13 34-30zM79 0h178c44 0 79 35 79 79v118c0 44-35 79-79 79H79c-44 0-79-35-79-79V79C0 35 35 0 79 0z"/></svg>',
+    };
+    ImageTool.prototype.render = function () {
+      var self = this;
+      this._wrapper = document.createElement('div');
+      this._wrapper.className = 'editorjs-image-tool';
+      if (this._data && this._data.url) { this._showImage(this._data.url, this._data.caption); return this._wrapper; }
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'editorjs-image-btn';
+      btn.textContent = '📷 이미지 업로드';
+      btn.addEventListener('click', function () { self._upload(); });
+      this._wrapper.appendChild(btn);
+      return this._wrapper;
+    };
+    ImageTool.prototype._upload = function () {
+      var self = this;
+      var input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.onchange = function () {
+        var file = input.files[0]; if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var img = new Image();
+          img.onload = function () {
+            var canvas = document.createElement('canvas');
+            var maxW = 1200; var ratio = Math.min(maxW / img.width, 1);
+            canvas.width = Math.round(img.width * ratio); canvas.height = Math.round(img.height * ratio);
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            self._data = { url: dataUrl, caption: '' }; self._showImage(dataUrl, '');
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    };
+    ImageTool.prototype._showImage = function (url, caption) {
+      this._wrapper.innerHTML = '';
+      var img = document.createElement('img'); img.src = url; img.style = 'max-width:100%;display:block;margin:8px 0;';
+      this._wrapper.appendChild(img);
+      var cap = document.createElement('input'); cap.type = 'text'; cap.placeholder = '사진 설명 (선택)'; cap.value = caption || ''; cap.className = 'editorjs-image-caption';
+      var self = this; cap.addEventListener('input', function () { self._data.caption = cap.value; });
+      this._wrapper.appendChild(cap);
+    };
+    ImageTool.prototype.save = function () { return { url: this._data.url || '', caption: this._data.caption || '' }; };
+    ImageTool.prototype.validate = function (data) { return !!data.url; };
+    return ImageTool;
   };
 
 })();

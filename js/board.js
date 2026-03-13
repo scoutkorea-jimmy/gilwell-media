@@ -24,10 +24,11 @@
     this.moreBtnEl = document.getElementById(opts.moreId  || 'load-more-btn');
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
 
-    this.page     = 1;
-    this.total    = 0;
-    this.loading  = false;
-    this.hasMore  = true;
+    this.page         = 1;
+    this.total        = 0;
+    this.loading      = false;
+    this.hasMore      = true;
+    this._searchQuery = '';
   }
 
   // ── Initialise ────────────────────────────────────────────
@@ -36,6 +37,8 @@
     GW.setMastheadDate();
     GW.markActiveNav();
     this._setupModal();
+    this._setupWriteFeature();
+    this._setupSearch();
     this._load();
 
     if (this.moreBtnEl) {
@@ -50,7 +53,8 @@
     this.loading = true;
     this._showLoading();
 
-    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page)
+    var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
+    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam)
       .then(function (data) {
         self.total   = data.total;
         self.hasMore = data.posts.length === data.pageSize;
@@ -74,12 +78,10 @@
   // ── Render cards ──────────────────────────────────────────
   Board.prototype._renderPosts = function (posts) {
     var self = this;
-    // Remove loading / empty state on first load
     var existing = this.gridEl.querySelector('.loading-state, .empty-state, .error-state');
     if (existing) existing.remove();
 
     if (posts.length === 0 && this.page === 2) {
-      // First load, no posts
       this._showEmpty();
       return;
     }
@@ -103,16 +105,28 @@
             + '" alt="" loading="lazy">';
     }
 
+    var tagHtml = post.tag ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(post.tag) + '</span>' : '';
+
     card.innerHTML =
       thumb +
       '<div class="post-card-body">' +
-        '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+        '<div class="post-card-labels">' +
+          '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+          tagHtml +
+        '</div>' +
         '<h3>' + GW.escapeHtml(post.title) + '</h3>' +
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
-        '<div class="post-card-meta">' + GW.formatDate(post.created_at) + '</div>' +
+        '<div class="post-card-meta">' +
+          GW.formatDate(post.created_at) +
+          (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
+          ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
+        '</div>' +
       '</div>';
 
-    card.addEventListener('click', function () { self._openPost(post.id); });
+    card.addEventListener('click', function (e) {
+      if (e.target.classList.contains('post-permalink')) return;
+      window.location.href = '/post/' + post.id;
+    });
     return card;
   };
 
@@ -121,12 +135,10 @@
     var self = this;
     if (!this.modalEl) return;
 
-    // Close on overlay click (outside .modal)
     this.modalEl.addEventListener('click', function (e) {
       if (e.target === self.modalEl) self._closePost();
     });
 
-    // Close on Escape key
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') self._closePost();
     });
@@ -136,7 +148,6 @@
     var self = this;
     if (!this.modalEl) return;
 
-    // Show loading state inside modal immediately
     var inner = this.modalEl.querySelector('.modal');
     if (inner) {
       inner.innerHTML =
@@ -168,11 +179,21 @@
       imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="">';
     }
 
+    var modalTagHtml = post.tag ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(post.tag) + '</span>' : '';
+
+    var subtitleHtml = post.subtitle
+      ? '<p class="modal-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'
+      : '';
+
     inner.innerHTML =
       '<button class="modal-close" id="modal-close-btn">×</button>' +
       '<div class="modal-header">' +
-        '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
+          '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+          modalTagHtml +
+        '</div>' +
         '<h2>' + GW.escapeHtml(post.title) + '</h2>' +
+        subtitleHtml +
         '<div class="modal-date">' + GW.formatDate(post.created_at) + '</div>' +
       '</div>' +
       imgHtml +
@@ -217,6 +238,506 @@
 
   Board.prototype._updateCount = function () {
     if (this.countEl) this.countEl.textContent = this.total + '개';
+  };
+
+  // ── Write Feature ─────────────────────────────────────────
+  Board.prototype._setupWriteFeature = function () {
+    var self = this;
+    var cat  = GW.CATEGORIES[this.category] || GW.CATEGORIES.korea;
+
+    // Inject write button
+    var textEl = document.querySelector('.board-banner-text');
+    if (textEl) {
+      var btn = document.createElement('button');
+      btn.className   = 'write-btn';
+      btn.textContent = '✏ 글쓰기';
+      btn.addEventListener('click', function () { self._showPasswordModal(); });
+      textEl.appendChild(btn);
+    }
+
+    // ── Password modal ──────────────────────────────────────
+    var pwOverlay = document.createElement('div');
+    pwOverlay.id        = 'board-pw-overlay';
+    pwOverlay.className = 'board-pw-overlay';
+    pwOverlay.innerHTML =
+      '<div class="board-pw-box">' +
+        '<div class="board-pw-header">글쓰기</div>' +
+        '<p class="board-pw-desc">관리자 비밀번호를 입력하세요</p>' +
+        '<input type="password" id="board-pw-input" placeholder="비밀번호" autocomplete="current-password" />' +
+        '<div id="board-pw-error" class="board-pw-error">관리자만 글을 쓸 수 있습니다</div>' +
+        '<div class="board-pw-actions">' +
+          '<button id="board-pw-submit">확인</button>' +
+          '<button id="board-pw-cancel">취소</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(pwOverlay);
+
+    document.getElementById('board-pw-submit').addEventListener('click', function () { self._checkPassword(); });
+    document.getElementById('board-pw-cancel').addEventListener('click', function () { self._closePasswordModal(); });
+    document.getElementById('board-pw-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter')  self._checkPassword();
+      if (e.key === 'Escape') self._closePasswordModal();
+    });
+    pwOverlay.addEventListener('click', function (e) {
+      if (e.target === pwOverlay) self._closePasswordModal();
+    });
+
+    // ── Write form modal (Editor.js) ────────────────────────
+    var writeOverlay = document.createElement('div');
+    writeOverlay.id        = 'board-write-overlay';
+    writeOverlay.className = 'board-write-overlay';
+    writeOverlay.innerHTML =
+      '<div class="board-write-box">' +
+        '<button class="board-write-close" id="board-write-close">×</button>' +
+        '<div class="board-write-header">새 게시글 작성</div>' +
+        '<span class="board-write-cat" style="background:' + cat.color + '">' + cat.label + '</span>' +
+        '<div class="form-group" style="margin-top:20px;">' +
+          '<label for="board-write-title-input">제목 *</label>' +
+          '<input type="text" id="board-write-title-input" placeholder="게시글 제목을 입력하세요" maxlength="200" />' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label for="board-write-subtitle-input">부제목</label>' +
+          '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>글머리 태그</label>' +
+          '<div id="board-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>대표 이미지</label>' +
+          '<div id="board-cover-wrap" class="cover-upload-wrap">' +
+            '<button type="button" id="board-cover-btn" class="cover-upload-btn">📷 대표 이미지 선택</button>' +
+            '<div id="board-cover-preview"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;">(이미지 최대 5개)</span></label>' +
+          '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
+        '</div>' +
+        '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
+          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;">(쉼표로 구분 · comma-separated)</span></label>' +
+          '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />' +
+          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
+        '</div>' +
+        '<div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">' +
+          '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
+          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
+        '</div>' +
+        '<button id="board-write-submit" class="submit-btn" style="margin-top:20px;">게재하기</button>' +
+        '<button id="board-write-savedraft" class="cancel-btn visible" style="margin-left:8px;">💾 임시저장</button>' +
+        '<button id="board-write-cancel" class="cancel-btn visible">취소</button>' +
+      '</div>';
+    document.body.appendChild(writeOverlay);
+
+    document.getElementById('board-write-close').addEventListener('click',  function () { self._closeWriteForm(); });
+    document.getElementById('board-write-cancel').addEventListener('click', function () { self._closeWriteForm(); });
+    document.getElementById('board-write-submit').addEventListener('click', function () { self._submitPost(); });
+    document.getElementById('board-cover-btn').addEventListener('click', function () { self._uploadCoverImage(); });
+    document.getElementById('board-write-savedraft').addEventListener('click', function () {
+      var title    = (document.getElementById('board-write-title-input') || {}).value || '';
+      var subEl    = document.getElementById('board-write-subtitle-input');
+      var subtitle = subEl ? (subEl.value || '') : '';
+      var mtEl     = document.getElementById('board-write-metatags-input');
+      var metaTags = mtEl ? (mtEl.value || '') : '';
+      var key = 'gw_draft_' + self.category;
+      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tag: self._selectedTag || '' };
+      if (self._editor) {
+        self._editor.save().then(function(d) {
+          saving.editorData = d;
+          localStorage.setItem(key, JSON.stringify(saving));
+          GW.showToast('임시저장됐습니다', 'success');
+        }).catch(function() {
+          GW.showToast('임시저장 실패', 'error');
+        });
+      } else {
+        localStorage.setItem(key, JSON.stringify(saving));
+        GW.showToast('임시저장됐습니다', 'success');
+      }
+    });
+    writeOverlay.addEventListener('click', function (e) {
+      if (e.target === writeOverlay) self._closeWriteForm();
+    });
+  };
+
+  // ── Board search ──────────────────────────────────────────
+  Board.prototype._setupSearch = function () {
+    var self = this;
+    var container = document.querySelector('.board-container');
+    if (!container) return;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'board-search-wrap';
+    wrap.innerHTML =
+      '<div class="board-search-inner">' +
+        '<input type="text" id="board-search-input" class="board-search-input" placeholder="이 게시판에서 검색…" autocomplete="off" />' +
+        '<button class="board-search-clear" id="board-search-clear" style="display:none;">✕</button>' +
+      '</div>';
+    container.insertBefore(wrap, container.firstChild);
+
+    var input  = document.getElementById('board-search-input');
+    var clear  = document.getElementById('board-search-clear');
+    var timer  = null;
+
+    input.addEventListener('input', function () {
+      var q = input.value.trim();
+      clear.style.display = q ? 'block' : 'none';
+      clearTimeout(timer);
+      timer = setTimeout(function () { self._search(q); }, 350);
+    });
+
+    clear.addEventListener('click', function () {
+      input.value = '';
+      clear.style.display = 'none';
+      self._search('');
+    });
+  };
+
+  Board.prototype._search = function (q) {
+    this._searchQuery = q;
+    this.page    = 1;
+    this.total   = 0;
+    this.hasMore = true;
+    this.loading = false;
+    this.gridEl.innerHTML = '';
+    this._load();
+  };
+
+  // ── Editor.js loader ──────────────────────────────────────
+  Board.prototype._loadEditorJs = function (callback) {
+    if (window.EditorJS) { callback(); return; }
+
+    function loadScript(src, cb) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = cb;
+      document.head.appendChild(s);
+    }
+
+    // Load core first, then 3 tools in parallel
+    loadScript('https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.1/dist/editorjs.umd.js', function () {
+      var pending = 3;
+      function done() { if (--pending === 0) callback(); }
+      loadScript('https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.umd.js', done);
+      loadScript('https://cdn.jsdelivr.net/npm/@editorjs/list@1.10.0/dist/list.umd.js',   done);
+      loadScript('https://cdn.jsdelivr.net/npm/@editorjs/quote@2.7.5/dist/quote.umd.js',  done);
+    });
+  };
+
+  Board.prototype._initEditorJs = function () {
+    if (this._editor) return;
+    var self = this;
+
+    this._editor = new window.EditorJS({
+      holder:      'board-editorjs',
+      placeholder: '내용을 작성하세요...',
+      tools: {
+        header: {
+          class:  window.Header,
+          config: { levels: [2, 3, 4], defaultLevel: 2 },
+        },
+        list: {
+          class:    window.List,
+          inlineToolbar: true,
+        },
+        quote: {
+          class:         window.Quote,
+          inlineToolbar: true,
+        },
+        image: {
+          class: GW.makeEditorImageTool(),
+        },
+      },
+    });
+  };
+
+  Board.prototype._showPasswordModal = function () {
+    var overlay = document.getElementById('board-pw-overlay');
+    if (!overlay) return;
+    document.getElementById('board-pw-input').value             = '';
+    document.getElementById('board-pw-error').style.display     = 'none';
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () { document.getElementById('board-pw-input').focus(); }, 50);
+  };
+
+  Board.prototype._closePasswordModal = function () {
+    var overlay = document.getElementById('board-pw-overlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  Board.prototype._checkPassword = function () {
+    var self      = this;
+    var input     = document.getElementById('board-pw-input');
+    var submitBtn = document.getElementById('board-pw-submit');
+    var error     = document.getElementById('board-pw-error');
+    var pw        = (input.value || '').trim();
+    if (!pw) return;
+
+    submitBtn.disabled    = true;
+    submitBtn.textContent = '확인 중…';
+    error.style.display   = 'none';
+
+    GW.apiFetch('/api/admin/login', {
+      method: 'POST',
+      body:   JSON.stringify({ password: pw }),
+    })
+      .then(function (data) {
+        GW.setToken(data.token);
+        self._closePasswordModal();
+        self._showWriteForm();
+      })
+      .catch(function () {
+        error.style.display = 'block';
+        input.value = '';
+        input.focus();
+      })
+      .finally(function () {
+        submitBtn.disabled    = false;
+        submitBtn.textContent = '확인';
+      });
+  };
+
+  Board.prototype._uploadCoverImage = function () {
+    var self  = this;
+    var input = document.createElement('input');
+    input.type   = 'file';
+    input.accept = 'image/*';
+    input.onchange = function () {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var canvas = document.createElement('canvas');
+          var maxW   = 1600;
+          var ratio  = Math.min(maxW / img.width, 1);
+          canvas.width  = Math.round(img.width  * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          self._coverImage = canvas.toDataURL('image/jpeg', 0.82);
+
+          var preview = document.getElementById('board-cover-preview');
+          if (preview) {
+            preview.innerHTML =
+              '<img src="' + self._coverImage + '" class="cover-preview-img">' +
+              '<button type="button" class="cover-remove-btn" id="board-cover-remove">× 제거</button>';
+            document.getElementById('board-cover-remove').addEventListener('click', function () {
+              self._coverImage = null;
+              preview.innerHTML = '';
+            });
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  Board.prototype._showWriteForm = function () {
+    var self    = this;
+    var overlay = document.getElementById('board-write-overlay');
+    if (!overlay) return;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Reset selections
+    self._selectedTag  = '';
+    self._coverImage   = null;
+    var preview = document.getElementById('board-cover-preview');
+    if (preview) preview.innerHTML = '';
+    var aiChk = document.getElementById('board-ai-assisted');
+    if (aiChk) aiChk.checked = false;
+
+    // Load available tags from API
+    fetch('/api/settings/tags')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var tags = data.items || [];
+        var sel  = document.getElementById('board-tag-selector');
+        if (!sel) return;
+        var html = '<button type="button" class="tag-pill active" data-tag="">없음</button>';
+        tags.forEach(function (t) {
+          html += '<button type="button" class="tag-pill" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
+        });
+        sel.innerHTML = html;
+        sel.querySelectorAll('.tag-pill').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            sel.querySelectorAll('.tag-pill').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            self._selectedTag = btn.dataset.tag || '';
+          });
+        });
+      })
+      .catch(function () {
+        var sel = document.getElementById('board-tag-selector');
+        if (sel) sel.innerHTML = '<span style="font-size:11px;color:var(--muted);">태그를 불러오지 못했습니다</span>';
+      });
+
+    this._loadEditorJs(function () {
+      // Destroy previous instance before creating a new one
+      if (self._editor) {
+        self._editor.destroy();
+        self._editor = null;
+        var holder = document.getElementById('board-editorjs');
+        if (holder) holder.innerHTML = '';
+      }
+      self._initEditorJs();
+      document.getElementById('board-write-title-input').value = '';
+      var sub = document.getElementById('board-write-subtitle-input');
+      if (sub) sub.value = '';
+      var mt = document.getElementById('board-write-metatags-input');
+      if (mt) mt.value = '';
+
+      // Check for draft
+      var draftKey = 'gw_draft_' + self.category;
+      var draftStr = localStorage.getItem(draftKey);
+      if (draftStr) {
+        try {
+          var draft = JSON.parse(draftStr);
+          if (draft && (draft.title || draft.editorData)) {
+            if (confirm('저장된 임시 글이 있습니다. 불러올까요?')) {
+              if (draft.title) document.getElementById('board-write-title-input').value = draft.title;
+              var sub2 = document.getElementById('board-write-subtitle-input');
+              if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
+              var mt2 = document.getElementById('board-write-metatags-input');
+              if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
+              if (draft.tag) self._selectedTag = draft.tag;
+              // If editorData exists, render it into the editor after a short delay
+              if (draft.editorData && self._editor) {
+                self._editor.render(draft.editorData).catch(function(){});
+              }
+            }
+          }
+        } catch(e) { localStorage.removeItem(draftKey); }
+      }
+
+      setTimeout(function () { document.getElementById('board-write-title-input').focus(); }, 100);
+    });
+
+    self._startDraftAutosave();
+  };
+
+  Board.prototype._closeWriteForm = function () {
+    this._stopDraftAutosave();
+    var overlay = document.getElementById('board-write-overlay');
+    if (overlay) overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  Board.prototype._submitPost = function () {
+    var self      = this;
+    var title     = (document.getElementById('board-write-title-input').value || '').trim();
+    var subEl     = document.getElementById('board-write-subtitle-input');
+    var subtitle  = subEl ? (subEl.value || '').trim() : '';
+    var mtEl      = document.getElementById('board-write-metatags-input');
+    var metaTags  = mtEl ? (mtEl.value || '').trim() : '';
+    var submitBtn = document.getElementById('board-write-submit');
+
+    if (!title) { GW.showToast('제목을 입력해주세요', 'error'); return; }
+    if (!this._editor) { GW.showToast('에디터가 준비되지 않았습니다', 'error'); return; }
+
+    submitBtn.disabled    = true;
+    submitBtn.textContent = '게재 중…';
+
+    this._editor.save()
+      .then(function (outputData) {
+        // Check that there's actual content
+        var hasContent = outputData.blocks && outputData.blocks.length > 0;
+        if (!hasContent) {
+          GW.showToast('내용을 입력해주세요', 'error');
+          submitBtn.disabled    = false;
+          submitBtn.textContent = '게재하기';
+          return;
+        }
+
+        // Validate max 5 images in body
+        var imageCount = (outputData.blocks || []).filter(function (b) { return b.type === 'image'; }).length;
+        if (imageCount > 5) {
+          GW.showToast('본문 이미지는 최대 5개까지 가능합니다', 'error');
+          submitBtn.disabled    = false;
+          submitBtn.textContent = '게재하기';
+          return;
+        }
+
+        var content = JSON.stringify(outputData);
+
+        var aiChk = document.getElementById('board-ai-assisted');
+        GW.apiFetch('/api/posts', {
+          method: 'POST',
+          body:   JSON.stringify({
+            category:    self.category,
+            title:       title,
+            subtitle:    subtitle || null,
+            content:     content,
+            image_url:   self._coverImage || null,
+            tag:         self._selectedTag || null,
+            meta_tags:   metaTags || null,
+            ai_assisted: aiChk ? (aiChk.checked ? 1 : 0) : 0,
+          }),
+        })
+          .then(function () {
+            GW.showToast('게재됐습니다', 'success');
+            localStorage.removeItem('gw_draft_' + self.category);
+            self._stopDraftAutosave();
+            self._closeWriteForm();
+            self.page    = 1;
+            self.total   = 0;
+            self.hasMore = true;
+            self.gridEl.innerHTML = '';
+            self._load();
+          })
+          .catch(function (err) {
+            if (err.status === 401) {
+              GW.clearToken();
+              GW.showToast('세션이 만료됐습니다. 다시 로그인해주세요.', 'error');
+              self._closeWriteForm();
+            } else {
+              GW.showToast(err.message || '게재 실패', 'error');
+            }
+          })
+          .finally(function () {
+            submitBtn.disabled    = false;
+            submitBtn.textContent = '게재하기';
+          });
+      })
+      .catch(function () {
+        GW.showToast('내용 저장 중 오류가 발생했습니다', 'error');
+        submitBtn.disabled    = false;
+        submitBtn.textContent = '게재하기';
+      });
+  };
+
+  // ── Draft Auto-save ───────────────────────────────────────
+  Board.prototype._startDraftAutosave = function () {
+    var self = this;
+    var key  = 'gw_draft_' + this.category;
+    this._draftTimer = setInterval(function () {
+      var title    = (document.getElementById('board-write-title-input') || {}).value || '';
+      var subEl    = document.getElementById('board-write-subtitle-input');
+      var subtitle = subEl ? (subEl.value || '') : '';
+      var mtEl     = document.getElementById('board-write-metatags-input');
+      var metaTags = mtEl ? (mtEl.value || '') : '';
+      if (!title && !subtitle) return; // don't save empty
+      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tag: self._selectedTag || '' };
+      if (self._editor) {
+        self._editor.save().then(function(d) {
+          saving.editorData = d;
+          localStorage.setItem(key, JSON.stringify(saving));
+        }).catch(function(){});
+      } else {
+        localStorage.setItem(key, JSON.stringify(saving));
+      }
+    }, 30000); // every 30 seconds
+  };
+
+  Board.prototype._stopDraftAutosave = function () {
+    if (this._draftTimer) {
+      clearInterval(this._draftTimer);
+      this._draftTimer = null;
+    }
   };
 
   // ── Export ────────────────────────────────────────────────
