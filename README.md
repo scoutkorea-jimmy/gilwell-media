@@ -79,10 +79,13 @@ wrangler d1 create gilwell-posts
 # [[d1_databases]] database_id = "abc123..."
 
 # Apply the current schema snapshot for a fresh database
-wrangler d1 execute gilwell-posts --file=./db/schema.sql
+./scripts/bootstrap_local_db.sh gilwell-posts
 
 # Start local dev server (serves static files + runs Functions)
 wrangler pages dev . --d1 DB=gilwell-posts
+
+# Verify the local D1 schema and seeded settings
+./scripts/smoke_check.sh gilwell-posts
 ```
 
 Open `http://localhost:8788` in your browser.
@@ -163,6 +166,11 @@ After creation, copy the `database_id` into `wrangler.toml` for local dev, and b
 `db/schema.sql` is a full snapshot for fresh installs.
 If your production database already exists, do not re-run `db/schema.sql`.
 Instead, apply only the missing files from `db/migration_001.sql` onward, in order.
+
+### Local helper scripts
+
+- `./scripts/bootstrap_local_db.sh gilwell-posts`
+- `./scripts/smoke_check.sh gilwell-posts`
 
 ---
 
