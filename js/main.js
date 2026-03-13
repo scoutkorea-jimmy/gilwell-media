@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.019.00';
+  GW.APP_VERSION = '0.020.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -181,6 +181,33 @@
     return '<p class="post-image-caption">' + GW.escapeHtml(text) + '</p>';
   };
 
+  GW.syncBuildVersion = function () {
+    var version = 'V' + GW.APP_VERSION;
+    document.querySelectorAll('.site-build-version').forEach(function (el) {
+      el.textContent = version;
+    });
+  };
+
+  GW.ensureFavicon = function () {
+    var href = '/img/favicon.svg';
+    [
+      { rel: 'icon', type: 'image/svg+xml' },
+      { rel: 'shortcut icon', type: 'image/svg+xml' }
+    ].forEach(function (spec) {
+      var selector = 'link[rel="' + spec.rel + '"]';
+      var link = document.head ? document.head.querySelector(selector) : null;
+      if (!link && document.head) {
+        link = document.createElement('link');
+        link.rel = spec.rel;
+        document.head.appendChild(link);
+      }
+      if (link) {
+        link.type = spec.type;
+        link.href = href;
+      }
+    });
+  };
+
   /** Render content: Editor.js JSON, Quill HTML, or plain text. */
   GW.renderText = function (str) {
     if (!str) return '';
@@ -268,6 +295,17 @@
     clearTimeout(el._timer);
     el._timer = setTimeout(function () { el.className = 'toast'; }, 2800);
   };
+
+  GW.applySiteChrome = function () {
+    GW.syncBuildVersion();
+    GW.ensureFavicon();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', GW.applySiteChrome, { once: true });
+  } else {
+    GW.applySiteChrome();
+  }
 
   // ── Session token ─────────────────────────────────────────
   GW.getToken  = function () { return localStorage.getItem('admin_token'); };

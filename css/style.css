@@ -1327,6 +1327,25 @@ footer p, footer a {
   color:           rgba(255,255,255,0.55);
 }
 
+.admin-build-label,
+.admin-login-build {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.admin-build-label {
+  margin-right: 10px;
+}
+
+.admin-login-build {
+  margin-top: 10px;
+  text-align: center;
+}
+
 footer a:hover { color: #ffffff; }
 
 /* Bottom disclaimer bar */
