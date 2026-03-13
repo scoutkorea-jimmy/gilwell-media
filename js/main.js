@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.014.00';
+  GW.APP_VERSION = '0.015.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -175,6 +175,12 @@
       .replace(/'/g, '&#39;');
   };
 
+  GW.buildImageCaption = function (value) {
+    var text = typeof value === 'string' ? value.trim() : '';
+    if (!text) return '';
+    return '<p class="post-image-caption">' + GW.escapeHtml(text) + '</p>';
+  };
+
   /** Render content: Editor.js JSON, Quill HTML, or plain text. */
   GW.renderText = function (str) {
     if (!str) return '';
@@ -207,7 +213,7 @@
                 var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
                 var cap = GW.escapeHtml(b.data.caption || '');
                 var html = '<img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:12px 0;">';
-                if (cap) html += '<p class="img-caption">' + cap + '</p>';
+                if (cap) html += '<p class="post-image-caption">' + cap + '</p>';
                 return html;
               }
               default: return '';
@@ -582,7 +588,7 @@
       this._wrapper.innerHTML = '';
       var img = document.createElement('img'); img.src = url; img.style = 'max-width:100%;display:block;margin:8px 0;';
       this._wrapper.appendChild(img);
-      var cap = document.createElement('input'); cap.type = 'text'; cap.placeholder = '사진 설명 (선택)'; cap.value = caption || ''; cap.className = 'editorjs-image-caption';
+      var cap = document.createElement('input'); cap.type = 'text'; cap.placeholder = '사진 출처 또는 캡션 (선택)'; cap.value = caption || ''; cap.className = 'editorjs-image-caption';
       var self = this; cap.addEventListener('input', function () { self._data.caption = cap.value; });
       this._wrapper.appendChild(cap);
     };

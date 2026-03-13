@@ -241,7 +241,8 @@
 
     var imgHtml = '';
     if (post.image_url) {
-      imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title || '') + '">';
+      imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title || '') + '">' +
+        GW.buildImageCaption(post.image_caption);
     }
     var youtubeHtml = GW.buildYouTubeEmbed(post.youtube_url, post.title);
 
@@ -392,6 +393,8 @@
             '<button type="button" id="board-cover-btn" class="cover-upload-btn">📷 대표 이미지 선택</button>' +
             '<div id="board-cover-preview"></div>' +
           '</div>' +
+          '<input type="text" id="board-write-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />' +
+          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
           '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
@@ -430,6 +433,7 @@
       var metaTags = mtEl ? (mtEl.value || '') : '';
       var ytEl     = document.getElementById('board-write-youtube-input');
       var youtubeUrl = ytEl ? (ytEl.value || '') : '';
+      var coverCaptionEl = document.getElementById('board-write-image-caption');
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -439,6 +443,7 @@
         subtitle: subtitle,
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
+        image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
         publish_date: dateEl ? (dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -666,17 +671,7 @@
           canvas.height = Math.round(img.height * ratio);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
           self._coverImage = canvas.toDataURL('image/jpeg', 0.82);
-
-          var preview = document.getElementById('board-cover-preview');
-          if (preview) {
-            preview.innerHTML =
-              '<img src="' + self._coverImage + '" class="cover-preview-img">' +
-              '<button type="button" class="cover-remove-btn" id="board-cover-remove">× 제거</button>';
-            document.getElementById('board-cover-remove').addEventListener('click', function () {
-              self._coverImage = null;
-              preview.innerHTML = '';
-            });
-          }
+          self._renderCoverPreview();
         };
         img.src = e.target.result;
       };
@@ -696,8 +691,9 @@
     self._selectedTags  = [];
     self._coverImage    = null;
     self._turnstileToken = '';
-    var preview = document.getElementById('board-cover-preview');
-    if (preview) preview.innerHTML = '';
+    var coverCaptionEl = document.getElementById('board-write-image-caption');
+    if (coverCaptionEl) coverCaptionEl.value = '';
+    self._renderCoverPreview();
     var aiChk = document.getElementById('board-ai-assisted');
     if (aiChk) aiChk.checked = false;
 
@@ -780,6 +776,8 @@
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
               var yt2 = document.getElementById('board-write-youtube-input');
               if (yt2 && draft.youtube_url) yt2.value = draft.youtube_url;
+              var cap2 = document.getElementById('board-write-image-caption');
+              if (cap2) cap2.value = draft.image_caption || '';
               var author2 = document.getElementById('board-write-author');
               if (author2 && draft.author) author2.value = draft.author;
               var date2 = document.getElementById('board-write-date');
@@ -788,20 +786,7 @@
               if (ai2) ai2.checked = !!draft.ai_assisted;
               if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
               self._coverImage = draft.image_url || null;
-              var preview2 = document.getElementById('board-cover-preview');
-              if (preview2) {
-                if (self._coverImage) {
-                  preview2.innerHTML =
-                    '<img src="' + self._coverImage + '" class="cover-preview-img">' +
-                    '<button type="button" class="cover-remove-btn" id="board-cover-remove">× 제거</button>';
-                  document.getElementById('board-cover-remove').addEventListener('click', function () {
-                    self._coverImage = null;
-                    preview2.innerHTML = '';
-                  });
-                } else {
-                  preview2.innerHTML = '';
-                }
-              }
+              self._renderCoverPreview();
               var tagSel = document.getElementById('board-tag-selector');
               if (tagSel) _syncBoardTagPills(tagSel, self._selectedTags);
               // If editorData exists, render it into the editor after a short delay
@@ -858,6 +843,7 @@
     var metaTags  = mtEl ? (mtEl.value || '').trim() : '';
     var ytEl      = document.getElementById('board-write-youtube-input');
     var youtubeUrl = ytEl ? (ytEl.value || '').trim() : '';
+    var coverCaptionEl = document.getElementById('board-write-image-caption');
     var submitBtn = document.getElementById('board-write-submit');
 
     if (!title) { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -892,6 +878,7 @@
             subtitle:    subtitle || null,
             content:     content,
             image_url:   self._coverImage || null,
+            image_caption: coverCaptionEl ? ((coverCaptionEl.value || '').trim() || null) : null,
             youtube_url: youtubeUrl || null,
             tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
             meta_tags:   metaTags || null,
@@ -953,6 +940,7 @@
       var metaTags = mtEl ? (mtEl.value || '') : '';
       var ytEl     = document.getElementById('board-write-youtube-input');
       var youtubeUrl = ytEl ? (ytEl.value || '') : '';
+      var coverCaptionEl = document.getElementById('board-write-image-caption');
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -962,6 +950,7 @@
         subtitle: subtitle,
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
+        image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
         publish_date: dateEl ? (dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -984,6 +973,23 @@
       clearInterval(this._draftTimer);
       this._draftTimer = null;
     }
+  };
+
+  Board.prototype._renderCoverPreview = function () {
+    var self = this;
+    var preview = document.getElementById('board-cover-preview');
+    if (!preview) return;
+    if (!self._coverImage) {
+      preview.innerHTML = '';
+      return;
+    }
+    preview.innerHTML =
+      '<img src="' + self._coverImage + '" class="cover-preview-img">' +
+      '<button type="button" class="cover-remove-btn" id="board-cover-remove">× 제거</button>';
+    document.getElementById('board-cover-remove').addEventListener('click', function () {
+      self._coverImage = null;
+      preview.innerHTML = '';
+    });
   };
 
   // ── Export ────────────────────────────────────────────────

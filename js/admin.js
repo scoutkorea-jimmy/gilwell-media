@@ -210,14 +210,7 @@
           canvas.width = Math.round(img.width * ratio); canvas.height = Math.round(img.height * ratio);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
           _adminCoverImg = canvas.toDataURL('image/jpeg', 0.82);
-          var preview = document.getElementById('admin-cover-preview');
-          if (preview) {
-            preview.innerHTML = '<img src="' + _adminCoverImg + '" class="cover-preview-img">' +
-              '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
-            document.getElementById('admin-cover-remove').addEventListener('click', function () {
-              _adminCoverImg = null; preview.innerHTML = '';
-            });
-          }
+          renderAdminCoverPreview();
         };
         img.src = e.target.result;
       };
@@ -391,6 +384,7 @@
     var author   = (document.getElementById('art-author').value   || '').trim();
     var metaTags = (document.getElementById('art-metatags').value || '').trim();
     var youtubeUrl = (document.getElementById('art-youtube-url').value || '').trim();
+    var imageCaption = (document.getElementById('art-image-caption').value || '').trim();
     var btn      = document.getElementById('submit-btn');
 
     if (!title)      { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -417,6 +411,7 @@
         subtitle: subtitle || null,
         content: content,
         image_url: _adminCoverImg || null,
+        image_caption: imageCaption || null,
         youtube_url: youtubeUrl || null,
         tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
         meta_tags: metaTags || null,
@@ -470,30 +465,14 @@
         document.getElementById('art-author').value    = p.author || '';
         document.getElementById('art-metatags').value  = p.meta_tags || '';
         document.getElementById('art-youtube-url').value = p.youtube_url || '';
+        document.getElementById('art-image-caption').value = p.image_caption || '';
         var aiChk = document.getElementById('art-ai-assisted');
         if (aiChk) aiChk.checked = !!p.ai_assisted;
         updateCatPreview();
 
         // Load cover image
         _adminCoverImg = p.image_url || null;
-        var preview = document.getElementById('admin-cover-preview');
-        if (preview) {
-          if (_adminCoverImg && _adminCoverImg.startsWith('http')) {
-            preview.innerHTML = '<img src="' + GW.escapeHtml(_adminCoverImg) + '" class="cover-preview-img">' +
-              '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
-            document.getElementById('admin-cover-remove').addEventListener('click', function () {
-              _adminCoverImg = null; preview.innerHTML = '';
-            });
-          } else if (_adminCoverImg) {
-            preview.innerHTML = '<img src="' + _adminCoverImg + '" class="cover-preview-img">' +
-              '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
-            document.getElementById('admin-cover-remove').addEventListener('click', function () {
-              _adminCoverImg = null; preview.innerHTML = '';
-            });
-          } else {
-            preview.innerHTML = '';
-          }
-        }
+        renderAdminCoverPreview();
 
         // Load tag selector (multi-select)
         _adminSelTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
@@ -552,6 +531,7 @@
     document.getElementById('art-subtitle').value = '';
     document.getElementById('art-metatags').value = '';
     document.getElementById('art-youtube-url').value = '';
+    document.getElementById('art-image-caption').value = '';
     var dateEl = document.getElementById('art-date');
     if (dateEl) dateEl.value = GW.getKstDateInputValue();
     var authorEl = document.getElementById('art-author');
@@ -560,8 +540,7 @@
     document.getElementById('art-category').value = 'korea';
     var aiChk = document.getElementById('art-ai-assisted');
     if (aiChk) aiChk.checked = false;
-    var preview = document.getElementById('admin-cover-preview');
-    if (preview) preview.innerHTML = '';
+    renderAdminCoverPreview();
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     if (_adminEditor) { _adminEditor.isReady.then(function(){_adminEditor.clear();}); }
@@ -626,6 +605,7 @@
       subtitle: subEl ? (subEl.value || '') : '',
       meta_tags: metaEl ? (metaEl.value || '') : '',
       youtube_url: youtubeEl ? (youtubeEl.value || '') : '',
+      image_caption: (document.getElementById('art-image-caption') || {}).value || '',
       author: authorEl ? (authorEl.value || '') : '',
       publish_date: dateEl ? (dateEl.value || '') : '',
       ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -642,24 +622,14 @@
     document.getElementById('art-subtitle').value = draft.subtitle || '';
     document.getElementById('art-metatags').value = draft.meta_tags || '';
     document.getElementById('art-youtube-url').value = draft.youtube_url || '';
+    document.getElementById('art-image-caption').value = draft.image_caption || '';
     document.getElementById('art-author').value = draft.author || 'Editor A';
     document.getElementById('art-date').value = draft.publish_date || GW.getKstDateInputValue();
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
     _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
     _adminCoverImg = draft.image_url || null;
     updateCatPreview();
-    var preview = document.getElementById('admin-cover-preview');
-    if (preview) {
-      if (_adminCoverImg) {
-        preview.innerHTML = '<img src="' + _adminCoverImg + '" class="cover-preview-img">' +
-          '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
-        document.getElementById('admin-cover-remove').addEventListener('click', function () {
-          _adminCoverImg = null; preview.innerHTML = '';
-        });
-      } else {
-        preview.innerHTML = '';
-      }
-    }
+    renderAdminCoverPreview();
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     if (_adminEditor && draft.editorData) {
@@ -733,6 +703,24 @@
           'expired-callback': function () { _adminTurnstileToken = ''; },
         });
       }
+    });
+  }
+
+  function renderAdminCoverPreview() {
+    var preview = document.getElementById('admin-cover-preview');
+    if (!preview) return;
+    if (!_adminCoverImg) {
+      preview.innerHTML = '';
+      return;
+    }
+    var src = _adminCoverImg.startsWith && _adminCoverImg.startsWith('http')
+      ? GW.escapeHtml(_adminCoverImg)
+      : _adminCoverImg;
+    preview.innerHTML = '<img src="' + src + '" class="cover-preview-img">' +
+      '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
+    document.getElementById('admin-cover-remove').addEventListener('click', function () {
+      _adminCoverImg = null;
+      preview.innerHTML = '';
     });
   }
 
