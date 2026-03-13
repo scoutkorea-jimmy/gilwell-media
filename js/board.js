@@ -688,7 +688,7 @@
     if (dateEl) dateEl.value = GW.getKstDateInputValue();
 
     // Load available tags (multi-select)
-    fetch('/api/settings/tags', { cache: 'no-store' })
+    fetch('/api/settings/tags?category=' + encodeURIComponent(self.category), { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var tags = data.items || [];

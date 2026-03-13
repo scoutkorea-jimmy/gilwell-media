@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.001.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.002.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -259,8 +259,35 @@
         <div class="panel" style="margin-bottom:24px;">
           <div class="panel-header"><h2>글머리 태그 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">한 줄에 태그 하나씩.</p>
-            <textarea id="tags-textarea" rows="5" style="width:100%;padding:11px 14px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;" placeholder="소식&#10;공지&#10;행사&#10;특집&#10;속보"></textarea>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
+            <div class="tag-admin-toolbar">
+              <input type="text" id="tag-new-input" maxlength="30" placeholder="새 태그 입력" />
+              <select id="tag-new-target">
+                <option value="common">A · 공통 태그</option>
+                <option value="korea">B · Korea 전용</option>
+                <option value="apr">B · APR 전용</option>
+                <option value="worm">B · WOSM 전용</option>
+              </select>
+              <button class="submit-btn" style="margin:0;width:auto;padding:11px 18px;" onclick="addManagedTag()">태그 추가</button>
+            </div>
+            <div class="tag-admin-grid">
+              <section class="tag-admin-panel">
+                <div class="tag-admin-panel-head">A · 공통 태그</div>
+                <div id="tag-lane-common" class="tag-admin-lane" data-tag-target="common"></div>
+              </section>
+              <section class="tag-admin-panel">
+                <div class="tag-admin-panel-head">B · Korea 전용</div>
+                <div id="tag-lane-korea" class="tag-admin-lane" data-tag-target="korea"></div>
+              </section>
+              <section class="tag-admin-panel">
+                <div class="tag-admin-panel-head">B · APR 전용</div>
+                <div id="tag-lane-apr" class="tag-admin-lane" data-tag-target="apr"></div>
+              </section>
+              <section class="tag-admin-panel">
+                <div class="tag-admin-panel-head">B · WOSM 전용</div>
+                <div id="tag-lane-worm" class="tag-admin-lane" data-tag-target="worm"></div>
+              </section>
+            </div>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveTags()">태그 저장</button>
           </div>
         </div>
@@ -335,8 +362,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.001.00"></script>
-  <script src="/js/admin.js?v=0.001.00"></script>
+  <script src="/js/main.js?v=0.002.00"></script>
+  <script src="/js/admin.js?v=0.002.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
