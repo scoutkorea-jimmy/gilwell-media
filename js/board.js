@@ -105,7 +105,7 @@
             + '" alt="" loading="lazy">';
     }
 
-    var tagHtml = post.tag ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(post.tag) + '</span>' : '';
+    var tagHtml = post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '';
 
     card.innerHTML =
       thumb +
@@ -179,7 +179,7 @@
       imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="">';
     }
 
-    var modalTagHtml = post.tag ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(post.tag) + '</span>' : '';
+    var modalTagHtml = post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '';
 
     var subtitleHtml = post.subtitle
       ? '<p class="modal-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'

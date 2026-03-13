@@ -35,38 +35,40 @@ export async function onRequestGet({ request, env }) {
     let postsQuery, countQuery;
     let postsArgs, countArgs;
 
+    const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
+
     if (featuredOnly) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published
+      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
                     FROM posts WHERE featured = 1 AND published = 1
-                    ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+                    ${ORDER} LIMIT ? OFFSET ?`;
       postsArgs  = [PAGE_SIZE, offset];
       countQuery = `SELECT COUNT(*) AS total FROM posts WHERE featured = 1 AND published = 1`;
       countArgs  = [];
     } else if (q && category) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published
+      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
                     FROM posts WHERE category = ? AND (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}
-                    ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+                    ${ORDER} LIMIT ? OFFSET ?`;
       postsArgs = [category, `%${q}%`, `%${q}%`, `%${q}%`, PAGE_SIZE, offset];
       countQuery = `SELECT COUNT(*) AS total FROM posts WHERE category = ? AND (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}`;
       countArgs  = [category, `%${q}%`, `%${q}%`, `%${q}%`];
     } else if (q) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published
+      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
                     FROM posts WHERE (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}
-                    ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+                    ${ORDER} LIMIT ? OFFSET ?`;
       postsArgs = [`%${q}%`, `%${q}%`, `%${q}%`, PAGE_SIZE, offset];
       countQuery = `SELECT COUNT(*) AS total FROM posts WHERE (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}`;
       countArgs  = [`%${q}%`, `%${q}%`, `%${q}%`];
     } else if (category) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published
+      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
                     FROM posts WHERE category = ? ${pubFilter}
-                    ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+                    ${ORDER} LIMIT ? OFFSET ?`;
       postsArgs = [category, PAGE_SIZE, offset];
       countQuery = `SELECT COUNT(*) AS total FROM posts WHERE category = ? ${pubFilter}`;
       countArgs  = [category];
     } else {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published
+      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
                     FROM posts WHERE 1=1 ${pubFilter}
-                    ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+                    ${ORDER} LIMIT ? OFFSET ?`;
       postsArgs = [PAGE_SIZE, offset];
       countQuery = `SELECT COUNT(*) AS total FROM posts WHERE 1=1 ${pubFilter}`;
       countArgs  = [];
@@ -100,7 +102,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, tag, meta_tags, ai_assisted } = body;
+  const { category, title, subtitle, content, image_url, tag, meta_tags, ai_assisted, publish_date } = body;
 
   if (!VALID_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm)' }, 400);
@@ -114,8 +116,16 @@ export async function onRequestPost({ request, env }) {
 
   const safeImageUrl  = sanitizeUrl(image_url);
   const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
-  const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 30) : null;
+  const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
+
+  // publish_date: YYYY-MM-DD — sets created_at to that date at noon
+  let createdAt = "datetime('now')";
+  let useRawDate = false;
+  if (publish_date && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
+    createdAt = `${publish_date} 12:00:00`;
+    useRawDate = true;
+  }
 
   // Get default author from settings if not provided in body
   const bodyAuthor = (body.author && typeof body.author === 'string') ? body.author.trim().slice(0, 60) : null;
@@ -130,21 +140,17 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    const { results } = await env.DB.prepare(
-      `INSERT INTO posts (category, title, subtitle, content, image_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-       RETURNING *`
-    ).bind(
-      category,
-      title.trim(),
-      safeSubtitle,
-      content.trim(),
-      safeImageUrl,
-      safeTag,
-      safeMetaTags,
-      safeAuthor,
-      safeAiAssisted
-    ).all();
+    const sql = useRawDate
+      ? `INSERT INTO posts (category, title, subtitle, content, image_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+         RETURNING *`
+      : `INSERT INTO posts (category, title, subtitle, content, image_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+         RETURNING *`;
+    const bindings = useRawDate
+      ? [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
+      : [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
+    const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     return json({ post: results[0] }, 201);
   } catch (err) {

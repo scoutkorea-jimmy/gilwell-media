@@ -41,16 +41,70 @@
         </div>
       </div>
       <nav class="admin-tabs-nav">
-        <button class="admin-tab-btn active" id="tab-btn-write"    onclick="showAdminTab('write')">✏ 글 작성</button>
-        <button class="admin-tab-btn"        id="tab-btn-list"     onclick="showAdminTab('list')">📋 게시글 목록</button>
-        <button class="admin-tab-btn"        id="tab-btn-settings" onclick="showAdminTab('settings')">⚙ 설정</button>
+        <button class="admin-tab-btn active" id="tab-btn-dashboard" onclick="showAdminTab('dashboard')">📊 대시보드</button>
+        <button class="admin-tab-btn"        id="tab-btn-write"     onclick="showAdminTab('write')">✏ 글 작성</button>
+        <button class="admin-tab-btn"        id="tab-btn-list"      onclick="showAdminTab('list')">📋 게시글 목록</button>
+        <button class="admin-tab-btn"        id="tab-btn-settings"  onclick="showAdminTab('settings')">⚙ 설정</button>
       </nav>
     </header>
 
     <div class="admin-tab-content">
 
+      <!-- ══ TAB: 대시보드 ══ -->
+      <div id="admin-tab-dashboard" class="admin-tab-panel active">
+        <div class="admin-dashboard">
+
+          <!-- Stats row -->
+          <div class="dash-stats-row">
+            <div class="dash-stat-card">
+              <div class="dash-stat-num" id="dash-total">—</div>
+              <div class="dash-stat-label">전체 게시글</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="dash-stat-num" id="dash-korea">—</div>
+              <div class="dash-stat-label">Korea</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="dash-stat-num" id="dash-apr">—</div>
+              <div class="dash-stat-label">APR</div>
+            </div>
+            <div class="dash-stat-card">
+              <div class="dash-stat-num" id="dash-worm">—</div>
+              <div class="dash-stat-label">Worm</div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="dash-actions">
+            <button class="dash-action-btn" onclick="showAdminTab('write')">
+              <span class="dash-action-icon">✏</span>
+              <span class="dash-action-label">새 게시글</span>
+            </button>
+            <button class="dash-action-btn" onclick="showAdminTab('list')">
+              <span class="dash-action-icon">📋</span>
+              <span class="dash-action-label">게시글 목록</span>
+            </button>
+            <button class="dash-action-btn" onclick="showAdminTab('settings')">
+              <span class="dash-action-icon">⚙</span>
+              <span class="dash-action-label">설정</span>
+            </button>
+            <a class="dash-action-btn" href="/index.html" target="_blank">
+              <span class="dash-action-icon">🌐</span>
+              <span class="dash-action-label">홈페이지</span>
+            </a>
+          </div>
+
+          <!-- Recent posts -->
+          <div class="panel">
+            <div class="panel-header"><h2>최근 게시글</h2></div>
+            <div id="dash-recent-list" class="article-list"></div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- ══ TAB: 글 작성 ══ -->
-      <div id="admin-tab-write" class="admin-tab-panel active">
+      <div id="admin-tab-write" class="admin-tab-panel">
         <div class="panel">
           <div class="panel-header">
             <h2 id="form-title">새 게시글 작성</h2>
@@ -82,9 +136,15 @@
               <input type="text" id="art-subtitle" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />
             </div>
 
-            <div class="form-group">
-              <label for="art-author">작성자</label>
-              <input type="text" id="art-author" placeholder="Editor.A" maxlength="60" />
+            <div class="form-row">
+              <div class="form-group" style="flex:1;">
+                <label for="art-author">작성자</label>
+                <input type="text" id="art-author" placeholder="Editor.A" maxlength="60" />
+              </div>
+              <div class="form-group">
+                <label for="art-date">게시 날짜</label>
+                <input type="date" id="art-date" style="padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
+              </div>
             </div>
 
             <div class="form-group">
@@ -126,6 +186,8 @@
                 style="flex:1;padding:7px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;"
                 oninput="adminSearchDebounce()" />
               <span class="count" id="article-count">0건</span>
+              <button id="reorder-save-btn" onclick="saveReorder()" style="display:none;padding:7px 14px;background:#622599;color:#fff;border:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.05em;cursor:pointer;">순서 저장</button>
+              <button onclick="clearReorder()" style="padding:7px 14px;border:1px solid var(--border);background:none;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;color:var(--muted);">순서 초기화</button>
             </div>
           </div>
 
@@ -175,20 +237,21 @@
 
         <!-- Hero -->
         <div class="panel" style="margin-bottom:24px;">
-          <div class="panel-header"><h2>히어로 기사 설정</h2></div>
+          <div class="panel-header"><h2>히어로 기사 설정 (최대 3개)</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">메인 히어로에 노출할 기사를 검색해서 선택하세요.</p>
-            <div id="hero-current-wrap" style="margin-bottom:16px;padding:12px 14px;border:1px solid var(--border);background:var(--bg);">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">현재 선택된 기사</div>
-              <div id="hero-current">불러오는 중…</div>
-              <button onclick="clearHero()" style="margin-top:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:10px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--muted);">히어로 해제</button>
-            </div>
-            <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">메인 히어로에 노출할 기사를 최대 3개까지 선택하세요. 자동 슬라이드로 순환됩니다.</p>
+
+            <!-- Current hero slots -->
+            <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+
+            <!-- Search to add -->
+            <div style="border:1px solid var(--border);padding:14px;">
+              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">기사 추가</div>
               <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;"
+                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
                 oninput="heroSearch()" />
+              <div id="hero-search-results" style="margin-top:8px;"></div>
             </div>
-            <div id="hero-search-results"></div>
           </div>
         </div>
 

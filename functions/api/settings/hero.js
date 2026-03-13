@@ -1,26 +1,42 @@
 /**
- * Gilwell Media · Hero Post Setting
+ * BP미디어 · Hero Posts Setting
  *
- * GET /api/settings/hero  ← public, returns { post_id, post }
- * PUT /api/settings/hero  ← admin only, body: { post_id: N }
+ * GET /api/settings/hero  ← public, returns { posts: [{id, category, title, subtitle, image_url, created_at}] }
+ * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N] } (up to 3)
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 
 // ── GET /api/settings/hero ────────────────────────────────────
 export async function onRequestGet({ env }) {
   try {
-    const row    = await env.DB.prepare(
+    const row = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'hero'`
     ).first();
-    const postId = row ? parseInt(row.value, 10) : 0;
 
-    if (!postId) return json({ post_id: 0, post: null });
+    if (!row) return json({ posts: [] });
 
-    const post = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, image_url, created_at FROM posts WHERE id = ?`
-    ).bind(postId).first();
+    // Backward-compat: stored value may be plain integer (old format) or JSON array
+    let postIds = [];
+    const val = row.value.trim();
+    if (val.startsWith('[')) {
+      try { postIds = JSON.parse(val).filter(Number.isFinite); } catch { postIds = []; }
+    } else {
+      const single = parseInt(val, 10);
+      if (single > 0) postIds = [single];
+    }
 
-    return json({ post_id: postId, post: post || null });
+    if (!postIds.length) return json({ posts: [] });
+
+    // Fetch posts in order
+    const posts = [];
+    for (const id of postIds) {
+      const post = await env.DB.prepare(
+        `SELECT id, category, title, subtitle, image_url, created_at FROM posts WHERE id = ? AND published = 1`
+      ).bind(id).first();
+      if (post) posts.push(post);
+    }
+
+    return json({ posts });
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -39,18 +55,23 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const postId = parseInt(body.post_id, 10);
-  if (!Number.isFinite(postId) || postId < 0) {
-    return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
+  const { post_ids } = body;
+  if (!Array.isArray(post_ids)) {
+    return json({ error: 'post_ids 배열을 입력해주세요' }, 400);
   }
+
+  const safeIds = post_ids
+    .map(id => parseInt(id, 10))
+    .filter(id => Number.isFinite(id) && id > 0)
+    .slice(0, 3);
 
   try {
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('hero', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(String(postId)).run();
+    ).bind(JSON.stringify(safeIds)).run();
 
-    return json({ success: true, post_id: postId });
+    return json({ success: true, post_ids: safeIds });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);

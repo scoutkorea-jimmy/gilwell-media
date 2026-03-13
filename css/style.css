@@ -529,6 +529,39 @@ p { margin-bottom: 6px; }
 /* ════════════════════════════════════════════════════════════
    SITE HERO (index.html top banner)
    ════════════════════════════════════════════════════════════ */
+
+/* ── Hero Slider wrapper ───────────────────────────────────── */
+.site-hero-slider {
+  position: relative;
+  overflow: hidden;
+}
+.site-hero-slide {
+  display: none;
+}
+.site-hero-slide.active {
+  display: flex;
+}
+.hero-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 2px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+.hero-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s;
+}
+.hero-dot.active {
+  background: #622599;
+}
+
 .site-hero {
   background:      #ffffff;
   padding:         64px 24px;
@@ -1416,6 +1449,82 @@ footer a:hover { color: #ffffff; }
 
 /* Admin layout */
 .admin-screen { display: none; }
+
+/* ── Admin Dashboard ──────────────────────────────────────── */
+.admin-dashboard {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.dash-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 700px) { .dash-stats-row { grid-template-columns: repeat(2, 1fr); } }
+.dash-stat-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 20px 16px;
+  text-align: center;
+}
+.dash-stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #622599;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.dash-stat-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dash-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) { .dash-actions { grid-template-columns: repeat(2, 1fr); } }
+.dash-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color .15s, box-shadow .15s;
+}
+.dash-action-btn:hover {
+  border-color: #622599;
+  box-shadow: 0 2px 8px rgba(98,37,153,0.12);
+}
+.dash-action-icon { font-size: 22px; }
+.dash-action-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+
+/* ── Drag-and-drop ────────────────────────────────────────── */
+.drag-handle {
+  flex-shrink: 0;
+  padding: 0 10px;
+  cursor: grab;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.article-item.drag-over {
+  border-color: #622599 !important;
+  box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
+}
 
 .admin-header {
   background:      var(--black);
