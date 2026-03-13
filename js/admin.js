@@ -9,6 +9,7 @@
   var _adminEditor    = null;
   var _adminCoverImg  = null;
   var _adminSelTags   = [];   // multi-select tags
+  var _adminDraftTimer = null;
   var _reorderDirty   = false; // drag-and-drop changed order
   var _heroPostIds    = [];   // current hero post IDs (up to 3)
 
@@ -84,7 +85,10 @@
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
     // Load Editor.js then initialize
-    _loadEditorJs(function () { _initAdminEditor(); });
+    _loadEditorJs(function () {
+      _initAdminEditor();
+      _startAdminDraftAutosave();
+    });
     // Load tags for selector
     loadTagsAdmin();
     loadTickerAdmin();
@@ -113,6 +117,7 @@
     if (btn) btn.classList.add('active');
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
+    if (tab === 'write') _maybeRestoreAdminDraft();
   };
 
   // ─── Editor.js loader ─────────────────────────────────────
@@ -237,9 +242,9 @@
     btn.disabled = true; btn.textContent = editingId ? '수정 중…' : '게재 중…';
 
     _adminEditor.save().then(function (outputData) {
-      var hasContent = outputData.blocks && outputData.blocks.length > 0;
-      if (!hasContent && !editingId) {
-        GW.showToast('내용을 입력해주세요', 'error');
+      var validation = GW.validatePostEditorOutput(outputData, { allowEmpty: !!editingId });
+      if (!validation.ok) {
+        GW.showToast(validation.error, 'error');
         btn.disabled = false; btn.textContent = editingId ? '수정 완료' : '게재하기';
         return;
       }
@@ -263,6 +268,7 @@
       GW.apiFetch(url, { method: method, body: JSON.stringify(body) })
         .then(function () {
           GW.showToast(editingId ? '수정됐습니다' : '게재됐습니다', 'success');
+          localStorage.removeItem(_getAdminDraftKey());
           cancelEdit();
           loadAdminList();
           showAdminTab('list');
@@ -397,6 +403,117 @@
     document.getElementById('cancel-btn').classList.remove('visible');
     updateCatPreview();
   };
+
+  function _getAdminDraftKey() {
+    var cat = document.getElementById('art-category');
+    return 'gw_draft_admin_' + ((cat && cat.value) || 'korea');
+  }
+
+  function _collectAdminDraft() {
+    var titleEl = document.getElementById('art-title');
+    var subEl   = document.getElementById('art-subtitle');
+    var metaEl  = document.getElementById('art-metatags');
+    var authorEl = document.getElementById('art-author');
+    var dateEl   = document.getElementById('art-date');
+    var aiEl     = document.getElementById('art-ai-assisted');
+    return {
+      title: titleEl ? (titleEl.value || '') : '',
+      subtitle: subEl ? (subEl.value || '') : '',
+      meta_tags: metaEl ? (metaEl.value || '') : '',
+      author: authorEl ? (authorEl.value || '') : '',
+      publish_date: dateEl ? (dateEl.value || '') : '',
+      ai_assisted: aiEl ? !!aiEl.checked : false,
+      tags: _adminSelTags.slice(),
+      image_url: _adminCoverImg || null,
+      category: (document.getElementById('art-category') || {}).value || 'korea',
+    };
+  }
+
+  function _applyAdminDraft(draft) {
+    if (!draft) return;
+    document.getElementById('art-category').value = draft.category || 'korea';
+    document.getElementById('art-title').value = draft.title || '';
+    document.getElementById('art-subtitle').value = draft.subtitle || '';
+    document.getElementById('art-metatags').value = draft.meta_tags || '';
+    document.getElementById('art-author').value = draft.author || 'Editor A';
+    document.getElementById('art-date').value = draft.publish_date || GW.getKstDateInputValue();
+    document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
+    _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
+    _adminCoverImg = draft.image_url || null;
+    updateCatPreview();
+    var preview = document.getElementById('admin-cover-preview');
+    if (preview) {
+      if (_adminCoverImg) {
+        preview.innerHTML = '<img src="' + _adminCoverImg + '" class="cover-preview-img">' +
+          '<button type="button" class="cover-remove-btn" id="admin-cover-remove">× 제거</button>';
+        document.getElementById('admin-cover-remove').addEventListener('click', function () {
+          _adminCoverImg = null; preview.innerHTML = '';
+        });
+      } else {
+        preview.innerHTML = '';
+      }
+    }
+    var sel = document.getElementById('admin-tag-selector');
+    if (sel) _syncTagPills(sel);
+    if (_adminEditor && draft.editorData) {
+      _adminEditor.isReady.then(function () {
+        _adminEditor.render(draft.editorData).catch(function () {});
+      });
+    }
+  }
+
+  function _maybeRestoreAdminDraft() {
+    if (editingId) return;
+    var titleEl = document.getElementById('art-title');
+    if (titleEl && titleEl.value) return;
+    var draftStr = localStorage.getItem(_getAdminDraftKey());
+    if (!draftStr) return;
+    try {
+      var draft = JSON.parse(draftStr);
+      if (draft && (draft.title || draft.editorData)) {
+        if (confirm('저장된 임시 글이 있습니다. 불러올까요?')) {
+          _applyAdminDraft(draft);
+        }
+      }
+    } catch (e) {
+      localStorage.removeItem(_getAdminDraftKey());
+    }
+  }
+
+  window.saveAdminDraft = function () {
+    var draft = _collectAdminDraft();
+    if (!draft.title && !draft.subtitle) {
+      GW.showToast('임시저장할 내용이 없습니다', 'error');
+      return;
+    }
+    if (_adminEditor) {
+      _adminEditor.save().then(function (data) {
+        draft.editorData = data;
+        localStorage.setItem(_getAdminDraftKey(), JSON.stringify(draft));
+        GW.showToast('임시저장됐습니다', 'success');
+      }).catch(function () {
+        GW.showToast('임시저장 실패', 'error');
+      });
+      return;
+    }
+    localStorage.setItem(_getAdminDraftKey(), JSON.stringify(draft));
+    GW.showToast('임시저장됐습니다', 'success');
+  };
+
+  function _startAdminDraftAutosave() {
+    if (_adminDraftTimer) return;
+    _adminDraftTimer = setInterval(function () {
+      if (editingId) return;
+      var draft = _collectAdminDraft();
+      if (!draft.title && !draft.subtitle) return;
+      if (_adminEditor) {
+        _adminEditor.save().then(function (data) {
+          draft.editorData = data;
+          localStorage.setItem(_getAdminDraftKey(), JSON.stringify(draft));
+        }).catch(function () {});
+      }
+    }, 30000);
+  }
 
   // ─── Admin list loading (paginated) ──────────────────────
   function loadAdminList() {
@@ -651,12 +768,9 @@
   function _renderEditorSelect() {
     var sel = document.getElementById('art-author');
     if (!sel || sel.tagName !== 'SELECT') return;
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    sel.innerHTML = letters.map(function (l) {
-      var name  = _editors[l] || '';
-      var label = 'Editor ' + l + (name ? ' — ' + name : '');
-      return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
-    }).join('');
+    var current = sel.value || 'Editor A';
+    sel.innerHTML = GW.buildEditorOptions(_editors);
+    sel.value = current;
   }
 
   function _renderEditorsManager() {

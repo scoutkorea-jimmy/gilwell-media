@@ -401,8 +401,20 @@
       var subtitle = subEl ? (subEl.value || '') : '';
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
+      var authEl   = document.getElementById('board-write-author');
+      var dateEl   = document.getElementById('board-write-date');
+      var aiEl     = document.getElementById('board-ai-assisted');
       var key = 'gw_draft_' + self.category;
-      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tags: self._selectedTags || [] };
+      var saving = {
+        title: title,
+        subtitle: subtitle,
+        meta_tags: metaTags,
+        author: authEl ? (authEl.value || '') : '',
+        publish_date: dateEl ? (dateEl.value || '') : '',
+        ai_assisted: aiEl ? !!aiEl.checked : false,
+        image_url: self._coverImage || null,
+        tags: self._selectedTags || [],
+      };
       if (self._editor) {
         self._editor.save().then(function(d) {
           saving.editorData = d;
@@ -663,12 +675,9 @@
     var _fillAuthorSelect = function (editors) {
       var sel = document.getElementById('board-write-author');
       if (!sel) return;
-      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-      sel.innerHTML = letters.map(function (l) {
-        var name  = (editors && editors[l]) || '';
-        var label = 'Editor ' + l + (name ? ' — ' + name : '');
-        return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
-      }).join('');
+      var current = sel.value || 'Editor A';
+      sel.innerHTML = GW.buildEditorOptions(editors);
+      sel.value = current;
     };
     GW.apiFetch('/api/settings/editors')
       .then(function (data) { _fillAuthorSelect(data.editors || {}); })
@@ -737,7 +746,30 @@
               if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
               var mt2 = document.getElementById('board-write-metatags-input');
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
+              var author2 = document.getElementById('board-write-author');
+              if (author2 && draft.author) author2.value = draft.author;
+              var date2 = document.getElementById('board-write-date');
+              if (date2) date2.value = draft.publish_date || GW.getKstDateInputValue();
+              var ai2 = document.getElementById('board-ai-assisted');
+              if (ai2) ai2.checked = !!draft.ai_assisted;
               if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
+              self._coverImage = draft.image_url || null;
+              var preview2 = document.getElementById('board-cover-preview');
+              if (preview2) {
+                if (self._coverImage) {
+                  preview2.innerHTML =
+                    '<img src="' + self._coverImage + '" class="cover-preview-img">' +
+                    '<button type="button" class="cover-remove-btn" id="board-cover-remove">× 제거</button>';
+                  document.getElementById('board-cover-remove').addEventListener('click', function () {
+                    self._coverImage = null;
+                    preview2.innerHTML = '';
+                  });
+                } else {
+                  preview2.innerHTML = '';
+                }
+              }
+              var tagSel = document.getElementById('board-tag-selector');
+              if (tagSel) _syncBoardTagPills(tagSel, self._selectedTags);
               // If editorData exists, render it into the editor after a short delay
               if (draft.editorData && self._editor) {
                 self._editor.render(draft.editorData).catch(function(){});
@@ -803,19 +835,9 @@
 
     this._editor.save()
       .then(function (outputData) {
-        // Check that there's actual content
-        var hasContent = outputData.blocks && outputData.blocks.length > 0;
-        if (!hasContent) {
-          GW.showToast('내용을 입력해주세요', 'error');
-          submitBtn.disabled    = false;
-          submitBtn.textContent = '게재하기';
-          return;
-        }
-
-        // Validate max 5 images in body
-        var imageCount = (outputData.blocks || []).filter(function (b) { return b.type === 'image'; }).length;
-        if (imageCount > 5) {
-          GW.showToast('본문 이미지는 최대 5개까지 가능합니다', 'error');
+        var validation = GW.validatePostEditorOutput(outputData);
+        if (!validation.ok) {
+          GW.showToast(validation.error, 'error');
           submitBtn.disabled    = false;
           submitBtn.textContent = '게재하기';
           return;
@@ -889,8 +911,20 @@
       var subtitle = subEl ? (subEl.value || '') : '';
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
+      var authEl   = document.getElementById('board-write-author');
+      var dateEl   = document.getElementById('board-write-date');
+      var aiEl     = document.getElementById('board-ai-assisted');
       if (!title && !subtitle) return; // don't save empty
-      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tags: self._selectedTags || [] };
+      var saving = {
+        title: title,
+        subtitle: subtitle,
+        meta_tags: metaTags,
+        author: authEl ? (authEl.value || '') : '',
+        publish_date: dateEl ? (dateEl.value || '') : '',
+        ai_assisted: aiEl ? !!aiEl.checked : false,
+        image_url: self._coverImage || null,
+        tags: self._selectedTags || [],
+      };
       if (self._editor) {
         self._editor.save().then(function(d) {
           saving.editorData = d;
