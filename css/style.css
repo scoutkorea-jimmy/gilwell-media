@@ -782,6 +782,10 @@ p { margin-bottom: 6px; }
   margin-bottom:         48px;
 }
 
+.home-mobile-stack {
+  display: none;
+}
+
 /* ── Mini article list (popular / editor picks) ── */
 .mini-list { display: flex; flex-direction: column; }
 
@@ -949,8 +953,8 @@ p { margin-bottom: 6px; }
 .board-grid {
   display:               grid;
   grid-template-columns: repeat(4, 1fr);
-  gap:                   2px;
-  margin-top:            2px;
+  gap:                   6px;
+  margin-top:            6px;
 }
 
 /* ── Post Card (board pages) ── */
@@ -2630,7 +2634,10 @@ footer a:hover { color: #ffffff; }
   .site-hero-slider   { height: 320px; }
   .site-hero          { padding: 40px 16px; min-height: 320px; }
 
-  /* Home sections: hide Korea/APR/WORM column list on mobile */
+  /* Home sections on mobile */
+  .home-mobile-stack  { display: block; }
+  .home-mobile-stack > * + * { margin-top: 20px; }
+  .home-2col,
   .home-3col          { display: none; }
 }
 

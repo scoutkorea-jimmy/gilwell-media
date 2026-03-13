@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.011.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.012.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -85,13 +85,45 @@
   <!-- ── HOME CONTENT ── -->
   <div class="home-wrapper">
 
+    <div class="home-mobile-stack">
+      <div>
+        <div class="home-section-title">
+          <span data-i18n="section.latest">최신 소식</span>
+          <div class="rule"></div>
+        </div>
+        <div class="mini-list" id="latest-list-mobile">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="home-section-title">
+          <span data-i18n="section.picks">에디터 추천</span>
+          <div class="rule"></div>
+        </div>
+        <div class="mini-list" id="picks-list-mobile">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="home-section-title">
+          <span data-i18n="section.popular">인기 소식</span>
+          <div class="rule"></div>
+        </div>
+        <div class="mini-list" id="popular-list-mobile">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 2-column: popular + editor picks -->
     <div class="home-2col">
 
       <!-- Popular posts -->
       <div>
         <div class="home-section-title">
-          <span data-i18n="section.popular">인기 게시글</span>
+          <span data-i18n="section.popular">인기 소식</span>
           <div class="rule"></div>
         </div>
         <div class="mini-list" id="popular-list">
@@ -177,7 +209,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span id="footer-build-version">V0.011.00</span></p>
+        <p class="footer-build">Build <span id="footer-build-version">V0.012.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -188,7 +220,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.011.00"></script>
+  <script src="/js/main.js?v=0.012.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -398,24 +430,46 @@
       el.innerHTML = posts.map(buildMiniItem).join('');
     }
 
+    GW.apiFetch('/api/posts?page=1')
+      .then(function (d) {
+        renderMiniList(
+          document.getElementById('latest-list-mobile'),
+          (d.posts || []).slice(0, 4),
+          '아직 게시글이 없습니다'
+        );
+      })
+      .catch(function () {
+        var latestEl = document.getElementById('latest-list-mobile');
+        if (latestEl) latestEl.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+      });
+
     // Load popular posts first, then fall back to latest if view data is sparse
     GW.apiFetch('/api/posts/popular')
       .then(function (d) {
         var posts = (d.posts || []).slice(0, 4);
         if (posts.length) {
           renderMiniList(document.getElementById('popular-list'), posts, '아직 게시글이 없습니다');
+          renderMiniList(document.getElementById('popular-list-mobile'), posts, '아직 게시글이 없습니다');
           return;
         }
         return GW.apiFetch('/api/posts?page=1').then(function (latest) {
+          var fallbackPosts = (latest.posts || []).slice(0, 4);
           renderMiniList(
             document.getElementById('popular-list'),
-            (latest.posts || []).slice(0, 4),
+            fallbackPosts,
+            '아직 게시글이 없습니다'
+          );
+          renderMiniList(
+            document.getElementById('popular-list-mobile'),
+            fallbackPosts,
             '아직 게시글이 없습니다'
           );
         });
       })
       .catch(function () {
         document.getElementById('popular-list').innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+        var popularMobile = document.getElementById('popular-list-mobile');
+        if (popularMobile) popularMobile.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
       });
 
     // Load editor's picks (featured=1)
@@ -426,9 +480,16 @@
           (d.posts || []).slice(0, 4),
           '에디터 추천 게시글이 없습니다'
         );
+        renderMiniList(
+          document.getElementById('picks-list-mobile'),
+          (d.posts || []).slice(0, 4),
+          '에디터 추천 게시글이 없습니다'
+        );
       })
       .catch(function () {
         document.getElementById('picks-list').innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+        var picksMobile = document.getElementById('picks-list-mobile');
+        if (picksMobile) picksMobile.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
       });
 
     // Load per-category columns

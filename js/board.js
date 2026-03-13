@@ -42,12 +42,29 @@
     this._setupModal();
     this._setupWriteFeature();
     this._setupSearch();
+    this._loadBoardLayout();
     this._load();
     this._loadTagBar();
 
     if (this.moreBtnEl) {
       this.moreBtnEl.addEventListener('click', function () { self._load(); });
     }
+  };
+
+  Board.prototype._loadBoardLayout = function () {
+    var self = this;
+    fetch('/api/settings/board-layout', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var gap = parseInt(data && data.gap_px, 10);
+        if (!Number.isFinite(gap)) gap = 6;
+        gap = Math.min(40, Math.max(5, gap));
+        if (self.gridEl) {
+          self.gridEl.style.gap = gap + 'px';
+          self.gridEl.style.marginTop = gap + 'px';
+        }
+      })
+      .catch(function () {});
   };
 
   // ── Tag filter bar ────────────────────────────────────────
