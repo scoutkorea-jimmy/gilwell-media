@@ -1,7 +1,7 @@
 /**
  * Gilwell Media · Editors Setting
  *
- * GET /api/settings/editors  ← public, returns A-Z editor list with internal names
+ * GET /api/settings/editors  ← public, returns A-C editor list with internal names
  * PUT /api/settings/editors  ← admin only, update editor names
  *
  * Stored in settings table as key='editors', value=JSON { "A": "name", "B": "", ... }
@@ -10,7 +10,7 @@
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const LETTERS = ['A', 'B', 'C'];
 
 export async function onRequestGet({ request, env }) {
   // Require auth — editor real names are private

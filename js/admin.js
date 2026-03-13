@@ -776,8 +776,7 @@
   function _renderEditorsManager() {
     var container = document.getElementById('editors-manager');
     if (!container) return;
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    container.innerHTML = letters.map(function (l) {
+    container.innerHTML = GW.EDITOR_LETTERS.map(function (l) {
       var name = _editors[l] || '';
       return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
         '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:.08em;min-width:64px;color:var(--ink);">Editor ' + l + '</span>' +
