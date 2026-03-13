@@ -37,6 +37,7 @@ wrangler pages deploy . --project-name gilwell-media
 - 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
 - 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
 - 현재 최신 마이그레이션 기준은 `db/migration_016.sql`까지다.
+- R2를 사용할 경우 Pages Functions에 `POST_IMAGES` 버킷 바인딩을 추가한다.
 
 예시:
 

@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.016.00`
+- Current version: `V0.017.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -191,6 +191,16 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 - `./scripts/smoke_check.sh gilwell-posts`
 - `./scripts/deploy_pages.sh`
 - `./scripts/post_deploy_check.sh`
+
+### Optional R2 binding for images
+
+If you want new post cover images, inline editor images, and site share images to move out of D1 and into R2, add a Pages Functions binding:
+
+| Variable name | Type | Purpose |
+|---|---|---|
+| `POST_IMAGES` | R2 bucket | Stores newly uploaded cover/share/inline images |
+
+If the binding is missing, the app falls back to the previous in-DB image behavior.
 
 ---
 
