@@ -8,5 +8,11 @@
 /admin.html
   X-Robots-Tag: noindex, nofollow
 
+/css/*
+  Cache-Control: no-cache, must-revalidate
+
+/js/*
+  Cache-Control: no-cache, must-revalidate
+
 /api/*
   Cache-Control: no-store
