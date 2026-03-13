@@ -51,7 +51,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES (
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'tags',
-  '["소식","공지","행사","보고","특집","단독","속보"]'
+  '{"common":["소식","공지","행사","보고","특집","단독","속보"],"categories":{"korea":[],"apr":[],"worm":[]}}'
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES ('hero', '[]');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('translations', '{}');

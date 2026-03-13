@@ -1358,6 +1358,99 @@ footer a:hover { color: #ffffff; }
   border-color: var(--black);
 }
 
+.tag-admin-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, .9fr) auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tag-admin-toolbar input,
+.tag-admin-toolbar select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tag-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tag-admin-panel {
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.tag-admin-panel-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tag-admin-lane {
+  min-height: 110px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  transition: background .15s, box-shadow .15s, border-color .15s;
+}
+
+.tag-admin-lane.drag-over {
+  background: rgba(98,37,153,0.06);
+  box-shadow: inset 0 0 0 2px rgba(98,37,153,0.18);
+}
+
+.tag-admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+  cursor: grab;
+  user-select: none;
+}
+
+.tag-admin-chip.dragging {
+  opacity: .45;
+}
+
+.tag-admin-chip-remove {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+}
+
+.tag-admin-empty {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 /* Post kicker label shown next to category tag — outline style, same size */
 .post-kicker {
   display:        inline-block;
@@ -1504,6 +1597,14 @@ footer a:hover { color: #ffffff; }
   gap: 12px;
 }
 @media (max-width: 700px) { .dash-actions { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) {
+  .tag-admin-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .tag-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .dash-action-btn {
   display: flex;
   flex-direction: column;

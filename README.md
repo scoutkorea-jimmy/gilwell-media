@@ -6,13 +6,18 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.001.00`
+- Current version: `V0.002.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
 - `cc`: increases only when there is no feature change and only the version label changes
 
 All static asset cache-busting query strings should follow this same version.
+
+Operational references:
+- `docs/release-playbook.md`
+- `docs/writing-regression-checklist.md`
+- `TODO.md`
 
 ---
 
@@ -183,6 +188,8 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 
 - `./scripts/bootstrap_local_db.sh gilwell-posts`
 - `./scripts/smoke_check.sh gilwell-posts`
+- `./scripts/deploy_pages.sh`
+- `./scripts/post_deploy_check.sh`
 
 ---
 

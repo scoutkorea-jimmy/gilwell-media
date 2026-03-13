@@ -14,6 +14,9 @@
   var _adminTurnstileToken = '';
   var _reorderDirty   = false; // drag-and-drop changed order
   var _heroPostIds    = [];   // current hero post IDs (up to 3)
+  var _tagSettings    = GW.normalizeTagSettings(null);
+  var _dragTagValue   = '';
+  var _dragTagSource  = '';
 
   // Pagination state
   var _listPage     = 1;
@@ -31,6 +34,15 @@
     if (GW.getToken()) { showAdmin(); }
     var pwInput = document.getElementById('pw-input');
     if (pwInput) { pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); }); }
+    var tagInput = document.getElementById('tag-new-input');
+    if (tagInput) {
+      tagInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addManagedTag();
+        }
+      });
+    }
 
     // Handle ?edit=ID in URL (for edit button on post pages)
     var editParam = new URLSearchParams(location.search).get('edit');
@@ -189,33 +201,33 @@
 
   // ─── Tag selector (multi-select) ─────────────────────────
   function loadTagsForSelector() {
-    fetch('/api/settings/tags', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var tags = data.items || [];
-        var sel  = document.getElementById('admin-tag-selector');
-        if (!sel) return;
-        var html = '<button type="button" class="tag-pill" data-tag="">없음</button>';
-        tags.forEach(function (t) {
-          html += '<button type="button" class="tag-pill" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
-        });
-        sel.innerHTML = html;
+    var sel = document.getElementById('admin-tag-selector');
+    if (!sel) return;
+    var categoryEl = document.getElementById('art-category');
+    var category = categoryEl ? categoryEl.value : 'korea';
+    var tags = GW.getTagsForCategory(_tagSettings, category);
+    _adminSelTags.forEach(function (tag) {
+      if (tags.indexOf(tag) < 0) tags.push(tag);
+    });
+    var html = '<button type="button" class="tag-pill" data-tag="">없음</button>';
+    tags.forEach(function (t) {
+      html += '<button type="button" class="tag-pill" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
+    });
+    sel.innerHTML = html;
+    _syncTagPills(sel);
+    sel.querySelectorAll('.tag-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tagVal = btn.dataset.tag || '';
+        if (tagVal === '') {
+          _adminSelTags = [];
+        } else {
+          var idx = _adminSelTags.indexOf(tagVal);
+          if (idx >= 0) { _adminSelTags.splice(idx, 1); }
+          else { _adminSelTags.push(tagVal); }
+        }
         _syncTagPills(sel);
-        sel.querySelectorAll('.tag-pill').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var tagVal = btn.dataset.tag || '';
-            if (tagVal === '') {
-              _adminSelTags = [];
-            } else {
-              var idx = _adminSelTags.indexOf(tagVal);
-              if (idx >= 0) { _adminSelTags.splice(idx, 1); }
-              else { _adminSelTags.push(tagVal); }
-            }
-            _syncTagPills(sel);
-          });
-        });
-      })
-      .catch(function () {});
+      });
+    });
   }
 
   function _syncTagPills(sel) {
@@ -229,6 +241,94 @@
       }
     });
   }
+
+  function _renderTagSettingsManager() {
+    ['common', 'korea', 'apr', 'worm'].forEach(function (target) {
+      var lane = document.getElementById('tag-lane-' + target);
+      if (!lane) return;
+      var items = target === 'common' ? _tagSettings.common : _tagSettings.categories[target];
+      lane.innerHTML = items.length ? items.map(function (tag) {
+        return '<div class="tag-admin-chip" draggable="true" data-tag="' + GW.escapeHtml(tag) + '" data-source="' + target + '">' +
+          '<span>' + GW.escapeHtml(tag) + '</span>' +
+          '<button type="button" class="tag-admin-chip-remove" data-remove-tag="' + GW.escapeHtml(tag) + '" title="태그 삭제">×</button>' +
+        '</div>';
+      }).join('') : '<div class="tag-admin-empty">비어 있음</div>';
+
+      lane.querySelectorAll('.tag-admin-chip').forEach(function (chip) {
+        chip.addEventListener('dragstart', function () {
+          _dragTagValue = chip.dataset.tag || '';
+          _dragTagSource = chip.dataset.source || '';
+          chip.classList.add('dragging');
+        });
+        chip.addEventListener('dragend', function () {
+          _dragTagValue = '';
+          _dragTagSource = '';
+          chip.classList.remove('dragging');
+          document.querySelectorAll('.tag-admin-lane').forEach(function (el) { el.classList.remove('drag-over'); });
+        });
+      });
+
+      lane.querySelectorAll('.tag-admin-chip-remove').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          _removeTagEverywhere(btn.getAttribute('data-remove-tag') || '');
+          _renderTagSettingsManager();
+          loadTagsForSelector();
+        });
+      });
+
+      lane.ondragover = function (e) {
+        e.preventDefault();
+        lane.classList.add('drag-over');
+      };
+      lane.ondragleave = function () {
+        lane.classList.remove('drag-over');
+      };
+      lane.ondrop = function (e) {
+        e.preventDefault();
+        lane.classList.remove('drag-over');
+        var targetKey = lane.getAttribute('data-tag-target') || 'common';
+        if (!_dragTagValue || !targetKey || _dragTagSource === targetKey) return;
+        _moveTagToTarget(_dragTagValue, targetKey);
+        _renderTagSettingsManager();
+        loadTagsForSelector();
+      };
+    });
+  }
+
+  function _removeTagEverywhere(tag) {
+    if (!tag) return;
+    _tagSettings.common = _tagSettings.common.filter(function (item) { return item !== tag; });
+    GW.TAG_CATEGORIES.forEach(function (category) {
+      _tagSettings.categories[category] = _tagSettings.categories[category].filter(function (item) { return item !== tag; });
+    });
+    _adminSelTags = _adminSelTags.filter(function (item) { return item !== tag; });
+  }
+
+  function _moveTagToTarget(tag, targetKey) {
+    if (!tag) return;
+    _removeTagEverywhere(tag);
+    if (targetKey === 'common') {
+      _tagSettings.common.push(tag);
+    } else if (_tagSettings.categories[targetKey]) {
+      _tagSettings.categories[targetKey].push(tag);
+    }
+  }
+
+  window.addManagedTag = function () {
+    var input = document.getElementById('tag-new-input');
+    var target = document.getElementById('tag-new-target');
+    if (!input || !target) return;
+    var value = (input.value || '').trim();
+    if (!value) {
+      GW.showToast('태그명을 입력해주세요', 'error');
+      return;
+    }
+    _moveTagToTarget(value, target.value || 'common');
+    input.value = '';
+    _renderTagSettingsManager();
+    loadTagsForSelector();
+    GW.showToast('태그가 추가됐습니다', 'success');
+  };
 
   // ─── Save (create or update) ──────────────────────────────
   window.savePost = function () {
@@ -765,6 +865,7 @@
     var meta = GW.CATEGORIES[cat.value] || GW.CATEGORIES.korea;
     preview.textContent = meta.label;
     preview.style.background = meta.color;
+    loadTagsForSelector();
   };
 
   // ─── Toggle Published ─────────────────────────────────────
@@ -844,17 +945,32 @@
   // ─── Tags admin ───────────────────────────────────────────
   function loadTagsAdmin() {
     fetch('/api/settings/tags', { cache: 'no-store' }).then(function(r){return r.json();}).then(function(data){
-      var ta = document.getElementById('tags-textarea');
-      if (ta && data.items) ta.value = data.items.join('\n');
+      _tagSettings = GW.normalizeTagSettings({
+        common: data.common,
+        categories: data.categories,
+      });
+      _renderTagSettingsManager();
       loadTagsForSelector();
     }).catch(function(){});
   }
 
   window.saveTags = function () {
-    var ta = document.getElementById('tags-textarea'); if (!ta) return;
-    var items = ta.value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
-    GW.apiFetch('/api/settings/tags', { method: 'PUT', body: JSON.stringify({ items: items }) })
-      .then(function () { GW.showToast('태그가 저장됐습니다', 'success'); loadTagsForSelector(); })
+    GW.apiFetch('/api/settings/tags', {
+      method: 'PUT',
+      body: JSON.stringify({
+        common: _tagSettings.common,
+        categories: _tagSettings.categories,
+      }),
+    })
+      .then(function (data) {
+        _tagSettings = GW.normalizeTagSettings({
+          common: data.common,
+          categories: data.categories,
+        });
+        _renderTagSettingsManager();
+        loadTagsForSelector();
+        GW.showToast('태그가 저장됐습니다', 'success');
+      })
       .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
   };
 

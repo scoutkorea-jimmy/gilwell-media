@@ -6,8 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.001.00';
+  GW.APP_VERSION = '0.002.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
+  GW.TAG_CATEGORIES = ['korea', 'apr', 'worm'];
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
@@ -54,6 +55,56 @@
       return { ok: false, error: '본문 이미지는 최대 5개까지 가능합니다' };
     }
     return { ok: true };
+  };
+
+  GW.normalizeTagSettings = function (raw) {
+    var normalized = {
+      common: [],
+      categories: {
+        korea: [],
+        apr: [],
+        worm: [],
+      },
+    };
+
+    function sanitize(items) {
+      var seen = new Set();
+      return (Array.isArray(items) ? items : [])
+        .map(function (item) { return String(item || '').trim(); })
+        .filter(function (item) {
+          if (!item || seen.has(item)) return false;
+          seen.add(item);
+          return true;
+        })
+        .slice(0, 100);
+    }
+
+    if (Array.isArray(raw)) {
+      normalized.common = sanitize(raw);
+      return normalized;
+    }
+
+    if (raw && typeof raw === 'object') {
+      normalized.common = sanitize(raw.common);
+      GW.TAG_CATEGORIES.forEach(function (category) {
+        normalized.categories[category] = sanitize(raw.categories && raw.categories[category]);
+      });
+    }
+
+    return normalized;
+  };
+
+  GW.getTagsForCategory = function (raw, category) {
+    var normalized = GW.normalizeTagSettings(raw);
+    var chosen = GW.TAG_CATEGORIES.indexOf(category) >= 0 ? category : 'korea';
+    var seen = new Set();
+    return normalized.common
+      .concat(normalized.categories[chosen] || [])
+      .filter(function (item) {
+        if (seen.has(item)) return false;
+        seen.add(item);
+        return true;
+      });
   };
 
   /** Set today's date + live clock in the masthead element. */
