@@ -6,6 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
+  GW.EDITOR_LETTERS = ['A', 'B', 'C'];
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
@@ -34,8 +35,7 @@
   };
 
   GW.buildEditorOptions = function (editors) {
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    return letters.map(function (l) {
+    return GW.EDITOR_LETTERS.map(function (l) {
       var name  = (editors && editors[l]) || '';
       var label = 'Editor ' + l + (name ? ' — ' + name : '');
       return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
