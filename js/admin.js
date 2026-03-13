@@ -43,12 +43,22 @@
     var err = document.getElementById('login-error');
     var btn = document.getElementById('login-btn');
     if (!pw) return;
+
+    // Collect Turnstile token if widget is active
+    var cfInput = document.querySelector('#login-turnstile input[name="cf-turnstile-response"]');
+    var cfToken = cfInput ? cfInput.value : '';
+    if (GW.TURNSTILE_SITE_KEY && !cfToken) {
+      err.textContent = 'CAPTCHA를 완료해주세요'; err.style.display = 'block'; return;
+    }
+
     btn.disabled = true; btn.textContent = '로그인 중…'; err.style.display = 'none';
-    GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) })
+    GW.apiFetch('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }),
+    })
       .then(function (data) {
         GW.setToken(data.token);
         showAdmin();
-        // If ?edit=ID was in URL, load that post for editing
         var editParam = new URLSearchParams(location.search).get('edit');
         if (editParam) {
           setTimeout(function () { editPost(parseInt(editParam, 10)); }, 600);
@@ -58,6 +68,7 @@
         err.textContent = e.message || '비밀번호가 올바르지 않습니다';
         err.style.display = 'block';
         document.getElementById('pw-input').value = ''; document.getElementById('pw-input').focus();
+        if (window.turnstile) window.turnstile.reset();
       })
       .finally(function () { btn.disabled = false; btn.textContent = '관리자 입장'; });
   };
@@ -589,8 +600,7 @@
   var _editors = {}; // { A: "name", B: "", ... }
 
   function loadEditorsAdmin() {
-    fetch('/api/settings/editors', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/editors')
       .then(function (data) {
         _editors = data.editors || {};
         _renderEditorSelect();

@@ -381,7 +381,8 @@
           '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
           '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
         '</div>' +
-        '<button id="board-write-submit" class="submit-btn" style="margin-top:20px;">게재하기</button>' +
+        '<div id="board-write-turnstile" style="margin:20px 0 0;"></div>' +
+        '<button id="board-write-submit" class="submit-btn" style="margin-top:12px;">게재하기</button>' +
         '<button id="board-write-savedraft" class="cancel-btn visible" style="margin-left:8px;">💾 임시저장</button>' +
         '<button id="board-write-cancel" class="cancel-btn visible">취소</button>' +
       '</div>';
@@ -614,16 +615,16 @@
     document.body.style.overflow = 'hidden';
 
     // Reset selections
-    self._selectedTags = [];
-    self._coverImage   = null;
+    self._selectedTags  = [];
+    self._coverImage    = null;
+    self._turnstileToken = '';
     var preview = document.getElementById('board-cover-preview');
     if (preview) preview.innerHTML = '';
     var aiChk = document.getElementById('board-ai-assisted');
     if (aiChk) aiChk.checked = false;
 
-    // Load editors for author select
-    fetch('/api/settings/editors', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    // Load editors for author select (requires auth — real names are private)
+    GW.apiFetch('/api/settings/editors')
       .then(function (data) {
         var editors = data.editors || {};
         var sel = document.getElementById('board-write-author');
@@ -716,6 +717,21 @@
       setTimeout(function () { document.getElementById('board-write-title-input').focus(); }, 100);
     });
 
+    // Load Turnstile widget for post submission
+    GW.loadTurnstile(function () {
+      if (window.turnstile && GW.TURNSTILE_SITE_KEY) {
+        var el = document.getElementById('board-write-turnstile');
+        if (el && !el.hasChildNodes()) {
+          window.turnstile.render('#board-write-turnstile', {
+            sitekey: GW.TURNSTILE_SITE_KEY,
+            theme: 'light',
+            callback: function (token) { self._turnstileToken = token; },
+            'expired-callback': function () { self._turnstileToken = ''; },
+          });
+        }
+      }
+    });
+
     self._startDraftAutosave();
   };
 
@@ -724,6 +740,8 @@
     var overlay = document.getElementById('board-write-overlay');
     if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';
+    this._turnstileToken = '';
+    if (window.turnstile) window.turnstile.reset('#board-write-turnstile');
   };
 
   Board.prototype._submitPost = function () {
@@ -737,6 +755,9 @@
 
     if (!title) { GW.showToast('제목을 입력해주세요', 'error'); return; }
     if (!this._editor) { GW.showToast('에디터가 준비되지 않았습니다', 'error'); return; }
+    if (GW.TURNSTILE_SITE_KEY && !this._turnstileToken) {
+      GW.showToast('CAPTCHA를 완료해주세요', 'error'); return;
+    }
 
     submitBtn.disabled    = true;
     submitBtn.textContent = '게재 중…';
@@ -779,12 +800,14 @@
             author:      authEl ? (authEl.value || undefined) : undefined,
             publish_date: dateEl && dateEl.value ? dateEl.value : undefined,
             ai_assisted: aiChk ? (aiChk.checked ? 1 : 0) : 0,
+            cf_turnstile_response: self._turnstileToken || undefined,
           }),
         })
           .then(function () {
             GW.showToast('게재됐습니다', 'success');
             localStorage.removeItem('gw_draft_' + self.category);
             self._stopDraftAutosave();
+            self._turnstileToken = '';
             self._closeWriteForm();
             self.page    = 1;
             self.total   = 0;
@@ -799,6 +822,8 @@
               self._closeWriteForm();
             } else {
               GW.showToast(err.message || '게재 실패', 'error');
+              self._turnstileToken = '';
+              if (window.turnstile) window.turnstile.reset('#board-write-turnstile');
             }
           })
           .finally(function () {

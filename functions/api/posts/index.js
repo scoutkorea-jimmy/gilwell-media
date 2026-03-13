@@ -5,6 +5,7 @@
  * POST /api/posts                          ← admin only, create post
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm'];
 const PAGE_SIZE = 20;
@@ -85,7 +86,15 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, tag, meta_tags, ai_assisted, publish_date } = body;
+  const { category, title, subtitle, content, image_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
+
+  // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
+  if (cf_turnstile_response !== undefined) {
+    const turnstileOk = await verifyTurnstile(cf_turnstile_response, env);
+    if (!turnstileOk) {
+      return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
+    }
+  }
 
   if (!VALID_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm)' }, 400);
