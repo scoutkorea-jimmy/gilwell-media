@@ -60,15 +60,19 @@
     </div>
   </div>
 
-  <!-- ── SITE HERO ── -->
-  <div class="site-hero" id="site-hero">
-    <div class="site-hero-bg-text" id="hero-bg-text"></div>
-    <div class="site-hero-content" id="hero-content">
-      <div class="site-hero-eyebrow">Scout Media · bpmedia.net</div>
-      <h2 class="site-hero-title">스카우트 운동의 소식을<br>기록합니다</h2>
-      <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>
+  <!-- ── SITE HERO (slider) ── -->
+  <div class="site-hero-slider" id="site-hero-slider">
+    <!-- Slides injected by JS; static fallback shown until JS runs -->
+    <div class="site-hero site-hero-slide active" id="site-hero-static">
+      <div class="site-hero-bg-text"></div>
+      <div class="site-hero-content">
+        <div class="site-hero-eyebrow">BP미디어 · bpmedia.net</div>
+        <h2 class="site-hero-title">스카우트 운동의 소식을<br>기록합니다</h2>
+        <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>
+      </div>
     </div>
   </div>
+  <div class="hero-dots" id="hero-dots"></div>
 
   <!-- ── HOME CONTENT ── -->
   <div class="home-wrapper">
@@ -184,30 +188,24 @@
       input.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
     })();
 
-    // ── Dynamic Hero ─────────────────────────────────────────
+    // ── Dynamic Hero Slider ───────────────────────────────────
     (function loadHero() {
-      fetch('/api/settings/hero')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.post) return;
-          var post    = data.post;
-          var hero    = document.getElementById('site-hero');
-          var content = document.getElementById('hero-content');
-          var bgText  = document.getElementById('hero-bg-text');
-          if (!hero || !content) return;
+      var _slides = [];
+      var _cur    = 0;
+      var _timer  = null;
 
-          var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
-
-          if (post.image_url) {
-            hero.style.backgroundImage = 'url(' + post.image_url + ')';
-            hero.classList.add('has-bg');
-          }
-
-          if (bgText && post.subtitle) {
-            bgText.textContent = post.subtitle;
-          }
-
-          content.innerHTML =
+      function buildSlide(post) {
+        var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+        var div    = document.createElement('div');
+        div.className = 'site-hero site-hero-slide';
+        div.setAttribute('data-post-id', post.id);
+        if (post.image_url) {
+          div.style.backgroundImage = 'url(' + post.image_url + ')';
+          div.classList.add('has-bg');
+        }
+        div.innerHTML =
+          '<div class="site-hero-bg-text">' + (post.subtitle ? GW.escapeHtml(post.subtitle) : '') + '</div>' +
+          '<div class="site-hero-content">' +
             '<div class="site-hero-eyebrow">' +
               '<span style="display:inline-block;padding:2px 10px;font-size:9px;letter-spacing:.14em;' +
               'text-transform:uppercase;background:' + cat.color + ';color:#fff;margin-bottom:10px;">' +
@@ -215,14 +213,63 @@
             '</div>' +
             '<h2 class="site-hero-title">' + GW.escapeHtml(post.title) + '</h2>' +
             (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
-            '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>';
+            '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>' +
+          '</div>';
+        div.style.cursor = 'pointer';
+        div.addEventListener('click', function (e) {
+          if (!e.target.classList.contains('site-hero-cta')) {
+            window.location.href = '/post/' + post.id;
+          }
+        });
+        return div;
+      }
 
-          hero.style.cursor = 'pointer';
-          hero.addEventListener('click', function (e) {
-            if (!e.target.classList.contains('site-hero-cta')) {
-              window.location.href = '/post/' + post.id;
-            }
+      function renderDots(count, active) {
+        var dotsEl = document.getElementById('hero-dots');
+        if (!dotsEl) return;
+        if (count <= 1) { dotsEl.innerHTML = ''; return; }
+        dotsEl.innerHTML = Array.from({length: count}, function(_, i) {
+          return '<button class="hero-dot' + (i === active ? ' active' : '') + '" aria-label="슬라이드 ' + (i+1) + '"></button>';
+        }).join('');
+        dotsEl.querySelectorAll('.hero-dot').forEach(function(btn, i) {
+          btn.addEventListener('click', function() { goTo(i); });
+        });
+      }
+
+      function goTo(idx) {
+        var slider = document.getElementById('site-hero-slider');
+        if (!slider || !_slides.length) return;
+        _slides[_cur].classList.remove('active');
+        _cur = (idx + _slides.length) % _slides.length;
+        _slides[_cur].classList.add('active');
+        renderDots(_slides.length, _cur);
+        clearInterval(_timer);
+        _timer = setInterval(function(){ goTo(_cur + 1); }, 6000);
+      }
+
+      fetch('/api/settings/hero')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var posts = data.posts || [];
+          if (!posts.length) return;
+
+          var slider = document.getElementById('site-hero-slider');
+          if (!slider) return;
+          // Remove static fallback
+          var staticSlide = document.getElementById('site-hero-static');
+          if (staticSlide) staticSlide.remove();
+
+          posts.forEach(function (post, i) {
+            var slide = buildSlide(post);
+            if (i === 0) slide.classList.add('active');
+            slider.appendChild(slide);
+            _slides.push(slide);
           });
+
+          renderDots(posts.length, 0);
+          if (posts.length > 1) {
+            _timer = setInterval(function(){ goTo(_cur + 1); }, 6000);
+          }
         })
         .catch(function () {});
     })();

@@ -8,7 +8,9 @@
   var editingId       = null;
   var _adminEditor    = null;
   var _adminCoverImg  = null;
-  var _adminSelTag    = '';
+  var _adminSelTags   = [];   // multi-select tags
+  var _reorderDirty   = false; // drag-and-drop changed order
+  var _heroPostIds    = [];   // current hero post IDs (up to 3)
 
   // Pagination state
   var _listPage     = 1;
@@ -81,10 +83,13 @@
     loadAiDisclaimerAdmin();
     loadContributorsAdmin();
     loadAdminList();
-    // Set today date in form
-    var dateEl = document.getElementById('art-date-display');
-    if (dateEl) dateEl.textContent = GW.formatDate(new Date().toISOString());
+    loadDashboard();
+    // Default date input to today
+    var dateEl = document.getElementById('art-date');
+    if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
     updateCatPreview();
+    // Default to dashboard tab
+    showAdminTab('dashboard');
   }
 
   // ─── Tab navigation ───────────────────────────────────────
@@ -96,6 +101,7 @@
     var btn = document.getElementById('tab-btn-' + tab);
     if (btn) btn.classList.add('active');
     if (tab === 'list') loadAdminList();
+    if (tab === 'dashboard') loadDashboard();
   };
 
   // ─── Editor.js loader ─────────────────────────────────────
@@ -162,7 +168,7 @@
     input.click();
   }
 
-  // ─── Tag selector (admin write form) ─────────────────────
+  // ─── Tag selector (multi-select) ─────────────────────────
   function loadTagsForSelector() {
     fetch('/api/settings/tags')
       .then(function (r) { return r.json(); })
@@ -170,20 +176,39 @@
         var tags = data.items || [];
         var sel  = document.getElementById('admin-tag-selector');
         if (!sel) return;
-        var html = '<button type="button" class="tag-pill active" data-tag="">없음</button>';
+        var html = '<button type="button" class="tag-pill" data-tag="">없음</button>';
         tags.forEach(function (t) {
           html += '<button type="button" class="tag-pill" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
         });
         sel.innerHTML = html;
+        _syncTagPills(sel);
         sel.querySelectorAll('.tag-pill').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            sel.querySelectorAll('.tag-pill').forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            _adminSelTag = btn.dataset.tag || '';
+            var tagVal = btn.dataset.tag || '';
+            if (tagVal === '') {
+              _adminSelTags = [];
+            } else {
+              var idx = _adminSelTags.indexOf(tagVal);
+              if (idx >= 0) { _adminSelTags.splice(idx, 1); }
+              else { _adminSelTags.push(tagVal); }
+            }
+            _syncTagPills(sel);
           });
         });
       })
       .catch(function () {});
+  }
+
+  function _syncTagPills(sel) {
+    if (!sel) return;
+    sel.querySelectorAll('.tag-pill').forEach(function (b) {
+      var t = b.dataset.tag || '';
+      if (t === '') {
+        b.classList.toggle('active', _adminSelTags.length === 0);
+      } else {
+        b.classList.toggle('active', _adminSelTags.indexOf(t) >= 0);
+      }
+    });
   }
 
   // ─── Save (create or update) ──────────────────────────────
@@ -209,16 +234,18 @@
       }
       var content = JSON.stringify(outputData);
       var aiEl = document.getElementById('art-ai-assisted');
+      var dateEl = document.getElementById('art-date');
       var body = {
         category: category,
         title: title,
         subtitle: subtitle || null,
         content: content,
         image_url: _adminCoverImg || null,
-        tag: _adminSelTag || null,
+        tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
         meta_tags: metaTags || null,
         author: author || undefined,
         ai_assisted: aiEl ? (aiEl.checked ? 1 : 0) : 0,
+        publish_date: (dateEl && dateEl.value) ? dateEl.value : undefined,
       };
       var url    = editingId ? '/api/posts/' + editingId : '/api/posts';
       var method = editingId ? 'PUT' : 'POST';
@@ -284,13 +311,15 @@
           }
         }
 
-        // Load tag selector
+        // Load tag selector (multi-select)
+        _adminSelTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
         var sel = document.getElementById('admin-tag-selector');
-        if (sel) {
-          _adminSelTag = p.tag || '';
-          sel.querySelectorAll('.tag-pill').forEach(function (btn) {
-            btn.classList.toggle('active', btn.dataset.tag === _adminSelTag);
-          });
+        if (sel) _syncTagPills(sel);
+
+        // Load publish date
+        var dateEl = document.getElementById('art-date');
+        if (dateEl && p.created_at) {
+          dateEl.value = p.created_at.slice(0, 10);
         }
 
         // Load content into Editor.js
@@ -334,12 +363,13 @@
     editingId = null;
     if (history.replaceState) history.replaceState(null, '', '/admin.html');
     _adminCoverImg = null;
-    _adminSelTag = '';
+    _adminSelTags = [];
     document.getElementById('art-title').value    = '';
     document.getElementById('art-subtitle').value = '';
     document.getElementById('art-metatags').value = '';
+    var dateEl = document.getElementById('art-date');
+    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
     var authorEl = document.getElementById('art-author');
-    // Re-fill author with settings default
     fetch('/api/settings/author').then(function(r){return r.json();}).then(function(d){
       if (authorEl) authorEl.value = d.author || 'Editor.A';
     }).catch(function(){});
@@ -350,7 +380,7 @@
     var preview = document.getElementById('admin-cover-preview');
     if (preview) preview.innerHTML = '';
     var sel = document.getElementById('admin-tag-selector');
-    if (sel) { sel.querySelectorAll('.tag-pill').forEach(function(b){b.classList.remove('active');}); var f=sel.querySelector('[data-tag=""]'); if(f) f.classList.add('active'); }
+    if (sel) _syncTagPills(sel);
     if (_adminEditor) { _adminEditor.isReady.then(function(){_adminEditor.clear();}); }
     document.getElementById('form-title').textContent  = '새 게시글 작성';
     document.getElementById('submit-btn').textContent  = '게재하기';
@@ -391,12 +421,15 @@
     list.innerHTML = posts.map(function (p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
       var isUnpublished = p.published === 0;
+      var hasSortOrder = p.sort_order !== null && p.sort_order !== undefined;
       return (
-        '<div class="article-item"' + (isUnpublished ? ' style="opacity:0.65;"' : '') + '>' +
+        '<div class="article-item" draggable="true" data-id="' + p.id + '"' + (isUnpublished ? ' style="opacity:0.65;"' : '') + '>' +
+          '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' +
           '<div class="article-item-content">' +
             '<div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
               '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:' + cat.color + ';">' + cat.label + '</span>' +
               (isUnpublished ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;background:#cc4444;color:#fff;">비공개</span>' : '') +
+              (hasSortOrder ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 6px;border:1px solid #622599;color:#622599;">순서 ' + (p.sort_order + 1) + '</span>' : '') +
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
             '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views || 0) + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
@@ -410,7 +443,73 @@
         '</div>'
       );
     }).join('');
+
+    // Setup drag-and-drop
+    _initDragAndDrop(list);
   }
+
+  var _dragSrc = null;
+
+  function _initDragAndDrop(list) {
+    var items = list.querySelectorAll('.article-item');
+    items.forEach(function (item) {
+      item.addEventListener('dragstart', function (e) {
+        _dragSrc = item;
+        e.dataTransfer.effectAllowed = 'move';
+        item.style.opacity = '0.4';
+      });
+      item.addEventListener('dragend', function () {
+        item.style.opacity = '';
+        list.querySelectorAll('.article-item').forEach(function (i) { i.classList.remove('drag-over'); });
+      });
+      item.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        list.querySelectorAll('.article-item').forEach(function (i) { i.classList.remove('drag-over'); });
+        if (item !== _dragSrc) item.classList.add('drag-over');
+      });
+      item.addEventListener('drop', function (e) {
+        e.preventDefault();
+        if (!_dragSrc || _dragSrc === item) return;
+        // Determine insertion position
+        var rect = item.getBoundingClientRect();
+        var after = e.clientY > rect.top + rect.height / 2;
+        if (after) {
+          item.parentNode.insertBefore(_dragSrc, item.nextSibling);
+        } else {
+          item.parentNode.insertBefore(_dragSrc, item);
+        }
+        item.classList.remove('drag-over');
+        _reorderDirty = true;
+        var btn = document.getElementById('reorder-save-btn');
+        if (btn) btn.style.display = '';
+      });
+    });
+  }
+
+  window.saveReorder = function () {
+    var list = document.getElementById('article-list');
+    var ids = [];
+    list.querySelectorAll('.article-item[data-id]').forEach(function (el) {
+      ids.push(parseInt(el.getAttribute('data-id'), 10));
+    });
+    GW.apiFetch('/api/posts/reorder', { method: 'PUT', body: JSON.stringify({ order: ids }) })
+      .then(function () {
+        GW.showToast('순서가 저장됐습니다', 'success');
+        _reorderDirty = false;
+        var btn = document.getElementById('reorder-save-btn');
+        if (btn) btn.style.display = 'none';
+        loadAdminList();
+      })
+      .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
+  };
+
+  window.clearReorder = function () {
+    if (!confirm('모든 게시글의 수동 순서를 초기화하고 날짜순으로 되돌릴까요?')) return;
+    GW.apiFetch('/api/posts/reorder', { method: 'DELETE' })
+      .then(function () { GW.showToast('순서가 초기화됐습니다', 'success'); loadAdminList(); })
+      .catch(function (err) { GW.showToast(err.message || '초기화 실패', 'error'); });
+  };
 
   function renderPagination() {
     var totalPages = Math.max(1, Math.ceil(_listTotal / _PAGE_SIZE));
@@ -577,48 +676,108 @@
       .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
   };
 
-  // ─── Hero admin ───────────────────────────────────────────
+  // ─── Hero admin (up to 3 articles) ───────────────────────
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
-      var el = document.getElementById('hero-current'); if(!el) return;
-      if (data.post) {
-        var cat = GW.CATEGORIES[data.post.category] || GW.CATEGORIES.korea;
-        el.innerHTML = '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';margin-right:6px;">'+cat.label+'</span>' +
-          '<strong>' + GW.escapeHtml(data.post.title) + '</strong>' +
-          (data.post.subtitle ? '<br><span style="font-size:12px;color:var(--muted);">'+GW.escapeHtml(data.post.subtitle)+'</span>' : '');
-      } else { el.textContent = '선택된 기사 없음'; }
+      _heroPostIds = (data.posts || []).map(function(p){ return p.id; });
+      renderHeroSlots(data.posts || []);
     }).catch(function(){});
   }
 
+  function renderHeroSlots(posts) {
+    var el = document.getElementById('hero-slots'); if (!el) return;
+    if (!posts.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">선택된 기사 없음</div>';
+      return;
+    }
+    el.innerHTML = posts.map(function(p, i){
+      var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);background:var(--bg);">' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);flex-shrink:0;">' + (i+1) + '</span>' +
+        '<span style="display:inline-block;font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';flex-shrink:0;">'+cat.label+'</span>' +
+        '<span style="flex:1;font-size:13px;">' + GW.escapeHtml(p.title) + '</span>' +
+        '<button onclick="removeHeroSlot(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:3px 8px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">제거</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.removeHeroSlot = function (index) {
+    _heroPostIds.splice(index, 1);
+    _saveHeroIds();
+  };
+
   window.heroSearch = function () {
-    var q = (document.getElementById('hero-search-input').value || '').toLowerCase().trim();
+    var q = (document.getElementById('hero-search-input').value || '').trim();
     var list = document.getElementById('hero-search-results'); if (!list) return;
     if (!q) { list.innerHTML = ''; return; }
-    // Search via API
     GW.apiFetch('/api/posts?q=' + encodeURIComponent(q))
       .then(function(data){
         var results = (data.posts || []).slice(0, 8);
         if (!results.length) { list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>'; return; }
         list.innerHTML = results.map(function(p){
           var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-          return '<div class="hero-result-item" onclick="selectHero(' + p.id + ')">' +
+          var already = _heroPostIds.indexOf(p.id) >= 0;
+          return '<div class="hero-result-item" style="' + (already ? 'opacity:0.5;pointer-events:none;' : '') + '" onclick="addHeroSlot(' + p.id + ')">' +
             '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';margin-right:6px;">'+cat.label+'</span>' +
-            GW.escapeHtml(p.title) + '</div>';
+            GW.escapeHtml(p.title) +
+            (already ? ' <span style="font-size:10px;color:var(--muted);">(이미 추가됨)</span>' : '') +
+          '</div>';
         }).join('');
       }).catch(function(){ list.innerHTML = ''; });
   };
 
-  window.selectHero = function (id) {
-    GW.apiFetch('/api/settings/hero', { method: 'PUT', body: JSON.stringify({ post_id: id }) })
-      .then(function(){ GW.showToast('히어로 기사가 설정됐습니다','success'); loadHeroAdmin(); document.getElementById('hero-search-results').innerHTML=''; document.getElementById('hero-search-input').value=''; })
-      .catch(function(err){ GW.showToast(err.message||'설정 실패','error'); });
+  window.addHeroSlot = function (id) {
+    if (_heroPostIds.length >= 3) { GW.showToast('히어로는 최대 3개까지 설정할 수 있습니다', 'error'); return; }
+    if (_heroPostIds.indexOf(id) >= 0) { GW.showToast('이미 추가된 기사입니다', 'error'); return; }
+    _heroPostIds.push(id);
+    _saveHeroIds();
+    document.getElementById('hero-search-results').innerHTML = '';
+    document.getElementById('hero-search-input').value = '';
   };
 
-  window.clearHero = function () {
-    GW.apiFetch('/api/settings/hero', { method: 'PUT', body: JSON.stringify({ post_id: 0 }) })
-      .then(function(){ GW.showToast('히어로가 해제됐습니다','success'); loadHeroAdmin(); })
-      .catch(function(err){ GW.showToast(err.message||'해제 실패','error'); });
-  };
+  function _saveHeroIds() {
+    GW.apiFetch('/api/settings/hero', { method: 'PUT', body: JSON.stringify({ post_ids: _heroPostIds }) })
+      .then(function(data){
+        GW.showToast('히어로 기사가 저장됐습니다', 'success');
+        loadHeroAdmin();
+      })
+      .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
+  }
+
+  // ─── Dashboard ────────────────────────────────────────────
+  function loadDashboard() {
+    fetch('/api/stats').then(function(r){return r.json();}).then(function(d){
+      var t = document.getElementById('dash-total');
+      var k = document.getElementById('dash-korea');
+      var a = document.getElementById('dash-apr');
+      var w = document.getElementById('dash-worm');
+      if(k) k.textContent = d.korea || 0;
+      if(a) a.textContent = d.apr   || 0;
+      if(w) w.textContent = d.worm  || 0;
+      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.worm||0));
+    }).catch(function(){});
+
+    // Load 5 most recent posts
+    fetch('/api/posts?page=1')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var el = document.getElementById('dash-recent-list'); if (!el) return;
+        var posts = (data.posts || []).slice(0, 5);
+        if (!posts.length) { el.innerHTML = '<div class="list-empty">게시글이 없습니다</div>'; return; }
+        el.innerHTML = posts.map(function(p){
+          var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+          return '<div class="article-item" style="cursor:pointer;" onclick="editPost(' + p.id + ');showAdminTab(\'write\')">' +
+            '<div class="article-item-content">' +
+              '<div style="margin-bottom:4px;display:flex;align-items:center;gap:6px;">' +
+                '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:'+cat.color+';">' + cat.label + '</span>' +
+              '</div>' +
+              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+              '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views||0) + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }).catch(function(){});
+  }
 
   // ─── Contributors admin ───────────────────────────────────
   var _contributors = [];

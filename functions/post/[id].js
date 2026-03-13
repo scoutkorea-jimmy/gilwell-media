@@ -135,7 +135,7 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
-          ${post.tag ? `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(post.tag)}</span>` : ''}
+          ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
           <span class="post-page-action-btns" id="post-action-btns">

@@ -58,7 +58,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, meta_tags, tag, author, ai_assisted } = body;
+  const { category, title, subtitle, content, image_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
 
   // Validate only fields that are actually provided
   if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
@@ -81,9 +81,13 @@ export async function onRequestPut({ params, request, env }) {
   if (content   !== undefined) { fields.push('content = ?');     values.push(content.trim()); }
   if (image_url !== undefined) { fields.push('image_url = ?');   values.push(sanitizeUrl(image_url)); }
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
-  if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 30) : null); }
+  if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
   if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
+  if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
+  if (publish_date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
+    fields.push('created_at = ?'); values.push(`${publish_date} 12:00:00`);
+  }
 
   if (fields.length === 0) {
     return json({ error: '변경할 내용을 입력해주세요' }, 400);
@@ -125,8 +129,9 @@ export async function onRequestPatch({ params, request, env }) {
   const fields = [];
   const values = [];
 
-  if (body.featured !== undefined) { fields.push('featured = ?'); values.push(body.featured ? 1 : 0); }
-  if (body.published !== undefined) { fields.push('published = ?'); values.push(body.published ? 1 : 0); }
+  if (body.featured    !== undefined) { fields.push('featured = ?');    values.push(body.featured ? 1 : 0); }
+  if (body.published   !== undefined) { fields.push('published = ?');   values.push(body.published ? 1 : 0); }
+  if (body.sort_order  !== undefined) { fields.push('sort_order = ?');  values.push(body.sort_order !== null ? parseInt(body.sort_order, 10) : null); }
 
   if (fields.length === 0) {
     return json({ error: 'featured 또는 published 값을 입력해주세요' }, 400);
