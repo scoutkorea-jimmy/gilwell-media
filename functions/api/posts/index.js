@@ -32,7 +32,8 @@ export async function onRequestGet({ request, env }) {
   const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
 
   const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
-  const COLS  = 'id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order';
+  const COLS  = `id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order,
+    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
   try {
     // Build WHERE conditions dynamically

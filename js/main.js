@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.007.00';
+  GW.APP_VERSION = '0.008.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm'];
 
@@ -34,6 +34,13 @@
       month: '2-digit',
       day: '2-digit',
     }).format(new Date());
+  };
+
+  GW.isTodayKst = function (dateStr) {
+    if (!dateStr) return false;
+    var current = GW.getKstDateInputValue();
+    var source = String(dateStr).slice(0, 10);
+    return source === current;
   };
 
   GW.buildEditorOptions = function (editors) {

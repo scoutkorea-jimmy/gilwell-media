@@ -1,4 +1,5 @@
 import { verifyToken, extractToken } from '../_shared/auth.js';
+import { getLikeStats, getViewerKey, recordUniqueView } from '../_shared/engagement.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -44,6 +45,12 @@ export async function onRequestGet({ params, env, request }) {
     isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
     if (!isAdmin) return notFound();
   }
+  const viewerKey = await getViewerKey(request, env);
+  if (!isAdmin) {
+    const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
+    if (counted) post.views = (post.views || 0) + 1;
+  }
+  const likeStats = await getLikeStats(env, id, viewerKey);
 
   const siteUrl  = new URL(request.url).origin;
   const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
@@ -59,6 +66,7 @@ export async function onRequestGet({ params, env, request }) {
   const dateStr  = formatDate(post.created_at);
   const bodyHtml = renderContent(post.content || '');
   const postUrl  = `${siteUrl}/post/${id}`;
+  const isNew    = isTodayKst(post.created_at);
 
   const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -83,7 +91,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.007.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.008.00">
 </head>
 <body>
 
@@ -150,6 +158,7 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
+          ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
           ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
@@ -170,6 +179,10 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="post-byline">
           ${post.author ? `<span class="post-byline-author">작성자 · ${escapeHtml(post.author)}</span>` : ''}
+          <span class="post-like-wrap">
+            <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>❤ 공감 <span id="post-like-count">${likeStats.likes}</span></button>
+            <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
+          </span>
           <span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>
         </div>
 
@@ -243,7 +256,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.007.00"></script>
+  <script src="/js/main.js?v=0.008.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -308,6 +321,24 @@ export async function onRequestGet({ params, env, request }) {
     document.getElementById('post-login-pw').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') window._postLoginSubmit();
     });
+    var _postLikeBtn = document.getElementById('post-like-btn');
+    if (_postLikeBtn) {
+      _postLikeBtn.addEventListener('click', function() {
+        if (_postLikeBtn.disabled) return;
+        GW.apiFetch('/api/posts/' + _editPostId + '/like', { method: 'POST' })
+          .then(function(data) {
+            var countEl = document.getElementById('post-like-count');
+            if (countEl) countEl.textContent = data.likes || 0;
+            _postLikeBtn.disabled = true;
+            _postLikeBtn.classList.add('liked');
+            var help = document.querySelector('.post-like-help');
+            if (help) help.textContent = '이미 공감한 기사입니다';
+          })
+          .catch(function(err) {
+            GW.showToast(err.message || '공감 처리에 실패했습니다', 'error');
+          });
+      });
+    }
   </script>
 </body>
 </html>`;
@@ -416,4 +447,15 @@ function truncatePlain(str, maxLen) {
   }
   const plain = str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
+}
+
+function isTodayKst(dateStr) {
+  if (!dateStr) return false;
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return String(dateStr).slice(0, 10) === today;
 }
