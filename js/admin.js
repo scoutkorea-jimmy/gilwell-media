@@ -46,6 +46,7 @@
   var _HISTORY_PAGE_SIZE = 10;
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
+  var _boardLayout = { gap_px: 6 };
 
   // Hero search cache
   var _allPosts = [];
@@ -133,6 +134,7 @@
     loadAiDisclaimerAdmin();
     loadContributorsAdmin();
     loadSiteMetaAdmin();
+    loadBoardLayoutAdmin();
     loadAdminList();
     loadDashboard();
     _ensureAdminWriteTurnstile();
@@ -1082,6 +1084,37 @@
     GW.apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: items }) })
       .then(function () { GW.showToast('티커가 저장됐습니다', 'success'); })
       .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
+  };
+
+  function loadBoardLayoutAdmin() {
+    fetch('/api/settings/board-layout', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _boardLayout = data || _boardLayout;
+        var input = document.getElementById('board-gap-input');
+        if (input) input.value = String(_boardLayout.gap_px || 6);
+      })
+      .catch(function () {});
+  }
+
+  window.saveBoardLayout = function () {
+    var input = document.getElementById('board-gap-input');
+    if (!input) return;
+    var gap = parseInt(input.value, 10);
+    if (!Number.isFinite(gap)) gap = 6;
+    gap = Math.min(40, Math.max(5, gap));
+    input.value = String(gap);
+    GW.apiFetch('/api/settings/board-layout', {
+      method: 'PUT',
+      body: JSON.stringify({ gap_px: gap }),
+    })
+      .then(function (data) {
+        _boardLayout = data || _boardLayout;
+        GW.showToast('게시판 카드 간격이 저장됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
   };
 
   function loadSiteMetaAdmin() {

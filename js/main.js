@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.011.00';
+  GW.APP_VERSION = '0.012.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -375,7 +375,8 @@
     'hero.sub':     { ko: '한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다', en: 'Delivering Scout news through volunteer effort.' },
     'hero.cta':     { ko: '소식 읽기 →', en: 'Read More →' },
 
-    'section.popular': { ko: '인기 게시글',    en: 'Popular Posts' },
+    'section.latest':  { ko: '최신 소식',      en: 'Latest News' },
+    'section.popular': { ko: '인기 소식',      en: 'Popular News' },
     'section.picks':   { ko: '에디터 추천',    en: "Editor's Picks" },
     'home.more':       { ko: '더보기 →',       en: 'More →' },
 
