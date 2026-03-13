@@ -40,7 +40,7 @@ export async function onRequestPut({ request, env }) {
   const safe = items
     .map(s => String(s).trim())
     .filter(s => s.length > 0)
-    .slice(0, 30);
+    .slice(0, 100);
 
   try {
     await env.DB.prepare(

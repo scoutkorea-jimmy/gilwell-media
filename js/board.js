@@ -352,9 +352,9 @@
             '<label for="board-write-author">작성자</label>' +
             '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
           '</div>' +
-          '<div class="form-group">' +
+          '<div class="form-group" style="min-width:140px;">' +
             '<label for="board-write-date">게시 날짜</label>' +
-            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />' +
+            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;" />' +
           '</div>' +
         '</div>' +
         '<div class="form-group">' +
@@ -638,9 +638,9 @@
       .then(function (data) { _fillAuthorSelect(data.editors || {}); })
       .catch(function () { _fillAuthorSelect({}); });
 
-    // Default date to today
+    // Default date to today (reset on every open)
     var dateEl = document.getElementById('board-write-date');
-    if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
 
     // Load available tags (multi-select)
     fetch('/api/settings/tags', { cache: 'no-store' })
