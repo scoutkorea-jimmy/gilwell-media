@@ -12,7 +12,13 @@ import { verifyToken, extractToken } from '../../_shared/auth.js';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
+  // Require auth — editor real names are private
+  const token = extractToken(request);
+  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+    return json({ error: '인증이 필요합니다' }, 401);
+  }
+
   try {
     const row = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'editors'`
@@ -25,7 +31,6 @@ export async function onRequestGet({ env }) {
     return json({ editors });
   } catch (err) {
     console.error('GET /api/settings/editors error:', err);
-    // Return empty editors on error
     const editors = {};
     LETTERS.forEach(l => { editors[l] = ''; });
     return json({ editors });

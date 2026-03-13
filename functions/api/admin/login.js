@@ -11,6 +11,7 @@
  *   ADMIN_SECRET    — random string for signing tokens (openssl rand -hex 32)
  */
 import { createToken, safeCompare } from '../../_shared/auth.js';
+import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const MAX_ATTEMPTS   = 10;
 const WINDOW_SECONDS = 900; // 15 minutes
@@ -79,9 +80,15 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { password } = body;
+  const { password, cf_turnstile_response } = body;
   if (!password || typeof password !== 'string') {
     return json({ error: '비밀번호를 입력해주세요' }, 400);
+  }
+
+  // Verify Turnstile CAPTCHA (skipped gracefully if TURNSTILE_SECRET not configured)
+  const turnstileOk = await verifyTurnstile(cf_turnstile_response, env);
+  if (!turnstileOk) {
+    return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
   }
 
   // Timing-safe comparison — prevents brute-force timing attacks

@@ -167,6 +167,33 @@
     return data;
   };
 
+  // ── Cloudflare Turnstile ──────────────────────────────────
+  /**
+   * Set this to your Cloudflare Turnstile Site Key.
+   * Get it at: dash.cloudflare.com → Turnstile → Add site (bpmedia.net)
+   * Leave empty ('') to disable CAPTCHA until you're ready to configure it.
+   */
+  GW.TURNSTILE_SITE_KEY = ''; // ← Replace with your Turnstile Site Key
+
+  /** Lazily load the Turnstile script once, then call cb(). */
+  GW.loadTurnstile = function (cb) {
+    if (!GW.TURNSTILE_SITE_KEY) { cb(); return; }
+    if (window.turnstile) { cb(); return; }
+    if (document.querySelector('script[data-turnstile]')) {
+      // Script already loading — wait for it
+      var wait = setInterval(function () {
+        if (window.turnstile) { clearInterval(wait); cb(); }
+      }, 100);
+      return;
+    }
+    var s  = document.createElement('script');
+    s.src  = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.defer = true;
+    s.setAttribute('data-turnstile', '1');
+    s.onload = function () { cb(); };
+    document.head.appendChild(s);
+  };
+
   // ── DOM helpers ───────────────────────────────────────────
   GW.$ = function (sel, ctx) { return (ctx || document).querySelector(sel); };
 
