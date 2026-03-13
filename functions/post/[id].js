@@ -117,7 +117,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.014.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.015.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -195,7 +195,7 @@ export async function onRequestGet({ params, env, request }) {
           </span>
         </div>
 
-        ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}">` : ''}
+        ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}">${renderImageCaption(post.image_caption)}` : ''}
         ${youtubeEmbedUrl ? `<div class="post-page-video">${renderYouTubeEmbed(youtubeEmbedUrl, post.title)}</div>` : ''}
 
         <div class="post-page-body modal-body">
@@ -285,7 +285,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.014.00"></script>
+  <script src="/js/main.js?v=0.015.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -444,7 +444,7 @@ function renderContent(str) {
               const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
               const cap = escapeHtml(b.data.caption || '');
               let html = `<img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:12px 0;">`;
-              if (cap) html += `<p class="img-caption">${cap}</p>`;
+              if (cap) html += `<p class="post-image-caption">${cap}</p>`;
               return html;
             }
             default: return '';
@@ -495,6 +495,12 @@ function renderYouTubeEmbed(embedUrl, title) {
       loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
       allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
   </div>`;
+}
+
+function renderImageCaption(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return '';
+  return `<p class="post-image-caption">${escapeHtml(text)}</p>`;
 }
 
 function buildArticleStructuredData(meta) {

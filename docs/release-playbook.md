@@ -36,12 +36,12 @@ wrangler pages deploy . --project-name gilwell-media
 - 기존 운영 DB는 `db/migration_*.sql` 중 누락된 파일만 순서대로 적용한다.
 - 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
 - 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
-- 현재 최신 마이그레이션 기준은 `db/migration_014.sql`까지다.
+- 현재 최신 마이그레이션 기준은 `db/migration_015.sql`까지다.
 
 예시:
 
 ```bash
-wrangler d1 execute gilwell-posts --remote --file=./db/migration_014.sql
+wrangler d1 execute gilwell-posts --remote --file=./db/migration_015.sql
 ```
 
 ## Functions 로그 확인 루틴

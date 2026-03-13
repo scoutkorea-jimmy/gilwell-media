@@ -1146,7 +1146,14 @@ p { margin-bottom: 6px; }
   object-fit:    cover;
   display:       block;
   margin-top:    24px;
-  border-bottom: 1px solid var(--border);
+}
+
+.post-image-caption {
+  margin: 6px 0 18px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #8f8f8f;
 }
 
 .youtube-embed-wrap {
@@ -2895,7 +2902,7 @@ footer a:hover { color: #ffffff; }
   max-height:    440px;
   object-fit:    cover;
   display:       block;
-  margin-bottom: 32px;
+  margin-bottom: 0;
 }
 
 .post-page-video {
