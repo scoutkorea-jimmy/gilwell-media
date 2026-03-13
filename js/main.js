@@ -33,6 +33,28 @@
     }).format(new Date());
   };
 
+  GW.buildEditorOptions = function (editors) {
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    return letters.map(function (l) {
+      var name  = (editors && editors[l]) || '';
+      var label = 'Editor ' + l + (name ? ' — ' + name : '');
+      return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
+    }).join('');
+  };
+
+  GW.validatePostEditorOutput = function (outputData, opts) {
+    var blocks = (outputData && outputData.blocks) || [];
+    var allowEmpty = !!(opts && opts.allowEmpty);
+    if (!blocks.length && !allowEmpty) {
+      return { ok: false, error: '내용을 입력해주세요' };
+    }
+    var imageCount = blocks.filter(function (b) { return b.type === 'image'; }).length;
+    if (imageCount > 5) {
+      return { ok: false, error: '본문 이미지는 최대 5개까지 가능합니다' };
+    }
+    return { ok: true };
+  };
+
   /** Set today's date + live clock in the masthead element. */
   GW.setMastheadDate = function (id) {
     const el = document.getElementById(id || 'today-date');
