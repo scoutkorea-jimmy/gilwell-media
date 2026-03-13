@@ -649,7 +649,7 @@
 
   // ─── Tags admin ───────────────────────────────────────────
   function loadTagsAdmin() {
-    fetch('/api/settings/tags').then(function(r){return r.json();}).then(function(data){
+    fetch('/api/settings/tags', { cache: 'no-store' }).then(function(r){return r.json();}).then(function(data){
       var ta = document.getElementById('tags-textarea');
       if (ta && data.items) ta.value = data.items.join('\n');
       loadTagsForSelector();

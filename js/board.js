@@ -347,6 +347,16 @@
           '<label for="board-write-subtitle-input">부제목</label>' +
           '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
         '</div>' +
+        '<div style="display:flex;gap:12px;">' +
+          '<div class="form-group" style="flex:1;">' +
+            '<label for="board-write-author">작성자</label>' +
+            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label for="board-write-date">게시 날짜</label>' +
+            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />' +
+          '</div>' +
+        '</div>' +
         '<div class="form-group">' +
           '<label>글머리 태그</label>' +
           '<div id="board-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>' +
@@ -388,7 +398,7 @@
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
       var key = 'gw_draft_' + self.category;
-      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tag: self._selectedTag || '' };
+      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tags: self._selectedTags || [] };
       if (self._editor) {
         self._editor.save().then(function(d) {
           saving.editorData = d;
@@ -406,6 +416,18 @@
       if (e.target === writeOverlay) self._closeWriteForm();
     });
   };
+
+  // ── Tag pill sync helper ──────────────────────────────────
+  function _syncBoardTagPills(sel, selectedTags) {
+    sel.querySelectorAll('.tag-pill').forEach(function (b) {
+      var t = b.dataset.tag || '';
+      if (t === '') {
+        b.classList.toggle('active', selectedTags.length === 0);
+      } else {
+        b.classList.toggle('active', selectedTags.indexOf(t) >= 0);
+      }
+    });
+  }
 
   // ── Board search ──────────────────────────────────────────
   Board.prototype._setupSearch = function () {
@@ -592,15 +614,38 @@
     document.body.style.overflow = 'hidden';
 
     // Reset selections
-    self._selectedTag  = '';
+    self._selectedTags = [];
     self._coverImage   = null;
     var preview = document.getElementById('board-cover-preview');
     if (preview) preview.innerHTML = '';
     var aiChk = document.getElementById('board-ai-assisted');
     if (aiChk) aiChk.checked = false;
 
-    // Load available tags from API
-    fetch('/api/settings/tags')
+    // Load editors for author select
+    fetch('/api/settings/editors', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var editors = data.editors || {};
+        var sel = document.getElementById('board-write-author');
+        if (!sel) return;
+        var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+        sel.innerHTML = letters.map(function (l) {
+          var name  = editors[l] || '';
+          var label = 'Editor ' + l + (name ? ' — ' + name : '');
+          return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
+        }).join('');
+      })
+      .catch(function () {
+        var sel = document.getElementById('board-write-author');
+        if (sel) sel.innerHTML = '<option value="">작성자 없음</option>';
+      });
+
+    // Default date to today
+    var dateEl = document.getElementById('board-write-date');
+    if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+
+    // Load available tags (multi-select)
+    fetch('/api/settings/tags', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var tags = data.items || [];
@@ -613,9 +658,15 @@
         sel.innerHTML = html;
         sel.querySelectorAll('.tag-pill').forEach(function (btn) {
           btn.addEventListener('click', function () {
-            sel.querySelectorAll('.tag-pill').forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            self._selectedTag = btn.dataset.tag || '';
+            var tagVal = btn.dataset.tag || '';
+            if (tagVal === '') {
+              self._selectedTags = [];
+            } else {
+              var idx = self._selectedTags.indexOf(tagVal);
+              if (idx >= 0) { self._selectedTags.splice(idx, 1); }
+              else { self._selectedTags.push(tagVal); }
+            }
+            _syncBoardTagPills(sel, self._selectedTags);
           });
         });
       })
@@ -652,7 +703,7 @@
               if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
               var mt2 = document.getElementById('board-write-metatags-input');
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
-              if (draft.tag) self._selectedTag = draft.tag;
+              if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
               // If editorData exists, render it into the editor after a short delay
               if (draft.editorData && self._editor) {
                 self._editor.render(draft.editorData).catch(function(){});
@@ -712,7 +763,9 @@
 
         var content = JSON.stringify(outputData);
 
-        var aiChk = document.getElementById('board-ai-assisted');
+        var aiChk  = document.getElementById('board-ai-assisted');
+        var authEl = document.getElementById('board-write-author');
+        var dateEl = document.getElementById('board-write-date');
         GW.apiFetch('/api/posts', {
           method: 'POST',
           body:   JSON.stringify({
@@ -721,8 +774,10 @@
             subtitle:    subtitle || null,
             content:     content,
             image_url:   self._coverImage || null,
-            tag:         self._selectedTag || null,
+            tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
             meta_tags:   metaTags || null,
+            author:      authEl ? (authEl.value || undefined) : undefined,
+            publish_date: dateEl && dateEl.value ? dateEl.value : undefined,
             ai_assisted: aiChk ? (aiChk.checked ? 1 : 0) : 0,
           }),
         })
@@ -769,7 +824,7 @@
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
       if (!title && !subtitle) return; // don't save empty
-      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tag: self._selectedTag || '' };
+      var saving = { title: title, subtitle: subtitle, meta_tags: metaTags, tags: self._selectedTags || [] };
       if (self._editor) {
         self._editor.save().then(function(d) {
           saving.editorData = d;
