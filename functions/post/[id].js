@@ -1,3 +1,5 @@
+import { verifyToken, extractToken } from '../_shared/auth.js';
+
 /**
  * Gilwell Media · Individual Post Page
  *
@@ -36,6 +38,12 @@ export async function onRequestGet({ params, env, request }) {
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
 
   if (!post) return notFound();
+  let isAdmin = false;
+  if (post.published === 0) {
+    const token = extractToken(request);
+    isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
+    if (!isAdmin) return notFound();
+  }
 
   const siteUrl  = new URL(request.url).origin;
   const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
@@ -307,7 +315,7 @@ export async function onRequestGet({ params, env, request }) {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      'Cache-Control': isAdmin ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300',
     },
   });
 }
