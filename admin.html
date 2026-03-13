@@ -8,14 +8,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.011.00">
   <style>
     body { background: #eceae4; }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
   <!-- LOGIN SCREEN -->
+  <main id="main-content">
   <div class="login-screen" id="login-screen">
     <div class="login-box">
       <div class="logo">BP미디어</div>
@@ -257,6 +259,12 @@
             </div>
 
             <div class="form-group">
+              <label for="art-youtube-url">유튜브 영상 링크</label>
+              <input type="url" id="art-youtube-url" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />
+              <p style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
+            </div>
+
+            <div class="form-group">
               <label>본문 * <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;">(이미지 최대 5개)</span></label>
               <div id="admin-editorjs" class="board-editorjs-wrap"></div>
             </div>
@@ -425,6 +433,18 @@
               <div id="site-meta-image-preview" style="margin-top:12px;"></div>
             </div>
 
+            <div class="form-row" style="margin-top:18px;">
+              <div class="form-group">
+                <label for="site-google-verification">Google Search Console 인증 코드</label>
+                <input type="text" id="site-google-verification" placeholder="google-site-verification content 값" maxlength="120" />
+              </div>
+              <div class="form-group">
+                <label for="site-naver-verification">네이버 서치어드바이저 인증 코드</label>
+                <input type="text" id="site-naver-verification" placeholder="naver-site-verification content 값" maxlength="120" />
+              </div>
+            </div>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
+
             <button class="submit-btn" style="margin-top:18px;" onclick="saveSiteMeta()">공유 설정 저장</button>
           </div>
         </div>
@@ -509,8 +529,9 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.010.00"></script>
-  <script src="/js/admin.js?v=0.010.00"></script>
+  </main>
+  <script src="/js/main.js?v=0.011.00"></script>
+  <script src="/js/admin.js?v=0.011.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

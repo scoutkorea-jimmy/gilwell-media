@@ -29,6 +29,8 @@
       search: { title: '', description: '' },
     },
     image_url: null,
+    google_verification: '',
+    naver_verification: '',
   };
 
   // Pagination state
@@ -386,6 +388,7 @@
     var subtitle = (document.getElementById('art-subtitle').value || '').trim();
     var author   = (document.getElementById('art-author').value   || '').trim();
     var metaTags = (document.getElementById('art-metatags').value || '').trim();
+    var youtubeUrl = (document.getElementById('art-youtube-url').value || '').trim();
     var btn      = document.getElementById('submit-btn');
 
     if (!title)      { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -412,6 +415,7 @@
         subtitle: subtitle || null,
         content: content,
         image_url: _adminCoverImg || null,
+        youtube_url: youtubeUrl || null,
         tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
         meta_tags: metaTags || null,
         author: author || undefined,
@@ -463,6 +467,7 @@
         document.getElementById('art-subtitle').value  = p.subtitle || '';
         document.getElementById('art-author').value    = p.author || '';
         document.getElementById('art-metatags').value  = p.meta_tags || '';
+        document.getElementById('art-youtube-url').value = p.youtube_url || '';
         var aiChk = document.getElementById('art-ai-assisted');
         if (aiChk) aiChk.checked = !!p.ai_assisted;
         updateCatPreview();
@@ -544,6 +549,7 @@
     document.getElementById('art-title').value    = '';
     document.getElementById('art-subtitle').value = '';
     document.getElementById('art-metatags').value = '';
+    document.getElementById('art-youtube-url').value = '';
     var dateEl = document.getElementById('art-date');
     if (dateEl) dateEl.value = GW.getKstDateInputValue();
     var authorEl = document.getElementById('art-author');
@@ -609,6 +615,7 @@
     var titleEl = document.getElementById('art-title');
     var subEl   = document.getElementById('art-subtitle');
     var metaEl  = document.getElementById('art-metatags');
+    var youtubeEl = document.getElementById('art-youtube-url');
     var authorEl = document.getElementById('art-author');
     var dateEl   = document.getElementById('art-date');
     var aiEl     = document.getElementById('art-ai-assisted');
@@ -616,6 +623,7 @@
       title: titleEl ? (titleEl.value || '') : '',
       subtitle: subEl ? (subEl.value || '') : '',
       meta_tags: metaEl ? (metaEl.value || '') : '',
+      youtube_url: youtubeEl ? (youtubeEl.value || '') : '',
       author: authorEl ? (authorEl.value || '') : '',
       publish_date: dateEl ? (dateEl.value || '') : '',
       ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -631,6 +639,7 @@
     document.getElementById('art-title').value = draft.title || '';
     document.getElementById('art-subtitle').value = draft.subtitle || '';
     document.getElementById('art-metatags').value = draft.meta_tags || '';
+    document.getElementById('art-youtube-url').value = draft.youtube_url || '';
     document.getElementById('art-author').value = draft.author || 'Editor A';
     document.getElementById('art-date').value = draft.publish_date || GW.getKstDateInputValue();
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
@@ -1113,6 +1122,10 @@
       }).join('');
     }
     _renderSiteMetaImagePreview();
+    var googleEl = document.getElementById('site-google-verification');
+    var naverEl = document.getElementById('site-naver-verification');
+    if (googleEl) googleEl.value = _siteMeta.google_verification || '';
+    if (naverEl) naverEl.value = _siteMeta.naver_verification || '';
   }
 
   function _renderSiteMetaImagePreview() {
@@ -1154,6 +1167,8 @@
       body: JSON.stringify({
         pages: pages,
         image_url: _siteMeta.image_url || null,
+        google_verification: ((document.getElementById('site-google-verification') || {}).value || '').trim(),
+        naver_verification: ((document.getElementById('site-naver-verification') || {}).value || '').trim(),
       }),
     })
       .then(function (data) {

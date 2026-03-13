@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.010.00';
+  GW.APP_VERSION = '0.011.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -63,6 +63,37 @@
       return { ok: false, error: '본문 이미지는 최대 5개까지 가능합니다' };
     }
     return { ok: true };
+  };
+
+  GW.getYouTubeEmbedUrl = function (value) {
+    if (!value || typeof value !== 'string') return '';
+    var trimmed = value.trim();
+    if (!trimmed) return '';
+    var parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch (_) {
+      return '';
+    }
+    var host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+    var videoId = '';
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+      if (parsed.pathname === '/watch') videoId = parsed.searchParams.get('v') || '';
+      else if (parsed.pathname.indexOf('/shorts/') === 0 || parsed.pathname.indexOf('/embed/') === 0) videoId = parsed.pathname.split('/')[2] || '';
+    } else if (host === 'youtu.be') {
+      videoId = parsed.pathname.split('/')[1] || '';
+    }
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return '';
+    return 'https://www.youtube-nocookie.com/embed/' + videoId + '?rel=0';
+  };
+
+  GW.buildYouTubeEmbed = function (value, title) {
+    var embedUrl = GW.getYouTubeEmbedUrl(value);
+    if (!embedUrl) return '';
+    return '<div class="youtube-embed-wrap">' +
+      '<iframe class="youtube-embed" src="' + GW.escapeHtml(embedUrl) + '" title="' + GW.escapeHtml((title || '유튜브 영상') + ' 영상') + '"' +
+      ' loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
+    '</div>';
   };
 
   GW.normalizeTagSettings = function (raw) {

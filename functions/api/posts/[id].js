@@ -7,6 +7,7 @@
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
+import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -65,7 +66,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
+  const { category, title, subtitle, content, image_url, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
 
   // Validate only fields that are actually provided
   if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
@@ -87,6 +88,7 @@ export async function onRequestPut({ params, request, env }) {
   if (subtitle  !== undefined) { fields.push('subtitle = ?');    values.push(subtitle ? subtitle.trim().slice(0, 300) : null); }
   if (content   !== undefined) { fields.push('content = ?');     values.push(content.trim()); }
   if (image_url !== undefined) { fields.push('image_url = ?');   values.push(sanitizeUrl(image_url)); }
+  if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
   if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
   if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }

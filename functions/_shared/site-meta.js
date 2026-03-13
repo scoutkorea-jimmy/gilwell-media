@@ -30,6 +30,8 @@ const DEFAULT_SITE_META = {
     },
   },
   image_url: null,
+  google_verification: '',
+  naver_verification: '',
 };
 
 export async function loadSiteMeta(env) {
@@ -45,6 +47,8 @@ export function normalizeSiteMeta(raw) {
   const meta = {
     pages: {},
     image_url: sanitizeImageUrl(raw && raw.image_url),
+    google_verification: sanitizeText(raw && raw.google_verification, '', 120),
+    naver_verification: sanitizeText(raw && raw.naver_verification, '', 120),
   };
 
   Object.keys(DEFAULT_SITE_META.pages).forEach((key) => {
@@ -72,14 +76,19 @@ export function getSitePageKey(pathname) {
   return mapping[normalized] || null;
 }
 
-export function buildShareMetaBlock({ title, description, url, imageUrl }) {
+export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification }) {
   const safeTitle = escapeHtml(title || DEFAULT_SITE_META.pages.home.title);
   const safeDesc = escapeHtml(description || DEFAULT_SITE_META.pages.home.description);
   const safeUrl = escapeHtml(url || 'https://bpmedia.net');
   const safeImage = imageUrl ? escapeHtml(imageUrl) : '';
   const twitterCard = safeImage ? 'summary_large_image' : 'summary';
+  const robots = pageKey === 'search'
+    ? '<meta name="robots" content="noindex,follow"/>'
+    : '<meta name="robots" content="index,follow,max-image-preview:large"/>';
+  const structuredData = buildPageStructuredData({ pageKey, title, description, url, imageUrl });
 
   return [
+    robots,
     `<meta name="description" content="${safeDesc}"/>`,
     `<meta property="og:type" content="website"/>`,
     `<meta property="og:title" content="${safeTitle}"/>`,
@@ -91,7 +100,10 @@ export function buildShareMetaBlock({ title, description, url, imageUrl }) {
     `<meta name="twitter:title" content="${safeTitle}"/>`,
     `<meta name="twitter:description" content="${safeDesc}"/>`,
     safeImage ? `<meta name="twitter:image" content="${safeImage}"/>` : '',
+    googleVerification ? `<meta name="google-site-verification" content="${escapeHtml(googleVerification)}"/>` : '',
+    naverVerification ? `<meta name="naver-site-verification" content="${escapeHtml(naverVerification)}"/>` : '',
     `<link rel="canonical" href="${safeUrl}"/>`,
+    structuredData ? `<script type="application/ld+json">${structuredData}</script>` : '',
   ].filter(Boolean).join('\n  ');
 }
 
@@ -159,6 +171,40 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function buildPageStructuredData({ pageKey, title, description, url, imageUrl }) {
+  const type = pageKey === 'home' ? 'WebSite' : (pageKey === 'search' ? 'SearchResultsPage' : 'CollectionPage');
+  const payload = {
+    '@context': 'https://schema.org',
+    '@type': type,
+    name: title || DEFAULT_SITE_META.pages.home.title,
+    description: description || DEFAULT_SITE_META.pages.home.description,
+    url: url || 'https://bpmedia.net/',
+    inLanguage: 'ko-KR',
+    publisher: {
+      '@type': 'Organization',
+      name: 'BP미디어',
+      url: 'https://bpmedia.net',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://bpmedia.net/img/logo.svg',
+      },
+    },
+  };
+  if (imageUrl) payload.image = imageUrl;
+  if (pageKey === 'home') {
+    payload.potentialAction = {
+      '@type': 'SearchAction',
+      target: 'https://bpmedia.net/search.html?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
+    };
+  }
+  return safeJsonLd(payload);
+}
+
+function safeJsonLd(value) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
 export { DEFAULT_SITE_META };

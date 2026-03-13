@@ -6,6 +6,7 @@
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
+import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 const PAGE_SIZE = 20;
@@ -33,6 +34,7 @@ export async function onRequestGet({ request, env }) {
 
   const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
   const COLS  = `id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order,
+    youtube_url,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
   try {
@@ -94,7 +96,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
+  const { category, title, subtitle, content, image_url, youtube_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
   if (cf_turnstile_response !== undefined) {
@@ -115,6 +117,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   const safeImageUrl  = sanitizeUrl(image_url);
+  const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
   const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
   const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
@@ -141,15 +144,15 @@ export async function onRequestPost({ request, env }) {
 
   try {
     const sql = useRawDate
-      ? `INSERT INTO posts (category, title, subtitle, content, image_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ? `INSERT INTO posts (category, title, subtitle, content, image_url, youtube_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
          RETURNING *`
-      : `INSERT INTO posts (category, title, subtitle, content, image_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      : `INSERT INTO posts (category, title, subtitle, content, image_url, youtube_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
          RETURNING *`;
     const bindings = useRawDate
-      ? [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
-      : [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
+      ? [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
+      : [category, title.trim(), safeSubtitle, content.trim(), safeImageUrl, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     return json({ post: results[0] }, 201);

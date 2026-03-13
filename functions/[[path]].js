@@ -15,10 +15,13 @@ export async function onRequest(context) {
   const siteMeta = await loadSiteMeta(env);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const shareMeta = buildShareMetaBlock({
+    pageKey,
     title: pageMeta.title,
     description: pageMeta.description,
     url: url.origin + (url.pathname === '/' ? '/' : url.pathname),
     imageUrl: getResolvedShareImage(siteMeta, url.origin),
+    googleVerification: siteMeta.google_verification,
+    naverVerification: siteMeta.naver_verification,
   });
 
   const updated = html

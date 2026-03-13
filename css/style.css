@@ -54,6 +54,29 @@ body {
   min-height:  100vh;
 }
 
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 16px;
+  z-index: 10000;
+  padding: 10px 14px;
+  background: var(--black);
+  color: var(--white);
+  text-decoration: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
 p { margin-bottom: 6px; }
 
 /* ════════════════════════════════════════════════════════════
@@ -1120,6 +1143,23 @@ p { margin-bottom: 6px; }
   display:       block;
   margin-top:    24px;
   border-bottom: 1px solid var(--border);
+}
+
+.youtube-embed-wrap {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  background: #000;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.youtube-embed {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 
 .modal-body {
@@ -2848,6 +2888,10 @@ footer a:hover { color: #ffffff; }
   max-height:    440px;
   object-fit:    cover;
   display:       block;
+  margin-bottom: 32px;
+}
+
+.post-page-video {
   margin-bottom: 32px;
 }
 .post-page-body {
