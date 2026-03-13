@@ -88,9 +88,10 @@ p { margin-bottom: 6px; }
 
 .masthead-logo-row {
   display:         flex;
+  flex-direction:  column;
   align-items:     center;
   justify-content: center;
-  gap:             10px;
+  gap:             4px;
 }
 
 .masthead-logo-img {
@@ -2113,6 +2114,9 @@ footer a:hover { color: #ffffff; }
   /* site-hero on phone */
   .site-hero-title    { font-size: 22px !important; }
   .site-hero          { padding: 40px 16px; }
+
+  /* Home sections: hide Korea/APR/WORM column list on mobile */
+  .home-3col          { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════════

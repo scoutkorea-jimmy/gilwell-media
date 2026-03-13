@@ -43,8 +43,11 @@ export async function onRequestGet({ params, env, request }) {
   const subtitle = escapeHtml(post.subtitle || '');
   const desc     = subtitle || truncatePlain(post.content || '', 160);
   const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
-  const ogImage  = post.image_url && post.image_url.startsWith('http')
-    ? escapeHtml(post.image_url) : '';
+  const ogImage  = post.image_url
+    ? (post.image_url.startsWith('http')
+        ? escapeHtml(post.image_url)
+        : `${siteUrl}/api/posts/${id}/image`)
+    : '';
   const dateStr  = formatDate(post.created_at);
   const bodyHtml = renderContent(post.content || '');
   const postUrl  = `${siteUrl}/post/${id}`;
