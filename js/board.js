@@ -24,11 +24,12 @@
     this.moreBtnEl = document.getElementById(opts.moreId  || 'load-more-btn');
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
 
-    this.page         = 1;
-    this.total        = 0;
-    this.loading      = false;
-    this.hasMore      = true;
-    this._searchQuery = '';
+    this.page          = 1;
+    this.total         = 0;
+    this.loading       = false;
+    this.hasMore       = true;
+    this._searchQuery  = '';
+    this._selectedTag  = null;
   }
 
   // ── Initialise ────────────────────────────────────────────
@@ -40,10 +41,51 @@
     this._setupWriteFeature();
     this._setupSearch();
     this._load();
+    this._loadTagBar();
 
     if (this.moreBtnEl) {
       this.moreBtnEl.addEventListener('click', function () { self._load(); });
     }
+  };
+
+  // ── Tag filter bar ────────────────────────────────────────
+  Board.prototype._loadTagBar = function () {
+    var self  = this;
+    var barEl = document.getElementById('tag-filter-bar');
+    if (!barEl) return;
+
+    fetch('/api/posts/tags?category=' + encodeURIComponent(this.category))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var tags = data.tags || [];
+        if (!tags.length) return;
+
+        var html = '<button class="tag-filter-btn active" data-tag="">전체</button>';
+        tags.forEach(function (t) {
+          html += '<button class="tag-filter-btn" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
+        });
+        barEl.innerHTML = html;
+
+        barEl.querySelectorAll('.tag-filter-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            barEl.querySelectorAll('.tag-filter-btn').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            self._selectedTag = btn.dataset.tag || null;
+            self._resetAndLoad();
+          });
+        });
+      })
+      .catch(function () {});
+  };
+
+  Board.prototype._resetAndLoad = function () {
+    this.page    = 1;
+    this.total   = 0;
+    this.hasMore = true;
+    this.loading = false;
+    this.gridEl.innerHTML = '';
+    if (this.moreBtnEl) this.moreBtnEl.style.display = 'none';
+    this._load();
   };
 
   // ── Load posts from API ───────────────────────────────────
@@ -54,7 +96,8 @@
     this._showLoading();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
-    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam)
+    var tagParam    = this._selectedTag  ? '&tag=' + encodeURIComponent(this._selectedTag)  : '';
+    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam + tagParam)
       .then(function (data) {
         self.total   = data.total;
         self.hasMore = data.posts.length === data.pageSize;

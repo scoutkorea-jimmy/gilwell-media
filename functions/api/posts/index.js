@@ -13,69 +13,52 @@ const PAGE_SIZE = 20;
 // Returns a paginated list of posts (no full content body — just
 // id, category, title, image_url, created_at for card display).
 export async function onRequestGet({ request, env }) {
-  const url      = new URL(request.url);
-  const category = url.searchParams.get('category') || null;
-  const page     = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-  const offset   = (page - 1) * PAGE_SIZE;
+  const url          = new URL(request.url);
+  const category     = url.searchParams.get('category') || null;
+  const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+  const offset       = (page - 1) * PAGE_SIZE;
+  const q            = url.searchParams.get('q') || null;
+  const tagFilter    = url.searchParams.get('tag') || null;
+  const featuredOnly = url.searchParams.get('featured') === '1';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, or worm.' }, 400);
   }
 
   // Admin token check — if valid token, include unpublished posts
-  const token     = extractToken(request);
-  const isAdmin   = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
-  const pubFilter = isAdmin ? '' : 'AND published = 1';
+  const token   = extractToken(request);
+  const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
 
-  const featuredOnly = url.searchParams.get('featured') === '1';
-  const q = url.searchParams.get('q') || null;
+  const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
+  const COLS  = 'id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order';
 
   try {
-    // Fetch posts
-    let postsQuery, countQuery;
-    let postsArgs, countArgs;
-
-    const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
+    // Build WHERE conditions dynamically
+    const conditions = [];
+    const baseArgs   = [];
 
     if (featuredOnly) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
-                    FROM posts WHERE featured = 1 AND published = 1
-                    ${ORDER} LIMIT ? OFFSET ?`;
-      postsArgs  = [PAGE_SIZE, offset];
-      countQuery = `SELECT COUNT(*) AS total FROM posts WHERE featured = 1 AND published = 1`;
-      countArgs  = [];
-    } else if (q && category) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
-                    FROM posts WHERE category = ? AND (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}
-                    ${ORDER} LIMIT ? OFFSET ?`;
-      postsArgs = [category, `%${q}%`, `%${q}%`, `%${q}%`, PAGE_SIZE, offset];
-      countQuery = `SELECT COUNT(*) AS total FROM posts WHERE category = ? AND (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}`;
-      countArgs  = [category, `%${q}%`, `%${q}%`, `%${q}%`];
-    } else if (q) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
-                    FROM posts WHERE (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}
-                    ${ORDER} LIMIT ? OFFSET ?`;
-      postsArgs = [`%${q}%`, `%${q}%`, `%${q}%`, PAGE_SIZE, offset];
-      countQuery = `SELECT COUNT(*) AS total FROM posts WHERE (title LIKE ? OR subtitle LIKE ? OR tag LIKE ?) ${pubFilter}`;
-      countArgs  = [`%${q}%`, `%${q}%`, `%${q}%`];
-    } else if (category) {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
-                    FROM posts WHERE category = ? ${pubFilter}
-                    ${ORDER} LIMIT ? OFFSET ?`;
-      postsArgs = [category, PAGE_SIZE, offset];
-      countQuery = `SELECT COUNT(*) AS total FROM posts WHERE category = ? ${pubFilter}`;
-      countArgs  = [category];
+      conditions.push('featured = 1', 'published = 1');
     } else {
-      postsQuery = `SELECT id, category, title, subtitle, image_url, created_at, featured, tag, views, author, published, sort_order
-                    FROM posts WHERE 1=1 ${pubFilter}
-                    ${ORDER} LIMIT ? OFFSET ?`;
-      postsArgs = [PAGE_SIZE, offset];
-      countQuery = `SELECT COUNT(*) AS total FROM posts WHERE 1=1 ${pubFilter}`;
-      countArgs  = [];
+      if (category)  { conditions.push('category = ?'); baseArgs.push(category); }
+      if (!isAdmin)  { conditions.push('published = 1'); }
+      if (q) {
+        conditions.push('(title LIKE ? OR subtitle LIKE ? OR tag LIKE ?)');
+        const qp = `%${q}%`;
+        baseArgs.push(qp, qp, qp);
+      }
+      if (tagFilter) {
+        conditions.push("(',' || tag || ',') LIKE ('%,' || ? || ',%')");
+        baseArgs.push(tagFilter);
+      }
     }
 
-    const { results: posts }    = await env.DB.prepare(postsQuery).bind(...postsArgs).all();
-    const { results: countRows } = await env.DB.prepare(countQuery).bind(...countArgs).all();
+    const WHERE      = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+    const postsQuery = `SELECT ${COLS} FROM posts ${WHERE} ${ORDER} LIMIT ? OFFSET ?`;
+    const countQuery = `SELECT COUNT(*) AS total FROM posts ${WHERE}`;
+
+    const { results: posts }     = await env.DB.prepare(postsQuery).bind(...baseArgs, PAGE_SIZE, offset).all();
+    const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
     const total = countRows[0]?.total ?? 0;
 
     return json({ posts, total, page, pageSize: PAGE_SIZE });

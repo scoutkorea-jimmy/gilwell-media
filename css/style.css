@@ -535,10 +535,10 @@ p { margin-bottom: 6px; }
   position: relative;
   overflow: hidden;
 }
-.site-hero-slide {
+.site-hero-slider .site-hero-slide {
   display: none;
 }
-.site-hero-slide.active {
+.site-hero-slider .site-hero-slide.active {
   display: flex;
 }
 .hero-dots {
@@ -2087,6 +2087,43 @@ footer a:hover { color: #ffffff; }
   .hero-main h2       { font-size: 24px; }
   .hero-main .deck    { font-size: 14px; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   TAG FILTER BAR
+   ════════════════════════════════════════════════════════════ */
+.tag-filter-bar {
+  display:    flex;
+  gap:        8px;
+  padding:    10px 48px;
+  overflow-x: auto;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.tag-filter-bar::-webkit-scrollbar { display: none; }
+
+.tag-filter-btn {
+  font-family:    'DM Mono', monospace;
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding:        5px 14px;
+  border:         1px solid var(--border);
+  background:     transparent;
+  color:          var(--muted);
+  cursor:         pointer;
+  white-space:    nowrap;
+  transition:     background 0.12s, color 0.12s, border-color 0.12s;
+}
+.tag-filter-btn.active,
+.tag-filter-btn:hover {
+  background:   var(--black);
+  color:        var(--white);
+  border-color: var(--black);
+}
+
+@media (max-width: 900px) { .tag-filter-bar { padding: 10px 24px; } }
+@media (max-width: 480px) { .tag-filter-bar { padding: 8px 16px; gap: 6px; } }
 
 /* ════════════════════════════════════════════════════════════
    EDITOR.JS OVERRIDES
