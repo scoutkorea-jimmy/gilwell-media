@@ -224,8 +224,9 @@
 
     var imgHtml = '';
     if (post.image_url) {
-      imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="">';
+      imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title || '') + '">';
     }
+    var youtubeHtml = GW.buildYouTubeEmbed(post.youtube_url, post.title);
 
     var modalTagHtml = (GW.isTodayKst(post.created_at) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
@@ -235,7 +236,7 @@
       : '';
 
     inner.innerHTML =
-      '<button class="modal-close" id="modal-close-btn">×</button>' +
+      '<button class="modal-close" id="modal-close-btn" aria-label="닫기">×</button>' +
       '<div class="modal-header">' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
           '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
@@ -246,6 +247,7 @@
         '<div class="modal-date">' + GW.formatDate(post.created_at) + '</div>' +
       '</div>' +
       imgHtml +
+      youtubeHtml +
       '<div class="modal-body">' + GW.renderText(post.content) + '</div>' +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
@@ -341,9 +343,9 @@
     writeOverlay.id        = 'board-write-overlay';
     writeOverlay.className = 'board-write-overlay';
     writeOverlay.innerHTML =
-      '<div class="board-write-box">' +
-        '<button class="board-write-close" id="board-write-close">×</button>' +
-        '<div class="board-write-header">새 게시글 작성</div>' +
+      '<div class="board-write-box" role="dialog" aria-modal="true" aria-labelledby="board-write-heading">' +
+        '<button class="board-write-close" id="board-write-close" aria-label="닫기">×</button>' +
+        '<div class="board-write-header" id="board-write-heading">새 게시글 작성</div>' +
         '<span class="board-write-cat" style="background:' + cat.color + '">' + cat.label + '</span>' +
         '<div class="form-group" style="margin-top:20px;">' +
           '<label for="board-write-title-input">제목 *</label>' +
@@ -375,6 +377,11 @@
           '</div>' +
         '</div>' +
         '<div class="form-group">' +
+          '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
+          '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
+          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
+        '</div>' +
+        '<div class="form-group">' +
           '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;">(이미지 최대 5개)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
         '</div>' +
@@ -404,6 +411,8 @@
       var subtitle = subEl ? (subEl.value || '') : '';
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
+      var ytEl     = document.getElementById('board-write-youtube-input');
+      var youtubeUrl = ytEl ? (ytEl.value || '') : '';
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -412,6 +421,7 @@
         title: title,
         subtitle: subtitle,
         meta_tags: metaTags,
+        youtube_url: youtubeUrl,
         author: authEl ? (authEl.value || '') : '',
         publish_date: dateEl ? (dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -735,6 +745,8 @@
       if (sub) sub.value = '';
       var mt = document.getElementById('board-write-metatags-input');
       if (mt) mt.value = '';
+      var yt = document.getElementById('board-write-youtube-input');
+      if (yt) yt.value = '';
 
       // Check for draft
       var draftKey = 'gw_draft_' + self.category;
@@ -749,6 +761,8 @@
               if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
               var mt2 = document.getElementById('board-write-metatags-input');
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
+              var yt2 = document.getElementById('board-write-youtube-input');
+              if (yt2 && draft.youtube_url) yt2.value = draft.youtube_url;
               var author2 = document.getElementById('board-write-author');
               if (author2 && draft.author) author2.value = draft.author;
               var date2 = document.getElementById('board-write-date');
@@ -825,6 +839,8 @@
     var subtitle  = subEl ? (subEl.value || '').trim() : '';
     var mtEl      = document.getElementById('board-write-metatags-input');
     var metaTags  = mtEl ? (mtEl.value || '').trim() : '';
+    var ytEl      = document.getElementById('board-write-youtube-input');
+    var youtubeUrl = ytEl ? (ytEl.value || '').trim() : '';
     var submitBtn = document.getElementById('board-write-submit');
 
     if (!title) { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -859,6 +875,7 @@
             subtitle:    subtitle || null,
             content:     content,
             image_url:   self._coverImage || null,
+            youtube_url: youtubeUrl || null,
             tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
             meta_tags:   metaTags || null,
             author:      authEl ? (authEl.value || undefined) : undefined,
@@ -917,6 +934,8 @@
       var subtitle = subEl ? (subEl.value || '') : '';
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
+      var ytEl     = document.getElementById('board-write-youtube-input');
+      var youtubeUrl = ytEl ? (ytEl.value || '') : '';
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -925,6 +944,7 @@
         title: title,
         subtitle: subtitle,
         meta_tags: metaTags,
+        youtube_url: youtubeUrl,
         author: authEl ? (authEl.value || '') : '',
         publish_date: dateEl ? (dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,

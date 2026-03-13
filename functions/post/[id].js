@@ -1,5 +1,6 @@
 import { verifyToken, extractToken } from '../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../_shared/engagement.js';
+import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -66,8 +67,19 @@ export async function onRequestGet({ params, env, request }) {
     : '';
   const dateStr  = formatDate(post.created_at);
   const bodyHtml = renderContent(post.content || '');
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const isNew    = isTodayKst(post.created_at);
+  const articleJsonLd = buildArticleStructuredData({
+    title: post.title,
+    description: desc,
+    url: postUrl,
+    image: ogImage,
+    datePublished: post.created_at,
+    dateModified: post.updated_at || post.created_at,
+    author: post.author,
+    category: cat.label,
+  });
 
   const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -88,13 +100,15 @@ export async function onRequestGet({ params, env, request }) {
   <meta name="twitter:description" content="${desc}"/>
   ${ogImage ? `<meta name="twitter:image" content="${ogImage}"/>` : ''}
   <link rel="canonical" href="${postUrl}"/>
+  <script type="application/ld+json">${articleJsonLd}</script>
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.011.00">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
   <!-- ── MASTHEAD ── -->
   <header class="masthead">
@@ -116,7 +130,7 @@ export async function onRequestGet({ params, env, request }) {
           <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
         </div>
         <div class="masthead-search">
-          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" />
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
           <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
         </div>
       </div>
@@ -142,7 +156,7 @@ export async function onRequestGet({ params, env, request }) {
   </div>
 
   <!-- ── ARTICLE ── -->
-  <div class="post-page-wrap">
+  <main id="main-content" class="post-page-wrap">
     <div class="post-page-layout">
 
       <!-- ── Main Content ── -->
@@ -170,6 +184,7 @@ export async function onRequestGet({ params, env, request }) {
         </div>
 
         ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}">` : ''}
+        ${youtubeEmbedUrl ? `<div class="post-page-video">${renderYouTubeEmbed(youtubeEmbedUrl, post.title)}</div>` : ''}
 
         <div class="post-page-body modal-body">
           ${bodyHtml}
@@ -217,7 +232,7 @@ export async function onRequestGet({ params, env, request }) {
       </aside>
 
     </div>
-  </div>
+  </main>
 
   <!-- ── FOOTER ── -->
   <footer>
@@ -242,8 +257,8 @@ export async function onRequestGet({ params, env, request }) {
 
   <!-- ── 수정 로그인 모달 ── -->
   <div id="post-login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;">
-    <div style="background:#fff;padding:32px;max-width:340px;width:90%;border-top:3px solid #622599;">
-      <h3 style="font-family:'AliceDigitalLearning',serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
+    <div style="background:#fff;padding:32px;max-width:340px;width:90%;border-top:3px solid #622599;" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
+      <h3 id="post-login-title" style="font-family:'AliceDigitalLearning',serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
       <p style="font-family:'DM Mono',monospace;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
       <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password"
         style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
@@ -258,7 +273,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.010.00"></script>
+  <script src="/js/main.js?v=0.011.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -460,4 +475,39 @@ function isTodayKst(dateStr) {
     day: '2-digit',
   }).format(new Date());
   return String(dateStr).slice(0, 10) === today;
+}
+
+function renderYouTubeEmbed(embedUrl, title) {
+  return `<div class="youtube-embed-wrap">
+    <iframe class="youtube-embed" src="${escapeHtml(embedUrl)}" title="${escapeHtml((title || '유튜브 영상') + ' 영상')}"
+      loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  </div>`;
+}
+
+function buildArticleStructuredData(meta) {
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: meta.title || '',
+    description: meta.description || '',
+    mainEntityOfPage: meta.url || '',
+    image: meta.image ? [meta.image] : undefined,
+    datePublished: meta.datePublished || '',
+    dateModified: meta.dateModified || meta.datePublished || '',
+    articleSection: meta.category || '',
+    author: {
+      '@type': 'Person',
+      name: meta.author || 'BP미디어',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'BP미디어',
+      url: 'https://bpmedia.net',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://bpmedia.net/img/logo.svg',
+      },
+    },
+  }).replace(/</g, '\\u003c');
 }

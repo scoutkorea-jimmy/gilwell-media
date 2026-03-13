@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.011.00">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
   <!-- ── MASTHEAD ── -->
   <header class="masthead">
@@ -33,7 +34,7 @@
           <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
         </div>
         <div class="masthead-search">
-          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" />
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
           <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
         </div>
       </div>
@@ -49,6 +50,7 @@
   </header>
 
   <!-- ── TICKER ── -->
+  <main id="main-content">
   <div class="ticker">
     <div class="ticker-inner" id="ticker-inner">
       길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다
@@ -161,6 +163,7 @@
 
   </div><!-- /home-wrapper -->
 
+  </main>
   <!-- ── FOOTER ── -->
   <footer>
     <div class="footer-inner">
@@ -174,7 +177,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span id="footer-build-version">V0.010.00</span></p>
+        <p class="footer-build">Build <span id="footer-build-version">V0.011.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -185,7 +188,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.010.00"></script>
+  <script src="/js/main.js?v=0.011.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

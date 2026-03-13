@@ -1,9 +1,22 @@
 {
   "items": [
     {
-      "version": "0.010.00",
+      "version": "0.011.00",
       "date": "2026-03-13",
       "commit": "local build",
+      "type": "feature",
+      "summary": "검색 최적화, 유튜브 임베드, 모바일·접근성 보강을 묶어 반영했습니다.",
+      "changes": [
+        "Google·Naver 수집 최적화를 위해 robots.txt, sitemap.xml, 일반 페이지 구조화 데이터, Search Console/서치어드바이저 인증 메타 설정을 추가했습니다.",
+        "검색 결과 페이지는 noindex 처리하고 404 페이지도 noindex로 조정해 중복·저품질 인덱싱을 줄였습니다.",
+        "글 작성 시 선택적으로 유튜브 링크를 넣을 수 있게 하고 기사 페이지와 게시판 뷰어에서 영상을 함께 볼 수 있게 했습니다.",
+        "모바일과 웹접근성을 위해 skip link, 메인 랜드마크, 검색 입력 접근성 레이블, 모달 ARIA, 포커스 표시, 반응형 유튜브 임베드를 보강했습니다."
+      ]
+    },
+    {
+      "version": "0.010.00",
+      "date": "2026-03-13",
+      "commit": "277eace",
       "type": "feature",
       "summary": "홈페이지 태그 표시를 다듬고 Scout People 카테고리와 별도 분석 페이지를 추가했습니다.",
       "changes": [
