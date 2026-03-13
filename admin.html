@@ -292,16 +292,24 @@
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
             <div id="contributors-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
             <div style="border:1px solid var(--border);padding:16px;background:var(--bg);">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
+              <div id="contrib-form-label" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
               <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="contrib-name-input" placeholder="이름 (최대 60자)" maxlength="60"
                   style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
               </div>
-              <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="contrib-note-input" placeholder="도움 내용 (최대 200자)" maxlength="200"
                   style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
               </div>
-              <button class="submit-btn" style="padding:9px 20px;margin:0;" onclick="addContributor()">추가</button>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+                <label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;margin:0;">도움 날짜</label>
+                <input type="date" id="contrib-date-input"
+                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="submit-btn" style="padding:9px 20px;margin:0;" id="contrib-submit-btn" onclick="submitContributor()">추가</button>
+                <button id="contrib-cancel-btn" onclick="cancelEditContributor()" style="display:none;padding:9px 20px;border:1px solid var(--border);background:none;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:var(--muted);">취소</button>
+              </div>
             </div>
           </div>
         </div>

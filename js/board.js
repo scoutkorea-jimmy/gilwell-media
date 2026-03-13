@@ -60,10 +60,11 @@
         var tags = data.tags || [];
         if (!tags.length) return;
 
-        var html = '<button class="tag-filter-btn active" data-tag="">전체</button>';
+        var html = '<div class="tag-filter-bar-inner"><button class="tag-filter-btn active" data-tag="">전체</button>';
         tags.forEach(function (t) {
           html += '<button class="tag-filter-btn" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
         });
+        html += '</div>';
         barEl.innerHTML = html;
 
         barEl.querySelectorAll('.tag-filter-btn').forEach(function (btn) {

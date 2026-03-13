@@ -37,9 +37,11 @@ export async function onRequestPut({ request, env }) {
 
   const safe = items
     .map(function (item) {
+      const dateVal = String(item.date || '').trim();
       return {
         name: String(item.name || '').trim().slice(0, 60),
         note: String(item.note || '').trim().slice(0, 200),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(dateVal) ? dateVal : '',
       };
     })
     .filter(function (item) { return item.name.length > 0; });
