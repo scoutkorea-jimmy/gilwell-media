@@ -548,12 +548,22 @@ p { margin-bottom: 6px; }
 .site-hero-slider {
   position: relative;
   overflow: hidden;
+  height: 380px;
 }
 .site-hero-slider .site-hero-slide {
-  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.65s ease;
 }
 .site-hero-slider .site-hero-slide.active {
-  display: flex;
+  z-index: 1;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 .hero-dots {
   display: flex;
@@ -582,7 +592,8 @@ p { margin-bottom: 6px; }
   text-align:      center;
   position:        relative;
   overflow:        hidden;
-  min-height:      240px;
+  height:          100%;
+  min-height:      380px;
   display:         flex;
   align-items:     center;
   justify-content: center;
@@ -2271,7 +2282,8 @@ footer a:hover { color: #ffffff; }
 
   /* site-hero on phone */
   .site-hero-title    { font-size: 22px !important; }
-  .site-hero          { padding: 40px 16px; }
+  .site-hero-slider   { height: 320px; }
+  .site-hero          { padding: 40px 16px; min-height: 320px; }
 
   /* Home sections: hide Korea/APR/WORM column list on mobile */
   .home-3col          { display: none; }

@@ -2,7 +2,7 @@
  * BP미디어 · Hero Posts Setting
  *
  * GET /api/settings/hero  ← public, returns { posts: [{id, category, title, subtitle, image_url, created_at}] }
- * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N] } (up to 3)
+ * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N] } (up to 5)
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 
@@ -63,7 +63,7 @@ export async function onRequestPut({ request, env }) {
   const safeIds = post_ids
     .map(id => parseInt(id, 10))
     .filter(id => Number.isFinite(id) && id > 0)
-    .slice(0, 3);
+    .slice(0, 5);
 
   try {
     await env.DB.prepare(

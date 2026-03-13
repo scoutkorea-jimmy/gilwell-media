@@ -13,7 +13,7 @@
   var _adminTurnstileWidgetId = null;
   var _adminTurnstileToken = '';
   var _reorderDirty   = false; // drag-and-drop changed order
-  var _heroPostIds    = [];   // current hero post IDs (up to 3)
+  var _heroPostIds    = [];   // current hero post IDs (up to 5)
   var _tagSettings    = GW.normalizeTagSettings(null);
   var _dragTagValue   = '';
   var _dragTagSource  = '';
@@ -1146,7 +1146,7 @@
       .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
   };
 
-  // ─── Hero admin (up to 3 articles) ───────────────────────
+  // ─── Hero admin (up to 5 articles) ───────────────────────
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
       _heroPostIds = (data.posts || []).map(function(p){ return p.id; });
@@ -1197,7 +1197,7 @@
   };
 
   window.addHeroSlot = function (id) {
-    if (_heroPostIds.length >= 3) { GW.showToast('히어로는 최대 3개까지 설정할 수 있습니다', 'error'); return; }
+    if (_heroPostIds.length >= 5) { GW.showToast('히어로는 최대 5개까지 설정할 수 있습니다', 'error'); return; }
     if (_heroPostIds.indexOf(id) >= 0) { GW.showToast('이미 추가된 기사입니다', 'error'); return; }
     _heroPostIds.push(id);
     _saveHeroIds();
