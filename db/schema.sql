@@ -34,7 +34,15 @@ CREATE TABLE IF NOT EXISTS settings (
 
 CREATE TABLE IF NOT EXISTS post_views (
   post_id   INTEGER NOT NULL,
+  viewer_key TEXT,
   viewed_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS post_likes (
+  post_id    INTEGER NOT NULL,
+  viewer_key TEXT    NOT NULL,
+  liked_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(post_id, viewer_key)
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
@@ -44,6 +52,8 @@ CREATE INDEX IF NOT EXISTS idx_posts_featured ON posts (featured);
 CREATE INDEX IF NOT EXISTS idx_posts_sort_order ON posts (sort_order);
 CREATE INDEX IF NOT EXISTS idx_pv_post_time ON post_views(post_id, viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_time ON post_views(viewed_at);
+CREATE INDEX IF NOT EXISTS idx_pv_viewer_post ON post_views(viewer_key, post_id);
+CREATE INDEX IF NOT EXISTS idx_pl_post ON post_likes(post_id);
 
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'ticker',

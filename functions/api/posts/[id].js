@@ -6,6 +6,7 @@
  * DELETE /api/posts/:id   ← admin only, delete post
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'worm'];
 
@@ -22,16 +23,22 @@ export async function onRequestGet({ params, env, request }) {
 
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
+    const token = extractToken(request);
+    const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
+
     // If unpublished, require admin token
     if (post.published === 0) {
-      const token   = extractToken(request);
-      const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
       if (!isAdmin) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     }
 
-    // Track view asynchronously (fire-and-forget)
-    env.DB.prepare(`UPDATE posts SET views = views + 1 WHERE id = ?`).bind(id).run().catch(() => {});
-    env.DB.prepare(`INSERT INTO post_views (post_id) VALUES (?)`).bind(id).run().catch(() => {});
+    const viewerKey = await getViewerKey(request, env);
+    if (!isAdmin) {
+      const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
+      if (counted) post.views = (post.views || 0) + 1;
+    }
+    const likeStats = await getLikeStats(env, id, viewerKey);
+    post.likes = likeStats.likes;
+    post.liked = likeStats.liked;
 
     return json({ post });
   } catch (err) {

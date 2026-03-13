@@ -37,6 +37,10 @@
   var _listSearch   = '';
   var _listSearchTimer = null;
   var _PAGE_SIZE    = 20;
+  var _historyItems = [];
+  var _historyPage  = 1;
+  var _historyLoaded = false;
+  var _HISTORY_PAGE_SIZE = 10;
 
   // Hero search cache
   var _allPosts = [];
@@ -131,6 +135,7 @@
     var dateEl = document.getElementById('art-date');
     if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
     updateCatPreview();
+    updateEditorActionState();
     // Default to dashboard tab
     showAdminTab('dashboard');
   }
@@ -146,6 +151,7 @@
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'write') _maybeRestoreAdminDraft();
+    if (tab === 'history') loadVersionHistory();
   };
 
   // ─── Editor.js loader ─────────────────────────────────────
@@ -509,7 +515,7 @@
         document.getElementById('form-title').textContent = '게시글 수정';
         document.getElementById('submit-btn').textContent = '수정 완료';
         document.getElementById('submit-btn').classList.add('editing');
-        document.getElementById('cancel-btn').classList.add('visible');
+        updateEditorActionState();
       })
       .catch(function () { GW.showToast('게시글을 불러오지 못했습니다.', 'error'); });
   };
@@ -550,9 +556,45 @@
     document.getElementById('form-title').textContent  = '새 게시글 작성';
     document.getElementById('submit-btn').textContent  = '게재하기';
     document.getElementById('submit-btn').classList.remove('editing');
-    document.getElementById('cancel-btn').classList.remove('visible');
+    updateEditorActionState();
     updateCatPreview();
   };
+
+  window.returnToList = function () {
+    cancelEdit();
+    showAdminTab('list');
+  };
+
+  window.deleteEditingPost = function () {
+    if (!editingId) {
+      GW.showToast('수정 중인 게시글이 없습니다', 'error');
+      return;
+    }
+    if (!confirm('이 게시글을 삭제할까요?\n삭제된 내용은 복구되지 않습니다.')) return;
+    var deletingId = editingId;
+    GW.apiFetch('/api/posts/' + deletingId, { method: 'DELETE' })
+      .then(function () {
+        GW.showToast('삭제됐습니다', 'success');
+        cancelEdit();
+        showAdminTab('list');
+        loadAdminList();
+      })
+      .catch(function (err) {
+        if (err.status === 401) { GW.showToast('세션 만료.', 'error'); doLogout(); return; }
+        GW.showToast(err.message || '삭제 실패', 'error');
+      });
+  };
+
+  function updateEditorActionState() {
+    var draftBtn = document.getElementById('admin-draft-btn');
+    var cancelBtn = document.getElementById('cancel-btn');
+    var backBtn = document.getElementById('back-to-list-btn');
+    var deleteBtn = document.getElementById('edit-delete-btn');
+    if (draftBtn) draftBtn.classList.add('visible');
+    if (cancelBtn) cancelBtn.classList.toggle('visible', !!editingId);
+    if (backBtn) backBtn.classList.toggle('visible', !!editingId);
+    if (deleteBtn) deleteBtn.classList.toggle('visible', !!editingId);
+  }
 
   function _getAdminDraftKey() {
     var cat = document.getElementById('art-category');
@@ -732,11 +774,11 @@
               (hasSortOrder ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 6px;border:1px solid #622599;color:#622599;">순서 ' + (p.sort_order + 1) + '</span>' : '') +
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-            '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views || 0) + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
+            '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views || 0) + (p.likes ? ' · 공감 ' + p.likes : '') + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
           '</div>' +
           '<div class="item-actions">' +
-            '<button onclick="togglePublished(' + p.id + ',' + (isUnpublished ? 0 : 1) + ')" title="' + (isUnpublished ? '비공개→공개' : '공개→비공개') + '" style="font-size:14px;padding:4px 8px;border:1px solid var(--border);background:none;cursor:pointer;color:' + (isUnpublished ? '#cc4444' : '#44aa44') + ';">' + (isUnpublished ? '🔒' : '🌐') + '</button>' +
-            '<button class="btn-featured" onclick="toggleFeatured(' + p.id + ',' + (p.featured ? 1 : 0) + ')" title="에디터 추천 토글" style="font-size:16px;padding:4px 8px;border:1px solid var(--border);background:none;cursor:pointer;color:' + (p.featured ? '#e6a800' : 'var(--muted)') + ';">' + (p.featured ? '★' : '☆') + '</button>' +
+            '<button class="btn-icon btn-icon-' + (isUnpublished ? 'danger' : 'success') + '" onclick="togglePublished(' + p.id + ',' + (isUnpublished ? 0 : 1) + ')" title="' + (isUnpublished ? '비공개→공개' : '공개→비공개') + '">' + (isUnpublished ? '🔒' : '🌐') + '</button>' +
+            '<button class="btn-icon btn-icon-star' + (p.featured ? ' active' : '') + '" onclick="toggleFeatured(' + p.id + ',' + (p.featured ? 1 : 0) + ')" title="에디터 추천 토글">' + (p.featured ? '★' : '☆') + '</button>' +
             '<button class="btn-edit"   onclick="editPost('   + p.id + ')">수정</button>' +
             '<button class="btn-delete" onclick="deletePost(' + p.id + ')">삭제</button>' +
           '</div>' +
@@ -1265,6 +1307,67 @@
         }).join('');
       }).catch(function(){});
   }
+
+  function loadVersionHistory() {
+    if (_historyLoaded) {
+      renderVersionHistory();
+      return;
+    }
+    fetch('/data/changelog.json?v=' + encodeURIComponent(GW.APP_VERSION), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _historyItems = Array.isArray(data.items) ? data.items : [];
+        _historyLoaded = true;
+        _historyPage = 1;
+        renderVersionHistory();
+      })
+      .catch(function () {
+        var list = document.getElementById('version-history-list');
+        if (list) list.innerHTML = '<div class="list-empty">버전 기록을 불러오지 못했습니다</div>';
+      });
+  }
+
+  function renderVersionHistory() {
+    var list = document.getElementById('version-history-list');
+    var pg = document.getElementById('version-history-pagination');
+    if (!list || !pg) return;
+    if (!_historyItems.length) {
+      list.innerHTML = '<div class="list-empty">기록된 버전이 없습니다</div>';
+      pg.innerHTML = '';
+      return;
+    }
+    var totalPages = Math.max(1, Math.ceil(_historyItems.length / _HISTORY_PAGE_SIZE));
+    _historyPage = Math.max(1, Math.min(totalPages, _historyPage));
+    var start = (_historyPage - 1) * _HISTORY_PAGE_SIZE;
+    var items = _historyItems.slice(start, start + _HISTORY_PAGE_SIZE);
+    list.innerHTML = items.map(function (item) {
+      var changes = Array.isArray(item.changes) ? item.changes : [];
+      return '<article class="version-history-item">' +
+        '<div class="version-history-top">' +
+          '<div>' +
+            '<div class="version-history-version">V' + GW.escapeHtml(item.version || '') + '</div>' +
+            '<div class="version-history-date">' + GW.escapeHtml(item.date || '') + (item.commit ? ' · ' + GW.escapeHtml(item.commit) : '') + '</div>' +
+          '</div>' +
+          '<div class="version-history-type">' + GW.escapeHtml(item.type || 'update') + '</div>' +
+        '</div>' +
+        '<p class="version-history-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
+        '<ul class="version-history-changes">' +
+          changes.map(function (change) { return '<li>' + GW.escapeHtml(change) + '</li>'; }).join('') +
+        '</ul>' +
+      '</article>';
+    }).join('');
+
+    var buttons = [];
+    buttons.push('<button type="button" ' + (_historyPage <= 1 ? 'disabled' : '') + ' onclick="changeHistoryPage(-1)">← 이전</button>');
+    buttons.push('<span>' + _historyPage + ' / ' + totalPages + '</span>');
+    buttons.push('<button type="button" ' + (_historyPage >= totalPages ? 'disabled' : '') + ' onclick="changeHistoryPage(1)">다음 →</button>');
+    pg.innerHTML = buttons.join('');
+  }
+
+  window.changeHistoryPage = function (delta) {
+    _historyPage += delta;
+    renderVersionHistory();
+  };
 
   // ─── Contributors admin ───────────────────────────────────
   var _contributors = [];

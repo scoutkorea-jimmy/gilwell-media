@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.007.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.008.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -47,6 +47,7 @@
         <button class="admin-tab-btn"        id="tab-btn-write"     onclick="showAdminTab('write')">✏ 글 작성</button>
         <button class="admin-tab-btn"        id="tab-btn-list"      onclick="showAdminTab('list')">📋 게시글 목록</button>
         <button class="admin-tab-btn"        id="tab-btn-settings"  onclick="showAdminTab('settings')">⚙ 설정</button>
+        <button class="admin-tab-btn"        id="tab-btn-history"   onclick="showAdminTab('history')">🕘 버전 기록</button>
       </nav>
     </header>
 
@@ -173,9 +174,13 @@
             </div>
 
             <div id="admin-write-turnstile" style="margin:20px 0 0;"></div>
-            <button class="cancel-btn visible" id="admin-draft-btn" onclick="saveAdminDraft()" style="margin-right:8px;">💾 임시저장</button>
-            <button class="submit-btn" id="submit-btn" onclick="savePost()">게재하기</button>
-            <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">작성 취소</button>
+            <div class="editor-action-row">
+              <button class="cancel-btn visible" id="admin-draft-btn" onclick="saveAdminDraft()">💾 임시저장</button>
+              <button class="submit-btn" id="submit-btn" onclick="savePost()">게재하기</button>
+              <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">수정 취소</button>
+              <button class="cancel-btn" id="back-to-list-btn" onclick="returnToList()">목록으로</button>
+              <button class="btn-delete-soft" id="edit-delete-btn" onclick="deleteEditingPost()">삭제하기</button>
+            </div>
           </div>
         </div>
       </div>
@@ -384,13 +389,23 @@
         </div>
 
       </div><!-- /settings tab -->
+
+      <div id="admin-tab-history" class="admin-tab-panel">
+        <div class="panel">
+          <div class="panel-header"><h2>버전 기록</h2></div>
+          <div class="panel-body">
+            <div id="version-history-list"></div>
+            <div id="version-history-pagination" class="version-history-pagination"></div>
+          </div>
+        </div>
+      </div>
     </div><!-- /admin-tab-content -->
   </div><!-- /admin-screen -->
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.007.00"></script>
-  <script src="/js/admin.js?v=0.007.00"></script>
+  <script src="/js/main.js?v=0.008.00"></script>
+  <script src="/js/admin.js?v=0.008.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

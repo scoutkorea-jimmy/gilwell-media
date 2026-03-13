@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.007.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.008.00">
 </head>
 <body>
 
@@ -162,7 +162,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span id="footer-build-version">V0.007.00</span></p>
+        <p class="footer-build">Build <span id="footer-build-version">V0.008.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -173,8 +173,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.007.00"></script>
-  <script src="/js/board.js?v=0.007.00"></script>
+  <script src="/js/main.js?v=0.008.00"></script>
+  <script src="/js/board.js?v=0.008.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -206,6 +206,7 @@
 
       function buildSlide(post) {
         var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+        var isNew  = GW.isTodayKst(post.created_at);
         var div    = document.createElement('div');
         div.className = 'site-hero site-hero-slide';
         div.setAttribute('data-post-id', post.id);
@@ -220,6 +221,7 @@
               '<span style="display:inline-block;padding:2px 10px;font-size:9px;letter-spacing:.14em;' +
               'text-transform:uppercase;background:' + cat.color + ';color:#fff;margin-bottom:10px;">' +
               cat.label + '</span>' +
+              (isNew ? '<span class="post-kicker post-kicker-new" style="margin-left:8px;">NEW</span>' : '') +
             '</div>' +
             '<h2 class="site-hero-title">' + GW.escapeHtml(post.title) + '</h2>' +
             (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
@@ -352,6 +354,7 @@
 
     function buildMiniItem(p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+      var isNew = GW.isTodayKst(p.created_at);
       var thumb = p.image_url
         ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
         : '';
@@ -360,6 +363,7 @@
           '<div class="mini-item-row">' +
             '<div class="mini-item-text">' +
               '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+              (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
               '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
             '</div>' +
