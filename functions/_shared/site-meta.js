@@ -1,3 +1,5 @@
+export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
+
 const DEFAULT_SITE_META = {
   pages: {
     home: {
@@ -88,6 +90,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
   const structuredData = buildPageStructuredData({ pageKey, title, description, url, imageUrl });
 
   return [
+    `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
     `<meta property="og:type" content="website"/>`,

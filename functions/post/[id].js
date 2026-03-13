@@ -1,6 +1,7 @@
 import { verifyToken, extractToken } from '../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../_shared/engagement.js';
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
+import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -87,6 +88,7 @@ export async function onRequestGet({ params, env, request }) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>${title} — BP미디어</title>
+  <meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>
   <meta name="description" content="${desc}"/>
   ${keywords ? `<meta name="keywords" content="${keywords}"/>` : ''}
   <meta property="og:type"        content="article"/>
@@ -105,7 +107,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.012.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.013.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -273,7 +275,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.012.00"></script>
+  <script src="/js/main.js?v=0.013.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
