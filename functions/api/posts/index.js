@@ -21,6 +21,7 @@ export async function onRequestGet({ request, env }) {
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;
   const featuredOnly = url.searchParams.get('featured') === '1';
+  const allRequested = url.searchParams.get('all') === '1';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, or worm.' }, 400);
@@ -55,14 +56,20 @@ export async function onRequestGet({ request, env }) {
     }
 
     const WHERE      = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-    const postsQuery = `SELECT ${COLS} FROM posts ${WHERE} ${ORDER} LIMIT ? OFFSET ?`;
+    const postsQuery = allRequested && isAdmin
+      ? `SELECT ${COLS} FROM posts ${WHERE} ${ORDER}`
+      : `SELECT ${COLS} FROM posts ${WHERE} ${ORDER} LIMIT ? OFFSET ?`;
     const countQuery = `SELECT COUNT(*) AS total FROM posts ${WHERE}`;
 
-    const { results: posts }     = await env.DB.prepare(postsQuery).bind(...baseArgs, PAGE_SIZE, offset).all();
+    const postsStmt = allRequested && isAdmin
+      ? env.DB.prepare(postsQuery).bind(...baseArgs)
+      : env.DB.prepare(postsQuery).bind(...baseArgs, PAGE_SIZE, offset);
+    const { results: posts }     = await postsStmt.all();
     const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
     const total = countRows[0]?.total ?? 0;
+    const pageSize = allRequested && isAdmin ? total : PAGE_SIZE;
 
-    return json({ posts, total, page, pageSize: PAGE_SIZE });
+    return json({ posts, total, page, pageSize });
   } catch (err) {
     console.error('GET /api/posts error:', err);
     return json({ error: 'Database error' }, 500);

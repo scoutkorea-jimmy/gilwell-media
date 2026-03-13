@@ -400,7 +400,8 @@
 
   // ─── Admin list loading (paginated) ──────────────────────
   function loadAdminList() {
-    var url = '/api/posts?page=' + _listPage;
+    var reorderMode = _canReorderCurrentList();
+    var url = reorderMode ? '/api/posts?all=1' : '/api/posts?page=' + _listPage;
     if (_listCat !== 'all') url += '&category=' + _listCat;
     if (_listSearch) url += '&q=' + encodeURIComponent(_listSearch);
 
@@ -409,7 +410,8 @@
         _listTotal = data.total;
         _allPosts  = _allPosts.concat(data.posts || []); // for hero search — rebuild separately
         renderAdminList(data.posts || []);
-        renderPagination();
+        renderPagination(reorderMode);
+        renderReorderControls(reorderMode);
         updateStats(data.posts || []);
       })
       .catch(function (err) {
@@ -427,13 +429,14 @@
       list.innerHTML = '<div class="list-empty">게시글이 없습니다</div>';
       return;
     }
+    var reorderMode = _canReorderCurrentList();
     list.innerHTML = posts.map(function (p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
       var isUnpublished = p.published === 0;
       var hasSortOrder = p.sort_order !== null && p.sort_order !== undefined;
       return (
-        '<div class="article-item" draggable="true" data-id="' + p.id + '"' + (isUnpublished ? ' style="opacity:0.65;"' : '') + '>' +
-          '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' +
+        '<div class="article-item" draggable="' + (reorderMode ? 'true' : 'false') + '" data-id="' + p.id + '"' + (isUnpublished ? ' style="opacity:0.65;"' : '') + '>' +
+          (reorderMode ? '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' : '') +
           '<div class="article-item-content">' +
             '<div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
               '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:' + cat.color + ';">' + cat.label + '</span>' +
@@ -454,7 +457,7 @@
     }).join('');
 
     // Setup drag-and-drop
-    _initDragAndDrop(list);
+    if (reorderMode) _initDragAndDrop(list);
   }
 
   var _dragSrc = null;
@@ -497,6 +500,10 @@
   }
 
   window.saveReorder = function () {
+    if (!_canReorderCurrentList()) {
+      GW.showToast('정렬은 전체 목록에서만 저장할 수 있습니다', 'error');
+      return;
+    }
     var list = document.getElementById('article-list');
     var ids = [];
     list.querySelectorAll('.article-item[data-id]').forEach(function (el) {
@@ -520,17 +527,47 @@
       .catch(function (err) { GW.showToast(err.message || '초기화 실패', 'error'); });
   };
 
-  function renderPagination() {
+  function renderPagination(reorderMode) {
     var totalPages = Math.max(1, Math.ceil(_listTotal / _PAGE_SIZE));
     var pgEl = document.getElementById('admin-pagination');
     var infoEl = document.getElementById('admin-page-info');
     var prevEl = document.getElementById('admin-prev-btn');
     var nextEl = document.getElementById('admin-next-btn');
     if (!pgEl) return;
+    if (reorderMode) {
+      pgEl.style.display = 'none';
+      return;
+    }
     pgEl.style.display = totalPages > 1 ? 'flex' : 'none';
     if (infoEl) infoEl.textContent = _listPage + ' / ' + totalPages;
     if (prevEl) prevEl.disabled = _listPage <= 1;
     if (nextEl) nextEl.disabled = _listPage >= totalPages;
+  }
+
+  function _canReorderCurrentList() {
+    return _listCat === 'all' && !_listSearch;
+  }
+
+  function renderReorderControls(reorderMode) {
+    var saveBtn = document.getElementById('reorder-save-btn');
+    if (saveBtn) saveBtn.style.display = reorderMode && _reorderDirty ? '' : 'none';
+    var hintId = 'reorder-mode-hint';
+    var count = document.getElementById('article-count');
+    if (!count) return;
+    var hint = document.getElementById(hintId);
+    if (!reorderMode) {
+      if (!hint) {
+        hint = document.createElement('span');
+        hint.id = hintId;
+        hint.style.marginLeft = '8px';
+        hint.style.fontSize = '11px';
+        hint.style.color = 'var(--muted)';
+        count.parentNode.insertBefore(hint, count.nextSibling);
+      }
+      hint.textContent = '정렬은 검색/카테고리 해제 시 전체 목록에서만 가능합니다';
+    } else if (hint) {
+      hint.remove();
+    }
   }
 
   window.adminListPageChange = function (delta) {
@@ -542,6 +579,7 @@
   window.adminListFilter = function (cat) {
     _listCat  = cat;
     _listPage = 1;
+    _reorderDirty = false;
     ['all','korea','apr','worm'].forEach(function (c) {
       var tab = document.getElementById('admin-tab-' + c);
       if (!tab) return;
@@ -556,6 +594,7 @@
     _listSearchTimer = setTimeout(function () {
       _listSearch = (document.getElementById('admin-list-search').value || '').trim();
       _listPage   = 1;
+      _reorderDirty = false;
       loadAdminList();
     }, 350);
   };
