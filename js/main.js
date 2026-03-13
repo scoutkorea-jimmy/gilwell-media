@@ -189,7 +189,7 @@
     'nav.apr':    { ko: 'APR',   en: 'APR' },
     'nav.worm':   { ko: 'Worm',  en: 'Worm' },
 
-    'hero.eyebrow': { ko: 'Scout Media · bpmedia.net', en: 'Scout Media · bpmedia.net' },
+    'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
     'hero.title':   { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
     'hero.sub':     { ko: '한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다', en: 'Delivering Scout news through volunteer effort.' },
     'hero.cta':     { ko: '소식 읽기 →', en: 'Read More →' },
@@ -198,20 +198,20 @@
     'section.picks':   { ko: '에디터 추천',    en: "Editor's Picks" },
     'home.more':       { ko: '더보기 →',       en: 'More →' },
 
-    'footer.title':    { ko: '길웰 미디어',    en: 'Gilwell Media' },
-    'footer.sections': { ko: '섹션',           en: 'Sections' },
-    'footer.join':     { ko: '봉사자 모집',    en: 'Join Us' },
+    'footer.title':    { ko: 'BP미디어',    en: 'BPmedia' },
+    'footer.sections': { ko: '섹션',        en: 'Sections' },
+    'footer.join':     { ko: '봉사자 모집', en: 'Join Us' },
     'footer.join.text': {
-      ko: '길웰 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다. 함께 글을 작성해 주실 봉사자를 모집하고 있습니다. 관심 있으신 분들은 이메일로 연락해 주세요.',
-      en: 'Gilwell Media is operated by Scout network volunteers. We are looking for contributors. Please contact us by email.',
+      ko: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다. 함께 글을 작성해 주실 봉사자를 모집하고 있습니다. 관심 있으신 분들은 이메일로 연락해 주세요.',
+      en: 'BPmedia is operated by Scout network volunteers. We are looking for contributors. Please contact us by email.',
     },
     'footer.copyright': {
-      ko: '© 2026 길웰 미디어 / The BP Post · bpmedia.net',
-      en: '© 2026 Gilwell Media / The BP Post · bpmedia.net',
+      ko: '© 2026 BP미디어 · bpmedia.net',
+      en: '© 2026 BPmedia · bpmedia.net',
     },
     'footer.disclaimer': {
-      ko: '길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
-      en: 'Gilwell Media is not an official channel of KSA or WOSM. Operated by volunteer contributors.',
+      ko: 'BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+      en: 'BPmedia is not an official channel of KSA or WOSM. Operated by volunteer contributors.',
     },
     'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
     'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },

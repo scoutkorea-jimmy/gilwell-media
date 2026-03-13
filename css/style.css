@@ -649,11 +649,9 @@ p { margin-bottom: 6px; }
    HOME PAGE SECTIONS
    ════════════════════════════════════════════════════════════ */
 .home-wrapper {
-  max-width:     1366px;
-  margin:        0 auto;
-  padding:       0 48px 60px;
-  padding-left:  10%;
-  padding-right: 10%;
+  max-width: 1366px;
+  margin:    0 auto;
+  padding:   0 48px 60px;
 }
 
 /* ── Shared section heading ── */
@@ -726,6 +724,24 @@ p { margin-bottom: 6px; }
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
+}
+
+/* Thumbnail layout for mini-items */
+.mini-item-row {
+  display:     flex;
+  align-items: flex-start;
+  gap:         12px;
+}
+
+.mini-item-text { flex: 1; min-width: 0; }
+
+.mini-thumb {
+  width:       72px;
+  height:      54px;
+  object-fit:  cover;
+  flex-shrink: 0;
+  display:     block;
+  border:      1px solid var(--border);
 }
 
 .mini-empty {
@@ -821,11 +837,9 @@ p { margin-bottom: 6px; }
    BULLETIN BOARD POST LIST
    ════════════════════════════════════════════════════════════ */
 .board-container {
-  max-width:     1366px;
-  margin:        0 auto;
-  padding:       0 48px 60px;
-  padding-left:  10%;
-  padding-right: 10%;
+  max-width: 1366px;
+  margin:    0 auto;
+  padding:   0 48px 60px;
 }
 
 .board-grid {
@@ -1141,21 +1155,18 @@ p { margin-bottom: 6px; }
    FOOTER
    ════════════════════════════════════════════════════════════ */
 footer {
-  background:    #622599;
-  padding:       32px 48px 24px;
-  padding-left:  10%;
-  padding-right: 10%;
-  display:       flex;
-  align-items:   flex-start;
-  justify-content: space-between;
-  flex-wrap:     wrap;
-  gap:           20px;
+  background: #622599;
 }
 
-.footer-grid {
-  display:  flex;
-  flex-wrap: wrap;
-  gap:      24px;
+.footer-inner {
+  max-width:       1366px;
+  margin:          0 auto;
+  padding:         32px 48px 24px;
+  display:         flex;
+  align-items:     flex-start;
+  justify-content: space-between;
+  flex-wrap:       wrap;
+  gap:             20px;
 }
 
 footer h4 {
@@ -1898,8 +1909,8 @@ footer a:hover { color: #ffffff; }
   .modal-header       { padding: 28px 24px 0; }
   .modal-body         { padding: 24px 24px 32px; }
 
-  .footer-grid        { grid-template-columns: 1fr; padding: 32px 24px 24px; gap: 24px; }
-  .footer-bottom      { padding: 16px 24px; flex-direction: column; gap: 8px; text-align: center; }
+  .footer-inner       { padding: 32px 24px 24px; gap: 16px; }
+  .footer-bottom      { padding: 16px 0; flex-direction: column; gap: 8px; text-align: center; }
 
   .admin-body         { grid-template-columns: 1fr; padding: 24px; }
   .form-row           { grid-template-columns: 1fr; }

@@ -54,7 +54,7 @@ export async function onRequestGet({ params, env, request }) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>${title} — 길웰 미디어</title>
+  <title>${title} — BP미디어</title>
   <meta name="description" content="${desc}"/>
   ${keywords ? `<meta name="keywords" content="${keywords}"/>` : ''}
   <meta property="og:type"        content="article"/>
@@ -62,7 +62,7 @@ export async function onRequestGet({ params, env, request }) {
   <meta property="og:description" content="${desc}"/>
   <meta property="og:url"         content="${postUrl}"/>
   ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
-  <meta property="og:site_name"   content="길웰 미디어 · The BP Post"/>
+  <meta property="og:site_name"   content="BP미디어 · bpmedia.net"/>
   <meta name="twitter:card"       content="${ogImage ? 'summary_large_image' : 'summary'}"/>
   <meta name="twitter:title"      content="${title}"/>
   <meta name="twitter:description" content="${desc}"/>
@@ -81,8 +81,8 @@ export async function onRequestGet({ params, env, request }) {
       <div class="masthead-date" id="today-date"></div>
       <div class="masthead-logo">
         <a href="/">
-          <h1>길웰 미디어</h1>
-          <div class="sub">The BP Post · bpmedia.net</div>
+          <h1>BP미디어</h1>
+          <div class="sub">bpmedia.net</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -138,7 +138,7 @@ export async function onRequestGet({ params, env, request }) {
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
           <span class="post-page-action-btns" id="post-action-btns">
-            <button id="post-edit-btn" class="post-share-btn" style="display:none;" onclick="window.location.href='/admin.html?edit=${id}'">✏ 수정</button>
+            <button id="post-edit-btn" class="post-share-btn" onclick="window._postEdit()">✏ 수정</button>
           </span>
         </div>
 
@@ -185,18 +185,39 @@ export async function onRequestGet({ params, env, request }) {
 
   <!-- ── FOOTER ── -->
   <footer>
-    <div>
-      <h4 data-i18n="footer.title">길웰 미디어</h4>
-      <p data-i18n="footer.join.text">길웰 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
-      <p style="margin-top:6px;">The BP Post · bpmedia.net</p>
-      <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
-      <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
-    </div>
-    <div class="footer-bottom">
-      <p data-i18n="footer.copyright">© 2026 길웰 미디어 / The BP Post · bpmedia.net</p>
-      <p data-i18n="footer.disclaimer">길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다.</p>
+    <div class="footer-inner">
+      <div>
+        <h4 data-i18n="footer.title">BP미디어</h4>
+        <p data-i18n="footer.join.text">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
+        <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+      </div>
+      <div>
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p data-i18n="footer.disclaimer">BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다.</p>
+      </div>
     </div>
   </footer>
+
+  <!-- ── 수정 로그인 모달 ── -->
+  <div id="post-login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:32px;max-width:340px;width:90%;border-top:3px solid #622599;">
+      <h3 style="font-family:'AliceDigitalLearning',serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
+      <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password"
+        style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
+      <div style="display:flex;gap:8px;">
+        <button onclick="window._postLoginSubmit()" style="flex:1;background:#622599;color:#fff;border:none;padding:10px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;">확인</button>
+        <button onclick="document.getElementById('post-login-modal').style.display='none'" style="background:none;border:1px solid #e8e8e8;padding:10px 16px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;">취소</button>
+      </div>
+      <p id="post-login-err" style="font-family:'DM Mono',monospace;font-size:11px;color:#FF5655;margin-top:8px;display:none;"></p>
+    </div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
@@ -214,10 +235,39 @@ export async function onRequestGet({ params, env, request }) {
       btn.addEventListener('click',go);
       inp.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
     })();
-    if (GW.getToken && GW.getToken()) {
-      var eb = document.getElementById('post-edit-btn');
-      if (eb) eb.style.display = '';
-    }
+
+    // Edit button — always visible, prompts login if not authenticated
+    var _editPostId = ${id};
+    window._postEdit = function() {
+      if (GW.getToken && GW.getToken()) {
+        window.location.href = '/admin.html?edit=' + _editPostId;
+      } else {
+        var modal = document.getElementById('post-login-modal');
+        modal.style.display = 'flex';
+        setTimeout(function() {
+          var pw = document.getElementById('post-login-pw');
+          if (pw) pw.focus();
+        }, 80);
+      }
+    };
+    window._postLoginSubmit = function() {
+      var pw   = (document.getElementById('post-login-pw').value || '').trim();
+      var err  = document.getElementById('post-login-err');
+      err.style.display = 'none';
+      if (!pw) { err.textContent = '비밀번호를 입력하세요'; err.style.display = ''; return; }
+      GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) })
+        .then(function(data) {
+          GW.setToken(data.token);
+          window.location.href = '/admin.html?edit=' + _editPostId;
+        })
+        .catch(function() {
+          err.textContent = '비밀번호가 올바르지 않습니다';
+          err.style.display = '';
+        });
+    };
+    document.getElementById('post-login-pw').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') window._postLoginSubmit();
+    });
   </script>
 </body>
 </html>`;

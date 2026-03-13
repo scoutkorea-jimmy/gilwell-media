@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>길웰 미디어 / The BP Post</title>
+  <title>BP미디어 · bpmedia.net</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
       <div class="masthead-date" id="today-date"></div>
       <div class="masthead-logo">
         <a href="index.html">
-          <h1>길웰 미디어</h1>
+          <h1>BP미디어</h1>
           <div class="sub">The BP Post · bpmedia.net</div>
         </a>
       </div>
@@ -141,16 +141,22 @@
 
   <!-- ── FOOTER ── -->
   <footer>
-    <div>
-      <h4 data-i18n="footer.title">길웰 미디어</h4>
-      <p data-i18n="footer.join.text">길웰 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
-      <p style="margin-top:6px;">The BP Post · bpmedia.net</p>
-      <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
-      <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
-    </div>
-    <div class="footer-bottom">
-      <p data-i18n="footer.copyright">© 2026 길웰 미디어 / The BP Post · bpmedia.net</p>
-      <p data-i18n="footer.disclaimer">길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+    <div class="footer-inner">
+      <div>
+        <h4 data-i18n="footer.title">BP미디어</h4>
+        <p data-i18n="footer.join.text">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
+        <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+      </div>
+      <div>
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p data-i18n="footer.disclaimer">BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+      </div>
     </div>
   </footer>
 
@@ -222,11 +228,19 @@
 
     function buildMiniItem(p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+      var thumb = p.image_url
+        ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
+        : '';
       return (
         '<a class="mini-item" href="/post/' + p.id + '">' +
-          '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-          '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-          '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
+          '<div class="mini-item-row">' +
+            '<div class="mini-item-text">' +
+              '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+              '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
+            '</div>' +
+            thumb +
+          '</div>' +
         '</a>'
       );
     }
