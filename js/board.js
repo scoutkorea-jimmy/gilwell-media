@@ -624,22 +624,19 @@
     if (aiChk) aiChk.checked = false;
 
     // Load editors for author select (requires auth — real names are private)
+    var _fillAuthorSelect = function (editors) {
+      var sel = document.getElementById('board-write-author');
+      if (!sel) return;
+      var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      sel.innerHTML = letters.map(function (l) {
+        var name  = (editors && editors[l]) || '';
+        var label = 'Editor ' + l + (name ? ' — ' + name : '');
+        return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
+      }).join('');
+    };
     GW.apiFetch('/api/settings/editors')
-      .then(function (data) {
-        var editors = data.editors || {};
-        var sel = document.getElementById('board-write-author');
-        if (!sel) return;
-        var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-        sel.innerHTML = letters.map(function (l) {
-          var name  = editors[l] || '';
-          var label = 'Editor ' + l + (name ? ' — ' + name : '');
-          return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
-        }).join('');
-      })
-      .catch(function () {
-        var sel = document.getElementById('board-write-author');
-        if (sel) sel.innerHTML = '<option value="">작성자 없음</option>';
-      });
+      .then(function (data) { _fillAuthorSelect(data.editors || {}); })
+      .catch(function () { _fillAuthorSelect({}); });
 
     // Default date to today
     var dateEl = document.getElementById('board-write-date');
