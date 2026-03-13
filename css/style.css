@@ -2407,3 +2407,79 @@ footer a:hover { color: #ffffff; }
   color:       var(--muted);
   letter-spacing: 0.04em;
 }
+
+/* ── Post byline ───────────────────────────────────────────── */
+.post-byline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.post-byline-author {
+  color: var(--ink);
+}
+.post-byline-report a {
+  color: var(--muted);
+  text-decoration: underline;
+}
+.post-byline-report a:hover {
+  color: #622599;
+}
+
+/* ── Contributors page ────────────────────────────────────── */
+.contributors-wrap {
+  max-width: 1366px;
+  margin: 0 auto;
+  padding: 48px 48px 80px;
+}
+.contributors-thank {
+  max-width: 640px;
+  margin-bottom: 40px;
+  font-family: 'Noto Serif KR', serif;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.contributors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.contributor-card {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.contributor-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.contributor-note {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.contributors-empty {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 32px 0;
+}
+@media (max-width: 600px) {
+  .contributors-wrap { padding: 32px 20px 60px; }
+  .contributor-card { flex-direction: column; gap: 4px; }
+}

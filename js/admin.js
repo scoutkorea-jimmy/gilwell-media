@@ -79,6 +79,7 @@
     loadTranslationsAdmin();
     loadAuthorAdmin();
     loadAiDisclaimerAdmin();
+    loadContributorsAdmin();
     loadAdminList();
     // Set today date in form
     var dateEl = document.getElementById('art-date-display');
@@ -617,6 +618,71 @@
     GW.apiFetch('/api/settings/hero', { method: 'PUT', body: JSON.stringify({ post_id: 0 }) })
       .then(function(){ GW.showToast('히어로가 해제됐습니다','success'); loadHeroAdmin(); })
       .catch(function(err){ GW.showToast(err.message||'해제 실패','error'); });
+  };
+
+  // ─── Contributors admin ───────────────────────────────────
+  var _contributors = [];
+
+  function loadContributorsAdmin() {
+    fetch('/api/settings/contributors')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _contributors = data.items || [];
+        renderContributorsAdmin();
+      })
+      .catch(function () {});
+  }
+
+  function renderContributorsAdmin() {
+    var el = document.getElementById('contributors-admin-list'); if (!el) return;
+    if (!_contributors.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">등록된 분이 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = _contributors.map(function (c, i) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);">' +
+        '<div style="flex:1;">' +
+          '<strong style="font-size:13px;">' + GW.escapeHtml(c.name) + '</strong>' +
+          (c.note ? '<span style="font-size:11px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.note) + '</span>' : '') +
+        '</div>' +
+        '<button onclick="deleteContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">삭제</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  window.addContributor = function () {
+    var nameEl = document.getElementById('contrib-name-input');
+    var noteEl = document.getElementById('contrib-note-input');
+    var name = (nameEl.value || '').trim();
+    var note = (noteEl.value || '').trim();
+    if (!name) { GW.showToast('이름을 입력해주세요', 'error'); return; }
+    _contributors.push({ name: name, note: note });
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: _contributors }) })
+      .then(function (data) {
+        _contributors = data.items || _contributors;
+        renderContributorsAdmin();
+        nameEl.value = ''; noteEl.value = '';
+        GW.showToast('추가됐습니다', 'success');
+      })
+      .catch(function (err) {
+        _contributors.pop();
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
+  };
+
+  window.deleteContributor = function (index) {
+    if (!confirm('삭제할까요?')) return;
+    _contributors.splice(index, 1);
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: _contributors }) })
+      .then(function (data) {
+        _contributors = data.items || _contributors;
+        renderContributorsAdmin();
+        GW.showToast('삭제됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '삭제 실패', 'error');
+        loadContributorsAdmin();
+      });
   };
 
   // ─── AI Disclaimer admin ──────────────────────────────────

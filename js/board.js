@@ -197,7 +197,11 @@
         '<div class="modal-date">' + GW.formatDate(post.created_at) + '</div>' +
       '</div>' +
       imgHtml +
-      '<div class="modal-body">' + GW.renderText(post.content) + '</div>';
+      '<div class="modal-body">' + GW.renderText(post.content) + '</div>' +
+      '<div class="post-byline">' +
+        (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
+        '<span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>' +
+      '</div>';
 
     inner.querySelector('#modal-close-btn').addEventListener('click', function () {
       self._closePost();
