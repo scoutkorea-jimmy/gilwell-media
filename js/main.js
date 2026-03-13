@@ -23,6 +23,16 @@
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
   };
 
+  /** Return YYYY-MM-DD using Korea Standard Time for date inputs. */
+  GW.getKstDateInputValue = function () {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  };
+
   /** Set today's date + live clock in the masthead element. */
   GW.setMastheadDate = function (id) {
     const el = document.getElementById(id || 'today-date');

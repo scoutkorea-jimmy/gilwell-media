@@ -676,7 +676,7 @@
 
     // Default date to today (reset on every open)
     var dateEl = document.getElementById('board-write-date');
-    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
+    if (dateEl) dateEl.value = GW.getKstDateInputValue();
 
     // Load available tags (multi-select)
     fetch('/api/settings/tags', { cache: 'no-store' })
