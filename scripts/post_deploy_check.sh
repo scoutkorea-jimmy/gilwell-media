@@ -11,12 +11,15 @@ echo "Checking ${BASE_URL} for V${VERSION}"
 
 MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${VERSION}")"
 BOARD_PAGE="$(curl -fsSL "${BASE_URL}/worm.html")"
+PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people.html")"
 ADMIN_PAGE="$(curl -fsSL "${BASE_URL}/admin.html")"
 
 echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${VERSION}'" >/dev/null
 echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A', 'B', 'C']" >/dev/null
 echo "$BOARD_PAGE" | grep -F "WOSM" >/dev/null
+echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
 echo "$ADMIN_PAGE" | grep -F "site-meta-manager" >/dev/null
+echo "$ADMIN_PAGE" | grep -F "analytics-cohort" >/dev/null
 curl -fsSL "${BASE_URL}/img/favicon.svg" >/dev/null
 
 echo "Post-deploy checks passed."

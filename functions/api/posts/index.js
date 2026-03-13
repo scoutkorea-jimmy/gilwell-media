@@ -7,7 +7,7 @@
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'worm'];
+const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 const PAGE_SIZE = 20;
 
 // ── GET /api/posts ────────────────────────────────────────────
@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
-    return json({ error: 'Invalid category. Must be korea, apr, or worm.' }, 400);
+    return json({ error: 'Invalid category. Must be korea, apr, worm, or people.' }, 400);
   }
 
   // Admin token check — if valid token, include unpublished posts
@@ -105,7 +105,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (!VALID_CATEGORIES.includes(category)) {
-    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm)' }, 400);
+    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm / people)' }, 400);
   }
   if (!title || !title.trim()) {
     return json({ error: '제목을 입력해주세요' }, 400);

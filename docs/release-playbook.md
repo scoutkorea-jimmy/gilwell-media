@@ -30,6 +30,32 @@ wrangler pages deploy . --project-name gilwell-media
 ./scripts/post_deploy_check.sh
 ```
 
+## 운영 DB 적용 / 복구
+
+- 신규 설치는 `db/schema.sql`만 적용한다.
+- 기존 운영 DB는 `db/migration_*.sql` 중 누락된 파일만 순서대로 적용한다.
+- 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
+- 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
+
+예시:
+
+```bash
+wrangler d1 execute gilwell-posts --remote --file=./db/migration_013.sql
+```
+
+## Functions 로그 확인 루틴
+
+1. Cloudflare Dashboard → Workers & Pages → `gilwell-media`
+2. `Observability` 또는 배포 상세의 로그 화면 진입
+3. `/api/admin/*`, `/api/posts/*`, `/api/analytics/visit` 실패 로그 확인
+4. 배포 직후에는 로그인, 글쓰기, 메타 설정, 분석 탭 API를 우선 점검
+
+CLI 예시:
+
+```bash
+wrangler pages deployment list --project-name gilwell-media
+```
+
 ## 참고
 
 - 현재 서비스 도메인: `https://bpmedia.net`

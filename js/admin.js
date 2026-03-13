@@ -24,6 +24,7 @@
       korea: { title: '', description: '' },
       apr: { title: '', description: '' },
       worm: { title: '', description: '' },
+      people: { title: '', description: '' },
       contributors: { title: '', description: '' },
       search: { title: '', description: '' },
     },
@@ -41,6 +42,8 @@
   var _historyPage  = 1;
   var _historyLoaded = false;
   var _HISTORY_PAGE_SIZE = 10;
+  var _analyticsViewMode = 'chart';
+  var _analyticsPayload = null;
 
   // Hero search cache
   var _allPosts = [];
@@ -150,6 +153,7 @@
     if (btn) btn.classList.add('active');
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
+    if (tab === 'analytics') loadAnalyticsPage();
     if (tab === 'write') _maybeRestoreAdminDraft();
     if (tab === 'history') loadVersionHistory();
   };
@@ -288,7 +292,7 @@
   }
 
   function _renderTagSettingsManager() {
-    ['common', 'korea', 'apr', 'worm'].forEach(function (target) {
+    ['common', 'korea', 'apr', 'worm', 'people'].forEach(function (target) {
       var lane = document.getElementById('tag-lane-' + target);
       if (!lane) return;
       var items = target === 'common' ? _tagSettings.common : _tagSettings.categories[target];
@@ -910,7 +914,7 @@
     _listCat  = cat;
     _listPage = 1;
     _reorderDirty = false;
-    ['all','korea','apr','worm'].forEach(function (c) {
+    ['all','korea','apr','worm','people'].forEach(function (c) {
       var tab = document.getElementById('admin-tab-' + c);
       if (!tab) return;
       tab.style.background = c === cat ? 'var(--black)' : 'var(--bg)';
@@ -930,12 +934,19 @@
   };
 
   function updateStats(posts) {
-    // Fetch category stats from the API stats endpoint
-    fetch('/api/stats').then(function(r){return r.json();}).then(function(d){
-      var k = document.getElementById('stat-korea'); if(k) k.textContent = d.korea || 0;
-      var a = document.getElementById('stat-apr');   if(a) a.textContent = d.apr   || 0;
-      var w = document.getElementById('stat-worm');  if(w) w.textContent = d.worm  || 0;
-    }).catch(function(){});
+    loadCategoryStats(function (d) {
+      setText('stat-korea', d.korea || 0);
+      setText('stat-apr', d.apr || 0);
+      setText('stat-worm', d.worm || 0);
+      setText('stat-people', d.people || 0);
+    });
+  }
+
+  function loadCategoryStats(done) {
+    fetch('/api/stats')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { done(d || {}); })
+      .catch(function () { done({}); });
   }
 
   // ─── Category preview ─────────────────────────────────────
@@ -1084,6 +1095,7 @@
         ['korea', 'Korea'],
         ['apr', 'APR'],
         ['worm', 'WOSM'],
+        ['people', 'Scout People'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
       ];
@@ -1275,24 +1287,18 @@
 
   // ─── Dashboard ────────────────────────────────────────────
   function loadDashboard() {
-    fetch('/api/stats').then(function(r){return r.json();}).then(function(d){
+    loadCategoryStats(function (d) {
       var t = document.getElementById('dash-total');
       var k = document.getElementById('dash-korea');
       var a = document.getElementById('dash-apr');
       var w = document.getElementById('dash-worm');
+      var p = document.getElementById('dash-people');
       if(k) k.textContent = d.korea || 0;
       if(a) a.textContent = d.apr   || 0;
       if(w) w.textContent = d.worm  || 0;
-      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.worm||0));
-    }).catch(function(){});
-
-    GW.apiFetch('/api/admin/analytics')
-      .then(function (data) {
-        renderAnalyticsDashboard(data);
-      })
-      .catch(function () {
-        renderAnalyticsDashboard(null);
-      });
+      if(p) p.textContent = d.people || 0;
+      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.worm||0) + (d.people||0));
+    });
 
     // Load 5 most recent posts
     fetch('/api/posts?page=1')
@@ -1316,38 +1322,204 @@
       }).catch(function(){});
   }
 
-  function renderAnalyticsDashboard(data) {
+  window.refreshAnalyticsPage = function () {
+    loadAnalyticsPage(true);
+  };
+
+  window.setAnalyticsViewMode = function (mode) {
+    _analyticsViewMode = mode === 'table' ? 'table' : 'chart';
+    var chartBtn = document.getElementById('analytics-view-chart');
+    var tableBtn = document.getElementById('analytics-view-table');
+    if (chartBtn) chartBtn.classList.toggle('active', _analyticsViewMode === 'chart');
+    if (tableBtn) tableBtn.classList.toggle('active', _analyticsViewMode === 'table');
+    _syncAnalyticsViewMode();
+  };
+
+  function loadAnalyticsPage(force) {
+    if (_analyticsPayload && !force) {
+      renderAnalyticsPage(_analyticsPayload);
+      return;
+    }
+    setText('analytics-tracking-note', '분석 데이터를 불러오는 중…');
+    var cohortEl = document.getElementById('analytics-cohort');
+    var cohort = cohortEl ? cohortEl.value : '7d';
+    GW.apiFetch('/api/admin/analytics?cohort=' + encodeURIComponent(cohort))
+      .then(function (data) {
+        _analyticsPayload = data || null;
+        renderAnalyticsPage(data || null);
+      })
+      .catch(function () {
+        _analyticsPayload = null;
+        renderAnalyticsPage(null);
+      });
+  }
+
+  function renderAnalyticsPage(data) {
     var fallback = {
+      cohort_label: '최근 7일',
       visitors: {
         today_unique: '—',
         today_visits: '—',
         yesterday_unique: '—',
         last7_unique: '—',
         last7_visits: '—',
+        series: [],
+      },
+      views: {
+        total: 0,
+        series: [],
+        top_posts: [],
       },
       top_paths: [],
       referrers: [],
       tracking_note: '방문자 대시보드를 불러오지 못했습니다.',
     };
     var payload = data || fallback;
+    var cohortLabel = payload.cohort_label || fallback.cohort_label;
     setText('analytics-today-unique', payload.visitors.today_unique);
     setText('analytics-today-visits', payload.visitors.today_visits);
     setText('analytics-yesterday-unique', payload.visitors.yesterday_unique);
     setText('analytics-last7-unique', payload.visitors.last7_unique);
     setText('analytics-last7-visits', payload.visitors.last7_visits);
+    setText('analytics-views-total', payload.views && payload.views.total ? payload.views.total : 0);
     setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
     renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
       return {
         title: item.referrer_host || 'direct',
-        meta: '최근 7일 · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+        meta: cohortLabel + ' · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
       };
     }, '아직 유입 경로 데이터가 없습니다');
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
       return {
         title: item.path || '/',
-        meta: '최근 7일 · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+        meta: cohortLabel + ' · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
       };
     }, '아직 방문 페이지 데이터가 없습니다');
+    renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
+    renderAnalyticsViewsChart(payload.views && payload.views.series ? payload.views.series : []);
+    renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
+    renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : []);
+    renderAnalyticsTopPosts(payload.views && payload.views.top_posts ? payload.views.top_posts : []);
+    _syncAnalyticsViewMode();
+  }
+
+  function _syncAnalyticsViewMode() {
+    toggleDisplay('analytics-visitors-chart', _analyticsViewMode === 'chart');
+    toggleDisplay('analytics-views-chart', _analyticsViewMode === 'chart');
+    toggleDisplay('analytics-visitors-table', _analyticsViewMode === 'table');
+    toggleDisplay('analytics-views-table', _analyticsViewMode === 'table');
+  }
+
+  function toggleDisplay(id, show) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  }
+
+  function renderAnalyticsVisitorsChart(rows) {
+    renderAnalyticsChart('analytics-visitors-chart', rows, [
+      { key: 'unique_visitors', label: '순방문자', className: 'analytics-bar-fill-unique' },
+      { key: 'visits', label: '방문 수', className: 'analytics-bar-fill-visits' },
+    ], '방문 데이터가 없습니다');
+  }
+
+  function renderAnalyticsViewsChart(rows) {
+    renderAnalyticsChart('analytics-views-chart', rows, [
+      { key: 'views', label: '조회수', className: 'analytics-bar-fill-views' },
+    ], '조회수 데이터가 없습니다');
+  }
+
+  function renderAnalyticsChart(id, rows, seriesDefs, emptyText) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="list-empty">' + GW.escapeHtml(emptyText) + '</div>';
+      return;
+    }
+    var max = 0;
+    rows.forEach(function (row) {
+      seriesDefs.forEach(function (series) {
+        max = Math.max(max, Number(row[series.key] || 0));
+      });
+    });
+    max = max || 1;
+    var legend = '<div class="analytics-chart-legend">' + seriesDefs.map(function (series) {
+      return '<span><i class="analytics-legend-swatch ' + series.className + '"></i>' + GW.escapeHtml(series.label) + '</span>';
+    }).join('') + '</div>';
+    var items = rows.map(function (row) {
+      var bars = seriesDefs.map(function (series) {
+        var value = Number(row[series.key] || 0);
+        var width = Math.max(4, Math.round((value / max) * 100));
+        return '<div class="analytics-bar-line">' +
+          '<div class="analytics-bar-track"><span class="analytics-bar-fill ' + series.className + '" style="width:' + width + '%;"></span></div>' +
+          '<span class="analytics-bar-value">' + value + '</span>' +
+        '</div>';
+      }).join('');
+      return '<div class="analytics-bar-row">' +
+        '<div class="analytics-bar-label">' + GW.escapeHtml(formatAnalyticsDate(row.date)) + '</div>' +
+        '<div class="analytics-bar-group">' + bars + '</div>' +
+      '</div>';
+    }).join('');
+    el.innerHTML = legend + '<div class="analytics-chart">' + items + '</div>';
+  }
+
+  function renderAnalyticsVisitorsTable(rows) {
+    renderAnalyticsTable('analytics-visitors-table', rows, [
+      { key: 'date', label: '날짜', format: formatAnalyticsDate },
+      { key: 'unique_visitors', label: '순방문자' },
+      { key: 'visits', label: '방문 수' },
+    ], '방문 데이터가 없습니다');
+  }
+
+  function renderAnalyticsViewsTable(rows) {
+    renderAnalyticsTable('analytics-views-table', rows, [
+      { key: 'date', label: '날짜', format: formatAnalyticsDate },
+      { key: 'views', label: '조회수' },
+    ], '조회수 데이터가 없습니다');
+  }
+
+  function renderAnalyticsTable(id, rows, columns, emptyText) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (!rows || !rows.length) {
+      el.innerHTML = '<div class="list-empty">' + GW.escapeHtml(emptyText) + '</div>';
+      return;
+    }
+    var head = columns.map(function (col) {
+      return '<th>' + GW.escapeHtml(col.label) + '</th>';
+    }).join('');
+    var body = rows.map(function (row) {
+      return '<tr>' + columns.map(function (col) {
+        var raw = row[col.key];
+        var value = col.format ? col.format(raw) : raw;
+        return '<td>' + GW.escapeHtml(value == null ? '' : String(value)) + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function renderAnalyticsTopPosts(items) {
+    var el = document.getElementById('analytics-top-posts');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="list-empty">기간 내 조회수 데이터가 없습니다</div>';
+      return;
+    }
+    var body = items.map(function (item, index) {
+      var cat = GW.CATEGORIES[item.category] || GW.CATEGORIES.korea;
+      return '<tr>' +
+        '<td>' + (index + 1) + '</td>' +
+        '<td><span class="analytics-inline-tag" style="background:' + cat.color + ';">' + GW.escapeHtml(cat.label) + '</span> ' + GW.escapeHtml(item.title || '') + '</td>' +
+        '<td>' + (item.views || 0) + '</td>' +
+      '</tr>';
+    }).join('');
+    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>게시글</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function formatAnalyticsDate(dateStr) {
+    if (!dateStr) return '';
+    var parts = String(dateStr).split('-');
+    if (parts.length !== 3) return String(dateStr);
+    return parts[1] + '.' + parts[2];
   }
 
   function renderAnalyticsList(id, items, mapFn, emptyText) {

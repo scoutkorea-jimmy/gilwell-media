@@ -18,6 +18,7 @@ const CATEGORIES = {
   korea: { label: 'Korea / KSA', color: '#0094B4' },
   apr:   { label: 'APR',         color: '#FF5655' },
   worm:  { label: 'WOSM', color: '#248737' },
+  people:{ label: 'Scout People', color: '#8A5A2B' },
 };
 
 export async function onRequestGet({ params, env, request }) {
@@ -91,7 +92,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.009.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
 </head>
 <body>
 
@@ -126,6 +127,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/korea.html" data-i18n="nav.korea">Korea</a>
       <a href="/apr.html" data-i18n="nav.apr">APR</a>
       <a href="/worm.html" data-i18n="nav.worm">WOSM</a>
+      <a href="/people.html" data-i18n="nav.people">스카우트 인물</a>
     </nav>
   </header>
 
@@ -256,7 +258,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.009.00"></script>
+  <script src="/js/main.js?v=0.010.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

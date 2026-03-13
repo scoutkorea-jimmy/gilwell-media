@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.009.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -44,6 +44,7 @@
       </div>
       <nav class="admin-tabs-nav">
         <button class="admin-tab-btn active" id="tab-btn-dashboard" onclick="showAdminTab('dashboard')">📊 대시보드</button>
+        <button class="admin-tab-btn"        id="tab-btn-analytics" onclick="showAdminTab('analytics')">📈 분석</button>
         <button class="admin-tab-btn"        id="tab-btn-write"     onclick="showAdminTab('write')">✏ 글 작성</button>
         <button class="admin-tab-btn"        id="tab-btn-list"      onclick="showAdminTab('list')">📋 게시글 목록</button>
         <button class="admin-tab-btn"        id="tab-btn-settings"  onclick="showAdminTab('settings')">⚙ 설정</button>
@@ -75,6 +76,10 @@
               <div class="dash-stat-num" id="dash-worm">—</div>
               <div class="dash-stat-label">WOSM</div>
             </div>
+            <div class="dash-stat-card">
+              <div class="dash-stat-num" id="dash-people">—</div>
+              <div class="dash-stat-label">Scout People</div>
+            </div>
           </div>
 
           <!-- Quick actions -->
@@ -97,60 +102,104 @@
             </a>
           </div>
 
-          <div class="panel" style="margin-bottom:24px;">
-            <div class="panel-header"><h2>방문자수 대시보드</h2></div>
-            <div class="panel-body">
-              <div class="dash-stats-row analytics-stats-row">
-                <div class="dash-stat-card">
-                  <div class="dash-stat-num" id="analytics-today-unique">—</div>
-                  <div class="dash-stat-label">오늘 순방문자</div>
-                </div>
-                <div class="dash-stat-card">
-                  <div class="dash-stat-num" id="analytics-today-visits">—</div>
-                  <div class="dash-stat-label">오늘 방문 수</div>
-                </div>
-                <div class="dash-stat-card">
-                  <div class="dash-stat-num" id="analytics-yesterday-unique">—</div>
-                  <div class="dash-stat-label">어제 순방문자</div>
-                </div>
-                <div class="dash-stat-card">
-                  <div class="dash-stat-num" id="analytics-last7-unique">—</div>
-                  <div class="dash-stat-label">최근 7일 순방문자</div>
-                </div>
-                <div class="dash-stat-card">
-                  <div class="dash-stat-num" id="analytics-last7-visits">—</div>
-                  <div class="dash-stat-label">최근 7일 방문 수</div>
-                </div>
-              </div>
-              <p class="analytics-note" id="analytics-tracking-note">유입 경로를 확인하는 중…</p>
-            </div>
-          </div>
-
-          <div class="dashboard-2col">
-            <div class="panel">
-              <div class="panel-header"><h2>유입 경로</h2></div>
-              <div class="panel-body">
-                <div id="analytics-referrers" class="analytics-list">
-                  <div class="list-empty">로드 중…</div>
-                </div>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel-header"><h2>인기 유입 페이지</h2></div>
-              <div class="panel-body">
-                <div id="analytics-paths" class="analytics-list">
-                  <div class="list-empty">로드 중…</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Recent posts -->
           <div class="panel">
             <div class="panel-header"><h2>최근 게시글</h2></div>
             <div id="dash-recent-list" class="article-list"></div>
           </div>
 
+        </div>
+      </div>
+
+      <div id="admin-tab-analytics" class="admin-tab-panel">
+        <div class="panel">
+          <div class="panel-header"><h2>방문자수 / 조회수 분석</h2></div>
+          <div class="panel-body">
+            <div class="analytics-toolbar">
+              <div class="analytics-toolbar-group">
+                <label for="analytics-cohort">기간</label>
+                <select id="analytics-cohort" onchange="refreshAnalyticsPage()">
+                  <option value="1d">1일</option>
+                  <option value="7d" selected>7일</option>
+                  <option value="30d">30일</option>
+                </select>
+              </div>
+              <div class="analytics-toolbar-group">
+                <label>보기 방식</label>
+                <div class="analytics-view-toggle">
+                  <button type="button" id="analytics-view-chart" class="active" onclick="setAnalyticsViewMode('chart')">차트</button>
+                  <button type="button" id="analytics-view-table" onclick="setAnalyticsViewMode('table')">표</button>
+                </div>
+              </div>
+            </div>
+            <p class="analytics-note" id="analytics-tracking-note">분석 데이터를 불러오는 중…</p>
+          </div>
+        </div>
+
+        <div class="dash-stats-row analytics-stats-row" style="margin-top:24px;">
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-today-unique">—</div>
+            <div class="dash-stat-label">오늘 순방문자</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-today-visits">—</div>
+            <div class="dash-stat-label">오늘 방문 수</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-yesterday-unique">—</div>
+            <div class="dash-stat-label">어제 순방문자</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-last7-unique">—</div>
+            <div class="dash-stat-label">최근 7일 순방문자</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-last7-visits">—</div>
+            <div class="dash-stat-label">최근 7일 방문 수</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-views-total">—</div>
+            <div class="dash-stat-label">기간 내 조회수</div>
+          </div>
+        </div>
+
+        <div class="dashboard-2col" style="margin-top:24px;">
+          <div class="panel">
+            <div class="panel-header"><h2>방문자 추이</h2></div>
+            <div class="panel-body">
+              <div id="analytics-visitors-chart" class="analytics-chart-wrap"></div>
+              <div id="analytics-visitors-table" class="analytics-table-wrap" style="display:none;"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h2>조회수 추이</h2></div>
+            <div class="panel-body">
+              <div id="analytics-views-chart" class="analytics-chart-wrap"></div>
+              <div id="analytics-views-table" class="analytics-table-wrap" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-2col" style="margin-top:24px;">
+          <div class="panel">
+            <div class="panel-header"><h2>유입 경로</h2></div>
+            <div class="panel-body">
+              <div id="analytics-referrers" class="analytics-list"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><h2>인기 유입 페이지</h2></div>
+            <div class="panel-body">
+              <div id="analytics-paths" class="analytics-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:24px;">
+          <div class="panel-header"><h2>조회수 상위 게시글</h2></div>
+          <div class="panel-body">
+            <div id="analytics-top-posts" class="analytics-table-wrap"></div>
+          </div>
         </div>
       </div>
 
@@ -168,6 +217,7 @@
                   <option value="korea">Korea — 한국스카우트연맹</option>
                   <option value="apr">APR — 아시아태평양</option>
                   <option value="worm">WOSM — 세계스카우트연맹</option>
+                  <option value="people">Scout People — 스카우트 인물</option>
                 </select>
                 <span class="cat-preview tag-korea" id="cat-preview">Korea</span>
               </div>
@@ -253,6 +303,7 @@
             <div class="stat-item"><span class="stat-num" id="stat-korea">—</span><span class="stat-label">Korea</span></div>
             <div class="stat-item"><span class="stat-num" id="stat-apr">—</span><span class="stat-label">APR</span></div>
             <div class="stat-item"><span class="stat-num" id="stat-worm">—</span><span class="stat-label">WOSM</span></div>
+            <div class="stat-item"><span class="stat-num" id="stat-people">—</span><span class="stat-label">People</span></div>
           </div>
 
           <!-- Category filter tabs -->
@@ -261,6 +312,7 @@
             <button id="admin-tab-korea" onclick="adminListFilter('korea')" style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">Korea</button>
             <button id="admin-tab-apr"   onclick="adminListFilter('apr')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">APR</button>
             <button id="admin-tab-worm"  onclick="adminListFilter('worm')"  style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">WOSM</button>
+            <button id="admin-tab-people" onclick="adminListFilter('people')" style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">People</button>
           </div>
 
           <div class="article-list" id="article-list">
@@ -328,6 +380,7 @@
                 <option value="korea">B · Korea 전용</option>
                 <option value="apr">B · APR 전용</option>
                 <option value="worm">B · WOSM 전용</option>
+                <option value="people">B · Scout People 전용</option>
               </select>
               <button class="submit-btn" style="margin:0;width:auto;padding:11px 18px;" onclick="addManagedTag()">태그 추가</button>
             </div>
@@ -347,6 +400,10 @@
               <section class="tag-admin-panel">
                 <div class="tag-admin-panel-head">B · WOSM 전용</div>
                 <div id="tag-lane-worm" class="tag-admin-lane" data-tag-target="worm"></div>
+              </section>
+              <section class="tag-admin-panel">
+                <div class="tag-admin-panel-head">B · Scout People 전용</div>
+                <div id="tag-lane-people" class="tag-admin-lane" data-tag-target="people"></div>
               </section>
             </div>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveTags()">태그 저장</button>
@@ -452,8 +509,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.009.00"></script>
-  <script src="/js/admin.js?v=0.009.00"></script>
+  <script src="/js/main.js?v=0.010.00"></script>
+  <script src="/js/admin.js?v=0.010.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
