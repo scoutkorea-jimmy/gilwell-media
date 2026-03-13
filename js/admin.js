@@ -78,8 +78,8 @@
     loadTagsAdmin();
     loadTickerAdmin();
     loadHeroAdmin();
+    loadEditorsAdmin();
     loadTranslationsAdmin();
-    loadAuthorAdmin();
     loadAiDisclaimerAdmin();
     loadContributorsAdmin();
     loadAdminList();
@@ -170,7 +170,7 @@
 
   // ─── Tag selector (multi-select) ─────────────────────────
   function loadTagsForSelector() {
-    fetch('/api/settings/tags')
+    fetch('/api/settings/tags', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var tags = data.items || [];
@@ -370,9 +370,7 @@
     var dateEl = document.getElementById('art-date');
     if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
     var authorEl = document.getElementById('art-author');
-    fetch('/api/settings/author').then(function(r){return r.json();}).then(function(d){
-      if (authorEl) authorEl.value = d.author || 'Editor.A';
-    }).catch(function(){});
+    if (authorEl && authorEl.tagName === 'SELECT') authorEl.selectedIndex = 0;
 
     document.getElementById('art-category').value = 'korea';
     var aiChk = document.getElementById('art-ai-assisted');
@@ -587,23 +585,57 @@
   };
 
   // ─── Author admin ─────────────────────────────────────────
-  function loadAuthorAdmin() {
-    fetch('/api/settings/author')
+  // ─── Editors A-Z ──────────────────────────────────────────
+  var _editors = {}; // { A: "name", B: "", ... }
+
+  function loadEditorsAdmin() {
+    fetch('/api/settings/editors', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        var inp = document.getElementById('author-name-input');
-        if (inp) inp.value = data.author || 'Editor.A';
-        var artAuthor = document.getElementById('art-author');
-        if (artAuthor && !artAuthor.value) artAuthor.value = data.author || 'Editor.A';
+        _editors = data.editors || {};
+        _renderEditorSelect();
+        _renderEditorsManager();
       })
       .catch(function () {});
   }
 
-  window.saveAuthorName = function () {
-    var val = (document.getElementById('author-name-input').value || '').trim();
-    if (!val) { GW.showToast('이름을 입력해주세요', 'error'); return; }
-    GW.apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: val }) })
-      .then(function () { GW.showToast('에디터 이름이 저장됐습니다', 'success'); })
+  function _renderEditorSelect() {
+    var sel = document.getElementById('art-author');
+    if (!sel || sel.tagName !== 'SELECT') return;
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    sel.innerHTML = letters.map(function (l) {
+      var name  = _editors[l] || '';
+      var label = 'Editor ' + l + (name ? ' — ' + name : '');
+      return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
+    }).join('');
+  }
+
+  function _renderEditorsManager() {
+    var container = document.getElementById('editors-manager');
+    if (!container) return;
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    container.innerHTML = letters.map(function (l) {
+      var name = _editors[l] || '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:.08em;min-width:64px;color:var(--ink);">Editor ' + l + '</span>' +
+        '<input type="text" data-editor="' + l + '" value="' + GW.escapeHtml(name) + '" placeholder="실명 (비공개, 선택)" maxlength="60" ' +
+          'style="flex:1;padding:5px 10px;border:1px solid var(--border);font-family:\'Noto Sans KR\',sans-serif;font-size:12px;outline:none;" />' +
+      '</div>';
+    }).join('');
+  }
+
+  window.saveEditors = function () {
+    var inputs  = document.querySelectorAll('#editors-manager input[data-editor]');
+    var editors = {};
+    inputs.forEach(function (inp) {
+      editors[inp.getAttribute('data-editor')] = inp.value.trim();
+    });
+    GW.apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editors }) })
+      .then(function (data) {
+        _editors = data.editors || editors;
+        _renderEditorSelect();
+        GW.showToast('에디터 정보가 저장됐습니다', 'success');
+      })
       .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
   };
 
