@@ -10,6 +10,8 @@
   var _adminCoverImg  = null;
   var _adminSelTags   = [];   // multi-select tags
   var _adminDraftTimer = null;
+  var _adminTurnstileWidgetId = null;
+  var _adminTurnstileToken = '';
   var _reorderDirty   = false; // drag-and-drop changed order
   var _heroPostIds    = [];   // current hero post IDs (up to 3)
 
@@ -99,6 +101,7 @@
     loadContributorsAdmin();
     loadAdminList();
     loadDashboard();
+    _ensureAdminWriteTurnstile();
     // Default date input to today
     var dateEl = document.getElementById('art-date');
     if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
@@ -238,6 +241,9 @@
 
     if (!title)      { GW.showToast('제목을 입력해주세요', 'error'); return; }
     if (!_adminEditor) { GW.showToast('에디터가 준비되지 않았습니다', 'error'); return; }
+    if (!editingId && GW.TURNSTILE_SITE_KEY && !_adminTurnstileToken) {
+      GW.showToast('CAPTCHA를 완료해주세요', 'error'); return;
+    }
 
     btn.disabled = true; btn.textContent = editingId ? '수정 중…' : '게재 중…';
 
@@ -262,6 +268,7 @@
         author: author || undefined,
         ai_assisted: aiEl ? (aiEl.checked ? 1 : 0) : 0,
         publish_date: (dateEl && dateEl.value) ? dateEl.value : undefined,
+        cf_turnstile_response: editingId ? undefined : (_adminTurnstileToken || undefined),
       };
       var url    = editingId ? '/api/posts/' + editingId : '/api/posts';
       var method = editingId ? 'PUT' : 'POST';
@@ -269,13 +276,17 @@
         .then(function () {
           GW.showToast(editingId ? '수정됐습니다' : '게재됐습니다', 'success');
           localStorage.removeItem(_getAdminDraftKey());
+          _resetAdminWriteTurnstile();
           cancelEdit();
           loadAdminList();
           showAdminTab('list');
         })
         .catch(function (err) {
           if (err.status === 401) { GW.showToast('세션 만료. 다시 로그인해주세요.', 'error'); doLogout(); }
-          else GW.showToast(err.message || '저장 실패', 'error');
+          else {
+            GW.showToast(err.message || '저장 실패', 'error');
+            _resetAdminWriteTurnstile();
+          }
         })
         .finally(function () { btn.disabled = false; btn.textContent = editingId ? '수정 완료' : '게재하기'; });
     }).catch(function () {
@@ -513,6 +524,27 @@
         }).catch(function () {});
       }
     }, 30000);
+  }
+
+  function _ensureAdminWriteTurnstile() {
+    GW.loadTurnstile(function () {
+      if (!window.turnstile || !GW.TURNSTILE_SITE_KEY) return;
+      if (_adminTurnstileWidgetId == null) {
+        _adminTurnstileWidgetId = window.turnstile.render('#admin-write-turnstile', {
+          sitekey: GW.TURNSTILE_SITE_KEY,
+          theme: 'light',
+          callback: function (token) { _adminTurnstileToken = token; },
+          'expired-callback': function () { _adminTurnstileToken = ''; },
+        });
+      }
+    });
+  }
+
+  function _resetAdminWriteTurnstile() {
+    _adminTurnstileToken = '';
+    if (window.turnstile && _adminTurnstileWidgetId != null) {
+      window.turnstile.reset(_adminTurnstileWidgetId);
+    }
   }
 
   // ─── Admin list loading (paginated) ──────────────────────

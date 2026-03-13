@@ -869,6 +869,9 @@
             localStorage.removeItem('gw_draft_' + self.category);
             self._stopDraftAutosave();
             self._turnstileToken = '';
+            if (window.turnstile && self._turnstileWidgetId != null) {
+              window.turnstile.reset(self._turnstileWidgetId);
+            }
             self._closeWriteForm();
             self.page    = 1;
             self.total   = 0;
