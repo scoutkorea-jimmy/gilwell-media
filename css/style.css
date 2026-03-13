@@ -1994,8 +1994,11 @@ footer a:hover { color: #ffffff; }
    ════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   .masthead-top       { padding: 16px 24px; }
-  .masthead-logo h1   { font-size: 24px; }
+  .masthead-logo h1   { font-size: 26px; }
+  .masthead-date      { min-width: 120px; font-size: 11px; }
+  .masthead-right     { min-width: 120px; }
   .nav                { padding: 0 24px; }
+  .nav a              { padding: 10px 14px; }
 
   .hero               { grid-template-columns: 1fr; }
   .hero-main          { padding: 32px 24px; border-right: none; }
@@ -2035,9 +2038,41 @@ footer a:hover { color: #ffffff; }
 }
 
 @media (max-width: 480px) {
+  /* ── Masthead: stack into two rows ── */
+  .masthead-top {
+    padding:     10px 16px;
+    flex-wrap:   wrap;
+    gap:         6px;
+  }
+  /* Hide date/time/tagline — too much for small screens */
+  .masthead-date,
   .masthead-tagline   { display: none; }
-  .masthead-top       { padding: 12px 16px; }
+  /* Logo takes full row, centered */
+  .masthead-logo {
+    order:    -1;
+    flex:     1 0 100%;
+    text-align: center;
+    padding-bottom: 4px;
+  }
+  .masthead-logo h1   { font-size: 26px; }
+  /* Right controls shrink and align right */
+  .masthead-right {
+    flex:       0 0 auto;
+    min-width:  0;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .masthead-stats     { display: none; }
+  /* Search expands to full width when active */
+  .masthead-search:focus-within .mh-search-input,
+  .mh-search-input:focus { width: 120px; }
+
+  /* Nav */
   .nav                { padding: 0 16px; }
+  .nav a              { padding: 10px 14px; font-size: 10px; }
+
   .board-container    { padding: 0 16px 32px; }
   .board-grid         { grid-template-columns: 1fr; }
   .admin-body         { padding: 16px; }
@@ -2046,6 +2081,11 @@ footer a:hover { color: #ffffff; }
   .board-pw-box       { padding: 28px 24px; }
   .board-write-box    { padding: 28px 20px; max-height: 100vh; }
   .board-write-overlay { padding: 0; align-items: flex-end; }
+
+  /* Hero on phone */
+  .hero-main          { padding: 24px 16px; }
+  .hero-main h2       { font-size: 24px; }
+  .hero-main .deck    { font-size: 14px; }
 }
 
 /* ════════════════════════════════════════════════════════════
