@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.006.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.007.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -241,6 +241,13 @@
           <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환됩니다.</p>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+              <label for="hero-interval-input" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;">기사 노출 시간</label>
+              <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
+                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+              <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">초</span>
+              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">노출 시간 저장</button>
+            </div>
 
             <!-- Current hero slots -->
             <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
@@ -382,8 +389,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.006.00"></script>
-  <script src="/js/admin.js?v=0.006.00"></script>
+  <script src="/js/main.js?v=0.007.00"></script>
+  <script src="/js/admin.js?v=0.007.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

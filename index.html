@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.006.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.007.00">
 </head>
 <body>
 
@@ -162,7 +162,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span id="footer-build-version">V0.006.00</span></p>
+        <p class="footer-build">Build <span id="footer-build-version">V0.007.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -173,8 +173,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.006.00"></script>
-  <script src="/js/board.js?v=0.006.00"></script>
+  <script src="/js/main.js?v=0.007.00"></script>
+  <script src="/js/board.js?v=0.007.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -201,6 +201,8 @@
       var _slides = [];
       var _cur    = 0;
       var _timer  = null;
+      var _animating = false;
+      var _intervalMs = 3000;
 
       function buildSlide(post) {
         var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
@@ -240,25 +242,84 @@
           return '<button class="hero-dot' + (i === active ? ' active' : '') + '" aria-label="슬라이드 ' + (i+1) + '"></button>';
         }).join('');
         dotsEl.querySelectorAll('.hero-dot').forEach(function(btn, i) {
-          btn.addEventListener('click', function() { goTo(i); });
+          btn.addEventListener('click', function() { goTo(i, i > _cur ? 1 : -1); });
         });
       }
 
-      function goTo(idx) {
-        var slider = document.getElementById('site-hero-slider');
-        if (!slider || !_slides.length) return;
-        _slides[_cur].classList.remove('active');
-        _cur = (idx + _slides.length) % _slides.length;
-        _slides[_cur].classList.add('active');
-        renderDots(_slides.length, _cur);
+      function setAutoTimer() {
         clearInterval(_timer);
-        _timer = setInterval(function(){ goTo(_cur + 1); }, 6000);
+        if (_slides.length > 1) {
+          _timer = setInterval(function(){ goTo(_cur + 1, 1); }, _intervalMs);
+        }
+      }
+
+      function normalizeOffscreen(slide, direction) {
+        slide.classList.remove('active', 'before', 'transitioning');
+        slide.style.visibility = 'hidden';
+        slide.style.pointerEvents = 'none';
+        slide.style.transform = direction < 0 ? 'translateX(-100%)' : 'translateX(100%)';
+      }
+
+      function goTo(idx, direction) {
+        var slider = document.getElementById('site-hero-slider');
+        if (!slider || !_slides.length || _animating) return;
+        var nextIndex = (idx + _slides.length) % _slides.length;
+        if (nextIndex === _cur) return;
+        _animating = true;
+        direction = direction || 1;
+
+        var currentSlide = _slides[_cur];
+        var nextSlide = _slides[nextIndex];
+
+        currentSlide.classList.remove('before');
+        currentSlide.classList.add('active', 'transitioning');
+        currentSlide.style.visibility = 'visible';
+        currentSlide.style.pointerEvents = 'none';
+        currentSlide.style.transform = 'translateX(0)';
+
+        nextSlide.classList.remove('active', 'before');
+        nextSlide.classList.add('transitioning');
+        nextSlide.style.visibility = 'visible';
+        nextSlide.style.pointerEvents = 'none';
+        nextSlide.style.transform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+
+        nextSlide.offsetWidth;
+        requestAnimationFrame(function () {
+          currentSlide.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+          nextSlide.style.transform = 'translateX(0)';
+        });
+
+        setTimeout(function () {
+          _slides.forEach(function (slide, slideIndex) {
+            if (slideIndex === nextIndex) {
+              slide.classList.remove('before', 'transitioning');
+              slide.classList.add('active');
+              slide.style.visibility = 'visible';
+              slide.style.pointerEvents = 'auto';
+              slide.style.transform = 'translateX(0)';
+            } else if (slideIndex === _cur) {
+              slide.classList.remove('active', 'before', 'transitioning');
+              if (direction > 0) slide.classList.add('before');
+              slide.style.visibility = 'hidden';
+              slide.style.pointerEvents = 'none';
+              slide.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+            } else {
+              normalizeOffscreen(slide, 1);
+            }
+          });
+
+          _cur = nextIndex;
+          _animating = false;
+          renderDots(_slides.length, _cur);
+          setAutoTimer();
+        }, 560);
       }
 
       fetch('/api/settings/hero')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           var posts = data.posts || [];
+          _intervalMs = data.interval_ms || 3000;
           if (!posts.length) return;
 
           var slider = document.getElementById('site-hero-slider');
@@ -269,15 +330,22 @@
 
           posts.forEach(function (post, i) {
             var slide = buildSlide(post);
-            if (i === 0) slide.classList.add('active');
+            if (i === 0) {
+              slide.classList.add('active');
+              slide.style.visibility = 'visible';
+              slide.style.pointerEvents = 'auto';
+              slide.style.transform = 'translateX(0)';
+            } else {
+              slide.style.visibility = 'hidden';
+              slide.style.pointerEvents = 'none';
+              slide.style.transform = 'translateX(100%)';
+            }
             slider.appendChild(slide);
             _slides.push(slide);
           });
 
           renderDots(posts.length, 0);
-          if (posts.length > 1) {
-            _timer = setInterval(function(){ goTo(_cur + 1); }, 6000);
-          }
+          setAutoTimer();
         })
         .catch(function () {});
     })();

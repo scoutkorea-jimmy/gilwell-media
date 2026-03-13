@@ -1,19 +1,20 @@
 /**
  * BP미디어 · Hero Posts Setting
  *
- * GET /api/settings/hero  ← public, returns { posts: [{id, category, title, subtitle, image_url, created_at}] }
- * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N] } (up to 5)
+ * GET /api/settings/hero  ← public, returns { posts: [...], interval_ms }
+ * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N], interval_ms } (up to 5)
  */
 import { verifyToken, extractToken } from '../../_shared/auth.js';
 
 // ── GET /api/settings/hero ────────────────────────────────────
 export async function onRequestGet({ env }) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'hero'`
-    ).first();
+    const [row, intervalRow] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
+    ]);
 
-    if (!row) return json({ posts: [] });
+    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
 
     // Backward-compat: stored value may be plain integer (old format) or JSON array
     let postIds = [];
@@ -25,7 +26,7 @@ export async function onRequestGet({ env }) {
       if (single > 0) postIds = [single];
     }
 
-    if (!postIds.length) return json({ posts: [] });
+    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
 
     // Fetch posts in order
     const posts = [];
@@ -36,7 +37,7 @@ export async function onRequestGet({ env }) {
       if (post) posts.push(post);
     }
 
-    return json({ posts });
+    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -55,7 +56,7 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { post_ids } = body;
+  const { post_ids, interval_ms } = body;
   if (!Array.isArray(post_ids)) {
     return json({ error: 'post_ids 배열을 입력해주세요' }, 400);
   }
@@ -64,18 +65,31 @@ export async function onRequestPut({ request, env }) {
     .map(id => parseInt(id, 10))
     .filter(id => Number.isFinite(id) && id > 0)
     .slice(0, 5);
+  const safeInterval = getSafeInterval(interval_ms);
 
   try {
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('hero', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(safeIds)).run();
+    await Promise.all([
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('hero', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(JSON.stringify(safeIds)).run(),
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('hero_interval', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(String(safeInterval)).run(),
+    ]);
 
-    return json({ success: true, post_ids: safeIds });
+    return json({ success: true, post_ids: safeIds, interval_ms: safeInterval });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+function getSafeInterval(value) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return 3000;
+  return Math.min(15000, Math.max(2000, parsed));
 }
 
 function json(data, status = 200) {

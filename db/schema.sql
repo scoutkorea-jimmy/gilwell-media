@@ -54,6 +54,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES (
   '{"common":["소식","공지","행사","보고","특집","단독","속보"],"categories":{"korea":[],"apr":[],"worm":[]}}'
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES ('hero', '[]');
+INSERT OR IGNORE INTO settings (key, value) VALUES ('hero_interval', '3000');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('translations', '{}');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('author_name', 'Editor.A');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('ai_disclaimer', '본 글은 AI의 도움을 받아 작성되었습니다.');
