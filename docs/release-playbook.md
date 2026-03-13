@@ -36,11 +36,12 @@ wrangler pages deploy . --project-name gilwell-media
 - 기존 운영 DB는 `db/migration_*.sql` 중 누락된 파일만 순서대로 적용한다.
 - 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
 - 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
+- 현재 최신 마이그레이션 기준은 `db/migration_014.sql`까지다.
 
 예시:
 
 ```bash
-wrangler d1 execute gilwell-posts --remote --file=./db/migration_013.sql
+wrangler d1 execute gilwell-posts --remote --file=./db/migration_014.sql
 ```
 
 ## Functions 로그 확인 루틴
@@ -61,3 +62,4 @@ wrangler pages deployment list --project-name gilwell-media
 - 현재 서비스 도메인: `https://bpmedia.net`
 - Pages 프로젝트명: `gilwell-media`
 - 현재 버전 규칙: `Va.bbbb.cc`
+- Git 자동 배포가 지연되거나 누락될 수 있으므로, 릴리스 직후에는 `Deployments`의 커밋 SHA와 라이브 응답 버전을 반드시 같이 확인한다.

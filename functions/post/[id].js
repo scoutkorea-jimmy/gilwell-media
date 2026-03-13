@@ -57,9 +57,12 @@ export async function onRequestGet({ params, env, request }) {
 
   const siteUrl  = new URL(request.url).origin;
   const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
-  const title    = escapeHtml(post.title || '');
-  const subtitle = escapeHtml(post.subtitle || '');
-  const desc     = subtitle || truncatePlain(post.content || '', 160);
+  const titleText = post.title || '';
+  const subtitleText = post.subtitle || '';
+  const title    = escapeHtml(titleText);
+  const subtitle = escapeHtml(subtitleText);
+  const descText = subtitleText || truncatePlain(post.content || '', 160);
+  const desc     = escapeHtml(descText);
   const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
   const ogImage  = post.image_url
     ? (post.image_url.startsWith('http')
@@ -70,11 +73,13 @@ export async function onRequestGet({ params, env, request }) {
   const bodyHtml = renderContent(post.content || '');
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
+  const categoryUrl = `${siteUrl}/${post.category}.html`;
   const isNew    = isTodayKst(post.created_at);
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
-    description: desc,
+    description: descText,
     url: postUrl,
+    categoryUrl,
     image: ogImage,
     datePublished: post.created_at,
     dateModified: post.updated_at || post.created_at,
@@ -89,14 +94,19 @@ export async function onRequestGet({ params, env, request }) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>${title} — BP미디어</title>
   <meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>
+  <meta name="robots" content="index,follow,max-image-preview:large"/>
   <meta name="description" content="${desc}"/>
   ${keywords ? `<meta name="keywords" content="${keywords}"/>` : ''}
+  <meta property="og:locale"      content="ko_KR"/>
   <meta property="og:type"        content="article"/>
   <meta property="og:title"       content="${title}"/>
   <meta property="og:description" content="${desc}"/>
   <meta property="og:url"         content="${postUrl}"/>
   ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
   <meta property="og:site_name"   content="BP미디어 · bpmedia.net"/>
+  <meta property="article:published_time" content="${escapeHtml(post.created_at || '')}"/>
+  <meta property="article:modified_time" content="${escapeHtml(post.updated_at || post.created_at || '')}"/>
+  <meta property="article:section" content="${escapeHtml(cat.label)}"/>
   <meta name="twitter:card"       content="${ogImage ? 'summary_large_image' : 'summary'}"/>
   <meta name="twitter:title"      content="${title}"/>
   <meta name="twitter:description" content="${desc}"/>
@@ -107,7 +117,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.013.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.014.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -275,7 +285,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.013.01"></script>
+  <script src="/js/main.js?v=0.014.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -488,28 +498,59 @@ function renderYouTubeEmbed(embedUrl, title) {
 }
 
 function buildArticleStructuredData(meta) {
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: meta.title || '',
-    description: meta.description || '',
-    mainEntityOfPage: meta.url || '',
-    image: meta.image ? [meta.image] : undefined,
-    datePublished: meta.datePublished || '',
-    dateModified: meta.dateModified || meta.datePublished || '',
-    articleSection: meta.category || '',
-    author: {
-      '@type': 'Person',
-      name: meta.author || 'BP미디어',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'BP미디어',
-      url: 'https://bpmedia.net',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://bpmedia.net/img/logo.svg',
+  return JSON.stringify([
+    {
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: meta.title || '',
+      description: meta.description || '',
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': meta.url || '',
+      },
+      url: meta.url || '',
+      image: meta.image ? [meta.image] : undefined,
+      datePublished: meta.datePublished || '',
+      dateModified: meta.dateModified || meta.datePublished || '',
+      articleSection: meta.category || '',
+      isAccessibleForFree: true,
+      author: {
+        '@type': 'Person',
+        name: meta.author || 'BP미디어',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'BP미디어',
+        url: 'https://bpmedia.net',
+        logo: {
+          '@type': 'ImageObject',
+          url: 'https://bpmedia.net/img/logo.svg',
+        },
       },
     },
-  }).replace(/</g, '\\u003c');
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: 'https://bpmedia.net/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: meta.category || '기사',
+          item: meta.categoryUrl || 'https://bpmedia.net/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: meta.title || '기사',
+          item: meta.url || '',
+        },
+      ],
+    },
+  ]).replace(/</g, '\\u003c');
 }

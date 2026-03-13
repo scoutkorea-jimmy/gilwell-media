@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.013.01`
+- Current version: `V0.014.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -204,8 +204,9 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 
 **Capabilities:**
 - Post to any of the four boards: Korea, APR, WOSM, Scout People
-- Attach an optional image URL to each post
-- Edit or delete existing posts
+- Set publish date, author, featured state, tags, subtitle, SEO tags, optional YouTube link
+- Attach an optional cover image and limited inline body images
+- Edit or delete existing posts and review analytics/version history
 - Session expires after 24 hours (simply log in again)
 
 **To change the admin password:**
@@ -218,14 +219,32 @@ No code changes needed.
 
 ```sql
 posts (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  category    TEXT    NOT NULL,   -- 'korea' | 'apr' | 'worm'
-  title       TEXT    NOT NULL,
-  content     TEXT    NOT NULL,
-  image_url   TEXT,               -- optional https:// URL
-  created_at  TEXT    NOT NULL,
-  updated_at  TEXT    NOT NULL
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  category     TEXT    NOT NULL,   -- 'korea' | 'apr' | 'worm' | 'people'
+  title        TEXT    NOT NULL,
+  subtitle     TEXT,
+  content      TEXT    NOT NULL,
+  image_url    TEXT,
+  youtube_url  TEXT,
+  tag          TEXT,
+  meta_tags    TEXT,
+  published    INTEGER NOT NULL DEFAULT 1,
+  featured     INTEGER NOT NULL DEFAULT 0,
+  views        INTEGER NOT NULL DEFAULT 0,
+  author       TEXT    NOT NULL DEFAULT 'Editor.A',
+  ai_assisted  INTEGER NOT NULL DEFAULT 0,
+  sort_order   INTEGER,
+  created_at   TEXT    NOT NULL,
+  updated_at   TEXT    NOT NULL
 )
+
+settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+)
+
+post_views / post_likes / site_visits
+  실조회수, 공감, 방문/유입 분석용 집계 테이블
 ```
 
 ---
@@ -256,4 +275,9 @@ posts (
 
 ## 9. Redeploy After Changes
 
-Every push to the `main` branch automatically triggers a new Cloudflare Pages build and deployment. No manual steps needed after initial setup.
+Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는 자동 배포 지연이나 누락이 발생할 수 있습니다.
+배포 후에는 반드시 아래를 같이 확인합니다.
+
+1. Cloudflare Pages `Deployments`의 최신 커밋 SHA
+2. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION`
+3. `./scripts/post_deploy_check.sh`

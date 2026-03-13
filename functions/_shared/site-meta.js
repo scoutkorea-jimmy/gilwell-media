@@ -1,4 +1,14 @@
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
+const SITE_ORIGIN = 'https://bpmedia.net';
+const PUBLISHER = {
+  '@type': 'Organization',
+  name: 'BP미디어',
+  url: SITE_ORIGIN,
+  logo: {
+    '@type': 'ImageObject',
+    url: `${SITE_ORIGIN}/img/logo.svg`,
+  },
+};
 
 const DEFAULT_SITE_META = {
   pages: {
@@ -87,12 +97,13 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
   const robots = pageKey === 'search'
     ? '<meta name="robots" content="noindex,follow"/>'
     : '<meta name="robots" content="index,follow,max-image-preview:large"/>';
-  const structuredData = buildPageStructuredData({ pageKey, title, description, url, imageUrl });
+  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl });
 
   return [
     `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
+    `<meta property="og:locale" content="ko_KR"/>`,
     `<meta property="og:type" content="website"/>`,
     `<meta property="og:title" content="${safeTitle}"/>`,
     `<meta property="og:description" content="${safeDesc}"/>`,
@@ -106,7 +117,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     googleVerification ? `<meta name="google-site-verification" content="${escapeHtml(googleVerification)}"/>` : '',
     naverVerification ? `<meta name="naver-site-verification" content="${escapeHtml(naverVerification)}"/>` : '',
     `<link rel="canonical" href="${safeUrl}"/>`,
-    structuredData ? `<script type="application/ld+json">${structuredData}</script>` : '',
+    ...structuredData.map((item) => `<script type="application/ld+json">${safeJsonLd(item)}</script>`),
   ].filter(Boolean).join('\n  ');
 }
 
@@ -176,34 +187,121 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-function buildPageStructuredData({ pageKey, title, description, url, imageUrl }) {
-  const type = pageKey === 'home' ? 'WebSite' : (pageKey === 'search' ? 'SearchResultsPage' : 'CollectionPage');
+function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl }) {
+  const resolvedUrl = url || `${SITE_ORIGIN}/`;
+  const pageName = title || DEFAULT_SITE_META.pages.home.title;
+  const pageDescription = description || DEFAULT_SITE_META.pages.home.description;
+  const entries = [
+    buildOrganizationStructuredData(imageUrl),
+    buildWebsiteStructuredData(imageUrl),
+    buildPageStructuredData({ pageKey, title: pageName, description: pageDescription, url: resolvedUrl, imageUrl }),
+  ];
+  const breadcrumb = buildBreadcrumbStructuredData(pageKey, resolvedUrl);
+  if (breadcrumb) entries.push(breadcrumb);
+  return entries;
+}
+
+function buildOrganizationStructuredData(imageUrl) {
   const payload = {
     '@context': 'https://schema.org',
-    '@type': type,
-    name: title || DEFAULT_SITE_META.pages.home.title,
-    description: description || DEFAULT_SITE_META.pages.home.description,
-    url: url || 'https://bpmedia.net/',
+    ...PUBLISHER,
+  };
+  if (imageUrl) payload.image = imageUrl;
+  return payload;
+}
+
+function buildWebsiteStructuredData(imageUrl) {
+  const payload = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': `${SITE_ORIGIN}/#website`,
+    name: 'BP미디어 · bpmedia.net',
+    url: `${SITE_ORIGIN}/`,
     inLanguage: 'ko-KR',
-    publisher: {
-      '@type': 'Organization',
-      name: 'BP미디어',
-      url: 'https://bpmedia.net',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://bpmedia.net/img/logo.svg',
-      },
+    publisher: PUBLISHER,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${SITE_ORIGIN}/search.html?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
     },
   };
   if (imageUrl) payload.image = imageUrl;
-  if (pageKey === 'home') {
-    payload.potentialAction = {
-      '@type': 'SearchAction',
-      target: 'https://bpmedia.net/search.html?q={search_term_string}',
-      'query-input': 'required name=search_term_string',
-    };
-  }
-  return safeJsonLd(payload);
+  return payload;
+}
+
+function buildPageStructuredData({ pageKey, title, description, url, imageUrl }) {
+  const type = pageKey === 'search' ? 'SearchResultsPage' : (pageKey === 'home' ? 'WebPage' : 'CollectionPage');
+  const payload = {
+    '@context': 'https://schema.org',
+    '@type': type,
+    '@id': `${url}#webpage`,
+    name: title,
+    headline: title,
+    description,
+    url,
+    isPartOf: {
+      '@type': 'WebSite',
+      '@id': `${SITE_ORIGIN}/#website`,
+      url: `${SITE_ORIGIN}/`,
+      name: 'BP미디어 · bpmedia.net',
+    },
+    about: {
+      '@type': 'Thing',
+      name: getPageTopic(pageKey),
+    },
+    inLanguage: 'ko-KR',
+    publisher: PUBLISHER,
+  };
+  if (imageUrl) payload.primaryImageOfPage = imageUrl;
+  return payload;
+}
+
+function buildBreadcrumbStructuredData(pageKey, url) {
+  const crumb = getBreadcrumbLabel(pageKey);
+  if (!crumb || pageKey === 'home') return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '홈',
+        item: `${SITE_ORIGIN}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: crumb,
+        item: url,
+      },
+    ],
+  };
+}
+
+function getBreadcrumbLabel(pageKey) {
+  const labels = {
+    korea: 'Korea',
+    apr: 'APR',
+    worm: 'WOSM',
+    people: '스카우트 인물',
+    contributors: '도움을 주신 분들',
+    search: '검색',
+  };
+  return labels[pageKey] || '';
+}
+
+function getPageTopic(pageKey) {
+  const topics = {
+    home: '스카우트 뉴스',
+    korea: '한국 스카우트 소식',
+    apr: '아시아태평양 스카우트 소식',
+    worm: '세계스카우트연맹 소식',
+    people: '스카우트 인물',
+    contributors: '후원 및 기여자 소개',
+    search: '사이트 검색 결과',
+  };
+  return topics[pageKey] || '스카우트 뉴스';
 }
 
 function safeJsonLd(value) {
