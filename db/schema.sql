@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS post_views (
   post_id   INTEGER NOT NULL,
   viewer_key TEXT,
+  viewed_bucket TEXT,
   viewed_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -53,6 +54,7 @@ CREATE TABLE IF NOT EXISTS site_visits (
   path          TEXT    NOT NULL,
   referrer_host TEXT    NOT NULL DEFAULT 'direct',
   referrer_url  TEXT,
+  visited_bucket TEXT,
   visited_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -64,11 +66,13 @@ CREATE INDEX IF NOT EXISTS idx_posts_sort_order ON posts (sort_order);
 CREATE INDEX IF NOT EXISTS idx_pv_post_time ON post_views(post_id, viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_time ON post_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_viewer_post ON post_views(viewer_key, post_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pv_unique_bucket ON post_views(post_id, viewer_key, viewed_bucket);
 CREATE INDEX IF NOT EXISTS idx_pl_post ON post_likes(post_id);
 CREATE INDEX IF NOT EXISTS idx_sv_time ON site_visits(visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_path_time ON site_visits(path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_viewer_path_time ON site_visits(viewer_key, path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_referrer_host ON site_visits(referrer_host);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sv_unique_bucket ON site_visits(viewer_key, path, visited_bucket);
 
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'ticker',
