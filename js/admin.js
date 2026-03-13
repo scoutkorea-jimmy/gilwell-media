@@ -97,7 +97,7 @@
     loadDashboard();
     // Default date input to today
     var dateEl = document.getElementById('art-date');
-    if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0, 10);
+    if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
     updateCatPreview();
     // Default to dashboard tab
     showAdminTab('dashboard');
@@ -379,7 +379,7 @@
     document.getElementById('art-subtitle').value = '';
     document.getElementById('art-metatags').value = '';
     var dateEl = document.getElementById('art-date');
-    if (dateEl) dateEl.value = new Date().toISOString().slice(0, 10);
+    if (dateEl) dateEl.value = GW.getKstDateInputValue();
     var authorEl = document.getElementById('art-author');
     if (authorEl && authorEl.tagName === 'SELECT') authorEl.selectedIndex = 0;
 
