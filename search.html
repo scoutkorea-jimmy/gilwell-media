@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>검색 — 길웰 미디어</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .search-page-wrap { max-width: 900px; margin: 0 auto; padding: 40px 10%; }
+    .search-page-header { margin-bottom: 32px; border-bottom: 2px solid var(--black); padding-bottom: 20px; }
+    .search-page-header h2 {
+      font-family: 'AliceDigitalLearning','Playfair Display',serif;
+      font-size: 28px; font-weight: 700; color: var(--black); margin-bottom: 16px;
+    }
+    .search-bar-row { display: flex; gap: 8px; }
+    .search-page-input {
+      flex: 1; padding: 11px 16px; border: 1px solid var(--border);
+      font-family: 'Noto Sans KR',sans-serif; font-size: 15px;
+      color: var(--ink); outline: none; transition: border-color 0.15s;
+    }
+    .search-page-input:focus { border-color: var(--accent); }
+    .search-page-btn {
+      padding: 11px 24px; background: var(--black); color: var(--white);
+      border: none; font-family: 'DM Mono',monospace; font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-page-btn:hover { background: var(--accent); }
+    .search-count {
+      font-family: 'DM Mono',monospace; font-size: 11px; color: var(--muted);
+      letter-spacing: 0.05em; margin: 16px 0;
+    }
+    .search-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .search-result-card {
+      display: block; padding: 20px; border: 1px solid var(--border);
+      text-decoration: none; color: var(--ink);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-result-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    .search-result-card .category-tag { margin-bottom: 8px; }
+    .search-result-card h3 {
+      font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+      font-size: 16px; font-weight: 600; line-height: 1.45;
+      color: var(--black); margin-bottom: 6px;
+    }
+    .search-result-card .result-sub {
+      font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 8px;
+    }
+    .search-result-meta {
+      font-family: 'DM Mono',monospace; font-size: 10px; color: var(--muted);
+      letter-spacing: 0.05em; margin-top: 8px;
+    }
+    .search-no-results {
+      text-align: center; padding: 60px 0;
+      font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+      font-size: 15px; color: var(--muted); line-height: 1.8;
+    }
+    .search-no-results strong { display: block; font-size: 18px; color: var(--black); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+  <!-- ── MASTHEAD ── -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="index.html">
+          <h1>길웰 미디어</h1>
+          <div class="sub">The BP Post · bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="index.html" data-i18n="nav.home">홈</a>
+      <a href="korea.html" data-i18n="nav.korea">Korea</a>
+      <a href="apr.html" data-i18n="nav.apr">APR</a>
+      <a href="worm.html" data-i18n="nav.worm">Worm</a>
+    </nav>
+  </header>
+
+  <!-- ── TICKER ── -->
+  <div class="ticker">
+    <div class="ticker-inner" id="ticker-inner">
+      길웰 미디어 · The BP Post · bpmedia.net
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+      길웰 미디어 · The BP Post · bpmedia.net
+      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+    </div>
+  </div>
+
+  <!-- ── SEARCH PAGE ── -->
+  <div class="search-page-wrap">
+    <div class="search-page-header">
+      <h2>전체 검색</h2>
+      <div class="search-bar-row">
+        <input type="text" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" />
+        <button class="search-page-btn" id="search-btn">검색</button>
+      </div>
+    </div>
+    <div id="search-count" class="search-count" style="display:none;"></div>
+    <div id="search-results"></div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer>
+    <div>
+      <h4 data-i18n="footer.title">길웰 미디어</h4>
+      <p data-i18n="footer.join.text">길웰 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+      <p style="margin-top:6px;">The BP Post · bpmedia.net</p>
+      <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
+      <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+    </div>
+    <div class="footer-bottom">
+      <p data-i18n="footer.copyright">© 2026 길웰 미디어 / The BP Post · bpmedia.net</p>
+      <p data-i18n="footer.disclaimer">길웰 미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다.</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/main.js"></script>
+  <script>
+    GW.setMastheadDate();
+    GW.markActiveNav();
+    GW.loadTicker('ticker-inner');
+    GW.loadStats();
+    GW.loadTranslations();
+
+    // ── Masthead mini search → this same page ────────────────
+    (function() {
+      var inp = document.getElementById('mh-search-input');
+      var btn = document.getElementById('mh-search-btn');
+      function go() {
+        var q = (inp.value || '').trim();
+        if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q);
+      }
+      btn.addEventListener('click', go);
+      inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') go(); });
+    })();
+
+    // ── Search logic ─────────────────────────────────────────
+    var searchInput  = document.getElementById('search-input');
+    var searchBtn    = document.getElementById('search-btn');
+    var searchCount  = document.getElementById('search-count');
+    var searchRes    = document.getElementById('search-results');
+
+    function doSearch(q) {
+      q = (q || '').trim();
+      if (!q) return;
+
+      searchRes.innerHTML =
+        '<div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+      searchCount.style.display = 'none';
+
+      GW.apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&page=1')
+        .then(function(data) {
+          var posts = data.posts || [];
+          var total = data.total || posts.length;
+
+          searchCount.style.display = 'block';
+          searchCount.textContent = '"' + q + '" 검색 결과 ' + total + '건';
+
+          if (!posts.length) {
+            searchRes.innerHTML =
+              '<div class="search-no-results">' +
+                '<strong>검색 결과가 없습니다</strong>' +
+                '"' + GW.escapeHtml(q) + '"에 해당하는 기사를 찾을 수 없습니다.' +
+              '</div>';
+            return;
+          }
+
+          searchRes.innerHTML =
+            '<div class="search-results-grid">' +
+            posts.map(function(p) {
+              var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+              return (
+                '<a class="search-result-card" href="/post/' + p.id + '">' +
+                  '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+                  '<h3>' + GW.escapeHtml(p.title) + '</h3>' +
+                  (p.subtitle ? '<p class="result-sub">' + GW.escapeHtml(p.subtitle) + '</p>' : '') +
+                  '<div class="search-result-meta">' +
+                    GW.formatDate(p.created_at) +
+                    (p.author ? ' &nbsp;·&nbsp; ' + GW.escapeHtml(p.author) : '') +
+                  '</div>' +
+                '</a>'
+              );
+            }).join('') +
+            '</div>';
+        })
+        .catch(function() {
+          searchRes.innerHTML =
+            '<div class="search-no-results"><strong>오류가 발생했습니다</strong>잠시 후 다시 시도해주세요.</div>';
+        });
+    }
+
+    // Read ?q= from URL and run search immediately
+    var urlQ = new URLSearchParams(location.search).get('q') || '';
+    if (urlQ) {
+      searchInput.value = urlQ;
+      doSearch(urlQ);
+    }
+
+    searchBtn.addEventListener('click', function() { doSearch(searchInput.value); });
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doSearch(searchInput.value);
+    });
+  </script>
+</body>
+</html>
