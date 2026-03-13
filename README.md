@@ -4,6 +4,18 @@ Independent Scout Media — bpmedia.net
 
 ---
 
+## Versioning
+
+- Current version: `V0.001.00`
+- Format: `Va.bbbb.cc`
+- `a`: major line controlled by the owner
+- `bbbb`: increases only when a real feature/fix is shipped and committed
+- `cc`: increases only when there is no feature change and only the version label changes
+
+All static asset cache-busting query strings should follow this same version.
+
+---
+
 ## Project Structure
 
 ```
