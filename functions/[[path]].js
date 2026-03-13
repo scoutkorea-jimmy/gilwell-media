@@ -14,11 +14,12 @@ export async function onRequest(context) {
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
+  const canonicalPath = url.pathname === '/index.html' ? '/' : url.pathname;
   const shareMeta = buildShareMetaBlock({
     pageKey,
     title: pageMeta.title,
     description: pageMeta.description,
-    url: url.origin + (url.pathname === '/' ? '/' : url.pathname),
+    url: url.origin + canonicalPath,
     imageUrl: getResolvedShareImage(siteMeta, url.origin),
     googleVerification: siteMeta.google_verification,
     naverVerification: siteMeta.naver_verification,

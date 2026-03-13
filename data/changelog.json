@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "0.014.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "운영 TODO와 SEO 데이터 구조를 최신 상태로 정리하고 검색봇 친화 구조를 보강했습니다.",
+      "changes": [
+        "TODO와 배포 문서를 현재 운영 상태 기준으로 다시 정리했습니다.",
+        "배포 후 점검 스크립트에 애드센스 메타, 구조화 데이터, 모바일 홈, 게시판 간격 API 확인을 추가했습니다.",
+        "일반 페이지에 Organization, WebSite, WebPage/CollectionPage, BreadcrumbList 구조화 데이터를 분리해 넣었습니다.",
+        "기사 페이지에 robots, article 메타, NewsArticle 및 BreadcrumbList JSON-LD를 보강했습니다.",
+        "프런트 태그 정규화 기본값에 people 카테고리를 추가하고 canonical 정규화를 보완했습니다."
+      ]
+    },
+    {
       "version": "0.013.01",
       "date": "2026-03-14",
       "commit": "local build",
