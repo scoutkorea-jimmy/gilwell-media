@@ -1451,6 +1451,51 @@ footer a:hover { color: #ffffff; }
   text-transform: uppercase;
 }
 
+.share-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.share-meta-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 14px;
+}
+
+.share-meta-card-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.share-meta-card label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 12px 0 6px;
+}
+
+.share-meta-card input,
+.share-meta-card textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+}
+
 /* Post kicker label shown next to category tag — outline style, same size */
 .post-kicker {
   display:        inline-block;
@@ -1602,6 +1647,9 @@ footer a:hover { color: #ffffff; }
     grid-template-columns: 1fr;
   }
   .tag-admin-grid {
+    grid-template-columns: 1fr;
+  }
+  .share-meta-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -2518,6 +2566,33 @@ footer a:hover { color: #ffffff; }
   transition:     border-color 0.15s, color 0.15s;
 }
 .post-share-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+@media (max-width: 900px) {
+  .post-page-wrap {
+    padding: 32px 24px 60px;
+  }
+  .post-page-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .post-page-main {
+    order: 1;
+  }
+  .post-page-sidebar {
+    order: 2;
+    position: static;
+    top: auto;
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .post-page-wrap {
+    padding: 24px 16px 48px;
+  }
+}
 
 /* Post card permalink icon */
 .post-permalink {

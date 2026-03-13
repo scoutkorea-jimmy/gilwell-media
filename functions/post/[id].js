@@ -79,10 +79,11 @@ export async function onRequestGet({ params, env, request }) {
   <meta name="twitter:description" content="${desc}"/>
   ${ogImage ? `<meta name="twitter:image" content="${ogImage}"/>` : ''}
   <link rel="canonical" href="${postUrl}"/>
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.002.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.003.00">
 </head>
 <body>
 
@@ -242,7 +243,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.002.00"></script>
+  <script src="/js/main.js?v=0.003.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
