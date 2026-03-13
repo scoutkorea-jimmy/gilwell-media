@@ -305,14 +305,21 @@
       el.innerHTML = posts.map(buildMiniItem).join('');
     }
 
-    // Load popular (latest 5 overall)
-    GW.apiFetch('/api/posts?page=1')
+    // Load popular posts first, then fall back to latest if view data is sparse
+    GW.apiFetch('/api/posts/popular')
       .then(function (d) {
-        renderMiniList(
-          document.getElementById('popular-list'),
-          (d.posts || []).slice(0, 4),
-          '아직 게시글이 없습니다'
-        );
+        var posts = (d.posts || []).slice(0, 4);
+        if (posts.length) {
+          renderMiniList(document.getElementById('popular-list'), posts, '아직 게시글이 없습니다');
+          return;
+        }
+        return GW.apiFetch('/api/posts?page=1').then(function (latest) {
+          renderMiniList(
+            document.getElementById('popular-list'),
+            (latest.posts || []).slice(0, 4),
+            '아직 게시글이 없습니다'
+          );
+        });
       })
       .catch(function () {
         document.getElementById('popular-list').innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
