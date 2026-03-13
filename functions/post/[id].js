@@ -16,7 +16,7 @@ import { verifyToken, extractToken } from '../_shared/auth.js';
 const CATEGORIES = {
   korea: { label: 'Korea / KSA', color: '#0094B4' },
   apr:   { label: 'APR',         color: '#FF5655' },
-  worm:  { label: 'Worm / WOSM', color: '#248737' },
+  worm:  { label: 'WOSM', color: '#248737' },
 };
 
 export async function onRequestGet({ params, env, request }) {
@@ -116,7 +116,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/" data-i18n="nav.home">홈</a>
       <a href="/korea.html" data-i18n="nav.korea">Korea</a>
       <a href="/apr.html" data-i18n="nav.apr">APR</a>
-      <a href="/worm.html" data-i18n="nav.worm">Worm</a>
+      <a href="/worm.html" data-i18n="nav.worm">WOSM</a>
     </nav>
   </header>
 

@@ -11,7 +11,7 @@ gilwell-media/
 ├── index.html              Homepage (all categories feed)
 ├── korea.html              Korea / KSA bulletin board
 ├── apr.html                APR bulletin board
-├── worm.html               Worm / WOSM bulletin board
+├── worm.html               WOSM bulletin board
 ├── admin.html              Admin panel (requires login)
 ├── css/style.css           Shared stylesheet
 ├── js/
@@ -183,7 +183,7 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 5. You can now create, edit, and delete posts
 
 **Capabilities:**
-- Post to any of the three boards: Korea, APR, Worm
+- Post to any of the three boards: Korea, APR, WOSM
 - Attach an optional image URL to each post
 - Edit or delete existing posts
 - Session expires after 24 hours (simply log in again)

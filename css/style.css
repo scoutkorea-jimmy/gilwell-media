@@ -2123,17 +2123,19 @@ footer a:hover { color: #ffffff; }
    TAG FILTER BAR
    ════════════════════════════════════════════════════════════ */
 .tag-filter-bar {
-  background:    var(--bg);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
+  overflow-x: clip;
 }
 
 .tag-filter-bar-inner {
-  display:   flex;
+  display: flex;
   flex-wrap: wrap;
-  gap:       8px;
-  padding:   10px 48px;
-  max-width: 1366px;
-  margin:    0 auto;
+  gap: 8px;
+  padding: 10px 48px;
+  width: min(100%, 1366px);
+  box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .tag-filter-btn {
