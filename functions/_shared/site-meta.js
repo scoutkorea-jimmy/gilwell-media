@@ -16,6 +16,10 @@ const DEFAULT_SITE_META = {
       title: 'WOSM · BP미디어',
       description: '세계스카우트연맹 관련 소식을 전합니다.',
     },
+    people: {
+      title: '스카우트 인물 · BP미디어',
+      description: '국내외 스카우트 인물을 조명하는 공간입니다.',
+    },
     contributors: {
       title: '도움을 주신 분들 · BP미디어',
       description: 'BP미디어 운영에 도움을 주신 분들을 소개합니다.',
@@ -61,6 +65,7 @@ export function getSitePageKey(pathname) {
     '/korea.html': 'korea',
     '/apr.html': 'apr',
     '/worm.html': 'worm',
+    '/people.html': 'people',
     '/contributors.html': 'contributors',
     '/search.html': 'search',
   };

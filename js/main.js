@@ -6,15 +6,16 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.009.00';
+  GW.APP_VERSION = '0.010.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
-  GW.TAG_CATEGORIES = ['korea', 'apr', 'worm'];
+  GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
     korea: { label: 'Korea', tagClass: 'tag-korea', color: '#0094B4' },
     apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#FF5655' },
     worm:  { label: 'WOSM',  tagClass: 'tag-worm',  color: '#248737' },
+    people:{ label: 'Scout People', tagClass: 'tag-people', color: '#8A5A2B' },
   };
 
   // ── Date formatting ───────────────────────────────────────
@@ -336,6 +337,7 @@
     'nav.korea':  { ko: 'Korea', en: 'Korea' },
     'nav.apr':    { ko: 'APR',   en: 'APR' },
     'nav.worm':   { ko: 'WOSM',  en: 'WOSM' },
+    'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
 
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
     'hero.title':   { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
@@ -364,6 +366,7 @@
     'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
     'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },
     'link.worm':  { ko: 'WOSM — 세계스카우트연맹',  en: 'WOSM — World Scout Organization' },
+    'link.people':{ ko: '스카우트 인물 — 국내외 스카우트 인물', en: 'Scout People — Scouts Around the World' },
 
     'board.korea.banner': { ko: 'Korea / KSA',     en: 'Korea / KSA' },
     'board.korea.title':  { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
@@ -374,6 +377,9 @@
     'board.worm.banner':  { ko: 'WOSM',             en: 'WOSM' },
     'board.worm.title':   { ko: '세계스카우트연맹',  en: 'World Scout Organization (WOSM)' },
     'board.worm.desc':    { ko: '세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.', en: 'Global news and trends from WOSM.' },
+    'board.people.banner': { ko: 'Scout People', en: 'Scout People' },
+    'board.people.title': { ko: '스카우트 인물', en: 'Scout People' },
+    'board.people.desc': { ko: '국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.', en: 'Spotlighting Scouts around the world, including active Scouts, Scout alumni, and departed Scout seniors.' },
 
     'write.btn':    { ko: '✏ 글쓰기', en: '✏ Write' },
     'loadmore.btn': { ko: '더 보기',  en: 'Load More' },
@@ -381,6 +387,7 @@
     'stat.korea': { ko: '한국소식',        en: 'Korea' },
     'stat.apr':   { ko: 'APR소식',         en: 'APR' },
     'stat.worm':  { ko: 'WOSM소식',        en: 'WOSM' },
+    'stat.people':{ ko: '인물소식',        en: 'People' },
     'stat.today': { ko: '오늘 공유된 소식', en: 'Today' },
     'stat.unit':  { ko: '건', en: '' },
   };
@@ -456,6 +463,8 @@
       GW.t('stat.apr')   + ' <strong>' + d.apr   + u + '</strong>' +
       '<span class="stat-sep">·</span>' +
       GW.t('stat.worm')  + ' <strong>' + d.worm  + u + '</strong>' +
+      '<span class="stat-sep">·</span>' +
+      GW.t('stat.people') + ' <strong>' + d.people + u + '</strong>' +
       '<span class="stat-sep">·</span>' +
       GW.t('stat.today') + ' <strong>' + d.today + u + '</strong>';
   };

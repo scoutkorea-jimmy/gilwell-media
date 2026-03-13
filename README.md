@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.009.00`
+- Current version: `V0.010.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -29,6 +29,7 @@ gilwell-media/
 ├── korea.html              Korea / KSA bulletin board
 ├── apr.html                APR bulletin board
 ├── worm.html               WOSM bulletin board
+├── people.html             Scout People board
 ├── admin.html              Admin panel (requires login)
 ├── css/style.css           Shared stylesheet
 ├── js/
@@ -202,7 +203,7 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 5. You can now create, edit, and delete posts
 
 **Capabilities:**
-- Post to any of the three boards: Korea, APR, WOSM
+- Post to any of the four boards: Korea, APR, WOSM, Scout People
 - Attach an optional image URL to each post
 - Edit or delete existing posts
 - Session expires after 24 hours (simply log in again)

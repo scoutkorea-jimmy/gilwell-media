@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.009.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.010.00">
 </head>
 <body>
 
@@ -44,6 +44,7 @@
       <a href="korea.html" data-i18n="nav.korea">Korea</a>
       <a href="apr.html" data-i18n="nav.apr">APR</a>
       <a href="worm.html" data-i18n="nav.worm">WOSM</a>
+      <a href="people.html" data-i18n="nav.people">스카우트 인물</a>
     </nav>
   </header>
 
@@ -109,7 +110,7 @@
 
     </div>
 
-    <!-- 3-column: Korea / APR / WOSM latest -->
+    <!-- 4-column: Korea / APR / WOSM / Scout People latest -->
     <div class="home-3col">
 
       <!-- Korea -->
@@ -145,6 +146,17 @@
         </div>
       </div>
 
+      <!-- Scout People -->
+      <div>
+        <div class="home-col-header">
+          <h3 data-i18n="nav.people">스카우트 인물</h3>
+          <a href="people.html" class="home-section-more" data-i18n="home.more">더보기 →</a>
+        </div>
+        <div class="mini-list" id="col-people">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+
     </div>
 
   </div><!-- /home-wrapper -->
@@ -162,7 +174,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span id="footer-build-version">V0.009.00</span></p>
+        <p class="footer-build">Build <span id="footer-build-version">V0.010.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -173,8 +185,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.009.00"></script>
-  <script src="/js/board.js?v=0.009.00"></script>
+  <script src="/js/main.js?v=0.010.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -362,8 +373,10 @@
         '<a class="mini-item" href="/post/' + p.id + '">' +
           '<div class="mini-item-row">' +
             '<div class="mini-item-text">' +
-              '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-              (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+              '<div class="mini-item-labels">' +
+                '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+                (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+              '</div>' +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
               '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
             '</div>' +
@@ -416,7 +429,7 @@
       });
 
     // Load per-category columns
-    ['korea', 'apr', 'worm'].forEach(function (cat) {
+    ['korea', 'apr', 'worm', 'people'].forEach(function (cat) {
       GW.apiFetch('/api/posts?category=' + cat + '&page=1')
         .then(function (d) {
           renderMiniList(

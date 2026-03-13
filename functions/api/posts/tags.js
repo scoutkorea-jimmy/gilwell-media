@@ -8,7 +8,7 @@ export async function onRequestGet({ request, env }) {
   const url      = new URL(request.url);
   const category = url.searchParams.get('category') || null;
 
-  const VALID = ['korea', 'apr', 'worm'];
+  const VALID = ['korea', 'apr', 'worm', 'people'];
   if (category && !VALID.includes(category)) {
     return json({ tags: [] });
   }
