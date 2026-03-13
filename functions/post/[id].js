@@ -149,7 +149,7 @@ export async function onRequestGet({ params, env, request }) {
           </span>
         </div>
 
-        ${post.image_url ? `<img class="post-page-cover" src="${escapeHtml(post.image_url)}" alt="${title}">` : ''}
+        ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}">` : ''}
 
         <div class="post-page-body modal-body">
           ${bodyHtml}
@@ -223,6 +223,7 @@ export async function onRequestGet({ params, env, request }) {
       <p style="font-family:'DM Mono',monospace;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
       <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password"
         style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
+      <div id="post-login-turnstile" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;">
         <button onclick="window._postLoginSubmit()" style="flex:1;background:#622599;color:#fff;border:none;padding:10px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;">확인</button>
         <button onclick="document.getElementById('post-login-modal').style.display='none'" style="background:none;border:1px solid #e8e8e8;padding:10px 16px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;">취소</button>
@@ -250,6 +251,7 @@ export async function onRequestGet({ params, env, request }) {
 
     // Edit button — always visible, prompts login if not authenticated
     var _editPostId = ${id};
+    var _postTurnstileWidgetId = null;
     window._postEdit = function() {
       if (GW.getToken && GW.getToken()) {
         window.location.href = '/admin.html?edit=' + _editPostId;
@@ -260,6 +262,15 @@ export async function onRequestGet({ params, env, request }) {
           var pw = document.getElementById('post-login-pw');
           if (pw) pw.focus();
         }, 80);
+        // Render Turnstile widget once
+        GW.loadTurnstile(function() {
+          if (window.turnstile && GW.TURNSTILE_SITE_KEY && _postTurnstileWidgetId == null) {
+            _postTurnstileWidgetId = window.turnstile.render('#post-login-turnstile', {
+              sitekey: GW.TURNSTILE_SITE_KEY,
+              theme: 'light',
+            });
+          }
+        });
       }
     };
     window._postLoginSubmit = function() {
@@ -267,7 +278,14 @@ export async function onRequestGet({ params, env, request }) {
       var err  = document.getElementById('post-login-err');
       err.style.display = 'none';
       if (!pw) { err.textContent = '비밀번호를 입력하세요'; err.style.display = ''; return; }
-      GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) })
+      var cfToken = '';
+      if (_postTurnstileWidgetId != null && window.turnstile) {
+        cfToken = window.turnstile.getResponse(_postTurnstileWidgetId) || '';
+      }
+      if (GW.TURNSTILE_SITE_KEY && !cfToken) {
+        err.textContent = 'CAPTCHA를 완료해주세요'; err.style.display = ''; return;
+      }
+      GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }) })
         .then(function(data) {
           GW.setToken(data.token);
           window.location.href = '/admin.html?edit=' + _editPostId;
@@ -275,6 +293,7 @@ export async function onRequestGet({ params, env, request }) {
         .catch(function() {
           err.textContent = '비밀번호가 올바르지 않습니다';
           err.style.display = '';
+          if (window.turnstile && _postTurnstileWidgetId != null) window.turnstile.reset(_postTurnstileWidgetId);
         });
     };
     document.getElementById('post-login-pw').addEventListener('keydown', function(e) {
