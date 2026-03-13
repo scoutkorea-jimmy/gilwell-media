@@ -2125,19 +2125,16 @@ footer a:hover { color: #ffffff; }
 .tag-filter-bar {
   background:    var(--bg);
   border-bottom: 1px solid var(--border);
-  overflow:      hidden;
 }
 
 .tag-filter-bar-inner {
-  display:    flex;
-  gap:        8px;
-  padding:    10px 48px;
-  max-width:  1366px;
-  margin:     0 auto;
-  overflow-x: auto;
-  scrollbar-width: none;
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       8px;
+  padding:   10px 48px;
+  max-width: 1366px;
+  margin:    0 auto;
 }
-.tag-filter-bar-inner::-webkit-scrollbar { display: none; }
 
 .tag-filter-btn {
   font-family:    'DM Mono', monospace;

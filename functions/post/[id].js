@@ -234,7 +234,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js"></script>
+  <script src="/js/main.js?v=3"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
