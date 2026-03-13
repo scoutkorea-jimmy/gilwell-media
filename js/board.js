@@ -720,14 +720,18 @@
     // Load Turnstile widget for post submission
     GW.loadTurnstile(function () {
       if (window.turnstile && GW.TURNSTILE_SITE_KEY) {
-        var el = document.getElementById('board-write-turnstile');
-        if (el && !el.hasChildNodes()) {
-          window.turnstile.render('#board-write-turnstile', {
+        if (self._turnstileWidgetId == null) {
+          // First open: render and store widget ID
+          self._turnstileWidgetId = window.turnstile.render('#board-write-turnstile', {
             sitekey: GW.TURNSTILE_SITE_KEY,
             theme: 'light',
             callback: function (token) { self._turnstileToken = token; },
             'expired-callback': function () { self._turnstileToken = ''; },
           });
+        } else {
+          // Subsequent opens: reset token only, widget DOM stays
+          window.turnstile.reset(self._turnstileWidgetId);
+          self._turnstileToken = '';
         }
       }
     });
@@ -741,7 +745,9 @@
     if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';
     this._turnstileToken = '';
-    if (window.turnstile) window.turnstile.reset('#board-write-turnstile');
+    if (window.turnstile && this._turnstileWidgetId != null) {
+      window.turnstile.reset(this._turnstileWidgetId);
+    }
   };
 
   Board.prototype._submitPost = function () {
@@ -823,7 +829,9 @@
             } else {
               GW.showToast(err.message || '게재 실패', 'error');
               self._turnstileToken = '';
-              if (window.turnstile) window.turnstile.reset('#board-write-turnstile');
+              if (window.turnstile && self._turnstileWidgetId != null) {
+                window.turnstile.reset(self._turnstileWidgetId);
+              }
             }
           })
           .finally(function () {
