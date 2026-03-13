@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS post_likes (
   UNIQUE(post_id, viewer_key)
 );
 
+CREATE TABLE IF NOT EXISTS site_visits (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  viewer_key    TEXT    NOT NULL,
+  path          TEXT    NOT NULL,
+  referrer_host TEXT    NOT NULL DEFAULT 'direct',
+  referrer_url  TEXT,
+  visited_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_published ON posts (published);
@@ -54,6 +63,10 @@ CREATE INDEX IF NOT EXISTS idx_pv_post_time ON post_views(post_id, viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_time ON post_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_viewer_post ON post_views(viewer_key, post_id);
 CREATE INDEX IF NOT EXISTS idx_pl_post ON post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_sv_time ON site_visits(visited_at);
+CREATE INDEX IF NOT EXISTS idx_sv_path_time ON site_visits(path, visited_at);
+CREATE INDEX IF NOT EXISTS idx_sv_viewer_path_time ON site_visits(viewer_key, path, visited_at);
+CREATE INDEX IF NOT EXISTS idx_sv_referrer_host ON site_visits(referrer_host);
 
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'ticker',
