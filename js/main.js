@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.30';
+  GW.APP_VERSION = '0.048.32';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -420,6 +420,58 @@
     el.className   = 'toast ' + (type || 'success') + ' show';
     clearTimeout(el._timer);
     el._timer = setTimeout(function () { el.className = 'toast'; }, 2800);
+  };
+
+  GW.copyText = function (text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', 'readonly');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        area.style.pointerEvents = 'none';
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(area);
+        if (!ok) throw new Error('copy-failed');
+        resolve();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  GW.isMobileShareContext = function () {
+    if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) return true;
+    var ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  };
+
+  GW.sharePostLink = function (options) {
+    options = options || {};
+    var url = String(options.url || window.location.href || '').trim();
+    var title = String(options.title || document.title || '').trim();
+    var text = String(options.text || title || '').trim();
+    var useNativeShare = !!(navigator.share && GW.isMobileShareContext());
+
+    if (useNativeShare) {
+      return navigator.share({ title: title, text: text, url: url }).catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        return GW.copyText(url).then(function () {
+          GW.showToast('기사 링크가 저장되었습니다. 붙여넣을 곳에서 Ctrl + V를 눌러주세요.', 'success');
+        });
+      });
+    }
+
+    return GW.copyText(url).then(function () {
+      GW.showToast('기사 링크가 저장되었습니다. 붙여넣을 곳에서 Ctrl + V를 눌러주세요.', 'success');
+    });
   };
 
   GW.applySiteChrome = function () {

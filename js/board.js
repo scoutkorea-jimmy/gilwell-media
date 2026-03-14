@@ -229,7 +229,8 @@
     }
 
     var isNew = GW.isTodayKst(post.created_at);
-    var tagHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+    var shareHtml = '<button class="post-share-btn post-card-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>';
+    var tagHtml = shareHtml + (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
 
     var labelsHtml = tagHtml || ('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
@@ -256,8 +257,20 @@
 
     card.addEventListener('click', function (e) {
       if (e.target.classList.contains('post-permalink')) return;
+      if (e.target.classList.contains('post-card-share-btn')) return;
       window.location.href = '/post/' + post.id;
     });
+    var shareBtn = card.querySelector('.post-card-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var url = new URL('/post/' + post.id, window.location.origin).toString();
+        GW.sharePostLink({ url: url, title: post.title, text: post.title })
+          .catch(function (err) {
+            GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+          });
+      });
+    }
     return card;
   };
 

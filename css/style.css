@@ -887,6 +887,15 @@ p { margin-bottom: 6px; }
   overflow:      hidden;
 }
 
+.mini-item-link {
+  color:           inherit;
+  text-decoration: none;
+}
+
+.mini-item-link:hover {
+  color: var(--accent);
+}
+
 .mini-item .mini-meta {
   font-family:    'DM Mono', monospace;
   font-size:      var(--fs-micro);
@@ -3606,6 +3615,9 @@ footer a:hover { color: #ffffff; }
   gap:         12px;
 }
 .post-share-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
   font-family:    'DM Mono', monospace;
   font-size:      10px;
   letter-spacing: 0.08em;
@@ -3615,6 +3627,7 @@ footer a:hover { color: #ffffff; }
   padding:        5px 12px;
   cursor:         pointer;
   transition:     border-color 0.15s, color 0.15s;
+  white-space:    nowrap;
 }
 .post-share-btn:hover { border-color: var(--accent); color: var(--accent); }
 
