@@ -47,17 +47,25 @@
 
   function renderTable(items) {
     var canEdit = !!(GW.getToken && GW.getToken());
-    var head = '<thead><tr><th>한국어</th><th>English</th><th>Français</th>' + (canEdit ? '<th>관리</th>' : '') + '</tr></thead>';
+    var head = '<thead><tr><th>한국어</th><th>English</th><th>Français</th></tr></thead>';
     return '<div class="glossary-table-wrap"><table class="glossary-table">' +
       head + '<tbody>' +
       items.map(function (item) {
+        var footer = '';
+        if (item.description_ko || canEdit) {
+          footer = '<tr class="glossary-description-row"><td colspan="3">' +
+            '<div class="glossary-description-row-inner">' +
+              '<div class="glossary-description-text">' + GW.escapeHtml(item.description_ko || '') + '</div>' +
+              (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '') +
+            '</div>' +
+          '</td></tr>';
+        }
         return '<tr class="glossary-term-row">' +
           '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
           '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
           '<td data-label="Français">' + GW.escapeHtml(item.term_fr || '-') + '</td>' +
-          (canEdit ? '<td data-label="관리"><button type="button" class="glossary-admin-inline-btn" data-edit-id="' + item.id + '">수정</button></td>' : '') +
         '</tr>' +
-        (item.description_ko ? '<tr class="glossary-description-row"><td colspan="' + (canEdit ? 4 : 3) + '"><div class="glossary-description-text">' + GW.escapeHtml(item.description_ko) + '</div></td></tr>' : '');
+        footer;
       }).join('') +
       '</tbody></table></div>';
   }

@@ -4034,7 +4034,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-table th,
 .glossary-table td {
-  padding: 12px 14px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
   text-align: left;
@@ -4042,14 +4042,14 @@ footer a:hover { color: #ffffff; }
 .glossary-table th {
   background: #f5f3ee;
   font-family: 'DM Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
 }
 .glossary-table td {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.75;
   color: var(--ink);
   word-break: keep-all;
 }
@@ -4185,10 +4185,32 @@ footer a:hover { color: #ffffff; }
   padding-top: 0;
   background: #fbfaf7;
 }
+.glossary-description-row-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
 .glossary-description-text {
-  font-size: 10px;
-  line-height: 1.65;
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.7;
   color: var(--muted);
+}
+.glossary-inline-edit-link {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.glossary-inline-edit-link:hover {
+  color: var(--black);
+  text-decoration: underline;
 }
 @media (max-width: 900px) {
   .glossary-hero {
@@ -4205,26 +4227,56 @@ footer a:hover { color: #ffffff; }
 @media (max-width: 640px) {
   .glossary-page-wrap { padding: 28px 20px 60px; }
   .glossary-hero-copy h2 { font-size: 30px; }
+  .glossary-table-wrap {
+    border: none;
+    background: transparent;
+  }
   .glossary-table th { display: none; }
   .glossary-table, .glossary-table tbody, .glossary-table tr, .glossary-table td {
     display: block;
     width: 100%;
     box-sizing: border-box;
   }
-  .glossary-table tr { border-bottom: 1px solid var(--border); }
+  .glossary-table tr {
+    border-bottom: none;
+  }
+  .glossary-term-row,
+  .glossary-description-row {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    background: #fff;
+  }
+  .glossary-term-row:first-child {
+    border-top: 1px solid var(--border);
+  }
+  .glossary-description-row {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+  }
   .glossary-table td {
     border-bottom: none;
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding: 12px 14px;
   }
   .glossary-table td::before {
     content: attr(data-label);
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-family: 'DM Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
+  }
+  .glossary-description-row td::before {
+    display: none;
+  }
+  .glossary-description-row-inner {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .glossary-description-text {
+    font-size: 12px;
+    line-height: 1.75;
   }
 }
