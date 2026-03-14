@@ -1,7 +1,20 @@
 {
   "items": [
     {
-      "version": "0.030.00",
+      "version": "0.032.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "Cloudflare 분석 토큰을 연결하고 WOSM 게시판 경로와 카테고리 키를 정식으로 wosm 기준에 맞췄습니다.",
+      "changes": [
+        "Cloudflare Pages 시크릿에 분석 토큰을 등록해 홈 지표와 관리자 분석 탭이 Cloudflare visits/pageviews 기준으로 전환될 수 있게 연결했습니다.",
+        "WOSM 게시판의 정식 경로를 /wosm.html로 바꾸고, 기존 /worm.html은 새 경로로 리다이렉트되도록 정리했습니다.",
+        "게시글 category, 태그 설정, 배너 설정, 공유 메타 설정의 내부 키를 worm에서 wosm으로 옮기는 데이터 마이그레이션을 추가했습니다.",
+        "기존 캐시나 남아 있는 예전 요청을 위해 API와 설정 로딩에는 worm 별칭 호환도 함께 유지했습니다."
+      ]
+    },
+    {
+      "version": "0.031.00",
       "date": "2026-03-14",
       "commit": "pending",
       "type": "feature",
@@ -15,7 +28,7 @@
       ]
     },
     {
-      "version": "0.031.00",
+      "version": "0.030.00",
       "date": "2026-03-14",
       "commit": "pending",
       "type": "feature",

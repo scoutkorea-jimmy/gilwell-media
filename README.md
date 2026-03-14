@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.031.00`
+- Current version: `V0.032.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -31,7 +31,7 @@ gilwell-media/
 ├── index.html              Homepage (all categories feed)
 ├── korea.html              Korea / KSA bulletin board
 ├── apr.html                APR bulletin board
-├── worm.html               WOSM bulletin board
+├── wosm.html               WOSM bulletin board
 ├── people.html             Scout People board
 ├── admin.html              Admin panel (requires login)
 ├── css/style.css           Shared stylesheet
@@ -234,7 +234,7 @@ No code changes needed.
 ```sql
 posts (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  category     TEXT    NOT NULL,   -- 'korea' | 'apr' | 'worm' | 'people'
+  category     TEXT    NOT NULL,   -- 'korea' | 'apr' | 'wosm' | 'people'
   title        TEXT    NOT NULL,
   subtitle     TEXT,
   content      TEXT    NOT NULL,

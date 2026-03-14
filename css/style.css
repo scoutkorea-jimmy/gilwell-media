@@ -34,7 +34,7 @@
   /* Category colours */
   --tag-korea:  #0094B4;
   --tag-apr:    #FF5655;
-  --tag-worm:   #248737;
+  --tag-wosm:   #248737;
   --tag-people: #8A5A2B;
 
   /* Feedback colours */
@@ -310,7 +310,7 @@ p { margin-bottom: 6px; }
 
 .tag-korea { background: var(--tag-korea); }
 .tag-apr   { background: var(--tag-apr);   }
-.tag-worm  { background: var(--tag-worm);  }
+.tag-wosm  { background: var(--tag-wosm);  }
 .tag-people{ background: var(--tag-people);}
 
 /* ════════════════════════════════════════════════════════════
@@ -1756,7 +1756,7 @@ footer a:hover { color: #ffffff; }
 /* Per-category kicker border+text colors */
 .tag-korea-kicker { border: 1px solid var(--tag-korea); color: var(--tag-korea); }
 .tag-apr-kicker   { border: 1px solid var(--tag-apr);   color: var(--tag-apr);   }
-.tag-worm-kicker  { border: 1px solid var(--tag-worm);  color: var(--tag-worm);  }
+.tag-wosm-kicker  { border: 1px solid var(--tag-wosm);  color: var(--tag-wosm);  }
 .tag-people-kicker{ border: 1px solid var(--tag-people); color: var(--tag-people); }
 
 /* ════════════════════════════════════════════════════════════

@@ -23,7 +23,7 @@
       home: { title: '', description: '' },
       korea: { title: '', description: '' },
       apr: { title: '', description: '' },
-      worm: { title: '', description: '' },
+      wosm: { title: '', description: '' },
       people: { title: '', description: '' },
       contributors: { title: '', description: '' },
       search: { title: '', description: '' },
@@ -60,7 +60,7 @@
     items: {
       korea: { event_name: '', event_date: '' },
       apr: { event_name: '', event_date: '' },
-      worm: { event_name: '', event_date: '' },
+      wosm: { event_name: '', event_date: '' },
       people: { event_name: '', event_date: '' },
     },
   };
@@ -348,7 +348,7 @@
   }
 
   function _renderTagSettingsManager() {
-    ['common', 'korea', 'apr', 'worm', 'people'].forEach(function (target) {
+    ['common', 'korea', 'apr', 'wosm', 'people'].forEach(function (target) {
       var lane = document.getElementById('tag-lane-' + target);
       if (!lane) return;
       var items = target === 'common' ? _tagSettings.common : _tagSettings.categories[target];
@@ -972,7 +972,7 @@
     _listCat  = cat;
     _listPage = 1;
     _reorderDirty = false;
-    ['all','korea','apr','worm','people'].forEach(function (c) {
+    ['all','korea','apr','wosm','people'].forEach(function (c) {
       var tab = document.getElementById('admin-tab-' + c);
       if (!tab) return;
       tab.style.background = c === cat ? 'var(--black)' : 'var(--bg)';
@@ -995,7 +995,7 @@
     loadCategoryStats(function (d) {
       setText('stat-korea', d.korea || 0);
       setText('stat-apr', d.apr || 0);
-      setText('stat-worm', d.worm || 0);
+      setText('stat-wosm', d.wosm || 0);
       setText('stat-people', d.people || 0);
     });
   }
@@ -1182,7 +1182,7 @@
       items: {
         korea: { event_name: '', event_date: '' },
         apr: { event_name: '', event_date: '' },
-        worm: { event_name: '', event_date: '' },
+        wosm: { event_name: '', event_date: '' },
         people: { event_name: '', event_date: '' },
       },
     };
@@ -1204,7 +1204,7 @@
     var defs = [
       ['korea', 'Korea'],
       ['apr', 'APR'],
-      ['worm', 'WOSM'],
+      ['wosm', 'WOSM'],
       ['people', 'Scout People'],
     ];
     container.innerHTML = defs.map(function (entry) {
@@ -1263,7 +1263,7 @@
         ['home', '홈 / index'],
         ['korea', 'Korea'],
         ['apr', 'APR'],
-        ['worm', 'WOSM'],
+        ['wosm', 'WOSM'],
         ['people', 'Scout People'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
@@ -1373,7 +1373,7 @@
     if (!container) return;
     var keys = [
       { key: 'board.apr.desc', label: 'APR 설명' },
-      { key: 'board.worm.desc', label: 'WOSM 설명' },
+      { key: 'board.wosm.desc', label: 'WOSM 설명' },
       { key: 'board.translation.note', label: '번역 안내 문구' },
     ];
     container.innerHTML = keys.map(function (item) {
@@ -1527,13 +1527,13 @@
       var t = document.getElementById('dash-total');
       var k = document.getElementById('dash-korea');
       var a = document.getElementById('dash-apr');
-      var w = document.getElementById('dash-worm');
+      var w = document.getElementById('dash-wosm');
       var p = document.getElementById('dash-people');
       if(k) k.textContent = d.korea || 0;
       if(a) a.textContent = d.apr   || 0;
-      if(w) w.textContent = d.worm  || 0;
+      if(w) w.textContent = d.wosm  || 0;
       if(p) p.textContent = d.people || 0;
-      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.worm||0) + (d.people||0));
+      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.wosm||0) + (d.people||0));
     });
 
     // Load 5 most recent posts

@@ -19,7 +19,7 @@ import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 const CATEGORIES = {
   korea: { label: 'Korea / KSA', color: '#0094B4' },
   apr:   { label: 'APR',         color: '#FF5655' },
-  worm:  { label: 'WOSM', color: '#248737' },
+  wosm:  { label: 'WOSM', color: '#248737' },
   people:{ label: 'Scout People', color: '#8A5A2B' },
 };
 
@@ -118,7 +118,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.031.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.032.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -153,7 +153,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/" data-i18n="nav.home">홈</a>
       <a href="/korea.html" data-i18n="nav.korea">Korea</a>
       <a href="/apr.html" data-i18n="nav.apr">APR</a>
-      <a href="/worm.html" data-i18n="nav.worm">WOSM</a>
+      <a href="/wosm.html" data-i18n="nav.wosm">WOSM</a>
       <a href="/people.html" data-i18n="nav.people">스카우트 인물</a>
     </nav>
   </header>
@@ -260,7 +260,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.031.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.032.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -287,7 +287,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.031.00"></script>
+  <script src="/js/main.js?v=0.032.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

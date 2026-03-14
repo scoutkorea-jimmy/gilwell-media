@@ -4,7 +4,7 @@ const DEFAULT_BOARD_BANNER = Object.freeze({
   items: {
     korea: { event_name: '', event_date: '' },
     apr: { event_name: '', event_date: '' },
-    worm: { event_name: '', event_date: '' },
+    wosm: { event_name: '', event_date: '' },
     people: { event_name: '', event_date: '' },
   },
 });
@@ -57,7 +57,7 @@ function normalizeBoardBannerSettings(raw) {
 
   const items = {};
   Object.keys(DEFAULT_BOARD_BANNER.items).forEach((category) => {
-    const source = parsed && parsed.items && parsed.items[category];
+    const source = parsed && parsed.items ? (parsed.items[category] || (category === 'wosm' ? parsed.items.worm : null)) : null;
     items[category] = {
       event_name: sanitizeName(source && source.event_name),
       event_date: sanitizeDate(source && source.event_date),

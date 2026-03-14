@@ -16,7 +16,7 @@
 
 ## 홈페이지 모달
 
-- `/korea.html`, `/apr.html`, `/worm.html`에서 글쓰기 진입 가능
+- `/korea.html`, `/apr.html`, `/wosm.html`에서 글쓰기 진입 가능
 - 관리자 로그인 후 모달 열림
 - 제목 필수 검증 동작
 - 작성자 선택 가능

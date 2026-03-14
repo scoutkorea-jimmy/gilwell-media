@@ -2,7 +2,7 @@ PRAGMA foreign_keys = OFF;
 
 CREATE TABLE posts_new (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  category     TEXT    NOT NULL CHECK(category IN ('korea', 'apr', 'worm', 'people')),
+  category     TEXT    NOT NULL CHECK(category IN ('korea', 'apr', 'wosm', 'people')),
   title        TEXT    NOT NULL,
   content      TEXT    NOT NULL DEFAULT '',
   image_url    TEXT,

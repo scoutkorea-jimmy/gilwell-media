@@ -11,7 +11,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
+const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
@@ -75,11 +75,12 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
+  const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
   if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
-    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm / people)' }, 400);
+    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
   if (title !== undefined && !title.trim()) {
     return json({ error: '제목을 입력해주세요' }, 400);
@@ -222,6 +223,11 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+function normalizeCategory(value) {
+  if (value === 'worm') return 'wosm';
+  return value;
 }
 
 function sanitizeUrl(url) {

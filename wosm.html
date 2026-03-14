@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>스카우트 인물 — BP미디어</title>
+  <title>WOSM — BP미디어</title>
   <!-- SHARE_META -->
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="shortcut icon" type="image/svg+xml" href="/img/favicon.svg">
@@ -14,6 +14,8 @@
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <!-- ── MASTHEAD ── -->
   <header class="masthead">
     <div class="masthead-top">
       <div class="masthead-date" id="today-date"></div>
@@ -43,49 +45,57 @@
       <a href="index.html" data-i18n="nav.home">홈</a>
       <a href="korea.html" data-i18n="nav.korea">Korea</a>
       <a href="apr.html" data-i18n="nav.apr">APR</a>
-      <a href="wosm.html" data-i18n="nav.wosm">WOSM</a>
-      <a href="people.html" class="active" data-i18n="nav.people">스카우트 인물</a>
+      <a href="wosm.html" class="active" data-i18n="nav.wosm">WOSM</a>
+      <a href="people.html" data-i18n="nav.people">스카우트 인물</a>
     </nav>
   </header>
 
+  <!-- ── TICKER ── -->
   <main id="main-content">
   <div class="ticker">
     <div class="ticker-inner" id="ticker-inner">
-      국내외 스카우트 인물을 조명합니다
+      세계스카우트연맹 소식 — WOSM
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      국내외 스카우트 인물을 조명합니다
+      세계스카우트연맹 소식 — WOSM
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
     </div>
   </div>
 
+  <!-- ── BOARD BANNER ── -->
   <div class="board-banner">
     <div class="board-banner-text">
-      <span class="category-tag tag-people" style="margin-bottom:16px;" data-i18n="board.people.banner">Scout People</span>
+      <span class="category-tag tag-wosm" style="margin-bottom:16px;" data-i18n="board.wosm.banner">WOSM</span>
       <div class="board-banner-heading">
-        <h2 data-i18n="board.people.title">스카우트 인물</h2>
+        <h2 data-i18n="board.wosm.title">세계스카우트연맹</h2>
         <div class="board-banner-count" id="board-count">총 —개</div>
       </div>
-      <p data-i18n="board.people.desc">국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.</p>
+      <p data-i18n="board.wosm.desc">세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.</p>
+      <p class="board-banner-note" data-i18n="board.translation.note">일부 게시글은 번역 자료를 바탕으로 작성되어 표현이 완전히 정확하지 않을 수 있습니다. 더 나은 번역 제안은 언제든 환영합니다.</p>
     </div>
     <div class="board-banner-total" id="board-banner-total">—</div>
   </div>
 
+  <!-- ── TAG FILTER BAR ── -->
   <div id="tag-filter-bar" class="tag-filter-bar"></div>
 
+  <!-- ── BOARD GRID ── -->
   <div class="board-container">
     <div class="board-grid" id="board-grid">
       <div class="loading-state">
         <div class="loading-dots"><span></span><span></span><span></span></div>
       </div>
     </div>
-    <button class="load-more-btn" id="load-more-btn" style="display:none;" data-i18n="loadmore.btn">더 보기</button>
+    <button class="load-more-btn" id="load-more-btn" style="display:none;" data-i18n="loadmore.btn">
+      더 보기
+    </button>
   </div>
 
   </main>
+  <!-- ── FOOTER ── -->
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
@@ -107,7 +117,11 @@
     </div>
   </footer>
 
-  <div class="modal-overlay" id="post-modal"><div class="modal"></div></div>
+  <!-- ── POST DETAIL MODAL ── -->
+  <div class="modal-overlay" id="post-modal">
+    <div class="modal"></div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script src="/js/main.js?v=0.032.00"></script>
@@ -118,7 +132,7 @@
     GW.loadTicker('ticker-inner');
     GW.loadStats();
     GW.loadTranslations();
-    var board = new GW.Board({ category: 'people' });
+    var board = new GW.Board({ category: 'wosm' });
     board.init();
     (function(){
       var inp=document.getElementById('mh-search-input'),btn=document.getElementById('mh-search-btn');

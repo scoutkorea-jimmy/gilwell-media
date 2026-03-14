@@ -6,9 +6,9 @@
 
 export async function onRequestGet({ request, env }) {
   const url      = new URL(request.url);
-  const category = url.searchParams.get('category') || null;
+  const category = normalizeCategory(url.searchParams.get('category') || null);
 
-  const VALID = ['korea', 'apr', 'worm', 'people'];
+  const VALID = ['korea', 'apr', 'wosm', 'people'];
   if (category && !VALID.includes(category)) {
     return json({ tags: [] });
   }
@@ -37,6 +37,11 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/posts/tags error:', err);
     return json({ tags: [] });
   }
+}
+
+function normalizeCategory(value) {
+  if (value === 'worm') return 'wosm';
+  return value;
 }
 
 function json(data, status = 200) {
