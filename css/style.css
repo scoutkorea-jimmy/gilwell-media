@@ -1381,6 +1381,18 @@ footer {
   gap:             20px;
 }
 
+.footer-brand {
+  max-width: 520px;
+}
+
+.footer-admin {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
 footer h4 {
   font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
   font-size:      14px;
@@ -1411,6 +1423,7 @@ footer p, footer a {
   margin-top: 10px;
   display: grid;
   gap: 2px;
+  justify-items: end;
 }
 
 .footer-live-stat {
@@ -1706,6 +1719,19 @@ footer a:hover { color: #ffffff; }
   box-sizing: border-box;
   outline: none;
   resize: vertical;
+}
+
+.share-meta-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.admin-settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
 }
 
 /* Post kicker label shown next to category tag — outline style, same size */
@@ -2158,6 +2184,8 @@ footer a:hover { color: #ffffff; }
   display:     flex;
   align-items: center;
   gap:         20px;
+  flex-wrap:   wrap;
+  justify-content: flex-end;
 }
 
 .admin-header a {
@@ -2686,9 +2714,12 @@ footer a:hover { color: #ffffff; }
   .modal-body         { padding: 24px 24px 32px; }
 
   .footer-inner       { padding: 32px 24px 24px; gap: 16px; }
+  .footer-admin       { margin-left: 0; align-items: flex-start; text-align: left; }
+  .footer-live-stats  { justify-items: start; }
   .footer-bottom      { padding: 16px 0; flex-direction: column; gap: 8px; text-align: center; }
 
-  .admin-body         { grid-template-columns: 1fr; padding: 24px; }
+  .admin-shell        { grid-template-columns: 1fr; padding: 24px; }
+  .admin-sidebar      { position: static; }
   .form-row           { grid-template-columns: 1fr; }
   .stats-row          { grid-template-columns: repeat(3, 1fr); }
   .editor-action-row  { flex-direction: column; }
@@ -2765,8 +2796,10 @@ footer a:hover { color: #ffffff; }
 
   .board-container    { padding: 0 16px 32px; }
   .board-grid         { grid-template-columns: 1fr; }
-  .admin-body         { padding: 16px; }
+  .admin-shell        { padding: 16px; }
+  .admin-header-top   { padding: 16px; align-items: flex-start; }
   .post-page-wrap     { padding: 24px 16px 48px; }
+  .share-meta-inline-grid { grid-template-columns: 1fr; }
 
   .board-pw-box       { padding: 28px 24px; }
   .board-write-box    { padding: 28px 20px; max-height: 100vh; }
@@ -3301,37 +3334,120 @@ footer a:hover { color: #ffffff; }
   display:         flex;
   justify-content: space-between;
   align-items:     center;
+  gap:             24px;
   padding:         16px 32px;
   border-bottom:   1px solid rgba(255,255,255,0.15);
 }
-.admin-tabs-nav {
-  display:    flex;
-  padding:    0 32px;
-  gap:        4px;
-  background: var(--black);
+.admin-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.admin-tab-btn {
-  padding:        12px 20px;
-  background:     none;
-  border:         none;
-  color:          rgba(255,255,255,0.6);
-  font-family:    'DM Mono', monospace;
-  font-size:      11px;
+
+.admin-header-copy {
+  margin: 0;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(245,243,238,0.6);
+}
+
+.admin-shell {
+  max-width: 1366px;
+  margin: 0 auto;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-sidebar-group {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 14px;
+}
+
+.admin-sidebar-group-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  cursor:         pointer;
-  border-bottom:  3px solid transparent;
-  transition:     color 0.15s, border-color 0.15s;
+  color: var(--muted);
+  margin-bottom: 10px;
 }
-.admin-tab-btn.active,
-.admin-tab-btn:hover {
-  color:         #fff;
-  border-bottom-color: var(--accent);
+
+.admin-sidebar-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
+
+.admin-sidebar-btn + .admin-sidebar-btn {
+  margin-top: 6px;
+}
+
+.admin-sidebar-btn-label {
+  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin-sidebar-btn-desc {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.admin-sidebar-btn.active,
+.admin-sidebar-btn:hover {
+  border-color: rgba(98, 37, 153, 0.24);
+  background: rgba(98, 37, 153, 0.05);
+}
+
 .admin-tab-content {
-  max-width:  1100px;
-  margin:     0 auto;
-  padding:    32px;
+  min-width: 0;
+}
+
+.admin-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-subnav-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin-subnav-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .admin-tab-panel { display: none; }
 .admin-tab-panel.active { display: block; }
