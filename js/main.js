@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.020.00';
+  GW.APP_VERSION = '0.021.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -25,6 +25,10 @@
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  };
+
+  GW.formatNumber = function (value) {
+    return new Intl.NumberFormat('ko-KR').format(Number(value || 0));
   };
 
   /** Return YYYY-MM-DD using Korea Standard Time for date inputs. */
