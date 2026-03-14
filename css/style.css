@@ -1814,6 +1814,14 @@ footer a:hover { color: #ffffff; }
   text-transform: uppercase;
   color: var(--muted);
 }
+.analytics-toolbar-group input[type="date"] {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 8px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+}
 .analytics-view-toggle {
   display: inline-flex;
   border: 1px solid var(--border);

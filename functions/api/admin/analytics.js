@@ -1,10 +1,5 @@
 import { extractToken, verifyToken } from '../../_shared/auth.js';
-
-const COHORTS = {
-  '1d': { days: 1, startModifier: '0 day', label: '최근 1일' },
-  '7d': { days: 7, startModifier: '-6 day', label: '최근 7일' },
-  '30d': { days: 30, startModifier: '-29 day', label: '최근 30일' },
-};
+import { getCloudflarePageMetrics, isCloudflareAnalyticsConfigured, resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -13,122 +8,158 @@ export async function onRequestGet({ request, env }) {
   }
 
   const url = new URL(request.url);
-  const cohortKey = COHORTS[url.searchParams.get('cohort')] ? url.searchParams.get('cohort') : '7d';
-  const cohort = COHORTS[cohortKey];
+  const range = resolveAnalyticsRange(url.searchParams.get('start'), url.searchParams.get('end'));
 
   try {
-    const [
-      todayUnique,
-      todayVisits,
-      yesterdayUnique,
-      last7Unique,
-      last7Visits,
-      visitSeriesRows,
-      viewSeriesRows,
-      topPaths,
-      referrers,
-      topPosts,
-      viewsTotal,
-    ] = await Promise.all([
-      scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
-      scalar(env, `SELECT COUNT(*) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
-      scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours', '-1 day'))
-                      AND datetime(visited_at, '+9 hours') < datetime(date('now', '+9 hours'))`),
-      scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours', '-6 day'))`),
-      scalar(env, `SELECT COUNT(*) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours', '-6 day'))`),
-      env.DB.prepare(
-        `SELECT date(visited_at, '+9 hours') AS visit_date,
-                COUNT(*) AS visits,
-                COUNT(DISTINCT viewer_key) AS unique_visitors
-           FROM site_visits
-          WHERE date(visited_at, '+9 hours') >= date('now', '+9 hours', ?)
-          GROUP BY visit_date
-          ORDER BY visit_date ASC`
-      ).bind(cohort.startModifier).all(),
-      env.DB.prepare(
-        `SELECT date(viewed_at, '+9 hours') AS view_date,
-                COUNT(*) AS views
-           FROM post_views
-          WHERE date(viewed_at, '+9 hours') >= date('now', '+9 hours', ?)
-          GROUP BY view_date
-          ORDER BY view_date ASC`
-      ).bind(cohort.startModifier).all(),
-      env.DB.prepare(
-        `SELECT path, COUNT(*) AS visits, COUNT(DISTINCT viewer_key) AS visitors
-           FROM site_visits
-          WHERE date(visited_at, '+9 hours') >= date('now', '+9 hours', ?)
-          GROUP BY path
-          ORDER BY visits DESC, visitors DESC, path ASC
-          LIMIT 8`
-      ).bind(cohort.startModifier).all(),
-      env.DB.prepare(
-        `SELECT referrer_host, COUNT(*) AS visits, COUNT(DISTINCT viewer_key) AS visitors
-           FROM site_visits
-          WHERE date(visited_at, '+9 hours') >= date('now', '+9 hours', ?)
-          GROUP BY referrer_host
-          ORDER BY visits DESC, visitors DESC, referrer_host ASC
-          LIMIT 10`
-      ).bind(cohort.startModifier).all(),
-      env.DB.prepare(
-        `SELECT p.id, p.title, p.category, COUNT(*) AS views
-           FROM post_views pv
-           JOIN posts p ON p.id = pv.post_id
-          WHERE date(pv.viewed_at, '+9 hours') >= date('now', '+9 hours', ?)
-          GROUP BY p.id, p.title, p.category
-          ORDER BY views DESC, p.id DESC
-          LIMIT 10`
-      ).bind(cohort.startModifier).all(),
-      scalar(env, `SELECT COUNT(*) AS count
-                     FROM post_views
-                    WHERE date(viewed_at, '+9 hours') >= date('now', '+9 hours', ?)`, [cohort.startModifier]),
-    ]);
+    if (isCloudflareAnalyticsConfigured(env)) {
+      const data = await getCloudflarePageMetrics(env, range, { includeSeries: true, includeReferrers: true });
+      return json(data);
+    }
 
-    const visitSeries = fillDateSeries(cohort.days, visitSeriesRows.results || [], 'visit_date', (row) => ({
-      visits: row.visits || 0,
-      unique_visitors: row.unique_visitors || 0,
-    }));
-    const viewSeries = fillDateSeries(cohort.days, viewSeriesRows.results || [], 'view_date', (row) => ({
-      views: row.views || 0,
-    }));
-
-    return json({
-      cohort: cohortKey,
-      cohort_label: cohort.label,
-      visitors: {
-        today_unique: todayUnique,
-        today_visits: todayVisits,
-        yesterday_unique: yesterdayUnique,
-        last7_unique: last7Unique,
-        last7_visits: last7Visits,
-        series: visitSeries,
-      },
-      views: {
-        total: viewsTotal,
-        series: viewSeries,
-        top_posts: topPosts.results || [],
-      },
-      top_paths: topPaths.results || [],
-      referrers: (referrers.results || []).map((item) => ({
-        referrer_host: item.referrer_host || 'direct',
-        visits: item.visits || 0,
-        visitors: item.visitors || 0,
-      })),
-      tracking_note: `${cohort.label} 기준입니다. 유입 경로는 document.referrer 기준이며 앱 내부 브라우저, 메신저, 복사/직접입력 유입은 direct 또는 unknown으로 보일 수 있습니다.`,
-    });
+    const internalData = await getInternalMetrics(env, range);
+    return json(internalData);
   } catch (err) {
     console.error('GET /api/admin/analytics error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+async function getInternalMetrics(env, range) {
+  const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
+  const allTime = rangeStartEnd(resolveAnalyticsRange(env.CF_ANALYTICS_START_DATE || '2026-03-12', range.endDate));
+  const chosen = rangeStartEnd(range);
+
+  const [
+    todayVisits,
+    todayViews,
+    totalVisits,
+    totalViews,
+    visitSeriesRows,
+    viewSeriesRows,
+    topPaths,
+    referrers,
+  ] = await Promise.all([
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    env.DB.prepare(
+      `SELECT date(visited_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
+         FROM site_visits
+        WHERE datetime(visited_at, '+9 hours') >= datetime(?)
+          AND datetime(visited_at, '+9 hours') < datetime(?)
+        GROUP BY visit_date
+        ORDER BY visit_date ASC`
+    ).bind(chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT date(viewed_at, '+9 hours') AS view_date, COUNT(*) AS views
+         FROM post_views
+        WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
+          AND datetime(viewed_at, '+9 hours') < datetime(?)
+        GROUP BY view_date
+        ORDER BY view_date ASC`
+    ).bind(chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT path, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
+         FROM site_visits
+        WHERE datetime(visited_at, '+9 hours') >= datetime(?)
+          AND datetime(visited_at, '+9 hours') < datetime(?)
+        GROUP BY path
+        ORDER BY pageviews DESC, visits DESC, path ASC
+        LIMIT 10`
+    ).bind(chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT referrer_host, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
+         FROM site_visits
+        WHERE datetime(visited_at, '+9 hours') >= datetime(?)
+          AND datetime(visited_at, '+9 hours') < datetime(?)
+        GROUP BY referrer_host
+        ORDER BY visits DESC, pageviews DESC, referrer_host ASC
+        LIMIT 10`
+    ).bind(chosen.start, chosen.endExclusive).all(),
+  ]);
+
+  const visitSeries = fillDateSeries(range, visitSeriesRows.results || [], 'visit_date', (row) => ({
+    visits: row.visits || 0,
+  }));
+  const viewSeries = fillDateSeries(range, viewSeriesRows.results || [], 'view_date', (row) => ({
+    views: row.views || 0,
+  }));
+  const rangeVisits = visitSeries.reduce((sum, item) => sum + Number(item.visits || 0), 0);
+  const rangeViews = viewSeries.reduce((sum, item) => sum + Number(item.views || 0), 0);
+
+  return {
+    provider: 'internal',
+    provider_label: '내부 집계',
+    range: {
+      start_date: range.startDate,
+      end_date: range.endDate,
+      label: range.label,
+      days: range.days,
+    },
+    summary: {
+      today_visits: todayVisits,
+      total_visits: totalVisits,
+      range_visits: rangeVisits,
+      total_pageviews: totalViews,
+      range_pageviews: rangeViews,
+      average_daily_visits: range.days ? Math.round((rangeVisits / range.days) * 10) / 10 : 0,
+      average_daily_pageviews: range.days ? Math.round((rangeViews / range.days) * 10) / 10 : 0,
+    },
+    visitors: {
+      today_visits: todayVisits,
+      total_visits: totalVisits,
+      range_visits: rangeVisits,
+      series: visitSeries,
+    },
+    views: {
+      total: rangeViews,
+      total_pageviews: totalViews,
+      range_pageviews: rangeViews,
+      series: viewSeries,
+      top_paths: (topPaths.results || []).map((item) => ({
+        path: item.path || '/',
+        visits: item.visits || 0,
+        pageviews: item.pageviews || 0,
+      })),
+    },
+    top_paths: (topPaths.results || []).map((item) => ({
+      path: item.path || '/',
+      visits: item.visits || 0,
+      pageviews: item.pageviews || 0,
+    })),
+    referrers: (referrers.results || []).map((item) => ({
+      referrer_host: item.referrer_host || 'direct',
+      visits: item.visits || 0,
+      pageviews: item.pageviews || 0,
+    })),
+    tracking_note: `${range.label} 기준 내부 집계입니다. Cloudflare API 토큰을 설정하면 분석 탭과 홈 푸터가 Cloudflare visits 기준으로 전환됩니다.`,
+  };
+}
+
+function rangeStartEnd(range) {
+  return {
+    start: `${range.startDate} 00:00:00`,
+    endExclusive: `${shiftKstDate(range.endDate, 1)} 00:00:00`,
+  };
+}
+
+function shiftKstDate(dateStr, offsetDays) {
+  const date = new Date(`${dateStr}T00:00:00+09:00`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return getKstDateString(date);
+}
+
+function fillDateSeries(range, rows, dateKey, valueBuilder) {
+  const byDate = new Map();
+  rows.forEach((row) => byDate.set(row[dateKey], row));
+  const out = [];
+  for (let i = 0; i < range.days; i += 1) {
+    const key = shiftKstDate(range.startDate, i);
+    const row = byDate.get(key);
+    out.push(Object.assign({ date: key }, row ? valueBuilder(row) : valueBuilder({})));
+  }
+  return out;
 }
 
 async function scalar(env, sql, binds = []) {
@@ -136,21 +167,13 @@ async function scalar(env, sql, binds = []) {
   return row?.count || 0;
 }
 
-function fillDateSeries(days, rows, dateKey, valueBuilder) {
-  const byDate = new Map();
-  rows.forEach((row) => byDate.set(row[dateKey], row));
-
-  const out = [];
-  const now = new Date();
-  const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  for (let i = days - 1; i >= 0; i -= 1) {
-    const date = new Date(kstNow);
-    date.setUTCDate(kstNow.getUTCDate() - i);
-    const key = date.toISOString().slice(0, 10);
-    const row = byDate.get(key);
-    out.push(Object.assign({ date: key }, row ? valueBuilder(row) : valueBuilder({})));
-  }
-  return out;
+function getKstDateString(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 function json(data, status = 200) {

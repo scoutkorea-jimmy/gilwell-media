@@ -1,6 +1,13 @@
+import { getCloudflareHomeMetrics, isCloudflareAnalyticsConfigured } from '../../_shared/cloudflare-analytics.js';
+
 export async function onRequestGet({ env }) {
   try {
-    const [todayUnique, todayViews, totalUnique] = await Promise.all([
+    if (isCloudflareAnalyticsConfigured(env)) {
+      const cloudflareMetrics = await getCloudflareHomeMetrics(env);
+      if (cloudflareMetrics) return json(cloudflareMetrics);
+    }
+
+    const [todayUnique, todayViews, totalUnique, totalViews] = await Promise.all([
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
                      FROM site_visits
                     WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
@@ -9,12 +16,17 @@ export async function onRequestGet({ env }) {
                     WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
                      FROM site_visits`),
+      scalar(env, `SELECT COUNT(*) AS count FROM post_views`),
     ]);
 
     return json({
+      provider: 'internal',
       today_unique: todayUnique,
       today_views: todayViews,
       total_unique: totalUnique,
+      today_visits: todayUnique,
+      total_visits: totalUnique,
+      total_pageviews: totalViews,
       measured_timezone: 'Asia/Seoul',
       measured_date: new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Seoul',

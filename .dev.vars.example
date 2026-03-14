@@ -4,6 +4,7 @@
 # For production, set these as Cloudflare Pages secrets:
 #   wrangler pages secret put ADMIN_PASSWORD
 #   wrangler pages secret put ADMIN_SECRET
+#   wrangler pages secret put CF_ANALYTICS_API_TOKEN
 
 # The admin login password (you choose this)
 ADMIN_PASSWORD=change-me-to-a-strong-password
@@ -11,3 +12,8 @@ ADMIN_PASSWORD=change-me-to-a-strong-password
 # A long random string used to sign session tokens.
 # Generate one with: openssl rand -hex 32
 ADMIN_SECRET=replace-with-a-random-64-char-hex-string
+
+# Optional: Cloudflare analytics token with Zone Analytics read permission.
+# Required if you want admin analytics and the homepage footer to use
+# Cloudflare metrics instead of the internal fallback counts.
+CF_ANALYTICS_API_TOKEN=replace-with-a-cloudflare-api-token

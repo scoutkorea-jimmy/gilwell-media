@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "0.023.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "Cloudflare 기준 분석 구조를 위한 기간 지정형 분석 탭과 홈 푸터 지표 구성을 정리했습니다.",
+      "changes": [
+        "관리자 분석 탭에서 시작일과 종료일을 직접 지정하고 7일·30일·90일 빠른 선택으로 Cloudflare 기준 기간 분석을 볼 수 있도록 구조를 바꿨습니다.",
+        "홈 푸터 지표를 전체 방문자수, 누적 조회수, 오늘 방문자수 3개 구성으로 정리했습니다.",
+        "Cloudflare API 토큰이 있으면 Cloudflare visits 기반으로, 없으면 내부 집계 fallback으로 같은 화면 구조를 유지하도록 구성했습니다."
+      ]
+    },
+    {
       "version": "0.022.00",
       "date": "2026-03-14",
       "commit": "pending",

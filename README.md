@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.022.00`
+- Current version: `V0.023.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -18,6 +18,9 @@ Operational references:
 - `docs/release-playbook.md`
 - `docs/writing-regression-checklist.md`
 - `TODO.md`
+
+Optional production secrets:
+- `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
 
 ---
 

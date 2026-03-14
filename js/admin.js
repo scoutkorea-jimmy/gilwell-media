@@ -1362,6 +1362,24 @@
     loadAnalyticsPage(true);
   };
 
+  window.setAnalyticsRangePreset = function (days) {
+    var endEl = document.getElementById('analytics-end-date');
+    var startEl = document.getElementById('analytics-start-date');
+    if (!endEl || !startEl) return;
+    var end = GW.getKstDateInputValue();
+    var base = new Date(end + 'T00:00:00+09:00');
+    base.setUTCDate(base.getUTCDate() - (Number(days || 7) - 1));
+    var start = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(base);
+    startEl.value = start;
+    endEl.value = end;
+    loadAnalyticsPage(true);
+  };
+
   window.setAnalyticsViewMode = function (mode) {
     _analyticsViewMode = mode === 'table' ? 'table' : 'chart';
     var chartBtn = document.getElementById('analytics-view-chart');
@@ -1377,9 +1395,16 @@
       return;
     }
     setText('analytics-tracking-note', '분석 데이터를 불러오는 중…');
-    var cohortEl = document.getElementById('analytics-cohort');
-    var cohort = cohortEl ? cohortEl.value : '7d';
-    GW.apiFetch('/api/admin/analytics?cohort=' + encodeURIComponent(cohort))
+    var endEl = document.getElementById('analytics-end-date');
+    var startEl = document.getElementById('analytics-start-date');
+    if (endEl && !endEl.value) endEl.value = GW.getKstDateInputValue();
+    if (startEl && !startEl.value) {
+      window.setAnalyticsRangePreset(7);
+      return;
+    }
+    var start = startEl ? startEl.value : GW.getKstDateInputValue();
+    var end = endEl ? endEl.value : GW.getKstDateInputValue();
+    GW.apiFetch('/api/admin/analytics?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end))
       .then(function (data) {
         _analyticsPayload = data || null;
         renderAnalyticsPage(data || null);
@@ -1392,50 +1417,56 @@
 
   function renderAnalyticsPage(data) {
     var fallback = {
-      cohort_label: '최근 7일',
-      visitors: {
-        today_unique: '—',
+      provider_label: '미설정',
+      range: { label: '최근 7일' },
+      summary: {
         today_visits: '—',
-        yesterday_unique: '—',
-        last7_unique: '—',
-        last7_visits: '—',
+        total_visits: '—',
+        range_visits: '—',
+        total_pageviews: '—',
+        range_pageviews: '—',
+      },
+      visitors: {
+        today_visits: '—',
+        total_visits: '—',
+        range_visits: '—',
         series: [],
       },
       views: {
         total: 0,
         series: [],
-        top_posts: [],
+        top_paths: [],
       },
       top_paths: [],
       referrers: [],
       tracking_note: '방문자 대시보드를 불러오지 못했습니다.',
     };
     var payload = data || fallback;
-    var cohortLabel = payload.cohort_label || fallback.cohort_label;
-    setText('analytics-today-unique', payload.visitors.today_unique);
-    setText('analytics-today-visits', payload.visitors.today_visits);
-    setText('analytics-yesterday-unique', payload.visitors.yesterday_unique);
-    setText('analytics-last7-unique', payload.visitors.last7_unique);
-    setText('analytics-last7-visits', payload.visitors.last7_visits);
-    setText('analytics-views-total', payload.views && payload.views.total ? payload.views.total : 0);
+    var rangeLabel = (payload.range && payload.range.label) || fallback.range.label;
+    setText('analytics-provider-label', payload.provider_label || fallback.provider_label);
+    setText('analytics-today-visits', payload.summary ? payload.summary.today_visits : '—');
+    setText('analytics-total-visits', payload.summary ? payload.summary.total_visits : '—');
+    setText('analytics-range-visits', payload.summary ? payload.summary.range_visits : '—');
+    setText('analytics-total-pageviews', payload.summary ? payload.summary.total_pageviews : '—');
+    setText('analytics-range-pageviews', payload.summary ? payload.summary.range_pageviews : '—');
     setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
     renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
       return {
         title: item.referrer_host || 'direct',
-        meta: cohortLabel + ' · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+        meta: rangeLabel + ' · 방문 ' + (item.visits || 0) + ' · 조회 ' + (item.pageviews || 0),
       };
     }, '아직 유입 경로 데이터가 없습니다');
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
       return {
         title: item.path || '/',
-        meta: cohortLabel + ' · 방문 ' + (item.visits || 0) + ' · 순방문자 ' + (item.visitors || 0),
+        meta: rangeLabel + ' · 방문 ' + (item.visits || 0) + ' · 조회 ' + (item.pageviews || 0),
       };
     }, '아직 방문 페이지 데이터가 없습니다');
     renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
     renderAnalyticsViewsChart(payload.views && payload.views.series ? payload.views.series : []);
     renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
     renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : []);
-    renderAnalyticsTopPosts(payload.views && payload.views.top_posts ? payload.views.top_posts : []);
+    renderAnalyticsTopPages(payload.views && payload.views.top_paths ? payload.views.top_paths : payload.top_paths);
     _syncAnalyticsViewMode();
   }
 
@@ -1453,7 +1484,6 @@
 
   function renderAnalyticsVisitorsChart(rows) {
     renderAnalyticsChart('analytics-visitors-chart', rows, [
-      { key: 'unique_visitors', label: '순방문자', className: 'analytics-bar-fill-unique' },
       { key: 'visits', label: '방문 수', className: 'analytics-bar-fill-visits' },
     ], '방문 데이터가 없습니다');
   }
@@ -1501,7 +1531,6 @@
   function renderAnalyticsVisitorsTable(rows) {
     renderAnalyticsTable('analytics-visitors-table', rows, [
       { key: 'date', label: '날짜', format: formatAnalyticsDate },
-      { key: 'unique_visitors', label: '순방문자' },
       { key: 'visits', label: '방문 수' },
     ], '방문 데이터가 없습니다');
   }
@@ -1533,22 +1562,22 @@
     el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
   }
 
-  function renderAnalyticsTopPosts(items) {
-    var el = document.getElementById('analytics-top-posts');
+  function renderAnalyticsTopPages(items) {
+    var el = document.getElementById('analytics-top-pages');
     if (!el) return;
     if (!items || !items.length) {
-      el.innerHTML = '<div class="list-empty">기간 내 조회수 데이터가 없습니다</div>';
+      el.innerHTML = '<div class="list-empty">기간 내 페이지 데이터가 없습니다</div>';
       return;
     }
     var body = items.map(function (item, index) {
-      var cat = GW.CATEGORIES[item.category] || GW.CATEGORIES.korea;
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
-        '<td><span class="analytics-inline-tag" style="background:' + cat.color + ';">' + GW.escapeHtml(cat.label) + '</span> ' + GW.escapeHtml(item.title || '') + '</td>' +
-        '<td>' + (item.views || 0) + '</td>' +
+        '<td>' + GW.escapeHtml(item.path || '/') + '</td>' +
+        '<td>' + (item.visits || 0) + '</td>' +
+        '<td>' + (item.pageviews || 0) + '</td>' +
       '</tr>';
     }).join('');
-    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>게시글</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>페이지</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
   }
 
   function formatAnalyticsDate(dateStr) {
