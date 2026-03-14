@@ -4190,7 +4190,7 @@ footer a:hover { color: #ffffff; }
 .glossary-term-actions {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-shrink: 0;
 }
 .glossary-description-row td {
@@ -4209,27 +4209,35 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-inline-edit-link {
   flex-shrink: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: #fff;
   color: var(--muted);
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
+  line-height: 1.2;
 }
 .glossary-description-toggle {
+  min-width: 32px;
+  height: 32px;
   padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--black);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .glossary-description-toggle:hover {
   color: var(--black);
+  border-color: var(--black);
+  background: #f6f2f8;
 }
 .glossary-description-toggle.open .glossary-chevron {
   display: inline-block;
@@ -4241,7 +4249,8 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-inline-edit-link:hover {
   color: var(--black);
-  text-decoration: underline;
+  border-color: var(--black);
+  background: #f7f7f7;
 }
 @media (max-width: 900px) {
   .glossary-hero {
