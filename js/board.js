@@ -38,7 +38,7 @@
   }
 
   Board.prototype._getPageSize = function () {
-    return window.innerWidth <= 640 ? 8 : 16;
+    return window.innerWidth <= 640 ? 20 : 16;
   };
 
   // ── Initialise ────────────────────────────────────────────
@@ -219,7 +219,7 @@
     var self    = this;
     var cat     = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
     var card    = document.createElement('article');
-    card.className = 'post-card';
+    card.className = 'post-card' + (post.image_url ? ' has-thumb' : ' no-thumb');
     card.style.animationDelay = (0.04 + idx * 0.04) + 's';
 
     var thumb = '';
@@ -232,14 +232,19 @@
     var tagHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
 
+    var labelsHtml = tagHtml || ('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
+    var subtitleHtml = post.subtitle
+      ? '<p class="post-card-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'
+      : '';
+
     card.innerHTML =
       thumb +
       '<div class="post-card-body">' +
-        '<div class="post-card-labels">' +
-          '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-          tagHtml +
+        '<div class="post-card-head">' +
+          '<div class="post-card-labels">' + labelsHtml + '</div>' +
+          '<h3>' + GW.escapeHtml(post.title) + '</h3>' +
         '</div>' +
-        '<h3>' + GW.escapeHtml(post.title) + '</h3>' +
+        subtitleHtml +
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
         '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
         '<div class="post-card-meta">' +
