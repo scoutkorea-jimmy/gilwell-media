@@ -125,7 +125,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.042.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.043.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -270,7 +270,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.042.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.043.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -297,7 +297,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.042.00"></script>
+  <script src="/js/main.js?v=0.043.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -528,9 +528,13 @@ function renderRelatedPostsSection(items, mobileOnly) {
   return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
     <h3 class="post-related-heading">유관기사 읽어보기</h3>
     <ul class="post-related-list">
-      ${items.map((item) => `<li><a href="/post/${item.id}">${escapeHtml(item.title || '')}</a></li>`).join('')}
+      ${items.map((item) => `<li><a href="/post/${item.id}">[${escapeHtml(resolveCategoryLabel(item.category))}] ${escapeHtml(item.title || '')}</a></li>`).join('')}
     </ul>
   </section>`;
+}
+
+function resolveCategoryLabel(category) {
+  return (CATEGORIES[category] && CATEGORIES[category].label) || CATEGORIES.korea.label;
 }
 
 function buildArticleStructuredData(meta) {
