@@ -4073,6 +4073,20 @@ footer a:hover { color: #ffffff; }
   align-items: end;
   margin-bottom: 18px;
 }
+.glossary-description-field {
+  grid-column: 1 / -1;
+}
+.glossary-description-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  resize: vertical;
+}
 .glossary-admin-list {
   display: flex;
   flex-direction: column;
@@ -4094,6 +4108,12 @@ footer a:hover { color: #ffffff; }
   padding: 12px;
   border: 1px solid var(--border);
   background: var(--bg);
+}
+.glossary-admin-description {
+  grid-column: 1 / -2;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
 }
 .glossary-admin-cell-label {
   display: none;
@@ -4160,6 +4180,15 @@ footer a:hover { color: #ffffff; }
   color: #cc4444 !important;
   font-size: 12px !important;
   margin-top: 10px !important;
+}
+.glossary-description-row td {
+  padding-top: 0;
+  background: #fbfaf7;
+}
+.glossary-description-text {
+  font-size: 10px;
+  line-height: 1.65;
+  color: var(--muted);
 }
 @media (max-width: 900px) {
   .glossary-hero {

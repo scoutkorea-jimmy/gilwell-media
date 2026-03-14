@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.046.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -107,6 +107,10 @@
                 <label for="glossary-public-fr">프랑스어</label>
                 <input type="text" id="glossary-public-fr" maxlength="160" placeholder="비워두면 - 로 표시">
               </div>
+              <div class="form-group glossary-description-field" style="margin:0;">
+                <label for="glossary-public-description">한국어 설명</label>
+                <textarea id="glossary-public-description" rows="3" maxlength="800" placeholder="용어의 의미나 쓰임을 한국어로 설명합니다."></textarea>
+              </div>
               <button type="button" class="submit-btn" style="width:auto;margin:0;" id="glossary-public-submit-btn">용어 저장</button>
               <button type="button" class="cancel-btn" style="margin:0;display:none;" id="glossary-public-cancel-btn">수정 취소</button>
             </div>
@@ -135,7 +139,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.046.02</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -158,8 +162,8 @@
     </div>
   </div>
 
-  <script src="/js/main.js?v=0.046.02"></script>
-  <script src="/js/glossary.js?v=0.046.02"></script>
+  <script src="/js/main.js?v=0.048.00"></script>
+  <script src="/js/glossary.js?v=0.048.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

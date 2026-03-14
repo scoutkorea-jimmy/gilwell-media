@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS glossary_terms (
   term_ko    TEXT    NOT NULL,
   term_en    TEXT    NOT NULL,
   term_fr    TEXT    NOT NULL,
+  description_ko TEXT NOT NULL DEFAULT '',
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT    NOT NULL DEFAULT (datetime('now'))

@@ -2102,7 +2102,7 @@
     var filtered = _glossaryItems.filter(function (item) {
       if (bucketFilter !== 'all' && item.bucket !== bucketFilter) return false;
       if (!query) return true;
-      var haystack = [item.term_ko, item.term_en, item.term_fr].join(' ').toLowerCase();
+      var haystack = [item.term_ko, item.term_en, item.term_fr, item.description_ko].join(' ').toLowerCase();
       return haystack.indexOf(query) >= 0;
     });
     if (!filtered.length) {
@@ -2120,6 +2120,7 @@
             '<div><span class="glossary-admin-cell-label">한국어</span>' + GW.escapeHtml(item.term_ko || '-') + '</div>' +
             '<div><span class="glossary-admin-cell-label">영어</span>' + GW.escapeHtml(item.term_en || '-') + '</div>' +
             '<div><span class="glossary-admin-cell-label">프랑스어</span>' + GW.escapeHtml(item.term_fr || '-') + '</div>' +
+            '<div class="glossary-admin-description"><span class="glossary-admin-cell-label">설명</span>' + GW.escapeHtml(item.description_ko || '-') + '</div>' +
             '<div class="glossary-admin-actions">' +
               '<button type="button" class="glossary-admin-inline-btn" onclick="editGlossaryTerm(' + item.id + ')">수정</button>' +
               '<button type="button" class="glossary-admin-inline-btn delete" onclick="deleteGlossaryTerm(' + item.id + ')">삭제</button>' +
@@ -2138,6 +2139,7 @@
     document.getElementById('glossary-ko-input').value = item.term_ko || '';
     document.getElementById('glossary-en-input').value = item.term_en || '';
     document.getElementById('glossary-fr-input').value = item.term_fr || '';
+    document.getElementById('glossary-description-input').value = item.description_ko || '';
     document.getElementById('glossary-submit-btn').textContent = '수정 저장';
     document.getElementById('glossary-cancel-btn').style.display = '';
     document.getElementById('glossary-ko-input').focus();
@@ -2149,6 +2151,7 @@
     document.getElementById('glossary-ko-input').value = '';
     document.getElementById('glossary-en-input').value = '';
     document.getElementById('glossary-fr-input').value = '';
+    document.getElementById('glossary-description-input').value = '';
     document.getElementById('glossary-submit-btn').textContent = '용어 저장';
     document.getElementById('glossary-cancel-btn').style.display = 'none';
   };
@@ -2159,6 +2162,7 @@
       term_ko: (document.getElementById('glossary-ko-input').value || '').trim(),
       term_en: (document.getElementById('glossary-en-input').value || '').trim(),
       term_fr: (document.getElementById('glossary-fr-input').value || '').trim(),
+      description_ko: (document.getElementById('glossary-description-input').value || '').trim(),
       sort_order: 0,
     };
     if (!payload.term_ko && !payload.term_en && !payload.term_fr) {
