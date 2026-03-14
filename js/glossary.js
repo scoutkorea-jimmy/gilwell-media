@@ -1,7 +1,8 @@
 (function () {
   'use strict';
 
-  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+  var MISC_BUCKET = '기타';
+  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET];
   var CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _items = [];
   var _bucket = 'all';
@@ -37,9 +38,8 @@
     });
   }
 
-  function getFilteredItems() {
+  function getSearchFilteredItems() {
     return _items.filter(function (item) {
-      if (_bucket !== 'all' && item.bucket !== _bucket) return false;
       if (!_query) return true;
       var haystack = [item.term_ko, item.term_en, item.term_fr, item.description_ko].join(' ').toLowerCase();
       return haystack.indexOf(_query) >= 0;
@@ -50,6 +50,14 @@
     return !!String(item && item.term_ko || '').trim();
   }
 
+  function isNumericStart(value) {
+    var first = String(value || '').trim().charAt(0);
+    return first >= '0' && first <= '9';
+  }
+
+  function isMiscItem(item) {
+    return isNumericStart(item.term_ko) || isNumericStart(item.term_en) || isNumericStart(item.term_fr);
+  }
 
   function renderTable(items) {
     var canEdit = !!(GW.getToken && GW.getToken());
@@ -107,25 +115,43 @@
   }
 
   function renderGlossary() {
-    var items = getFilteredItems();
-    var regularItems = items.filter(hasKoreanTerm);
-    var unmatchedItems = items.filter(function (item) { return !hasKoreanTerm(item); });
+    var items = getSearchFilteredItems();
+    var miscItems = items.filter(isMiscItem);
+    var remainingItems = items.filter(function (item) { return !isMiscItem(item); });
+    var regularItems = remainingItems.filter(hasKoreanTerm);
+    var unmatchedItems = remainingItems.filter(function (item) { return !hasKoreanTerm(item); });
     var meta = byId('glossary-results-meta');
     var list = byId('glossary-results');
-    if (meta) meta.textContent = (_bucket === 'all' ? '전체' : _bucket) + ' · ' + GW.formatNumber(items.length) + '개 용어';
+    var metaCount = (_bucket === MISC_BUCKET ? miscItems.length : (_bucket === 'all' ? items.length : regularItems.filter(function (item) { return item.bucket === _bucket; }).length));
+    if (meta) meta.textContent = (_bucket === 'all' ? '전체' : _bucket) + ' · ' + GW.formatNumber(metaCount) + '개 용어';
     if (!list) return;
     if (!items.length) {
       list.innerHTML = '<div class="glossary-empty">검색 결과가 없습니다.</div>';
       return;
     }
-    if (_bucket === 'all' && !_query) {
-      list.innerHTML = BUCKETS.map(function (bucket) {
+    if (_bucket === MISC_BUCKET) {
+      list.innerHTML = miscItems.length
+        ? '<section class="glossary-section"><h3 class="glossary-section-title">기타</h3>' + renderTable(miscItems) + '</section>'
+        : '<div class="glossary-empty">검색 결과가 없습니다.</div>';
+    } else if (_bucket === 'all' && !_query) {
+      var miscSection = miscItems.length
+        ? '<section class="glossary-section"><h3 class="glossary-section-title">기타</h3>' + renderTable(miscItems) + '</section>'
+        : '';
+      var bucketsMarkup = BUCKETS.filter(function (bucket) { return bucket !== MISC_BUCKET; }).map(function (bucket) {
         var group = regularItems.filter(function (item) { return item.bucket === bucket; });
         if (!group.length) return '';
         return '<section class="glossary-section"><h3 class="glossary-section-title">' + bucket + '</h3>' + renderTable(group) + '</section>';
-      }).join('') + renderUnmatchedSection(unmatchedItems);
+      }).join('');
+      list.innerHTML = miscSection + bucketsMarkup + renderUnmatchedSection(unmatchedItems);
     } else {
-      list.innerHTML = (regularItems.length ? '<section class="glossary-section">' + renderTable(regularItems) + '</section>' : '') +
+      var bucketItems = (_bucket === 'all')
+        ? regularItems
+        : regularItems.filter(function (item) { return item.bucket === _bucket; });
+      var miscInline = (_bucket === 'all' && miscItems.length)
+        ? '<section class="glossary-section"><h3 class="glossary-section-title">기타</h3>' + renderTable(miscItems) + '</section>'
+        : '';
+      list.innerHTML = miscInline +
+        (bucketItems.length ? '<section class="glossary-section">' + renderTable(bucketItems) + '</section>' : '') +
         ((_bucket === 'all' || _query) ? renderUnmatchedSection(unmatchedItems) : '');
     }
     bindInlineEditButtons();
