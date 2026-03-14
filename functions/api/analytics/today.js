@@ -1,17 +1,20 @@
 export async function onRequestGet({ env }) {
   try {
-    const [todayUnique, todayViews] = await Promise.all([
+    const [todayUnique, todayViews, totalUnique] = await Promise.all([
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
                      FROM site_visits
                     WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(*) AS count
                      FROM post_views
                     WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
+      scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
+                     FROM site_visits`),
     ]);
 
     return json({
       today_unique: todayUnique,
       today_views: todayViews,
+      total_unique: totalUnique,
       measured_timezone: 'Asia/Seoul',
       measured_date: new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Seoul',
