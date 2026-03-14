@@ -4187,20 +4187,20 @@ footer a:hover { color: #ffffff; }
   justify-content: space-between;
   gap: 12px;
 }
+.glossary-term-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
 .glossary-description-row td {
   padding-top: 0;
-  background: #9FED8F;
+  background: rgba(77, 0, 110, 0.2);
 }
 .glossary-description-row-inner {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.glossary-description-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
 }
 .glossary-description-text {
   font-size: 11px;
@@ -4304,9 +4304,6 @@ footer a:hover { color: #ffffff; }
   .glossary-description-row-inner {
     flex-direction: column;
     gap: 12px;
-  }
-  .glossary-description-actions {
-    justify-content: flex-end;
   }
   .glossary-term-cell-with-toggle {
     align-items: flex-start;
