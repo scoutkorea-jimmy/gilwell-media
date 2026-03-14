@@ -4040,12 +4040,12 @@ footer a:hover { color: #ffffff; }
   text-align: left;
 }
 .glossary-table th {
-  background: #f5f3ee;
+  background: #4D006E;
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #ffffff;
 }
 .glossary-table td {
   font-size: 15px;
@@ -4181,9 +4181,15 @@ footer a:hover { color: #ffffff; }
   font-size: 12px !important;
   margin-top: 10px !important;
 }
+.glossary-term-cell-with-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
 .glossary-description-row td {
   padding-top: 0;
-  background: #fbfaf7;
+  background: #9FED8F;
 }
 .glossary-description-row-inner {
   display: flex;
@@ -4220,6 +4226,7 @@ footer a:hover { color: #ffffff; }
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+  flex-shrink: 0;
 }
 .glossary-description-toggle:hover {
   color: var(--black);
@@ -4300,6 +4307,9 @@ footer a:hover { color: #ffffff; }
   }
   .glossary-description-actions {
     justify-content: flex-end;
+  }
+  .glossary-term-cell-with-toggle {
+    align-items: flex-start;
   }
   .glossary-description-text {
     font-size: 12px;
