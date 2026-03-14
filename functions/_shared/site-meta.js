@@ -24,7 +24,7 @@ const DEFAULT_SITE_META = {
       title: 'APR · BP미디어',
       description: '아시아태평양 지역 스카우트 소식을 전합니다.',
     },
-    worm: {
+    wosm: {
       title: 'WOSM · BP미디어',
       description: '세계스카우트연맹 관련 소식을 전합니다.',
     },
@@ -73,7 +73,9 @@ export function normalizeSiteMeta(raw) {
   };
 
   Object.keys(DEFAULT_SITE_META.pages).forEach((key) => {
-    const source = raw && raw.pages && raw.pages[key] ? raw.pages[key] : {};
+    const source = raw && raw.pages
+      ? (raw.pages[key] || (key === 'wosm' ? raw.pages.worm : null) || {})
+      : {};
     meta.pages[key] = {
       title: sanitizeText(source.title, DEFAULT_SITE_META.pages[key].title, 120),
       description: sanitizeText(source.description, DEFAULT_SITE_META.pages[key].description, 260),
@@ -99,7 +101,7 @@ export function getSitePageKey(pathname) {
     '/index.html': 'home',
     '/korea.html': 'korea',
     '/apr.html': 'apr',
-    '/worm.html': 'worm',
+    '/wosm.html': 'wosm',
     '/people.html': 'people',
     '/contributors.html': 'contributors',
     '/search.html': 'search',
@@ -308,7 +310,7 @@ function getBreadcrumbLabel(pageKey) {
   const labels = {
     korea: 'Korea',
     apr: 'APR',
-    worm: 'WOSM',
+    wosm: 'WOSM',
     people: '스카우트 인물',
     contributors: '도움을 주신 분들',
     search: '검색',
@@ -321,7 +323,7 @@ function getPageTopic(pageKey) {
     home: '스카우트 뉴스',
     korea: '한국 스카우트 소식',
     apr: '아시아태평양 스카우트 소식',
-    worm: '세계스카우트연맹 소식',
+    wosm: '세계스카우트연맹 소식',
     people: '스카우트 인물',
     contributors: '후원 및 기여자 소개',
     search: '사이트 검색 결과',

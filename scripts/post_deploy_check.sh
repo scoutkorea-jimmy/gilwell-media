@@ -11,7 +11,7 @@ echo "Checking ${BASE_URL} for V${VERSION}"
 
 MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${VERSION}")"
 HOME_PAGE="$(curl -fsSL "${BASE_URL}/")"
-BOARD_PAGE="$(curl -fsSL "${BASE_URL}/worm.html")"
+BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm.html")"
 PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people.html")"
 ADMIN_PAGE="$(curl -fsSL "${BASE_URL}/admin.html")"
 ROBOTS_TXT="$(curl -fsSL "${BASE_URL}/robots.txt")"

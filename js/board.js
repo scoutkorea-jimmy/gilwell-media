@@ -11,7 +11,7 @@
 
   /**
    * @param {object} opts
-   * @param {string} opts.category   - 'korea' | 'apr' | 'worm'
+   * @param {string} opts.category   - 'korea' | 'apr' | 'wosm'
    * @param {string} [opts.gridId]   - id of the grid container element
    * @param {string} [opts.countId]  - id of the post-count element
    * @param {string} [opts.moreId]   - id of the "load more" button

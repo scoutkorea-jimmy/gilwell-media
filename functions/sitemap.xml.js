@@ -4,7 +4,7 @@ export async function onRequestGet({ request, env }) {
     { path: '/', priority: '1.0' },
     { path: '/korea.html', priority: '0.9' },
     { path: '/apr.html', priority: '0.9' },
-    { path: '/worm.html', priority: '0.9' },
+    { path: '/wosm.html', priority: '0.9' },
     { path: '/people.html', priority: '0.9' },
     { path: '/contributors.html', priority: '0.5' },
   ];

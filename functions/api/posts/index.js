@@ -10,7 +10,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
+const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 20;
 
 // ── GET /api/posts ────────────────────────────────────────────
@@ -19,7 +19,7 @@ const PAGE_SIZE = 20;
 export async function onRequestGet({ request, env }) {
   const url          = new URL(request.url);
   const origin       = url.origin;
-  const category     = url.searchParams.get('category') || null;
+  const category     = normalizeCategory(url.searchParams.get('category') || null);
   const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const offset       = (page - 1) * PAGE_SIZE;
   const q            = url.searchParams.get('q') || null;
@@ -28,7 +28,7 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
-    return json({ error: 'Invalid category. Must be korea, apr, worm, or people.' }, 400);
+    return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
   }
 
   // Admin token check — if valid token, include unpublished posts
@@ -101,7 +101,8 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { category, title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
+  const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
   if (cf_turnstile_response !== undefined) {
@@ -112,7 +113,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (!VALID_CATEGORIES.includes(category)) {
-    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / worm / people)' }, 400);
+    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
   if (!title || !title.trim()) {
     return json({ error: '제목을 입력해주세요' }, 400);
@@ -196,4 +197,9 @@ function sanitizeCaption(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 300) : null;
+}
+
+function normalizeCategory(value) {
+  if (value === 'worm') return 'wosm';
+  return value;
 }

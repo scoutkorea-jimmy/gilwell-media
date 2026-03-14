@@ -11,7 +11,7 @@ const DEFAULT_TAGS = {
   categories: {
     korea: [],
     apr: [],
-    worm: [],
+    wosm: [],
     people: [],
   },
 };
@@ -86,7 +86,7 @@ function normalizeTagSettings(raw) {
     categories: {
       korea: [],
       apr: [],
-      worm: [],
+      wosm: [],
       people: [],
     },
   };
@@ -98,8 +98,8 @@ function normalizeTagSettings(raw) {
 
   if (raw && typeof raw === 'object') {
     normalized.common = sanitize(raw.common);
-    ['korea', 'apr', 'worm', 'people'].forEach((category) => {
-      normalized.categories[category] = sanitize(raw.categories?.[category]);
+    ['korea', 'apr', 'wosm', 'people'].forEach((category) => {
+      normalized.categories[category] = sanitize(raw.categories?.[category] || (category === 'wosm' ? raw.categories?.worm : null));
     });
   }
 
@@ -119,7 +119,7 @@ function sanitize(items) {
 }
 
 function getTagsForCategory(tags, category) {
-  const chosen = ['korea', 'apr', 'worm', 'people'].includes(category) ? category : 'korea';
+  const chosen = ['korea', 'apr', 'wosm', 'people'].includes(category === 'worm' ? 'wosm' : category) ? (category === 'worm' ? 'wosm' : category) : 'korea';
   const seen = new Set();
   return tags.common.concat(tags.categories[chosen] || []).filter((item) => {
     if (seen.has(item)) return false;
