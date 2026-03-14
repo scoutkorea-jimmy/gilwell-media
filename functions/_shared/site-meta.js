@@ -149,7 +149,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
 }
 
 export function getResolvedShareImage(siteMeta, origin) {
-  if (!siteMeta || !siteMeta.image_url) return '';
+  if (!siteMeta || !siteMeta.image_url) return `${origin}/img/logo.svg`;
   if (siteMeta.image_url.startsWith('http')) return siteMeta.image_url;
   return `${origin}/api/settings/site-meta/image`;
 }

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.11">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.12">
   <style>
     body { background: #eceae4; }
   </style>
@@ -28,7 +28,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.048.11</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.048.12</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -44,7 +44,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.048.11</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.048.12</span></span>
           <a href="index.html">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
@@ -501,7 +501,8 @@
         <div class="panel" id="settings-hero" style="margin-bottom:24px;">
           <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px;">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
             <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
               <label for="hero-interval-input" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;">기사 노출 시간</label>
               <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
@@ -611,6 +612,7 @@
               <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin:0;" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
               <button class="cancel-btn visible" type="button" style="width:auto;padding:10px 18px;margin:0 0 0 8px;" onclick="removeSiteMetaImage()">이미지 제거</button>
               <div id="site-meta-image-preview" style="margin-top:12px;"></div>
+              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
             </div>
 
             <div class="form-row" style="margin-top:18px;">
@@ -667,7 +669,8 @@
         <div class="panel">
           <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px;">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">행을 드래그해서 순서를 변경할 수 있습니다.</p>
             <div id="contributors-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
             <div style="border:1px solid var(--border);padding:16px;background:var(--bg);">
               <div id="contrib-form-label" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
@@ -722,8 +725,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.048.11"></script>
-  <script src="/js/admin.js?v=0.048.11"></script>
+  <script src="/js/main.js?v=0.048.12"></script>
+  <script src="/js/admin.js?v=0.048.12"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

@@ -2256,6 +2256,11 @@ footer a:hover { color: #ffffff; }
   border-color: #622599 !important;
   box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
 }
+.hero-slot-item.drag-over,
+.contributors-admin-item.drag-over {
+  border-color: #622599 !important;
+  box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
+}
 
 .admin-header {
   background:      var(--black);
