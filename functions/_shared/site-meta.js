@@ -1,4 +1,5 @@
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
+export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
 const SITE_ORIGIN = 'https://bpmedia.net';
 const PUBLISHER = {
   '@type': 'Organization',
@@ -51,7 +52,7 @@ const DEFAULT_SITE_META = {
   },
   image_url: null,
   google_verification: '',
-  naver_verification: '',
+  naver_verification: NAVER_SITE_VERIFICATION,
 };
 
 export async function loadSiteMeta(env) {

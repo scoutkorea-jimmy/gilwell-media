@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "0.041.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "네이버 서치어드바이저 검증 태그를 반영하고, 홈 공개 API 호출 비용을 줄이기 위한 캐시/중복 호출 정리를 적용했습니다.",
+      "changes": [
+        "전체 일반 페이지에 naver-site-verification 메타 태그 기본값을 반영해 네이버 서치어드바이저 HTML 검증이 가능하게 했습니다.",
+        "홈 최신 소식은 한 번만 불러오고, 인기 소식 fallback에서도 같은 응답을 재사용하도록 바꿔 중복 API 호출을 제거했습니다.",
+        "공개 GET API 가운데 posts, popular, hero, translations, ticker, stats 응답에 짧은 캐시와 stale-while-revalidate를 적용해 D1/Functions 호출 비용을 줄였습니다.",
+        "기능은 유지하면서 홈 첫 진입 시 불필요한 재조회와 같은 저효율 요소를 줄이는 쪽으로 정리했습니다."
+      ]
+    },
+    {
       "version": "0.040.01",
       "date": "2026-03-14",
       "commit": "pending",

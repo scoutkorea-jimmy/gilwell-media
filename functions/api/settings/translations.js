@@ -13,7 +13,7 @@ export async function onRequestGet({ env }) {
       `SELECT value FROM settings WHERE key = 'translations'`
     ).first();
     const custom = row ? JSON.parse(row.value || '{}') : {};
-    return json({ strings: custom });
+    return json({ strings: custom }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/translations error:', err);
     return json({ error: 'Database error' }, 500);
@@ -47,9 +47,15 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
 }

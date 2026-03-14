@@ -18,10 +18,10 @@ export async function onRequestGet({ env }) {
       `SELECT value FROM settings WHERE key = 'ticker'`
     ).first();
     const items = row ? JSON.parse(row.value) : DEFAULT_ITEMS;
-    return json({ items });
+    return json({ items }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/ticker error:', err);
-    return json({ items: DEFAULT_ITEMS });
+    return json({ items: DEFAULT_ITEMS }, 200, publicCacheHeaders(300, 1800));
   }
 }
 
@@ -58,9 +58,15 @@ export async function onRequestPut({ request, env }) {
   }
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
 }
