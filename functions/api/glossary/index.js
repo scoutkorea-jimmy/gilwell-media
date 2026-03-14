@@ -62,7 +62,7 @@ function normalizeGlossaryInput(body) {
   const term_fr = String(body.term_fr || '').trim().slice(0, 160);
   const sort_order = Number.isFinite(Number(body.sort_order)) ? Math.max(0, Math.min(9999, parseInt(body.sort_order, 10))) : 0;
   if (!BUCKETS.includes(bucket)) return { error: '올바른 분류를 선택해주세요' };
-  if (!term_ko || !term_en || !term_fr) return { error: '한국어, 영어, 프랑스어를 모두 입력해주세요' };
+  if (!term_ko && !term_en && !term_fr) return { error: '한국어, 영어, 프랑스어 중 하나 이상 입력해주세요' };
   return { bucket, term_ko, term_en, term_fr, sort_order };
 }
 
