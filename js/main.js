@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.023.00';
+  GW.APP_VERSION = '0.024.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -458,6 +458,7 @@
     'board.worm.banner':  { ko: 'WOSM',             en: 'WOSM' },
     'board.worm.title':   { ko: '세계스카우트연맹',  en: 'World Scout Organization (WOSM)' },
     'board.worm.desc':    { ko: '세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.', en: 'Global news and trends from WOSM.' },
+    'board.translation.note': { ko: '일부 게시글은 번역 자료를 바탕으로 작성되어 표현이 완전히 정확하지 않을 수 있습니다. 더 나은 번역 제안은 언제든 환영합니다.', en: 'Some posts are based on translated source materials, so wording may not be perfectly exact. Suggestions for better translations are always welcome.' },
     'board.people.banner': { ko: 'Scout People', en: 'Scout People' },
     'board.people.title': { ko: '스카우트 인물', en: 'Scout People' },
     'board.people.desc': { ko: '국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.', en: 'Spotlighting Scouts around the world, including active Scouts, Scout alumni, and departed Scout seniors.' },

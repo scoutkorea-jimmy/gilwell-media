@@ -1207,8 +1207,36 @@
   function loadTranslationsAdmin() {
     fetch('/api/settings/translations').then(function(r){return r.json();}).then(function(data){
       _translationOverrides = data.strings || {};
+      renderCategoryCopyManager();
       renderTranslationsTable();
-    }).catch(function(){ renderTranslationsTable(); });
+    }).catch(function(){
+      renderCategoryCopyManager();
+      renderTranslationsTable();
+    });
+  }
+
+  function renderCategoryCopyManager() {
+    var container = document.getElementById('category-copy-manager');
+    if (!container) return;
+    var keys = [
+      { key: 'board.apr.desc', label: 'APR 설명' },
+      { key: 'board.worm.desc', label: 'WOSM 설명' },
+      { key: 'board.translation.note', label: '번역 안내 문구' },
+    ];
+    container.innerHTML = keys.map(function (item) {
+      var def = GW.STRINGS[item.key] || { ko: '', en: '' };
+      var over = _translationOverrides[item.key] || {};
+      var koVal = over.ko !== undefined ? over.ko : (def.ko || '');
+      var enVal = over.en !== undefined ? over.en : (def.en || '');
+      return '<div style="border:1px solid var(--border);padding:12px 14px;background:var(--bg);">' +
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">' + item.label + ' · ' + item.key + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+          '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">KOR</label>' +
+          '<textarea data-category-copy="' + item.key + '" data-category-lang="ko" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(koVal) + '</textarea></div>' +
+          '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">ENG</label>' +
+          '<textarea data-category-copy="' + item.key + '" data-category-lang="en" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(enVal) + '</textarea></div>' +
+        '</div></div>';
+    }).join('');
   }
   function renderTranslationsTable() {
     var container = document.getElementById('translations-table'); if (!container) return;
@@ -1235,6 +1263,25 @@
     GW.apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: strings }) })
       .then(function(){ GW.showToast('번역이 저장됐습니다','success'); })
       .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
+  };
+
+  window.saveCategoryCopy = function () {
+    var areas = document.querySelectorAll('#category-copy-manager textarea[data-category-copy]');
+    var strings = JSON.parse(JSON.stringify(_translationOverrides || {}));
+    areas.forEach(function (area) {
+      var key = area.getAttribute('data-category-copy');
+      var lang = area.getAttribute('data-category-lang');
+      if (!strings[key]) strings[key] = {};
+      strings[key][lang] = area.value;
+    });
+    GW.apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: strings }) })
+      .then(function () {
+        _translationOverrides = strings;
+        GW.showToast('카테고리 문구가 저장됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
   };
 
   // ─── Hero admin (up to 5 articles) ───────────────────────
