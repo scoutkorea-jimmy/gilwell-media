@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.045.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.046.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -73,6 +73,43 @@
           <label for="glossary-search-input">용어 검색</label>
           <input type="search" id="glossary-search-input" class="glossary-search-input" placeholder="한국어, 영어, 프랑스어로 검색" autocomplete="off">
           <p class="glossary-search-help">가~하 분류와 검색을 함께 써서 원하는 용어를 빠르게 찾을 수 있습니다.</p>
+          <div class="glossary-public-admin">
+            <button type="button" class="glossary-admin-toggle-btn" id="glossary-admin-toggle-btn">용어 추가/수정</button>
+            <p class="glossary-search-help" id="glossary-admin-help">관리자 로그인 후 이 페이지에서 바로 용어를 추가하거나 수정할 수 있습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="glossary-editor-panel" id="glossary-editor-panel" style="display:none;">
+        <div class="panel">
+          <div class="panel-header"><h2>용어 바로 추가/수정</h2></div>
+          <div class="panel-body">
+            <div class="glossary-admin-form-grid">
+              <div class="form-group" style="margin:0;">
+                <label for="glossary-public-bucket">분류</label>
+                <select id="glossary-public-bucket">
+                  <option value="가">가</option><option value="나">나</option><option value="다">다</option><option value="라">라</option>
+                  <option value="마">마</option><option value="바">바</option><option value="사">사</option><option value="아">아</option>
+                  <option value="자">자</option><option value="차">차</option><option value="카">카</option><option value="타">타</option>
+                  <option value="파">파</option><option value="하">하</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="glossary-public-ko">한국어</label>
+                <input type="text" id="glossary-public-ko" maxlength="120" placeholder="비워두면 - 로 표시">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="glossary-public-en">영어</label>
+                <input type="text" id="glossary-public-en" maxlength="160" placeholder="비워두면 - 로 표시">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="glossary-public-fr">프랑스어</label>
+                <input type="text" id="glossary-public-fr" maxlength="160" placeholder="비워두면 - 로 표시">
+              </div>
+              <button type="button" class="submit-btn" style="width:auto;margin:0;" id="glossary-public-submit-btn">용어 저장</button>
+              <button type="button" class="cancel-btn" style="margin:0;display:none;" id="glossary-public-cancel-btn">수정 취소</button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -97,7 +134,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.045.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.046.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -107,9 +144,21 @@
   </footer>
 
   <div class="toast" id="toast"></div>
+  <div id="glossary-login-modal" class="glossary-login-modal" style="display:none;">
+    <div class="glossary-login-card" role="dialog" aria-modal="true" aria-labelledby="glossary-login-title">
+      <h3 id="glossary-login-title">관리자 인증</h3>
+      <p>용어를 추가하거나 수정하려면 관리자 비밀번호를 입력하세요.</p>
+      <input type="password" id="glossary-login-password" placeholder="비밀번호" autocomplete="current-password">
+      <div class="glossary-login-actions">
+        <button type="button" class="submit-btn" id="glossary-login-submit">로그인</button>
+        <button type="button" class="cancel-btn" id="glossary-login-close">취소</button>
+      </div>
+      <p class="glossary-login-error" id="glossary-login-error" style="display:none;"></p>
+    </div>
+  </div>
 
-  <script src="/js/main.js?v=0.045.00"></script>
-  <script src="/js/glossary.js?v=0.045.00"></script>
+  <script src="/js/main.js?v=0.046.00"></script>
+  <script src="/js/glossary.js?v=0.046.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

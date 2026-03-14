@@ -3921,6 +3921,24 @@ footer a:hover { color: #ffffff; }
   line-height: 1.6;
   color: var(--muted);
 }
+.glossary-public-admin {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.glossary-admin-toggle-btn {
+  padding: 10px 14px;
+  border: 1px solid var(--black);
+  background: var(--black);
+  color: var(--white);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.glossary-editor-panel {
+  margin-bottom: 24px;
+}
 .glossary-letter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -4052,6 +4070,47 @@ footer a:hover { color: #ffffff; }
 .glossary-admin-inline-btn.delete {
   border-color: #cc4444;
   color: #cc4444;
+}
+.glossary-login-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.glossary-login-card {
+  width: min(92vw, 360px);
+  background: #fff;
+  padding: 28px;
+  border-top: 3px solid #622599;
+}
+.glossary-login-card h3 {
+  margin: 0 0 8px;
+  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-size: 22px;
+}
+.glossary-login-card p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.glossary-login-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.glossary-login-actions {
+  display: flex;
+  gap: 8px;
+}
+.glossary-login-error {
+  color: #cc4444 !important;
+  font-size: 12px !important;
+  margin-top: 10px !important;
 }
 @media (max-width: 900px) {
   .glossary-hero {

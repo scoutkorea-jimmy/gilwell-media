@@ -5,6 +5,7 @@
   var _items = [];
   var _bucket = 'all';
   var _query = '';
+  var _editingId = null;
 
   function byId(id) { return document.getElementById(id); }
 
@@ -35,13 +36,16 @@
   }
 
   function renderTable(items) {
+    var canEdit = !!(GW.getToken && GW.getToken());
+    var head = '<thead><tr><th>한국어</th><th>English</th><th>Français</th>' + (canEdit ? '<th>관리</th>' : '') + '</tr></thead>';
     return '<div class="glossary-table-wrap"><table class="glossary-table">' +
-      '<thead><tr><th>한국어</th><th>English</th><th>Français</th></tr></thead><tbody>' +
+      head + '<tbody>' +
       items.map(function (item) {
         return '<tr>' +
-          '<td data-label="한국어">' + GW.escapeHtml(item.term_ko) + '</td>' +
-          '<td data-label="English">' + GW.escapeHtml(item.term_en) + '</td>' +
-          '<td data-label="Français">' + GW.escapeHtml(item.term_fr) + '</td>' +
+          '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
+          '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
+          '<td data-label="Français">' + GW.escapeHtml(item.term_fr || '-') + '</td>' +
+          (canEdit ? '<td data-label="관리"><button type="button" class="glossary-admin-inline-btn" data-edit-id="' + item.id + '">수정</button></td>' : '') +
         '</tr>';
       }).join('') +
       '</tbody></table></div>';
@@ -66,6 +70,7 @@
     } else {
       list.innerHTML = '<section class="glossary-section">' + renderTable(items) + '</section>';
     }
+    bindInlineEditButtons();
   }
 
   function bindSearch() {
@@ -91,9 +96,113 @@
       });
   }
 
+  function bindInlineEditButtons() {
+    document.querySelectorAll('[data-edit-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(btn.getAttribute('data-edit-id') || '0', 10);
+        var item = _items.find(function (entry) { return entry.id === id; });
+        if (!item) return;
+        _editingId = id;
+        byId('glossary-editor-panel').style.display = '';
+        byId('glossary-public-bucket').value = item.bucket || '가';
+        byId('glossary-public-ko').value = item.term_ko || '';
+        byId('glossary-public-en').value = item.term_en || '';
+        byId('glossary-public-fr').value = item.term_fr || '';
+        byId('glossary-public-submit-btn').textContent = '수정 저장';
+        byId('glossary-public-cancel-btn').style.display = '';
+        byId('glossary-public-ko').focus();
+      });
+    });
+  }
+
+  function resetPublicEditor() {
+    _editingId = null;
+    byId('glossary-public-bucket').value = '가';
+    byId('glossary-public-ko').value = '';
+    byId('glossary-public-en').value = '';
+    byId('glossary-public-fr').value = '';
+    byId('glossary-public-submit-btn').textContent = '용어 저장';
+    byId('glossary-public-cancel-btn').style.display = 'none';
+  }
+
+  function openLoginModal() {
+    byId('glossary-login-error').style.display = 'none';
+    byId('glossary-login-password').value = '';
+    byId('glossary-login-modal').style.display = 'flex';
+    byId('glossary-login-password').focus();
+  }
+
+  function closeLoginModal() {
+    byId('glossary-login-modal').style.display = 'none';
+  }
+
+  function ensureGlossaryEditor() {
+    if (GW.getToken && GW.getToken()) {
+      byId('glossary-editor-panel').style.display = '';
+      return true;
+    }
+    openLoginModal();
+    return false;
+  }
+
+  function submitLogin() {
+    var pw = (byId('glossary-login-password').value || '').trim();
+    if (!pw) return;
+    GW.apiFetch('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password: pw })
+    })
+      .then(function (data) {
+        GW.setToken(data.token);
+        if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        closeLoginModal();
+        byId('glossary-editor-panel').style.display = '';
+        renderGlossary();
+      })
+      .catch(function (err) {
+        var error = byId('glossary-login-error');
+        error.textContent = err.message || '로그인 실패';
+        error.style.display = '';
+      });
+  }
+
+  function submitPublicTerm() {
+    if (!ensureGlossaryEditor()) return;
+    var payload = {
+      bucket: (byId('glossary-public-bucket').value || '가').trim(),
+      term_ko: (byId('glossary-public-ko').value || '').trim(),
+      term_en: (byId('glossary-public-en').value || '').trim(),
+      term_fr: (byId('glossary-public-fr').value || '').trim(),
+      sort_order: 0,
+    };
+    if (!payload.term_ko && !payload.term_en && !payload.term_fr) {
+      GW.showToast('한국어, 영어, 프랑스어 중 하나 이상 입력해주세요', 'error');
+      return;
+    }
+    var url = _editingId ? '/api/glossary/' + _editingId : '/api/glossary';
+    var method = _editingId ? 'PUT' : 'POST';
+    GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
+      .then(function () {
+        GW.showToast(_editingId ? '용어가 수정됐습니다' : '용어가 추가됐습니다', 'success');
+        resetPublicEditor();
+        loadGlossary();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     bindSearch();
     renderBucketBar();
+    byId('glossary-admin-toggle-btn').addEventListener('click', ensureGlossaryEditor);
+    byId('glossary-public-submit-btn').addEventListener('click', submitPublicTerm);
+    byId('glossary-public-cancel-btn').addEventListener('click', resetPublicEditor);
+    byId('glossary-login-submit').addEventListener('click', submitLogin);
+    byId('glossary-login-close').addEventListener('click', closeLoginModal);
+    byId('glossary-login-password').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') submitLogin();
+    });
     loadGlossary();
   });
 })();

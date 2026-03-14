@@ -2094,9 +2094,9 @@
         group.map(function (item) {
           return '<div class="glossary-admin-row">' +
             '<div><span class="glossary-admin-cell-label">분류</span><strong>' + GW.escapeHtml(item.bucket) + '</strong></div>' +
-            '<div><span class="glossary-admin-cell-label">한국어</span>' + GW.escapeHtml(item.term_ko) + '</div>' +
-            '<div><span class="glossary-admin-cell-label">영어</span>' + GW.escapeHtml(item.term_en) + '</div>' +
-            '<div><span class="glossary-admin-cell-label">프랑스어</span>' + GW.escapeHtml(item.term_fr) + '</div>' +
+            '<div><span class="glossary-admin-cell-label">한국어</span>' + GW.escapeHtml(item.term_ko || '-') + '</div>' +
+            '<div><span class="glossary-admin-cell-label">영어</span>' + GW.escapeHtml(item.term_en || '-') + '</div>' +
+            '<div><span class="glossary-admin-cell-label">프랑스어</span>' + GW.escapeHtml(item.term_fr || '-') + '</div>' +
             '<div class="glossary-admin-actions">' +
               '<button type="button" class="glossary-admin-inline-btn" onclick="editGlossaryTerm(' + item.id + ')">수정</button>' +
               '<button type="button" class="glossary-admin-inline-btn delete" onclick="deleteGlossaryTerm(' + item.id + ')">삭제</button>' +
@@ -2138,8 +2138,8 @@
       term_fr: (document.getElementById('glossary-fr-input').value || '').trim(),
       sort_order: 0,
     };
-    if (!payload.term_ko || !payload.term_en || !payload.term_fr) {
-      GW.showToast('한국어, 영어, 프랑스어를 모두 입력해주세요', 'error');
+    if (!payload.term_ko && !payload.term_en && !payload.term_fr) {
+      GW.showToast('한국어, 영어, 프랑스어 중 하나 이상 입력해주세요', 'error');
       return;
     }
     var url = _glossaryEditingId ? '/api/glossary/' + _glossaryEditingId : '/api/glossary';
