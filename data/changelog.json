@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "0.033.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "Cloudflare 분석 집계가 긴 기간에서도 실패하지 않도록 범위를 하루 단위로 나눠 조회하게 수정했습니다.",
+      "changes": [
+        "Cloudflare Free 구간에서 한 번에 24시간을 넘는 GraphQL 조회가 quota 오류를 내던 문제를 수정했습니다.",
+        "홈 누적 지표와 관리자 기간 분석은 요청 기간을 하루 단위 청크로 나눠 합산하도록 바꿨습니다.",
+        "이제 Cloudflare 토큰이 연결된 상태에서도 /api/analytics/today 와 분석 탭이 500 없이 동작하도록 보강했습니다."
+      ]
+    },
+    {
       "version": "0.032.00",
       "date": "2026-03-14",
       "commit": "pending",
