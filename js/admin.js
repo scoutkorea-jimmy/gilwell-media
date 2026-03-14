@@ -1630,7 +1630,7 @@
     if (!_heroSearchResults.length) {
       list.innerHTML = _heroSearchQuery
         ? '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>'
-        : '<div style="font-size:12px;color:var(--muted);padding:8px 0;">최신 기사 10개를 먼저 표시합니다. 아래로 스크롤하면 더 불러옵니다.</div>';
+        : '<div style="font-size:12px;color:var(--muted);padding:8px 0;">공개된 최신 기사 10개를 먼저 표시합니다. 아래로 스크롤하면 더 불러옵니다.</div>';
       return;
     }
     list.innerHTML = _heroSearchResults.map(function (p) {

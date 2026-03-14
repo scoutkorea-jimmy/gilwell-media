@@ -1103,9 +1103,18 @@ p { margin-bottom: 6px; }
   font-family:    'DM Mono', monospace;
   font-size:      10px;
   color:          var(--muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   margin-top:     auto;
   padding-top:    6px;
+  line-height:    1.6;
+}
+
+.post-card-engagement {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  padding-top: 6px;
 }
 
 /* ── Read More link ── */
@@ -1882,7 +1891,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .analytics-stats-row .dash-stat-num {
-  font-size: clamp(20px, 2vw, 28px);
+  font-size: clamp(18px, 1.65vw, 24px);
   line-height: 1.08;
   margin-bottom: 8px;
   overflow-wrap: anywhere;
@@ -1891,10 +1900,26 @@ footer a:hover { color: #ffffff; }
 }
 
 .analytics-stats-row .dash-stat-label {
+  font-size: 9px;
   line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: keep-all;
   white-space: normal;
+}
+
+.analytics-provider-card .dash-stat-num {
+  font-family: 'DM Mono', monospace;
+  font-size: clamp(12px, 1vw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.analytics-provider-card .dash-stat-label {
+  font-size: 8px;
+  letter-spacing: 0.14em;
 }
 
 .dash-stat-card {
@@ -2792,6 +2817,15 @@ footer a:hover { color: #ffffff; }
 }
 
 @media (max-width: 1180px) {
+  .nav {
+    padding: 0 20px;
+  }
+
+  .nav a {
+    padding: 11px 12px;
+    letter-spacing: 0.09em;
+  }
+
   .masthead-stats {
     display: flex;
     flex-direction: column;
