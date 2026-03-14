@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.021.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.022.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -210,8 +210,9 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.021.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.022.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
+          <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">오늘 방문자수 <strong id="home-today-visitors">—</strong></p>
           <p class="footer-live-stat">오늘 조회수 <strong id="home-today-views">—</strong></p>
         </div>
@@ -225,7 +226,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.021.00"></script>
+  <script src="/js/main.js?v=0.022.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -248,8 +249,10 @@
     (function loadHomeFooterStats() {
       GW.apiFetch('/api/analytics/today')
         .then(function (data) {
+          var total = document.getElementById('home-total-visitors');
           var visitors = document.getElementById('home-today-visitors');
           var views = document.getElementById('home-today-views');
+          if (total) total.textContent = GW.formatNumber(data.total_unique || 0);
           if (visitors) visitors.textContent = GW.formatNumber(data.today_unique || 0);
           if (views) views.textContent = GW.formatNumber(data.today_views || 0);
         })
