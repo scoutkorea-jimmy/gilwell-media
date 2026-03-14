@@ -2,12 +2,22 @@
   'use strict';
 
   var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+  var CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _items = [];
   var _bucket = 'all';
   var _query = '';
   var _editingId = null;
 
   function byId(id) { return document.getElementById(id); }
+
+  function inferBucket(termKo) {
+    var first = String(termKo || '').trim().charAt(0);
+    if (!first) return '';
+    var code = first.charCodeAt(0);
+    if (code < 0xac00 || code > 0xd7a3) return '';
+    var choseongIndex = Math.floor((code - 0xac00) / 588);
+    return CHOSEONG_BUCKETS[choseongIndex] || '';
+  }
 
   function renderBucketBar() {
     var el = byId('glossary-letter-bar');
@@ -125,6 +135,16 @@
     byId('glossary-public-cancel-btn').style.display = 'none';
   }
 
+  function bindBucketAutoFill() {
+    var koInput = byId('glossary-public-ko');
+    var bucketSelect = byId('glossary-public-bucket');
+    if (!koInput || !bucketSelect) return;
+    koInput.addEventListener('input', function () {
+      var inferred = inferBucket(koInput.value);
+      if (inferred) bucketSelect.value = inferred;
+    });
+  }
+
   function openLoginModal() {
     byId('glossary-login-error').style.display = 'none';
     byId('glossary-login-password').value = '';
@@ -195,6 +215,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     bindSearch();
     renderBucketBar();
+    bindBucketAutoFill();
     byId('glossary-admin-toggle-btn').addEventListener('click', ensureGlossaryEditor);
     byId('glossary-public-submit-btn').addEventListener('click', submitPublicTerm);
     byId('glossary-public-cancel-btn').addEventListener('click', resetPublicEditor);

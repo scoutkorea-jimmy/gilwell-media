@@ -52,6 +52,8 @@
   var _historyItems = [];
   var _historyPage  = 1;
   var _historyLoaded = false;
+  var GLOSSARY_BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+  var GLOSSARY_CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _HISTORY_PAGE_SIZE = 10;
   var _glossaryItems = [];
   var _glossaryEditingId = null;
@@ -2054,6 +2056,7 @@
   }
 
   function loadGlossaryAdmin() {
+    bindGlossaryBucketAutofill();
     fetch('/api/glossary', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -2064,6 +2067,26 @@
         var list = document.getElementById('glossary-admin-list');
         if (list) list.innerHTML = '<div class="list-empty">용어를 불러오지 못했습니다.</div>';
       });
+  }
+
+  function inferGlossaryBucket(termKo) {
+    var first = String(termKo || '').trim().charAt(0);
+    if (!first) return '';
+    var code = first.charCodeAt(0);
+    if (code < 0xac00 || code > 0xd7a3) return '';
+    var choseongIndex = Math.floor((code - 0xac00) / 588);
+    return GLOSSARY_CHOSEONG_BUCKETS[choseongIndex] || '';
+  }
+
+  function bindGlossaryBucketAutofill() {
+    var koInput = document.getElementById('glossary-ko-input');
+    var bucketSelect = document.getElementById('glossary-bucket-input');
+    if (!koInput || !bucketSelect || koInput.dataset.bucketBound === '1') return;
+    koInput.dataset.bucketBound = '1';
+    koInput.addEventListener('input', function () {
+      var inferred = inferGlossaryBucket(koInput.value);
+      if (inferred && GLOSSARY_BUCKETS.indexOf(inferred) >= 0) bucketSelect.value = inferred;
+    });
   }
 
   window.filterGlossaryAdmin = function () {
