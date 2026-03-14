@@ -1,12 +1,20 @@
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet(context) {
+  return buildSitemapResponse(context, false);
+}
+
+export async function onRequestHead(context) {
+  return buildSitemapResponse(context, true);
+}
+
+async function buildSitemapResponse({ request, env }, headOnly) {
   const origin = new URL(request.url).origin;
   const staticPages = [
     { path: '/', priority: '1.0', category: null },
-    { path: '/korea.html', priority: '0.9', category: 'korea' },
-    { path: '/apr.html', priority: '0.9', category: 'apr' },
-    { path: '/wosm.html', priority: '0.9', category: 'wosm' },
-    { path: '/people.html', priority: '0.9', category: 'people' },
-    { path: '/glossary.html', priority: '0.9', category: 'glossary' },
+    { path: '/korea', priority: '0.9', category: 'korea' },
+    { path: '/apr', priority: '0.9', category: 'apr' },
+    { path: '/wosm', priority: '0.9', category: 'wosm' },
+    { path: '/people', priority: '0.9', category: 'people' },
+    { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/ai-guide.html', priority: '0.4', category: null },
     { path: '/contributors.html', priority: '0.5', category: null },
   ];
@@ -49,7 +57,7 @@ export async function onRequestGet({ request, env }) {
 ${urls.join('\n')}
 </urlset>`;
 
-  return new Response(xml, {
+  return new Response(headOnly ? null : xml, {
     headers: {
       'Content-Type': 'application/xml; charset=UTF-8',
       'Cache-Control': 'public, max-age=3600',
