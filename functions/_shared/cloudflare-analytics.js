@@ -82,7 +82,7 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
 
   return {
     provider: 'cloudflare',
-    provider_label: 'Cloudflare',
+    provider_label: 'CF eyeball',
     range: {
       start_date: queryRange.startDate,
       end_date: queryRange.endDate,
@@ -113,7 +113,7 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
     },
     top_paths: topPaths,
     referrers,
-    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. requestSource=eyeball 기준 데이터를 사용하고, 정적 자산·API 요청·비공개 관리 경로는 제외했습니다.${referrerFallback ? ' 현재 계정 권한 범위에서는 일부 유입 경로 필드가 비활성화되어 referrer 목록이 비어 있을 수 있습니다.' : ''}`,
+    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. requestSource=eyeball 기준 방문과 페이지뷰만 사용하고, 알려진 봇·정적 자산·API 요청·비공개 관리 경로는 제외했습니다. 대외 비교 기준은 최근 30일 visits/pageviews를 권장합니다.${referrerFallback ? ' 현재 계정 권한 범위에서는 일부 유입 경로 필드가 비활성화되어 referrer 목록이 비어 있을 수 있습니다.' : ''}`,
   };
 }
 
