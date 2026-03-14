@@ -46,6 +46,10 @@
     });
   }
 
+  function hasKoreanTerm(item) {
+    return !!String(item && item.term_ko || '').trim();
+  }
+
   function renderTable(items) {
     var canEdit = !!(GW.getToken && GW.getToken());
     var head = '<thead><tr><th>한국어</th><th>English</th><th>Français</th></tr></thead>';
@@ -71,8 +75,9 @@
             '</span>' +
           '</div>';
         }
+        var koLabel = hasKoreanTerm(item) ? GW.escapeHtml(item.term_ko || '-') : '<span class="glossary-unmatched-label">국문 미확정</span>';
         var row = '<tr class="glossary-term-row">' +
-          '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
+          '<td data-label="한국어">' + koLabel + '</td>' +
           '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
           '<td data-label="Français">' + frCell + '</td>' +
         '</tr>';
@@ -102,6 +107,8 @@
 
   function renderGlossary() {
     var items = getFilteredItems();
+    var regularItems = items.filter(hasKoreanTerm);
+    var unmatchedItems = items.filter(function (item) { return !hasKoreanTerm(item); });
     var meta = byId('glossary-results-meta');
     var list = byId('glossary-results');
     if (meta) meta.textContent = (_bucket === 'all' ? '전체' : _bucket) + ' · ' + GW.formatNumber(items.length) + '개 용어';
@@ -112,16 +119,26 @@
     }
     if (_bucket === 'all' && !_query) {
       list.innerHTML = BUCKETS.map(function (bucket) {
-        var group = items.filter(function (item) { return item.bucket === bucket; });
+        var group = regularItems.filter(function (item) { return item.bucket === bucket; });
         if (!group.length) return '';
         return '<section class="glossary-section"><h3 class="glossary-section-title">' + bucket + '</h3>' + renderTable(group) + '</section>';
-      }).join('');
+      }).join('') + renderUnmatchedSection(unmatchedItems);
     } else {
-      list.innerHTML = '<section class="glossary-section">' + renderTable(items) + '</section>';
+      list.innerHTML = (regularItems.length ? '<section class="glossary-section">' + renderTable(regularItems) + '</section>' : '') +
+        ((_bucket === 'all' || _query) ? renderUnmatchedSection(unmatchedItems) : '');
     }
     bindInlineEditButtons();
     bindDescriptionToggles();
     bindInlineEditRowActions();
+  }
+
+  function renderUnmatchedSection(items) {
+    if (!items.length) return '';
+    return '<section class="glossary-section glossary-unmatched-section">' +
+      '<h3 class="glossary-section-title">국문 미확정 용어</h3>' +
+      '<p class="glossary-unmatched-note">적절한 한국어 대응 용어를 아직 찾지 못한 스카우트 용어들입니다. 언제든 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a> 으로 메일 주시면 검토 후 반영하겠습니다.</p>' +
+      renderTable(items) +
+    '</section>';
   }
 
   function bindSearch() {
