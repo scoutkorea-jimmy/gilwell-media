@@ -133,7 +133,7 @@ async function getInternalMetrics(env, range) {
       visits: item.visits || 0,
       pageviews: item.pageviews || 0,
     })),
-    tracking_note: `${range.label} 기준 내부 집계입니다. Cloudflare API 토큰을 설정하면 분석 탭과 홈 푸터가 Cloudflare visits 기준으로 전환됩니다.`,
+    tracking_note: `${range.label} 기준 내부 집계입니다. 알려진 봇, 소셜 미리보기 크롤러, 프리페치 요청은 기록에서 제외합니다. Cloudflare API 토큰을 설정하면 분석 탭과 홈 푸터가 Cloudflare visits 기준으로 전환됩니다.`,
   };
 }
 

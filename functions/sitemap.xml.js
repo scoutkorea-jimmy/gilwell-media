@@ -1,29 +1,43 @@
 export async function onRequestGet({ request, env }) {
   const origin = new URL(request.url).origin;
   const staticPages = [
-    { path: '/', priority: '1.0' },
-    { path: '/korea.html', priority: '0.9' },
-    { path: '/apr.html', priority: '0.9' },
-    { path: '/wosm.html', priority: '0.9' },
-    { path: '/people.html', priority: '0.9' },
-    { path: '/contributors.html', priority: '0.5' },
+    { path: '/', priority: '1.0', category: null },
+    { path: '/korea.html', priority: '0.9', category: 'korea' },
+    { path: '/apr.html', priority: '0.9', category: 'apr' },
+    { path: '/wosm.html', priority: '0.9', category: 'wosm' },
+    { path: '/people.html', priority: '0.9', category: 'people' },
+    { path: '/contributors.html', priority: '0.5', category: null },
   ];
 
   let posts = [];
+  let staticLastmods = {};
   try {
-    const result = await env.DB.prepare(
-      `SELECT id, updated_at
-         FROM posts
-        WHERE published = 1
-        ORDER BY created_at DESC`
-    ).all();
-    posts = result.results || [];
+    const [postResult, lastmodResult] = await Promise.all([
+      env.DB.prepare(
+        `SELECT id, updated_at
+           FROM posts
+          WHERE published = 1
+          ORDER BY created_at DESC`
+      ).all(),
+      env.DB.prepare(
+        `SELECT category, MAX(updated_at) AS updated_at
+           FROM posts
+          WHERE published = 1
+          GROUP BY category`
+      ).all(),
+    ]);
+    posts = postResult.results || [];
+    (lastmodResult.results || []).forEach((row) => {
+      if (row.category) staticLastmods[row.category] = row.updated_at || null;
+    });
+    staticLastmods.home = posts.length ? (posts[0].updated_at || null) : null;
   } catch (err) {
     console.error('GET /sitemap.xml error:', err);
   }
 
   const urls = staticPages.map((page) => {
-    return xmlUrl(`${origin}${page.path}`, null, page.priority);
+    const lastmod = page.category ? staticLastmods[page.category] : staticLastmods.home;
+    return xmlUrl(`${origin}${page.path}`, lastmod, page.priority);
   }).concat(posts.map((post) => {
     return xmlUrl(`${origin}/post/${post.id}`, post.updated_at, '0.8');
   }));
