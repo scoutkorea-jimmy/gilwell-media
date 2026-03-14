@@ -1133,30 +1133,40 @@ p { margin-bottom: 6px; }
 }
 
 /* ── Load More button ── */
-.load-more-btn {
-  display:        block;
-  margin:         40px auto 0;
-  padding:        12px 32px;
-  background:     none;
-  border:         1px solid var(--border);
-  font-family:    'DM Mono', monospace;
-  font-size:      11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color:          var(--muted);
-  cursor:         pointer;
-  transition:     all 0.15s;
+.board-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 36px auto 0;
 }
 
-.load-more-btn:hover {
-  background:   var(--black);
-  color:        var(--white);
+.board-page-btn {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.board-page-btn:hover {
   border-color: var(--black);
+  color: var(--black);
 }
 
-.load-more-btn:disabled {
-  opacity: 0.4;
-  cursor:  not-allowed;
+.board-page-btn.active {
+  background: var(--black);
+  border-color: var(--black);
+  color: var(--white);
+}
+
+.board-page-btn.board-page-nav {
+  text-transform: uppercase;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -2799,7 +2809,27 @@ footer a:hover { color: #ffffff; }
   .filter-bar         { padding: 16px 24px; }
 
   .board-banner       { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
-  .board-banner-total { display: none; }
+  .board-banner-total {
+    display: block;
+    width: 100%;
+    text-align: right;
+    align-self: stretch;
+    margin-top: 12px;
+    font-size: 40px;
+  }
+  .board-banner-total.has-event {
+    display: flex;
+    width: 100%;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .board-banner-total-label {
+    max-width: none;
+    width: 100%;
+  }
+  .board-banner-total-value {
+    font-size: 40px;
+  }
   .board-container    { padding: 0 24px 40px; }
   .board-grid         { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -2926,6 +2956,25 @@ footer a:hover { color: #ffffff; }
   .board-banner       { padding: 20px 16px; }
   .board-banner h2    { font-size: 20px; }
   .board-banner p     { font-size: 12px; }
+  .board-banner-total {
+    display: block;
+    width: 100%;
+    text-align: right;
+    margin-top: 10px;
+    font-size: 30px;
+  }
+  .board-banner-total.has-event {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .board-banner-total-label {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .board-banner-total-value {
+    font-size: 30px;
+  }
 
   /* Ticker on phone */
   .ticker             { font-size: 10px; padding: 6px 0; }

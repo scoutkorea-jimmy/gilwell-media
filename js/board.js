@@ -22,14 +22,15 @@
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
-    this.moreBtnEl = document.getElementById(opts.moreId  || 'load-more-btn');
+    this.paginationEl = document.getElementById(opts.paginationId || 'board-pagination');
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
     this.bannerInfo = { event_name: '', event_date: '' };
 
     this.page          = 1;
+    this.pageSize      = 16;
+    this.totalPages    = 1;
     this.total         = 0;
     this.loading       = false;
-    this.hasMore       = true;
     this._searchQuery  = '';
     this._selectedTag  = null;
     this._loginTurnstileWidgetId = null;
@@ -48,10 +49,6 @@
     this._loadBoardBannerInfo();
     this._load();
     this._loadTagBar();
-
-    if (this.moreBtnEl) {
-      this.moreBtnEl.addEventListener('click', function () { self._load(); });
-    }
   };
 
   Board.prototype._loadBoardLayout = function () {
@@ -120,16 +117,16 @@
   Board.prototype._resetAndLoad = function () {
     this.page    = 1;
     this.total   = 0;
-    this.hasMore = true;
+    this.totalPages = 1;
     this.loading = false;
     this.gridEl.innerHTML = '';
-    if (this.moreBtnEl) this.moreBtnEl.style.display = 'none';
+    if (this.paginationEl) this.paginationEl.innerHTML = '';
     this._load();
   };
 
   // ── Load posts from API ───────────────────────────────────
   Board.prototype._load = function () {
-    if (this.loading || !this.hasMore) return;
+    if (this.loading) return;
     var self = this;
     this.loading = true;
     this._showLoading();
@@ -139,14 +136,11 @@
     GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam + tagParam)
       .then(function (data) {
         self.total   = data.total;
-        self.hasMore = (data.page * data.pageSize) < data.total;
-        self.page++;
+        self.pageSize = data.pageSize || self.pageSize || 16;
+        self.totalPages = Math.max(1, Math.ceil(self.total / self.pageSize));
         self._renderPosts(data.posts);
         self._updateCount();
-        if (self.moreBtnEl) {
-          self.moreBtnEl.style.display = self.hasMore ? 'block' : 'none';
-          self.moreBtnEl.disabled = false;
-        }
+        self._renderPagination();
       })
       .catch(function (err) {
         console.error(err);
@@ -160,10 +154,9 @@
   // ── Render cards ──────────────────────────────────────────
   Board.prototype._renderPosts = function (posts) {
     var self = this;
-    var existing = this.gridEl.querySelector('.loading-state, .empty-state, .error-state');
-    if (existing) existing.remove();
+    this.gridEl.innerHTML = '';
 
-    if (posts.length === 0 && this.page === 2) {
+    if (posts.length === 0) {
       this._showEmpty();
       return;
     }
@@ -171,6 +164,41 @@
     posts.forEach(function (post, i) {
       var card = self._buildCard(post, i);
       self.gridEl.appendChild(card);
+    });
+  };
+
+  Board.prototype._renderPagination = function () {
+    if (!this.paginationEl) return;
+    if (this.totalPages <= 1) {
+      this.paginationEl.innerHTML = '';
+      return;
+    }
+
+    var currentPage = this.page;
+    var totalPages = this.totalPages;
+    var start = Math.max(1, currentPage - 2);
+    var end = Math.min(totalPages, start + 4);
+    start = Math.max(1, end - 4);
+    var html = '';
+
+    if (currentPage > 1) {
+      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage - 1) + '">이전</button>';
+    }
+    for (var page = start; page <= end; page++) {
+      html += '<button type="button" class="board-page-btn' + (page === currentPage ? ' active' : '') + '" data-page="' + page + '">[' + page + ']</button>';
+    }
+    if (currentPage < totalPages) {
+      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage + 1) + '">다음</button>';
+    }
+    this.paginationEl.innerHTML = html;
+    this.paginationEl.querySelectorAll('[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var nextPage = parseInt(btn.getAttribute('data-page') || '1', 10);
+        if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage === currentPage) return;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        self.page = nextPage;
+        self._load();
+      });
     });
   };
 
@@ -320,13 +348,10 @@
 
   // ── State displays ────────────────────────────────────────
   Board.prototype._showLoading = function () {
-    if (this.page === 1) {
-      this.gridEl.innerHTML =
-        '<div class="loading-state">' +
-          '<div class="loading-dots"><span></span><span></span><span></span></div>' +
-        '</div>';
-    }
-    if (this.moreBtnEl) this.moreBtnEl.disabled = true;
+    this.gridEl.innerHTML =
+      '<div class="loading-state">' +
+        '<div class="loading-dots"><span></span><span></span><span></span></div>' +
+      '</div>';
   };
 
   Board.prototype._showEmpty = function () {
@@ -586,7 +611,7 @@
     this._searchQuery = q;
     this.page    = 1;
     this.total   = 0;
-    this.hasMore = true;
+    this.totalPages = 1;
     this.loading = false;
     this.gridEl.innerHTML = '';
     this._load();
@@ -968,7 +993,7 @@
             self._closeWriteForm();
             self.page    = 1;
             self.total   = 0;
-            self.hasMore = true;
+            self.totalPages = 1;
             self.gridEl.innerHTML = '';
             self._load();
           })
