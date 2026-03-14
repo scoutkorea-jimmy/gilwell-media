@@ -173,11 +173,18 @@ p { margin-bottom: 6px; }
   letter-spacing: 0.08em;
   padding: 4px 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .masthead-type-btn.active {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+.masthead-type-value {
+  opacity: 0.72;
 }
 
 .masthead-time {
@@ -3026,9 +3033,9 @@ footer a:hover { color: #ffffff; }
     text-align: center;
     padding-bottom: 4px;
   }
-  .masthead-logo h1   { font-size: var(--mobile-fs-section); }
+  .masthead-logo h1   { font-size: calc(32px * var(--mobile-user-scale)); }
   .masthead-logo .sub { font-size: var(--mobile-fs-micro); letter-spacing: 0.12em; }
-  .masthead-logo-img  { width: 28px; height: 28px; }
+  .masthead-logo-img  { width: 56px; height: 56px; }
   .masthead-type-controls {
     display: inline-flex;
     align-items: center;
@@ -3680,6 +3687,14 @@ footer a:hover { color: #ffffff; }
 @media (max-width: 480px) {
   .post-page-wrap {
     padding: 24px 16px 48px;
+  }
+  .post-page-meta > span:not(.category-tag):not(.post-kicker):not(.post-page-action-btns) {
+    display: none;
+  }
+  .post-byline-author,
+  .ai-disclaimer,
+  .post-page-sidebar .pps-section:nth-child(2) {
+    display: none;
   }
 }
 
@@ -4700,9 +4715,9 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-description-toggle {
   position: relative;
-  min-width: 32px;
-  height: 32px;
-  padding: 0;
+  min-width: 88px;
+  min-height: 32px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--black);
@@ -4713,6 +4728,13 @@ footer a:hover { color: #ffffff; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+.glossary-description-toggle-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 .glossary-description-toggle:hover {
   color: var(--black);
@@ -4723,12 +4745,9 @@ footer a:hover { color: #ffffff; }
   transform: translate(-50%, -50%) rotate(180deg);
 }
 .glossary-chevron {
-  position: absolute;
-  left: 50%;
-  top: 50%;
   display: block;
   line-height: 1;
-  transform: translate(-50%, -50%);
+  transform: translateY(-1px);
   transform-origin: center center;
   transition: transform 0.15s ease;
 }
@@ -4888,8 +4907,8 @@ footer a:hover { color: #ffffff; }
     font-size: 10px;
   }
   .glossary-description-toggle {
-    min-width: 30px;
-    height: 30px;
+    min-width: 96px;
+    min-height: 32px;
   }
   .glossary-inline-edit-grid {
     grid-template-columns: 1fr;

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.26';
+  GW.APP_VERSION = '0.048.27';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -193,15 +193,43 @@
     });
   };
 
+  GW.readCachedPayload = function (key, maxAgeMs) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (!parsed.savedAt || (Date.now() - parsed.savedAt) > maxAgeMs) return null;
+      return parsed.data;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  GW.writeCachedPayload = function (key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify({
+        savedAt: Date.now(),
+        data: data,
+      }));
+    } catch (_) {}
+  };
+
   GW.applyMobileTypeScale = function () {
     var raw = '1';
     try {
       raw = localStorage.getItem('gw_mobile_type_scale') || '1';
     } catch (_) {}
-    var scale = raw === '0.92' || raw === '1.08' ? raw : '1';
+    var scaleNum = parseFloat(raw);
+    if (!Number.isFinite(scaleNum)) scaleNum = 1;
+    scaleNum = Math.max(0.84, Math.min(1.32, Math.round(scaleNum * 100) / 100));
+    var scale = String(scaleNum);
     document.documentElement.style.setProperty('--mobile-user-scale', scale);
     document.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
-      btn.classList.toggle('active', btn.getAttribute('data-scale') === scale);
+      btn.classList.toggle('active', btn.getAttribute('data-action') === 'reset' && scaleNum === 1);
+    });
+    document.querySelectorAll('.masthead-type-value').forEach(function (el) {
+      el.textContent = Math.round(scaleNum * 100) + '%';
     });
   };
 
@@ -215,15 +243,25 @@
     controls.setAttribute('role', 'group');
     controls.setAttribute('aria-label', '글자 크기 조절');
     controls.innerHTML =
-      '<button type="button" class="masthead-type-btn" data-scale="0.92" aria-label="글자 크기 줄이기">A-</button>' +
-      '<button type="button" class="masthead-type-btn" data-scale="1" aria-label="기본 글자 크기">A</button>' +
-      '<button type="button" class="masthead-type-btn" data-scale="1.08" aria-label="글자 크기 키우기">A+</button>';
+      '<button type="button" class="masthead-type-btn" data-action="decrease" aria-label="글자 크기 줄이기">A-</button>' +
+      '<button type="button" class="masthead-type-btn" data-action="reset" aria-label="기본 글자 크기로 되돌리기">A <span class="masthead-type-value">100%</span></button>' +
+      '<button type="button" class="masthead-type-btn" data-action="increase" aria-label="글자 크기 키우기">A+</button>';
     logo.appendChild(controls);
     controls.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var scale = btn.getAttribute('data-scale') || '1';
+        var action = btn.getAttribute('data-action') || 'reset';
+        var current = 1;
         try {
-          localStorage.setItem('gw_mobile_type_scale', scale);
+          current = parseFloat(localStorage.getItem('gw_mobile_type_scale') || '1');
+        } catch (_) {}
+        if (!Number.isFinite(current)) current = 1;
+        var scale = current;
+        if (action === 'decrease') scale = current - 0.08;
+        else if (action === 'increase') scale = current + 0.08;
+        else scale = 1;
+        scale = Math.max(0.84, Math.min(1.32, Math.round(scale * 100) / 100));
+        try {
+          localStorage.setItem('gw_mobile_type_scale', String(scale));
         } catch (_) {}
         GW.applyMobileTypeScale();
       });
@@ -383,9 +421,17 @@
   };
 
   GW.applyManagedFooter = function () {
+    var cacheKey = 'gw_cache_site_meta_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW.applyManagedFooterData(cached);
+    }
     fetch('/api/settings/site-meta', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
-      .then(function (data) { GW.applyManagedFooterData(data); })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW.applyManagedFooterData(data);
+      })
       .catch(function () {});
   };
 
@@ -611,9 +657,17 @@
 
   /** Load custom translation overrides from API then apply. */
   GW.loadTranslations = function () {
+    var cacheKey = 'gw_cache_translations_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 60 * 12);
+    if (cached && cached.strings) {
+      GW._customStrings = cached.strings || {};
+      GW.applyLang();
+      if (GW._statsData) GW._renderStats();
+    }
     fetch('/api/settings/translations')
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
         GW._customStrings = data.strings || {};
         GW.applyLang();
         // Re-render stats if already loaded
@@ -624,9 +678,16 @@
 
   /** Fetch article counts and show in masthead stats bar. */
   GW.loadStats = function () {
+    var cacheKey = 'gw_cache_stats_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 5);
+    if (cached) {
+      GW._statsData = cached;
+      GW._renderStats();
+    }
     fetch('/api/stats')
       .then(function (r) { return r.json(); })
       .then(function (d) {
+        GW.writeCachedPayload(cacheKey, d);
         GW._statsData = d;
         GW._renderStats();
       })
@@ -662,10 +723,16 @@
   GW.loadTicker = function (innerId) {
     var inner = document.getElementById(innerId || 'ticker-inner');
     if (!inner) return;
+    var cacheKey = 'gw_cache_ticker_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached && Array.isArray(cached.items)) {
+      GW.renderTickerItems(innerId, cached.items || []);
+    }
 
     fetch('/api/settings/ticker')
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
         GW.renderTickerItems(innerId, data.items || []);
       })
       .catch(function () { /* keep static fallback */ });
