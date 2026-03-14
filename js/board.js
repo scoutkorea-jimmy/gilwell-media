@@ -21,6 +21,7 @@
     this.category = opts.category;
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
+    this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
     this.moreBtnEl = document.getElementById(opts.moreId  || 'load-more-btn');
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
 
@@ -311,6 +312,7 @@
 
   Board.prototype._updateCount = function () {
     if (this.countEl) this.countEl.textContent = '총 ' + this.total + '개';
+    if (this.bannerTotalEl) this.bannerTotalEl.textContent = this.total + '개';
   };
 
   // ── Write Feature ─────────────────────────────────────────
