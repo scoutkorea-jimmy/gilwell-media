@@ -68,6 +68,12 @@
 
   // Hero search cache
   var _allPosts = [];
+  var _heroSearchPage = 1;
+  var _heroSearchHasMore = true;
+  var _heroSearchLoading = false;
+  var _heroSearchQuery = '';
+  var _heroSearchResults = [];
+  var _heroSearchBound = false;
 
   function getAdminRole() {
     return _adminRole === 'limited' ? 'limited' : 'full';
@@ -105,6 +111,7 @@
         }
       });
     }
+    _bindHeroSearchUi();
 
     // Handle ?edit=ID in URL (for edit button on post pages)
     var editParam = new URLSearchParams(location.search).get('edit');
@@ -1554,6 +1561,89 @@
   };
 
   // ─── Hero admin (up to 5 articles) ───────────────────────
+  function _bindHeroSearchUi() {
+    if (_heroSearchBound) return;
+    _heroSearchBound = true;
+    var input = document.getElementById('hero-search-input');
+    var list = document.getElementById('hero-search-results');
+    if (input) {
+      ['focus', 'click'].forEach(function (evt) {
+        input.addEventListener(evt, function () {
+          if (!_heroSearchResults.length && !_heroSearchLoading) {
+            _resetHeroSearch();
+            _loadHeroSearchResults();
+          }
+        });
+      });
+    }
+    if (list) {
+      list.addEventListener('scroll', function () {
+        if (_heroSearchLoading || !_heroSearchHasMore) return;
+        if ((list.scrollTop + list.clientHeight) >= (list.scrollHeight - 24)) {
+          _loadHeroSearchResults();
+        }
+      });
+    }
+  }
+
+  function _resetHeroSearch() {
+    _heroSearchPage = 1;
+    _heroSearchHasMore = true;
+    _heroSearchLoading = false;
+    _heroSearchResults = [];
+    _heroSearchQuery = (document.getElementById('hero-search-input').value || '').trim();
+    _renderHeroSearchResults();
+  }
+
+  function _loadHeroSearchResults() {
+    var list = document.getElementById('hero-search-results');
+    if (!list || _heroSearchLoading || !_heroSearchHasMore) return;
+    _heroSearchLoading = true;
+    if (!_heroSearchResults.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사 목록을 불러오는 중…</div>';
+    } else {
+      list.setAttribute('data-loading', '1');
+    }
+    var query = _heroSearchQuery ? '&q=' + encodeURIComponent(_heroSearchQuery) : '';
+    GW.apiFetch('/api/posts?page=' + _heroSearchPage + '&limit=10' + query)
+      .then(function (data) {
+        var rows = Array.isArray(data.posts) ? data.posts : [];
+        _heroSearchResults = _heroSearchResults.concat(rows);
+        _heroSearchHasMore = rows.length === 10;
+        _heroSearchPage += 1;
+        _renderHeroSearchResults();
+      })
+      .catch(function () {
+        if (!_heroSearchResults.length) {
+          list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사를 불러오지 못했습니다</div>';
+        }
+      })
+      .finally(function () {
+        _heroSearchLoading = false;
+        if (list) list.removeAttribute('data-loading');
+      });
+  }
+
+  function _renderHeroSearchResults() {
+    var list = document.getElementById('hero-search-results');
+    if (!list) return;
+    if (!_heroSearchResults.length) {
+      list.innerHTML = _heroSearchQuery
+        ? '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>'
+        : '<div style="font-size:12px;color:var(--muted);padding:8px 0;">최신 기사 10개를 먼저 표시합니다. 아래로 스크롤하면 더 불러옵니다.</div>';
+      return;
+    }
+    list.innerHTML = _heroSearchResults.map(function (p) {
+      var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+      var already = _heroPostIds.indexOf(p.id) >= 0;
+      return '<div class="hero-result-item" style="' + (already ? 'opacity:0.5;pointer-events:none;' : '') + '" onclick="addHeroSlot(' + p.id + ')">' +
+        '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';margin-right:6px;">' + cat.label + '</span>' +
+        GW.escapeHtml(p.title) +
+        (already ? ' <span style="font-size:10px;color:var(--muted);">(이미 추가됨)</span>' : '') +
+      '</div>';
+    }).join('') + (_heroSearchHasMore ? '<div style="font-size:11px;color:var(--muted);padding:10px 0 2px;">아래로 스크롤하면 더 불러옵니다.</div>' : '');
+  }
+
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
       _heroPostIds = (data.posts || []).map(function(p){ return p.id; });
@@ -1587,23 +1677,8 @@
   };
 
   window.heroSearch = function () {
-    var q = (document.getElementById('hero-search-input').value || '').trim();
-    var list = document.getElementById('hero-search-results'); if (!list) return;
-    if (!q) { list.innerHTML = ''; return; }
-    GW.apiFetch('/api/posts?q=' + encodeURIComponent(q))
-      .then(function(data){
-        var results = (data.posts || []).slice(0, 8);
-        if (!results.length) { list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>'; return; }
-        list.innerHTML = results.map(function(p){
-          var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-          var already = _heroPostIds.indexOf(p.id) >= 0;
-          return '<div class="hero-result-item" style="' + (already ? 'opacity:0.5;pointer-events:none;' : '') + '" onclick="addHeroSlot(' + p.id + ')">' +
-            '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';margin-right:6px;">'+cat.label+'</span>' +
-            GW.escapeHtml(p.title) +
-            (already ? ' <span style="font-size:10px;color:var(--muted);">(이미 추가됨)</span>' : '') +
-          '</div>';
-        }).join('');
-      }).catch(function(){ list.innerHTML = ''; });
+    _resetHeroSearch();
+    _loadHeroSearchResults();
   };
 
   window.addHeroSlot = function (id) {
@@ -1611,8 +1686,8 @@
     if (_heroPostIds.indexOf(id) >= 0) { GW.showToast('이미 추가된 기사입니다', 'error'); return; }
     _heroPostIds.push(id);
     _saveHeroIds();
-    document.getElementById('hero-search-results').innerHTML = '';
-    document.getElementById('hero-search-input').value = '';
+    _resetHeroSearch();
+    _loadHeroSearchResults();
   };
 
   window.saveHeroSettings = function () {

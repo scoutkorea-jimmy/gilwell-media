@@ -237,6 +237,7 @@ p { margin-bottom: 6px; }
 .nav {
   display:    flex;
   align-items: center;
+  justify-content: center;
   gap:         0;
   padding:     0 48px;
   overflow-x:  auto;
@@ -281,7 +282,7 @@ p { margin-bottom: 6px; }
 .ticker-inner {
   display:        inline-block;
   white-space:    nowrap;
-  animation:      ticker 30s linear infinite;
+  animation:      ticker 60s linear infinite;
   font-family:    'DM Mono', monospace;
   font-size:      11px;
   letter-spacing: 0.08em;
@@ -3413,6 +3414,7 @@ footer a:hover { color: #ffffff; }
 .admin-group-nav {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 14px 32px 18px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -3518,6 +3520,7 @@ footer a:hover { color: #ffffff; }
 .admin-subnav {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   margin-bottom: 20px;
 }

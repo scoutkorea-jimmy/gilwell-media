@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.037.00';
+  GW.APP_VERSION = '0.038.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -620,8 +620,8 @@
         var run  = items.map(function (t) { return GW.escapeHtml(t); }).join(sep);
         // Two identical runs → animate translateX(-50%) for a seamless infinite loop
         inner.innerHTML = run + sep + run + sep;
-        // Adjust speed: ~8s per item, minimum 20s
-        var dur = Math.max(20, items.length * 8);
+        // Slow ticker to roughly 50% of the previous speed, regardless of copy length.
+        var dur = Math.max(40, items.length * 16);
         inner.style.animationDuration = dur + 's';
       })
       .catch(function () { /* keep static fallback */ });
