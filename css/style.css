@@ -2673,6 +2673,20 @@ footer a:hover { color: #ffffff; }
   .post-page-sidebar  { position: static; }
 }
 
+@media (max-width: 1180px) {
+  .masthead-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+  }
+
+  .stat-sep {
+    display: none;
+  }
+}
+
 @media (max-width: 480px) {
   /* ── Masthead: stack into two rows ── */
   .masthead-top {
