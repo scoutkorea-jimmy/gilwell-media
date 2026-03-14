@@ -42,6 +42,7 @@ const DEFAULT_SITE_META = {
     },
   },
   footer: {
+    raw_text: '',
     title: 'BP미디어',
     description: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
     domain_label: 'bpmedia.net',
@@ -81,6 +82,7 @@ export function normalizeSiteMeta(raw) {
 
   const footer = raw && raw.footer ? raw.footer : {};
   meta.footer = {
+    raw_text: sanitizeText(footer.raw_text, DEFAULT_SITE_META.footer.raw_text, 1000),
     title: sanitizeText(footer.title, DEFAULT_SITE_META.footer.title, 80),
     description: sanitizeText(footer.description, DEFAULT_SITE_META.footer.description, 260),
     domain_label: sanitizeText(footer.domain_label, DEFAULT_SITE_META.footer.domain_label, 120),
