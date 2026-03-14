@@ -2,7 +2,7 @@
  * GET  /api/settings/ai-disclaimer  ← public, get current disclaimer text
  * PUT  /api/settings/ai-disclaimer  ← admin only, update disclaimer text
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -15,7 +15,7 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다.' }, 401);
   }
   let body;

@@ -1,4 +1,4 @@
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 const DEFAULT_GAP = 6;
 
@@ -14,7 +14,7 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 

@@ -8,14 +8,14 @@
  * Internal names are NOT shown publicly on posts — only used in admin panel.
  * Posts store author as "Editor A", "Editor B", etc.
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 const LETTERS = ['A', 'B', 'C'];
 
 export async function onRequestGet({ request, env }) {
   // Require auth — editor real names are private
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 
@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 

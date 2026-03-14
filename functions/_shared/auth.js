@@ -11,12 +11,14 @@
 /**
  * Create a signed session token valid for 24 hours.
  * @param {string} secret  ADMIN_SECRET environment variable value
+ * @param {string} role    full | limited
  * @returns {Promise<string>} token string
  */
-export async function createToken(secret) {
+export async function createToken(secret, role = 'full') {
   const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = b64url(JSON.stringify({
     sub: 'admin',
+    role: normalizeRole(role),
     exp: Date.now() + 86_400_000, // 24 h in ms
   }));
   const data = `${header}.${payload}`;
@@ -32,26 +34,49 @@ export async function createToken(secret) {
  * @returns {Promise<boolean>}
  */
 export async function verifyToken(token, secret) {
+  const payload = await readToken(token, secret);
+  return !!payload;
+}
+
+export async function readToken(token, secret) {
   try {
-    if (!token || typeof token !== 'string') return false;
+    if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return null;
 
     const [header, payload, sig] = parts;
     const parsed = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
 
     // Check expiry
-    if (!parsed.exp || parsed.exp < Date.now()) return false;
+    if (!parsed.exp || parsed.exp < Date.now()) return null;
     // Check subject
-    if (parsed.sub !== 'admin') return false;
+    if (parsed.sub !== 'admin') return null;
 
     // Verify signature
     const key = await importKey(secret, ['verify']);
     const sigBuf = b64urlToBuf(sig);
-    return await crypto.subtle.verify('HMAC', key, sigBuf, enc(`${header}.${payload}`));
+    const verified = await crypto.subtle.verify('HMAC', key, sigBuf, enc(`${header}.${payload}`));
+    if (!verified) return null;
+    return {
+      sub: parsed.sub,
+      exp: parsed.exp,
+      role: normalizeRole(parsed.role),
+    };
   } catch {
-    return false;
+    return null;
   }
+}
+
+export async function getTokenRole(token, secret) {
+  const payload = await readToken(token, secret);
+  return payload ? payload.role : null;
+}
+
+export async function verifyTokenRole(token, secret, allowedRoles = ['full']) {
+  const payload = await readToken(token, secret);
+  if (!payload) return false;
+  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+  return roles.includes(payload.role);
 }
 
 /**
@@ -110,4 +135,8 @@ async function importKey(secret, usages) {
     false,
     usages
   );
+}
+
+function normalizeRole(role) {
+  return role === 'limited' ? 'limited' : 'full';
 }

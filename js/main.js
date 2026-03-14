@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.035.00';
+  GW.APP_VERSION = '0.036.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -320,7 +320,7 @@
         var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
         var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
         if (footerBrand && info.raw_text) {
-          footerBrand.innerHTML = GW.renderManagedFooterText(info.raw_text);
+          footerBrand.innerHTML = GW.renderManagedFooterHtml(info.raw_text);
           return;
         }
         if (title && info.title) title.textContent = info.title;
@@ -338,29 +338,8 @@
       .catch(function () {});
   };
 
-  GW.renderManagedFooterText = function (rawText) {
-    var lines = String(rawText || '')
-      .split(/\r?\n/)
-      .map(function (line) { return line.trim(); })
-      .filter(Boolean);
-    if (!lines.length) return '';
-
-    var head = '<h4>' + GW.escapeHtml(lines[0]) + '</h4>';
-    var body = lines.slice(1).map(function (line) {
-      return '<p>' + GW.formatFooterLine(line) + '</p>';
-    }).join('');
-    return head + body;
-  };
-
-  GW.formatFooterLine = function (line) {
-    var text = String(line || '');
-    var emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-    if (!emailMatch) return GW.escapeHtml(text);
-    var email = emailMatch[0];
-    var parts = text.split(email);
-    return GW.escapeHtml(parts[0] || '') +
-      '<a href="mailto:' + GW.escapeHtml(email) + '">' + GW.escapeHtml(email) + '</a>' +
-      GW.escapeHtml(parts.slice(1).join(email) || '');
+  GW.renderManagedFooterHtml = function (rawText) {
+    return String(rawText || '').trim();
   };
 
   if (document.readyState === 'loading') {
@@ -372,7 +351,14 @@
   // ── Session token ─────────────────────────────────────────
   GW.getToken  = function () { return localStorage.getItem('admin_token'); };
   GW.setToken  = function (t) { localStorage.setItem('admin_token', t); };
-  GW.clearToken = function () { localStorage.removeItem('admin_token'); };
+  GW.clearToken = function () {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_role');
+  };
+  GW.getAdminRole = function () { return localStorage.getItem('admin_role') || 'full'; };
+  GW.setAdminRole = function (role) {
+    localStorage.setItem('admin_role', role === 'limited' ? 'limited' : 'full');
+  };
 
   // ── API fetch ─────────────────────────────────────────────
   /**

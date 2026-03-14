@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.035.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.036.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -28,7 +28,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.035.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.036.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -44,14 +44,14 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.035.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.036.00</span></span>
           <a href="index.html" target="_blank">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
       </div>
       <nav class="admin-group-nav" aria-label="관리자 상위 메뉴">
         <button class="admin-group-btn active" id="group-btn-overview" onclick="showAdminGroup('overview')">운영 개요</button>
-        <button class="admin-group-btn" id="group-btn-content" onclick="showAdminGroup('content')">콘텐츠</button>
+        <button class="admin-group-btn" id="group-btn-content" data-role-min="full" onclick="showAdminGroup('content')">콘텐츠</button>
         <button class="admin-group-btn" id="group-btn-site" onclick="showAdminGroup('site')">사이트 설정</button>
       </nav>
     </header>
@@ -69,11 +69,11 @@
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="content" style="display:none;">
-          <button class="admin-sidebar-btn" id="tab-btn-write" onclick="showAdminTab('write')">
+          <button class="admin-sidebar-btn" id="tab-btn-write" data-role-min="full" onclick="showAdminTab('write')">
             <span class="admin-sidebar-btn-label">글 작성</span>
             <span class="admin-sidebar-btn-desc">새 글 작성과 수정</span>
           </button>
-          <button class="admin-sidebar-btn" id="tab-btn-list" onclick="showAdminTab('list')">
+          <button class="admin-sidebar-btn" id="tab-btn-list" data-role-min="full" onclick="showAdminTab('list')">
             <span class="admin-sidebar-btn-label">게시글 목록</span>
             <span class="admin-sidebar-btn-desc">정렬, 공개 상태, 삭제</span>
           </button>
@@ -83,11 +83,11 @@
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
           </button>
-          <button class="admin-sidebar-btn" id="tab-btn-contributors" onclick="showAdminTab('contributors')">
+          <button class="admin-sidebar-btn" id="tab-btn-contributors" data-role-min="full" onclick="showAdminTab('contributors')">
             <span class="admin-sidebar-btn-label">도움을 주신 분들</span>
             <span class="admin-sidebar-btn-desc">기여자 목록 관리</span>
           </button>
-          <button class="admin-sidebar-btn" id="tab-btn-translations" onclick="showAdminTab('translations')">
+          <button class="admin-sidebar-btn" id="tab-btn-translations" data-role-min="full" onclick="showAdminTab('translations')">
             <span class="admin-sidebar-btn-label">UI 번역 관리</span>
             <span class="admin-sidebar-btn-desc">국문/영문 UI 텍스트</span>
           </button>
@@ -130,15 +130,15 @@
 
           <!-- Quick actions -->
           <div class="dash-actions">
-            <button class="dash-action-btn" onclick="showAdminTab('write')">
+            <button class="dash-action-btn" id="dash-action-write" data-role-min="full" onclick="showAdminTab('write')">
               <span class="dash-action-icon">✏</span>
               <span class="dash-action-label">새 게시글</span>
             </button>
-            <button class="dash-action-btn" onclick="showAdminTab('list')">
+            <button class="dash-action-btn" id="dash-action-list" data-role-min="full" onclick="showAdminTab('list')">
               <span class="dash-action-icon">📋</span>
               <span class="dash-action-label">게시글 목록</span>
             </button>
-            <button class="dash-action-btn" onclick="showAdminTab('settings')">
+            <button class="dash-action-btn" id="dash-action-settings" onclick="showAdminTab('settings')">
               <span class="dash-action-icon">⚙</span>
               <span class="dash-action-label">설정</span>
             </button>
@@ -258,7 +258,7 @@
       </div>
 
       <!-- ══ TAB: 글 작성 ══ -->
-      <div id="admin-tab-write" class="admin-tab-panel">
+      <div id="admin-tab-write" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
           <div class="panel-header">
             <h2 id="form-title">새 게시글 작성</h2>
@@ -346,7 +346,7 @@
       </div>
 
       <!-- ══ TAB: 게시글 목록 ══ -->
-      <div id="admin-tab-list" class="admin-tab-panel">
+      <div id="admin-tab-list" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
           <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
             <h2>게시글 목록</h2>
@@ -393,17 +393,17 @@
       <!-- ══ TAB: 설정 ══ -->
       <div id="admin-tab-settings" class="admin-tab-panel">
         <div class="admin-subnav">
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-editors')">에디터</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-hero')">히어로</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-board')">게시판</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-tags')">태그</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-site-meta')">공유/푸터</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-ticker')">티커</button>
-          <button type="button" class="admin-subnav-btn" onclick="scrollAdminSection('settings-copy')">문구</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-editors" data-role-min="full" onclick="scrollAdminSection('settings-editors')">에디터</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-hero" onclick="scrollAdminSection('settings-hero')">히어로</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-board" data-role-min="full" onclick="scrollAdminSection('settings-board')">게시판</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-tags" data-role-min="full" onclick="scrollAdminSection('settings-tags')">태그</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-site-meta" data-role-min="full" onclick="scrollAdminSection('settings-site-meta')">공유/푸터</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-ticker" data-role-min="full" onclick="scrollAdminSection('settings-ticker')">티커</button>
+          <button type="button" class="admin-subnav-btn" data-settings-section="settings-copy" data-role-min="full" onclick="scrollAdminSection('settings-copy')">문구</button>
         </div>
 
         <!-- Editors A-Z setting -->
-        <div class="panel" id="settings-editors" style="margin-bottom:24px;">
+        <div class="panel" id="settings-editors" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>에디터 관리 (A–C)</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
@@ -439,7 +439,7 @@
           </div>
         </div>
 
-        <div class="panel" id="settings-board" style="margin-bottom:24px;">
+        <div class="panel" id="settings-board" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>게시판 카드 간격</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">Korea, APR, WOSM, Scout People 게시판 카드의 상하 간격입니다. 최소 5px부터 설정할 수 있습니다.</p>
@@ -453,7 +453,7 @@
           </div>
         </div>
 
-        <div class="panel" style="margin-bottom:24px;">
+        <div class="panel" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>게시판 D-day 설정</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">카테고리 배너 오른쪽 큰 영역에 행사명과 D-day를 표시합니다. 날짜를 비워두면 기존처럼 게시글 수가 표시되며, 모바일에서는 표시되지 않습니다.</p>
@@ -463,7 +463,7 @@
         </div>
 
         <!-- Tags -->
-        <div class="panel" id="settings-tags" style="margin-bottom:24px;">
+        <div class="panel" id="settings-tags" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>글머리 태그 관리</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
@@ -504,7 +504,7 @@
           </div>
         </div>
 
-        <div class="panel" id="settings-site-meta" style="margin-bottom:24px;">
+        <div class="panel" id="settings-site-meta" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
@@ -517,8 +517,8 @@
             <div class="share-meta-card">
               <div class="share-meta-card-head">푸터 좌측 전체 문구</div>
               <label>전체 입력</label>
-              <textarea id="site-footer-raw" rows="8" maxlength="1000" placeholder="1행: 제목&#10;2행부터: 소개/도메인/기사제보/문의 등 원하는 줄을 그대로 입력"></textarea>
-              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">첫 줄은 제목으로 사용하고, 그 아래 줄들은 푸터 좌측에 순서대로 표시됩니다. 이메일 주소가 들어간 줄은 자동으로 링크 처리됩니다.</p>
+              <textarea id="site-footer-raw" rows="8" maxlength="4000" placeholder="<h4>BP미디어</h4>&#10;<p>소개 문구를 HTML로 직접 작성하세요.</p>&#10;<p><a href=&quot;mailto:story@bpmedia.net&quot;>story@bpmedia.net</a></p>"></textarea>
+              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">여기는 HTML 그대로 저장됩니다. 제목, 문단, 링크, 줄바꿈을 원하는 구조로 직접 작성하면 푸터 좌측에 그대로 렌더링됩니다.</p>
             </div>
 
             <div style="margin-top:18px;">
@@ -545,7 +545,7 @@
         </div>
 
         <!-- Ticker -->
-        <div class="panel" id="settings-ticker" style="margin-bottom:24px;">
+        <div class="panel" id="settings-ticker" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">한 줄에 텍스트 하나씩 입력하세요.</p>
@@ -555,7 +555,7 @@
         </div>
 
         <!-- AI Disclaimer -->
-        <div class="panel" style="margin-bottom:24px;">
+        <div class="panel" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>AI 도움 문구 설정</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">AI 지원 글 하단에 표시될 문구입니다.</p>
@@ -567,7 +567,7 @@
           </div>
         </div>
 
-        <div class="panel" id="settings-copy" style="margin-bottom:24px;">
+        <div class="panel" id="settings-copy" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
@@ -578,7 +578,7 @@
 
       </div><!-- /settings tab -->
 
-      <div id="admin-tab-contributors" class="admin-tab-panel">
+      <div id="admin-tab-contributors" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
           <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
           <div class="panel-body">
@@ -608,7 +608,7 @@
         </div>
       </div>
 
-      <div id="admin-tab-translations" class="admin-tab-panel">
+      <div id="admin-tab-translations" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
           <div class="panel-header"><h2>UI 번역 관리</h2></div>
           <div class="panel-body">
@@ -637,8 +637,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.035.00"></script>
-  <script src="/js/admin.js?v=0.035.00"></script>
+  <script src="/js/main.js?v=0.036.00"></script>
+  <script src="/js/admin.js?v=0.036.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
