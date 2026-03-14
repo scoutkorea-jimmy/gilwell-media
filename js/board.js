@@ -168,6 +168,7 @@
   };
 
   Board.prototype._renderPagination = function () {
+    var self = this;
     if (!this.paginationEl) return;
     if (this.totalPages <= 1) {
       this.paginationEl.innerHTML = '';
