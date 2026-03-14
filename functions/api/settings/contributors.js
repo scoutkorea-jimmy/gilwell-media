@@ -8,11 +8,13 @@ import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 export async function onRequestGet({ env }) {
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'contributors'`
-    ).first();
+    const [row, revRow] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors'`).first(),
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors_rev'`).first(),
+    ]);
     const items = row ? JSON.parse(row.value) : [];
-    return json({ items });
+    const revision = revRow ? parseInt(revRow.value, 10) : 0;
+    return json({ items, revision });
   } catch (err) {
     console.error('GET /api/settings/contributors error:', err);
     return json({ items: [] });
@@ -30,7 +32,7 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON' }, 400);
   }
 
-  const { items } = body;
+  const { items, if_revision } = body;
   if (!Array.isArray(items)) {
     return json({ error: '항목 배열을 입력해주세요' }, 400);
   }
@@ -47,11 +49,26 @@ export async function onRequestPut({ request, env }) {
     .filter(function (item) { return item.name.length > 0; });
 
   try {
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('contributors', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(JSON.stringify(safe)).run();
-    return json({ items: safe });
+    const revRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors_rev'`).first();
+    const currentRev = revRow ? parseInt(revRow.value, 10) : 0;
+    if (Number.isFinite(if_revision) && parseInt(if_revision, 10) !== currentRev) {
+      return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
+    }
+    const prev = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'contributors'`).first();
+    const nextRev = currentRev + 1;
+
+    await Promise.all([
+      prev ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('contributors', prev.value).run() : null,
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('contributors', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(JSON.stringify(safe)).run(),
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('contributors_rev', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(String(nextRev)).run(),
+    ]);
+    return json({ items: safe, revision: nextRev });
   } catch (err) {
     console.error('PUT /api/settings/contributors error:', err);
     return json({ error: 'Database error' }, 500);
