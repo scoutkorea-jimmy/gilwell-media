@@ -16,7 +16,7 @@ export async function onRequestGet({ env, request }) {
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
     ]);
 
-    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
+    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
 
     // Backward-compat: stored value may be plain integer (old format) or JSON array
     let postIds = [];
@@ -28,7 +28,7 @@ export async function onRequestGet({ env, request }) {
       if (single > 0) postIds = [single];
     }
 
-    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
+    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
 
     // Fetch posts in order
     const posts = [];
@@ -39,7 +39,7 @@ export async function onRequestGet({ env, request }) {
       if (post) posts.push(serializePostImage(post, origin));
     }
 
-    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value) });
+    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -94,9 +94,15 @@ function getSafeInterval(value) {
   return Math.min(15000, Math.max(2000, parsed));
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
 }

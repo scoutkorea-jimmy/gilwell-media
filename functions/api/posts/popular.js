@@ -44,7 +44,10 @@ export async function onRequestGet({ env, request }) {
 
     return new Response(JSON.stringify({ posts: scored }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, max-age=180, s-maxage=180, stale-while-revalidate=900',
+      },
     });
   } catch (err) {
     console.error('GET /api/posts/popular error:', err);

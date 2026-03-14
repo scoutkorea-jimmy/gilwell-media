@@ -78,7 +78,11 @@ export async function onRequestGet({ request, env }) {
     const effectivePageSize = allRequested && isAdmin ? total : pageSize;
 
     const hydrated = (posts || []).map((post) => serializePostImage(post, origin));
-    return json({ posts: hydrated, total, page, pageSize: effectivePageSize });
+    return json(
+      { posts: hydrated, total, page, pageSize: effectivePageSize },
+      200,
+      isAdmin ? { 'Cache-Control': 'no-store' } : publicCacheHeaders(120, 600)
+    );
   } catch (err) {
     console.error('GET /api/posts error:', err);
     return json({ error: 'Database error' }, 500);
@@ -175,11 +179,17 @@ export async function onRequestPost({ request, env }) {
 
 // ── Helpers ───────────────────────────────────────────────────
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
+}
+
+function publicCacheHeaders(maxAge, swr) {
+  return {
+    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
+  };
 }
 
 /** Allow http/https URLs and data:image/ base64 strings (cover uploads). */
