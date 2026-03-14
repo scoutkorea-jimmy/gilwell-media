@@ -4207,6 +4207,83 @@ footer a:hover { color: #ffffff; }
   line-height: 1.7;
   color: var(--muted);
 }
+.glossary-inline-edit-row td {
+  background: rgba(77, 0, 110, 0.06);
+  padding-top: 12px;
+  padding-bottom: 16px;
+}
+.glossary-inline-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.glossary-inline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.glossary-inline-field span {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.glossary-inline-field-full {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.glossary-inline-input,
+.glossary-inline-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(77, 0, 110, 0.18);
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.glossary-inline-input {
+  min-height: 42px;
+  padding: 10px 12px;
+}
+.glossary-inline-textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.glossary-inline-input:focus,
+.glossary-inline-textarea:focus {
+  outline: none;
+  border-color: #4D006E;
+  box-shadow: 0 0 0 2px rgba(77, 0, 110, 0.1);
+}
+.glossary-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.glossary-inline-save-btn,
+.glossary-inline-cancel-btn {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.glossary-inline-save-btn {
+  border-color: #4D006E;
+  background: #4D006E;
+  color: #fff;
+}
 .glossary-inline-edit-link {
   flex-shrink: 0;
   padding: 5px 10px;
@@ -4316,6 +4393,15 @@ footer a:hover { color: #ffffff; }
   }
   .glossary-term-cell-with-toggle {
     align-items: flex-start;
+  }
+  .glossary-inline-edit-grid {
+    grid-template-columns: 1fr;
+  }
+  .glossary-inline-edit-row td {
+    border-bottom: 1px solid var(--border);
+  }
+  .glossary-inline-actions {
+    justify-content: flex-start;
   }
   .glossary-description-text {
     font-size: 12px;
