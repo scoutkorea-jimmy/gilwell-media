@@ -1850,8 +1850,9 @@
       };
     }, '아직 유입 경로 데이터가 없습니다');
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
+      var pageInfo = getAnalyticsPageInfo(item);
       return {
-        title: item.path || '/',
+        title: pageInfo.title,
         meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
       };
     }, '아직 방문 페이지 데이터가 없습니다');
@@ -1963,14 +1964,38 @@
       return;
     }
     var body = items.map(function (item, index) {
+      var pageInfo = getAnalyticsPageInfo(item);
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
-        '<td>' + GW.escapeHtml(item.path || '/') + '</td>' +
+        '<td><strong>' + GW.escapeHtml(pageInfo.title) + '</strong><div style="font-size:10px;color:var(--muted);margin-top:4px;">' + GW.escapeHtml(pageInfo.path) + '</div></td>' +
         '<td>' + formatMetricCompact(item.visits || 0) + '</td>' +
         '<td>' + formatMetricCompact(item.pageviews || 0) + '</td>' +
       '</tr>';
     }).join('');
     el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>페이지</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function getAnalyticsPageInfo(item) {
+    var path = item && item.path ? String(item.path) : '/';
+    var title = item && item.title ? String(item.title).trim() : '';
+    if (title) return { title: title, path: path };
+
+    var pageTitles = {
+      '/': '홈',
+      '/index.html': '홈',
+      '/korea.html': 'Korea',
+      '/apr.html': 'APR',
+      '/wosm.html': 'WOSM',
+      '/people.html': 'Scout People',
+      '/contributors.html': '도움을 주신 분들',
+      '/search.html': '검색',
+      '/404.html': '404',
+      '/admin.html': '관리자',
+    };
+    return {
+      title: pageTitles[path] || path,
+      path: path,
+    };
   }
 
   function formatAnalyticsDate(dateStr) {
