@@ -6,11 +6,13 @@
   <title>BP미디어 · 관리자</title>
   <meta name="google-adsense-account" content="ca-pub-9517793409283448">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
-  <link rel="shortcut icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+  <link rel="apple-touch-icon" href="/img/logo.png">
+  <link rel="shortcut icon" href="/img/favicon-48.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.21">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.22">
   <style>
     body { background: #eceae4; }
   </style>
@@ -28,7 +30,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.048.21</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.048.22</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -44,7 +46,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.048.21</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.048.22</span></span>
           <a href="index.html">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
@@ -594,6 +596,7 @@
           <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">특히 `홈 / index` 설명은 구글과 네이버 검색 결과의 사이트 소개 문구로 활용됩니다.</p>
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">평균적으로 반영 확인까지 1~10분 정도 걸릴 수 있으며, 카카오톡·페이스북·X 같은 플랫폼은 자체 캐시 때문에 더 오래 보일 수 있습니다.</p>
 
             <div class="share-meta-grid" id="site-meta-manager"></div>
@@ -725,8 +728,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.048.21"></script>
-  <script src="/js/admin.js?v=0.048.21"></script>
+  <script src="/js/main.js?v=0.048.22"></script>
+  <script src="/js/admin.js?v=0.048.22"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
