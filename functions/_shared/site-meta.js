@@ -1,6 +1,11 @@
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
 export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
 const SITE_ORIGIN = 'https://bpmedia.net';
+const HOME_SEARCH_DESCRIPTION = 'BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.';
+const LEGACY_HOME_DESCRIPTIONS = [
+  '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
+  'BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+];
 const PUBLISHER = {
   '@type': 'Organization',
   name: 'BP미디어',
@@ -15,7 +20,7 @@ const DEFAULT_SITE_META = {
   pages: {
     home: {
       title: 'BP미디어 · bpmedia.net',
-      description: '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
+      description: HOME_SEARCH_DESCRIPTION,
     },
     korea: {
       title: 'Korea · BP미디어',
@@ -85,9 +90,12 @@ export function normalizeSiteMeta(raw) {
     const source = raw && raw.pages
       ? (raw.pages[key] || (key === 'wosm' ? raw.pages.worm : null) || {})
       : {};
+    const sourceDescription = key === 'home'
+      ? upgradeLegacyHomeDescription(source.description)
+      : source.description;
     meta.pages[key] = {
       title: sanitizeText(source.title, DEFAULT_SITE_META.pages[key].title, 120),
-      description: sanitizeText(source.description, DEFAULT_SITE_META.pages[key].description, 260),
+      description: sanitizeText(sourceDescription, DEFAULT_SITE_META.pages[key].description, 260),
     };
   });
 
@@ -208,6 +216,12 @@ function sanitizeImageUrl(url) {
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return trimmed;
   } catch {}
   return null;
+}
+
+function upgradeLegacyHomeDescription(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return text;
+  return LEGACY_HOME_DESCRIPTIONS.includes(text) ? HOME_SEARCH_DESCRIPTION : text;
 }
 
 function sanitizeEmail(value, fallback) {

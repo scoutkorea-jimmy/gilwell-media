@@ -1411,8 +1411,12 @@
         var key = entry[0];
         var label = entry[1];
         var page = (_siteMeta.pages && _siteMeta.pages[key]) || { title: '', description: '' };
+        var helper = key === 'home'
+          ? '<div style="margin:0 0 10px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">구글/네이버 검색 결과에 노출될 사이트 소개 문구입니다.</div>'
+          : '';
         return '<div class="share-meta-card">' +
           '<div class="share-meta-card-head">' + label + '</div>' +
+          helper +
           '<label>공유 제목</label>' +
           '<input type="text" data-site-meta-page="' + key + '" data-site-meta-field="title" value="' + GW.escapeHtml(page.title || '') + '" maxlength="120" />' +
           '<label>공유 설명</label>' +
