@@ -34,6 +34,13 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS settings_history (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  key      TEXT NOT NULL,
+  value    TEXT NOT NULL,
+  saved_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS post_views (
   post_id   INTEGER NOT NULL,
   viewer_key TEXT,

@@ -16,6 +16,7 @@
   var _heroPostIds    = [];   // current hero post IDs (up to 5)
   var _heroPosts      = [];
   var _heroIntervalMs = 3000;
+  var _heroRevision   = null;
   var _tagSettings    = GW.normalizeTagSettings(null);
   var _dragTagValue   = '';
   var _dragTagSource  = '';
@@ -27,6 +28,7 @@
       wosm: { title: '', description: '' },
       people: { title: '', description: '' },
       glossary: { title: '', description: '' },
+      ai_guide: { title: '', description: '' },
       contributors: { title: '', description: '' },
       search: { title: '', description: '' },
     },
@@ -42,6 +44,7 @@
     google_verification: '',
     naver_verification: '',
   };
+  var _siteMetaRevision = null;
 
   // Pagination state
   var _listPage     = 1;
@@ -328,25 +331,40 @@
     btn.addEventListener('click', function () { _uploadAdminCover(); });
   });
 
+  function _isSvgFile(file) {
+    return !!(file && (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '')));
+  }
+
+  function _rasterizeImageFile(file, options, done) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var canvas = document.createElement('canvas');
+        var maxW = options.maxW || 1600;
+        var ratio = Math.min(maxW / img.width, 1);
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var usePng = options.forcePng || false;
+        var mime = usePng ? 'image/png' : 'image/jpeg';
+        var quality = usePng ? 0.92 : 0.82;
+        done(canvas.toDataURL(mime, quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function _uploadAdminCover() {
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
     input.onchange = function () {
       var file = input.files[0]; if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var img = new Image();
-        img.onload = function () {
-          var canvas = document.createElement('canvas');
-          var maxW = 1600; var ratio = Math.min(maxW / img.width, 1);
-          canvas.width = Math.round(img.width * ratio); canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          _adminCoverImg = canvas.toDataURL('image/jpeg', 0.82);
-          renderAdminCoverPreview();
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+      _rasterizeImageFile(file, { maxW: 1600, forcePng: _isSvgFile(file) }, function (dataUrl) {
+        _adminCoverImg = dataUrl;
+        renderAdminCoverPreview();
+      });
     };
     input.click();
   }
@@ -358,21 +376,7 @@
     input.onchange = function () {
       var file = input.files[0];
       if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var img = new Image();
-        img.onload = function () {
-          var canvas = document.createElement('canvas');
-          var maxW = 1600;
-          var ratio = Math.min(maxW / img.width, 1);
-          canvas.width = Math.round(img.width * ratio);
-          canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          done(canvas.toDataURL('image/jpeg', 0.82));
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+      _rasterizeImageFile(file, { maxW: 1600, forcePng: _isSvgFile(file) }, done);
     };
     input.click();
   }
@@ -1380,10 +1384,12 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         _siteMeta = data || _siteMeta;
+        _siteMetaRevision = data && data.revision ? data.revision : _siteMetaRevision;
         _renderSiteMetaManager();
       })
       .catch(function () {
         _renderSiteMetaManager();
+        GW.showToast('공유 설정을 불러오지 못했습니다', 'error');
       });
   }
 
@@ -1397,6 +1403,7 @@
         ['wosm', 'WOSM'],
         ['people', 'Scout People'],
         ['glossary', '용어 번역집'],
+        ['ai_guide', 'AI 작업 가이드'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
       ];
@@ -1437,7 +1444,15 @@
     if (_siteMeta.image_url) {
       var src = _siteMeta.image_url.startsWith('http') ? GW.escapeHtml(_siteMeta.image_url) : _siteMeta.image_url;
       preview.innerHTML = '<img src="' + src + '" class="cover-preview-img">' +
-        '<div style="margin-top:8px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">일반 페이지 공유 대표 이미지</div>';
+        '<div style="margin-top:6px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">일반 페이지 공유 대표 이미지</div>' +
+        '<div style="margin-top:4px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);" id="site-meta-image-size">권장 1200×630px, PNG/JPG, 1MB 이하</div>';
+      var img = preview.querySelector('img');
+      if (img) {
+        img.onload = function () {
+          var sizeEl = document.getElementById('site-meta-image-size');
+          if (sizeEl) sizeEl.textContent = '현재 ' + img.naturalWidth + '×' + img.naturalHeight + ' · 권장 1200×630px, PNG/JPG, 1MB 이하';
+        };
+      }
       return;
     }
     preview.innerHTML = '<div class="tag-admin-empty">설정된 이미지 없음</div>';
@@ -1475,14 +1490,21 @@
         image_url: _siteMeta.image_url || null,
         google_verification: ((document.getElementById('site-google-verification') || {}).value || '').trim(),
         naver_verification: ((document.getElementById('site-naver-verification') || {}).value || '').trim(),
+        if_revision: _siteMetaRevision,
       }),
     })
       .then(function (data) {
         _siteMeta = data || _siteMeta;
+        _siteMetaRevision = data && data.revision ? data.revision : _siteMetaRevision;
         _renderSiteMetaManager();
         GW.showToast('공유 설정이 저장됐습니다', 'success');
       })
       .catch(function (err) {
+        if (err && err.status === 409) {
+          GW.showToast('다른 변경이 있어 다시 불러왔습니다', 'error');
+          loadSiteMetaAdmin();
+          return;
+        }
         GW.showToast(err.message || '저장 실패', 'error');
       });
   };
@@ -1658,10 +1680,13 @@
       _heroPosts = data.posts || [];
       _heroPostIds = _heroPosts.map(function(p){ return p.id; });
       _heroIntervalMs = data.interval_ms || 3000;
+      _heroRevision = data.revision || null;
       var intervalEl = document.getElementById('hero-interval-input');
       if (intervalEl) intervalEl.value = String(Math.round(_heroIntervalMs / 1000));
       renderHeroSlots(_heroPosts);
-    }).catch(function(){});
+    }).catch(function(){
+      GW.showToast('히어로 설정을 불러오지 못했습니다', 'error');
+    });
   }
 
   function renderHeroSlots(posts) {
@@ -1756,13 +1781,22 @@
     _heroIntervalMs = intervalSeconds * 1000;
     GW.apiFetch('/api/settings/hero', {
       method: 'PUT',
-      body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: _heroIntervalMs }),
+      body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: _heroIntervalMs, if_revision: _heroRevision }),
     })
       .then(function(data){
+        _heroRevision = data.revision || _heroRevision;
         GW.showToast('히어로 설정이 저장됐습니다', 'success');
         loadHeroAdmin();
       })
-      .catch(function(err){ GW.showToast(err.message||'저장 실패','error'); });
+      .catch(function(err){
+        if (err && err.status === 409) {
+          GW.showToast('다른 변경이 있어 다시 불러왔습니다', 'error');
+          loadHeroAdmin();
+          return;
+        }
+        GW.showToast(err.message||'저장 실패','error');
+        loadHeroAdmin();
+      });
   }
 
   // ─── Dashboard ────────────────────────────────────────────
@@ -2304,6 +2338,7 @@
 
   // ─── Contributors admin ───────────────────────────────────
   var _contributors = [];
+  var _contributorsRevision = null;
   var _editingContributorIdx = null;
 
   function loadContributorsAdmin() {
@@ -2311,9 +2346,12 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         _contributors = data.items || [];
+        _contributorsRevision = data.revision || null;
         renderContributorsAdmin();
       })
-      .catch(function () {});
+      .catch(function () {
+        GW.showToast('도움을 주신 분들을 불러오지 못했습니다', 'error');
+      });
   }
 
   function renderContributorsAdmin() {
@@ -2379,12 +2417,18 @@
 
   function saveContributorOrder() {
     var updated = _contributors.slice();
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated, if_revision: _contributorsRevision }) })
       .then(function (data) {
         _contributors = data.items || updated;
+        _contributorsRevision = data.revision || _contributorsRevision;
         GW.showToast('순서가 저장됐습니다', 'success');
       })
       .catch(function (err) {
+        if (err && err.status === 409) {
+          GW.showToast('다른 변경이 있어 다시 불러왔습니다', 'error');
+          loadContributorsAdmin();
+          return;
+        }
         GW.showToast(err.message || '저장 실패', 'error');
         loadContributorsAdmin();
       });
@@ -2427,14 +2471,20 @@
       updated.push(entry);
     }
     var wasEditing = _editingContributorIdx !== null;
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated, if_revision: _contributorsRevision }) })
       .then(function (data) {
         _contributors = data.items || updated;
+        _contributorsRevision = data.revision || _contributorsRevision;
         renderContributorsAdmin();
         cancelEditContributor();
         GW.showToast(wasEditing ? '수정됐습니다' : '추가됐습니다', 'success');
       })
       .catch(function (err) {
+        if (err && err.status === 409) {
+          GW.showToast('다른 변경이 있어 다시 불러왔습니다', 'error');
+          loadContributorsAdmin();
+          return;
+        }
         GW.showToast(err.message || '저장 실패', 'error');
       });
   };
@@ -2443,13 +2493,19 @@
     if (!confirm('삭제할까요?')) return;
     var updated = _contributors.slice();
     updated.splice(index, 1);
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated, if_revision: _contributorsRevision }) })
       .then(function (data) {
         _contributors = data.items || updated;
+        _contributorsRevision = data.revision || _contributorsRevision;
         renderContributorsAdmin();
         GW.showToast('삭제됐습니다', 'success');
       })
       .catch(function (err) {
+        if (err && err.status === 409) {
+          GW.showToast('다른 변경이 있어 다시 불러왔습니다', 'error');
+          loadContributorsAdmin();
+          return;
+        }
         GW.showToast(err.message || '삭제 실패', 'error');
         loadContributorsAdmin();
       });

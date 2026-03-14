@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 작업 가이드 — BP미디어</title>
+  <!-- SHARE_META -->
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="shortcut icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.13">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-date" id="today-date"></div>
+      <div class="masthead-logo">
+        <a href="index.html">
+          <div class="masthead-logo-row">
+            <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
+            <h1>BP미디어</h1>
+          </div>
+          <div class="sub">The BP Post · bpmedia.net</div>
+        </a>
+      </div>
+      <div class="masthead-right">
+        <div class="masthead-stats" id="masthead-stats"></div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
+        </div>
+        <div class="masthead-search">
+          <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
+          <button class="mh-search-btn" id="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/contributors.html" data-i18n="nav.contributors">도움을 주신 분들</a>
+      <a href="index.html" data-i18n="nav.home">홈</a>
+      <a href="korea.html" data-i18n="nav.korea">Korea</a>
+      <a href="apr.html" data-i18n="nav.apr">APR</a>
+      <a href="wosm.html" data-i18n="nav.wosm">WOSM</a>
+      <a href="people.html" data-i18n="nav.people">스카우트 인물</a>
+      <a href="glossary.html" data-i18n="nav.glossary">용어 번역집</a>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <div class="contributors-wrap">
+      <div class="contributors-thank">
+        <h2>AI 작업 가이드</h2>
+        <p>이 페이지는 BP미디어 작업 환경과 맥락을 요약한 가이드입니다. 새로운 AI가 투입되더라도 일관된 방식으로 작업하도록 돕기 위한 기준입니다.</p>
+      </div>
+
+      <div class="contributors-list" style="gap:18px;">
+        <div class="contributor-card">
+          <h3>기본 원칙</h3>
+          <p>변경은 안정성 우선이며, 기능적 변경이 아닌 경우 버전은 `Va.bbbb.cc` 중 `cc`만 올립니다. 모든 변경은 커밋/배포까지 완료합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>작업 환경</h3>
+          <p>저장소 경로는 `/Users/jimmy/gilwell-media`이며, Cloudflare Pages + Functions + D1 + R2 구조입니다. 프로덕션 배포는 `./scripts/deploy_pages.sh`로 진행합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>중요 URL</h3>
+          <p>관리자: `/admin.html` · 용어집: `/glossary.html` · 게시글: `/post/:id` · 사이트맵: `/sitemap.xml` · 로봇: `/robots.txt`</p>
+        </div>
+        <div class="contributor-card">
+          <h3>공유 메타</h3>
+          <p>일반 페이지 공유 메타는 `functions/[[path]].js`에서 주입되고, 대표 이미지는 `site_meta.image_url` 또는 기본 이미지로 설정됩니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>관리자 제한</h3>
+          <p>일부 관리자 계정은 히어로 설정만 접근 가능하며 게시글 작성/삭제 권한은 제한됩니다. 이 정책을 항상 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>데이터 변경</h3>
+          <p>설정 값 수정 시 `settings_history`에 스냅샷을 남기며, 충돌 가능성이 있으면 최신 데이터를 재로드하도록 처리합니다.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
+        <p>문의: <a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+      </div>
+      <div class="footer-admin">
+        <h4>관리자</h4>
+        <a href="/admin.html">관리자 페이지 →</a>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.13</span></p>
+      </div>
+      <div class="footer-bottom">
+        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
+        <p data-i18n="footer.disclaimer">BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/main.js?v=0.048.13"></script>
+  <script>
+    GW.setMastheadDate();
+    GW.markActiveNav();
+    GW.loadTicker('ticker-inner');
+    GW.loadStats();
+    GW.loadTranslations();
+    (function() {
+      var input = document.getElementById('mh-search-input');
+      var btn = document.getElementById('mh-search-btn');
+      function go() {
+        var q = (input.value || '').trim();
+        if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q);
+      }
+      btn.addEventListener('click', go);
+      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') go(); });
+    })();
+  </script>
+</body>
+</html>

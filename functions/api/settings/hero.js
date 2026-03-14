@@ -11,12 +11,14 @@ import { serializePostImage } from '../../_shared/images.js';
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
-    const [row, intervalRow] = await Promise.all([
+    const [row, intervalRow, revRow] = await Promise.all([
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first(),
       env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first(),
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_rev'`).first(),
     ]);
+    const revision = revRow ? parseInt(revRow.value, 10) : 0;
 
-    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
+    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision }, 200, publicCacheHeaders(180, 900));
 
     // Backward-compat: stored value may be plain integer (old format) or JSON array
     let postIds = [];
@@ -28,7 +30,7 @@ export async function onRequestGet({ env, request }) {
       if (single > 0) postIds = [single];
     }
 
-    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
+    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision }, 200, publicCacheHeaders(180, 900));
 
     // Fetch posts in order
     const posts = [];
@@ -39,7 +41,7 @@ export async function onRequestGet({ env, request }) {
       if (post) posts.push(serializePostImage(post, origin));
     }
 
-    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value) }, 200, publicCacheHeaders(180, 900));
+    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision }, 200, publicCacheHeaders(180, 900));
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -58,7 +60,7 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { post_ids, interval_ms } = body;
+  const { post_ids, interval_ms, if_revision } = body;
   if (!Array.isArray(post_ids)) {
     return json({ error: 'post_ids 배열을 입력해주세요' }, 400);
   }
@@ -70,7 +72,18 @@ export async function onRequestPut({ request, env }) {
   const safeInterval = getSafeInterval(interval_ms);
 
   try {
+    const revRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_rev'`).first();
+    const currentRev = revRow ? parseInt(revRow.value, 10) : 0;
+    if (Number.isFinite(if_revision) && parseInt(if_revision, 10) !== currentRev) {
+      return json({ error: '다른 변경이 감지되었습니다', revision: currentRev }, 409);
+    }
+    const prevHero = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first();
+    const prevInterval = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_interval'`).first();
+    const nextRev = currentRev + 1;
+
     await Promise.all([
+      prevHero ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('hero', prevHero.value).run() : null,
+      prevInterval ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('hero_interval', prevInterval.value).run() : null,
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('hero', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -79,9 +92,13 @@ export async function onRequestPut({ request, env }) {
         `INSERT INTO settings (key, value) VALUES ('hero_interval', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(String(safeInterval)).run(),
+      env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('hero_rev', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(String(nextRev)).run(),
     ]);
 
-    return json({ success: true, post_ids: safeIds, interval_ms: safeInterval });
+    return json({ success: true, post_ids: safeIds, interval_ms: safeInterval, revision: nextRev });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);

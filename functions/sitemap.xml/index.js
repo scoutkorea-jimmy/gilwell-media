@@ -7,6 +7,7 @@ export async function onRequestGet({ request, env }) {
     { path: '/wosm.html', priority: '0.9', category: 'wosm' },
     { path: '/people.html', priority: '0.9', category: 'people' },
     { path: '/glossary.html', priority: '0.9', category: 'glossary' },
+    { path: '/ai-guide.html', priority: '0.4', category: null },
     { path: '/contributors.html', priority: '0.5', category: null },
   ];
 
