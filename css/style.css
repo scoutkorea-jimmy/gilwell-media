@@ -2849,7 +2849,7 @@ footer a:hover { color: #ffffff; }
     font-size: 40px;
   }
   .board-container    { padding: 0 24px 40px; }
-  .board-grid         { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .board-grid         { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .modal-overlay      { padding: 0; }
   .modal              { max-height: 100vh; border-radius: 0; }

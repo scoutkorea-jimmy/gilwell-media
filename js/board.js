@@ -37,9 +37,14 @@
     this._loginTurnstileToken = '';
   }
 
+  Board.prototype._getPageSize = function () {
+    return window.innerWidth <= 640 ? 8 : 16;
+  };
+
   // ── Initialise ────────────────────────────────────────────
   Board.prototype.init = function () {
     var self = this;
+    this.pageSize = this._getPageSize();
     GW.setMastheadDate();
     GW.markActiveNav();
     this._setupModal();
@@ -49,6 +54,12 @@
     this._loadBoardBannerInfo();
     this._load();
     this._loadTagBar();
+    window.addEventListener('resize', function () {
+      var nextPageSize = self._getPageSize();
+      if (nextPageSize === self.pageSize) return;
+      self.pageSize = nextPageSize;
+      self._resetAndLoad();
+    });
   };
 
   Board.prototype._loadBoardLayout = function () {
@@ -130,10 +141,11 @@
     var self = this;
     this.loading = true;
     this._showLoading();
+    this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
     var tagParam    = this._selectedTag  ? '&tag=' + encodeURIComponent(this._selectedTag)  : '';
-    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam + tagParam)
+    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + '&limit=' + this.pageSize + searchParam + tagParam)
       .then(function (data) {
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
