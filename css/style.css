@@ -4194,17 +4194,19 @@ footer a:hover { color: #ffffff; }
   flex-shrink: 0;
 }
 .glossary-description-row td {
-  padding-top: 0;
+  padding-top: 10px;
+  padding-bottom: 14px;
   background: rgba(77, 0, 110, 0.2);
 }
 .glossary-description-row-inner {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 4px 0;
 }
 .glossary-description-text {
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.85;
   color: var(--muted);
 }
 .glossary-inline-edit-row td {
@@ -4297,6 +4299,7 @@ footer a:hover { color: #ffffff; }
   line-height: 1.2;
 }
 .glossary-description-toggle {
+  position: relative;
   min-width: 32px;
   height: 32px;
   padding: 0;
@@ -4317,11 +4320,16 @@ footer a:hover { color: #ffffff; }
   background: #f6f2f8;
 }
 .glossary-description-toggle.open .glossary-chevron {
-  display: inline-block;
-  transform: rotate(180deg);
+  transform: translate(-50%, -50%) rotate(180deg);
 }
 .glossary-chevron {
-  display: inline-block;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
   transition: transform 0.15s ease;
 }
 .glossary-inline-edit-link:hover {
@@ -4404,7 +4412,7 @@ footer a:hover { color: #ffffff; }
     justify-content: flex-start;
   }
   .glossary-description-text {
-    font-size: 12px;
-    line-height: 1.75;
+    font-size: 14px;
+    line-height: 1.8;
   }
 }
