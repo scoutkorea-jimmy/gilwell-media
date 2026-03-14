@@ -1,5 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
-import { getCloudflarePageMetrics, isCloudflareAnalyticsConfigured, resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -11,11 +11,6 @@ export async function onRequestGet({ request, env }) {
   const range = resolveAnalyticsRange(url.searchParams.get('start'), url.searchParams.get('end'));
 
   try {
-    if (isCloudflareAnalyticsConfigured(env)) {
-      const data = await getCloudflarePageMetrics(env, range, { includeSeries: true, includeReferrers: true });
-      return json(data);
-    }
-
     const internalData = await getInternalMetrics(env, range);
     return json(internalData);
   } catch (err) {
@@ -39,15 +34,15 @@ async function getInternalMetrics(env, range) {
     topPaths,
     referrers,
   ] = await Promise.all([
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
     env.DB.prepare(
-      `SELECT date(visited_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
-         FROM site_visits
-        WHERE datetime(visited_at, '+9 hours') >= datetime(?)
-          AND datetime(visited_at, '+9 hours') < datetime(?)
+      `SELECT date(viewed_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
+         FROM post_views
+        WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
+          AND datetime(viewed_at, '+9 hours') < datetime(?)
         GROUP BY visit_date
         ORDER BY visit_date ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
@@ -60,12 +55,16 @@ async function getInternalMetrics(env, range) {
         ORDER BY view_date ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
-      `SELECT path, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
-         FROM site_visits
-        WHERE datetime(visited_at, '+9 hours') >= datetime(?)
-          AND datetime(visited_at, '+9 hours') < datetime(?)
-        GROUP BY path
-        ORDER BY pageviews DESC, visits DESC, path ASC
+      `SELECT '/post/' || p.id AS path,
+              p.title AS title,
+              COUNT(*) AS pageviews,
+              COUNT(DISTINCT pv.viewer_key) AS visits
+         FROM post_views pv
+         JOIN posts p ON p.id = pv.post_id
+        WHERE datetime(pv.viewed_at, '+9 hours') >= datetime(?)
+          AND datetime(pv.viewed_at, '+9 hours') < datetime(?)
+        GROUP BY p.id, p.title
+        ORDER BY pageviews DESC, visits DESC, p.id DESC
         LIMIT 10`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
@@ -73,6 +72,7 @@ async function getInternalMetrics(env, range) {
          FROM site_visits
         WHERE datetime(visited_at, '+9 hours') >= datetime(?)
           AND datetime(visited_at, '+9 hours') < datetime(?)
+          AND path LIKE '/post/%'
         GROUP BY referrer_host
         ORDER BY visits DESC, pageviews DESC, referrer_host ASC
         LIMIT 10`
@@ -89,8 +89,8 @@ async function getInternalMetrics(env, range) {
   const rangeViews = viewSeries.reduce((sum, item) => sum + Number(item.views || 0), 0);
 
   return {
-    provider: 'internal',
-    provider_label: '내부 집계',
+    provider: 'post_views',
+    provider_label: '기사 조회 집계',
     range: {
       start_date: range.startDate,
       end_date: range.endDate,
@@ -119,12 +119,14 @@ async function getInternalMetrics(env, range) {
       series: viewSeries,
       top_paths: (topPaths.results || []).map((item) => ({
         path: item.path || '/',
+        title: item.title || '',
         visits: item.visits || 0,
         pageviews: item.pageviews || 0,
       })),
     },
     top_paths: (topPaths.results || []).map((item) => ({
       path: item.path || '/',
+      title: item.title || '',
       visits: item.visits || 0,
       pageviews: item.pageviews || 0,
     })),
@@ -133,7 +135,7 @@ async function getInternalMetrics(env, range) {
       visits: item.visits || 0,
       pageviews: item.pageviews || 0,
     })),
-    tracking_note: `${range.label} 기준 내부 집계입니다. 알려진 봇, 소셜 미리보기 크롤러, 프리페치 요청은 기록에서 제외합니다. Cloudflare API 토큰을 설정하면 분석 탭과 홈 푸터가 Cloudflare visits 기준으로 전환됩니다.`,
+    tracking_note: `${range.label} 기준 게시글 조회 로그 집계입니다. 방문 수는 게시글을 실제로 연 고유 사용자 수, 조회수는 게시글 실제 조회 누적 수를 뜻합니다. 알려진 봇, 소셜 미리보기 크롤러, 프리페치 요청은 제외하며, 유입 경로 목록만 별도로 site_visits 기준 참고값을 보여줍니다.`,
   };
 }
 
