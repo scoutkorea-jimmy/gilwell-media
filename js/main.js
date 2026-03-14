@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.028.00';
+  GW.APP_VERSION = '0.029.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -303,6 +303,34 @@
   GW.applySiteChrome = function () {
     GW.syncBuildVersion();
     GW.ensureFavicon();
+    GW.applyManagedFooter();
+  };
+
+  GW.applyManagedFooter = function () {
+    var footer = document.querySelector('footer');
+    if (!footer) return;
+    fetch('/api/settings/site-meta', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var info = data && data.footer ? data.footer : {};
+        var title = document.querySelector('[data-footer-role="title"]');
+        var description = document.querySelector('[data-footer-role="description"]');
+        var domain = document.querySelector('[data-footer-role="domain"]');
+        var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
+        var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
+        if (title && info.title) title.textContent = info.title;
+        if (description && info.description) description.textContent = info.description;
+        if (domain && info.domain_label) domain.textContent = info.domain_label;
+        if (tipEmail && info.tip_email) {
+          tipEmail.textContent = info.tip_email;
+          tipEmail.href = 'mailto:' + info.tip_email;
+        }
+        if (contactEmail && info.contact_email) {
+          contactEmail.textContent = info.contact_email;
+          contactEmail.href = 'mailto:' + info.contact_email;
+        }
+      })
+      .catch(function () {});
   };
 
   if (document.readyState === 'loading') {

@@ -28,6 +28,13 @@
       contributors: { title: '', description: '' },
       search: { title: '', description: '' },
     },
+    footer: {
+      title: 'BP미디어',
+      description: '',
+      domain_label: 'bpmedia.net',
+      tip_email: 'story@bpmedia.net',
+      contact_email: 'info@bpmedia.net',
+    },
     image_url: null,
     google_verification: '',
     naver_verification: '',
@@ -161,14 +168,30 @@
     document.querySelectorAll('.admin-tab-panel').forEach(function (p) { p.classList.remove('active'); });
     var panel = document.getElementById('admin-tab-' + tab);
     if (panel) panel.classList.add('active');
-    document.querySelectorAll('.admin-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+    document.querySelectorAll('.admin-tab-btn, .admin-sidebar-btn').forEach(function (b) {
+      b.classList.remove('active');
+      b.removeAttribute('aria-current');
+    });
     var btn = document.getElementById('tab-btn-' + tab);
-    if (btn) btn.classList.add('active');
+    if (btn) {
+      btn.classList.add('active');
+      btn.setAttribute('aria-current', 'page');
+    }
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'analytics') loadAnalyticsPage();
     if (tab === 'write') _maybeRestoreAdminDraft();
     if (tab === 'history') loadVersionHistory();
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  };
+
+  window.scrollAdminSection = function (id) {
+    showAdminTab('settings');
+    setTimeout(function () {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   // ─── Editor.js loader ─────────────────────────────────────
@@ -1232,6 +1255,17 @@
       }).join('');
     }
     _renderSiteMetaImagePreview();
+    var footer = _siteMeta.footer || {};
+    var footerTitle = document.getElementById('site-footer-title');
+    var footerDescription = document.getElementById('site-footer-description');
+    var footerDomain = document.getElementById('site-footer-domain');
+    var footerTip = document.getElementById('site-footer-tip-email');
+    var footerContact = document.getElementById('site-footer-contact-email');
+    if (footerTitle) footerTitle.value = footer.title || '';
+    if (footerDescription) footerDescription.value = footer.description || '';
+    if (footerDomain) footerDomain.value = footer.domain_label || '';
+    if (footerTip) footerTip.value = footer.tip_email || '';
+    if (footerContact) footerContact.value = footer.contact_email || '';
     var googleEl = document.getElementById('site-google-verification');
     var naverEl = document.getElementById('site-naver-verification');
     if (googleEl) googleEl.value = _siteMeta.google_verification || '';
@@ -1276,6 +1310,13 @@
       method: 'PUT',
       body: JSON.stringify({
         pages: pages,
+        footer: {
+          title: ((document.getElementById('site-footer-title') || {}).value || '').trim(),
+          description: ((document.getElementById('site-footer-description') || {}).value || '').trim(),
+          domain_label: ((document.getElementById('site-footer-domain') || {}).value || '').trim(),
+          tip_email: ((document.getElementById('site-footer-tip-email') || {}).value || '').trim(),
+          contact_email: ((document.getElementById('site-footer-contact-email') || {}).value || '').trim(),
+        },
         image_url: _siteMeta.image_url || null,
         google_verification: ((document.getElementById('site-google-verification') || {}).value || '').trim(),
         naver_verification: ((document.getElementById('site-naver-verification') || {}).value || '').trim(),

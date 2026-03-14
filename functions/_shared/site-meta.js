@@ -41,6 +41,13 @@ const DEFAULT_SITE_META = {
       description: 'BP미디어 기사와 페이지를 검색합니다.',
     },
   },
+  footer: {
+    title: 'BP미디어',
+    description: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
+    domain_label: 'bpmedia.net',
+    tip_email: 'story@bpmedia.net',
+    contact_email: 'info@bpmedia.net',
+  },
   image_url: null,
   google_verification: '',
   naver_verification: '',
@@ -58,6 +65,7 @@ export async function loadSiteMeta(env) {
 export function normalizeSiteMeta(raw) {
   const meta = {
     pages: {},
+    footer: {},
     image_url: sanitizeImageUrl(raw && raw.image_url),
     google_verification: sanitizeText(raw && raw.google_verification, '', 120),
     naver_verification: sanitizeText(raw && raw.naver_verification, '', 120),
@@ -70,6 +78,15 @@ export function normalizeSiteMeta(raw) {
       description: sanitizeText(source.description, DEFAULT_SITE_META.pages[key].description, 260),
     };
   });
+
+  const footer = raw && raw.footer ? raw.footer : {};
+  meta.footer = {
+    title: sanitizeText(footer.title, DEFAULT_SITE_META.footer.title, 80),
+    description: sanitizeText(footer.description, DEFAULT_SITE_META.footer.description, 260),
+    domain_label: sanitizeText(footer.domain_label, DEFAULT_SITE_META.footer.domain_label, 120),
+    tip_email: sanitizeEmail(footer.tip_email, DEFAULT_SITE_META.footer.tip_email),
+    contact_email: sanitizeEmail(footer.contact_email, DEFAULT_SITE_META.footer.contact_email),
+  };
 
   return meta;
 }
@@ -176,6 +193,12 @@ function sanitizeImageUrl(url) {
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return trimmed;
   } catch {}
   return null;
+}
+
+function sanitizeEmail(value, fallback) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return fallback;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text) ? text : fallback;
 }
 
 function escapeHtml(str) {

@@ -118,7 +118,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.028.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.029.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -250,17 +250,17 @@ export async function onRequestGet({ params, env, request }) {
   <!-- ── FOOTER ── -->
   <footer>
     <div class="footer-inner">
-      <div>
-        <h4 data-i18n="footer.title">BP미디어</h4>
-        <p data-i18n="footer.join.text">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
-        <p style="margin-top:6px;">bpmedia.net</p>
-        <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
-        <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+      <div class="footer-brand">
+        <h4 data-footer-role="title">BP미디어</h4>
+        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
+        <p>기사제보: <a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
+        <p>문의: <a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
       </div>
-      <div>
+      <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.028.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.029.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -287,7 +287,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.028.00"></script>
+  <script src="/js/main.js?v=0.029.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
