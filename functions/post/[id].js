@@ -163,7 +163,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/apr.html" data-i18n="nav.apr">APR</a>
       <a href="/wosm.html" data-i18n="nav.wosm">WOSM</a>
       <a href="/people.html" data-i18n="nav.people">스카우트 인물</a>
-      <a href="/glossary.html" data-i18n="nav.glossary">용어 번역집</a>
+      <a href="/glossary.html" data-i18n="nav.glossary">영어집</a>
     </nav>
   </header>
 

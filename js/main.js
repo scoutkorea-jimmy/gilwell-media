@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.13';
+  GW.APP_VERSION = '0.048.14';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -16,7 +16,7 @@
     apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#FF5655' },
     wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: '#248737' },
     people:{ label: 'Scout People', tagClass: 'tag-people', color: '#8A5A2B' },
-    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: '#5D6F2B' },
+    glossary:{ label: 'English Glossary', tagClass: 'tag-glossary', color: '#5D6F2B' },
   };
 
   // ── Date formatting ───────────────────────────────────────
@@ -466,7 +466,7 @@
     'nav.apr':    { ko: 'APR',   en: 'APR' },
     'nav.wosm':   { ko: 'WOSM',  en: 'WOSM' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
-    'nav.glossary': { ko: '용어 번역집', en: 'Glossary' },
+    'nav.glossary': { ko: '영어집', en: 'English Glossary' },
 
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
     'hero.title':   { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
@@ -497,7 +497,7 @@
     'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },
     'link.wosm':  { ko: 'WOSM — 세계스카우트연맹',  en: 'WOSM — World Scout Organization' },
     'link.people':{ ko: '스카우트 인물 — 국내외 스카우트 인물', en: 'Scout People — Scouts Around the World' },
-    'link.glossary':{ ko: '용어 번역집 — 국문·영문·불어 스카우트 용어', en: 'Glossary — Korean, English, French Scout Terms' },
+    'link.glossary':{ ko: '영어집 — 국문·영문·불어 스카우트 용어', en: 'English Glossary — Korean, English, French Scout Terms' },
 
     'board.korea.banner': { ko: 'Korea / KSA',     en: 'Korea / KSA' },
     'board.korea.title':  { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
@@ -512,8 +512,8 @@
     'board.people.banner': { ko: 'Scout People', en: 'Scout People' },
     'board.people.title': { ko: '스카우트 인물', en: 'Scout People' },
     'board.people.desc': { ko: '국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.', en: 'Spotlighting Scouts around the world, including active Scouts, Scout alumni, and departed Scout seniors.' },
-    'board.glossary.banner': { ko: 'Glossary', en: 'Glossary' },
-    'board.glossary.title': { ko: '스카우트 용어 번역집', en: 'Scout Glossary' },
+    'board.glossary.banner': { ko: '영어집', en: 'English Glossary' },
+    'board.glossary.title': { ko: '스카우트 영어집', en: 'Scout English Glossary' },
     'board.glossary.desc': { ko: '스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.', en: 'A trilingual glossary of Scout terms in Korean, English, and French.' },
 
     'write.btn':    { ko: '✏ 글쓰기', en: '✏ Write' },
