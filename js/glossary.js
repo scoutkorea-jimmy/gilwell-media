@@ -80,7 +80,7 @@
             '<span>' + frCell + '</span>' +
             '<span class="glossary-term-actions">' +
               (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '') +
-              (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 펼치기"><span class="glossary-chevron">⌄</span></button>' : '') +
+              (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 보기"><span class="glossary-description-toggle-text">설명 보기</span><span class="glossary-chevron">⌄</span></button>' : '') +
             '</span>' +
           '</div>';
         }
@@ -229,10 +229,13 @@
         var row = byId('glossary-desc-row-' + id);
         if (!row) return;
         var willExpand = row.hasAttribute('hidden');
+        var label = btn.querySelector('.glossary-description-toggle-text');
         if (willExpand) row.removeAttribute('hidden');
         else row.setAttribute('hidden', '');
         btn.setAttribute('aria-expanded', willExpand ? 'true' : 'false');
+        btn.setAttribute('aria-label', willExpand ? '설명 숨김' : '설명 보기');
         btn.classList.toggle('open', willExpand);
+        if (label) label.textContent = willExpand ? '설명 숨김' : '설명 보기';
       });
     });
   }
