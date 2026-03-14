@@ -268,7 +268,13 @@
     setTimeout(function () {
       var el = document.getElementById(id);
       if (!el) return;
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var header = document.querySelector('.admin-header');
+      var sidebar = document.querySelector('.admin-sidebar');
+      var offset = 12;
+      if (header) offset += header.getBoundingClientRect().height;
+      if (sidebar) offset += Math.min(sidebar.getBoundingClientRect().height, 64);
+      var top = window.pageYOffset + el.getBoundingClientRect().top - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
     }, 50);
   };
 

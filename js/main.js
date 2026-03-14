@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.24';
+  GW.APP_VERSION = '0.048.25';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -193,6 +193,44 @@
     });
   };
 
+  GW.applyMobileTypeScale = function () {
+    var raw = '1';
+    try {
+      raw = localStorage.getItem('gw_mobile_type_scale') || '1';
+    } catch (_) {}
+    var scale = raw === '0.92' || raw === '1.08' ? raw : '1';
+    document.documentElement.style.setProperty('--mobile-user-scale', scale);
+    document.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-scale') === scale);
+    });
+  };
+
+  GW.initMobileTypeControls = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (window.innerWidth > 640) return;
+    var logo = document.querySelector('.masthead-logo');
+    if (!logo || logo.querySelector('.masthead-type-controls') || document.body.classList.contains('admin-page')) return;
+    var controls = document.createElement('div');
+    controls.className = 'masthead-type-controls';
+    controls.setAttribute('role', 'group');
+    controls.setAttribute('aria-label', '글자 크기 조절');
+    controls.innerHTML =
+      '<button type="button" class="masthead-type-btn" data-scale="0.92" aria-label="글자 크기 줄이기">A-</button>' +
+      '<button type="button" class="masthead-type-btn" data-scale="1" aria-label="기본 글자 크기">A</button>' +
+      '<button type="button" class="masthead-type-btn" data-scale="1.08" aria-label="글자 크기 키우기">A+</button>';
+    logo.appendChild(controls);
+    controls.querySelectorAll('.masthead-type-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var scale = btn.getAttribute('data-scale') || '1';
+        try {
+          localStorage.setItem('gw_mobile_type_scale', scale);
+        } catch (_) {}
+        GW.applyMobileTypeScale();
+      });
+    });
+    GW.applyMobileTypeScale();
+  };
+
   GW.ensureFavicon = function () {
     var href = '/img/favicon.svg';
     [
@@ -304,6 +342,15 @@
   GW.applySiteChrome = function () {
     GW.syncBuildVersion();
     GW.ensureFavicon();
+    GW.initMobileTypeControls();
+    GW.applyMobileTypeScale();
+    if (!GW._responsiveChromeBound) {
+      GW._responsiveChromeBound = true;
+      window.addEventListener('resize', function () {
+        GW.initMobileTypeControls();
+        GW.applyMobileTypeScale();
+      });
+    }
     if (document.body && document.body.hasAttribute('data-home-bootstrap')) return;
     GW.applyManagedFooter();
   };
