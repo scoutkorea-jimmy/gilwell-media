@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.19';
+  GW.APP_VERSION = '0.048.20';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -639,6 +639,118 @@
     inner.style.animationDuration = dur + 's';
   };
 
+  GW.isMobileViewport = function () {
+    return window.innerWidth <= 640;
+  };
+
+  GW.setupMastheadSearch = function () {
+    var input = document.getElementById('mh-search-input');
+    var btn = document.getElementById('mh-search-btn');
+    if (!input || !btn) return;
+
+    ensureSearchModal();
+
+    function go(query) {
+      var q = String(query || '').trim();
+      if (!q) return;
+      window.location.href = '/search.html?q=' + encodeURIComponent(q);
+    }
+
+    function submitFromInput() {
+      go(input.value || '');
+    }
+
+    btn.addEventListener('click', function (e) {
+      if (GW.isMobileViewport()) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        openSearchModal(input.value || '');
+        return;
+      }
+      submitFromInput();
+    }, true);
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      if (GW.isMobileViewport()) {
+        e.preventDefault();
+        openSearchModal(input.value || '');
+        return;
+      }
+      submitFromInput();
+    }, true);
+
+    input.addEventListener('focus', function () {
+      if (!GW.isMobileViewport()) return;
+      openSearchModal(input.value || '');
+      input.blur();
+    });
+
+    input.addEventListener('click', function (e) {
+      if (!GW.isMobileViewport()) return;
+      e.preventDefault();
+      openSearchModal(input.value || '');
+    });
+
+    function ensureSearchModal() {
+      if (document.getElementById('mobile-search-modal')) return;
+      var modal = document.createElement('div');
+      modal.id = 'mobile-search-modal';
+      modal.className = 'mobile-search-modal';
+      modal.innerHTML =
+        '<div class="mobile-search-modal-backdrop" data-search-close></div>' +
+        '<div class="mobile-search-modal-card" role="dialog" aria-modal="true" aria-labelledby="mobile-search-title">' +
+          '<div class="mobile-search-modal-head">' +
+            '<strong id="mobile-search-title">검색</strong>' +
+            '<button type="button" class="mobile-search-close-btn" data-search-close aria-label="검색 닫기">닫기</button>' +
+          '</div>' +
+          '<div class="mobile-search-modal-body">' +
+            '<input type="search" id="mobile-search-input" class="mobile-search-input" placeholder="검색어를 입력하세요" autocomplete="off" />' +
+            '<button type="button" id="mobile-search-submit" class="mobile-search-submit">검색</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+
+      modal.querySelectorAll('[data-search-close]').forEach(function (node) {
+        node.addEventListener('click', closeSearchModal);
+      });
+
+      document.getElementById('mobile-search-submit').addEventListener('click', function () {
+        var modalInput = document.getElementById('mobile-search-input');
+        go(modalInput && modalInput.value || '');
+      });
+
+      document.getElementById('mobile-search-input').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          go(e.target.value || '');
+        }
+        if (e.key === 'Escape') closeSearchModal();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeSearchModal();
+      });
+    }
+
+    function openSearchModal(value) {
+      var modal = document.getElementById('mobile-search-modal');
+      var modalInput = document.getElementById('mobile-search-input');
+      if (!modal || !modalInput) return;
+      modal.classList.add('open');
+      document.body.classList.add('search-modal-open');
+      modalInput.value = String(value || '').trim();
+      setTimeout(function () { modalInput.focus(); }, 10);
+    }
+
+    function closeSearchModal() {
+      var modal = document.getElementById('mobile-search-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      document.body.classList.remove('search-modal-open');
+    }
+  };
+
 
   // ── Shared Editor.js Image Tool ───────────────────────────
   GW.makeEditorImageTool = function () {
@@ -698,5 +810,9 @@
     ImageTool.prototype.validate = function (data) { return !!data.url; };
     return ImageTool;
   };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    GW.setupMastheadSearch();
+  });
 
 })();
