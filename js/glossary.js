@@ -173,6 +173,8 @@
     if (!input) return;
     input.addEventListener('input', function () {
       _query = String(input.value || '').trim().toLowerCase();
+      if (_query) _bucket = 'all';
+      renderBucketBar();
       renderGlossary();
     });
   }
