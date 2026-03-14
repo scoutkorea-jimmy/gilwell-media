@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.28">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.29">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -213,7 +213,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.048.28</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.29</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -229,22 +229,13 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.048.28"></script>
+  <script src="/js/main.js?v=0.048.29"></script>
   <script>
-    GW.setMastheadDate();
-    GW.markActiveNav();
-
-    // ── Masthead search → navigate to search.html ────────────
-    (function() {
-      var input = document.getElementById('mh-search-input');
-      var btn   = document.getElementById('mh-search-btn');
-      function doSearch() {
-        var q = (input.value || '').trim();
-        if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q);
-      }
-      btn.addEventListener('click', doSearch);
-      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
-    })();
+    GW.bootstrapStandardPage({
+      loadTicker: false,
+      loadStats: false,
+      loadTranslations: false
+    });
 
     function buildMiniItem(p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;

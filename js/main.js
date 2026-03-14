@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.28';
+  GW.APP_VERSION = '0.048.29';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -800,6 +800,15 @@
 
   GW.isMobileViewport = function () {
     return window.innerWidth <= 640;
+  };
+
+  GW.bootstrapStandardPage = function (opts) {
+    opts = opts || {};
+    if (opts.setDate !== false) GW.setMastheadDate();
+    if (opts.markActiveNav !== false) GW.markActiveNav();
+    if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
+    if (opts.loadStats !== false) GW.loadStats();
+    if (opts.loadTranslations !== false) GW.loadTranslations();
   };
 
   GW.setupMastheadSearch = function () {
