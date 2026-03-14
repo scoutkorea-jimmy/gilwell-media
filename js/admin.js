@@ -47,6 +47,14 @@
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
   var _boardLayout = { gap_px: 6 };
+  var _boardBannerInfo = {
+    items: {
+      korea: { event_name: '', event_date: '' },
+      apr: { event_name: '', event_date: '' },
+      worm: { event_name: '', event_date: '' },
+      people: { event_name: '', event_date: '' },
+    },
+  };
 
   // Hero search cache
   var _allPosts = [];
@@ -135,6 +143,7 @@
     loadContributorsAdmin();
     loadSiteMetaAdmin();
     loadBoardLayoutAdmin();
+    loadBoardBannerAdmin();
     loadAdminList();
     loadDashboard();
     _ensureAdminWriteTurnstile();
@@ -1099,6 +1108,86 @@
       .then(function (data) {
         _boardLayout = data || _boardLayout;
         GW.showToast('게시판 카드 간격이 저장됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+      });
+  };
+
+  function loadBoardBannerAdmin() {
+    fetch('/api/settings/board-banner', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _boardBannerInfo = normalizeBoardBannerInfo(data);
+        _renderBoardBannerManager();
+      })
+      .catch(function () {
+        _boardBannerInfo = normalizeBoardBannerInfo(null);
+        _renderBoardBannerManager();
+      });
+  }
+
+  function normalizeBoardBannerInfo(raw) {
+    var defaults = {
+      items: {
+        korea: { event_name: '', event_date: '' },
+        apr: { event_name: '', event_date: '' },
+        worm: { event_name: '', event_date: '' },
+        people: { event_name: '', event_date: '' },
+      },
+    };
+    var normalized = JSON.parse(JSON.stringify(defaults));
+    if (!raw || typeof raw !== 'object' || !raw.items) return normalized;
+    Object.keys(normalized.items).forEach(function (category) {
+      var item = raw.items[category] || {};
+      normalized.items[category] = {
+        event_name: String(item.event_name || '').trim().slice(0, 80),
+        event_date: /^\d{4}-\d{2}-\d{2}$/.test(String(item.event_date || '').trim()) ? String(item.event_date).trim() : '',
+      };
+    });
+    return normalized;
+  }
+
+  function _renderBoardBannerManager() {
+    var container = document.getElementById('board-banner-manager');
+    if (!container) return;
+    var defs = [
+      ['korea', 'Korea'],
+      ['apr', 'APR'],
+      ['worm', 'WOSM'],
+      ['people', 'Scout People'],
+    ];
+    container.innerHTML = defs.map(function (entry) {
+      var category = entry[0];
+      var label = entry[1];
+      var item = (_boardBannerInfo.items && _boardBannerInfo.items[category]) || { event_name: '', event_date: '' };
+      return '<div class="share-meta-card">' +
+        '<div class="share-meta-card-head">' + label + '</div>' +
+        '<label>행사명</label>' +
+        '<input type="text" data-board-banner-category="' + category + '" data-board-banner-field="event_name" maxlength="80" value="' + GW.escapeHtml(item.event_name || '') + '" placeholder="예: 전국 잼버리 개막" />' +
+        '<label>D-day 기준일</label>' +
+        '<input type="date" data-board-banner-category="' + category + '" data-board-banner-field="event_date" value="' + GW.escapeHtml(item.event_date || '') + '" />' +
+      '</div>';
+    }).join('');
+  }
+
+  window.saveBoardBanner = function () {
+    var nextState = normalizeBoardBannerInfo(null);
+    document.querySelectorAll('[data-board-banner-category]').forEach(function (input) {
+      var category = input.getAttribute('data-board-banner-category');
+      var field = input.getAttribute('data-board-banner-field');
+      if (!nextState.items[category] || !field) return;
+      nextState.items[category][field] = (input.value || '').trim();
+    });
+    nextState = normalizeBoardBannerInfo(nextState);
+    GW.apiFetch('/api/settings/board-banner', {
+      method: 'PUT',
+      body: JSON.stringify(nextState),
+    })
+      .then(function (data) {
+        _boardBannerInfo = normalizeBoardBannerInfo(data);
+        _renderBoardBannerManager();
+        GW.showToast('게시판 D-day 설정이 저장됐습니다', 'success');
       })
       .catch(function (err) {
         GW.showToast(err.message || '저장 실패', 'error');
