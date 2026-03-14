@@ -24,6 +24,7 @@
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
     this.moreBtnEl = document.getElementById(opts.moreId  || 'load-more-btn');
     this.modalEl  = document.getElementById(opts.modalId  || 'post-modal');
+    this.bannerInfo = { event_name: '', event_date: '' };
 
     this.page          = 1;
     this.total         = 0;
@@ -44,6 +45,7 @@
     this._setupWriteFeature();
     this._setupSearch();
     this._loadBoardLayout();
+    this._loadBoardBannerInfo();
     this._load();
     this._loadTagBar();
 
@@ -64,6 +66,22 @@
           self.gridEl.style.gap = gap + 'px';
           self.gridEl.style.marginTop = gap + 'px';
         }
+      })
+      .catch(function () {});
+  };
+
+  Board.prototype._loadBoardBannerInfo = function () {
+    var self = this;
+    fetch('/api/settings/board-banner', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var items = data && data.items ? data.items : {};
+        var item = items[self.category] || {};
+        self.bannerInfo = {
+          event_name: String(item.event_name || '').trim(),
+          event_date: /^\d{4}-\d{2}-\d{2}$/.test(String(item.event_date || '').trim()) ? String(item.event_date).trim() : '',
+        };
+        self._updateCount();
       })
       .catch(function () {});
   };
@@ -312,8 +330,41 @@
 
   Board.prototype._updateCount = function () {
     if (this.countEl) this.countEl.textContent = '총 ' + this.total + '개';
-    if (this.bannerTotalEl) this.bannerTotalEl.textContent = this.total + '개';
+    if (!this.bannerTotalEl) return;
+
+    var eventName = this.bannerInfo && this.bannerInfo.event_name;
+    var eventDate = this.bannerInfo && this.bannerInfo.event_date;
+    var dday = getDdayLabel(eventDate);
+    if (eventName && dday) {
+      this.bannerTotalEl.classList.add('has-event');
+      this.bannerTotalEl.innerHTML =
+        '<div class="board-banner-total-label">' + GW.escapeHtml(eventName) + '</div>' +
+        '<div class="board-banner-total-value">' + GW.escapeHtml(dday) + '</div>';
+      return;
+    }
+
+    this.bannerTotalEl.classList.remove('has-event');
+    this.bannerTotalEl.textContent = this.total + '개';
   };
+
+  function getDdayLabel(dateStr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''))) return '';
+    var parts = dateStr.split('-').map(function (part) { return parseInt(part, 10); });
+    var targetUtc = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+    if (!Number.isFinite(targetUtc)) return '';
+    var now = new Date();
+    var kstText = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now);
+    var currentParts = kstText.split('-').map(function (part) { return parseInt(part, 10); });
+    var todayUtc = Date.UTC(currentParts[0], currentParts[1] - 1, currentParts[2]);
+    var diff = Math.round((targetUtc - todayUtc) / 86400000);
+    if (diff === 0) return 'D-Day';
+    return diff > 0 ? 'D-' + diff : 'D+' + Math.abs(diff);
+  }
 
   // ── Write Feature ─────────────────────────────────────────
   Board.prototype._setupWriteFeature = function () {
