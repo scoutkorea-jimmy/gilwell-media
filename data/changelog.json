@@ -1,6 +1,17 @@
 {
   "items": [
     {
+      "version": "0.034.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "기존 worm 경로가 중간 경로에 머무르지 않고 WOSM 정식 페이지로 곧바로 이동하도록 리다이렉트를 명시했습니다.",
+      "changes": [
+        "Cloudflare Pages redirect 규칙을 추가해 /worm 과 /worm.html 요청이 모두 /wosm.html 로 바로 이동하도록 정리했습니다.",
+        "이전 링크를 타고 들어오는 사용자와 검색엔진이 더 이상 /worm 중간 경로에 머무르지 않게 했습니다."
+      ]
+    },
+    {
       "version": "0.033.00",
       "date": "2026-03-14",
       "commit": "pending",
