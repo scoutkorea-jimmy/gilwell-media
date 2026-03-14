@@ -2970,6 +2970,16 @@ footer a:hover { color: #ffffff; }
 }
 
 @media (max-width: 480px) {
+  :root {
+    --mobile-fs-micro: 10px;
+    --mobile-fs-meta: 11px;
+    --mobile-fs-body: 13px;
+    --mobile-fs-title: 16px;
+    --mobile-fs-section: 20px;
+    --mobile-fs-hero: 24px;
+    --mobile-lh-tight: 1.35;
+    --mobile-lh-copy: 1.6;
+  }
   /* ── Masthead: stack into two rows ── */
   .masthead-top {
     padding:     10px 16px;
@@ -2987,8 +2997,8 @@ footer a:hover { color: #ffffff; }
     text-align: center;
     padding-bottom: 4px;
   }
-  .masthead-logo h1   { font-size: 22px; }
-  .masthead-logo .sub { font-size: 9px; letter-spacing: 0.14em; }
+  .masthead-logo h1   { font-size: var(--mobile-fs-section); }
+  .masthead-logo .sub { font-size: var(--mobile-fs-micro); letter-spacing: 0.12em; }
   .masthead-logo-img  { width: 28px; height: 28px; }
   /* Right controls shrink and align right */
   .masthead-right {
@@ -3005,16 +3015,24 @@ footer a:hover { color: #ffffff; }
   .mh-search-input:focus { width: 120px; }
 
   .mini-item h4 {
+    font-size: var(--mobile-fs-title);
+    line-height: var(--mobile-lh-tight);
     -webkit-line-clamp: 3;
   }
 
   .sidebar-item h4 {
+    font-size: var(--mobile-fs-title);
+    line-height: var(--mobile-lh-tight);
     -webkit-line-clamp: 3;
+  }
+
+  .mini-item .mini-meta {
+    font-size: var(--mobile-fs-micro);
   }
 
   /* Nav */
   .nav                { padding: 0 16px; }
-  .nav a              { padding: 10px 14px; font-size: 10px; }
+  .nav a              { padding: 10px 14px; font-size: var(--mobile-fs-meta); }
 
   .board-container    { padding: 0 16px 32px; }
   .board-grid         { grid-template-columns: 1fr; gap: 10px; }
@@ -3055,8 +3073,8 @@ footer a:hover { color: #ffffff; }
     margin-bottom: 0;
   }
   .post-card-body h3 {
-    font-size: 15px;
-    line-height: 1.4;
+    font-size: var(--mobile-fs-title);
+    line-height: var(--mobile-lh-tight);
     margin-bottom: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -3064,15 +3082,15 @@ footer a:hover { color: #ffffff; }
     overflow: hidden;
   }
   .post-card-subtitle {
-    font-size: 12px;
-    line-height: 1.55;
+    font-size: var(--mobile-fs-body);
+    line-height: var(--mobile-lh-copy);
     margin-bottom: 8px;
     -webkit-line-clamp: 2;
   }
   .post-card-excerpt  { display: none; }
   .post-card-engagement { display: none; }
   .post-card-meta {
-    font-size: 10px;
+    font-size: var(--mobile-fs-meta);
     line-height: 1.5;
     padding-top: 0;
     margin-top: auto;
@@ -3083,16 +3101,19 @@ footer a:hover { color: #ffffff; }
   }
   .admin-shell        { padding: 16px; }
   .admin-header-top   { padding: 12px 16px; align-items: flex-start; gap: 12px; }
-  .admin-header .logo { font-size: 16px; }
+  .admin-header .logo { font-size: var(--mobile-fs-title); }
   .admin-header .badge { margin-left: 8px; }
   .admin-build-label,
   .admin-header a,
-  .logout-btn { font-size: 10px; letter-spacing: 0.06em; }
+  .logout-btn { font-size: var(--mobile-fs-micro); letter-spacing: 0.06em; }
   .admin-group-nav { padding: 8px 16px 12px; }
-  .admin-group-btn { font-size: 10px; padding: 9px 12px; }
+  .admin-group-btn { font-size: var(--mobile-fs-meta); padding: 9px 12px; }
   .admin-sidebar { margin: 0 -16px; padding: 0 16px 8px; }
   .admin-sidebar-group { padding: 8px; }
   .admin-sidebar-btn { min-width: 136px; }
+  .admin-sidebar-group-title,
+  .admin-sidebar-btn-desc { font-size: var(--mobile-fs-micro); }
+  .admin-sidebar-btn-label { font-size: 14px; }
   .post-page-wrap     { padding: 24px 16px 48px; }
   .share-meta-inline-grid { grid-template-columns: 1fr; }
 
@@ -3102,13 +3123,13 @@ footer a:hover { color: #ffffff; }
 
   /* Hero on phone */
   .hero-main          { padding: 24px 16px; }
-  .hero-main h2       { font-size: 24px; }
-  .hero-main .deck    { font-size: 14px; }
+  .hero-main h2       { font-size: var(--mobile-fs-hero); line-height: 1.2; }
+  .hero-main .deck    { font-size: var(--mobile-fs-body); line-height: var(--mobile-lh-copy); }
 
   /* Board banner on phone */
   .board-banner       { padding: 20px 16px; }
-  .board-banner h2    { font-size: 20px; }
-  .board-banner p     { font-size: 12px; }
+  .board-banner h2    { font-size: var(--mobile-fs-section); line-height: 1.2; }
+  .board-banner p     { font-size: var(--mobile-fs-body); line-height: var(--mobile-lh-copy); }
   .board-banner-total {
     display: block;
     width: 100%;
@@ -3122,7 +3143,7 @@ footer a:hover { color: #ffffff; }
     gap: 6px;
   }
   .board-banner-total-label {
-    font-size: 10px;
+    font-size: var(--mobile-fs-micro);
     line-height: 1.4;
   }
   .board-banner-total-value {
@@ -3130,8 +3151,8 @@ footer a:hover { color: #ffffff; }
   }
 
   /* Ticker on phone */
-  .ticker             { font-size: 9px; padding: 5px 0; }
-  .ticker-inner       { font-size: 9px; letter-spacing: 0.04em; }
+  .ticker             { font-size: var(--mobile-fs-micro); padding: 5px 0; }
+  .ticker-inner       { font-size: var(--mobile-fs-micro); letter-spacing: 0.04em; line-height: 1.3; }
 
   .mobile-search-modal-card {
     top: 0;
@@ -3147,7 +3168,7 @@ footer a:hover { color: #ffffff; }
   }
 
   .mobile-search-modal-head strong {
-    font-size: 20px;
+    font-size: var(--mobile-fs-section);
   }
 
   .mobile-search-modal-body {
@@ -3160,9 +3181,27 @@ footer a:hover { color: #ffffff; }
   }
 
   /* site-hero on phone */
-  .site-hero-title    { font-size: 22px !important; }
+  .site-hero-title    { font-size: 22px !important; line-height: 1.22 !important; }
   .site-hero-slider   { height: 320px; }
   .site-hero          { padding: 40px 16px; min-height: 320px; }
+
+  .global-search-item strong {
+    font-size: var(--mobile-fs-title);
+    line-height: var(--mobile-lh-tight);
+  }
+
+  .global-search-item p,
+  .board-search-input {
+    font-size: var(--mobile-fs-body);
+    line-height: var(--mobile-lh-copy);
+  }
+
+  .global-search-date,
+  .board-search-clear,
+  .home-section-more,
+  .home-col-header h3 {
+    font-size: var(--mobile-fs-micro);
+  }
 
   /* Home sections on mobile */
   .home-mobile-stack  { display: block; }
