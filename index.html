@@ -10,9 +10,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.041.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.042.00">
 </head>
-<body>
+<body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
   <!-- ── MASTHEAD ── -->
@@ -210,7 +210,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.041.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.042.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 조회수 <strong id="home-total-views">—</strong></p>
@@ -226,13 +226,10 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.041.00"></script>
+  <script src="/js/main.js?v=0.042.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
-    GW.loadTicker('ticker-inner');
-    GW.loadStats();
-    GW.loadTranslations();
 
     // ── Masthead search → navigate to search.html ────────────
     (function() {
@@ -246,26 +243,53 @@
       input.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
     })();
 
-    (function loadHomeFooterStats() {
-      GW.apiFetch('/api/analytics/today')
-        .then(function (data) {
-          var total = document.getElementById('home-total-visitors');
-          var totalViews = document.getElementById('home-total-views');
-          var visitors = document.getElementById('home-today-visitors');
-          if (total) total.textContent = GW.formatNumber(data.total_visits || data.total_unique || 0);
-          if (totalViews) totalViews.textContent = GW.formatNumber(data.total_pageviews || data.today_views || 0);
-          if (visitors) visitors.textContent = GW.formatNumber(data.today_visits || data.today_unique || 0);
-        })
-        .catch(function () {});
-    })();
+    function buildMiniItem(p) {
+      var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+      var isNew = GW.isTodayKst(p.created_at);
+      var thumb = p.image_url
+        ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
+        : '';
+      return (
+        '<a class="mini-item" href="/post/' + p.id + '">' +
+          '<div class="mini-item-row">' +
+            '<div class="mini-item-text">' +
+              '<div class="mini-item-labels">' +
+                '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+                (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+              '</div>' +
+              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+              '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
+            '</div>' +
+            thumb +
+          '</div>' +
+        '</a>'
+      );
+    }
 
-    // ── Dynamic Hero Slider ───────────────────────────────────
-    (function loadHero() {
+    function renderMiniList(el, posts, emptyMsg) {
+      if (!el) return;
+      if (!posts || posts.length === 0) {
+        el.innerHTML = '<div class="mini-empty">' + (emptyMsg || '게시글이 없습니다') + '</div>';
+        return;
+      }
+      el.innerHTML = posts.map(buildMiniItem).join('');
+    }
+
+    function renderHomeFooterStats(data) {
+      var total = document.getElementById('home-total-visitors');
+      var totalViews = document.getElementById('home-total-views');
+      var visitors = document.getElementById('home-today-visitors');
+      if (total) total.textContent = GW.formatNumber(data.total_visits || data.total_unique || 0);
+      if (totalViews) totalViews.textContent = GW.formatNumber(data.total_pageviews || data.today_views || 0);
+      if (visitors) visitors.textContent = GW.formatNumber(data.today_visits || data.today_unique || 0);
+    }
+
+    function renderHero(data) {
       var _slides = [];
       var _cur    = 0;
       var _timer  = null;
       var _animating = false;
-      var _intervalMs = 3000;
+      var _intervalMs = (data && data.interval_ms) || 3000;
 
       function buildSlide(post) {
         var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
@@ -380,152 +404,78 @@
         }, 560);
       }
 
-      fetch('/api/settings/hero')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var posts = data.posts || [];
-          _intervalMs = data.interval_ms || 3000;
-          if (!posts.length) return;
+      var posts = data && data.posts ? data.posts : [];
+      if (!posts.length) return;
 
-          var slider = document.getElementById('site-hero-slider');
-          if (!slider) return;
-          // Remove static fallback
-          var staticSlide = document.getElementById('site-hero-static');
-          if (staticSlide) staticSlide.remove();
+      var slider = document.getElementById('site-hero-slider');
+      if (!slider) return;
+      var staticSlide = document.getElementById('site-hero-static');
+      if (staticSlide) staticSlide.remove();
 
-          posts.forEach(function (post, i) {
-            var slide = buildSlide(post);
-            if (i === 0) {
-              slide.classList.add('active');
-              slide.style.visibility = 'visible';
-              slide.style.pointerEvents = 'auto';
-              slide.style.transform = 'translateX(0)';
-            } else {
-              slide.style.visibility = 'hidden';
-              slide.style.pointerEvents = 'none';
-              slide.style.transform = 'translateX(100%)';
-            }
-            slider.appendChild(slide);
-            _slides.push(slide);
-          });
-
-          renderDots(posts.length, 0);
-          setAutoTimer();
-        })
-        .catch(function () {});
-    })();
-
-    function buildMiniItem(p) {
-      var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-      var isNew = GW.isTodayKst(p.created_at);
-      var thumb = p.image_url
-        ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
-        : '';
-      return (
-        '<a class="mini-item" href="/post/' + p.id + '">' +
-          '<div class="mini-item-row">' +
-            '<div class="mini-item-text">' +
-              '<div class="mini-item-labels">' +
-                '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-                (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
-              '</div>' +
-              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-              '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
-            '</div>' +
-            thumb +
-          '</div>' +
-        '</a>'
-      );
-    }
-
-    function renderMiniList(el, posts, emptyMsg) {
-      if (!el) return;
-      if (!posts || posts.length === 0) {
-        el.innerHTML = '<div class="mini-empty">' + (emptyMsg || '게시글이 없습니다') + '</div>';
-        return;
-      }
-      el.innerHTML = posts.map(buildMiniItem).join('');
-    }
-
-    var latestPostsPromise = GW.apiFetch('/api/posts?page=1');
-
-    latestPostsPromise
-      .then(function (d) {
-        renderMiniList(
-          document.getElementById('latest-list-mobile'),
-          (d.posts || []).slice(0, 4),
-          '아직 게시글이 없습니다'
-        );
-      })
-      .catch(function () {
-        var latestEl = document.getElementById('latest-list-mobile');
-        if (latestEl) latestEl.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
-      });
-
-    // Load popular posts first, then fall back to latest if view data is sparse
-    GW.apiFetch('/api/posts/popular')
-      .then(function (d) {
-        var posts = (d.posts || []).slice(0, 4);
-        if (posts.length) {
-          renderMiniList(document.getElementById('popular-list'), posts, '아직 게시글이 없습니다');
-          renderMiniList(document.getElementById('popular-list-mobile'), posts, '아직 게시글이 없습니다');
-          return;
+      posts.forEach(function (post, i) {
+        var slide = buildSlide(post);
+        if (i === 0) {
+          slide.classList.add('active');
+          slide.style.visibility = 'visible';
+          slide.style.pointerEvents = 'auto';
+          slide.style.transform = 'translateX(0)';
+        } else {
+          slide.style.visibility = 'hidden';
+          slide.style.pointerEvents = 'none';
+          slide.style.transform = 'translateX(100%)';
         }
-        return latestPostsPromise.then(function (latest) {
-          var fallbackPosts = (latest.posts || []).slice(0, 4);
-          renderMiniList(
-            document.getElementById('popular-list'),
-            fallbackPosts,
-            '아직 게시글이 없습니다'
-          );
-          renderMiniList(
-            document.getElementById('popular-list-mobile'),
-            fallbackPosts,
-            '아직 게시글이 없습니다'
-          );
-        });
-      })
-      .catch(function () {
-        document.getElementById('popular-list').innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
-        var popularMobile = document.getElementById('popular-list-mobile');
-        if (popularMobile) popularMobile.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+        slider.appendChild(slide);
+        _slides.push(slide);
       });
 
-    // Load editor's picks (featured=1)
-    GW.apiFetch('/api/posts?featured=1')
-      .then(function (d) {
-        renderMiniList(
-          document.getElementById('picks-list'),
-          (d.posts || []).slice(0, 4),
-          '에디터 추천 게시글이 없습니다'
-        );
-        renderMiniList(
-          document.getElementById('picks-list-mobile'),
-          (d.posts || []).slice(0, 4),
-          '에디터 추천 게시글이 없습니다'
-        );
-      })
-      .catch(function () {
-        document.getElementById('picks-list').innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
-        var picksMobile = document.getElementById('picks-list-mobile');
-        if (picksMobile) picksMobile.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
-      });
+      renderDots(posts.length, 0);
+      setAutoTimer();
+    }
 
-    // Load per-category columns
-    ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
-      GW.apiFetch('/api/posts?category=' + cat + '&page=1')
-        .then(function (d) {
-          renderMiniList(
-            document.getElementById('col-' + cat),
-            (d.posts || []).slice(0, 4),
-            '게시글이 없습니다'
-          );
+    (function loadHomeBootstrap() {
+      GW.apiFetch('/api/home')
+        .then(function (data) {
+          if (data.site_meta) {
+            GW._siteMetaData = data.site_meta;
+            GW.applyManagedFooterData(data.site_meta);
+          }
+          GW._customStrings = (data.translations && data.translations.strings) || {};
+          GW.applyLang();
+          GW._statsData = data.stats || null;
+          if (GW._statsData) GW._renderStats();
+          GW.renderTickerItems('ticker-inner', data.ticker && data.ticker.items);
+          renderHomeFooterStats(data.analytics || {});
+          renderHero(data.hero || {});
+
+          var latestPosts = data.latest && data.latest.posts ? data.latest.posts : [];
+          var popularPosts = data.popular && data.popular.posts ? data.popular.posts : [];
+          var picksPosts = data.picks && data.picks.posts ? data.picks.posts : [];
+          var columns = data.columns || {};
+
+          renderMiniList(document.getElementById('latest-list-mobile'), latestPosts.slice(0, 4), '아직 게시글이 없습니다');
+          renderMiniList(document.getElementById('popular-list'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');
+          renderMiniList(document.getElementById('popular-list-mobile'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');
+          renderMiniList(document.getElementById('picks-list'), picksPosts.slice(0, 4), '에디터 추천 게시글이 없습니다');
+          renderMiniList(document.getElementById('picks-list-mobile'), picksPosts.slice(0, 4), '에디터 추천 게시글이 없습니다');
+
+          ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
+            renderMiniList(
+              document.getElementById('col-' + cat),
+              columns[cat] && columns[cat].posts ? columns[cat].posts.slice(0, 4) : [],
+              '게시글이 없습니다'
+            );
+          });
         })
         .catch(function () {
-          var el = document.getElementById('col-' + cat);
-          if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+          GW.loadTicker('ticker-inner');
+          GW.loadStats();
+          GW.loadTranslations();
+          document.querySelectorAll('#latest-list-mobile, #popular-list, #popular-list-mobile, #picks-list, #picks-list-mobile, #col-korea, #col-apr, #col-wosm, #col-people')
+            .forEach(function (el) {
+              if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
+            });
         });
-    });
+    })();
   </script>
 </body>
 </html>

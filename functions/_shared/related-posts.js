@@ -1,15 +1,32 @@
 export async function findRelatedPosts(env, basePost, limit = 5) {
   if (!env?.DB || !basePost?.id) return [];
 
-  const anchorTerms = extractTerms(basePost.tag, basePost.meta_tags);
-  const { results } = await env.DB.prepare(
-    `SELECT id, title, category, created_at, tag, meta_tags
-       FROM posts
-      WHERE published = 1
-        AND id != ?
-      ORDER BY datetime(created_at) DESC
-      LIMIT 80`
-  ).bind(basePost.id).all();
+  const anchorTerms = Array.from(extractTerms(basePost.tag, basePost.meta_tags)).slice(0, 3);
+  let sql = `
+    SELECT id, title, category, created_at, tag, meta_tags
+      FROM posts
+     WHERE published = 1
+       AND id != ?
+  `;
+  const bindings = [basePost.id];
+
+  if (anchorTerms.length) {
+    const likeParts = [];
+    anchorTerms.forEach((term) => {
+      likeParts.push('LOWER(COALESCE(tag, \'\')) LIKE ?', 'LOWER(COALESCE(meta_tags, \'\')) LIKE ?');
+      bindings.push(`%${term}%`, `%${term}%`);
+    });
+    sql += ` AND (category = ? OR ${likeParts.join(' OR ')})`;
+    bindings.splice(1, 0, basePost.category || '');
+  } else if (basePost.category) {
+    sql += ' AND category = ?';
+    bindings.push(basePost.category);
+  }
+
+  sql += ' ORDER BY datetime(created_at) DESC LIMIT ?';
+  bindings.push(anchorTerms.length ? 30 : 20);
+
+  const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
   const scored = (results || []).map((post) => {
     const candidateTerms = extractTerms(post.tag, post.meta_tags);
