@@ -5,7 +5,7 @@
  * PUT    /api/posts/:id   ← admin only, update post
  * DELETE /api/posts/:id   ← admin only, delete post
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
@@ -27,7 +27,7 @@ export async function onRequestGet({ params, env, request }) {
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
     const token = extractToken(request);
-    const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
+    const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
     // If unpublished, require admin token
     if (post.published === 0) {
@@ -56,7 +56,7 @@ export async function onRequestGet({ params, env, request }) {
 export async function onRequestPut({ params, request, env }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -149,7 +149,7 @@ export async function onRequestPut({ params, request, env }) {
 // Toggle featured or published flag. Requires valid admin token.
 export async function onRequestPatch({ params, request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -191,7 +191,7 @@ export async function onRequestPatch({ params, request, env }) {
 // Deletes a post. Requires valid admin token.
 export async function onRequestDelete({ params, request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

@@ -1669,6 +1669,17 @@ footer a:hover { color: #ffffff; }
   padding: 0;
 }
 
+.tag-admin-chip-edit {
+  border: 0;
+  background: rgba(98,37,153,0.08);
+  color: #622599;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+}
+
 .tag-admin-empty {
   font-family: 'DM Mono', monospace;
   font-size: 10px;
@@ -1875,12 +1886,14 @@ footer a:hover { color: #ffffff; }
   margin-bottom: 8px;
   overflow-wrap: anywhere;
   word-break: keep-all;
+  white-space: normal;
 }
 
 .analytics-stats-row .dash-stat-label {
   line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: keep-all;
+  white-space: normal;
 }
 
 .dash-stat-card {
@@ -3492,6 +3505,10 @@ footer a:hover { color: #ffffff; }
 .admin-sidebar-btn:hover {
   border-color: rgba(98, 37, 153, 0.24);
   background: rgba(98, 37, 153, 0.05);
+}
+
+[data-role-min="full"][style*="display: none"] {
+  display: none !important;
 }
 
 .admin-tab-content {

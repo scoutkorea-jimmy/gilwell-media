@@ -3,7 +3,7 @@
  * POST /api/admin/login
  *
  * Body:   { "password": "..." }
- * Returns 200: { "token": "..." }   ← store in sessionStorage
+ * Returns 200: { "token": "...", "role": "full|limited" }
  * Returns 401: { "error": "..." }
  *
  * Required Cloudflare secrets (set in Pages dashboard):
@@ -15,6 +15,7 @@ import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const MAX_ATTEMPTS   = 10;
 const WINDOW_SECONDS = 900; // 15 minutes
+const LIMITED_ADMIN_PASSWORD = 'scout1922';
 
 async function getRateLimit(env, ip) {
   try {
@@ -91,8 +92,15 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
   }
 
+  let role = null;
+  if (safeCompare(password, env.ADMIN_PASSWORD)) {
+    role = 'full';
+  } else if (safeCompare(password, LIMITED_ADMIN_PASSWORD)) {
+    role = 'limited';
+  }
+
   // Timing-safe comparison — prevents brute-force timing attacks
-  if (!safeCompare(password, env.ADMIN_PASSWORD)) {
+  if (!role) {
     await incrementRateLimit(env, ip);
     // Artificial delay further discourages automated brute-force
     await new Promise(r => setTimeout(r, 400));
@@ -103,8 +111,8 @@ export async function onRequestPost({ request, env }) {
   await clearRateLimit(env, ip);
 
   // Issue a signed 24-hour session token
-  const token = await createToken(env.ADMIN_SECRET);
-  return json({ token });
+  const token = await createToken(env.ADMIN_SECRET, role);
+  return json({ token, role });
 }
 
 // Only POST is allowed on this endpoint

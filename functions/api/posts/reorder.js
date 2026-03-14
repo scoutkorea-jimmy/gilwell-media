@@ -5,11 +5,11 @@
  * Body: { order: [id1, id2, id3, ...] }
  * Assigns sort_order = 0, 1, 2, ... based on array position.
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 
@@ -41,7 +41,7 @@ export async function onRequestPut({ request, env }) {
 // Also support clearing all sort_order (reset to date ordering)
 export async function onRequestDelete({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 

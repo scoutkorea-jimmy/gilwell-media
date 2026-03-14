@@ -4,7 +4,7 @@
  * GET  /api/posts?category=korea&page=1   ← public, list posts
  * POST /api/posts                          ← admin only, create post
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
@@ -33,7 +33,7 @@ export async function onRequestGet({ request, env }) {
 
   // Admin token check — if valid token, include unpublished posts
   const token   = extractToken(request);
-  const isAdmin = token ? await verifyToken(token, env.ADMIN_SECRET).catch(() => false) : false;
+  const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
   const ORDER = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order,
@@ -89,7 +89,7 @@ export async function onRequestPost({ request, env }) {
   const origin = new URL(request.url).origin;
   // Verify admin token
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

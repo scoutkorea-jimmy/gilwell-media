@@ -4,7 +4,7 @@
  * GET /api/settings/hero  ← public, returns { posts: [...], interval_ms }
  * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N], interval_ms } (up to 5)
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
 
 // ── GET /api/settings/hero ────────────────────────────────────
@@ -49,7 +49,7 @@ export async function onRequestGet({ env, request }) {
 // ── PUT /api/settings/hero ────────────────────────────────────
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, ['full', 'limited']))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

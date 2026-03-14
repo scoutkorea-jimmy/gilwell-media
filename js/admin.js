@@ -55,6 +55,7 @@
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
   var _adminGroup = 'overview';
+  var _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
   var _boardLayout = { gap_px: 6 };
   var _boardBannerInfo = {
     items: {
@@ -67,6 +68,28 @@
 
   // Hero search cache
   var _allPosts = [];
+
+  function getAdminRole() {
+    return _adminRole === 'limited' ? 'limited' : 'full';
+  }
+
+  function isLimitedAdmin() {
+    return getAdminRole() === 'limited';
+  }
+
+  function isFullAdmin() {
+    return !isLimitedAdmin();
+  }
+
+  function canAccessAdminTab(tab) {
+    if (isFullAdmin()) return true;
+    return ['dashboard', 'analytics', 'settings', 'history'].indexOf(tab) >= 0;
+  }
+
+  function canAccessAdminGroup(group) {
+    if (isFullAdmin()) return true;
+    return ['overview', 'site'].indexOf(group) >= 0;
+  }
 
   // ─── Boot ────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
@@ -85,7 +108,7 @@
 
     // Handle ?edit=ID in URL (for edit button on post pages)
     var editParam = new URLSearchParams(location.search).get('edit');
-    if (editParam && GW.getToken()) {
+    if (editParam && GW.getToken() && (!GW.getAdminRole || GW.getAdminRole() === 'full')) {
       showAdmin();
       setTimeout(function () { editPost(parseInt(editParam, 10)); }, 500);
     }
@@ -112,9 +135,11 @@
     })
       .then(function (data) {
         GW.setToken(data.token);
+        if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        _adminRole = data.role || 'full';
         showAdmin();
         var editParam = new URLSearchParams(location.search).get('edit');
-        if (editParam) {
+        if (editParam && isFullAdmin()) {
           setTimeout(function () { editPost(parseInt(editParam, 10)); }, 600);
         }
       })
@@ -129,39 +154,42 @@
 
   window.doLogout = function () {
     GW.clearToken();
+    _adminRole = 'full';
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('admin-screen').style.display = 'none';
     document.getElementById('pw-input').value = '';
   };
 
   function showAdmin() {
+    _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
-    // Load Editor.js then initialize
-    _loadEditorJs(function () {
-      _initAdminEditor();
-      _startAdminDraftAutosave();
-    });
-    // Load tags for selector
-    loadTagsAdmin();
-    loadTickerAdmin();
+    applyAdminPermissions();
+    if (isFullAdmin()) {
+      _loadEditorJs(function () {
+        _initAdminEditor();
+        _startAdminDraftAutosave();
+      });
+      loadTagsAdmin();
+      loadTickerAdmin();
+      loadEditorsAdmin();
+      loadTranslationsAdmin();
+      loadAiDisclaimerAdmin();
+      loadContributorsAdmin();
+      loadSiteMetaAdmin();
+      loadBoardLayoutAdmin();
+      loadBoardBannerAdmin();
+      loadAdminList();
+      _ensureAdminWriteTurnstile();
+    }
     loadHeroAdmin();
-    loadEditorsAdmin();
-    loadTranslationsAdmin();
-    loadAiDisclaimerAdmin();
-    loadContributorsAdmin();
-    loadSiteMetaAdmin();
-    loadBoardLayoutAdmin();
-    loadBoardBannerAdmin();
-    loadAdminList();
     loadDashboard();
-    _ensureAdminWriteTurnstile();
-    // Default date input to today
-    var dateEl = document.getElementById('art-date');
-    if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
-    updateCatPreview();
-    updateEditorActionState();
-    // Default to dashboard tab
+    if (isFullAdmin()) {
+      var dateEl = document.getElementById('art-date');
+      if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
+      updateCatPreview();
+      updateEditorActionState();
+    }
     showAdminTab('dashboard');
   }
 
@@ -178,7 +206,8 @@
   };
 
   window.showAdminGroup = function (group) {
-    _adminGroup = TAB_GROUPS[group] ? TAB_GROUPS[group] : group;
+    var nextGroup = TAB_GROUPS[group] ? TAB_GROUPS[group] : group;
+    _adminGroup = canAccessAdminGroup(nextGroup) ? nextGroup : 'overview';
     document.querySelectorAll('.admin-group-btn').forEach(function (btn) {
       var active = btn.id === 'group-btn-' + _adminGroup;
       btn.classList.toggle('active', active);
@@ -191,6 +220,9 @@
   };
 
   window.showAdminTab = function (tab) {
+    if (!canAccessAdminTab(tab)) {
+      tab = isLimitedAdmin() ? 'dashboard' : 'dashboard';
+    }
     document.querySelectorAll('.admin-tab-panel').forEach(function (p) { p.classList.remove('active'); });
     var panel = document.getElementById('admin-tab-' + tab);
     if (panel) panel.classList.add('active');
@@ -213,6 +245,7 @@
   };
 
   window.scrollAdminSection = function (id) {
+    if (isLimitedAdmin() && id !== 'settings-hero') id = 'settings-hero';
     showAdminTab('settings');
     setTimeout(function () {
       var el = document.getElementById(id);
@@ -220,6 +253,31 @@
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
   };
+
+  function applyAdminPermissions() {
+    var limited = isLimitedAdmin();
+    document.querySelectorAll('[data-role-min="full"]').forEach(function (el) {
+      el.style.display = limited ? 'none' : '';
+    });
+    document.querySelectorAll('.admin-subnav-btn').forEach(function (btn) {
+      var target = btn.getAttribute('data-settings-section');
+      if (!target) return;
+      var panel = document.getElementById(target);
+      var allowed = panel ? panel.style.display !== 'none' : true;
+      btn.style.display = allowed ? '' : 'none';
+    });
+    var siteBtn = document.getElementById('tab-btn-settings');
+    if (siteBtn) {
+      var desc = siteBtn.querySelector('.admin-sidebar-btn-desc');
+      if (desc) desc.textContent = limited ? '히어로 기사 설정' : '태그, 메타, 푸터, 문구';
+    }
+    var contentGroup = document.querySelector('.admin-sidebar-group[data-admin-group="content"]');
+    if (contentGroup) contentGroup.style.display = limited ? 'none' : (_adminGroup === 'content' ? '' : 'none');
+    var siteGroup = document.querySelector('.admin-sidebar-group[data-admin-group="site"]');
+    if (siteGroup) siteGroup.style.display = _adminGroup === 'site' ? '' : 'none';
+    var overviewGroup = document.querySelector('.admin-sidebar-group[data-admin-group="overview"]');
+    if (overviewGroup) overviewGroup.style.display = _adminGroup === 'overview' ? '' : 'none';
+  }
 
   // ─── Editor.js loader ─────────────────────────────────────
   function _loadEditorJs(callback) {
@@ -355,6 +413,7 @@
       lane.innerHTML = items.length ? items.map(function (tag) {
         return '<div class="tag-admin-chip" draggable="true" data-tag="' + GW.escapeHtml(tag) + '" data-source="' + target + '">' +
           '<span>' + GW.escapeHtml(tag) + '</span>' +
+          '<button type="button" class="tag-admin-chip-edit" data-edit-tag="' + GW.escapeHtml(tag) + '" title="태그 수정">수정</button>' +
           '<button type="button" class="tag-admin-chip-remove" data-remove-tag="' + GW.escapeHtml(tag) + '" title="태그 삭제">×</button>' +
         '</div>';
       }).join('') : '<div class="tag-admin-empty">비어 있음</div>';
@@ -376,6 +435,22 @@
       lane.querySelectorAll('.tag-admin-chip-remove').forEach(function (btn) {
         btn.addEventListener('click', function () {
           _removeTagEverywhere(btn.getAttribute('data-remove-tag') || '');
+          _renderTagSettingsManager();
+          loadTagsForSelector();
+        });
+      });
+
+      lane.querySelectorAll('.tag-admin-chip-edit').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var before = btn.getAttribute('data-edit-tag') || '';
+          var after = window.prompt('태그명을 수정하세요', before);
+          if (after == null) return;
+          after = after.trim();
+          if (!after) {
+            GW.showToast('태그명을 입력해주세요', 'error');
+            return;
+          }
+          _renameTagEverywhere(before, after);
           _renderTagSettingsManager();
           loadTagsForSelector();
         });
@@ -419,6 +494,31 @@
     }
   }
 
+  function _renameTagEverywhere(fromTag, toTag) {
+    if (!fromTag || !toTag) return;
+    if (fromTag === toTag) return;
+    _tagSettings.common = _tagSettings.common.map(function (item) { return item === fromTag ? toTag : item; });
+    GW.TAG_CATEGORIES.forEach(function (category) {
+      _tagSettings.categories[category] = _tagSettings.categories[category].map(function (item) {
+        return item === fromTag ? toTag : item;
+      });
+      _tagSettings.categories[category] = uniqueStrings(_tagSettings.categories[category]);
+    });
+    _tagSettings.common = uniqueStrings(_tagSettings.common);
+    _adminSelTags = _adminSelTags.map(function (item) { return item === fromTag ? toTag : item; });
+    _adminSelTags = uniqueStrings(_adminSelTags);
+  }
+
+  function uniqueStrings(items) {
+    var seen = Object.create(null);
+    return (Array.isArray(items) ? items : []).filter(function (item) {
+      var key = String(item || '').trim();
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+  }
+
   window.addManagedTag = function () {
     var input = document.getElementById('tag-new-input');
     var target = document.getElementById('tag-new-target');
@@ -437,6 +537,10 @@
 
   // ─── Save (create or update) ──────────────────────────────
   window.savePost = function () {
+    if (!isFullAdmin()) {
+      GW.showToast('이 계정은 게시글 작성 권한이 없습니다', 'error');
+      return;
+    }
     var category = document.getElementById('art-category').value;
     var title    = (document.getElementById('art-title').value    || '').trim();
     var subtitle = (document.getElementById('art-subtitle').value || '').trim();
@@ -506,6 +610,10 @@
 
   // ─── Edit ─────────────────────────────────────────────────
   window.editPost = function (id) {
+    if (!isFullAdmin()) {
+      GW.showToast('이 계정은 게시글 수정 권한이 없습니다', 'error');
+      return;
+    }
     // Update URL without reload so browser history reflects the edit
     if (history.replaceState) {
       history.replaceState(null, '', '/admin.html?edit=' + id);
@@ -571,6 +679,10 @@
 
   // ─── Delete ───────────────────────────────────────────────
   window.deletePost = function (id) {
+    if (!isFullAdmin()) {
+      GW.showToast('이 계정은 게시글 삭제 권한이 없습니다', 'error');
+      return;
+    }
     if (!confirm('이 게시글을 삭제할까요?\n삭제된 내용은 복구되지 않습니다.')) return;
     GW.apiFetch('/api/posts/' + id, { method: 'DELETE' })
       .then(function () { GW.showToast('삭제됐습니다', 'success'); loadAdminList(); })
@@ -616,6 +728,10 @@
   };
 
   window.deleteEditingPost = function () {
+    if (!isFullAdmin()) {
+      GW.showToast('이 계정은 게시글 삭제 권한이 없습니다', 'error');
+      return;
+    }
     if (!editingId) {
       GW.showToast('수정 중인 게시글이 없습니다', 'error');
       return;
@@ -1543,15 +1659,17 @@
         var el = document.getElementById('dash-recent-list'); if (!el) return;
         var posts = (data.posts || []).slice(0, 5);
         if (!posts.length) { el.innerHTML = '<div class="list-empty">게시글이 없습니다</div>'; return; }
+        var editable = isFullAdmin();
         el.innerHTML = posts.map(function(p){
           var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-          return '<div class="article-item" style="cursor:pointer;" onclick="editPost(' + p.id + ');showAdminTab(\'write\')">' +
+          var actionAttr = editable ? ' onclick="editPost(' + p.id + ');showAdminTab(&quot;write&quot;)"' : '';
+          return '<div class="article-item" style="cursor:' + (editable ? 'pointer' : 'default') + ';"' + actionAttr + '>' +
             '<div class="article-item-content">' +
               '<div style="margin-bottom:4px;display:flex;align-items:center;gap:6px;">' +
                 '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:'+cat.color+';">' + cat.label + '</span>' +
               '</div>' +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-              '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views||0) + '</div>' +
+              '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views||0) + (editable ? ' · 수정 가능' : '') + '</div>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -1609,15 +1727,15 @@
         _analyticsPayload = data || null;
         renderAnalyticsPage(data || null);
       })
-      .catch(function () {
+      .catch(function (err) {
         _analyticsPayload = null;
-        renderAnalyticsPage(null);
+        renderAnalyticsPage({ error_message: (err && err.message) || '분석 데이터를 불러오지 못했습니다.' });
       });
   }
 
   function renderAnalyticsPage(data) {
     var fallback = {
-      provider_label: '미설정',
+      provider_label: '연결 오류',
       range: { label: '최근 7일' },
       summary: {
         today_visits: '—',
@@ -1639,7 +1757,7 @@
       },
       top_paths: [],
       referrers: [],
-      tracking_note: '방문자 대시보드를 불러오지 못했습니다.',
+      tracking_note: (data && data.error_message) || '방문자 대시보드를 불러오지 못했습니다.',
     };
     var payload = data || fallback;
     var rangeLabel = (payload.range && payload.range.label) || fallback.range.label;

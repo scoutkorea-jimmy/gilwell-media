@@ -1,4 +1,4 @@
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { loadSiteMeta, normalizeSiteMeta } from '../../_shared/site-meta.js';
 import { deleteStoredImageByUrl, storeDataImage } from '../../_shared/image-storage.js';
 
@@ -10,7 +10,7 @@ export async function onRequestGet({ env }) {
 export async function onRequestPut({ request, env }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 

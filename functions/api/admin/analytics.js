@@ -1,9 +1,9 @@
-import { extractToken, verifyToken } from '../../_shared/auth.js';
+import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { getCloudflarePageMetrics, isCloudflareAnalyticsConfigured, resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, ['full', 'limited']))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

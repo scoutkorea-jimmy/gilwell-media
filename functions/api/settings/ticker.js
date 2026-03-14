@@ -4,7 +4,7 @@
  * GET /api/settings/ticker  ← public, returns ticker items
  * PUT /api/settings/ticker  ← admin only, update ticker items
  */
-import { verifyToken, extractToken } from '../../_shared/auth.js';
+import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
 const DEFAULT_ITEMS = [
   '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
@@ -27,7 +27,7 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env.ADMIN_SECRET))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 
