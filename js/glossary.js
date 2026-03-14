@@ -55,8 +55,11 @@
         if (item.description_ko || canEdit) {
           footer = '<tr class="glossary-description-row"><td colspan="3">' +
             '<div class="glossary-description-row-inner">' +
-              '<div class="glossary-description-text">' + GW.escapeHtml(item.description_ko || '') + '</div>' +
-              (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '') +
+              '<div class="glossary-description-actions">' +
+                (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '<span></span>') +
+                (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 펼치기"><span class="glossary-chevron">⌄</span></button>' : '') +
+              '</div>' +
+              '<div class="glossary-description-text" id="glossary-desc-' + item.id + '" hidden>' + GW.escapeHtml(item.description_ko || '') + '</div>' +
             '</div>' +
           '</td></tr>';
         }
@@ -90,6 +93,7 @@
       list.innerHTML = '<section class="glossary-section">' + renderTable(items) + '</section>';
     }
     bindInlineEditButtons();
+    bindDescriptionToggles();
   }
 
   function bindSearch() {
@@ -131,6 +135,21 @@
         byId('glossary-public-submit-btn').textContent = '수정 저장';
         byId('glossary-public-cancel-btn').style.display = '';
         byId('glossary-public-ko').focus();
+      });
+    });
+  }
+
+  function bindDescriptionToggles() {
+    document.querySelectorAll('[data-desc-id]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-desc-id');
+        var target = byId('glossary-desc-' + id);
+        if (!target) return;
+        var willExpand = target.hasAttribute('hidden');
+        if (willExpand) target.removeAttribute('hidden');
+        else target.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', willExpand ? 'true' : 'false');
+        btn.classList.toggle('open', willExpand);
       });
     });
   }
