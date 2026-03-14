@@ -4031,6 +4031,25 @@ footer a:hover { color: #ffffff; }
   font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
   font-size: 24px;
 }
+.glossary-unmatched-section {
+  margin-top: 32px;
+}
+.glossary-unmatched-note {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.glossary-unmatched-note a {
+  color: #4D006E;
+  text-decoration: underline;
+}
+.glossary-unmatched-label {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
 .glossary-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
