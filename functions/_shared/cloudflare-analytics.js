@@ -122,36 +122,25 @@ function getConfiguredZoneTag(env) {
 }
 
 async function queryByHourAndPath(env, startUtcIso, endUtcIso, limit) {
-  return runGroupsQuery(
-    env,
-    startUtcIso,
-    endUtcIso,
-    limit,
-    '[datetimeHour_ASC, count_DESC]',
-    'dimensions { datetimeHour clientRequestPath }'
-  );
+  return runGroupsQueryChunked(env, startUtcIso, endUtcIso, limit, '[datetimeHour_ASC, count_DESC]', 'dimensions { datetimeHour clientRequestPath }');
 }
 
 async function queryByPath(env, startUtcIso, endUtcIso, limit) {
-  return runGroupsQuery(
-    env,
-    startUtcIso,
-    endUtcIso,
-    limit,
-    '[count_DESC]',
-    'dimensions { clientRequestPath }'
-  );
+  return runGroupsQueryChunked(env, startUtcIso, endUtcIso, limit, '[count_DESC]', 'dimensions { clientRequestPath }');
 }
 
 async function queryByReferrerAndPath(env, startUtcIso, endUtcIso, limit) {
-  return runGroupsQuery(
-    env,
-    startUtcIso,
-    endUtcIso,
-    limit,
-    '[count_DESC]',
-    'dimensions { clientRefererHost clientRequestPath }'
-  );
+  return runGroupsQueryChunked(env, startUtcIso, endUtcIso, limit, '[count_DESC]', 'dimensions { clientRefererHost clientRequestPath }');
+}
+
+async function runGroupsQueryChunked(env, startUtcIso, endUtcIso, limit, orderBy, dimensionsSelection) {
+  const ranges = splitUtcIsoRangeByDay(startUtcIso, endUtcIso);
+  const rows = [];
+  for (const range of ranges) {
+    const chunkRows = await runGroupsQuery(env, range.startUtcIso, range.endUtcIso, limit, orderBy, dimensionsSelection);
+    rows.push(...chunkRows);
+  }
+  return rows;
 }
 
 async function runGroupsQuery(env, startUtcIso, endUtcIso, limit, orderBy, dimensionsSelection) {
@@ -173,6 +162,21 @@ async function runGroupsQuery(env, startUtcIso, endUtcIso, limit, orderBy, dimen
   `;
   const payload = await runGraphqlQuery(env, query);
   return (((payload || {}).viewer || {}).zones || [])[0]?.httpRequestsAdaptiveGroups || [];
+}
+
+function splitUtcIsoRangeByDay(startUtcIso, endUtcIso) {
+  const ranges = [];
+  let cursor = new Date(startUtcIso);
+  const end = new Date(endUtcIso);
+  while (cursor < end) {
+    const next = new Date(Math.min(cursor.getTime() + 86400000, end.getTime()));
+    ranges.push({
+      startUtcIso: cursor.toISOString(),
+      endUtcIso: next.toISOString(),
+    });
+    cursor = next;
+  }
+  return ranges;
 }
 
 async function runGraphqlQuery(env, query) {
