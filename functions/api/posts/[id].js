@@ -6,7 +6,7 @@
  * DELETE /api/posts/:id   ← admin only, delete post
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-import { getLikeStats, getViewerKey, recordUniqueView } from '../../_shared/engagement.js';
+import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
@@ -35,7 +35,7 @@ export async function onRequestGet({ params, env, request }) {
     }
 
     const viewerKey = await getViewerKey(request, env);
-    if (!isAdmin) {
+    if (!isAdmin && !isLikelyNonHumanRequest(request)) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }

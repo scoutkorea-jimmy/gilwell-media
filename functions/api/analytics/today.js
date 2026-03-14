@@ -1,39 +1,30 @@
-import { getCloudflareHomeMetrics, isCloudflareAnalyticsConfigured } from '../../_shared/cloudflare-analytics.js';
-
 export async function onRequestGet({ env }) {
   try {
-    if (isCloudflareAnalyticsConfigured(env)) {
-      const cloudflareMetrics = await getCloudflareHomeMetrics(env);
-      if (cloudflareMetrics) return json(cloudflareMetrics);
-    }
-
     const [todayUnique, todayViews, totalUnique, totalViews] = await Promise.all([
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM site_visits
-                    WHERE datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
+                     FROM post_views
+                    WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(*) AS count
                      FROM post_views
                     WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM site_visits`),
-      scalar(env, `SELECT COUNT(*) AS count FROM post_views`),
+                     FROM post_views`),
+      scalar(env, `SELECT COUNT(*) AS count
+                     FROM post_views`),
     ]);
 
     return json({
-      provider: 'internal',
+      provider: 'post_views',
+      provider_label: '기사 조회 집계',
       today_unique: todayUnique,
       today_views: todayViews,
       total_unique: totalUnique,
       today_visits: todayUnique,
       total_visits: totalUnique,
       total_pageviews: totalViews,
+      measured_basis: 'post_views',
       measured_timezone: 'Asia/Seoul',
-      measured_date: new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Seoul',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date()),
+      measured_date: getKstDateString(new Date()),
     });
   } catch (err) {
     console.error('GET /api/analytics/today error:', err);
@@ -44,6 +35,15 @@ export async function onRequestGet({ env }) {
 async function scalar(env, sql) {
   const row = await env.DB.prepare(sql).first();
   return row?.count || 0;
+}
+
+function getKstDateString(date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
 }
 
 function json(data, status = 200) {
