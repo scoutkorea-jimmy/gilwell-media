@@ -202,6 +202,7 @@
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
         '<div class="post-card-meta">' +
           GW.formatDate(post.created_at) +
+          ' &nbsp;·&nbsp; 공감 ' + GW.formatNumber(post.likes || 0) +
           (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
           ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
         '</div>' +

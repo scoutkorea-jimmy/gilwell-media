@@ -21,7 +21,9 @@ export async function onRequestGet({ request, env }) {
   const origin       = url.origin;
   const category     = normalizeCategory(url.searchParams.get('category') || null);
   const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-  const offset       = (page - 1) * PAGE_SIZE;
+  const requestedLimit = parseInt(url.searchParams.get('limit') || String(PAGE_SIZE), 10);
+  const pageSize     = Math.min(50, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : PAGE_SIZE));
+  const offset       = (page - 1) * pageSize;
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;
   const featuredOnly = url.searchParams.get('featured') === '1';
@@ -69,14 +71,14 @@ export async function onRequestGet({ request, env }) {
 
     const postsStmt = allRequested && isAdmin
       ? env.DB.prepare(postsQuery).bind(...baseArgs)
-      : env.DB.prepare(postsQuery).bind(...baseArgs, PAGE_SIZE, offset);
+      : env.DB.prepare(postsQuery).bind(...baseArgs, pageSize, offset);
     const { results: posts }     = await postsStmt.all();
     const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
     const total = countRows[0]?.total ?? 0;
-    const pageSize = allRequested && isAdmin ? total : PAGE_SIZE;
+    const effectivePageSize = allRequested && isAdmin ? total : pageSize;
 
     const hydrated = (posts || []).map((post) => serializePostImage(post, origin));
-    return json({ posts: hydrated, total, page, pageSize });
+    return json({ posts: hydrated, total, page, pageSize: effectivePageSize });
   } catch (err) {
     console.error('GET /api/posts error:', err);
     return json({ error: 'Database error' }, 500);
