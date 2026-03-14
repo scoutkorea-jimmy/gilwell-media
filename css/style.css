@@ -1864,6 +1864,25 @@ footer a:hover { color: #ffffff; }
 .analytics-stats-row {
   grid-template-columns: repeat(6, 1fr);
 }
+
+.analytics-stats-row .dash-stat-card {
+  min-width: 0;
+}
+
+.analytics-stats-row .dash-stat-num {
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.08;
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.analytics-stats-row .dash-stat-label {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
 .dash-stat-card {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -2089,6 +2108,22 @@ footer a:hover { color: #ffffff; }
   color: var(--muted);
   letter-spacing: 0.05em;
 }
+
+.admin-inline-save {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-inline-save input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.admin-inline-save-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 @media (max-width: 700px) { .dash-actions { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 700px) {
   .analytics-stats-row {
@@ -2115,6 +2150,14 @@ footer a:hover { color: #ffffff; }
   }
   .share-meta-grid {
     grid-template-columns: 1fr;
+  }
+  .admin-group-nav {
+    flex-wrap: wrap;
+    padding: 12px 20px 16px;
+  }
+  .admin-inline-save {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 .dash-action-btn {
@@ -3354,6 +3397,34 @@ footer a:hover { color: #ffffff; }
   color: rgba(245,243,238,0.6);
 }
 
+.admin-group-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.admin-group-btn {
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.04);
+  color: rgba(245,243,238,0.82);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.admin-group-btn:hover,
+.admin-group-btn.active {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.34);
+  color: var(--white);
+}
+
 .admin-shell {
   max-width: 1366px;
   margin: 0 auto;
@@ -3376,6 +3447,9 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: var(--bg);
   padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .admin-sidebar-group-title {
@@ -3398,10 +3472,6 @@ footer a:hover { color: #ffffff; }
   background: transparent;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
-}
-
-.admin-sidebar-btn + .admin-sidebar-btn {
-  margin-top: 6px;
 }
 
 .admin-sidebar-btn-label {

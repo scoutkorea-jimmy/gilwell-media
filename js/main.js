@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.030.00';
+  GW.APP_VERSION = '0.031.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -313,11 +313,16 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var info = data && data.footer ? data.footer : {};
+        var footerBrand = footer.querySelector('.footer-brand');
         var title = document.querySelector('[data-footer-role="title"]');
         var description = document.querySelector('[data-footer-role="description"]');
         var domain = document.querySelector('[data-footer-role="domain"]');
         var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
         var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
+        if (footerBrand && info.raw_text) {
+          footerBrand.innerHTML = GW.renderManagedFooterText(info.raw_text);
+          return;
+        }
         if (title && info.title) title.textContent = info.title;
         if (description && info.description) description.textContent = info.description;
         if (domain && info.domain_label) domain.textContent = info.domain_label;
@@ -331,6 +336,31 @@
         }
       })
       .catch(function () {});
+  };
+
+  GW.renderManagedFooterText = function (rawText) {
+    var lines = String(rawText || '')
+      .split(/\r?\n/)
+      .map(function (line) { return line.trim(); })
+      .filter(Boolean);
+    if (!lines.length) return '';
+
+    var head = '<h4>' + GW.escapeHtml(lines[0]) + '</h4>';
+    var body = lines.slice(1).map(function (line) {
+      return '<p>' + GW.formatFooterLine(line) + '</p>';
+    }).join('');
+    return head + body;
+  };
+
+  GW.formatFooterLine = function (line) {
+    var text = String(line || '');
+    var emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    if (!emailMatch) return GW.escapeHtml(text);
+    var email = emailMatch[0];
+    var parts = text.split(email);
+    return GW.escapeHtml(parts[0] || '') +
+      '<a href="mailto:' + GW.escapeHtml(email) + '">' + GW.escapeHtml(email) + '</a>' +
+      GW.escapeHtml(parts.slice(1).join(email) || '');
   };
 
   if (document.readyState === 'loading') {

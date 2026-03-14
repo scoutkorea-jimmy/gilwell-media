@@ -29,6 +29,7 @@
       search: { title: '', description: '' },
     },
     footer: {
+      raw_text: '',
       title: 'BP미디어',
       description: '',
       domain_label: 'bpmedia.net',
@@ -53,6 +54,7 @@
   var _HISTORY_PAGE_SIZE = 10;
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
+  var _adminGroup = 'overview';
   var _boardLayout = { gap_px: 6 };
   var _boardBannerInfo = {
     items: {
@@ -164,6 +166,30 @@
   }
 
   // ─── Tab navigation ───────────────────────────────────────
+  var TAB_GROUPS = {
+    dashboard: 'overview',
+    analytics: 'overview',
+    write: 'content',
+    list: 'content',
+    settings: 'site',
+    contributors: 'site',
+    translations: 'site',
+    history: 'site',
+  };
+
+  window.showAdminGroup = function (group) {
+    _adminGroup = TAB_GROUPS[group] ? TAB_GROUPS[group] : group;
+    document.querySelectorAll('.admin-group-btn').forEach(function (btn) {
+      var active = btn.id === 'group-btn-' + _adminGroup;
+      btn.classList.toggle('active', active);
+      if (active) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('.admin-sidebar-group[data-admin-group]').forEach(function (section) {
+      section.style.display = section.getAttribute('data-admin-group') === _adminGroup ? '' : 'none';
+    });
+  };
+
   window.showAdminTab = function (tab) {
     document.querySelectorAll('.admin-tab-panel').forEach(function (p) { p.classList.remove('active'); });
     var panel = document.getElementById('admin-tab-' + tab);
@@ -177,6 +203,7 @@
       btn.classList.add('active');
       btn.setAttribute('aria-current', 'page');
     }
+    showAdminGroup(TAB_GROUPS[tab] || 'overview');
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'analytics') loadAnalyticsPage();
@@ -1256,16 +1283,16 @@
     }
     _renderSiteMetaImagePreview();
     var footer = _siteMeta.footer || {};
-    var footerTitle = document.getElementById('site-footer-title');
-    var footerDescription = document.getElementById('site-footer-description');
-    var footerDomain = document.getElementById('site-footer-domain');
-    var footerTip = document.getElementById('site-footer-tip-email');
-    var footerContact = document.getElementById('site-footer-contact-email');
-    if (footerTitle) footerTitle.value = footer.title || '';
-    if (footerDescription) footerDescription.value = footer.description || '';
-    if (footerDomain) footerDomain.value = footer.domain_label || '';
-    if (footerTip) footerTip.value = footer.tip_email || '';
-    if (footerContact) footerContact.value = footer.contact_email || '';
+    var footerRaw = document.getElementById('site-footer-raw');
+    if (footerRaw) {
+      footerRaw.value = footer.raw_text || [
+        footer.title || 'BP미디어',
+        footer.description || '',
+        footer.domain_label || '',
+        footer.tip_email ? '기사제보: ' + footer.tip_email : '',
+        footer.contact_email ? '문의: ' + footer.contact_email : '',
+      ].filter(Boolean).join('\n');
+    }
     var googleEl = document.getElementById('site-google-verification');
     var naverEl = document.getElementById('site-naver-verification');
     if (googleEl) googleEl.value = _siteMeta.google_verification || '';
@@ -1311,11 +1338,7 @@
       body: JSON.stringify({
         pages: pages,
         footer: {
-          title: ((document.getElementById('site-footer-title') || {}).value || '').trim(),
-          description: ((document.getElementById('site-footer-description') || {}).value || '').trim(),
-          domain_label: ((document.getElementById('site-footer-domain') || {}).value || '').trim(),
-          tip_email: ((document.getElementById('site-footer-tip-email') || {}).value || '').trim(),
-          contact_email: ((document.getElementById('site-footer-contact-email') || {}).value || '').trim(),
+          raw_text: ((document.getElementById('site-footer-raw') || {}).value || '').trim(),
         },
         image_url: _siteMeta.image_url || null,
         google_verification: ((document.getElementById('site-google-verification') || {}).value || '').trim(),
@@ -1621,22 +1644,22 @@
     var payload = data || fallback;
     var rangeLabel = (payload.range && payload.range.label) || fallback.range.label;
     setText('analytics-provider-label', payload.provider_label || fallback.provider_label);
-    setText('analytics-today-visits', payload.summary ? payload.summary.today_visits : '—');
-    setText('analytics-total-visits', payload.summary ? payload.summary.total_visits : '—');
-    setText('analytics-range-visits', payload.summary ? payload.summary.range_visits : '—');
-    setText('analytics-total-pageviews', payload.summary ? payload.summary.total_pageviews : '—');
-    setText('analytics-range-pageviews', payload.summary ? payload.summary.range_pageviews : '—');
+    setMetricText('analytics-today-visits', payload.summary ? payload.summary.today_visits : '—');
+    setMetricText('analytics-total-visits', payload.summary ? payload.summary.total_visits : '—');
+    setMetricText('analytics-range-visits', payload.summary ? payload.summary.range_visits : '—');
+    setMetricText('analytics-total-pageviews', payload.summary ? payload.summary.total_pageviews : '—');
+    setMetricText('analytics-range-pageviews', payload.summary ? payload.summary.range_pageviews : '—');
     setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
     renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
       return {
         title: item.referrer_host || 'direct',
-        meta: rangeLabel + ' · 방문 ' + (item.visits || 0) + ' · 조회 ' + (item.pageviews || 0),
+        meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
       };
     }, '아직 유입 경로 데이터가 없습니다');
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
       return {
         title: item.path || '/',
-        meta: rangeLabel + ' · 방문 ' + (item.visits || 0) + ' · 조회 ' + (item.pageviews || 0),
+        meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
       };
     }, '아직 방문 페이지 데이터가 없습니다');
     renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
@@ -1694,7 +1717,7 @@
         var width = Math.max(4, Math.round((value / max) * 100));
         return '<div class="analytics-bar-line">' +
           '<div class="analytics-bar-track"><span class="analytics-bar-fill ' + series.className + '" style="width:' + width + '%;"></span></div>' +
-          '<span class="analytics-bar-value">' + value + '</span>' +
+          '<span class="analytics-bar-value">' + formatMetricCompact(value) + '</span>' +
         '</div>';
       }).join('');
       return '<div class="analytics-bar-row">' +
@@ -1750,8 +1773,8 @@
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
         '<td>' + GW.escapeHtml(item.path || '/') + '</td>' +
-        '<td>' + (item.visits || 0) + '</td>' +
-        '<td>' + (item.pageviews || 0) + '</td>' +
+        '<td>' + formatMetricCompact(item.visits || 0) + '</td>' +
+        '<td>' + formatMetricCompact(item.pageviews || 0) + '</td>' +
       '</tr>';
     }).join('');
     el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>페이지</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
@@ -1782,6 +1805,28 @@
   function setText(id, value) {
     var el = document.getElementById(id);
     if (el) el.textContent = value;
+  }
+
+  function setMetricText(id, value) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = formatMetricCompact(value);
+    el.title = value == null ? '' : String(value);
+  }
+
+  function formatMetricCompact(value) {
+    if (value == null || value === '' || value === '—') return '—';
+    if (typeof value === 'string' && !/^\d+(\.\d+)?$/.test(value)) return value;
+    var num = Number(value || 0);
+    if (!Number.isFinite(num)) return String(value);
+    if (num < 1000) return String(Math.round(num)).padStart(3, '0');
+    if (num < 1000000) return trimMetricUnit(num / 1000) + 'k';
+    return trimMetricUnit(num / 1000000) + 'm';
+  }
+
+  function trimMetricUnit(value) {
+    var fixed = value >= 100 ? value.toFixed(0) : (value >= 10 ? value.toFixed(1) : value.toFixed(2));
+    return fixed.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
   }
 
   function loadVersionHistory() {

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.030.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.031.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -28,7 +28,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.030.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.031.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -44,17 +44,21 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.030.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.031.00</span></span>
           <a href="index.html" target="_blank">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
       </div>
+      <nav class="admin-group-nav" aria-label="관리자 상위 메뉴">
+        <button class="admin-group-btn active" id="group-btn-overview" onclick="showAdminGroup('overview')">운영 개요</button>
+        <button class="admin-group-btn" id="group-btn-content" onclick="showAdminGroup('content')">콘텐츠</button>
+        <button class="admin-group-btn" id="group-btn-site" onclick="showAdminGroup('site')">사이트 설정</button>
+      </nav>
     </header>
 
     <div class="admin-shell">
       <aside class="admin-sidebar">
-        <div class="admin-sidebar-group">
-          <div class="admin-sidebar-group-title">운영 개요</div>
+        <div class="admin-sidebar-group" data-admin-group="overview">
           <button class="admin-sidebar-btn active" id="tab-btn-dashboard" onclick="showAdminTab('dashboard')">
             <span class="admin-sidebar-btn-label">대시보드</span>
             <span class="admin-sidebar-btn-desc">최근 게시글과 운영 현황</span>
@@ -64,8 +68,7 @@
             <span class="admin-sidebar-btn-desc">방문, 조회, 유입 경로</span>
           </button>
         </div>
-        <div class="admin-sidebar-group">
-          <div class="admin-sidebar-group-title">콘텐츠</div>
+        <div class="admin-sidebar-group" data-admin-group="content" style="display:none;">
           <button class="admin-sidebar-btn" id="tab-btn-write" onclick="showAdminTab('write')">
             <span class="admin-sidebar-btn-label">글 작성</span>
             <span class="admin-sidebar-btn-desc">새 글 작성과 수정</span>
@@ -75,11 +78,18 @@
             <span class="admin-sidebar-btn-desc">정렬, 공개 상태, 삭제</span>
           </button>
         </div>
-        <div class="admin-sidebar-group">
-          <div class="admin-sidebar-group-title">사이트 설정</div>
+        <div class="admin-sidebar-group" data-admin-group="site" style="display:none;">
           <button class="admin-sidebar-btn" id="tab-btn-settings" onclick="showAdminTab('settings')">
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-contributors" onclick="showAdminTab('contributors')">
+            <span class="admin-sidebar-btn-label">도움을 주신 분들</span>
+            <span class="admin-sidebar-btn-desc">기여자 목록 관리</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-translations" onclick="showAdminTab('translations')">
+            <span class="admin-sidebar-btn-label">UI 번역 관리</span>
+            <span class="admin-sidebar-btn-desc">국문/영문 UI 텍스트</span>
           </button>
           <button class="admin-sidebar-btn" id="tab-btn-history" onclick="showAdminTab('history')">
             <span class="admin-sidebar-btn-label">버전 기록</span>
@@ -505,23 +515,10 @@
             <div class="admin-settings-divider"></div>
 
             <div class="share-meta-card">
-              <div class="share-meta-card-head">푸터 좌측 문구</div>
-              <label>푸터 제목</label>
-              <input type="text" id="site-footer-title" maxlength="80" />
-              <label>소개 문구</label>
-              <textarea id="site-footer-description" rows="4" maxlength="260"></textarea>
-              <label>도메인 표기</label>
-              <input type="text" id="site-footer-domain" maxlength="120" />
-              <div class="share-meta-inline-grid">
-                <div>
-                  <label>기사제보 이메일</label>
-                  <input type="email" id="site-footer-tip-email" maxlength="120" />
-                </div>
-                <div>
-                  <label>문의 이메일</label>
-                  <input type="email" id="site-footer-contact-email" maxlength="120" />
-                </div>
-              </div>
+              <div class="share-meta-card-head">푸터 좌측 전체 문구</div>
+              <label>전체 입력</label>
+              <textarea id="site-footer-raw" rows="8" maxlength="1000" placeholder="1행: 제목&#10;2행부터: 소개/도메인/기사제보/문의 등 원하는 줄을 그대로 입력"></textarea>
+              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">첫 줄은 제목으로 사용하고, 그 아래 줄들은 푸터 좌측에 순서대로 표시됩니다. 이메일 주소가 들어간 줄은 자동으로 링크 처리됩니다.</p>
             </div>
 
             <div style="margin-top:18px;">
@@ -562,16 +559,27 @@
           <div class="panel-header"><h2>AI 도움 문구 설정</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">AI 지원 글 하단에 표시될 문구입니다.</p>
-            <div style="display:flex;gap:8px;">
+            <div class="admin-inline-save">
               <input type="text" id="ai-disclaimer-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500"
-                style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
-              <button class="submit-btn" style="padding:9px 20px;margin:0;" onclick="saveAiDisclaimer()">저장</button>
+                style="padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
+              <button class="submit-btn admin-inline-save-btn" onclick="saveAiDisclaimer()">저장</button>
             </div>
           </div>
         </div>
 
-        <!-- Contributors -->
-        <div class="panel" style="margin-bottom:24px;">
+        <div class="panel" id="settings-copy" style="margin-bottom:24px;">
+          <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
+          <div class="panel-body">
+            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
+            <div id="category-copy-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
+            <button class="submit-btn" style="margin-top:16px;" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
+          </div>
+        </div>
+
+      </div><!-- /settings tab -->
+
+      <div id="admin-tab-contributors" class="admin-tab-panel">
+        <div class="panel">
           <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
           <div class="panel-body">
             <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
@@ -598,17 +606,9 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="panel" id="settings-copy" style="margin-bottom:24px;">
-          <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
-          <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
-            <div id="category-copy-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
-            <button class="submit-btn" style="margin-top:16px;" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
-          </div>
-        </div>
-
-        <!-- Translations -->
+      <div id="admin-tab-translations" class="admin-tab-panel">
         <div class="panel">
           <div class="panel-header"><h2>UI 번역 관리</h2></div>
           <div class="panel-body">
@@ -619,8 +619,7 @@
             <button class="submit-btn" style="margin-top:16px;" onclick="saveTranslations()">번역 저장</button>
           </div>
         </div>
-
-      </div><!-- /settings tab -->
+      </div>
 
       <div id="admin-tab-history" class="admin-tab-panel">
         <div class="panel">
@@ -638,8 +637,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.030.00"></script>
-  <script src="/js/admin.js?v=0.030.00"></script>
+  <script src="/js/main.js?v=0.031.00"></script>
+  <script src="/js/admin.js?v=0.031.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
