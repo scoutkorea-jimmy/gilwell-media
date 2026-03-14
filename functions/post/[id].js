@@ -2,6 +2,7 @@ import { verifyTokenRole, extractToken } from '../_shared/auth.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../_shared/engagement.js';
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
+import { findRelatedPosts } from '../_shared/related-posts.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -53,7 +54,10 @@ export async function onRequestGet({ params, env, request }) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
-  const likeStats = await getLikeStats(env, id, viewerKey);
+  const [likeStats, relatedPosts] = await Promise.all([
+    getLikeStats(env, id, viewerKey),
+    findRelatedPosts(env, post, 5),
+  ]);
 
   const siteUrl  = new URL(request.url).origin;
   const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
@@ -121,7 +125,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.039.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.040.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -207,6 +211,7 @@ export async function onRequestGet({ params, env, request }) {
         </div>
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
+        ${renderRelatedPostsSection(relatedPosts, false)}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
 
@@ -220,6 +225,8 @@ export async function onRequestGet({ params, env, request }) {
         </div>
 
       </div>
+
+      ${renderRelatedPostsSection(relatedPosts, true)}
 
       <!-- ── Sidebar ── -->
       <aside class="post-page-sidebar">
@@ -263,7 +270,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.039.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.040.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -290,7 +297,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.039.01"></script>
+  <script src="/js/main.js?v=0.040.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -514,6 +521,16 @@ function renderImageCaption(value) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) return '';
   return `<p class="post-image-caption">${escapeHtml(text)}</p>`;
+}
+
+function renderRelatedPostsSection(items, mobileOnly) {
+  if (!Array.isArray(items) || !items.length) return '';
+  return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
+    <h3 class="post-related-heading">유관기사 읽어보기</h3>
+    <ul class="post-related-list">
+      ${items.map((item) => `<li><a href="/post/${item.id}">${escapeHtml(item.title || '')}</a></li>`).join('')}
+    </ul>
+  </section>`;
 }
 
 function buildArticleStructuredData(meta) {
