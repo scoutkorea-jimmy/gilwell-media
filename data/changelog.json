@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "0.035.00",
+      "date": "2026-03-14",
+      "commit": "pending",
+      "type": "feature",
+      "summary": "검색엔진용 sitemap·robots·구조화 데이터를 보강하고, 방문/조회 집계에서 봇과 허수성 요청을 제외하도록 정리했습니다.",
+      "changes": [
+        "sitemap.xml에 현재 운영 중인 WOSM 경로와 최신 게시글 수정일을 반영하고, 주요 정적 페이지 lastmod를 카테고리별 최신 게시글 시각 기준으로 보강했습니다.",
+        "robots.txt에 Googlebot, Googlebot-Image, AdsBot-Google 허용 규칙을 명시하고 관리자 및 관리자 API 경로는 크롤링 대상에서 제외했습니다.",
+        "일반 페이지는 CollectionPage/WebPage + ItemList 구조화 데이터, 기사 페이지는 NewsArticle 구조화 데이터와 ISO 8601 날짜 메타로 정리했습니다.",
+        "내부 방문자수와 조회수 집계에서는 알려진 봇, 소셜 미리보기 크롤러, 프리페치/프리뷰 요청을 저장 단계에서 제외하도록 변경했습니다.",
+        "Cloudflare 분석 탭 설명도 실제 필터 기준에 맞게 보정했습니다."
+      ]
+    },
+    {
       "version": "0.034.00",
       "date": "2026-03-14",
       "commit": "pending",

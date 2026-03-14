@@ -1,13 +1,14 @@
-import { getViewerKey } from './engagement.js';
+import { getViewerKey, isLikelyNonHumanRequest } from './engagement.js';
 
 const VISIT_WINDOW_MINUTES = 30;
 
 export async function recordSiteVisit(request, env, payload) {
+  if (isLikelyNonHumanRequest(request)) return { recorded: false, excluded: 'bot' };
   const viewerKey = await getViewerKey(request, env);
   if (!viewerKey) return { recorded: false };
 
   const path = sanitizePath(payload && payload.path);
-  if (!path || path.startsWith('/api/') || path === '/admin.html') {
+  if (!path || path.startsWith('/api/') || path === '/admin.html' || path === '/admin') {
     return { recorded: false };
   }
 

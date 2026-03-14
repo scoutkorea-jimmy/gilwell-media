@@ -15,6 +15,7 @@ export async function onRequest(context) {
   const siteMeta = await loadSiteMeta(env);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const canonicalPath = url.pathname === '/index.html' ? '/' : url.pathname;
+  const itemListElements = await loadPageItemList(env, url.origin, pageKey);
   const shareMeta = buildShareMetaBlock({
     pageKey,
     title: pageMeta.title,
@@ -23,6 +24,7 @@ export async function onRequest(context) {
     imageUrl: getResolvedShareImage(siteMeta, url.origin),
     googleVerification: siteMeta.google_verification,
     naverVerification: siteMeta.naver_verification,
+    itemListElements,
   });
 
   const updated = html
@@ -36,6 +38,25 @@ export async function onRequest(context) {
     statusText: response.statusText,
     headers,
   });
+}
+
+async function loadPageItemList(env, origin, pageKey) {
+  if (!['home', 'korea', 'apr', 'wosm', 'people'].includes(pageKey)) return [];
+  try {
+    const category = pageKey === 'home' ? null : pageKey;
+    const query = category
+      ? `SELECT id, title FROM posts WHERE published = 1 AND category = ? ORDER BY created_at DESC LIMIT 10`
+      : `SELECT id, title FROM posts WHERE published = 1 ORDER BY created_at DESC LIMIT 10`;
+    const result = category
+      ? await env.DB.prepare(query).bind(category).all()
+      : await env.DB.prepare(query).all();
+    return (result.results || []).map((item) => ({
+      url: `${origin}/post/${item.id}`,
+      title: item.title || `post-${item.id}`,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 function escapeHtml(str) {

@@ -39,3 +39,26 @@ export async function getLikeStats(env, postId, viewerKey) {
     liked: !!likedRow,
   };
 }
+
+export function isLikelyNonHumanRequest(request) {
+  if (!request) return false;
+  const userAgent = String(request.headers.get('user-agent') || '').toLowerCase();
+  const purpose = String(request.headers.get('purpose') || request.headers.get('x-purpose') || '').toLowerCase();
+  const secPurpose = String(request.headers.get('sec-purpose') || '').toLowerCase();
+  const moz = String(request.headers.get('x-moz') || '').toLowerCase();
+
+  if (purpose.includes('prefetch') || purpose.includes('preview') || secPurpose.includes('prefetch') || moz.includes('prefetch')) {
+    return true;
+  }
+
+  const botPatterns = [
+    'bot', 'spider', 'crawl', 'slurp', 'bingpreview', 'facebookexternalhit',
+    'meta-externalagent', 'discordbot', 'telegrambot', 'slackbot', 'whatsapp',
+    'kakaotalk', 'kakao', 'linkedinbot', 'pinterest', 'redditbot', 'embedly',
+    'quora link preview', 'applebot', 'lighthouse', 'pagespeed', 'headlesschrome',
+    'curl', 'wget', 'python-requests', 'axios', 'go-http-client', 'java/', 'okhttp',
+    'node-fetch', 'undici', 'googleother', 'apis-google', 'inspectiontool',
+    'adsbot-google', 'mediapartners-google'
+  ];
+  return botPatterns.some((pattern) => userAgent.includes(pattern));
+}

@@ -1,5 +1,5 @@
 import { verifyToken, extractToken } from '../_shared/auth.js';
-import { getLikeStats, getViewerKey, recordUniqueView } from '../_shared/engagement.js';
+import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../_shared/engagement.js';
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 
@@ -49,7 +49,7 @@ export async function onRequestGet({ params, env, request }) {
     if (!isAdmin) return notFound();
   }
   const viewerKey = await getViewerKey(request, env);
-  if (!isAdmin) {
+  if (!isAdmin && !isLikelyNonHumanRequest(request)) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
@@ -64,6 +64,8 @@ export async function onRequestGet({ params, env, request }) {
   const descText = subtitleText || truncatePlain(post.content || '', 160);
   const desc     = escapeHtml(descText);
   const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
+  const publishedIso = toIsoString(post.created_at);
+  const modifiedIso = toIsoString(post.updated_at || post.created_at);
   const ogImage  = post.image_url
     ? (post.image_url.startsWith('http')
         ? escapeHtml(post.image_url)
@@ -81,8 +83,8 @@ export async function onRequestGet({ params, env, request }) {
     url: postUrl,
     categoryUrl,
     image: ogImage,
-    datePublished: post.created_at,
-    dateModified: post.updated_at || post.created_at,
+    datePublished: publishedIso,
+    dateModified: modifiedIso,
     author: post.author,
     category: cat.label,
   });
@@ -96,6 +98,7 @@ export async function onRequestGet({ params, env, request }) {
   <meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>
   <meta name="robots" content="index,follow,max-image-preview:large"/>
   <meta name="description" content="${desc}"/>
+  <meta name="author" content="${escapeHtml(post.author || 'Editor.A')}"/>
   ${keywords ? `<meta name="keywords" content="${keywords}"/>` : ''}
   <meta property="og:locale"      content="ko_KR"/>
   <meta property="og:type"        content="article"/>
@@ -104,8 +107,8 @@ export async function onRequestGet({ params, env, request }) {
   <meta property="og:url"         content="${postUrl}"/>
   ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
   <meta property="og:site_name"   content="BP미디어 · bpmedia.net"/>
-  <meta property="article:published_time" content="${escapeHtml(post.created_at || '')}"/>
-  <meta property="article:modified_time" content="${escapeHtml(post.updated_at || post.created_at || '')}"/>
+  <meta property="article:published_time" content="${escapeHtml(publishedIso)}"/>
+  <meta property="article:modified_time" content="${escapeHtml(modifiedIso)}"/>
   <meta property="article:section" content="${escapeHtml(cat.label)}"/>
   <meta name="twitter:card"       content="${ogImage ? 'summary_large_image' : 'summary'}"/>
   <meta name="twitter:title"      content="${title}"/>
@@ -118,7 +121,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.034.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.035.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -260,7 +263,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.034.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.035.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -287,7 +290,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.034.00"></script>
+  <script src="/js/main.js?v=0.035.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -413,6 +416,14 @@ function formatDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+function toIsoString(dateStr) {
+  if (!dateStr) return '';
+  const normalized = String(dateStr).replace(' ', 'T');
+  const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : `${normalized}+09:00`;
+  const d = new Date(withZone);
+  return Number.isNaN(d.getTime()) ? normalized : d.toISOString();
 }
 
 /** Render Editor.js JSON or plain text to HTML (server-side). */

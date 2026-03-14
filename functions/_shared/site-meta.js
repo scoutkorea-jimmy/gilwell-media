@@ -109,7 +109,7 @@ export function getSitePageKey(pathname) {
   return mapping[normalized] || null;
 }
 
-export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification }) {
+export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements }) {
   const safeTitle = escapeHtml(title || DEFAULT_SITE_META.pages.home.title);
   const safeDesc = escapeHtml(description || DEFAULT_SITE_META.pages.home.description);
   const safeUrl = escapeHtml(url || 'https://bpmedia.net');
@@ -118,7 +118,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
   const robots = pageKey === 'search'
     ? '<meta name="robots" content="noindex,follow"/>'
     : '<meta name="robots" content="index,follow,max-image-preview:large"/>';
-  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl });
+  const structuredData = buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements });
 
   return [
     `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
@@ -214,7 +214,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl }) {
+function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl, itemListElements }) {
   const resolvedUrl = url || `${SITE_ORIGIN}/`;
   const pageName = title || DEFAULT_SITE_META.pages.home.title;
   const pageDescription = description || DEFAULT_SITE_META.pages.home.description;
@@ -223,6 +223,8 @@ function buildStructuredDataEntries({ pageKey, title, description, url, imageUrl
     buildWebsiteStructuredData(imageUrl),
     buildPageStructuredData({ pageKey, title: pageName, description: pageDescription, url: resolvedUrl, imageUrl }),
   ];
+  const itemList = buildItemListStructuredData({ pageKey, url: resolvedUrl, itemListElements });
+  if (itemList) entries.push(itemList);
   const breadcrumb = buildBreadcrumbStructuredData(pageKey, resolvedUrl);
   if (breadcrumb) entries.push(breadcrumb);
   return entries;
@@ -329,6 +331,23 @@ function getPageTopic(pageKey) {
     search: '사이트 검색 결과',
   };
   return topics[pageKey] || '스카우트 뉴스';
+}
+
+function buildItemListStructuredData({ pageKey, url, itemListElements }) {
+  if (!Array.isArray(itemListElements) || !itemListElements.length) return null;
+  if (!['home', 'korea', 'apr', 'wosm', 'people'].includes(pageKey)) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    '@id': `${url}#itemlist`,
+    name: getPageTopic(pageKey),
+    itemListElement: itemListElements.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: item.url,
+      name: item.title,
+    })),
+  };
 }
 
 function safeJsonLd(value) {

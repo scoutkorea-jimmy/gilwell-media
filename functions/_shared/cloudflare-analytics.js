@@ -109,7 +109,7 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
     },
     top_paths: topPaths,
     referrers,
-    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. 방문수는 Cloudflare visits, 조회수는 페이지 경로 요청 수 기준이며 정적 자산과 API 요청은 제외했습니다.`,
+    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. requestSource=eyeball 기준 데이터를 사용하고, 정적 자산·API 요청·비공개 관리 경로는 제외했습니다.`,
   };
 }
 
