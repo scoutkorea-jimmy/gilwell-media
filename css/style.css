@@ -91,9 +91,9 @@ p { margin-bottom: 6px; }
 }
 
 .masthead-top {
-  display:         flex;
+  display:         grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
   align-items:     center;
-  justify-content: space-between;
   padding:         18px 48px;
   border-bottom:   1px solid var(--border);
   max-width:       1366px;
@@ -108,7 +108,10 @@ p { margin-bottom: 6px; }
   min-width:   160px;
 }
 
-.masthead-logo { text-align: center; }
+.masthead-logo {
+  text-align: center;
+  justify-self: center;
+}
 
 .masthead-logo-row {
   display:         flex;
@@ -171,6 +174,7 @@ p { margin-bottom: 6px; }
   align-items:    flex-end;
   gap:            6px;
   min-width:      160px;
+  justify-self:   end;
 }
 
 .masthead-stats {
@@ -521,6 +525,10 @@ p { margin-bottom: 6px; }
   line-height:   1.4;
   margin-bottom: 6px;
   color:         var(--black);
+  display:       -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:      hidden;
 }
 
 .sidebar-item .meta {
@@ -825,6 +833,10 @@ p { margin-bottom: 6px; }
   line-height:   1.4;
   color:         var(--black);
   margin-bottom: 4px;
+  display:       -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:      hidden;
 }
 
 .mini-item .mini-meta {
@@ -1154,6 +1166,16 @@ p { margin-bottom: 6px; }
   font-size: 10px;
   line-height: 1.5;
   color: #8f8f8f;
+  text-align: center;
+}
+
+.board-banner-note {
+  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  color: #8f8f8f;
+  line-height: 1.7;
+  margin-top: 10px;
+  max-width: 760px;
 }
 
 .youtube-embed-wrap {
@@ -2577,7 +2599,7 @@ footer a:hover { color: #ffffff; }
    RESPONSIVE
    ════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  .masthead-top       { padding: 16px 24px; }
+  .masthead-top       { padding: 16px 24px; grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr); }
   .masthead-logo h1   { font-size: 26px; }
   .masthead-date      { min-width: 120px; font-size: 11px; }
   .masthead-right     { min-width: 120px; }
@@ -2628,6 +2650,7 @@ footer a:hover { color: #ffffff; }
     padding:     10px 16px;
     flex-wrap:   wrap;
     gap:         6px;
+    display:     flex;
   }
   /* Hide date/time/tagline — too much for small screens */
   .masthead-date,
@@ -2655,6 +2678,14 @@ footer a:hover { color: #ffffff; }
   /* Search expands to full width when active */
   .masthead-search:focus-within .mh-search-input,
   .mh-search-input:focus { width: 120px; }
+
+  .mini-item h4 {
+    -webkit-line-clamp: 3;
+  }
+
+  .sidebar-item h4 {
+    -webkit-line-clamp: 3;
+  }
 
   /* Nav */
   .nav                { padding: 0 16px; }
