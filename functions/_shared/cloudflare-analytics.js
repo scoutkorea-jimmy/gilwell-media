@@ -58,6 +58,7 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
   const includeSeries = opts.includeSeries !== false;
   const includeReferrers = opts.includeReferrers !== false;
 
+  let referrerFallback = '';
   const [rangeRows, todayRows, totalRows, referrerRows] = await Promise.all([
     includeSeries
       ? queryByHourAndPath(env, queryRange.startUtcIso, queryRange.endUtcIso, 10000)
@@ -65,7 +66,10 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
     queryByPath(env, kstDateToUtcStartIso(getKstDateString(new Date())), kstDateToUtcStartIso(shiftKstDate(getKstDateString(new Date()), 1)), 1000),
     queryByPath(env, kstDateToUtcStartIso(env.CF_ANALYTICS_START_DATE || DEFAULT_START_DATE), queryRange.endUtcIso, 5000),
     includeReferrers
-      ? queryByReferrerAndPath(env, queryRange.startUtcIso, queryRange.endUtcIso, 5000)
+      ? queryByReferrerAndPath(env, queryRange.startUtcIso, queryRange.endUtcIso, 5000).catch((err) => {
+        referrerFallback = err && err.message ? String(err.message) : 'Cloudflare referrer query unavailable';
+        return [];
+      })
       : Promise.resolve([]),
   ]);
 
@@ -109,7 +113,7 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
     },
     top_paths: topPaths,
     referrers,
-    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. requestSource=eyeball 기준 데이터를 사용하고, 정적 자산·API 요청·비공개 관리 경로는 제외했습니다.`,
+    tracking_note: `${queryRange.label} 기준 Cloudflare GraphQL 집계입니다. requestSource=eyeball 기준 데이터를 사용하고, 정적 자산·API 요청·비공개 관리 경로는 제외했습니다.${referrerFallback ? ' 현재 계정 권한 범위에서는 일부 유입 경로 필드가 비활성화되어 referrer 목록이 비어 있을 수 있습니다.' : ''}`,
   };
 }
 
