@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.048.27';
+  GW.APP_VERSION = '0.048.28';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -213,6 +213,51 @@
         data: data,
       }));
     } catch (_) {}
+  };
+
+  GW.isSvgFile = function (file) {
+    return !!(file && (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '')));
+  };
+
+  GW.optimizeImageFile = function (file, options) {
+    options = options || {};
+    return new Promise(function (resolve, reject) {
+      if (!file) {
+        reject(new Error('이미지 파일이 없습니다'));
+        return;
+      }
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('이미지를 읽지 못했습니다')); };
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = function () { reject(new Error('이미지를 불러오지 못했습니다')); };
+        img.onload = function () {
+          var maxW = options.maxW || 1600;
+          var maxH = options.maxH || 1600;
+          var ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+          var width = Math.max(1, Math.round(img.width * ratio));
+          var height = Math.max(1, Math.round(img.height * ratio));
+          var canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          var forcePng = !!options.forcePng || GW.isSvgFile(file);
+          var mime = forcePng ? 'image/png' : 'image/jpeg';
+          var quality = forcePng ? 0.92 : (options.quality || 0.82);
+          resolve({
+            dataUrl: canvas.toDataURL(mime, quality),
+            width: width,
+            height: height,
+            mime: mime,
+            sourceWidth: img.width,
+            sourceHeight: img.height,
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   GW.applyMobileTypeScale = function () {
@@ -895,20 +940,14 @@
       input.type = 'file'; input.accept = 'image/*';
       input.onchange = function () {
         var file = input.files[0]; if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var img = new Image();
-          img.onload = function () {
-            var canvas = document.createElement('canvas');
-            var maxW = 1200; var ratio = Math.min(maxW / img.width, 1);
-            canvas.width = Math.round(img.width * ratio); canvas.height = Math.round(img.height * ratio);
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            self._data = { url: dataUrl, caption: '' }; self._showImage(dataUrl, '');
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+        GW.optimizeImageFile(file, { maxW: 1200, maxH: 1200, quality: 0.8 })
+          .then(function (result) {
+            self._data = { url: result.dataUrl, caption: '' };
+            self._showImage(result.dataUrl, '');
+          })
+          .catch(function () {
+            GW.showToast('본문 이미지 최적화 실패', 'error');
+          });
       };
       input.click();
     };

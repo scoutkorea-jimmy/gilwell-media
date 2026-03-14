@@ -3167,6 +3167,13 @@ footer a:hover { color: #ffffff; }
   .admin-sidebar-group-title,
   .admin-sidebar-btn-desc { font-size: var(--mobile-fs-micro); }
   .admin-sidebar-btn-label { font-size: 14px; }
+  .admin-subnav {
+    top: 152px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    margin-bottom: 16px;
+  }
   .post-page-wrap     { padding: 24px 16px 48px; }
   .share-meta-inline-grid { grid-template-columns: 1fr; }
 
@@ -3967,6 +3974,14 @@ footer a:hover { color: #ffffff; }
   justify-content: center;
   gap: 8px;
   margin-bottom: 20px;
+  position: sticky;
+  top: 188px;
+  z-index: 140;
+  padding: 10px 12px;
+  background: rgba(236, 234, 228, 0.96);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.04);
 }
 
 .admin-subnav-btn {
