@@ -10,7 +10,7 @@
 
 CREATE TABLE IF NOT EXISTS posts (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  category     TEXT    NOT NULL CHECK(category IN ('korea', 'apr', 'wosm', 'people')),
+  category     TEXT    NOT NULL CHECK(category IN ('korea', 'apr', 'wosm', 'people', 'glossary')),
   title        TEXT    NOT NULL,
   content      TEXT    NOT NULL DEFAULT '',
   image_url    TEXT,
@@ -80,14 +80,14 @@ INSERT OR IGNORE INTO settings (key, value) VALUES (
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'tags',
-  '{"common":["소식","공지","행사","보고","특집","단독","속보"],"categories":{"korea":[],"apr":[],"wosm":[],"people":[]}}'
+  '{"common":["소식","공지","행사","보고","특집","단독","속보"],"categories":{"korea":[],"apr":[],"wosm":[],"people":[],"glossary":[]}}'
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES ('hero', '[]');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('hero_interval', '3000');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('board_card_gap', '6');
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'board_banner_events',
-  '{"items":{"korea":{"event_name":"","event_date":""},"apr":{"event_name":"","event_date":""},"wosm":{"event_name":"","event_date":""},"people":{"event_name":"","event_date":""}}}'
+  '{"items":{"korea":{"event_name":"","event_date":""},"apr":{"event_name":"","event_date":""},"wosm":{"event_name":"","event_date":""},"people":{"event_name":"","event_date":""},"glossary":{"event_name":"","event_date":""}}}'
 );
 INSERT OR IGNORE INTO settings (key, value) VALUES ('translations', '{}');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('author_name', 'Editor.A');
@@ -96,5 +96,5 @@ INSERT OR IGNORE INTO settings (key, value) VALUES ('contributors', '[]');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('editors', '{}');
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'site_meta',
-  '{"pages":{"home":{"title":"BP미디어 · bpmedia.net","description":"스카우트 운동의 소식을 기록하는 독립 미디어입니다."},"korea":{"title":"Korea · BP미디어","description":"한국스카우트연맹 관련 소식을 전합니다."},"apr":{"title":"APR · BP미디어","description":"아시아태평양 지역 스카우트 소식을 전합니다."},"wosm":{"title":"WOSM · BP미디어","description":"세계스카우트연맹 관련 소식을 전합니다."},"people":{"title":"스카우트 인물 · BP미디어","description":"국내외 스카우트 인물을 조명하는 공간입니다."},"contributors":{"title":"도움을 주신 분들 · BP미디어","description":"BP미디어 운영에 도움을 주신 분들을 소개합니다."},"search":{"title":"검색 · BP미디어","description":"BP미디어 기사와 페이지를 검색합니다."}},"footer":{"raw_text":"","title":"BP미디어","description":"BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.","domain_label":"bpmedia.net","tip_email":"story@bpmedia.net","contact_email":"info@bpmedia.net"},"image_url":null,"google_verification":"","naver_verification":""}'
+  '{"pages":{"home":{"title":"BP미디어 · bpmedia.net","description":"스카우트 운동의 소식을 기록하는 독립 미디어입니다."},"korea":{"title":"Korea · BP미디어","description":"한국스카우트연맹 관련 소식을 전합니다."},"apr":{"title":"APR · BP미디어","description":"아시아태평양 지역 스카우트 소식을 전합니다."},"wosm":{"title":"WOSM · BP미디어","description":"세계스카우트연맹 관련 소식을 전합니다."},"people":{"title":"스카우트 인물 · BP미디어","description":"국내외 스카우트 인물을 조명하는 공간입니다."},"glossary":{"title":"스카우트 용어 번역집 · BP미디어","description":"국문·영문·불어 3개 국어 기준의 스카우트 용어 번역집입니다."},"contributors":{"title":"도움을 주신 분들 · BP미디어","description":"BP미디어 운영에 도움을 주신 분들을 소개합니다."},"search":{"title":"검색 · BP미디어","description":"BP미디어 기사와 페이지를 검색합니다."}},"footer":{"raw_text":"","title":"BP미디어","description":"BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.","domain_label":"bpmedia.net","tip_email":"story@bpmedia.net","contact_email":"info@bpmedia.net"},"image_url":null,"google_verification":"","naver_verification":""}'
 );

@@ -12,7 +12,7 @@ import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findRelatedPosts } from '../../_shared/related-posts.js';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
+const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people', 'glossary'];
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
@@ -85,7 +85,7 @@ export async function onRequestPut({ params, request, env }) {
 
   // Validate only fields that are actually provided
   if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
-    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
+    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people / glossary)' }, 400);
   }
   if (title !== undefined && !title.trim()) {
     return json({ error: '제목을 입력해주세요' }, 400);

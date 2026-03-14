@@ -36,6 +36,7 @@
   --tag-apr:    #FF5655;
   --tag-wosm:   #248737;
   --tag-people: #8A5A2B;
+  --tag-glossary:#5D6F2B;
 
   /* Feedback colours */
   --success:    #248737;
@@ -882,7 +883,7 @@ p { margin-bottom: 6px; }
 /* ── 3-column: Korea / APR / WOSM ── */
 .home-3col {
   display:               grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap:                   40px;
   margin-bottom:         48px;
 }

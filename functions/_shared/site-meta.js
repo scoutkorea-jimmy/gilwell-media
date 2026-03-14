@@ -33,6 +33,10 @@ const DEFAULT_SITE_META = {
       title: '스카우트 인물 · BP미디어',
       description: '국내외 스카우트 인물을 조명하는 공간입니다.',
     },
+    glossary: {
+      title: '스카우트 용어 번역집 · BP미디어',
+      description: '국문·영문·불어 3개 국어 기준의 스카우트 용어 번역집입니다.',
+    },
     contributors: {
       title: '도움을 주신 분들 · BP미디어',
       description: 'BP미디어 운영에 도움을 주신 분들을 소개합니다.',
@@ -104,6 +108,7 @@ export function getSitePageKey(pathname) {
     '/apr.html': 'apr',
     '/wosm.html': 'wosm',
     '/people.html': 'people',
+    '/glossary.html': 'glossary',
     '/contributors.html': 'contributors',
     '/search.html': 'search',
   };
@@ -315,6 +320,7 @@ function getBreadcrumbLabel(pageKey) {
     apr: 'APR',
     wosm: 'WOSM',
     people: '스카우트 인물',
+    glossary: '스카우트 용어 번역집',
     contributors: '도움을 주신 분들',
     search: '검색',
   };
@@ -328,6 +334,7 @@ function getPageTopic(pageKey) {
     apr: '아시아태평양 스카우트 소식',
     wosm: '세계스카우트연맹 소식',
     people: '스카우트 인물',
+    glossary: '스카우트 용어 번역집',
     contributors: '후원 및 기여자 소개',
     search: '사이트 검색 결과',
   };
@@ -336,7 +343,7 @@ function getPageTopic(pageKey) {
 
 function buildItemListStructuredData({ pageKey, url, itemListElements }) {
   if (!Array.isArray(itemListElements) || !itemListElements.length) return null;
-  if (!['home', 'korea', 'apr', 'wosm', 'people'].includes(pageKey)) return null;
+  if (!['home', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return null;
   return {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
