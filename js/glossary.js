@@ -56,17 +56,23 @@
           footer = '<tr class="glossary-description-row"><td colspan="3">' +
             '<div class="glossary-description-row-inner">' +
               '<div class="glossary-description-actions">' +
-                (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '<span></span>') +
-                (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 펼치기"><span class="glossary-chevron">⌄</span></button>' : '') +
+                (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '') +
               '</div>' +
               '<div class="glossary-description-text" id="glossary-desc-' + item.id + '" hidden>' + GW.escapeHtml(item.description_ko || '') + '</div>' +
             '</div>' +
           '</td></tr>';
         }
+        var frCell = GW.escapeHtml(item.term_fr || '-');
+        if (item.description_ko) {
+          frCell = '<div class="glossary-term-cell-with-toggle">' +
+            '<span>' + frCell + '</span>' +
+            '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 펼치기"><span class="glossary-chevron">⌄</span></button>' +
+          '</div>';
+        }
         return '<tr class="glossary-term-row">' +
           '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
           '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
-          '<td data-label="Français">' + GW.escapeHtml(item.term_fr || '-') + '</td>' +
+          '<td data-label="Français">' + frCell + '</td>' +
         '</tr>' +
         footer;
       }).join('') +
