@@ -921,10 +921,15 @@ p { margin-bottom: 6px; }
   padding:       40px 48px;
   max-width:     1366px;
   margin:        0 auto;
-  display:       flex;
-  align-items:   flex-end;
-  justify-content: space-between;
-  gap:           24px;
+  display:       block;
+}
+
+.board-banner-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
 .board-banner-text h2 {
@@ -934,7 +939,7 @@ p { margin-bottom: 6px; }
   letter-spacing: -0.02em;
   color:          var(--black);
   line-height:    1.1;
-  margin-bottom:  8px;
+  margin-bottom:  0;
 }
 
 .board-banner-text p {
@@ -945,12 +950,17 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-count {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
-  font-size:      56px;
-  font-weight:    700;
-  color:          var(--border);
-  line-height:    1;
-  flex-shrink:    0;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: #f7f5f0;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -2617,8 +2627,7 @@ footer a:hover { color: #ffffff; }
   .section-header     { padding: 24px 24px 16px; }
   .filter-bar         { padding: 16px 24px; }
 
-  .board-banner       { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
-  .board-banner-count { display: none; }
+  .board-banner       { padding: 28px 24px; }
   .board-container    { padding: 0 24px 40px; }
   .board-grid         { grid-template-columns: repeat(2, 1fr); }
 

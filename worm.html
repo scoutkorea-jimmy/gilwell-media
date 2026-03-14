@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.024.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.025.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -69,11 +69,13 @@
   <div class="board-banner">
     <div class="board-banner-text">
       <span class="category-tag tag-worm" style="margin-bottom:16px;" data-i18n="board.worm.banner">WOSM</span>
-      <h2 data-i18n="board.worm.title">세계스카우트연맹</h2>
+      <div class="board-banner-heading">
+        <h2 data-i18n="board.worm.title">세계스카우트연맹</h2>
+        <div class="board-banner-count" id="board-count">총 —개</div>
+      </div>
       <p data-i18n="board.worm.desc">세계스카우트연맹(WOSM)의 글로벌 소식과 동향을 전합니다.</p>
       <p class="board-banner-note" data-i18n="board.translation.note">일부 게시글은 번역 자료를 바탕으로 작성되어 표현이 완전히 정확하지 않을 수 있습니다. 더 나은 번역 제안은 언제든 환영합니다.</p>
     </div>
-    <div class="board-banner-count" id="board-count">—</div>
   </div>
 
   <!-- ── TAG FILTER BAR ── -->
@@ -105,7 +107,7 @@
       <div>
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.024.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.025.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -121,8 +123,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.024.00"></script>
-  <script src="/js/board.js?v=0.024.00"></script>
+  <script src="/js/main.js?v=0.025.00"></script>
+  <script src="/js/board.js?v=0.025.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();

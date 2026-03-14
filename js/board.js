@@ -310,7 +310,7 @@
   };
 
   Board.prototype._updateCount = function () {
-    if (this.countEl) this.countEl.textContent = this.total + '개';
+    if (this.countEl) this.countEl.textContent = '총 ' + this.total + '개';
   };
 
   // ── Write Feature ─────────────────────────────────────────
