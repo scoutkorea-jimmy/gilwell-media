@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.041.00';
+  GW.APP_VERSION = '0.042.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -303,38 +303,41 @@
   GW.applySiteChrome = function () {
     GW.syncBuildVersion();
     GW.ensureFavicon();
+    if (document.body && document.body.hasAttribute('data-home-bootstrap')) return;
     GW.applyManagedFooter();
   };
 
-  GW.applyManagedFooter = function () {
+  GW.applyManagedFooterData = function (data) {
     var footer = document.querySelector('footer');
     if (!footer) return;
+    var info = data && data.footer ? data.footer : {};
+    var footerBrand = footer.querySelector('.footer-brand');
+    var title = document.querySelector('[data-footer-role="title"]');
+    var description = document.querySelector('[data-footer-role="description"]');
+    var domain = document.querySelector('[data-footer-role="domain"]');
+    var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
+    var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
+    if (footerBrand && info.raw_text) {
+      footerBrand.innerHTML = GW.renderManagedFooterHtml(info.raw_text);
+      return;
+    }
+    if (title && info.title) title.textContent = info.title;
+    if (description && info.description) description.textContent = info.description;
+    if (domain && info.domain_label) domain.textContent = info.domain_label;
+    if (tipEmail && info.tip_email) {
+      tipEmail.textContent = info.tip_email;
+      tipEmail.href = 'mailto:' + info.tip_email;
+    }
+    if (contactEmail && info.contact_email) {
+      contactEmail.textContent = info.contact_email;
+      contactEmail.href = 'mailto:' + info.contact_email;
+    }
+  };
+
+  GW.applyManagedFooter = function () {
     fetch('/api/settings/site-meta', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var info = data && data.footer ? data.footer : {};
-        var footerBrand = footer.querySelector('.footer-brand');
-        var title = document.querySelector('[data-footer-role="title"]');
-        var description = document.querySelector('[data-footer-role="description"]');
-        var domain = document.querySelector('[data-footer-role="domain"]');
-        var tipEmail = document.querySelector('[data-footer-role="tip-email"]');
-        var contactEmail = document.querySelector('[data-footer-role="contact-email"]');
-        if (footerBrand && info.raw_text) {
-          footerBrand.innerHTML = GW.renderManagedFooterHtml(info.raw_text);
-          return;
-        }
-        if (title && info.title) title.textContent = info.title;
-        if (description && info.description) description.textContent = info.description;
-        if (domain && info.domain_label) domain.textContent = info.domain_label;
-        if (tipEmail && info.tip_email) {
-          tipEmail.textContent = info.tip_email;
-          tipEmail.href = 'mailto:' + info.tip_email;
-        }
-        if (contactEmail && info.contact_email) {
-          contactEmail.textContent = info.contact_email;
-          contactEmail.href = 'mailto:' + info.contact_email;
-        }
-      })
+      .then(function (data) { GW.applyManagedFooterData(data); })
       .catch(function () {});
   };
 
@@ -610,21 +613,24 @@
     fetch('/api/settings/ticker')
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        var items = (data.items && data.items.length) ? data.items : [
-          '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
-          '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
-          'The BP Post · bpmedia.net',
-        ];
-        // Build one run of items separated by diamonds
-        var sep  = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
-        var run  = items.map(function (t) { return GW.escapeHtml(t); }).join(sep);
-        // Two identical runs → animate translateX(-50%) for a seamless infinite loop
-        inner.innerHTML = run + sep + run + sep;
-        // Slow ticker to roughly 50% of the previous speed, regardless of copy length.
-        var dur = Math.max(40, items.length * 16);
-        inner.style.animationDuration = dur + 's';
+        GW.renderTickerItems(innerId, data.items || []);
       })
       .catch(function () { /* keep static fallback */ });
+  };
+
+  GW.renderTickerItems = function (innerId, items) {
+    var inner = document.getElementById(innerId || 'ticker-inner');
+    if (!inner) return;
+    var list = (items && items.length) ? items : [
+      '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
+      '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
+      'The BP Post · bpmedia.net',
+    ];
+    var sep = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
+    var run = list.map(function (t) { return GW.escapeHtml(t); }).join(sep);
+    inner.innerHTML = run + sep + run + sep;
+    var dur = Math.max(40, list.length * 16);
+    inner.style.animationDuration = dur + 's';
   };
 
 
