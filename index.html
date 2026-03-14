@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.30">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.32">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -213,7 +213,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.048.30</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.32</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -229,7 +229,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.048.30"></script>
+  <script src="/js/main.js?v=0.048.32"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -244,19 +244,20 @@
         ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
         : '';
       return (
-        '<a class="mini-item" href="/post/' + p.id + '">' +
+        '<article class="mini-item">' +
           '<div class="mini-item-row">' +
             '<div class="mini-item-text">' +
               '<div class="mini-item-labels">' +
+                '<button class="post-share-btn mini-share-btn" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>' +
                 '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
                 (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
               '</div>' +
-              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+              '<h4><a class="mini-item-link" href="/post/' + p.id + '">' + GW.escapeHtml(p.title) + '</a></h4>' +
               '<div class="mini-meta">' + GW.formatDate(p.created_at) + '</div>' +
             '</div>' +
             thumb +
           '</div>' +
-        '</a>'
+        '</article>'
       );
     }
 
@@ -267,6 +268,17 @@
         return;
       }
       el.innerHTML = posts.map(buildMiniItem).join('');
+      el.querySelectorAll('.mini-share-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var path = btn.getAttribute('data-share-url') || '';
+          var title = btn.getAttribute('data-share-title') || '';
+          var url = new URL(path, window.location.origin).toString();
+          GW.sharePostLink({ url: url, title: title, text: title })
+            .catch(function (err) {
+              GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+            });
+        });
+      });
     }
 
     function renderHomeFooterStats(data) {

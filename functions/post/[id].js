@@ -129,7 +129,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.30">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.32">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -198,13 +198,16 @@ export async function onRequestGet({ params, env, request }) {
         ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
 
         <div class="post-page-meta">
+          <span class="post-page-action-btns">
+            <button id="post-share-btn" class="post-share-btn" type="button" onclick="window._sharePostLink()">공유하기</button>
+          </span>
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
           ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
           <span class="post-page-action-btns" id="post-action-btns">
-            <button id="post-edit-btn" class="post-share-btn" onclick="window._postEdit()">✏ 수정</button>
+            <button id="post-edit-btn" class="post-share-btn" type="button" onclick="window._postEdit()">✏ 수정</button>
           </span>
         </div>
 
@@ -275,7 +278,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.048.30</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.32</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -302,12 +305,23 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.048.30"></script>
+  <script src="/js/main.js?v=0.048.32"></script>
   <script>
     GW.bootstrapStandardPage();
 
     // Edit button — always visible, prompts login if not authenticated
     var _editPostId = ${id};
+    var _sharePostUrl = ${JSON.stringify(postUrl)};
+    var _sharePostTitle = ${JSON.stringify(titleText)};
+    window._sharePostLink = function() {
+      GW.sharePostLink({
+        url: _sharePostUrl,
+        title: _sharePostTitle,
+        text: _sharePostTitle
+      }).catch(function(err) {
+        GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+      });
+    };
     var _postTurnstileWidgetId = null;
     window._postEdit = function() {
       if (GW.getToken && GW.getToken()) {
@@ -397,9 +411,9 @@ function notFound() {
 }
 
 function errorPage() {
-  return new Response('<h1>서버 오류가 발생했습니다</h1>', {
-    status: 500,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  return new Response(null, {
+    status: 302,
+    headers: { Location: '/404.html' },
   });
 }
 
