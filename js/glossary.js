@@ -142,7 +142,7 @@
         if (!group.length) return '';
         return '<section class="glossary-section"><h3 class="glossary-section-title">' + bucket + '</h3>' + renderTable(group) + '</section>';
       }).join('');
-      list.innerHTML = miscSection + bucketsMarkup + renderUnmatchedSection(unmatchedItems);
+      list.innerHTML = bucketsMarkup + miscSection + renderUnmatchedSection(unmatchedItems);
     } else {
       var bucketItems = (_bucket === 'all')
         ? regularItems
