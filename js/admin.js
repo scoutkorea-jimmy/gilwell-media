@@ -14,6 +14,7 @@
   var _adminTurnstileToken = '';
   var _reorderDirty   = false; // drag-and-drop changed order
   var _heroPostIds    = [];   // current hero post IDs (up to 5)
+  var _heroPosts      = [];
   var _heroIntervalMs = 3000;
   var _tagSettings    = GW.normalizeTagSettings(null);
   var _dragTagValue   = '';
@@ -1395,6 +1396,7 @@
         ['apr', 'APR'],
         ['wosm', 'WOSM'],
         ['people', 'Scout People'],
+        ['glossary', '용어 번역집'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
       ];
@@ -1653,11 +1655,12 @@
 
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
-      _heroPostIds = (data.posts || []).map(function(p){ return p.id; });
+      _heroPosts = data.posts || [];
+      _heroPostIds = _heroPosts.map(function(p){ return p.id; });
       _heroIntervalMs = data.interval_ms || 3000;
       var intervalEl = document.getElementById('hero-interval-input');
       if (intervalEl) intervalEl.value = String(Math.round(_heroIntervalMs / 1000));
-      renderHeroSlots(data.posts || []);
+      renderHeroSlots(_heroPosts);
     }).catch(function(){});
   }
 
@@ -1669,13 +1672,56 @@
     }
     el.innerHTML = posts.map(function(p, i){
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);background:var(--bg);">' +
+      return '<div class="hero-slot-item" draggable="true" data-hero-index="' + i + '" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);background:var(--bg);">' +
+        '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
         '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);flex-shrink:0;">' + (i+1) + '</span>' +
         '<span style="display:inline-block;font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';flex-shrink:0;">'+cat.label+'</span>' +
         '<span style="flex:1;font-size:13px;">' + GW.escapeHtml(p.title) + '</span>' +
         '<button onclick="removeHeroSlot(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:3px 8px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">제거</button>' +
       '</div>';
     }).join('');
+    bindHeroDrag();
+  }
+
+  function bindHeroDrag() {
+    var list = document.getElementById('hero-slots');
+    if (!list || list.dataset.dragBound === '1') return;
+    list.dataset.dragBound = '1';
+
+    list.addEventListener('dragstart', function (event) {
+      var item = event.target.closest('.hero-slot-item');
+      if (!item) return;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', item.getAttribute('data-hero-index'));
+    });
+
+    list.addEventListener('dragover', function (event) {
+      var item = event.target.closest('.hero-slot-item');
+      if (!item) return;
+      event.preventDefault();
+      item.classList.add('drag-over');
+    });
+
+    list.addEventListener('dragleave', function (event) {
+      var item = event.target.closest('.hero-slot-item');
+      if (!item) return;
+      item.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', function (event) {
+      var item = event.target.closest('.hero-slot-item');
+      if (!item) return;
+      event.preventDefault();
+      item.classList.remove('drag-over');
+      var fromIndex = parseInt(event.dataTransfer.getData('text/plain') || '-1', 10);
+      var toIndex = parseInt(item.getAttribute('data-hero-index') || '-1', 10);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+      var moved = _heroPosts.splice(fromIndex, 1)[0];
+      _heroPosts.splice(toIndex, 0, moved);
+      _heroPostIds = _heroPosts.map(function (p) { return p.id; });
+      renderHeroSlots(_heroPosts);
+      _saveHeroIds();
+    });
   }
 
   window.removeHeroSlot = function (index) {
@@ -2277,7 +2323,8 @@
       return;
     }
     el.innerHTML = _contributors.map(function (c, i) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);">' +
+      return '<div class="contributors-admin-item" draggable="true" data-contrib-index="' + i + '" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);">' +
+        '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
         '<div style="flex:1;">' +
           '<strong style="font-size:13px;">' + GW.escapeHtml(c.name) + '</strong>' +
           (c.note ? '<span style="font-size:11px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.note) + '</span>' : '') +
@@ -2287,8 +2334,61 @@
         '<button onclick="deleteContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">삭제</button>' +
       '</div>';
     }).join('');
+    bindContributorDrag();
   }
 
+  function bindContributorDrag() {
+    var list = document.getElementById('contributors-admin-list');
+    if (!list || list.dataset.dragBound === '1') return;
+    list.dataset.dragBound = '1';
+
+    list.addEventListener('dragstart', function (event) {
+      var item = event.target.closest('.contributors-admin-item');
+      if (!item) return;
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', item.getAttribute('data-contrib-index'));
+    });
+
+    list.addEventListener('dragover', function (event) {
+      var item = event.target.closest('.contributors-admin-item');
+      if (!item) return;
+      event.preventDefault();
+      item.classList.add('drag-over');
+    });
+
+    list.addEventListener('dragleave', function (event) {
+      var item = event.target.closest('.contributors-admin-item');
+      if (!item) return;
+      item.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', function (event) {
+      var item = event.target.closest('.contributors-admin-item');
+      if (!item) return;
+      event.preventDefault();
+      item.classList.remove('drag-over');
+      var fromIndex = parseInt(event.dataTransfer.getData('text/plain') || '-1', 10);
+      var toIndex = parseInt(item.getAttribute('data-contrib-index') || '-1', 10);
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+      var moved = _contributors.splice(fromIndex, 1)[0];
+      _contributors.splice(toIndex, 0, moved);
+      renderContributorsAdmin();
+      saveContributorOrder();
+    });
+  }
+
+  function saveContributorOrder() {
+    var updated = _contributors.slice();
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: updated }) })
+      .then(function (data) {
+        _contributors = data.items || updated;
+        GW.showToast('순서가 저장됐습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
+        loadContributorsAdmin();
+      });
+  }
   window.editContributor = function (index) {
     var c = _contributors[index]; if (!c) return;
     _editingContributorIdx = index;
