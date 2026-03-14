@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.20">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.21">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -211,7 +211,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.048.20</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.21</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -227,7 +227,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.048.20"></script>
+  <script src="/js/main.js?v=0.048.21"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
@@ -291,6 +291,8 @@
       var _timer  = null;
       var _animating = false;
       var _intervalMs = (data && data.interval_ms) || 3000;
+      var _touchState = null;
+      var _suppressClickUntil = 0;
 
       function buildSlide(post) {
         var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
@@ -317,6 +319,10 @@
           '</div>';
         div.style.cursor = 'pointer';
         div.addEventListener('click', function (e) {
+          if (Date.now() < _suppressClickUntil) {
+            e.preventDefault();
+            return;
+          }
           if (!e.target.classList.contains('site-hero-cta')) {
             window.location.href = '/post/' + post.id;
           }
@@ -341,6 +347,38 @@
         if (_slides.length > 1) {
           _timer = setInterval(function(){ goTo(_cur + 1, 1); }, _intervalMs);
         }
+      }
+
+      function bindTouchNavigation(slider) {
+        if (!slider || _slides.length <= 1) return;
+
+        slider.addEventListener('touchstart', function (e) {
+          if (!e.touches || e.touches.length !== 1) return;
+          var touch = e.touches[0];
+          _touchState = {
+            startX: touch.clientX,
+            startY: touch.clientY,
+            deltaX: 0,
+            deltaY: 0,
+          };
+        }, { passive: true });
+
+        slider.addEventListener('touchmove', function (e) {
+          if (!_touchState || !e.touches || e.touches.length !== 1) return;
+          var touch = e.touches[0];
+          _touchState.deltaX = touch.clientX - _touchState.startX;
+          _touchState.deltaY = touch.clientY - _touchState.startY;
+        }, { passive: true });
+
+        slider.addEventListener('touchend', function () {
+          if (!_touchState) return;
+          var deltaX = _touchState.deltaX;
+          var deltaY = _touchState.deltaY;
+          _touchState = null;
+          if (Math.abs(deltaX) < 36 || Math.abs(deltaX) < Math.abs(deltaY) || _animating) return;
+          _suppressClickUntil = Date.now() + 450;
+          goTo(_cur + (deltaX < 0 ? 1 : -1), deltaX < 0 ? 1 : -1);
+        });
       }
 
       function normalizeOffscreen(slide, direction) {
@@ -430,6 +468,7 @@
       });
 
       renderDots(posts.length, 0);
+      bindTouchNavigation(slider);
       setAutoTimer();
     }
 
