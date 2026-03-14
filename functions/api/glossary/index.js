@@ -8,16 +8,9 @@ export async function onRequestGet({ env }) {
     const { results } = await env.DB.prepare(`
       SELECT id, bucket, term_ko, term_en, term_fr, sort_order, created_at, updated_at
       FROM glossary_terms
-      ORDER BY CASE bucket
-        WHEN '가' THEN 1 WHEN '나' THEN 2 WHEN '다' THEN 3 WHEN '라' THEN 4
-        WHEN '마' THEN 5 WHEN '바' THEN 6 WHEN '사' THEN 7 WHEN '아' THEN 8
-        WHEN '자' THEN 9 WHEN '차' THEN 10 WHEN '카' THEN 11 WHEN '타' THEN 12
-        WHEN '파' THEN 13 WHEN '하' THEN 14 ELSE 99 END,
-        sort_order ASC,
-        term_ko COLLATE NOCASE ASC,
-        id ASC
     `).all();
-    return json({ buckets: BUCKETS, items: results || [] }, 200, {
+    const items = normalizeGlossaryRows(results || []);
+    return json({ buckets: BUCKETS, items }, 200, {
       'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
     });
   } catch (err) {
@@ -76,6 +69,26 @@ function inferBucket(termKo) {
   if (code < 0xac00 || code > 0xd7a3) return '';
   const choseongIndex = Math.floor((code - 0xac00) / 588);
   return CHOSEONG_BUCKETS[choseongIndex] || '';
+}
+
+function normalizeGlossaryRows(rows) {
+  return rows
+    .map(function (row) {
+      return Object.assign({}, row, {
+        bucket: inferBucket(row.term_ko) || row.bucket || '가',
+      });
+    })
+    .sort(function (a, b) {
+      var bucketDiff = BUCKETS.indexOf(a.bucket) - BUCKETS.indexOf(b.bucket);
+      if (bucketDiff !== 0) return bucketDiff;
+      var sortDiff = (a.sort_order || 0) - (b.sort_order || 0);
+      if (sortDiff !== 0) return sortDiff;
+      var aTerm = String(a.term_ko || a.term_en || a.term_fr || '');
+      var bTerm = String(b.term_ko || b.term_en || b.term_fr || '');
+      var termDiff = aTerm.localeCompare(bTerm, 'ko');
+      if (termDiff !== 0) return termDiff;
+      return (a.id || 0) - (b.id || 0);
+    });
 }
 
 function json(data, status = 200, extraHeaders = {}) {
