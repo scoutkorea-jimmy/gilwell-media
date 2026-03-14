@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.048.08">
+  <link rel="stylesheet" href="/css/style.css?v=0.048.09">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -73,10 +73,6 @@
           <label for="glossary-search-input">용어 검색</label>
           <input type="search" id="glossary-search-input" class="glossary-search-input" placeholder="한국어, 영어, 프랑스어로 검색" autocomplete="off">
           <p class="glossary-search-help">가~하 분류와 검색을 함께 써서 원하는 용어를 빠르게 찾을 수 있습니다.</p>
-          <div class="glossary-public-admin">
-            <button type="button" class="glossary-admin-toggle-btn" id="glossary-admin-toggle-btn">용어 추가/수정</button>
-            <p class="glossary-search-help" id="glossary-admin-help">관리자 로그인 후 이 페이지에서 바로 용어를 추가하거나 수정할 수 있습니다.</p>
-          </div>
         </div>
       </section>
 
@@ -85,6 +81,11 @@
       <div class="glossary-results-meta" id="glossary-results-meta">불러오는 중…</div>
       <div id="glossary-results">
         <div class="glossary-empty">용어를 불러오는 중…</div>
+      </div>
+
+      <div class="glossary-public-admin">
+        <button type="button" class="glossary-admin-toggle-btn" id="glossary-admin-toggle-btn">용어 추가/수정</button>
+        <p class="glossary-search-help" id="glossary-admin-help">관리자 로그인 후 이 페이지에서 바로 용어를 추가하거나 수정할 수 있습니다.</p>
       </div>
 
       <section class="glossary-editor-panel" id="glossary-editor-panel" style="display:none;">
@@ -139,7 +140,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.048.08</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.048.09</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -162,8 +163,8 @@
     </div>
   </div>
 
-  <script src="/js/main.js?v=0.048.08"></script>
-  <script src="/js/glossary.js?v=0.048.08"></script>
+  <script src="/js/main.js?v=0.048.09"></script>
+  <script src="/js/glossary.js?v=0.048.09"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
