@@ -10,7 +10,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
+const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people', 'glossary'];
 const PAGE_SIZE = 16;
 
 // ── GET /api/posts ────────────────────────────────────────────
@@ -30,7 +30,7 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
-    return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
+    return json({ error: 'Invalid category. Must be korea, apr, wosm, people, or glossary.' }, 400);
   }
 
   // Admin token check — if valid token, include unpublished posts
@@ -119,7 +119,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (!VALID_CATEGORIES.includes(category)) {
-    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
+    return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people / glossary)' }, 400);
   }
   if (!title || !title.trim()) {
     return json({ error: '제목을 입력해주세요' }, 400);

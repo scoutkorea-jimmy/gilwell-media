@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.043.01`
+- Current version: `V0.044.00`
 - Format: `Va.bbbb.cc`
 - `a`: major line controlled by the owner
 - `bbbb`: increases only when a real feature/fix is shipped and committed
@@ -33,6 +33,7 @@ gilwell-media/
 ├── apr.html                APR bulletin board
 ├── wosm.html               WOSM bulletin board
 ├── people.html             Scout People board
+├── glossary.html           Scout glossary board
 ├── admin.html              Admin panel (requires login)
 ├── css/style.css           Shared stylesheet
 ├── js/

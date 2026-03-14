@@ -25,6 +25,7 @@
       apr: { title: '', description: '' },
       wosm: { title: '', description: '' },
       people: { title: '', description: '' },
+      glossary: { title: '', description: '' },
       contributors: { title: '', description: '' },
       search: { title: '', description: '' },
     },
@@ -63,6 +64,7 @@
       apr: { event_name: '', event_date: '' },
       wosm: { event_name: '', event_date: '' },
       people: { event_name: '', event_date: '' },
+      glossary: { event_name: '', event_date: '' },
     },
   };
 
@@ -1095,7 +1097,7 @@
     _listCat  = cat;
     _listPage = 1;
     _reorderDirty = false;
-    ['all','korea','apr','wosm','people'].forEach(function (c) {
+    ['all','korea','apr','wosm','people','glossary'].forEach(function (c) {
       var tab = document.getElementById('admin-tab-' + c);
       if (!tab) return;
       tab.style.background = c === cat ? 'var(--black)' : 'var(--bg)';
@@ -1120,6 +1122,7 @@
       setText('stat-apr', d.apr || 0);
       setText('stat-wosm', d.wosm || 0);
       setText('stat-people', d.people || 0);
+      setText('stat-glossary', d.glossary || 0);
     });
   }
 
@@ -1307,6 +1310,7 @@
         apr: { event_name: '', event_date: '' },
         wosm: { event_name: '', event_date: '' },
         people: { event_name: '', event_date: '' },
+        glossary: { event_name: '', event_date: '' },
       },
     };
     var normalized = JSON.parse(JSON.stringify(defaults));
@@ -1329,6 +1333,7 @@
       ['apr', 'APR'],
       ['wosm', 'WOSM'],
       ['people', 'Scout People'],
+      ['glossary', 'Glossary'],
     ];
     container.innerHTML = defs.map(function (entry) {
       var category = entry[0];
@@ -1388,6 +1393,7 @@
         ['apr', 'APR'],
         ['wosm', 'WOSM'],
         ['people', 'Scout People'],
+        ['glossary', 'Glossary'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
       ];
@@ -1720,11 +1726,13 @@
       var a = document.getElementById('dash-apr');
       var w = document.getElementById('dash-wosm');
       var p = document.getElementById('dash-people');
+      var g = document.getElementById('dash-glossary');
       if(k) k.textContent = d.korea || 0;
       if(a) a.textContent = d.apr   || 0;
       if(w) w.textContent = d.wosm  || 0;
       if(p) p.textContent = d.people || 0;
-      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.wosm||0) + (d.people||0));
+      if(g) g.textContent = d.glossary || 0;
+      if(t) t.textContent = ((d.korea||0) + (d.apr||0) + (d.wosm||0) + (d.people||0) + (d.glossary||0));
     });
 
     // Load 5 most recent posts
@@ -1987,6 +1995,7 @@
       '/apr.html': 'APR',
       '/wosm.html': 'WOSM',
       '/people.html': 'Scout People',
+      '/glossary.html': 'Glossary',
       '/contributors.html': '도움을 주신 분들',
       '/search.html': '검색',
       '/404.html': '404',

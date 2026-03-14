@@ -41,7 +41,7 @@ export async function onRequest(context) {
 }
 
 async function loadPageItemList(env, origin, pageKey) {
-  if (!['home', 'korea', 'apr', 'wosm', 'people'].includes(pageKey)) return [];
+  if (!['home', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return [];
   try {
     const category = pageKey === 'home' ? null : pageKey;
     const query = category

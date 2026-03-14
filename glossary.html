@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>스카우트 인물 — BP미디어</title>
+  <title>스카우트 용어 번역집 — BP미디어</title>
   <!-- SHARE_META -->
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="shortcut icon" type="image/svg+xml" href="/img/favicon.svg">
@@ -44,19 +44,19 @@
       <a href="korea.html" data-i18n="nav.korea">Korea</a>
       <a href="apr.html" data-i18n="nav.apr">APR</a>
       <a href="wosm.html" data-i18n="nav.wosm">WOSM</a>
-      <a href="people.html" class="active" data-i18n="nav.people">스카우트 인물</a>
-      <a href="glossary.html" data-i18n="nav.glossary">용어 번역집</a>
+      <a href="people.html" data-i18n="nav.people">스카우트 인물</a>
+      <a href="glossary.html" class="active" data-i18n="nav.glossary">용어 번역집</a>
     </nav>
   </header>
 
   <main id="main-content">
   <div class="ticker">
     <div class="ticker-inner" id="ticker-inner">
-      국내외 스카우트 인물을 조명합니다
+      스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      국내외 스카우트 인물을 조명합니다
+      스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       BP미디어 · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
@@ -65,12 +65,12 @@
 
   <div class="board-banner">
     <div class="board-banner-text">
-      <span class="category-tag tag-people" style="margin-bottom:16px;" data-i18n="board.people.banner">Scout People</span>
+      <span class="category-tag tag-glossary" style="margin-bottom:16px;" data-i18n="board.glossary.banner">Scout Glossary</span>
       <div class="board-banner-heading">
-        <h2 data-i18n="board.people.title">스카우트 인물</h2>
+        <h2 data-i18n="board.glossary.title">스카우트 용어 번역집</h2>
         <div class="board-banner-count" id="board-count">총 —개</div>
       </div>
-      <p data-i18n="board.people.desc">국내외 스카우트 출신 인물과 활동 중인 스카우트, 먼저 떠난 스카우트 선배들을 조명합니다.</p>
+      <p data-i18n="board.glossary.desc">스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.</p>
     </div>
     <div class="board-banner-total" id="board-banner-total">—</div>
   </div>
@@ -119,7 +119,7 @@
     GW.loadTicker('ticker-inner');
     GW.loadStats();
     GW.loadTranslations();
-    var board = new GW.Board({ category: 'people' });
+    var board = new GW.Board({ category: 'glossary' });
     board.init();
     (function(){
       var inp=document.getElementById('mh-search-input'),btn=document.getElementById('mh-search-btn');
