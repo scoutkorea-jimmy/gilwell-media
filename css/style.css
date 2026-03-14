@@ -3207,6 +3207,50 @@ footer a:hover { color: #ffffff; }
   padding:        3px 9px;
   border:         1px solid var(--border);
 }
+
+.post-related-posts,
+.modal-related-posts {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.post-related-posts-mobile {
+  display: none;
+}
+
+.post-related-posts-desktop {
+  display: block;
+}
+
+.post-related-heading {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.post-related-list {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0;
+}
+
+.post-related-list li + li {
+  margin-top: 8px;
+}
+
+.post-related-list a {
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1.6;
+}
+
+.post-related-list a:hover {
+  color: var(--accent);
+}
 .post-page-share {
   margin-top:  24px;
   display:     flex;
@@ -3285,6 +3329,14 @@ footer a:hover { color: #ffffff; }
     top: auto;
     border-top: 1px solid var(--border);
     padding-top: 8px;
+  }
+  .post-related-posts-desktop {
+    display: none;
+  }
+  .post-related-posts-mobile {
+    display: block;
+    order: 2;
+    width: 100%;
   }
   .post-like-wrap {
     align-items: flex-start;

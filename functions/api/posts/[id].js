@@ -10,6 +10,7 @@ import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView }
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
+import { findRelatedPosts } from '../../_shared/related-posts.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -39,9 +40,13 @@ export async function onRequestGet({ params, env, request }) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }
-    const likeStats = await getLikeStats(env, id, viewerKey);
+    const [likeStats, relatedPosts] = await Promise.all([
+      getLikeStats(env, id, viewerKey),
+      findRelatedPosts(env, post, 5),
+    ]);
     post.likes = likeStats.likes;
     post.liked = likeStats.liked;
+    post.related_posts = relatedPosts;
 
     const origin = new URL(request.url).origin;
     return json({ post: isAdmin ? post : serializePostImage(post, origin) });

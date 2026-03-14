@@ -272,6 +272,7 @@
     var subtitleHtml = post.subtitle
       ? '<p class="modal-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'
       : '';
+    var relatedHtml = buildRelatedPostsHtml(post.related_posts);
 
     inner.innerHTML =
       '<button class="modal-close" id="modal-close-btn" aria-label="닫기">×</button>' +
@@ -287,6 +288,7 @@
       imgHtml +
       youtubeHtml +
       '<div class="modal-body">' + GW.renderText(post.content) + '</div>' +
+      relatedHtml +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
         '<span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>' +
@@ -302,6 +304,18 @@
     this.modalEl.classList.remove('open');
     document.body.style.overflow = '';
   };
+
+  function buildRelatedPostsHtml(items) {
+    if (!Array.isArray(items) || !items.length) return '';
+    return '<section class="modal-related-posts">' +
+      '<h3 class="post-related-heading">유관기사 읽어보기</h3>' +
+      '<ul class="post-related-list">' +
+        items.map(function (item) {
+          return '<li><a href="/post/' + item.id + '">' + GW.escapeHtml(item.title || '') + '</a></li>';
+        }).join('') +
+      '</ul>' +
+    '</section>';
+  }
 
   // ── State displays ────────────────────────────────────────
   Board.prototype._showLoading = function () {
