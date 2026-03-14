@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.044.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.045.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -50,43 +50,41 @@
   </header>
 
   <main id="main-content">
-  <div class="ticker">
-    <div class="ticker-inner" id="ticker-inner">
-      스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-    </div>
-  </div>
-
-  <div class="board-banner">
-    <div class="board-banner-text">
-      <span class="category-tag tag-glossary" style="margin-bottom:16px;" data-i18n="board.glossary.banner">Scout Glossary</span>
-      <div class="board-banner-heading">
-        <h2 data-i18n="board.glossary.title">스카우트 용어 번역집</h2>
-        <div class="board-banner-count" id="board-count">총 —개</div>
-      </div>
-      <p data-i18n="board.glossary.desc">스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.</p>
-    </div>
-    <div class="board-banner-total" id="board-banner-total">—</div>
-  </div>
-
-  <div id="tag-filter-bar" class="tag-filter-bar"></div>
-
-  <div class="board-container">
-    <div class="board-grid" id="board-grid">
-      <div class="loading-state">
-        <div class="loading-dots"><span></span><span></span><span></span></div>
+    <div class="ticker">
+      <div class="ticker-inner" id="ticker-inner">
+        스카우트 용어를 국문·영문·불어 3개 국어 기준으로 빠르게 찾을 수 있게 정리합니다
+        &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+        BP미디어 · bpmedia.net
+        &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+        스카우트 용어를 국문·영문·불어 3개 국어 기준으로 빠르게 찾을 수 있게 정리합니다
+        &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
+        BP미디어 · bpmedia.net
       </div>
     </div>
-    <button class="load-more-btn" id="load-more-btn" style="display:none;" data-i18n="loadmore.btn">더 보기</button>
-  </div>
 
+    <div class="glossary-page-wrap">
+      <section class="glossary-hero">
+        <div class="glossary-hero-copy">
+          <span class="category-tag tag-glossary" data-i18n="board.glossary.banner">Glossary</span>
+          <h2 data-i18n="board.glossary.title">스카우트 용어 번역집</h2>
+          <p data-i18n="board.glossary.desc">스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.</p>
+        </div>
+        <div class="glossary-search-card">
+          <label for="glossary-search-input">용어 검색</label>
+          <input type="search" id="glossary-search-input" class="glossary-search-input" placeholder="한국어, 영어, 프랑스어로 검색" autocomplete="off">
+          <p class="glossary-search-help">가~하 분류와 검색을 함께 써서 원하는 용어를 빠르게 찾을 수 있습니다.</p>
+        </div>
+      </section>
+
+      <div class="glossary-toolbar-title">가 ~ 하 분류</div>
+      <div class="glossary-letter-bar" id="glossary-letter-bar"></div>
+      <div class="glossary-results-meta" id="glossary-results-meta">불러오는 중…</div>
+      <div id="glossary-results">
+        <div class="glossary-empty">용어를 불러오는 중…</div>
+      </div>
+    </div>
   </main>
+
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
@@ -99,7 +97,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.044.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.045.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -108,23 +106,25 @@
     </div>
   </footer>
 
-  <div class="modal-overlay" id="post-modal"><div class="modal"></div></div>
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.044.00"></script>
-  <script src="/js/board.js?v=0.044.00"></script>
+  <script src="/js/main.js?v=0.045.00"></script>
+  <script src="/js/glossary.js?v=0.045.00"></script>
   <script>
     GW.setMastheadDate();
     GW.markActiveNav();
     GW.loadTicker('ticker-inner');
     GW.loadStats();
     GW.loadTranslations();
-    var board = new GW.Board({ category: 'glossary' });
-    board.init();
-    (function(){
-      var inp=document.getElementById('mh-search-input'),btn=document.getElementById('mh-search-btn');
-      function go(){var q=(inp.value||'').trim();if(q)window.location.href='/search.html?q='+encodeURIComponent(q);}
-      btn.addEventListener('click',go);inp.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+    (function() {
+      var input = document.getElementById('mh-search-input');
+      var btn = document.getElementById('mh-search-btn');
+      function go() {
+        var q = (input.value || '').trim();
+        if (q) window.location.href = '/search.html?q=' + encodeURIComponent(q);
+      }
+      btn.addEventListener('click', go);
+      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') go(); });
     })();
   </script>
 </body>
