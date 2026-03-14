@@ -52,6 +52,7 @@
       head + '<tbody>' +
       items.map(function (item) {
         var footer = '';
+        var isEditing = _editingId === item.id && canEdit;
         if (item.description_ko) {
           footer = '<tr class="glossary-description-row" id="glossary-desc-row-' + item.id + '" hidden><td colspan="3">' +
             '<div class="glossary-description-row-inner">' +
@@ -60,7 +61,7 @@
           '</td></tr>';
         }
         var frCell = GW.escapeHtml(item.term_fr || '-');
-        if (item.description_ko || canEdit) {
+        if (!isEditing && (item.description_ko || canEdit)) {
           frCell = '<div class="glossary-term-cell-with-toggle">' +
             '<span>' + frCell + '</span>' +
             '<span class="glossary-term-actions">' +
@@ -69,14 +70,33 @@
             '</span>' +
           '</div>';
         }
-        return '<tr class="glossary-term-row">' +
+        var row = '<tr class="glossary-term-row">' +
           '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
           '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
           '<td data-label="Français">' + frCell + '</td>' +
-        '</tr>' +
-        footer;
+        '</tr>';
+        if (isEditing) {
+          row += renderInlineEditRow(item);
+          footer = '';
+        }
+        return row + footer;
       }).join('') +
       '</tbody></table></div>';
+  }
+
+  function renderInlineEditRow(item) {
+    return '<tr class="glossary-inline-edit-row"><td colspan="3">' +
+      '<div class="glossary-inline-edit-grid">' +
+        '<label class="glossary-inline-field"><span>한국어</span><input type="text" id="glossary-inline-ko-' + item.id + '" class="glossary-inline-input" maxlength="120" value="' + GW.escapeHtml(item.term_ko || '') + '" placeholder="-"></label>' +
+        '<label class="glossary-inline-field"><span>English</span><input type="text" id="glossary-inline-en-' + item.id + '" class="glossary-inline-input" maxlength="160" value="' + GW.escapeHtml(item.term_en || '') + '" placeholder="-"></label>' +
+        '<label class="glossary-inline-field"><span>Français</span><input type="text" id="glossary-inline-fr-' + item.id + '" class="glossary-inline-input" maxlength="160" value="' + GW.escapeHtml(item.term_fr || '') + '" placeholder="-"></label>' +
+      '</div>' +
+      '<label class="glossary-inline-field glossary-inline-field-full"><span>한국어 설명</span><textarea id="glossary-inline-description-' + item.id + '" class="glossary-inline-textarea" rows="3" maxlength="800" placeholder="설명은 비워둘 수 있습니다.">' + GW.escapeHtml(item.description_ko || '') + '</textarea></label>' +
+      '<div class="glossary-inline-actions">' +
+        '<button type="button" class="glossary-inline-save-btn" data-inline-save="' + item.id + '">저장</button>' +
+        '<button type="button" class="glossary-inline-cancel-btn" data-inline-cancel>취소</button>' +
+      '</div>' +
+    '</td></tr>';
   }
 
   function renderGlossary() {
@@ -100,6 +120,7 @@
     }
     bindInlineEditButtons();
     bindDescriptionToggles();
+    bindInlineEditRowActions();
   }
 
   function bindSearch() {
@@ -132,15 +153,24 @@
         var item = _items.find(function (entry) { return entry.id === id; });
         if (!item) return;
         _editingId = id;
-        byId('glossary-editor-panel').style.display = '';
-        byId('glossary-public-bucket').value = item.bucket || '가';
-        byId('glossary-public-ko').value = item.term_ko || '';
-        byId('glossary-public-en').value = item.term_en || '';
-        byId('glossary-public-fr').value = item.term_fr || '';
-        byId('glossary-public-description').value = item.description_ko || '';
-        byId('glossary-public-submit-btn').textContent = '수정 저장';
-        byId('glossary-public-cancel-btn').style.display = '';
-        byId('glossary-public-ko').focus();
+        renderGlossary();
+        var input = byId('glossary-inline-ko-' + id) || byId('glossary-inline-en-' + id) || byId('glossary-inline-fr-' + id);
+        if (input) input.focus();
+      });
+    });
+  }
+
+  function bindInlineEditRowActions() {
+    document.querySelectorAll('[data-inline-save]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(btn.getAttribute('data-inline-save') || '0', 10);
+        if (id > 0) submitInlineEdit(id);
+      });
+    });
+    document.querySelectorAll('[data-inline-cancel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _editingId = null;
+        renderGlossary();
       });
     });
   }
@@ -246,6 +276,31 @@
       })
       .catch(function (err) {
         GW.showToast(err.message || '저장 실패', 'error');
+      });
+  }
+
+  function submitInlineEdit(id) {
+    if (!ensureGlossaryEditor()) return;
+    var payload = {
+      bucket: inferBucket((byId('glossary-inline-ko-' + id) || {}).value || '') || '가',
+      term_ko: ((byId('glossary-inline-ko-' + id) || {}).value || '').trim(),
+      term_en: ((byId('glossary-inline-en-' + id) || {}).value || '').trim(),
+      term_fr: ((byId('glossary-inline-fr-' + id) || {}).value || '').trim(),
+      description_ko: ((byId('glossary-inline-description-' + id) || {}).value || '').trim(),
+      sort_order: 0,
+    };
+    if (!payload.term_ko && !payload.term_en && !payload.term_fr) {
+      GW.showToast('한국어, 영어, 프랑스어 중 하나 이상 입력해주세요', 'error');
+      return;
+    }
+    GW.apiFetch('/api/glossary/' + id, { method: 'PUT', body: JSON.stringify(payload) })
+      .then(function () {
+        _editingId = null;
+        GW.showToast('용어가 수정됐습니다', 'success');
+        loadGlossary();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '수정 실패', 'error');
       });
   }
 
