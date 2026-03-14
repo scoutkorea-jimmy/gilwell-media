@@ -337,39 +337,17 @@
     btn.addEventListener('click', function () { _uploadAdminCover(); });
   });
 
-  function _isSvgFile(file) {
-    return !!(file && (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '')));
-  }
-
-  function _rasterizeImageFile(file, options, done) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      var img = new Image();
-      img.onload = function () {
-        var canvas = document.createElement('canvas');
-        var maxW = options.maxW || 1600;
-        var ratio = Math.min(maxW / img.width, 1);
-        canvas.width = Math.round(img.width * ratio);
-        canvas.height = Math.round(img.height * ratio);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        var usePng = options.forcePng || false;
-        var mime = usePng ? 'image/png' : 'image/jpeg';
-        var quality = usePng ? 0.92 : 0.82;
-        done(canvas.toDataURL(mime, quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
   function _uploadAdminCover() {
     var input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
     input.onchange = function () {
       var file = input.files[0]; if (!file) return;
-      _rasterizeImageFile(file, { maxW: 1600, forcePng: _isSvgFile(file) }, function (dataUrl) {
+      GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 }).then(function (result) {
+        var dataUrl = result.dataUrl;
         _adminCoverImg = dataUrl;
         renderAdminCoverPreview();
+      }).catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '대표 이미지 최적화 실패', 'error');
       });
     };
     input.click();
@@ -382,7 +360,11 @@
     input.onchange = function () {
       var file = input.files[0];
       if (!file) return;
-      _rasterizeImageFile(file, { maxW: 1600, forcePng: _isSvgFile(file) }, done);
+      GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 }).then(function (result) {
+        done(result.dataUrl);
+      }).catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
+      });
     };
     input.click();
   }

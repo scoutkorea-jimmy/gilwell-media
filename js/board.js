@@ -772,22 +772,14 @@
     input.onchange = function () {
       var file = input.files[0];
       if (!file) return;
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var img = new Image();
-        img.onload = function () {
-          var canvas = document.createElement('canvas');
-          var maxW   = 1600;
-          var ratio  = Math.min(maxW / img.width, 1);
-          canvas.width  = Math.round(img.width  * ratio);
-          canvas.height = Math.round(img.height * ratio);
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          self._coverImage = canvas.toDataURL('image/jpeg', 0.82);
+      GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 })
+        .then(function (result) {
+          self._coverImage = result.dataUrl;
           self._renderCoverPreview();
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+        })
+        .catch(function (err) {
+          GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
+        });
     };
     input.click();
   };
