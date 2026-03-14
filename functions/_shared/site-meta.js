@@ -34,8 +34,8 @@ const DEFAULT_SITE_META = {
       description: '국내외 스카우트 인물을 조명하는 공간입니다.',
     },
     glossary: {
-      title: '스카우트 영어집 · BP미디어',
-      description: '국문·영문·불어 3개 국어 기준의 스카우트 용어 영어집입니다.',
+      title: '스카우트 용어집 · BP미디어',
+      description: '국문·영문·불어 3개 국어 기준의 스카우트 용어집입니다.',
     },
     ai_guide: {
       title: 'AI 작업 가이드 · BP미디어',
@@ -325,7 +325,7 @@ function getBreadcrumbLabel(pageKey) {
     apr: 'APR',
     wosm: 'WOSM',
     people: '스카우트 인물',
-    glossary: '스카우트 영어집',
+    glossary: '스카우트 용어집',
     contributors: '도움을 주신 분들',
     search: '검색',
   };
@@ -339,7 +339,7 @@ function getPageTopic(pageKey) {
     apr: '아시아태평양 스카우트 소식',
     wosm: '세계스카우트연맹 소식',
     people: '스카우트 인물',
-    glossary: '스카우트 영어집',
+    glossary: '스카우트 용어집',
     contributors: '후원 및 기여자 소개',
     search: '사이트 검색 결과',
   };
