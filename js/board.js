@@ -139,7 +139,7 @@
     GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + searchParam + tagParam)
       .then(function (data) {
         self.total   = data.total;
-        self.hasMore = data.posts.length === data.pageSize;
+        self.hasMore = (data.page * data.pageSize) < data.total;
         self.page++;
         self._renderPosts(data.posts);
         self._updateCount();
@@ -311,7 +311,8 @@
       '<h3 class="post-related-heading">유관기사 읽어보기</h3>' +
       '<ul class="post-related-list">' +
         items.map(function (item) {
-          return '<li><a href="/post/' + item.id + '">' + GW.escapeHtml(item.title || '') + '</a></li>';
+          var category = GW.CATEGORIES[item.category] || GW.CATEGORIES.korea;
+          return '<li><a href="/post/' + item.id + '">[' + GW.escapeHtml(category.label) + '] ' + GW.escapeHtml(item.title || '') + '</a></li>';
         }).join('') +
       '</ul>' +
     '</section>';

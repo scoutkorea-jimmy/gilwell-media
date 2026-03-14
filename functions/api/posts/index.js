@@ -11,7 +11,7 @@ import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 16;
 
 // ── GET /api/posts ────────────────────────────────────────────
 // Returns a paginated list of posts (no full content body — just

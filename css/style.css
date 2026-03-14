@@ -2789,7 +2789,7 @@ footer a:hover { color: #ffffff; }
   .board-banner       { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
   .board-banner-total { display: none; }
   .board-container    { padding: 0 24px 40px; }
-  .board-grid         { grid-template-columns: repeat(2, 1fr); }
+  .board-grid         { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   .modal-overlay      { padding: 0; }
   .modal              { max-height: 100vh; border-radius: 0; }
@@ -2887,7 +2887,15 @@ footer a:hover { color: #ffffff; }
   .nav a              { padding: 10px 14px; font-size: 10px; }
 
   .board-container    { padding: 0 16px 32px; }
-  .board-grid         { grid-template-columns: 1fr; }
+  .board-grid         { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .post-card-body     { padding: 12px; }
+  .post-card h3       { font-size: 13px; }
+  .post-card-excerpt  { display: none; }
+  .post-card-meta     { font-size: 9px; line-height: 1.4; }
+  .post-card-engagement { font-size: 9px; margin-bottom: 6px; }
+  .post-card-labels   { gap: 4px; }
+  .post-card-labels .post-kicker,
+  .post-card-labels .category-tag { transform: scale(0.92); transform-origin: left center; }
   .admin-shell        { padding: 16px; }
   .admin-header-top   { padding: 16px; align-items: flex-start; }
   .post-page-wrap     { padding: 24px 16px 48px; }
