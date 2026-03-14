@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.025.00';
+  GW.APP_VERSION = '0.026.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'worm', 'people'];
 
@@ -539,16 +539,19 @@
     var el  = document.getElementById('masthead-stats');
     if (!el) return;
     var u   = GW.t('stat.unit');
+    function statItem(label, value) {
+      return '<span class="masthead-stat-item">' + label + ' <strong>' + value + u + '</strong></span>';
+    }
     el.innerHTML =
-      GW.t('stat.korea') + ' <strong>' + d.korea + u + '</strong>' +
+      statItem(GW.t('stat.korea'), d.korea) +
       '<span class="stat-sep">·</span>' +
-      GW.t('stat.apr')   + ' <strong>' + d.apr   + u + '</strong>' +
+      statItem(GW.t('stat.apr'), d.apr) +
       '<span class="stat-sep">·</span>' +
-      GW.t('stat.worm')  + ' <strong>' + d.worm  + u + '</strong>' +
+      statItem(GW.t('stat.worm'), d.worm) +
       '<span class="stat-sep">·</span>' +
-      GW.t('stat.people') + ' <strong>' + d.people + u + '</strong>' +
+      statItem(GW.t('stat.people'), d.people) +
       '<span class="stat-sep">·</span>' +
-      GW.t('stat.today') + ' <strong>' + d.today + u + '</strong>';
+      statItem(GW.t('stat.today'), d.today);
   };
 
   // ── Ticker loader ─────────────────────────────────────────
