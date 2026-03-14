@@ -883,7 +883,7 @@ p { margin-bottom: 6px; }
 /* ── 3-column: Korea / APR / WOSM ── */
 .home-3col {
   display:               grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap:                   40px;
   margin-bottom:         48px;
 }
@@ -3862,4 +3862,232 @@ footer a:hover { color: #ffffff; }
 @media (max-width: 600px) {
   .contributors-wrap { padding: 32px 20px 60px; }
   .contributor-card { flex-direction: column; gap: 4px; }
+}
+
+.glossary-page-wrap {
+  max-width: 1366px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+.glossary-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+.glossary-hero-copy h2 {
+  margin: 0 0 12px;
+  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-size: 42px;
+  line-height: 1.1;
+}
+.glossary-hero-copy p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.glossary-search-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 18px;
+}
+.glossary-search-card label,
+.glossary-toolbar-title {
+  display: block;
+  margin-bottom: 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.glossary-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+}
+.glossary-search-input:focus { border-color: var(--accent); }
+.glossary-search-help {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.glossary-letter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.glossary-letter-btn {
+  min-width: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.glossary-letter-btn.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+.glossary-results-meta {
+  margin-bottom: 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.glossary-section + .glossary-section { margin-top: 26px; }
+.glossary-section-title {
+  margin: 0 0 10px;
+  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-size: 24px;
+}
+.glossary-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.glossary-table th,
+.glossary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+}
+.glossary-table th {
+  background: #f5f3ee;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.glossary-table td {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  word-break: keep-all;
+}
+.glossary-empty {
+  padding: 28px 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.glossary-admin-toolbar,
+.glossary-admin-form-grid {
+  display: grid;
+  gap: 12px;
+}
+.glossary-admin-toolbar {
+  grid-template-columns: 180px minmax(0, 1fr);
+  margin-bottom: 16px;
+}
+.glossary-admin-form-grid {
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.glossary-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.glossary-admin-group-title {
+  margin: 0 0 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.glossary-admin-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.glossary-admin-cell-label {
+  display: none;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.glossary-admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.glossary-admin-inline-btn {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+}
+.glossary-admin-inline-btn.delete {
+  border-color: #cc4444;
+  color: #cc4444;
+}
+@media (max-width: 900px) {
+  .glossary-hero {
+    grid-template-columns: 1fr;
+  }
+  .glossary-admin-toolbar,
+  .glossary-admin-form-grid,
+  .glossary-admin-row {
+    grid-template-columns: 1fr;
+  }
+  .glossary-admin-cell-label { display: block; }
+  .glossary-admin-actions { flex-direction: row; }
+}
+@media (max-width: 640px) {
+  .glossary-page-wrap { padding: 28px 20px 60px; }
+  .glossary-hero-copy h2 { font-size: 30px; }
+  .glossary-table th { display: none; }
+  .glossary-table, .glossary-table tbody, .glossary-table tr, .glossary-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .glossary-table tr { border-bottom: 1px solid var(--border); }
+  .glossary-table td {
+    border-bottom: none;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .glossary-table td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 }

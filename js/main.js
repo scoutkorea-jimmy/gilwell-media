@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.044.00';
+  GW.APP_VERSION = '0.045.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
-  GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people', 'glossary'];
+  GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
@@ -109,7 +109,6 @@
         apr: [],
         wosm: [],
         people: [],
-        glossary: [],
       },
     };
 
@@ -524,7 +523,6 @@
     'stat.apr':   { ko: 'APR소식',         en: 'APR' },
     'stat.wosm':  { ko: 'WOSM소식',        en: 'WOSM' },
     'stat.people':{ ko: '인물소식',        en: 'People' },
-    'stat.glossary':{ ko: '용어집',        en: 'Glossary' },
     'stat.today': { ko: '오늘 공유된 소식', en: 'Today' },
     'stat.unit':  { ko: '건', en: '' },
   };
@@ -605,8 +603,6 @@
       statItem(GW.t('stat.wosm'), d.wosm) +
       '<span class="stat-sep">·</span>' +
       statItem(GW.t('stat.people'), d.people) +
-      '<span class="stat-sep">·</span>' +
-      statItem(GW.t('stat.glossary'), d.glossary) +
       '<span class="stat-sep">·</span>' +
       statItem(GW.t('stat.today'), d.today);
   };

@@ -6,7 +6,6 @@ const DEFAULT_BOARD_BANNER = Object.freeze({
     apr: { event_name: '', event_date: '' },
     wosm: { event_name: '', event_date: '' },
     people: { event_name: '', event_date: '' },
-    glossary: { event_name: '', event_date: '' },
   },
 });
 
