@@ -56,7 +56,7 @@
   var _historyItems = [];
   var _historyPage  = 1;
   var _historyLoaded = false;
-  var GLOSSARY_BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', '영어집'];
+  var GLOSSARY_BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
   var GLOSSARY_CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _HISTORY_PAGE_SIZE = 10;
   var _glossaryItems = [];
@@ -1402,7 +1402,7 @@
         ['apr', 'APR'],
         ['wosm', 'WOSM'],
         ['people', 'Scout People'],
-        ['glossary', '영어집'],
+        ['glossary', '용어집'],
         ['ai_guide', 'AI 작업 가이드'],
         ['contributors', '도움을 주신 분들'],
         ['search', '검색'],
@@ -2074,7 +2074,7 @@
       '/apr.html': 'APR',
       '/wosm.html': 'WOSM',
       '/people.html': 'Scout People',
-      '/glossary.html': '영어집',
+      '/glossary.html': '용어집',
       '/contributors.html': '도움을 주신 분들',
       '/search.html': '검색',
       '/404.html': '404',
