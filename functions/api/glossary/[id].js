@@ -19,14 +19,15 @@ export async function onRequestPut({ request, env, params }) {
   try {
     const row = await env.DB.prepare(`
       UPDATE glossary_terms
-      SET bucket = ?, term_ko = ?, term_en = ?, term_fr = ?, sort_order = ?, updated_at = datetime('now')
+      SET bucket = ?, term_ko = ?, term_en = ?, term_fr = ?, description_ko = ?, sort_order = ?, updated_at = datetime('now')
       WHERE id = ?
-      RETURNING id, bucket, term_ko, term_en, term_fr, sort_order, created_at, updated_at
+      RETURNING id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
     `).bind(
       normalized.bucket,
       normalized.term_ko,
       normalized.term_en,
       normalized.term_fr,
+      normalized.description_ko,
       normalized.sort_order,
       id
     ).first();
@@ -59,11 +60,12 @@ function normalizeGlossaryInput(body) {
   const term_ko = String(body.term_ko || '').trim().slice(0, 120);
   const term_en = String(body.term_en || '').trim().slice(0, 160);
   const term_fr = String(body.term_fr || '').trim().slice(0, 160);
+  const description_ko = String(body.description_ko || '').trim().slice(0, 800);
   const sort_order = Number.isFinite(Number(body.sort_order)) ? Math.max(0, Math.min(9999, parseInt(body.sort_order, 10))) : 0;
   const bucket = inferBucket(term_ko) || requestedBucket;
   if (!BUCKETS.includes(bucket)) return { error: '올바른 분류를 선택해주세요' };
   if (!term_ko && !term_en && !term_fr) return { error: '한국어, 영어, 프랑스어 중 하나 이상 입력해주세요' };
-  return { bucket, term_ko, term_en, term_fr, sort_order };
+  return { bucket, term_ko, term_en, term_fr, description_ko, sort_order };
 }
 
 function inferBucket(termKo) {

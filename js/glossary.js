@@ -40,7 +40,7 @@
     return _items.filter(function (item) {
       if (_bucket !== 'all' && item.bucket !== _bucket) return false;
       if (!_query) return true;
-      var haystack = [item.term_ko, item.term_en, item.term_fr].join(' ').toLowerCase();
+      var haystack = [item.term_ko, item.term_en, item.term_fr, item.description_ko].join(' ').toLowerCase();
       return haystack.indexOf(_query) >= 0;
     });
   }
@@ -51,12 +51,13 @@
     return '<div class="glossary-table-wrap"><table class="glossary-table">' +
       head + '<tbody>' +
       items.map(function (item) {
-        return '<tr>' +
+        return '<tr class="glossary-term-row">' +
           '<td data-label="한국어">' + GW.escapeHtml(item.term_ko || '-') + '</td>' +
           '<td data-label="English">' + GW.escapeHtml(item.term_en || '-') + '</td>' +
           '<td data-label="Français">' + GW.escapeHtml(item.term_fr || '-') + '</td>' +
           (canEdit ? '<td data-label="관리"><button type="button" class="glossary-admin-inline-btn" data-edit-id="' + item.id + '">수정</button></td>' : '') +
-        '</tr>';
+        '</tr>' +
+        (item.description_ko ? '<tr class="glossary-description-row"><td colspan="' + (canEdit ? 4 : 3) + '"><div class="glossary-description-text">' + GW.escapeHtml(item.description_ko) + '</div></td></tr>' : '');
       }).join('') +
       '</tbody></table></div>';
   }
@@ -118,6 +119,7 @@
         byId('glossary-public-ko').value = item.term_ko || '';
         byId('glossary-public-en').value = item.term_en || '';
         byId('glossary-public-fr').value = item.term_fr || '';
+        byId('glossary-public-description').value = item.description_ko || '';
         byId('glossary-public-submit-btn').textContent = '수정 저장';
         byId('glossary-public-cancel-btn').style.display = '';
         byId('glossary-public-ko').focus();
@@ -131,6 +133,7 @@
     byId('glossary-public-ko').value = '';
     byId('glossary-public-en').value = '';
     byId('glossary-public-fr').value = '';
+    byId('glossary-public-description').value = '';
     byId('glossary-public-submit-btn').textContent = '용어 저장';
     byId('glossary-public-cancel-btn').style.display = 'none';
   }
@@ -193,6 +196,7 @@
       term_ko: (byId('glossary-public-ko').value || '').trim(),
       term_en: (byId('glossary-public-en').value || '').trim(),
       term_fr: (byId('glossary-public-fr').value || '').trim(),
+      description_ko: (byId('glossary-public-description').value || '').trim(),
       sort_order: 0,
     };
     if (!payload.term_ko && !payload.term_en && !payload.term_fr) {
