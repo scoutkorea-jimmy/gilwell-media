@@ -14,7 +14,7 @@ export async function onRequest(context) {
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
-  const canonicalPath = url.pathname === '/index.html' ? '/' : url.pathname;
+  const canonicalPath = getCanonicalPath(url.pathname, pageKey);
   const itemListElements = await loadPageItemList(env, url.origin, pageKey);
   const shareMeta = buildShareMetaBlock({
     pageKey,
@@ -38,6 +38,16 @@ export async function onRequest(context) {
     statusText: response.statusText,
     headers,
   });
+}
+
+function getCanonicalPath(pathname, pageKey) {
+  if (pathname === '/index.html' || pathname === '/') return '/';
+  if (pageKey === 'korea') return '/korea';
+  if (pageKey === 'apr') return '/apr';
+  if (pageKey === 'wosm') return '/wosm';
+  if (pageKey === 'people') return '/people';
+  if (pageKey === 'glossary') return '/glossary';
+  return pathname;
 }
 
 async function loadPageItemList(env, origin, pageKey) {

@@ -1,3 +1,9 @@
-/worm /wosm.html 301
-/worm.html /wosm.html 301
+/index.html / 301
+/korea.html /korea 301
+/apr.html /apr 301
+/wosm.html /wosm 301
+/people.html /people 301
+/glossary.html /glossary 301
+/worm /wosm 301
+/worm.html /wosm 301
 /favicon.ico /img/favicon-48.png 301

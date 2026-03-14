@@ -116,10 +116,15 @@ export function getSitePageKey(pathname) {
   const normalized = pathname === '/' ? '/index.html' : pathname;
   const mapping = {
     '/index.html': 'home',
+    '/korea': 'korea',
     '/korea.html': 'korea',
+    '/apr': 'apr',
     '/apr.html': 'apr',
+    '/wosm': 'wosm',
     '/wosm.html': 'wosm',
+    '/people': 'people',
     '/people.html': 'people',
+    '/glossary': 'glossary',
     '/glossary.html': 'glossary',
     '/ai-guide.html': 'ai_guide',
     '/contributors.html': 'contributors',

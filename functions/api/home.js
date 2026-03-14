@@ -96,7 +96,6 @@ async function loadStats(env) {
     korea: koreaRow?.n ?? 0,
     apr: aprRow?.n ?? 0,
     wosm: wosmRow?.n ?? 0,
-    worm: wosmRow?.n ?? 0,
     people: peopleRow?.n ?? 0,
     today: todayRow?.n ?? 0,
   };
