@@ -39,6 +39,7 @@ wrangler pages deploy . --project-name gilwell-media
 - 현재 최신 마이그레이션 기준은 `db/migration_016.sql`까지다.
 - R2를 사용할 경우 Pages Functions에 `POST_IMAGES` 버킷 바인딩을 추가한다.
 - 기존 D1 base64 이미지를 R2로 옮길 때는 `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`를 사용한다.
+- Cloudflare 기반 분석을 쓰려면 Pages secret `CF_ANALYTICS_API_TOKEN`을 설정한다.
 
 예시:
 
