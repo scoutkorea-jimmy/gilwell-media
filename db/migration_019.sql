@@ -72,7 +72,7 @@ SET value = json_set(
   '$.pages.glossary',
   COALESCE(
     json_extract(value, '$.pages.glossary'),
-    json('{"title":"스카우트 용어 번역집 · BP미디어","description":"국문·영문·불어 3개 국어 기준의 스카우트 용어 번역집입니다."}')
+    json('{"title":"스카우트 영어집 · BP미디어","description":"국문·영문·불어 3개 국어 기준의 스카우트 용어 영어집입니다."}')
   )
 )
 WHERE key = 'site_meta';

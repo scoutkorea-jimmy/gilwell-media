@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
+  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', '영어집'];
   var CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _items = [];
   var _bucket = 'all';
@@ -48,6 +48,14 @@
 
   function hasKoreanTerm(item) {
     return !!String(item && item.term_ko || '').trim();
+  }
+
+  function isEnglishBucket(item) {
+    return String(item && item.bucket || '') === '영어집';
+  }
+
+  function isRegularItem(item) {
+    return hasKoreanTerm(item) || isEnglishBucket(item);
   }
 
   function renderTable(items) {
@@ -107,8 +115,8 @@
 
   function renderGlossary() {
     var items = getFilteredItems();
-    var regularItems = items.filter(hasKoreanTerm);
-    var unmatchedItems = items.filter(function (item) { return !hasKoreanTerm(item); });
+    var regularItems = items.filter(isRegularItem);
+    var unmatchedItems = items.filter(function (item) { return !isRegularItem(item); });
     var meta = byId('glossary-results-meta');
     var list = byId('glossary-results');
     if (meta) meta.textContent = (_bucket === 'all' ? '전체' : _bucket) + ' · ' + GW.formatNumber(items.length) + '개 용어';
