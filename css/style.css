@@ -3971,22 +3971,31 @@ footer a:hover { color: #ffffff; }
   color: var(--muted);
 }
 .glossary-public-admin {
-  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
 }
+.glossary-public-admin-top {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
 .glossary-admin-toggle-btn {
-  padding: 10px 14px;
-  border: 1px solid var(--black);
-  background: var(--black);
-  color: var(--white);
+  padding: 8px 12px;
+  border: 1px solid rgba(77, 0, 110, 0.18);
+  background: rgba(77, 0, 110, 0.04);
+  color: #4D006E;
   font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   cursor: pointer;
 }
-.glossary-editor-panel {
-  margin-bottom: 24px;
+.glossary-admin-toggle-btn:hover {
+  border-color: rgba(77, 0, 110, 0.32);
+  background: rgba(77, 0, 110, 0.08);
 }
 .glossary-letter-bar {
   display: flex;
@@ -4154,6 +4163,9 @@ footer a:hover { color: #ffffff; }
   padding: 28px;
   border-top: 3px solid #622599;
 }
+.glossary-editor-modal-card {
+  width: min(92vw, 860px);
+}
 .glossary-login-card h3 {
   margin: 0 0 8px;
   font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
@@ -4175,6 +4187,13 @@ footer a:hover { color: #ffffff; }
 .glossary-login-actions {
   display: flex;
   gap: 8px;
+}
+.glossary-modal-form-grid {
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  margin-bottom: 16px;
+}
+.glossary-modal-form-grid .glossary-description-field {
+  grid-column: 1 / -1;
 }
 .glossary-login-error {
   color: #cc4444 !important;
@@ -4341,8 +4360,13 @@ footer a:hover { color: #ffffff; }
   .glossary-hero {
     grid-template-columns: 1fr;
   }
+  .glossary-public-admin {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   .glossary-admin-toolbar,
   .glossary-admin-form-grid,
+  .glossary-modal-form-grid,
   .glossary-admin-row {
     grid-template-columns: 1fr;
   }

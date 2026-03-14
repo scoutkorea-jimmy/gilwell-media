@@ -7,6 +7,7 @@
   var _bucket = 'all';
   var _query = '';
   var _editingId = null;
+  var _openEditorAfterLogin = false;
 
   function byId(id) { return document.getElementById(id); }
 
@@ -198,7 +199,6 @@
     byId('glossary-public-fr').value = '';
     byId('glossary-public-description').value = '';
     byId('glossary-public-submit-btn').textContent = '용어 저장';
-    byId('glossary-public-cancel-btn').style.display = 'none';
   }
 
   function bindBucketAutoFill() {
@@ -220,11 +220,21 @@
 
   function closeLoginModal() {
     byId('glossary-login-modal').style.display = 'none';
+    _openEditorAfterLogin = false;
   }
 
-  function ensureGlossaryEditor() {
+  function openEditorModal() {
+    resetPublicEditor();
+    byId('glossary-editor-modal').style.display = 'flex';
+    byId('glossary-public-ko').focus();
+  }
+
+  function closeEditorModal() {
+    byId('glossary-editor-modal').style.display = 'none';
+  }
+
+  function ensureGlossaryAuth() {
     if (GW.getToken && GW.getToken()) {
-      byId('glossary-editor-panel').style.display = '';
       return true;
     }
     openLoginModal();
@@ -242,7 +252,10 @@
         GW.setToken(data.token);
         if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
         closeLoginModal();
-        byId('glossary-editor-panel').style.display = '';
+        if (_openEditorAfterLogin) {
+          _openEditorAfterLogin = false;
+          openEditorModal();
+        }
         renderGlossary();
       })
       .catch(function (err) {
@@ -253,7 +266,7 @@
   }
 
   function submitPublicTerm() {
-    if (!ensureGlossaryEditor()) return;
+    if (!ensureGlossaryAuth()) return;
     var payload = {
       bucket: (byId('glossary-public-bucket').value || '가').trim(),
       term_ko: (byId('glossary-public-ko').value || '').trim(),
@@ -272,6 +285,7 @@
       .then(function () {
         GW.showToast(_editingId ? '용어가 수정됐습니다' : '용어가 추가됐습니다', 'success');
         resetPublicEditor();
+        closeEditorModal();
         loadGlossary();
       })
       .catch(function (err) {
@@ -280,7 +294,7 @@
   }
 
   function submitInlineEdit(id) {
-    if (!ensureGlossaryEditor()) return;
+    if (!ensureGlossaryAuth()) return;
     var payload = {
       bucket: inferBucket((byId('glossary-inline-ko-' + id) || {}).value || '') || '가',
       term_ko: ((byId('glossary-inline-ko-' + id) || {}).value || '').trim(),
@@ -308,9 +322,20 @@
     bindSearch();
     renderBucketBar();
     bindBucketAutoFill();
-    byId('glossary-admin-toggle-btn').addEventListener('click', ensureGlossaryEditor);
+    document.querySelectorAll('[data-glossary-add-trigger]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (ensureGlossaryAuth()) {
+          openEditorModal();
+        } else {
+          _openEditorAfterLogin = true;
+        }
+      });
+    });
     byId('glossary-public-submit-btn').addEventListener('click', submitPublicTerm);
-    byId('glossary-public-cancel-btn').addEventListener('click', resetPublicEditor);
+    byId('glossary-public-cancel-btn').addEventListener('click', function () {
+      resetPublicEditor();
+      closeEditorModal();
+    });
     byId('glossary-login-submit').addEventListener('click', submitLogin);
     byId('glossary-login-close').addEventListener('click', closeLoginModal);
     byId('glossary-login-password').addEventListener('keydown', function (e) {
