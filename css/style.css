@@ -10,6 +10,269 @@
   font-display: swap;
 }
 
+/* ── Final Home / Admin Type System (V0.059.04) ───────────── */
+:root {
+  --admin-fs-display: 22px;
+  --admin-fs-section: 19px;
+  --admin-fs-title: 17px;
+  --admin-fs-body: 14px;
+  --admin-fs-meta: 12px;
+  --admin-fs-micro: 11px;
+}
+
+.section-header {
+  align-items: center !important;
+  padding: 13px 24px !important;
+  min-height: 44px !important;
+}
+
+.section-header h2 {
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+}
+
+.home-col-header {
+  padding: 13px 14px !important;
+  min-height: 44px !important;
+  margin-bottom: 8px !important;
+}
+
+.home-col-header h3,
+.home-col-header .home-section-more {
+  font-size: 12px !important;
+  line-height: 1.1 !important;
+}
+
+body.admin-page {
+  --admin-surface: rgba(255,255,255,0.96);
+  --admin-surface-soft: rgba(255,255,255,0.88);
+  --admin-stroke: rgba(31,31,31,0.1);
+}
+
+body.admin-page .admin-header-top {
+  gap: 10px !important;
+  padding: 10px 16px !important;
+}
+
+body.admin-page .admin-brand,
+body.admin-page .admin-header .header-right {
+  padding: 10px 12px !important;
+  min-height: 0 !important;
+}
+
+body.admin-page .admin-brand {
+  gap: 6px !important;
+}
+
+body.admin-page .admin-brand .logo {
+  font-size: var(--admin-fs-display) !important;
+  line-height: 1.05 !important;
+}
+
+body.admin-page .admin-brand .badge,
+body.admin-page .admin-build-label,
+body.admin-page .admin-login-build {
+  font-size: var(--admin-fs-micro) !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+body.admin-page .admin-header-copy {
+  font-size: var(--admin-fs-meta) !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page .admin-header-box {
+  padding: 8px !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-header-link,
+body.admin-page .admin-group-btn,
+body.admin-page .logout-btn {
+  min-height: 36px !important;
+  padding: 8px 10px !important;
+  font-size: var(--admin-fs-meta) !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.admin-page .admin-sidebar-group {
+  padding: 10px !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-sidebar-btn {
+  min-width: 138px !important;
+  padding: 10px 12px !important;
+  gap: 3px !important;
+}
+
+body.admin-page .admin-sidebar-btn-label {
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+body.admin-page .admin-sidebar-btn-desc {
+  font-size: var(--admin-fs-micro) !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.01em !important;
+}
+
+body.admin-page .panel,
+body.admin-page .dash-stat-card,
+body.admin-page .dash-action-btn,
+body.admin-page .admin-subnav,
+body.admin-page .admin-sidebar-group {
+  border-color: var(--admin-stroke) !important;
+  background: var(--admin-surface) !important;
+}
+
+body.admin-page .panel-header {
+  padding: 14px 18px !important;
+}
+
+body.admin-page .panel-header h2,
+body.admin-page .post-history-head h3 {
+  font-size: var(--admin-fs-section) !important;
+  line-height: 1.2 !important;
+}
+
+body.admin-page .panel-body,
+body.admin-page .panel-body p,
+body.admin-page .panel-body li,
+body.admin-page .analytics-note,
+body.admin-page .post-history-summary,
+body.admin-page .list-empty,
+body.admin-page #article-count,
+body.admin-page #admin-page-info,
+body.admin-page .count,
+body.admin-page .stat-label,
+body.admin-page .analytics-list,
+body.admin-page .analytics-table-wrap,
+body.admin-page #translations-table,
+body.admin-page #contributors-admin-list,
+body.admin-page #version-history-list {
+  font-size: var(--admin-fs-body) !important;
+  line-height: 1.55 !important;
+}
+
+body.admin-page .panel-body p[style],
+body.admin-page .panel-body small,
+body.admin-page .panel-body small[style],
+body.admin-page .panel-body label[style],
+body.admin-page .panel-body span[style],
+body.admin-page .panel-body div[style*="font-size:9px"],
+body.admin-page .panel-body div[style*="font-size:10px"],
+body.admin-page .panel-body div[style*="font-size:11px"] {
+  font-size: var(--admin-fs-meta) !important;
+  line-height: 1.55 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+body.admin-page .form-group > label,
+body.admin-page .analytics-toolbar-group label,
+body.admin-page .glossary-admin-toolbar label,
+body.admin-page .glossary-admin-form-grid label,
+body.admin-page .admin-settings-block-head span {
+  font-size: var(--admin-fs-meta) !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.02em !important;
+}
+
+body.admin-page input:not([type="checkbox"]):not([type="radio"]),
+body.admin-page select,
+body.admin-page textarea {
+  min-height: 42px !important;
+  padding: 10px 12px !important;
+  font-size: var(--admin-fs-body) !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page textarea {
+  min-height: 120px !important;
+}
+
+body.admin-page button,
+body.admin-page .submit-btn,
+body.admin-page .cancel-btn,
+body.admin-page .btn-delete-soft,
+body.admin-page .btn-edit,
+body.admin-page .btn-delete,
+body.admin-page .btn-icon,
+body.admin-page .cover-upload-btn,
+body.admin-page .admin-subnav-btn,
+body.admin-page .admin-list-tabs > button,
+body.admin-page #admin-prev-btn,
+body.admin-page #admin-next-btn {
+  font-size: var(--admin-fs-meta) !important;
+  line-height: 1.2 !important;
+  min-height: 38px !important;
+}
+
+body.admin-page .admin-subnav-btn,
+body.admin-page .admin-list-tabs > button {
+  letter-spacing: 0.04em !important;
+}
+
+body.admin-page .dash-stat-num {
+  font-size: clamp(26px, 2.2vw, 34px) !important;
+}
+
+body.admin-page .dash-stat-label,
+body.admin-page .dash-action-label {
+  font-size: var(--admin-fs-meta) !important;
+}
+
+body.admin-page .dash-action-btn {
+  padding: 14px 16px !important;
+}
+
+body.admin-page .dash-action-icon {
+  font-size: 18px !important;
+}
+
+body.admin-page .article-item h4,
+body.admin-page .global-search-item strong,
+body.admin-page .admin-settings-block-head strong {
+  font-size: var(--admin-fs-title) !important;
+  line-height: 1.35 !important;
+}
+
+body.admin-page .item-meta-chip {
+  padding: 8px 10px !important;
+  min-height: 0 !important;
+}
+
+body.admin-page .item-meta-chip strong,
+body.admin-page .item-meta-chip span {
+  font-size: var(--admin-fs-micro) !important;
+}
+
+body.admin-page .post-history-list,
+body.admin-page .version-history-pagination {
+  font-size: var(--admin-fs-body) !important;
+}
+
+@media (max-width: 768px) {
+  .section-header,
+  .home-col-header {
+    min-height: 40px !important;
+  }
+
+  .section-header {
+    padding: 11px 16px !important;
+  }
+
+  .home-col-header {
+    padding: 11px 12px !important;
+  }
+
+  body.admin-page .admin-sidebar-btn {
+    min-width: 0 !important;
+  }
+}
+
 /* ── Global Typography Alignment (V0.059.01) ──────────────── */
 :root {
   --fs-nav: 12px;
