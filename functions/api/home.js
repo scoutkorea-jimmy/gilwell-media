@@ -34,7 +34,7 @@ export async function onRequestGet({ env, request }) {
       loadFooterAnalytics(env),
       loadHero(env, origin),
       loadHomeLead(env, origin),
-      loadPostList(env, origin, { limit: 4 }),
+      loadLatestPosts(env, origin, 4),
       loadPopular(env, origin, 4),
       loadPostList(env, origin, { featured: true, limit: 4 }),
       loadPostList(env, origin, { category: 'korea', limit: 4 }),
@@ -194,6 +194,19 @@ async function loadPostList(env, origin, opts = {}) {
       ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC
       LIMIT ?`
   ).bind(...bindings, limit).all();
+  return (results || []).map((post) => serializePostImage(post, origin));
+}
+
+async function loadLatestPosts(env, origin, limit) {
+  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
+  const { results } = await env.DB.prepare(
+    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order, youtube_url,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+       FROM posts
+      WHERE published = 1
+      ORDER BY created_at DESC
+      LIMIT ?`
+  ).bind(safeLimit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
 }
 

@@ -3562,6 +3562,105 @@ footer a:hover { color: #ffffff; }
   .nav                { padding: 0 16px; }
   .nav a              { padding: 10px 14px; font-size: var(--mobile-fs-meta); }
 
+  body.post-page .masthead,
+  body.post-page .ticker {
+    display: none;
+  }
+  body.post-page .post-mobile-header {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 140;
+    background: rgba(255, 252, 247, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  body.post-page .post-mobile-header-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px 8px;
+  }
+  body.post-page .post-mobile-back,
+  body.post-page .post-mobile-search {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.88);
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    line-height: 1;
+  }
+  body.post-page .post-mobile-brand {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--accent);
+    justify-self: start;
+  }
+  body.post-page .post-mobile-brand-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  body.post-page .post-mobile-brand-text {
+    font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  body.post-page .post-mobile-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  body.post-page .post-mobile-section-chip {
+    max-width: 124px;
+    padding: 7px 10px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    line-height: 1.1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #fff;
+    background: var(--accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.post-page .post-mobile-quicknav {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0 8px 8px;
+    scrollbar-width: none;
+  }
+  body.post-page .post-mobile-quicknav::-webkit-scrollbar {
+    display: none;
+  }
+  body.post-page .post-mobile-quicknav a {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  body.post-page .post-page-wrap {
+    padding-top: 18px;
+  }
+
   .board-container    { padding: 0 16px 32px; }
   .board-grid         { grid-template-columns: 1fr; gap: 10px; }
   .post-card {
@@ -4141,6 +4240,10 @@ footer a:hover { color: #ffffff; }
   font-family: 'DM Mono', monospace;
   font-size: 10px;
   color: var(--muted);
+}
+
+.post-mobile-header {
+  display: none;
 }
 
 @media (max-width: 900px) {

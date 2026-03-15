@@ -131,8 +131,29 @@ export async function onRequestGet({ params, env, request }) {
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css?v=0.055.01">
 </head>
-<body>
+<body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+
+  <div class="post-mobile-header" aria-label="기사 페이지 모바일 상단">
+    <div class="post-mobile-header-bar">
+      <a href="javascript:history.back()" class="post-mobile-back" aria-label="뒤로가기">←</a>
+      <a href="/" class="post-mobile-brand" aria-label="BP미디어 홈으로 이동">
+        <img src="/img/logo.svg" alt="" class="post-mobile-brand-mark" aria-hidden="true">
+        <span class="post-mobile-brand-text">BP미디어</span>
+      </a>
+      <div class="post-mobile-header-actions">
+        <a href="/${post.category}.html" class="post-mobile-section-chip">${cat.label}</a>
+        <a href="/search.html" class="post-mobile-search" aria-label="검색">⌕</a>
+      </div>
+    </div>
+    <nav class="post-mobile-quicknav" aria-label="빠른 이동">
+      <a href="/latest">최신</a>
+      <a href="/korea">Korea</a>
+      <a href="/apr">APR</a>
+      <a href="/wosm">WOSM</a>
+      <a href="/people">인물</a>
+    </nav>
+  </div>
 
   <!-- ── MASTHEAD ── -->
   <header class="masthead">
