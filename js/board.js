@@ -14,6 +14,7 @@
    * @param {string} opts.category   - page category key
    * @param {string|null} [opts.apiCategory] - actual API category filter
    * @param {boolean} [opts.enableWrite] - whether to expose write UI
+   * @param {object} [opts.extraParams] - extra query params for public list/tag calls
    * @param {string} [opts.gridId]   - id of the grid container element
    * @param {string} [opts.countId]  - id of the post-count element
    * @param {string} [opts.moreId]   - id of the "load more" button
@@ -23,6 +24,7 @@
     this.category = opts.category;
     this.apiCategory = Object.prototype.hasOwnProperty.call(opts, 'apiCategory') ? opts.apiCategory : opts.category;
     this.enableWrite = opts.enableWrite !== false;
+    this.extraParams = opts.extraParams || {};
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
@@ -105,7 +107,14 @@
     if (!barEl) return;
 
     var url = '/api/posts/tags';
-    if (this.apiCategory) url += '?category=' + encodeURIComponent(this.apiCategory);
+    var params = [];
+    if (this.apiCategory) params.push('category=' + encodeURIComponent(this.apiCategory));
+    Object.keys(this.extraParams).forEach(function (key) {
+      var value = self.extraParams[key];
+      if (value === null || value === undefined || value === '') return;
+      params.push(encodeURIComponent(key) + '=' + encodeURIComponent(String(value)));
+    });
+    if (params.length) url += '?' + params.join('&');
     fetch(url)
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -153,6 +162,11 @@
     var tagParam    = this._selectedTag  ? '&tag=' + encodeURIComponent(this._selectedTag)  : '';
     var endpoint = '/api/posts?page=' + this.page + '&limit=' + this.pageSize + searchParam + tagParam;
     if (this.apiCategory) endpoint += '&category=' + encodeURIComponent(this.apiCategory);
+    Object.keys(this.extraParams).forEach(function (key) {
+      var value = self.extraParams[key];
+      if (value === null || value === undefined || value === '') return;
+      endpoint += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
+    });
     GW.apiFetch(endpoint)
       .then(function (data) {
         self.total   = data.total;

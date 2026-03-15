@@ -57,7 +57,9 @@ async function loadPageItemList(env, origin, pageKey) {
     const category = pageKey === 'home' || pageKey === 'latest' ? null : pageKey;
     const query = category
       ? `SELECT id, title FROM posts WHERE published = 1 AND category = ? ORDER BY created_at DESC LIMIT 10`
-      : `SELECT id, title FROM posts WHERE published = 1 ORDER BY created_at DESC LIMIT 10`;
+      : pageKey === 'latest'
+        ? `SELECT id, title FROM posts WHERE published = 1 AND datetime(created_at) >= datetime('now', '-30 days') ORDER BY created_at DESC LIMIT 10`
+        : `SELECT id, title FROM posts WHERE published = 1 ORDER BY created_at DESC LIMIT 10`;
     const result = category
       ? await env.DB.prepare(query).bind(category).all()
       : await env.DB.prepare(query).all();

@@ -28,6 +28,7 @@ export async function onRequestGet({ request, env }) {
   const tagFilter    = url.searchParams.get('tag') || null;
   const featuredOnly = url.searchParams.get('featured') === '1';
   const allRequested = url.searchParams.get('all') === '1';
+  const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
@@ -54,6 +55,10 @@ export async function onRequestGet({ request, env }) {
     } else {
       if (category)  { conditions.push('category = ?'); baseArgs.push(category); }
       if (!isAdmin)  { conditions.push('published = 1'); }
+      if (daysFilter > 0) {
+        conditions.push('datetime(created_at) >= datetime(?, ?)');
+        baseArgs.push('now', '-' + daysFilter + ' days');
+      }
       if (q) {
         conditions.push('(title LIKE ? OR subtitle LIKE ? OR tag LIKE ?)');
         const qp = `%${q}%`;

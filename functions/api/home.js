@@ -18,6 +18,7 @@ export async function onRequestGet({ env, request }) {
       stats,
       footerAnalytics,
       hero,
+      lead,
       latest,
       popular,
       picks,
@@ -32,6 +33,7 @@ export async function onRequestGet({ env, request }) {
       loadStats(env),
       loadFooterAnalytics(env),
       loadHero(env, origin),
+      loadHomeLead(env, origin),
       loadPostList(env, origin, { limit: 4 }),
       loadPopular(env, origin, 4),
       loadPostList(env, origin, { featured: true, limit: 4 }),
@@ -48,6 +50,7 @@ export async function onRequestGet({ env, request }) {
       stats,
       analytics: footerAnalytics,
       hero,
+      lead,
       latest: { posts: latest },
       popular: { posts: popular },
       picks: { posts: picks },
@@ -157,6 +160,19 @@ async function loadHero(env, origin) {
     posts: postIds.map((id) => byId.get(id)).filter(Boolean),
     interval_ms,
   };
+}
+
+async function loadHomeLead(env, origin) {
+  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+  const postId = row ? parseInt(row.value, 10) : 0;
+  if (!postId) return { post: null };
+  const post = await env.DB.prepare(
+    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order, youtube_url,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+       FROM posts
+      WHERE id = ? AND published = 1`
+  ).bind(postId).first();
+  return { post: post ? serializePostImage(post, origin) : null };
 }
 
 async function loadPostList(env, origin, opts = {}) {

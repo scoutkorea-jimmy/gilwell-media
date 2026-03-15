@@ -7,6 +7,7 @@
 export async function onRequestGet({ request, env }) {
   const url      = new URL(request.url);
   const category = normalizeCategory(url.searchParams.get('category') || null);
+  const daysFilter = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
 
 const VALID = ['korea', 'apr', 'wosm', 'people'];
   if (category && !VALID.includes(category)) {
@@ -14,13 +15,18 @@ const VALID = ['korea', 'apr', 'wosm', 'people'];
   }
 
   try {
-    const query = category
-      ? `SELECT tag FROM posts WHERE published = 1 AND tag IS NOT NULL AND tag != '' AND category = ?`
-      : `SELECT tag FROM posts WHERE published = 1 AND tag IS NOT NULL AND tag != ''`;
-
-    const { results } = category
-      ? await env.DB.prepare(query).bind(category).all()
-      : await env.DB.prepare(query).all();
+    const conditions = [`published = 1`, `tag IS NOT NULL`, `tag != ''`];
+    const bindings = [];
+    if (category) {
+      conditions.push('category = ?');
+      bindings.push(category);
+    }
+    if (daysFilter > 0) {
+      conditions.push('datetime(created_at) >= datetime(?, ?)');
+      bindings.push('now', '-' + daysFilter + ' days');
+    }
+    const query = `SELECT tag FROM posts WHERE ${conditions.join(' AND ')}`;
+    const { results } = await env.DB.prepare(query).bind(...bindings).all();
 
     const tagSet = new Set();
     results.forEach(function (row) {
