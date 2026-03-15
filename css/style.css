@@ -10,6 +10,121 @@
   font-display: swap;
 }
 
+/* ── Global Typography Alignment (V0.059.01) ──────────────── */
+:root {
+  --fs-nav: 12px;
+  --fs-card-title: 18px;
+  --fs-admin-title: 18px;
+}
+
+html,
+body {
+  line-break: strict;
+}
+
+body,
+body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
+  font-family: 'AliceDigitalLearning', sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+p,
+li,
+dt,
+dd,
+blockquote,
+figcaption,
+a,
+button,
+label,
+.article-card h3,
+.mini-item h4,
+.sidebar-item h4,
+.post-card-body h3,
+.post-page-title,
+.home-lead-body h3,
+.hero-main h2,
+.hero-side-item h3,
+.section-header h2,
+.board-banner-text h2,
+.glossary-hero-copy h2,
+.article-item h4,
+.admin-header-copy,
+.admin-sidebar-btn-label,
+.admin-sidebar-btn-desc,
+.dash-stat-label {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.nav a,
+body.admin-page .admin-header-link,
+body.admin-page .admin-group-btn,
+body.admin-page .logout-btn {
+  font-size: var(--fs-nav) !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.nav a {
+  color: var(--muted) !important;
+}
+
+body.admin-page .admin-header-link,
+body.admin-page .admin-group-btn {
+  color: rgba(245,243,238,0.78) !important;
+}
+
+body.admin-page .admin-group-btn.active,
+body.admin-page .admin-group-btn:hover,
+body.admin-page .admin-header-link:hover {
+  color: var(--white) !important;
+}
+
+body.admin-page .logout-btn {
+  color: var(--white) !important;
+}
+
+.article-card h3,
+.mini-item h4,
+.sidebar-item h4,
+.post-card-body h3,
+.home-lead-body h3,
+.article-item h4 {
+  font-size: var(--fs-card-title) !important;
+  line-height: var(--lh-tight) !important;
+}
+
+body.admin-page .article-item h4 {
+  font-size: var(--fs-admin-title) !important;
+  margin-bottom: 12px !important;
+}
+
+body.admin-page .item-meta-chip strong {
+  font-size: var(--fs-micro) !important;
+}
+
+body.admin-page .item-meta-chip span {
+  font-size: var(--fs-meta) !important;
+  color: rgba(31,31,31,0.68) !important;
+}
+
+body.admin-page .admin-build-label,
+body.admin-page .admin-login-build,
+.masthead-date,
+.masthead-logo .sub,
+.global-search-date {
+  font-size: var(--fs-micro) !important;
+  letter-spacing: 0.06em !important;
+}
+
+.global-search-input,
+.board-search-input {
+  font-size: var(--fs-body) !important;
+  line-height: 1.5 !important;
+}
+
 /* ── Final Admin / Glossary Overrides (V0.059.00) ─────────── */
 body.admin-page,
 body.admin-page *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
