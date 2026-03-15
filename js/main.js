@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.053.02';
+  GW.APP_VERSION = '0.054.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -653,7 +653,7 @@
   GW.STRINGS = {
     'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
     'nav.home':   { ko: '홈',    en: 'Home' },
-    'nav.latest': { ko: '전체 소식', en: 'Latest' },
+    'nav.latest': { ko: '1개월 소식', en: 'Last 30 Days' },
     'nav.korea':  { ko: 'Korea', en: 'Korea' },
     'nav.apr':    { ko: 'APR',   en: 'APR' },
     'nav.wosm':   { ko: 'WOSM',  en: 'WOSM' },
@@ -685,16 +685,16 @@
       ko: 'BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.',
       en: 'BPmedia is not an official channel of KSA or WOSM. Operated by volunteer contributors.',
     },
-    'link.latest': { ko: '전체 소식 — 카테고리 구분 없는 최신 게시글', en: 'Latest — Cross-category latest posts' },
+    'link.latest': { ko: '1개월 소식 — 최근 30일간의 세계 스카우트 소식', en: 'Last 30 Days — Scout news from the last month' },
     'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },
     'link.apr':   { ko: 'APR — 아시아태평양',     en: 'APR — Asia-Pacific' },
     'link.wosm':  { ko: 'WOSM — 세계스카우트연맹',  en: 'WOSM — World Scout Organization' },
     'link.people':{ ko: '스카우트 인물 — 국내외 스카우트 인물', en: 'Scout People — Scouts Around the World' },
     'link.glossary':{ ko: '용어집 — 국문·영문·불어 스카우트 용어', en: 'Glossary — Korean, English, French Scout Terms' },
 
-    'board.latest.banner': { ko: 'Latest', en: 'Latest' },
-    'board.latest.title': { ko: '전체 최신 소식', en: 'Latest News' },
-    'board.latest.desc': { ko: '카테고리 구분 없이 BP미디어의 가장 최근 게시글을 시간순으로 모아봅니다.', en: 'The newest BPmedia posts across all categories, in chronological order.' },
+    'board.latest.banner': { ko: '30 Days', en: '30 Days' },
+    'board.latest.title': { ko: '최근 1개월 소식', en: 'Last 30 Days' },
+    'board.latest.desc': { ko: '최근 30일 동안 한국을 포함한 세계의 스카우트 소식을 한 번에 모아봅니다.', en: 'Scout news from Korea and around the world from the last 30 days.' },
     'board.korea.banner': { ko: 'Korea / KSA',     en: 'Korea / KSA' },
     'board.korea.title':  { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
     'board.korea.desc':   { ko: '국내 스카우트 운동의 소식과 기록을 전합니다.', en: 'News and records from domestic Scout activities.' },

@@ -23,6 +23,7 @@
   var _siteMeta       = {
     pages: {
       home: { title: '', description: '' },
+      latest: { title: '', description: '' },
       korea: { title: '', description: '' },
       apr: { title: '', description: '' },
       wosm: { title: '', description: '' },
@@ -83,6 +84,9 @@
   var _heroSearchQuery = '';
   var _heroSearchResults = [];
   var _heroSearchBound = false;
+  var _homeLeadPost = null;
+  var _homeLeadSearchTimer = null;
+  var _homeLeadSearchResults = [];
 
   function getAdminRole() {
     return _adminRole === 'limited' ? 'limited' : 'full';
@@ -247,10 +251,19 @@
       b.classList.remove('active');
       b.removeAttribute('aria-current');
     });
+    document.querySelectorAll('.admin-tab-strip-btn').forEach(function (b) {
+      b.classList.remove('active');
+      b.removeAttribute('aria-current');
+    });
     var btn = document.getElementById('tab-btn-' + tab);
     if (btn) {
       btn.classList.add('active');
       btn.setAttribute('aria-current', 'page');
+    }
+    var stripBtn = document.getElementById('tab-strip-' + tab);
+    if (stripBtn) {
+      stripBtn.classList.add('active');
+      stripBtn.setAttribute('aria-current', 'page');
     }
     showAdminGroup(TAB_GROUPS[tab] || 'overview');
     if (tab === 'list') loadAdminList();
@@ -1386,6 +1399,7 @@
     if (container) {
       var defs = [
         ['home', '홈 / index'],
+        ['latest', '최근 1개월 소식'],
         ['korea', 'Korea'],
         ['apr', 'APR'],
         ['wosm', 'WOSM'],
@@ -1676,10 +1690,114 @@
       var intervalEl = document.getElementById('hero-interval-input');
       if (intervalEl) intervalEl.value = String(Math.round(_heroIntervalMs / 1000));
       renderHeroSlots(_heroPosts);
+      loadHomeLeadAdmin();
     }).catch(function(){
       GW.showToast('히어로 설정을 불러오지 못했습니다', 'error');
     });
   }
+
+  function loadHomeLeadAdmin() {
+    fetch('/api/settings/home-lead', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _homeLeadPost = data && data.post ? data.post : null;
+        renderHomeLeadSelection();
+      })
+      .catch(function () {
+        _homeLeadPost = null;
+        renderHomeLeadSelection('메인 스토리 설정을 불러오지 못했습니다');
+      });
+  }
+
+  function renderHomeLeadSelection(errorText) {
+    var el = document.getElementById('home-lead-selected');
+    if (!el) return;
+    if (errorText) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0;">' + GW.escapeHtml(errorText) + '</div>';
+      return;
+    }
+    if (!_homeLeadPost) {
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--muted);">지정된 메인 스토리가 없습니다. 기본 규칙으로 자동 선택됩니다.</span></div>';
+      return;
+    }
+    var cat = GW.CATEGORIES[_homeLeadPost.category] || GW.CATEGORIES.korea;
+    el.innerHTML =
+      '<div class="admin-selected-post-card">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
+          '<span style="display:inline-block;font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';">' + cat.label + '</span>' +
+          '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">현재 선택됨</span>' +
+        '</div>' +
+        '<div style="font-size:14px;line-height:1.5;color:var(--ink);">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+          '<button type="button" class="cancel-btn visible" style="margin:0;" onclick="clearHomeLeadPost()">해제</button>' +
+          '<a href="/post/' + _homeLeadPost.id + '" class="cancel-btn visible" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;">기사 보기</a>' +
+        '</div>' +
+      '</div>';
+  }
+
+  window.searchHomeLeadPost = function () {
+    clearTimeout(_homeLeadSearchTimer);
+    _homeLeadSearchTimer = setTimeout(loadHomeLeadSearchResults, 180);
+  };
+
+  function loadHomeLeadSearchResults() {
+    var input = document.getElementById('home-lead-search-input');
+    var list = document.getElementById('home-lead-search-results');
+    if (!list) return;
+    var query = input ? (input.value || '').trim() : '';
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사 목록을 불러오는 중…</div>';
+    GW.apiFetch('/api/posts?page=1&limit=10' + (query ? '&q=' + encodeURIComponent(query) : ''))
+      .then(function (data) {
+        _homeLeadSearchResults = Array.isArray(data.posts) ? data.posts : [];
+        if (!_homeLeadSearchResults.length) {
+          list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>';
+          return;
+        }
+        list.innerHTML = _homeLeadSearchResults.map(function (p) {
+          var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
+          var selected = _homeLeadPost && _homeLeadPost.id === p.id;
+          return '<div class="hero-result-item" style="' + (selected ? 'opacity:0.55;' : '') + '" onclick="selectHomeLeadPost(' + p.id + ')">' +
+            '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';margin-right:6px;">' + cat.label + '</span>' +
+            GW.escapeHtml(p.title) +
+            (selected ? ' <span style="font-size:10px;color:var(--muted);">(현재 메인 스토리)</span>' : '') +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () {
+        list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사를 불러오지 못했습니다</div>';
+      });
+  }
+
+  window.selectHomeLeadPost = function (postId) {
+    GW.apiFetch('/api/settings/home-lead', {
+      method: 'PUT',
+      body: JSON.stringify({ post_id: postId })
+    })
+      .then(function () {
+        GW.showToast('메인 스토리가 저장됐습니다', 'success');
+        loadHomeLeadAdmin();
+        loadHomeLeadSearchResults();
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '메인 스토리 저장 실패', 'error');
+      });
+  };
+
+  window.clearHomeLeadPost = function () {
+    GW.apiFetch('/api/settings/home-lead', {
+      method: 'PUT',
+      body: JSON.stringify({ post_id: null })
+    })
+      .then(function () {
+        _homeLeadPost = null;
+        renderHomeLeadSelection();
+        GW.showToast('메인 스토리 지정을 해제했습니다', 'success');
+        loadHomeLeadSearchResults();
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '메인 스토리 해제 실패', 'error');
+      });
+  };
 
   function renderHeroSlots(posts) {
     var el = document.getElementById('hero-slots'); if (!el) return;
