@@ -976,11 +976,19 @@
               (hasSortOrder ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 6px;border:1px solid #622599;color:#622599;">순서 ' + (p.sort_order + 1) + '</span>' : '') +
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-            '<div class="item-meta">생성 ' + GW.formatDate(p.created_at) + ' · 게시 ' + GW.formatDate(p.publish_at || p.created_at) + ' · 조회 ' + (p.views || 0) + (p.likes ? ' · 공감 ' + p.likes : '') + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
+            '<div class="item-meta-grid">' +
+              '<span class="item-meta-chip">Created ' + GW.formatDate(p.created_at) + '</span>' +
+              '<span class="item-meta-chip">Published ' + GW.formatDate(p.publish_at || p.created_at) + '</span>' +
+              '<span class="item-meta-chip">Modified ' + GW.formatDate(p.updated_at || p.created_at) + '</span>' +
+              '<span class="item-meta-chip">조회 ' + (p.views || 0) + '</span>' +
+              (p.likes ? '<span class="item-meta-chip">공감 ' + p.likes + '</span>' : '') +
+              (p.author ? '<span class="item-meta-chip">' + GW.escapeHtml(p.author) + '</span>' : '') +
+            '</div>' +
           '</div>' +
           '<div class="item-actions">' +
             '<button class="btn-icon btn-icon-' + (isUnpublished ? 'danger' : 'success') + '" onclick="togglePublished(' + p.id + ',' + (isUnpublished ? 0 : 1) + ')" title="' + (isUnpublished ? '비공개→공개' : '공개→비공개') + '">' + (isUnpublished ? '🔒' : '🌐') + '</button>' +
             '<button class="btn-icon btn-icon-star' + (p.featured ? ' active' : '') + '" onclick="toggleFeatured(' + p.id + ',' + (p.featured ? 1 : 0) + ')" title="에디터 추천 토글">' + (p.featured ? '★' : '☆') + '</button>' +
+            '<button class="btn-edit"   onclick="openPostHistory(' + p.id + ')">기록</button>' +
             '<button class="btn-edit"   onclick="editPost('   + p.id + ')">수정</button>' +
             '<button class="btn-delete" onclick="deletePost(' + p.id + ')">삭제</button>' +
           '</div>' +
@@ -1172,6 +1180,56 @@
     GW.apiFetch('/api/posts/' + id, { method: 'PATCH', body: JSON.stringify({ featured: newVal }) })
       .then(function () { GW.showToast(newVal ? '에디터 추천 추가' : '에디터 추천 제거', 'success'); loadAdminList(); })
       .catch(function (err) { GW.showToast(err.message || '변경 실패', 'error'); });
+  };
+
+  window.openPostHistory = function (id) {
+    var modal = document.getElementById('post-history-modal');
+    var list = document.getElementById('post-history-list');
+    var summary = document.getElementById('post-history-summary');
+    if (!modal || !list || !summary) return;
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    summary.textContent = '기록을 불러오는 중…';
+    list.innerHTML = '<div class="list-empty">로드 중…</div>';
+    GW.apiFetch('/api/posts/' + id + '/history')
+      .then(function (data) {
+        var post = data.post || {};
+        var history = data.history || [];
+        summary.textContent =
+          'Created ' + GW.formatDate(post.created_at) +
+          ' · Published ' + GW.formatDate(post.publish_at || post.created_at) +
+          ' · Modified ' + GW.formatDate(post.updated_at || post.created_at);
+        if (!history.length) {
+          list.innerHTML = '<div class="list-empty">기록이 없습니다</div>';
+          return;
+        }
+        list.innerHTML = history.map(function (item) {
+          var snap = {};
+          try { snap = JSON.parse(item.snapshot || '{}'); } catch (_) {}
+          return '<article class="post-history-entry">' +
+            '<div class="post-history-entry-top">' +
+              '<strong>' + GW.escapeHtml(item.summary || item.action || '변경') + '</strong>' +
+              '<span>' + GW.escapeHtml(String(item.created_at || '').replace('T', ' ')) + '</span>' +
+            '</div>' +
+            '<div class="post-history-entry-meta">' +
+              '<span>제목: ' + GW.escapeHtml(snap.title || post.title || '') + '</span>' +
+              '<span>Published: ' + GW.escapeHtml(GW.formatDate(snap.publish_at || snap.created_at || '')) + '</span>' +
+              '<span>Created: ' + GW.escapeHtml(GW.formatDate(snap.created_at || '')) + '</span>' +
+            '</div>' +
+          '</article>';
+        }).join('');
+      })
+      .catch(function (err) {
+        summary.textContent = '기록을 불러오지 못했습니다';
+        list.innerHTML = '<div class="list-empty">' + GW.escapeHtml(err.message || '오류가 발생했습니다') + '</div>';
+      });
+  };
+
+  window.closePostHistory = function () {
+    var modal = document.getElementById('post-history-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
   };
 
   // ─── Author admin ─────────────────────────────────────────
@@ -1945,7 +2003,13 @@
                 '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:'+cat.color+';">' + cat.label + '</span>' +
               '</div>' +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-              '<div class="item-meta">생성 ' + GW.formatDate(p.created_at) + ' · 게시 ' + GW.formatDate(p.publish_at || p.created_at) + ' · 조회 ' + (p.views||0) + (editable ? ' · 수정 가능' : '') + '</div>' +
+              '<div class="item-meta-grid">' +
+                '<span class="item-meta-chip">Created ' + GW.formatDate(p.created_at) + '</span>' +
+                '<span class="item-meta-chip">Published ' + GW.formatDate(p.publish_at || p.created_at) + '</span>' +
+                '<span class="item-meta-chip">Modified ' + GW.formatDate(p.updated_at || p.created_at) + '</span>' +
+                '<span class="item-meta-chip">조회 ' + (p.views||0) + '</span>' +
+                (editable ? '<span class="item-meta-chip">수정 가능</span>' : '') +
+              '</div>' +
             '</div>' +
           '</div>';
         }).join('');
