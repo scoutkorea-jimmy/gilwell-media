@@ -23,7 +23,7 @@ export async function onRequestGet({ request, env }) {
   const category     = normalizeCategory(url.searchParams.get('category') || null);
   const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const requestedLimit = parseInt(url.searchParams.get('limit') || String(PAGE_SIZE), 10);
-  const pageSize     = Math.min(50, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : PAGE_SIZE));
+  const pageSize     = Math.min(100, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : PAGE_SIZE));
   const offset       = (page - 1) * pageSize;
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;

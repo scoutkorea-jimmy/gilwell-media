@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.057.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.058.00">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -107,6 +107,7 @@
         <div class="home-priority-latest">
           <div class="home-section-title home-section-title-latest">
             <span data-i18n="section.latest">최신 소식</span>
+            <a href="/latest" class="home-section-more" data-i18n="home.more">더보기 →</a>
             <div class="rule"></div>
           </div>
           <div class="home-rail-card">
@@ -237,7 +238,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.057.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.058.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -253,7 +254,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.057.00"></script>
+  <script src="/js/main.js?v=0.058.00"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -261,10 +262,32 @@
       loadTranslations: false
     });
 
-    function buildMiniItem(p) {
+    function getSortedPostTags(post) {
+      return String((post && post.tag) || '')
+        .split(',')
+        .map(function (tag) { return tag.trim(); })
+        .filter(Boolean)
+        .sort(function (a, b) { return a.localeCompare(b, 'ko'); });
+    }
+
+    function buildMiniLabels(p, options) {
+      var opts = options || {};
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-      var isNew = GW.isPostNew(p);
-      var leadTag = (p.tag || '').trim();
+      var labels = [];
+      if (!opts.hideCategoryChip) {
+        labels.push('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
+      }
+      getSortedPostTags(p).forEach(function (tag) {
+        labels.push('<span class="post-kicker tag-' + GW.escapeHtml(p.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>');
+      });
+      if (GW.isPostNew(p)) {
+        labels.push('<span class="post-kicker post-kicker-new">NEW</span>');
+      }
+      labels.push('<button class="post-share-btn mini-share-btn" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>');
+      return labels.join('');
+    }
+
+    function buildMiniItem(p, options) {
       var thumb = p.image_url
         ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
         : '';
@@ -273,10 +296,7 @@
           '<div class="mini-item-row">' +
             '<div class="mini-item-text">' +
               '<div class="mini-item-labels">' +
-                (leadTag ? '<span class="post-kicker tag-' + GW.escapeHtml(p.category) + '-kicker">' + GW.escapeHtml(leadTag) + '</span>' : '') +
-                '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-                (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
-                '<button class="post-share-btn mini-share-btn" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>' +
+                buildMiniLabels(p, options) +
               '</div>' +
               '<h4><a class="mini-item-link" href="/post/' + p.id + '">' + GW.escapeHtml(p.title) + '</a></h4>' +
               '<div class="mini-meta">' + GW.formatPostDate(p) + '</div>' +
@@ -295,6 +315,7 @@
       }
       var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
       var isNew = GW.isPostNew(post);
+      var tags = getSortedPostTags(post);
       var subtitle = (post.subtitle || '').trim();
       var excerpt = GW.truncate(post.content || '', 220);
       if (excerpt === subtitle) excerpt = '';
@@ -306,8 +327,11 @@
           thumb +
           '<div class="home-lead-body">' +
             '<div class="home-lead-labels">' +
-              '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
               '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+              tags.map(function (tag) {
+                return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
+              }).join('') +
+              '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
               (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
             '</div>' +
             '<h3><a class="home-lead-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
@@ -334,13 +358,15 @@
       }
     }
 
-    function renderMiniList(el, posts, emptyMsg) {
+    function renderMiniList(el, posts, emptyMsg, options) {
       if (!el) return;
       if (!posts || posts.length === 0) {
         el.innerHTML = '<div class="mini-empty">' + (emptyMsg || '게시글이 없습니다') + '</div>';
         return;
       }
-      el.innerHTML = posts.map(buildMiniItem).join('');
+      el.innerHTML = posts.map(function (post) {
+        return buildMiniItem(post, options);
+      }).join('');
       el.querySelectorAll('.mini-share-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var path = btn.getAttribute('data-share-url') || '';
@@ -601,7 +627,8 @@
             renderMiniList(
               document.getElementById('col-' + cat),
               columns[cat] && columns[cat].posts ? columns[cat].posts.slice(0, 4) : [],
-              '게시글이 없습니다'
+              '게시글이 없습니다',
+              { hideCategoryChip: true }
             );
           });
         })
