@@ -31,7 +31,6 @@ export async function onRequestGet({ request }) {
     'Disallow: /admin.html',
     'Disallow: /api/admin/',
     '',
-    `Host: ${origin.replace(/^https?:\/\//, '')}`,
     `Sitemap: ${origin}/sitemap.xml`,
   ].join('\n');
 
