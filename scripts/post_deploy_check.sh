@@ -34,7 +34,9 @@ echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${VERSION}'" >/dev/null
 echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A', 'B', 'C']" >/dev/null
 echo "$HOME_PAGE" | grep -F 'google-adsense-account' >/dev/null
 echo "$HOME_PAGE" | grep -F 'application/ld+json' >/dev/null
-echo "$HOME_PAGE" | grep -F 'latest-list-mobile' >/dev/null
+echo "$HOME_PAGE" | grep -F 'home-lead-story' >/dev/null
+echo "$HOME_PAGE" | grep -F 'latest-list' >/dev/null
+echo "$HOME_PAGE" | grep -F '/rss.xml' >/dev/null
 echo "$BOARD_PAGE" | grep -F "WOSM" >/dev/null
 echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
 echo "$ADMIN_PAGE" | grep -F "site-meta-manager" >/dev/null
