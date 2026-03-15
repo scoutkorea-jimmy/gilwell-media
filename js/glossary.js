@@ -80,7 +80,7 @@
             '<span>' + frCell + '</span>' +
             '<span class="glossary-term-actions">' +
               (canEdit ? '<button type="button" class="glossary-inline-edit-link" data-edit-id="' + item.id + '">수정</button>' : '') +
-              (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 보기"><span class="glossary-description-toggle-text">설명 보기</span><span class="glossary-chevron">⌄</span></button>' : '') +
+              (item.description_ko ? '<button type="button" class="glossary-description-toggle" data-desc-id="' + item.id + '" aria-expanded="false" aria-label="설명 보기"><span class="glossary-description-toggle-text">설명 보기</span><span class="glossary-chevron" aria-hidden="true"><svg viewBox="0 0 16 16" focusable="false"><path d="M3.2 5.6 8 10.4l4.8-4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>' : '') +
             '</span>' +
           '</div>';
         }
