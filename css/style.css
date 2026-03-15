@@ -4755,6 +4755,145 @@ footer a:hover { color: #ffffff; }
 .admin-tab-panel { display: none; }
 .admin-tab-panel.active { display: block; }
 
+@media (max-width: 760px) {
+  body.admin-page,
+  body.admin-page .admin-screen,
+  body.admin-page .admin-shell,
+  body.admin-page .admin-tab-content,
+  body.admin-page .panel {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body.admin-page .admin-header-top {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  body.admin-page .admin-brand,
+  body.admin-page .admin-header .header-right,
+  body.admin-page .admin-group-nav-inner,
+  body.admin-page .admin-sidebar-group,
+  body.admin-page .admin-subnav,
+  body.admin-page .panel-header,
+  body.admin-page .article-list-toolbar,
+  body.admin-page .editor-action-row,
+  body.admin-page .item-actions,
+  body.admin-page #admin-pagination,
+  body.admin-page .admin-list-tabs {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    overflow-x: visible;
+    white-space: normal;
+  }
+
+  body.admin-page .admin-group-nav,
+  body.admin-page .admin-sidebar {
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  body.admin-page .admin-group-btn,
+  body.admin-page .admin-sidebar-btn,
+  body.admin-page .admin-subnav-btn,
+  body.admin-page .admin-list-tabs > button,
+  body.admin-page .article-list-toolbar > * ,
+  body.admin-page .editor-action-row > * ,
+  body.admin-page .item-actions > * ,
+  body.admin-page #admin-pagination > * {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  body.admin-page .article-list-toolbar > .count,
+  body.admin-page #admin-page-info,
+  body.admin-page .admin-build-label {
+    width: auto;
+  }
+
+  body.admin-page .admin-header-link,
+  body.admin-page .logout-btn,
+  body.admin-page .admin-group-btn,
+  body.admin-page .admin-sidebar-btn,
+  body.admin-page .admin-subnav-btn,
+  body.admin-page .btn-edit,
+  body.admin-page .btn-delete,
+  body.admin-page .btn-icon,
+  body.admin-page .submit-btn,
+  body.admin-page .cancel-btn,
+  body.admin-page .btn-delete-soft {
+    justify-content: center;
+  }
+
+  body.admin-page .dash-stats-row,
+  body.admin-page .analytics-stats-row,
+  body.admin-page .stats-row,
+  body.admin-page .admin-inline-save,
+  body.admin-page .tag-admin-grid,
+  body.admin-page .tag-admin-toolbar,
+  body.admin-page .glossary-admin-toolbar,
+  body.admin-page .glossary-admin-form-grid,
+  body.admin-page .glossary-admin-row,
+  body.admin-page .contributors-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.admin-page .admin-list-stats {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  body.admin-page .admin-list-tabs > button {
+    flex: 0 0 auto !important;
+    padding: 12px 14px !important;
+    text-align: left;
+  }
+
+  body.admin-page .article-item {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  body.admin-page .article-item h4 {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  body.admin-page .item-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  body.admin-page .item-meta-chip {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  body.admin-page .article-item .item-actions {
+    padding-top: 0;
+  }
+
+  body.admin-page .article-item .item-actions .btn-icon {
+    min-height: 42px;
+  }
+
+  body.admin-page .panel-header h2 {
+    width: 100%;
+  }
+}
+
 /* Author tag on cards */
 .post-author {
   font-family:    'DM Mono', monospace;
