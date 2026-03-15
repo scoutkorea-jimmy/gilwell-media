@@ -13,10 +13,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.052.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.053.00">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+  <div class="pull-refresh-indicator" id="pull-refresh-indicator" aria-hidden="true">
+    <span class="pull-refresh-label">당겨서 새로고침</span>
+  </div>
 
   <!-- ── MASTHEAD ── -->
   <header class="masthead">
@@ -140,12 +143,6 @@
         </div>
       </div>
 
-      <div class="home-mobile-links">
-        <a href="/korea">Korea</a>
-        <a href="/apr">APR</a>
-        <a href="/wosm">WOSM</a>
-        <a href="/people">People</a>
-      </div>
     </div>
 
     <!-- 2-column: popular + editor picks -->
@@ -240,7 +237,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.052.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.053.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -256,7 +253,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.052.00"></script>
+  <script src="/js/main.js?v=0.053.00"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -614,6 +611,62 @@
               if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
             });
         });
+    })();
+
+    (function initHomePullToRefresh() {
+      var indicator = document.getElementById('pull-refresh-indicator');
+      if (!indicator || !window.matchMedia('(pointer: coarse)').matches) return;
+
+      var startY = 0;
+      var pulling = false;
+      var current = 0;
+      var threshold = 86;
+
+      function resetIndicator() {
+        indicator.classList.remove('visible', 'ready');
+        indicator.style.setProperty('--pull-distance', '0px');
+        current = 0;
+      }
+
+      window.addEventListener('touchstart', function (e) {
+        if (window.scrollY > 0 || !e.touches || e.touches.length !== 1) return;
+        startY = e.touches[0].clientY;
+        pulling = true;
+      }, { passive: true });
+
+      window.addEventListener('touchmove', function (e) {
+        if (!pulling || window.scrollY > 0 || !e.touches || e.touches.length !== 1) return;
+        var delta = e.touches[0].clientY - startY;
+        if (delta <= 0) {
+          resetIndicator();
+          return;
+        }
+        current = Math.min(delta * 0.55, 104);
+        indicator.classList.add('visible');
+        indicator.style.setProperty('--pull-distance', current + 'px');
+        if (current >= threshold) indicator.classList.add('ready');
+        else indicator.classList.remove('ready');
+        if (delta > 6) e.preventDefault();
+      }, { passive: false });
+
+      window.addEventListener('touchend', function () {
+        if (!pulling) return;
+        pulling = false;
+        if (current >= threshold) {
+          indicator.classList.add('ready');
+          indicator.querySelector('.pull-refresh-label').textContent = '새로고침 중...';
+          window.location.reload();
+          return;
+        }
+        indicator.querySelector('.pull-refresh-label').textContent = '당겨서 새로고침';
+        resetIndicator();
+      });
+
+      window.addEventListener('touchcancel', function () {
+        pulling = false;
+        indicator.querySelector('.pull-refresh-label').textContent = '당겨서 새로고침';
+        resetIndicator();
+      });
     })();
   </script>
 </body>
