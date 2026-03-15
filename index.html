@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.050.32">
+  <link rel="stylesheet" href="/css/style.css?v=0.051.32">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -100,22 +100,19 @@
         </div>
       </div>
       <aside class="home-priority-side">
-        <div>
+        <div class="home-priority-latest">
           <div class="home-section-title">
             <span data-i18n="section.latest">최신 브리핑</span>
             <div class="rule"></div>
           </div>
-          <div class="mini-list" id="latest-list">
-            <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-          </div>
-        </div>
-        <div class="home-subscribe-card">
-          <p class="home-subscribe-eyebrow">SUBSCRIBE</p>
-          <h3>BP미디어 구독</h3>
-          <p>RSS 피드와 검색 페이지를 통해 최신 스카우트 소식을 더 빠르게 확인할 수 있습니다.</p>
-          <div class="home-subscribe-actions">
-            <a href="/rss.xml" class="home-subscribe-btn">RSS 구독</a>
-            <a href="/search.html" class="home-subscribe-btn secondary">사이트 검색</a>
+          <div class="home-rail-card">
+            <div class="mini-list" id="latest-list">
+              <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+            </div>
+            <div class="home-rail-actions">
+              <a href="/rss.xml" class="home-subscribe-btn">RSS 구독</a>
+              <a href="/search.html" class="home-subscribe-btn secondary">사이트 검색</a>
+            </div>
           </div>
         </div>
       </aside>
@@ -147,7 +144,6 @@
         <a href="/apr">APR</a>
         <a href="/wosm">WOSM</a>
         <a href="/people">People</a>
-        <a href="/glossary">Glossary</a>
       </div>
     </div>
 
@@ -178,7 +174,7 @@
 
     </div>
 
-    <!-- 5-column: Korea / APR / WOSM / Scout People / Glossary latest -->
+    <!-- 4-column: Korea / APR / WOSM / Scout People latest -->
     <div class="home-3col">
 
       <!-- Korea -->
@@ -225,16 +221,6 @@
         </div>
       </div>
 
-      <div>
-        <div class="home-col-header">
-          <h3 data-i18n="nav.glossary">용어집</h3>
-          <a href="/glossary" class="home-section-more" data-i18n="home.more">더보기 →</a>
-        </div>
-        <div class="mini-list" id="col-glossary">
-          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
-        </div>
-      </div>
-
     </div>
 
   </div><!-- /home-wrapper -->
@@ -253,7 +239,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.050.32</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.051.32</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -269,7 +255,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.050.32"></script>
+  <script src="/js/main.js?v=0.051.32"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -596,7 +582,7 @@
           var leadPost = (picksPosts.length ? picksPosts[0] : latestPosts[0]) || null;
           var latestRail = latestPosts.filter(function (post) {
             return !leadPost || post.id !== leadPost.id;
-          }).slice(0, 4);
+          }).slice(0, 5);
           var picksRail = picksPosts.filter(function (post) {
             return !leadPost || post.id !== leadPost.id;
           }).slice(0, 4);
@@ -608,7 +594,7 @@
           renderMiniList(document.getElementById('picks-list'), picksRail, '에디터 추천 게시글이 없습니다');
           renderMiniList(document.getElementById('picks-list-mobile'), picksRail, '에디터 추천 게시글이 없습니다');
 
-          ['korea', 'apr', 'wosm', 'people', 'glossary'].forEach(function (cat) {
+          ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
             renderMiniList(
               document.getElementById('col-' + cat),
               columns[cat] && columns[cat].posts ? columns[cat].posts.slice(0, 4) : [],
@@ -620,7 +606,7 @@
           GW.loadTicker('ticker-inner');
           GW.loadStats();
           GW.loadTranslations();
-          document.querySelectorAll('#home-lead-story, #latest-list, #popular-list, #popular-list-mobile, #picks-list, #picks-list-mobile, #col-korea, #col-apr, #col-wosm, #col-people, #col-glossary')
+          document.querySelectorAll('#home-lead-story, #latest-list, #popular-list, #popular-list-mobile, #picks-list, #picks-list-mobile, #col-korea, #col-apr, #col-wosm, #col-people')
             .forEach(function (el) {
               if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
             });

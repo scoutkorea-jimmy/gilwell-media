@@ -25,7 +25,6 @@ export async function onRequestGet({ env, request }) {
       apr,
       wosm,
       people,
-      glossary,
     ] = await Promise.all([
       loadSiteMeta(env),
       loadTranslations(env),
@@ -40,7 +39,6 @@ export async function onRequestGet({ env, request }) {
       loadPostList(env, origin, { category: 'apr', limit: 4 }),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }),
       loadPostList(env, origin, { category: 'people', limit: 4 }),
-      loadPostList(env, origin, { category: 'glossary', limit: 4 }),
     ]);
 
     return json({
@@ -58,7 +56,6 @@ export async function onRequestGet({ env, request }) {
         apr: { posts: apr },
         wosm: { posts: wosm },
         people: { posts: people },
-        glossary: { posts: glossary },
       },
     }, 200, publicCacheHeaders(120, 600));
   } catch (err) {
