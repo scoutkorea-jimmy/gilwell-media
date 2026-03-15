@@ -123,7 +123,7 @@ export async function onRequestPut({ params, request, env }) {
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
   if (publish_date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
-    fields.push('created_at = ?'); values.push(`${publish_date} 12:00:00`);
+    fields.push('publish_at = ?'); values.push(`${publish_date} 12:00:00`);
   }
 
   if (fields.length === 0) {

@@ -668,9 +668,11 @@
 
         // Load publish date
         var dateEl = document.getElementById('art-date');
-        if (dateEl && p.created_at) {
-          dateEl.value = p.created_at.slice(0, 10);
+        if (dateEl && (p.publish_at || p.created_at)) {
+          dateEl.value = (p.publish_at || p.created_at).slice(0, 10);
         }
+        var createdMetaEl = document.getElementById('art-created-at-meta');
+        if (createdMetaEl) createdMetaEl.textContent = '생성 시각: ' + GW.formatDate(p.created_at) + ' ' + String(p.created_at || '').slice(11, 16);
 
         // Load content into Editor.js
         if (_adminEditor) {
@@ -725,6 +727,8 @@
     document.getElementById('art-image-caption').value = '';
     var dateEl = document.getElementById('art-date');
     if (dateEl) dateEl.value = GW.getKstDateInputValue();
+    var createdMetaEl = document.getElementById('art-created-at-meta');
+    if (createdMetaEl) createdMetaEl.textContent = '생성 시각: 새 글 작성 시 자동 기록';
     var authorEl = document.getElementById('art-author');
     if (authorEl && authorEl.tagName === 'SELECT') authorEl.selectedIndex = 0;
 
@@ -972,7 +976,7 @@
               (hasSortOrder ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 6px;border:1px solid #622599;color:#622599;">순서 ' + (p.sort_order + 1) + '</span>' : '') +
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-            '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views || 0) + (p.likes ? ' · 공감 ' + p.likes : '') + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
+            '<div class="item-meta">생성 ' + GW.formatDate(p.created_at) + ' · 게시 ' + GW.formatDate(p.publish_at || p.created_at) + ' · 조회 ' + (p.views || 0) + (p.likes ? ' · 공감 ' + p.likes : '') + (p.author ? ' · ' + GW.escapeHtml(p.author) : '') + '</div>' +
           '</div>' +
           '<div class="item-actions">' +
             '<button class="btn-icon btn-icon-' + (isUnpublished ? 'danger' : 'success') + '" onclick="togglePublished(' + p.id + ',' + (isUnpublished ? 0 : 1) + ')" title="' + (isUnpublished ? '비공개→공개' : '공개→비공개') + '">' + (isUnpublished ? '🔒' : '🌐') + '</button>' +
@@ -1941,7 +1945,7 @@
                 '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:'+cat.color+';">' + cat.label + '</span>' +
               '</div>' +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
-              '<div class="item-meta">' + GW.formatDate(p.created_at) + ' · 조회 ' + (p.views||0) + (editable ? ' · 수정 가능' : '') + '</div>' +
+              '<div class="item-meta">생성 ' + GW.formatDate(p.created_at) + ' · 게시 ' + GW.formatDate(p.publish_at || p.created_at) + ' · 조회 ' + (p.views||0) + (editable ? ' · 수정 가능' : '') + '</div>' +
             '</div>' +
           '</div>';
         }).join('');

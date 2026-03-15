@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { results } = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, content, created_at, updated_at, author, published
+      `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, author, published
          FROM posts
         WHERE published = 1
         ORDER BY created_at DESC
@@ -16,7 +16,7 @@ export async function onRequestGet({ request, env }) {
       const title = escapeXml(post.title || `post-${post.id}`);
       const link = `${origin}/post/${post.id}`;
       const description = escapeXml(buildDescription(post));
-      const pubDate = toRfc822(post.created_at || post.updated_at);
+      const pubDate = toRfc822(post.publish_at || post.created_at || post.updated_at);
       const category = escapeXml(resolveCategoryLabel(post.category));
       const author = escapeXml(post.author || 'BP미디어');
       const guid = escapeXml(link);

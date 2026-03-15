@@ -250,7 +250,7 @@
             + '" alt="" loading="lazy">';
     }
 
-    var isNew = GW.isTodayKst(post.created_at);
+    var isNew = GW.isPostNew(post);
     var shareHtml = '<button class="post-share-btn post-card-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>';
     var tagHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       shareHtml +
@@ -272,7 +272,7 @@
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
         '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
         '<div class="post-card-meta">' +
-          GW.formatDate(post.created_at) +
+          GW.formatPostDate(post) +
           (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
           ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
         '</div>' +
@@ -348,7 +348,7 @@
     }
     var youtubeHtml = GW.buildYouTubeEmbed(post.youtube_url, post.title);
 
-    var modalTagHtml = (GW.isTodayKst(post.created_at) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+    var modalTagHtml = (GW.isPostNew(post) ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
 
     var subtitleHtml = post.subtitle
@@ -365,7 +365,7 @@
         '</div>' +
         '<h2>' + GW.escapeHtml(post.title) + '</h2>' +
         subtitleHtml +
-        '<div class="modal-date">' + GW.formatDate(post.created_at) + '</div>' +
+        '<div class="modal-date">' + GW.formatPostDate(post) + '</div>' +
       '</div>' +
       imgHtml +
       youtubeHtml +
