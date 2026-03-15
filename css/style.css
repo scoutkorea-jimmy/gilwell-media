@@ -1171,10 +1171,10 @@ p { margin-bottom: 6px; }
 }
 
 .home-section-more {
-  font-family:    'DM Mono', monospace;
-  font-size:      var(--fs-micro);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-size:      13px;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color:          rgba(255,255,255,0.82);
   text-decoration: none;
   transition:     color 0.15s;
@@ -3058,27 +3058,31 @@ footer a:hover { color: #ffffff; }
 }
 
 .item-meta-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .item-meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 30px;
-  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 9px 11px;
   border: 1px solid rgba(31,31,31,0.16);
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(243,239,232,0.96));
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.03em;
+  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
   color: #555;
 }
 
 .item-meta-chip strong {
-  font-weight: 600;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
   color: #1f1f1f;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3086,6 +3090,7 @@ footer a:hover { color: #ffffff; }
 
 .item-meta-chip span {
   color: #6a625b;
+  word-break: keep-all;
 }
 
 .item-meta-chip-date {
@@ -4877,7 +4882,7 @@ footer a:hover { color: #ffffff; }
   }
 
   body.admin-page .item-meta-chip {
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
   }
 

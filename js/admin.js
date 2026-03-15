@@ -673,7 +673,7 @@
           dateEl.value = (p.publish_at || p.created_at).slice(0, 10);
         }
         var createdMetaEl = document.getElementById('art-created-at-meta');
-        if (createdMetaEl) createdMetaEl.textContent = '생성 시각: ' + GW.formatDate(p.created_at) + ' ' + String(p.created_at || '').slice(11, 16);
+        if (createdMetaEl) createdMetaEl.textContent = '생성 시각: ' + GW.formatDateTime(p.created_at);
 
         // Load content into Editor.js
         if (_adminEditor) {
@@ -978,9 +978,9 @@
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
             '<div class="item-meta-grid">' +
-              '<span class="item-meta-chip item-meta-chip-date"><strong>Created</strong><span>' + GW.formatDate(p.created_at) + '</span></span>' +
-              '<span class="item-meta-chip item-meta-chip-date"><strong>Published</strong><span>' + GW.formatDate(p.publish_at || p.created_at) + '</span></span>' +
-              '<span class="item-meta-chip item-meta-chip-date"><strong>Modified</strong><span>' + GW.formatDate(p.updated_at || p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Created</strong><span>' + GW.formatDateTime(p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Published</strong><span>' + GW.formatDateTime(p.publish_at || p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Modified</strong><span>' + GW.formatDateTime(p.updated_at || p.created_at) + '</span></span>' +
               '<span class="item-meta-chip"><strong>조회</strong><span>' + (p.views || 0) + '</span></span>' +
               (p.likes ? '<span class="item-meta-chip"><strong>공감</strong><span>' + p.likes + '</span></span>' : '') +
               (p.author ? '<span class="item-meta-chip"><strong>작성</strong><span>' + GW.escapeHtml(p.author) + '</span></span>' : '') +
@@ -1191,9 +1191,9 @@
         var post = data.post || {};
         var history = data.history || [];
         summary.textContent =
-          'Created ' + GW.formatDate(post.created_at) +
-          ' · Published ' + GW.formatDate(post.publish_at || post.created_at) +
-          ' · Modified ' + GW.formatDate(post.updated_at || post.created_at);
+          'Created ' + GW.formatDateTime(post.created_at) +
+          ' · Published ' + GW.formatDateTime(post.publish_at || post.created_at) +
+          ' · Modified ' + GW.formatDateTime(post.updated_at || post.created_at);
         if (!history.length) {
           list.innerHTML = '<div class="list-empty">기록이 없습니다</div>';
           return;
@@ -1208,8 +1208,8 @@
             '</div>' +
             '<div class="post-history-entry-meta">' +
               '<span>제목: ' + GW.escapeHtml(snap.title || post.title || '') + '</span>' +
-              '<span>Published: ' + GW.escapeHtml(GW.formatDate(snap.publish_at || snap.created_at || '')) + '</span>' +
-              '<span>Created: ' + GW.escapeHtml(GW.formatDate(snap.created_at || '')) + '</span>' +
+              '<span>Published: ' + GW.escapeHtml(GW.formatDateTime(snap.publish_at || snap.created_at || '')) + '</span>' +
+              '<span>Created: ' + GW.escapeHtml(GW.formatDateTime(snap.created_at || '')) + '</span>' +
             '</div>' +
           '</article>';
         }).join('');
@@ -1999,9 +1999,9 @@
               '</div>' +
               '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
               '<div class="item-meta-grid">' +
-                '<span class="item-meta-chip">Created ' + GW.formatDate(p.created_at) + '</span>' +
-                '<span class="item-meta-chip">Published ' + GW.formatDate(p.publish_at || p.created_at) + '</span>' +
-                '<span class="item-meta-chip">Modified ' + GW.formatDate(p.updated_at || p.created_at) + '</span>' +
+                '<span class="item-meta-chip">Created ' + GW.formatDateTime(p.created_at) + '</span>' +
+                '<span class="item-meta-chip">Published ' + GW.formatDateTime(p.publish_at || p.created_at) + '</span>' +
+                '<span class="item-meta-chip">Modified ' + GW.formatDateTime(p.updated_at || p.created_at) + '</span>' +
                 '<span class="item-meta-chip">조회 ' + (p.views||0) + '</span>' +
                 (editable ? '<span class="item-meta-chip">수정 가능</span>' : '') +
               '</div>' +
