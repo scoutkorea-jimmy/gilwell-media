@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BP미디어 · bpmedia.net</title>
+  <title>BP미디어 | 스카우트 뉴스 아카이브 · bpmedia.net</title>
   <!-- SHARE_META -->
   <link rel="alternate" type="application/rss+xml" title="BP미디어 RSS" href="/rss.xml">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.049.32">
+  <link rel="stylesheet" href="/css/style.css?v=0.050.32">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -89,18 +89,39 @@
 
   <!-- ── HOME CONTENT ── -->
   <div class="home-wrapper">
-
-    <div class="home-mobile-stack">
-      <div>
+    <section class="home-priority">
+      <div class="home-priority-main">
         <div class="home-section-title">
-          <span data-i18n="section.latest">최신 소식</span>
+          <span>메인 스토리</span>
           <div class="rule"></div>
         </div>
-        <div class="mini-list" id="latest-list-mobile">
+        <div id="home-lead-story" class="home-lead-story">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
+      <aside class="home-priority-side">
+        <div>
+          <div class="home-section-title">
+            <span data-i18n="section.latest">최신 브리핑</span>
+            <div class="rule"></div>
+          </div>
+          <div class="mini-list" id="latest-list">
+            <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+          </div>
+        </div>
+        <div class="home-subscribe-card">
+          <p class="home-subscribe-eyebrow">SUBSCRIBE</p>
+          <h3>BP미디어 구독</h3>
+          <p>RSS 피드와 검색 페이지를 통해 최신 스카우트 소식을 더 빠르게 확인할 수 있습니다.</p>
+          <div class="home-subscribe-actions">
+            <a href="/rss.xml" class="home-subscribe-btn">RSS 구독</a>
+            <a href="/search.html" class="home-subscribe-btn secondary">사이트 검색</a>
+          </div>
+        </div>
+      </aside>
+    </section>
 
+    <div class="home-mobile-stack">
       <div>
         <div class="home-section-title">
           <span data-i18n="section.picks">에디터 추천</span>
@@ -119,6 +140,14 @@
         <div class="mini-list" id="popular-list-mobile">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
+      </div>
+
+      <div class="home-mobile-links">
+        <a href="/korea">Korea</a>
+        <a href="/apr">APR</a>
+        <a href="/wosm">WOSM</a>
+        <a href="/people">People</a>
+        <a href="/glossary">Glossary</a>
       </div>
     </div>
 
@@ -196,6 +225,16 @@
         </div>
       </div>
 
+      <div>
+        <div class="home-col-header">
+          <h3 data-i18n="nav.glossary">용어집</h3>
+          <a href="/glossary" class="home-section-more" data-i18n="home.more">더보기 →</a>
+        </div>
+        <div class="mini-list" id="col-glossary">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+
     </div>
 
   </div><!-- /home-wrapper -->
@@ -214,7 +253,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.049.32</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.050.32</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -230,7 +269,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.049.32"></script>
+  <script src="/js/main.js?v=0.050.32"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -260,6 +299,48 @@
           '</div>' +
         '</article>'
       );
+    }
+
+    function renderLeadStory(el, post, label) {
+      if (!el) return;
+      if (!post) {
+        el.innerHTML = '<div class="mini-empty">대표 기사를 준비 중입니다</div>';
+        return;
+      }
+      var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+      var isNew = GW.isTodayKst(post.created_at);
+      var summary = post.subtitle || GW.truncate(post.content || '', 180);
+      var thumb = post.image_url
+        ? '<a class="home-lead-thumb-link" href="/post/' + post.id + '"><img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
+        : '';
+      el.innerHTML =
+        '<article class="home-lead-card">' +
+          thumb +
+          '<div class="home-lead-body">' +
+            '<div class="home-lead-labels">' +
+              '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
+              '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+              (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+            '</div>' +
+            '<h3><a class="home-lead-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
+            (summary ? '<p class="home-lead-summary">' + GW.escapeHtml(summary) + '</p>' : '') +
+            '<div class="home-lead-meta">' + GW.formatDate(post.created_at) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
+            '<div class="home-lead-actions">' +
+              '<a class="home-subscribe-btn" href="/post/' + post.id + '">기사 읽기</a>' +
+              '<button class="home-subscribe-btn secondary" type="button" id="home-lead-share-btn">공유하기</button>' +
+            '</div>' +
+          '</div>' +
+        '</article>';
+      var shareBtn = document.getElementById('home-lead-share-btn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', function () {
+          var url = new URL('/post/' + post.id, window.location.origin).toString();
+          GW.sharePostLink({ url: url, title: post.title, text: post.title })
+            .catch(function (err) {
+              GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+            });
+        });
+      }
     }
 
     function renderMiniList(el, posts, emptyMsg) {
@@ -321,15 +402,30 @@
             '</div>' +
             '<h2 class="site-hero-title">' + GW.escapeHtml(post.title) + '</h2>' +
             (post.subtitle ? '<p class="site-hero-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
-            '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>' +
+            '<div class="site-hero-actions">' +
+              '<a class="site-hero-cta" href="/post/' + post.id + '">소식 읽기 →</a>' +
+              '<button class="site-hero-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +
+            '</div>' +
           '</div>';
         div.style.cursor = 'pointer';
+        var shareBtn = div.querySelector('.site-hero-share-btn');
+        if (shareBtn) {
+          shareBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var url = new URL(shareBtn.getAttribute('data-share-url') || '', window.location.origin).toString();
+            var title = shareBtn.getAttribute('data-share-title') || post.title || '';
+            GW.sharePostLink({ url: url, title: title, text: title })
+              .catch(function (err) {
+                GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+              });
+          });
+        }
         div.addEventListener('click', function (e) {
           if (Date.now() < _suppressClickUntil) {
             e.preventDefault();
             return;
           }
-          if (!e.target.classList.contains('site-hero-cta')) {
+          if (!e.target.classList.contains('site-hero-cta') && !e.target.classList.contains('site-hero-share-btn')) {
             window.location.href = '/post/' + post.id;
           }
         });
@@ -497,14 +593,22 @@
           var popularPosts = data.popular && data.popular.posts ? data.popular.posts : [];
           var picksPosts = data.picks && data.picks.posts ? data.picks.posts : [];
           var columns = data.columns || {};
+          var leadPost = (picksPosts.length ? picksPosts[0] : latestPosts[0]) || null;
+          var latestRail = latestPosts.filter(function (post) {
+            return !leadPost || post.id !== leadPost.id;
+          }).slice(0, 4);
+          var picksRail = picksPosts.filter(function (post) {
+            return !leadPost || post.id !== leadPost.id;
+          }).slice(0, 4);
 
-          renderMiniList(document.getElementById('latest-list-mobile'), latestPosts.slice(0, 4), '아직 게시글이 없습니다');
+          renderLeadStory(document.getElementById('home-lead-story'), leadPost, picksPosts.length ? '추천 기사' : '대표 기사');
+          renderMiniList(document.getElementById('latest-list'), latestRail, '아직 게시글이 없습니다');
           renderMiniList(document.getElementById('popular-list'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');
           renderMiniList(document.getElementById('popular-list-mobile'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');
-          renderMiniList(document.getElementById('picks-list'), picksPosts.slice(0, 4), '에디터 추천 게시글이 없습니다');
-          renderMiniList(document.getElementById('picks-list-mobile'), picksPosts.slice(0, 4), '에디터 추천 게시글이 없습니다');
+          renderMiniList(document.getElementById('picks-list'), picksRail, '에디터 추천 게시글이 없습니다');
+          renderMiniList(document.getElementById('picks-list-mobile'), picksRail, '에디터 추천 게시글이 없습니다');
 
-          ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
+          ['korea', 'apr', 'wosm', 'people', 'glossary'].forEach(function (cat) {
             renderMiniList(
               document.getElementById('col-' + cat),
               columns[cat] && columns[cat].posts ? columns[cat].posts.slice(0, 4) : [],
@@ -516,7 +620,7 @@
           GW.loadTicker('ticker-inner');
           GW.loadStats();
           GW.loadTranslations();
-          document.querySelectorAll('#latest-list-mobile, #popular-list, #popular-list-mobile, #picks-list, #picks-list-mobile, #col-korea, #col-apr, #col-wosm, #col-people')
+          document.querySelectorAll('#home-lead-story, #latest-list, #popular-list, #popular-list-mobile, #picks-list, #picks-list-mobile, #col-korea, #col-apr, #col-wosm, #col-people, #col-glossary')
             .forEach(function (el) {
               if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
             });
