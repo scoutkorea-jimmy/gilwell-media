@@ -11,7 +11,7 @@
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/css/style.css?v=0.059.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.059.01">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -88,6 +88,10 @@
           <p>이 사이트의 기본 서체는 전역적으로 `AliceDigitalLearning` 하나만 씁니다. 공개 페이지, 관리자 페이지, 버튼, 메타, 검색, 시스템 안내까지 모두 같은 서체 규칙을 유지하고, 예전 DM Mono/Noto/Playfair 흔적이 남아 있으면 정리합니다.</p>
         </div>
         <div class="contributor-card">
+          <h3>타이포 스케일 규칙</h3>
+          <p>일반 홈페이지의 상단 메뉴 크기와 카드 제목 크기를 공통 기준으로 삼고, 관리자 페이지도 그 스케일을 따라갑니다. 관리자라고 별도 서체나 과한 크기를 쓰지 않고, 공통 토큰으로 같은 리듬을 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
           <h3>버튼 규칙</h3>
           <p>`소식 읽기`, `공유하기`, `RSS 구독`, `사이트 검색`처럼 같은 레벨의 행동 버튼은 높이, 패딩, 폰트, 자간, 테두리 굵기를 통일합니다. primary / secondary 차이는 색과 채움 정도로만 구분하고, 버튼 모양과 크기는 유지합니다.</p>
         </div>
@@ -100,12 +104,16 @@
           <p>관리자 화면을 포함해 모바일에서는 가로 스크롤을 허용하지 않습니다. 탭, 버튼, 툴바, 통계, 액션은 필요 시 모두 1단으로 떨어뜨리고, `overflow-x`로 임시 봉합하지 않습니다.</p>
         </div>
         <div class="contributor-card">
+          <h3>한글 줄바꿈 규칙</h3>
+          <p>한글 본문과 제목은 가능하면 단어 단위로 줄바꿈되게 유지합니다. 기본 규칙은 `word-break: keep-all`이며, 필요한 경우에만 `overflow-wrap`으로 긴 텍스트를 보조합니다.</p>
+        </div>
+        <div class="contributor-card">
           <h3>관리자 정보 표시 규칙</h3>
           <p>관리자에서 Created / Published / Modified처럼 운영 판단에 중요한 메타는 숨기지 말고 `YYYY년 MM월 DD일 HH시 MM분 SS초` 형식으로 모두 노출합니다. 다만 메타는 제목보다 작고 얕게 보여야 하며, 제목이 첫 시선의 중심이 되도록 위계를 유지합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>관리자 헤더 규칙</h3>
-          <p>관리자 상단 액션은 흩어놓지 않고 하나의 박스 안에서 두 줄로 정리합니다. 첫 줄은 `홈페이지 보기 / 로그아웃`, 두 번째 줄은 `운영 개요 / 콘텐츠 / 사이트 설정`으로 고정하고, 로그아웃은 배경 대비를 높여 즉시 식별 가능해야 합니다.</p>
+          <p>관리자 상단 액션은 흩어놓지 않고 하나의 박스 안에서 두 줄로 정리합니다. 첫 줄은 `홈페이지 보기 / 로그아웃`, 두 번째 줄은 `운영 개요 / 콘텐츠 / 사이트 설정`으로 고정하고, 글자 크기와 색상 리듬은 일반 홈페이지 상단 메뉴 가이드를 준용합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>관리자 개요 규칙</h3>
@@ -131,7 +139,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.059.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.059.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -140,7 +148,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.059.00"></script>
+  <script src="/js/main.js?v=0.059.01"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
