@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.054.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.054.03">
   <style>
     body { background: #eceae4; }
   </style>
@@ -30,7 +30,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.054.02</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.054.03</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -46,7 +46,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.054.02</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.054.03</span></span>
           <a href="index.html">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
@@ -55,17 +55,6 @@
         <button class="admin-group-btn active" id="group-btn-overview" onclick="showAdminGroup('overview')">운영 개요</button>
         <button class="admin-group-btn" id="group-btn-content" data-role-min="full" onclick="showAdminGroup('content')">콘텐츠</button>
         <button class="admin-group-btn" id="group-btn-site" onclick="showAdminGroup('site')">사이트 설정</button>
-      </nav>
-      <nav class="admin-tab-strip" aria-label="관리자 세부 메뉴">
-        <button class="admin-tab-strip-btn active" id="tab-strip-dashboard" onclick="showAdminTab('dashboard')">대시보드</button>
-        <button class="admin-tab-strip-btn" id="tab-strip-analytics" onclick="showAdminTab('analytics')">분석</button>
-        <button class="admin-tab-strip-btn" data-role-min="full" id="tab-strip-write" onclick="showAdminTab('write')">글 작성</button>
-        <button class="admin-tab-strip-btn" data-role-min="full" id="tab-strip-list" onclick="showAdminTab('list')">게시글 목록</button>
-        <button class="admin-tab-strip-btn" data-role-min="full" id="tab-strip-glossary" onclick="showAdminTab('glossary')">용어집</button>
-        <button class="admin-tab-strip-btn" id="tab-strip-settings" onclick="showAdminTab('settings')">설정</button>
-        <button class="admin-tab-strip-btn" data-role-min="full" id="tab-strip-contributors" onclick="showAdminTab('contributors')">도움을 주신 분들</button>
-        <button class="admin-tab-strip-btn" data-role-min="full" id="tab-strip-translations" onclick="showAdminTab('translations')">UI 번역</button>
-        <button class="admin-tab-strip-btn" id="tab-strip-history" onclick="showAdminTab('history')">버전 기록</button>
       </nav>
     </header>
 
@@ -756,8 +745,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.054.02"></script>
-  <script src="/js/admin.js?v=0.054.02"></script>
+  <script src="/js/main.js?v=0.054.03"></script>
+  <script src="/js/admin.js?v=0.054.03"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
