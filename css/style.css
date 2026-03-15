@@ -788,25 +788,28 @@ p { margin-bottom: 6px; }
 }
 
 /* CTA button on dynamic hero */
-.site-hero-cta {
+.site-hero-cta,
+.site-hero-share-btn {
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
   min-width:      168px;
-  margin-top:     8px;
+  min-height:     44px;
+  margin-top:     0;
   padding:        10px 22px;
   border:         1px solid rgba(255,255,255,0.46);
   background:     rgba(255,255,255,0.10);
   color:          #ffffff;
-  font-family:    'DM Mono', monospace;
-  font-size:      11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-size:      13px;
+  letter-spacing: .03em;
+  text-transform: none;
   cursor:         pointer;
   text-decoration: none;
   transition:     background .2s, border-color .2s, transform .2s;
 }
-.site-hero-cta:hover {
+.site-hero-cta:hover,
+.site-hero-share-btn:hover {
   background:   rgba(255,255,255,0.18);
   border-color: #fff;
   transform: translateY(-1px);
@@ -817,29 +820,6 @@ p { margin-bottom: 6px; }
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-.site-hero-share-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 168px;
-  padding: 10px 22px;
-  border: 1px solid rgba(255,255,255,0.46);
-  background: rgba(255,255,255,0.10);
-  color: #fff;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background .2s, border-color .2s, transform .2s;
-}
-
-.site-hero-share-btn:hover {
-  background: rgba(255,255,255,0.18);
-  border-color: #fff;
-  transform: translateY(-1px);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1077,11 +1057,11 @@ p { margin-bottom: 6px; }
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--white);
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-size: 13px;
+  letter-spacing: 0.03em;
   text-decoration: none;
-  text-transform: uppercase;
+  text-transform: none;
   cursor: pointer;
   transition: opacity 0.15s, border-color 0.15s, color 0.15s, background 0.15s;
 }
