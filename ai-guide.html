@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.058.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.058.03">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -84,6 +84,26 @@
           <h3>데이터 변경</h3>
           <p>설정 값 수정 시 `settings_history`에 스냅샷을 남기며, 충돌 가능성이 있으면 최신 데이터를 재로드하도록 처리합니다.</p>
         </div>
+        <div class="contributor-card">
+          <h3>디자인 서체 규칙</h3>
+          <p>대제목, 섹션 타이틀, CTA, 더보기 링크처럼 사용자가 바로 인지하는 핵심 UI 텍스트는 기본적으로 Alice 계열(`AliceDigitalLearning`)을 우선 사용합니다. DM Mono는 빌드 버전, 시스템 메타, 기술적 보조 정보처럼 기계적인 정보에만 제한적으로 사용합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>버튼 규칙</h3>
+          <p>`소식 읽기`, `공유하기`, `RSS 구독`, `사이트 검색`처럼 같은 레벨의 행동 버튼은 높이, 패딩, 폰트, 자간, 테두리 굵기를 통일합니다. primary / secondary 차이는 색과 채움 정도로만 구분하고, 버튼 모양과 크기는 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>더보기 규칙</h3>
+          <p>홈 메인 내 `더보기` 링크는 모든 섹션에서 같은 서체, 같은 크기, 같은 정렬 규칙을 써야 합니다. `최신 소식`에 맞춘 스타일이 기준이며, 다른 섹션이 별도 폰트나 별도 분위기로 보이면 안 됩니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>모바일 레이아웃 규칙</h3>
+          <p>관리자 화면을 포함해 모바일에서는 가로 스크롤을 허용하지 않습니다. 탭, 버튼, 툴바, 통계, 액션은 필요 시 모두 1단으로 떨어뜨리고, `overflow-x`로 임시 봉합하지 않습니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>관리자 정보 표시 규칙</h3>
+          <p>관리자에서 Created / Published / Modified처럼 운영 판단에 중요한 메타는 숨기지 말고 충분히 명확하게 보여줍니다. 다만 정보량이 많아질수록 칩이나 카드 구조로 묶어 한눈에 스캔 가능하게 정리합니다.</p>
+        </div>
       </div>
     </div>
   </main>
@@ -100,7 +120,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.058.02</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.058.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -109,7 +129,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.058.02"></script>
+  <script src="/js/main.js?v=0.058.03"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
