@@ -6702,7 +6702,7 @@ footer a:hover { color: #ffffff; }
   }
 }
 
-/* ── Admin Redesign System (V0.060.02) ───────────────────── */
+/* ── Admin Redesign System (V0.060.03) ───────────────────── */
 body.admin-page {
   --admin-bg: #f2efe8;
   --admin-surface: rgba(255,255,255,0.96);
@@ -7792,7 +7792,7 @@ body.admin-page .drag-handle {
   }
 }
 
-/* ── Admin Mobile-Only Layout (V0.060.02) ────────────────── */
+/* ── Admin Mobile-Only Layout (V0.060.03) ────────────────── */
 body.admin-page {
   background:
     radial-gradient(circle at top, rgba(98, 37, 153, 0.10), transparent 32%),
@@ -7815,6 +7815,9 @@ body.admin-page {
 }
 
 body.admin-page main#main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
@@ -7842,6 +7845,8 @@ body.admin-page .admin-shell {
   display: grid !important;
   grid-template-columns: 1fr !important;
   gap: 10px !important;
+  width: 100% !important;
+  justify-items: stretch !important;
 }
 
 body.admin-page .admin-brand-card,
@@ -7867,6 +7872,7 @@ body.admin-page .admin-settings-block {
 body.admin-page .admin-brand-card,
 body.admin-page .admin-header-controls {
   padding: 14px !important;
+  width: 100% !important;
 }
 
 body.admin-page .admin-brand-card {
@@ -7897,7 +7903,7 @@ body.admin-page .admin-header-copy {
 
 body.admin-page .admin-header-controls {
   gap: 9px !important;
-  background: rgba(255, 255, 255, 0.84) !important;
+  background: linear-gradient(180deg, rgba(255, 250, 247, 0.95), rgba(244, 236, 248, 0.94)) !important;
 }
 
 body.admin-page .admin-build-label,
@@ -7913,7 +7919,8 @@ body.admin-page .admin-header-box,
 body.admin-page .admin-control-card {
   padding: 8px !important;
   border-radius: 16px !important;
-  background: rgba(248, 244, 240, 0.92) !important;
+  background: linear-gradient(180deg, rgba(247, 239, 251, 0.92), rgba(252, 248, 244, 0.96)) !important;
+  border: 1px solid rgba(98, 37, 153, 0.10) !important;
 }
 
 body.admin-page .admin-header-box-row-actions {
@@ -7975,6 +7982,7 @@ body.admin-page .cancel-btn,
 body.admin-page .analytics-view-toggle button,
 body.admin-page .admin-list-tabs button {
   background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(98, 37, 153, 0.10) !important;
 }
 
 body.admin-page .admin-group-btn.active,
@@ -7992,6 +8000,7 @@ body.admin-page .admin-sidebar {
   display: flex !important;
   flex-direction: column !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
 body.admin-page .admin-sidebar-group {
@@ -7999,7 +8008,9 @@ body.admin-page .admin-sidebar-group {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 8px !important;
   padding: 10px !important;
-  background: rgba(255, 255, 255, 0.92) !important;
+  width: 100% !important;
+  background: linear-gradient(180deg, rgba(100, 52, 154, 0.12), rgba(255, 255, 255, 0.96)) !important;
+  border-color: rgba(98, 37, 153, 0.12) !important;
 }
 
 body.admin-page .admin-sidebar-btn {
@@ -8008,6 +8019,19 @@ body.admin-page .admin-sidebar-btn {
   padding: 11px !important;
   border-radius: 15px !important;
   text-align: left !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(98, 37, 153, 0.10) !important;
+}
+
+body.admin-page .admin-sidebar-btn:hover,
+body.admin-page .admin-header-link:hover,
+body.admin-page .admin-group-btn:hover {
+  border-color: rgba(98, 37, 153, 0.22) !important;
+}
+
+body.admin-page .admin-sidebar-btn.active {
+  background: linear-gradient(135deg, #1f1b17, #37302b) !important;
+  border-color: #1f1b17 !important;
 }
 
 body.admin-page .admin-sidebar-btn-label {
@@ -8021,6 +8045,10 @@ body.admin-page .admin-sidebar-btn-desc {
   display: block !important;
   font-size: 10px !important;
   line-height: 1.42 !important;
+}
+
+body.admin-page .admin-tab-content {
+  width: 100% !important;
 }
 
 body.admin-page .panel {

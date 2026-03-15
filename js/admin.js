@@ -66,6 +66,7 @@
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
   var _adminGroup = 'overview';
+  var _adminActiveTab = 'dashboard';
   var _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
   var _boardLayout = { gap_px: 6 };
   var _boardBannerInfo = {
@@ -227,7 +228,18 @@
     history: 'site',
   };
 
-  window.showAdminGroup = function (group) {
+  function getAdminTabsForGroup(group) {
+    return Object.keys(TAB_GROUPS).filter(function (tab) {
+      return TAB_GROUPS[tab] === group && canAccessAdminTab(tab);
+    });
+  }
+
+  function getDefaultAdminTabForGroup(group) {
+    var groupTabs = getAdminTabsForGroup(group);
+    return groupTabs.length ? groupTabs[0] : 'dashboard';
+  }
+
+  window.showAdminGroup = function (group, activateDefaultTab) {
     var nextGroup = TAB_GROUPS[group] ? TAB_GROUPS[group] : group;
     _adminGroup = canAccessAdminGroup(nextGroup) ? nextGroup : 'overview';
     document.querySelectorAll('.admin-group-btn').forEach(function (btn) {
@@ -239,12 +251,22 @@
     document.querySelectorAll('.admin-sidebar-group[data-admin-group]').forEach(function (section) {
       section.style.display = section.getAttribute('data-admin-group') === _adminGroup ? '' : 'none';
     });
+
+    if (activateDefaultTab) {
+      var nextTab = TAB_GROUPS[_adminActiveTab] === _adminGroup ? _adminActiveTab : getDefaultAdminTabForGroup(_adminGroup);
+      if (nextTab && nextTab !== _adminActiveTab) {
+        showAdminTab(nextTab, true);
+        return;
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
   };
 
-  window.showAdminTab = function (tab) {
+  window.showAdminTab = function (tab, skipGroupSync) {
     if (!canAccessAdminTab(tab)) {
       tab = isLimitedAdmin() ? 'dashboard' : 'dashboard';
     }
+    _adminActiveTab = tab;
     document.querySelectorAll('.admin-tab-panel').forEach(function (p) { p.classList.remove('active'); });
     var panel = document.getElementById('admin-tab-' + tab);
     if (panel) panel.classList.add('active');
@@ -266,7 +288,7 @@
       stripBtn.classList.add('active');
       stripBtn.setAttribute('aria-current', 'page');
     }
-    showAdminGroup(TAB_GROUPS[tab] || 'overview');
+    if (!skipGroupSync) showAdminGroup(TAB_GROUPS[tab] || 'overview');
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'analytics') loadAnalyticsPage();
