@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.059.04`
+- Current version: `V0.059.05`
 - Format: `Va.bbb.cc`
 - `a`: increases only when the owner explicitly requests a major version change
 - `bbb`: increases only when a new feature is added
@@ -17,6 +17,7 @@ All static asset cache-busting query strings should follow this same version.
 
 Operational references:
 - `docs/release-playbook.md`
+- `docs/preview-release-checklist.md`
 - `docs/writing-regression-checklist.md`
 
 Optional production secrets:
@@ -193,7 +194,9 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 
 - `./scripts/bootstrap_local_db.sh gilwell-posts`
 - `./scripts/smoke_check.sh gilwell-posts`
-- `./scripts/deploy_pages.sh`
+- `./scripts/deploy_pages.sh`  # preview deploy wrapper
+- `./scripts/deploy_preview.sh`
+- `./scripts/deploy_production.sh`
 - `./scripts/post_deploy_check.sh`
 - `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`
 
@@ -291,8 +294,12 @@ post_views / post_likes / site_visits
 ## 9. Redeploy After Changes
 
 Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는 자동 배포 지연이나 누락이 발생할 수 있습니다.
-배포 후에는 반드시 아래를 같이 확인합니다.
+이 저장소는 이제 `preview -> approval -> production` 순서로만 반영합니다.
 
-1. Cloudflare Pages `Deployments`의 최신 커밋 SHA
-2. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION`
-3. `./scripts/post_deploy_check.sh`
+1. `./scripts/deploy_preview.sh` 또는 `./scripts/deploy_pages.sh`
+2. 배포 출력에서 preview URL 확보
+3. `./scripts/post_deploy_check.sh <preview-url>`
+4. `docs/preview-release-checklist.md` 기준 수동 검수
+5. 승인 후 `main`에서 `./scripts/deploy_production.sh`
+6. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION`
+7. `./scripts/post_deploy_check.sh https://bpmedia.net`
