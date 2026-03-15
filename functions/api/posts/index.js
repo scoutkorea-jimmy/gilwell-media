@@ -38,10 +38,10 @@ export async function onRequestGet({ request, env }) {
   const token   = extractToken(request);
   const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
-  const ORDER_LATEST = 'ORDER BY created_at DESC';
-  const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC';
+  const ORDER_LATEST = 'ORDER BY created_at DESC, id DESC';
+  const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC, id DESC';
   const ORDER = allRequested && isAdmin ? ORDER_MANUAL : ORDER_LATEST;
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order,
+  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order,
     youtube_url,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
@@ -56,7 +56,7 @@ export async function onRequestGet({ request, env }) {
       if (category)  { conditions.push('category = ?'); baseArgs.push(category); }
       if (!isAdmin)  { conditions.push('published = 1'); }
       if (daysFilter > 0) {
-        conditions.push('datetime(created_at) >= datetime(?, ?)');
+        conditions.push("datetime(COALESCE(publish_at, created_at)) >= datetime(?, ?)");
         baseArgs.push('now', '-' + daysFilter + ' days');
       }
       if (q) {
@@ -144,12 +144,9 @@ export async function onRequestPost({ request, env }) {
   const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
 
-  // publish_date: YYYY-MM-DD — sets created_at to that date at noon
-  let createdAt = "datetime('now')";
-  let useRawDate = false;
+  let publishAtValue = null;
   if (publish_date && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
-    createdAt = `${publish_date} 12:00:00`;
-    useRawDate = true;
+    publishAtValue = `${publish_date} 12:00:00`;
   }
 
   // Get default author from settings if not provided in body
@@ -165,16 +162,10 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    const sql = useRawDate
-      ? `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-         RETURNING *`
-      : `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, author, ai_assisted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
          RETURNING *`;
-    const bindings = useRawDate
-      ? [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, createdAt]
-      : [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted];
+    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     return json({ post: results[0] }, 201);

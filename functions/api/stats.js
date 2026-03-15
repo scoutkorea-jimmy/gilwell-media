@@ -14,7 +14,7 @@ export async function onRequestGet({ env }) {
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr'   AND published = 1`).first(),
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm'  AND published = 1`).first(),
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(created_at) = ? AND published = 1`).bind(today).first(),
+      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(COALESCE(publish_at, created_at)) = ? AND published = 1`).bind(today).first(),
     ]);
 
     return json({

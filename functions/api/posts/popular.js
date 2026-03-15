@@ -15,7 +15,7 @@ export async function onRequestGet({ env, request }) {
         GROUP BY post_id
       ),
       base AS (
-        SELECT p.id, p.category, p.title, p.subtitle, p.image_url, p.created_at, p.tag, p.views,
+        SELECT p.id, p.category, p.title, p.subtitle, p.image_url, p.created_at, p.publish_at, p.tag, p.views,
                COALESCE(l.likes, 0) AS likes
         FROM posts p
         LEFT JOIN likes_by_post l ON l.post_id = p.id

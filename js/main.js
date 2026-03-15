@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.055.04';
+  GW.APP_VERSION = '0.056.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -48,6 +48,19 @@
     var current = GW.getKstDateInputValue();
     var source = String(dateStr).slice(0, 10);
     return source === current;
+  };
+
+  GW.getPostPublicDate = function (post) {
+    if (!post || typeof post !== 'object') return '';
+    return post.publish_at || post.created_at || '';
+  };
+
+  GW.formatPostDate = function (post) {
+    return GW.formatDate(GW.getPostPublicDate(post));
+  };
+
+  GW.isPostNew = function (post) {
+    return GW.isTodayKst(GW.getPostPublicDate(post));
   };
 
   GW.buildEditorOptions = function (editors) {

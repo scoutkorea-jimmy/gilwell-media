@@ -69,19 +69,20 @@ export async function onRequestGet({ params, env, request }) {
   const descText = subtitleText || truncatePlain(post.content || '', 160);
   const desc     = escapeHtml(descText);
   const keywords = post.meta_tags ? escapeHtml(post.meta_tags) : '';
-  const publishedIso = toIsoString(post.created_at);
+  const publicDateValue = post.publish_at || post.created_at;
+  const publishedIso = toIsoString(publicDateValue);
   const modifiedIso = toIsoString(post.updated_at || post.created_at);
   const ogImage  = post.image_url
     ? (post.image_url.startsWith('http')
         ? escapeHtml(post.image_url)
         : `${siteUrl}/api/posts/${id}/image`)
     : '';
-  const dateStr  = formatDate(post.created_at);
+  const dateStr  = formatDate(publicDateValue);
   const bodyHtml = renderContent(post.content || '');
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const categoryUrl = `${siteUrl}/${post.category}.html`;
-  const isNew    = isTodayKst(post.created_at);
+  const isNew    = isTodayKst(publicDateValue);
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
     description: descText,
@@ -129,7 +130,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.055.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.056.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -300,7 +301,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.055.04</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.056.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -327,7 +328,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.055.04"></script>
+  <script src="/js/main.js?v=0.056.00"></script>
   <script>
     GW.bootstrapStandardPage();
 

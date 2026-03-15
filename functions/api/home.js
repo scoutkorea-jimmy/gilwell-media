@@ -93,7 +93,7 @@ async function loadStats(env) {
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr' AND published = 1`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm' AND published = 1`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(created_at) = ? AND published = 1`).bind(today).first(),
+    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(COALESCE(publish_at, created_at)) = ? AND published = 1`).bind(today).first(),
   ]);
   return {
     korea: koreaRow?.n ?? 0,
@@ -149,7 +149,7 @@ async function loadHero(env, origin) {
 
   const placeholders = postIds.map(() => '?').join(', ');
   const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, image_url, created_at
+    `SELECT id, category, title, subtitle, image_url, created_at, publish_at
        FROM posts
       WHERE published = 1
         AND id IN (${placeholders})`
@@ -167,7 +167,7 @@ async function loadHomeLead(env, origin) {
   const postId = row ? parseInt(row.value, 10) : 0;
   if (!postId) return { post: null };
   const post = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order, youtube_url,
+    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE id = ? AND published = 1`
@@ -187,11 +187,11 @@ async function loadPostList(env, origin, opts = {}) {
   }
   const limit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
   const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order, youtube_url,
+    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE ${conditions.join(' AND ')}
-      ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC
+      ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC, id DESC
       LIMIT ?`
   ).bind(...bindings, limit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
@@ -200,11 +200,11 @@ async function loadPostList(env, origin, opts = {}) {
 async function loadLatestPosts(env, origin, limit) {
   const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
   const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, featured, tag, views, author, published, sort_order, youtube_url,
+    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE published = 1
-      ORDER BY created_at DESC
+      ORDER BY created_at DESC, id DESC
       LIMIT ?`
   ).bind(safeLimit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
@@ -218,7 +218,7 @@ async function loadPopular(env, origin, limit) {
       GROUP BY post_id
     ),
     base AS (
-      SELECT p.id, p.category, p.title, p.subtitle, p.image_url, p.image_caption, p.created_at, p.tag, p.views, p.author, p.youtube_url,
+      SELECT p.id, p.category, p.title, p.subtitle, p.image_url, p.image_caption, p.created_at, p.publish_at, p.tag, p.views, p.author, p.youtube_url,
              COALESCE(l.likes, 0) AS likes
       FROM posts p
       LEFT JOIN likes_by_post l ON l.post_id = p.id

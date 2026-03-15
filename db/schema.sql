@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS posts (
   image_caption TEXT,
   youtube_url  TEXT,
   created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  publish_at   TEXT,
   updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   featured     INTEGER NOT NULL DEFAULT 0,
   tag          TEXT,
@@ -79,6 +80,7 @@ CREATE TABLE IF NOT EXISTS glossary_terms (
 
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_publish_at ON posts (publish_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_published ON posts (published);
 CREATE INDEX IF NOT EXISTS idx_posts_featured ON posts (featured);
 CREATE INDEX IF NOT EXISTS idx_posts_sort_order ON posts (sort_order);
