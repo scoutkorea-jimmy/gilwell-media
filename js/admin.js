@@ -1470,7 +1470,7 @@
         var label = entry[1];
         var page = (_siteMeta.pages && _siteMeta.pages[key]) || { title: '', description: '' };
         var helper = key === 'home'
-          ? '<div style="margin:0 0 10px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">구글/네이버 검색 결과에 노출될 사이트 소개 문구입니다.</div>'
+          ? '<div style="margin:0 0 10px;font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);">구글/네이버 검색 결과에 노출될 사이트 소개 문구입니다.</div>'
           : '';
         return '<div class="share-meta-card">' +
           '<div class="share-meta-card-head">' + label + '</div>' +
@@ -1506,8 +1506,8 @@
     if (_siteMeta.image_url) {
       var src = _siteMeta.image_url.startsWith('http') ? GW.escapeHtml(_siteMeta.image_url) : _siteMeta.image_url;
       preview.innerHTML = '<img src="' + src + '" class="cover-preview-img">' +
-        '<div style="margin-top:6px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">일반 페이지 공유 대표 이미지</div>' +
-        '<div style="margin-top:4px;font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);" id="site-meta-image-size">권장 1200×630px, PNG/JPG, 1MB 이하</div>';
+        '<div style="margin-top:6px;font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);">일반 페이지 공유 대표 이미지</div>' +
+        '<div style="margin-top:4px;font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);" id="site-meta-image-size">권장 1200×630px, PNG/JPG, 1MB 이하</div>';
       var img = preview.querySelector('img');
       if (img) {
         img.onload = function () {
@@ -1601,9 +1601,9 @@
         '<div class="admin-copy-card-head">' + item.label + ' · ' + item.key + '</div>' +
         '<div class="admin-copy-card-grid">' +
           '<div><label class="admin-copy-card-label">KOR</label>' +
-          '<textarea data-category-copy="' + item.key + '" data-category-lang="ko" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(koVal) + '</textarea></div>' +
+          '<textarea data-category-copy="' + item.key + '" data-category-lang="ko" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family: AliceDigitalLearning, sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(koVal) + '</textarea></div>' +
           '<div><label class="admin-copy-card-label">ENG</label>' +
-          '<textarea data-category-copy="' + item.key + '" data-category-lang="en" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(enVal) + '</textarea></div>' +
+          '<textarea data-category-copy="' + item.key + '" data-category-lang="en" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family: AliceDigitalLearning, sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(enVal) + '</textarea></div>' +
         '</div></div>';
     }).join('');
   }
@@ -1618,9 +1618,9 @@
         '<div class="admin-copy-card-head">' + key + '</div>' +
         '<div class="admin-copy-card-grid">' +
           '<div><label class="admin-copy-card-label">KOR</label>' +
-          '<input type="text" value="' + escapeAttr(koVal) + '" data-tkey="' + key + '" data-tlang="ko" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;"></div>' +
+          '<input type="text" value="' + escapeAttr(koVal) + '" data-tkey="' + key + '" data-tlang="ko" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family: AliceDigitalLearning, sans-serif;outline:none;"></div>' +
           '<div><label class="admin-copy-card-label">ENG</label>' +
-          '<input type="text" value="' + escapeAttr(enVal) + '" data-tkey="' + key + '" data-tlang="en" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;"></div>' +
+          '<input type="text" value="' + escapeAttr(enVal) + '" data-tkey="' + key + '" data-tlang="en" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family: AliceDigitalLearning, sans-serif;outline:none;"></div>' +
         '</div></div>';
     }).join('');
   }

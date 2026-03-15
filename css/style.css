@@ -287,7 +287,7 @@ body {
 
 body,
 body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: 'AliceDigitalLearning', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -471,7 +471,7 @@ body.admin-page .logout-btn {
 /* ── Final Admin / Glossary Overrides (V0.059.00) ─────────── */
 body.admin-page,
 body.admin-page *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: 'AliceDigitalLearning', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
 }
 
 body.admin-page .admin-header-top {
@@ -600,7 +600,7 @@ input,
 textarea,
 select,
 option {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
 }
 
 body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
@@ -648,7 +648,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .admin-page #admin-page-info,
 .admin-page .admin-sidebar-btn-desc,
 .admin-page .dash-action-label {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
   letter-spacing: 0.02em !important;
   text-transform: none !important;
 }
@@ -830,7 +830,7 @@ html { scroll-behavior: smooth; }
 body {
   background:  var(--bg);
   color:       var(--ink);
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-weight: 300;
   line-height: 1.7;
   min-height:  100vh;
@@ -850,7 +850,7 @@ body {
   background: var(--black);
   color: var(--white);
   text-decoration: none;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
 }
@@ -883,7 +883,7 @@ p { margin-bottom: 6px; }
 }
 
 .masthead-date {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   12px;
   color:       var(--ink);
   line-height: 1.5;
@@ -915,7 +915,7 @@ p { margin-bottom: 6px; }
 }
 
 .masthead-logo h1 {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-display);
   font-weight:    700;
   letter-spacing: -0.02em;
@@ -924,7 +924,7 @@ p { margin-bottom: 6px; }
 }
 
 .masthead-logo .sub {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-micro);
   letter-spacing: 0.2em;
   color:          var(--muted);
@@ -940,7 +940,7 @@ p { margin-bottom: 6px; }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: var(--fs-micro);
   letter-spacing: 0.08em;
   padding: 4px 8px;
@@ -961,7 +961,7 @@ p { margin-bottom: 6px; }
 
 .masthead-time {
   display:     block;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   20px;
   font-weight: 500;
   color:       var(--accent);
@@ -973,7 +973,7 @@ p { margin-bottom: 6px; }
   font-size:   11px;
   color:       var(--muted);
   text-align:  right;
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-style:  italic;
 }
 
@@ -987,7 +987,7 @@ p { margin-bottom: 6px; }
 }
 
 .masthead-stats {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -1020,7 +1020,7 @@ p { margin-bottom: 6px; }
 }
 
 .lang-btn {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1056,7 +1056,7 @@ p { margin-bottom: 6px; }
 }
 
 .nav a {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-meta);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1094,7 +1094,7 @@ p { margin-bottom: 6px; }
   display:        inline-block;
   white-space:    nowrap;
   animation:      ticker 60s linear infinite;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.08em;
   line-height:    1;
@@ -1112,7 +1112,7 @@ p { margin-bottom: 6px; }
    ════════════════════════════════════════════════════════════ */
 .category-tag {
   display:        inline-block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -1146,7 +1146,7 @@ p { margin-bottom: 6px; }
 .hero-main .category-tag { margin-bottom: 16px; }
 
 .hero-main h2 {
-  font-family:    'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      38px;
   font-weight:    700;
   line-height:    1.28;
@@ -1160,12 +1160,12 @@ p { margin-bottom: 6px; }
   color:         var(--muted);
   line-height:   var(--lh-copy);
   margin-bottom: 24px;
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-weight:   300;
 }
 
 .hero-main .meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1185,7 +1185,7 @@ p { margin-bottom: 6px; }
 .hero-side-item:last-child { border-bottom: none; }
 
 .hero-side-item h3 {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     15px;
   font-weight:   600;
   line-height:   1.4;
@@ -1194,7 +1194,7 @@ p { margin-bottom: 6px; }
 }
 
 .hero-side-item .meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1223,7 +1223,7 @@ p { margin-bottom: 6px; }
 }
 
 .section-header h2 {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      20px;
   font-weight:    700;
   letter-spacing: -0.01em;
@@ -1246,7 +1246,7 @@ p { margin-bottom: 6px; }
 }
 
 .filter-btn {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1289,7 +1289,7 @@ p { margin-bottom: 6px; }
 .article-card .category-tag { margin-bottom: 10px; }
 
 .article-card h3 {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     var(--fs-title);
   font-weight:   600;
   line-height:   1.4;
@@ -1305,7 +1305,7 @@ p { margin-bottom: 6px; }
 }
 
 .article-card .meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1322,7 +1322,7 @@ p { margin-bottom: 6px; }
 }
 
 .sidebar-section h3 {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      14px;
   font-weight:    700;
   letter-spacing: 0.02em;
@@ -1339,7 +1339,7 @@ p { margin-bottom: 6px; }
 .sidebar-item:last-child { border-bottom: none; }
 
 .sidebar-item h4 {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     14px;
   font-weight:   600;
   line-height:   1.4;
@@ -1352,7 +1352,7 @@ p { margin-bottom: 6px; }
 }
 
 .sidebar-item .meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -1367,7 +1367,7 @@ p { margin-bottom: 6px; }
 }
 
 .about-box h3 {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   18px;
   font-style:  italic;
   margin-bottom: 12px;
@@ -1377,7 +1377,7 @@ p { margin-bottom: 6px; }
   font-size:   12px;
   line-height: 1.7;
   color:       rgba(245,243,238,0.75);
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
 }
 
 .about-box .divider {
@@ -1387,7 +1387,7 @@ p { margin-bottom: 6px; }
 }
 
 .about-box .domain {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--accent);
   letter-spacing: 0.1em;
@@ -1482,7 +1482,7 @@ p { margin-bottom: 6px; }
   bottom:         -4px;
   left:           0;
   right:          0;
-  font-family:    'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      clamp(36px, 7vw, 90px);
   font-weight:    700;
   color:          rgba(77, 0, 110, 0.05);
@@ -1502,7 +1502,7 @@ p { margin-bottom: 6px; }
 }
 
 .site-hero-eyebrow {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -1512,7 +1512,7 @@ p { margin-bottom: 6px; }
 .site-hero.has-bg .site-hero-eyebrow { color: rgba(255,255,255,0.7); }
 
 .site-hero-title {
-  font-family:        'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:          clamp(28px, 5vw, 48px);
   font-weight:        700;
   color:              var(--black);
@@ -1527,7 +1527,7 @@ p { margin-bottom: 6px; }
 .site-hero.has-bg .site-hero-title { color: #ffffff; }
 
 .site-hero-sub {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   15px;
   color:       var(--muted);
   max-width:   520px;
@@ -1538,7 +1538,7 @@ p { margin-bottom: 6px; }
 
 /* Subtitle text on dynamic hero */
 .site-hero-subtitle {
-  font-family: 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   16px;
   color:       rgba(255,255,255,0.78);
   max-width:   560px;
@@ -1559,7 +1559,7 @@ p { margin-bottom: 6px; }
   border:         1px solid rgba(255,255,255,0.46);
   background:     rgba(255,255,255,0.10);
   color:          #ffffff;
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      13px;
   letter-spacing: .03em;
   text-transform: none;
@@ -1659,14 +1659,14 @@ p { margin-bottom: 6px; }
   padding: 4px 10px;
   background: var(--black);
   color: var(--white);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .home-lead-body h3 {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: clamp(20px, 2vw, 28px);
   line-height: 1.26;
   color: var(--black);
@@ -1719,7 +1719,7 @@ p { margin-bottom: 6px; }
 }
 
 .home-lead-meta {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -1816,7 +1816,7 @@ p { margin-bottom: 6px; }
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--white);
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 13px;
   letter-spacing: 0.03em;
   text-decoration: none;
@@ -1865,7 +1865,7 @@ p { margin-bottom: 6px; }
   border: 1px solid var(--black);
   background: rgba(255,255,255,0.96);
   box-shadow: 0 10px 28px rgba(0,0,0,0.12);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1873,7 +1873,7 @@ p { margin-bottom: 6px; }
 
 /* ── Shared section heading ── */
 .home-section-title {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      14px;
   font-weight:    700;
   letter-spacing: 0.08em;
@@ -1910,7 +1910,7 @@ p { margin-bottom: 6px; }
 }
 
 .home-section-more {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      13px;
   letter-spacing: 0.04em;
   text-transform: none;
@@ -1982,7 +1982,7 @@ p { margin-bottom: 6px; }
 }
 
 .mini-item h4 {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     16px;
   font-weight:   600;
   line-height:   1.4;
@@ -2007,7 +2007,7 @@ p { margin-bottom: 6px; }
 }
 
 .mini-item .mini-meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -2034,7 +2034,7 @@ p { margin-bottom: 6px; }
 .mini-empty {
   padding:     24px 0;
   color:       var(--muted);
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   13px;
 }
 
@@ -2058,7 +2058,7 @@ p { margin-bottom: 6px; }
 }
 
 .home-col-header h3 {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   13px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -2129,7 +2129,7 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-text h2 {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      40px;
   font-weight:    700;
   letter-spacing: -0.02em;
@@ -2139,7 +2139,7 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-text p {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   14px;
   color:       var(--muted);
   line-height: 1.6;
@@ -2151,7 +2151,7 @@ p { margin-bottom: 6px; }
   padding: 4px 10px;
   border: 1px solid var(--border);
   background: #f7f5f0;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -2160,7 +2160,7 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-total {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 56px;
   font-weight: 700;
   color: var(--border);
@@ -2179,7 +2179,7 @@ p { margin-bottom: 6px; }
 
 .board-banner-total-label {
   max-width: 240px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -2190,7 +2190,7 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-total-value {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 56px;
   font-weight: 700;
   color: var(--border);
@@ -2269,7 +2269,7 @@ p { margin-bottom: 6px; }
 .post-card-labels .post-kicker { margin-bottom: 0; }
 
 .post-card-body h3 {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     var(--fs-title);
   font-weight:   600;
   line-height:   1.4;
@@ -2302,7 +2302,7 @@ p { margin-bottom: 6px; }
 }
 
 .post-card-meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -2312,7 +2312,7 @@ p { margin-bottom: 6px; }
 }
 
 .post-card-engagement {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   color: var(--accent);
@@ -2322,7 +2322,7 @@ p { margin-bottom: 6px; }
 /* ── Read More link ── */
 .read-more {
   display:        inline-block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2348,7 +2348,7 @@ p { margin-bottom: 6px; }
   border: 1px solid var(--border);
   background: #fff;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -2415,7 +2415,7 @@ p { margin-bottom: 6px; }
 .modal-header .category-tag { margin-bottom: 16px; }
 
 .modal-header h2 {
-  font-family:    'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      26px;
   font-weight:    700;
   line-height:    1.4;
@@ -2424,7 +2424,7 @@ p { margin-bottom: 6px; }
 }
 
 .modal-header .modal-date {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -2443,7 +2443,7 @@ p { margin-bottom: 6px; }
 
 .post-image-caption {
   margin: 6px 0 18px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   line-height: 1.5;
   color: #8f8f8f;
@@ -2451,7 +2451,7 @@ p { margin-bottom: 6px; }
 }
 
 .board-banner-note {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   color: #8f8f8f;
   line-height: 1.7;
@@ -2478,7 +2478,7 @@ p { margin-bottom: 6px; }
 
 .modal-body {
   padding:     28px 40px 40px;
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   15px;
   font-weight: 300;
   line-height: 1.85;
@@ -2498,7 +2498,7 @@ p { margin-bottom: 6px; }
   line-height: 1;
   padding:     4px 8px;
   transition:  color 0.15s;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
 }
 
 .modal-close:hover { color: var(--black); }
@@ -2513,7 +2513,7 @@ p { margin-bottom: 6px; }
 }
 
 .empty-state .empty-icon {
-  font-family:   'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     48px;
   font-style:    italic;
   color:         var(--border);
@@ -2522,7 +2522,7 @@ p { margin-bottom: 6px; }
 }
 
 .empty-state p {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   14px;
   line-height: 1.7;
 }
@@ -2557,7 +2557,7 @@ p { margin-bottom: 6px; }
 .error-state {
   padding:    40px 48px;
   text-align: center;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:  12px;
   color:      var(--danger);
 }
@@ -2571,7 +2571,7 @@ p { margin-bottom: 6px; }
   right:          32px;
   background:     var(--black);
   color:          var(--white);
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      12px;
   letter-spacing: 0.08em;
   padding:        14px 24px;
@@ -2630,7 +2630,7 @@ footer::before {
 }
 
 footer h4 {
-  font-family:    'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      14px;
   font-weight:    700;
   margin-bottom:  10px;
@@ -2653,7 +2653,7 @@ footer p, footer a {
   border: 0;
   background: transparent;
   color: rgba(255,255,255,0.76);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2666,7 +2666,7 @@ footer p, footer a {
 
 .footer-build {
   margin-top:      8px;
-  font-family:     'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:       10px;
   letter-spacing:  0.12em;
   text-transform:  uppercase;
@@ -2681,7 +2681,7 @@ footer p, footer a {
 }
 
 .footer-live-stat {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2696,7 +2696,7 @@ footer p, footer a {
 .admin-build-label,
 .admin-login-build {
   display: block;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2728,7 +2728,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .footer-bottom p {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          rgba(255,255,255,0.62);
   letter-spacing: 0.08em;
@@ -2738,7 +2738,7 @@ footer a:hover { color: #ffffff; }
    MODAL SUBTITLE
    ════════════════════════════════════════════════════════════ */
 .modal-subtitle {
-  font-family:   'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     15px;
   color:         var(--muted);
   margin:        4px 0 12px;
@@ -2757,7 +2757,7 @@ footer a:hover { color: #ffffff; }
   padding:        8px 16px;
   border:         1px dashed var(--border);
   background:     var(--bg);
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   cursor:         pointer;
@@ -2779,7 +2779,7 @@ footer a:hover { color: #ffffff; }
   padding:     4px 10px;
   border:      1px solid var(--border);
   background:  none;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   10px;
   color:       var(--muted);
   cursor:      pointer;
@@ -2816,7 +2816,7 @@ footer a:hover { color: #ffffff; }
   display:       inline-block;
   padding:       4px 12px;
   border:        1px solid var(--border);
-  font-family:   'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     11px;
   letter-spacing:.08em;
   color:         var(--muted);
@@ -2851,7 +2851,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   outline: none;
   box-sizing: border-box;
@@ -2871,7 +2871,7 @@ footer a:hover { color: #ffffff; }
 .tag-admin-panel-head {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -2900,7 +2900,7 @@ footer a:hover { color: #ffffff; }
   padding: 6px 10px;
   border: 1px solid var(--border);
   background: var(--white);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--ink);
   cursor: grab;
@@ -2934,7 +2934,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .tag-admin-empty {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: .08em;
@@ -2954,7 +2954,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .share-meta-card-head {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -2964,7 +2964,7 @@ footer a:hover { color: #ffffff; }
 
 .share-meta-card label {
   display: block;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -2979,7 +2979,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 13px;
   box-sizing: border-box;
   outline: none;
@@ -3002,7 +3002,7 @@ footer a:hover { color: #ffffff; }
 /* Post kicker label shown next to category tag — outline style, same size */
 .post-kicker {
   display:        inline-block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -3044,14 +3044,14 @@ footer a:hover { color: #ffffff; }
 }
 
 .login-box .logo {
-  font-family:   'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     24px;
   font-weight:   700;
   margin-bottom: 4px;
 }
 
 .login-box .sub {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   color:          var(--muted);
@@ -3061,7 +3061,7 @@ footer a:hover { color: #ffffff; }
 
 .login-box label {
   display:        block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3074,7 +3074,7 @@ footer a:hover { color: #ffffff; }
   padding:       12px 14px;
   border:        1px solid var(--border);
   background:    var(--white);
-  font-family:   'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     14px;
   color:         var(--ink);
   margin-bottom: 20px;
@@ -3090,7 +3090,7 @@ footer a:hover { color: #ffffff; }
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -3102,7 +3102,7 @@ footer a:hover { color: #ffffff; }
 
 .login-error {
   margin-top:  12px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   11px;
   color:       var(--danger);
   text-align:  center;
@@ -3151,7 +3151,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .analytics-provider-card .dash-stat-num {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: clamp(12px, 1vw, 15px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -3172,7 +3172,7 @@ footer a:hover { color: #ffffff; }
   text-align: center;
 }
 .dash-stat-num {
-  font-family: 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 36px;
   font-weight: 700;
   color: #622599;
@@ -3180,7 +3180,7 @@ footer a:hover { color: #ffffff; }
   margin-bottom: 6px;
 }
 .dash-stat-label {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -3198,7 +3198,7 @@ footer a:hover { color: #ffffff; }
 }
 .analytics-note {
   margin: 14px 0 0;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   line-height: 1.7;
@@ -3216,7 +3216,7 @@ footer a:hover { color: #ffffff; }
   gap: 10px;
 }
 .analytics-toolbar-group label {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3227,7 +3227,7 @@ footer a:hover { color: #ffffff; }
   background: var(--bg);
   color: var(--ink);
   padding: 8px 10px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
 }
 .analytics-view-toggle {
@@ -3239,7 +3239,7 @@ footer a:hover { color: #ffffff; }
   background: var(--bg);
   color: var(--muted);
   padding: 8px 12px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -3264,7 +3264,7 @@ footer a:hover { color: #ffffff; }
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -3290,7 +3290,7 @@ footer a:hover { color: #ffffff; }
   align-items: start;
 }
 .analytics-bar-label {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.06em;
@@ -3328,7 +3328,7 @@ footer a:hover { color: #ffffff; }
   background: var(--tag-apr);
 }
 .analytics-bar-value {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--ink);
   text-align: right;
@@ -3348,7 +3348,7 @@ footer a:hover { color: #ffffff; }
   vertical-align: top;
 }
 .analytics-table th {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3363,7 +3363,7 @@ footer a:hover { color: #ffffff; }
   display: inline-block;
   margin-right: 8px;
   padding: 2px 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3385,7 +3385,7 @@ footer a:hover { color: #ffffff; }
 }
 .analytics-item span {
   display: block;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.05em;
@@ -3476,7 +3476,7 @@ footer a:hover { color: #ffffff; }
   box-shadow: 0 2px 8px rgba(98,37,153,0.12);
 }
 .dash-action-icon { font-size: 22px; }
-.dash-action-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.dash-action-label { font-family: AliceDigitalLearning, sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
 
 /* ── Drag-and-drop ────────────────────────────────────────── */
 .drag-handle {
@@ -3512,13 +3512,13 @@ footer a:hover { color: #ffffff; }
 }
 
 .admin-header .logo {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   18px;
   font-weight: 700;
 }
 
 .admin-header .badge {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   background:     var(--accent);
@@ -3536,7 +3536,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .admin-header a {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   color:          rgba(245,243,238,0.6);
@@ -3548,7 +3548,7 @@ footer a:hover { color: #ffffff; }
 .admin-header a:hover { color: var(--white); }
 
 .logout-btn {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   color:          var(--accent);
@@ -3584,13 +3584,13 @@ footer a:hover { color: #ffffff; }
 }
 
 .panel-header h2 {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   18px;
   font-weight: 700;
 }
 
 .panel-header .count {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.08em;
@@ -3603,7 +3603,7 @@ footer a:hover { color: #ffffff; }
 
 .form-group label {
   display:        block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3618,7 +3618,7 @@ footer a:hover { color: #ffffff; }
   padding:     11px 14px;
   border:      1px solid var(--border);
   background:  var(--white);
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   14px;
   font-weight: 300;
   color:       var(--ink);
@@ -3641,7 +3641,7 @@ footer a:hover { color: #ffffff; }
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -3679,7 +3679,7 @@ footer a:hover { color: #ffffff; }
   background:     none;
   color:          var(--muted);
   border:         1px solid var(--border);
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3698,7 +3698,7 @@ footer a:hover { color: #ffffff; }
   background: none;
   color: var(--danger);
   border: 1px solid rgba(204, 68, 68, 0.45);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3719,7 +3719,7 @@ footer a:hover { color: #ffffff; }
 /* Category preview tag */
 .cat-preview {
   display:        inline-block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -3745,7 +3745,7 @@ footer a:hover { color: #ffffff; }
 .stat-item:last-child { border-right: none; }
 
 .stat-item .stat-num {
-  font-family:  'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:    28px;
   font-weight:  700;
   color:        var(--black);
@@ -3753,7 +3753,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .stat-item .stat-label {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3778,7 +3778,7 @@ footer a:hover { color: #ffffff; }
 .article-item-content { flex: 1; min-width: 0; }
 
 .article-item h4 {
-  font-family:    'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      14px;
   font-weight:    600;
   line-height:    1.4;
@@ -3790,7 +3790,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .article-item .item-meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -3812,7 +3812,7 @@ footer a:hover { color: #ffffff; }
   padding: 9px 11px;
   border: 1px solid rgba(31,31,31,0.16);
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(243,239,232,0.96));
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   line-height: 1.45;
   letter-spacing: 0.01em;
@@ -3820,7 +3820,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .item-meta-chip strong {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-weight: 500;
   color: #1f1f1f;
   letter-spacing: 0.08em;
@@ -3856,7 +3856,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .btn-edit, .btn-delete {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3900,7 +3900,7 @@ footer a:hover { color: #ffffff; }
   padding:     40px 28px;
   text-align:  center;
   color:       var(--muted);
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   13px;
   line-height: 1.7;
 }
@@ -3915,7 +3915,7 @@ footer a:hover { color: #ffffff; }
   align-items:    center;
   gap:            6px;
   margin-top:     20px;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3954,7 +3954,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .board-pw-header {
-  font-family:   'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     22px;
   font-weight:   700;
   margin-bottom: 8px;
@@ -3962,7 +3962,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .board-pw-desc {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     13px;
   color:         var(--muted);
   margin-bottom: 20px;
@@ -3974,7 +3974,7 @@ footer a:hover { color: #ffffff; }
   padding:       12px 14px;
   border:        1px solid var(--border);
   background:    var(--white);
-  font-family:   'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     14px;
   color:         var(--ink);
   outline:       none;
@@ -3983,7 +3983,7 @@ footer a:hover { color: #ffffff; }
 .board-pw-box input[type="password"]:focus { border-color: var(--black); }
 
 .board-pw-error {
-  font-family:  'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:    11px;
   color:        var(--danger);
   margin-top:   10px;
@@ -3998,7 +3998,7 @@ footer a:hover { color: #ffffff; }
 .board-pw-actions button {
   flex:           1;
   padding:        12px;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -4051,13 +4051,13 @@ footer a:hover { color: #ffffff; }
   color:       var(--muted);
   line-height: 1;
   padding:     4px 8px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   transition:  color 0.15s;
 }
 .board-write-close:hover { color: var(--black); }
 
 .board-write-header {
-  font-family:   'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     22px;
   font-weight:   700;
   margin-bottom: 10px;
@@ -4066,7 +4066,7 @@ footer a:hover { color: #ffffff; }
 
 .board-write-cat {
   display:        inline-block;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      9px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -4418,7 +4418,7 @@ footer a:hover { color: #ffffff; }
     color: var(--ink);
     text-decoration: none;
     background: rgba(255, 255, 255, 0.88);
-    font-family: 'DM Mono', monospace;
+    font-family: AliceDigitalLearning, sans-serif;
     font-size: 18px;
     line-height: 1;
   }
@@ -4437,7 +4437,7 @@ footer a:hover { color: #ffffff; }
     flex-shrink: 0;
   }
   body.post-page .post-mobile-brand-text {
-    font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+    font-family: AliceDigitalLearning, sans-serif;
     font-size: 22px;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -4450,7 +4450,7 @@ footer a:hover { color: #ffffff; }
   body.post-page .post-mobile-section-chip {
     max-width: 124px;
     padding: 7px 10px 6px;
-    font-family: 'DM Mono', monospace;
+    font-family: AliceDigitalLearning, sans-serif;
     font-size: 10px;
     line-height: 1.1;
     letter-spacing: 0.08em;
@@ -4475,7 +4475,7 @@ footer a:hover { color: #ffffff; }
   body.post-page .post-mobile-quicknav a {
     flex: 0 0 auto;
     padding: 8px 10px;
-    font-family: 'DM Mono', monospace;
+    font-family: AliceDigitalLearning, sans-serif;
     font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -4694,7 +4694,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .tag-filter-btn {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -4758,18 +4758,18 @@ footer a:hover { color: #ffffff; }
   margin:    0 !important;
 }
 .ce-paragraph {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
   font-size:   14px !important;
   line-height: 1.8 !important;
   color:       var(--ink) !important;
 }
 .ce-header {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
   color:       var(--black) !important;
 }
 .cdx-quote__text,
 .cdx-list__item {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
   font-size:   14px !important;
 }
 .cdx-quote {
@@ -4783,7 +4783,7 @@ footer a:hover { color: #ffffff; }
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   cursor:         pointer;
@@ -4794,7 +4794,7 @@ footer a:hover { color: #ffffff; }
   width:       100%;
   padding:     6px 10px;
   border:      1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   margin-top:  6px;
@@ -4847,7 +4847,7 @@ footer a:hover { color: #ffffff; }
 .pps-section:last-child  { border-bottom: none; }
 
 .pps-label {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -4858,7 +4858,7 @@ footer a:hover { color: #ffffff; }
 .pps-category {
   display:        inline-block;
   color:          #fff;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -4871,7 +4871,7 @@ footer a:hover { color: #ffffff; }
 .pps-row {
   display:       flex;
   gap:           8px;
-  font-family:   'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     11px;
   margin-bottom: 8px;
   align-items:   baseline;
@@ -4887,7 +4887,7 @@ footer a:hover { color: #ffffff; }
 
 .post-page-back { margin-bottom: 28px; }
 .post-page-back-link {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -4898,7 +4898,7 @@ footer a:hover { color: #ffffff; }
 .post-page-back-link:hover { color: var(--accent); }
 
 .post-page-title {
-  font-family:   'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     clamp(22px, 3.5vw, 36px);
   font-weight:   700;
   line-height:   1.3;
@@ -4906,14 +4906,14 @@ footer a:hover { color: #ffffff; }
   margin-bottom: 14px;
 }
 .post-page-subtitle {
-  font-family:   'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:     clamp(14px, 2vw, 18px);
   color:         var(--muted);
   line-height:   1.6;
   margin-bottom: 16px;
 }
 .post-page-meta {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -4951,7 +4951,7 @@ footer a:hover { color: #ffffff; }
   align-items: center;
 }
 .post-page-tag {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.08em;
   background:     var(--bg);
@@ -4976,7 +4976,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .post-related-heading {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -5013,7 +5013,7 @@ footer a:hover { color: #ffffff; }
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.08em;
   background:     none;
@@ -5041,7 +5041,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid rgba(217, 74, 58, 0.3);
   background: #fff4f1;
   color: #c24335;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -5062,7 +5062,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .post-like-help {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -5146,7 +5146,7 @@ footer a:hover { color: #ffffff; }
   flex:        1;
   padding:     9px 14px;
   border:      1px solid var(--border);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   14px;
   outline:     none;
   color:       var(--ink);
@@ -5158,7 +5158,7 @@ footer a:hover { color: #ffffff; }
   background:     var(--accent);
   color:          #fff;
   border:         none;
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5170,7 +5170,7 @@ footer a:hover { color: #ffffff; }
   padding:     8px 14px;
   background:  none;
   border:      1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   cursor:      pointer;
@@ -5199,7 +5199,7 @@ footer a:hover { color: #ffffff; }
 .global-search-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .global-search-item strong { display:block; font-size:16px; line-height:1.4; margin: 6px 0 4px; }
 .global-search-item p { font-size:13px; color:var(--muted); margin:0 0 6px; line-height:1.6; }
-.global-search-date { font-family:'DM Mono',monospace; font-size:var(--fs-micro); color:var(--muted); }
+.global-search-date { font-family: AliceDigitalLearning, sans-serif; font-size:var(--fs-micro); color:var(--muted); }
 .global-search-empty { text-align:center; padding:40px; font-size:14px; color:var(--muted); }
 
 /* ════════════════════════════════════════════════════════════
@@ -5218,7 +5218,7 @@ footer a:hover { color: #ffffff; }
   width:       100%;
   padding:     9px 36px 9px 14px;
   border:      1px solid var(--border);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   14px;
   outline:     none;
   color:       var(--ink);
@@ -5263,7 +5263,7 @@ footer a:hover { color: #ffffff; }
 
 .admin-header-copy {
   margin: 0;
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: rgba(245,243,238,0.82);
@@ -5291,7 +5291,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.04);
   color: rgba(245,243,238,0.82);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5377,7 +5377,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .admin-sidebar-group-title {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5400,14 +5400,14 @@ footer a:hover { color: #ffffff; }
 }
 
 .admin-sidebar-btn-label {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .admin-sidebar-btn-desc {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -5457,13 +5457,13 @@ footer a:hover { color: #ffffff; }
 }
 
 .admin-settings-block-head strong {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 20px;
   color: var(--ink);
 }
 
 .admin-settings-block-head span {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -5485,7 +5485,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5640,7 +5640,7 @@ footer a:hover { color: #ffffff; }
 
 /* Author tag on cards */
 .post-author {
-  font-family:    'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -5658,7 +5658,7 @@ footer a:hover { color: #ffffff; }
   width: 0; padding: 5px 0;
   border: none; border-bottom: 1px solid transparent;
   background: transparent;
-  font-family: 'DM Mono', monospace; font-size: 11px;
+  font-family: AliceDigitalLearning, sans-serif; font-size: 11px;
   color: var(--ink); outline: none; overflow: hidden;
   transition: width 0.25s ease, border-color 0.25s, padding 0.25s;
 }
@@ -5711,7 +5711,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .mobile-search-modal-head strong {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 22px;
   color: var(--ink);
 }
@@ -5720,7 +5720,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5742,7 +5742,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: #fff;
   color: var(--ink);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 15px;
   padding: 10px 14px;
   outline: none;
@@ -5754,7 +5754,7 @@ footer a:hover { color: #ffffff; }
   border: none;
   background: var(--black);
   color: var(--white);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5767,7 +5767,7 @@ footer a:hover { color: #ffffff; }
   padding:     12px 16px;
   border-left: 3px solid #622599;
   background:  rgba(98, 37, 153, 0.05);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   letter-spacing: 0.04em;
@@ -5782,7 +5782,7 @@ footer a:hover { color: #ffffff; }
   margin-top: 32px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -5817,7 +5817,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .version-history-version {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -5826,7 +5826,7 @@ footer a:hover { color: #ffffff; }
 
 .version-history-date,
 .version-history-type {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.08em;
@@ -5864,7 +5864,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: none;
   color: var(--ink);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -5876,7 +5876,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .version-history-pagination span {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -5924,13 +5924,13 @@ footer a:hover { color: #ffffff; }
 }
 
 .post-history-head h3 {
-  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 22px;
 }
 
 .post-history-summary {
   margin-top: 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: rgba(255,255,255,0.78);
@@ -5941,7 +5941,7 @@ footer a:hover { color: #ffffff; }
   background: rgba(255,255,255,0.08);
   color: #fff;
   padding: 8px 12px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5970,14 +5970,14 @@ footer a:hover { color: #ffffff; }
 }
 
 .post-history-entry-top strong {
-  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 15px;
   color: var(--ink);
 }
 
 .post-history-entry-top span,
 .post-history-entry-meta span {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -5992,7 +5992,7 @@ footer a:hover { color: #ffffff; }
 .contributors-thank {
   max-width: 640px;
   margin-bottom: 40px;
-  font-family: 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 16px;
   line-height: 1.8;
   color: var(--muted);
@@ -6011,20 +6011,20 @@ footer a:hover { color: #ffffff; }
   background: var(--bg);
 }
 .contributor-name {
-  font-family: 'Noto Serif KR', serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 16px;
   font-weight: 600;
   color: var(--ink);
   flex-shrink: 0;
 }
 .contributor-note {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.03em;
 }
 .contributor-date {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.05em;
@@ -6032,7 +6032,7 @@ footer a:hover { color: #ffffff; }
   flex-shrink: 0;
 }
 .contributors-empty {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   color: var(--muted);
   padding: 32px 0;
@@ -6056,7 +6056,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-hero-copy h2 {
   margin: 0 0 12px;
-  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 42px;
   line-height: 1.1;
 }
@@ -6075,7 +6075,7 @@ footer a:hover { color: #ffffff; }
 .glossary-toolbar-title {
   display: block;
   margin-bottom: 8px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -6087,7 +6087,7 @@ footer a:hover { color: #ffffff; }
   padding: 12px 14px;
   border: 1px solid var(--border);
   background: #fff;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 14px;
   color: var(--ink);
   outline: none;
@@ -6117,7 +6117,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid rgba(77, 0, 110, 0.18);
   background: rgba(77, 0, 110, 0.04);
   color: #4D006E;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -6138,7 +6138,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -6150,14 +6150,14 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-results-meta {
   margin-bottom: 16px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
 .glossary-section + .glossary-section { margin-top: 26px; }
 .glossary-section-title {
   margin: 0 0 10px;
-  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 24px;
 }
 .glossary-unmatched-section {
@@ -6198,7 +6198,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-table th {
   background: #4D006E;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -6239,7 +6239,7 @@ footer a:hover { color: #ffffff; }
   padding: 10px 12px;
   border: 1px solid var(--border);
   background: #fff;
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 13px;
   color: var(--ink);
   resize: vertical;
@@ -6251,7 +6251,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-admin-group-title {
   margin: 0 0 8px;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -6274,7 +6274,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-admin-cell-label {
   display: none;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.08em;
@@ -6289,7 +6289,7 @@ footer a:hover { color: #ffffff; }
   padding: 7px 10px;
   border: 1px solid var(--border);
   background: transparent;
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   cursor: pointer;
 }
@@ -6316,7 +6316,7 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-login-card h3 {
   margin: 0 0 8px;
-  font-family: 'AliceDigitalLearning','Noto Serif KR',serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 22px;
 }
 .glossary-login-card p {
@@ -6399,7 +6399,7 @@ footer a:hover { color: #ffffff; }
   gap: 6px;
 }
 .glossary-inline-field span {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -6417,7 +6417,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid rgba(98, 37, 153, 0.18);
   background: #fff;
   color: var(--ink);
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -6449,7 +6449,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: #fff;
   color: var(--ink);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -6467,7 +6467,7 @@ footer a:hover { color: #ffffff; }
   border: 1px solid var(--border);
   background: #fff;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -6495,7 +6495,7 @@ footer a:hover { color: #ffffff; }
   white-space: nowrap;
 }
 .glossary-description-toggle-text {
-  font-family: 'DM Mono', monospace;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.04em;
   color: inherit;
@@ -6646,7 +6646,7 @@ footer a:hover { color: #ffffff; }
     content: attr(data-label);
     display: block;
     margin-bottom: 5px;
-    font-family: 'DM Mono', monospace;
+    font-family: AliceDigitalLearning, sans-serif;
     font-size: 9px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -6702,7 +6702,7 @@ footer a:hover { color: #ffffff; }
   }
 }
 
-/* ── Admin Redesign System (V0.060.01) ───────────────────── */
+/* ── Admin Redesign System (V0.060.02) ───────────────────── */
 body.admin-page {
   --admin-bg: #f2efe8;
   --admin-surface: rgba(255,255,255,0.96);
@@ -6725,7 +6725,7 @@ body.admin-page {
 
 body.admin-page,
 body.admin-page * {
-  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif !important;
+  font-family: AliceDigitalLearning, sans-serif!important;
   box-sizing: border-box;
 }
 
@@ -7792,40 +7792,38 @@ body.admin-page .drag-handle {
   }
 }
 
-/* ── Admin Mobile-Only Layout (V0.060.01) ────────────────── */
+/* ── Admin Mobile-Only Layout (V0.060.02) ────────────────── */
 body.admin-page {
   background:
-    radial-gradient(circle at top, rgba(98, 37, 153, 0.08), transparent 34%),
-    #f3eee7 !important;
+    radial-gradient(circle at top, rgba(98, 37, 153, 0.10), transparent 32%),
+    linear-gradient(180deg, #f1ece5 0%, #f7f3ed 100%) !important;
 }
 
 body.admin-page,
-body.admin-page button,
-body.admin-page input,
-body.admin-page select,
-body.admin-page textarea,
-body.admin-page label,
-body.admin-page a,
-body.admin-page p,
-body.admin-page span,
-body.admin-page strong,
-body.admin-page li,
-body.admin-page th,
-body.admin-page td,
-body.admin-page h1,
-body.admin-page h2,
-body.admin-page h3,
-body.admin-page h4 {
-  font-family: 'AliceDigitalLearning', sans-serif !important;
+body.admin-page *,
+body.admin-page *::before,
+body.admin-page *::after {
+  font-family: AliceDigitalLearning, sans-serif !important;
+  box-sizing: border-box;
   word-break: keep-all;
 }
 
+body.admin-page {
+  background:
+    radial-gradient(circle at top center, rgba(111, 55, 171, 0.12), transparent 42%),
+    #f6f0ec !important;
+}
+
 body.admin-page main#main-content {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
   padding: 12px 12px 48px !important;
 }
 
 body.admin-page .admin-screen {
-  width: min(100%, 520px);
+  width: 100%;
+  max-width: 496px;
   margin: 0 auto;
 }
 
@@ -7840,110 +7838,99 @@ body.admin-page .admin-header {
 }
 
 body.admin-page .admin-header-top,
-body.admin-page .admin-shell,
-body.admin-page .dash-stats-row,
-body.admin-page .dash-actions,
-body.admin-page .analytics-toolbar,
-body.admin-page .dashboard-2col,
-body.admin-page .admin-dashboard-grid,
-body.admin-page .admin-list-stats,
-body.admin-page .article-list-toolbar,
-body.admin-page .admin-list-tabs,
-body.admin-page .form-row,
-body.admin-page .item-meta-grid,
-body.admin-page .share-meta-grid,
-body.admin-page .tag-admin-grid,
-body.admin-page .admin-copy-card-grid,
-body.admin-page .admin-inline-save,
-body.admin-page .admin-subnav {
-  grid-template-columns: 1fr !important;
-}
-
-body.admin-page .admin-header-top,
 body.admin-page .admin-shell {
   display: grid !important;
-  gap: 12px !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
 }
 
 body.admin-page .admin-brand-card,
 body.admin-page .admin-header-controls,
 body.admin-page .admin-sidebar-group,
 body.admin-page .panel,
-body.admin-page .dash-stat-card,
 body.admin-page .tag-admin-panel,
 body.admin-page .admin-copy-card,
+body.admin-page .post-history-card,
+body.admin-page .version-history-item,
 body.admin-page .analytics-item,
+body.admin-page .admin-search-panel,
+body.admin-page .admin-selected-post-card,
 body.admin-page .hero-result-item,
 body.admin-page .hero-slot-item,
 body.admin-page .contributors-admin-item,
-body.admin-page .admin-selected-post-card,
-body.admin-page .post-history-card,
-body.admin-page .version-history-item {
+body.admin-page .admin-settings-block {
+  border: 1px solid rgba(37, 29, 22, 0.08) !important;
   border-radius: 18px !important;
+  box-shadow: 0 12px 30px rgba(84, 62, 47, 0.06) !important;
 }
 
 body.admin-page .admin-brand-card,
 body.admin-page .admin-header-controls {
-  padding: 14px 16px !important;
+  padding: 14px !important;
 }
 
-body.admin-page .admin-brand {
+body.admin-page .admin-brand-card {
+  display: flex !important;
+  flex-direction: column !important;
   gap: 8px !important;
+  background: linear-gradient(145deg, rgba(98, 37, 153, 0.94), rgba(137, 83, 198, 0.9)) !important;
 }
 
 body.admin-page .admin-brand .logo {
-  font-size: 24px !important;
-  line-height: 1.08 !important;
+  font-size: 22px !important;
+  line-height: 1.05 !important;
 }
 
 body.admin-page .admin-brand .badge {
-  min-height: 24px !important;
+  min-height: 23px !important;
   padding: 0 10px !important;
-  font-size: 11px !important;
-  letter-spacing: 0.04em !important;
+  font-size: 10px !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
 }
 
 body.admin-page .admin-header-copy {
-  font-size: 12px !important;
-  line-height: 1.52 !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
 }
 
 body.admin-page .admin-header-controls {
-  gap: 10px !important;
+  gap: 9px !important;
+  background: rgba(255, 255, 255, 0.84) !important;
 }
 
 body.admin-page .admin-build-label,
-body.admin-page .admin-login-build,
-body.admin-page .analytics-note,
-body.admin-page .admin-section-note,
-body.admin-page .admin-inline-note,
-body.admin-page .hero-result-note,
-body.admin-page .admin-selected-post-note,
-body.admin-page .contributors-admin-date,
-body.admin-page .version-history-summary,
-body.admin-page .version-history-type,
-body.admin-page .version-history-changes li,
-body.admin-page .post-history-entry-meta {
-  font-size: 12px !important;
-  line-height: 1.56 !important;
-  letter-spacing: 0 !important;
+body.admin-page .admin-login-build {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  opacity: 0.72;
+}
+
+body.admin-page .admin-header-box,
+body.admin-page .admin-control-card {
+  padding: 8px !important;
+  border-radius: 16px !important;
+  background: rgba(248, 244, 240, 0.92) !important;
 }
 
 body.admin-page .admin-header-box-row-actions {
+  display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 8px !important;
 }
 
 body.admin-page .admin-header-box-row-groups {
-  grid-template-columns: 1fr !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 8px !important;
 }
 
 body.admin-page .admin-header-link,
 body.admin-page .logout-btn,
 body.admin-page .admin-group-btn,
-body.admin-page .dash-action-btn,
-body.admin-page .admin-subnav-btn,
 body.admin-page .submit-btn,
 body.admin-page .cancel-btn,
 body.admin-page .btn-edit,
@@ -7961,153 +7948,379 @@ body.admin-page .admin-inline-danger,
 body.admin-page #reorder-save-btn,
 body.admin-page .admin-list-tabs button {
   min-height: 40px !important;
-  padding: 0 12px !important;
-  border-radius: 14px !important;
-  font-size: 13px !important;
+  padding: 0 11px !important;
+  border-radius: 13px !important;
+  font-size: 12px !important;
+  line-height: 1.2 !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
 
 body.admin-page .logout-btn,
-body.admin-page .submit-btn,
-body.admin-page .dash-action-btn {
-  background: linear-gradient(135deg, #4b1e75, #7237af) !important;
+body.admin-page .submit-btn {
+  background: linear-gradient(135deg, #56228b, #7a3fbb) !important;
+  color: #fff !important;
+  border-color: rgba(86, 34, 139, 0.7) !important;
 }
 
-body.admin-page .dash-action-btn {
-  justify-content: flex-start !important;
-  flex-direction: row !important;
-  min-height: 0 !important;
-  padding: 14px 16px !important;
+body.admin-page .admin-header-link,
+body.admin-page .admin-group-btn,
+body.admin-page .admin-subnav-btn,
+body.admin-page .admin-sidebar-btn,
+body.admin-page .btn-icon,
+body.admin-page .btn-edit,
+body.admin-page .btn-delete,
+body.admin-page .btn-delete-soft,
+body.admin-page .cancel-btn,
+body.admin-page .analytics-view-toggle button,
+body.admin-page .admin-list-tabs button {
+  background: rgba(255, 255, 255, 0.88) !important;
 }
 
-body.admin-page .dash-action-icon {
-  font-size: 18px !important;
-}
-
-body.admin-page .dash-action-label {
-  font-size: 14px !important;
-  letter-spacing: 0 !important;
+body.admin-page .admin-group-btn.active,
+body.admin-page .admin-subnav-btn.active,
+body.admin-page .analytics-view-toggle button.active,
+body.admin-page .admin-list-tabs button.active {
+  background: rgba(98, 37, 153, 0.11) !important;
+  color: #4b1e75 !important;
+  border-color: rgba(98, 37, 153, 0.24) !important;
 }
 
 body.admin-page .admin-sidebar {
   position: static !important;
   top: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
   gap: 10px !important;
 }
 
 body.admin-page .admin-sidebar-group {
-  padding: 12px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 8px !important;
+  padding: 10px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
 }
 
 body.admin-page .admin-sidebar-btn {
-  padding: 12px 14px !important;
-  border-radius: 14px !important;
+  width: 100% !important;
+  min-height: 68px !important;
+  padding: 11px !important;
+  border-radius: 15px !important;
+  text-align: left !important;
 }
 
 body.admin-page .admin-sidebar-btn-label {
-  margin-bottom: 3px !important;
-  font-size: 15px !important;
-  line-height: 1.34 !important;
+  display: block !important;
+  margin-bottom: 4px !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
 }
 
 body.admin-page .admin-sidebar-btn-desc {
-  font-size: 12px !important;
-  line-height: 1.5 !important;
+  display: block !important;
+  font-size: 10px !important;
+  line-height: 1.42 !important;
 }
 
-body.admin-page .panel-header,
-body.admin-page .admin-panel-header-wrap,
-body.admin-page .panel-body,
-body.admin-page .admin-pagination {
-  padding-left: 16px !important;
-  padding-right: 16px !important;
+body.admin-page .panel {
+  border-radius: 20px !important;
 }
 
 body.admin-page .panel-header,
 body.admin-page .admin-panel-header-wrap {
-  gap: 10px !important;
-  padding-top: 14px !important;
-  padding-bottom: 14px !important;
+  gap: 8px !important;
+  padding: 13px 14px !important;
 }
 
 body.admin-page .panel-header h2 {
-  font-size: 17px !important;
-  line-height: 1.34 !important;
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.32 !important;
 }
 
-body.admin-page .panel-body {
-  padding-top: 16px !important;
-  padding-bottom: 16px !important;
-}
-
-body.admin-page .dash-stat-card,
-body.admin-page .analytics-item,
-body.admin-page .hero-result-item,
-body.admin-page .hero-slot-item,
-body.admin-page .contributors-admin-item,
-body.admin-page .admin-search-panel,
-body.admin-page .admin-selected-post-card,
-body.admin-page .admin-settings-block,
-body.admin-page .post-history-entry,
-body.admin-page .version-history-item {
+body.admin-page .panel-body,
+body.admin-page .admin-pagination {
   padding: 14px !important;
 }
 
-body.admin-page .dash-stat-card {
+body.admin-page p,
+body.admin-page li,
+body.admin-page small,
+body.admin-page td,
+body.admin-page th,
+body.admin-page .admin-section-note,
+body.admin-page .admin-inline-note,
+body.admin-page .analytics-note,
+body.admin-page .hero-result-note,
+body.admin-page .admin-selected-post-note,
+body.admin-page .contributors-admin-date,
+body.admin-page .version-history-summary,
+body.admin-page .version-history-type,
+body.admin-page .version-history-changes li,
+body.admin-page .post-history-entry-meta {
+  font-size: 11px !important;
+  line-height: 1.56 !important;
+  letter-spacing: 0 !important;
+}
+
+body.admin-page .admin-dashboard .dash-stats-row {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card {
+  grid-column: span 2 !important;
+}
+
+body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(4),
+body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(5) {
+  grid-column: span 3 !important;
+}
+
+body.admin-page .analytics-stats-row {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.admin-page .analytics-stats-row .dash-stat-card {
+  grid-column: span 2 !important;
+}
+
+body.admin-page .dash-stat-card,
+body.admin-page .admin-list-stats .stat-item {
   min-height: 0 !important;
+  padding: 12px !important;
+  border-radius: 16px !important;
 }
 
 body.admin-page .dash-stat-num,
 body.admin-page .stat-item .stat-num {
-  font-size: 26px !important;
+  font-size: 22px !important;
   line-height: 1 !important;
 }
 
 body.admin-page .dash-stat-label,
 body.admin-page .stat-item .stat-label {
-  margin-top: 8px !important;
-  font-size: 12px !important;
+  margin-top: 6px !important;
+  font-size: 11px !important;
   letter-spacing: 0 !important;
 }
 
-body.admin-page .stats-row {
-  grid-template-columns: 1fr !important;
+body.admin-page .dash-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
 }
 
-body.admin-page .stat-item {
-  padding: 14px 16px !important;
-  border-right: 0 !important;
-  border-bottom: 1px solid var(--admin-stroke) !important;
+body.admin-page .dash-action-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  min-height: 52px !important;
+  padding: 12px 13px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: var(--admin-ink) !important;
 }
 
-body.admin-page .stat-item:last-child {
-  border-bottom: 0 !important;
+body.admin-page .dash-action-icon {
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+body.admin-page .dash-action-label {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  letter-spacing: 0 !important;
 }
 
 body.admin-page .analytics-toolbar {
-  gap: 10px !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
 }
 
 body.admin-page .analytics-toolbar-group {
   min-width: 0 !important;
 }
 
+body.admin-page .dashboard-2col,
+body.admin-page .admin-dashboard-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+body.admin-page .stats-row,
+body.admin-page .admin-list-stats {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  padding: 14px !important;
+}
+
+body.admin-page .stat-item {
+  padding: 12px !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+}
+
+body.admin-page .article-list-toolbar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+}
+
+body.admin-page #admin-list-search {
+  flex: 1 1 100% !important;
+}
+
+body.admin-page #admin-list-page-size,
+body.admin-page #reorder-save-btn,
+body.admin-page .article-list-toolbar > button,
+body.admin-page .article-list-toolbar > .count {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0 !important;
+}
+
+body.admin-page .article-list-toolbar > .count {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border: 1px solid rgba(37, 29, 22, 0.10) !important;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  font-size: 11px !important;
+}
+
+body.admin-page .admin-list-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 10px 12px !important;
+  border-bottom: 1px solid rgba(37, 29, 22, 0.10) !important;
+}
+
+body.admin-page .article-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 12px !important;
+}
+
+body.admin-page .article-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 10px !important;
+  padding: 14px !important;
+  border-radius: 16px !important;
+}
+
+body.admin-page .article-item-top {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-bottom: 6px !important;
+}
+
+body.admin-page .article-item-title,
+body.admin-page .article-item h4 {
+  margin: 0 0 8px !important;
+  font-size: 15px !important;
+  line-height: 1.44 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+body.admin-page .item-meta-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.admin-page .item-meta-chip {
+  min-height: 0 !important;
+  padding: 9px 10px !important;
+  gap: 3px !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page .item-meta-chip strong,
 body.admin-page .analytics-toolbar label,
 body.admin-page .form-group label,
 body.admin-page .admin-inline-label,
 body.admin-page .admin-search-panel-title,
 body.admin-page .admin-copy-card-label,
-body.admin-page .item-meta-chip strong,
 body.admin-page .admin-settings-block-head span,
-body.admin-page .contrib-form-label,
 body.admin-page .analytics-table th,
 body.admin-page .analytics-item span {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+}
+
+body.admin-page .item-meta-chip span {
   font-size: 11px !important;
-  line-height: 1.4 !important;
-  letter-spacing: 0.01em !important;
-  text-transform: none !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page .item-actions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+body.admin-page .item-actions .btn-icon,
+body.admin-page .item-actions .btn-edit,
+body.admin-page .item-actions .btn-delete {
+  width: 100% !important;
+}
+
+body.admin-page .admin-inline-controls,
+body.admin-page .admin-selected-post-actions,
+body.admin-page .admin-selected-post-card-header {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+body.admin-page .admin-inline-controls > * {
+  width: auto !important;
+}
+
+body.admin-page .admin-inline-controls > label,
+body.admin-page .admin-inline-controls > .admin-inline-label,
+body.admin-page .admin-inline-controls > .submit-btn {
+  flex: 1 1 100% !important;
+}
+
+body.admin-page .form-row,
+body.admin-page .share-meta-grid,
+body.admin-page .admin-copy-card-grid,
+body.admin-page .admin-inline-save,
+body.admin-page .tag-admin-grid,
+body.admin-page .admin-subnav {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.admin-page .form-group:only-child,
+body.admin-page .admin-inline-save > :first-child:last-child {
+  grid-column: 1 / -1 !important;
 }
 
 body.admin-page .form-group input,
@@ -8119,96 +8332,79 @@ body.admin-page input[type="url"],
 body.admin-page input[type="number"],
 body.admin-page select,
 body.admin-page textarea {
-  min-height: 42px;
-  padding: 10px 12px !important;
-  border-radius: 14px !important;
-  font-size: 14px !important;
-  line-height: 1.45 !important;
+  min-height: 40px !important;
+  padding: 10px 11px !important;
+  border-radius: 13px !important;
+  font-size: 13px !important;
+  line-height: 1.42 !important;
 }
 
 body.admin-page .form-group textarea,
 body.admin-page textarea {
-  min-height: 120px;
+  min-height: 112px !important;
 }
 
-body.admin-page .article-list {
-  padding-left: 16px !important;
-  padding-right: 16px !important;
+body.admin-page .analytics-table th,
+body.admin-page .analytics-table td {
+  padding: 10px !important;
 }
 
-body.admin-page .article-list-toolbar {
-  display: grid !important;
-  gap: 8px !important;
-}
-
-body.admin-page .article-list-toolbar > *,
-body.admin-page .article-list-toolbar > .count {
-  width: 100% !important;
-  margin: 0 !important;
-}
-
-body.admin-page .admin-list-tabs {
-  display: grid !important;
-  gap: 8px !important;
-  padding: 12px 16px !important;
-}
-
-body.admin-page .article-item,
+body.admin-page .hero-result-item,
 body.admin-page .hero-slot-item,
-body.admin-page .contributors-admin-item {
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 12px !important;
-  padding: 16px !important;
+body.admin-page .contributors-admin-item,
+body.admin-page .post-history-entry,
+body.admin-page .version-history-item,
+body.admin-page .admin-settings-block {
+  padding: 13px !important;
 }
 
-body.admin-page .article-item-title,
-body.admin-page .article-item h4 {
-  margin: 0 0 10px !important;
-  font-size: 17px !important;
-  line-height: 1.46 !important;
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: unset !important;
+body.admin-page .hero-result-title,
+body.admin-page .hero-slot-title,
+body.admin-page .contributors-admin-name,
+body.admin-page .admin-selected-post-title {
+  font-size: 14px !important;
+  line-height: 1.42 !important;
 }
 
-body.admin-page .item-meta-chip {
-  min-height: 0 !important;
-  padding: 10px 12px !important;
-  gap: 4px !important;
-  font-size: 12px !important;
-  line-height: 1.5 !important;
+@media (max-width: 480px) {
+  body.admin-page main#main-content {
+    padding-inline: 10px !important;
+  }
+
+  body.admin-page .admin-list-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  body.admin-page .admin-dashboard .dash-stats-row,
+  body.admin-page .analytics-stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:first-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(2),
+  body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(3),
+  body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(4),
+  body.admin-page .admin-dashboard .dash-stats-row .dash-stat-card:nth-child(5),
+  body.admin-page .analytics-stats-row .dash-stat-card {
+    grid-column: auto !important;
+  }
 }
 
-body.admin-page .item-actions,
-body.admin-page .admin-selected-post-actions,
-body.admin-page .admin-inline-controls {
-  width: 100% !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  gap: 8px !important;
-}
+@media (max-width: 420px) {
+  body.admin-page .form-row,
+  body.admin-page .share-meta-grid,
+  body.admin-page .admin-copy-card-grid,
+  body.admin-page .admin-inline-save,
+  body.admin-page .tag-admin-grid,
+  body.admin-page .analytics-toolbar {
+    grid-template-columns: 1fr !important;
+  }
 
-body.admin-page .item-actions .btn-icon,
-body.admin-page .item-actions .btn-edit,
-body.admin-page .item-actions .btn-delete,
-body.admin-page .admin-inline-controls > * {
-  width: 100% !important;
-}
-
-body.admin-page .admin-editor-row {
-  grid-template-columns: 1fr !important;
-  gap: 8px !important;
-}
-
-body.admin-page .admin-copy-card-grid,
-body.admin-page .share-meta-grid,
-body.admin-page .tag-admin-grid,
-body.admin-page .admin-inline-save {
-  gap: 10px !important;
-}
-
-body.admin-page .admin-inline-save-btn,
-body.admin-page .admin-inline-save-btn-compact {
-  width: 100% !important;
+  body.admin-page .article-list-toolbar > *,
+  body.admin-page .article-list-toolbar > .count {
+    flex-basis: 100% !important;
+  }
 }

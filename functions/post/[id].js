@@ -127,10 +127,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.060.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.060.02">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -213,7 +210,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-back">
           <a href="javascript:history.back()" class="post-page-back-link">← 뒤로가기</a>
           <a href="/${post.category}.html" class="post-page-back-link" style="margin-left:16px;">
-            <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;font-family:'DM Mono',monospace;">${cat.label}</span>
+            <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;font-family: AliceDigitalLearning, sans-serif;">${cat.label}</span>
           </a>
         </div>
 
@@ -241,7 +238,7 @@ export async function onRequestGet({ params, env, request }) {
           ${bodyHtml}
         </div>
 
-        ${keywords ? `<div class="post-page-tags"><span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
+        ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
         ${renderRelatedPostsSection(relatedPosts, false)}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
@@ -301,7 +298,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.060.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.060.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -313,22 +310,22 @@ export async function onRequestGet({ params, env, request }) {
   <!-- ── 수정 로그인 모달 ── -->
   <div id="post-login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;">
     <div style="background:#fff;padding:32px;max-width:340px;width:90%;border-top:3px solid #622599;" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
-      <h3 id="post-login-title" style="font-family:'AliceDigitalLearning',serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
-      <p style="font-family:'DM Mono',monospace;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
+      <h3 id="post-login-title" style="font-family: AliceDigitalLearning, sans-serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
+      <p style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
       <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password"
-        style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family:'DM Mono',monospace;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
+        style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
       <div id="post-login-turnstile" style="margin-bottom:12px;"></div>
       <div style="display:flex;gap:8px;">
-        <button onclick="window._postLoginSubmit()" style="flex:1;background:#622599;color:#fff;border:none;padding:10px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.06em;">확인</button>
-        <button onclick="document.getElementById('post-login-modal').style.display='none'" style="background:none;border:1px solid #e8e8e8;padding:10px 16px;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;">취소</button>
+        <button onclick="window._postLoginSubmit()" style="flex:1;background:#622599;color:#fff;border:none;padding:10px;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;letter-spacing:.06em;">확인</button>
+        <button onclick="document.getElementById('post-login-modal').style.display='none'" style="background:none;border:1px solid #e8e8e8;padding:10px 16px;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;">취소</button>
       </div>
-      <p id="post-login-err" style="font-family:'DM Mono',monospace;font-size:11px;color:#FF5655;margin-top:8px;display:none;"></p>
+      <p id="post-login-err" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:#FF5655;margin-top:8px;display:none;"></p>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.060.01"></script>
+  <script src="/js/main.js?v=0.060.02"></script>
   <script>
     GW.bootstrapStandardPage();
 

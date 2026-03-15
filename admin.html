@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.060.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.060.02">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.060.01</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.060.02</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.060.01</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.060.02</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -298,12 +298,12 @@
             <div class="form-row">
               <div class="form-group" style="flex:1;">
                 <label for="art-author">작성자</label>
-                <select id="art-author" style="padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>
+                <select id="art-author" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>
               </div>
               <div class="form-group">
                 <label for="art-date">게시 날짜</label>
-                <input type="date" id="art-date" style="padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
-                <p id="art-created-at-meta" style="margin-top:6px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:0.04em;">생성 시각: 새 글 작성 시 자동 기록</p>
+                <input type="date" id="art-date" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
+                <p id="art-created-at-meta" style="margin-top:6px;font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;letter-spacing:0.04em;">생성 시각: 새 글 작성 시 자동 기록</p>
               </div>
             </div>
 
@@ -314,22 +314,22 @@
                 <div id="admin-cover-preview"></div>
               </div>
               <input type="text" id="art-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />
-              <p style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>
+              <p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>
             </div>
 
             <div class="form-group">
               <label for="art-youtube-url">유튜브 영상 링크</label>
               <input type="url" id="art-youtube-url" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />
-              <p style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
+              <p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
             </div>
 
             <div class="form-group">
-              <label>본문 * <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;">(이미지 최대 5개)</span></label>
+              <label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 5개)</span></label>
               <div id="admin-editorjs" class="board-editorjs-wrap"></div>
             </div>
 
             <div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
-              <label for="art-metatags">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;">(쉼표로 구분)</span></label>
+              <label for="art-metatags">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분)</span></label>
               <input type="text" id="art-metatags" placeholder="예: 스카우트, 잼버리, WOSM" maxlength="500" />
             </div>
 
@@ -357,18 +357,18 @@
             <h2>게시글 목록</h2>
             <div class="article-list-toolbar">
               <input type="text" id="admin-list-search" placeholder="제목/태그 검색…"
-                style="flex:1;padding:7px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;"
+                style="flex:1;padding:7px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;"
                 oninput="adminSearchDebounce()" />
               <select id="admin-list-page-size" onchange="adminListPageSizeChange(this.value)"
-                style="padding:7px 12px;border:1px solid var(--border);background:#fff;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--ink);">
+                style="padding:7px 12px;border:1px solid var(--border);background:#fff;font-family: AliceDigitalLearning, sans-serif;font-size:11px;letter-spacing:.04em;color:var(--ink);">
                 <option value="10">10개씩</option>
                 <option value="20" selected>20개씩</option>
                 <option value="50">50개씩</option>
                 <option value="100">100개씩</option>
               </select>
               <span class="count" id="article-count">0건</span>
-              <button id="reorder-save-btn" onclick="saveReorder()" style="display:none;padding:7px 14px;background:#622599;color:#fff;border:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.05em;cursor:pointer;">순서 저장</button>
-              <button onclick="clearReorder()" style="padding:7px 14px;border:1px solid var(--border);background:none;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;color:var(--muted);">순서 초기화</button>
+              <button id="reorder-save-btn" onclick="saveReorder()" style="display:none;padding:7px 14px;background:#622599;color:#fff;border:none;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.05em;cursor:pointer;">순서 저장</button>
+              <button onclick="clearReorder()" style="padding:7px 14px;border:1px solid var(--border);background:none;font-family: AliceDigitalLearning, sans-serif;font-size:10px;cursor:pointer;color:var(--muted);">순서 초기화</button>
             </div>
           </div>
 
@@ -382,11 +382,11 @@
 
           <!-- Category filter tabs -->
           <div class="admin-list-tabs">
-            <button id="admin-tab-all" class="active" onclick="adminListFilter('all')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--black);color:var(--white);">전체</button>
-            <button id="admin-tab-korea" onclick="adminListFilter('korea')" style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">Korea</button>
-            <button id="admin-tab-apr"   onclick="adminListFilter('apr')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">APR</button>
-            <button id="admin-tab-wosm"  onclick="adminListFilter('wosm')"  style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">WOSM</button>
-            <button id="admin-tab-people" onclick="adminListFilter('people')" style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">People</button>
+            <button id="admin-tab-all" class="active" onclick="adminListFilter('all')"   style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--black);color:var(--white);">전체</button>
+            <button id="admin-tab-korea" onclick="adminListFilter('korea')" style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">Korea</button>
+            <button id="admin-tab-apr"   onclick="adminListFilter('apr')"   style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">APR</button>
+            <button id="admin-tab-wosm"  onclick="adminListFilter('wosm')"  style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">WOSM</button>
+            <button id="admin-tab-people" onclick="adminListFilter('people')" style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">People</button>
           </div>
 
           <div class="article-list" id="article-list">
@@ -395,9 +395,9 @@
 
           <!-- Pagination -->
           <div id="admin-pagination" class="admin-pagination">
-            <button id="admin-prev-btn" onclick="adminListPageChange(-1)" style="font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">← 이전</button>
-            <span id="admin-page-info" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">1 / 1</span>
-            <button id="admin-next-btn" onclick="adminListPageChange(1)" style="font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">다음 →</button>
+            <button id="admin-prev-btn" onclick="adminListPageChange(-1)" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">← 이전</button>
+            <span id="admin-page-info" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:var(--muted);">1 / 1</span>
+            <button id="admin-next-btn" onclick="adminListPageChange(1)" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">다음 →</button>
           </div>
         </div>
       </div>
@@ -528,7 +528,7 @@
             <div class="admin-inline-controls">
               <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
               <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
-                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
               <span class="admin-inline-unit">초</span>
               <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">노출 시간 저장</button>
             </div>
@@ -540,7 +540,7 @@
             <div class="admin-search-panel">
               <div class="admin-search-panel-title">기사 추가</div>
               <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
-                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
                 oninput="heroSearch()" />
               <div id="hero-search-results" style="margin-top:8px;max-height:320px;overflow:auto;"></div>
             </div>
@@ -556,7 +556,7 @@
               <div class="admin-search-panel admin-search-panel-soft">
                 <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
                 <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
-                  style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                  style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
                   oninput="searchHomeLeadPost()" />
                 <div id="home-lead-search-results" style="margin-top:8px;max-height:280px;overflow:auto;"></div>
               </div>
@@ -571,7 +571,7 @@
             <div class="admin-inline-controls">
               <label for="board-gap-input" class="admin-inline-label">카드 간격</label>
               <input type="number" id="board-gap-input" min="5" max="40" step="1" value="6"
-                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
               <span class="admin-inline-unit">px</span>
               <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveBoardLayout()">간격 저장</button>
             </div>
@@ -644,16 +644,16 @@
               <div class="share-meta-card-head">푸터 좌측 전체 문구</div>
               <label>전체 입력</label>
               <textarea id="site-footer-raw" rows="8" maxlength="4000" placeholder="<h4>BP미디어</h4>&#10;<p>소개 문구를 HTML로 직접 작성하세요.</p>&#10;<p><a href=&quot;mailto:story@bpmedia.net&quot;>story@bpmedia.net</a></p>"></textarea>
-              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">여기는 HTML 그대로 저장됩니다. 제목, 문단, 링크, 줄바꿈을 원하는 구조로 직접 작성하면 푸터 좌측에 그대로 렌더링됩니다.</p>
+              <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:8px;">여기는 HTML 그대로 저장됩니다. 제목, 문단, 링크, 줄바꿈을 원하는 구조로 직접 작성하면 푸터 좌측에 그대로 렌더링됩니다.</p>
               <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin-top:12px;" onclick="saveSiteMeta()">푸터 문구 저장</button>
             </div>
 
             <div style="margin-top:18px;">
-              <label style="display:block;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">공유 대표 이미지</label>
+              <label style="display:block;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">공유 대표 이미지</label>
               <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin:0;" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
               <button class="cancel-btn visible" type="button" style="width:auto;padding:10px 18px;margin:0 0 0 8px;" onclick="removeSiteMetaImage()">이미지 제거</button>
               <div id="site-meta-image-preview" style="margin-top:12px;"></div>
-              <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
+              <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:8px;">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
             </div>
 
             <div class="form-row" style="margin-top:18px;">
@@ -666,7 +666,7 @@
                 <input type="text" id="site-naver-verification" placeholder="naver-site-verification content 값" maxlength="120" />
               </div>
             </div>
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
+            <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:4px;">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
 
             <button class="submit-btn" style="margin-top:18px;" onclick="saveSiteMeta()">공유 설정 저장</button>
           </div>
@@ -677,7 +677,7 @@
           <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">한 줄에 텍스트 하나씩 입력하세요.</p>
-            <textarea id="ticker-textarea" rows="5" style="width:100%;padding:11px 14px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
+            <textarea id="ticker-textarea" rows="5" style="width:100%;padding:11px 14px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;color:var(--ink);resize:vertical;outline:none;" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveTicker()">티커 저장</button>
           </div>
         </div>
@@ -689,7 +689,7 @@
             <p class="admin-section-note">AI 지원 글 하단에 표시될 문구입니다.</p>
             <div class="admin-inline-save">
               <input type="text" id="ai-disclaimer-input" class="admin-inline-save-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500"
-                style="padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
+                style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
               <button class="submit-btn admin-inline-save-btn admin-inline-save-btn-compact" onclick="saveAiDisclaimer()">저장</button>
             </div>
           </div>
@@ -714,23 +714,23 @@
             <p class="admin-section-note">행을 드래그해서 순서를 변경할 수 있습니다.</p>
             <div id="contributors-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
             <div style="border:1px solid var(--border);padding:16px;background:var(--bg);">
-              <div id="contrib-form-label" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
+              <div id="contrib-form-label" style="font-family: AliceDigitalLearning, sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
               <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="contrib-name-input" placeholder="이름 (최대 60자)" maxlength="60"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
+                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
               </div>
               <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <input type="text" id="contrib-note-input" placeholder="도움 내용 (최대 200자)" maxlength="200"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
+                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
               </div>
               <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                <label style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);white-space:nowrap;margin:0;">도움 날짜</label>
+                <label style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);white-space:nowrap;margin:0;">도움 날짜</label>
                 <input type="date" id="contrib-date-input"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
+                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
               </div>
               <div style="display:flex;gap:8px;">
                 <button class="submit-btn" style="padding:9px 20px;margin:0;" id="contrib-submit-btn" onclick="submitContributor()">추가</button>
-                <button id="contrib-cancel-btn" onclick="cancelEditContributor()" style="display:none;padding:9px 20px;border:1px solid var(--border);background:none;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;color:var(--muted);">취소</button>
+                <button id="contrib-cancel-btn" onclick="cancelEditContributor()" style="display:none;padding:9px 20px;border:1px solid var(--border);background:none;font-family: AliceDigitalLearning, sans-serif;font-size:11px;cursor:pointer;color:var(--muted);">취소</button>
               </div>
             </div>
           </div>
@@ -766,8 +766,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.060.01"></script>
-  <script src="/js/admin.js?v=0.060.01"></script>
+  <script src="/js/main.js?v=0.060.02"></script>
+  <script src="/js/admin.js?v=0.060.02"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

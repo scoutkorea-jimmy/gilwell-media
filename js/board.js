@@ -524,11 +524,11 @@
         '<div style="display:flex;gap:12px;">' +
           '<div class="form-group" style="flex:1;">' +
             '<label for="board-write-author">작성자</label>' +
-            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
+            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
           '</div>' +
           '<div class="form-group" style="min-width:140px;">' +
             '<label for="board-write-date">게시 날짜</label>' +
-            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family:\'DM Mono\',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;" />' +
+            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;" />' +
           '</div>' +
         '</div>' +
         '<div class="form-group">' +
@@ -542,25 +542,25 @@
             '<div id="board-cover-preview"></div>' +
           '</div>' +
           '<input type="text" id="board-write-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
           '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
           '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;">(이미지 최대 5개)</span></label>' +
+          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 5개)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
         '</div>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
-          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;">(쉼표로 구분 · comma-separated)</span></label>' +
+          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
           '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family:\'DM Mono\',monospace;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
         '</div>' +
         '<div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">' +
           '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
-          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
+          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
         '</div>' +
         '<div id="board-write-turnstile" style="margin:20px 0 0;"></div>' +
         '<button id="board-write-submit" class="submit-btn" style="margin-top:12px;">게재하기</button>' +

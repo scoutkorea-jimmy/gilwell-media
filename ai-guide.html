@@ -9,9 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/css/style.css?v=0.060.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.060.02">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -97,7 +95,7 @@
         </div>
         <div class="contributor-card">
           <h3>디자인 서체 규칙</h3>
-          <p>이 사이트의 기본 서체는 전역적으로 `AliceDigitalLearning` 하나만 씁니다. 공개 페이지, 관리자 페이지, 버튼, 메타, 검색, 시스템 안내까지 모두 같은 서체 규칙을 유지하고, 예전 DM Mono/Noto/Playfair 흔적이 남아 있으면 정리합니다.</p>
+          <p>이 사이트의 기본 서체는 전역적으로 `AliceDigitalLearning` 하나만 씁니다. 공개 페이지, 관리자 페이지, 버튼, 메타, 검색, 시스템 안내까지 모두 같은 서체 규칙을 유지하고, 예전 대체 서체 흔적이 남아 있으면 모두 제거합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>타이포 스케일 규칙</h3>
@@ -113,7 +111,7 @@
         </div>
         <div class="contributor-card">
           <h3>모바일 레이아웃 규칙</h3>
-          <p>관리자 화면을 포함해 모바일에서는 가로 스크롤을 허용하지 않습니다. 탭, 버튼, 툴바, 통계, 액션은 필요 시 모두 1단으로 떨어뜨리고, `overflow-x`로 임시 봉합하지 않습니다.</p>
+          <p>관리자 화면을 포함해 모바일에서는 가로 스크롤을 허용하지 않습니다. 다만 `1단 흐름`은 화면 전체 구조를 뜻하지, 모든 항목을 한 줄에 하나씩만 세운다는 뜻은 아닙니다. 통계, 빠른 액션, 탭, 메타 카드처럼 성격이 같은 정보는 카드 내부나 섹션 내부에서 2열/2줄로 묶어 밀도를 확보하고, 전체 페이지 흐름만 위에서 아래로 유지합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>한글 줄바꿈 규칙</h3>
@@ -129,7 +127,7 @@
         </div>
         <div class="contributor-card">
           <h3>관리자 구조 규칙</h3>
-          <p>관리자 화면은 이제 뷰포트와 무관하게 `모바일 단일 폭 · 1단 흐름`을 기본으로 합니다. 데스크톱에서도 모바일 최적화된 폭과 간격을 그대로 사용하고, 좌우 2단 레이아웃은 두지 않습니다. 탐색, 통계, 목록, 설정은 모두 위에서 아래로 한 줄 흐름 안에서 읽히고 조작돼야 합니다.</p>
+          <p>관리자 화면은 이제 뷰포트와 무관하게 `모바일 단일 폭 · 1단 흐름`을 기본으로 합니다. 데스크톱에서도 모바일 최적화된 폭과 간격을 그대로 사용하고, 좌우 2단 레이아웃은 두지 않습니다. 대신 한 카드 안에서는 2열 통계, 2열 액션, 2줄 탭처럼 정보를 압축 배치해 세로 길이를 줄이고 조작 효율을 높입니다.</p>
         </div>
         <div class="contributor-card">
           <h3>관리자 헤더 규칙</h3>
@@ -145,7 +143,7 @@
         </div>
         <div class="contributor-card">
           <h3>관리자 개요 규칙</h3>
-          <p>운영 개요 상단 통계와 빠른 액션도 관리자 전체 규칙을 따라 항상 1단으로 쌓습니다. PC라고 여러 칸으로 펼치지 않고, 모바일 카드들이 차례로 내려오는 방식으로 유지합니다. 통계 라벨은 숫자보다 조용해야 하며, 숫자가 주인공이어야 합니다.</p>
+          <p>운영 개요 상단 통계와 빠른 액션은 페이지 전체로는 1단 흐름을 유지하되, 카드 묶음 내부에서는 2열 또는 2줄 배치를 적극 활용합니다. 통계는 한 화면에서 빠르게 훑히는 밀도가 중요하고, 라벨은 숫자보다 조용해야 하며 숫자가 주인공이어야 합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>용어집 검색 규칙</h3>
@@ -179,7 +177,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.060.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.060.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -188,7 +186,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.060.01"></script>
+  <script src="/js/main.js?v=0.060.02"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
