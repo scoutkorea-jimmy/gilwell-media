@@ -9,13 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.059.05">
-  <style>
-    body { background: #eceae4; }
-  </style>
+  <link rel="stylesheet" href="/css/style.css?v=0.060.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -30,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.059.05</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.060.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,14 +34,14 @@
 
     <header class="admin-header">
       <div class="admin-header-top">
-        <div class="admin-brand">
+        <div class="admin-brand admin-brand-card">
           <span class="logo">BP미디어</span>
           <span class="badge">Admin</span>
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
-        <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.059.05</span></span>
-          <div class="admin-header-box">
+        <div class="header-right admin-header-controls">
+          <span class="admin-build-label">Build <span class="site-build-version">V0.060.00</span></span>
+          <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
               <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -112,7 +106,7 @@
 
       <!-- ══ TAB: 대시보드 ══ -->
       <div id="admin-tab-dashboard" class="admin-tab-panel active">
-        <div class="admin-dashboard">
+        <div class="admin-dashboard admin-stack">
 
           <!-- Stats row -->
           <div class="dash-stats-row">
@@ -227,7 +221,7 @@
           </div>
         </div>
 
-        <div class="dashboard-2col" style="margin-top:24px;">
+        <div class="dashboard-2col admin-dashboard-grid">
           <div class="panel">
             <div class="panel-header"><h2>방문자 추이</h2></div>
             <div class="panel-body">
@@ -244,7 +238,7 @@
           </div>
         </div>
 
-        <div class="dashboard-2col" style="margin-top:24px;">
+        <div class="dashboard-2col admin-dashboard-grid">
           <div class="panel">
             <div class="panel-header"><h2>유입 경로</h2></div>
             <div class="panel-body">
@@ -259,7 +253,7 @@
           </div>
         </div>
 
-        <div class="panel" style="margin-top:24px;">
+        <div class="panel admin-panel-spaced">
           <div class="panel-header"><h2>상위 페이지 상세</h2></div>
           <div class="panel-body">
             <div id="analytics-top-pages" class="analytics-table-wrap"></div>
@@ -359,7 +353,7 @@
       <!-- ══ TAB: 게시글 목록 ══ -->
       <div id="admin-tab-list" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
-          <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+          <div class="panel-header admin-panel-header-wrap">
             <h2>게시글 목록</h2>
             <div class="article-list-toolbar">
               <input type="text" id="admin-list-search" placeholder="제목/태그 검색…"
@@ -379,7 +373,7 @@
           </div>
 
           <!-- Stats -->
-          <div class="stats-row admin-list-stats" style="padding:12px 24px;border-bottom:1px solid var(--border);">
+          <div class="stats-row admin-list-stats">
             <div class="stat-item"><span class="stat-num" id="stat-korea">—</span><span class="stat-label">Korea</span></div>
             <div class="stat-item"><span class="stat-num" id="stat-apr">—</span><span class="stat-label">APR</span></div>
             <div class="stat-item"><span class="stat-num" id="stat-wosm">—</span><span class="stat-label">WOSM</span></div>
@@ -387,8 +381,8 @@
           </div>
 
           <!-- Category filter tabs -->
-          <div class="admin-list-tabs" style="display:flex;border-bottom:1px solid var(--border);">
-            <button id="admin-tab-all"   onclick="adminListFilter('all')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--black);color:var(--white);">전체</button>
+          <div class="admin-list-tabs">
+            <button id="admin-tab-all" class="active" onclick="adminListFilter('all')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--black);color:var(--white);">전체</button>
             <button id="admin-tab-korea" onclick="adminListFilter('korea')" style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">Korea</button>
             <button id="admin-tab-apr"   onclick="adminListFilter('apr')"   style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">APR</button>
             <button id="admin-tab-wosm"  onclick="adminListFilter('wosm')"  style="flex:1;padding:10px 0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">WOSM</button>
@@ -400,7 +394,7 @@
           </div>
 
           <!-- Pagination -->
-          <div id="admin-pagination" style="display:none;padding:16px 24px;border-top:1px solid var(--border);align-items:center;gap:12px;justify-content:center;">
+          <div id="admin-pagination" class="admin-pagination">
             <button id="admin-prev-btn" onclick="adminListPageChange(-1)" style="font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">← 이전</button>
             <span id="admin-page-info" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">1 / 1</span>
             <button id="admin-next-btn" onclick="adminListPageChange(1)" style="font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">다음 →</button>
@@ -426,7 +420,7 @@
         <div class="panel">
           <div class="panel-header"><h2>스카우트 용어집 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">가 ~ 하 분류별로 한국어, 영어, 프랑스어 용어를 관리합니다. 공개 페이지에서는 검색과 분류 버튼으로 한눈에 찾을 수 있습니다.</p>
+            <p class="admin-section-note">가 ~ 하 분류별로 한국어, 영어, 프랑스어 용어를 관리합니다. 공개 페이지에서는 검색과 분류 버튼으로 한눈에 찾을 수 있습니다.</p>
 
             <div class="glossary-admin-toolbar">
               <div class="form-group" style="margin:0;">
@@ -519,7 +513,7 @@
         <div class="panel" id="settings-editors" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>에디터 관리 (A–C)</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
+            <p class="admin-section-note">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
             <div id="editors-manager" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);padding:0 12px;"></div>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveEditors()">에디터 저장</button>
           </div>
@@ -529,13 +523,13 @@
         <div class="panel" id="settings-hero" style="margin-bottom:24px;">
           <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px;">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
-            <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
-              <label for="hero-interval-input" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;">기사 노출 시간</label>
+            <p class="admin-section-note">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
+            <p class="admin-section-note">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
+            <div class="admin-inline-controls">
+              <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
               <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
                 style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
-              <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">초</span>
+              <span class="admin-inline-unit">초</span>
               <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">노출 시간 저장</button>
             </div>
 
@@ -543,8 +537,8 @@
             <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
 
             <!-- Search to add -->
-            <div style="border:1px solid var(--border);padding:14px;">
-              <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">기사 추가</div>
+            <div class="admin-search-panel">
+              <div class="admin-search-panel-title">기사 추가</div>
               <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
                 style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
                 oninput="heroSearch()" />
@@ -559,8 +553,8 @@
                 <span>홈 상단 `메인 스토리` 카드에 노출할 게시글을 직접 선택합니다.</span>
               </div>
               <div id="home-lead-selected" class="admin-selected-post">불러오는 중…</div>
-              <div style="border:1px solid var(--border);padding:14px;background:rgba(255,255,255,0.7);">
-                <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">메인 스토리 기사 검색</div>
+              <div class="admin-search-panel admin-search-panel-soft">
+                <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
                 <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
                   style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
                   oninput="searchHomeLeadPost()" />
@@ -573,12 +567,12 @@
         <div class="panel" id="settings-board" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>게시판 카드 간격</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">Korea, APR, WOSM, Scout People 게시판 카드의 상하 간격입니다. 최소 5px부터 설정할 수 있습니다.</p>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <label for="board-gap-input" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0;">카드 간격</label>
+            <p class="admin-section-note">Korea, APR, WOSM, Scout People 게시판 카드의 상하 간격입니다. 최소 5px부터 설정할 수 있습니다.</p>
+            <div class="admin-inline-controls">
+              <label for="board-gap-input" class="admin-inline-label">카드 간격</label>
               <input type="number" id="board-gap-input" min="5" max="40" step="1" value="6"
                 style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
-              <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">px</span>
+              <span class="admin-inline-unit">px</span>
               <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveBoardLayout()">간격 저장</button>
             </div>
           </div>
@@ -587,7 +581,7 @@
         <div class="panel" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>게시판 D-day 설정</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">카테고리 배너 오른쪽 큰 영역에 행사명과 D-day를 표시합니다. 날짜를 비워두면 기존처럼 게시글 수가 표시되며, 모바일에서는 표시되지 않습니다.</p>
+            <p class="admin-section-note">카테고리 배너 오른쪽 큰 영역에 행사명과 D-day를 표시합니다. 날짜를 비워두면 기존처럼 게시글 수가 표시되며, 모바일에서는 표시되지 않습니다.</p>
             <div id="board-banner-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
             <button type="button" class="submit-btn" style="margin-top:16px;" onclick="saveBoardBanner()">D-day 설정 저장</button>
           </div>
@@ -597,7 +591,7 @@
         <div class="panel" id="settings-tags" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>글머리 태그 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
+            <p class="admin-section-note">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
             <div class="tag-admin-toolbar">
               <input type="text" id="tag-new-input" maxlength="30" placeholder="새 태그 입력" />
               <select id="tag-new-target">
@@ -638,9 +632,9 @@
         <div class="panel" id="settings-site-meta" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">특히 `홈 / index` 설명은 구글과 네이버 검색 결과의 사이트 소개 문구로 활용됩니다.</p>
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">평균적으로 반영 확인까지 1~10분 정도 걸릴 수 있으며, 카카오톡·페이스북·X 같은 플랫폼은 자체 캐시 때문에 더 오래 보일 수 있습니다.</p>
+            <p class="admin-section-note">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
+            <p class="admin-section-note">특히 `홈 / index` 설명은 구글과 네이버 검색 결과의 사이트 소개 문구로 활용됩니다.</p>
+            <p class="admin-section-note">평균적으로 반영 확인까지 1~10분 정도 걸릴 수 있으며, 카카오톡·페이스북·X 같은 플랫폼은 자체 캐시 때문에 더 오래 보일 수 있습니다.</p>
 
             <div class="share-meta-grid" id="site-meta-manager"></div>
 
@@ -682,7 +676,7 @@
         <div class="panel" id="settings-ticker" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">한 줄에 텍스트 하나씩 입력하세요.</p>
+            <p class="admin-section-note">한 줄에 텍스트 하나씩 입력하세요.</p>
             <textarea id="ticker-textarea" rows="5" style="width:100%;padding:11px 14px;border:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px;color:var(--ink);resize:vertical;outline:none;" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveTicker()">티커 저장</button>
           </div>
@@ -692,7 +686,7 @@
         <div class="panel" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>AI 도움 문구 설정</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:12px;">AI 지원 글 하단에 표시될 문구입니다.</p>
+            <p class="admin-section-note">AI 지원 글 하단에 표시될 문구입니다.</p>
             <div class="admin-inline-save">
               <input type="text" id="ai-disclaimer-input" class="admin-inline-save-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500"
                 style="padding:9px 12px;border:1px solid var(--border);font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;" />
@@ -704,7 +698,7 @@
         <div class="panel" id="settings-copy" data-role-min="full" style="margin-bottom:24px;">
           <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
+            <p class="admin-section-note">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
             <div id="category-copy-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
             <button class="submit-btn" style="margin-top:16px;" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
           </div>
@@ -716,8 +710,8 @@
         <div class="panel">
           <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:10px;">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">행을 드래그해서 순서를 변경할 수 있습니다.</p>
+            <p class="admin-section-note">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
+            <p class="admin-section-note">행을 드래그해서 순서를 변경할 수 있습니다.</p>
             <div id="contributors-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
             <div style="border:1px solid var(--border);padding:16px;background:var(--bg);">
               <div id="contrib-form-label" style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
@@ -747,7 +741,7 @@
         <div class="panel">
           <div class="panel-header"><h2>UI 번역 관리</h2></div>
           <div class="panel-body">
-            <p style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:16px;">버튼과 메뉴의 국문/영문 텍스트를 수정하세요.</p>
+            <p class="admin-section-note">버튼과 메뉴의 국문/영문 텍스트를 수정하세요.</p>
             <div id="translations-table" style="display:flex;flex-direction:column;gap:8px;">
               <div style="font-size:12px;color:var(--muted);">불러오는 중…</div>
             </div>
@@ -772,8 +766,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.059.05"></script>
-  <script src="/js/admin.js?v=0.059.05"></script>
+  <script src="/js/main.js?v=0.060.00"></script>
+  <script src="/js/admin.js?v=0.060.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
