@@ -68,4 +68,5 @@ wrangler pages deployment list --project-name gilwell-media
 - `a`는 오너가 직접 올리라고 한 경우에만 증가한다.
 - `bbb`는 기능 추가가 있을 때만 증가한다.
 - `cc`는 버그 수정, 배너 위치 조정 같은 사소한 수정에만 증가한다.
+- `bbb`가 올라가면 `cc`는 반드시 `00`으로 초기화한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, 릴리스 직후에는 `Deployments`의 커밋 SHA와 라이브 응답 버전을 반드시 같이 확인한다.
