@@ -3600,9 +3600,8 @@ footer a:hover { color: #ffffff; }
   .admin-header a,
   .logout-btn { font-size: var(--mobile-fs-micro); letter-spacing: 0.06em; }
   .admin-group-nav { padding: 8px 16px 12px; }
-  .admin-tab-strip { padding: 8px 16px 10px; }
   .admin-group-btn { font-size: var(--mobile-fs-meta); padding: 9px 12px; }
-  .admin-sidebar { top: 140px; margin: 0 -16px; padding: 0 16px 8px; }
+  .admin-sidebar { top: 104px; margin: 0 -16px; padding: 0 16px 8px; }
   .admin-sidebar-group {
     padding: 8px;
     flex-wrap: nowrap;
@@ -3614,7 +3613,7 @@ footer a:hover { color: #ffffff; }
   .admin-sidebar-btn-desc { font-size: var(--mobile-fs-micro); }
   .admin-sidebar-btn-label { font-size: 14px; }
   .admin-subnav {
-    top: 196px;
+    top: 160px;
     justify-content: flex-start;
     overflow-x: auto;
     flex-wrap: nowrap;
@@ -4339,37 +4338,6 @@ footer a:hover { color: #ffffff; }
   background: var(--black);
 }
 
-.admin-tab-strip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 24px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: rgba(14,14,14,0.98);
-}
-
-.admin-tab-strip-btn {
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.04);
-  color: rgba(245,243,238,0.78);
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.admin-tab-strip-btn:hover,
-.admin-tab-strip-btn.active {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.3);
-  color: var(--white);
-}
-
 .admin-shell {
   max-width: 1366px;
   margin: 0 auto;
@@ -4382,7 +4350,7 @@ footer a:hover { color: #ffffff; }
 
 .admin-sidebar {
   position: sticky;
-  top: 168px;
+  top: 122px;
   z-index: 180;
   display: block;
 }
@@ -4456,7 +4424,7 @@ footer a:hover { color: #ffffff; }
   gap: 8px;
   margin-bottom: 20px;
   position: sticky;
-  top: 244px;
+  top: 198px;
   z-index: 140;
   padding: 10px 12px;
   background: rgba(236, 234, 228, 0.96);
