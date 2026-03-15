@@ -125,6 +125,86 @@ body.admin-page .admin-login-build,
   line-height: 1.5 !important;
 }
 
+/* ── Header Density Tuning (V0.059.03) ────────────────────── */
+.section-header {
+  padding: 18px 28px 12px !important;
+  gap: 10px !important;
+}
+
+.section-header h2 {
+  font-size: 18px !important;
+  line-height: 1.1 !important;
+}
+
+.home-col-header {
+  padding: 8px 14px !important;
+  margin-bottom: 8px !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+}
+
+.home-col-header h3,
+.home-col-header .home-section-more {
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
+
+body.admin-page .admin-header-top {
+  gap: 12px !important;
+  padding: 10px 18px !important;
+}
+
+body.admin-page .admin-brand {
+  gap: 6px !important;
+  padding: 10px 14px !important;
+}
+
+body.admin-page .admin-brand .logo {
+  font-size: 14px !important;
+  line-height: 1.1 !important;
+}
+
+body.admin-page .admin-brand .badge {
+  font-size: 8px !important;
+  padding: 3px 8px !important;
+}
+
+body.admin-page .admin-header-copy {
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page .header-right {
+  padding: 10px 12px !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-header-box {
+  padding: 10px !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-header-link,
+body.admin-page .admin-group-btn,
+body.admin-page .logout-btn {
+  min-height: 34px !important;
+  padding: 7px 10px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 768px) {
+  .section-header {
+    padding: 14px 16px 10px !important;
+  }
+
+  .home-col-header {
+    padding: 8px 12px !important;
+  }
+
+  body.admin-page .admin-header-top {
+    padding: 10px 12px !important;
+  }
+}
+
 /* ── Final Admin / Glossary Overrides (V0.059.00) ─────────── */
 body.admin-page,
 body.admin-page *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
