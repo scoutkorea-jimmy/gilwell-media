@@ -10,6 +10,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
   const origin = new URL(request.url).origin;
   const staticPages = [
     { path: '/', priority: '1.0', category: null },
+    { path: '/latest', priority: '0.9', category: null },
     { path: '/korea', priority: '0.9', category: 'korea' },
     { path: '/apr', priority: '0.9', category: 'apr' },
     { path: '/wosm', priority: '0.9', category: 'wosm' },

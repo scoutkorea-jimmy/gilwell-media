@@ -11,7 +11,9 @@
 
   /**
    * @param {object} opts
-   * @param {string} opts.category   - 'korea' | 'apr' | 'wosm'
+   * @param {string} opts.category   - page category key
+   * @param {string|null} [opts.apiCategory] - actual API category filter
+   * @param {boolean} [opts.enableWrite] - whether to expose write UI
    * @param {string} [opts.gridId]   - id of the grid container element
    * @param {string} [opts.countId]  - id of the post-count element
    * @param {string} [opts.moreId]   - id of the "load more" button
@@ -19,6 +21,8 @@
    */
   function Board(opts) {
     this.category = opts.category;
+    this.apiCategory = Object.prototype.hasOwnProperty.call(opts, 'apiCategory') ? opts.apiCategory : opts.category;
+    this.enableWrite = opts.enableWrite !== false;
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
@@ -48,7 +52,7 @@
     GW.setMastheadDate();
     GW.markActiveNav();
     this._setupModal();
-    this._setupWriteFeature();
+    if (this.enableWrite) this._setupWriteFeature();
     this._setupSearch();
     this._loadBoardLayout();
     this._loadBoardBannerInfo();
@@ -100,7 +104,9 @@
     var barEl = document.getElementById('tag-filter-bar');
     if (!barEl) return;
 
-    fetch('/api/posts/tags?category=' + encodeURIComponent(this.category))
+    var url = '/api/posts/tags';
+    if (this.apiCategory) url += '?category=' + encodeURIComponent(this.apiCategory);
+    fetch(url)
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var tags = data.tags || [];
@@ -145,7 +151,9 @@
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
     var tagParam    = this._selectedTag  ? '&tag=' + encodeURIComponent(this._selectedTag)  : '';
-    GW.apiFetch('/api/posts?category=' + this.category + '&page=' + this.page + '&limit=' + this.pageSize + searchParam + tagParam)
+    var endpoint = '/api/posts?page=' + this.page + '&limit=' + this.pageSize + searchParam + tagParam;
+    if (this.apiCategory) endpoint += '&category=' + encodeURIComponent(this.apiCategory);
+    GW.apiFetch(endpoint)
       .then(function (data) {
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
