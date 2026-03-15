@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.054.04';
+  GW.APP_VERSION = '0.054.05';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -797,6 +797,33 @@
       .catch(function () {});
   };
 
+  GW.applyBoardLayoutSettings = function (data) {
+    var parsed = parseInt(data && data.gap_px, 10);
+    var gap = Number.isFinite(parsed) ? Math.min(40, Math.max(5, parsed)) : 6;
+    var root = document.documentElement;
+    if (!root || !root.style) return;
+    root.style.setProperty('--board-card-gap', gap + 'px');
+    root.style.setProperty('--home-section-gap', Math.max(15, gap * 3) + 'px');
+    root.style.setProperty('--home-grid-gap', Math.max(20, gap * 4) + 'px');
+    root.style.setProperty('--home-block-bottom', Math.max(28, gap * 6) + 'px');
+    root.style.setProperty('--home-title-gap', Math.max(12, gap * 2) + 'px');
+  };
+
+  GW.loadBoardLayoutSettings = function () {
+    var cacheKey = 'gw_cache_board_layout_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW.applyBoardLayoutSettings(cached);
+    }
+    fetch('/api/settings/board-layout', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW.applyBoardLayoutSettings(data);
+      })
+      .catch(function () {});
+  };
+
   GW._renderStats = function () {
     var d   = GW._statsData;
     if (!d) return;
@@ -864,6 +891,7 @@
     opts = opts || {};
     if (opts.setDate !== false) GW.setMastheadDate();
     if (opts.markActiveNav !== false) GW.markActiveNav();
+    GW.loadBoardLayoutSettings();
     if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
     if (opts.loadStats !== false) GW.loadStats();
     if (opts.loadTranslations !== false) GW.loadTranslations();
