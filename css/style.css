@@ -6702,7 +6702,7 @@ footer a:hover { color: #ffffff; }
   }
 }
 
-/* ── Admin Redesign System (V0.060.00) ───────────────────── */
+/* ── Admin Redesign System (V0.060.01) ───────────────────── */
 body.admin-page {
   --admin-bg: #f2efe8;
   --admin-surface: rgba(255,255,255,0.96);
@@ -7790,4 +7790,425 @@ body.admin-page .drag-handle {
   body.admin-page .admin-editor-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Admin Mobile-Only Layout (V0.060.01) ────────────────── */
+body.admin-page {
+  background:
+    radial-gradient(circle at top, rgba(98, 37, 153, 0.08), transparent 34%),
+    #f3eee7 !important;
+}
+
+body.admin-page,
+body.admin-page button,
+body.admin-page input,
+body.admin-page select,
+body.admin-page textarea,
+body.admin-page label,
+body.admin-page a,
+body.admin-page p,
+body.admin-page span,
+body.admin-page strong,
+body.admin-page li,
+body.admin-page th,
+body.admin-page td,
+body.admin-page h1,
+body.admin-page h2,
+body.admin-page h3,
+body.admin-page h4 {
+  font-family: 'AliceDigitalLearning', sans-serif !important;
+  word-break: keep-all;
+}
+
+body.admin-page main#main-content {
+  padding: 12px 12px 48px !important;
+}
+
+body.admin-page .admin-screen {
+  width: min(100%, 520px);
+  margin: 0 auto;
+}
+
+body.admin-page .admin-header {
+  position: static !important;
+  top: auto !important;
+  padding: 0 !important;
+  margin-bottom: 12px !important;
+  background: transparent !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+
+body.admin-page .admin-header-top,
+body.admin-page .admin-shell,
+body.admin-page .dash-stats-row,
+body.admin-page .dash-actions,
+body.admin-page .analytics-toolbar,
+body.admin-page .dashboard-2col,
+body.admin-page .admin-dashboard-grid,
+body.admin-page .admin-list-stats,
+body.admin-page .article-list-toolbar,
+body.admin-page .admin-list-tabs,
+body.admin-page .form-row,
+body.admin-page .item-meta-grid,
+body.admin-page .share-meta-grid,
+body.admin-page .tag-admin-grid,
+body.admin-page .admin-copy-card-grid,
+body.admin-page .admin-inline-save,
+body.admin-page .admin-subnav {
+  grid-template-columns: 1fr !important;
+}
+
+body.admin-page .admin-header-top,
+body.admin-page .admin-shell {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+body.admin-page .admin-brand-card,
+body.admin-page .admin-header-controls,
+body.admin-page .admin-sidebar-group,
+body.admin-page .panel,
+body.admin-page .dash-stat-card,
+body.admin-page .tag-admin-panel,
+body.admin-page .admin-copy-card,
+body.admin-page .analytics-item,
+body.admin-page .hero-result-item,
+body.admin-page .hero-slot-item,
+body.admin-page .contributors-admin-item,
+body.admin-page .admin-selected-post-card,
+body.admin-page .post-history-card,
+body.admin-page .version-history-item {
+  border-radius: 18px !important;
+}
+
+body.admin-page .admin-brand-card,
+body.admin-page .admin-header-controls {
+  padding: 14px 16px !important;
+}
+
+body.admin-page .admin-brand {
+  gap: 8px !important;
+}
+
+body.admin-page .admin-brand .logo {
+  font-size: 24px !important;
+  line-height: 1.08 !important;
+}
+
+body.admin-page .admin-brand .badge {
+  min-height: 24px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.admin-page .admin-header-copy {
+  font-size: 12px !important;
+  line-height: 1.52 !important;
+}
+
+body.admin-page .admin-header-controls {
+  gap: 10px !important;
+}
+
+body.admin-page .admin-build-label,
+body.admin-page .admin-login-build,
+body.admin-page .analytics-note,
+body.admin-page .admin-section-note,
+body.admin-page .admin-inline-note,
+body.admin-page .hero-result-note,
+body.admin-page .admin-selected-post-note,
+body.admin-page .contributors-admin-date,
+body.admin-page .version-history-summary,
+body.admin-page .version-history-type,
+body.admin-page .version-history-changes li,
+body.admin-page .post-history-entry-meta {
+  font-size: 12px !important;
+  line-height: 1.56 !important;
+  letter-spacing: 0 !important;
+}
+
+body.admin-page .admin-header-box-row-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-header-box-row-groups {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-header-link,
+body.admin-page .logout-btn,
+body.admin-page .admin-group-btn,
+body.admin-page .dash-action-btn,
+body.admin-page .admin-subnav-btn,
+body.admin-page .submit-btn,
+body.admin-page .cancel-btn,
+body.admin-page .btn-edit,
+body.admin-page .btn-delete,
+body.admin-page .btn-delete-soft,
+body.admin-page .btn-icon,
+body.admin-page .analytics-view-toggle button,
+body.admin-page .admin-pagination button,
+body.admin-page .glossary-inline-save-btn,
+body.admin-page .glossary-inline-cancel-btn,
+body.admin-page .glossary-inline-edit-link,
+body.admin-page .glossary-description-toggle,
+body.admin-page .post-history-close,
+body.admin-page .admin-inline-danger,
+body.admin-page #reorder-save-btn,
+body.admin-page .admin-list-tabs button {
+  min-height: 40px !important;
+  padding: 0 12px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+body.admin-page .logout-btn,
+body.admin-page .submit-btn,
+body.admin-page .dash-action-btn {
+  background: linear-gradient(135deg, #4b1e75, #7237af) !important;
+}
+
+body.admin-page .dash-action-btn {
+  justify-content: flex-start !important;
+  flex-direction: row !important;
+  min-height: 0 !important;
+  padding: 14px 16px !important;
+}
+
+body.admin-page .dash-action-icon {
+  font-size: 18px !important;
+}
+
+body.admin-page .dash-action-label {
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+}
+
+body.admin-page .admin-sidebar {
+  position: static !important;
+  top: auto !important;
+  gap: 10px !important;
+}
+
+body.admin-page .admin-sidebar-group {
+  padding: 12px !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-sidebar-btn {
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+}
+
+body.admin-page .admin-sidebar-btn-label {
+  margin-bottom: 3px !important;
+  font-size: 15px !important;
+  line-height: 1.34 !important;
+}
+
+body.admin-page .admin-sidebar-btn-desc {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+body.admin-page .panel-header,
+body.admin-page .admin-panel-header-wrap,
+body.admin-page .panel-body,
+body.admin-page .admin-pagination {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+body.admin-page .panel-header,
+body.admin-page .admin-panel-header-wrap {
+  gap: 10px !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+}
+
+body.admin-page .panel-header h2 {
+  font-size: 17px !important;
+  line-height: 1.34 !important;
+}
+
+body.admin-page .panel-body {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+}
+
+body.admin-page .dash-stat-card,
+body.admin-page .analytics-item,
+body.admin-page .hero-result-item,
+body.admin-page .hero-slot-item,
+body.admin-page .contributors-admin-item,
+body.admin-page .admin-search-panel,
+body.admin-page .admin-selected-post-card,
+body.admin-page .admin-settings-block,
+body.admin-page .post-history-entry,
+body.admin-page .version-history-item {
+  padding: 14px !important;
+}
+
+body.admin-page .dash-stat-card {
+  min-height: 0 !important;
+}
+
+body.admin-page .dash-stat-num,
+body.admin-page .stat-item .stat-num {
+  font-size: 26px !important;
+  line-height: 1 !important;
+}
+
+body.admin-page .dash-stat-label,
+body.admin-page .stat-item .stat-label {
+  margin-top: 8px !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+}
+
+body.admin-page .stats-row {
+  grid-template-columns: 1fr !important;
+}
+
+body.admin-page .stat-item {
+  padding: 14px 16px !important;
+  border-right: 0 !important;
+  border-bottom: 1px solid var(--admin-stroke) !important;
+}
+
+body.admin-page .stat-item:last-child {
+  border-bottom: 0 !important;
+}
+
+body.admin-page .analytics-toolbar {
+  gap: 10px !important;
+}
+
+body.admin-page .analytics-toolbar-group {
+  min-width: 0 !important;
+}
+
+body.admin-page .analytics-toolbar label,
+body.admin-page .form-group label,
+body.admin-page .admin-inline-label,
+body.admin-page .admin-search-panel-title,
+body.admin-page .admin-copy-card-label,
+body.admin-page .item-meta-chip strong,
+body.admin-page .admin-settings-block-head span,
+body.admin-page .contrib-form-label,
+body.admin-page .analytics-table th,
+body.admin-page .analytics-item span {
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+}
+
+body.admin-page .form-group input,
+body.admin-page .form-group select,
+body.admin-page .form-group textarea,
+body.admin-page input[type="text"],
+body.admin-page input[type="date"],
+body.admin-page input[type="url"],
+body.admin-page input[type="number"],
+body.admin-page select,
+body.admin-page textarea {
+  min-height: 42px;
+  padding: 10px 12px !important;
+  border-radius: 14px !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+body.admin-page .form-group textarea,
+body.admin-page textarea {
+  min-height: 120px;
+}
+
+body.admin-page .article-list {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+body.admin-page .article-list-toolbar {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+body.admin-page .article-list-toolbar > *,
+body.admin-page .article-list-toolbar > .count {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+body.admin-page .admin-list-tabs {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 12px 16px !important;
+}
+
+body.admin-page .article-item,
+body.admin-page .hero-slot-item,
+body.admin-page .contributors-admin-item {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+body.admin-page .article-item-title,
+body.admin-page .article-item h4 {
+  margin: 0 0 10px !important;
+  font-size: 17px !important;
+  line-height: 1.46 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+body.admin-page .item-meta-chip {
+  min-height: 0 !important;
+  padding: 10px 12px !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+body.admin-page .item-actions,
+body.admin-page .admin-selected-post-actions,
+body.admin-page .admin-inline-controls {
+  width: 100% !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+}
+
+body.admin-page .item-actions .btn-icon,
+body.admin-page .item-actions .btn-edit,
+body.admin-page .item-actions .btn-delete,
+body.admin-page .admin-inline-controls > * {
+  width: 100% !important;
+}
+
+body.admin-page .admin-editor-row {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+body.admin-page .admin-copy-card-grid,
+body.admin-page .share-meta-grid,
+body.admin-page .tag-admin-grid,
+body.admin-page .admin-inline-save {
+  gap: 10px !important;
+}
+
+body.admin-page .admin-inline-save-btn,
+body.admin-page .admin-inline-save-btn-compact {
+  width: 100% !important;
 }
