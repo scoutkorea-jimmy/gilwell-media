@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.059.01';
+  GW.APP_VERSION = '0.059.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -188,13 +188,56 @@
     const el = document.getElementById(id || 'today-date');
     if (!el) return;
     const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const resolvedTimeZone = (function () {
+      try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+      } catch (_) {
+        return undefined;
+      }
+    })();
+
+    function getLocalParts(date) {
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: resolvedTimeZone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(date);
+        const map = {};
+        parts.forEach(function (part) {
+          if (part.type !== 'literal') map[part.type] = part.value;
+        });
+        return {
+          year: map.year,
+          month: map.month,
+          day: map.day,
+          hour: map.hour,
+          minute: map.minute,
+          second: map.second,
+        };
+      } catch (_) {
+        return {
+          year: String(date.getFullYear()),
+          month: String(date.getMonth() + 1).padStart(2, '0'),
+          day: String(date.getDate()).padStart(2, '0'),
+          hour: String(date.getHours()).padStart(2, '0'),
+          minute: String(date.getMinutes()).padStart(2, '0'),
+          second: String(date.getSeconds()).padStart(2, '0'),
+        };
+      }
+    }
+
     function update() {
       const d = new Date();
-      const h = String(d.getHours()).padStart(2, '0');
-      const m = String(d.getMinutes()).padStart(2, '0');
-      const s = String(d.getSeconds()).padStart(2, '0');
+      const parts = getLocalParts(d);
       el.innerHTML =
-        `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})<span class="masthead-time">${h}:${m}:${s}</span>`;
+        `${parts.year}년 ${Number(parts.month)}월 ${Number(parts.day)}일 (${days[d.getDay()]})<span class="masthead-time">${parts.hour}:${parts.minute}:${parts.second}</span>`;
     }
     update();
     setInterval(update, 1000);
