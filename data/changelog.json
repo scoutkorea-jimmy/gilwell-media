@@ -1,6 +1,16 @@
 {
   "items": [
     {
+      "version": "0.059.05",
+      "date": "2026-03-15",
+      "summary": "배포를 preview 우선 구조로 바꾸고 AI 가이드를 전체 운영 기준에 맞춰 다시 정리했습니다.",
+      "changes": [
+        "`deploy_pages.sh`는 이제 preview 배포 래퍼로 바뀌었고, `deploy_preview.sh`와 `deploy_production.sh`를 분리해 preview 승인 전에는 production으로 바로 올리지 않도록 운영 흐름을 명확히 했습니다.",
+        "`docs/release-playbook.md`와 새 `docs/preview-release-checklist.md`에 preview 배포, 자동 체크, 수동 검수, production 승격 절차를 문서화했습니다.",
+        "`ai-guide.html`은 이번에 사이트 구조, 홈 구성, 날짜 규칙, 관리자 구조, preview 승인 규칙까지 포함하도록 크게 최신화했습니다."
+      ]
+    },
+    {
       "version": "0.059.04",
       "date": "2026-03-15",
       "summary": "홈 보드 헤더 높이를 다시 맞추고 관리자 전반의 글자 크기 체계를 새로 정리했습니다.",
