@@ -1,15 +1,20 @@
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
 export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
 const SITE_ORIGIN = 'https://bpmedia.net';
-const HOME_SEARCH_DESCRIPTION = 'BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.';
+const HOME_SEARCH_DESCRIPTION = 'BP미디어는 스카우트 뉴스와 활동 기록을 전하는 독립 미디어 아카이브입니다. 한국스카우트연맹, APR, WOSM, 스카우트 인물, 용어집까지 bpmedia.net에서 한 번에 확인할 수 있습니다.';
 const LEGACY_HOME_DESCRIPTIONS = [
   '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
   'BP미디어는 한국스카우트연맹 및 세계스카우트연맹의 공식 채널이 아닙니다. 본 미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
 ];
+const LEGACY_HOME_TITLES = [
+  'BP미디어 · bpmedia.net',
+];
 const PUBLISHER = {
   '@type': 'Organization',
   name: 'BP미디어',
+  alternateName: ['비피미디어', 'BPmedia', 'The BP Post'],
   url: SITE_ORIGIN,
+  description: HOME_SEARCH_DESCRIPTION,
   logo: {
     '@type': 'ImageObject',
     url: `${SITE_ORIGIN}/img/logo.svg`,
@@ -19,7 +24,7 @@ const PUBLISHER = {
 const DEFAULT_SITE_META = {
   pages: {
     home: {
-      title: 'BP미디어 · bpmedia.net',
+      title: 'BP미디어 | 스카우트 뉴스 아카이브 · bpmedia.net',
       description: HOME_SEARCH_DESCRIPTION,
     },
     korea: {
@@ -93,8 +98,11 @@ export function normalizeSiteMeta(raw) {
     const sourceDescription = key === 'home'
       ? upgradeLegacyHomeDescription(source.description)
       : source.description;
+    const sourceTitle = key === 'home'
+      ? upgradeLegacyHomeTitle(source.title)
+      : source.title;
     meta.pages[key] = {
-      title: sanitizeText(source.title, DEFAULT_SITE_META.pages[key].title, 120),
+      title: sanitizeText(sourceTitle, DEFAULT_SITE_META.pages[key].title, 120),
       description: sanitizeText(sourceDescription, DEFAULT_SITE_META.pages[key].description, 260),
     };
   });
@@ -148,6 +156,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
+    `<meta name="keywords" content="${escapeHtml(getPageKeywords(pageKey))}"/>`,
     `<meta property="og:locale" content="ko_KR"/>`,
     `<meta property="og:type" content="website"/>`,
     `<meta property="og:title" content="${safeTitle}"/>`,
@@ -229,6 +238,12 @@ function upgradeLegacyHomeDescription(value) {
   return LEGACY_HOME_DESCRIPTIONS.includes(text) ? HOME_SEARCH_DESCRIPTION : text;
 }
 
+function upgradeLegacyHomeTitle(value) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  if (!text) return text;
+  return LEGACY_HOME_TITLES.includes(text) ? DEFAULT_SITE_META.pages.home.title : text;
+}
+
 function sanitizeEmail(value, fallback) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) return fallback;
@@ -274,9 +289,11 @@ function buildWebsiteStructuredData(imageUrl) {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': `${SITE_ORIGIN}/#website`,
-    name: 'BP미디어 · bpmedia.net',
+    name: 'BP미디어',
+    alternateName: ['비피미디어', 'The BP Post', 'bpmedia.net'],
     url: `${SITE_ORIGIN}/`,
     inLanguage: 'ko-KR',
+    description: HOME_SEARCH_DESCRIPTION,
     publisher: PUBLISHER,
     potentialAction: {
       '@type': 'SearchAction',
@@ -308,9 +325,17 @@ function buildPageStructuredData({ pageKey, title, description, url, imageUrl })
       '@type': 'Thing',
       name: getPageTopic(pageKey),
     },
+    keywords: getPageKeywords(pageKey),
     inLanguage: 'ko-KR',
     publisher: PUBLISHER,
   };
+  if (pageKey === 'home') {
+    payload.mainEntity = {
+      '@type': 'ItemList',
+      '@id': `${url}#itemlist`,
+      name: 'BP미디어 최신 기사',
+    };
+  }
   if (imageUrl) payload.primaryImageOfPage = imageUrl;
   return payload;
 }
@@ -363,6 +388,20 @@ function getPageTopic(pageKey) {
     search: '사이트 검색 결과',
   };
   return topics[pageKey] || '스카우트 뉴스';
+}
+
+function getPageKeywords(pageKey) {
+  const keywords = {
+    home: 'BP미디어, 비피미디어, BPmedia, The BP Post, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
+    korea: 'Korea, 한국스카우트연맹, BP미디어',
+    apr: 'APR, 아시아태평양 스카우트, BP미디어',
+    wosm: 'WOSM, 세계스카우트연맹, BP미디어',
+    people: '스카우트 인물, BP미디어',
+    glossary: '스카우트 용어집, BP미디어',
+    contributors: 'BP미디어, 도움을 주신 분들',
+    search: 'BP미디어 검색',
+  };
+  return keywords[pageKey] || 'BP미디어';
 }
 
 function buildItemListStructuredData({ pageKey, url, itemListElements }) {
