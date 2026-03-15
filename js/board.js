@@ -230,7 +230,8 @@
 
     var isNew = GW.isTodayKst(post.created_at);
     var shareHtml = '<button class="post-share-btn post-card-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>';
-    var tagHtml = shareHtml + (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+    var tagHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+      shareHtml +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
 
     var labelsHtml = tagHtml || ('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
