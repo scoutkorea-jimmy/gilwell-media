@@ -42,6 +42,7 @@ export async function onRequest(context) {
 
 function getCanonicalPath(pathname, pageKey) {
   if (pathname === '/index.html' || pathname === '/') return '/';
+  if (pageKey === 'latest') return '/latest';
   if (pageKey === 'korea') return '/korea';
   if (pageKey === 'apr') return '/apr';
   if (pageKey === 'wosm') return '/wosm';
@@ -51,9 +52,9 @@ function getCanonicalPath(pathname, pageKey) {
 }
 
 async function loadPageItemList(env, origin, pageKey) {
-  if (!['home', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return [];
+  if (!['home', 'latest', 'korea', 'apr', 'wosm', 'people', 'glossary'].includes(pageKey)) return [];
   try {
-    const category = pageKey === 'home' ? null : pageKey;
+    const category = pageKey === 'home' || pageKey === 'latest' ? null : pageKey;
     const query = category
       ? `SELECT id, title FROM posts WHERE published = 1 AND category = ? ORDER BY created_at DESC LIMIT 10`
       : `SELECT id, title FROM posts WHERE published = 1 ORDER BY created_at DESC LIMIT 10`;
