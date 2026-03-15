@@ -7,6 +7,8 @@
   var _items = [];
   var _bucket = 'all';
   var _query = '';
+  var _searchTerms = true;
+  var _searchDescription = true;
   var _editingId = null;
   var _openEditorAfterLogin = false;
 
@@ -41,9 +43,16 @@
   function getSearchFilteredItems() {
     return _items.filter(function (item) {
       if (!_query) return true;
-      var haystack = [item.term_ko, item.term_en, item.term_fr, item.description_ko].join(' ').toLowerCase();
+      var fields = [];
+      if (_searchTerms) fields.push(item.term_ko, item.term_en, item.term_fr);
+      if (_searchDescription) fields.push(item.description_ko);
+      var haystack = fields.join(' ').toLowerCase();
       return haystack.indexOf(_query) >= 0;
     });
+  }
+
+  function hasSearchScope() {
+    return _searchTerms || _searchDescription;
   }
 
   function hasKoreanTerm(item) {
@@ -170,13 +179,33 @@
 
   function bindSearch() {
     var input = byId('glossary-search-input');
+    var terms = byId('glossary-search-terms');
+    var description = byId('glossary-search-description');
     if (!input) return;
-    input.addEventListener('input', function () {
+
+    function syncSearchScope() {
+      _searchTerms = !terms || !!terms.checked;
+      _searchDescription = !description || !!description.checked;
+    }
+
+    function applySearch() {
+      syncSearchScope();
       _query = String(input.value || '').trim().toLowerCase();
+      if (_query && !hasSearchScope()) {
+        _query = '';
+        GW.showToast('검색 색인을 설정해달라고 체크박스를 선택해주세요.', 'error');
+        renderBucketBar();
+        renderGlossary();
+        return;
+      }
       if (_query) _bucket = 'all';
       renderBucketBar();
       renderGlossary();
-    });
+    }
+
+    input.addEventListener('input', applySearch);
+    if (terms) terms.addEventListener('change', applySearch);
+    if (description) description.addEventListener('change', applySearch);
   }
 
   function loadGlossary() {
