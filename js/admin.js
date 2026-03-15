@@ -968,15 +968,15 @@
       var isUnpublished = p.published === 0;
       var hasSortOrder = p.sort_order !== null && p.sort_order !== undefined;
       return (
-        '<div class="article-item" draggable="' + (reorderMode ? 'true' : 'false') + '" data-id="' + p.id + '"' + (isUnpublished ? ' style="opacity:0.65;"' : '') + '>' +
+        '<article class="article-item' + (isUnpublished ? ' is-unpublished' : '') + '" draggable="' + (reorderMode ? 'true' : 'false') + '" data-id="' + p.id + '">' +
           (reorderMode ? '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' : '') +
           '<div class="article-item-content">' +
-            '<div style="margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
-              '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:' + cat.color + ';">' + cat.label + '</span>' +
-              (isUnpublished ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;background:#cc4444;color:#fff;">비공개</span>' : '') +
-              (hasSortOrder ? '<span style="font-family:\'DM Mono\',monospace;font-size:9px;padding:2px 6px;border:1px solid #622599;color:#622599;">순서 ' + (p.sort_order + 1) + '</span>' : '') +
+            '<div class="article-item-top">' +
+              '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
+              (isUnpublished ? '<span class="admin-status-pill admin-status-pill-danger">비공개</span>' : '<span class="admin-status-pill admin-status-pill-live">공개</span>') +
+              (hasSortOrder ? '<span class="admin-status-pill admin-status-pill-order">순서 ' + (p.sort_order + 1) + '</span>' : '') +
             '</div>' +
-            '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+            '<h4 class="article-item-title">' + GW.escapeHtml(p.title) + '</h4>' +
             '<div class="item-meta-grid">' +
               '<span class="item-meta-chip item-meta-chip-date"><strong>Created</strong><span>' + GW.formatDateTime(p.created_at) + '</span></span>' +
               '<span class="item-meta-chip item-meta-chip-date"><strong>Published</strong><span>' + GW.formatDateTime(p.publish_at || p.created_at) + '</span></span>' +
@@ -993,7 +993,7 @@
             '<button class="btn-edit"   onclick="editPost('   + p.id + ')">수정</button>' +
             '<button class="btn-delete" onclick="deletePost(' + p.id + ')">삭제</button>' +
           '</div>' +
-        '</div>'
+        '</article>'
       );
     }).join('');
 
@@ -1118,8 +1118,7 @@
     ['all','korea','apr','wosm','people'].forEach(function (c) {
       var tab = document.getElementById('admin-tab-' + c);
       if (!tab) return;
-      tab.style.background = c === cat ? 'var(--black)' : 'var(--bg)';
-      tab.style.color      = c === cat ? 'var(--white)' : 'var(--muted)';
+      tab.classList.toggle('active', c === cat);
     });
     loadAdminList();
   };
@@ -1254,10 +1253,10 @@
     if (!container) return;
     container.innerHTML = GW.EDITOR_LETTERS.map(function (l) {
       var name = _editors[l] || '';
-      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">' +
-        '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:.08em;min-width:64px;color:var(--ink);">Editor ' + l + '</span>' +
+      return '<div class="admin-editor-row">' +
+        '<span class="admin-editor-row-label">Editor ' + l + '</span>' +
         '<input type="text" data-editor="' + l + '" value="' + GW.escapeHtml(name) + '" placeholder="실명 (비공개, 선택)" maxlength="60" ' +
-          'style="flex:1;padding:5px 10px;border:1px solid var(--border);font-family:\'Noto Sans KR\',sans-serif;font-size:12px;outline:none;" />' +
+          'class="admin-editor-row-input" />' +
       '</div>';
     }).join('');
   }
@@ -1598,12 +1597,12 @@
       var over = _translationOverrides[item.key] || {};
       var koVal = over.ko !== undefined ? over.ko : (def.ko || '');
       var enVal = over.en !== undefined ? over.en : (def.en || '');
-      return '<div style="border:1px solid var(--border);padding:12px 14px;background:var(--bg);">' +
-        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">' + item.label + ' · ' + item.key + '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
-          '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">KOR</label>' +
+      return '<div class="admin-copy-card">' +
+        '<div class="admin-copy-card-head">' + item.label + ' · ' + item.key + '</div>' +
+        '<div class="admin-copy-card-grid">' +
+          '<div><label class="admin-copy-card-label">KOR</label>' +
           '<textarea data-category-copy="' + item.key + '" data-category-lang="ko" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(koVal) + '</textarea></div>' +
-          '<div><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px;">ENG</label>' +
+          '<div><label class="admin-copy-card-label">ENG</label>' +
           '<textarea data-category-copy="' + item.key + '" data-category-lang="en" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;resize:vertical;">' + GW.escapeHtml(enVal) + '</textarea></div>' +
         '</div></div>';
     }).join('');
@@ -1615,12 +1614,12 @@
       var def = GW.STRINGS[key]; var over = _translationOverrides[key] || {};
       var koVal = over.ko !== undefined ? over.ko : (def.ko || '');
       var enVal = over.en !== undefined ? over.en : (def.en || '');
-      return '<div style="border:1px solid var(--border);padding:10px 12px;">' +
-        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">' + key + '</div>' +
-        '<div style="display:flex;gap:8px;">' +
-          '<div style="flex:1;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">KOR</label>' +
+      return '<div class="admin-copy-card">' +
+        '<div class="admin-copy-card-head">' + key + '</div>' +
+        '<div class="admin-copy-card-grid">' +
+          '<div><label class="admin-copy-card-label">KOR</label>' +
           '<input type="text" value="' + escapeAttr(koVal) + '" data-tkey="' + key + '" data-tlang="ko" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;"></div>' +
-          '<div style="flex:1;"><label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px;">ENG</label>' +
+          '<div><label class="admin-copy-card-label">ENG</label>' +
           '<input type="text" value="' + escapeAttr(enVal) + '" data-tkey="' + key + '" data-tlang="en" style="width:100%;padding:6px 8px;border:1px solid var(--border);font-size:12px;font-family:\'Noto Sans KR\',sans-serif;outline:none;"></div>' +
         '</div></div>';
     }).join('');
@@ -1694,7 +1693,7 @@
     if (!list || _heroSearchLoading || !_heroSearchHasMore) return;
     _heroSearchLoading = true;
     if (!_heroSearchResults.length) {
-      list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사 목록을 불러오는 중…</div>';
+      list.innerHTML = '<div class="admin-inline-note">기사 목록을 불러오는 중…</div>';
     } else {
       list.setAttribute('data-loading', '1');
     }
@@ -1709,7 +1708,7 @@
       })
       .catch(function () {
         if (!_heroSearchResults.length) {
-          list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사를 불러오지 못했습니다</div>';
+          list.innerHTML = '<div class="admin-inline-note">기사를 불러오지 못했습니다</div>';
         }
       })
       .finally(function () {
@@ -1723,19 +1722,19 @@
     if (!list) return;
     if (!_heroSearchResults.length) {
       list.innerHTML = _heroSearchQuery
-        ? '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>'
-        : '<div style="font-size:12px;color:var(--muted);padding:8px 0;">공개된 최신 기사 10개를 먼저 표시합니다. 아래로 스크롤하면 더 불러옵니다.</div>';
+        ? '<div class="admin-inline-note">검색 결과 없음</div>'
+        : '<div class="admin-inline-note">공개된 최신 기사 10개를 먼저 표시합니다. 아래로 스크롤하면 더 불러옵니다.</div>';
       return;
     }
     list.innerHTML = _heroSearchResults.map(function (p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
       var already = _heroPostIds.indexOf(p.id) >= 0;
-      return '<div class="hero-result-item" style="' + (already ? 'opacity:0.5;pointer-events:none;' : '') + '" onclick="addHeroSlot(' + p.id + ')">' +
-        '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';margin-right:6px;">' + cat.label + '</span>' +
-        GW.escapeHtml(p.title) +
-        (already ? ' <span style="font-size:10px;color:var(--muted);">(이미 추가됨)</span>' : '') +
+      return '<div class="hero-result-item' + (already ? ' is-disabled' : '') + '" onclick="addHeroSlot(' + p.id + ')">' +
+        '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
+        '<span class="hero-result-title">' + GW.escapeHtml(p.title) + '</span>' +
+        (already ? '<span class="hero-result-note">(이미 추가됨)</span>' : '') +
       '</div>';
-    }).join('') + (_heroSearchHasMore ? '<div style="font-size:11px;color:var(--muted);padding:10px 0 2px;">아래로 스크롤하면 더 불러옵니다.</div>' : '');
+    }).join('') + (_heroSearchHasMore ? '<div class="hero-result-footer">아래로 스크롤하면 더 불러옵니다.</div>' : '');
   }
 
   function loadHeroAdmin() {
@@ -1770,22 +1769,22 @@
     var el = document.getElementById('home-lead-selected');
     if (!el) return;
     if (errorText) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:6px 0;">' + GW.escapeHtml(errorText) + '</div>';
+      el.innerHTML = '<div class="admin-inline-note">' + GW.escapeHtml(errorText) + '</div>';
       return;
     }
     if (!_homeLeadPost) {
-      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--muted);">지정된 메인 스토리가 없습니다. 기본 규칙으로 자동 선택됩니다.</span></div>';
+      el.innerHTML = '<div class="admin-inline-note">지정된 메인 스토리가 없습니다. 기본 규칙으로 자동 선택됩니다.</div>';
       return;
     }
     var cat = GW.CATEGORIES[_homeLeadPost.category] || GW.CATEGORIES.korea;
     el.innerHTML =
       '<div class="admin-selected-post-card">' +
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
-          '<span style="display:inline-block;font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';">' + cat.label + '</span>' +
-          '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">현재 선택됨</span>' +
+        '<div class="admin-selected-post-card-header">' +
+          '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
+          '<span class="admin-selected-post-note">현재 선택됨</span>' +
         '</div>' +
-        '<div style="font-size:14px;line-height:1.5;color:var(--ink);">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+        '<div class="admin-selected-post-title">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
+        '<div class="admin-selected-post-actions">' +
           '<button type="button" class="cancel-btn visible" style="margin:0;" onclick="clearHomeLeadPost()">해제</button>' +
           '<a href="/post/' + _homeLeadPost.id + '" class="cancel-btn visible" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;">기사 보기</a>' +
         '</div>' +
@@ -1802,26 +1801,26 @@
     var list = document.getElementById('home-lead-search-results');
     if (!list) return;
     var query = input ? (input.value || '').trim() : '';
-    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사 목록을 불러오는 중…</div>';
+    list.innerHTML = '<div class="admin-inline-note">기사 목록을 불러오는 중…</div>';
     GW.apiFetch('/api/posts?page=1&limit=10' + (query ? '&q=' + encodeURIComponent(query) : ''))
       .then(function (data) {
         _homeLeadSearchResults = Array.isArray(data.posts) ? data.posts : [];
         if (!_homeLeadSearchResults.length) {
-          list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">검색 결과 없음</div>';
+          list.innerHTML = '<div class="admin-inline-note">검색 결과 없음</div>';
           return;
         }
         list.innerHTML = _homeLeadSearchResults.map(function (p) {
           var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
           var selected = _homeLeadPost && _homeLeadPost.id === p.id;
-          return '<div class="hero-result-item" style="' + (selected ? 'opacity:0.55;' : '') + '" onclick="selectHomeLeadPost(' + p.id + ')">' +
-            '<span style="font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:' + cat.color + ';margin-right:6px;">' + cat.label + '</span>' +
-            GW.escapeHtml(p.title) +
-            (selected ? ' <span style="font-size:10px;color:var(--muted);">(현재 메인 스토리)</span>' : '') +
+          return '<div class="hero-result-item' + (selected ? ' is-selected' : '') + '" onclick="selectHomeLeadPost(' + p.id + ')">' +
+            '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
+            '<span class="hero-result-title">' + GW.escapeHtml(p.title) + '</span>' +
+            (selected ? '<span class="hero-result-note">(현재 메인 스토리)</span>' : '') +
           '</div>';
         }).join('');
       })
       .catch(function () {
-        list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">기사를 불러오지 못했습니다</div>';
+        list.innerHTML = '<div class="admin-inline-note">기사를 불러오지 못했습니다</div>';
       });
   }
 
@@ -1859,17 +1858,17 @@
   function renderHeroSlots(posts) {
     var el = document.getElementById('hero-slots'); if (!el) return;
     if (!posts.length) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">선택된 기사 없음</div>';
+      el.innerHTML = '<div class="admin-inline-note">선택된 기사 없음</div>';
       return;
     }
     el.innerHTML = posts.map(function(p, i){
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-      return '<div class="hero-slot-item" draggable="true" data-hero-index="' + i + '" style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);background:var(--bg);">' +
+      return '<div class="hero-slot-item" draggable="true" data-hero-index="' + i + '">' +
         '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
-        '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);flex-shrink:0;">' + (i+1) + '</span>' +
-        '<span style="display:inline-block;font-size:9px;font-family:\'DM Mono\',monospace;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;color:#f5f3ee;background:'+cat.color+';flex-shrink:0;">'+cat.label+'</span>' +
-        '<span style="flex:1;font-size:13px;">' + GW.escapeHtml(p.title) + '</span>' +
-        '<button onclick="removeHeroSlot(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:3px 8px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">제거</button>' +
+        '<span class="hero-slot-index">' + (i+1) + '</span>' +
+        '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">'+cat.label+'</span>' +
+        '<span class="hero-slot-title">' + GW.escapeHtml(p.title) + '</span>' +
+        '<button onclick="removeHeroSlot(' + i + ')" class="admin-inline-danger">제거</button>' +
       '</div>';
     }).join('');
     bindHeroDrag();
@@ -1992,21 +1991,21 @@
         el.innerHTML = posts.map(function(p){
           var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
           var actionAttr = editable ? ' onclick="editPost(' + p.id + ');showAdminTab(&quot;write&quot;)"' : '';
-          return '<div class="article-item" style="cursor:' + (editable ? 'pointer' : 'default') + ';"' + actionAttr + '>' +
+          return '<article class="article-item article-item-dashboard" style="cursor:' + (editable ? 'pointer' : 'default') + ';"' + actionAttr + '>' +
             '<div class="article-item-content">' +
-              '<div style="margin-bottom:4px;display:flex;align-items:center;gap:6px;">' +
-                '<span style="display:inline-block;font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;color:#f5f3ee;background:'+cat.color+';">' + cat.label + '</span>' +
+              '<div class="article-item-top">' +
+                '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
               '</div>' +
-              '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
+              '<h4 class="article-item-title">' + GW.escapeHtml(p.title) + '</h4>' +
               '<div class="item-meta-grid">' +
-                '<span class="item-meta-chip">Created ' + GW.formatDateTime(p.created_at) + '</span>' +
-                '<span class="item-meta-chip">Published ' + GW.formatDateTime(p.publish_at || p.created_at) + '</span>' +
-                '<span class="item-meta-chip">Modified ' + GW.formatDateTime(p.updated_at || p.created_at) + '</span>' +
-                '<span class="item-meta-chip">조회 ' + (p.views||0) + '</span>' +
-                (editable ? '<span class="item-meta-chip">수정 가능</span>' : '') +
+                '<span class="item-meta-chip item-meta-chip-date"><strong>Created</strong><span>' + GW.formatDateTime(p.created_at) + '</span></span>' +
+                '<span class="item-meta-chip item-meta-chip-date"><strong>Published</strong><span>' + GW.formatDateTime(p.publish_at || p.created_at) + '</span></span>' +
+                '<span class="item-meta-chip item-meta-chip-date"><strong>Modified</strong><span>' + GW.formatDateTime(p.updated_at || p.created_at) + '</span></span>' +
+                '<span class="item-meta-chip"><strong>조회</strong><span>' + (p.views||0) + '</span></span>' +
+                (editable ? '<span class="item-meta-chip"><strong>상태</strong><span>수정 가능</span></span>' : '') +
               '</div>' +
             '</div>' +
-          '</div>';
+          '</article>';
         }).join('');
       }).catch(function(){});
   }
@@ -2535,19 +2534,19 @@
   function renderContributorsAdmin() {
     var el = document.getElementById('contributors-admin-list'); if (!el) return;
     if (!_contributors.length) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">등록된 분이 없습니다.</div>';
+      el.innerHTML = '<div class="admin-inline-note">등록된 분이 없습니다.</div>';
       return;
     }
     el.innerHTML = _contributors.map(function (c, i) {
-      return '<div class="contributors-admin-item" draggable="true" data-contrib-index="' + i + '" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);background:var(--bg);">' +
+      return '<div class="contributors-admin-item" draggable="true" data-contrib-index="' + i + '">' +
         '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
-        '<div style="flex:1;">' +
-          '<strong style="font-size:13px;">' + GW.escapeHtml(c.name) + '</strong>' +
-          (c.note ? '<span style="font-size:11px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.note) + '</span>' : '') +
-          (c.date ? '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);margin-left:8px;">' + GW.escapeHtml(c.date) + '</span>' : '') +
+        '<div class="contributors-admin-body">' +
+          '<strong class="contributors-admin-name">' + GW.escapeHtml(c.name) + '</strong>' +
+          (c.note ? '<span class="contributors-admin-note">' + GW.escapeHtml(c.note) + '</span>' : '') +
+          (c.date ? '<span class="contributors-admin-date">' + GW.escapeHtml(c.date) + '</span>' : '') +
         '</div>' +
-        '<button onclick="editContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">수정</button>' +
-        '<button onclick="deleteContributor(' + i + ')" style="font-family:\'DM Mono\',monospace;font-size:10px;padding:4px 10px;border:1px solid #cc4444;background:none;cursor:pointer;color:#cc4444;">삭제</button>' +
+        '<button onclick="editContributor(' + i + ')" class="btn-edit">수정</button>' +
+        '<button onclick="deleteContributor(' + i + ')" class="btn-delete">삭제</button>' +
       '</div>';
     }).join('');
     bindContributorDrag();
