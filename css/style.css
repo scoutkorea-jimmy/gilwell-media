@@ -1771,8 +1771,9 @@ p { margin-bottom: 6px; }
 #latest-list {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 #latest-list .mini-item {
@@ -1780,6 +1781,7 @@ p { margin-bottom: 6px; }
   align-items: stretch;
   min-height: 0;
   overflow: hidden;
+  padding: 12px 0;
 }
 
 #latest-list .mini-item-row {
@@ -1791,12 +1793,13 @@ p { margin-bottom: 6px; }
 #latest-list .mini-item-text {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 0;
 }
 
 #latest-list .mini-item h4 {
   -webkit-line-clamp: 2;
+  margin-bottom: 2px;
 }
 
 .home-rail-actions {
@@ -2020,7 +2023,28 @@ p { margin-bottom: 6px; }
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: 4px;
+}
+
+.mini-share-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.mini-share-link:hover {
+  color: var(--accent);
 }
 
 /* Thumbnail layout for mini-items */
@@ -6776,7 +6800,7 @@ footer a:hover { color: #ffffff; }
   }
 }
 
-/* ── Admin Redesign System (V0.061.00) ───────────────────── */
+/* ── Admin Redesign System (V0.061.01) ───────────────────── */
 body.admin-page {
   --admin-bg: #f2efe8;
   --admin-surface: rgba(255,255,255,0.96);
@@ -7866,7 +7890,7 @@ body.admin-page .drag-handle {
   }
 }
 
-/* ── Admin Mobile-Only Layout (V0.061.00) ────────────────── */
+/* ── Admin Mobile-Only Layout (V0.061.01) ────────────────── */
 body.admin-page {
   background:
     radial-gradient(circle at top, rgba(98, 37, 153, 0.10), transparent 32%),
