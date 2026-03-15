@@ -11,6 +11,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findRelatedPosts } from '../../_shared/related-posts.js';
+import { recordPostHistory } from '../../_shared/post-history.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -143,6 +144,9 @@ export async function onRequestPut({ params, request, env }) {
     if (oldImageToDelete) {
       await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
     }
+    if (results[0]) {
+      await recordPostHistory(env, id, 'update', results[0], '게시글 수정');
+    }
     return json({ post: results[0] });
   } catch (err) {
     console.error('PUT /api/posts/:id error:', err);
@@ -185,6 +189,13 @@ export async function onRequestPatch({ params, request, env }) {
       `UPDATE posts SET ${fields.join(', ')} WHERE id = ? RETURNING *`
     ).bind(...values).all();
     if (!results.length) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (results[0]) {
+      var summary = [];
+      if (body.featured !== undefined) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
+      if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
+      if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
+      await recordPostHistory(env, id, 'status', results[0], summary.join(' · ') || '상태 변경');
+    }
     return json({ post: results[0] });
   } catch (err) {
     console.error('PATCH /api/posts/:id error:', err);

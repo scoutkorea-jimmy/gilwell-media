@@ -9,6 +9,7 @@ import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
+import { recordPostHistory } from '../../_shared/post-history.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 16;
@@ -41,7 +42,7 @@ export async function onRequestGet({ request, env }) {
   const ORDER_LATEST = 'ORDER BY created_at DESC, id DESC';
   const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC, id DESC';
   const ORDER = allRequested && isAdmin ? ORDER_MANUAL : ORDER_LATEST;
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order,
+  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, views, author, published, sort_order,
     youtube_url,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
@@ -168,6 +169,9 @@ export async function onRequestPost({ request, env }) {
     const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
+    if (results[0]) {
+      await recordPostHistory(env, results[0].id, 'create', results[0], '게시글 생성');
+    }
     return json({ post: results[0] }, 201);
   } catch (err) {
     console.error('POST /api/posts error:', err);

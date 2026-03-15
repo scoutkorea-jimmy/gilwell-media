@@ -42,6 +42,15 @@ CREATE TABLE IF NOT EXISTS settings_history (
   saved_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS post_history (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id    INTEGER NOT NULL,
+  action     TEXT    NOT NULL DEFAULT 'update',
+  summary    TEXT,
+  snapshot   TEXT    NOT NULL,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS post_views (
   post_id   INTEGER NOT NULL,
   viewer_key TEXT,
@@ -85,6 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_published ON posts (published);
 CREATE INDEX IF NOT EXISTS idx_posts_featured ON posts (featured);
 CREATE INDEX IF NOT EXISTS idx_posts_sort_order ON posts (sort_order);
 CREATE INDEX IF NOT EXISTS idx_pv_post_time ON post_views(post_id, viewed_at);
+CREATE INDEX IF NOT EXISTS idx_post_history_post_time ON post_history(post_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pv_time ON post_views(viewed_at);
 CREATE INDEX IF NOT EXISTS idx_pv_viewer_post ON post_views(viewer_key, post_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pv_unique_bucket ON post_views(post_id, viewer_key, viewed_bucket);

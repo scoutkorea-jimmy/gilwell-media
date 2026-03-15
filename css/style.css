@@ -1879,10 +1879,6 @@ footer::before {
 
 .footer-brand {
   max-width: 520px;
-  padding: 18px 20px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: var(--gradient-footer-panel);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .footer-admin {
@@ -1891,10 +1887,6 @@ footer::before {
   flex-direction: column;
   align-items: flex-end;
   text-align: right;
-  padding: 18px 20px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: var(--gradient-footer-panel);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 footer h4 {
@@ -3066,6 +3058,25 @@ footer a:hover { color: #ffffff; }
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
+}
+
+.item-meta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.item-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid rgba(31,31,31,0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(246,243,238,0.94));
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 
 .article-item .item-actions {
@@ -4466,33 +4477,37 @@ footer a:hover { color: #ffffff; }
    ADMIN TABS LAYOUT
    ════════════════════════════════════════════════════════════ */
 .admin-header-top {
-  display:         flex;
-  justify-content: space-between;
-  align-items:     center;
+  display:         grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, auto);
+  align-items:     stretch;
   gap:             24px;
-  padding:         16px 32px;
-  border-bottom:   1px solid rgba(255,255,255,0.15);
+  padding:         18px 32px;
+  border-bottom:   1px solid rgba(255,255,255,0.1);
 }
 .admin-brand {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(98,37,153,0.9), rgba(67,20,106,0.88));
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .admin-header-copy {
   margin: 0;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: rgba(245,243,238,0.6);
+  font-family: 'AliceDigitalLearning', 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(245,243,238,0.82);
 }
 
 .admin-group-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 10px;
-  padding: 12px 32px 14px;
+  padding: 12px 32px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.12);
 }
 
@@ -4520,7 +4535,44 @@ footer a:hover { color: #ffffff; }
   position: sticky;
   top: 0;
   z-index: 220;
-  background: var(--black);
+  background: linear-gradient(180deg, #1f1f1f 0%, #171717 100%);
+}
+
+.admin-header .logo {
+  font-size: 24px;
+}
+
+.admin-header .badge {
+  align-self: flex-start;
+  margin-left: 0;
+}
+
+.admin-header .header-right {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+
+.admin-header-link,
+.logout-btn {
+  min-height: 42px;
+}
+
+.admin-header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color: rgba(245,243,238,0.88) !important;
+}
+
+.admin-header-link:hover {
+  background: rgba(255,255,255,0.12);
 }
 
 .admin-shell {
@@ -4914,6 +4966,108 @@ footer a:hover { color: #ffffff; }
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--muted);
+}
+
+.post-history-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: none;
+}
+
+.post-history-modal.open {
+  display: block;
+}
+
+.post-history-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.42);
+}
+
+.post-history-card {
+  position: absolute;
+  right: 24px;
+  top: 24px;
+  width: min(680px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+}
+
+.post-history-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(98,37,153,0.96), rgba(67,20,106,0.94));
+  color: #fff;
+}
+
+.post-history-head h3 {
+  font-family: 'AliceDigitalLearning', 'Playfair Display', serif;
+  font-size: 22px;
+}
+
+.post-history-summary {
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.78);
+}
+
+.post-history-close {
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  padding: 8px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.post-history-list {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.post-history-entry {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,244,239,0.96));
+  padding: 14px 16px;
+}
+
+.post-history-entry-top,
+.post-history-entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  justify-content: space-between;
+}
+
+.post-history-entry-top strong {
+  font-family: 'AliceDigitalLearning', 'Noto Serif KR', serif;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.post-history-entry-top span,
+.post-history-entry-meta span {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
 }
 
 /* ── Contributors page ────────────────────────────────────── */

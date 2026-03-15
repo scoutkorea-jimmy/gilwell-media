@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.056.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.057.00">
   <style>
     body { background: #eceae4; }
   </style>
@@ -30,7 +30,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.056.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.057.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -46,8 +46,8 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.056.00</span></span>
-          <a href="index.html">← 홈페이지 보기</a>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.057.00</span></span>
+          <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
           <button class="logout-btn" onclick="doLogout()">로그아웃</button>
         </div>
       </div>
@@ -394,6 +394,20 @@
             <span id="admin-page-info" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">1 / 1</span>
             <button id="admin-next-btn" onclick="adminListPageChange(1)" style="font-family:'DM Mono',monospace;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">다음 →</button>
           </div>
+        </div>
+      </div>
+
+      <div id="post-history-modal" class="post-history-modal" aria-hidden="true">
+        <div class="post-history-backdrop" onclick="closePostHistory()"></div>
+        <div class="post-history-card" role="dialog" aria-modal="true" aria-labelledby="post-history-title">
+          <div class="post-history-head">
+            <div>
+              <h3 id="post-history-title">게시글 기록</h3>
+              <p id="post-history-summary" class="post-history-summary">기록을 불러오는 중…</p>
+            </div>
+            <button type="button" class="post-history-close" onclick="closePostHistory()" aria-label="닫기">닫기</button>
+          </div>
+          <div id="post-history-list" class="post-history-list"></div>
         </div>
       </div>
 
@@ -747,8 +761,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.056.00"></script>
-  <script src="/js/admin.js?v=0.056.00"></script>
+  <script src="/js/main.js?v=0.057.00"></script>
+  <script src="/js/admin.js?v=0.057.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
