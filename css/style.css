@@ -770,22 +770,27 @@ p { margin-bottom: 6px; }
 
 /* CTA button on dynamic hero */
 .site-hero-cta {
-  display:        inline-block;
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  min-width:      168px;
   margin-top:     8px;
-  padding:        10px 28px;
-  border:         1px solid rgba(255,255,255,0.55);
-  background:     transparent;
+  padding:        10px 22px;
+  border:         1px solid rgba(255,255,255,0.46);
+  background:     rgba(255,255,255,0.10);
   color:          #ffffff;
   font-family:    'DM Mono', monospace;
   font-size:      11px;
-  letter-spacing: .1em;
+  letter-spacing: .08em;
   text-transform: uppercase;
   cursor:         pointer;
-  transition:     background .2s, border-color .2s;
+  text-decoration: none;
+  transition:     background .2s, border-color .2s, transform .2s;
 }
 .site-hero-cta:hover {
-  background:   rgba(255,255,255,0.15);
+  background:   rgba(255,255,255,0.18);
   border-color: #fff;
+  transform: translateY(-1px);
 }
 
 .site-hero-actions {
@@ -796,21 +801,26 @@ p { margin-bottom: 6px; }
 }
 
 .site-hero-share-btn {
-  padding: 10px 20px;
-  border: 1px solid rgba(255,255,255,0.42);
-  background: rgba(255,255,255,0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 168px;
+  padding: 10px 22px;
+  border: 1px solid rgba(255,255,255,0.46);
+  background: rgba(255,255,255,0.10);
   color: #fff;
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background .2s, border-color .2s;
+  transition: background .2s, border-color .2s, transform .2s;
 }
 
 .site-hero-share-btn:hover {
-  background: rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.18);
   border-color: #fff;
+  transform: translateY(-1px);
 }
 
 /* ════════════════════════════════════════════════════════════
