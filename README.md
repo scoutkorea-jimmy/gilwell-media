@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.058.03`
+- Current version: `V0.059.00`
 - Format: `Va.bbb.cc`
 - `a`: increases only when the owner explicitly requests a major version change
 - `bbb`: increases only when a new feature is added

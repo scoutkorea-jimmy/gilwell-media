@@ -11,8 +11,7 @@
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.058.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.059.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -86,7 +85,7 @@
         </div>
         <div class="contributor-card">
           <h3>디자인 서체 규칙</h3>
-          <p>대제목, 섹션 타이틀, CTA, 더보기 링크처럼 사용자가 바로 인지하는 핵심 UI 텍스트는 기본적으로 Alice 계열(`AliceDigitalLearning`)을 우선 사용합니다. DM Mono는 빌드 버전, 시스템 메타, 기술적 보조 정보처럼 기계적인 정보에만 제한적으로 사용합니다.</p>
+          <p>이 사이트의 기본 서체는 전역적으로 `AliceDigitalLearning` 하나만 씁니다. 공개 페이지, 관리자 페이지, 버튼, 메타, 검색, 시스템 안내까지 모두 같은 서체 규칙을 유지하고, 예전 DM Mono/Noto/Playfair 흔적이 남아 있으면 정리합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>버튼 규칙</h3>
@@ -102,7 +101,19 @@
         </div>
         <div class="contributor-card">
           <h3>관리자 정보 표시 규칙</h3>
-          <p>관리자에서 Created / Published / Modified처럼 운영 판단에 중요한 메타는 숨기지 말고 충분히 명확하게 보여줍니다. 다만 정보량이 많아질수록 칩이나 카드 구조로 묶어 한눈에 스캔 가능하게 정리합니다.</p>
+          <p>관리자에서 Created / Published / Modified처럼 운영 판단에 중요한 메타는 숨기지 말고 `YYYY년 MM월 DD일 HH시 MM분 SS초` 형식으로 모두 노출합니다. 다만 메타는 제목보다 작고 얕게 보여야 하며, 제목이 첫 시선의 중심이 되도록 위계를 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>관리자 헤더 규칙</h3>
+          <p>관리자 상단 액션은 흩어놓지 않고 하나의 박스 안에서 두 줄로 정리합니다. 첫 줄은 `홈페이지 보기 / 로그아웃`, 두 번째 줄은 `운영 개요 / 콘텐츠 / 사이트 설정`으로 고정하고, 로그아웃은 배경 대비를 높여 즉시 식별 가능해야 합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>관리자 개요 규칙</h3>
+          <p>운영 개요 상단 통계는 `전체 게시글 / Korea / APR / WOSM / Scout People` 5개를 데스크톱에서 한 줄에 모두 보여주고, 모바일에서만 1단으로 떨어뜨립니다. 통계 라벨은 숫자보다 조용해야 하며, 숫자가 주인공이어야 합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>용어집 검색 규칙</h3>
+          <p>용어집 검색은 기본적으로 `용어 + 설명`을 함께 검색하고, 체크박스로 범위를 좁힐 수 있어야 합니다. `용어`와 `설명`을 모두 해제한 채 검색을 시도하면, 검색을 막고 `검색 색인을 설정해달라고` 안내하는 토스트를 띄웁니다.</p>
         </div>
       </div>
     </div>
@@ -120,7 +131,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.058.03</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.059.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -129,7 +140,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.058.03"></script>
+  <script src="/js/main.js?v=0.059.00"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
