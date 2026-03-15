@@ -1123,19 +1123,19 @@ p { margin-bottom: 6px; }
 }
 
 .home-section-title-main {
-  background-image: linear-gradient(90deg, #111111 0%, #2f2b2b 52%, #4b4341 100%);
+  background-image: linear-gradient(90deg, #111111 0%, #191717 52%, #221d1c 100%);
 }
 
 .home-section-title-latest {
-  background-image: linear-gradient(90deg, #4d006e 0%, #6c1f8b 52%, #8a44a6 100%);
+  background-image: linear-gradient(90deg, #4d006e 0%, #43005f 52%, #37004e 100%);
 }
 
 .home-section-title-popular {
-  background-image: linear-gradient(90deg, #d85b1f 0%, #e67733 52%, #f09a52 100%);
+  background-image: linear-gradient(90deg, #d85b1f 0%, #c24e18 52%, #a64016 100%);
 }
 
 .home-section-title-picks {
-  background-image: linear-gradient(90deg, #0d6c57 0%, #1f8c71 52%, #41ac8d 100%);
+  background-image: linear-gradient(90deg, #0d6c57 0%, #0c5e4c 52%, #0a4f40 100%);
 }
 
 .home-section-more {
@@ -1291,19 +1291,19 @@ p { margin-bottom: 6px; }
 }
 
 .home-col-header-korea {
-  background-image: linear-gradient(90deg, #0094b4 0%, #16a8c4 52%, #3bbedd 100%);
+  background-image: linear-gradient(90deg, #0094b4 0%, #007f9c 52%, #006c85 100%);
 }
 
 .home-col-header-apr {
-  background-image: linear-gradient(90deg, #ff5655 0%, #ff6f5e 52%, #ff8d6e 100%);
+  background-image: linear-gradient(90deg, #ff5655 0%, #ea4f4d 52%, #cf4744 100%);
 }
 
 .home-col-header-wosm {
-  background-image: linear-gradient(90deg, #248737 0%, #35984a 52%, #55af61 100%);
+  background-image: linear-gradient(90deg, #248737 0%, #1f7530 52%, #196229 100%);
 }
 
 .home-col-header-people {
-  background-image: linear-gradient(90deg, #8a5a2b 0%, #a56d34 52%, #c18447 100%);
+  background-image: linear-gradient(90deg, #8a5a2b 0%, #764b25 52%, #623d1f 100%);
 }
 
 .home-col-header .home-section-more {
