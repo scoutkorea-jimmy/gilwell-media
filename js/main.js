@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.054.07';
+  GW.APP_VERSION = '0.054.08';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -803,10 +803,10 @@
     var root = document.documentElement;
     if (!root || !root.style) return;
     root.style.setProperty('--board-card-gap', gap + 'px');
-    root.style.setProperty('--home-section-gap', Math.max(15, gap * 3) + 'px');
-    root.style.setProperty('--home-grid-gap', Math.max(20, gap * 4) + 'px');
-    root.style.setProperty('--home-block-bottom', Math.max(28, gap * 6) + 'px');
-    root.style.setProperty('--home-title-gap', Math.max(12, gap * 2) + 'px');
+    root.style.setProperty('--home-section-gap', gap + 'px');
+    root.style.setProperty('--home-grid-gap', gap + 'px');
+    root.style.setProperty('--home-block-bottom', gap + 'px');
+    root.style.setProperty('--home-title-gap', gap + 'px');
   };
 
   GW.loadBoardLayoutSettings = function () {
