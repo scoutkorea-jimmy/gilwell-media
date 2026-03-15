@@ -82,6 +82,21 @@ export async function onRequestGet({ params, env, request }) {
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const categoryUrl = `${siteUrl}/${post.category}.html`;
+  const editSeed = serializeForScript({
+    id,
+    category: post.category,
+    title: post.title || '',
+    subtitle: post.subtitle || '',
+    content: post.content || '',
+    image_url: post.image_url || '',
+    image_caption: post.image_caption || '',
+    youtube_url: post.youtube_url || '',
+    meta_tags: post.meta_tags || '',
+    tag: post.tag || '',
+    author: post.author || 'Editor A',
+    ai_assisted: !!post.ai_assisted,
+    publish_date: String(publicDateValue || '').slice(0, 10),
+  });
   const isNew    = isTodayKst(publicDateValue);
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
@@ -127,7 +142,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.060.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.061.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -216,11 +231,11 @@ export async function onRequestGet({ params, env, request }) {
 
         <h1 class="post-page-title">${title}</h1>
         ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
+        <div class="post-page-share">
+          <button id="post-share-btn" class="post-share-btn" type="button" onclick="window._sharePostLink()">공유하기</button>
+        </div>
 
         <div class="post-page-meta">
-          <span class="post-page-action-btns">
-            <button id="post-share-btn" class="post-share-btn" type="button" onclick="window._sharePostLink()">공유하기</button>
-          </span>
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
           ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
@@ -298,7 +313,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.060.03</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.061.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -308,31 +323,445 @@ export async function onRequestGet({ params, env, request }) {
   </footer>
 
   <!-- ── 수정 로그인 모달 ── -->
-  <div id="post-login-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;">
-    <div style="background:#fff;padding:32px;max-width:340px;width:90%;border-top:3px solid #622599;" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
-      <h3 id="post-login-title" style="font-family: AliceDigitalLearning, sans-serif;font-size:18px;margin-bottom:8px;">관리자 인증</h3>
-      <p style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:#888;margin-bottom:16px;">수정하려면 관리자 비밀번호를 입력하세요.</p>
-      <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password"
-        style="width:100%;border:1px solid #e8e8e8;padding:10px 12px;font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;margin-bottom:12px;box-sizing:border-box;">
-      <div id="post-login-turnstile" style="margin-bottom:12px;"></div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="window._postLoginSubmit()" style="flex:1;background:#622599;color:#fff;border:none;padding:10px;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;letter-spacing:.06em;">확인</button>
-        <button onclick="document.getElementById('post-login-modal').style.display='none'" style="background:none;border:1px solid #e8e8e8;padding:10px 16px;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;">취소</button>
+  <div id="post-login-modal" class="board-pw-overlay" aria-hidden="true">
+    <div class="board-pw-box" role="dialog" aria-modal="true" aria-labelledby="post-login-title">
+      <h3 id="post-login-title" class="board-pw-header">관리자 인증</h3>
+      <p class="board-pw-desc">수정하려면 관리자 비밀번호를 입력하세요.</p>
+      <input id="post-login-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
+      <div id="post-login-turnstile" style="margin-top:12px;"></div>
+      <div class="board-pw-actions">
+        <button id="post-login-submit-btn" type="button" onclick="window._postLoginSubmit()">확인</button>
+        <button type="button" onclick="window._closePostLogin()">취소</button>
       </div>
-      <p id="post-login-err" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:#FF5655;margin-top:8px;display:none;"></p>
+      <p id="post-login-err" class="board-pw-error"></p>
+    </div>
+  </div>
+
+  <div id="post-edit-overlay" class="board-write-overlay" aria-hidden="true">
+    <div class="board-write-box post-edit-box" role="dialog" aria-modal="true" aria-labelledby="post-edit-title">
+      <button class="board-write-close" type="button" aria-label="수정 모달 닫기" onclick="window._closePostEdit()">×</button>
+      <div class="board-write-header" id="post-edit-title">기사 수정</div>
+      <div class="board-write-cat" id="post-edit-category-chip" style="background:${cat.color};">${cat.label}</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="post-edit-category">카테고리</label>
+          <select id="post-edit-category">
+            <option value="korea">Korea</option>
+            <option value="apr">APR</option>
+            <option value="wosm">WOSM</option>
+            <option value="people">Scout People</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="post-edit-author">작성자</label>
+          <select id="post-edit-author"><option>불러오는 중…</option></select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="post-edit-title-input">제목</label>
+        <input type="text" id="post-edit-title-input" maxlength="200" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="post-edit-date">게시 날짜</label>
+          <input type="date" id="post-edit-date" />
+        </div>
+        <div class="form-group">
+          <label for="post-edit-youtube">유튜브 링크</label>
+          <input type="url" id="post-edit-youtube" placeholder="https://youtu.be/..." />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="post-edit-subtitle-input">부제목</label>
+        <textarea id="post-edit-subtitle-input" rows="3" maxlength="300"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>글머리 태그</label>
+        <div id="post-tag-selector" class="tag-pill-group"><span class="post-edit-note">불러오는 중…</span></div>
+      </div>
+
+      <div class="form-group">
+        <label>대표 이미지</label>
+        <div class="cover-upload-wrap">
+          <button id="post-cover-btn" type="button" class="cover-upload-btn">이미지 선택</button>
+          <div id="post-cover-preview"></div>
+          <p class="post-edit-note">대표 이미지는 유지하거나 새 이미지로 교체할 수 있습니다.</p>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="post-edit-image-caption">이미지 설명</label>
+          <input type="text" id="post-edit-image-caption" maxlength="300" />
+        </div>
+        <div class="form-group">
+          <label for="post-edit-metatags-input">메타 태그</label>
+          <input type="text" id="post-edit-metatags-input" placeholder="쉼표로 구분" maxlength="500" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>본문</label>
+        <div id="post-edit-editorjs" class="post-edit-editor-holder"></div>
+      </div>
+
+      <div class="post-edit-check">
+        <input type="checkbox" id="post-edit-ai-assisted" />
+        <label for="post-edit-ai-assisted">AI 지원 여부</label>
+      </div>
+
+      <div class="post-edit-actions">
+        <button id="post-edit-submit" class="submit-btn" type="button" onclick="window._postSaveEdit()">수정 저장</button>
+        <button id="post-edit-cancel" class="cancel-btn visible" type="button" onclick="window._closePostEdit()">취소</button>
+      </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.060.03"></script>
+  <script src="/js/main.js?v=0.061.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
-    // Edit button — always visible, prompts login if not authenticated
     var _editPostId = ${id};
     var _sharePostUrl = ${JSON.stringify(postUrl)};
     var _sharePostTitle = ${JSON.stringify(titleText)};
+    var _postEditSeed = ${editSeed};
+    var _postTurnstileWidgetId = null;
+    var _postEditState = {
+      editor: null,
+      editorLoading: false,
+      coverImage: _postEditSeed.image_url || null,
+      selectedTags: [],
+      activeCategory: _postEditSeed.category || 'korea'
+    };
+
+    function _setBodyModalLock(locked) {
+      document.body.style.overflow = locked ? 'hidden' : '';
+    }
+
+    function _parsePostTags(value) {
+      return String(value || '')
+        .split(',')
+        .map(function (tag) { return tag.trim(); })
+        .filter(Boolean);
+    }
+
+    function _stripLegacyHtml(html) {
+      if (!html) return '';
+      var tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      return (tmp.textContent || tmp.innerText || '').trim();
+    }
+
+    function _createParagraphBlocks(text) {
+      var normalized = String(text || '').replace(/\r\n/g, '\n').trim();
+      if (!normalized) return [];
+      return normalized.split(/\n{2,}/).map(function (chunk) {
+        return {
+          type: 'paragraph',
+          data: {
+            text: GW.escapeHtml(chunk).replace(/\n/g, '<br>')
+          }
+        };
+      });
+    }
+
+    function _parseEditorSeed(raw) {
+      var text = typeof raw === 'string' ? raw.trim() : '';
+      if (!text) return { time: Date.now(), blocks: [] };
+      if (text.charAt(0) === '{') {
+        try {
+          var parsed = JSON.parse(text);
+          if (parsed && Array.isArray(parsed.blocks)) return parsed;
+        } catch (_) {}
+      }
+      if (/^</.test(text)) {
+        text = _stripLegacyHtml(text);
+      }
+      return {
+        time: Date.now(),
+        blocks: _createParagraphBlocks(text)
+      };
+    }
+
+    function _loadPostEditorAssets(callback) {
+      if (window.EditorJS && window.Header && window.List && window.Quote) {
+        callback();
+        return;
+      }
+      if (_postEditState.editorLoading) {
+        setTimeout(function () { _loadPostEditorAssets(callback); }, 120);
+        return;
+      }
+      _postEditState.editorLoading = true;
+
+      function loadScript(src, done) {
+        var exists = document.querySelector('script[src="' + src + '"]');
+        if (exists) {
+          if (exists.dataset.loaded === '1') {
+            done();
+            return;
+          }
+          exists.addEventListener('load', done, { once: true });
+          return;
+        }
+        var script = document.createElement('script');
+        script.src = src;
+        script.addEventListener('load', function () {
+          script.dataset.loaded = '1';
+          done();
+        }, { once: true });
+        document.head.appendChild(script);
+      }
+
+      loadScript('https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.1/dist/editorjs.umd.js', function () {
+        var pending = 3;
+        function done() {
+          pending -= 1;
+          if (pending === 0) {
+            _postEditState.editorLoading = false;
+            callback();
+          }
+        }
+        loadScript('https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.umd.js', done);
+        loadScript('https://cdn.jsdelivr.net/npm/@editorjs/list@1.10.0/dist/list.umd.js', done);
+        loadScript('https://cdn.jsdelivr.net/npm/@editorjs/quote@2.7.5/dist/quote.umd.js', done);
+      });
+    }
+
+    function _initPostEditor(callback) {
+      _loadPostEditorAssets(function () {
+        if (!_postEditState.editor) {
+          _postEditState.editor = new window.EditorJS({
+            holder: 'post-edit-editorjs',
+            placeholder: '내용을 수정하세요...',
+            tools: {
+              header: {
+                class: window.Header,
+                config: { levels: [2, 3, 4], defaultLevel: 2 }
+              },
+              list: {
+                class: window.List,
+                inlineToolbar: true
+              },
+              quote: {
+                class: window.Quote,
+                inlineToolbar: true
+              },
+              image: {
+                class: GW.makeEditorImageTool()
+              }
+            }
+          });
+        }
+        _postEditState.editor.isReady
+          .then(function () { callback(); })
+          .catch(function () {
+            GW.showToast('에디터를 불러오지 못했습니다', 'error');
+          });
+      });
+    }
+
+    function _fillPostAuthorOptions(editors) {
+      var select = document.getElementById('post-edit-author');
+      if (!select) return;
+      var current = _postEditSeed.author || 'Editor A';
+      select.innerHTML = GW.buildEditorOptions(editors || {});
+      select.value = current;
+    }
+
+    function _syncPostCategoryChip(category) {
+      var chip = document.getElementById('post-edit-category-chip');
+      var meta = (GW.CATEGORIES && GW.CATEGORIES[category]) || GW.CATEGORIES.korea;
+      if (!chip || !meta) return;
+      chip.textContent = meta.label;
+      chip.style.background = meta.color;
+    }
+
+    function _syncPostTagPills(selectedTags) {
+      var selector = document.getElementById('post-tag-selector');
+      if (!selector) return;
+      selector.querySelectorAll('.tag-pill').forEach(function (pill) {
+        var value = pill.getAttribute('data-tag') || '';
+        if (!value) {
+          pill.classList.toggle('active', selectedTags.length === 0);
+          return;
+        }
+        pill.classList.toggle('active', selectedTags.indexOf(value) >= 0);
+      });
+    }
+
+    function _renderPostTagSelector(items) {
+      var selector = document.getElementById('post-tag-selector');
+      if (!selector) return;
+      var selected = _postEditState.selectedTags.filter(function (tag) {
+        return items.indexOf(tag) >= 0;
+      });
+      _postEditState.selectedTags = selected;
+      var html = '<button type="button" class="tag-pill' + (!selected.length ? ' active' : '') + '" data-tag="">없음</button>';
+      items.forEach(function (tag) {
+        var active = selected.indexOf(tag) >= 0 ? ' active' : '';
+        html += '<button type="button" class="tag-pill' + active + '" data-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
+      });
+      selector.innerHTML = html;
+      selector.querySelectorAll('.tag-pill').forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          var value = pill.getAttribute('data-tag') || '';
+          if (!value) {
+            _postEditState.selectedTags = [];
+          } else {
+            var idx = _postEditState.selectedTags.indexOf(value);
+            if (idx >= 0) _postEditState.selectedTags.splice(idx, 1);
+            else _postEditState.selectedTags.push(value);
+          }
+          _syncPostTagPills(_postEditState.selectedTags);
+        });
+      });
+      _syncPostTagPills(_postEditState.selectedTags);
+    }
+
+    function _loadPostTagOptions(category) {
+      var selector = document.getElementById('post-tag-selector');
+      if (selector) selector.innerHTML = '<span class="post-edit-note">불러오는 중…</span>';
+      fetch('/api/settings/tags?category=' + encodeURIComponent(category), { cache: 'no-store' })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          _renderPostTagSelector((data && data.items) || []);
+        })
+        .catch(function () {
+          if (selector) selector.innerHTML = '<span class="post-edit-note">태그를 불러오지 못했습니다.</span>';
+        });
+    }
+
+    function _renderPostCoverPreview() {
+      var preview = document.getElementById('post-cover-preview');
+      if (!preview) return;
+      if (!_postEditState.coverImage) {
+        preview.innerHTML = '';
+        return;
+      }
+      preview.innerHTML =
+        '<img src="' + GW.escapeHtml(_postEditState.coverImage) + '" class="cover-preview-img" alt="대표 이미지 미리보기">' +
+        '<button type="button" class="cover-remove-btn" id="post-cover-remove">이미지 제거</button>';
+      var removeBtn = document.getElementById('post-cover-remove');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function () {
+          _postEditState.coverImage = null;
+          _renderPostCoverPreview();
+        });
+      }
+    }
+
+    window._postUploadCover = function () {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.addEventListener('change', function () {
+        var file = input.files && input.files[0];
+        if (!file) return;
+        GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 })
+          .then(function (result) {
+            _postEditState.coverImage = result.dataUrl;
+            _renderPostCoverPreview();
+          })
+          .catch(function (err) {
+            GW.showToast((err && err.message) || '대표 이미지 처리에 실패했습니다', 'error');
+          });
+      });
+      input.click();
+    };
+
+    function _populatePostEditForm() {
+      document.getElementById('post-edit-category').value = _postEditSeed.category || 'korea';
+      document.getElementById('post-edit-title-input').value = _postEditSeed.title || '';
+      document.getElementById('post-edit-subtitle-input').value = _postEditSeed.subtitle || '';
+      document.getElementById('post-edit-date').value = _postEditSeed.publish_date || GW.getKstDateInputValue();
+      document.getElementById('post-edit-youtube').value = _postEditSeed.youtube_url || '';
+      document.getElementById('post-edit-image-caption').value = _postEditSeed.image_caption || '';
+      document.getElementById('post-edit-metatags-input').value = _postEditSeed.meta_tags || '';
+      document.getElementById('post-edit-ai-assisted').checked = !!_postEditSeed.ai_assisted;
+      _postEditState.coverImage = _postEditSeed.image_url || null;
+      _postEditState.selectedTags = _parsePostTags(_postEditSeed.tag);
+      _postEditState.activeCategory = _postEditSeed.category || 'korea';
+      _syncPostCategoryChip(_postEditState.activeCategory);
+      _renderPostCoverPreview();
+      _loadPostTagOptions(_postEditState.activeCategory);
+      _fillPostAuthorOptions({});
+      GW.apiFetch('/api/settings/editors')
+        .then(function (data) {
+          _fillPostAuthorOptions((data && data.editors) || {});
+        })
+        .catch(function () {
+          _fillPostAuthorOptions({});
+        });
+      _initPostEditor(function () {
+        _postEditState.editor.render(_parseEditorSeed(_postEditSeed.content || '')).catch(function () {});
+      });
+    }
+
+    window._closePostLogin = function () {
+      var modal = document.getElementById('post-login-modal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+      _setBodyModalLock(false);
+      var err = document.getElementById('post-login-err');
+      if (err) err.style.display = 'none';
+      if (window.turnstile && _postTurnstileWidgetId != null) {
+        window.turnstile.reset(_postTurnstileWidgetId);
+      }
+    };
+
+    function _openPostLogin() {
+      var modal = document.getElementById('post-login-modal');
+      if (!modal) return;
+      document.getElementById('post-login-pw').value = '';
+      var err = document.getElementById('post-login-err');
+      if (err) err.style.display = 'none';
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+      _setBodyModalLock(true);
+      setTimeout(function () {
+        var input = document.getElementById('post-login-pw');
+        if (input) input.focus();
+      }, 80);
+      GW.loadTurnstile(function () {
+        if (window.turnstile && GW.TURNSTILE_SITE_KEY && _postTurnstileWidgetId == null) {
+          _postTurnstileWidgetId = window.turnstile.render('#post-login-turnstile', {
+            sitekey: GW.TURNSTILE_SITE_KEY,
+            theme: 'light'
+          });
+        }
+      });
+    }
+
+    window._closePostEdit = function () {
+      var overlay = document.getElementById('post-edit-overlay');
+      if (!overlay) return;
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+      _setBodyModalLock(false);
+    };
+
+    function _openPostEdit() {
+      var overlay = document.getElementById('post-edit-overlay');
+      if (!overlay) return;
+      _populatePostEditForm();
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      _setBodyModalLock(true);
+      setTimeout(function () {
+        var input = document.getElementById('post-edit-title-input');
+        if (input) input.focus();
+      }, 100);
+    }
+
     window._sharePostLink = function() {
       GW.sharePostLink({
         url: _sharePostUrl,
@@ -342,54 +771,181 @@ export async function onRequestGet({ params, env, request }) {
         GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
       });
     };
-    var _postTurnstileWidgetId = null;
+
     window._postEdit = function() {
-      if (GW.getToken && GW.getToken()) {
-        window.location.href = '/admin.html?edit=' + _editPostId;
-      } else {
-        var modal = document.getElementById('post-login-modal');
-        modal.style.display = 'flex';
-        setTimeout(function() {
-          var pw = document.getElementById('post-login-pw');
-          if (pw) pw.focus();
-        }, 80);
-        // Render Turnstile widget once
-        GW.loadTurnstile(function() {
-          if (window.turnstile && GW.TURNSTILE_SITE_KEY && _postTurnstileWidgetId == null) {
-            _postTurnstileWidgetId = window.turnstile.render('#post-login-turnstile', {
-              sitekey: GW.TURNSTILE_SITE_KEY,
-              theme: 'light',
-            });
-          }
-        });
+      if (GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full') {
+        _openPostEdit();
+        return;
       }
+      if (GW.getToken && GW.getToken()) {
+        GW.clearToken();
+        GW.showToast('수정 권한이 있는 관리자 비밀번호를 다시 입력해주세요', 'error');
+      } else {
+        GW.showToast('수정하려면 관리자 비밀번호를 입력해주세요', 'error');
+      }
+      _openPostLogin();
     };
+
     window._postLoginSubmit = function() {
-      var pw   = (document.getElementById('post-login-pw').value || '').trim();
-      var err  = document.getElementById('post-login-err');
+      var pw = (document.getElementById('post-login-pw').value || '').trim();
+      var err = document.getElementById('post-login-err');
+      var submitBtn = document.getElementById('post-login-submit-btn');
       err.style.display = 'none';
-      if (!pw) { err.textContent = '비밀번호를 입력하세요'; err.style.display = ''; return; }
+      if (!pw) {
+        err.textContent = '비밀번호를 입력하세요';
+        err.style.display = 'block';
+        GW.showToast('관리자 비밀번호를 입력해주세요', 'error');
+        return;
+      }
       var cfToken = '';
       if (_postTurnstileWidgetId != null && window.turnstile) {
         cfToken = window.turnstile.getResponse(_postTurnstileWidgetId) || '';
       }
       if (GW.TURNSTILE_SITE_KEY && !cfToken) {
-        err.textContent = 'CAPTCHA를 완료해주세요'; err.style.display = ''; return;
+        err.textContent = 'CAPTCHA를 완료해주세요';
+        err.style.display = 'block';
+        GW.showToast('CAPTCHA를 완료해주세요', 'error');
+        return;
       }
-      GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }) })
-        .then(function(data) {
-          GW.setToken(data.token);
-          window.location.href = '/admin.html?edit=' + _editPostId;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '확인 중…';
+      GW.apiFetch('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          password: pw,
+          cf_turnstile_response: cfToken || undefined
         })
-        .catch(function() {
-          err.textContent = '비밀번호가 올바르지 않습니다';
-          err.style.display = '';
+      })
+        .then(function(data) {
+          if (!data || !data.token || data.role !== 'full') {
+            GW.clearToken();
+            err.textContent = '수정 권한이 있는 관리자 계정만 사용할 수 있습니다';
+            err.style.display = 'block';
+            GW.showToast('수정 권한이 있는 관리자 비밀번호가 아닙니다', 'error');
+            if (window.turnstile && _postTurnstileWidgetId != null) window.turnstile.reset(_postTurnstileWidgetId);
+            return;
+          }
+          GW.setToken(data.token);
+          GW.setAdminRole(data.role || 'full');
+          window._closePostLogin();
+          GW.showToast('관리자 인증이 확인되었습니다', 'success');
+          _openPostEdit();
+        })
+        .catch(function(errObj) {
+          var message = (errObj && errObj.message) || '비밀번호가 올바르지 않습니다';
+          err.textContent = message;
+          err.style.display = 'block';
+          GW.showToast(message, 'error');
           if (window.turnstile && _postTurnstileWidgetId != null) window.turnstile.reset(_postTurnstileWidgetId);
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '확인';
         });
     };
+
+    window._postSaveEdit = function() {
+      var submitBtn = document.getElementById('post-edit-submit');
+      var category = document.getElementById('post-edit-category').value || 'korea';
+      var title = (document.getElementById('post-edit-title-input').value || '').trim();
+      var subtitle = (document.getElementById('post-edit-subtitle-input').value || '').trim();
+      var publishDate = (document.getElementById('post-edit-date').value || '').trim();
+      var youtubeUrl = (document.getElementById('post-edit-youtube').value || '').trim();
+      var imageCaption = (document.getElementById('post-edit-image-caption').value || '').trim();
+      var metaTags = (document.getElementById('post-edit-metatags-input').value || '').trim();
+      var author = (document.getElementById('post-edit-author').value || '').trim();
+      var aiAssisted = !!document.getElementById('post-edit-ai-assisted').checked;
+
+      if (!title) {
+        GW.showToast('제목을 입력해주세요', 'error');
+        return;
+      }
+      if (!_postEditState.editor) {
+        GW.showToast('에디터가 준비되지 않았습니다', 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '저장 중…';
+
+      _postEditState.editor.save()
+        .then(function (outputData) {
+          var validation = GW.validatePostEditorOutput(outputData);
+          if (!validation.ok) {
+            GW.showToast(validation.error, 'error');
+            throw new Error('__post_validation__');
+          }
+          return GW.apiFetch('/api/posts/' + _editPostId, {
+            method: 'PUT',
+            body: JSON.stringify({
+              category: category,
+              title: title,
+              subtitle: subtitle || null,
+              content: JSON.stringify(outputData),
+              image_url: _postEditState.coverImage || null,
+              image_caption: imageCaption || null,
+              youtube_url: youtubeUrl || null,
+              tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
+              meta_tags: metaTags || null,
+              author: author || null,
+              ai_assisted: aiAssisted,
+              publish_date: publishDate || undefined
+            })
+          });
+        })
+        .then(function () {
+          GW.showToast('기사 수정이 저장되었습니다', 'success');
+          window._closePostEdit();
+          window.location.reload();
+        })
+        .catch(function (errObj) {
+          if (errObj && errObj.message === '__post_validation__') return;
+          if (errObj && errObj.status === 401) {
+            GW.clearToken();
+            window._closePostEdit();
+            GW.showToast('수정 권한을 다시 확인해주세요', 'error');
+            _openPostLogin();
+            return;
+          }
+          GW.showToast((errObj && errObj.message) || '기사 수정에 실패했습니다', 'error');
+        })
+        .finally(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '수정 저장';
+        });
+    };
+
     document.getElementById('post-login-pw').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') window._postLoginSubmit();
     });
+    document.getElementById('post-login-modal').addEventListener('click', function (event) {
+      if (event.target === event.currentTarget) window._closePostLogin();
+    });
+    document.getElementById('post-edit-overlay').addEventListener('click', function (event) {
+      if (event.target === event.currentTarget) window._closePostEdit();
+    });
+    document.getElementById('post-edit-category').addEventListener('change', function (event) {
+      _postEditState.activeCategory = event.target.value || 'korea';
+      _postEditState.selectedTags = [];
+      _syncPostCategoryChip(_postEditState.activeCategory);
+      _loadPostTagOptions(_postEditState.activeCategory);
+    });
+    document.getElementById('post-cover-btn').addEventListener('click', function () {
+      window._postUploadCover();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      var loginModal = document.getElementById('post-login-modal');
+      var editOverlay = document.getElementById('post-edit-overlay');
+      if (editOverlay && editOverlay.classList.contains('open')) {
+        window._closePostEdit();
+        return;
+      }
+      if (loginModal && loginModal.classList.contains('open')) {
+        window._closePostLogin();
+      }
+    });
+
     var _postLikeBtn = document.getElementById('post-like-btn');
     if (_postLikeBtn) {
       _postLikeBtn.addEventListener('click', function() {
@@ -621,4 +1177,13 @@ function buildArticleStructuredData(meta) {
       ],
     },
   ]).replace(/</g, '\\u003c');
+}
+
+function serializeForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }

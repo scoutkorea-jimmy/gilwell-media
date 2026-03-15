@@ -818,6 +818,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --lh-tight:   1.35;
   --lh-copy:    1.65;
   --mobile-user-scale: 1;
+  --btn-height-primary: 44px;
+  --btn-height-secondary: 36px;
   --gradient-ink: linear-gradient(90deg, #111111 0%, #191717 52%, #221d1c 100%);
   --gradient-purple: linear-gradient(90deg, #622599 0%, #562085 52%, #45186b 100%);
   --gradient-purple-deep: linear-gradient(135deg, #622599 0%, #4e1d7a 46%, #2a103f 100%);
@@ -1553,7 +1555,7 @@ p { margin-bottom: 6px; }
   align-items:    center;
   justify-content: center;
   min-width:      168px;
-  min-height:     44px;
+  min-height:     var(--btn-height-primary);
   margin-top:     0;
   padding:        10px 22px;
   border:         1px solid rgba(255,255,255,0.46);
@@ -1810,7 +1812,7 @@ p { margin-bottom: 6px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--btn-height-primary);
   min-width: 122px;
   padding: 10px 18px;
   border: 1px solid var(--black);
@@ -2011,6 +2013,14 @@ p { margin-bottom: 6px; }
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.05em;
+}
+
+.mini-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
 
 /* Thumbnail layout for mini-items */
@@ -2299,6 +2309,13 @@ p { margin-bottom: 6px; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow:         hidden;
+}
+
+.post-card-share-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
 }
 
 .post-card-meta {
@@ -5009,17 +5026,74 @@ footer a:hover { color: #ffffff; }
   align-items: center;
   gap:         12px;
 }
+
+.post-edit-box {
+  max-width: 760px;
+}
+
+.post-edit-editor-holder {
+  min-height: 260px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  padding: 16px;
+}
+
+.post-edit-note {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.post-edit-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.post-edit-check input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.post-edit-check label {
+  margin: 0;
+  cursor: pointer;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.post-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.post-edit-actions .submit-btn,
+.post-edit-actions .cancel-btn {
+  width: auto;
+  margin-top: 0;
+  flex: 1 1 180px;
+}
+
 .post-share-btn {
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
+  min-height:     var(--btn-height-secondary);
   font-family: AliceDigitalLearning, sans-serif;
-  font-size:      10px;
-  letter-spacing: 0.08em;
+  font-size:      11px;
+  letter-spacing: 0.04em;
   background:     none;
   border:         1px solid var(--border);
   color:          var(--muted);
-  padding:        5px 12px;
+  padding:        0 14px;
   cursor:         pointer;
   transition:     border-color 0.15s, color 0.15s;
   white-space:    nowrap;
@@ -6702,7 +6776,7 @@ footer a:hover { color: #ffffff; }
   }
 }
 
-/* ── Admin Redesign System (V0.060.03) ───────────────────── */
+/* ── Admin Redesign System (V0.061.00) ───────────────────── */
 body.admin-page {
   --admin-bg: #f2efe8;
   --admin-surface: rgba(255,255,255,0.96);
@@ -7792,7 +7866,7 @@ body.admin-page .drag-handle {
   }
 }
 
-/* ── Admin Mobile-Only Layout (V0.060.03) ────────────────── */
+/* ── Admin Mobile-Only Layout (V0.061.00) ────────────────── */
 body.admin-page {
   background:
     radial-gradient(circle at top, rgba(98, 37, 153, 0.10), transparent 32%),
