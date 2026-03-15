@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.058.01';
+  GW.APP_VERSION = '0.058.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -27,6 +27,23 @@
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  };
+
+  GW.formatDateTime = function (dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+    return [
+      d.getFullYear() + '년',
+      pad(d.getMonth() + 1) + '월',
+      pad(d.getDate()) + '일',
+      pad(d.getHours()) + '시',
+      pad(d.getMinutes()) + '분',
+      pad(d.getSeconds()) + '초'
+    ].join(' ');
   };
 
   GW.formatNumber = function (value) {
