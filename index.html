@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=0.054.08">
+  <link rel="stylesheet" href="/css/style.css?v=0.055.00">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -237,7 +237,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.054.08</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.055.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -253,7 +253,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.054.08"></script>
+  <script src="/js/main.js?v=0.055.00"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -264,6 +264,7 @@
     function buildMiniItem(p) {
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
       var isNew = GW.isTodayKst(p.created_at);
+      var leadTag = (p.tag || '').trim();
       var thumb = p.image_url
         ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
         : '';
@@ -272,6 +273,7 @@
           '<div class="mini-item-row">' +
             '<div class="mini-item-text">' +
               '<div class="mini-item-labels">' +
+                (leadTag ? '<span class="post-kicker tag-' + GW.escapeHtml(p.category) + '-kicker">' + GW.escapeHtml(leadTag) + '</span>' : '') +
                 '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
                 (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
                 '<button class="post-share-btn mini-share-btn" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>' +
@@ -293,7 +295,9 @@
       }
       var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
       var isNew = GW.isTodayKst(post.created_at);
-      var summary = post.subtitle || GW.truncate(post.content || '', 180);
+      var subtitle = (post.subtitle || '').trim();
+      var excerpt = GW.truncate(post.content || '', 220);
+      if (excerpt === subtitle) excerpt = '';
       var thumb = post.image_url
         ? '<a class="home-lead-thumb-link" href="/post/' + post.id + '"><img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
         : '';
@@ -307,7 +311,8 @@
               (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
             '</div>' +
             '<h3><a class="home-lead-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
-            (summary ? '<p class="home-lead-summary">' + GW.escapeHtml(summary) + '</p>' : '') +
+            (subtitle ? '<p class="home-lead-subtitle">' + GW.escapeHtml(subtitle) + '</p>' : '') +
+            (excerpt ? '<p class="home-lead-excerpt">' + GW.escapeHtml(excerpt) + '</p>' : '') +
             '<div class="home-lead-footer">' +
               '<div class="home-lead-meta">' + GW.formatDate(post.created_at) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
               '<div class="home-lead-actions">' +
