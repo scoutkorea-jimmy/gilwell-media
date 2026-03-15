@@ -54,6 +54,7 @@
   var _listSearch   = '';
   var _listSearchTimer = null;
   var _PAGE_SIZE    = 20;
+  var _PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
   var _historyItems = [];
   var _historyPage  = 1;
   var _historyLoaded = false;
@@ -933,7 +934,7 @@
   // ─── Admin list loading (paginated) ──────────────────────
   function loadAdminList() {
     var reorderMode = _canReorderCurrentList();
-    var url = reorderMode ? '/api/posts?all=1' : '/api/posts?page=' + _listPage;
+    var url = '/api/posts?page=' + _listPage + '&limit=' + _PAGE_SIZE;
     if (_listCat !== 'all') url += '&category=' + _listCat;
     if (_listSearch) url += '&q=' + encodeURIComponent(_listSearch);
 
@@ -977,12 +978,12 @@
             '</div>' +
             '<h4>' + GW.escapeHtml(p.title) + '</h4>' +
             '<div class="item-meta-grid">' +
-              '<span class="item-meta-chip">Created ' + GW.formatDate(p.created_at) + '</span>' +
-              '<span class="item-meta-chip">Published ' + GW.formatDate(p.publish_at || p.created_at) + '</span>' +
-              '<span class="item-meta-chip">Modified ' + GW.formatDate(p.updated_at || p.created_at) + '</span>' +
-              '<span class="item-meta-chip">조회 ' + (p.views || 0) + '</span>' +
-              (p.likes ? '<span class="item-meta-chip">공감 ' + p.likes + '</span>' : '') +
-              (p.author ? '<span class="item-meta-chip">' + GW.escapeHtml(p.author) + '</span>' : '') +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Created</strong><span>' + GW.formatDate(p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Published</strong><span>' + GW.formatDate(p.publish_at || p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip item-meta-chip-date"><strong>Modified</strong><span>' + GW.formatDate(p.updated_at || p.created_at) + '</span></span>' +
+              '<span class="item-meta-chip"><strong>조회</strong><span>' + (p.views || 0) + '</span></span>' +
+              (p.likes ? '<span class="item-meta-chip"><strong>공감</strong><span>' + p.likes + '</span></span>' : '') +
+              (p.author ? '<span class="item-meta-chip"><strong>작성</strong><span>' + GW.escapeHtml(p.author) + '</span></span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="item-actions">' +
@@ -1074,10 +1075,6 @@
     var prevEl = document.getElementById('admin-prev-btn');
     var nextEl = document.getElementById('admin-next-btn');
     if (!pgEl) return;
-    if (reorderMode) {
-      pgEl.style.display = 'none';
-      return;
-    }
     pgEl.style.display = totalPages > 1 ? 'flex' : 'none';
     if (infoEl) infoEl.textContent = _listPage + ' / ' + totalPages;
     if (prevEl) prevEl.disabled = _listPage <= 1;
@@ -1085,27 +1082,17 @@
   }
 
   function _canReorderCurrentList() {
-    return _listCat === 'all' && !_listSearch;
+    return false;
   }
 
   function renderReorderControls(reorderMode) {
     var saveBtn = document.getElementById('reorder-save-btn');
-    if (saveBtn) saveBtn.style.display = reorderMode && _reorderDirty ? '' : 'none';
+    if (saveBtn) saveBtn.style.display = 'none';
     var hintId = 'reorder-mode-hint';
     var count = document.getElementById('article-count');
     if (!count) return;
     var hint = document.getElementById(hintId);
-    if (!reorderMode) {
-      if (!hint) {
-        hint = document.createElement('span');
-        hint.id = hintId;
-        hint.style.marginLeft = '8px';
-        hint.style.fontSize = '11px';
-        hint.style.color = 'var(--muted)';
-        count.parentNode.insertBefore(hint, count.nextSibling);
-      }
-      hint.textContent = '정렬은 검색/카테고리 해제 시 전체 목록에서만 가능합니다';
-    } else if (hint) {
+    if (hint) {
       hint.remove();
     }
   }
@@ -1113,6 +1100,14 @@
   window.adminListPageChange = function (delta) {
     var totalPages = Math.max(1, Math.ceil(_listTotal / _PAGE_SIZE));
     _listPage = Math.max(1, Math.min(totalPages, _listPage + delta));
+    loadAdminList();
+  };
+
+  window.adminListPageSizeChange = function (value) {
+    var nextSize = parseInt(value, 10);
+    if (_PAGE_SIZE_OPTIONS.indexOf(nextSize) === -1) nextSize = 20;
+    _PAGE_SIZE = nextSize;
+    _listPage = 1;
     loadAdminList();
   };
 
