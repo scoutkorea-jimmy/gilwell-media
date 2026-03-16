@@ -33,7 +33,7 @@ export async function onRequestGet(context) {
     required_ids: getPreviewChecklistIds(release),
     has_history: true,
     has_rollback: true,
-    can_promote: !!context.env.GITHUB_WORKFLOW_TOKEN,
+    can_promote: !!context.env.GITHUB_WORKFLOW_TOKEN && !!release.has_pending_changes,
   });
 }
 

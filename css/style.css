@@ -8930,6 +8930,26 @@ body.preview-review-modal-open .preview-review-fab {
   padding: 0 18px 6px;
 }
 
+.preview-review-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+}
+
+.preview-review-notice strong {
+  color: #171119;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.preview-review-notice p {
+  margin: 0;
+  color: #6d645e;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
 .preview-review-history-list {
   display: flex;
   flex-direction: column;
