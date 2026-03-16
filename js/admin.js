@@ -2353,7 +2353,7 @@
   function renderAnalyticsPage(data) {
     var fallback = {
       provider_label: '연결 오류',
-      range: { label: '최근 7일' },
+      range: { label: '최근 7일', granularity: 'day' },
       summary: {
         today_visits: '—',
         total_visits: '—',
@@ -2386,9 +2386,14 @@
     setMetricText('analytics-range-pageviews', payload.summary ? payload.summary.range_pageviews : '—');
     setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
     renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
+      var metaParts = [rangeLabel];
+      if (item.source_type_label) metaParts.push(item.source_type_label);
+      if (item.source_detail) metaParts.push(item.source_detail);
+      metaParts.push('방문 ' + formatMetricCompact(item.visits || 0));
+      metaParts.push('조회 ' + formatMetricCompact(item.pageviews || 0));
       return {
-        title: item.referrer_host || 'direct',
-        meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
+        title: item.source_label || item.referrer_host || 'direct',
+        meta: metaParts.join(' · '),
       };
     }, '아직 유입 경로 데이터가 없습니다');
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
@@ -2398,10 +2403,10 @@
         meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
       };
     }, '아직 방문 페이지 데이터가 없습니다');
-    renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
-    renderAnalyticsViewsChart(payload.views && payload.views.series ? payload.views.series : []);
-    renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : []);
-    renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : []);
+    renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
+    renderAnalyticsViewsChart(payload.views && payload.views.series ? payload.views.series : [], payload.range || fallback.range);
+    renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
+    renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : [], payload.range || fallback.range);
     renderAnalyticsTopPages(payload.views && payload.views.top_paths ? payload.views.top_paths : payload.top_paths);
     _syncAnalyticsViewMode();
   }
@@ -2418,19 +2423,19 @@
     if (el) el.style.display = show ? '' : 'none';
   }
 
-  function renderAnalyticsVisitorsChart(rows) {
+  function renderAnalyticsVisitorsChart(rows, range) {
     renderAnalyticsChart('analytics-visitors-chart', rows, [
       { key: 'visits', label: '방문 수', className: 'analytics-bar-fill-visits' },
-    ], '방문 데이터가 없습니다');
+    ], '방문 데이터가 없습니다', range);
   }
 
-  function renderAnalyticsViewsChart(rows) {
+  function renderAnalyticsViewsChart(rows, range) {
     renderAnalyticsChart('analytics-views-chart', rows, [
       { key: 'views', label: '조회수', className: 'analytics-bar-fill-views' },
-    ], '조회수 데이터가 없습니다');
+    ], '조회수 데이터가 없습니다', range);
   }
 
-  function renderAnalyticsChart(id, rows, seriesDefs, emptyText) {
+  function renderAnalyticsChart(id, rows, seriesDefs, emptyText, range) {
     var el = document.getElementById(id);
     if (!el) return;
     if (!rows || !rows.length) {
@@ -2457,23 +2462,23 @@
         '</div>';
       }).join('');
       return '<div class="analytics-bar-row">' +
-        '<div class="analytics-bar-label">' + GW.escapeHtml(formatAnalyticsDate(row.date)) + '</div>' +
+        '<div class="analytics-bar-label">' + GW.escapeHtml(getAnalyticsBucketLabel(row, range)) + '</div>' +
         '<div class="analytics-bar-group">' + bars + '</div>' +
       '</div>';
     }).join('');
     el.innerHTML = legend + '<div class="analytics-chart">' + items + '</div>';
   }
 
-  function renderAnalyticsVisitorsTable(rows) {
+  function renderAnalyticsVisitorsTable(rows, range) {
     renderAnalyticsTable('analytics-visitors-table', rows, [
-      { key: 'date', label: '날짜', format: formatAnalyticsDate },
+      { key: 'date', label: isHourlyAnalyticsRange(range) ? '시간' : '날짜', format: function (_, row) { return getAnalyticsBucketLabel(row, range); } },
       { key: 'visits', label: '방문 수' },
     ], '방문 데이터가 없습니다');
   }
 
-  function renderAnalyticsViewsTable(rows) {
+  function renderAnalyticsViewsTable(rows, range) {
     renderAnalyticsTable('analytics-views-table', rows, [
-      { key: 'date', label: '날짜', format: formatAnalyticsDate },
+      { key: 'date', label: isHourlyAnalyticsRange(range) ? '시간' : '날짜', format: function (_, row) { return getAnalyticsBucketLabel(row, range); } },
       { key: 'views', label: '조회수' },
     ], '조회수 데이터가 없습니다');
   }
@@ -2491,7 +2496,7 @@
     var body = rows.map(function (row) {
       return '<tr>' + columns.map(function (col) {
         var raw = row[col.key];
-        var value = col.format ? col.format(raw) : raw;
+        var value = col.format ? col.format(raw, row) : raw;
         return '<td>' + GW.escapeHtml(value == null ? '' : String(value)) + '</td>';
       }).join('') + '</tr>';
     }).join('');
@@ -2551,6 +2556,16 @@
     var parts = String(dateStr).split('-');
     if (parts.length !== 3) return String(dateStr);
     return parts[1] + '.' + parts[2];
+  }
+
+  function getAnalyticsBucketLabel(row, range) {
+    if (row && row.label) return String(row.label);
+    if (isHourlyAnalyticsRange(range) && row && row.hour != null) return String(row.hour) + ':00';
+    return formatAnalyticsDate(row && row.date);
+  }
+
+  function isHourlyAnalyticsRange(range) {
+    return !!(range && range.granularity === 'hour');
   }
 
   function renderAnalyticsList(id, items, mapFn, emptyText) {

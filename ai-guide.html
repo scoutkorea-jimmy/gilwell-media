@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.062.07">
+  <link rel="stylesheet" href="/css/style.css?v=0.063.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -171,7 +171,7 @@
         </div>
         <div class="contributor-card">
           <h3>Preview 배포 규칙</h3>
-          <p>기능 개발 후에는 `./scripts/deploy_preview.sh`로 preview 배포를 만들고, 그 URL에 대해 `./scripts/post_deploy_check.sh <preview-url>` 검증과 수동 화면 확인을 먼저 진행합니다. 이 스크립트는 현재 HEAD를 `origin/preview`에도 동기화해, preview에서 본 코드와 GitHub의 preview 브랜치가 같은 커밋을 가리키게 유지해야 합니다. 오너 확인 전에는 production 배포를 하지 않습니다. 단, 관리자 페이지는 오너가 즉시 반영을 요청한 경우 preview 규칙에서 제외할 수 있습니다.</p>
+          <p>기능 개발 후에는 `./scripts/deploy_preview.sh`로 preview 배포를 만들고, 그 URL에 대해 `./scripts/post_deploy_check.sh <preview-url>` 검증과 수동 화면 확인을 먼저 진행합니다. 이 스크립트는 현재 HEAD를 `origin/preview`에도 동기화해, preview에서 본 코드와 GitHub의 preview 브랜치가 같은 커밋을 가리키게 유지해야 합니다. 오너 확인 전에는 production 배포를 하지 않습니다. 단, 관리자 페이지 UI만 수정되거나 관리자/API 계열만 수정되는 경우는 preview 없이 바로 production에 반영하는 운영 예외를 기본 규칙으로 둡니다.</p>
         </div>
         <div class="contributor-card">
           <h3>Production 배포 규칙</h3>
@@ -208,7 +208,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.07</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.063.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -217,7 +217,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.062.07"></script>
+  <script src="/js/main.js?v=0.063.00"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
