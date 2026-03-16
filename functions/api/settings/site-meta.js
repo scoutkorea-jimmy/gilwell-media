@@ -48,7 +48,12 @@ export async function onRequestPut({ request, env }) {
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(String(nextRev)).run();
     if (previousRow && previousRow.value) {
-      await env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('site_meta', previousRow.value).run();
+      await ensureSettingsHistoryTable(env);
+      try {
+        await env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('site_meta', previousRow.value).run();
+      } catch (historyErr) {
+        console.warn('PUT /api/settings/site-meta history save skipped:', historyErr);
+      }
     }
     if (previous && previous.image_url && previous.image_url !== safe.image_url) {
       await deleteStoredImageByUrl(env, previous.image_url, origin).catch(() => {});
@@ -59,6 +64,17 @@ export async function onRequestPut({ request, env }) {
     console.error('PUT /api/settings/site-meta error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+async function ensureSettingsHistoryTable(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS settings_history (
+      id       INTEGER PRIMARY KEY AUTOINCREMENT,
+      key      TEXT NOT NULL,
+      value    TEXT NOT NULL,
+      saved_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`
+  ).run();
 }
 
 function json(data, status = 200) {
