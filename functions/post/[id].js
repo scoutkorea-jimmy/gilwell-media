@@ -142,7 +142,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.062.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.05">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -310,7 +310,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.04</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.062.05</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -421,7 +421,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.062.04"></script>
+  <script src="/js/main.js?v=0.062.05"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -457,13 +457,13 @@ export async function onRequestGet({ params, env, request }) {
     }
 
     function _createParagraphBlocks(text) {
-      var normalized = String(text || '').replace(/\r\n/g, '\n').trim();
+      var normalized = String(text || '').replace(/\\r\\n/g, '\\n').trim();
       if (!normalized) return [];
-      return normalized.split(/\n{2,}/).map(function (chunk) {
+      return normalized.split(/\\n{2,}/).map(function (chunk) {
         return {
           type: 'paragraph',
           data: {
-            text: GW.escapeHtml(chunk).replace(/\n/g, '<br>')
+            text: GW.escapeHtml(chunk).replace(/\\n/g, '<br>')
           }
         };
       });
