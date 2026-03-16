@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "version": "0.062.07",
+      "date": "2026-03-16",
+      "summary": "관리자 버전 기록이 더 이상 모두 Update로 보이지 않도록 Va.bbb.cc 규칙 기반 자동 분류를 적용했습니다.",
+      "changes": [
+        "관리자 `버전 기록`은 이제 changelog에 type이 비어 있어도 버전 번호를 읽어 `A = Super Nova`, `bbb = Update`, `cc = Hotfix / Bugfix` 규칙으로 자동 라벨링합니다.",
+        "fix 계열 버전은 요약과 변경 내용에 따라 `Hotfix`와 `Bugfix`를 나눠 보여주고, 배지 색상도 계층별로 구분해 한눈에 성격을 파악할 수 있게 했습니다.",
+        "AI 가이드와 README의 버전 규칙 설명도 같은 기준으로 다시 정리해, 버전 번호 의미와 버전 기록 표시 방식이 서로 어긋나지 않게 맞췄습니다."
+      ],
+      "request_history": [
+        {
+          "status": "changed",
+          "request": "버전 기록이 전부 UPDATE로 보이지 말고 A.bbb.cc 규칙에 맞는 성격으로 보여야 함",
+          "outcome": "버전 기록 UI가 버전 번호를 읽어 Super Nova, Update, Hotfix, Bugfix로 자동 분류하도록 수정했습니다.",
+          "feedback": "이제 changelog에 type이 비어 있어도 버전 규칙 자체가 화면에 반영됩니다."
+        }
+      ]
+    },
+    {
       "version": "0.062.06",
       "date": "2026-03-16",
       "summary": "관리자 프리뷰 버튼이 변경 없음 상태를 먼저 확인하고, preview 검수 모달도 같은 기준으로 멈추도록 정리했습니다.",
