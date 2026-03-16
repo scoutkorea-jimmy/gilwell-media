@@ -8023,7 +8023,7 @@ body.admin-page .admin-control-card {
 
 body.admin-page .admin-header-box-row-actions {
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 8px !important;
 }
 
@@ -8130,6 +8130,12 @@ body.admin-page .admin-group-btn:hover {
 body.admin-page .admin-sidebar-btn.active {
   background: linear-gradient(135deg, #1f1b17, #37302b) !important;
   border-color: #1f1b17 !important;
+}
+
+body.admin-page .admin-preview-link {
+  background: linear-gradient(135deg, rgba(98, 37, 153, 0.16), rgba(255, 255, 255, 0.96)) !important;
+  border-color: rgba(98, 37, 153, 0.24) !important;
+  color: #56228b !important;
 }
 
 body.admin-page .admin-sidebar-btn-label {

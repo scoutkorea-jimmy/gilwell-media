@@ -9,7 +9,8 @@
         "반영 버튼은 full 관리자 인증과 전체 체크 완료를 모두 요구하며, 승인 후에는 GitHub Actions `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 자동으로 진행합니다.",
         "최근 20개 개발 히스토리와 코드 스냅샷은 `release-history` 브랜치에 누적 보관하고, preview 모달 히스토리에서 배포 롤백 또는 코드 스냅샷 복구를 시작할 수 있게 연결했습니다.",
         "홈 `최신 소식`의 `공유하기`는 날짜 아래 텍스트형 링크로 유지하고, 카드 레일은 자연 높이로 다시 배치해 높이가 어색하게 깨지지 않도록 재정리했습니다.",
-        "preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 필요하다는 운영 규칙을 문서와 가이드에 함께 반영했습니다."
+        "preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 필요하다는 운영 규칙을 문서와 가이드에 함께 반영했습니다.",
+        "관리자 상단 액션에 `프리뷰 보기`를 추가해 별도 개발자 페이지 없이도 preview 공개 화면을 바로 열 수 있게 했습니다."
       ]
     },
     {
