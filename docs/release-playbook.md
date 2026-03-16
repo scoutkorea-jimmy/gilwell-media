@@ -69,7 +69,7 @@ preview 승인 후에만 진행한다.
 1. preview 페이지 자동 검수 모달에서 변경 항목과 검수 체크를 모두 완료
 2. full 관리자 인증
 3. `본 페이지에 반영하기` 버튼 실행
-4. GitHub Actions `promote-preview.yml`가 `origin/preview`를 `main`으로 병합
+4. GitHub Actions `promote-preview.yml`가 현재 `origin/main`을 백업 브랜치로 저장한 뒤, 검수 완료된 `origin/preview` 스냅샷으로 `main`을 승격
 5. 같은 워크플로우 안에서 `./scripts/deploy_production.sh` 실행
 
 수동 경로가 꼭 필요하면:
@@ -77,7 +77,10 @@ preview 승인 후에만 진행한다.
 ```bash
 git switch main
 git fetch origin preview
-git merge origin/preview
+PREVIOUS_MAIN_SHA="$(git rev-parse origin/main)"
+git push origin "${PREVIOUS_MAIN_SHA}:refs/heads/backup/main-before-manual-promote-$(date -u +%Y%m%dT%H%M%SZ)"
+git reset --hard origin/preview
+git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin HEAD:main
 ./scripts/deploy_production.sh
 ```
 
@@ -143,3 +146,4 @@ wrangler pages deployment list --project-name gilwell-media
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, preview와 production 모두 `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
 - preview 모달의 `본 페이지에 반영하기`는 GitHub Actions와 Cloudflare API 시크릿이 정상일 때만 동작한다.
+- 승격 기준 브랜치는 항상 `preview`이며, `main`은 검수 완료된 preview 스냅샷을 반영하는 production용 브랜치로 취급한다.

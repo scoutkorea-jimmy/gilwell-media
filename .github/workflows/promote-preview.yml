@@ -42,7 +42,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Merge Preview Into Main
+      - name: Promote Preview Snapshot To Main
         env:
           INPUT_VERSION: ${{ github.event.inputs.version }}
           INPUT_APPROVED_AT: ${{ github.event.inputs.approved_at }}
@@ -56,9 +56,11 @@ jobs:
             echo "Actual:   $ACTUAL_PREVIEW_SHA"
             exit 1
           fi
-          git checkout -B main origin/main
-          git merge --no-ff origin/preview -m "Promote preview V${INPUT_VERSION} (${INPUT_APPROVED_AT})"
-          git push origin HEAD:main
+          PREVIOUS_MAIN_SHA="$(git rev-parse origin/main)"
+          BACKUP_BRANCH="backup/main-before-promote-v${INPUT_VERSION//./-}-$(date -u +%Y%m%dT%H%M%SZ)"
+          git push origin "${PREVIOUS_MAIN_SHA}:refs/heads/${BACKUP_BRANCH}"
+          git checkout -B main origin/preview
+          git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin HEAD:main
 
       - name: Setup Node
         uses: actions/setup-node@v4
