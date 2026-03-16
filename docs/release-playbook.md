@@ -9,9 +9,9 @@
 1. `git status --short`로 워크트리 확인
 2. `cat VERSION`으로 현재 버전 확인
 3. 필요한 경우 기능 변경 커밋 반영
-4. Preview 배포
+4. Preview 브랜치 동기화 + Preview 배포
 5. Preview URL 기준 자동/수동 검수
-6. 승인 후 `main`에서 production 배포
+6. 승인 후 preview 모달 또는 GitHub Actions로 production 승격
 7. 라이브 검증
 
 ## Preview 배포
@@ -26,9 +26,12 @@
 ./scripts/deploy_preview.sh
 ```
 
+이 스크립트는 현재 HEAD를 `origin/preview`로 밀어 넣은 뒤 preview 배포를 생성한다.
+
 직접 실행이 필요하면:
 
 ```bash
+git push origin HEAD:preview --force-with-lease
 wrangler pages deploy . --project-name gilwell-media --branch preview
 ```
 
@@ -39,6 +42,14 @@ wrangler pages deploy . --project-name gilwell-media --branch preview
 ```bash
 ./scripts/post_deploy_check.sh <preview-url>
 ```
+
+preview 환경 준비물:
+
+- Pages preview secret: `ADMIN_PASSWORD`
+- Pages preview secret: `ADMIN_SECRET`
+- Pages preview secret: `GITHUB_WORKFLOW_TOKEN`
+- Pages preview secret: `CLOUDFLARE_API_TOKEN`
+- Pages preview secret: `CLOUDFLARE_ACCOUNT_ID`
 
 수동 확인 최소 범위:
 
@@ -53,9 +64,20 @@ wrangler pages deploy . --project-name gilwell-media --branch preview
 
 preview 승인 후에만 진행한다.
 
+기본 경로:
+
+1. preview 페이지 자동 검수 모달에서 변경 항목과 검수 체크를 모두 완료
+2. full 관리자 인증
+3. `본 페이지에 반영하기` 버튼 실행
+4. GitHub Actions `promote-preview.yml`가 `origin/preview`를 `main`으로 병합
+5. 같은 워크플로우 안에서 `./scripts/deploy_production.sh` 실행
+
+수동 경로가 꼭 필요하면:
+
 ```bash
 git switch main
-git merge preview
+git fetch origin preview
+git merge origin/preview
 ./scripts/deploy_production.sh
 ```
 
@@ -70,6 +92,11 @@ wrangler pages deploy . --project-name gilwell-media --branch main
 ```bash
 ./scripts/post_deploy_check.sh https://bpmedia.net
 ```
+
+추가 확인:
+
+- GitHub Actions `promote-preview.yml` 성공 여부
+- preview 모달 히스토리의 최신 production 스냅샷 반영 여부
 
 ## 운영 DB 적용 / 복구
 
@@ -106,6 +133,7 @@ wrangler pages deployment list --project-name gilwell-media
 - 현재 서비스 도메인: `https://bpmedia.net`
 - Pages 프로젝트명: `gilwell-media`
 - Preview 브랜치명: `preview`
+- Release snapshot 브랜치명: `release-history`
 - 현재 버전 규칙: `Va.bbb.cc`
 - `a`는 오너가 직접 올리라고 한 경우에만 증가한다.
 - `bbb`는 기능 추가가 있을 때만 증가한다.
@@ -114,3 +142,4 @@ wrangler pages deployment list --project-name gilwell-media
 - `deploy_pages.sh`는 이제 preview 배포 래퍼다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, preview와 production 모두 `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
+- preview 모달의 `본 페이지에 반영하기`는 GitHub Actions와 Cloudflare API 시크릿이 정상일 때만 동작한다.

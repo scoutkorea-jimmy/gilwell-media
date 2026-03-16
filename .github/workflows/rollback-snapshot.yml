@@ -1,0 +1,68 @@
+name: Rollback From Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      snapshot_id:
+        description: Snapshot id from release-history/data/release-snapshots.json
+        required: true
+        type: string
+      requested_at:
+        description: Rollback request timestamp
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rollback-snapshot
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Restore Snapshot
+        env:
+          SNAPSHOT_ID: ${{ github.event.inputs.snapshot_id }}
+        run: |
+          chmod +x ./scripts/restore_release_snapshot.sh
+          ./scripts/restore_release_snapshot.sh "${SNAPSHOT_ID}"
+
+      - name: Commit Rollback
+        env:
+          SNAPSHOT_ID: ${{ github.event.inputs.snapshot_id }}
+        run: |
+          git add -A
+          if [ -n "$(git status --short)" ]; then
+            git commit -m "Rollback to snapshot ${SNAPSHOT_ID}"
+            git push origin HEAD:main
+          else
+            echo "No changes detected after restore."
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Wrangler
+        run: npm install -g wrangler@4.72.0
+
+      - name: Deploy Production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: ./scripts/deploy_production.sh

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.061.01';
+  GW.APP_VERSION = '0.062.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -970,6 +970,468 @@
     if (opts.loadTranslations !== false) GW.loadTranslations();
   };
 
+  GW._previewRuntimeState = {
+    loaded: false,
+    loading: false,
+    modalReady: false,
+    release: null,
+    history: null,
+  };
+  GW._previewChecklistState = {};
+
+  GW.decoratePreviewTitle = function (prefix) {
+    if (typeof document === 'undefined') return;
+    var appliedPrefix = String(prefix || '[프리뷰]').trim();
+    var current = String(document.title || '').trim();
+    if (!current || current.indexOf(appliedPrefix) === 0) return;
+    document.title = appliedPrefix + ' ' + current;
+  };
+
+  GW.getPreviewChecklistStorageKey = function () {
+    var version = GW._previewRuntimeState.release && GW._previewRuntimeState.release.version;
+    return 'gw_preview_checks_' + String(version || 'draft');
+  };
+
+  GW.loadPreviewChecklistState = function () {
+    try {
+      var raw = localStorage.getItem(GW.getPreviewChecklistStorageKey());
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  };
+
+  GW.savePreviewChecklistState = function () {
+    try {
+      localStorage.setItem(GW.getPreviewChecklistStorageKey(), JSON.stringify(GW._previewChecklistState || {}));
+    } catch (_) {}
+  };
+
+  GW.isPreviewAdminReady = function () {
+    return !!(GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full');
+  };
+
+  GW.initPreviewRuntime = function () {
+    if (GW._previewRuntimeState.loaded || GW._previewRuntimeState.loading) return;
+    GW._previewRuntimeState.loading = true;
+    fetch('/api/preview/release', { cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('not-preview');
+        return response.json();
+      })
+      .then(function (data) {
+        if (!data || !data.preview || !data.release) return;
+        GW._previewRuntimeState.loaded = true;
+        GW._previewRuntimeState.release = data.release;
+        GW._previewChecklistState = GW.loadPreviewChecklistState();
+        document.body.classList.add('preview-runtime');
+        GW.decoratePreviewTitle(data.release.title_prefix || '[프리뷰]');
+        GW.openPreviewReviewModal();
+      })
+      .catch(function () {})
+      .finally(function () {
+        GW._previewRuntimeState.loading = false;
+      });
+  };
+
+  GW.ensurePreviewReviewModal = function () {
+    if (typeof document === 'undefined' || document.getElementById('preview-review-modal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'preview-review-modal';
+    modal.className = 'preview-review-modal';
+    modal.innerHTML =
+      '<div class="preview-review-backdrop" data-preview-close></div>' +
+      '<div class="preview-review-card" role="dialog" aria-modal="true" aria-labelledby="preview-review-title">' +
+        '<div class="preview-review-head">' +
+          '<div class="preview-review-head-copy">' +
+            '<strong id="preview-review-title">[프리뷰] 검수 센터</strong>' +
+            '<p id="preview-review-summary" class="preview-review-summary">이번 프리뷰 변경 사항을 불러오는 중입니다.</p>' +
+          '</div>' +
+          '<button type="button" class="preview-review-close" data-preview-close>닫기</button>' +
+        '</div>' +
+        '<div id="preview-review-body" class="preview-review-body">' +
+          '<div class="preview-review-loading">체크리스트를 준비하는 중입니다…</div>' +
+        '</div>' +
+        '<div class="preview-review-history">' +
+          '<div class="preview-review-history-head">' +
+            '<div>' +
+              '<strong>최근 20개 개발 히스토리</strong>' +
+              '<span>배포 이력과 코드 스냅샷을 함께 보관하고, 필요하면 여기서 복구를 시작할 수 있습니다.</span>' +
+            '</div>' +
+            '<button type="button" id="preview-history-refresh-btn" class="preview-history-refresh-btn">히스토리 새로고침</button>' +
+          '</div>' +
+          '<div id="preview-history-list" class="preview-history-list">' +
+            '<div class="preview-review-loading">히스토리를 불러오는 중입니다…</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="preview-review-actions">' +
+          '<div id="preview-auth-panel" class="preview-auth-panel">' +
+            '<div class="preview-auth-title">관리자 인증을 확인하는 중입니다…</div>' +
+          '</div>' +
+          '<div class="preview-review-action-row">' +
+            '<p class="preview-review-note">모든 체크박스를 완료하고, 관리자 인증까지 끝난 뒤에만 본 페이지 반영을 시작할 수 있습니다.</p>' +
+            '<button type="button" id="preview-promote-btn" class="preview-promote-btn" aria-disabled="true">본 페이지에 반영하기</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('[data-preview-close]').forEach(function (node) {
+      node.addEventListener('click', GW.closePreviewReviewModal);
+    });
+
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) GW.closePreviewReviewModal();
+    });
+
+    var promoteBtn = document.getElementById('preview-promote-btn');
+    if (promoteBtn) {
+      promoteBtn.addEventListener('click', GW.handlePreviewPromotion);
+    }
+
+    var refreshBtn = document.getElementById('preview-history-refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        GW.loadPreviewHistory(true);
+      });
+    }
+
+    var historyList = document.getElementById('preview-history-list');
+    if (historyList) {
+      historyList.addEventListener('click', function (event) {
+        var deploymentBtn = event.target.closest('[data-preview-rollback-deployment]');
+        if (deploymentBtn) {
+          GW.handlePreviewRollback({
+            mode: 'deployment',
+            id: deploymentBtn.getAttribute('data-preview-rollback-deployment') || '',
+          });
+          return;
+        }
+        var snapshotBtn = event.target.closest('[data-preview-rollback-snapshot]');
+        if (snapshotBtn) {
+          GW.handlePreviewRollback({
+            mode: 'snapshot',
+            id: snapshotBtn.getAttribute('data-preview-rollback-snapshot') || '',
+          });
+        }
+      });
+    }
+
+    GW._previewRuntimeState.modalReady = true;
+  };
+
+  GW.openPreviewReviewModal = function () {
+    if (!GW._previewRuntimeState.loaded || !GW._previewRuntimeState.release) return;
+    GW.ensurePreviewReviewModal();
+    var modal = document.getElementById('preview-review-modal');
+    if (!modal) return;
+    GW.renderPreviewReviewModal();
+    GW.syncPreviewAuthPanel();
+    GW.loadPreviewHistory(false);
+    modal.classList.add('open');
+  };
+
+  GW.closePreviewReviewModal = function () {
+    var modal = document.getElementById('preview-review-modal');
+    if (modal) modal.classList.remove('open');
+  };
+
+  GW.renderPreviewReviewModal = function () {
+    var release = GW._previewRuntimeState.release;
+    var title = document.getElementById('preview-review-title');
+    var summary = document.getElementById('preview-review-summary');
+    var body = document.getElementById('preview-review-body');
+    if (!release || !title || !summary || !body) return;
+
+    title.textContent = release.title || '[프리뷰] 검수 센터';
+    summary.textContent = release.summary || '';
+
+    var html = (release.sections || []).map(function (section) {
+      return '<section class="preview-review-section">' +
+        '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
+        '<div class="preview-review-checklist">' +
+          (section.items || []).map(function (item) {
+            var checked = !!GW._previewChecklistState[item.id];
+            return '<label class="preview-review-item">' +
+              '<input type="checkbox" class="preview-review-checkbox" data-preview-check="' + GW.escapeHtml(item.id) + '"' + (checked ? ' checked' : '') + '>' +
+              '<span class="preview-review-copy">' +
+                '<strong>' + GW.escapeHtml(item.label || '') + '</strong>' +
+                '<span>' + GW.escapeHtml(item.description || '') + '</span>' +
+              '</span>' +
+            '</label>';
+          }).join('') +
+        '</div>' +
+      '</section>';
+    }).join('');
+
+    html += '<div class="preview-review-footnote">' + GW.escapeHtml(release.promotion_note || '') + '</div>';
+    body.innerHTML = html;
+    body.querySelectorAll('.preview-review-checkbox').forEach(function (checkbox) {
+      checkbox.addEventListener('change', function () {
+        var id = checkbox.getAttribute('data-preview-check') || '';
+        GW._previewChecklistState[id] = !!checkbox.checked;
+        GW.savePreviewChecklistState();
+        GW.syncPreviewPromoteButton();
+      });
+    });
+    GW.syncPreviewPromoteButton();
+  };
+
+  GW.syncPreviewAuthPanel = function () {
+    var panel = document.getElementById('preview-auth-panel');
+    if (!panel) return;
+
+    if (GW.isPreviewAdminReady()) {
+      panel.className = 'preview-auth-panel is-ready';
+      panel.innerHTML =
+        '<div class="preview-auth-title">관리자 인증 완료</div>' +
+        '<p class="preview-auth-copy">현재 브라우저에는 본 페이지 반영과 복구를 실행할 수 있는 full 관리자 세션이 연결되어 있습니다.</p>';
+      return;
+    }
+
+    panel.className = 'preview-auth-panel';
+    panel.innerHTML =
+      '<div class="preview-auth-title">관리자 인증</div>' +
+      '<p class="preview-auth-copy">본 페이지 반영과 복구는 full 관리자 비밀번호가 필요합니다.</p>' +
+      '<div class="preview-auth-form">' +
+        '<input type="password" id="preview-admin-password" class="preview-auth-input" placeholder="관리자 비밀번호" autocomplete="current-password">' +
+        '<button type="button" id="preview-admin-auth-btn" class="preview-auth-btn">인증</button>' +
+      '</div>';
+
+    var authBtn = document.getElementById('preview-admin-auth-btn');
+    var authInput = document.getElementById('preview-admin-password');
+    if (authBtn) authBtn.addEventListener('click', GW.handlePreviewAuth);
+    if (authInput) {
+      authInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          GW.handlePreviewAuth();
+        }
+      });
+    }
+  };
+
+  GW.handlePreviewAuth = function () {
+    var input = document.getElementById('preview-admin-password');
+    var button = document.getElementById('preview-admin-auth-btn');
+    var password = input ? String(input.value || '').trim() : '';
+    if (!password) {
+      GW.showToast('관리자 비밀번호를 입력해주세요.', 'error');
+      if (input) input.focus();
+      return;
+    }
+
+    if (button) {
+      button.disabled = true;
+      button.textContent = '인증 중…';
+    }
+
+    GW.apiFetch('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password: password }),
+    })
+      .then(function (data) {
+        if (!data || data.role !== 'full') {
+          GW.showToast('본 페이지 반영 권한이 있는 관리자 비밀번호가 아닙니다.', 'error');
+          return;
+        }
+        GW.setToken(data.token);
+        GW.setAdminRole(data.role || 'full');
+        GW.showToast('프리뷰 반영용 관리자 인증이 완료되었습니다.', 'success');
+        GW.syncPreviewAuthPanel();
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '관리자 인증에 실패했습니다.', 'error');
+      })
+      .finally(function () {
+        if (button) {
+          button.disabled = false;
+          button.textContent = '인증';
+        }
+        if (input) input.value = '';
+      });
+  };
+
+  GW.loadPreviewHistory = function (force) {
+    var list = document.getElementById('preview-history-list');
+    if (!list) return;
+    if (!force && GW._previewRuntimeState.history) {
+      GW.renderPreviewHistory();
+      return;
+    }
+    list.innerHTML = '<div class="preview-review-loading">히스토리를 불러오는 중입니다…</div>';
+    fetch('/api/preview/history', { cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('history-failed');
+        return response.json();
+      })
+      .then(function (data) {
+        GW._previewRuntimeState.history = data || { deployments: [], snapshots: [] };
+        GW.renderPreviewHistory();
+      })
+      .catch(function () {
+        list.innerHTML = '<div class="preview-history-empty">히스토리를 불러오지 못했습니다.</div>';
+      });
+  };
+
+  GW.renderPreviewHistory = function () {
+    var list = document.getElementById('preview-history-list');
+    if (!list) return;
+    var history = GW._previewRuntimeState.history || {};
+    var deployments = Array.isArray(history.deployments) ? history.deployments.slice(0, 20) : [];
+    var snapshots = Array.isArray(history.snapshots) ? history.snapshots.slice(0, 20) : [];
+
+    if (!deployments.length && !snapshots.length) {
+      list.innerHTML = '<div class="preview-history-empty">아직 저장된 히스토리가 없습니다.</div>';
+      return;
+    }
+
+    var blocks = [];
+    if (deployments.length) {
+      blocks.push(
+        '<div class="preview-history-group">' +
+          '<h4>배포 히스토리</h4>' +
+          deployments.map(function (item) {
+            var canRollback = String(item.environment || '').toLowerCase() === 'production' && item.id;
+            return '<article class="preview-history-item">' +
+              '<div class="preview-history-copy">' +
+                '<div class="preview-history-title">' + GW.escapeHtml(item.environment || '') + ' · ' + GW.escapeHtml(item.branch || '') + '</div>' +
+                '<div class="preview-history-meta">' + GW.escapeHtml(item.source || '') + '</div>' +
+                '<div class="preview-history-meta">' + GW.escapeHtml(item.created_on || '') + '</div>' +
+              '</div>' +
+              '<div class="preview-history-actions">' +
+                (item.url ? '<a class="preview-history-link" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener">열기</a>' : '') +
+                (canRollback ? '<button type="button" class="preview-history-btn" data-preview-rollback-deployment="' + GW.escapeHtml(item.id) + '">배포 롤백</button>' : '') +
+              '</div>' +
+            '</article>';
+          }).join('') +
+        '</div>'
+      );
+    }
+
+    if (snapshots.length) {
+      blocks.push(
+        '<div class="preview-history-group">' +
+          '<h4>코드 스냅샷</h4>' +
+          snapshots.map(function (item) {
+            return '<article class="preview-history-item">' +
+              '<div class="preview-history-copy">' +
+                '<div class="preview-history-title">V' + GW.escapeHtml(item.version || '') + ' · ' + GW.escapeHtml(item.id || '') + '</div>' +
+                '<div class="preview-history-meta">' + GW.escapeHtml(item.commit_short || '') + ' · ' + GW.escapeHtml(item.commit_message || '') + '</div>' +
+                '<div class="preview-history-meta">' + GW.escapeHtml(item.archived_at || '') + '</div>' +
+              '</div>' +
+              '<div class="preview-history-actions">' +
+                '<button type="button" class="preview-history-btn" data-preview-rollback-snapshot="' + GW.escapeHtml(item.id || '') + '">코드 복구</button>' +
+              '</div>' +
+            '</article>';
+          }).join('') +
+        '</div>'
+      );
+    }
+
+    list.innerHTML = blocks.join('');
+  };
+
+  GW.syncPreviewPromoteButton = function () {
+    var button = document.getElementById('preview-promote-btn');
+    var release = GW._previewRuntimeState.release;
+    if (!button || !release) return;
+    var requiredIds = [];
+    (release.sections || []).forEach(function (section) {
+      (section.items || []).forEach(function (item) {
+        requiredIds.push(item.id);
+      });
+    });
+    var ready = requiredIds.length > 0 && requiredIds.every(function (id) {
+      return !!GW._previewChecklistState[id];
+    });
+    button.classList.toggle('ready', ready);
+    button.setAttribute('aria-disabled', ready ? 'false' : 'true');
+  };
+
+  GW.handlePreviewPromotion = function () {
+    var button = document.getElementById('preview-promote-btn');
+    var release = GW._previewRuntimeState.release;
+    if (!button || !release) return;
+
+    var requiredIds = [];
+    (release.sections || []).forEach(function (section) {
+      (section.items || []).forEach(function (item) {
+        requiredIds.push(item.id);
+      });
+    });
+    var checkedIds = requiredIds.filter(function (id) {
+      return !!GW._previewChecklistState[id];
+    });
+
+    if (checkedIds.length !== requiredIds.length) {
+      GW.showToast('체크 항목을 꼼꼼히 확인하고 체크박스를 모두 선택해주세요.', 'error');
+      return;
+    }
+    if (!GW.isPreviewAdminReady()) {
+      GW.showToast('반영 전에 full 관리자 인증을 먼저 완료해주세요.', 'error');
+      var input = document.getElementById('preview-admin-password');
+      if (input) input.focus();
+      return;
+    }
+    if (!window.confirm('이 선택은 돌이킬 수 없습니다. 본 페이지에 반영하시겠습니까?')) {
+      return;
+    }
+
+    button.classList.add('is-loading');
+    button.textContent = '반영 작업 시작 중…';
+    GW.apiFetch('/api/preview/promote', {
+      method: 'POST',
+      body: JSON.stringify({ checked_ids: checkedIds }),
+    })
+      .then(function (data) {
+        GW.showToast('본 페이지 반영 워크플로우를 시작했습니다.', 'success');
+        button.textContent = '반영 요청됨';
+        if (data && data.actions_url) {
+          window.open(data.actions_url, '_blank', 'noopener');
+        }
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '반영을 시작하지 못했습니다.', 'error');
+        button.classList.remove('is-loading');
+        button.textContent = '본 페이지에 반영하기';
+      });
+  };
+
+  GW.handlePreviewRollback = function (payload) {
+    payload = payload || {};
+    var mode = payload.mode || '';
+    var id = payload.id || '';
+    if (!mode || !id) return;
+    if (!GW.isPreviewAdminReady()) {
+      GW.showToast('복구 작업도 full 관리자 인증이 필요합니다.', 'error');
+      var input = document.getElementById('preview-admin-password');
+      if (input) input.focus();
+      return;
+    }
+    var message = mode === 'deployment'
+      ? '선택한 production 배포로 롤백을 시작할까요?'
+      : '선택한 코드 스냅샷으로 복구를 시작할까요?';
+    if (!window.confirm(message)) return;
+
+    var body = mode === 'deployment'
+      ? { deployment_id: id }
+      : { snapshot_id: id };
+
+    GW.apiFetch('/api/preview/rollback', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+      .then(function (data) {
+        GW.showToast((data && data.message) || '복구 작업을 시작했습니다.', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '복구를 시작하지 못했습니다.', 'error');
+      });
+  };
+
   GW.setupMastheadSearch = function () {
     var input = document.getElementById('mh-search-input');
     var btn = document.getElementById('mh-search-btn');
@@ -1134,6 +1596,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     GW.setupMastheadSearch();
+    GW.initPreviewRuntime();
   });
 
 })();

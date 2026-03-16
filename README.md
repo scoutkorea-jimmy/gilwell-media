@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.061.01`
+- Current version: `V0.062.00`
 - Format: `Va.bbb.cc`
 - `a`: increases only when the owner explicitly requests a major version change
 - `bbb`: increases only when a new feature is added
@@ -22,6 +22,13 @@ Operational references:
 
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
+
+Preview environment secrets:
+- `ADMIN_PASSWORD`
+- `ADMIN_SECRET`
+- `GITHUB_WORKFLOW_TOKEN`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
 
 ---
 
