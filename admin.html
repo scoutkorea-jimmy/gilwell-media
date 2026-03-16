@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.068.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.069.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -22,9 +22,9 @@
       <div class="sub">Admin · The BP Post</div>
       <label for="pw-input">비밀번호</label>
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
-      <div id="login-turnstile" style="margin:12px 0;"></div>
+      <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.068.04</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.069.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.068.04</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.069.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -313,12 +313,12 @@
             <div class="form-row">
               <div class="form-group" style="flex:1;">
                 <label for="art-author">작성자</label>
-                <select id="art-author" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>
+                <select id="art-author" class="admin-control-input"><option>불러오는 중…</option></select>
               </div>
               <div class="form-group">
-                <label for="art-date">게시 날짜</label>
-                <input type="date" id="art-date" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
-                <p id="art-created-at-meta" style="margin-top:6px;font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;letter-spacing:0.04em;">생성 시각: 새 글 작성 시 자동 기록</p>
+                <label for="art-date">퍼블리싱 시각</label>
+                <input type="datetime-local" id="art-date" class="admin-control-input" />
+                <p id="art-created-at-meta" class="admin-field-meta">생성 시각: 새 글 작성 시 자동 기록</p>
               </div>
             </div>
 
@@ -328,32 +328,32 @@
                 <button type="button" id="admin-cover-btn" class="cover-upload-btn">📷 대표 이미지 선택</button>
                 <div id="admin-cover-preview"></div>
               </div>
-              <input type="text" id="art-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />
-              <p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>
+              <input type="text" id="art-image-caption" class="admin-control-input admin-control-input-spaced" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" />
+              <p class="admin-field-meta">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>
             </div>
 
             <div class="form-group">
               <label for="art-youtube-url">유튜브 영상 링크</label>
               <input type="url" id="art-youtube-url" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />
-              <p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
+              <p class="admin-field-meta">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
             </div>
 
             <div class="form-group">
-              <label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 5개)</span></label>
+              <label>본문 * <span class="admin-label-note">(이미지 최대 5개)</span></label>
               <div id="admin-editorjs" class="board-editorjs-wrap"></div>
             </div>
 
-            <div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
-              <label for="art-metatags">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분)</span></label>
+            <div class="form-group admin-form-group-section">
+              <label for="art-metatags">SEO 해시태그 <span class="admin-label-note">(쉼표로 구분)</span></label>
               <input type="text" id="art-metatags" placeholder="예: 스카우트, 잼버리, WOSM" maxlength="500" />
             </div>
 
-            <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-              <input type="checkbox" id="art-ai-assisted" style="width:auto;margin:0;" />
-              <label for="art-ai-assisted" style="margin:0;cursor:pointer;">AI 지원 여부 (체크 시 기사 하단에 AI 도움 문구 표시)</label>
+            <div class="form-group admin-inline-check">
+              <input type="checkbox" id="art-ai-assisted" class="admin-inline-checkbox" />
+              <label for="art-ai-assisted" class="admin-inline-check-label">AI 지원 여부 (체크 시 기사 하단에 AI 도움 문구 표시)</label>
             </div>
 
-            <div id="admin-write-turnstile" style="margin:20px 0 0;"></div>
+            <div id="admin-write-turnstile" class="admin-turnstile-slot admin-turnstile-slot-top"></div>
             <div class="editor-action-row">
               <button class="cancel-btn visible" id="admin-draft-btn" onclick="saveAdminDraft()">💾 임시저장</button>
               <button class="submit-btn" id="submit-btn" onclick="savePost()">게재하기</button>
@@ -372,18 +372,18 @@
             <h2>게시글 목록</h2>
             <div class="article-list-toolbar">
               <input type="text" id="admin-list-search" placeholder="제목/태그 검색…"
-                style="flex:1;padding:7px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;"
+                class="admin-list-search-input"
                 oninput="adminSearchDebounce()" />
               <select id="admin-list-page-size" onchange="adminListPageSizeChange(this.value)"
-                style="padding:7px 12px;border:1px solid var(--border);background:#fff;font-family: AliceDigitalLearning, sans-serif;font-size:11px;letter-spacing:.04em;color:var(--ink);">
+                class="admin-list-page-size">
                 <option value="10">10개씩</option>
                 <option value="20" selected>20개씩</option>
                 <option value="50">50개씩</option>
                 <option value="100">100개씩</option>
               </select>
               <span class="count" id="article-count">0건</span>
-              <button id="reorder-save-btn" onclick="saveReorder()" style="display:none;padding:7px 14px;background:#622599;color:#fff;border:none;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.05em;cursor:pointer;">순서 저장</button>
-              <button onclick="clearReorder()" style="padding:7px 14px;border:1px solid var(--border);background:none;font-family: AliceDigitalLearning, sans-serif;font-size:10px;cursor:pointer;color:var(--muted);">순서 초기화</button>
+              <button id="reorder-save-btn" class="admin-inline-btn admin-inline-btn-primary" onclick="saveReorder()">순서 저장</button>
+              <button class="admin-inline-btn" onclick="clearReorder()">순서 초기화</button>
             </div>
           </div>
 
@@ -410,9 +410,9 @@
 
           <!-- Pagination -->
           <div id="admin-pagination" class="admin-pagination">
-            <button id="admin-prev-btn" onclick="adminListPageChange(-1)" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">← 이전</button>
-            <span id="admin-page-info" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:var(--muted);">1 / 1</span>
-            <button id="admin-next-btn" onclick="adminListPageChange(1)" style="font-family: AliceDigitalLearning, sans-serif;font-size:11px;padding:6px 14px;border:1px solid var(--border);background:none;cursor:pointer;color:var(--ink);">다음 →</button>
+            <button id="admin-prev-btn" class="admin-inline-btn" onclick="adminListPageChange(-1)">← 이전</button>
+            <span id="admin-page-info" class="admin-pagination-info">1 / 1</span>
+            <button id="admin-next-btn" class="admin-inline-btn" onclick="adminListPageChange(1)">다음 →</button>
           </div>
         </div>
       </div>
@@ -483,7 +483,7 @@
                   <option value="파">파</option>
                   <option value="하">하</option>
                 </select>
-                <small style="display:block;margin-top:6px;color:var(--muted);font-size:12px;">한국어가 입력되면 초성 기준으로 자동 분류됩니다.</small>
+                <small class="admin-field-meta admin-field-meta-block">한국어가 입력되면 초성 기준으로 자동 분류됩니다.</small>
               </div>
               <div class="form-group" style="margin:0;">
                 <label for="glossary-ko-input">한국어</label>
@@ -501,8 +501,8 @@
                 <label for="glossary-description-input">한국어 설명</label>
                 <textarea id="glossary-description-input" rows="3" maxlength="800" placeholder="용어의 의미나 쓰임을 한국어로 설명합니다."></textarea>
               </div>
-              <button type="button" class="submit-btn" style="width:auto;margin:0;" id="glossary-submit-btn" onclick="submitGlossaryTerm()">용어 저장</button>
-              <button type="button" class="cancel-btn" style="margin:0;display:none;" id="glossary-cancel-btn" onclick="cancelGlossaryEdit()">수정 취소</button>
+              <button type="button" class="submit-btn admin-inline-submit" id="glossary-submit-btn" onclick="submitGlossaryTerm()">용어 저장</button>
+              <button type="button" class="cancel-btn admin-inline-cancel" id="glossary-cancel-btn" onclick="cancelGlossaryEdit()">수정 취소</button>
             </div>
 
             <div id="glossary-admin-list" class="glossary-admin-list">
@@ -524,40 +524,40 @@
         </div>
 
         <!-- Editors A-Z setting -->
-        <div class="panel" id="settings-editors" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-block" id="settings-editors" data-role-min="full">
           <div class="panel-header"><h2>에디터 관리 (A–C)</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
-            <div id="editors-manager" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);padding:0 12px;"></div>
-            <button class="submit-btn" style="margin-top:12px;" onclick="saveEditors()">에디터 저장</button>
+            <div id="editors-manager" class="admin-scroll-card"></div>
+            <button class="submit-btn admin-submit-spaced" onclick="saveEditors()">에디터 저장</button>
           </div>
         </div>
 
-        <div class="panel" id="settings-board" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-block" id="settings-board" data-role-min="full">
           <div class="panel-header"><h2>게시판 카드 간격</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">Korea, APR, WOSM, Scout People 게시판 카드의 상하 간격입니다. 최소 5px부터 설정할 수 있습니다.</p>
             <div class="admin-inline-controls">
               <label for="board-gap-input" class="admin-inline-label">카드 간격</label>
               <input type="number" id="board-gap-input" min="5" max="40" step="1" value="6"
-                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+                class="admin-control-input admin-control-input-short" />
               <span class="admin-inline-unit">px</span>
-              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveBoardLayout()">간격 저장</button>
+              <button type="button" class="submit-btn admin-inline-submit" onclick="saveBoardLayout()">간격 저장</button>
             </div>
           </div>
         </div>
 
-        <div class="panel" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-block" data-role-min="full">
           <div class="panel-header"><h2>게시판 D-day 설정</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">카테고리 배너 오른쪽 큰 영역에 행사명과 D-day를 표시합니다. 날짜를 비워두면 기존처럼 게시글 수가 표시되며, 모바일에서는 표시되지 않습니다.</p>
-            <div id="board-banner-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
-            <button type="button" class="submit-btn" style="margin-top:16px;" onclick="saveBoardBanner()">D-day 설정 저장</button>
+            <div id="board-banner-manager" class="admin-stack-tight"></div>
+            <button type="button" class="submit-btn admin-submit-spaced" onclick="saveBoardBanner()">D-day 설정 저장</button>
           </div>
         </div>
 
         <!-- Tags -->
-        <div class="panel" id="settings-tags" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-block" id="settings-tags" data-role-min="full">
           <div class="panel-header"><h2>글머리 태그 관리</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
@@ -570,7 +570,7 @@
                 <option value="wosm">B · WOSM 전용</option>
                 <option value="people">B · Scout People 전용</option>
               </select>
-              <button class="submit-btn" style="margin:0;width:auto;padding:11px 18px;" onclick="addManagedTag()">태그 추가</button>
+              <button class="submit-btn admin-inline-submit" onclick="addManagedTag()">태그 추가</button>
             </div>
             <div class="tag-admin-grid">
               <section class="tag-admin-panel">
@@ -594,7 +594,7 @@
                 <div id="tag-lane-people" class="tag-admin-lane" data-tag-target="people"></div>
               </section>
             </div>
-            <button class="submit-btn" style="margin-top:12px;" onclick="saveTags()">태그 저장</button>
+            <button class="submit-btn admin-submit-spaced" onclick="saveTags()">태그 저장</button>
           </div>
         </div>
 
@@ -810,8 +810,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.068.04"></script>
-  <script src="/js/admin.js?v=0.068.04"></script>
+  <script src="/js/main.js?v=0.069.00"></script>
+  <script src="/js/admin.js?v=0.069.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

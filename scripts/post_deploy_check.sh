@@ -16,7 +16,10 @@ PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people.html")"
 ADMIN_PAGE="$(curl -fsSL "${BASE_URL}/admin.html")"
 ROBOTS_TXT="$(curl -fsSL "${BASE_URL}/robots.txt")"
 SITEMAP_XML="$(curl -fsSL "${BASE_URL}/sitemap.xml")"
+RSS_XML="$(curl -fsSL "${BASE_URL}/rss.xml")"
 BOARD_LAYOUT="$(curl -fsSL "${BASE_URL}/api/settings/board-layout")"
+POSTS_JSON="$(curl -fsSL "${BASE_URL}/api/posts?page=1&limit=3")"
+ADMIN_SESSION_STATUS="$(curl -s -o /dev/null -w '%{http_code}' "${BASE_URL}/api/admin/session")"
 
 POST_ID="$(
   curl -fsSL "${BASE_URL}/api/posts?page=1" \
@@ -42,8 +45,12 @@ echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
 echo "$ADMIN_PAGE" | grep -F "site-meta-manager" >/dev/null
 echo "$ADMIN_PAGE" | grep -F "analytics-start-date" >/dev/null
 echo "$BOARD_LAYOUT" | grep -F '"gap_px":' >/dev/null
+echo "$POSTS_JSON" | grep -F '"publish_at":' >/dev/null
 echo "$ROBOTS_TXT" | grep -F "Sitemap: ${BASE_URL}/sitemap.xml" >/dev/null
 echo "$SITEMAP_XML" | grep -F "<loc>${BASE_URL}/</loc>" >/dev/null
+echo "$RSS_XML" | grep -F '<bpmedia:created>' >/dev/null
+echo "$RSS_XML" | grep -F '<category domain="tag">' >/dev/null
+test "$ADMIN_SESSION_STATUS" = "401"
 if [[ -n "${POST_PAGE}" ]]; then
   echo "$POST_PAGE" | grep -F 'application/ld+json' >/dev/null
   echo "$POST_PAGE" | grep -F 'article:published_time' >/dev/null

@@ -25,10 +25,10 @@ async function buildSitemapResponse({ request, env }, headOnly) {
   try {
     const [postResult, lastmodResult] = await Promise.all([
       env.DB.prepare(
-        `SELECT id, updated_at
+        `SELECT id, updated_at, publish_at, created_at
            FROM posts
           WHERE published = 1
-          ORDER BY created_at DESC`
+          ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC`
       ).all(),
       env.DB.prepare(
         `SELECT category, MAX(updated_at) AS updated_at
@@ -41,7 +41,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     (lastmodResult.results || []).forEach((row) => {
       if (row.category) staticLastmods[row.category] = row.updated_at || null;
     });
-    staticLastmods.home = posts.length ? (posts[0].updated_at || null) : null;
+    staticLastmods.home = posts.length ? (posts[0].updated_at || posts[0].publish_at || posts[0].created_at || null) : null;
   } catch (err) {
     console.error('GET /sitemap.xml error:', err);
   }
@@ -50,7 +50,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     const lastmod = page.category ? staticLastmods[page.category] : staticLastmods.home;
     return xmlUrl(`${origin}${page.path}`, lastmod, page.priority);
   }).concat(posts.map((post) => {
-    return xmlUrl(`${origin}/post/${post.id}`, post.updated_at, '0.8');
+    return xmlUrl(`${origin}/post/${post.id}`, post.updated_at || post.publish_at || post.created_at, '0.8');
   }));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

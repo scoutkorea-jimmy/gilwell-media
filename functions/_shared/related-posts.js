@@ -3,7 +3,7 @@ export async function findRelatedPosts(env, basePost, limit = 5) {
 
   const anchorTerms = Array.from(extractTerms(basePost.tag, basePost.meta_tags)).slice(0, 3);
   let sql = `
-    SELECT id, title, category, created_at, tag, meta_tags
+    SELECT id, title, category, created_at, publish_at, tag, meta_tags
       FROM posts
      WHERE published = 1
        AND id != ?
@@ -23,7 +23,7 @@ export async function findRelatedPosts(env, basePost, limit = 5) {
     bindings.push(basePost.category);
   }
 
-  sql += ' ORDER BY datetime(created_at) DESC LIMIT ?';
+  sql += ' ORDER BY datetime(COALESCE(publish_at, created_at)) DESC LIMIT ?';
   bindings.push(anchorTerms.length ? 30 : 20);
 
   const { results } = await env.DB.prepare(sql).bind(...bindings).all();
@@ -38,14 +38,14 @@ export async function findRelatedPosts(env, basePost, limit = 5) {
       id: post.id,
       title: post.title || '',
       category: post.category || '',
-      created_at: post.created_at || '',
+      sort_date: post.publish_at || post.created_at || '',
       score,
     };
   }).filter((post) => post.title);
 
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    return String(b.created_at).localeCompare(String(a.created_at));
+    return String(b.sort_date).localeCompare(String(a.sort_date));
   });
 
   return scored.slice(0, limit).map((post) => ({

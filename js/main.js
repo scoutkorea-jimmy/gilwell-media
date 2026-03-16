@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.068.04';
+  GW.APP_VERSION = '0.069.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -58,6 +58,67 @@
       month: '2-digit',
       day: '2-digit',
     }).format(new Date());
+  };
+
+  GW.getKstDateTimeInputValue = function () {
+    var now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+    return [
+      now.getUTCFullYear(),
+      '-',
+      pad(now.getUTCMonth() + 1),
+      '-',
+      pad(now.getUTCDate()),
+      'T',
+      pad(now.getUTCHours()),
+      ':',
+      pad(now.getUTCMinutes())
+    ].join('');
+  };
+
+  GW.toDatetimeLocalValue = function (dateStr) {
+    if (!dateStr) return '';
+    var normalized = String(dateStr).trim().replace(' ', 'T');
+    if (!normalized) return '';
+    var withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+09:00';
+    var date = new Date(withZone);
+    if (isNaN(date.getTime())) {
+      return normalized.slice(0, 16);
+    }
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+    return [
+      date.getFullYear(),
+      '-',
+      pad(date.getMonth() + 1),
+      '-',
+      pad(date.getDate()),
+      'T',
+      pad(date.getHours()),
+      ':',
+      pad(date.getMinutes())
+    ].join('');
+  };
+
+  GW.normalizePublishAtValue = function (value) {
+    var trimmed = String(value || '').trim();
+    if (!trimmed) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed + ' 12:00:00';
+    }
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed.replace('T', ' ') + ':00';
+    }
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed + ':00';
+    }
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed.replace('T', ' ');
+    }
+    return '';
   };
 
   GW.isTodayKst = function (dateStr) {
@@ -1120,6 +1181,7 @@
         if (!data || !data.preview || !data.release) return;
         GW._previewRuntimeState.loaded = true;
         GW._previewRuntimeState.release = data.release;
+        GW._previewRuntimeState.promotionReadiness = data.promotion_readiness || null;
         GW._previewChecklistState = GW.loadPreviewChecklistState();
         document.body.classList.add('preview-runtime');
         GW.decoratePreviewTitle(data.release.title_prefix || '[프리뷰]');
@@ -1491,6 +1553,7 @@
   GW.syncPreviewPromoteButton = function () {
     var button = document.getElementById('preview-promote-btn');
     var release = GW._previewRuntimeState.release;
+    var readiness = GW._previewRuntimeState.promotionReadiness;
     if (!button || !release) return;
     if (release.has_pending_changes === false) {
       button.classList.remove('ready');
@@ -1508,6 +1571,7 @@
     var ready = requiredIds.length > 0 && requiredIds.every(function (id) {
       return !!GW._previewChecklistState[id];
     });
+    if (readiness && readiness.ok === false) ready = false;
     button.classList.toggle('ready', ready);
     button.setAttribute('aria-disabled', ready ? 'false' : 'true');
   };
@@ -1549,6 +1613,19 @@
               return '<li>' + GW.escapeHtml(label) + '</li>';
             }).join('') + '</ul>'
           : '')
+      );
+      return;
+    }
+    var readiness = GW._previewRuntimeState.promotionReadiness;
+    if (readiness && readiness.ok === false) {
+      GW.showPreviewGuardModal(
+        '반영 준비 상태 확인 필요',
+        '<p class="preview-guard-copy">아래 항목을 먼저 확인한 뒤 다시 시도해주세요.</p>' +
+        '<ul class="preview-guard-list">' +
+          (Array.isArray(readiness.reasons) ? readiness.reasons : ['preview 반영 준비 상태를 확인하지 못했습니다.']).map(function (label) {
+            return '<li>' + GW.escapeHtml(label) + '</li>';
+          }).join('') +
+        '</ul>'
       );
       return;
     }

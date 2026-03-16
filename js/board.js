@@ -527,8 +527,8 @@
             '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
           '</div>' +
           '<div class="form-group" style="min-width:140px;">' +
-            '<label for="board-write-date">게시 날짜</label>' +
-            '<input type="date" id="board-write-date" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box;" />' +
+            '<label for="board-write-date">퍼블리싱 시각</label>' +
+            '<input type="datetime-local" id="board-write-date" class="admin-control-input board-write-datetime" />' +
           '</div>' +
         '</div>' +
         '<div class="form-group">' +
@@ -604,7 +604,7 @@
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
-        publish_date: dateEl ? (dateEl.value || '') : '',
+        publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
         image_url: self._coverImage || null,
         tags: self._selectedTags || [],
@@ -929,7 +929,7 @@
 
     // Default date to today (reset on every open)
     var dateEl = document.getElementById('board-write-date');
-    if (dateEl) dateEl.value = GW.getKstDateInputValue();
+    if (dateEl) dateEl.value = GW.getKstDateTimeInputValue();
 
     self._loadWriteTagOptions();
 
@@ -970,7 +970,7 @@
               var author2 = document.getElementById('board-write-author');
               if (author2 && draft.author) author2.value = draft.author;
               var date2 = document.getElementById('board-write-date');
-              if (date2) date2.value = draft.publish_date || GW.getKstDateInputValue();
+              if (date2) date2.value = GW.toDatetimeLocalValue(draft.publish_at || draft.publish_date || '') || GW.getKstDateTimeInputValue();
               var ai2 = document.getElementById('board-ai-assisted');
               if (ai2) ai2.checked = !!draft.ai_assisted;
               if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
@@ -1072,7 +1072,7 @@
             tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
             meta_tags:   metaTags || null,
             author:      authEl ? (authEl.value || undefined) : undefined,
-            publish_date: dateEl && dateEl.value ? dateEl.value : undefined,
+            publish_at: dateEl && dateEl.value ? GW.normalizePublishAtValue(dateEl.value) : undefined,
             ai_assisted: aiChk ? (aiChk.checked ? 1 : 0) : 0,
             cf_turnstile_response: self._turnstileToken || undefined,
           }),
@@ -1141,7 +1141,7 @@
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
-        publish_date: dateEl ? (dateEl.value || '') : '',
+        publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
         image_url: self._coverImage || null,
         tags: self._selectedTags || [],

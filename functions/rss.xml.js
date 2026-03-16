@@ -8,7 +8,7 @@ export async function onRequestGet({ request, env }) {
       `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, tag, published
          FROM posts
         WHERE published = 1
-        ORDER BY created_at DESC
+        ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
         LIMIT 20`
     ).all();
 

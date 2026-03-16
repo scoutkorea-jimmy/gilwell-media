@@ -52,6 +52,67 @@ export async function dispatchGithubWorkflow(env, workflowFile, ref, inputs) {
   return true;
 }
 
+export async function fetchGithubBranchHead(env, branch) {
+  if (!env.GITHUB_WORKFLOW_TOKEN) {
+    throw new Error('GITHUB_WORKFLOW_TOKEN secret is missing');
+  }
+  const response = await fetch(
+    GITHUB_API + '/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/git/ref/heads/' + encodeURIComponent(branch),
+    {
+      headers: {
+        'Authorization': 'Bearer ' + env.GITHUB_WORKFLOW_TOKEN,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'gilwell-media-preview-control',
+      },
+    }
+  );
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error('GitHub branch head fetch failed: ' + text);
+  }
+  const data = await response.json();
+  return String(data && data.object && data.object.sha || '').trim();
+}
+
+export async function verifyPromotionReadiness(env, release) {
+  const reasons = [];
+  if (!env.GITHUB_WORKFLOW_TOKEN) reasons.push('GitHub workflow token이 없습니다.');
+  if (!env.CLOUDFLARE_API_TOKEN) reasons.push('Cloudflare API token이 없습니다.');
+  if (!env.CLOUDFLARE_ACCOUNT_ID) reasons.push('Cloudflare account id가 없습니다.');
+  if (!release || !release.has_pending_changes) reasons.push('production에 반영할 새 변경이 없습니다.');
+  if (!release || !release.commit_sha) reasons.push('preview 커밋 SHA를 확인하지 못했습니다.');
+
+  let branchHeads = null;
+  if (!reasons.length) {
+    try {
+      const [mainSha, previewSha] = await Promise.all([
+        fetchGithubBranchHead(env, 'main'),
+        fetchGithubBranchHead(env, 'preview'),
+      ]);
+      branchHeads = { main: mainSha, preview: previewSha };
+      if (!previewSha) {
+        reasons.push('GitHub preview 브랜치 SHA를 확인하지 못했습니다.');
+      } else if (release.commit_sha && previewSha !== release.commit_sha) {
+        reasons.push('preview 배포 SHA와 GitHub preview 브랜치 SHA가 다릅니다.');
+      }
+    } catch (error) {
+      reasons.push(error.message || 'GitHub 브랜치 상태를 확인하지 못했습니다.');
+    }
+
+    try {
+      await fetchPagesDeployments(env);
+    } catch (error) {
+      reasons.push(error.message || 'Cloudflare Pages 프로젝트 상태를 확인하지 못했습니다.');
+    }
+  }
+
+  return {
+    ok: reasons.length === 0,
+    reasons,
+    branch_heads: branchHeads,
+  };
+}
+
 export async function fetchPagesDeployments(env) {
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return [];
   const response = await fetch(

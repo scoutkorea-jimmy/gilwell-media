@@ -9,6 +9,7 @@ import {
   fetchReleaseDeployments,
   json,
   previewOnly,
+  verifyPromotionReadiness,
 } from '../../_shared/preview-ops.js';
 
 export async function onRequestGet(context) {
@@ -27,6 +28,13 @@ export async function onRequestGet(context) {
     commit_sha: context.env.CF_PAGES_COMMIT_SHA || findLatestDeploymentSource(deployments, 'preview', 'preview') || '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
+  const readiness = await verifyPromotionReadiness(context.env, release).catch(function (error) {
+    return {
+      ok: false,
+      reasons: [error.message || 'preview 승격 준비 상태를 확인하지 못했습니다.'],
+      branch_heads: null,
+    };
+  });
 
   return json({
     preview: true,
@@ -34,7 +42,8 @@ export async function onRequestGet(context) {
     required_ids: getPreviewChecklistIds(release),
     has_history: true,
     has_rollback: true,
-    can_promote: !!context.env.GITHUB_WORKFLOW_TOKEN && !!release.has_pending_changes,
+    can_promote: readiness.ok,
+    promotion_readiness: readiness,
   });
 }
 
