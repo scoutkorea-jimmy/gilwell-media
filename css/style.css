@@ -1629,6 +1629,7 @@ p { margin-bottom: 6px; }
 .home-lead-thumb-link {
   display: block;
   height: 100%;
+  overflow: hidden;
 }
 
 .home-lead-thumb {
@@ -1638,6 +1639,8 @@ p { margin-bottom: 6px; }
   min-height: 100%;
   object-fit: cover;
   border: 1px solid var(--border);
+  transform-origin: center center;
+  transition: transform 0.18s ease;
 }
 
 .home-lead-body {
@@ -1645,6 +1648,13 @@ p { margin-bottom: 6px; }
   flex-direction: column;
   min-width: 0;
   min-height: 100%;
+}
+
+.home-lead-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .home-lead-labels {
@@ -1694,7 +1704,7 @@ p { margin-bottom: 6px; }
   color: var(--ink);
   margin-bottom: 10px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1704,15 +1714,16 @@ p { margin-bottom: 6px; }
   font-size: 14px;
   line-height: 1.72;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 8;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  flex: 1 1 auto;
 }
 
 .home-lead-footer {
-  margin-top: auto;
+  margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--border);
   display: flex;
@@ -1781,7 +1792,7 @@ p { margin-bottom: 6px; }
   align-items: stretch;
   min-height: 0;
   overflow: hidden;
-  padding: 12px 0;
+  padding: 14px 0 16px;
 }
 
 #latest-list .mini-item-row {
@@ -1799,7 +1810,13 @@ p { margin-bottom: 6px; }
 
 #latest-list .mini-item h4 {
   -webkit-line-clamp: 2;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  min-height: 0;
+  align-items: flex-start;
+}
+
+#latest-list .mini-item-actions {
+  margin-top: 2px;
 }
 
 .home-rail-actions {
@@ -5049,6 +5066,7 @@ footer a:hover { color: #ffffff; }
   display:     flex;
   align-items: center;
   gap:         12px;
+  flex-wrap:   wrap;
 }
 
 .post-edit-box {
@@ -5106,6 +5124,7 @@ footer a:hover { color: #ffffff; }
   flex: 1 1 180px;
 }
 
+.post-action-btn,
 .post-share-btn {
   display:        inline-flex;
   align-items:    center;
@@ -5122,7 +5141,16 @@ footer a:hover { color: #ffffff; }
   transition:     border-color 0.15s, color 0.15s;
   white-space:    nowrap;
 }
-.post-share-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.post-page-share .post-action-btn {
+  min-width: 124px;
+}
+
+.post-action-btn:hover,
+.post-share-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 
 .post-like-wrap {
   display: inline-flex;
@@ -7675,6 +7703,80 @@ body.admin-page .admin-selected-post-title {
   color: var(--admin-ink) !important;
   font-size: 20px !important;
   line-height: 1.45 !important;
+}
+
+body.admin-page .admin-home-lead-preview {
+  margin-top: 16px;
+}
+
+body.admin-page .admin-home-lead-preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--admin-stroke);
+  border-radius: 18px;
+  background: rgba(98, 37, 153, 0.06);
+}
+
+body.admin-page .admin-home-lead-preview-frame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform-origin: center center;
+}
+
+body.admin-page .admin-home-lead-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+body.admin-page .admin-home-lead-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--admin-stroke);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+body.admin-page .admin-home-lead-control.full {
+  grid-column: 1 / -1;
+}
+
+body.admin-page .admin-home-lead-control label,
+body.admin-page .admin-home-lead-control strong {
+  color: var(--admin-ink) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+body.admin-page .admin-home-lead-control input[type="range"],
+body.admin-page .admin-home-lead-control select {
+  width: 100%;
+}
+
+body.admin-page .admin-home-lead-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+body.admin-page .admin-home-lead-range span {
+  min-width: 40px;
+  color: var(--admin-muted) !important;
+  font-size: 12px !important;
+  text-align: right;
+}
+
+body.admin-page .admin-home-lead-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 body.admin-page .admin-editor-row {

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.062.01';
+  GW.APP_VERSION = '0.062.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1013,6 +1013,21 @@
     return !!(GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full');
   };
 
+  GW.getCurrentPathname = function () {
+    if (typeof window === 'undefined' || !window.location) return '/';
+    return String(window.location.pathname || '/').trim() || '/';
+  };
+
+  GW.isAdminPagePath = function () {
+    var pathname = GW.getCurrentPathname();
+    return pathname === '/admin.html' || pathname === '/admin';
+  };
+
+  GW.isHomePagePath = function () {
+    var pathname = GW.getCurrentPathname();
+    return pathname === '/' || pathname === '/index.html' || pathname === '/index';
+  };
+
   GW.initPreviewRuntime = function () {
     if (GW._previewRuntimeState.loaded || GW._previewRuntimeState.loading) return;
     GW._previewRuntimeState.loading = true;
@@ -1028,7 +1043,12 @@
         GW._previewChecklistState = GW.loadPreviewChecklistState();
         document.body.classList.add('preview-runtime');
         GW.decoratePreviewTitle(data.release.title_prefix || '[프리뷰]');
-        GW.openPreviewReviewModal();
+        if (!GW.isAdminPagePath()) {
+          GW.ensurePreviewReviewLauncher();
+          if (GW.isHomePagePath()) {
+            GW.openPreviewReviewModal();
+          }
+        }
       })
       .catch(function () {})
       .finally(function () {

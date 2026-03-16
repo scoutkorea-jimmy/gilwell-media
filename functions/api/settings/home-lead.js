@@ -1,23 +1,34 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
 
+const DEFAULT_HOME_LEAD_MEDIA = {
+  fit: 'cover',
+  position_x: 50,
+  position_y: 50,
+  zoom: 100,
+};
+
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
-    const postId = row ? parseInt(row.value, 10) : 0;
+    const [postRow, mediaRow] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
+    ]);
+    const postId = postRow ? parseInt(postRow.value, 10) : 0;
+    const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
     if (!postId) {
-      return json({ post: null }, 200, publicCacheHeaders(180, 900));
+      return json({ post: null, media }, 200, publicCacheHeaders(180, 900));
     }
     const post = await env.DB.prepare(
       `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, tag, views, author, youtube_url
          FROM posts
         WHERE id = ? AND published = 1`
     ).bind(postId).first();
-    return json({ post: post ? serializePostImage(post, origin) : null }, 200, publicCacheHeaders(180, 900));
+    return json({ post: post ? serializePostImage(post, origin) : null, media }, 200, publicCacheHeaders(180, 900));
   } catch (err) {
     console.error('GET /api/settings/home-lead error:', err);
-    return json({ post: null }, 500);
+    return json({ post: null, media: DEFAULT_HOME_LEAD_MEDIA }, 500);
   }
 }
 
@@ -34,20 +45,49 @@ export async function onRequestPut({ env, request }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const postId = body && body.post_id ? parseInt(body.post_id, 10) : 0;
+  const hasPostId = !!(body && Object.prototype.hasOwnProperty.call(body, 'post_id'));
+  const rawPostId = hasPostId ? parseInt(body.post_id, 10) : 0;
+  const postId = Number.isFinite(rawPostId) ? rawPostId : 0;
+  const hasMedia = !!(body && typeof body.media === 'object' && body.media);
+  const media = hasMedia ? normalizeHomeLeadMedia(body.media) : null;
 
   try {
-    if (!postId) {
+    const currentRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+    const currentPostId = currentRow ? parseInt(currentRow.value, 10) : 0;
+
+    if (hasPostId && !postId) {
       await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run();
-      return json({ success: true, post_id: null });
+      await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run();
+      return json({ success: true, post_id: null, media: DEFAULT_HOME_LEAD_MEDIA });
     }
-    const post = await env.DB.prepare(`SELECT id FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
-    if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
-    await env.DB.prepare(
-      `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).bind(String(postId)).run();
-    return json({ success: true, post_id: postId });
+
+    if (hasPostId) {
+      const post = await env.DB.prepare(`SELECT id FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
+      if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
+      await env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(String(postId)).run();
+      if (!hasMedia && currentPostId !== postId) {
+        await env.DB.prepare(
+          `INSERT INTO settings (key, value) VALUES ('home_lead_media', ?)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        ).bind(JSON.stringify(DEFAULT_HOME_LEAD_MEDIA)).run();
+      }
+    }
+
+    if (hasMedia) {
+      await env.DB.prepare(
+        `INSERT INTO settings (key, value) VALUES ('home_lead_media', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+      ).bind(JSON.stringify(media)).run();
+    }
+
+    return json({
+      success: true,
+      post_id: hasPostId ? postId : currentPostId,
+      media: media || (currentPostId !== postId && hasPostId ? DEFAULT_HOME_LEAD_MEDIA : normalizeHomeLeadMedia(parseJsonValue((await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first())?.value))),
+    });
   } catch (err) {
     console.error('PUT /api/settings/home-lead error:', err);
     return json({ error: 'Database error' }, 500);
@@ -65,4 +105,29 @@ function publicCacheHeaders(maxAge, swr) {
   return {
     'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
   };
+}
+
+function parseJsonValue(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+function normalizeHomeLeadMedia(input) {
+  const raw = input && typeof input === 'object' ? input : {};
+  return {
+    fit: raw.fit === 'contain' ? 'contain' : 'cover',
+    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_x),
+    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_y),
+    zoom: clampNumber(raw.zoom, 100, 150, DEFAULT_HOME_LEAD_MEDIA.zoom),
+  };
+}
+
+function clampNumber(value, min, max, fallback) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
 }
