@@ -40,6 +40,22 @@ export function findLatestProductionVersion(deployments) {
   return '';
 }
 
+export function findLatestDeploymentSource(deployments, environment, branch) {
+  const rows = Array.isArray(deployments) ? deployments : [];
+  const targetEnvironment = String(environment || '').trim().toLowerCase();
+  const targetBranch = String(branch || '').trim().toLowerCase();
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const rowEnvironment = String(row.environment || '').trim().toLowerCase();
+    const rowBranch = String(row.branch || '').trim().toLowerCase();
+    if (targetEnvironment && rowEnvironment !== targetEnvironment) continue;
+    if (targetBranch && rowBranch && rowBranch !== targetBranch) continue;
+    const source = String(row.source || '').trim();
+    if (source) return source;
+  }
+  return '';
+}
+
 export function collectPendingPreviewEntries(entries, liveVersion) {
   const rows = Array.isArray(entries) ? entries.filter(isChangelogEntry) : [];
   if (!rows.length) return [];

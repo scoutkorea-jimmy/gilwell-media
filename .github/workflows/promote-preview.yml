@@ -17,7 +17,7 @@ on:
         type: string
       preview_sha:
         description: Preview commit SHA
-        required: true
+        required: false
         type: string
 
 permissions:
@@ -52,18 +52,22 @@ jobs:
           INPUT_PREVIEW_SHA: ${{ github.event.inputs.preview_sha }}
         run: |
           git fetch origin main preview
-          ACTUAL_PREVIEW_SHA="$(git rev-parse origin/preview)"
-          if [ "$ACTUAL_PREVIEW_SHA" != "$INPUT_PREVIEW_SHA" ]; then
-            echo "Preview SHA mismatch"
-            echo "Expected: $INPUT_PREVIEW_SHA"
-            echo "Actual:   $ACTUAL_PREVIEW_SHA"
+          TARGET_PREVIEW_SHA="${INPUT_PREVIEW_SHA:-}"
+          if [ -z "$TARGET_PREVIEW_SHA" ]; then
+            TARGET_PREVIEW_SHA="$(git rev-parse origin/preview)"
+          fi
+          if ! git cat-file -e "${TARGET_PREVIEW_SHA}^{commit}" 2>/dev/null; then
+            git fetch origin "${TARGET_PREVIEW_SHA}" --depth=1 || true
+          fi
+          if ! git cat-file -e "${TARGET_PREVIEW_SHA}^{commit}" 2>/dev/null; then
+            echo "Approved preview commit not found: ${TARGET_PREVIEW_SHA}"
             exit 1
           fi
           PREVIOUS_MAIN_SHA="$(git rev-parse origin/main)"
           BACKUP_BRANCH="backup/main-before-promote-v${INPUT_VERSION//./-}-$(date -u +%Y%m%dT%H%M%SZ)"
           git push origin "${PREVIOUS_MAIN_SHA}:refs/heads/${BACKUP_BRANCH}"
-          git checkout -B main origin/preview
-          git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin HEAD:main
+          git checkout -B main "${TARGET_PREVIEW_SHA}"
+          git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin "${TARGET_PREVIEW_SHA}:main"
 
       - name: Setup Node
         uses: actions/setup-node@v6

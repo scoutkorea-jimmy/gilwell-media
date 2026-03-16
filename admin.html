@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.067.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.068.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.067.01</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.068.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.067.01</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.068.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -84,9 +84,17 @@
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="site" hidden>
-          <button class="admin-sidebar-btn" id="tab-btn-settings" onclick="showAdminTab('settings')">
+          <button class="admin-sidebar-btn" id="tab-btn-settings" data-role-min="full" onclick="showAdminTab('settings')">
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-hero-manager" onclick="showAdminTab('hero-manager')">
+            <span class="admin-sidebar-btn-label">히어로 기사 설정</span>
+            <span class="admin-sidebar-btn-desc">배너 기사, 위치, 노출 시간</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-home-lead" data-role-min="full" onclick="showAdminTab('home-lead')">
+            <span class="admin-sidebar-btn-label">메인 스토리 직접 지정</span>
+            <span class="admin-sidebar-btn-desc">대표 기사와 이미지 위치</span>
           </button>
           <button class="admin-sidebar-btn" id="tab-btn-contributors" data-role-min="full" onclick="showAdminTab('contributors')">
             <span class="admin-sidebar-btn-label">도움을 주신 분들</span>
@@ -508,8 +516,6 @@
       <div id="admin-tab-settings" class="admin-tab-panel">
         <div class="admin-subnav">
           <button type="button" class="admin-subnav-btn" data-settings-section="settings-editors" data-role-min="full" onclick="scrollAdminSection('settings-editors')">에디터</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-hero-manager" onclick="scrollAdminSection('settings-hero-manager')">히어로 관리 설정</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-home-lead" data-role-min="full" onclick="scrollAdminSection('settings-home-lead')">메인 스토리 직접 지정</button>
           <button type="button" class="admin-subnav-btn" data-settings-section="settings-board" data-role-min="full" onclick="scrollAdminSection('settings-board')">게시판</button>
           <button type="button" class="admin-subnav-btn" data-settings-section="settings-tags" data-role-min="full" onclick="scrollAdminSection('settings-tags')">태그</button>
           <button type="button" class="admin-subnav-btn" data-settings-section="settings-site-meta" data-role-min="full" onclick="scrollAdminSection('settings-site-meta')">공유/푸터</button>
@@ -524,56 +530,6 @@
             <p class="admin-section-note">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
             <div id="editors-manager" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);padding:0 12px;"></div>
             <button class="submit-btn" style="margin-top:12px;" onclick="saveEditors()">에디터 저장</button>
-          </div>
-        </div>
-
-        <!-- Hero -->
-        <div class="panel" id="settings-hero-manager" style="margin-bottom:24px;">
-          <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
-            <p class="admin-section-note">선택된 히어로 카드는 PC 버전과 모바일 버전의 이미지 위치·확대를 각각 따로 저장합니다.</p>
-            <p class="admin-section-note">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
-            <div class="admin-inline-controls">
-              <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
-              <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
-                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
-              <span class="admin-inline-unit">초</span>
-              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
-            </div>
-
-            <!-- Current hero slots -->
-            <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
-            <div class="admin-settings-actions">
-              <span class="admin-inline-note">슬라이드 카드에서 조정한 이미지 위치와 노출 시간은 아래 저장 버튼으로 함께 반영합니다.</span>
-              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
-            </div>
-
-            <!-- Search to add -->
-            <div class="admin-search-panel">
-              <div class="admin-search-panel-title">기사 추가</div>
-              <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
-                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
-                oninput="heroSearch()" />
-              <div id="hero-search-results" style="margin-top:8px;max-height:320px;overflow:auto;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel" id="settings-home-lead" data-role-min="full" style="margin-bottom:24px;">
-          <div class="panel-header"><h2>메인 스토리 직접 지정</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">홈 상단 `메인 스토리` 카드에 노출할 게시글을 직접 선택하고, PC/모바일 이미지 위치를 따로 조정합니다.</p>
-            <div class="admin-settings-block">
-              <div id="home-lead-selected" class="admin-selected-post">불러오는 중…</div>
-              <div class="admin-search-panel admin-search-panel-soft">
-                <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
-                <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
-                  style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
-                  oninput="searchHomeLeadPost()" />
-                <div id="home-lead-search-results" style="margin-top:8px;max-height:280px;overflow:auto;"></div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -743,6 +699,57 @@
 
       </div><!-- /settings tab -->
 
+      <div id="admin-tab-hero-manager" class="admin-tab-panel">
+        <div class="panel" id="settings-hero-manager">
+          <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
+          <div class="panel-body">
+            <p class="admin-section-note">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
+            <p class="admin-section-note">선택된 히어로 카드는 PC 버전과 모바일 버전의 이미지 위치·확대를 각각 따로 저장합니다.</p>
+            <p class="admin-section-note">이미지를 100% 아래로 줄이면 같은 이미지를 흐린 배경으로 깔아 빈 공간이 어색하지 않게 보강합니다.</p>
+            <p class="admin-section-note">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
+            <div class="admin-inline-controls">
+              <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
+              <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
+                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+              <span class="admin-inline-unit">초</span>
+              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
+            </div>
+            <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+            <div class="admin-settings-actions">
+              <span class="admin-inline-note">슬라이드 카드에서 조정한 이미지 위치, 크기, 노출 시간은 아래 저장 버튼으로 함께 반영합니다.</span>
+              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
+            </div>
+            <div class="admin-search-panel">
+              <div class="admin-search-panel-title">기사 추가</div>
+              <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
+                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                oninput="heroSearch()" />
+              <div id="hero-search-results" style="margin-top:8px;max-height:320px;overflow:auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-tab-home-lead" class="admin-tab-panel" data-role-min="full">
+        <div class="panel" id="settings-home-lead">
+          <div class="panel-header"><h2>메인 스토리 직접 지정</h2></div>
+          <div class="panel-body">
+            <p class="admin-section-note">홈 상단 `메인 스토리` 카드에 노출할 게시글을 직접 선택하고, PC/모바일 이미지 위치를 따로 조정합니다.</p>
+            <p class="admin-section-note">이미지를 100% 아래로 줄이면 같은 이미지를 흐린 배경으로 깔아 빈 공간을 자연스럽게 메웁니다.</p>
+            <div class="admin-settings-block">
+              <div id="home-lead-selected" class="admin-selected-post">불러오는 중…</div>
+              <div class="admin-search-panel admin-search-panel-soft">
+                <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
+                <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
+                  style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                  oninput="searchHomeLeadPost()" />
+                <div id="home-lead-search-results" style="margin-top:8px;max-height:280px;overflow:auto;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="admin-tab-contributors" class="admin-tab-panel" data-role-min="full">
         <div class="panel">
           <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
@@ -803,8 +810,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.067.01"></script>
-  <script src="/js/admin.js?v=0.067.01"></script>
+  <script src="/js/main.js?v=0.068.00"></script>
+  <script src="/js/admin.js?v=0.068.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

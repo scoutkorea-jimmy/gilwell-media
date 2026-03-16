@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.067.01';
+  GW.APP_VERSION = '0.068.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1211,6 +1211,29 @@
     GW._previewRuntimeState.modalReady = true;
   };
 
+  GW.ensurePreviewGuardModal = function () {
+    if (typeof document === 'undefined' || document.getElementById('preview-guard-modal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'preview-guard-modal';
+    modal.className = 'preview-guard-modal';
+    modal.innerHTML =
+      '<div class="preview-guard-backdrop" data-preview-guard-close></div>' +
+      '<div class="preview-guard-card" role="alertdialog" aria-modal="true" aria-labelledby="preview-guard-title">' +
+        '<div class="preview-guard-head">' +
+          '<strong id="preview-guard-title">확인이 더 필요합니다</strong>' +
+          '<button type="button" class="preview-guard-close" data-preview-guard-close>닫기</button>' +
+        '</div>' +
+        '<div id="preview-guard-body" class="preview-guard-body"></div>' +
+        '<div class="preview-guard-actions">' +
+          '<button type="button" class="preview-guard-confirm" data-preview-guard-close>다시 확인하기</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    modal.querySelectorAll('[data-preview-guard-close]').forEach(function (node) {
+      node.addEventListener('click', GW.closePreviewGuardModal);
+    });
+  };
+
   GW.ensurePreviewReviewLauncher = function () {
     if (typeof document === 'undefined' || document.getElementById('preview-review-fab')) return;
     var button = document.createElement('button');
@@ -1256,6 +1279,23 @@
     if (launcher) launcher.setAttribute('aria-expanded', 'false');
     var input = document.getElementById('preview-admin-password');
     if (input) input.value = '';
+    GW.closePreviewGuardModal();
+  };
+
+  GW.showPreviewGuardModal = function (title, html) {
+    GW.ensurePreviewGuardModal();
+    var modal = document.getElementById('preview-guard-modal');
+    var titleEl = document.getElementById('preview-guard-title');
+    var body = document.getElementById('preview-guard-body');
+    if (!modal || !titleEl || !body) return;
+    titleEl.textContent = title || '확인이 더 필요합니다';
+    body.innerHTML = html || '';
+    modal.classList.add('open');
+  };
+
+  GW.closePreviewGuardModal = function () {
+    var modal = document.getElementById('preview-guard-modal');
+    if (modal) modal.classList.remove('open');
   };
 
   GW.renderPreviewReviewModal = function () {
@@ -1483,11 +1523,29 @@
     });
 
     if (checkedIds.length !== requiredIds.length) {
-      GW.showToast('체크 항목을 꼼꼼히 확인하고 체크박스를 모두 선택해주세요.', 'error');
+      var missingItems = [];
+      (release.sections || []).forEach(function (section) {
+        (section.items || []).forEach(function (item) {
+          if (!item || !item.id || GW._previewChecklistState[item.id]) return;
+          missingItems.push(item.label || item.id);
+        });
+      });
+      GW.showPreviewGuardModal(
+        '체크리스트 확인 필요',
+        '<p class="preview-guard-copy">체크 항목을 꼼꼼히 확인하고 체크박스를 모두 선택한 뒤 다시 반영을 시도해주세요.</p>' +
+        (missingItems.length
+          ? '<ul class="preview-guard-list">' + missingItems.map(function (label) {
+              return '<li>' + GW.escapeHtml(label) + '</li>';
+            }).join('') + '</ul>'
+          : '')
+      );
       return;
     }
     if (!password) {
-      GW.showToast('반영 직전에 full 관리자 비밀번호를 다시 입력해주세요.', 'error');
+      GW.showPreviewGuardModal(
+        '최종 관리자 확인 필요',
+        '<p class="preview-guard-copy">반영 직전에는 현재 로그인 상태와 무관하게 full 관리자 비밀번호를 다시 입력해야 합니다.</p>'
+      );
       if (input) input.focus();
       return;
     }
