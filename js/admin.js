@@ -186,6 +186,7 @@
     _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
+    syncAdminPreviewLink();
     applyAdminPermissions();
     if (isFullAdmin()) {
       _loadEditorJs(function () {
@@ -213,6 +214,19 @@
       updateEditorActionState();
     }
     showAdminTab('dashboard');
+  }
+
+  function syncAdminPreviewLink() {
+    var link = document.getElementById('admin-preview-link');
+    if (!link) return;
+    var host = String(window.location.hostname || '').toLowerCase();
+    var isPreviewHost = host === 'preview.gilwell-media.pages.dev';
+    var previewUrl = isPreviewHost ? (window.location.origin + '/') : 'https://preview.gilwell-media.pages.dev/';
+    link.href = previewUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = isPreviewHost ? '프리뷰 홈 보기 ↗' : '프리뷰 보기 ↗';
+    link.setAttribute('aria-label', link.textContent);
   }
 
   // ─── Tab navigation ───────────────────────────────────────
