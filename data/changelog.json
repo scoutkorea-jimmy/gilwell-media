@@ -1,6 +1,23 @@
 {
   "items": [
     {
+      "version": "0.069.01",
+      "date": "2026-03-16",
+      "summary": "preview 반영 버튼의 readiness 판단을 실제 승격 조건에 맞게 다시 조정한 핫픽스입니다.",
+      "changes": [
+        "preview 반영 readiness 검사는 이제 preview 배포 SHA와 GitHub preview 브랜치 SHA를 비교할 때 짧은 SHA와 긴 SHA를 같은 커밋으로 인식하도록 보정했습니다.",
+        "Cloudflare deployment list 확인 실패는 승격을 직접 막는 오류가 아니라 경고로만 남기도록 바꿔, preview 환경의 부가 진단 실패 때문에 반영 버튼이 불필요하게 비활성화되지 않게 했습니다."
+      ],
+      "request_history": [
+        {
+          "status": "changed",
+          "request": "preview 반영 버튼을 눌렀는데도 계속 프로덕션 반영이 안 되는 문제 해결",
+          "outcome": "SHA 비교 기준을 보정하고, 실제 승격과 무관한 Cloudflare deployment list 확인 실패는 차단 사유에서 분리했습니다.",
+          "feedback": "진짜로 막아야 할 사유와 참고용 진단 경고를 섞어버리면 운영자가 이유 없이 버튼이 안 되는 상태로 느끼게 된다는 문제를 반영했습니다."
+        }
+      ]
+    },
+    {
       "version": "0.069.00",
       "date": "2026-03-16",
       "summary": "게시글 날짜 체계를 시각 단위까지 분리 정리하고, 관련 정렬·삭제 정리·preview 승격 신뢰도·관리자 구조·스모크 체크를 한 번에 보강한 대형 업데이트입니다.",

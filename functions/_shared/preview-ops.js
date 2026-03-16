@@ -76,9 +76,8 @@ export async function fetchGithubBranchHead(env, branch) {
 
 export async function verifyPromotionReadiness(env, release) {
   const reasons = [];
+  const warnings = [];
   if (!env.GITHUB_WORKFLOW_TOKEN) reasons.push('GitHub workflow token이 없습니다.');
-  if (!env.CLOUDFLARE_API_TOKEN) reasons.push('Cloudflare API token이 없습니다.');
-  if (!env.CLOUDFLARE_ACCOUNT_ID) reasons.push('Cloudflare account id가 없습니다.');
   if (!release || !release.has_pending_changes) reasons.push('production에 반영할 새 변경이 없습니다.');
   if (!release || !release.commit_sha) reasons.push('preview 커밋 SHA를 확인하지 못했습니다.');
 
@@ -92,7 +91,12 @@ export async function verifyPromotionReadiness(env, release) {
       branchHeads = { main: mainSha, preview: previewSha };
       if (!previewSha) {
         reasons.push('GitHub preview 브랜치 SHA를 확인하지 못했습니다.');
-      } else if (release.commit_sha && previewSha !== release.commit_sha) {
+      } else if (
+        release.commit_sha &&
+        previewSha !== release.commit_sha &&
+        !previewSha.startsWith(String(release.commit_sha)) &&
+        !String(release.commit_sha).startsWith(previewSha)
+      ) {
         reasons.push('preview 배포 SHA와 GitHub preview 브랜치 SHA가 다릅니다.');
       }
     } catch (error) {
@@ -102,13 +106,14 @@ export async function verifyPromotionReadiness(env, release) {
     try {
       await fetchPagesDeployments(env);
     } catch (error) {
-      reasons.push(error.message || 'Cloudflare Pages 프로젝트 상태를 확인하지 못했습니다.');
+      warnings.push(error.message || 'Cloudflare Pages 프로젝트 상태를 확인하지 못했습니다.');
     }
   }
 
   return {
     ok: reasons.length === 0,
     reasons,
+    warnings,
     branch_heads: branchHeads,
   };
 }
