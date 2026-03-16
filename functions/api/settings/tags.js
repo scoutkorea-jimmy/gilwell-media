@@ -17,13 +17,23 @@ const DEFAULT_TAGS = {
 };
 
 export async function onRequestGet({ env, request }) {
+  const url = new URL(request.url);
+  const usageTag = String(url.searchParams.get('usage') || '').trim();
+  if (usageTag) {
+    const token = extractToken(request);
+    if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+      return json({ error: '인증이 필요합니다' }, 401);
+    }
+    const usage = await getTagUsage(env, usageTag);
+    return json(usage);
+  }
+
   try {
     const row = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'tags'`
     ).first();
     const parsed = row ? JSON.parse(row.value) : DEFAULT_TAGS;
     const tags = normalizeTagSettings(parsed);
-    const url = new URL(request.url);
     const category = url.searchParams.get('category');
     const items = getTagsForCategory(tags, category);
     return json({
@@ -65,6 +75,19 @@ export async function onRequestPut({ request, env }) {
   }
 
   try {
+    const current = await loadTagSettings(env);
+    const removedTags = collectRemovedTags(current, safe);
+    for (const removedTag of removedTags) {
+      const usage = await getTagUsage(env, removedTag);
+      if (usage.in_use) {
+        return json({
+          error: `"${removedTag}" 태그가 적용된 글이 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.`,
+          tag_in_use: removedTag,
+          count: usage.count,
+          posts: usage.posts,
+        }, 409);
+      }
+    }
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('tags', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -77,6 +100,17 @@ export async function onRequestPut({ request, env }) {
   } catch (err) {
     console.error('PUT /api/settings/tags error:', err);
     return json({ error: 'Database error' }, 500);
+  }
+}
+
+async function loadTagSettings(env) {
+  try {
+    const row = await env.DB.prepare(
+      `SELECT value FROM settings WHERE key = 'tags'`
+    ).first();
+    return normalizeTagSettings(row ? JSON.parse(row.value) : DEFAULT_TAGS);
+  } catch (_) {
+    return normalizeTagSettings(DEFAULT_TAGS);
   }
 }
 
@@ -126,6 +160,68 @@ function getTagsForCategory(tags, category) {
     seen.add(item);
     return true;
   });
+}
+
+function collectRemovedTags(current, next) {
+  const currentTags = flattenTags(current);
+  const nextTags = new Set(flattenTags(next));
+  return currentTags.filter((tag) => !nextTags.has(tag));
+}
+
+function flattenTags(tags) {
+  const collected = [];
+  const pushUnique = (item) => {
+    const value = String(item || '').trim();
+    if (!value || collected.includes(value)) return;
+    collected.push(value);
+  };
+  sanitize(tags && tags.common).forEach(pushUnique);
+  ['korea', 'apr', 'wosm', 'people'].forEach((category) => {
+    sanitize(tags && tags.categories && tags.categories[category]).forEach(pushUnique);
+  });
+  return collected;
+}
+
+async function getTagUsage(env, tag) {
+  const safeTag = String(tag || '').trim();
+  if (!safeTag) {
+    return { tag: safeTag, in_use: false, count: 0, posts: [] };
+  }
+  const [countRow, rows] = await Promise.all([
+    env.DB.prepare(
+      `SELECT COUNT(*) AS count
+         FROM posts
+        WHERE tag IS NOT NULL
+          AND instr(
+            ',' || replace(replace(COALESCE(tag, ''), ', ', ','), ' ,', ',') || ',',
+            ',' || replace(replace(?, ', ', ','), ' ,', ',') || ','
+          ) > 0`
+    ).bind(safeTag).first(),
+    env.DB.prepare(
+      `SELECT id, title, category, tag
+       FROM posts
+      WHERE tag IS NOT NULL
+        AND instr(
+          ',' || replace(replace(COALESCE(tag, ''), ', ', ','), ' ,', ',') || ',',
+          ',' || replace(replace(?, ', ', ','), ' ,', ',') || ','
+        ) > 0
+      ORDER BY updated_at DESC, id DESC
+      LIMIT 5`
+    ).bind(safeTag).all(),
+  ]);
+  const items = (rows.results || []).map((row) => ({
+    id: row.id,
+    title: row.title || '',
+    category: row.category || '',
+    tag: row.tag || '',
+  }));
+  const count = Number(countRow && countRow.count || 0);
+  return {
+    tag: safeTag,
+    in_use: count > 0,
+    count: count,
+    posts: items,
+  };
 }
 
 function json(data, status = 200) {

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.063.00';
+  GW.APP_VERSION = '0.064.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -646,6 +646,12 @@
     if (!res.ok) {
       const err = new Error(data.error || 'API 오류가 발생했습니다');
       err.status = res.status;
+      err.data = data;
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(function (key) {
+          if (!(key in err)) err[key] = data[key];
+        });
+      }
       throw err;
     }
     return data;
