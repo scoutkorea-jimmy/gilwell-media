@@ -47,6 +47,64 @@
   };
   var _siteMetaRevision = null;
 
+  function getFooterEditorValue(id, fallback) {
+    var el = document.getElementById(id);
+    var value = el && typeof el.value === 'string' ? el.value.trim() : '';
+    return value || (fallback || '');
+  }
+
+  function buildSiteFooterHtml(footer) {
+    var safe = footer || {};
+    var blocks = [];
+    if (safe.title) {
+      blocks.push('<h4>' + GW.escapeHtml(safe.title) + '</h4>');
+    }
+    if (safe.description) {
+      blocks.push('<p>' + GW.escapeHtml(safe.description) + '</p>');
+    }
+    if (safe.domain_label) {
+      blocks.push('<p>' + GW.escapeHtml(safe.domain_label) + '</p>');
+    }
+    if (safe.tip_email) {
+      blocks.push('<p>기사제보: <a href="mailto:' + GW.escapeHtml(safe.tip_email) + '">' + GW.escapeHtml(safe.tip_email) + '</a></p>');
+    }
+    if (safe.contact_email) {
+      blocks.push('<p>문의: <a href="mailto:' + GW.escapeHtml(safe.contact_email) + '">' + GW.escapeHtml(safe.contact_email) + '</a></p>');
+    }
+    return blocks.join('');
+  }
+
+  function readFooterEditorState() {
+    var footer = _siteMeta.footer || {};
+    return {
+      title: getFooterEditorValue('site-footer-title', footer.title || 'BP미디어'),
+      description: getFooterEditorValue('site-footer-description', footer.description || ''),
+      domain_label: getFooterEditorValue('site-footer-domain', footer.domain_label || 'bpmedia.net'),
+      tip_email: getFooterEditorValue('site-footer-tip-email', footer.tip_email || 'story@bpmedia.net'),
+      contact_email: getFooterEditorValue('site-footer-contact-email', footer.contact_email || 'info@bpmedia.net'),
+    };
+  }
+
+  function renderSiteFooterPreview(footer) {
+    var preview = document.getElementById('site-footer-preview');
+    if (!preview) return;
+    preview.innerHTML = buildSiteFooterHtml(footer);
+  }
+
+  function bindSiteFooterEditor() {
+    ['site-footer-title', 'site-footer-description', 'site-footer-domain', 'site-footer-tip-email', 'site-footer-contact-email']
+      .forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el || el.dataset.boundPreview === 'true') return;
+        el.dataset.boundPreview = 'true';
+        ['input', 'change'].forEach(function (eventName) {
+          el.addEventListener(eventName, function () {
+            renderSiteFooterPreview(readFooterEditorState());
+          });
+        });
+      });
+  }
+
   // Pagination state
   var _listPage     = 1;
   var _listCat      = 'all';
@@ -1555,16 +1613,24 @@
     }
     _renderSiteMetaImagePreview();
     var footer = _siteMeta.footer || {};
-    var footerRaw = document.getElementById('site-footer-raw');
-    if (footerRaw) {
-      footerRaw.value = footer.raw_text || [
-        footer.title || 'BP미디어',
-        footer.description || '',
-        footer.domain_label || '',
-        footer.tip_email ? '기사제보: ' + footer.tip_email : '',
-        footer.contact_email ? '문의: ' + footer.contact_email : '',
-      ].filter(Boolean).join('\n');
-    }
+    var footerTitle = document.getElementById('site-footer-title');
+    var footerDescription = document.getElementById('site-footer-description');
+    var footerDomain = document.getElementById('site-footer-domain');
+    var footerTipEmail = document.getElementById('site-footer-tip-email');
+    var footerContactEmail = document.getElementById('site-footer-contact-email');
+    if (footerTitle) footerTitle.value = footer.title || 'BP미디어';
+    if (footerDescription) footerDescription.value = footer.description || '';
+    if (footerDomain) footerDomain.value = footer.domain_label || 'bpmedia.net';
+    if (footerTipEmail) footerTipEmail.value = footer.tip_email || 'story@bpmedia.net';
+    if (footerContactEmail) footerContactEmail.value = footer.contact_email || 'info@bpmedia.net';
+    bindSiteFooterEditor();
+    renderSiteFooterPreview({
+      title: footer.title || 'BP미디어',
+      description: footer.description || '',
+      domain_label: footer.domain_label || 'bpmedia.net',
+      tip_email: footer.tip_email || 'story@bpmedia.net',
+      contact_email: footer.contact_email || 'info@bpmedia.net',
+    });
     var googleEl = document.getElementById('site-google-verification');
     var naverEl = document.getElementById('site-naver-verification');
     if (googleEl) googleEl.value = _siteMeta.google_verification || '';
@@ -1607,6 +1673,7 @@
   window.saveSiteMeta = function () {
     var inputs = document.querySelectorAll('[data-site-meta-page][data-site-meta-field]');
     var pages = {};
+    var footer = readFooterEditorState();
     inputs.forEach(function (input) {
       var page = input.getAttribute('data-site-meta-page');
       var field = input.getAttribute('data-site-meta-field');
@@ -1618,7 +1685,12 @@
       body: JSON.stringify({
         pages: pages,
         footer: {
-          raw_text: ((document.getElementById('site-footer-raw') || {}).value || '').trim(),
+          raw_text: buildSiteFooterHtml(footer),
+          title: footer.title,
+          description: footer.description,
+          domain_label: footer.domain_label,
+          tip_email: footer.tip_email,
+          contact_email: footer.contact_email,
         },
         image_url: _siteMeta.image_url || null,
         google_verification: ((document.getElementById('site-google-verification') || {}).value || '').trim(),

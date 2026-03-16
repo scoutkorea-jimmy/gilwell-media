@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.062.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.03">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.062.02</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.062.03</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.062.02</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.062.03</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -643,9 +643,33 @@
 
             <div class="share-meta-card">
               <div class="share-meta-card-head">푸터 좌측 전체 문구</div>
-              <label>전체 입력</label>
-              <textarea id="site-footer-raw" rows="8" maxlength="4000" placeholder="<h4>BP미디어</h4>&#10;<p>소개 문구를 HTML로 직접 작성하세요.</p>&#10;<p><a href=&quot;mailto:story@bpmedia.net&quot;>story@bpmedia.net</a></p>"></textarea>
-              <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:8px;">여기는 HTML 그대로 저장됩니다. 제목, 문단, 링크, 줄바꿈을 원하는 구조로 직접 작성하면 푸터 좌측에 그대로 렌더링됩니다.</p>
+              <p class="admin-section-note">푸터 좌측 문구는 아래 필드만 수정하면 자동으로 정리된 형태로 반영됩니다.</p>
+              <div class="share-meta-inline-grid footer-editor-grid">
+                <div>
+                  <label for="site-footer-title">제목</label>
+                  <input type="text" id="site-footer-title" maxlength="80" placeholder="BP미디어" />
+                </div>
+                <div>
+                  <label for="site-footer-domain">도메인</label>
+                  <input type="text" id="site-footer-domain" maxlength="120" placeholder="bpmedia.net" />
+                </div>
+                <div style="grid-column: 1 / -1;">
+                  <label for="site-footer-description">소개 문구</label>
+                  <textarea id="site-footer-description" rows="4" maxlength="260" placeholder="BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다."></textarea>
+                </div>
+                <div>
+                  <label for="site-footer-tip-email">기사제보 메일</label>
+                  <input type="email" id="site-footer-tip-email" maxlength="120" placeholder="story@bpmedia.net" />
+                </div>
+                <div>
+                  <label for="site-footer-contact-email">문의 메일</label>
+                  <input type="email" id="site-footer-contact-email" maxlength="120" placeholder="info@bpmedia.net" />
+                </div>
+              </div>
+              <div class="footer-editor-preview-block">
+                <div class="share-meta-card-head">미리보기</div>
+                <div id="site-footer-preview" class="footer-editor-preview"></div>
+              </div>
               <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin-top:12px;" onclick="saveSiteMeta()">푸터 문구 저장</button>
             </div>
 
@@ -767,8 +791,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.062.02"></script>
-  <script src="/js/admin.js?v=0.062.02"></script>
+  <script src="/js/main.js?v=0.062.03"></script>
+  <script src="/js/admin.js?v=0.062.03"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

@@ -2691,17 +2691,26 @@ footer h4 {
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      14px;
   font-weight:    700;
-  margin-bottom:  10px;
+  margin:         0 0 8px;
   color:          #ffffff;
   letter-spacing: 0.05em;
 }
 
-footer p, footer a {
+footer p {
   font-size:       12px;
   color:           rgba(255,255,255,0.75);
-  line-height:     1.8;
+  line-height:     1.5;
   text-decoration: none;
   display:         block;
+  margin:          0 0 4px;
+}
+
+footer a {
+  font-size:       12px;
+  color:           rgba(255,255,255,0.82);
+  line-height:     1.5;
+  text-decoration: none;
+  display:         inline;
 }
 
 .footer-admin > a {
@@ -3049,6 +3058,38 @@ footer a:hover { color: #ffffff; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 12px;
+}
+
+.footer-editor-grid {
+  margin-top: 0;
+}
+
+.footer-editor-preview-block {
+  margin-top: 16px;
+}
+
+.footer-editor-preview {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(97, 36, 153, 0.08), rgba(97, 36, 153, 0.02));
+}
+
+.footer-editor-preview h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.footer-editor-preview p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.footer-editor-preview a {
+  color: var(--ink);
+  text-decoration: none;
 }
 
 .admin-settings-divider {
@@ -8891,6 +8932,28 @@ body.preview-review-modal-open .preview-review-fab {
   padding: 0 18px 6px;
 }
 
+.preview-review-summary-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 18px 10px;
+}
+
+.preview-review-summary-item {
+  padding: 14px 0;
+  border-top: 1px solid rgba(34, 27, 40, 0.06);
+}
+
+.preview-review-summary-item:first-child {
+  border-top: 0;
+}
+
+.preview-review-summary-item p {
+  margin: 6px 0 0;
+  color: #6d645e;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 .preview-review-item {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
@@ -8917,7 +8980,8 @@ body.preview-review-modal-open .preview-review-fab {
 }
 
 .preview-review-copy strong,
-.preview-history-title {
+.preview-history-title,
+.preview-review-summary-item strong {
   color: #171119;
   font-size: 15px;
   line-height: 1.4;

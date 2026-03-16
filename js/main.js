@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.062.02';
+  GW.APP_VERSION = '0.062.03';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1198,6 +1198,19 @@
     summary.textContent = release.summary || '';
 
     var html = (release.sections || []).map(function (section) {
+      if (section && section.variant === 'summary') {
+        return '<section class="preview-review-section preview-review-section-summary">' +
+          '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
+          '<div class="preview-review-summary-list">' +
+            (section.items || []).map(function (item) {
+              return '<article class="preview-review-summary-item">' +
+                '<strong>' + GW.escapeHtml(item.label || '') + '</strong>' +
+                '<p>' + GW.escapeHtml(item.description || '') + '</p>' +
+              '</article>';
+            }).join('') +
+          '</div>' +
+        '</section>';
+      }
       return '<section class="preview-review-section">' +
         '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
         '<div class="preview-review-checklist">' +
@@ -1390,7 +1403,7 @@
     var requiredIds = [];
     (release.sections || []).forEach(function (section) {
       (section.items || []).forEach(function (item) {
-        requiredIds.push(item.id);
+        if (item && item.id) requiredIds.push(item.id);
       });
     });
     var ready = requiredIds.length > 0 && requiredIds.every(function (id) {
@@ -1408,7 +1421,7 @@
     var requiredIds = [];
     (release.sections || []).forEach(function (section) {
       (section.items || []).forEach(function (item) {
-        requiredIds.push(item.id);
+        if (item && item.id) requiredIds.push(item.id);
       });
     });
     var checkedIds = requiredIds.filter(function (id) {

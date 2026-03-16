@@ -28,6 +28,7 @@ const GENERIC_CHECKS = [
 
 const DEFAULT_SUMMARY = '현재 preview 릴리스의 변경 사항과 검수 체크리스트를 확인합니다.';
 const MAX_RELEASE_SECTIONS = 12;
+const HISTORY_HIGHLIGHT_LIMIT = 2;
 
 export function findLatestProductionVersion(deployments) {
   const rows = Array.isArray(deployments) ? deployments : [];
@@ -75,7 +76,7 @@ export function buildPreviewRelease(entries, meta) {
   const leadSummary = String((leadEntry && leadEntry.summary) || DEFAULT_SUMMARY).trim();
 
   const summary = liveVersion
-    ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다.'
+    ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다. 최신 변경은 상세 체크리스트로, 그 이전 변경은 요약 히스토리로 확인합니다.'
     : leadSummary;
 
   return {
@@ -96,30 +97,23 @@ export function buildPreviewRelease(entries, meta) {
 export function getPreviewChecklistIds(release) {
   return (release && release.sections ? release.sections : []).reduce(function (acc, section) {
     return acc.concat((section.items || []).map(function (item) {
-      return item.id;
-    }));
-  }, []);
+      return item && item.id ? item.id : '';
+    }).filter(Boolean));
+  }, []).filter(Boolean);
 }
 
 function buildSections(entries) {
-  const releaseSections = entries.map(function (entry, entryIndex) {
-    const version = String(entry.version || '').trim();
-    const changes = Array.isArray(entry.changes) && entry.changes.length
-      ? entry.changes
-      : [String(entry.summary || DEFAULT_SUMMARY).trim()];
+  const latestEntry = entries[0] || null;
+  const previousEntries = entries.slice(1);
+  const releaseSections = [];
 
-    return {
-      key: 'release-' + sanitizeVersionId(version || String(entryIndex + 1)),
-      title: 'V' + version + ' · ' + String(entry.summary || DEFAULT_SUMMARY).trim(),
-      items: changes.map(function (change, changeIndex) {
-        return {
-          id: 'update-' + sanitizeVersionId(version || String(entryIndex + 1)) + '-' + String(changeIndex + 1),
-          label: String(change || '').trim(),
-          description: '마지막 production 반영 이후 preview에 누적된 변경입니다. 실제 화면과 동작을 확인한 뒤 체크하세요.',
-        };
-      }),
-    };
-  });
+  if (latestEntry) {
+    releaseSections.push(buildDetailedSection(latestEntry, 0));
+  }
+
+  if (previousEntries.length) {
+    releaseSections.push(buildHistorySummarySection(previousEntries));
+  }
 
   releaseSections.push({
     key: 'checks',
@@ -128,6 +122,52 @@ function buildSections(entries) {
   });
 
   return releaseSections;
+}
+
+function buildDetailedSection(entry, entryIndex) {
+  const version = String(entry.version || '').trim();
+  const changes = Array.isArray(entry.changes) && entry.changes.length
+    ? entry.changes
+    : [String(entry.summary || DEFAULT_SUMMARY).trim()];
+
+  return {
+    key: 'release-' + sanitizeVersionId(version || String(entryIndex + 1)),
+    title: '최신 변경 상세 · V' + version,
+    items: changes.map(function (change, changeIndex) {
+      return {
+        id: 'update-' + sanitizeVersionId(version || String(entryIndex + 1)) + '-' + String(changeIndex + 1),
+        label: String(change || '').trim(),
+        description: '가장 최신 preview 변경입니다. 실제 화면과 동작을 우선 확인한 뒤 체크하세요.',
+      };
+    }),
+  };
+}
+
+function buildHistorySummarySection(entries) {
+  return {
+    key: 'history-summary',
+    title: '운영 반영본 이후 이전 누적 히스토리 요약',
+    variant: 'summary',
+    items: entries.map(function (entry) {
+      const version = String(entry.version || '').trim();
+      return {
+        label: 'V' + version + ' · ' + String(entry.summary || DEFAULT_SUMMARY).trim(),
+        description: summarizeHistoryEntry(entry),
+      };
+    }),
+  };
+}
+
+function summarizeHistoryEntry(entry) {
+  const changes = Array.isArray(entry && entry.changes) ? entry.changes.filter(Boolean) : [];
+  if (!changes.length) {
+    return '이전 preview 누적 변경입니다. 최신 변경에 흡수된 부분이 있을 수 있으니 흐름 중심으로만 확인하세요.';
+  }
+  const highlights = changes.slice(0, HISTORY_HIGHLIGHT_LIMIT).map(function (change) {
+    return String(change || '').trim();
+  }).filter(Boolean);
+  const extraCount = Math.max(0, changes.length - highlights.length);
+  return '이전 preview 누적 변경 요약 · ' + highlights.join(' / ') + (extraCount ? ' / 그 외 ' + extraCount + '건' : '');
 }
 
 function isChangelogEntry(entry) {
