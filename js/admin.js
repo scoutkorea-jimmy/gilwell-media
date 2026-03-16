@@ -477,10 +477,16 @@
     showAdminTab('dashboard');
   }
 
+  function getAdminAccessDeniedMessage(message) {
+    return message || '권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.';
+  }
+
   function showAdminLoginPrompt(message) {
     var login = document.getElementById('login-screen');
     var admin = document.getElementById('admin-screen');
     var err = document.getElementById('login-error');
+    var silent = message === '';
+    var nextMessage = silent ? '' : getAdminAccessDeniedMessage(message);
     if (login) login.style.display = 'flex';
     if (admin) {
       admin.hidden = true;
@@ -488,9 +494,10 @@
       admin.style.display = 'none';
     }
     if (err) {
-      err.textContent = message || '';
-      err.style.display = message ? 'block' : 'none';
+      err.textContent = nextMessage;
+      err.style.display = silent ? 'none' : 'block';
     }
+    if (!silent) GW.showToast(nextMessage, 'error');
     var pwInput = document.getElementById('pw-input');
     if (pwInput) {
       pwInput.value = '';
@@ -508,7 +515,7 @@
     window.addEventListener('pageshow', function () {
       if (!document.body.classList.contains('admin-page')) return;
       if (!GW.getToken()) {
-        showAdminLoginPrompt('');
+        showAdminLoginPrompt('권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.');
         return;
       }
       verifyAdminSession().catch(function () {
@@ -519,7 +526,7 @@
 
   function bootAdminAccess() {
     if (!GW.getToken()) {
-      showAdminLoginPrompt('');
+      showAdminLoginPrompt('권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.');
       return;
     }
     verifyAdminSession().then(function (session) {
