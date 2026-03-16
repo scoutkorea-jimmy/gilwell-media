@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: promote-preview
@@ -33,6 +34,8 @@ env:
 jobs:
   promote:
     runs-on: ubuntu-latest
+    outputs:
+      promoted_sha: ${{ steps.promote.outputs.promoted_sha }}
     steps:
       - name: Checkout Preview
         uses: actions/checkout@v6
@@ -46,6 +49,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Promote Preview Snapshot To Main
+        id: promote
         env:
           INPUT_VERSION: ${{ github.event.inputs.version }}
           INPUT_APPROVED_AT: ${{ github.event.inputs.approved_at }}
@@ -68,11 +72,22 @@ jobs:
           git push origin "${PREVIOUS_MAIN_SHA}:refs/heads/${BACKUP_BRANCH}"
           git checkout -B main "${TARGET_PREVIEW_SHA}"
           git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin "${TARGET_PREVIEW_SHA}:main"
+          echo "promoted_sha=${TARGET_PREVIEW_SHA}" >> "$GITHUB_OUTPUT"
 
+  deploy:
+    runs-on: ubuntu-latest
+    needs: promote
+    steps:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 24
+
+      - name: Checkout Main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Install Wrangler
         run: npm install -g wrangler@4.72.0
@@ -84,13 +99,17 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           VERSION="${INPUT_VERSION:-$(cat VERSION)}"
-          COMMIT_SHA="$(git rev-parse HEAD)"
+          COMMIT_SHA="${{ needs.promote.outputs.promoted_sha }}"
+          if [ -z "${COMMIT_SHA}" ]; then
+            COMMIT_SHA="$(git rev-parse HEAD)"
+          fi
           COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
           wrangler pages deploy . \
             --project-name gilwell-media \
             --branch main \
             --commit-hash "${COMMIT_SHA}" \
-            --commit-message "${COMMIT_MESSAGE}"
+            --commit-message "${COMMIT_MESSAGE}" \
+            --commit-dirty true
 
       - name: Store Release Snapshot
         if: always()
