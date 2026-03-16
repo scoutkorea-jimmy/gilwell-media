@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.065.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.066.00">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -235,7 +235,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.065.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.066.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -251,7 +251,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.065.00"></script>
+  <script src="/js/main.js?v=0.066.00"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -287,16 +287,55 @@
       return '<button class="mini-share-link" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>';
     }
 
+    function normalizeResponsiveMedia(media) {
+      var raw = media && typeof media === 'object' ? media : {};
+      function clamp(value, min, max, fallback) {
+        var parsed = parseInt(value, 10);
+        if (!Number.isFinite(parsed)) return fallback;
+        return Math.min(max, Math.max(min, parsed));
+      }
+      var fallbackDesktop = {
+        position_x: clamp(raw.position_x, 0, 100, 50),
+        position_y: clamp(raw.position_y, 0, 100, 50),
+        zoom: clamp(raw.zoom, 100, 150, 100),
+      };
+      var fallbackMobile = {
+        position_x: fallbackDesktop.position_x,
+        position_y: fallbackDesktop.position_y,
+        zoom: fallbackDesktop.zoom,
+      };
+      var desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
+      var mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
+      return {
+        fit: raw.fit === 'contain' ? 'contain' : 'cover',
+        desktop: {
+          position_x: clamp(desktop.position_x, 0, 100, fallbackDesktop.position_x),
+          position_y: clamp(desktop.position_y, 0, 100, fallbackDesktop.position_y),
+          zoom: clamp(desktop.zoom, 100, 150, fallbackDesktop.zoom),
+        },
+        mobile: {
+          position_x: clamp(mobile.position_x, 0, 100, fallbackMobile.position_x),
+          position_y: clamp(mobile.position_y, 0, 100, fallbackMobile.position_y),
+          zoom: clamp(mobile.zoom, 100, 150, fallbackMobile.zoom),
+        },
+      };
+    }
+
+    function getResponsiveMediaStyle(media) {
+      var config = normalizeResponsiveMedia(media);
+      return [
+        '--media-fit:' + config.fit,
+        '--media-pos-x-desktop:' + config.desktop.position_x + '%',
+        '--media-pos-y-desktop:' + config.desktop.position_y + '%',
+        '--media-zoom-desktop:' + (config.desktop.zoom / 100).toFixed(2),
+        '--media-pos-x-mobile:' + config.mobile.position_x + '%',
+        '--media-pos-y-mobile:' + config.mobile.position_y + '%',
+        '--media-zoom-mobile:' + (config.mobile.zoom / 100).toFixed(2)
+      ].join(';');
+    }
+
     function getHomeLeadMediaStyle(media) {
-      var config = media && typeof media === 'object' ? media : {};
-      var fit = config.fit === 'contain' ? 'contain' : 'cover';
-      var posX = Number.isFinite(parseInt(config.position_x, 10)) ? parseInt(config.position_x, 10) : 50;
-      var posY = Number.isFinite(parseInt(config.position_y, 10)) ? parseInt(config.position_y, 10) : 50;
-      var zoom = Number.isFinite(parseInt(config.zoom, 10)) ? parseInt(config.zoom, 10) : 100;
-      posX = Math.min(100, Math.max(0, posX));
-      posY = Math.min(100, Math.max(0, posY));
-      zoom = Math.min(150, Math.max(100, zoom));
-      return 'object-fit:' + fit + ';object-position:' + posX + '% ' + posY + '%;transform:scale(' + (zoom / 100).toFixed(2) + ');';
+      return getResponsiveMediaStyle(media);
     }
 
     function buildMiniItem(p, options) {
@@ -420,11 +459,16 @@
         var div    = document.createElement('div');
         div.className = 'site-hero site-hero-slide';
         div.setAttribute('data-post-id', post.id);
+        var mediaMarkup = '';
         if (post.image_url) {
-          div.style.backgroundImage = 'url(' + post.image_url + ')';
           div.classList.add('has-bg');
+          mediaMarkup =
+            '<div class="site-hero-media" aria-hidden="true">' +
+              '<img class="site-hero-media-img" src="' + GW.escapeHtml(post.image_url) + '" alt="" style="' + getResponsiveMediaStyle(post.media) + '">' +
+            '</div>';
         }
         div.innerHTML =
+          mediaMarkup +
           '<div class="site-hero-bg-text">' + (post.subtitle ? GW.escapeHtml(post.subtitle) : '') + '</div>' +
           '<div class="site-hero-content">' +
             '<div class="site-hero-labels">' +

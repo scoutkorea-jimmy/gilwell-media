@@ -3,9 +3,16 @@ import { serializePostImage } from '../../_shared/images.js';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
-  position_x: 50,
-  position_y: 50,
-  zoom: 100,
+  desktop: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
+  mobile: {
+    position_x: 50,
+    position_y: 50,
+    zoom: 100,
+  },
 };
 
 export async function onRequestGet({ env, request }) {
@@ -118,11 +125,30 @@ function parseJsonValue(raw) {
 
 function normalizeHomeLeadMedia(input) {
   const raw = input && typeof input === 'object' ? input : {};
+  const fallbackDesktop = {
+    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_x),
+    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_y),
+    zoom: clampNumber(raw.zoom, 100, 150, DEFAULT_HOME_LEAD_MEDIA.desktop.zoom),
+  };
+  const fallbackMobile = {
+    position_x: fallbackDesktop.position_x,
+    position_y: fallbackDesktop.position_y,
+    zoom: fallbackDesktop.zoom,
+  };
+  const desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
+  const mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
   return {
     fit: raw.fit === 'contain' ? 'contain' : 'cover',
-    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_x),
-    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_y),
-    zoom: clampNumber(raw.zoom, 100, 150, DEFAULT_HOME_LEAD_MEDIA.zoom),
+    desktop: {
+      position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
+      position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
+      zoom: clampNumber(desktop.zoom, 100, 150, fallbackDesktop.zoom),
+    },
+    mobile: {
+      position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
+      position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
+      zoom: clampNumber(mobile.zoom, 100, 150, fallbackMobile.zoom),
+    },
   };
 }
 

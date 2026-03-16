@@ -255,6 +255,16 @@ body.admin-page .version-history-pagination {
 }
 
 @media (max-width: 768px) {
+  .site-hero-media-img {
+    object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
+    transform: scale(var(--media-zoom-mobile, 1));
+  }
+
+  .home-lead-thumb {
+    object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
+    transform: scale(var(--media-zoom-mobile, 1));
+  }
+
   .section-header,
   .home-col-header {
     min-height: 40px !important;
@@ -1465,11 +1475,23 @@ p { margin-bottom: 6px; }
   justify-content: center;
 }
 
-/* Background image mode */
-.site-hero.has-bg {
-  background-size:     cover;
-  background-position: center;
+.site-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
 }
+
+.site-hero-media-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--media-fit, cover);
+  object-position: var(--media-pos-x-desktop, 50%) var(--media-pos-y-desktop, 50%);
+  transform: scale(var(--media-zoom-desktop, 1));
+  transform-origin: center center;
+}
+
 .site-hero.has-bg::after {
   content:    '';
   position:   absolute;
@@ -1516,6 +1538,7 @@ p { margin-bottom: 6px; }
 .site-hero-labels {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 14px;
@@ -1654,8 +1677,10 @@ p { margin-bottom: 6px; }
   width: 100%;
   height: 100%;
   min-height: 100%;
-  object-fit: cover;
+  object-fit: var(--media-fit, cover);
+  object-position: var(--media-pos-x-desktop, 50%) var(--media-pos-y-desktop, 50%);
   border: 1px solid var(--border);
+  transform: scale(var(--media-zoom-desktop, 1));
   transform-origin: center center;
   transition: transform 0.18s ease;
 }
@@ -7866,7 +7891,8 @@ body.admin-page .admin-home-lead-preview {
   margin-top: 16px;
 }
 
-body.admin-page .admin-home-lead-preview-frame {
+body.admin-page .admin-home-lead-preview-frame,
+body.admin-page .admin-media-preview-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
@@ -7876,7 +7902,8 @@ body.admin-page .admin-home-lead-preview-frame {
   background: rgba(98, 37, 153, 0.06);
 }
 
-body.admin-page .admin-home-lead-preview-frame img {
+body.admin-page .admin-home-lead-preview-frame img,
+body.admin-page .admin-media-preview-frame img {
   width: 100%;
   height: 100%;
   display: block;
@@ -7913,6 +7940,82 @@ body.admin-page .admin-home-lead-control strong {
 
 body.admin-page .admin-home-lead-control input[type="range"],
 body.admin-page .admin-home-lead-control select {
+  width: 100%;
+}
+
+body.admin-page .hero-slot-item {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+}
+
+body.admin-page .hero-slot-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+body.admin-page .admin-media-editor {
+  display: grid;
+  gap: 12px;
+}
+
+body.admin-page .admin-media-control-fit {
+  max-width: 220px;
+}
+
+body.admin-page .admin-media-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+body.admin-page .admin-media-device-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--admin-stroke);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+body.admin-page .admin-media-device-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+body.admin-page .admin-media-device-head strong {
+  color: var(--admin-ink) !important;
+  font-size: 13px !important;
+}
+
+body.admin-page .admin-media-device-head span {
+  color: var(--admin-muted) !important;
+  font-size: 11px !important;
+}
+
+body.admin-page .admin-media-preview-frame.is-mobile {
+  max-width: 220px;
+  aspect-ratio: 9 / 14;
+  margin: 0 auto;
+}
+
+body.admin-page .admin-media-control {
+  display: grid;
+  gap: 8px;
+}
+
+body.admin-page .admin-media-control label {
+  color: var(--admin-ink) !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+body.admin-page .admin-media-control select,
+body.admin-page .admin-media-control input[type="range"] {
   width: 100%;
 }
 

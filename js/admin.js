@@ -149,22 +149,60 @@
   var _homeLeadSearchTimer = null;
   var _homeLeadSearchResults = [];
 
-  function defaultHomeLeadMedia() {
+  function defaultResponsiveMedia() {
     return {
       fit: 'cover',
-      position_x: 50,
-      position_y: 50,
-      zoom: 100,
+      desktop: {
+        position_x: 50,
+        position_y: 50,
+        zoom: 100,
+      },
+      mobile: {
+        position_x: 50,
+        position_y: 50,
+        zoom: 100,
+      },
     };
   }
 
+  function defaultHomeLeadMedia() {
+    return defaultResponsiveMedia();
+  }
+
   function normalizeHomeLeadMedia(media) {
+    return normalizeResponsiveMedia(media);
+  }
+
+  function normalizeHeroMedia(media) {
+    return normalizeResponsiveMedia(media);
+  }
+
+  function normalizeResponsiveMedia(media) {
     var raw = media && typeof media === 'object' ? media : {};
-    return {
-      fit: raw.fit === 'contain' ? 'contain' : 'cover',
+    var fallbackDesktop = {
       position_x: clampHomeLeadValue(raw.position_x, 0, 100, 50),
       position_y: clampHomeLeadValue(raw.position_y, 0, 100, 50),
       zoom: clampHomeLeadValue(raw.zoom, 100, 150, 100),
+    };
+    var fallbackMobile = {
+      position_x: fallbackDesktop.position_x,
+      position_y: fallbackDesktop.position_y,
+      zoom: fallbackDesktop.zoom,
+    };
+    var desktop = raw.desktop && typeof raw.desktop === 'object' ? raw.desktop : raw;
+    var mobile = raw.mobile && typeof raw.mobile === 'object' ? raw.mobile : raw;
+    return {
+      fit: raw.fit === 'contain' ? 'contain' : 'cover',
+      desktop: {
+        position_x: clampHomeLeadValue(desktop.position_x, 0, 100, fallbackDesktop.position_x),
+        position_y: clampHomeLeadValue(desktop.position_y, 0, 100, fallbackDesktop.position_y),
+        zoom: clampHomeLeadValue(desktop.zoom, 100, 150, fallbackDesktop.zoom),
+      },
+      mobile: {
+        position_x: clampHomeLeadValue(mobile.position_x, 0, 100, fallbackMobile.position_x),
+        position_y: clampHomeLeadValue(mobile.position_y, 0, 100, fallbackMobile.position_y),
+        zoom: clampHomeLeadValue(mobile.zoom, 100, 150, fallbackMobile.zoom),
+      },
     };
   }
 
@@ -174,13 +212,120 @@
     return Math.min(max, Math.max(min, parsed));
   }
 
-  function getHomeLeadPreviewStyle(media) {
-    var config = normalizeHomeLeadMedia(media);
+  function getResponsivePreviewStyle(media, device) {
+    var config = normalizeResponsiveMedia(media);
+    var target = config[device === 'mobile' ? 'mobile' : 'desktop'];
     return [
       'object-fit:' + config.fit,
-      'object-position:' + config.position_x + '% ' + config.position_y + '%',
-      'transform:scale(' + (config.zoom / 100).toFixed(2) + ')'
+      'object-position:' + target.position_x + '% ' + target.position_y + '%',
+      'transform:scale(' + (target.zoom / 100).toFixed(2) + ')'
     ].join(';');
+  }
+
+  function getHomeLeadPreviewStyle(media, device) {
+    return getResponsivePreviewStyle(media, device || 'desktop');
+  }
+
+  function buildResponsiveMediaEditor(prefix, media, imageUrl, altText) {
+    var config = normalizeResponsiveMedia(media);
+    function buildDevice(device, label) {
+      var current = config[device];
+      return '' +
+        '<div class="admin-media-device-card" data-media-device="' + device + '">' +
+          '<div class="admin-media-device-head">' +
+            '<strong>' + label + '</strong>' +
+            '<span>' + (device === 'mobile' ? '모바일 화면 기준' : '데스크톱 화면 기준') + '</span>' +
+          '</div>' +
+          '<div class="admin-media-preview-frame' + (device === 'mobile' ? ' is-mobile' : '') + '">' +
+            '<img id="' + prefix + '-' + device + '-preview" src="' + GW.escapeHtml(imageUrl) + '" alt="' + GW.escapeHtml(altText || '') + '" style="' + getResponsivePreviewStyle(config, device) + '">' +
+          '</div>' +
+          '<div class="admin-media-control">' +
+            '<label for="' + prefix + '-' + device + '-position-x">좌우 위치</label>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="' + prefix + '-' + device + '-position-x" min="0" max="100" step="1" value="' + current.position_x + '">' +
+              '<span id="' + prefix + '-' + device + '-position-x-value">' + current.position_x + '%</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-media-control">' +
+            '<label for="' + prefix + '-' + device + '-position-y">상하 위치</label>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="' + prefix + '-' + device + '-position-y" min="0" max="100" step="1" value="' + current.position_y + '">' +
+              '<span id="' + prefix + '-' + device + '-position-y-value">' + current.position_y + '%</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-media-control">' +
+            '<label for="' + prefix + '-' + device + '-zoom">이미지 확대</label>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="' + prefix + '-' + device + '-zoom" min="100" max="150" step="1" value="' + current.zoom + '">' +
+              '<span id="' + prefix + '-' + device + '-zoom-value">' + current.zoom + '%</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    return '' +
+      '<div class="admin-media-editor">' +
+        '<div class="admin-media-control admin-media-control-fit">' +
+          '<label for="' + prefix + '-fit">이미지 맞춤</label>' +
+          '<select id="' + prefix + '-fit">' +
+            '<option value="cover"' + (config.fit === 'cover' ? ' selected' : '') + '>꽉 채우기</option>' +
+            '<option value="contain"' + (config.fit === 'contain' ? ' selected' : '') + '>원본 비율</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="admin-media-device-grid">' +
+          buildDevice('desktop', 'PC 버전') +
+          buildDevice('mobile', '모바일 버전') +
+        '</div>' +
+      '</div>';
+  }
+
+  function bindResponsiveMediaControls(prefix, onChange) {
+    var fit = document.getElementById(prefix + '-fit');
+    if (!fit) return;
+    var devices = ['desktop', 'mobile'];
+
+    function buildNextMedia() {
+      return normalizeResponsiveMedia({
+        fit: fit.value,
+        desktop: {
+          position_x: document.getElementById(prefix + '-desktop-position-x').value,
+          position_y: document.getElementById(prefix + '-desktop-position-y').value,
+          zoom: document.getElementById(prefix + '-desktop-zoom').value,
+        },
+        mobile: {
+          position_x: document.getElementById(prefix + '-mobile-position-x').value,
+          position_y: document.getElementById(prefix + '-mobile-position-y').value,
+          zoom: document.getElementById(prefix + '-mobile-zoom').value,
+        },
+      });
+    }
+
+    function applyPreview() {
+      var nextMedia = buildNextMedia();
+      devices.forEach(function (device) {
+        ['position-x', 'position-y', 'zoom'].forEach(function (field) {
+          var input = document.getElementById(prefix + '-' + device + '-' + field);
+          var label = document.getElementById(prefix + '-' + device + '-' + field + '-value');
+          if (!input || !label) return;
+          label.textContent = input.value + (field === 'zoom' ? '%' : '%');
+        });
+        var preview = document.getElementById(prefix + '-' + device + '-preview');
+        if (preview) preview.style.cssText = getResponsivePreviewStyle(nextMedia, device);
+      });
+      if (typeof onChange === 'function') onChange(nextMedia);
+    }
+
+    var nodes = [fit];
+    devices.forEach(function (device) {
+      nodes.push(document.getElementById(prefix + '-' + device + '-position-x'));
+      nodes.push(document.getElementById(prefix + '-' + device + '-position-y'));
+      nodes.push(document.getElementById(prefix + '-' + device + '-zoom'));
+    });
+    nodes.filter(Boolean).forEach(function (node) {
+      node.addEventListener('input', applyPreview);
+      node.addEventListener('change', applyPreview);
+    });
+    applyPreview();
   }
 
   function getAdminRole() {
@@ -2043,7 +2188,11 @@
 
   function loadHeroAdmin() {
     fetch('/api/settings/hero').then(function(r){return r.json();}).then(function(data){
-      _heroPosts = data.posts || [];
+      _heroPosts = (data.posts || []).map(function (post) {
+        var next = Object.assign({}, post);
+        next.media = normalizeHeroMedia(post && post.media);
+        return next;
+      });
       _heroPostIds = _heroPosts.map(function(p){ return p.id; });
       _heroIntervalMs = data.interval_ms || 3000;
       _heroRevision = data.revision || null;
@@ -2092,41 +2241,9 @@
         '<div class="admin-selected-post-title">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
         (_homeLeadPost.image_url ? (
           '<div class="admin-home-lead-preview">' +
-            '<div class="admin-home-lead-preview-frame">' +
-              '<img id="home-lead-media-preview" src="' + GW.escapeHtml(_homeLeadPost.image_url) + '" alt="' + GW.escapeHtml(_homeLeadPost.title || '메인 스토리 미리보기') + '" style="' + getHomeLeadPreviewStyle(_homeLeadMedia) + '">' +
-            '</div>' +
+            buildResponsiveMediaEditor('home-lead-media', _homeLeadMedia, _homeLeadPost.image_url, _homeLeadPost.title || '메인 스토리 미리보기') +
           '</div>'
         ) : '') +
-        '<div class="admin-home-lead-controls">' +
-          '<div class="admin-home-lead-control">' +
-            '<label for="home-lead-fit">이미지 맞춤</label>' +
-            '<select id="home-lead-fit">' +
-              '<option value="cover"' + (_homeLeadMedia.fit === 'cover' ? ' selected' : '') + '>꽉 채우기</option>' +
-              '<option value="contain"' + (_homeLeadMedia.fit === 'contain' ? ' selected' : '') + '>원본 비율</option>' +
-            '</select>' +
-          '</div>' +
-          '<div class="admin-home-lead-control">' +
-            '<strong>좌우 위치</strong>' +
-            '<div class="admin-home-lead-range">' +
-              '<input type="range" id="home-lead-position-x" min="0" max="100" step="1" value="' + _homeLeadMedia.position_x + '">' +
-              '<span id="home-lead-position-x-value">' + _homeLeadMedia.position_x + '%</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="admin-home-lead-control">' +
-            '<strong>상하 위치</strong>' +
-            '<div class="admin-home-lead-range">' +
-              '<input type="range" id="home-lead-position-y" min="0" max="100" step="1" value="' + _homeLeadMedia.position_y + '">' +
-              '<span id="home-lead-position-y-value">' + _homeLeadMedia.position_y + '%</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="admin-home-lead-control">' +
-            '<strong>이미지 확대</strong>' +
-            '<div class="admin-home-lead-range">' +
-              '<input type="range" id="home-lead-zoom" min="100" max="150" step="1" value="' + _homeLeadMedia.zoom + '">' +
-              '<span id="home-lead-zoom-value">' + _homeLeadMedia.zoom + '%</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
         '<div class="admin-home-lead-actions">' +
           '<button type="button" class="submit-btn" style="width:auto;margin:0;" onclick="saveHomeLeadMedia()">이미지 위치 저장</button>' +
           '<button type="button" class="cancel-btn visible" style="margin:0;" onclick="clearHomeLeadPost()">해제</button>' +
@@ -2137,34 +2254,9 @@
   }
 
   function bindHomeLeadMediaControls() {
-    var fit = document.getElementById('home-lead-fit');
-    var posX = document.getElementById('home-lead-position-x');
-    var posY = document.getElementById('home-lead-position-y');
-    var zoom = document.getElementById('home-lead-zoom');
-    var preview = document.getElementById('home-lead-media-preview');
-    if (!fit || !posX || !posY || !zoom) return;
-
-    function applyPreview() {
-      _homeLeadMedia = normalizeHomeLeadMedia({
-        fit: fit.value,
-        position_x: posX.value,
-        position_y: posY.value,
-        zoom: zoom.value,
-      });
-      var posXLabel = document.getElementById('home-lead-position-x-value');
-      var posYLabel = document.getElementById('home-lead-position-y-value');
-      var zoomLabel = document.getElementById('home-lead-zoom-value');
-      if (posXLabel) posXLabel.textContent = _homeLeadMedia.position_x + '%';
-      if (posYLabel) posYLabel.textContent = _homeLeadMedia.position_y + '%';
-      if (zoomLabel) zoomLabel.textContent = _homeLeadMedia.zoom + '%';
-      if (preview) preview.style.cssText = getHomeLeadPreviewStyle(_homeLeadMedia);
-    }
-
-    [fit, posX, posY, zoom].forEach(function (node) {
-      node.addEventListener('input', applyPreview);
-      node.addEventListener('change', applyPreview);
+    bindResponsiveMediaControls('home-lead-media', function (nextMedia) {
+      _homeLeadMedia = normalizeHomeLeadMedia(nextMedia);
     });
-    applyPreview();
   }
 
   window.searchHomeLeadPost = function () {
@@ -2256,15 +2348,33 @@
     }
     el.innerHTML = posts.map(function(p, i){
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
-      return '<div class="hero-slot-item" draggable="true" data-hero-index="' + i + '">' +
-        '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
-        '<span class="hero-slot-index">' + (i+1) + '</span>' +
-        '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">'+cat.label+'</span>' +
-        '<span class="hero-slot-title">' + GW.escapeHtml(p.title) + '</span>' +
-        '<button onclick="removeHeroSlot(' + i + ')" class="admin-inline-danger">제거</button>' +
-      '</div>';
+      var media = normalizeHeroMedia(p.media);
+      var mediaEditor = p.image_url
+        ? buildResponsiveMediaEditor('hero-slot-' + i, media, p.image_url, p.title || '히어로 미리보기')
+        : '<div class="admin-inline-note">대표 이미지가 없는 기사입니다.</div>';
+      return '' +
+        '<div class="hero-slot-item" draggable="true" data-hero-index="' + i + '">' +
+          '<div class="hero-slot-top">' +
+            '<span class="drag-handle" title="드래그해서 순서 변경">↕</span>' +
+            '<span class="hero-slot-index">' + (i+1) + '</span>' +
+            '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">'+cat.label+'</span>' +
+            '<span class="hero-slot-title">' + GW.escapeHtml(p.title) + '</span>' +
+            '<button onclick="removeHeroSlot(' + i + ')" class="admin-inline-danger">제거</button>' +
+          '</div>' +
+          mediaEditor +
+        '</div>';
     }).join('');
     bindHeroDrag();
+    bindHeroMediaControls();
+  }
+
+  function bindHeroMediaControls() {
+    _heroPosts.forEach(function (post, index) {
+      bindResponsiveMediaControls('hero-slot-' + index, function (nextMedia) {
+        if (!_heroPosts[index]) return;
+        _heroPosts[index].media = normalizeHeroMedia(nextMedia);
+      });
+    });
   }
 
   function bindHeroDrag() {
@@ -2274,7 +2384,11 @@
 
     list.addEventListener('dragstart', function (event) {
       var item = event.target.closest('.hero-slot-item');
-      if (!item) return;
+      var handle = event.target.closest('.drag-handle');
+      if (!item || !handle) {
+        event.preventDefault();
+        return;
+      }
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', item.getAttribute('data-hero-index'));
     });
@@ -2340,7 +2454,16 @@
     _heroIntervalMs = intervalSeconds * 1000;
     GW.apiFetch('/api/settings/hero', {
       method: 'PUT',
-      body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: _heroIntervalMs, if_revision: _heroRevision }),
+      body: JSON.stringify({
+        post_ids: _heroPostIds,
+        interval_ms: _heroIntervalMs,
+        if_revision: _heroRevision,
+        media_map: _heroPosts.reduce(function (acc, post) {
+          if (!post || !post.id) return acc;
+          acc[String(post.id)] = normalizeHeroMedia(post.media);
+          return acc;
+        }, {}),
+      }),
     })
       .then(function(data){
         _heroRevision = data.revision || _heroRevision;
