@@ -8294,6 +8294,10 @@ body.admin-page .admin-sidebar-group {
   border-color: rgba(98, 37, 153, 0.12) !important;
 }
 
+body.admin-page .admin-sidebar-group[hidden] {
+  display: none !important;
+}
+
 body.admin-page .admin-sidebar-btn {
   width: 100% !important;
   min-height: 68px !important;
@@ -8319,6 +8323,72 @@ body.admin-page .admin-preview-link {
   background: linear-gradient(135deg, rgba(98, 37, 153, 0.16), rgba(255, 255, 255, 0.96)) !important;
   border-color: rgba(98, 37, 153, 0.24) !important;
   color: #56228b !important;
+}
+
+body.admin-page .admin-write-tag-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+body.admin-page .admin-write-tag-tools input {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(98, 37, 153, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--admin-ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 13px;
+  outline: none;
+}
+
+body.admin-page .admin-inline-tag-add {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(98, 37, 153, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(98, 37, 153, 0.10), rgba(130, 68, 193, 0.16));
+  color: var(--admin-accent);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+body.admin-page .admin-inline-tag-add:hover {
+  border-color: rgba(98, 37, 153, 0.24) !important;
+  background: linear-gradient(135deg, rgba(98, 37, 153, 0.14), rgba(130, 68, 193, 0.20));
+  color: var(--admin-accent) !important;
+}
+
+body.admin-page .admin-header-link:hover {
+  color: var(--admin-ink) !important;
+}
+
+body.admin-page .admin-group-btn:hover:not(.active) {
+  color: var(--admin-ink) !important;
+}
+
+body.admin-page .admin-group-btn.active,
+body.admin-page .admin-group-btn.active:hover {
+  color: var(--admin-accent) !important;
+}
+
+body.admin-page .admin-sidebar-btn:hover .admin-sidebar-btn-label,
+body.admin-page .admin-sidebar-btn:hover .admin-sidebar-btn-desc {
+  color: var(--admin-ink) !important;
+}
+
+body.admin-page .admin-sidebar-btn.active:hover .admin-sidebar-btn-label,
+body.admin-page .admin-sidebar-btn.active:hover .admin-sidebar-btn-desc,
+body.admin-page .logout-btn:hover,
+body.admin-page .submit-btn:hover,
+body.admin-page .dash-action-btn:hover,
+body.admin-page .btn-edit:hover,
+body.admin-page .btn-delete:hover,
+body.admin-page .btn-delete-soft:hover {
+  color: #fff !important;
 }
 
 body.admin-page .admin-sidebar-btn-label {

@@ -407,7 +407,7 @@
       else btn.removeAttribute('aria-current');
     });
     document.querySelectorAll('.admin-sidebar-group[data-admin-group]').forEach(function (section) {
-      section.style.display = section.getAttribute('data-admin-group') === _adminGroup ? '' : 'none';
+      syncAdminSidebarGroupVisibility(section, section.getAttribute('data-admin-group') === _adminGroup);
     });
 
     if (activateDefaultTab) {
@@ -490,11 +490,18 @@
       if (desc) desc.textContent = limited ? '히어로 기사 설정' : '태그, 메타, 푸터, 문구';
     }
     var contentGroup = document.querySelector('.admin-sidebar-group[data-admin-group="content"]');
-    if (contentGroup) contentGroup.style.display = limited ? 'none' : (_adminGroup === 'content' ? '' : 'none');
+    if (contentGroup) syncAdminSidebarGroupVisibility(contentGroup, !limited && _adminGroup === 'content');
     var siteGroup = document.querySelector('.admin-sidebar-group[data-admin-group="site"]');
-    if (siteGroup) siteGroup.style.display = _adminGroup === 'site' ? '' : 'none';
+    if (siteGroup) syncAdminSidebarGroupVisibility(siteGroup, _adminGroup === 'site');
     var overviewGroup = document.querySelector('.admin-sidebar-group[data-admin-group="overview"]');
-    if (overviewGroup) overviewGroup.style.display = _adminGroup === 'overview' ? '' : 'none';
+    if (overviewGroup) syncAdminSidebarGroupVisibility(overviewGroup, _adminGroup === 'overview');
+  }
+
+  function syncAdminSidebarGroupVisibility(section, visible) {
+    if (!section) return;
+    section.hidden = !visible;
+    section.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    section.classList.toggle('is-open', !!visible);
   }
 
   // ─── Editor.js loader ─────────────────────────────────────
@@ -635,25 +642,31 @@
 
       lane.querySelectorAll('.tag-admin-chip-remove').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          _removeTagEverywhere(btn.getAttribute('data-remove-tag') || '');
-          _renderTagSettingsManager();
-          loadTagsForSelector();
+          attemptManagedTagRemoval(btn.getAttribute('data-remove-tag') || '');
         });
       });
 
       lane.querySelectorAll('.tag-admin-chip-edit').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var before = btn.getAttribute('data-edit-tag') || '';
-          var after = window.prompt('태그명을 수정하세요', before);
-          if (after == null) return;
-          after = after.trim();
-          if (!after) {
-            GW.showToast('태그명을 입력해주세요', 'error');
-            return;
-          }
-          _renameTagEverywhere(before, after);
-          _renderTagSettingsManager();
-          loadTagsForSelector();
+          requestTagUsage(before).then(function (usage) {
+            if (usage && usage.in_use) {
+              GW.showToast(buildTagUsageToast(usage.tag || before, usage), 'error');
+              return;
+            }
+            var after = window.prompt('태그명을 수정하세요', before);
+            if (after == null) return;
+            after = after.trim();
+            if (!after) {
+              GW.showToast('태그명을 입력해주세요', 'error');
+              return;
+            }
+            _renameTagEverywhere(before, after);
+            _renderTagSettingsManager();
+            loadTagsForSelector();
+          }).catch(function (err) {
+            GW.showToast(err && err.message ? err.message : '태그 사용 여부를 확인하지 못했습니다', 'error');
+          });
         });
       });
 
@@ -734,6 +747,45 @@
     _renderTagSettingsManager();
     loadTagsForSelector();
     GW.showToast('태그가 추가됐습니다', 'success');
+  };
+
+  window.addEditorManagedTag = function () {
+    if (!isFullAdmin()) {
+      GW.showToast('이 계정은 태그 추가 권한이 없습니다', 'error');
+      return;
+    }
+    var input = document.getElementById('art-tag-new-input');
+    var categoryEl = document.getElementById('art-category');
+    var value = (input && input.value || '').trim();
+    var target = categoryEl && categoryEl.value ? categoryEl.value : 'common';
+    if (!value) {
+      GW.showToast('태그명을 입력해주세요', 'error');
+      if (input) input.focus();
+      return;
+    }
+    var available = GW.getTagsForCategory(_tagSettings, target);
+    if (available.indexOf(value) >= 0) {
+      if (_adminSelTags.indexOf(value) < 0) _adminSelTags.push(value);
+      loadTagsForSelector();
+      if (input) input.value = '';
+      GW.showToast('이미 있는 태그라서 바로 선택했습니다', 'success');
+      return;
+    }
+    _moveTagToTarget(value, target);
+    if (_adminSelTags.indexOf(value) < 0) _adminSelTags.push(value);
+    persistTagSettings('태그를 추가하고 바로 선택했습니다', function (data) {
+      _tagSettings = GW.normalizeTagSettings({
+        common: data.common,
+        categories: data.categories,
+      });
+      loadTagsForSelector();
+      _renderTagSettingsManager();
+      if (input) input.value = '';
+    }, function (err) {
+      _removeTagEverywhere(value);
+      _adminSelTags = _adminSelTags.filter(function (item) { return item !== value; });
+      GW.showToast(err && err.message ? err.message : '태그 저장 실패', 'error');
+    });
   };
 
   // ─── Save (create or update) ──────────────────────────────
@@ -875,6 +927,8 @@
         document.getElementById('form-title').textContent = '게시글 수정';
         document.getElementById('submit-btn').textContent = '수정 완료';
         document.getElementById('submit-btn').classList.add('editing');
+        var inlineTagInput = document.getElementById('art-tag-new-input');
+        if (inlineTagInput) inlineTagInput.value = '';
         updateEditorActionState();
       })
       .catch(function () { GW.showToast('게시글을 불러오지 못했습니다.', 'error'); });
@@ -919,6 +973,8 @@
     renderAdminCoverPreview();
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
+    var inlineTagInput = document.getElementById('art-tag-new-input');
+    if (inlineTagInput) inlineTagInput.value = '';
     if (_adminEditor) { _adminEditor.isReady.then(function(){_adminEditor.clear();}); }
     document.getElementById('form-title').textContent  = '새 게시글 작성';
     document.getElementById('submit-btn').textContent  = '게재하기';
@@ -1477,6 +1533,24 @@
   }
 
   window.saveTags = function () {
+    persistTagSettings('태그가 저장됐습니다', function (data) {
+      _tagSettings = GW.normalizeTagSettings({
+        common: data.common,
+        categories: data.categories,
+      });
+      _renderTagSettingsManager();
+      loadTagsForSelector();
+    }, function (err) {
+      if (err && err.status === 409) {
+        GW.showToast(buildTagUsageToast(err.tag_in_use, err), 'error');
+        loadTagsAdmin();
+        return;
+      }
+      GW.showToast(err && err.message ? err.message : '저장 실패', 'error');
+    });
+  };
+
+  function persistTagSettings(successMessage, onSuccess, onError) {
     GW.apiFetch('/api/settings/tags', {
       method: 'PUT',
       body: JSON.stringify({
@@ -1485,16 +1559,52 @@
       }),
     })
       .then(function (data) {
-        _tagSettings = GW.normalizeTagSettings({
-          common: data.common,
-          categories: data.categories,
-        });
-        _renderTagSettingsManager();
-        loadTagsForSelector();
-        GW.showToast('태그가 저장됐습니다', 'success');
+        if (typeof onSuccess === 'function') onSuccess(data);
+        GW.showToast(successMessage, 'success');
       })
-      .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
-  };
+      .catch(function (err) {
+        if (typeof onError === 'function') {
+          onError(err);
+          return;
+        }
+        GW.showToast(err && err.message ? err.message : '저장 실패', 'error');
+      });
+  }
+
+  function attemptManagedTagRemoval(tag) {
+    if (!tag) return;
+    requestTagUsage(tag).then(function (usage) {
+      if (usage && usage.in_use) {
+        GW.showToast(buildTagUsageToast(tag, usage), 'error');
+        return;
+      }
+      _removeTagEverywhere(tag);
+      _renderTagSettingsManager();
+      loadTagsForSelector();
+      GW.showToast('태그를 목록에서 제거했습니다. 저장하면 반영됩니다.', 'success');
+    }).catch(function (err) {
+      GW.showToast(err && err.message ? err.message : '태그 사용 여부를 확인하지 못했습니다', 'error');
+    });
+  }
+
+  function requestTagUsage(tag) {
+    return GW.apiFetch('/api/settings/tags?usage=' + encodeURIComponent(tag), {
+      method: 'GET',
+    });
+  }
+
+  function buildTagUsageToast(tag, usage) {
+    var count = Number(usage && usage.count || 0);
+    var posts = Array.isArray(usage && usage.posts) ? usage.posts : [];
+    var lead = posts.length && posts[0] && posts[0].title ? '"' + posts[0].title + '"' : '';
+    if (lead && count > 1) {
+      return lead + ' 등 ' + count + '개 글에 "' + tag + '" 태그가 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.';
+    }
+    if (lead) {
+      return lead + ' 글에 "' + tag + '" 태그가 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.';
+    }
+    return '"' + tag + '" 태그가 적용된 글이 있어 삭제할 수 없습니다. 먼저 해당 글의 태그에서 제외해주세요.';
+  }
 
   window.saveTicker = function () {
     var ta = document.getElementById('ticker-textarea'); if (!ta) return;

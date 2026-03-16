@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.063.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.064.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" style="margin:12px 0;"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.063.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.064.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.063.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.064.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -69,7 +69,7 @@
             <span class="admin-sidebar-btn-desc">방문, 조회, 유입 경로</span>
           </button>
         </div>
-        <div class="admin-sidebar-group" data-admin-group="content" style="display:none;">
+        <div class="admin-sidebar-group" data-admin-group="content" hidden>
           <button class="admin-sidebar-btn" id="tab-btn-write" data-role-min="full" onclick="showAdminTab('write')">
             <span class="admin-sidebar-btn-label">글 작성</span>
             <span class="admin-sidebar-btn-desc">새 글 작성과 수정</span>
@@ -83,7 +83,7 @@
             <span class="admin-sidebar-btn-desc">국문 · 영문 · 불어 관리</span>
           </button>
         </div>
-        <div class="admin-sidebar-group" data-admin-group="site" style="display:none;">
+        <div class="admin-sidebar-group" data-admin-group="site" hidden>
           <button class="admin-sidebar-btn" id="tab-btn-settings" onclick="showAdminTab('settings')">
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
@@ -284,6 +284,11 @@
               <div class="form-group">
                 <label>글머리 태그</label>
                 <div id="admin-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>
+                <div class="admin-write-tag-tools">
+                  <input type="text" id="art-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
+                  <button type="button" class="admin-inline-tag-add" onclick="addEditorManagedTag()">태그 추가</button>
+                </div>
+                <p class="admin-section-note">새 태그를 추가하면 현재 카테고리 태그 목록에 저장되고 바로 선택됩니다.</p>
               </div>
             </div>
 
@@ -792,8 +797,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.063.00"></script>
-  <script src="/js/admin.js?v=0.063.00"></script>
+  <script src="/js/main.js?v=0.064.00"></script>
+  <script src="/js/admin.js?v=0.064.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
