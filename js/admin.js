@@ -215,10 +215,12 @@
   function getResponsivePreviewStyle(media, device) {
     var config = normalizeResponsiveMedia(media);
     var target = config[device === 'mobile' ? 'mobile' : 'desktop'];
+    var renderFit = target.zoom < 100 ? 'contain' : config.fit;
     return [
-      'object-fit:' + config.fit,
+      'object-fit:' + renderFit,
       'object-position:' + target.position_x + '% ' + target.position_y + '%',
-      'transform:scale(' + (target.zoom / 100).toFixed(2) + ')'
+      'transform:scale(' + (target.zoom / 100).toFixed(2) + ')',
+      'transform-origin:' + target.position_x + '% ' + target.position_y + '%'
     ].join(';');
   }
 
