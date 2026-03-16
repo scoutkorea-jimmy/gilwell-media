@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.062.00';
+  GW.APP_VERSION = '0.062.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1122,20 +1122,49 @@
     GW._previewRuntimeState.modalReady = true;
   };
 
+  GW.ensurePreviewReviewLauncher = function () {
+    if (typeof document === 'undefined' || document.getElementById('preview-review-fab')) return;
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.id = 'preview-review-fab';
+    button.className = 'preview-review-fab';
+    button.setAttribute('aria-label', '검수리스트 열기');
+    button.setAttribute('aria-expanded', 'false');
+    button.innerHTML =
+      '<span class="preview-review-fab-icon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">' +
+          '<path d="M7 6.5h10M7 12h10M7 17.5h6m6-12.2v13.4a1.3 1.3 0 0 1-1.3 1.3H6.3A1.3 1.3 0 0 1 5 18.7V5.3A1.3 1.3 0 0 1 6.3 4h11.4A1.3 1.3 0 0 1 19 5.3Zm-2.5 7.1 1.6 1.6 3.4-3.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>' +
+      '</span>' +
+      '<span class="preview-review-fab-copy">' +
+        '<strong>검수리스트</strong>' +
+        '<span>다시 열기</span>' +
+      '</span>';
+    button.addEventListener('click', GW.openPreviewReviewModal);
+    document.body.appendChild(button);
+  };
+
   GW.openPreviewReviewModal = function () {
     if (!GW._previewRuntimeState.loaded || !GW._previewRuntimeState.release) return;
     GW.ensurePreviewReviewModal();
+    GW.ensurePreviewReviewLauncher();
     var modal = document.getElementById('preview-review-modal');
+    var launcher = document.getElementById('preview-review-fab');
     if (!modal) return;
     GW.renderPreviewReviewModal();
     GW.syncPreviewAuthPanel();
     GW.loadPreviewHistory(false);
     modal.classList.add('open');
+    document.body.classList.add('preview-review-modal-open');
+    if (launcher) launcher.setAttribute('aria-expanded', 'true');
   };
 
   GW.closePreviewReviewModal = function () {
     var modal = document.getElementById('preview-review-modal');
     if (modal) modal.classList.remove('open');
+    document.body.classList.remove('preview-review-modal-open');
+    var launcher = document.getElementById('preview-review-fab');
+    if (launcher) launcher.setAttribute('aria-expanded', 'false');
   };
 
   GW.renderPreviewReviewModal = function () {
