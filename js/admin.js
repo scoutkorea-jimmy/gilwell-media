@@ -364,7 +364,8 @@
 
   // ─── Boot ────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
-    if (GW.getToken()) { showAdmin(); }
+    bindAdminAuthEvents();
+    bootAdminAccess();
     var pwInput = document.getElementById('pw-input');
     if (pwInput) { pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); }); }
     var tagInput = document.getElementById('tag-new-input');
@@ -381,8 +382,13 @@
     // Handle ?edit=ID in URL (for edit button on post pages)
     var editParam = new URLSearchParams(location.search).get('edit');
     if (editParam && GW.getToken() && (!GW.getAdminRole || GW.getAdminRole() === 'full')) {
-      showAdmin();
-      setTimeout(function () { editPost(parseInt(editParam, 10)); }, 500);
+      verifyAdminSession().then(function (session) {
+        if (!session || session.authenticated !== true) return;
+        showAdmin();
+        setTimeout(function () { editPost(parseInt(editParam, 10)); }, 500);
+      }).catch(function () {
+        showAdminLoginPrompt('관리자 세션을 다시 확인해주세요.');
+      });
     }
   });
 
@@ -427,15 +433,20 @@
   window.doLogout = function () {
     GW.clearToken();
     _adminRole = 'full';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('admin-screen').style.display = 'none';
+    showAdminLoginPrompt('');
     document.getElementById('pw-input').value = '';
   };
 
   function showAdmin() {
     _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-screen').style.display = 'block';
+    var login = document.getElementById('login-screen');
+    var admin = document.getElementById('admin-screen');
+    if (login) login.style.display = 'none';
+    if (admin) {
+      admin.hidden = false;
+      admin.setAttribute('aria-hidden', 'false');
+      admin.style.display = 'block';
+    }
     syncAdminPreviewLink();
     applyAdminPermissions();
     if (isFullAdmin()) {
@@ -464,6 +475,71 @@
       updateEditorActionState();
     }
     showAdminTab('dashboard');
+  }
+
+  function showAdminLoginPrompt(message) {
+    var login = document.getElementById('login-screen');
+    var admin = document.getElementById('admin-screen');
+    var err = document.getElementById('login-error');
+    if (login) login.style.display = 'flex';
+    if (admin) {
+      admin.hidden = true;
+      admin.setAttribute('aria-hidden', 'true');
+      admin.style.display = 'none';
+    }
+    if (err) {
+      err.textContent = message || '';
+      err.style.display = message ? 'block' : 'none';
+    }
+    var pwInput = document.getElementById('pw-input');
+    if (pwInput) {
+      pwInput.value = '';
+      setTimeout(function () { pwInput.focus(); }, 30);
+    }
+  }
+
+  function bindAdminAuthEvents() {
+    if (document.body.dataset.adminAuthBound === 'true') return;
+    document.body.dataset.adminAuthBound = 'true';
+    document.addEventListener('gw:admin-auth-required', function (event) {
+      var detail = event && event.detail ? event.detail : {};
+      showAdminLoginPrompt(detail.message || '관리자 로그인이 필요합니다.');
+    });
+    window.addEventListener('pageshow', function () {
+      if (!document.body.classList.contains('admin-page')) return;
+      if (!GW.getToken()) {
+        showAdminLoginPrompt('');
+        return;
+      }
+      verifyAdminSession().catch(function () {
+        showAdminLoginPrompt('관리자 세션을 다시 확인해주세요.');
+      });
+    });
+  }
+
+  function bootAdminAccess() {
+    if (!GW.getToken()) {
+      showAdminLoginPrompt('');
+      return;
+    }
+    verifyAdminSession().then(function (session) {
+      if (!session || session.authenticated !== true) {
+        showAdminLoginPrompt('관리자 로그인이 필요합니다.');
+        return;
+      }
+      if (GW.setAdminRole) GW.setAdminRole(session.role || 'full');
+      _adminRole = session.role || 'full';
+      showAdmin();
+    }).catch(function () {
+      showAdminLoginPrompt('관리자 세션을 다시 확인해주세요.');
+    });
+  }
+
+  function verifyAdminSession() {
+    return GW.apiFetch('/api/admin/session', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   function syncAdminPreviewLink() {

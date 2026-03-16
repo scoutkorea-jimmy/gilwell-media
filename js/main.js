@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.068.01';
+  GW.APP_VERSION = '0.068.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -709,6 +709,17 @@
         Object.keys(data).forEach(function (key) {
           if (!(key in err)) err[key] = data[key];
         });
+      }
+      if (res.status === 401 && typeof document !== 'undefined' && document.body && document.body.classList.contains('admin-page')) {
+        try {
+          GW.clearToken();
+        } catch (_) {}
+        document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
+          detail: {
+            message: err.message || '관리자 로그인이 필요합니다.',
+            source: url,
+          },
+        }));
       }
       throw err;
     }
