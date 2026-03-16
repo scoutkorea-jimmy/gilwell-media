@@ -6,6 +6,7 @@ import {
 } from '../../_shared/preview-release-data.js';
 import {
   dispatchGithubWorkflow,
+  fetchProductionSiteVersion,
   fetchReleaseDeployments,
   json,
   previewOnly,
@@ -29,10 +30,13 @@ export async function onRequestPost(context) {
 
   const changelog = await loadChangelog(context.request);
   const items = changelog && Array.isArray(changelog.items) ? changelog.items : [];
-  const deployments = await fetchReleaseDeployments().catch(function () { return []; });
+  const [deployments, productionVersion] = await Promise.all([
+    fetchReleaseDeployments().catch(function () { return []; }),
+    fetchProductionSiteVersion().catch(function () { return ''; }),
+  ]);
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
-    live_version: findLatestProductionVersion(deployments),
+    live_version: findLatestProductionVersion(deployments) || productionVersion,
     commit_sha: context.env.CF_PAGES_COMMIT_SHA || '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });

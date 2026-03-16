@@ -114,6 +114,21 @@ export async function fetchReleaseDeployments() {
   }
 }
 
+export async function fetchProductionSiteVersion() {
+  try {
+    const response = await fetch('https://bpmedia.net/js/main.js', {
+      headers: { 'Cache-Control': 'no-store' },
+      cf: { cacheTtl: 0 },
+    });
+    if (!response.ok) return '';
+    const text = await response.text();
+    const match = text.match(/APP_VERSION = '([0-9.]+)'/);
+    return match && match[1] ? String(match[1]).trim() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
 export function json(data, status) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
