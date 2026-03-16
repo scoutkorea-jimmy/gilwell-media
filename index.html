@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.066.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.067.00">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -85,7 +85,10 @@
         <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>
       </div>
     </div>
-    <div class="hero-dots" id="hero-dots"></div>
+    <div class="hero-controls" id="hero-controls">
+      <div class="hero-dots" id="hero-dots"></div>
+      <button type="button" class="hero-pause-btn" id="hero-pause-btn" aria-pressed="false">일시정지</button>
+    </div>
   </div>
 
   <!-- ── HOME CONTENT ── -->
@@ -235,7 +238,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.066.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.067.00</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -251,7 +254,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.066.00"></script>
+  <script src="/js/main.js?v=0.067.00"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -372,7 +375,7 @@
       var excerpt = GW.truncate(post.content || '', 420);
       if (excerpt === subtitle) excerpt = '';
       var thumb = post.image_url
-        ? '<a class="home-lead-thumb-link" href="/post/' + post.id + '"><img class="home-lead-thumb" style="' + getHomeLeadMediaStyle(leadMedia) + '" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
+        ? '<a class="home-lead-thumb-link" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')" href="/post/' + post.id + '"><img class="home-lead-thumb" style="' + getHomeLeadMediaStyle(leadMedia) + '" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
         : '';
       el.innerHTML =
         '<article class="home-lead-card">' +
@@ -450,6 +453,7 @@
       var _animating = false;
       var _intervalMs = (data && data.interval_ms) || 3000;
       var _touchState = null;
+      var _paused = false;
       var _suppressClickUntil = 0;
 
       function buildSlide(post) {
@@ -463,7 +467,7 @@
         if (post.image_url) {
           div.classList.add('has-bg');
           mediaMarkup =
-            '<div class="site-hero-media" aria-hidden="true">' +
+            '<div class="site-hero-media" aria-hidden="true" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')">' +
               '<img class="site-hero-media-img" src="' + GW.escapeHtml(post.image_url) + '" alt="" style="' + getResponsiveMediaStyle(post.media) + '">' +
             '</div>';
         }
@@ -524,9 +528,29 @@
 
       function setAutoTimer() {
         clearInterval(_timer);
-        if (_slides.length > 1) {
+        if (!_paused && _slides.length > 1) {
           _timer = setInterval(function(){ goTo(_cur + 1, 1); }, _intervalMs);
         }
+      }
+
+      function syncPauseButton() {
+        var btn = document.getElementById('hero-pause-btn');
+        if (!btn) return;
+        btn.hidden = _slides.length <= 1;
+        btn.textContent = _paused ? '재생' : '일시정지';
+        btn.setAttribute('aria-pressed', _paused ? 'true' : 'false');
+        btn.classList.toggle('is-paused', _paused);
+      }
+
+      function bindPauseButton() {
+        var btn = document.getElementById('hero-pause-btn');
+        if (!btn) return;
+        btn.onclick = function () {
+          _paused = !_paused;
+          syncPauseButton();
+          setAutoTimer();
+        };
+        syncPauseButton();
       }
 
       function bindTouchNavigation(slider) {
@@ -649,6 +673,7 @@
 
       renderDots(posts.length, 0);
       bindTouchNavigation(slider);
+      bindPauseButton();
       setAutoTimer();
     }
 

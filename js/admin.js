@@ -228,6 +228,8 @@
 
   function buildResponsiveMediaEditor(prefix, media, imageUrl, altText) {
     var config = normalizeResponsiveMedia(media);
+    var variantClass = prefix.indexOf('hero-slot-') === 0 ? ' is-hero' : ' is-home-lead';
+    var frameStyle = 'background-image:url(' + GW.escapeHtml(imageUrl) + ');';
     function buildDevice(device, label) {
       var current = config[device];
       return '' +
@@ -236,7 +238,7 @@
             '<strong>' + label + '</strong>' +
             '<span>' + (device === 'mobile' ? '모바일 화면 기준' : '데스크톱 화면 기준') + '</span>' +
           '</div>' +
-          '<div class="admin-media-preview-frame' + (device === 'mobile' ? ' is-mobile' : '') + '">' +
+          '<div class="admin-media-preview-frame' + variantClass + (device === 'mobile' ? ' is-mobile' : ' is-desktop') + '" style="' + frameStyle + '">' +
             '<img id="' + prefix + '-' + device + '-preview" src="' + GW.escapeHtml(imageUrl) + '" alt="' + GW.escapeHtml(altText || '') + '" style="' + getResponsivePreviewStyle(config, device) + '">' +
           '</div>' +
           '<div class="admin-media-control">' +
@@ -602,7 +604,7 @@
   };
 
   window.scrollAdminSection = function (id) {
-    if (isLimitedAdmin() && id !== 'settings-hero') id = 'settings-hero';
+    if (isLimitedAdmin() && id !== 'settings-hero-manager') id = 'settings-hero-manager';
     showAdminTab('settings');
     setTimeout(function () {
       var el = document.getElementById(id);
