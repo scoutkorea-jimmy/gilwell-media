@@ -28,7 +28,6 @@ const GENERIC_CHECKS = [
 
 const DEFAULT_SUMMARY = '현재 preview 릴리스의 변경 사항과 검수 체크리스트를 확인합니다.';
 const MAX_RELEASE_SECTIONS = 12;
-const HISTORY_HIGHLIGHT_LIMIT = 2;
 
 export function findLatestProductionVersion(deployments) {
   const rows = Array.isArray(deployments) ? deployments : [];
@@ -76,7 +75,7 @@ export function buildPreviewRelease(entries, meta) {
   const leadSummary = String((leadEntry && leadEntry.summary) || DEFAULT_SUMMARY).trim();
 
   const summary = liveVersion
-    ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다. 최신 변경은 상세 체크리스트로, 그 이전 변경은 요약 히스토리로 확인합니다.'
+    ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다. 누적 변경 상세와 요청/피드백 히스토리를 함께 확인합니다.'
     : leadSummary;
 
   return {
@@ -103,16 +102,20 @@ export function getPreviewChecklistIds(release) {
 }
 
 function buildSections(entries) {
-  const latestEntry = entries[0] || null;
-  const previousEntries = entries.slice(1);
   const releaseSections = [];
 
-  if (latestEntry) {
-    releaseSections.push(buildDetailedSection(latestEntry, 0));
+  if (entries.length) {
+    releaseSections.push(buildCumulativeDetailSection(entries));
   }
 
-  if (previousEntries.length) {
-    releaseSections.push(buildHistorySummarySection(previousEntries));
+  const historyItems = buildRequestHistoryItems(entries);
+  if (historyItems.length) {
+    releaseSections.push({
+      key: 'request-history',
+      title: '요청 / 피드백 히스토리',
+      variant: 'history',
+      items: historyItems,
+    });
   }
 
   releaseSections.push({
@@ -124,50 +127,64 @@ function buildSections(entries) {
   return releaseSections;
 }
 
-function buildDetailedSection(entry, entryIndex) {
-  const version = String(entry.version || '').trim();
-  const changes = Array.isArray(entry.changes) && entry.changes.length
-    ? entry.changes
-    : [String(entry.summary || DEFAULT_SUMMARY).trim()];
-
+function buildCumulativeDetailSection(entries) {
   return {
-    key: 'release-' + sanitizeVersionId(version || String(entryIndex + 1)),
-    title: '최신 변경 상세 · V' + version,
-    items: changes.map(function (change, changeIndex) {
-      return {
-        id: 'update-' + sanitizeVersionId(version || String(entryIndex + 1)) + '-' + String(changeIndex + 1),
-        label: String(change || '').trim(),
-        description: '가장 최신 preview 변경입니다. 실제 화면과 동작을 우선 확인한 뒤 체크하세요.',
-      };
-    }),
-  };
-}
-
-function buildHistorySummarySection(entries) {
-  return {
-    key: 'history-summary',
-    title: '운영 반영본 이후 이전 누적 히스토리 요약',
-    variant: 'summary',
-    items: entries.map(function (entry) {
+    key: 'cumulative-updates',
+    title: '운영 반영본 이후 누적 변경 상세',
+    items: entries.reduce(function (acc, entry, entryIndex) {
       const version = String(entry.version || '').trim();
-      return {
-        label: 'V' + version + ' · ' + String(entry.summary || DEFAULT_SUMMARY).trim(),
-        description: summarizeHistoryEntry(entry),
-      };
-    }),
+      const summary = String(entry.summary || DEFAULT_SUMMARY).trim();
+      const changes = Array.isArray(entry.changes) && entry.changes.length
+        ? entry.changes
+        : [summary];
+      return acc.concat(changes.map(function (change, changeIndex) {
+        return {
+          id: 'update-' + sanitizeVersionId(version || String(entryIndex + 1)) + '-' + String(changeIndex + 1),
+          label: String(change || '').trim(),
+          description: 'V' + version + ' · ' + summary,
+        };
+      }));
+    }, []),
   };
 }
 
-function summarizeHistoryEntry(entry) {
-  const changes = Array.isArray(entry && entry.changes) ? entry.changes.filter(Boolean) : [];
-  if (!changes.length) {
-    return '이전 preview 누적 변경입니다. 최신 변경에 흡수된 부분이 있을 수 있으니 흐름 중심으로만 확인하세요.';
-  }
-  const highlights = changes.slice(0, HISTORY_HIGHLIGHT_LIMIT).map(function (change) {
-    return String(change || '').trim();
-  }).filter(Boolean);
-  const extraCount = Math.max(0, changes.length - highlights.length);
-  return '이전 preview 누적 변경 요약 · ' + highlights.join(' / ') + (extraCount ? ' / 그 외 ' + extraCount + '건' : '');
+function buildRequestHistoryItems(entries) {
+  const aggregated = [];
+  entries.forEach(function (entry) {
+    const version = String(entry && entry.version || '').trim();
+    const summary = String(entry && entry.summary || DEFAULT_SUMMARY).trim();
+    const history = Array.isArray(entry && entry.request_history) ? entry.request_history : [];
+    if (!history.length) {
+      aggregated.push({
+        version: version,
+        status: 'kept',
+        label: 'V' + version + ' · ' + summary,
+        description: '이 버전의 변경은 현재 preview 누적 변경 상세에 포함되어 있습니다.',
+        feedback: '',
+      });
+      return;
+    }
+    history.forEach(function (item, index) {
+      const request = String(item && item.request || '').trim();
+      const outcome = String(item && item.outcome || '').trim();
+      const feedback = String(item && item.feedback || '').trim();
+      aggregated.push({
+        version: version,
+        status: normalizeHistoryStatus(item && item.status),
+        label: request || ('V' + version + ' · 요청 히스토리 ' + String(index + 1)),
+        description: outcome || ('V' + version + '에서 반영된 요청 흐름입니다.'),
+        feedback: feedback,
+      });
+    });
+  });
+  return aggregated;
+}
+
+function normalizeHistoryStatus(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'removed' || normalized === 'deleted') return 'removed';
+  if (normalized === 'changed' || normalized === 'updated') return 'changed';
+  return 'kept';
 }
 
 function isChangelogEntry(entry) {

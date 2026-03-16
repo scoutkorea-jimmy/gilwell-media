@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.062.03';
+  GW.APP_VERSION = '0.062.04';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1198,14 +1198,25 @@
     summary.textContent = release.summary || '';
 
     var html = (release.sections || []).map(function (section) {
-      if (section && section.variant === 'summary') {
-        return '<section class="preview-review-section preview-review-section-summary">' +
+      if (section && section.variant === 'history') {
+        return '<section class="preview-review-section preview-review-section-history">' +
           '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
-          '<div class="preview-review-summary-list">' +
+          '<div class="preview-review-history-list">' +
             (section.items || []).map(function (item) {
-              return '<article class="preview-review-summary-item">' +
+              var status = String(item.status || 'kept').toLowerCase();
+              var statusLabel = status === 'removed'
+                ? '삭제'
+                : status === 'changed'
+                  ? '변경'
+                  : '유지';
+              return '<article class="preview-review-history-item">' +
+                '<div class="preview-review-history-meta-row">' +
+                  '<span class="preview-review-history-status is-' + GW.escapeHtml(status) + '">' + GW.escapeHtml(statusLabel) + '</span>' +
+                  '<span class="preview-review-history-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
+                '</div>' +
                 '<strong>' + GW.escapeHtml(item.label || '') + '</strong>' +
                 '<p>' + GW.escapeHtml(item.description || '') + '</p>' +
+                (item.feedback ? '<div class="preview-review-history-feedback">피드백 · ' + GW.escapeHtml(item.feedback) + '</div>' : '') +
               '</article>';
             }).join('') +
           '</div>' +
