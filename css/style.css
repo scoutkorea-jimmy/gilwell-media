@@ -8560,6 +8560,81 @@ body.preview-runtime {
   display: flex;
 }
 
+.preview-review-fab {
+  position: fixed;
+  right: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  z-index: 1180;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 18px 0 14px;
+  border: 1px solid rgba(98, 37, 153, 0.18);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(95, 35, 150, 0.96), rgba(148, 88, 208, 0.94));
+  box-shadow: 0 18px 42px rgba(54, 26, 82, 0.28);
+  color: #fff;
+  font-family: AliceDigitalLearning, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+
+.preview-review-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 48px rgba(54, 26, 82, 0.34);
+}
+
+.preview-review-fab:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.34), 0 18px 42px rgba(54, 26, 82, 0.28);
+}
+
+body.preview-review-modal-open .preview-review-fab {
+  opacity: 0.78;
+}
+
+.preview-review-fab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
+}
+
+.preview-review-fab-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.preview-review-fab-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.preview-review-fab-copy strong,
+.preview-review-fab-copy span {
+  display: block;
+  color: inherit;
+}
+
+.preview-review-fab-copy strong {
+  font-size: 15px;
+  line-height: 1.1;
+}
+
+.preview-review-fab-copy span {
+  font-size: 12px;
+  line-height: 1.15;
+  opacity: 0.86;
+}
+
 .preview-review-backdrop {
   position: absolute;
   inset: 0;
@@ -8876,6 +8951,13 @@ body.preview-runtime {
     padding: 12px;
   }
 
+  .preview-review-fab {
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    min-height: 54px;
+    padding: 0 16px 0 12px;
+  }
+
   .preview-history-list {
     grid-template-columns: 1fr;
   }
@@ -8909,5 +8991,19 @@ body.preview-runtime {
 
   .preview-review-head strong {
     font-size: 22px;
+  }
+
+  .preview-review-fab {
+    gap: 10px;
+    min-height: 50px;
+    padding-right: 14px;
+  }
+
+  .preview-review-fab-copy strong {
+    font-size: 14px;
+  }
+
+  .preview-review-fab-copy span {
+    font-size: 11px;
   }
 }
