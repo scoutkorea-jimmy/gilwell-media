@@ -5993,9 +5993,48 @@ footer a:hover { color: #ffffff; }
 .version-history-type {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
-  color: var(--muted);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.version-history-date {
+  color: var(--muted);
+}
+
+.version-history-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 27, 40, 0.1);
+  background: rgba(36, 27, 40, 0.04);
+  color: var(--muted);
+}
+
+.version-history-type.is-super-nova {
+  color: #5f2aa5;
+  border-color: rgba(95, 42, 165, 0.2);
+  background: rgba(95, 42, 165, 0.1);
+}
+
+.version-history-type.is-update {
+  color: #0c6b8f;
+  border-color: rgba(12, 107, 143, 0.2);
+  background: rgba(0, 148, 180, 0.1);
+}
+
+.version-history-type.is-hotfix {
+  color: #8a5a00;
+  border-color: rgba(138, 90, 0, 0.2);
+  background: rgba(255, 182, 70, 0.14);
+}
+
+.version-history-type.is-bugfix {
+  color: #a23438;
+  border-color: rgba(162, 52, 56, 0.2);
+  background: rgba(255, 103, 110, 0.14);
 }
 
 .version-history-summary {
@@ -7932,10 +7971,13 @@ body.admin-page .version-history-version {
 
 body.admin-page .post-history-entry-meta,
 body.admin-page .version-history-summary,
-body.admin-page .version-history-type,
 body.admin-page .version-history-changes li {
   color: var(--admin-muted) !important;
   font-size: 13px !important;
+}
+
+body.admin-page .version-history-type {
+  font-size: 11px !important;
 }
 
 body.admin-page .drag-handle {
@@ -8329,7 +8371,6 @@ body.admin-page .hero-result-note,
 body.admin-page .admin-selected-post-note,
 body.admin-page .contributors-admin-date,
 body.admin-page .version-history-summary,
-body.admin-page .version-history-type,
 body.admin-page .version-history-changes li,
 body.admin-page .post-history-entry-meta {
   font-size: 11px !important;

@@ -6,11 +6,11 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.062.06`
+- Current version: `V0.062.07`
 - Format: `Va.bbb.cc`
-- `a`: increases only when the owner explicitly requests a major version change
-- `bbb`: increases only when a new feature is added
-- `cc`: increases only for bug fixes or small UI/layout adjustments
+- `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
+- `bbb`: major functional change or structural update; in the history UI this maps to `Update`
+- `cc`: fix-only increment; in the history UI this maps to `Hotfix` or `Bugfix`
 - When `bbb` increases, `cc` resets to `00`
 
 All static asset cache-busting query strings should follow this same version.

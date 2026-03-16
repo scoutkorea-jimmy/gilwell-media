@@ -2767,7 +2767,10 @@
     _historyPage = Math.max(1, Math.min(totalPages, _historyPage));
     var start = (_historyPage - 1) * _HISTORY_PAGE_SIZE;
     var items = _historyItems.slice(start, start + _HISTORY_PAGE_SIZE);
-    list.innerHTML = items.map(function (item) {
+    list.innerHTML = items.map(function (item, localIndex) {
+      var absoluteIndex = start + localIndex;
+      var previousItem = _historyItems[absoluteIndex + 1] || null;
+      var versionType = getVersionHistoryType(item, previousItem);
       var changes = Array.isArray(item.changes) ? item.changes : [];
       return '<article class="version-history-item">' +
         '<div class="version-history-top">' +
@@ -2775,7 +2778,7 @@
             '<div class="version-history-version">V' + GW.escapeHtml(item.version || '') + '</div>' +
             '<div class="version-history-date">' + GW.escapeHtml(item.date || '') + (item.commit ? ' · ' + GW.escapeHtml(item.commit) : '') + '</div>' +
           '</div>' +
-          '<div class="version-history-type">' + GW.escapeHtml(item.type || 'update') + '</div>' +
+          '<div class="version-history-type is-' + GW.escapeHtml(versionType.key) + '">' + GW.escapeHtml(versionType.label) + '</div>' +
         '</div>' +
         '<p class="version-history-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
         '<ul class="version-history-changes">' +
@@ -2795,6 +2798,71 @@
     _historyPage += delta;
     renderVersionHistory();
   };
+
+  function getVersionHistoryType(item, previousItem) {
+    var explicitType = normalizeVersionHistoryType(item && item.type);
+    if (explicitType) return explicitType;
+    var current = parseVersionTuple(item && item.version);
+    var previous = parseVersionTuple(previousItem && previousItem.version);
+    if (current && previous) {
+      if (current.major !== previous.major) return { key: 'super-nova', label: 'Super Nova' };
+      if (current.update !== previous.update) return { key: 'update', label: 'Update' };
+      return inferFixVersionType(item);
+    }
+    if (current) {
+      if (current.update > 0) return { key: 'update', label: 'Update' };
+      if (current.fix > 0) return inferFixVersionType(item);
+      return { key: 'super-nova', label: 'Super Nova' };
+    }
+    return { key: 'update', label: 'Update' };
+  }
+
+  function normalizeVersionHistoryType(value) {
+    var normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) return null;
+    if (normalized === 'super nova' || normalized === 'super-nova' || normalized === 'major') {
+      return { key: 'super-nova', label: 'Super Nova' };
+    }
+    if (normalized === 'update' || normalized === 'feature' || normalized === 'release') {
+      return { key: 'update', label: 'Update' };
+    }
+    if (normalized === 'bugfix' || normalized === 'bug-fix' || normalized === 'bug fix') {
+      return { key: 'bugfix', label: 'Bugfix' };
+    }
+    if (normalized === 'hotfix' || normalized === 'hot-fix' || normalized === 'hot fix') {
+      return { key: 'hotfix', label: 'Hotfix' };
+    }
+    return { key: 'update', label: toTitleCase(normalized) };
+  }
+
+  function inferFixVersionType(item) {
+    var pool = [];
+    if (item && item.summary) pool.push(item.summary);
+    if (item && Array.isArray(item.changes)) pool = pool.concat(item.changes);
+    var combined = pool.join(' ').toLowerCase();
+    if (/(bug|버그|오류|실패|깨짐|작동하지|복구|fix)/.test(combined)) {
+      return { key: 'bugfix', label: 'Bugfix' };
+    }
+    return { key: 'hotfix', label: 'Hotfix' };
+  }
+
+  function parseVersionTuple(version) {
+    var raw = String(version || '').trim();
+    if (!raw) return null;
+    var parts = raw.split('.');
+    if (!parts.length) return null;
+    return {
+      major: parseInt(parts[0], 10) || 0,
+      update: parseInt(parts[1], 10) || 0,
+      fix: parseInt(parts[2], 10) || 0,
+    };
+  }
+
+  function toTitleCase(value) {
+    return String(value || '').replace(/\b[a-z]/g, function (match) {
+      return match.toUpperCase();
+    });
+  }
 
   // ─── Contributors admin ───────────────────────────────────
   var _contributors = [];
