@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
   ]);
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
-    live_version: findLatestProductionVersion(deployments) || productionVersion,
+    live_version: productionVersion || findLatestProductionVersion(deployments),
     commit_sha: context.env.CF_PAGES_COMMIT_SHA || findLatestDeploymentSource(deployments, 'preview', 'preview') || '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
