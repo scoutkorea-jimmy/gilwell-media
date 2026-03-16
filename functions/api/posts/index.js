@@ -39,8 +39,8 @@ export async function onRequestGet({ request, env }) {
   const token   = extractToken(request);
   const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
-  const ORDER_LATEST = 'ORDER BY created_at DESC, id DESC';
-  const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC, id DESC';
+  const ORDER_LATEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
+  const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
   const ORDER = allRequested && isAdmin ? ORDER_MANUAL : ORDER_LATEST;
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, views, author, published, sort_order,
     youtube_url,
