@@ -3,7 +3,12 @@ import {
   findLatestProductionVersion,
   getPreviewChecklistIds,
 } from '../../_shared/preview-release-data.js';
-import { fetchReleaseDeployments, json, previewOnly } from '../../_shared/preview-ops.js';
+import {
+  fetchProductionSiteVersion,
+  fetchReleaseDeployments,
+  json,
+  previewOnly,
+} from '../../_shared/preview-ops.js';
 
 export async function onRequestGet(context) {
   const blocked = previewOnly(context.request, context.env);
@@ -11,10 +16,13 @@ export async function onRequestGet(context) {
 
   const changelog = await loadChangelog(context.request);
   const items = changelog && Array.isArray(changelog.items) ? changelog.items : [];
-  const deployments = await fetchReleaseDeployments().catch(function () { return []; });
+  const [deployments, productionVersion] = await Promise.all([
+    fetchReleaseDeployments().catch(function () { return []; }),
+    fetchProductionSiteVersion().catch(function () { return ''; }),
+  ]);
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
-    live_version: findLatestProductionVersion(deployments),
+    live_version: findLatestProductionVersion(deployments) || productionVersion,
     commit_sha: context.env.CF_PAGES_COMMIT_SHA || '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
