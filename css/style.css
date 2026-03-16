@@ -6463,18 +6463,49 @@ footer a:hover { color: #ffffff; }
 }
 .glossary-admin-row {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: 64px minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr) 86px;
+  gap: 8px;
   align-items: start;
   padding: 12px;
   border: 1px solid var(--border);
   background: var(--bg);
+}
+.glossary-admin-row > div {
+  min-width: 0;
+}
+.glossary-admin-cell {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+.glossary-admin-cell strong {
+  display: block;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.glossary-admin-cell-bucket {
+  font-size: 13px;
 }
 .glossary-admin-description {
   grid-column: 1 / -2;
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
+}
+.glossary-admin-cell-text {
+  display: block;
+  min-width: 0;
+}
+.glossary-admin-cell-text-ko {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.glossary-admin-cell-text-en,
+.glossary-admin-cell-text-fr {
+  word-break: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 .glossary-admin-cell-label {
   display: none;
@@ -6488,6 +6519,7 @@ footer a:hover { color: #ffffff; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  align-items: stretch;
 }
 .glossary-admin-inline-btn {
   padding: 7px 10px;

@@ -2781,11 +2781,11 @@
         '<h3 class="glossary-admin-group-title">' + bucket + '</h3>' +
         group.map(function (item) {
           return '<div class="glossary-admin-row">' +
-            '<div><span class="glossary-admin-cell-label">분류</span><strong>' + GW.escapeHtml(item.bucket) + '</strong></div>' +
-            '<div><span class="glossary-admin-cell-label">한국어</span>' + GW.escapeHtml(item.term_ko || '-') + '</div>' +
-            '<div><span class="glossary-admin-cell-label">영어</span>' + GW.escapeHtml(item.term_en || '-') + '</div>' +
-            '<div><span class="glossary-admin-cell-label">프랑스어</span>' + GW.escapeHtml(item.term_fr || '-') + '</div>' +
-            '<div class="glossary-admin-description"><span class="glossary-admin-cell-label">설명</span>' + GW.escapeHtml(item.description_ko || '-') + '</div>' +
+            '<div class="glossary-admin-cell glossary-admin-cell-bucket"><span class="glossary-admin-cell-label">분류</span><strong lang="ko">' + GW.escapeHtml(item.bucket) + '</strong></div>' +
+            '<div class="glossary-admin-cell glossary-admin-cell-term glossary-admin-cell-term-ko"><span class="glossary-admin-cell-label">한국어</span><span class="glossary-admin-cell-text glossary-admin-cell-text-ko" lang="ko">' + GW.escapeHtml(item.term_ko || '-') + '</span></div>' +
+            '<div class="glossary-admin-cell glossary-admin-cell-term glossary-admin-cell-term-en"><span class="glossary-admin-cell-label">영어</span><span class="glossary-admin-cell-text glossary-admin-cell-text-en" lang="en">' + GW.escapeHtml(item.term_en || '-') + '</span></div>' +
+            '<div class="glossary-admin-cell glossary-admin-cell-term glossary-admin-cell-term-fr"><span class="glossary-admin-cell-label">프랑스어</span><span class="glossary-admin-cell-text glossary-admin-cell-text-fr" lang="fr">' + GW.escapeHtml(item.term_fr || '-') + '</span></div>' +
+            '<div class="glossary-admin-description"><span class="glossary-admin-cell-label">설명</span><span class="glossary-admin-cell-text glossary-admin-cell-text-ko" lang="ko">' + GW.escapeHtml(item.description_ko || '-') + '</span></div>' +
             '<div class="glossary-admin-actions">' +
               '<button type="button" class="glossary-admin-inline-btn" onclick="editGlossaryTerm(' + item.id + ')">수정</button>' +
               '<button type="button" class="glossary-admin-inline-btn delete" onclick="deleteGlossaryTerm(' + item.id + ')">삭제</button>' +

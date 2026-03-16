@@ -242,13 +242,12 @@ function classifyReferrer(referrerHost, referrerUrl) {
   }
 
   if (host === 'internal') {
-    const internalLabel = describeInternalReferrer(url);
     return {
-      key: 'internal:' + internalLabel,
+      key: 'internal',
       label: '내부 이동',
       type: 'internal',
       typeLabel: '내부',
-      detail: internalLabel,
+      detail: '',
     };
   }
 
@@ -344,26 +343,6 @@ function sourceInfo(key, label, type, typeLabel, detail) {
     typeLabel: typeLabel,
     detail: detail,
   };
-}
-
-function describeInternalReferrer(referrerUrl) {
-  try {
-    const parsed = new URL(referrerUrl);
-    const path = String(parsed.pathname || '/').trim() || '/';
-    if (path === '/' || path === '/index.html') return '홈';
-    if (path === '/latest' || path === '/latest.html') return '최신 소식';
-    if (path === '/korea' || path === '/korea.html') return 'Korea 게시판';
-    if (path === '/apr' || path === '/apr.html') return 'APR 게시판';
-    if (path === '/wosm' || path === '/wosm.html') return 'WOSM 게시판';
-    if (path === '/people' || path === '/people.html') return '스카우트 인물 게시판';
-    if (path === '/glossary' || path === '/glossary.html') return '용어집';
-    if (path === '/search' || path === '/search.html') return '검색';
-    if (path === '/contributors.html') return '도움을 주신 분들';
-    if (path.indexOf('/post/') === 0) return '기사 상세';
-    return path;
-  } catch (_) {
-    return '내부 페이지';
-  }
 }
 
 function simplifyDomain(host) {
