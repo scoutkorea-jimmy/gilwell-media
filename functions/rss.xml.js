@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { results } = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, author, published
+      `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, tag, published
          FROM posts
         WHERE published = 1
         ORDER BY created_at DESC
@@ -16,10 +16,11 @@ export async function onRequestGet({ request, env }) {
       const title = escapeXml(post.title || `post-${post.id}`);
       const link = `${origin}/post/${post.id}`;
       const description = escapeXml(buildDescription(post));
-      const pubDate = toRfc822(post.publish_at || post.created_at || post.updated_at);
+      const pubDate = toRfc822(post.created_at || post.updated_at || post.publish_at);
       const category = escapeXml(resolveCategoryLabel(post.category));
-      const author = escapeXml(post.author || 'BP미디어');
+      const tags = parseTags(post.tag);
       const guid = escapeXml(link);
+      const categoryTags = tags.map((tag) => `    <category domain="tag">${escapeXml(tag)}</category>`).join('\n');
 
       return `  <item>
     <title>${title}</title>
@@ -27,13 +28,13 @@ export async function onRequestGet({ request, env }) {
     <guid isPermaLink="true">${guid}</guid>
     <description>${description}</description>
     <category>${category}</category>
-    <author>info@bpmedia.net (${author})</author>
+${categoryTags ? `${categoryTags}\n` : ''}    <bpmedia:created>${escapeXml(post.created_at || '')}</bpmedia:created>
     ${pubDate ? `<pubDate>${escapeXml(pubDate)}</pubDate>` : ''}
   </item>`;
     }).join('\n');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:bpmedia="https://bpmedia.net/ns/rss">
 <channel>
   <title>BP미디어</title>
   <link>${escapeXml(siteUrl)}</link>
@@ -63,8 +64,17 @@ ${items}
 
 function buildDescription(post) {
   const subtitle = typeof post.subtitle === 'string' ? post.subtitle.trim() : '';
-  if (subtitle) return subtitle;
-  return truncatePlain(post.content || '', 220);
+  const summary = subtitle || truncatePlain(post.content || '', 220);
+  const tags = parseTags(post.tag);
+  if (!tags.length) return summary;
+  return summary ? `${summary} | 글머리 태그: ${tags.join(', ')}` : `글머리 태그: ${tags.join(', ')}`;
+}
+
+function parseTags(value) {
+  return String(value || '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
 }
 
 function truncatePlain(str, maxLen) {

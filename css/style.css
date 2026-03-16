@@ -1513,6 +1513,23 @@ p { margin-bottom: 6px; }
 }
 .site-hero.has-bg .site-hero-eyebrow { color: rgba(255,255,255,0.7); }
 
+.site-hero-labels {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.site-hero-labels .category-tag,
+.site-hero-labels .post-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  line-height: 1.2;
+}
+
 .site-hero-title {
   font-family: AliceDigitalLearning, sans-serif;
   font-size:          clamp(28px, 5vw, 48px);
@@ -2902,6 +2919,36 @@ footer a:hover { color: #ffffff; }
   background:   var(--black);
   color:        var(--white);
   border-color: var(--black);
+}
+
+.public-tag-add-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.public-tag-add-tools input {
+  min-width: 0;
+}
+
+.public-inline-tag-add {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.96);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.public-inline-tag-add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255,255,255,1);
 }
 
 .tag-admin-toolbar {
@@ -8440,6 +8487,13 @@ body.admin-page .admin-tab-content {
   width: 100% !important;
 }
 
+body.admin-page {
+  --admin-space-section: 18px;
+  --admin-space-panel: 14px;
+  --admin-space-field: 12px;
+  --admin-space-inline: 8px;
+}
+
 body.admin-page .panel {
   border-radius: 20px !important;
 }
@@ -8459,6 +8513,74 @@ body.admin-page .panel-header h2 {
 body.admin-page .panel-body,
 body.admin-page .admin-pagination {
   padding: 14px !important;
+}
+
+body.admin-page .admin-tab-content,
+body.admin-page .admin-stack {
+  gap: var(--admin-space-section) !important;
+}
+
+body.admin-page .dashboard-2col,
+body.admin-page .admin-dashboard-grid,
+body.admin-page .dash-stats-row,
+body.admin-page .dash-actions,
+body.admin-page .analytics-toolbar,
+body.admin-page .analytics-list,
+body.admin-page .article-list,
+body.admin-page .admin-list-stats,
+body.admin-page .admin-inline-controls,
+body.admin-page .admin-selected-post-actions,
+body.admin-page #hero-search-results,
+body.admin-page #home-lead-search-results,
+body.admin-page #hero-slots,
+body.admin-page #contributors-admin-list,
+body.admin-page #translations-table,
+body.admin-page #category-copy-manager,
+body.admin-page .glossary-admin-list,
+body.admin-page .tag-admin-grid {
+  gap: var(--admin-space-panel) !important;
+}
+
+body.admin-page .form-row {
+  gap: var(--admin-space-field) !important;
+}
+
+body.admin-page .form-group {
+  margin-bottom: var(--admin-space-field) !important;
+}
+
+body.admin-page .form-group:last-child {
+  margin-bottom: 0 !important;
+}
+
+body.admin-page .form-group > label,
+body.admin-page .admin-copy-card-label,
+body.admin-page .admin-inline-label {
+  margin-bottom: var(--admin-space-inline) !important;
+}
+
+body.admin-page .admin-search-panel,
+body.admin-page .admin-settings-block,
+body.admin-page .admin-selected-post-card,
+body.admin-page .tag-admin-panel,
+body.admin-page .admin-copy-card,
+body.admin-page .post-history-entry,
+body.admin-page .version-history-item,
+body.admin-page .hero-result-item,
+body.admin-page .hero-slot-item,
+body.admin-page .contributors-admin-item,
+body.admin-page .analytics-item {
+  margin-top: 0 !important;
+}
+
+body.admin-page .article-item-top,
+body.admin-page .admin-settings-block-head,
+body.admin-page .admin-selected-post-card-header {
+  margin-bottom: var(--admin-space-field) !important;
+}
+
+body.admin-page .admin-subnav {
+  margin-bottom: var(--admin-space-section) !important;
 }
 
 body.admin-page p,

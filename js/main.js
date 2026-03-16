@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.064.01';
+  GW.APP_VERSION = '0.065.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -180,6 +180,64 @@
         if (seen.has(item)) return false;
         seen.add(item);
         return true;
+      });
+  };
+
+  GW.uniqueTagStrings = function (items) {
+    var seen = new Set();
+    return (Array.isArray(items) ? items : [])
+      .map(function (item) { return String(item || '').trim(); })
+      .filter(function (item) {
+        if (!item || seen.has(item)) return false;
+        seen.add(item);
+        return true;
+      });
+  };
+
+  GW.addManagedTagToCategory = function (tagValue, category) {
+    var value = String(tagValue || '').trim();
+    var target = GW.TAG_CATEGORIES.indexOf(category) >= 0 ? category : 'korea';
+    if (!value) {
+      return Promise.reject(new Error('태그명을 입력해주세요'));
+    }
+    if (!(GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full')) {
+      return Promise.reject(new Error('이 계정은 태그 추가 권한이 없습니다'));
+    }
+
+    return fetch('/api/settings/tags', { cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('태그 설정을 불러오지 못했습니다');
+        return response.json();
+      })
+      .then(function (data) {
+        var settings = GW.normalizeTagSettings({
+          common: data && data.common,
+          categories: data && data.categories,
+        });
+        var available = GW.getTagsForCategory(settings, target);
+        if (available.indexOf(value) >= 0) {
+          return {
+            created: false,
+            selectedTag: value,
+            common: settings.common,
+            categories: settings.categories,
+          };
+        }
+        settings.categories[target] = GW.uniqueTagStrings((settings.categories[target] || []).concat(value));
+        return GW.apiFetch('/api/settings/tags', {
+          method: 'PUT',
+          body: JSON.stringify({
+            common: settings.common,
+            categories: settings.categories,
+          }),
+        }).then(function (saved) {
+          return {
+            created: true,
+            selectedTag: value,
+            common: saved && saved.common,
+            categories: saved && saved.categories,
+          };
+        });
       });
   };
 
@@ -1019,6 +1077,11 @@
     return !!(GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full');
   };
 
+  GW.hasPreviewActionPassword = function () {
+    var input = document.getElementById('preview-admin-password');
+    return !!(input && String(input.value || '').trim());
+  };
+
   GW.getCurrentPathname = function () {
     if (typeof window === 'undefined' || !window.location) return '/';
     return String(window.location.pathname || '/').trim() || '/';
@@ -1094,10 +1157,10 @@
         '</div>' +
         '<div class="preview-review-actions">' +
           '<div id="preview-auth-panel" class="preview-auth-panel">' +
-            '<div class="preview-auth-title">관리자 인증을 확인하는 중입니다…</div>' +
+            '<div class="preview-auth-title">최종 관리자 확인을 준비하는 중입니다…</div>' +
           '</div>' +
           '<div class="preview-review-action-row">' +
-            '<p class="preview-review-note">모든 체크박스를 완료하고, 관리자 인증까지 끝난 뒤에만 본 페이지 반영을 시작할 수 있습니다.</p>' +
+            '<p class="preview-review-note">모든 체크박스를 완료하고, 본 페이지 반영 직전에 full 관리자 비밀번호를 다시 입력한 뒤에만 반영을 시작할 수 있습니다.</p>' +
             '<button type="button" id="preview-promote-btn" class="preview-promote-btn" aria-disabled="true">본 페이지에 반영하기</button>' +
           '</div>' +
         '</div>' +
@@ -1191,6 +1254,8 @@
     document.body.classList.remove('preview-review-modal-open');
     var launcher = document.getElementById('preview-review-fab');
     if (launcher) launcher.setAttribute('aria-expanded', 'false');
+    var input = document.getElementById('preview-admin-password');
+    if (input) input.value = '';
   };
 
   GW.renderPreviewReviewModal = function () {
@@ -1270,76 +1335,26 @@
   GW.syncPreviewAuthPanel = function () {
     var panel = document.getElementById('preview-auth-panel');
     if (!panel) return;
-
-    if (GW.isPreviewAdminReady()) {
-      panel.className = 'preview-auth-panel is-ready';
-      panel.innerHTML =
-        '<div class="preview-auth-title">관리자 인증 완료</div>' +
-        '<p class="preview-auth-copy">현재 브라우저에는 본 페이지 반영과 복구를 실행할 수 있는 full 관리자 세션이 연결되어 있습니다.</p>';
-      return;
-    }
-
     panel.className = 'preview-auth-panel';
     panel.innerHTML =
-      '<div class="preview-auth-title">관리자 인증</div>' +
-      '<p class="preview-auth-copy">본 페이지 반영과 복구는 full 관리자 비밀번호가 필요합니다.</p>' +
+      '<div class="preview-auth-title">최종 관리자 확인</div>' +
+      '<p class="preview-auth-copy">' +
+        (GW.isPreviewAdminReady()
+          ? '현재 브라우저가 이미 관리자 로그인 상태여도, 본 페이지 반영과 복구 직전에는 full 관리자 비밀번호를 다시 입력해야 합니다.'
+          : '본 페이지 반영과 복구 직전에는 full 관리자 비밀번호를 다시 입력해야 합니다.') +
+      '</p>' +
       '<div class="preview-auth-form">' +
-        '<input type="password" id="preview-admin-password" class="preview-auth-input" placeholder="관리자 비밀번호" autocomplete="current-password">' +
-        '<button type="button" id="preview-admin-auth-btn" class="preview-auth-btn">인증</button>' +
+        '<input type="password" id="preview-admin-password" class="preview-auth-input" placeholder="최종 확인용 관리자 비밀번호" autocomplete="current-password">' +
       '</div>';
-
-    var authBtn = document.getElementById('preview-admin-auth-btn');
     var authInput = document.getElementById('preview-admin-password');
-    if (authBtn) authBtn.addEventListener('click', GW.handlePreviewAuth);
     if (authInput) {
       authInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
           event.preventDefault();
-          GW.handlePreviewAuth();
+          GW.handlePreviewPromotion();
         }
       });
     }
-  };
-
-  GW.handlePreviewAuth = function () {
-    var input = document.getElementById('preview-admin-password');
-    var button = document.getElementById('preview-admin-auth-btn');
-    var password = input ? String(input.value || '').trim() : '';
-    if (!password) {
-      GW.showToast('관리자 비밀번호를 입력해주세요.', 'error');
-      if (input) input.focus();
-      return;
-    }
-
-    if (button) {
-      button.disabled = true;
-      button.textContent = '인증 중…';
-    }
-
-    GW.apiFetch('/api/admin/login', {
-      method: 'POST',
-      body: JSON.stringify({ password: password }),
-    })
-      .then(function (data) {
-        if (!data || data.role !== 'full') {
-          GW.showToast('본 페이지 반영 권한이 있는 관리자 비밀번호가 아닙니다.', 'error');
-          return;
-        }
-        GW.setToken(data.token);
-        GW.setAdminRole(data.role || 'full');
-        GW.showToast('프리뷰 반영용 관리자 인증이 완료되었습니다.', 'success');
-        GW.syncPreviewAuthPanel();
-      })
-      .catch(function (err) {
-        GW.showToast((err && err.message) || '관리자 인증에 실패했습니다.', 'error');
-      })
-      .finally(function () {
-        if (button) {
-          button.disabled = false;
-          button.textContent = '인증';
-        }
-        if (input) input.value = '';
-      });
   };
 
   GW.loadPreviewHistory = function (force) {
@@ -1449,6 +1464,8 @@
   GW.handlePreviewPromotion = function () {
     var button = document.getElementById('preview-promote-btn');
     var release = GW._previewRuntimeState.release;
+    var input = document.getElementById('preview-admin-password');
+    var password = input ? String(input.value || '').trim() : '';
     if (!button || !release) return;
     if (release.has_pending_changes === false) {
       GW.showToast('반영할 추가 변경이 없습니다.', 'error');
@@ -1469,9 +1486,8 @@
       GW.showToast('체크 항목을 꼼꼼히 확인하고 체크박스를 모두 선택해주세요.', 'error');
       return;
     }
-    if (!GW.isPreviewAdminReady()) {
-      GW.showToast('반영 전에 full 관리자 인증을 먼저 완료해주세요.', 'error');
-      var input = document.getElementById('preview-admin-password');
+    if (!password) {
+      GW.showToast('반영 직전에 full 관리자 비밀번호를 다시 입력해주세요.', 'error');
       if (input) input.focus();
       return;
     }
@@ -1483,11 +1499,15 @@
     button.textContent = '반영 작업 시작 중…';
     GW.apiFetch('/api/preview/promote', {
       method: 'POST',
-      body: JSON.stringify({ checked_ids: checkedIds }),
+      body: JSON.stringify({
+        checked_ids: checkedIds,
+        confirm_password: password,
+      }),
     })
       .then(function (data) {
         GW.showToast('본 페이지 반영 워크플로우를 시작했습니다.', 'success');
         button.textContent = '반영 요청됨';
+        if (input) input.value = '';
         if (data && data.actions_url) {
           window.open(data.actions_url, '_blank', 'noopener');
         }
@@ -1503,10 +1523,11 @@
     payload = payload || {};
     var mode = payload.mode || '';
     var id = payload.id || '';
+    var input = document.getElementById('preview-admin-password');
+    var password = input ? String(input.value || '').trim() : '';
     if (!mode || !id) return;
-    if (!GW.isPreviewAdminReady()) {
-      GW.showToast('복구 작업도 full 관리자 인증이 필요합니다.', 'error');
-      var input = document.getElementById('preview-admin-password');
+    if (!password) {
+      GW.showToast('복구 직전에도 full 관리자 비밀번호를 다시 입력해주세요.', 'error');
       if (input) input.focus();
       return;
     }
@@ -1521,10 +1542,11 @@
 
     GW.apiFetch('/api/preview/rollback', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify(Object.assign({}, body, { confirm_password: password })),
     })
       .then(function (data) {
         GW.showToast((data && data.message) || '복구 작업을 시작했습니다.', 'success');
+        if (input) input.value = '';
       })
       .catch(function (err) {
         GW.showToast((err && err.message) || '복구를 시작하지 못했습니다.', 'error');

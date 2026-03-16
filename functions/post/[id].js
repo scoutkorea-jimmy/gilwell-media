@@ -142,7 +142,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.062.05">
+  <link rel="stylesheet" href="/css/style.css?v=0.065.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -310,7 +310,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.05</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.065.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -380,6 +380,10 @@ export async function onRequestGet({ params, env, request }) {
       <div class="form-group">
         <label>글머리 태그</label>
         <div id="post-tag-selector" class="tag-pill-group"><span class="post-edit-note">불러오는 중…</span></div>
+        <div class="public-tag-add-tools">
+          <input type="text" id="post-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
+          <button type="button" id="post-tag-new-btn" class="public-inline-tag-add">태그 추가</button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -421,7 +425,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.062.05"></script>
+  <script src="/js/main.js?v=0.065.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -633,6 +637,33 @@ export async function onRequestGet({ params, env, request }) {
         })
         .catch(function () {
           if (selector) selector.innerHTML = '<span class="post-edit-note">태그를 불러오지 못했습니다.</span>';
+        });
+    }
+
+    function _addPostManagedTag() {
+      var input = document.getElementById('post-tag-new-input');
+      var value = (input && input.value || '').trim();
+      if (!value) {
+        GW.showToast('태그명을 입력해주세요', 'error');
+        if (input) input.focus();
+        return;
+      }
+      GW.addManagedTagToCategory(value, _postEditState.activeCategory)
+        .then(function (result) {
+          var selectedTag = result && result.selectedTag ? result.selectedTag : value;
+          if (_postEditState.selectedTags.indexOf(selectedTag) < 0) {
+            _postEditState.selectedTags.push(selectedTag);
+          }
+          return fetch('/api/settings/tags?category=' + encodeURIComponent(_postEditState.activeCategory), { cache: 'no-store' })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+              _renderPostTagSelector((data && data.items) || []);
+              if (input) input.value = '';
+              GW.showToast(result && result.created ? '태그를 추가하고 바로 선택했습니다' : '이미 있는 태그라서 바로 선택했습니다', 'success');
+            });
+        })
+        .catch(function (err) {
+          GW.showToast((err && err.message) || '태그를 추가하지 못했습니다', 'error');
         });
     }
 
@@ -943,6 +974,15 @@ export async function onRequestGet({ params, env, request }) {
       _postEditState.selectedTags = [];
       _syncPostCategoryChip(_postEditState.activeCategory);
       _loadPostTagOptions(_postEditState.activeCategory);
+    });
+    document.getElementById('post-tag-new-btn').addEventListener('click', function () {
+      _addPostManagedTag();
+    });
+    document.getElementById('post-tag-new-input').addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        _addPostManagedTag();
+      }
     });
     document.getElementById('post-cover-btn').addEventListener('click', function () {
       window._postUploadCover();
