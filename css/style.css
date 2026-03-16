@@ -261,13 +261,17 @@ body.admin-page .version-history-pagination {
   }
 
   .site-hero-media-img {
+    object-fit: var(--media-render-fit-mobile, var(--media-fit, cover));
     object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
     transform: scale(var(--media-zoom-mobile, 1));
+    transform-origin: var(--media-origin-x-mobile, 50%) var(--media-origin-y-mobile, 50%);
   }
 
   .home-lead-thumb {
+    object-fit: var(--media-render-fit-mobile, var(--media-fit, cover));
     object-position: var(--media-pos-x-mobile, 50%) var(--media-pos-y-mobile, 50%);
     transform: scale(var(--media-zoom-mobile, 1));
+    transform-origin: var(--media-origin-x-mobile, 50%) var(--media-origin-y-mobile, 50%);
   }
 
   .section-header,
@@ -1544,10 +1548,10 @@ p { margin-bottom: 6px; }
   height: 100%;
   position: relative;
   z-index: 1;
-  object-fit: var(--media-fit, cover);
+  object-fit: var(--media-render-fit-desktop, var(--media-fit, cover));
   object-position: var(--media-pos-x-desktop, 50%) var(--media-pos-y-desktop, 50%);
   transform: scale(var(--media-zoom-desktop, 1));
-  transform-origin: center center;
+  transform-origin: var(--media-origin-x-desktop, 50%) var(--media-origin-y-desktop, 50%);
 }
 
 .site-hero.has-bg::after {
@@ -1739,11 +1743,11 @@ p { margin-bottom: 6px; }
   min-height: 100%;
   position: relative;
   z-index: 1;
-  object-fit: var(--media-fit, cover);
+  object-fit: var(--media-render-fit-desktop, var(--media-fit, cover));
   object-position: var(--media-pos-x-desktop, 50%) var(--media-pos-y-desktop, 50%);
   border: 1px solid var(--border);
   transform: scale(var(--media-zoom-desktop, 1));
-  transform-origin: center center;
+  transform-origin: var(--media-origin-x-desktop, 50%) var(--media-origin-y-desktop, 50%);
   transition: transform 0.18s ease;
 }
 
