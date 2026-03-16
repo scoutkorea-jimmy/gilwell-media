@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.062.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.02">
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -235,7 +235,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.062.02</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자수 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 소식 조회수 <strong id="home-total-views">—</strong></p>
@@ -251,7 +251,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.062.01"></script>
+  <script src="/js/main.js?v=0.062.02"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -287,6 +287,18 @@
       return '<button class="mini-share-link" type="button" data-share-url="/post/' + p.id + '" data-share-title="' + GW.escapeHtml(p.title) + '">공유하기</button>';
     }
 
+    function getHomeLeadMediaStyle(media) {
+      var config = media && typeof media === 'object' ? media : {};
+      var fit = config.fit === 'contain' ? 'contain' : 'cover';
+      var posX = Number.isFinite(parseInt(config.position_x, 10)) ? parseInt(config.position_x, 10) : 50;
+      var posY = Number.isFinite(parseInt(config.position_y, 10)) ? parseInt(config.position_y, 10) : 50;
+      var zoom = Number.isFinite(parseInt(config.zoom, 10)) ? parseInt(config.zoom, 10) : 100;
+      posX = Math.min(100, Math.max(0, posX));
+      posY = Math.min(100, Math.max(0, posY));
+      zoom = Math.min(150, Math.max(100, zoom));
+      return 'object-fit:' + fit + ';object-position:' + posX + '% ' + posY + '%;transform:scale(' + (zoom / 100).toFixed(2) + ');';
+    }
+
     function buildMiniItem(p, options) {
       var thumb = p.image_url
         ? '<img class="mini-thumb" src="' + GW.escapeHtml(p.image_url) + '" loading="lazy" alt="">'
@@ -308,7 +320,7 @@
       );
     }
 
-    function renderLeadStory(el, post, label) {
+    function renderLeadStory(el, post, label, leadMedia) {
       if (!el) return;
       if (!post) {
         el.innerHTML = '<div class="mini-empty">대표 기사를 준비 중입니다</div>';
@@ -318,26 +330,28 @@
       var isNew = GW.isPostNew(post);
       var tags = getSortedPostTags(post);
       var subtitle = (post.subtitle || '').trim();
-      var excerpt = GW.truncate(post.content || '', 220);
+      var excerpt = GW.truncate(post.content || '', 420);
       if (excerpt === subtitle) excerpt = '';
       var thumb = post.image_url
-        ? '<a class="home-lead-thumb-link" href="/post/' + post.id + '"><img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
+        ? '<a class="home-lead-thumb-link" href="/post/' + post.id + '"><img class="home-lead-thumb" style="' + getHomeLeadMediaStyle(leadMedia) + '" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy"></a>'
         : '';
       el.innerHTML =
         '<article class="home-lead-card">' +
           thumb +
           '<div class="home-lead-body">' +
-            '<div class="home-lead-labels">' +
-              '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
-              tags.map(function (tag) {
-                return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
-              }).join('') +
-              '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
-              (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+            '<div class="home-lead-copy">' +
+              '<div class="home-lead-labels">' +
+                '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+                tags.map(function (tag) {
+                  return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
+                }).join('') +
+                '<span class="home-lead-kicker">' + GW.escapeHtml(label || '메인 스토리') + '</span>' +
+                (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+              '</div>' +
+              '<h3><a class="home-lead-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
+              (subtitle ? '<p class="home-lead-subtitle">' + GW.escapeHtml(subtitle) + '</p>' : '') +
+              (excerpt ? '<p class="home-lead-excerpt">' + GW.escapeHtml(excerpt) + '</p>' : '') +
             '</div>' +
-            '<h3><a class="home-lead-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
-            (subtitle ? '<p class="home-lead-subtitle">' + GW.escapeHtml(subtitle) + '</p>' : '') +
-            (excerpt ? '<p class="home-lead-excerpt">' + GW.escapeHtml(excerpt) + '</p>' : '') +
             '<div class="home-lead-footer">' +
               '<div class="home-lead-meta">' + GW.formatPostDate(post) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
               '<div class="home-lead-actions">' +
@@ -368,7 +382,7 @@
       el.innerHTML = posts.map(function (post) {
         return buildMiniItem(post, options);
       }).join('');
-      el.querySelectorAll('.mini-share-btn').forEach(function (btn) {
+      el.querySelectorAll('.mini-share-link').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var path = btn.getAttribute('data-share-url') || '';
           var title = btn.getAttribute('data-share-title') || '';
@@ -627,7 +641,8 @@
         return !leadPost || post.id !== leadPost.id;
       }).slice(0, 4);
 
-      renderLeadStory(document.getElementById('home-lead-story'), leadPost, (data.lead && data.lead.post) ? '메인 스토리' : (picksPosts.length ? '추천 기사' : '대표 기사'));
+      var leadMedia = (data.lead && data.lead.post && leadPost && data.lead.post.id === leadPost.id) ? data.lead.media : null;
+      renderLeadStory(document.getElementById('home-lead-story'), leadPost, (data.lead && data.lead.post) ? '메인 스토리' : (picksPosts.length ? '추천 기사' : '대표 기사'), leadMedia);
       renderMiniList(document.getElementById('latest-list'), latestRail, '아직 게시글이 없습니다');
       renderMiniList(document.getElementById('popular-list'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');
       renderMiniList(document.getElementById('popular-list-mobile'), (popularPosts.length ? popularPosts : latestPosts).slice(0, 4), '아직 게시글이 없습니다');

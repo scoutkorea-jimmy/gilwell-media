@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.062.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.02">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -175,11 +175,11 @@
         </div>
         <div class="contributor-card">
           <h3>프리뷰 검수 모달 규칙</h3>
-          <p>preview 환경에서는 모든 공개 페이지 접속 시 브라우저 제목 앞에 `[프리뷰]`를 붙이고, 변경 항목과 검수 체크리스트를 담은 모달을 자동으로 띄웁니다. 업데이트 항목과 검수 항목은 모두 체크박스로 보여야 하며, 미체크 상태에서 반영 버튼을 눌렀을 때는 체크를 더 하라는 토스트를 띄웁니다.</p>
+          <p>preview 환경에서는 모든 공개 페이지의 브라우저 제목 앞에 `[프리뷰]`를 붙입니다. 검수 모달은 홈에서만 자동으로 띄우고, 기사/게시판/기타 공개 페이지에서는 하단 `검수리스트` 플로팅 버튼으로 다시 열게 합니다. 관리자 페이지에는 검수 모달과 플로팅 버튼을 띄우지 않습니다.</p>
         </div>
         <div class="contributor-card">
           <h3>프리뷰 자동화 규칙</h3>
-          <p>preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 설정돼 있어야 합니다. preview 페이지의 반영 버튼은 GitHub Actions의 `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 실행하고, 최근 20개 코드 스냅샷과 배포 이력은 `release-history` 브랜치에 보관합니다. 복구가 필요하면 preview 모달의 히스토리에서 배포 롤백 또는 코드 스냅샷 복구를 시작할 수 있어야 합니다.</p>
+          <p>preview 검수 모달의 업데이트 항목은 마지막 production 반영 버전 이후 changelog에 누적된 모든 변경을 기준으로 생성합니다. preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 설정돼 있어야 하며, 반영 버튼은 GitHub Actions의 `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 실행합니다. 최근 20개 코드 스냅샷과 배포 이력은 `release-history` 브랜치에 보관하고, 복구는 preview 모달 히스토리에서 시작할 수 있어야 합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>검수 루틴</h3>
@@ -201,7 +201,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.062.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -210,7 +210,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.062.00"></script>
+  <script src="/js/main.js?v=0.062.02"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>

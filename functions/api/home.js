@@ -7,6 +7,13 @@ const DEFAULT_TICKER_ITEMS = [
   'The BP Post · bpmedia.net',
 ];
 
+const DEFAULT_HOME_LEAD_MEDIA = {
+  fit: 'cover',
+  position_x: 50,
+  position_y: 50,
+  zoom: 100,
+};
+
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
@@ -163,16 +170,20 @@ async function loadHero(env, origin) {
 }
 
 async function loadHomeLead(env, origin) {
-  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+  const [row, mediaRow] = await Promise.all([
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
+  ]);
   const postId = row ? parseInt(row.value, 10) : 0;
-  if (!postId) return { post: null };
+  const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
+  if (!postId) return { post: null, media };
   const post = await env.DB.prepare(
     `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE id = ? AND published = 1`
   ).bind(postId).first();
-  return { post: post ? serializePostImage(post, origin) : null };
+  return { post: post ? serializePostImage(post, origin) : null, media };
 }
 
 async function loadPostList(env, origin, opts = {}) {
@@ -250,6 +261,31 @@ function getSafeInterval(value) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed)) return 3000;
   return Math.min(15000, Math.max(2000, parsed));
+}
+
+function parseJsonValue(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return null;
+  }
+}
+
+function normalizeHomeLeadMedia(input) {
+  const raw = input && typeof input === 'object' ? input : {};
+  return {
+    fit: raw.fit === 'contain' ? 'contain' : 'cover',
+    position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_x),
+    position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.position_y),
+    zoom: clampNumber(raw.zoom, 100, 150, DEFAULT_HOME_LEAD_MEDIA.zoom),
+  };
+}
+
+function clampNumber(value, min, max, fallback) {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
 }
 
 function json(data, status = 200, extraHeaders = {}) {

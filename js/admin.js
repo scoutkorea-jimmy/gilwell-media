@@ -87,8 +87,43 @@
   var _heroSearchResults = [];
   var _heroSearchBound = false;
   var _homeLeadPost = null;
+  var _homeLeadMedia = defaultHomeLeadMedia();
   var _homeLeadSearchTimer = null;
   var _homeLeadSearchResults = [];
+
+  function defaultHomeLeadMedia() {
+    return {
+      fit: 'cover',
+      position_x: 50,
+      position_y: 50,
+      zoom: 100,
+    };
+  }
+
+  function normalizeHomeLeadMedia(media) {
+    var raw = media && typeof media === 'object' ? media : {};
+    return {
+      fit: raw.fit === 'contain' ? 'contain' : 'cover',
+      position_x: clampHomeLeadValue(raw.position_x, 0, 100, 50),
+      position_y: clampHomeLeadValue(raw.position_y, 0, 100, 50),
+      zoom: clampHomeLeadValue(raw.zoom, 100, 150, 100),
+    };
+  }
+
+  function clampHomeLeadValue(value, min, max, fallback) {
+    var parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function getHomeLeadPreviewStyle(media) {
+    var config = normalizeHomeLeadMedia(media);
+    return [
+      'object-fit:' + config.fit,
+      'object-position:' + config.position_x + '% ' + config.position_y + '%',
+      'transform:scale(' + (config.zoom / 100).toFixed(2) + ')'
+    ].join(';');
+  }
 
   function getAdminRole() {
     return _adminRole === 'limited' ? 'limited' : 'full';
@@ -1793,10 +1828,12 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         _homeLeadPost = data && data.post ? data.post : null;
+        _homeLeadMedia = normalizeHomeLeadMedia(data && data.media);
         renderHomeLeadSelection();
       })
       .catch(function () {
         _homeLeadPost = null;
+        _homeLeadMedia = defaultHomeLeadMedia();
         renderHomeLeadSelection('메인 스토리 설정을 불러오지 못했습니다');
       });
   }
@@ -1820,11 +1857,81 @@
           '<span class="admin-selected-post-note">현재 선택됨</span>' +
         '</div>' +
         '<div class="admin-selected-post-title">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
-        '<div class="admin-selected-post-actions">' +
+        (_homeLeadPost.image_url ? (
+          '<div class="admin-home-lead-preview">' +
+            '<div class="admin-home-lead-preview-frame">' +
+              '<img id="home-lead-media-preview" src="' + GW.escapeHtml(_homeLeadPost.image_url) + '" alt="' + GW.escapeHtml(_homeLeadPost.title || '메인 스토리 미리보기') + '" style="' + getHomeLeadPreviewStyle(_homeLeadMedia) + '">' +
+            '</div>' +
+          '</div>'
+        ) : '') +
+        '<div class="admin-home-lead-controls">' +
+          '<div class="admin-home-lead-control">' +
+            '<label for="home-lead-fit">이미지 맞춤</label>' +
+            '<select id="home-lead-fit">' +
+              '<option value="cover"' + (_homeLeadMedia.fit === 'cover' ? ' selected' : '') + '>꽉 채우기</option>' +
+              '<option value="contain"' + (_homeLeadMedia.fit === 'contain' ? ' selected' : '') + '>원본 비율</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="admin-home-lead-control">' +
+            '<strong>좌우 위치</strong>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="home-lead-position-x" min="0" max="100" step="1" value="' + _homeLeadMedia.position_x + '">' +
+              '<span id="home-lead-position-x-value">' + _homeLeadMedia.position_x + '%</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-home-lead-control">' +
+            '<strong>상하 위치</strong>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="home-lead-position-y" min="0" max="100" step="1" value="' + _homeLeadMedia.position_y + '">' +
+              '<span id="home-lead-position-y-value">' + _homeLeadMedia.position_y + '%</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="admin-home-lead-control">' +
+            '<strong>이미지 확대</strong>' +
+            '<div class="admin-home-lead-range">' +
+              '<input type="range" id="home-lead-zoom" min="100" max="150" step="1" value="' + _homeLeadMedia.zoom + '">' +
+              '<span id="home-lead-zoom-value">' + _homeLeadMedia.zoom + '%</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="admin-home-lead-actions">' +
+          '<button type="button" class="submit-btn" style="width:auto;margin:0;" onclick="saveHomeLeadMedia()">이미지 위치 저장</button>' +
           '<button type="button" class="cancel-btn visible" style="margin:0;" onclick="clearHomeLeadPost()">해제</button>' +
           '<a href="/post/' + _homeLeadPost.id + '" class="cancel-btn visible" style="margin:0;text-decoration:none;display:inline-flex;align-items:center;">기사 보기</a>' +
         '</div>' +
       '</div>';
+    bindHomeLeadMediaControls();
+  }
+
+  function bindHomeLeadMediaControls() {
+    var fit = document.getElementById('home-lead-fit');
+    var posX = document.getElementById('home-lead-position-x');
+    var posY = document.getElementById('home-lead-position-y');
+    var zoom = document.getElementById('home-lead-zoom');
+    var preview = document.getElementById('home-lead-media-preview');
+    if (!fit || !posX || !posY || !zoom) return;
+
+    function applyPreview() {
+      _homeLeadMedia = normalizeHomeLeadMedia({
+        fit: fit.value,
+        position_x: posX.value,
+        position_y: posY.value,
+        zoom: zoom.value,
+      });
+      var posXLabel = document.getElementById('home-lead-position-x-value');
+      var posYLabel = document.getElementById('home-lead-position-y-value');
+      var zoomLabel = document.getElementById('home-lead-zoom-value');
+      if (posXLabel) posXLabel.textContent = _homeLeadMedia.position_x + '%';
+      if (posYLabel) posYLabel.textContent = _homeLeadMedia.position_y + '%';
+      if (zoomLabel) zoomLabel.textContent = _homeLeadMedia.zoom + '%';
+      if (preview) preview.style.cssText = getHomeLeadPreviewStyle(_homeLeadMedia);
+    }
+
+    [fit, posX, posY, zoom].forEach(function (node) {
+      node.addEventListener('input', applyPreview);
+      node.addEventListener('change', applyPreview);
+    });
+    applyPreview();
   }
 
   window.searchHomeLeadPost = function () {
@@ -1875,6 +1982,22 @@
       });
   };
 
+  window.saveHomeLeadMedia = function () {
+    if (!_homeLeadPost) return;
+    GW.apiFetch('/api/settings/home-lead', {
+      method: 'PUT',
+      body: JSON.stringify({ media: normalizeHomeLeadMedia(_homeLeadMedia) })
+    })
+      .then(function (data) {
+        _homeLeadMedia = normalizeHomeLeadMedia(data && data.media);
+        renderHomeLeadSelection();
+        GW.showToast('메인 스토리 이미지 위치를 저장했습니다', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '메인 스토리 이미지 저장 실패', 'error');
+      });
+  };
+
   window.clearHomeLeadPost = function () {
     GW.apiFetch('/api/settings/home-lead', {
       method: 'PUT',
@@ -1882,6 +2005,7 @@
     })
       .then(function () {
         _homeLeadPost = null;
+        _homeLeadMedia = defaultHomeLeadMedia();
         renderHomeLeadSelection();
         GW.showToast('메인 스토리 지정을 해제했습니다', 'success');
         loadHomeLeadSearchResults();
