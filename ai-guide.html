@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.068.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.069.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -95,7 +95,8 @@
         </div>
         <div class="contributor-card">
           <h3>날짜 규칙</h3>
-          <p>사용자에게 보이는 날짜는 `publish_at` 기준이고, 최신 정렬과 내부 기록은 `created_at` 기준입니다. 관리자에서는 Created / Published / Modified를 모두 보여주며, 홈 `최신 소식`은 `created_at` 최신순이 기준입니다.</p>
+          <p>게시글 데이터는 `created_at`(실제 생성 시각)과 `publish_at`(실제 공개 시각)을 분리해 보관합니다. 공개 화면의 정렬 기준은 기본적으로 `publish_at` 우선이며, `publish_at`이 없는 기존 글만 `created_at`을 fallback으로 사용합니다.</p>
+          <p>사용자에게 보이는 날짜는 공개 페이지 어디서든 `YYYY년 M월 D일`까지만 보여주고, 관리자에서는 Created / Published / Modified를 `YYYY년 MM월 DD일 HH시 MM분 SS초` 형식으로 모두 노출합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>디자인 서체 규칙</h3>
@@ -139,7 +140,8 @@
         </div>
         <div class="contributor-card">
           <h3>관리자 구조 규칙</h3>
-          <p>관리자 화면은 이제 뷰포트와 무관하게 `모바일 단일 폭 · 1단 흐름`을 기본으로 합니다. 데스크톱에서도 모바일 최적화된 폭과 간격을 그대로 사용하고, 좌우 2단 레이아웃은 두지 않습니다. 대신 한 카드 안에서는 2열 통계, 2열 액션, 2줄 탭처럼 정보를 압축 배치해 세로 길이를 줄이고 조작 효율을 높입니다. 상위 메뉴를 누르면 그 그룹의 하위 메뉴와 기본 본문이 함께 전환되는 구조를 유지하고, 선택되지 않은 상위 메뉴의 하위 메뉴는 화면에 보이지 않게 숨깁니다.</p>
+          <p>관리자 화면은 이제 뷰포트와 무관하게 `모바일 단일 폭 · 1단 흐름`을 기본으로 합니다. 데스크톱에서도 모바일 최적화된 폭과 간격을 그대로 사용하고, 좌우 2단 레이아웃은 두지 않습니다. 대신 한 카드 안에서는 2열 통계, 2열 액션, 2줄 탭처럼 정보를 압축 배치해 세로 길이를 줄이고 조작 효율을 높입니다.</p>
+          <p>관리자 리빌드는 부분 패치를 덧대는 대신, 공통 카드·툴바·입력·메타 칩·spacing 토큰을 중심으로 한 번에 재정리하는 방향을 기본 원칙으로 합니다. 상위 메뉴를 누르면 그 그룹의 하위 메뉴와 기본 본문이 함께 전환되는 구조를 유지하고, 선택되지 않은 상위 메뉴의 하위 메뉴는 화면에 보이지 않게 숨깁니다.</p>
         </div>
         <div class="contributor-card">
           <h3>관리자 헤더 규칙</h3>
@@ -216,6 +218,10 @@
           <p>Korea, APR, WOSM, Scout People, `1개월 소식` 같은 공개 게시판 목록은 작성 시각 `created_at`이 아니라 공개 기준 시각인 `publish_at`을 우선으로 정렬합니다. `publish_at`이 비어 있는 기존 글만 `created_at`을 fallback으로 사용합니다.</p>
         </div>
         <div class="contributor-card">
+          <h3>삭제 정리 규칙</h3>
+          <p>게시글 삭제는 글 row만 지우고 끝내지 않습니다. 대표 이미지와 본문 이미지의 저장 파일, 조회/공감/기록 데이터, 게시글 상세 URL 방문 로그처럼 연관 데이터도 함께 정리해 고아 데이터와 남는 파일이 쌓이지 않게 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
           <h3>관리자 간격 규칙</h3>
           <p>관리자 페이지의 상하 여백은 `섹션 간격 > 패널 내부 블록 간격 > 폼 필드 간격 > 라벨/보조문구 간격` 순으로 단계가 분명해야 합니다. 일부 카드만 지나치게 붙거나 넓어지지 않도록 공통 spacing 변수로 묶어, 위계가 같으면 같은 간격을 사용합니다.</p>
         </div>
@@ -236,11 +242,15 @@
           <p>preview 검수 모달의 기준은 항상 현재 production 메인 홈페이지에 실제 빌드된 최신 버전 이후 changelog입니다. 상세 섹션은 최신 버전만이 아니라 그 기준 이후 누적된 모든 변경을 체크리스트로 보여줘야 합니다.</p>
           <p>만약 preview와 production 버전이 같고 production 이후 누적 changelog가 없다면, 검수 모달과 관리자 `프리뷰 보기` 모두 `변경 없음` 상태를 명확히 보여줘야 합니다. 이때는 반영 버튼도 실제로 동작하면 안 됩니다.</p>
           <p>또한 각 changelog 항목은 가능하면 `요청 / 결과 / 피드백 / 상태(유지·변경·삭제)`를 남겨, 나중에 어떤 요청이 유지됐고 어떤 요청이 피드백으로 바뀌거나 삭제됐는지를 preview 모달의 요청 히스토리에서 바로 추적할 수 있어야 합니다.</p>
-          <p>preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 설정돼 있어야 하며, 반영 버튼은 GitHub Actions의 `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 실행합니다. 최근 20개 코드 스냅샷과 배포 이력은 `release-history` 브랜치에 보관하고, 복구는 preview 모달 히스토리에서 시작할 수 있어야 합니다.</p>
+          <p>preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 설정돼 있어야 하며, 반영 버튼은 GitHub Actions의 `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 실행합니다. 버튼은 pending changes, branch HEAD 일치, GitHub dispatch 가능 여부, Cloudflare 배포 접근성까지 readiness 검사를 통과했을 때만 실제 승격 가능 상태가 됩니다. 최근 20개 코드 스냅샷과 배포 이력은 `release-history` 브랜치에 보관하고, 복구는 preview 모달 히스토리에서 시작할 수 있어야 합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>검수 루틴</h3>
           <p>preview에서는 최소한 홈, 대표 기사 상세, 카테고리 보드, 검색, 용어집, 관리자 진입 화면, 모바일 레이아웃을 확인합니다. 최근 작업이 홈 최신 갱신, 공유 버튼 위치, 공개 기사 수정 모달처럼 상호작용을 건드렸다면, hard refresh 없이 최신 반영 여부와 공개 상세에서 수정 인증/저장 흐름까지 직접 검수합니다. 검수 결과는 preview 모달 체크박스에 바로 반영하고, 마지막 판단까지 끝낸 뒤에만 본 페이지 반영 버튼을 누릅니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>스모크 체크 규칙</h3>
+          <p>배포 후 스모크 체크는 단순 HTML 응답만 보지 않습니다. 최소한 홈/관리자/대표 기사/카테고리 페이지 응답, RSS 응답, 공개 posts API의 `publish_at`, 관리자 세션 401, D1의 `created_at`·`publish_at`·`updated_at` 컬럼 존재까지 확인해 날짜 체계와 접근 규칙 회귀를 함께 점검합니다.</p>
         </div>
       </div>
     </div>
@@ -258,7 +268,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.068.04</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.069.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -267,7 +277,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.068.04"></script>
+  <script src="/js/main.js?v=0.069.00"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>

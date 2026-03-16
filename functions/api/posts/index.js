@@ -115,7 +115,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, ai_assisted, publish_date, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -145,10 +145,7 @@ export async function onRequestPost({ request, env }) {
   const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
 
-  let publishAtValue = null;
-  if (publish_date && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
-    publishAtValue = `${publish_date} 12:00:00`;
-  }
+  const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
 
   // Get default author from settings if not provided in body
   const bodyAuthor = (body.author && typeof body.author === 'string') ? body.author.trim().slice(0, 60) : null;
@@ -216,4 +213,17 @@ function sanitizeCaption(value) {
 function normalizeCategory(value) {
   if (value === 'worm') return 'wosm';
   return value;
+}
+
+function normalizePublishAtInput(publishAt, publishDate) {
+  const precise = String(publishAt || '').trim();
+  if (precise) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(precise)) return `${precise} 12:00:00`;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(precise)) return `${precise.replace('T', ' ')}:00`;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(precise)) return `${precise}:00`;
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(precise)) return precise.replace('T', ' ');
+  }
+  const fallback = String(publishDate || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
+  return null;
 }

@@ -95,6 +95,7 @@ export async function onRequestGet({ params, env, request }) {
     tag: post.tag || '',
     author: post.author || 'Editor A',
     ai_assisted: !!post.ai_assisted,
+    publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
     publish_date: String(publicDateValue || '').slice(0, 10),
   });
   const isNew    = isTodayKst(publicDateValue);
@@ -142,7 +143,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.068.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.069.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -310,7 +311,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.068.04</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.069.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -363,8 +364,8 @@ export async function onRequestGet({ params, env, request }) {
 
       <div class="form-row">
         <div class="form-group">
-          <label for="post-edit-date">게시 날짜</label>
-          <input type="date" id="post-edit-date" />
+          <label for="post-edit-date">퍼블리싱 시각</label>
+          <input type="datetime-local" id="post-edit-date" />
         </div>
         <div class="form-group">
           <label for="post-edit-youtube">유튜브 링크</label>
@@ -425,7 +426,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.068.04"></script>
+  <script src="/js/main.js?v=0.069.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -709,7 +710,7 @@ export async function onRequestGet({ params, env, request }) {
       document.getElementById('post-edit-category').value = _postEditSeed.category || 'korea';
       document.getElementById('post-edit-title-input').value = _postEditSeed.title || '';
       document.getElementById('post-edit-subtitle-input').value = _postEditSeed.subtitle || '';
-      document.getElementById('post-edit-date').value = _postEditSeed.publish_date || GW.getKstDateInputValue();
+      document.getElementById('post-edit-date').value = GW.toDatetimeLocalValue(_postEditSeed.publish_at || _postEditSeed.publish_date || '') || GW.getKstDateTimeInputValue();
       document.getElementById('post-edit-youtube').value = _postEditSeed.youtube_url || '';
       document.getElementById('post-edit-image-caption').value = _postEditSeed.image_caption || '';
       document.getElementById('post-edit-metatags-input').value = _postEditSeed.meta_tags || '';
@@ -917,7 +918,7 @@ export async function onRequestGet({ params, env, request }) {
               meta_tags: metaTags || null,
               author: author || null,
               ai_assisted: aiAssisted,
-              publish_date: publishDate || undefined
+              publish_at: publishDate ? GW.normalizePublishAtValue(publishDate) : undefined
             })
           });
         })

@@ -11,6 +11,7 @@ import {
   fetchReleaseDeployments,
   json,
   previewOnly,
+  verifyPromotionReadiness,
 } from '../../_shared/preview-ops.js';
 
 export async function onRequestPost(context) {
@@ -57,6 +58,15 @@ export async function onRequestPost(context) {
       error: '체크리스트를 모두 완료한 뒤 반영할 수 있습니다.',
       missing_ids: missingIds,
     }, 400);
+  }
+
+  const readiness = await verifyPromotionReadiness(context.env, release);
+  if (!readiness.ok) {
+    return json({
+      error: 'preview 반영 준비 상태가 완전하지 않습니다.',
+      reasons: readiness.reasons,
+      branch_heads: readiness.branch_heads,
+    }, 409);
   }
 
   try {

@@ -472,7 +472,7 @@
     loadDashboard();
     if (isFullAdmin()) {
       var dateEl = document.getElementById('art-date');
-      if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateInputValue();
+      if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateTimeInputValue();
       updateCatPreview();
       updateEditorActionState();
     }
@@ -1081,7 +1081,7 @@
         meta_tags: metaTags || null,
         author: author || undefined,
         ai_assisted: aiEl ? (aiEl.checked ? 1 : 0) : 0,
-        publish_date: (dateEl && dateEl.value) ? dateEl.value : undefined,
+        publish_at: (dateEl && dateEl.value) ? GW.normalizePublishAtValue(dateEl.value) : undefined,
         cf_turnstile_response: editingId ? undefined : (_adminTurnstileToken || undefined),
       };
       var url    = editingId ? '/api/posts/' + editingId : '/api/posts';
@@ -1150,7 +1150,7 @@
         // Load publish date
         var dateEl = document.getElementById('art-date');
         if (dateEl && (p.publish_at || p.created_at)) {
-          dateEl.value = (p.publish_at || p.created_at).slice(0, 10);
+          dateEl.value = GW.toDatetimeLocalValue(p.publish_at || p.created_at);
         }
         var createdMetaEl = document.getElementById('art-created-at-meta');
         if (createdMetaEl) createdMetaEl.textContent = '생성 시각: ' + GW.formatDateTime(p.created_at);
@@ -1209,7 +1209,7 @@
     document.getElementById('art-youtube-url').value = '';
     document.getElementById('art-image-caption').value = '';
     var dateEl = document.getElementById('art-date');
-    if (dateEl) dateEl.value = GW.getKstDateInputValue();
+    if (dateEl) dateEl.value = GW.getKstDateTimeInputValue();
     var createdMetaEl = document.getElementById('art-created-at-meta');
     if (createdMetaEl) createdMetaEl.textContent = '생성 시각: 새 글 작성 시 자동 기록';
     var authorEl = document.getElementById('art-author');
@@ -1291,7 +1291,7 @@
       youtube_url: youtubeEl ? (youtubeEl.value || '') : '',
       image_caption: (document.getElementById('art-image-caption') || {}).value || '',
       author: authorEl ? (authorEl.value || '') : '',
-      publish_date: dateEl ? (dateEl.value || '') : '',
+      publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
       ai_assisted: aiEl ? !!aiEl.checked : false,
       tags: _adminSelTags.slice(),
       image_url: _adminCoverImg || null,
@@ -1308,7 +1308,7 @@
     document.getElementById('art-youtube-url').value = draft.youtube_url || '';
     document.getElementById('art-image-caption').value = draft.image_caption || '';
     document.getElementById('art-author').value = draft.author || 'Editor A';
-    document.getElementById('art-date').value = draft.publish_date || GW.getKstDateInputValue();
+    document.getElementById('art-date').value = GW.toDatetimeLocalValue(draft.publish_at || draft.publish_date || '') || GW.getKstDateTimeInputValue();
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
     _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
     _adminCoverImg = draft.image_url || null;

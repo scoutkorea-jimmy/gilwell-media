@@ -230,7 +230,7 @@ async function loadPostList(env, origin, opts = {}) {
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE ${conditions.join(' AND ')}
-      ORDER BY sort_order IS NULL ASC, sort_order ASC, created_at DESC, id DESC
+      ORDER BY sort_order IS NULL ASC, sort_order ASC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC
       LIMIT ?`
   ).bind(...bindings, limit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
@@ -243,7 +243,7 @@ async function loadLatestPosts(env, origin, limit) {
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE published = 1
-      ORDER BY created_at DESC, id DESC
+      ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
       LIMIT ?`
   ).bind(safeLimit).all();
   return (results || []).map((post) => serializePostImage(post, origin));

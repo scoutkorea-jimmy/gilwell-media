@@ -81,7 +81,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, publish_at, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
@@ -123,8 +123,13 @@ export async function onRequestPut({ params, request, env }) {
   if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
-  if (publish_date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(publish_date)) {
-    fields.push('publish_at = ?'); values.push(`${publish_date} 12:00:00`);
+  const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
+  if (publish_at !== undefined || publish_date !== undefined) {
+    if (normalizedPublishAt) {
+      fields.push('publish_at = ?'); values.push(normalizedPublishAt);
+    } else if (publish_at === null || publish_date === null || publish_at === '' || publish_date === '') {
+      fields.push('publish_at = ?'); values.push(null);
+    }
   }
 
   if (fields.length === 0) {
@@ -215,11 +220,24 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
+    const existing = await env.DB.prepare(`SELECT image_url, content FROM posts WHERE id = ?`).bind(id).first();
+    if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const { meta } = await env.DB.prepare(
       `DELETE FROM posts WHERE id = ?`
     ).bind(id).run();
 
     if (meta.changes === 0) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    await Promise.all([
+      env.DB.prepare(`DELETE FROM post_views WHERE post_id = ?`).bind(id).run().catch(() => {}),
+      env.DB.prepare(`DELETE FROM post_likes WHERE post_id = ?`).bind(id).run().catch(() => {}),
+      env.DB.prepare(`DELETE FROM post_history WHERE post_id = ?`).bind(id).run().catch(() => {}),
+      env.DB.prepare(`DELETE FROM site_visits WHERE path = ?`).bind('/post/' + id).run().catch(() => {}),
+    ]);
+    const origin = new URL(request.url).origin;
+    const imageUrls = collectStoredImageUrls(existing, origin);
+    await Promise.all(imageUrls.map(function (value) {
+      return deleteStoredImageByUrl(env, value, origin).catch(() => {});
+    }));
     return json({ success: true });
   } catch (err) {
     console.error('DELETE /api/posts/:id error:', err);
@@ -262,4 +280,44 @@ function sanitizeCaption(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 300) : null;
+}
+
+function normalizePublishAtInput(publishAt, publishDate) {
+  const precise = String(publishAt || '').trim();
+  if (precise) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(precise)) return `${precise} 12:00:00`;
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(precise)) return `${precise.replace('T', ' ')}:00`;
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(precise)) return `${precise}:00`;
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(precise)) return precise.replace('T', ' ');
+  }
+  const fallback = String(publishDate || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
+  return '';
+}
+
+function collectStoredImageUrls(post) {
+  const urls = [];
+  if (post && post.image_url) urls.push(String(post.image_url));
+  const content = post && typeof post.content === 'string' ? post.content.trim() : '';
+  if (!content || content.charAt(0) !== '{') return uniqueStrings(urls);
+  try {
+    const parsed = JSON.parse(content);
+    const blocks = Array.isArray(parsed && parsed.blocks) ? parsed.blocks : [];
+    blocks.forEach(function (block) {
+      if (!block || block.type !== 'image' || !block.data) return;
+      const imageUrl = (block.data.file && block.data.file.url) || block.data.url;
+      if (imageUrl) urls.push(String(imageUrl));
+    });
+  } catch (_) {}
+  return uniqueStrings(urls);
+}
+
+function uniqueStrings(items) {
+  const seen = new Set();
+  return (Array.isArray(items) ? items : []).filter(function (item) {
+    const value = String(item || '').trim();
+    if (!value || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
 }

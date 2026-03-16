@@ -9867,3 +9867,276 @@ body.preview-review-modal-open .preview-review-fab {
     font-size: 11px;
   }
 }
+
+/* ── Admin refresh 2026-03 ───────────────────────────────── */
+body.admin-page {
+  --admin-space-section: 24px;
+  --admin-space-panel: 18px;
+  --admin-space-block: 14px;
+  --admin-space-field: 10px;
+  --admin-radius-card: 18px;
+  --admin-radius-soft: 14px;
+}
+
+body.admin-page .admin-shell {
+  gap: var(--admin-space-section);
+}
+
+body.admin-page .admin-sidebar-group,
+body.admin-page .panel,
+body.admin-page .tag-admin-panel,
+body.admin-page .admin-search-panel,
+body.admin-page .dash-action-btn,
+body.admin-page .dash-stat-card {
+  border-radius: var(--admin-radius-card);
+}
+
+body.admin-page .panel + .panel,
+body.admin-page .admin-panel-block + .admin-panel-block,
+body.admin-page .admin-tab-panel .panel + .panel {
+  margin-top: var(--admin-space-section);
+}
+
+body.admin-page .panel-header,
+body.admin-page .admin-panel-header-wrap {
+  padding: 18px 22px 14px;
+}
+
+body.admin-page .panel-body {
+  padding: 0 22px 22px;
+}
+
+body.admin-page .form-row,
+body.admin-page .admin-inline-controls,
+body.admin-page .tag-admin-toolbar,
+body.admin-page .glossary-admin-toolbar,
+body.admin-page .glossary-admin-form-grid,
+body.admin-page .article-list-toolbar,
+body.admin-page .share-meta-inline-grid,
+body.admin-page .tag-admin-grid,
+body.admin-page .dash-actions,
+body.admin-page .dash-stats-row {
+  gap: var(--admin-space-block);
+}
+
+body.admin-page .form-group {
+  margin-bottom: var(--admin-space-panel);
+}
+
+body.admin-page .form-group:last-child {
+  margin-bottom: 0;
+}
+
+body.admin-page .admin-form-group-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+body.admin-page .admin-control-input,
+body.admin-page .admin-list-search-input,
+body.admin-page .admin-list-page-size {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+body.admin-page .admin-list-search-input {
+  flex: 1 1 260px;
+}
+
+body.admin-page .admin-list-page-size,
+body.admin-page .admin-control-input-short {
+  width: auto;
+  min-width: 96px;
+}
+
+body.admin-page .admin-control-input-spaced {
+  margin-top: 10px;
+}
+
+body.admin-page .admin-field-meta,
+body.admin-page .admin-label-note {
+  color: var(--muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+body.admin-page .admin-field-meta {
+  margin-top: 6px;
+}
+
+body.admin-page .admin-field-meta-block {
+  display: block;
+}
+
+body.admin-page .admin-inline-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+body.admin-page .admin-inline-checkbox {
+  width: auto;
+  margin: 0;
+}
+
+body.admin-page .admin-inline-check-label {
+  margin: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+body.admin-page .admin-turnstile-slot {
+  margin: 12px 0;
+}
+
+body.admin-page .admin-turnstile-slot-top {
+  margin: 20px 0 0;
+}
+
+body.admin-page .admin-inline-btn,
+body.admin-page .admin-inline-submit,
+body.admin-page .admin-inline-cancel {
+  width: auto;
+  margin: 0;
+}
+
+body.admin-page .admin-inline-btn {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+body.admin-page .admin-inline-btn-primary {
+  background: #622599;
+  color: #fff;
+  border-color: #622599;
+}
+
+body.admin-page #reorder-save-btn:not([style*="display:none"]) {
+  display: inline-flex !important;
+  align-items: center;
+}
+
+body.admin-page .admin-pagination-info {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+body.admin-page .admin-scroll-card {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  padding: 0 12px;
+  border-radius: var(--admin-radius-soft);
+}
+
+body.admin-page .admin-submit-spaced {
+  margin-top: 12px;
+}
+
+body.admin-page .admin-stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+body.admin-page .admin-header-top {
+  align-items: stretch;
+  gap: var(--admin-space-section);
+}
+
+body.admin-page .admin-brand-card,
+body.admin-page .admin-control-card {
+  min-height: 0;
+}
+
+body.admin-page .admin-control-card {
+  padding: 16px;
+  gap: 14px;
+}
+
+body.admin-page .admin-header-box-row {
+  gap: 10px;
+}
+
+body.admin-page .admin-group-btn,
+body.admin-page .admin-sidebar-btn {
+  min-height: 52px;
+}
+
+body.admin-page .admin-group-btn {
+  border-radius: 14px;
+}
+
+body.admin-page .admin-sidebar-btn {
+  justify-content: center;
+  align-items: flex-start;
+  padding: 14px 16px;
+}
+
+body.admin-page .admin-tab-panel.active {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-section);
+}
+
+body.admin-page .article-list-toolbar,
+body.admin-page .glossary-admin-toolbar,
+body.admin-page .glossary-admin-form-grid {
+  margin-bottom: var(--admin-space-panel);
+}
+
+body.admin-page .item-meta-chip strong {
+  font-size: 10px;
+}
+
+body.admin-page .item-meta-chip span {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (min-width: 961px) {
+  body.admin-page .admin-screen {
+    width: min(100%, 960px);
+  }
+
+  body.admin-page .dash-stats-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  body.admin-page .dash-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.board-write-datetime,
+#post-edit-date {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  box-sizing: border-box;
+  outline: none;
+}
