@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.062.05';
+  GW.APP_VERSION = '0.062.06';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1198,6 +1198,15 @@
     summary.textContent = release.summary || '';
 
     var html = (release.sections || []).map(function (section) {
+      if (section && section.variant === 'notice') {
+        return '<section class="preview-review-section preview-review-section-notice">' +
+          '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
+          '<div class="preview-review-notice">' +
+            '<strong>' + GW.escapeHtml(section.message || '') + '</strong>' +
+            '<p>' + GW.escapeHtml(section.detail || '') + '</p>' +
+          '</div>' +
+        '</section>';
+      }
       if (section && section.variant === 'history') {
         return '<section class="preview-review-section preview-review-section-history">' +
           '<div class="preview-review-section-head">' + GW.escapeHtml(section.title || '') + '</div>' +
@@ -1411,6 +1420,13 @@
     var button = document.getElementById('preview-promote-btn');
     var release = GW._previewRuntimeState.release;
     if (!button || !release) return;
+    if (release.has_pending_changes === false) {
+      button.classList.remove('ready');
+      button.classList.remove('is-loading');
+      button.setAttribute('aria-disabled', 'true');
+      button.textContent = '반영할 변경 없음';
+      return;
+    }
     var requiredIds = [];
     (release.sections || []).forEach(function (section) {
       (section.items || []).forEach(function (item) {
@@ -1428,6 +1444,10 @@
     var button = document.getElementById('preview-promote-btn');
     var release = GW._previewRuntimeState.release;
     if (!button || !release) return;
+    if (release.has_pending_changes === false) {
+      GW.showToast('반영할 추가 변경이 없습니다.', 'error');
+      return;
+    }
 
     var requiredIds = [];
     (release.sections || []).forEach(function (section) {

@@ -59,7 +59,7 @@ export function collectPendingPreviewEntries(entries, liveVersion) {
     if (pending.length >= MAX_RELEASE_SECTIONS) break;
   }
 
-  return pending.length ? pending : rows.slice(0, 1);
+  return pending;
 }
 
 export function buildPreviewRelease(entries, meta) {
@@ -71,12 +71,21 @@ export function buildPreviewRelease(entries, meta) {
   ).trim();
   const liveVersion = String(meta && meta.live_version || '').trim();
   const pendingEntries = collectPendingPreviewEntries(rows, liveVersion);
+  const hasPendingChanges = liveVersion
+    ? pendingEntries.length > 0
+    : rows.length > 0;
   const leadEntry = pendingEntries[0] || rows[0] || null;
   const leadSummary = String((leadEntry && leadEntry.summary) || DEFAULT_SUMMARY).trim();
 
   const summary = liveVersion
-    ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다. 누적 변경 상세와 요청/피드백 히스토리를 함께 확인합니다.'
+    ? hasPendingChanges
+      ? '현재 운영 반영 버전 V' + liveVersion + ' 이후 누적된 ' + pendingEntries.length + '개 릴리스 변경을 검수합니다. 누적 변경 상세와 요청/피드백 히스토리를 함께 확인합니다.'
+      : '현재 운영 반영 버전 V' + liveVersion + '와 preview가 같아 아직 추가 수정이나 개발된 사항이 없는 최신 버전입니다.'
     : leadSummary;
+
+  const promotionNote = hasPendingChanges
+    ? '모든 체크박스를 완료하고 관리자 인증까지 마친 뒤에만 본 페이지 반영을 시작할 수 있습니다.'
+    : '현재 preview에는 production에 아직 반영되지 않은 추가 변경이 없습니다.';
 
   return {
     version: currentVersion,
@@ -84,12 +93,13 @@ export function buildPreviewRelease(entries, meta) {
     title_prefix: '[프리뷰]',
     summary: summary,
     live_version: liveVersion,
+    has_pending_changes: hasPendingChanges,
     pending_versions: pendingEntries.map(function (entry) { return String(entry.version || '').trim(); }).filter(Boolean),
-    promotion_note: '모든 체크박스를 완료하고 관리자 인증까지 마친 뒤에만 본 페이지 반영을 시작할 수 있습니다.',
+    promotion_note: promotionNote,
     actions_url: 'https://github.com/scoutkorea-jimmy/gilwell-media/actions',
     commit_sha: String(meta && meta.commit_sha || '').trim(),
     branch: String(meta && meta.branch || 'preview').trim(),
-    sections: buildSections(pendingEntries),
+    sections: buildSections(pendingEntries, liveVersion, currentVersion, hasPendingChanges),
   };
 }
 
@@ -101,8 +111,21 @@ export function getPreviewChecklistIds(release) {
   }, []).filter(Boolean);
 }
 
-function buildSections(entries) {
+function buildSections(entries, liveVersion, currentVersion, hasPendingChanges) {
   const releaseSections = [];
+
+  if (!hasPendingChanges) {
+    releaseSections.push({
+      key: 'up-to-date',
+      title: '현재 상태',
+      variant: 'notice',
+      message: liveVersion
+        ? '운영 반영 버전 V' + liveVersion + '와 preview V' + currentVersion + '가 같아서, 아직 새로 검수할 기능적 변경이 없습니다.'
+        : '아직 preview에 검수할 변경 이력이 없습니다.',
+      detail: '추가 수정이나 개발이 생기면 여기에서 운영 반영본 이후 누적 변경과 요청/피드백 히스토리를 다시 확인할 수 있습니다.',
+    });
+    return releaseSections;
+  }
 
   if (entries.length) {
     releaseSections.push(buildCumulativeDetailSection(entries));

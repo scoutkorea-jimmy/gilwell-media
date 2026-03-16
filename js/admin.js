@@ -320,6 +320,57 @@
     link.rel = 'noopener';
     link.textContent = isPreviewHost ? '프리뷰 홈 보기 ↗' : '프리뷰 보기 ↗';
     link.setAttribute('aria-label', link.textContent);
+    if (link.dataset.previewBound === 'true') return;
+    link.dataset.previewBound = 'true';
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      if (link.dataset.previewChecking === 'true') return;
+      link.dataset.previewChecking = 'true';
+      var originalText = link.textContent;
+      link.textContent = '프리뷰 확인 중…';
+      fetch(resolvePreviewReleaseUrl(isPreviewHost), {
+        cache: 'no-store',
+        credentials: 'omit',
+      })
+        .then(function (response) {
+          if (!response.ok) throw new Error('preview-release-fetch-failed');
+          return response.json();
+        })
+        .then(function (data) {
+          var release = data && data.release ? data.release : null;
+          var hasPendingChanges = releaseHasPendingChanges(release);
+          if (!hasPendingChanges) {
+            GW.showToast('아직 추가 수정이나 개발된 사항이 없는 최신버전이에요.', 'success');
+            return;
+          }
+          window.open(previewUrl, '_blank', 'noopener');
+        })
+        .catch(function () {
+          GW.showToast('프리뷰 상태를 확인하지 못했습니다. 잠시 후 다시 시도해주세요.', 'error');
+        })
+        .finally(function () {
+          link.dataset.previewChecking = 'false';
+          link.textContent = originalText;
+        });
+    });
+  }
+
+  function resolvePreviewReleaseUrl(isPreviewHost) {
+    return isPreviewHost
+      ? (window.location.origin + '/api/preview/release')
+      : 'https://preview.gilwell-media.pages.dev/api/preview/release';
+  }
+
+  function releaseHasPendingChanges(release) {
+    if (!release || typeof release !== 'object') return true;
+    if (release.has_pending_changes === false) return false;
+    if (release.has_pending_changes === true) return true;
+    var pendingVersions = Array.isArray(release.pending_versions) ? release.pending_versions.filter(Boolean) : [];
+    if (pendingVersions.length > 0) return true;
+    var liveVersion = String(release.live_version || '').trim();
+    var previewVersion = String(release.version || '').trim();
+    if (liveVersion && previewVersion && liveVersion === previewVersion) return false;
+    return true;
   }
 
   // ─── Tab navigation ───────────────────────────────────────
