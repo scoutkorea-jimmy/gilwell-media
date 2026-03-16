@@ -182,7 +182,7 @@
     var fallbackDesktop = {
       position_x: clampHomeLeadValue(raw.position_x, 0, 100, 50),
       position_y: clampHomeLeadValue(raw.position_y, 0, 100, 50),
-      zoom: clampHomeLeadValue(raw.zoom, 100, 150, 100),
+      zoom: clampHomeLeadValue(raw.zoom, 60, 150, 100),
     };
     var fallbackMobile = {
       position_x: fallbackDesktop.position_x,
@@ -196,12 +196,12 @@
       desktop: {
         position_x: clampHomeLeadValue(desktop.position_x, 0, 100, fallbackDesktop.position_x),
         position_y: clampHomeLeadValue(desktop.position_y, 0, 100, fallbackDesktop.position_y),
-        zoom: clampHomeLeadValue(desktop.zoom, 100, 150, fallbackDesktop.zoom),
+        zoom: clampHomeLeadValue(desktop.zoom, 60, 150, fallbackDesktop.zoom),
       },
       mobile: {
         position_x: clampHomeLeadValue(mobile.position_x, 0, 100, fallbackMobile.position_x),
         position_y: clampHomeLeadValue(mobile.position_y, 0, 100, fallbackMobile.position_y),
-        zoom: clampHomeLeadValue(mobile.zoom, 100, 150, fallbackMobile.zoom),
+        zoom: clampHomeLeadValue(mobile.zoom, 60, 150, fallbackMobile.zoom),
       },
     };
   }
@@ -222,6 +222,13 @@
     ].join(';');
   }
 
+  function getResponsivePreviewFrameStyle(media, device) {
+    var config = normalizeResponsiveMedia(media);
+    var target = config[device === 'mobile' ? 'mobile' : 'desktop'];
+    var backdropOpacity = target.zoom < 100 ? 0.4 : 0;
+    return '--media-backdrop-opacity:' + backdropOpacity.toFixed(2);
+  }
+
   function getHomeLeadPreviewStyle(media, device) {
     return getResponsivePreviewStyle(media, device || 'desktop');
   }
@@ -229,7 +236,7 @@
   function buildResponsiveMediaEditor(prefix, media, imageUrl, altText) {
     var config = normalizeResponsiveMedia(media);
     var variantClass = prefix.indexOf('hero-slot-') === 0 ? ' is-hero' : ' is-home-lead';
-    var frameStyle = 'background-image:url(' + GW.escapeHtml(imageUrl) + ');';
+    var imageStyle = 'background-image:url(' + GW.escapeHtml(imageUrl) + ');';
     function buildDevice(device, label) {
       var current = config[device];
       return '' +
@@ -238,7 +245,8 @@
             '<strong>' + label + '</strong>' +
             '<span>' + (device === 'mobile' ? '모바일 화면 기준' : '데스크톱 화면 기준') + '</span>' +
           '</div>' +
-          '<div class="admin-media-preview-frame' + variantClass + (device === 'mobile' ? ' is-mobile' : ' is-desktop') + '" style="' + frameStyle + '">' +
+          '<div id="' + prefix + '-' + device + '-frame" class="admin-media-preview-frame' + variantClass + (device === 'mobile' ? ' is-mobile' : ' is-desktop') + '" data-media-src="' + GW.escapeHtml(imageUrl) + '" style="' + getResponsivePreviewFrameStyle(config, device) + '">' +
+            '<div class="admin-media-preview-backdrop" aria-hidden="true" style="' + imageStyle + '"></div>' +
             '<img id="' + prefix + '-' + device + '-preview" src="' + GW.escapeHtml(imageUrl) + '" alt="' + GW.escapeHtml(altText || '') + '" style="' + getResponsivePreviewStyle(config, device) + '">' +
           '</div>' +
           '<div class="admin-media-control">' +
@@ -258,7 +266,7 @@
           '<div class="admin-media-control">' +
             '<label for="' + prefix + '-' + device + '-zoom">이미지 확대</label>' +
             '<div class="admin-home-lead-range">' +
-              '<input type="range" id="' + prefix + '-' + device + '-zoom" min="100" max="150" step="1" value="' + current.zoom + '">' +
+              '<input type="range" id="' + prefix + '-' + device + '-zoom" min="60" max="150" step="1" value="' + current.zoom + '">' +
               '<span id="' + prefix + '-' + device + '-zoom-value">' + current.zoom + '%</span>' +
             '</div>' +
           '</div>' +
@@ -311,6 +319,8 @@
           if (!input || !label) return;
           label.textContent = input.value + (field === 'zoom' ? '%' : '%');
         });
+        var frame = document.getElementById(prefix + '-' + device + '-frame');
+        if (frame) frame.style.cssText = getResponsivePreviewFrameStyle(nextMedia, device);
         var preview = document.getElementById(prefix + '-' + device + '-preview');
         if (preview) preview.style.cssText = getResponsivePreviewStyle(nextMedia, device);
       });
@@ -344,7 +354,7 @@
 
   function canAccessAdminTab(tab) {
     if (isFullAdmin()) return true;
-    return ['dashboard', 'analytics', 'settings', 'history'].indexOf(tab) >= 0;
+    return ['dashboard', 'analytics', 'hero-manager', 'history'].indexOf(tab) >= 0;
   }
 
   function canAccessAdminGroup(group) {
@@ -528,6 +538,8 @@
     list: 'content',
     glossary: 'content',
     settings: 'site',
+    'hero-manager': 'site',
+    'home-lead': 'site',
     contributors: 'site',
     translations: 'site',
     history: 'site',
@@ -600,12 +612,21 @@
     if (tab === 'write') _maybeRestoreAdminDraft();
     if (tab === 'glossary') loadGlossaryAdmin();
     if (tab === 'history') loadVersionHistory();
+    if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
   window.scrollAdminSection = function (id) {
-    if (isLimitedAdmin() && id !== 'settings-hero-manager') id = 'settings-hero-manager';
-    showAdminTab('settings');
+    if (isLimitedAdmin()) {
+      id = 'settings-hero-manager';
+      showAdminTab('hero-manager');
+    } else if (id === 'settings-hero-manager') {
+      showAdminTab('hero-manager');
+    } else if (id === 'settings-home-lead') {
+      showAdminTab('home-lead');
+    } else {
+      showAdminTab('settings');
+    }
     setTimeout(function () {
       var el = document.getElementById(id);
       if (!el) return;
@@ -631,11 +652,6 @@
       var allowed = panel ? panel.style.display !== 'none' : true;
       btn.style.display = allowed ? '' : 'none';
     });
-    var siteBtn = document.getElementById('tab-btn-settings');
-    if (siteBtn) {
-      var desc = siteBtn.querySelector('.admin-sidebar-btn-desc');
-      if (desc) desc.textContent = limited ? '히어로 기사 설정' : '태그, 메타, 푸터, 문구';
-    }
     var contentGroup = document.querySelector('.admin-sidebar-group[data-admin-group="content"]');
     if (contentGroup) syncAdminSidebarGroupVisibility(contentGroup, !limited && _adminGroup === 'content');
     var siteGroup = document.querySelector('.admin-sidebar-group[data-admin-group="site"]');

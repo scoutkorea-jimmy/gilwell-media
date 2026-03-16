@@ -128,7 +128,7 @@ function normalizeHomeLeadMedia(input) {
   const fallbackDesktop = {
     position_x: clampNumber(raw.position_x, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_x),
     position_y: clampNumber(raw.position_y, 0, 100, DEFAULT_HOME_LEAD_MEDIA.desktop.position_y),
-    zoom: clampNumber(raw.zoom, 100, 150, DEFAULT_HOME_LEAD_MEDIA.desktop.zoom),
+    zoom: clampNumber(raw.zoom, 60, 150, DEFAULT_HOME_LEAD_MEDIA.desktop.zoom),
   };
   const fallbackMobile = {
     position_x: fallbackDesktop.position_x,
@@ -142,12 +142,12 @@ function normalizeHomeLeadMedia(input) {
     desktop: {
       position_x: clampNumber(desktop.position_x, 0, 100, fallbackDesktop.position_x),
       position_y: clampNumber(desktop.position_y, 0, 100, fallbackDesktop.position_y),
-      zoom: clampNumber(desktop.zoom, 100, 150, fallbackDesktop.zoom),
+      zoom: clampNumber(desktop.zoom, 60, 150, fallbackDesktop.zoom),
     },
     mobile: {
       position_x: clampNumber(mobile.position_x, 0, 100, fallbackMobile.position_x),
       position_y: clampNumber(mobile.position_y, 0, 100, fallbackMobile.position_y),
-      zoom: clampNumber(mobile.zoom, 100, 150, fallbackMobile.zoom),
+      zoom: clampNumber(mobile.zoom, 60, 150, fallbackMobile.zoom),
     },
   };
 }

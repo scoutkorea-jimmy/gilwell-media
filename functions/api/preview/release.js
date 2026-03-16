@@ -1,5 +1,6 @@
 import {
   buildPreviewRelease,
+  findLatestDeploymentSource,
   findLatestProductionVersion,
   getPreviewChecklistIds,
 } from '../../_shared/preview-release-data.js';
@@ -23,7 +24,7 @@ export async function onRequestGet(context) {
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
     live_version: findLatestProductionVersion(deployments) || productionVersion,
-    commit_sha: context.env.CF_PAGES_COMMIT_SHA || '',
+    commit_sha: context.env.CF_PAGES_COMMIT_SHA || findLatestDeploymentSource(deployments, 'preview', 'preview') || '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
 
