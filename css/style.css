@@ -9271,8 +9271,10 @@ body.preview-review-modal-open .preview-review-fab {
 .preview-review-card {
   position: relative;
   width: min(980px, 100%);
-  max-height: 92vh;
-  overflow: auto;
+  max-height: min(88vh, 980px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background:
     radial-gradient(circle at top right, rgba(110, 61, 169, 0.16), transparent 30%),
     linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(246, 239, 235, 0.98));
@@ -9286,6 +9288,11 @@ body.preview-review-modal-open .preview-review-fab {
 .preview-review-history,
 .preview-review-actions {
   padding: 22px 26px;
+}
+
+.preview-review-head,
+.preview-review-actions {
+  flex: 0 0 auto;
 }
 
 .preview-review-head {
@@ -9385,6 +9392,11 @@ body.preview-review-modal-open .preview-review-fab {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 18px;
 }
 
 .preview-review-section,
@@ -9547,6 +9559,10 @@ body.preview-review-modal-open .preview-review-fab {
 }
 
 .preview-review-history {
+  flex: 0 0 auto;
+  max-height: min(30vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid rgba(34, 27, 40, 0.08);
 }
 
@@ -9691,6 +9707,9 @@ body.preview-review-modal-open .preview-review-fab {
 .preview-guard-card {
   position: relative;
   width: min(520px, 100%);
+  max-height: min(72vh, 640px);
+  display: flex;
+  flex-direction: column;
   background: linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(246, 239, 235, 0.98));
   border: 1px solid rgba(34, 27, 40, 0.12);
   border-radius: 24px;
@@ -9744,6 +9763,13 @@ body.preview-review-modal-open .preview-review-fab {
   line-height: 1.6;
 }
 
+.preview-guard-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .preview-guard-list {
   margin: 14px 0 0;
   padding-left: 18px;
@@ -9767,6 +9793,14 @@ body.preview-review-modal-open .preview-review-fab {
 @media (max-width: 900px) {
   .preview-review-modal {
     padding: 12px;
+  }
+
+  .preview-review-card {
+    max-height: min(84vh, 900px);
+  }
+
+  .preview-review-history {
+    max-height: min(24vh, 260px);
   }
 
   .preview-review-fab {
@@ -9809,6 +9843,10 @@ body.preview-review-modal-open .preview-review-fab {
 
   .preview-review-head strong {
     font-size: 22px;
+  }
+
+  .preview-review-history {
+    max-height: min(22vh, 220px);
   }
 
   .preview-review-fab {
