@@ -29,3 +29,8 @@ wrangler pages deploy . \
   --branch main \
   --commit-hash "${COMMIT_SHA}" \
   --commit-message "${COMMIT_MESSAGE}"
+
+if [[ -x "$ROOT_DIR/scripts/store_release_snapshot.sh" || -f "$ROOT_DIR/scripts/store_release_snapshot.sh" ]]; then
+  chmod +x "$ROOT_DIR/scripts/store_release_snapshot.sh"
+  GITHUB_REF_NAME=main "$ROOT_DIR/scripts/store_release_snapshot.sh" production "https://bpmedia.net"
+fi

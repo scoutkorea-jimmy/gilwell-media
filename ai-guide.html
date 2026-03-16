@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.061.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -163,15 +163,23 @@
         </div>
         <div class="contributor-card">
           <h3>Preview 배포 규칙</h3>
-          <p>기능 개발 후에는 `./scripts/deploy_preview.sh`로 preview 배포를 만들고, 그 URL에 대해 `./scripts/post_deploy_check.sh <preview-url>` 검증과 수동 화면 확인을 먼저 진행합니다. 오너 확인 전에는 production 배포를 하지 않습니다. 단, 관리자 페이지는 오너가 즉시 반영을 요청한 경우 preview 규칙에서 제외할 수 있습니다. preview 환경에서도 관리자 검수가 필요하므로 `ADMIN_PASSWORD`와 `ADMIN_SECRET`는 production과 별도로 preview 환경에도 반드시 설정돼 있어야 합니다.</p>
+          <p>기능 개발 후에는 `./scripts/deploy_preview.sh`로 preview 배포를 만들고, 그 URL에 대해 `./scripts/post_deploy_check.sh <preview-url>` 검증과 수동 화면 확인을 먼저 진행합니다. 이 스크립트는 현재 HEAD를 `origin/preview`에도 동기화해, preview에서 본 코드와 GitHub의 preview 브랜치가 같은 커밋을 가리키게 유지해야 합니다. 오너 확인 전에는 production 배포를 하지 않습니다. 단, 관리자 페이지는 오너가 즉시 반영을 요청한 경우 preview 규칙에서 제외할 수 있습니다.</p>
         </div>
         <div class="contributor-card">
           <h3>Production 배포 규칙</h3>
-          <p>preview 승인 후에만 `main` 브랜치에서 `./scripts/deploy_production.sh`를 실행합니다. production 배포는 깨끗한 워크트리의 `main`에서만 허용하고, 배포 후에는 라이브 버전 문자열과 기본 페이지 응답을 다시 확인합니다.</p>
+          <p>preview 승인 후에는 preview 페이지의 `본 페이지에 반영하기` 버튼으로 GitHub Actions 승격 워크플로우를 시작하는 것을 기본으로 합니다. 이 버튼은 모든 체크박스가 완료되고 full 관리자 인증이 끝났을 때만 동작합니다. 예외적으로 수동 production 배포가 필요할 때만 깨끗한 워크트리의 `main`에서 `./scripts/deploy_production.sh`를 실행합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>프리뷰 검수 모달 규칙</h3>
+          <p>preview 환경에서는 모든 공개 페이지 접속 시 브라우저 제목 앞에 `[프리뷰]`를 붙이고, 변경 항목과 검수 체크리스트를 담은 모달을 자동으로 띄웁니다. 업데이트 항목과 검수 항목은 모두 체크박스로 보여야 하며, 미체크 상태에서 반영 버튼을 눌렀을 때는 체크를 더 하라는 토스트를 띄웁니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>프리뷰 자동화 규칙</h3>
+          <p>preview 환경에는 `ADMIN_PASSWORD`, `ADMIN_SECRET`, `GITHUB_WORKFLOW_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`가 별도로 설정돼 있어야 합니다. preview 페이지의 반영 버튼은 GitHub Actions의 `promote-preview.yml`을 호출해 `preview -> main -> production deploy`를 실행하고, 최근 20개 코드 스냅샷과 배포 이력은 `release-history` 브랜치에 보관합니다. 복구가 필요하면 preview 모달의 히스토리에서 배포 롤백 또는 코드 스냅샷 복구를 시작할 수 있어야 합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>검수 루틴</h3>
-          <p>preview에서는 최소한 홈, 대표 기사 상세, 카테고리 보드, 검색, 용어집, 관리자 진입 화면, 모바일 레이아웃을 확인합니다. 최근 작업이 홈 최신 갱신, 공유 버튼 위치, 공개 기사 수정 모달처럼 상호작용을 건드렸다면, hard refresh 없이 최신 반영 여부와 공개 상세에서 수정 인증/저장 흐름까지 직접 검수합니다.</p>
+          <p>preview에서는 최소한 홈, 대표 기사 상세, 카테고리 보드, 검색, 용어집, 관리자 진입 화면, 모바일 레이아웃을 확인합니다. 최근 작업이 홈 최신 갱신, 공유 버튼 위치, 공개 기사 수정 모달처럼 상호작용을 건드렸다면, hard refresh 없이 최신 반영 여부와 공개 상세에서 수정 인증/저장 흐름까지 직접 검수합니다. 검수 결과는 preview 모달 체크박스에 바로 반영하고, 마지막 판단까지 끝낸 뒤에만 본 페이지 반영 버튼을 누릅니다.</p>
         </div>
       </div>
     </div>
@@ -189,7 +197,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.061.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.062.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -198,7 +206,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.061.01"></script>
+  <script src="/js/main.js?v=0.062.00"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>
