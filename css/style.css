@@ -5016,7 +5016,7 @@ footer a:hover { color: #ffffff; }
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.05em;
-  margin-bottom:  28px;
+  margin-bottom:  0;
   display:        flex;
   align-items:    center;
   gap:            8px;
@@ -5103,10 +5103,11 @@ footer a:hover { color: #ffffff; }
   color: var(--accent);
 }
 .post-page-share {
-  margin-top:  24px;
+  margin-top:  8px;
+  margin-bottom: 28px;
   display:     flex;
   align-items: center;
-  gap:         12px;
+  gap:         8px;
   flex-wrap:   wrap;
 }
 
@@ -5170,21 +5171,18 @@ footer a:hover { color: #ffffff; }
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
-  min-height:     var(--btn-height-secondary);
+  min-height:     0;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size:      11px;
-  letter-spacing: 0.04em;
+  font-size:      10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   background:     none;
   border:         1px solid var(--border);
   color:          var(--muted);
-  padding:        0 14px;
+  padding:        3px 8px;
   cursor:         pointer;
   transition:     border-color 0.15s, color 0.15s;
   white-space:    nowrap;
-}
-
-.post-page-share .post-action-btn {
-  min-width: 124px;
 }
 
 .post-action-btn:hover,
@@ -8932,26 +8930,78 @@ body.preview-review-modal-open .preview-review-fab {
   padding: 0 18px 6px;
 }
 
-.preview-review-summary-list {
+.preview-review-history-list {
   display: flex;
   flex-direction: column;
   padding: 8px 18px 10px;
 }
 
-.preview-review-summary-item {
+.preview-review-history-item {
   padding: 14px 0;
   border-top: 1px solid rgba(34, 27, 40, 0.06);
 }
 
-.preview-review-summary-item:first-child {
+.preview-review-history-item:first-child {
   border-top: 0;
 }
 
-.preview-review-summary-item p {
+.preview-review-history-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.preview-review-history-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(34, 27, 40, 0.1);
+  color: #5b524d;
+  background: rgba(36, 27, 40, 0.04);
+}
+
+.preview-review-history-status.is-kept {
+  color: #226336;
+  border-color: rgba(34, 99, 54, 0.2);
+  background: rgba(34, 99, 54, 0.08);
+}
+
+.preview-review-history-status.is-changed {
+  color: #8a5a00;
+  border-color: rgba(138, 90, 0, 0.2);
+  background: rgba(255, 182, 70, 0.12);
+}
+
+.preview-review-history-status.is-removed {
+  color: #a23438;
+  border-color: rgba(162, 52, 56, 0.2);
+  background: rgba(255, 103, 110, 0.12);
+}
+
+.preview-review-history-version {
+  color: #8a827d;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.preview-review-history-item p {
   margin: 6px 0 0;
   color: #6d645e;
   font-size: 14px;
   line-height: 1.55;
+}
+
+.preview-review-history-feedback {
+  margin-top: 8px;
+  color: #6d645e;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .preview-review-item {
@@ -8981,7 +9031,7 @@ body.preview-review-modal-open .preview-review-fab {
 
 .preview-review-copy strong,
 .preview-history-title,
-.preview-review-summary-item strong {
+.preview-review-history-item strong {
   color: #171119;
   font-size: 15px;
   line-height: 1.4;

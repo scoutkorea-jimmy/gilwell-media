@@ -142,7 +142,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.062.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.062.04">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -231,17 +231,16 @@ export async function onRequestGet({ params, env, request }) {
 
         <h1 class="post-page-title">${title}</h1>
         ${subtitle ? `<p class="post-page-subtitle">${subtitle}</p>` : ''}
-        <div class="post-page-share">
-          <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
-          <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
-        </div>
-
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
           ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
+        </div>
+        <div class="post-page-share">
+          <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
+          <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
         </div>
 
         ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}" fetchpriority="high" decoding="async">${renderImageCaption(post.image_caption)}` : ''}
@@ -311,7 +310,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.062.03</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.062.04</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -422,7 +421,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.062.03"></script>
+  <script src="/js/main.js?v=0.062.04"></script>
   <script>
     GW.bootstrapStandardPage();
 
