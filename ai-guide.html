@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.064.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.065.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -178,6 +178,10 @@
           <p>글머리 태그는 설정 화면뿐 아니라 글 작성/수정 화면에서도 현재 카테고리 기준으로 바로 추가할 수 있어야 합니다. 다만 삭제는 해당 태그를 쓰는 글이 하나도 없을 때만 허용하고, 사용 중인 태그면 어떤 글 때문에 막히는지 안내한 뒤 먼저 그 글의 태그에서 제외하도록 유도합니다.</p>
         </div>
         <div class="contributor-card">
+          <h3>공개 글쓰기 태그 규칙</h3>
+          <p>공개 페이지의 글쓰기/수정 모달도 관리자와 같은 수준으로 글머리 태그를 다뤄야 합니다. 게시판 글쓰기 모달과 기사 상세 수정 모달에서는 현재 카테고리에 새 태그를 추가하고 바로 선택할 수 있어야 하며, 권한 없는 계정이면 태그 추가를 막고 토스트로 안내합니다.</p>
+        </div>
+        <div class="contributor-card">
           <h3>용어집 검색 규칙</h3>
           <p>용어집 검색은 기본적으로 `용어 + 설명`을 함께 검색하고, 체크박스로 범위를 좁힐 수 있어야 합니다. `용어`와 `설명`을 모두 해제한 채 검색을 시도하면, 검색을 막고 `검색 색인을 설정해달라고` 안내하는 토스트를 띄웁니다.</p>
         </div>
@@ -188,6 +192,22 @@
         <div class="contributor-card">
           <h3>Preview 배포 규칙</h3>
           <p>기능 개발 후에는 `./scripts/deploy_preview.sh`로 preview 배포를 만들고, 그 URL에 대해 `./scripts/post_deploy_check.sh <preview-url>` 검증과 수동 화면 확인을 먼저 진행합니다. 이 스크립트는 현재 HEAD를 `origin/preview`에도 동기화해, preview에서 본 코드와 GitHub의 preview 브랜치가 같은 커밋을 가리키게 유지해야 합니다. 오너 확인 전에는 production 배포를 하지 않습니다. 단, 관리자 페이지 UI만 수정되거나 관리자/API 계열만 수정되는 경우는 preview 없이 바로 production에 반영하는 운영 예외를 기본 규칙으로 둡니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>Preview 최종 확인 규칙</h3>
+          <p>preview 검수리스트의 `본 페이지에 반영하기`와 복구 계열 동작은, 현재 브라우저가 이미 관리자 로그인 상태여도 full 관리자 비밀번호를 다시 입력해야 합니다. 검수 모달을 열어둔 채 자리를 비워도 바로 실행되지 않게, 최종 동작 직전에 비밀번호 재입력을 요구하는 구조를 유지합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>메인 슬라이드 태그 규칙</h3>
+          <p>메인 슬라이드의 카테고리 칩, 글머리 태그, `NEW` 태그는 같은 높이·같은 서체·같은 자간 규칙을 따릅니다. 대표 슬라이드에는 게시글의 글머리 태그를 가능한 한 모두 보여주고, 특정 태그만 혼자 더 커 보이거나 다른 리듬으로 보이지 않게 맞춥니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>관리자 간격 규칙</h3>
+          <p>관리자 페이지의 상하 여백은 `섹션 간격 > 패널 내부 블록 간격 > 폼 필드 간격 > 라벨/보조문구 간격` 순으로 단계가 분명해야 합니다. 일부 카드만 지나치게 붙거나 넓어지지 않도록 공통 spacing 변수로 묶어, 위계가 같으면 같은 간격을 사용합니다.</p>
+        </div>
+        <div class="contributor-card">
+          <h3>RSS 규칙</h3>
+          <p>RSS 피드에서는 작성자 실명을 노출하지 않습니다. RSS 항목의 날짜는 `publish_at`이 아니라 실제 생성 시각인 `created_at` 기준으로 보내고, 글머리 태그도 함께 포함해 리더와 수집기가 기사 성격을 더 잘 이해할 수 있게 유지합니다.</p>
         </div>
         <div class="contributor-card">
           <h3>Production 배포 규칙</h3>
@@ -224,7 +244,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.064.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.065.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -233,7 +253,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.064.01"></script>
+  <script src="/js/main.js?v=0.065.00"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>

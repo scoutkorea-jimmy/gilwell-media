@@ -534,6 +534,10 @@
         '<div class="form-group">' +
           '<label>글머리 태그</label>' +
           '<div id="board-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>' +
+          '<div class="public-tag-add-tools">' +
+            '<input type="text" id="board-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />' +
+            '<button type="button" id="board-tag-new-btn" class="public-inline-tag-add">태그 추가</button>' +
+          '</div>' +
         '</div>' +
         '<div class="form-group">' +
           '<label>대표 이미지</label>' +
@@ -573,6 +577,13 @@
     document.getElementById('board-write-cancel').addEventListener('click', function () { self._closeWriteForm(); });
     document.getElementById('board-write-submit').addEventListener('click', function () { self._submitPost(); });
     document.getElementById('board-cover-btn').addEventListener('click', function () { self._uploadCoverImage(); });
+    document.getElementById('board-tag-new-btn').addEventListener('click', function () { self._addWriteTag(); });
+    document.getElementById('board-tag-new-input').addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        self._addWriteTag();
+      }
+    });
     document.getElementById('board-write-savedraft').addEventListener('click', function () {
       var title    = (document.getElementById('board-write-title-input') || {}).value || '';
       var subEl    = document.getElementById('board-write-subtitle-input');
@@ -627,6 +638,73 @@
       }
     });
   }
+
+  Board.prototype._renderWriteTagSelector = function (tags) {
+    var self = this;
+    var sel = document.getElementById('board-tag-selector');
+    if (!sel) return;
+    var selected = (self._selectedTags || []).filter(function (tag) {
+      return tags.indexOf(tag) >= 0;
+    });
+    self._selectedTags = selected;
+    var html = '<button type="button" class="tag-pill' + (!selected.length ? ' active' : '') + '" data-tag="">없음</button>';
+    tags.forEach(function (tag) {
+      var active = selected.indexOf(tag) >= 0 ? ' active' : '';
+      html += '<button type="button" class="tag-pill' + active + '" data-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
+    });
+    sel.innerHTML = html;
+    sel.querySelectorAll('.tag-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tagVal = btn.dataset.tag || '';
+        if (tagVal === '') {
+          self._selectedTags = [];
+        } else {
+          var idx = self._selectedTags.indexOf(tagVal);
+          if (idx >= 0) self._selectedTags.splice(idx, 1);
+          else self._selectedTags.push(tagVal);
+        }
+        _syncBoardTagPills(sel, self._selectedTags);
+      });
+    });
+    _syncBoardTagPills(sel, self._selectedTags);
+  };
+
+  Board.prototype._loadWriteTagOptions = function () {
+    var self = this;
+    var sel = document.getElementById('board-tag-selector');
+    if (sel) sel.innerHTML = '<span style="font-size:11px;color:var(--muted);">불러오는 중…</span>';
+    return fetch('/api/settings/tags?category=' + encodeURIComponent(self.category), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        self._renderWriteTagSelector((data && data.items) || []);
+      })
+      .catch(function () {
+        if (sel) sel.innerHTML = '<span style="font-size:11px;color:var(--muted);">태그를 불러오지 못했습니다</span>';
+      });
+  };
+
+  Board.prototype._addWriteTag = function () {
+    var self = this;
+    var input = document.getElementById('board-tag-new-input');
+    var value = (input && input.value || '').trim();
+    if (!value) {
+      GW.showToast('태그명을 입력해주세요', 'error');
+      if (input) input.focus();
+      return;
+    }
+    GW.addManagedTagToCategory(value, self.category)
+      .then(function (result) {
+        var selectedTag = result && result.selectedTag ? result.selectedTag : value;
+        if (self._selectedTags.indexOf(selectedTag) < 0) self._selectedTags.push(selectedTag);
+        return self._loadWriteTagOptions().then(function () {
+          if (input) input.value = '';
+          GW.showToast(result && result.created ? '태그를 추가하고 바로 선택했습니다' : '이미 있는 태그라서 바로 선택했습니다', 'success');
+        });
+      })
+      .catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '태그를 추가하지 못했습니다', 'error');
+      });
+  };
 
   // ── Board search ──────────────────────────────────────────
   Board.prototype._setupSearch = function () {
@@ -853,36 +931,7 @@
     var dateEl = document.getElementById('board-write-date');
     if (dateEl) dateEl.value = GW.getKstDateInputValue();
 
-    // Load available tags (multi-select)
-    fetch('/api/settings/tags?category=' + encodeURIComponent(self.category), { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var tags = data.items || [];
-        var sel  = document.getElementById('board-tag-selector');
-        if (!sel) return;
-        var html = '<button type="button" class="tag-pill active" data-tag="">없음</button>';
-        tags.forEach(function (t) {
-          html += '<button type="button" class="tag-pill" data-tag="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</button>';
-        });
-        sel.innerHTML = html;
-        sel.querySelectorAll('.tag-pill').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var tagVal = btn.dataset.tag || '';
-            if (tagVal === '') {
-              self._selectedTags = [];
-            } else {
-              var idx = self._selectedTags.indexOf(tagVal);
-              if (idx >= 0) { self._selectedTags.splice(idx, 1); }
-              else { self._selectedTags.push(tagVal); }
-            }
-            _syncBoardTagPills(sel, self._selectedTags);
-          });
-        });
-      })
-      .catch(function () {
-        var sel = document.getElementById('board-tag-selector');
-        if (sel) sel.innerHTML = '<span style="font-size:11px;color:var(--muted);">태그를 불러오지 못했습니다</span>';
-      });
+    self._loadWriteTagOptions();
 
     this._loadEditorJs(function () {
       // Destroy previous instance before creating a new one

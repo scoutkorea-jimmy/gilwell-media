@@ -1,4 +1,4 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { extractToken, safeCompare, verifyTokenRole } from '../../_shared/auth.js';
 import {
   buildPreviewRelease,
   findLatestProductionVersion,
@@ -16,16 +16,21 @@ export async function onRequestPost(context) {
   const blocked = previewOnly(context.request, context.env);
   if (blocked) return blocked;
 
-  const token = extractToken(context.request);
-  if (!token || !(await verifyTokenRole(token, context.env.ADMIN_SECRET, 'full'))) {
-    return json({ error: '관리자 로그인 후 반영할 수 있습니다.' }, 401);
-  }
-
   let body;
   try {
     body = await context.request.json();
   } catch (_) {
     return json({ error: '올바른 요청 형식이 아닙니다.' }, 400);
+  }
+
+  const confirmPassword = String(body && body.confirm_password || '').trim();
+  if (!confirmPassword || !safeCompare(confirmPassword, context.env.ADMIN_PASSWORD || '')) {
+    return json({ error: '최종 반영 전에 full 관리자 비밀번호를 다시 확인해주세요.' }, 401);
+  }
+
+  const token = extractToken(context.request);
+  if (token && !(await verifyTokenRole(token, context.env.ADMIN_SECRET, 'full'))) {
+    return json({ error: '현재 관리자 세션에 본 페이지 반영 권한이 없습니다.' }, 401);
   }
 
   const changelog = await loadChangelog(context.request);
