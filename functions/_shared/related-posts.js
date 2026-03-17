@@ -38,6 +38,8 @@ export async function findRelatedPosts(env, basePost, limit = 5) {
       id: post.id,
       title: post.title || '',
       category: post.category || '',
+      publish_at: post.publish_at || '',
+      created_at: post.created_at || '',
       sort_date: post.publish_at || post.created_at || '',
       score,
     };
@@ -52,6 +54,8 @@ export async function findRelatedPosts(env, basePost, limit = 5) {
     id: post.id,
     title: post.title,
     category: post.category,
+    publish_at: post.publish_at,
+    created_at: post.created_at,
   }));
 }
 
