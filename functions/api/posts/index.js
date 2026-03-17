@@ -10,6 +10,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
+import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 16;
@@ -28,6 +29,7 @@ export async function onRequestGet({ request, env }) {
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;
   const featuredOnly = url.searchParams.get('featured') === '1';
+  const specialFeature = sanitizeSpecialFeature(url.searchParams.get('special_feature'));
   const allRequested = url.searchParams.get('all') === '1';
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
 
@@ -42,7 +44,7 @@ export async function onRequestGet({ request, env }) {
   const ORDER_LATEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
   const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
   const ORDER = allRequested && isAdmin ? ORDER_MANUAL : ORDER_LATEST;
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, views, author, published, sort_order,
+  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, special_feature, views, author, published, sort_order,
     youtube_url,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
@@ -64,6 +66,10 @@ export async function onRequestGet({ request, env }) {
         conditions.push('(title LIKE ? OR subtitle LIKE ? OR tag LIKE ?)');
         const qp = `%${q}%`;
         baseArgs.push(qp, qp, qp);
+      }
+      if (specialFeature) {
+        conditions.push('COALESCE(special_feature, \'\') = ?');
+        baseArgs.push(specialFeature);
       }
       if (tagFilter) {
         conditions.push("(',' || tag || ',') LIKE ('%,' || ? || ',%')");
@@ -115,7 +121,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -143,6 +149,7 @@ export async function onRequestPost({ request, env }) {
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
   const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
   const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
+  const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
@@ -160,10 +167,10 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
          RETURNING *`;
-    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
+    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     if (results[0]) {

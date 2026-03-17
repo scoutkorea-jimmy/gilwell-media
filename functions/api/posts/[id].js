@@ -12,6 +12,7 @@ import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findRelatedPosts } from '../../_shared/related-posts.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
+import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -41,13 +42,15 @@ export async function onRequestGet({ params, env, request }) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }
-    const [likeStats, relatedPosts] = await Promise.all([
+    const [likeStats, relatedPosts, specialFeaturePosts] = await Promise.all([
       getLikeStats(env, id, viewerKey),
       findRelatedPosts(env, post, 5),
+      findSpecialFeaturePosts(env, post, 50),
     ]);
     post.likes = likeStats.likes;
     post.liked = likeStats.liked;
     post.related_posts = relatedPosts;
+    post.special_feature_posts = specialFeaturePosts;
 
     const origin = new URL(request.url).origin;
     return json({ post: isAdmin ? post : serializePostImage(post, origin) });
@@ -81,7 +84,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, author, ai_assisted, publish_date, publish_at, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
@@ -120,6 +123,7 @@ export async function onRequestPut({ params, request, env }) {
   if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
   if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
+  if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
   if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }

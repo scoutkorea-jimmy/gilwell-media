@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS posts (
   updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   featured     INTEGER NOT NULL DEFAULT 0,
   tag          TEXT,
+  special_feature TEXT,
   subtitle     TEXT,
   meta_tags    TEXT,
   published    INTEGER NOT NULL DEFAULT 1,
@@ -91,6 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_publish_at ON posts (publish_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_published ON posts (published);
+CREATE INDEX IF NOT EXISTS idx_posts_special_feature ON posts (category, special_feature, publish_at DESC, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_featured ON posts (featured);
 CREATE INDEX IF NOT EXISTS idx_posts_sort_order ON posts (sort_order);
 CREATE INDEX IF NOT EXISTS idx_pv_post_time ON post_views(post_id, viewed_at);

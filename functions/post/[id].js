@@ -3,6 +3,7 @@ import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView }
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 import { findRelatedPosts } from '../_shared/related-posts.js';
+import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -55,9 +56,10 @@ export async function onRequestGet({ params, env, request }) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
-  const [likeStats, relatedPosts] = await Promise.all([
+  const [likeStats, relatedPosts, specialFeaturePosts] = await Promise.all([
     getLikeStats(env, id, viewerKey),
     findRelatedPosts(env, post, 5),
+    findSpecialFeaturePosts(env, post, 50),
   ]);
 
   const siteUrl  = new URL(request.url).origin;
@@ -93,6 +95,7 @@ export async function onRequestGet({ params, env, request }) {
     youtube_url: post.youtube_url || '',
     meta_tags: post.meta_tags || '',
     tag: post.tag || '',
+    special_feature: post.special_feature || '',
     author: post.author || 'Editor A',
     ai_assisted: !!post.ai_assisted,
     publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
@@ -143,7 +146,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.070.04">
+  <link rel="stylesheet" href="/css/style.css?v=0.071.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -244,7 +247,7 @@ export async function onRequestGet({ params, env, request }) {
           <button id="post-edit-btn" class="post-action-btn" type="button">수정하기</button>
         </div>
 
-        ${post.image_url ? `<img class="post-page-cover" src="${post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`}" alt="${title}" fetchpriority="high" decoding="async">${renderImageCaption(post.image_caption)}` : ''}
+        ${post.image_url ? renderPostCover(post, id, title) : ''}
         ${youtubeEmbedUrl ? `<div class="post-page-video">${renderYouTubeEmbed(youtubeEmbedUrl, post.title)}</div>` : ''}
 
         <div class="post-page-body modal-body">
@@ -252,6 +255,7 @@ export async function onRequestGet({ params, env, request }) {
         </div>
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
+        ${renderSpecialFeatureSection(post, specialFeaturePosts)}
         ${renderRelatedPostsSection(relatedPosts, false)}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
@@ -312,7 +316,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.070.04</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.071.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -380,6 +384,11 @@ export async function onRequestGet({ params, env, request }) {
       </div>
 
       <div class="form-group">
+        <label for="post-edit-special-feature">특집 기사 묶음명</label>
+        <input type="text" id="post-edit-special-feature" maxlength="120" placeholder="예: 세계잼버리 리더십 특집">
+      </div>
+
+      <div class="form-group">
         <label>글머리 태그</label>
         <div id="post-tag-selector" class="tag-pill-group"><span class="post-edit-note">불러오는 중…</span></div>
         <div class="public-tag-add-tools">
@@ -427,7 +436,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.070.04"></script>
+  <script src="/js/main.js?v=0.071.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -711,6 +720,7 @@ export async function onRequestGet({ params, env, request }) {
       document.getElementById('post-edit-category').value = _postEditSeed.category || 'korea';
       document.getElementById('post-edit-title-input').value = _postEditSeed.title || '';
       document.getElementById('post-edit-subtitle-input').value = _postEditSeed.subtitle || '';
+      document.getElementById('post-edit-special-feature').value = _postEditSeed.special_feature || '';
       document.getElementById('post-edit-date').value = GW.toDatetimeLocalValue(_postEditSeed.publish_at || _postEditSeed.publish_date || '') || GW.getKstDateTimeInputValue();
       document.getElementById('post-edit-youtube').value = _postEditSeed.youtube_url || '';
       document.getElementById('post-edit-image-caption').value = _postEditSeed.image_caption || '';
@@ -879,6 +889,7 @@ export async function onRequestGet({ params, env, request }) {
       var category = document.getElementById('post-edit-category').value || 'korea';
       var title = (document.getElementById('post-edit-title-input').value || '').trim();
       var subtitle = (document.getElementById('post-edit-subtitle-input').value || '').trim();
+      var specialFeature = (document.getElementById('post-edit-special-feature').value || '').trim();
       var publishDate = (document.getElementById('post-edit-date').value || '').trim();
       var youtubeUrl = (document.getElementById('post-edit-youtube').value || '').trim();
       var imageCaption = (document.getElementById('post-edit-image-caption').value || '').trim();
@@ -911,6 +922,7 @@ export async function onRequestGet({ params, env, request }) {
               category: category,
               title: title,
               subtitle: subtitle || null,
+              special_feature: specialFeature || null,
               content: JSON.stringify(outputData),
               image_url: _postEditState.coverImage || null,
               image_caption: imageCaption || null,
@@ -959,6 +971,16 @@ export async function onRequestGet({ params, env, request }) {
         event.preventDefault();
         event.stopPropagation();
         window._postEdit();
+      });
+    }
+
+    var _specialFeatureToggle = document.getElementById('post-special-feature-toggle');
+    if (_specialFeatureToggle) {
+      _specialFeatureToggle.addEventListener('click', function () {
+        var list = document.querySelector('.post-special-feature-list');
+        if (!list) return;
+        var collapsed = list.classList.toggle('expanded');
+        _specialFeatureToggle.textContent = collapsed ? '목록 접기' : '전체 목록보기';
       });
     }
 
@@ -1173,6 +1195,42 @@ function renderImageCaption(value) {
   return `<p class="post-image-caption">${escapeHtml(text)}</p>`;
 }
 
+function renderPostCover(post, id, title) {
+  const src = post.image_url.startsWith('http') ? escapeHtml(post.image_url) : `/api/posts/${id}/image`;
+  const pngClass = isTransparentPng(post.image_url) ? ' is-png' : '';
+  return `<div class="post-page-cover-frame${pngClass}">
+    <img class="post-page-cover" src="${src}" alt="${title}" fetchpriority="high" decoding="async">
+  </div>${renderImageCaption(post.image_caption)}`;
+}
+
+function renderSpecialFeatureSection(post, items) {
+  if (!post || !post.special_feature || !Array.isArray(items) || !items.length) return '';
+  const slug = slugifySpecialFeature(post.special_feature);
+  const featureUrl = `/feature/${post.category}/${slug}`;
+  const visibleCount = 5;
+  return `<section class="post-special-feature-posts">
+    <div class="post-special-feature-heading-row">
+      <div>
+        <h3 class="post-related-heading">특집 기사 몰아보기</h3>
+        <p class="post-special-feature-name">${escapeHtml(post.special_feature)}</p>
+      </div>
+      <a class="post-special-feature-page-link" href="${featureUrl}">컬렉션 페이지로 보기</a>
+    </div>
+    <ul class="post-related-list post-special-feature-list" data-initial-limit="${visibleCount}">
+      ${items.map((item, index) => {
+        const publicDate = item.publish_at || item.created_at || '';
+        return `<li class="${index >= visibleCount ? 'is-collapsed' : ''}">
+          <a href="/post/${item.id}">
+            <span class="post-related-title">[${escapeHtml(resolveCategoryLabel(item.category))}] ${escapeHtml(item.title || '')}</span>
+            <span class="post-related-date">${escapeHtml(formatDateShort(publicDate))}</span>
+          </a>
+        </li>`;
+      }).join('')}
+    </ul>
+    ${items.length > visibleCount ? `<button type="button" class="post-special-feature-toggle" id="post-special-feature-toggle">전체 목록보기</button>` : ''}
+  </section>`;
+}
+
 function renderRelatedPostsSection(items, mobileOnly) {
   if (!Array.isArray(items) || !items.length) return '';
   return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
@@ -1193,6 +1251,11 @@ function renderRelatedPostsSection(items, mobileOnly) {
 
 function resolveCategoryLabel(category) {
   return (CATEGORIES[category] && CATEGORIES[category].label) || CATEGORIES.korea.label;
+}
+
+function isTransparentPng(value) {
+  const source = String(value || '').trim().toLowerCase();
+  return source.startsWith('data:image/png') || /\.png(?:$|[?#])/i.test(source);
 }
 
 function buildArticleStructuredData(meta) {
