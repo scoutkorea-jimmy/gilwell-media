@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.069.02`
+- Current version: `V0.069.03`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -29,6 +29,9 @@ Preview environment secrets:
 - `GITHUB_WORKFLOW_TOKEN`
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
+
+Optional machine-only secrets:
+- `GLOSSARY_BOT_TOKEN`: private token for `/api/glossary/bot`
 
 ---
 

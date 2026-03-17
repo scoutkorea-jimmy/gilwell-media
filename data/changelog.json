@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "version": "0.069.03",
+      "date": "2026-03-17",
+      "summary": "용어집을 일반 사용자에게는 숨기고 인증된 AI·봇만 읽을 수 있는 전용 엔드포인트를 추가한 API 업데이트입니다.",
+      "changes": [
+        "새 `/api/glossary/bot` 엔드포인트를 추가해, `GLOSSARY_BOT_TOKEN`으로 인증된 봇만 용어집 전체를 JSON 또는 텍스트 형식으로 읽을 수 있게 했습니다.",
+        "이 엔드포인트는 `Authorization: Bearer <token>` 또는 `X-BP-Bot-Token` 헤더가 없으면 401을 반환하고, `X-Robots-Tag: noindex, nofollow`를 붙여 일반 색인 노출을 막습니다.",
+        "응답에는 한국어·영어·프랑스어 용어, 한국어 설명, 검색용 결합 텍스트, 생성/수정 시각이 포함돼 AI 참고용이나 내부 봇 검색용으로 바로 쓸 수 있게 정리했습니다."
+      ],
+      "request_history": [
+        {
+          "status": "changed",
+          "request": "용어집의 내용을 일반 사람은 못 보고 AI나 봇만 참고용/검색용으로 접근할 수 있는 전용 페이지 만들기",
+          "outcome": "공개 HTML 페이지 대신 인증된 봇 전용 비공개 API 엔드포인트를 추가했고, 전용 토큰 없이는 접근할 수 없도록 막았습니다.",
+          "feedback": "User-Agent만으로 봇과 사람을 구분하는 방식은 안전하지 않아, 실제 운영 가능한 수준의 비공개 토큰 인증 구조로 구현했습니다."
+        }
+      ]
+    },
+    {
       "version": "0.069.02",
       "date": "2026-03-16",
       "summary": "preview 검수센터의 live version 판단을 실제 운영 사이트 기준으로 바로잡고, production deploy 인증 배선을 복구한 핫픽스입니다.",
