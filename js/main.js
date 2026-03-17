@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.069.07';
+  GW.APP_VERSION = '0.070.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -640,31 +640,203 @@
     });
   };
 
+  GW.KAKAO_JS_KEY = window.GW_KAKAO_JS_KEY || window.KAKAO_JS_KEY || '';
+  GW._shareModalState = null;
+  GW._kakaoSdkPromise = null;
+
   GW.isMobileShareContext = function () {
     if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) return true;
     var ua = navigator.userAgent || '';
     return /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
   };
 
-  GW.sharePostLink = function (options) {
-    options = options || {};
-    var url = String(options.url || window.location.href || '').trim();
-    var title = String(options.title || document.title || '').trim();
-    var text = String(options.text || title || '').trim();
-    var useNativeShare = !!(navigator.share && GW.isMobileShareContext());
+  GW.buildShareUrl = function (url, source) {
+    var raw = String(url || window.location.href || '').trim();
+    var channel = String(source || 'share').trim().toLowerCase() || 'share';
+    var parsed;
+    try {
+      parsed = new URL(raw, window.location.origin);
+    } catch (_) {
+      return raw;
+    }
+    parsed.searchParams.set('utm_source', channel);
+    parsed.searchParams.set('utm_medium', 'social-share');
+    parsed.searchParams.set('utm_campaign', 'bpmedia-share');
+    return parsed.toString();
+  };
 
-    if (useNativeShare) {
-      return navigator.share({ title: title, text: text, url: url }).catch(function (err) {
-        if (err && err.name === 'AbortError') return;
-        return GW.copyText(url).then(function () {
-          GW.showToast('기사 링크가 저장되었습니다. 붙여넣을 곳에서 Ctrl + V를 눌러주세요.', 'success');
+  GW.ensureShareModal = function () {
+    if (document.getElementById('share-modal')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'share-modal';
+    overlay.className = 'share-modal';
+    overlay.innerHTML =
+      '<div class="share-modal-card" role="dialog" aria-modal="true" aria-labelledby="share-modal-title">' +
+        '<button type="button" class="share-modal-close" id="share-modal-close" aria-label="닫기">×</button>' +
+        '<div class="share-modal-kicker">공유하기</div>' +
+        '<h3 id="share-modal-title" class="share-modal-title"></h3>' +
+        '<p class="share-modal-help">공유 링크에는 유입 분석용 UTM이 자동으로 붙습니다.</p>' +
+        '<div class="share-modal-actions">' +
+          '<button type="button" class="share-modal-btn share-modal-btn-kakao" data-share-channel="kakaotalk">' +
+            '<span class="share-modal-btn-label">카카오톡</span><span class="share-modal-btn-help">메신저 공유</span>' +
+          '</button>' +
+          '<button type="button" class="share-modal-btn share-modal-btn-facebook" data-share-channel="facebook">' +
+            '<span class="share-modal-btn-label">페이스북</span><span class="share-modal-btn-help">공개 링크 공유</span>' +
+          '</button>' +
+          '<button type="button" class="share-modal-btn share-modal-btn-copy" data-share-channel="copy">' +
+            '<span class="share-modal-btn-label">링크 복사</span><span class="share-modal-btn-help">추적 링크 복사</span>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) GW.closeShareModal();
+    });
+    document.body.appendChild(overlay);
+    document.getElementById('share-modal-close').addEventListener('click', GW.closeShareModal);
+    overlay.querySelectorAll('[data-share-channel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        GW.handleShareChannel(btn.getAttribute('data-share-channel') || '');
+      });
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') GW.closeShareModal();
+    });
+  };
+
+  GW.openShareModal = function (options) {
+    options = options || {};
+    GW._shareModalState = {
+      url: String(options.url || window.location.href || '').trim(),
+      title: String(options.title || document.title || '').trim(),
+      text: String(options.text || options.title || document.title || '').trim()
+    };
+    GW.ensureShareModal();
+    var overlay = document.getElementById('share-modal');
+    var titleEl = document.getElementById('share-modal-title');
+    if (!overlay || !titleEl) return;
+    titleEl.textContent = GW._shareModalState.title || '이 글을 공유합니다';
+    overlay.classList.add('open');
+    document.body.classList.add('share-modal-open');
+  };
+
+  GW.closeShareModal = function () {
+    var overlay = document.getElementById('share-modal');
+    if (overlay) overlay.classList.remove('open');
+    document.body.classList.remove('share-modal-open');
+  };
+
+  GW.loadKakaoSdk = function () {
+    if (window.Kakao && window.Kakao.Share) {
+      if (GW.KAKAO_JS_KEY && !window.Kakao.isInitialized()) {
+        window.Kakao.init(GW.KAKAO_JS_KEY);
+      }
+      return Promise.resolve(window.Kakao);
+    }
+    if (!GW.KAKAO_JS_KEY) {
+      return Promise.reject(new Error('kakao-unconfigured'));
+    }
+    if (GW._kakaoSdkPromise) return GW._kakaoSdkPromise;
+    GW._kakaoSdkPromise = new Promise(function (resolve, reject) {
+      var existing = document.getElementById('kakao-share-sdk');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          try {
+            if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(GW.KAKAO_JS_KEY);
+            resolve(window.Kakao);
+          } catch (err) {
+            reject(err);
+          }
+        }, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+        return;
+      }
+      var script = document.createElement('script');
+      script.id = 'kakao-share-sdk';
+      script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.8.0/kakao.min.js';
+      script.async = true;
+      script.onload = function () {
+        try {
+          if (window.Kakao && !window.Kakao.isInitialized()) window.Kakao.init(GW.KAKAO_JS_KEY);
+          resolve(window.Kakao);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    return GW._kakaoSdkPromise;
+  };
+
+  GW.shareViaKakao = function (state) {
+    var trackedUrl = GW.buildShareUrl(state.url, 'kakaotalk');
+    return GW.loadKakaoSdk()
+      .then(function (Kakao) {
+        if (!Kakao || !Kakao.Share || !Kakao.Share.sendScrap) {
+          throw new Error('kakao-sdk-unavailable');
+        }
+        Kakao.Share.sendScrap({
+          requestUrl: trackedUrl
+        });
+        GW.showToast('카카오톡 공유 창을 열었습니다.', 'success');
+      })
+      .catch(function () {
+        if (navigator.share && GW.isMobileShareContext()) {
+          return navigator.share({
+            title: state.title,
+            text: state.text,
+            url: trackedUrl
+          }).then(function () {
+            GW.showToast('공유 시트를 열었습니다. 카카오톡을 선택해주세요.', 'success');
+          }).catch(function (err) {
+            if (err && err.name === 'AbortError') return;
+            return GW.copyText(trackedUrl).then(function () {
+              GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
+            });
+          });
+        }
+        return GW.copyText(trackedUrl).then(function () {
+          GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
         });
       });
-    }
+  };
 
-    return GW.copyText(url).then(function () {
-      GW.showToast('기사 링크가 저장되었습니다. 붙여넣을 곳에서 Ctrl + V를 눌러주세요.', 'success');
-    });
+  GW.handleShareChannel = function (channel) {
+    var state = GW._shareModalState;
+    if (!state || !state.url) return;
+    var trackedUrl = GW.buildShareUrl(state.url, channel || 'share');
+    if (channel === 'facebook') {
+      window.open(
+        'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(trackedUrl),
+        '_blank',
+        'noopener,noreferrer,width=640,height=680'
+      );
+      GW.showToast('페이스북 공유 창을 열었습니다.', 'success');
+      GW.closeShareModal();
+      return;
+    }
+    if (channel === 'copy') {
+      GW.copyText(trackedUrl)
+        .then(function () {
+          GW.showToast('공유 링크를 복사했습니다.', 'success');
+          GW.closeShareModal();
+        })
+        .catch(function () {
+          GW.showToast('링크 복사에 실패했습니다.', 'error');
+        });
+      return;
+    }
+    if (channel === 'kakaotalk') {
+      GW.shareViaKakao(state).finally(function () {
+        GW.closeShareModal();
+      });
+      return;
+    }
+  };
+
+  GW.sharePostLink = function (options) {
+    GW.openShareModal(options || {});
+    return Promise.resolve();
   };
 
   GW.applySiteChrome = function () {
