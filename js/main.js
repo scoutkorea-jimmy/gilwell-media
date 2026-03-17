@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.070.02';
+  GW.APP_VERSION = '0.070.03';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -675,7 +675,7 @@
         '<button type="button" class="share-modal-close" id="share-modal-close" aria-label="닫기">×</button>' +
         '<div class="share-modal-kicker">공유하기</div>' +
         '<h3 id="share-modal-title" class="share-modal-title"></h3>' +
-        '<p class="share-modal-help">공유 링크에는 유입 분석용 UTM이 자동으로 붙습니다.</p>' +
+        '<p class="share-modal-help">공유하기에 맞는 링크가 자동으로 준비됩니다.</p>' +
         '<div class="share-modal-actions">' +
           '<button type="button" class="share-modal-btn share-modal-btn-kakao" data-share-channel="kakaotalk">' +
             '<span class="share-modal-btn-label">카카오톡</span><span class="share-modal-btn-help">메신저 공유</span>' +
