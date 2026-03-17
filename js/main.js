@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.070.01';
+  GW.APP_VERSION = '0.070.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -684,7 +684,7 @@
             '<span class="share-modal-btn-label">페이스북</span><span class="share-modal-btn-help">공개 링크 공유</span>' +
           '</button>' +
           '<button type="button" class="share-modal-btn share-modal-btn-copy" data-share-channel="copy">' +
-            '<span class="share-modal-btn-label">링크 복사</span><span class="share-modal-btn-help">추적 링크 복사</span>' +
+            '<span class="share-modal-btn-label">URL 복사</span><span class="share-modal-btn-help">복사 후 직접 공유</span>' +
           '</button>' +
         '</div>' +
       '</div>';
@@ -796,10 +796,10 @@
           });
         }
         return GW.copyText(trackedUrl).then(function () {
-          GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
-        });
+            GW.showToast('카카오 설정이 연결되지 않아 링크를 복사했습니다.', 'success');
+          });
       });
-  };
+    };
 
   GW.handleShareChannel = function (channel) {
     var state = GW._shareModalState;
@@ -818,7 +818,7 @@
     if (channel === 'copy') {
       GW.copyText(trackedUrl)
         .then(function () {
-          GW.showToast('공유 링크를 복사했습니다.', 'success');
+          GW.showToast('URL을 복사했습니다. 원하는 곳에 직접 공유해주세요.', 'success');
           GW.closeShareModal();
         })
         .catch(function () {
