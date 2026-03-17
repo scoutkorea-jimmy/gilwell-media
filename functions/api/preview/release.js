@@ -5,6 +5,7 @@ import {
   getPreviewChecklistIds,
 } from '../../_shared/preview-release-data.js';
 import {
+  fetchGithubBranchHead,
   fetchProductionSiteVersion,
   fetchReleaseDeployments,
   json,
@@ -22,10 +23,15 @@ export async function onRequestGet(context) {
     fetchReleaseDeployments().catch(function () { return []; }),
     fetchProductionSiteVersion().catch(function () { return ''; }),
   ]);
+  const githubPreviewSha = await fetchGithubBranchHead(context.env, 'preview').catch(function () { return ''; });
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
     live_version: productionVersion || findLatestProductionVersion(deployments),
-    commit_sha: context.env.CF_PAGES_COMMIT_SHA || findLatestDeploymentSource(deployments, 'preview', 'preview') || '',
+    commit_sha:
+      githubPreviewSha ||
+      context.env.CF_PAGES_COMMIT_SHA ||
+      findLatestDeploymentSource(deployments, 'preview', 'preview') ||
+      '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
   const readiness = await verifyPromotionReadiness(context.env, release).catch(function (error) {

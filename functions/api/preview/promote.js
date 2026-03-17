@@ -7,6 +7,7 @@ import {
 } from '../../_shared/preview-release-data.js';
 import {
   dispatchGithubWorkflow,
+  fetchGithubBranchHead,
   fetchProductionSiteVersion,
   fetchReleaseDeployments,
   json,
@@ -41,10 +42,15 @@ export async function onRequestPost(context) {
     fetchReleaseDeployments().catch(function () { return []; }),
     fetchProductionSiteVersion().catch(function () { return ''; }),
   ]);
+  const githubPreviewSha = await fetchGithubBranchHead(context.env, 'preview').catch(function () { return ''; });
   const release = buildPreviewRelease(items, {
     version: items[0] && items[0].version,
     live_version: productionVersion || findLatestProductionVersion(deployments),
-    commit_sha: context.env.CF_PAGES_COMMIT_SHA || findLatestDeploymentSource(deployments, 'preview', 'preview') || '',
+    commit_sha:
+      githubPreviewSha ||
+      context.env.CF_PAGES_COMMIT_SHA ||
+      findLatestDeploymentSource(deployments, 'preview', 'preview') ||
+      '',
     branch: context.env.CF_PAGES_BRANCH || 'preview',
   });
 
@@ -74,7 +80,7 @@ export async function onRequestPost(context) {
       version: release.version,
       approved_at: new Date().toISOString(),
       checklist_ids: checkedIds.join(','),
-      preview_sha: release.commit_sha,
+      preview_sha: githubPreviewSha || release.commit_sha,
     });
     return json({
       success: true,
