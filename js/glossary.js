@@ -117,6 +117,7 @@
       '</div>' +
       '<label class="glossary-inline-field glossary-inline-field-full"><span>한국어 설명</span><textarea id="glossary-inline-description-' + item.id + '" class="glossary-inline-textarea" rows="3" maxlength="800" placeholder="설명은 비워둘 수 있습니다.">' + GW.escapeHtml(item.description_ko || '') + '</textarea></label>' +
       '<div class="glossary-inline-actions">' +
+        '<button type="button" class="glossary-inline-delete-btn" data-inline-delete="' + item.id + '">삭제</button>' +
         '<button type="button" class="glossary-inline-save-btn" data-inline-save="' + item.id + '">저장</button>' +
         '<button type="button" class="glossary-inline-cancel-btn" data-inline-cancel>취소</button>' +
       '</div>' +
@@ -237,6 +238,12 @@
   }
 
   function bindInlineEditRowActions() {
+    document.querySelectorAll('[data-inline-delete]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(btn.getAttribute('data-inline-delete') || '0', 10);
+        if (id > 0) deleteInlineTerm(id);
+      });
+    });
     document.querySelectorAll('[data-inline-save]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var id = parseInt(btn.getAttribute('data-inline-save') || '0', 10);
@@ -393,6 +400,24 @@
       })
       .catch(function (err) {
         GW.showToast(err.message || '수정 실패', 'error');
+      });
+  }
+
+  function deleteInlineTerm(id) {
+    if (!ensureGlossaryAuth()) return;
+    var item = _items.find(function (entry) { return entry.id === id; });
+    var label = item && (item.term_ko || item.term_en || item.term_fr) ? (item.term_ko || item.term_en || item.term_fr) : '이 용어';
+    if (!window.confirm('정말 삭제할까요?\n\n' + label + ' 항목이 용어집에서 제거됩니다.')) {
+      return;
+    }
+    GW.apiFetch('/api/glossary/' + id, { method: 'DELETE' })
+      .then(function () {
+        _editingId = null;
+        GW.showToast('용어가 삭제됐습니다', 'success');
+        loadGlossary();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '삭제 실패', 'error');
       });
   }
 

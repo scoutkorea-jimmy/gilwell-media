@@ -6829,7 +6829,8 @@ footer a:hover { color: #ffffff; }
   margin-top: 12px;
 }
 .glossary-inline-save-btn,
-.glossary-inline-cancel-btn {
+.glossary-inline-cancel-btn,
+.glossary-inline-delete-btn {
   min-height: 34px;
   padding: 0 12px;
   border: 1px solid var(--border);
@@ -6843,6 +6844,14 @@ footer a:hover { color: #ffffff; }
 .glossary-inline-save-btn {
   border-color: var(--midnight-purple);
   background: var(--midnight-purple);
+  color: #fff;
+}
+.glossary-inline-delete-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.glossary-inline-delete-btn:hover {
+  background: var(--danger);
   color: #fff;
 }
 .glossary-inline-edit-link {
