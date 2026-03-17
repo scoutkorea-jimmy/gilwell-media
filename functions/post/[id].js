@@ -143,7 +143,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.070.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.070.04">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -312,7 +312,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.070.03</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.070.04</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -427,7 +427,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.070.03"></script>
+  <script src="/js/main.js?v=0.070.04"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1065,6 +1065,16 @@ function formatDate(dateStr) {
   return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return String(dateStr).slice(0, 10);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 function toIsoString(dateStr) {
   if (!dateStr) return '';
   const normalized = String(dateStr).replace(' ', 'T');
@@ -1168,7 +1178,15 @@ function renderRelatedPostsSection(items, mobileOnly) {
   return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
     <h3 class="post-related-heading">유관기사 읽어보기</h3>
     <ul class="post-related-list">
-      ${items.map((item) => `<li><a href="/post/${item.id}">[${escapeHtml(resolveCategoryLabel(item.category))}] ${escapeHtml(item.title || '')}</a></li>`).join('')}
+      ${items.map((item) => {
+        const publicDate = item.publish_at || item.created_at || '';
+        return `<li>
+          <a href="/post/${item.id}">
+            <span class="post-related-title">[${escapeHtml(resolveCategoryLabel(item.category))}] ${escapeHtml(item.title || '')}</span>
+            <span class="post-related-date">${escapeHtml(formatDateShort(publicDate))}</span>
+          </a>
+        </li>`;
+      }).join('')}
     </ul>
   </section>`;
 }
