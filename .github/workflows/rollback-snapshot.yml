@@ -80,10 +80,20 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler@4.72.0
 
-      - name: Deploy Production
+      - name: Configure Wrangler OAuth
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_OAUTH_TOKEN: ${{ secrets.CLOUDFLARE_OAUTH_TOKEN }}
+          CLOUDFLARE_REFRESH_TOKEN: ${{ secrets.CLOUDFLARE_REFRESH_TOKEN }}
+          CLOUDFLARE_OAUTH_EXPIRATION: ${{ secrets.CLOUDFLARE_OAUTH_EXPIRATION }}
+        run: |
+          mkdir -p "$HOME/.wrangler/config"
+          cat > "$HOME/.wrangler/config/default.toml" <<EOF
+          oauth_token = "${CLOUDFLARE_OAUTH_TOKEN}"
+          expiration_time = "${CLOUDFLARE_OAUTH_EXPIRATION}"
+          refresh_token = "${CLOUDFLARE_REFRESH_TOKEN}"
+          EOF
+
+      - name: Deploy Production
         run: |
           COMMIT_SHA="${{ needs.rollback.outputs.restored_sha }}"
           if [ -z "${COMMIT_SHA}" ]; then
