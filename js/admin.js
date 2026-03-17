@@ -1045,6 +1045,7 @@
     var category = document.getElementById('art-category').value;
     var title    = (document.getElementById('art-title').value    || '').trim();
     var subtitle = (document.getElementById('art-subtitle').value || '').trim();
+    var specialFeature = (document.getElementById('art-special-feature').value || '').trim();
     var author   = (document.getElementById('art-author').value   || '').trim();
     var metaTags = (document.getElementById('art-metatags').value || '').trim();
     var youtubeUrl = (document.getElementById('art-youtube-url').value || '').trim();
@@ -1073,6 +1074,7 @@
         category: category,
         title: title,
         subtitle: subtitle || null,
+        special_feature: specialFeature || null,
         content: content,
         image_url: _adminCoverImg || null,
         image_caption: imageCaption || null,
@@ -1130,6 +1132,7 @@
         document.getElementById('art-category').value  = p.category;
         document.getElementById('art-title').value     = p.title;
         document.getElementById('art-subtitle').value  = p.subtitle || '';
+        document.getElementById('art-special-feature').value = p.special_feature || '';
         document.getElementById('art-author').value    = p.author || '';
         document.getElementById('art-metatags').value  = p.meta_tags || '';
         document.getElementById('art-youtube-url').value = p.youtube_url || '';
@@ -1205,6 +1208,7 @@
     _adminSelTags = [];
     document.getElementById('art-title').value    = '';
     document.getElementById('art-subtitle').value = '';
+    document.getElementById('art-special-feature').value = '';
     document.getElementById('art-metatags').value = '';
     document.getElementById('art-youtube-url').value = '';
     document.getElementById('art-image-caption').value = '';
@@ -1279,6 +1283,7 @@
   function _collectAdminDraft() {
     var titleEl = document.getElementById('art-title');
     var subEl   = document.getElementById('art-subtitle');
+    var specialFeatureEl = document.getElementById('art-special-feature');
     var metaEl  = document.getElementById('art-metatags');
     var youtubeEl = document.getElementById('art-youtube-url');
     var authorEl = document.getElementById('art-author');
@@ -1287,6 +1292,7 @@
     return {
       title: titleEl ? (titleEl.value || '') : '',
       subtitle: subEl ? (subEl.value || '') : '',
+      special_feature: specialFeatureEl ? (specialFeatureEl.value || '') : '',
       meta_tags: metaEl ? (metaEl.value || '') : '',
       youtube_url: youtubeEl ? (youtubeEl.value || '') : '',
       image_caption: (document.getElementById('art-image-caption') || {}).value || '',
@@ -1304,6 +1310,7 @@
     document.getElementById('art-category').value = draft.category || 'korea';
     document.getElementById('art-title').value = draft.title || '';
     document.getElementById('art-subtitle').value = draft.subtitle || '';
+    document.getElementById('art-special-feature').value = draft.special_feature || '';
     document.getElementById('art-metatags').value = draft.meta_tags || '';
     document.getElementById('art-youtube-url').value = draft.youtube_url || '';
     document.getElementById('art-image-caption').value = draft.image_caption || '';

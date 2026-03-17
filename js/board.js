@@ -521,6 +521,10 @@
           '<label for="board-write-subtitle-input">부제목</label>' +
           '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
         '</div>' +
+        '<div class="form-group">' +
+          '<label for="board-write-special-feature">특집 기사 묶음명</label>' +
+          '<input type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" />' +
+        '</div>' +
         '<div style="display:flex;gap:12px;">' +
           '<div class="form-group" style="flex:1;">' +
             '<label for="board-write-author">작성자</label>' +
@@ -588,6 +592,7 @@
       var title    = (document.getElementById('board-write-title-input') || {}).value || '';
       var subEl    = document.getElementById('board-write-subtitle-input');
       var subtitle = subEl ? (subEl.value || '') : '';
+      var specialFeatureEl = document.getElementById('board-write-special-feature');
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
       var ytEl     = document.getElementById('board-write-youtube-input');
@@ -600,6 +605,7 @@
       var saving = {
         title: title,
         subtitle: subtitle,
+        special_feature: specialFeatureEl ? (specialFeatureEl.value || '') : '',
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
@@ -945,6 +951,8 @@
       document.getElementById('board-write-title-input').value = '';
       var sub = document.getElementById('board-write-subtitle-input');
       if (sub) sub.value = '';
+      var sf = document.getElementById('board-write-special-feature');
+      if (sf) sf.value = '';
       var mt = document.getElementById('board-write-metatags-input');
       if (mt) mt.value = '';
       var yt = document.getElementById('board-write-youtube-input');
@@ -961,6 +969,8 @@
               if (draft.title) document.getElementById('board-write-title-input').value = draft.title;
               var sub2 = document.getElementById('board-write-subtitle-input');
               if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
+              var sf2 = document.getElementById('board-write-special-feature');
+              if (sf2 && draft.special_feature) sf2.value = draft.special_feature;
               var mt2 = document.getElementById('board-write-metatags-input');
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
               var yt2 = document.getElementById('board-write-youtube-input');
@@ -1028,6 +1038,7 @@
     var title     = (document.getElementById('board-write-title-input').value || '').trim();
     var subEl     = document.getElementById('board-write-subtitle-input');
     var subtitle  = subEl ? (subEl.value || '').trim() : '';
+    var specialFeatureEl = document.getElementById('board-write-special-feature');
     var mtEl      = document.getElementById('board-write-metatags-input');
     var metaTags  = mtEl ? (mtEl.value || '').trim() : '';
     var ytEl      = document.getElementById('board-write-youtube-input');
@@ -1065,6 +1076,7 @@
             category:    self.category,
             title:       title,
             subtitle:    subtitle || null,
+            special_feature: specialFeatureEl ? ((specialFeatureEl.value || '').trim() || null) : null,
             content:     content,
             image_url:   self._coverImage || null,
             image_caption: coverCaptionEl ? ((coverCaptionEl.value || '').trim() || null) : null,
@@ -1125,6 +1137,7 @@
       var title    = (document.getElementById('board-write-title-input') || {}).value || '';
       var subEl    = document.getElementById('board-write-subtitle-input');
       var subtitle = subEl ? (subEl.value || '') : '';
+      var specialFeatureEl = document.getElementById('board-write-special-feature');
       var mtEl     = document.getElementById('board-write-metatags-input');
       var metaTags = mtEl ? (mtEl.value || '') : '';
       var ytEl     = document.getElementById('board-write-youtube-input');
@@ -1137,6 +1150,7 @@
       var saving = {
         title: title,
         subtitle: subtitle,
+        special_feature: specialFeatureEl ? (specialFeatureEl.value || '') : '',
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',

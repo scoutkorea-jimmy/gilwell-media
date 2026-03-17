@@ -1528,6 +1528,10 @@ p { margin-bottom: 6px; }
   background-color: rgba(22, 17, 29, 0.72);
 }
 
+.site-hero-media.is-png {
+  background-color: var(--bg);
+}
+
 .site-hero-media-backdrop,
 .home-lead-thumb-backdrop {
   position: absolute;
@@ -1560,6 +1564,10 @@ p { margin-bottom: 6px; }
   inset:      0;
   background: rgba(0, 0, 0, 0.58);
   z-index:    1;
+}
+
+.site-hero.site-hero-png::after {
+  background: rgba(247, 243, 239, 0.14);
 }
 
 /* Large watermark subtitle in background */
@@ -1734,6 +1742,10 @@ p { margin-bottom: 6px; }
   overflow: hidden;
   position: relative;
   background-color: rgba(240, 236, 230, 0.96);
+}
+
+.home-lead-thumb-link.is-png {
+  background-color: var(--bg);
 }
 
 .home-lead-thumb {
@@ -5332,6 +5344,11 @@ footer a:hover { color: #ffffff; }
   margin-bottom: 0;
 }
 
+.post-page-cover-frame {
+  background: var(--bg);
+  margin-bottom: 0;
+}
+
 .post-page-video {
   margin-bottom: 32px;
 }
@@ -5361,7 +5378,8 @@ footer a:hover { color: #ffffff; }
 }
 
 .post-related-posts,
-.modal-related-posts {
+.modal-related-posts,
+.post-special-feature-posts {
   margin-top: 28px;
   padding-top: 20px;
   border-top: 1px solid var(--border);
@@ -5382,6 +5400,55 @@ footer a:hover { color: #ffffff; }
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 14px;
+}
+
+.post-special-feature-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.post-special-feature-name {
+  margin: -8px 0 0;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.post-special-feature-page-link,
+.post-special-feature-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  text-decoration: none;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.post-special-feature-page-link:hover,
+.post-special-feature-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.post-special-feature-toggle {
+  margin-top: 14px;
+}
+
+.post-special-feature-list li.is-collapsed {
+  display: none;
+}
+
+.post-special-feature-list.expanded li.is-collapsed {
+  display: list-item;
 }
 
 .post-related-list {
@@ -5585,6 +5652,10 @@ footer a:hover { color: #ffffff; }
     display: block;
     order: 2;
     width: 100%;
+  }
+  .post-special-feature-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .post-related-list li + li {
     margin-top: 10px;
@@ -8205,6 +8276,111 @@ body.admin-page .admin-media-preview-frame img {
   height: 100%;
   display: block;
   transform-origin: center center;
+}
+
+.feature-page {
+  background: var(--bg);
+}
+
+.feature-page-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 36px 20px 72px;
+}
+
+.feature-page-hero,
+.feature-page-item {
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.feature-page-hero {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.feature-page-breadcrumb,
+.feature-page-breadcrumb a {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.feature-page-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 18px 0 12px;
+}
+
+.feature-page-hero h1 {
+  margin: 0 0 10px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: clamp(24px, 4vw, 40px);
+  line-height: 1.25;
+}
+
+.feature-page-hero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.feature-page-list {
+  display: grid;
+  gap: 14px;
+}
+
+.feature-page-item {
+  padding: 18px 20px;
+}
+
+.feature-page-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.feature-page-date {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.feature-page-item h2 {
+  margin: 0 0 8px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.feature-page-item h2 a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.feature-page-subtitle {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+@media (max-width: 720px) {
+  .feature-page-wrap {
+    padding: 24px 14px 56px;
+  }
+  .feature-page-item-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .feature-page-item h2 {
+    font-size: 18px;
+  }
 }
 
 body.admin-page .admin-home-lead-controls {
