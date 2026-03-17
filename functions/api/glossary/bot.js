@@ -1,19 +1,7 @@
-import { extractToken, safeCompare } from '../../_shared/auth.js';
-
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하'];
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
 
 export async function onRequestGet({ request, env }) {
-  const botToken = resolveBotToken(request);
-  if (!env.GLOSSARY_BOT_TOKEN) {
-    return json({ error: 'Server not configured. Set GLOSSARY_BOT_TOKEN secret.' }, 500);
-  }
-  if (!botToken || !safeCompare(botToken, env.GLOSSARY_BOT_TOKEN)) {
-    return json({ error: '이 엔드포인트는 인증된 봇 전용입니다.' }, 401, {
-      'WWW-Authenticate': 'Bearer realm="bpmedia-glossary-bot"',
-    });
-  }
-
   const format = String(new URL(request.url).searchParams.get('format') || 'json').trim().toLowerCase();
 
   try {
@@ -46,7 +34,7 @@ export async function onRequestGet({ request, env }) {
 
     return json({
       source: 'BP미디어 스카우트 용어집',
-      audience: 'authorized-bots-only',
+      audience: 'public-machine-readable',
       generated_at: new Date().toISOString(),
       buckets: BUCKETS,
       count: items.length,
@@ -56,13 +44,6 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/glossary/bot error:', err);
     return json({ error: '용어집 데이터를 불러오지 못했습니다.' }, 500);
   }
-}
-
-function resolveBotToken(request) {
-  const bearer = extractToken(request);
-  if (bearer) return bearer;
-  const headerToken = request.headers.get('X-BP-Bot-Token') || '';
-  return String(headerToken).trim();
 }
 
 function renderText(items) {
@@ -110,9 +91,7 @@ function normalizeGlossaryRows(rows) {
 
 function baseHeaders(extraHeaders = {}) {
   return Object.assign({
-    'Cache-Control': 'private, no-store',
-    'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
-    'Vary': 'Authorization, X-BP-Bot-Token',
+    'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
   }, extraHeaders);
 }
 
