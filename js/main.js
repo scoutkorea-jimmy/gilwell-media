@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.070.00';
+  GW.APP_VERSION = '0.070.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -640,7 +640,7 @@
     });
   };
 
-  GW.KAKAO_JS_KEY = window.GW_KAKAO_JS_KEY || window.KAKAO_JS_KEY || '';
+  GW.KAKAO_JS_KEY = window.GW_KAKAO_JS_KEY || window.KAKAO_JS_KEY || '562c13180bf71daf08f258ea1a714108';
   GW._shareModalState = null;
   GW._kakaoSdkPromise = null;
 
