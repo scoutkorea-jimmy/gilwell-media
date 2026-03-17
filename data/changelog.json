@@ -1,6 +1,23 @@
 {
   "items": [
     {
+      "version": "0.069.06",
+      "date": "2026-03-17",
+      "summary": "Preview 반영 버튼이 존재하지 않는 SHA를 workflow에 넘기던 문제를 바로잡은 승격 안정화 업데이트입니다.",
+      "changes": [
+        "preview 검수 API와 반영 API가 Cloudflare 배포 SHA 대신 GitHub `preview` 브랜치 HEAD SHA를 우선 기준으로 사용하도록 수정했습니다.",
+        "`Promote Preview To Production` workflow가 더 이상 원격에 없는 SHA를 승인본으로 받아 실패하지 않도록 preview 반영 버튼의 SHA 전달 경로를 정리했습니다."
+      ],
+      "request_history": [
+        {
+          "status": "changed",
+          "request": "Preview to Production 버튼이 계속 실패하는 문제 해결",
+          "outcome": "preview 화면과 workflow가 동일한 GitHub preview 브랜치 HEAD SHA를 보도록 정리해 잘못된 SHA 전달로 인한 promote 실패를 막았습니다.",
+          "feedback": "실패 원인이 배포 자체보다 UI가 존재하지 않는 승인 SHA를 넘기던 구조였기 때문에, 버튼에서 전달하는 기준 SHA를 단일화하는 쪽으로 수정했습니다."
+        }
+      ]
+    },
+    {
       "version": "0.069.05",
       "date": "2026-03-17",
       "summary": "푸터 보조 링크 영역에 공개 용어집 원문 색인으로 바로 가는 링크를 추가한 UI 업데이트입니다.",
