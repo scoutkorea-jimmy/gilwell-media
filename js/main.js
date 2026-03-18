@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.071.01';
+  GW.APP_VERSION = '0.072.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -156,8 +156,8 @@
       return { ok: false, error: '내용을 입력해주세요' };
     }
     var imageCount = blocks.filter(function (b) { return b.type === 'image'; }).length;
-    if (imageCount > 5) {
-      return { ok: false, error: '본문 이미지는 최대 5개까지 가능합니다' };
+    if (imageCount > 10) {
+      return { ok: false, error: '본문 이미지는 최대 10개까지 가능합니다' };
     }
     return { ok: true };
   };
@@ -532,8 +532,11 @@
     });
   };
 
-  /** Render content: Editor.js JSON, Quill HTML, or plain text. */
   GW.renderText = function (str) {
+    return GW.renderTextWithMedia(str).html;
+  };
+
+  GW.renderTextWithMedia = function (str) {
     if (!str) return '';
     const trimmed = str.trim();
 
@@ -542,7 +545,10 @@
       try {
         const doc = JSON.parse(trimmed);
         if (Array.isArray(doc.blocks)) {
-          return doc.blocks.map(function (b) {
+          var imageBlocks = doc.blocks.filter(function (b) { return b && b.type === 'image' && b.data; });
+          var useGallery = imageBlocks.length >= 2;
+          var galleryItems = [];
+          var html = doc.blocks.map(function (b) {
             switch (b.type) {
               case 'paragraph':
                 return '<p>' + (b.data.text || '') + '</p>';
@@ -563,6 +569,10 @@
               case 'image': {
                 var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
                 var cap = GW.escapeHtml(b.data.caption || '');
+                if (useGallery) {
+                  galleryItems.push({ url: url, caption: b.data.caption || '' });
+                  return '';
+                }
                 var html = '<div class="post-inline-media"><img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>';
                 if (cap) html += '<p class="post-image-caption">' + cap + '</p>';
                 return html;
@@ -570,15 +580,67 @@
               default: return '';
             }
           }).join('');
+          return { html: html, gallery: galleryItems };
         }
       } catch (e) { /* fall through */ }
     }
 
     // Quill HTML output starts with a block tag
     if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) {
-      return str;
+      return { html: str, gallery: [] };
     }
-    return GW.escapeHtml(str).replace(/\n/g, '<br>');
+    return { html: GW.escapeHtml(str).replace(/\n/g, '<br>'), gallery: [] };
+  };
+
+  GW.renderContentGallery = function (items, options) {
+    var slides = Array.isArray(items) ? items.filter(function (item) { return item && item.url; }) : [];
+    if (slides.length < 2) return '';
+    var className = (options && options.className) ? ' ' + options.className : '';
+    return '<section class="content-gallery' + className + '" data-gallery-interval="5000">' +
+      '<div class="content-gallery-track">' +
+        slides.map(function (item, index) {
+          var cap = GW.escapeHtml(item.caption || '');
+          return '<figure class="content-gallery-slide' + (index === 0 ? ' is-active' : '') + '">' +
+            '<div class="content-gallery-media"><img src="' + GW.escapeHtml(item.url) + '" alt="' + cap + '"></div>' +
+            (cap ? '<figcaption class="post-image-caption">' + cap + '</figcaption>' : '') +
+          '</figure>';
+        }).join('') +
+      '</div>' +
+      '<div class="content-gallery-dots">' +
+        slides.map(function (_, index) {
+          return '<button type="button" class="content-gallery-dot' + (index === 0 ? ' is-active' : '') + '" data-gallery-index="' + index + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
+        }).join('') +
+      '</div>' +
+    '</section>';
+  };
+
+  GW.initContentGalleries = function (root) {
+    var scope = root || document;
+    scope.querySelectorAll('.content-gallery').forEach(function (gallery) {
+      if (gallery.dataset.galleryReady === '1') return;
+      gallery.dataset.galleryReady = '1';
+      var slides = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-slide'));
+      var dots = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-dot'));
+      if (slides.length < 2) return;
+      var current = 0;
+      var intervalMs = parseInt(gallery.getAttribute('data-gallery-interval') || '5000', 10) || 5000;
+      function sync(next) {
+        current = next;
+        slides.forEach(function (slide, idx) { slide.classList.toggle('is-active', idx === current); });
+        dots.forEach(function (dot, idx) { dot.classList.toggle('is-active', idx === current); });
+      }
+      function advance() { sync((current + 1) % slides.length); }
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          var index = parseInt(dot.getAttribute('data-gallery-index') || '0', 10);
+          sync(index);
+        });
+      });
+      sync(0);
+      var timer = window.setInterval(advance, intervalMs);
+      gallery.addEventListener('mouseenter', function () { window.clearInterval(timer); });
+      gallery.addEventListener('mouseleave', function () { timer = window.setInterval(advance, intervalMs); });
+    });
   };
 
   /** Strip HTML/JSON and truncate plain text for excerpts. */
@@ -2041,6 +2103,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     GW.setupMastheadSearch();
     GW.initPreviewRuntime();
+    GW.initContentGalleries(document);
   });
 
 })();

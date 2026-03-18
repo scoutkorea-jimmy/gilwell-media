@@ -80,7 +80,9 @@ export async function onRequestGet({ params, env, request }) {
         : `${siteUrl}/api/posts/${id}/image`)
     : '';
   const dateStr  = formatDate(publicDateValue);
-  const bodyHtml = renderContent(post.content || '');
+  const renderedContent = renderContent(post.content || '');
+  const bodyHtml = renderedContent.html;
+  const bodyGalleryHtml = renderContentGallery(renderedContent.gallery);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const categoryUrl = `${siteUrl}/${post.category}.html`;
@@ -146,7 +148,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.071.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.072.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -253,6 +255,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-body modal-body">
           ${bodyHtml}
         </div>
+        ${bodyGalleryHtml}
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
@@ -316,7 +319,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.071.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.072.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -436,7 +439,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.071.01"></script>
+  <script src="/js/main.js?v=0.072.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1107,14 +1110,17 @@ function toIsoString(dateStr) {
 
 /** Render Editor.js JSON or plain text to HTML (server-side). */
 function renderContent(str) {
-  if (!str) return '';
+  if (!str) return { html: '', gallery: [] };
   const trimmed = str.trim();
 
   if (trimmed.charAt(0) === '{') {
     try {
       const doc = JSON.parse(trimmed);
       if (Array.isArray(doc.blocks)) {
-        return doc.blocks.map(b => {
+        const imageBlocks = doc.blocks.filter((b) => b && b.type === 'image' && b.data);
+        const useGallery = imageBlocks.length >= 2;
+        const gallery = [];
+        const html = doc.blocks.map(b => {
           switch (b.type) {
             case 'paragraph':
               return '<p>' + (b.data.text || '') + '</p>';
@@ -1135,6 +1141,10 @@ function renderContent(str) {
             case 'image': {
               const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
               const cap = escapeHtml(b.data.caption || '');
+              if (useGallery) {
+                gallery.push({ url, caption: b.data.caption || '' });
+                return '';
+              }
               let html = `<div class="post-inline-media"><img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>`;
               if (cap) html += `<p class="post-image-caption">${cap}</p>`;
               return html;
@@ -1142,12 +1152,13 @@ function renderContent(str) {
             default: return '';
           }
         }).join('');
+        return { html, gallery };
       }
     } catch (e) { /* fall through */ }
   }
 
-  if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) return str;
-  return escapeHtml(str).replace(/\n/g, '<br>');
+  if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) return { html: str, gallery: [] };
+  return { html: escapeHtml(str).replace(/\n/g, '<br>'), gallery: [] };
 }
 
 /** Strip tags/JSON and return plain text truncated to maxLen chars. */
@@ -1201,6 +1212,25 @@ function renderPostCover(post, id, title) {
   return `<div class="post-page-cover-frame${pngClass}">
     <img class="post-page-cover" src="${src}" alt="${title}" fetchpriority="high" decoding="async">
   </div>${renderImageCaption(post.image_caption)}`;
+}
+
+function renderContentGallery(items) {
+  const slides = Array.isArray(items) ? items.filter((item) => item && item.url) : [];
+  if (slides.length < 2) return '';
+  return `<section class="content-gallery post-content-gallery" data-gallery-interval="5000">
+    <div class="content-gallery-track">
+      ${slides.map((item, index) => {
+        const cap = escapeHtml(item.caption || '');
+        return `<figure class="content-gallery-slide${index === 0 ? ' is-active' : ''}">
+          <div class="content-gallery-media"><img src="${escapeHtml(item.url)}" alt="${cap}"></div>
+          ${cap ? `<figcaption class="post-image-caption">${cap}</figcaption>` : ''}
+        </figure>`;
+      }).join('')}
+    </div>
+    <div class="content-gallery-dots">
+      ${slides.map((_, index) => `<button type="button" class="content-gallery-dot${index === 0 ? ' is-active' : ''}" data-gallery-index="${index}" aria-label="슬라이드 ${index + 1}"></button>`).join('')}
+    </div>
+  </section>`;
 }
 
 function renderSpecialFeatureSection(post, items) {
