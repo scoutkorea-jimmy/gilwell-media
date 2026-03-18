@@ -8,6 +8,7 @@
   var editingId       = null;
   var _adminEditor    = null;
   var _adminCoverImg  = null;
+  var _adminGalleryImages = [];
   var _adminSelTags   = [];   // multi-select tags
   var _adminDraftTimer = null;
   var _adminTurnstileWidgetId = null;
@@ -784,6 +785,8 @@
     var btn = document.getElementById('admin-cover-btn');
     if (!btn) return;
     btn.addEventListener('click', function () { _uploadAdminCover(); });
+    var galleryBtn = document.getElementById('admin-gallery-btn');
+    if (galleryBtn) galleryBtn.addEventListener('click', function () { _uploadAdminGalleryImages(); });
   });
 
   function _uploadAdminCover() {
@@ -797,6 +800,34 @@
         renderAdminCoverPreview();
       }).catch(function (err) {
         GW.showToast(err && err.message ? err.message : '대표 이미지 최적화 실패', 'error');
+      });
+    };
+    input.click();
+  }
+
+  function _uploadAdminGalleryImages() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = function () {
+      var files = Array.prototype.slice.call(input.files || []);
+      var remaining = Math.max(0, 10 - _adminGalleryImages.length);
+      if (!files.length) return;
+      if (!remaining) {
+        GW.showToast('슬라이드 이미지는 최대 10장까지 추가할 수 있습니다', 'error');
+        return;
+      }
+      files.slice(0, remaining).reduce(function (chain, file) {
+        return chain.then(function () {
+          return GW.optimizeImageFile(file, { maxW: 1800, maxH: 1800, quality: 0.84 }).then(function (result) {
+            _adminGalleryImages.push({ url: result.dataUrl, caption: '' });
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        renderAdminGalleryPreview();
+      }).catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '슬라이드 이미지 처리 실패', 'error');
       });
     };
     input.click();
@@ -1077,6 +1108,7 @@
         special_feature: specialFeature || null,
         content: content,
         image_url: _adminCoverImg || null,
+        gallery_images: _adminGalleryImages,
         image_caption: imageCaption || null,
         youtube_url: youtubeUrl || null,
         tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
@@ -1144,6 +1176,8 @@
         // Load cover image
         _adminCoverImg = p.image_url || null;
         renderAdminCoverPreview();
+        _adminGalleryImages = parseGalleryImagesSeed(p.gallery_images);
+        renderAdminGalleryPreview();
 
         // Load tag selector (multi-select)
         _adminSelTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
@@ -1205,6 +1239,7 @@
     editingId = null;
     if (history.replaceState) history.replaceState(null, '', '/admin.html');
     _adminCoverImg = null;
+    _adminGalleryImages = [];
     _adminSelTags = [];
     document.getElementById('art-title').value    = '';
     document.getElementById('art-subtitle').value = '';
@@ -1223,6 +1258,7 @@
     var aiChk = document.getElementById('art-ai-assisted');
     if (aiChk) aiChk.checked = false;
     renderAdminCoverPreview();
+    renderAdminGalleryPreview();
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     var inlineTagInput = document.getElementById('art-tag-new-input');
@@ -1301,6 +1337,7 @@
       ai_assisted: aiEl ? !!aiEl.checked : false,
       tags: _adminSelTags.slice(),
       image_url: _adminCoverImg || null,
+      gallery_images: _adminGalleryImages.slice(),
       category: (document.getElementById('art-category') || {}).value || 'korea',
     };
   }
@@ -1319,8 +1356,10 @@
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
     _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
     _adminCoverImg = draft.image_url || null;
+    _adminGalleryImages = parseGalleryImagesSeed(draft.gallery_images);
     updateCatPreview();
     renderAdminCoverPreview();
+    renderAdminGalleryPreview();
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     if (_adminEditor && draft.editorData) {
@@ -1413,6 +1452,43 @@
       _adminCoverImg = null;
       preview.innerHTML = '';
     });
+  }
+
+  function renderAdminGalleryPreview() {
+    var preview = document.getElementById('admin-gallery-preview');
+    var counter = document.getElementById('admin-gallery-count');
+    if (counter) counter.textContent = String(_adminGalleryImages.length) + '/10';
+    if (!preview) return;
+    if (!_adminGalleryImages.length) {
+      preview.innerHTML = '<p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p>';
+      return;
+    }
+    preview.innerHTML = _adminGalleryImages.map(function (item, index) {
+      var src = item.url && item.url.startsWith && item.url.startsWith('http') ? GW.escapeHtml(item.url) : item.url;
+      return '<div class="gallery-upload-item">' +
+        '<img src="' + src + '" class="gallery-upload-thumb" alt="슬라이드 이미지 ' + (index + 1) + '">' +
+        '<button type="button" class="gallery-upload-remove" data-index="' + index + '">제거</button>' +
+      '</div>';
+    }).join('');
+    preview.querySelectorAll('.gallery-upload-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-index') || '-1', 10);
+        if (!Number.isFinite(index) || index < 0) return;
+        _adminGalleryImages.splice(index, 1);
+        renderAdminGalleryPreview();
+      });
+    });
+  }
+
+  function parseGalleryImagesSeed(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.slice(0, 10);
+    try {
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
+    } catch (_) {
+      return [];
+    }
   }
 
   function _resetAdminWriteTurnstile() {

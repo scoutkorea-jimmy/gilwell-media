@@ -121,7 +121,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -144,6 +144,7 @@ export async function onRequestPost({ request, env }) {
 
   const upgradedContent = await upgradeEditorContentImages(content.trim(), env, origin, 'inline');
   const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
+  const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
@@ -167,10 +168,11 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, youtube_url, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
+    await ensureGalleryImagesColumn(env);
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
          RETURNING *`;
-    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeYoutubeUrl, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
+    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     if (results[0]) {
@@ -217,6 +219,39 @@ function sanitizeCaption(value) {
   return trimmed ? trimmed.slice(0, 300) : null;
 }
 
+function normalizeGalleryImages(rawItems) {
+  if (!Array.isArray(rawItems)) return [];
+  return rawItems.map(function (item) {
+    if (typeof item === 'string') return { url: item, caption: '' };
+    return {
+      url: item && typeof item.url === 'string' ? item.url : '',
+      caption: item && typeof item.caption === 'string' ? item.caption : '',
+    };
+  }).filter(function (item) {
+    return item.url;
+  }).slice(0, 10);
+}
+
+async function storeGalleryImages(env, rawItems, origin) {
+  const items = normalizeGalleryImages(rawItems);
+  const stored = [];
+  for (const item of items) {
+    const source = sanitizeUrl(item.url);
+    if (!source) continue;
+    const saved = await storeDataImage(env, source, origin, 'gallery');
+    if (!saved.url) continue;
+    stored.push({
+      url: saved.url,
+      caption: sanitizeCaption(item.caption) || '',
+    });
+  }
+  return stored.slice(0, 10);
+}
+
+function serializeGalleryImages(items) {
+  return items && items.length ? JSON.stringify(items) : null;
+}
+
 function normalizeCategory(value) {
   if (value === 'worm') return 'wosm';
   return value;
@@ -233,4 +268,14 @@ function normalizePublishAtInput(publishAt, publishDate) {
   const fallback = String(publishDate || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
   return null;
+}
+
+async function ensureGalleryImagesColumn(env) {
+  try {
+    await env.DB.prepare('SELECT gallery_images FROM posts LIMIT 1').first();
+  } catch (err) {
+    var msg = String(err && err.message || err || '');
+    if (msg.indexOf('no such column') === -1) throw err;
+    await env.DB.prepare('ALTER TABLE posts ADD COLUMN gallery_images TEXT').run();
+  }
 }

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS posts (
   content      TEXT    NOT NULL DEFAULT '',
   image_url    TEXT,
   image_caption TEXT,
+  gallery_images TEXT,
   youtube_url  TEXT,
   created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   publish_at   TEXT,

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.072.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.073.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.072.02</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.073.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.072.02</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.073.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -339,13 +339,24 @@
             </div>
 
             <div class="form-group">
+              <label>슬라이드 전용 이미지 <span class="admin-label-note" id="admin-gallery-count">0/10</span></label>
+              <div class="cover-upload-wrap">
+                <button type="button" id="admin-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>
+                <div id="admin-gallery-preview" class="gallery-upload-preview">
+                  <p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p>
+                </div>
+              </div>
+              <p class="admin-field-meta">본문 이미지와 별개로 관리됩니다. 2장 이상일 때만 슬라이드가 활성화됩니다.</p>
+            </div>
+
+            <div class="form-group">
               <label for="art-youtube-url">유튜브 영상 링크</label>
               <input type="url" id="art-youtube-url" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />
               <p class="admin-field-meta">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
             </div>
 
             <div class="form-group">
-              <label>본문 * <span class="admin-label-note">(이미지 최대 10개 · 2장 이상이면 하단 슬라이드)</span></label>
+              <label>본문 * <span class="admin-label-note">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>
               <div id="admin-editorjs" class="board-editorjs-wrap"></div>
             </div>
 
@@ -816,8 +827,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.072.02"></script>
-  <script src="/js/admin.js?v=0.072.02"></script>
+  <script src="/js/main.js?v=0.073.00"></script>
+  <script src="/js/admin.js?v=0.073.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
