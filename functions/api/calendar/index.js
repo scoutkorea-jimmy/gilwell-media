@@ -5,7 +5,7 @@ export async function onRequestGet({ env }) {
   try {
     await ensureCalendarTable(env);
     const { results } = await env.DB.prepare(`
-      SELECT id, title, description, location_name, location_address, start_at, end_at, link_url, created_at, updated_at
+      SELECT id, title, event_category, description, country_name, location_name, location_address, latitude, longitude, start_at, end_at, link_url, created_at, updated_at
       FROM calendar_events
       ORDER BY start_at ASC, id ASC
     `).all();
@@ -30,14 +30,18 @@ export async function onRequestPost({ request, env }) {
   try {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
-      INSERT INTO calendar_events (title, description, location_name, location_address, start_at, end_at, link_url, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      RETURNING id, title, description, location_name, location_address, start_at, end_at, link_url, created_at, updated_at
+      INSERT INTO calendar_events (title, event_category, description, country_name, location_name, location_address, latitude, longitude, start_at, end_at, link_url, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      RETURNING id, title, event_category, description, country_name, location_name, location_address, latitude, longitude, start_at, end_at, link_url, created_at, updated_at
     `).bind(
       normalized.title,
+      normalized.event_category,
       normalized.description,
+      normalized.country_name,
       normalized.location_name,
       normalized.location_address,
+      normalized.latitude,
+      normalized.longitude,
       normalized.start_at,
       normalized.end_at,
       normalized.link_url

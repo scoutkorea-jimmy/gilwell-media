@@ -16,14 +16,18 @@ export async function onRequestPut({ request, env, params }) {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
       UPDATE calendar_events
-      SET title = ?, description = ?, location_name = ?, location_address = ?, start_at = ?, end_at = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, event_category = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, start_at = ?, end_at = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-      RETURNING id, title, description, location_name, location_address, start_at, end_at, link_url, created_at, updated_at
+      RETURNING id, title, event_category, description, country_name, location_name, location_address, latitude, longitude, start_at, end_at, link_url, created_at, updated_at
     `).bind(
       normalized.title,
+      normalized.event_category,
       normalized.description,
+      normalized.country_name,
       normalized.location_name,
       normalized.location_address,
+      normalized.latitude,
+      normalized.longitude,
       normalized.start_at,
       normalized.end_at,
       normalized.link_url,

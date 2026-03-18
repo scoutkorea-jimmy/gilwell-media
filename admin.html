@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.075.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.076.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.075.01</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.076.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.075.01</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.076.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -559,12 +559,28 @@
                 <input type="text" id="calendar-title-input" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
               </div>
               <div class="form-group" style="margin:0;">
+                <label for="calendar-category-input">캘린더 분류</label>
+                <select id="calendar-category-input">
+                  <option value="KOR">KOR</option>
+                  <option value="APR">APR</option>
+                  <option value="EUR">EUR</option>
+                  <option value="AFR">AFR</option>
+                  <option value="ARB">ARB</option>
+                  <option value="IAR">IAR</option>
+                  <option value="WOSM">WOSM</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0;">
                 <label for="calendar-start-input">시작 일시</label>
                 <input type="datetime-local" id="calendar-start-input" />
               </div>
               <div class="form-group" style="margin:0;">
                 <label for="calendar-end-input">종료 일시</label>
                 <input type="datetime-local" id="calendar-end-input" />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-country-input">국가명</label>
+                <input type="text" id="calendar-country-input" maxlength="120" placeholder="예: 대한민국" />
               </div>
               <div class="form-group" style="margin:0;">
                 <label for="calendar-location-name-input">위치 이름</label>
@@ -577,6 +593,14 @@
               <div class="form-group glossary-description-field" style="margin:0;">
                 <label for="calendar-link-input">관련 링크</label>
                 <input type="url" id="calendar-link-input" maxlength="500" placeholder="https://..." />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-lat-input">위도</label>
+                <input type="number" id="calendar-lat-input" step="0.000001" placeholder="예: 37.5665" />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-lng-input">경도</label>
+                <input type="number" id="calendar-lng-input" step="0.000001" placeholder="예: 126.9780" />
               </div>
               <div class="form-group glossary-description-field" style="margin:0;">
                 <label for="calendar-description-input">설명</label>
@@ -890,8 +914,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.075.01"></script>
-  <script src="/js/admin.js?v=0.075.01"></script>
+  <script src="/js/main.js?v=0.076.00"></script>
+  <script src="/js/admin.js?v=0.076.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

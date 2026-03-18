@@ -3212,9 +3212,12 @@
     }
     list.innerHTML = _calendarItems.map(function (item) {
       var place = item.location_name || item.location_address || '';
+      var category = GW.escapeHtml(item.event_category || 'WOSM');
+      var status = getCalendarStatus(item);
       return '<article class="calendar-admin-item">' +
         '<div class="calendar-admin-item-head">' +
           '<div>' +
+            '<div class="calendar-admin-item-badges"><span class="calendar-category-badge is-' + category.toLowerCase() + '">' + category + '</span><span class="calendar-status-badge is-' + status.key + '">' + GW.escapeHtml(status.label) + '</span></div>' +
             '<h3>' + GW.escapeHtml(item.title || '') + '</h3>' +
             '<p>' + GW.escapeHtml(formatCalendarRange(item.start_at, item.end_at)) + '</p>' +
           '</div>' +
@@ -3235,10 +3238,14 @@
     if (!item) return;
     _calendarEditingId = id;
     document.getElementById('calendar-title-input').value = item.title || '';
+    document.getElementById('calendar-category-input').value = item.event_category || 'WOSM';
     document.getElementById('calendar-start-input').value = toDateTimeLocalValue(item.start_at);
     document.getElementById('calendar-end-input').value = toDateTimeLocalValue(item.end_at);
+    document.getElementById('calendar-country-input').value = item.country_name || '';
     document.getElementById('calendar-location-name-input').value = item.location_name || '';
     document.getElementById('calendar-location-address-input').value = item.location_address || '';
+    document.getElementById('calendar-lat-input').value = item.latitude == null ? '' : item.latitude;
+    document.getElementById('calendar-lng-input').value = item.longitude == null ? '' : item.longitude;
     document.getElementById('calendar-link-input').value = item.link_url || '';
     document.getElementById('calendar-description-input').value = item.description || '';
     document.getElementById('calendar-submit-btn').textContent = '일정 수정';
@@ -3249,10 +3256,14 @@
   window.cancelCalendarEdit = function () {
     _calendarEditingId = null;
     document.getElementById('calendar-title-input').value = '';
+    document.getElementById('calendar-category-input').value = 'KOR';
     document.getElementById('calendar-start-input').value = '';
     document.getElementById('calendar-end-input').value = '';
+    document.getElementById('calendar-country-input').value = '';
     document.getElementById('calendar-location-name-input').value = '';
     document.getElementById('calendar-location-address-input').value = '';
+    document.getElementById('calendar-lat-input').value = '';
+    document.getElementById('calendar-lng-input').value = '';
     document.getElementById('calendar-link-input').value = '';
     document.getElementById('calendar-description-input').value = '';
     document.getElementById('calendar-submit-btn').textContent = '일정 저장';
@@ -3262,10 +3273,14 @@
   window.submitCalendarEvent = function () {
     var payload = {
       title: (document.getElementById('calendar-title-input').value || '').trim(),
+      event_category: document.getElementById('calendar-category-input').value || 'WOSM',
       start_at: document.getElementById('calendar-start-input').value || '',
       end_at: document.getElementById('calendar-end-input').value || '',
+      country_name: (document.getElementById('calendar-country-input').value || '').trim(),
       location_name: (document.getElementById('calendar-location-name-input').value || '').trim(),
       location_address: (document.getElementById('calendar-location-address-input').value || '').trim(),
+      latitude: document.getElementById('calendar-lat-input').value || '',
+      longitude: document.getElementById('calendar-lng-input').value || '',
       link_url: (document.getElementById('calendar-link-input').value || '').trim(),
       description: (document.getElementById('calendar-description-input').value || '').trim(),
     };
@@ -3316,6 +3331,23 @@
     var startLabel = start.replace('T', ' ');
     if (!end) return startLabel;
     return startLabel + ' ~ ' + end.replace('T', ' ');
+  }
+
+  function getCalendarStatus(item) {
+    var now = Date.now();
+    var start = parseCalendarDateTime(item && item.start_at);
+    var end = parseCalendarDateTime(item && item.end_at);
+    if (!start) return { key: 'upcoming', label: '개최예정' };
+    if (start > now) return { key: 'upcoming', label: '개최예정' };
+    if (!end || end >= now) return { key: 'ongoing', label: '진행중' };
+    return { key: 'finished', label: '행사종료' };
+  }
+
+  function parseCalendarDateTime(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return 0;
+    var parsed = Date.parse(raw.replace(' ', 'T') + '+09:00');
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   function loadVersionHistory() {
