@@ -16,20 +16,25 @@ export async function onRequestPut({ request, env, params }) {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
       UPDATE calendar_events
-      SET title = ?, event_category = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, start_at = ?, end_at = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-      RETURNING id, title, event_category, description, country_name, location_name, location_address, latitude, longitude, start_at, end_at, link_url, created_at, updated_at
+      RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, start_at, start_has_time, end_at, end_has_time, link_url, created_at, updated_at
     `).bind(
       normalized.title,
+      normalized.title_original,
       normalized.event_category,
+      normalized.event_tags,
       normalized.description,
       normalized.country_name,
       normalized.location_name,
       normalized.location_address,
       normalized.latitude,
       normalized.longitude,
+      normalized.related_post_id,
       normalized.start_at,
+      normalized.start_has_time,
       normalized.end_at,
+      normalized.end_has_time,
       normalized.link_url,
       id
     ).first();
