@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.073.00';
+  GW.APP_VERSION = '0.073.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1139,6 +1139,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         path: path,
+        current_url: window.location.href || '',
         referrer: document.referrer || '',
       }),
       keepalive: true,

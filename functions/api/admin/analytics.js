@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -20,6 +21,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 async function getInternalMetrics(env, range) {
+  await ensureSiteVisitColumns(env);
   const useHourlySeries = range.days === 1;
   const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
   const allTime = rangeStartEnd(resolveAnalyticsRange(env.CF_ANALYTICS_START_DATE || '2026-03-12', range.endDate));
@@ -35,60 +37,65 @@ async function getInternalMetrics(env, range) {
     topPaths,
     referrers,
   ] = await Promise.all([
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
-    scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
-    scalar(env, `SELECT COUNT(*) AS count FROM post_views WHERE datetime(viewed_at, '+9 hours') >= datetime(?) AND datetime(viewed_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
     env.DB.prepare(
       useHourlySeries
-        ? `SELECT strftime('%H', datetime(viewed_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits
-             FROM post_views
-            WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
-              AND datetime(viewed_at, '+9 hours') < datetime(?)
+        ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits
+             FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND datetime(visited_at, '+9 hours') >= datetime(?)
+              AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY visit_hour
             ORDER BY visit_hour ASC`
-        : `SELECT date(viewed_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
-             FROM post_views
-            WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
-              AND datetime(viewed_at, '+9 hours') < datetime(?)
+        : `SELECT date(visited_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
+             FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND datetime(visited_at, '+9 hours') >= datetime(?)
+              AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY visit_date
             ORDER BY visit_date ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
       useHourlySeries
-        ? `SELECT strftime('%H', datetime(viewed_at, '+9 hours')) AS view_hour, COUNT(*) AS views
-             FROM post_views
-            WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
-              AND datetime(viewed_at, '+9 hours') < datetime(?)
+        ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS view_hour, COUNT(*) AS views
+             FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND datetime(visited_at, '+9 hours') >= datetime(?)
+              AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY view_hour
             ORDER BY view_hour ASC`
-        : `SELECT date(viewed_at, '+9 hours') AS view_date, COUNT(*) AS views
-             FROM post_views
-            WHERE datetime(viewed_at, '+9 hours') >= datetime(?)
-              AND datetime(viewed_at, '+9 hours') < datetime(?)
+        : `SELECT date(visited_at, '+9 hours') AS view_date, COUNT(*) AS views
+             FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND datetime(visited_at, '+9 hours') >= datetime(?)
+              AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY view_date
             ORDER BY view_date ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
-      `SELECT '/post/' || p.id AS path,
+      `SELECT sv.path AS path,
               p.title AS title,
               COUNT(*) AS pageviews,
-              COUNT(DISTINCT pv.viewer_key) AS visits
-         FROM post_views pv
-         JOIN posts p ON p.id = pv.post_id
-        WHERE datetime(pv.viewed_at, '+9 hours') >= datetime(?)
-          AND datetime(pv.viewed_at, '+9 hours') < datetime(?)
-        GROUP BY p.id, p.title
-        ORDER BY pageviews DESC, visits DESC, p.id DESC
+              COUNT(DISTINCT sv.viewer_key) AS visits
+         FROM site_visits sv
+         LEFT JOIN posts p ON sv.path = '/post/' || p.id
+        WHERE sv.path LIKE '/post/%'
+          AND datetime(sv.visited_at, '+9 hours') >= datetime(?)
+          AND datetime(sv.visited_at, '+9 hours') < datetime(?)
+        GROUP BY sv.path, p.title
+        ORDER BY pageviews DESC, visits DESC, sv.path DESC
         LIMIT 10`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
-      `SELECT referrer_host, referrer_url, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
+      `SELECT referrer_host, referrer_url, utm_source, utm_medium, utm_campaign, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
          FROM site_visits
         WHERE datetime(visited_at, '+9 hours') >= datetime(?)
           AND datetime(visited_at, '+9 hours') < datetime(?)
           AND path LIKE '/post/%'
-        GROUP BY referrer_host, referrer_url
+        GROUP BY referrer_host, referrer_url, utm_source, utm_medium, utm_campaign
         ORDER BY visits DESC, pageviews DESC, referrer_host ASC
         LIMIT 200`
     ).bind(chosen.start, chosen.endExclusive).all(),
@@ -120,8 +127,8 @@ async function getInternalMetrics(env, range) {
   const rangeViews = viewSeries.reduce((sum, item) => sum + Number(item.views || 0), 0);
 
   return {
-    provider: 'post_views',
-    provider_label: '기사 조회 집계',
+    provider: 'site_visits',
+    provider_label: '기사 페이지 방문 집계',
     range: {
       start_date: range.startDate,
       end_date: range.endDate,
@@ -163,7 +170,7 @@ async function getInternalMetrics(env, range) {
       pageviews: item.pageviews || 0,
     })),
     referrers: aggregateReferrers(referrers.results || []),
-    tracking_note: `${range.label} 기준 게시글 조회 로그 집계입니다. 방문 수는 게시글을 실제로 연 고유 사용자 수, 조회수는 게시글 실제 조회 누적 수를 뜻합니다. 유입 경로는 site_visits의 referrer URL을 기준으로 카카오, 네이버 검색, 내부 이동 등으로 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 referrer를 넘기지 않으면 direct로 기록될 수 있습니다.`,
+    tracking_note: `${range.label} 기준 기사 페이지 방문 집계입니다. 방문 수는 기사 페이지를 연 고유 사용자 수, 조회수는 기사 페이지 열린 횟수 기준입니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
 
@@ -207,7 +214,7 @@ function fillHourSeries(range, rows, hourKey, valueBuilder) {
 function aggregateReferrers(rows) {
   const bySource = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
-    const source = classifyReferrer(row && row.referrer_host, row && row.referrer_url);
+    const source = classifyReferrer(row && row.referrer_host, row && row.referrer_url, row && row.utm_source, row && row.utm_medium, row && row.utm_campaign);
     const current = bySource.get(source.key) || {
       source_key: source.key,
       source_label: source.label,
@@ -227,9 +234,19 @@ function aggregateReferrers(rows) {
     .slice(0, 12);
 }
 
-function classifyReferrer(referrerHost, referrerUrl) {
+function classifyReferrer(referrerHost, referrerUrl, utmSource, utmMedium, utmCampaign) {
   const host = String(referrerHost || '').trim().toLowerCase();
   const url = String(referrerUrl || '').trim();
+  const source = String(utmSource || '').trim().toLowerCase();
+  const medium = String(utmMedium || '').trim().toLowerCase();
+  const campaign = String(utmCampaign || '').trim().toLowerCase();
+
+  if (source) {
+    if (source === 'kakaotalk') return sourceInfo('utm-kakaotalk', '카카오톡 공유', medium === 'social-share' ? 'share' : 'campaign', medium === 'social-share' ? '공유' : '캠페인', campaign || medium || 'utm');
+    if (source === 'facebook') return sourceInfo('utm-facebook', '페이스북 공유', medium === 'social-share' ? 'share' : 'campaign', medium === 'social-share' ? '공유' : '캠페인', campaign || medium || 'utm');
+    if (source === 'copy') return sourceInfo('utm-copy', '직접 공유 URL', medium === 'social-share' ? 'share' : 'campaign', medium === 'social-share' ? '공유' : '캠페인', campaign || medium || 'utm');
+    return sourceInfo('utm-' + source, 'UTM · ' + source, 'campaign', '캠페인', campaign || medium || source);
+  }
 
   if (!host || host === 'direct') {
     return {

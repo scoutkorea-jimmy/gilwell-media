@@ -2821,7 +2821,7 @@
         title: pageInfo.title,
         meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
       };
-    }, '아직 방문 페이지 데이터가 없습니다');
+    }, '아직 상위 기사 데이터가 없습니다');
     renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
     renderAnalyticsViewsChart(payload.views && payload.views.series ? payload.views.series : [], payload.range || fallback.range);
     renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
@@ -2926,7 +2926,7 @@
     var el = document.getElementById('analytics-top-pages');
     if (!el) return;
     if (!items || !items.length) {
-      el.innerHTML = '<div class="list-empty">기간 내 페이지 데이터가 없습니다</div>';
+      el.innerHTML = '<div class="list-empty">기간 내 상위 기사 데이터가 없습니다</div>';
       return;
     }
     var body = items.map(function (item, index) {
@@ -2938,7 +2938,7 @@
         '<td>' + formatMetricCompact(item.pageviews || 0) + '</td>' +
       '</tr>';
     }).join('');
-    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>페이지</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>기사</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
   }
 
   function getAnalyticsPageInfo(item) {
