@@ -8,7 +8,8 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.075.01">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/css/style.css?v=0.076.00">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -72,19 +73,36 @@
 
         <section class="calendar-panel">
           <div class="calendar-side-head">
-            <h3 id="calendar-selected-date-label">선택한 날짜 일정</h3>
+            <h3>이달의 상태별 일정</h3>
           </div>
-          <div id="calendar-selected-events" class="calendar-events-list">
-            <div class="list-empty">일정을 불러오는 중…</div>
+          <div class="calendar-status-group">
+            <div class="calendar-status-head is-ongoing">진행중</div>
+            <div id="calendar-ongoing-events" class="calendar-events-list">
+              <div class="list-empty">일정을 불러오는 중…</div>
+            </div>
           </div>
-          <div class="calendar-side-head calendar-side-head-secondary">
-            <h3>다가오는 일정</h3>
+          <div class="calendar-status-group">
+            <div class="calendar-status-head is-upcoming">개최예정</div>
+            <div id="calendar-upcoming-events" class="calendar-events-list">
+              <div class="list-empty">일정을 불러오는 중…</div>
+            </div>
           </div>
-          <div id="calendar-upcoming-events" class="calendar-events-list">
-            <div class="list-empty">일정을 불러오는 중…</div>
+          <div class="calendar-status-group">
+            <div class="calendar-status-head is-finished">행사종료</div>
+            <div id="calendar-finished-events" class="calendar-events-list">
+              <div class="list-empty">일정을 불러오는 중…</div>
+            </div>
           </div>
         </section>
       </div>
+
+      <section class="calendar-panel calendar-map-panel">
+        <div class="calendar-side-head">
+          <h3>캘린더 지도</h3>
+          <p class="calendar-map-help">축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.</p>
+        </div>
+        <div id="calendar-map" class="calendar-map"></div>
+      </section>
     </section>
   </main>
 
@@ -101,7 +119,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.075.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.076.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -112,7 +130,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.075.01"></script>
-  <script src="/js/calendar.js?v=0.075.01"></script>
+  <script src="/js/main.js?v=0.076.00"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/calendar.js?v=0.076.00"></script>
 </body>
 </html>
