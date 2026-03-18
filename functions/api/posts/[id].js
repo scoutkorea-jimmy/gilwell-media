@@ -73,8 +73,9 @@ export async function onRequestPut({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   let currentPost = null;
+  await ensureGalleryImagesColumn(env);
   try {
-    currentPost = await env.DB.prepare(`SELECT image_url FROM posts WHERE id = ?`).bind(id).first();
+    currentPost = await env.DB.prepare(`SELECT image_url, gallery_images FROM posts WHERE id = ?`).bind(id).first();
   } catch (_) {}
 
   let body;
@@ -84,7 +85,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, youtube_url, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
@@ -111,6 +112,7 @@ export async function onRequestPut({ params, request, env }) {
     values.push(upgradedContent);
   }
   let oldImageToDelete = '';
+  let oldGalleryToDelete = [];
   if (image_url !== undefined) {
     const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
     fields.push('image_url = ?');
@@ -118,6 +120,12 @@ export async function onRequestPut({ params, request, env }) {
     if (currentPost && currentPost.image_url && currentPost.image_url !== storedCover.url) {
       oldImageToDelete = currentPost.image_url;
     }
+  }
+  if (gallery_images !== undefined) {
+    const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
+    fields.push('gallery_images = ?');
+    values.push(serializeGalleryImages(storedGalleryImages));
+    oldGalleryToDelete = diffRemovedGalleryUrls(currentPost && currentPost.gallery_images, storedGalleryImages);
   }
   if (image_caption !== undefined) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
   if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
@@ -152,6 +160,11 @@ export async function onRequestPut({ params, request, env }) {
     if (!results.length) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (oldImageToDelete) {
       await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
+    }
+    if (oldGalleryToDelete.length) {
+      await Promise.all(oldGalleryToDelete.map(function (value) {
+        return deleteStoredImageByUrl(env, value, origin).catch(() => {});
+      }));
     }
     if (results[0]) {
       await recordPostHistory(env, id, 'update', results[0], '게시글 수정');
@@ -224,7 +237,8 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
-    const existing = await env.DB.prepare(`SELECT image_url, content FROM posts WHERE id = ?`).bind(id).first();
+    await ensureGalleryImagesColumn(env);
+    const existing = await env.DB.prepare(`SELECT image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
     if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const { meta } = await env.DB.prepare(
       `DELETE FROM posts WHERE id = ?`
@@ -286,6 +300,39 @@ function sanitizeCaption(value) {
   return trimmed ? trimmed.slice(0, 300) : null;
 }
 
+function normalizeGalleryImages(rawItems) {
+  if (!Array.isArray(rawItems)) return [];
+  return rawItems.map(function (item) {
+    if (typeof item === 'string') return { url: item, caption: '' };
+    return {
+      url: item && typeof item.url === 'string' ? item.url : '',
+      caption: item && typeof item.caption === 'string' ? item.caption : '',
+    };
+  }).filter(function (item) {
+    return item.url;
+  }).slice(0, 10);
+}
+
+async function storeGalleryImages(env, rawItems, origin) {
+  const items = normalizeGalleryImages(rawItems);
+  const stored = [];
+  for (const item of items) {
+    const source = sanitizeUrl(item.url);
+    if (!source) continue;
+    const saved = await storeDataImage(env, source, origin, 'gallery');
+    if (!saved.url) continue;
+    stored.push({
+      url: saved.url,
+      caption: sanitizeCaption(item.caption) || '',
+    });
+  }
+  return stored.slice(0, 10);
+}
+
+function serializeGalleryImages(items) {
+  return items && items.length ? JSON.stringify(items) : null;
+}
+
 function normalizePublishAtInput(publishAt, publishDate) {
   const precise = String(publishAt || '').trim();
   if (precise) {
@@ -302,6 +349,16 @@ function normalizePublishAtInput(publishAt, publishDate) {
 function collectStoredImageUrls(post) {
   const urls = [];
   if (post && post.image_url) urls.push(String(post.image_url));
+  if (post && post.gallery_images) {
+    try {
+      const gallery = JSON.parse(post.gallery_images);
+      if (Array.isArray(gallery)) {
+        gallery.forEach(function (item) {
+          if (item && item.url) urls.push(String(item.url));
+        });
+      }
+    } catch (_) {}
+  }
   const content = post && typeof post.content === 'string' ? post.content.trim() : '';
   if (!content || content.charAt(0) !== '{') return uniqueStrings(urls);
   try {
@@ -324,4 +381,33 @@ function uniqueStrings(items) {
     seen.add(value);
     return true;
   });
+}
+
+function parseGalleryImages(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function diffRemovedGalleryUrls(previousRaw, nextItems) {
+  const previous = parseGalleryImages(previousRaw).map(function (item) {
+    return item && item.url ? String(item.url) : '';
+  }).filter(Boolean);
+  const next = new Set((nextItems || []).map(function (item) { return item.url; }));
+  return uniqueStrings(previous.filter(function (url) { return !next.has(url); }));
+}
+
+async function ensureGalleryImagesColumn(env) {
+  try {
+    await env.DB.prepare('SELECT gallery_images FROM posts LIMIT 1').first();
+  } catch (err) {
+    var msg = String(err && err.message || err || '');
+    if (msg.indexOf('no such column') === -1) throw err;
+    await env.DB.prepare('ALTER TABLE posts ADD COLUMN gallery_images TEXT').run();
+  }
 }

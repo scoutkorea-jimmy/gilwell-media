@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.072.02';
+  GW.APP_VERSION = '0.073.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -545,9 +545,6 @@
       try {
         const doc = JSON.parse(trimmed);
         if (Array.isArray(doc.blocks)) {
-          var imageBlocks = doc.blocks.filter(function (b) { return b && b.type === 'image' && b.data; });
-          var useGallery = imageBlocks.length >= 2;
-          var galleryItems = [];
           var html = doc.blocks.map(function (b) {
             switch (b.type) {
               case 'paragraph':
@@ -569,10 +566,6 @@
               case 'image': {
                 var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
                 var cap = GW.escapeHtml(b.data.caption || '');
-                if (useGallery) {
-                  galleryItems.push({ url: url, caption: b.data.caption || '' });
-                  return '';
-                }
                 var html = '<div class="post-inline-media"><img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>';
                 if (cap) html += '<p class="post-image-caption">' + cap + '</p>';
                 return html;
@@ -580,7 +573,7 @@
               default: return '';
             }
           }).join('');
-          return { html: html, gallery: galleryItems };
+          return { html: html, gallery: [] };
         }
       } catch (e) { /* fall through */ }
     }

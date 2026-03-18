@@ -41,6 +41,7 @@
     this._selectedTag  = null;
     this._loginTurnstileWidgetId = null;
     this._loginTurnstileToken = '';
+    this._galleryImages = [];
   }
 
   Board.prototype._getPageSize = function () {
@@ -356,7 +357,7 @@
       : '';
     var renderedContent = GW.renderTextWithMedia(post.content);
     var relatedHtml = buildRelatedPostsHtml(post.related_posts);
-    var galleryHtml = GW.renderContentGallery(renderedContent.gallery, { className: 'modal-content-gallery' });
+    var galleryHtml = GW.renderContentGallery(parseGalleryImages(post.gallery_images), { className: 'modal-content-gallery' });
 
     inner.innerHTML =
       '<button class="modal-close" id="modal-close-btn" aria-label="닫기">×</button>' +
@@ -402,6 +403,17 @@
         }).join('') +
       '</ul>' +
     '</section>';
+  }
+
+  function parseGalleryImages(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try {
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── State displays ────────────────────────────────────────
@@ -557,12 +569,20 @@
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
+          '<label>슬라이드 전용 이미지 <span class="admin-label-note" id="board-gallery-count">0/10</span></label>' +
+          '<div class="cover-upload-wrap">' +
+            '<button type="button" id="board-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>' +
+            '<div id="board-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>' +
+          '</div>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 이미지와 별개로 관리되며 2장 이상일 때만 슬라이드가 활성화됩니다.</p>' +
+        '</div>' +
+        '<div class="form-group">' +
           '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
           '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 10개 · 2장 이상이면 하단 슬라이드)</span></label>' +
+          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
         '</div>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
@@ -585,6 +605,7 @@
     document.getElementById('board-write-cancel').addEventListener('click', function () { self._closeWriteForm(); });
     document.getElementById('board-write-submit').addEventListener('click', function () { self._submitPost(); });
     document.getElementById('board-cover-btn').addEventListener('click', function () { self._uploadCoverImage(); });
+    document.getElementById('board-gallery-btn').addEventListener('click', function () { self._uploadGalleryImages(); });
     document.getElementById('board-tag-new-btn').addEventListener('click', function () { self._addWriteTag(); });
     document.getElementById('board-tag-new-input').addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
@@ -617,6 +638,7 @@
         publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
         image_url: self._coverImage || null,
+        gallery_images: self._galleryImages || [],
         tags: self._selectedTags || [],
       };
       if (self._editor) {
@@ -908,6 +930,35 @@
     input.click();
   };
 
+  Board.prototype._uploadGalleryImages = function () {
+    var self  = this;
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = function () {
+      var files = Array.prototype.slice.call(input.files || []);
+      var remaining = Math.max(0, 10 - self._galleryImages.length);
+      if (!files.length) return;
+      if (!remaining) {
+        GW.showToast('슬라이드 이미지는 최대 10장까지 추가할 수 있습니다', 'error');
+        return;
+      }
+      files.slice(0, remaining).reduce(function (chain, file) {
+        return chain.then(function () {
+          return GW.optimizeImageFile(file, { maxW: 1800, maxH: 1800, quality: 0.84 }).then(function (result) {
+            self._galleryImages.push({ url: result.dataUrl, caption: '' });
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        self._renderGalleryPreview();
+      }).catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
+      });
+    };
+    input.click();
+  };
+
   Board.prototype._showWriteForm = function () {
     var self    = this;
     var overlay = document.getElementById('board-write-overlay');
@@ -918,10 +969,12 @@
     // Reset selections
     self._selectedTags  = [];
     self._coverImage    = null;
+    self._galleryImages = [];
     self._turnstileToken = '';
     var coverCaptionEl = document.getElementById('board-write-image-caption');
     if (coverCaptionEl) coverCaptionEl.value = '';
     self._renderCoverPreview();
+    self._renderGalleryPreview();
     var aiChk = document.getElementById('board-ai-assisted');
     if (aiChk) aiChk.checked = false;
 
@@ -990,6 +1043,8 @@
               if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
               self._coverImage = draft.image_url || null;
               self._renderCoverPreview();
+              self._galleryImages = self._parseGallerySeed(draft.gallery_images);
+              self._renderGalleryPreview();
               var tagSel = document.getElementById('board-tag-selector');
               if (tagSel) _syncBoardTagPills(tagSel, self._selectedTags);
               // If editorData exists, render it into the editor after a short delay
@@ -1083,6 +1138,7 @@
             special_feature: specialFeatureEl ? ((specialFeatureEl.value || '').trim() || null) : null,
             content:     content,
             image_url:   self._coverImage || null,
+            gallery_images: self._galleryImages || [],
             image_caption: coverCaptionEl ? ((coverCaptionEl.value || '').trim() || null) : null,
             youtube_url: youtubeUrl || null,
             tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
@@ -1162,6 +1218,7 @@
         publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
         image_url: self._coverImage || null,
+        gallery_images: self._galleryImages || [],
         tags: self._selectedTags || [],
       };
       if (self._editor) {
@@ -1197,6 +1254,43 @@
       self._coverImage = null;
       preview.innerHTML = '';
     });
+  };
+
+  Board.prototype._renderGalleryPreview = function () {
+    var self = this;
+    var preview = document.getElementById('board-gallery-preview');
+    var counter = document.getElementById('board-gallery-count');
+    if (counter) counter.textContent = String(self._galleryImages.length) + '/10';
+    if (!preview) return;
+    if (!self._galleryImages.length) {
+      preview.innerHTML = '<p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p>';
+      return;
+    }
+    preview.innerHTML = self._galleryImages.map(function (item, index) {
+      return '<div class="gallery-upload-item">' +
+        '<img src="' + item.url + '" class="gallery-upload-thumb" alt="슬라이드 이미지 ' + (index + 1) + '">' +
+        '<button type="button" class="gallery-upload-remove" data-index="' + index + '">제거</button>' +
+      '</div>';
+    }).join('');
+    preview.querySelectorAll('.gallery-upload-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-index') || '-1', 10);
+        if (!Number.isFinite(index) || index < 0) return;
+        self._galleryImages.splice(index, 1);
+        self._renderGalleryPreview();
+      });
+    });
+  };
+
+  Board.prototype._parseGallerySeed = function (raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw.slice(0, 10);
+    try {
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
+    } catch (_) {
+      return [];
+    }
   };
 
   // ── Export ────────────────────────────────────────────────

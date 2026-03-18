@@ -82,7 +82,7 @@ export async function onRequestGet({ params, env, request }) {
   const dateStr  = formatDate(publicDateValue);
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
-  const bodyGalleryHtml = renderContentGallery(renderedContent.gallery);
+  const bodyGalleryHtml = renderContentGallery(parseGalleryImages(post.gallery_images));
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const categoryUrl = `${siteUrl}/${post.category}.html`;
@@ -93,6 +93,7 @@ export async function onRequestGet({ params, env, request }) {
     subtitle: post.subtitle || '',
     content: post.content || '',
     image_url: post.image_url || '',
+    gallery_images: post.gallery_images || '',
     image_caption: post.image_caption || '',
     youtube_url: post.youtube_url || '',
     meta_tags: post.meta_tags || '',
@@ -148,7 +149,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.072.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.073.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -319,7 +320,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.072.02</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.073.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -409,6 +410,14 @@ export async function onRequestGet({ params, env, request }) {
         </div>
       </div>
 
+      <div class="form-group">
+        <label>슬라이드 전용 이미지 <span class="admin-label-note" id="post-gallery-count">0/10</span></label>
+        <div class="cover-upload-wrap">
+          <button type="button" class="cover-upload-btn" onclick="window._postUploadGallery()">🖼 슬라이드 이미지 선택</button>
+          <div id="post-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label for="post-edit-image-caption">이미지 설명</label>
@@ -439,7 +448,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.072.02"></script>
+  <script src="/js/main.js?v=0.073.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -452,6 +461,7 @@ export async function onRequestGet({ params, env, request }) {
       editor: null,
       editorLoading: false,
       coverImage: _postEditSeed.image_url || null,
+      galleryImages: [],
       selectedTags: [],
       activeCategory: _postEditSeed.category || 'korea'
     };
@@ -700,6 +710,58 @@ export async function onRequestGet({ params, env, request }) {
       }
     }
 
+    function _parsePostGallerySeed(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) {
+        return raw.map(function (item) {
+          if (typeof item === 'string') return { url: item, caption: '' };
+          return {
+            url: item && typeof item.url === 'string' ? item.url : '',
+            caption: item && typeof item.caption === 'string' ? item.caption : ''
+          };
+        }).filter(function (item) { return item.url; }).slice(0, 10);
+      }
+      try {
+        var parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map(function (item) {
+          if (typeof item === 'string') return { url: item, caption: '' };
+          return {
+            url: item && typeof item.url === 'string' ? item.url : '',
+            caption: item && typeof item.caption === 'string' ? item.caption : ''
+          };
+        }).filter(function (item) { return item.url; }).slice(0, 10);
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function _renderPostGalleryPreview() {
+      var preview = document.getElementById('post-gallery-preview');
+      var count = document.getElementById('post-gallery-count');
+      if (!preview) return;
+      if (count) count.textContent = (_postEditState.galleryImages.length || 0) + '/10';
+      if (!_postEditState.galleryImages.length) {
+        preview.innerHTML = '<p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p>';
+        return;
+      }
+      preview.innerHTML = _postEditState.galleryImages.map(function (item, idx) {
+        return '' +
+          '<div class="gallery-upload-item">' +
+            '<img class="gallery-upload-thumb" src="' + GW.escapeHtml(item.url) + '" alt="슬라이드 이미지 ' + (idx + 1) + '">' +
+            '<button type="button" class="gallery-upload-remove" data-idx="' + idx + '">제거</button>' +
+          '</div>';
+      }).join('');
+      preview.querySelectorAll('.gallery-upload-remove').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var idx = parseInt(button.getAttribute('data-idx') || '-1', 10);
+          if (idx < 0) return;
+          _postEditState.galleryImages.splice(idx, 1);
+          _renderPostGalleryPreview();
+        });
+      });
+    }
+
     window._postUploadCover = function () {
       var input = document.createElement('input');
       input.type = 'file';
@@ -719,6 +781,34 @@ export async function onRequestGet({ params, env, request }) {
       input.click();
     };
 
+    window._postUploadGallery = function () {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.multiple = true;
+      input.addEventListener('change', function () {
+        var files = Array.prototype.slice.call((input.files || []));
+        if (!files.length) return;
+        if ((_postEditState.galleryImages.length + files.length) > 10) {
+          GW.showToast('슬라이드 이미지는 최대 10장까지 등록할 수 있습니다', 'error');
+          return;
+        }
+        Promise.all(files.map(function (file) {
+          return GW.optimizeImageFile(file, { maxW: 1800, maxH: 1800, quality: 0.84 });
+        }))
+          .then(function (results) {
+            results.forEach(function (result) {
+              _postEditState.galleryImages.push({ url: result.dataUrl, caption: '' });
+            });
+            _renderPostGalleryPreview();
+          })
+          .catch(function (err) {
+            GW.showToast((err && err.message) || '슬라이드 이미지 처리에 실패했습니다', 'error');
+          });
+      });
+      input.click();
+    };
+
     function _populatePostEditForm() {
       document.getElementById('post-edit-category').value = _postEditSeed.category || 'korea';
       document.getElementById('post-edit-title-input').value = _postEditSeed.title || '';
@@ -730,10 +820,12 @@ export async function onRequestGet({ params, env, request }) {
       document.getElementById('post-edit-metatags-input').value = _postEditSeed.meta_tags || '';
       document.getElementById('post-edit-ai-assisted').checked = !!_postEditSeed.ai_assisted;
       _postEditState.coverImage = _postEditSeed.image_url || null;
+      _postEditState.galleryImages = _parsePostGallerySeed(_postEditSeed.gallery_images);
       _postEditState.selectedTags = _parsePostTags(_postEditSeed.tag);
       _postEditState.activeCategory = _postEditSeed.category || 'korea';
       _syncPostCategoryChip(_postEditState.activeCategory);
       _renderPostCoverPreview();
+      _renderPostGalleryPreview();
       _loadPostTagOptions(_postEditState.activeCategory);
       _fillPostAuthorOptions({});
       GW.apiFetch('/api/settings/editors')
@@ -928,6 +1020,7 @@ export async function onRequestGet({ params, env, request }) {
               special_feature: specialFeature || null,
               content: JSON.stringify(outputData),
               image_url: _postEditState.coverImage || null,
+              gallery_images: _postEditState.galleryImages || [],
               image_caption: imageCaption || null,
               youtube_url: youtubeUrl || null,
               tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
@@ -1117,9 +1210,6 @@ function renderContent(str) {
     try {
       const doc = JSON.parse(trimmed);
       if (Array.isArray(doc.blocks)) {
-        const imageBlocks = doc.blocks.filter((b) => b && b.type === 'image' && b.data);
-        const useGallery = imageBlocks.length >= 2;
-        const gallery = [];
         const html = doc.blocks.map(b => {
           switch (b.type) {
             case 'paragraph':
@@ -1141,10 +1231,6 @@ function renderContent(str) {
             case 'image': {
               const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
               const cap = escapeHtml(b.data.caption || '');
-              if (useGallery) {
-                gallery.push({ url, caption: b.data.caption || '' });
-                return '';
-              }
               let html = `<div class="post-inline-media"><img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>`;
               if (cap) html += `<p class="post-image-caption">${cap}</p>`;
               return html;
@@ -1152,7 +1238,7 @@ function renderContent(str) {
             default: return '';
           }
         }).join('');
-        return { html, gallery };
+        return { html, gallery: [] };
       }
     } catch (e) { /* fall through */ }
   }
@@ -1217,20 +1303,38 @@ function renderPostCover(post, id, title) {
 function renderContentGallery(items) {
   const slides = Array.isArray(items) ? items.filter((item) => item && item.url) : [];
   if (slides.length < 2) return '';
-  return `<section class="content-gallery post-content-gallery" data-gallery-interval="5000">
+  return `<section class="content-gallery post-content-gallery" data-gallery-interval="3000">
     <div class="content-gallery-track">
-      ${slides.map((item, index) => {
-        const cap = escapeHtml(item.caption || '');
-        return `<figure class="content-gallery-slide${index === 0 ? ' is-active' : ''}">
-          <div class="content-gallery-media"><img src="${escapeHtml(item.url)}" alt="${cap}"></div>
-          ${cap ? `<figcaption class="post-image-caption">${cap}</figcaption>` : ''}
-        </figure>`;
-      }).join('')}
+      <div class="content-gallery-slides">
+        ${slides.map((item, index) => {
+          const cap = escapeHtml(item.caption || '');
+          return `<figure class="content-gallery-slide${index === 0 ? ' is-active' : ''}">
+            <div class="content-gallery-media"><img src="${escapeHtml(item.url)}" alt="${cap}"></div>
+            ${cap ? `<figcaption class="post-image-caption">${cap}</figcaption>` : ''}
+          </figure>`;
+        }).join('')}
+      </div>
+      <div class="content-gallery-controls">
+        <div class="content-gallery-dots">
+          ${slides.map((_, index) => `<button type="button" class="content-gallery-dot${index === 0 ? ' is-active' : ''}" data-gallery-index="${index}" aria-label="슬라이드 ${index + 1}"></button>`).join('')}
+        </div>
+        <button type="button" class="content-gallery-pause" aria-label="슬라이드 일시정지" aria-pressed="false">일시정지</button>
+      </div>
     </div>
-    <div class="content-gallery-dots">
-      ${slides.map((_, index) => `<button type="button" class="content-gallery-dot${index === 0 ? ' is-active' : ''}" data-gallery-index="${index}" aria-label="슬라이드 ${index + 1}"></button>`).join('')}
-    </div>
+    <button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>
+    <button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>
   </section>`;
+}
+
+function parseGalleryImages(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
 }
 
 function renderSpecialFeatureSection(post, items) {

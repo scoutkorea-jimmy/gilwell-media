@@ -3300,6 +3300,57 @@ footer a:hover { color: #ffffff; }
 }
 .cover-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
 
+.gallery-upload-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.gallery-upload-empty {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  background: var(--bg);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.gallery-upload-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gallery-upload-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--page-bg);
+}
+
+.gallery-upload-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.gallery-upload-remove:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
 /* ════════════════════════════════════════════════════════════
    HERO SEARCH RESULTS (admin)
    ════════════════════════════════════════════════════════════ */
