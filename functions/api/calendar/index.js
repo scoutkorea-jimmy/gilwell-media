@@ -29,7 +29,7 @@ export async function onRequestGet({ env }) {
         c.updated_at
       FROM calendar_events c
       LEFT JOIN posts p ON p.id = c.related_post_id
-      ORDER BY start_at ASC, id ASC
+      ORDER BY c.start_at ASC, c.id ASC
     `).all();
     return json({ items: normalizeCalendarRows(results || []) }, 200, {
       'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=600',

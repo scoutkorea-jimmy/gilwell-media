@@ -1,6 +1,14 @@
 {
   "items": [
     {
+      "version": "0.077.02",
+      "date": "2026-03-19",
+      "summary": "캘린더 preview 응답을 막던 조인 정렬 충돌을 고친 hotfix입니다.",
+      "changes": [
+        "캘린더 목록 API가 관련 기사 조인을 포함할 때 정렬 기준을 명확히 지정해 preview에서 DB 오류 없이 열리도록 수정했습니다."
+      ]
+    },
+    {
       "version": "0.077.01",
       "date": "2026-03-19",
       "summary": "캘린더 확장 기능의 기존 DB 호환성을 preview에서 보강한 hotfix입니다.",
