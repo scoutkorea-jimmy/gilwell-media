@@ -376,8 +376,8 @@
       imgHtml +
       youtubeHtml +
       '<div class="modal-body">' + renderedContent.html + '</div>' +
-      galleryHtml +
       locationHtml +
+      galleryHtml +
       relatedHtml +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +

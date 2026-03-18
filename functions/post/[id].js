@@ -152,7 +152,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.074.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.074.01">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -259,8 +259,8 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-body modal-body">
           ${bodyHtml}
         </div>
-        ${bodyGalleryHtml}
         ${locationSectionHtml}
+        ${bodyGalleryHtml}
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
@@ -324,7 +324,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.074.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.074.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -468,7 +468,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.074.00"></script>
+  <script src="/js/main.js?v=0.074.01"></script>
   <script>
     GW.bootstrapStandardPage();
 
