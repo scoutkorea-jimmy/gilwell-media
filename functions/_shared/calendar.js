@@ -1,5 +1,5 @@
 export async function ensureCalendarTable(env) {
-  await env.DB.exec(`
+  await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS calendar_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -12,7 +12,7 @@ export async function ensureCalendarTable(env) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
-  `);
+  `).run();
 }
 
 export function normalizeCalendarInput(body) {
