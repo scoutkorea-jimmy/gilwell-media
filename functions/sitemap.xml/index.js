@@ -15,6 +15,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/apr', priority: '0.9', category: 'apr' },
     { path: '/wosm', priority: '0.9', category: 'wosm' },
     { path: '/people', priority: '0.9', category: 'people' },
+    { path: '/calendar.html', priority: '0.8', category: null },
     { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/glossary-raw', priority: '0.8', category: 'glossary' },
     { path: '/ai-guide.html', priority: '0.4', category: null },

@@ -94,6 +94,19 @@ CREATE TABLE IF NOT EXISTS glossary_terms (
   updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  location_name TEXT,
+  location_address TEXT,
+  start_at TEXT NOT NULL,
+  end_at TEXT,
+  link_url TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_publish_at ON posts (publish_at DESC);

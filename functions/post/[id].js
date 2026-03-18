@@ -152,7 +152,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.074.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.075.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -211,6 +211,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/apr" data-i18n="nav.apr">APR</a>
       <a href="/wosm" data-i18n="nav.wosm">WOSM</a>
       <a href="/people" data-i18n="nav.people">스카우트 인물</a>
+      <a href="/calendar.html">캘린더</a>
       <a href="/glossary" data-i18n="nav.glossary">용어집</a>
     </nav>
   </header>
@@ -324,7 +325,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.074.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.075.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -468,7 +469,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.074.01"></script>
+  <script src="/js/main.js?v=0.075.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1360,7 +1361,7 @@ function renderPostLocationSection(post) {
   const locationName = String(post && post.location_name || '').trim();
   const mapTitle = locationName || locationAddress;
   const mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
-  return `<details class="post-location-section">
+  return `<details class="post-location-section" open>
     <summary>위치 정보 보기</summary>
     <div class="post-location-body">
       ${locationName ? `<div class="post-location-name">${escapeHtml(locationName)}</div>` : ''}
