@@ -360,6 +360,7 @@
     var renderedContent = GW.renderTextWithMedia(post.content);
     var relatedHtml = buildRelatedPostsHtml(post.related_posts);
     var galleryHtml = GW.renderContentGallery(parseGalleryImages(post.gallery_images), { className: 'modal-content-gallery' });
+    var locationHtml = buildPostLocationHtml(post);
 
     inner.innerHTML =
       '<button class="modal-close" id="modal-close-btn" aria-label="닫기">×</button>' +
@@ -376,6 +377,7 @@
       youtubeHtml +
       '<div class="modal-body">' + renderedContent.html + '</div>' +
       galleryHtml +
+      locationHtml +
       relatedHtml +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
@@ -405,6 +407,24 @@
         }).join('') +
       '</ul>' +
     '</section>';
+  }
+
+  function buildPostLocationHtml(post) {
+    var locationAddress = post && post.location_address ? String(post.location_address).trim() : '';
+    if (!locationAddress) return '';
+    var locationName = post && post.location_name ? String(post.location_name).trim() : '';
+    var mapTitle = locationName || locationAddress;
+    var mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
+    return '<details class="post-location-section">' +
+      '<summary>위치 정보 보기</summary>' +
+      '<div class="post-location-body">' +
+        (locationName ? '<div class="post-location-name">' + GW.escapeHtml(locationName) + '</div>' : '') +
+        '<div class="post-location-address">' + GW.escapeHtml(locationAddress) + '</div>' +
+        '<div class="post-location-map-frame">' +
+          '<iframe class="post-location-map" src="' + mapUrl + '" title="' + GW.escapeHtml(mapTitle) + ' 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+        '</div>' +
+      '</div>' +
+    '</details>';
   }
 
   function parseGalleryImages(raw) {
@@ -587,6 +607,20 @@
           '</div>' +
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
         '</div>' +
+        '<details class="location-form-toggle" id="board-location-toggle">' +
+          '<summary>위치 정보 추가</summary>' +
+          '<div class="location-form-fields">' +
+            '<div class="form-group">' +
+              '<label for="board-write-location-name">위치 이름</label>' +
+              '<input type="text" id="board-write-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />' +
+            '</div>' +
+            '<div class="form-group">' +
+              '<label for="board-write-location-address">주소</label>' +
+              '<input type="text" id="board-write-location-address" placeholder="예: 강원특별자치도 고성군 토성면 ..." maxlength="300" />' +
+              '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>' +
+            '</div>' +
+          '</div>' +
+        '</details>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
           '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
           '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />' +
@@ -625,6 +659,8 @@
       var ytEl     = document.getElementById('board-write-youtube-input');
       var youtubeUrl = ytEl ? (ytEl.value || '') : '';
       var coverCaptionEl = document.getElementById('board-write-image-caption');
+      var locationNameEl = document.getElementById('board-write-location-name');
+      var locationAddressEl = document.getElementById('board-write-location-address');
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -636,6 +672,8 @@
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
+        location_name: locationNameEl ? (locationNameEl.value || '') : '',
+        location_address: locationAddressEl ? (locationAddressEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
         publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -1016,6 +1054,12 @@
       if (mt) mt.value = '';
       var yt = document.getElementById('board-write-youtube-input');
       if (yt) yt.value = '';
+      var locationNameEl = document.getElementById('board-write-location-name');
+      if (locationNameEl) locationNameEl.value = '';
+      var locationAddressEl = document.getElementById('board-write-location-address');
+      if (locationAddressEl) locationAddressEl.value = '';
+      var locationToggle = document.getElementById('board-location-toggle');
+      if (locationToggle) locationToggle.open = false;
 
       // Check for draft
       var draftKey = 'gw_draft_' + self.category;
@@ -1034,6 +1078,12 @@
               if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
               var yt2 = document.getElementById('board-write-youtube-input');
               if (yt2 && draft.youtube_url) yt2.value = draft.youtube_url;
+              var locationName2 = document.getElementById('board-write-location-name');
+              if (locationName2 && draft.location_name) locationName2.value = draft.location_name;
+              var locationAddress2 = document.getElementById('board-write-location-address');
+              if (locationAddress2 && draft.location_address) locationAddress2.value = draft.location_address;
+              var locationToggle2 = document.getElementById('board-location-toggle');
+              if (locationToggle2) locationToggle2.open = !!(draft.location_name || draft.location_address);
               var cap2 = document.getElementById('board-write-image-caption');
               if (cap2) cap2.value = draft.image_caption || '';
               var author2 = document.getElementById('board-write-author');
@@ -1105,6 +1155,8 @@
     var ytEl      = document.getElementById('board-write-youtube-input');
     var youtubeUrl = ytEl ? (ytEl.value || '').trim() : '';
     var coverCaptionEl = document.getElementById('board-write-image-caption');
+    var locationNameEl = document.getElementById('board-write-location-name');
+    var locationAddressEl = document.getElementById('board-write-location-address');
     var submitBtn = document.getElementById('board-write-submit');
 
     if (!title) { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -1143,6 +1195,8 @@
             gallery_images: self._galleryImages || [],
             image_caption: coverCaptionEl ? ((coverCaptionEl.value || '').trim() || null) : null,
             youtube_url: youtubeUrl || null,
+            location_name: locationNameEl ? ((locationNameEl.value || '').trim() || null) : null,
+            location_address: locationAddressEl ? ((locationAddressEl.value || '').trim() || null) : null,
             tag:         self._selectedTags && self._selectedTags.length ? self._selectedTags.join(',') : null,
             meta_tags:   metaTags || null,
             author:      authEl ? (authEl.value || undefined) : undefined,
@@ -1205,6 +1259,8 @@
       var ytEl     = document.getElementById('board-write-youtube-input');
       var youtubeUrl = ytEl ? (ytEl.value || '') : '';
       var coverCaptionEl = document.getElementById('board-write-image-caption');
+      var locationNameEl = document.getElementById('board-write-location-name');
+      var locationAddressEl = document.getElementById('board-write-location-address');
       var authEl   = document.getElementById('board-write-author');
       var dateEl   = document.getElementById('board-write-date');
       var aiEl     = document.getElementById('board-ai-assisted');
@@ -1216,6 +1272,8 @@
         meta_tags: metaTags,
         youtube_url: youtubeUrl,
         image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
+        location_name: locationNameEl ? (locationNameEl.value || '') : '',
+        location_address: locationAddressEl ? (locationAddressEl.value || '') : '',
         author: authEl ? (authEl.value || '') : '',
         publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
         ai_assisted: aiEl ? !!aiEl.checked : false,

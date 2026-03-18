@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.073.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.074.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.073.02</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.074.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.073.02</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.074.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -359,6 +359,21 @@
               </div>
               <p class="admin-field-meta">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>
             </div>
+
+            <details class="location-form-toggle" id="admin-location-toggle">
+              <summary>위치 정보 추가</summary>
+              <div class="location-form-fields">
+                <div class="form-group">
+                  <label for="art-location-name">위치 이름</label>
+                  <input type="text" id="art-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />
+                </div>
+                <div class="form-group">
+                  <label for="art-location-address">주소</label>
+                  <input type="text" id="art-location-address" placeholder="예: 강원특별자치도 고성군 토성면 ..." maxlength="300" />
+                  <p class="admin-field-meta">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>
+                </div>
+              </div>
+            </details>
 
             <div class="form-group admin-form-group-section">
               <label for="art-metatags">SEO 해시태그 <span class="admin-label-note">(쉼표로 구분)</span></label>
@@ -827,8 +842,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.073.02"></script>
-  <script src="/js/admin.js?v=0.073.02"></script>
+  <script src="/js/main.js?v=0.074.00"></script>
+  <script src="/js/admin.js?v=0.074.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

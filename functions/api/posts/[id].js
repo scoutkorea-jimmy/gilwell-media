@@ -73,7 +73,7 @@ export async function onRequestPut({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   let currentPost = null;
-  await ensureGalleryImagesColumn(env);
+  await ensurePostOptionalColumns(env);
   try {
     currentPost = await env.DB.prepare(`SELECT image_url, gallery_images FROM posts WHERE id = ?`).bind(id).first();
   } catch (_) {}
@@ -85,7 +85,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
@@ -129,6 +129,8 @@ export async function onRequestPut({ params, request, env }) {
   }
   if (image_caption !== undefined) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
   if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
+  if (location_name !== undefined) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
+  if (location_address !== undefined) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
   if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
   if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
@@ -237,7 +239,7 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
-    await ensureGalleryImagesColumn(env);
+    await ensurePostOptionalColumns(env);
     const existing = await env.DB.prepare(`SELECT image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
     if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const { meta } = await env.DB.prepare(
@@ -298,6 +300,12 @@ function sanitizeCaption(value) {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, 300) : null;
+}
+
+function sanitizeShortText(value, maxLength) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : null;
 }
 
 function normalizeGalleryImages(rawItems) {
@@ -402,12 +410,18 @@ function diffRemovedGalleryUrls(previousRaw, nextItems) {
   return uniqueStrings(previous.filter(function (url) { return !next.has(url); }));
 }
 
-async function ensureGalleryImagesColumn(env) {
+async function ensurePostOptionalColumns(env) {
+  await ensureColumn(env, 'gallery_images');
+  await ensureColumn(env, 'location_name');
+  await ensureColumn(env, 'location_address');
+}
+
+async function ensureColumn(env, columnName) {
   try {
-    await env.DB.prepare('SELECT gallery_images FROM posts LIMIT 1').first();
+    await env.DB.prepare(`SELECT ${columnName} FROM posts LIMIT 1`).first();
   } catch (err) {
     var msg = String(err && err.message || err || '');
     if (msg.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare('ALTER TABLE posts ADD COLUMN gallery_images TEXT').run();
+    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} TEXT`).run();
   }
 }

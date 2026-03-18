@@ -1081,6 +1081,8 @@
     var metaTags = (document.getElementById('art-metatags').value || '').trim();
     var youtubeUrl = (document.getElementById('art-youtube-url').value || '').trim();
     var imageCaption = (document.getElementById('art-image-caption').value || '').trim();
+    var locationName = (document.getElementById('art-location-name').value || '').trim();
+    var locationAddress = (document.getElementById('art-location-address').value || '').trim();
     var btn      = document.getElementById('submit-btn');
 
     if (!title)      { GW.showToast('제목을 입력해주세요', 'error'); return; }
@@ -1111,6 +1113,8 @@
         gallery_images: _adminGalleryImages,
         image_caption: imageCaption || null,
         youtube_url: youtubeUrl || null,
+        location_name: locationName || null,
+        location_address: locationAddress || null,
         tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
         meta_tags: metaTags || null,
         author: author || undefined,
@@ -1169,6 +1173,10 @@
         document.getElementById('art-metatags').value  = p.meta_tags || '';
         document.getElementById('art-youtube-url').value = p.youtube_url || '';
         document.getElementById('art-image-caption').value = p.image_caption || '';
+        document.getElementById('art-location-name').value = p.location_name || '';
+        document.getElementById('art-location-address').value = p.location_address || '';
+        var locationToggleEl = document.getElementById('admin-location-toggle');
+        if (locationToggleEl) locationToggleEl.open = !!(p.location_name || p.location_address);
         var aiChk = document.getElementById('art-ai-assisted');
         if (aiChk) aiChk.checked = !!p.ai_assisted;
         updateCatPreview();
@@ -1247,6 +1255,10 @@
     document.getElementById('art-metatags').value = '';
     document.getElementById('art-youtube-url').value = '';
     document.getElementById('art-image-caption').value = '';
+    document.getElementById('art-location-name').value = '';
+    document.getElementById('art-location-address').value = '';
+    var locationToggleEl = document.getElementById('admin-location-toggle');
+    if (locationToggleEl) locationToggleEl.open = false;
     var dateEl = document.getElementById('art-date');
     if (dateEl) dateEl.value = GW.getKstDateTimeInputValue();
     var createdMetaEl = document.getElementById('art-created-at-meta');
@@ -1332,6 +1344,8 @@
       meta_tags: metaEl ? (metaEl.value || '') : '',
       youtube_url: youtubeEl ? (youtubeEl.value || '') : '',
       image_caption: (document.getElementById('art-image-caption') || {}).value || '',
+      location_name: (document.getElementById('art-location-name') || {}).value || '',
+      location_address: (document.getElementById('art-location-address') || {}).value || '',
       author: authorEl ? (authorEl.value || '') : '',
       publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
       ai_assisted: aiEl ? !!aiEl.checked : false,
@@ -1351,6 +1365,10 @@
     document.getElementById('art-metatags').value = draft.meta_tags || '';
     document.getElementById('art-youtube-url').value = draft.youtube_url || '';
     document.getElementById('art-image-caption').value = draft.image_caption || '';
+    document.getElementById('art-location-name').value = draft.location_name || '';
+    document.getElementById('art-location-address').value = draft.location_address || '';
+    var locationToggleEl = document.getElementById('admin-location-toggle');
+    if (locationToggleEl) locationToggleEl.open = !!(draft.location_name || draft.location_address);
     document.getElementById('art-author').value = draft.author || 'Editor A';
     document.getElementById('art-date').value = GW.toDatetimeLocalValue(draft.publish_at || draft.publish_date || '') || GW.getKstDateTimeInputValue();
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
