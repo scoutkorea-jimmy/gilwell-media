@@ -122,6 +122,8 @@
   var _HISTORY_PAGE_SIZE = 10;
   var _glossaryItems = [];
   var _glossaryEditingId = null;
+  var _calendarItems = [];
+  var _calendarEditingId = null;
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
   var _adminGroup = 'overview';
@@ -623,6 +625,7 @@
     write: 'content',
     list: 'content',
     glossary: 'content',
+    calendar: 'content',
     settings: 'site',
     'hero-manager': 'site',
     'home-lead': 'site',
@@ -697,6 +700,7 @@
     if (tab === 'analytics') loadAnalyticsPage();
     if (tab === 'write') _maybeRestoreAdminDraft();
     if (tab === 'glossary') loadGlossaryAdmin();
+    if (tab === 'calendar') loadCalendarAdmin();
     if (tab === 'history') loadVersionHistory();
     if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -3186,6 +3190,133 @@
         GW.showToast(err.message || '삭제 실패', 'error');
       });
   };
+
+  function loadCalendarAdmin() {
+    GW.apiFetch('/api/calendar')
+      .then(function (data) {
+        _calendarItems = Array.isArray(data && data.items) ? data.items : [];
+        renderCalendarAdmin();
+      })
+      .catch(function () {
+        var list = document.getElementById('calendar-admin-list');
+        if (list) list.innerHTML = '<div class="list-empty">일정을 불러오지 못했습니다.</div>';
+      });
+  }
+
+  function renderCalendarAdmin() {
+    var list = document.getElementById('calendar-admin-list');
+    if (!list) return;
+    if (!_calendarItems.length) {
+      list.innerHTML = '<div class="list-empty">등록된 일정이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = _calendarItems.map(function (item) {
+      var place = item.location_name || item.location_address || '';
+      return '<article class="calendar-admin-item">' +
+        '<div class="calendar-admin-item-head">' +
+          '<div>' +
+            '<h3>' + GW.escapeHtml(item.title || '') + '</h3>' +
+            '<p>' + GW.escapeHtml(formatCalendarRange(item.start_at, item.end_at)) + '</p>' +
+          '</div>' +
+          '<div class="calendar-admin-item-actions">' +
+            '<button type="button" class="glossary-admin-inline-btn" onclick="editCalendarEvent(' + item.id + ')">수정</button>' +
+            '<button type="button" class="glossary-admin-inline-btn delete" onclick="deleteCalendarEvent(' + item.id + ')">삭제</button>' +
+          '</div>' +
+        '</div>' +
+        (place ? '<p class="calendar-admin-item-meta">' + GW.escapeHtml(place) + '</p>' : '') +
+        (item.description ? '<p class="calendar-admin-item-desc">' + GW.escapeHtml(item.description) + '</p>' : '') +
+        (item.link_url ? '<a class="calendar-admin-item-link" href="' + GW.escapeHtml(item.link_url) + '" target="_blank" rel="noopener">관련 링크 ↗</a>' : '') +
+      '</article>';
+    }).join('');
+  }
+
+  window.editCalendarEvent = function (id) {
+    var item = _calendarItems.find(function (entry) { return entry.id === id; });
+    if (!item) return;
+    _calendarEditingId = id;
+    document.getElementById('calendar-title-input').value = item.title || '';
+    document.getElementById('calendar-start-input').value = toDateTimeLocalValue(item.start_at);
+    document.getElementById('calendar-end-input').value = toDateTimeLocalValue(item.end_at);
+    document.getElementById('calendar-location-name-input').value = item.location_name || '';
+    document.getElementById('calendar-location-address-input').value = item.location_address || '';
+    document.getElementById('calendar-link-input').value = item.link_url || '';
+    document.getElementById('calendar-description-input').value = item.description || '';
+    document.getElementById('calendar-submit-btn').textContent = '일정 수정';
+    document.getElementById('calendar-cancel-btn').style.display = '';
+    document.getElementById('calendar-title-input').focus();
+  };
+
+  window.cancelCalendarEdit = function () {
+    _calendarEditingId = null;
+    document.getElementById('calendar-title-input').value = '';
+    document.getElementById('calendar-start-input').value = '';
+    document.getElementById('calendar-end-input').value = '';
+    document.getElementById('calendar-location-name-input').value = '';
+    document.getElementById('calendar-location-address-input').value = '';
+    document.getElementById('calendar-link-input').value = '';
+    document.getElementById('calendar-description-input').value = '';
+    document.getElementById('calendar-submit-btn').textContent = '일정 저장';
+    document.getElementById('calendar-cancel-btn').style.display = 'none';
+  };
+
+  window.submitCalendarEvent = function () {
+    var payload = {
+      title: (document.getElementById('calendar-title-input').value || '').trim(),
+      start_at: document.getElementById('calendar-start-input').value || '',
+      end_at: document.getElementById('calendar-end-input').value || '',
+      location_name: (document.getElementById('calendar-location-name-input').value || '').trim(),
+      location_address: (document.getElementById('calendar-location-address-input').value || '').trim(),
+      link_url: (document.getElementById('calendar-link-input').value || '').trim(),
+      description: (document.getElementById('calendar-description-input').value || '').trim(),
+    };
+    if (!payload.title) {
+      GW.showToast('일정 제목을 입력해주세요', 'error');
+      return;
+    }
+    if (!payload.start_at) {
+      GW.showToast('시작 일시를 입력해주세요', 'error');
+      return;
+    }
+    var url = _calendarEditingId ? '/api/calendar/' + _calendarEditingId : '/api/calendar';
+    var method = _calendarEditingId ? 'PUT' : 'POST';
+    GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
+      .then(function () {
+        GW.showToast(_calendarEditingId ? '일정이 수정됐습니다' : '일정이 등록됐습니다', 'success');
+        cancelCalendarEdit();
+        loadCalendarAdmin();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '일정 저장 실패', 'error');
+      });
+  };
+
+  window.deleteCalendarEvent = function (id) {
+    if (!confirm('이 일정을 삭제할까요?')) return;
+    GW.apiFetch('/api/calendar/' + id, { method: 'DELETE' })
+      .then(function () {
+        GW.showToast('일정이 삭제됐습니다', 'success');
+        if (_calendarEditingId === id) cancelCalendarEdit();
+        loadCalendarAdmin();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '일정 삭제 실패', 'error');
+      });
+  };
+
+  function toDateTimeLocalValue(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    return raw.slice(0, 16).replace(' ', 'T');
+  }
+
+  function formatCalendarRange(startAt, endAt) {
+    var start = toDateTimeLocalValue(startAt);
+    var end = toDateTimeLocalValue(endAt);
+    if (!start) return '';
+    var startLabel = start.replace('T', ' ');
+    if (!end) return startLabel;
+    return startLabel + ' ~ ' + end.replace('T', ' ');
+  }
 
   function loadVersionHistory() {
     if (_historyLoaded) {

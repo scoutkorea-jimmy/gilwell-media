@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.074.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.075.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.074.01</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.075.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.074.01</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.075.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -81,6 +81,10 @@
           <button class="admin-sidebar-btn" id="tab-btn-glossary" data-role-min="full" onclick="showAdminTab('glossary')">
             <span class="admin-sidebar-btn-label">용어집</span>
             <span class="admin-sidebar-btn-desc">국문 · 영문 · 불어 관리</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-calendar" data-role-min="full" onclick="showAdminTab('calendar')">
+            <span class="admin-sidebar-btn-label">캘린더</span>
+            <span class="admin-sidebar-btn-desc">일정 등록과 공개 캘린더 관리</span>
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="site" hidden>
@@ -544,6 +548,50 @@
         </div>
       </div>
 
+      <div id="admin-tab-calendar" class="admin-tab-panel" data-role-min="full">
+        <div class="panel">
+          <div class="panel-header"><h2>일정 캘린더 관리</h2></div>
+          <div class="panel-body">
+            <p class="admin-section-note">공개 캘린더 페이지에 노출할 일정을 등록합니다. 등록 즉시 `/calendar.html`에서 확인할 수 있습니다.</p>
+            <div class="glossary-admin-form-grid">
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-title-input">일정 제목</label>
+                <input type="text" id="calendar-title-input" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-start-input">시작 일시</label>
+                <input type="datetime-local" id="calendar-start-input" />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-end-input">종료 일시</label>
+                <input type="datetime-local" id="calendar-end-input" />
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label for="calendar-location-name-input">위치 이름</label>
+                <input type="text" id="calendar-location-name-input" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
+              </div>
+              <div class="form-group glossary-description-field" style="margin:0;">
+                <label for="calendar-location-address-input">주소</label>
+                <input type="text" id="calendar-location-address-input" maxlength="300" placeholder="예: 강원특별자치도 고성군 ..." />
+              </div>
+              <div class="form-group glossary-description-field" style="margin:0;">
+                <label for="calendar-link-input">관련 링크</label>
+                <input type="url" id="calendar-link-input" maxlength="500" placeholder="https://..." />
+              </div>
+              <div class="form-group glossary-description-field" style="margin:0;">
+                <label for="calendar-description-input">설명</label>
+                <textarea id="calendar-description-input" rows="3" maxlength="2000" placeholder="일정 설명을 입력하세요."></textarea>
+              </div>
+              <button type="button" class="submit-btn admin-inline-submit" id="calendar-submit-btn" onclick="submitCalendarEvent()">일정 저장</button>
+              <button type="button" class="cancel-btn admin-inline-cancel" id="calendar-cancel-btn" onclick="cancelCalendarEdit()" style="display:none;">수정 취소</button>
+            </div>
+            <div id="calendar-admin-list" class="calendar-admin-list">
+              <div class="list-empty">일정을 불러오는 중…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ TAB: 설정 ══ -->
       <div id="admin-tab-settings" class="admin-tab-panel">
         <div class="admin-subnav">
@@ -842,8 +890,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.074.01"></script>
-  <script src="/js/admin.js?v=0.074.01"></script>
+  <script src="/js/main.js?v=0.075.00"></script>
+  <script src="/js/admin.js?v=0.075.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

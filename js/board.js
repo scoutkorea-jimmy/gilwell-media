@@ -415,7 +415,7 @@
     var locationName = post && post.location_name ? String(post.location_name).trim() : '';
     var mapTitle = locationName || locationAddress;
     var mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
-    return '<details class="post-location-section">' +
+    return '<details class="post-location-section" open>' +
       '<summary>위치 정보 보기</summary>' +
       '<div class="post-location-body">' +
         (locationName ? '<div class="post-location-name">' + GW.escapeHtml(locationName) + '</div>' : '') +
