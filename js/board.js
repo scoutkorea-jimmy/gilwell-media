@@ -270,12 +270,14 @@
         '</div>' +
         subtitleHtml +
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
-        shareHtml +
-        '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
-        '<div class="post-card-meta">' +
-          GW.formatPostDate(post) +
-          (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
-          ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
+        '<div class="post-card-footer">' +
+          shareHtml +
+          '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
+          '<div class="post-card-meta">' +
+            GW.formatPostDate(post) +
+            (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
+            ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
+          '</div>' +
         '</div>' +
       '</div>';
 
@@ -569,14 +571,6 @@
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label>슬라이드 전용 이미지 <span class="admin-label-note" id="board-gallery-count">0/10</span></label>' +
-          '<div class="cover-upload-wrap">' +
-            '<button type="button" id="board-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>' +
-            '<div id="board-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>' +
-          '</div>' +
-          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 이미지와 별개로 관리되며 2장 이상일 때만 슬라이드가 활성화됩니다.</p>' +
-        '</div>' +
-        '<div class="form-group">' +
           '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
           '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
@@ -584,6 +578,14 @@
         '<div class="form-group">' +
           '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
+        '</div>' +
+        '<div class="form-group">' +
+          '<label>슬라이드 전용 이미지 <span class="admin-label-note" id="board-gallery-count">0/10</span></label>' +
+          '<div class="cover-upload-wrap">' +
+            '<button type="button" id="board-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>' +
+            '<div id="board-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>' +
+          '</div>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
         '</div>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
           '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +

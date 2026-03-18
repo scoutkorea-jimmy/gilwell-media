@@ -149,7 +149,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.073.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.073.02">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -320,7 +320,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.073.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.073.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -410,21 +410,13 @@ export async function onRequestGet({ params, env, request }) {
         </div>
       </div>
 
-      <div class="form-group">
-        <label>슬라이드 전용 이미지 <span class="admin-label-note" id="post-gallery-count">0/10</span></label>
-        <div class="cover-upload-wrap">
-          <button type="button" class="cover-upload-btn" onclick="window._postUploadGallery()">🖼 슬라이드 이미지 선택</button>
-          <div id="post-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>
-        </div>
-      </div>
-
       <div class="form-row">
         <div class="form-group">
-          <label for="post-edit-image-caption">이미지 설명</label>
+          <label for="post-edit-image-caption">이미지 캡션</label>
           <input type="text" id="post-edit-image-caption" maxlength="300" />
         </div>
         <div class="form-group">
-          <label for="post-edit-metatags-input">메타 태그</label>
+          <label for="post-edit-metatags-input">SEO 해시태그</label>
           <input type="text" id="post-edit-metatags-input" placeholder="쉼표로 구분" maxlength="500" />
         </div>
       </div>
@@ -434,13 +426,22 @@ export async function onRequestGet({ params, env, request }) {
         <div id="post-edit-editorjs" class="post-edit-editor-holder"></div>
       </div>
 
+      <div class="form-group">
+        <label>슬라이드 전용 이미지 <span class="admin-label-note" id="post-gallery-count">0/10</span></label>
+        <div class="cover-upload-wrap">
+          <button type="button" class="cover-upload-btn" onclick="window._postUploadGallery()">🖼 슬라이드 이미지 선택</button>
+          <div id="post-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>
+        </div>
+        <p class="post-edit-note">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>
+      </div>
+
       <div class="post-edit-check">
         <input type="checkbox" id="post-edit-ai-assisted" />
         <label for="post-edit-ai-assisted">AI 지원 여부</label>
       </div>
 
       <div class="post-edit-actions">
-        <button id="post-edit-submit" class="submit-btn" type="button" onclick="window._postSaveEdit()">수정 저장</button>
+        <button id="post-edit-submit" class="submit-btn" type="button" onclick="window._postSaveEdit()">수정 완료</button>
         <button id="post-edit-cancel" class="cancel-btn visible" type="button" onclick="window._closePostEdit()">취소</button>
       </div>
     </div>
@@ -448,7 +449,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.073.01"></script>
+  <script src="/js/main.js?v=0.073.02"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1049,7 +1050,7 @@ export async function onRequestGet({ params, env, request }) {
         })
         .finally(function () {
           submitBtn.disabled = false;
-          submitBtn.textContent = '수정 저장';
+          submitBtn.textContent = '수정 완료';
         });
     };
 
