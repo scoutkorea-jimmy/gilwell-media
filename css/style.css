@@ -2642,6 +2642,57 @@ p { margin-bottom: 6px; }
   text-align: center;
 }
 
+.content-gallery {
+  margin: 28px 0;
+}
+
+.content-gallery-track {
+  position: relative;
+  min-height: 240px;
+}
+
+.content-gallery-slide {
+  display: none;
+}
+
+.content-gallery-slide.is-active {
+  display: block;
+}
+
+.content-gallery-media {
+  background: var(--bg);
+}
+
+.content-gallery-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+.content-gallery-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.content-gallery-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(17,17,17,0.22);
+  cursor: pointer;
+}
+
+.content-gallery-dot.is-active {
+  background: var(--accent);
+}
+
 .board-banner-note {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;

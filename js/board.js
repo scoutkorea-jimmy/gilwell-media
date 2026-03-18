@@ -354,7 +354,9 @@
     var subtitleHtml = post.subtitle
       ? '<p class="modal-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'
       : '';
+    var renderedContent = GW.renderTextWithMedia(post.content);
     var relatedHtml = buildRelatedPostsHtml(post.related_posts);
+    var galleryHtml = GW.renderContentGallery(renderedContent.gallery, { className: 'modal-content-gallery' });
 
     inner.innerHTML =
       '<button class="modal-close" id="modal-close-btn" aria-label="닫기">×</button>' +
@@ -369,7 +371,8 @@
       '</div>' +
       imgHtml +
       youtubeHtml +
-      '<div class="modal-body">' + GW.renderText(post.content) + '</div>' +
+      '<div class="modal-body">' + renderedContent.html + '</div>' +
+      galleryHtml +
       relatedHtml +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
@@ -379,6 +382,7 @@
     inner.querySelector('#modal-close-btn').addEventListener('click', function () {
       self._closePost();
     });
+    GW.initContentGalleries(inner);
   };
 
   Board.prototype._closePost = function () {
@@ -558,7 +562,7 @@
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 5개)</span></label>' +
+          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(이미지 최대 10개 · 2장 이상이면 하단 슬라이드)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
         '</div>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
