@@ -4260,6 +4260,26 @@ footer a:hover { color: #ffffff; }
 
 .form-group textarea { min-height: 200px; line-height: 1.7; }
 
+#post-edit-subtitle-input {
+  min-height: 88px;
+  max-height: 180px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.post-edit-box .form-group {
+  margin-bottom: 16px;
+}
+
+.post-edit-box .form-row {
+  margin-bottom: 4px;
+  align-items: start;
+}
+
+.post-edit-box .form-group label {
+  margin-bottom: 8px;
+}
+
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .submit-btn {

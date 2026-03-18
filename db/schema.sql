@@ -73,6 +73,9 @@ CREATE TABLE IF NOT EXISTS site_visits (
   path          TEXT    NOT NULL,
   referrer_host TEXT    NOT NULL DEFAULT 'direct',
   referrer_url  TEXT,
+  utm_source    TEXT,
+  utm_medium    TEXT,
+  utm_campaign  TEXT,
   visited_bucket TEXT,
   visited_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
