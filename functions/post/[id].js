@@ -83,6 +83,7 @@ export async function onRequestGet({ params, env, request }) {
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
   const bodyGalleryHtml = renderContentGallery(parseGalleryImages(post.gallery_images));
+  const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
   const categoryUrl = `${siteUrl}/${post.category}.html`;
@@ -96,6 +97,8 @@ export async function onRequestGet({ params, env, request }) {
     gallery_images: post.gallery_images || '',
     image_caption: post.image_caption || '',
     youtube_url: post.youtube_url || '',
+    location_name: post.location_name || '',
+    location_address: post.location_address || '',
     meta_tags: post.meta_tags || '',
     tag: post.tag || '',
     special_feature: post.special_feature || '',
@@ -149,7 +152,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.073.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.074.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -257,6 +260,7 @@ export async function onRequestGet({ params, env, request }) {
           ${bodyHtml}
         </div>
         ${bodyGalleryHtml}
+        ${locationSectionHtml}
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
@@ -320,7 +324,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.073.02</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.074.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -435,6 +439,21 @@ export async function onRequestGet({ params, env, request }) {
         <p class="post-edit-note">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>
       </div>
 
+      <details class="location-form-toggle" id="post-location-toggle">
+        <summary>위치 정보 추가</summary>
+        <div class="location-form-fields">
+          <div class="form-group">
+            <label for="post-edit-location-name">위치 이름</label>
+            <input type="text" id="post-edit-location-name" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
+          </div>
+          <div class="form-group">
+            <label for="post-edit-location-address">주소</label>
+            <input type="text" id="post-edit-location-address" maxlength="300" placeholder="예: 강원특별자치도 고성군 토성면 ..." />
+            <p class="post-edit-note">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>
+          </div>
+        </div>
+      </details>
+
       <div class="post-edit-check">
         <input type="checkbox" id="post-edit-ai-assisted" />
         <label for="post-edit-ai-assisted">AI 지원 여부</label>
@@ -449,7 +468,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.073.02"></script>
+  <script src="/js/main.js?v=0.074.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -817,6 +836,10 @@ export async function onRequestGet({ params, env, request }) {
       document.getElementById('post-edit-special-feature').value = _postEditSeed.special_feature || '';
       document.getElementById('post-edit-date').value = GW.toDatetimeLocalValue(_postEditSeed.publish_at || _postEditSeed.publish_date || '') || GW.getKstDateTimeInputValue();
       document.getElementById('post-edit-youtube').value = _postEditSeed.youtube_url || '';
+      document.getElementById('post-edit-location-name').value = _postEditSeed.location_name || '';
+      document.getElementById('post-edit-location-address').value = _postEditSeed.location_address || '';
+      var locationToggle = document.getElementById('post-location-toggle');
+      if (locationToggle) locationToggle.open = !!(_postEditSeed.location_name || _postEditSeed.location_address);
       document.getElementById('post-edit-image-caption').value = _postEditSeed.image_caption || '';
       document.getElementById('post-edit-metatags-input').value = _postEditSeed.meta_tags || '';
       document.getElementById('post-edit-ai-assisted').checked = !!_postEditSeed.ai_assisted;
@@ -988,6 +1011,8 @@ export async function onRequestGet({ params, env, request }) {
       var specialFeature = (document.getElementById('post-edit-special-feature').value || '').trim();
       var publishDate = (document.getElementById('post-edit-date').value || '').trim();
       var youtubeUrl = (document.getElementById('post-edit-youtube').value || '').trim();
+      var locationName = (document.getElementById('post-edit-location-name').value || '').trim();
+      var locationAddress = (document.getElementById('post-edit-location-address').value || '').trim();
       var imageCaption = (document.getElementById('post-edit-image-caption').value || '').trim();
       var metaTags = (document.getElementById('post-edit-metatags-input').value || '').trim();
       var author = (document.getElementById('post-edit-author').value || '').trim();
@@ -1024,6 +1049,8 @@ export async function onRequestGet({ params, env, request }) {
               gallery_images: _postEditState.galleryImages || [],
               image_caption: imageCaption || null,
               youtube_url: youtubeUrl || null,
+              location_name: locationName || null,
+              location_address: locationAddress || null,
               tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
               meta_tags: metaTags || null,
               author: author || null,
@@ -1325,6 +1352,24 @@ function renderContentGallery(items) {
     <button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>
     <button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>
   </section>`;
+}
+
+function renderPostLocationSection(post) {
+  const locationAddress = String(post && post.location_address || '').trim();
+  if (!locationAddress) return '';
+  const locationName = String(post && post.location_name || '').trim();
+  const mapTitle = locationName || locationAddress;
+  const mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
+  return `<details class="post-location-section">
+    <summary>위치 정보 보기</summary>
+    <div class="post-location-body">
+      ${locationName ? `<div class="post-location-name">${escapeHtml(locationName)}</div>` : ''}
+      <div class="post-location-address">${escapeHtml(locationAddress)}</div>
+      <div class="post-location-map-frame">
+        <iframe class="post-location-map" src="${mapUrl}" title="${escapeHtml(mapTitle)} 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </details>`;
 }
 
 function parseGalleryImages(raw) {

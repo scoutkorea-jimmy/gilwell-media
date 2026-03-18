@@ -3362,6 +3362,94 @@ footer a:hover { color: #ffffff; }
   border-color: var(--danger);
 }
 
+.location-form-toggle {
+  margin: 18px 0 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.location-form-toggle > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.location-form-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+
+.location-form-toggle[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.location-form-fields {
+  padding: 14px;
+}
+
+.post-location-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.post-location-section > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.post-location-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.post-location-body {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.post-location-name {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.post-location-address {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.post-location-map-frame {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.post-location-map {
+  display: block;
+  width: 100%;
+  height: 280px;
+  border: 0;
+}
+
 /* ════════════════════════════════════════════════════════════
    HERO SEARCH RESULTS (admin)
    ════════════════════════════════════════════════════════════ */

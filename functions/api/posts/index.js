@@ -121,7 +121,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -150,6 +150,8 @@ export async function onRequestPost({ request, env }) {
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
   const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
   const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
+  const safeLocationName = sanitizeShortText(location_name, 120);
+  const safeLocationAddress = sanitizeShortText(location_address, 300);
   const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
 
@@ -168,11 +170,11 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    await ensureGalleryImagesColumn(env);
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
+    await ensurePostOptionalColumns(env);
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
          RETURNING *`;
-    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
+    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     if (results[0]) {
@@ -270,12 +272,24 @@ function normalizePublishAtInput(publishAt, publishDate) {
   return null;
 }
 
-async function ensureGalleryImagesColumn(env) {
+async function ensurePostOptionalColumns(env) {
+  await ensureColumn(env, 'gallery_images');
+  await ensureColumn(env, 'location_name');
+  await ensureColumn(env, 'location_address');
+}
+
+async function ensureColumn(env, columnName) {
   try {
-    await env.DB.prepare('SELECT gallery_images FROM posts LIMIT 1').first();
+    await env.DB.prepare(`SELECT ${columnName} FROM posts LIMIT 1`).first();
   } catch (err) {
     var msg = String(err && err.message || err || '');
     if (msg.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare('ALTER TABLE posts ADD COLUMN gallery_images TEXT').run();
+    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} TEXT`).run();
   }
+}
+
+function sanitizeShortText(value, maxLength) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, maxLength) : null;
 }

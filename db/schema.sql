@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS posts (
   image_caption TEXT,
   gallery_images TEXT,
   youtube_url  TEXT,
+  location_name TEXT,
+  location_address TEXT,
   created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
   publish_at   TEXT,
   updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
