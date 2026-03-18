@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.072.01';
+  GW.APP_VERSION = '0.072.02';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -598,6 +598,7 @@
     var className = (options && options.className) ? ' ' + options.className : '';
     return '<section class="content-gallery' + className + '" data-gallery-interval="3000">' +
       '<div class="content-gallery-track">' +
+        '<div class="content-gallery-slides">' +
         slides.map(function (item, index) {
           var cap = GW.escapeHtml(item.caption || '');
           return '<figure class="content-gallery-slide' + (index === 0 ? ' is-active' : '') + '">' +
@@ -605,14 +606,18 @@
             (cap ? '<figcaption class="post-image-caption">' + cap + '</figcaption>' : '') +
           '</figure>';
         }).join('') +
+        '</div>' +
+        '<div class="content-gallery-controls">' +
+          '<div class="content-gallery-dots">' +
+            slides.map(function (_, index) {
+              return '<button type="button" class="content-gallery-dot' + (index === 0 ? ' is-active' : '') + '" data-gallery-index="' + index + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
+            }).join('') +
+          '</div>' +
+          '<button type="button" class="content-gallery-pause" aria-label="슬라이드 일시정지" aria-pressed="false">일시정지</button>' +
+        '</div>' +
       '</div>' +
       '<button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>' +
       '<button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>' +
-      '<div class="content-gallery-dots">' +
-        slides.map(function (_, index) {
-          return '<button type="button" class="content-gallery-dot' + (index === 0 ? ' is-active' : '') + '" data-gallery-index="' + index + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
-        }).join('') +
-      '</div>' +
     '</section>';
   };
 
@@ -621,21 +626,32 @@
     scope.querySelectorAll('.content-gallery').forEach(function (gallery) {
       if (gallery.dataset.galleryReady === '1') return;
       gallery.dataset.galleryReady = '1';
+      var track = gallery.querySelector('.content-gallery-track');
+      var slidesWrap = gallery.querySelector('.content-gallery-slides');
       var slides = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-slide'));
       var dots = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-dot'));
       var prevBtn = gallery.querySelector('.content-gallery-prev');
       var nextBtn = gallery.querySelector('.content-gallery-next');
+      var pauseBtn = gallery.querySelector('.content-gallery-pause');
       if (slides.length < 2) return;
       var current = 0;
       var intervalMs = parseInt(gallery.getAttribute('data-gallery-interval') || '3000', 10) || 3000;
       var timer = null;
+      var paused = false;
       var dragStartX = 0;
       var dragDeltaX = 0;
       var dragging = false;
+      function updateTrackPosition(offsetPx) {
+        if (!slidesWrap || !track) return;
+        var trackWidth = track.clientWidth || 1;
+        var percentage = (-current * trackWidth + (offsetPx || 0)) / trackWidth * 100;
+        slidesWrap.style.transform = 'translateX(' + percentage + '%)';
+      }
       function sync(next) {
         current = (next + slides.length) % slides.length;
         slides.forEach(function (slide, idx) { slide.classList.toggle('is-active', idx === current); });
         dots.forEach(function (dot, idx) { dot.classList.toggle('is-active', idx === current); });
+        updateTrackPosition(0);
       }
       function advance() { sync((current + 1) % slides.length); }
       function retreat() { sync((current - 1 + slides.length) % slides.length); }
@@ -647,6 +663,7 @@
       }
       function startTimer() {
         clearTimer();
+        if (paused) return;
         timer = window.setInterval(advance, intervalMs);
       }
       dots.forEach(function (dot) {
@@ -668,22 +685,36 @@
           startTimer();
         });
       }
+      if (pauseBtn) {
+        pauseBtn.addEventListener('click', function () {
+          paused = !paused;
+          pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+          pauseBtn.textContent = paused ? '재생' : '일시정지';
+          if (paused) clearTimer();
+          else startTimer();
+        });
+      }
       function onPointerDown(clientX) {
         dragging = true;
         dragStartX = clientX;
         dragDeltaX = 0;
         clearTimer();
+        gallery.classList.add('is-dragging');
       }
       function onPointerMove(clientX) {
         if (!dragging) return;
         dragDeltaX = clientX - dragStartX;
+        updateTrackPosition(dragDeltaX);
       }
       function onPointerUp() {
         if (!dragging) return;
         dragging = false;
+        gallery.classList.remove('is-dragging');
         if (Math.abs(dragDeltaX) > 40) {
           if (dragDeltaX < 0) advance();
           else retreat();
+        } else {
+          updateTrackPosition(0);
         }
         dragDeltaX = 0;
         startTimer();
@@ -698,6 +729,7 @@
       }, { passive: true });
       gallery.addEventListener('touchend', onPointerUp);
       gallery.addEventListener('mousedown', function (event) {
+        if (event.button !== 0) return;
         onPointerDown(event.clientX);
       });
       gallery.addEventListener('mousemove', function (event) {

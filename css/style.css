@@ -2650,14 +2650,14 @@ p { margin-bottom: 6px; }
 .content-gallery-track {
   position: relative;
   min-height: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg);
 }
 
 .content-gallery-slide {
-  display: none;
-}
-
-.content-gallery-slide.is-active {
-  display: block;
+  flex: 0 0 100%;
+  width: 100%;
 }
 
 .content-gallery-media {
@@ -2682,12 +2682,36 @@ p { margin-bottom: 6px; }
   -webkit-user-drag: none;
 }
 
+.content-gallery-slides {
+  display: flex;
+  transition: transform 320ms ease;
+  will-change: transform;
+}
+
+.content-gallery.is-dragging .content-gallery-slides {
+  transition: none;
+}
+
+.content-gallery-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(17,17,17,0.62);
+  backdrop-filter: blur(10px);
+  z-index: 3;
+}
+
 .content-gallery-dots {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
 }
 
 .content-gallery-dot {
@@ -2696,20 +2720,32 @@ p { margin-bottom: 6px; }
   border-radius: 50%;
   border: none;
   padding: 0;
-  background: rgba(17,17,17,0.22);
+  background: rgba(255,255,255,0.35);
   cursor: pointer;
 }
 
 .content-gallery-dot.is-active {
-  background: var(--accent);
+  background: #fff;
+}
+
+.content-gallery-pause {
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .content-gallery-nav {
   position: absolute;
-  top: calc(clamp(260px, 46vw, 520px) / 2);
+  top: 50%;
   transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1px solid rgba(17,17,17,0.14);
   background: rgba(255,255,255,0.88);
@@ -2726,11 +2762,11 @@ p { margin-bottom: 6px; }
 }
 
 .content-gallery-prev {
-  left: 12px;
+  left: 16px;
 }
 
 .content-gallery-next {
-  right: 12px;
+  right: 16px;
 }
 
 .content-gallery-nav:hover {
@@ -2747,16 +2783,24 @@ p { margin-bottom: 6px; }
     max-height: 360px;
   }
   .content-gallery-nav {
-    top: 110px;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     font-size: 20px;
   }
   .content-gallery-prev {
-    left: 8px;
+    left: 10px;
   }
   .content-gallery-next {
-    right: 8px;
+    right: 10px;
+  }
+  .content-gallery-controls {
+    bottom: 10px;
+    gap: 8px;
+    padding: 7px 10px;
+  }
+  .content-gallery-pause {
+    font-size: 11px;
+    padding: 6px 10px;
   }
 }
 
