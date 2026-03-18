@@ -17,6 +17,10 @@
     selected: toDateKey(new Date()),
     map: null,
     mapLayer: null,
+    editingId: null,
+    tags: [],
+    relatedPost: null,
+    relatedSearchTimer: null,
   };
 
   function init() {
@@ -27,6 +31,14 @@
   }
 
   function bind() {
+    bindMonthNavigation();
+    bindManageControls();
+    bindModalControls();
+    bindTimeToggle('calendar-modal-start-time-enabled', 'calendar-modal-start-time-input');
+    bindTimeToggle('calendar-modal-end-time-enabled', 'calendar-modal-end-time-input');
+  }
+
+  function bindMonthNavigation() {
     var prev = document.getElementById('calendar-prev-btn');
     var next = document.getElementById('calendar-next-btn');
     if (prev) prev.addEventListener('click', function () {
@@ -36,6 +48,66 @@
     if (next) next.addEventListener('click', function () {
       state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1);
       render();
+    });
+  }
+
+  function bindManageControls() {
+    var addBtn = document.getElementById('calendar-add-event-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        ensureCalendarAuth(function () {
+          openEditor();
+        });
+      });
+    }
+  }
+
+  function bindModalControls() {
+    var loginSubmit = document.getElementById('calendar-login-submit-btn');
+    var loginCancel = document.getElementById('calendar-login-cancel-btn');
+    var editClose = document.getElementById('calendar-edit-close-btn');
+    var editCancel = document.getElementById('calendar-modal-cancel-btn');
+    var editSubmit = document.getElementById('calendar-modal-submit-btn');
+    var editDelete = document.getElementById('calendar-modal-delete-btn');
+    var tagAdd = document.getElementById('calendar-modal-tag-add-btn');
+    var relatedQuery = document.getElementById('calendar-modal-related-post-query');
+    var loginModal = document.getElementById('calendar-login-modal');
+    var editOverlay = document.getElementById('calendar-edit-overlay');
+
+    if (loginSubmit) loginSubmit.addEventListener('click', submitLogin);
+    if (loginCancel) loginCancel.addEventListener('click', closeLogin);
+    if (editClose) editClose.addEventListener('click', closeEditor);
+    if (editCancel) editCancel.addEventListener('click', closeEditor);
+    if (editSubmit) editSubmit.addEventListener('click', submitCalendarEvent);
+    if (editDelete) editDelete.addEventListener('click', deleteCalendarEvent);
+    if (tagAdd) tagAdd.addEventListener('click', addModalTag);
+    if (relatedQuery) {
+      relatedQuery.addEventListener('input', function () {
+        if (state.relatedSearchTimer) clearTimeout(state.relatedSearchTimer);
+        state.relatedSearchTimer = setTimeout(function () {
+          searchRelatedPosts(relatedQuery.value || '');
+        }, 180);
+      });
+    }
+    if (loginModal) {
+      loginModal.addEventListener('click', function (event) {
+        if (event.target === loginModal) closeLogin();
+      });
+    }
+    if (editOverlay) {
+      editOverlay.addEventListener('click', function (event) {
+        if (event.target === editOverlay) closeEditor();
+      });
+    }
+  }
+
+  function bindTimeToggle(toggleId, inputId) {
+    var toggle = document.getElementById(toggleId);
+    var input = document.getElementById(inputId);
+    if (!toggle || !input) return;
+    toggle.addEventListener('change', function () {
+      input.disabled = !toggle.checked;
+      if (!toggle.checked) input.value = '';
     });
   }
 
@@ -51,7 +123,7 @@
   }
 
   function loadEvents() {
-    fetch('/api/calendar')
+    fetch('/api/calendar', { cache: 'no-store' })
       .then(function (res) { return res.json(); })
       .then(function (data) {
         state.items = Array.isArray(data && data.items) ? data.items : [];
@@ -134,25 +206,56 @@
     var wrap = document.getElementById(id);
     if (!wrap) return;
     wrap.innerHTML = items.length ? items.map(renderEventCard).join('') : '<div class="list-empty">' + emptyMessage + '</div>';
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-edit]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var idValue = parseInt(btn.getAttribute('data-calendar-edit'), 10);
+        ensureCalendarAuth(function () {
+          openEditor(findItem(idValue));
+        });
+      });
+    });
   }
 
   function renderEventCard(item) {
-    var when = formatEventTime(item.start_at, item.end_at);
+    var when = formatEventTime(item);
     var place = item.location_name || item.location_address || item.country_name || '';
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
-    var linkHtml = item.link_url ? '<a class="calendar-event-link" href="' + GW.escapeHtml(item.link_url) + '" target="_blank" rel="noopener">관련 링크 ↗</a>' : '';
+    var title = item.title || item.title_original || '';
+    var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
+    var tagHtml = item.event_tags && item.event_tags.length
+      ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
+          return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
+        }).join('') + '</div>'
+      : '';
+    var relatedLinks = '';
+    if (item.related_post_id && item.related_post_title) {
+      relatedLinks += '<a class="calendar-event-link" href="/post/' + item.related_post_id + '">관련 기사 읽기 ↗</a>';
+    }
+    if (item.link_url) {
+      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
+    }
+    var editAction = GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full'
+      ? '<button type="button" class="calendar-event-edit-btn" data-calendar-edit="' + item.id + '">수정</button>'
+      : '';
     return '<article class="calendar-event-card' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
-      '<div class="calendar-event-badges">' +
-        '<span class="calendar-category-badge' + categoryClass + '">' + category + '</span>' +
-        '<span class="calendar-status-badge is-' + status.key + '">' + GW.escapeHtml(status.label) + '</span>' +
+      '<div class="calendar-event-card-head">' +
+        '<div>' +
+          '<div class="calendar-event-badges">' +
+            '<span class="calendar-category-badge' + categoryClass + '">' + category + '</span>' +
+            '<span class="calendar-status-badge is-' + status.key + '">' + escape(status.label) + '</span>' +
+          '</div>' +
+          '<div class="calendar-event-time">' + escape(when) + '</div>' +
+        '</div>' +
+        editAction +
       '</div>' +
-      '<div class="calendar-event-time">' + GW.escapeHtml(when) + '</div>' +
-      '<h4>' + GW.escapeHtml(item.title || '') + '</h4>' +
-      (place ? '<p class="calendar-event-place">' + GW.escapeHtml(place) + '</p>' : '') +
-      (item.description ? '<p class="calendar-event-desc">' + GW.escapeHtml(item.description) + '</p>' : '') +
-      linkHtml +
+      '<h4>' + escape(title) + '</h4>' +
+      originalTitle +
+      (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
+      tagHtml +
+      (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
+      (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
     '</article>';
   }
 
@@ -164,8 +267,7 @@
     if (!items.length) return;
 
     if (state.map.getZoom() <= 4) {
-      var grouped = groupByCountry(items);
-      grouped.forEach(function (group) {
+      groupByCountry(items).forEach(function (group) {
         var marker = L.circleMarker([group.lat, group.lng], {
           radius: Math.min(18, 8 + group.items.length),
           color: '#111',
@@ -177,7 +279,7 @@
           '<div class="calendar-map-popup">' +
             '<strong>' + escape(group.country_name || '기타 지역') + '</strong>' +
             '<ul>' + group.items.map(function (item) {
-              return '<li>' + escape(item.title || '') + '</li>';
+              return '<li>' + escape(item.title || item.title_original || '') + '</li>';
             }).join('') + '</ul>' +
           '</div>'
         );
@@ -188,18 +290,17 @@
 
     items.forEach(function (item) {
       var category = normalizeCategory(item.event_category);
-      var color = CATEGORY_META[category].color;
       var marker = L.circleMarker([item.latitude, item.longitude], {
         radius: 9,
         color: '#fff',
         weight: 2,
-        fillColor: color,
+        fillColor: CATEGORY_META[category].color,
         fillOpacity: 0.92
       });
       marker.bindPopup(
         '<div class="calendar-map-popup">' +
-          '<strong>' + escape(item.title || '') + '</strong>' +
-          '<div>' + escape(formatEventTime(item.start_at, item.end_at)) + '</div>' +
+          '<strong>' + escape(item.title || item.title_original || '') + '</strong>' +
+          '<div>' + escape(formatEventTime(item)) + '</div>' +
           '<div>' + escape(item.location_name || item.location_address || item.country_name || '') + '</div>' +
         '</div>'
       );
@@ -235,6 +336,267 @@
     });
   }
 
+  function ensureCalendarAuth(onSuccess) {
+    if (GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full') {
+      onSuccess();
+      return;
+    }
+    openLogin(onSuccess);
+  }
+
+  function openLogin(onSuccess) {
+    var modal = document.getElementById('calendar-login-modal');
+    if (!modal) return;
+    modal.dataset.successHandler = 'true';
+    modal._onSuccess = onSuccess;
+    document.getElementById('calendar-login-pw').value = '';
+    document.getElementById('calendar-login-err').style.display = 'none';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeLogin() {
+    var modal = document.getElementById('calendar-login-modal');
+    if (!modal) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    modal._onSuccess = null;
+  }
+
+  function submitLogin() {
+    var password = (document.getElementById('calendar-login-pw').value || '').trim();
+    var err = document.getElementById('calendar-login-err');
+    var btn = document.getElementById('calendar-login-submit-btn');
+    err.style.display = 'none';
+    if (!password) {
+      err.textContent = '비밀번호를 입력해주세요.';
+      err.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '확인 중…';
+    GW.apiFetch('/api/admin/login', {
+      method: 'POST',
+      body: JSON.stringify({ password: password })
+    }).then(function (data) {
+      if (!data || !data.token || data.role !== 'full') {
+        throw new Error('관리자 권한이 필요합니다.');
+      }
+      GW.setToken(data.token);
+      GW.setAdminRole(data.role || 'full');
+      var modal = document.getElementById('calendar-login-modal');
+      var handler = modal && modal._onSuccess;
+      closeLogin();
+      if (typeof handler === 'function') handler();
+      renderStatusLists();
+    }).catch(function (error) {
+      err.textContent = error.message || '인증에 실패했습니다.';
+      err.style.display = 'block';
+    }).finally(function () {
+      btn.disabled = false;
+      btn.textContent = '확인';
+    });
+  }
+
+  function openEditor(item) {
+    state.editingId = item && item.id ? item.id : null;
+    state.tags = item && Array.isArray(item.event_tags) ? item.event_tags.slice() : [];
+    state.relatedPost = item && item.related_post_id ? {
+      id: item.related_post_id,
+      title: item.related_post_title || '',
+      category: item.related_post_category || ''
+    } : null;
+    setValue('calendar-edit-title', state.editingId ? '일정 수정' : '일정 추가');
+    setValue('calendar-modal-title-input', item && item.title || '');
+    setValue('calendar-modal-title-original-input', item && item.title_original || '');
+    setValue('calendar-modal-category-input', item && item.event_category || 'KOR');
+    setValue('calendar-modal-country-input', item && item.country_name || '');
+    setValue('calendar-modal-start-date-input', toDateOnlyValue(item && item.start_at));
+    setChecked('calendar-modal-start-time-enabled', !!(item && item.start_has_time));
+    setDisabled('calendar-modal-start-time-input', !(item && item.start_has_time));
+    setValue('calendar-modal-start-time-input', item && item.start_has_time ? toTimeValue(item.start_at) : '');
+    setValue('calendar-modal-end-date-input', toDateOnlyValue(item && item.end_at));
+    setChecked('calendar-modal-end-time-enabled', !!(item && item.end_has_time));
+    setDisabled('calendar-modal-end-time-input', !(item && item.end_has_time));
+    setValue('calendar-modal-end-time-input', item && item.end_has_time ? toTimeValue(item.end_at) : '');
+    setValue('calendar-modal-location-name-input', item && item.location_name || '');
+    setValue('calendar-modal-location-address-input', item && item.location_address || '');
+    setValue('calendar-modal-link-input', item && item.link_url || '');
+    setValue('calendar-modal-lat-input', item && item.latitude != null ? item.latitude : '');
+    setValue('calendar-modal-lng-input', item && item.longitude != null ? item.longitude : '');
+    setValue('calendar-modal-description-input', item && item.description || '');
+    setValue('calendar-modal-related-post-query', '');
+    setHtml('calendar-modal-related-post-results', '');
+    renderModalTags();
+    renderModalRelatedPost();
+    var deleteBtn = document.getElementById('calendar-modal-delete-btn');
+    if (deleteBtn) deleteBtn.style.display = state.editingId ? '' : 'none';
+    var overlay = document.getElementById('calendar-edit-overlay');
+    if (overlay) {
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function closeEditor() {
+    var overlay = document.getElementById('calendar-edit-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+    state.editingId = null;
+  }
+
+  function addModalTag() {
+    var input = document.getElementById('calendar-modal-tags-input');
+    var value = String(input && input.value || '').trim();
+    if (!value) {
+      GW.showToast('추가할 태그를 입력해주세요', 'error');
+      return;
+    }
+    if (state.tags.indexOf(value) >= 0) {
+      GW.showToast('이미 추가된 태그입니다', 'error');
+      return;
+    }
+    state.tags.push(value);
+    if (input) input.value = '';
+    renderModalTags();
+  }
+
+  function renderModalTags() {
+    var list = document.getElementById('calendar-modal-tags-list');
+    if (!list) return;
+    if (!state.tags.length) {
+      list.innerHTML = '<div class="list-empty">등록된 행사 태그가 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = state.tags.map(function (tag) {
+      return '<button type="button" class="calendar-tag-chip" data-calendar-modal-tag="' + escape(tag) + '">' +
+        '<span>' + escape(tag) + '</span><strong>×</strong>' +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(list.querySelectorAll('[data-calendar-modal-tag]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-calendar-modal-tag') || '';
+        state.tags = state.tags.filter(function (tag) { return tag !== target; });
+        renderModalTags();
+      });
+    });
+  }
+
+  function searchRelatedPosts(query) {
+    var resultsEl = document.getElementById('calendar-modal-related-post-results');
+    if (!resultsEl) return;
+    var term = String(query || '').trim();
+    if (!term) {
+      resultsEl.innerHTML = '';
+      return;
+    }
+    GW.apiFetch('/api/posts?page=1&limit=8&q=' + encodeURIComponent(term))
+      .then(function (data) {
+        var posts = Array.isArray(data && data.posts) ? data.posts : [];
+        if (!posts.length) {
+          resultsEl.innerHTML = '<div class="list-empty">검색 결과가 없습니다.</div>';
+          return;
+        }
+        resultsEl.innerHTML = posts.map(function (post) {
+          return '<button type="button" class="calendar-related-post-option" data-post-id="' + post.id + '">' +
+            '<strong>' + escape(post.title || '') + '</strong>' +
+            '<span>' + escape(post.category || '') + '</span>' +
+          '</button>';
+        }).join('');
+        Array.prototype.forEach.call(resultsEl.querySelectorAll('[data-post-id]'), function (btn) {
+          btn.addEventListener('click', function () {
+            var id = parseInt(btn.getAttribute('data-post-id'), 10);
+            var post = posts.find(function (entry) { return entry.id === id; });
+            if (!post) return;
+            state.relatedPost = { id: post.id, title: post.title || '', category: post.category || '' };
+            setValue('calendar-modal-related-post-query', '');
+            setHtml('calendar-modal-related-post-results', '');
+            renderModalRelatedPost();
+          });
+        });
+      })
+      .catch(function () {
+        resultsEl.innerHTML = '<div class="list-empty">기사를 검색하지 못했습니다.</div>';
+      });
+  }
+
+  function renderModalRelatedPost() {
+    var wrap = document.getElementById('calendar-modal-related-post-selected');
+    if (!wrap) return;
+    if (!state.relatedPost || !state.relatedPost.id) {
+      wrap.innerHTML = '<div class="list-empty">선택된 관련 기사가 없습니다.</div>';
+      return;
+    }
+    wrap.innerHTML = '<div class="calendar-related-post-pill">' +
+      '<div><strong>' + escape(state.relatedPost.title || '') + '</strong>' +
+      (state.relatedPost.category ? '<span>' + escape(state.relatedPost.category) + '</span>' : '') +
+      '</div>' +
+      '<button type="button" id="calendar-modal-related-post-clear-btn">해제</button>' +
+    '</div>';
+    var clearBtn = document.getElementById('calendar-modal-related-post-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        state.relatedPost = null;
+        renderModalRelatedPost();
+      });
+    }
+  }
+
+  function submitCalendarEvent() {
+    var payload = {
+      title: valueOf('calendar-modal-title-input'),
+      title_original: valueOf('calendar-modal-title-original-input'),
+      event_category: valueOf('calendar-modal-category-input') || 'KOR',
+      start_date: valueOf('calendar-modal-start-date-input'),
+      start_time: isChecked('calendar-modal-start-time-enabled') ? valueOf('calendar-modal-start-time-input') : '',
+      end_date: valueOf('calendar-modal-end-date-input'),
+      end_time: isChecked('calendar-modal-end-time-enabled') ? valueOf('calendar-modal-end-time-input') : '',
+      event_tags: state.tags.slice(),
+      country_name: valueOf('calendar-modal-country-input'),
+      location_name: valueOf('calendar-modal-location-name-input'),
+      location_address: valueOf('calendar-modal-location-address-input'),
+      latitude: valueOf('calendar-modal-lat-input'),
+      longitude: valueOf('calendar-modal-lng-input'),
+      related_post_id: state.relatedPost && state.relatedPost.id ? state.relatedPost.id : null,
+      link_url: valueOf('calendar-modal-link-input'),
+      description: valueOf('calendar-modal-description-input'),
+    };
+    if (!payload.title && !payload.title_original) {
+      GW.showToast('행사명(국문) 또는 원문 제목을 입력해주세요', 'error');
+      return;
+    }
+    if (!payload.start_date) {
+      GW.showToast('행사 시작 일을 입력해주세요', 'error');
+      return;
+    }
+    var url = state.editingId ? '/api/calendar/' + state.editingId : '/api/calendar';
+    var method = state.editingId ? 'PUT' : 'POST';
+    GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
+      .then(function () {
+        GW.showToast(state.editingId ? '일정이 수정됐습니다' : '일정이 등록됐습니다', 'success');
+        closeEditor();
+        loadEvents();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '일정 저장 실패', 'error');
+      });
+  }
+
+  function deleteCalendarEvent() {
+    if (!state.editingId) return;
+    if (!window.confirm('이 일정을 삭제할까요?')) return;
+    GW.apiFetch('/api/calendar/' + state.editingId, { method: 'DELETE' })
+      .then(function () {
+        GW.showToast('일정이 삭제됐습니다', 'success');
+        closeEditor();
+        loadEvents();
+      })
+      .catch(function (err) {
+        GW.showToast(err.message || '일정 삭제 실패', 'error');
+      });
+  }
+
   function getMonthItems() {
     var year = state.month.getFullYear();
     var month = state.month.getMonth();
@@ -258,64 +620,53 @@
   function filterByStatus(items, key) {
     return (Array.isArray(items) ? items : []).filter(function (item) {
       return getEventStatus(item).key === key;
-    }).sort(function (a, b) {
-      return (a.start_at || '').localeCompare(b.start_at || '');
     });
   }
 
   function countStatuses(items) {
-    var counts = { ongoing: 0, upcoming: 0, finished: 0 };
-    (Array.isArray(items) ? items : []).forEach(function (item) {
-      counts[getEventStatus(item).key] += 1;
-    });
-    return counts;
+    return (Array.isArray(items) ? items : []).reduce(function (acc, item) {
+      var key = getEventStatus(item).key;
+      acc[key] += 1;
+      return acc;
+    }, { ongoing: 0, upcoming: 0, finished: 0 });
   }
 
   function getEventStatus(item) {
     var now = Date.now();
-    var start = parseDate(item && item.start_at);
-    var end = parseDate(item && item.end_at);
+    var start = parseDateTime(item && item.start_at);
+    var end = parseDateTime(item && item.end_at);
     if (!start) return { key: 'upcoming', label: '개최예정' };
-    if (start.getTime() > now) return { key: 'upcoming', label: '개최예정' };
-    if (!end || end.getTime() >= now) return { key: 'ongoing', label: '진행중' };
+    if (start > now) return { key: 'upcoming', label: '개최예정' };
+    if (!end || end >= now) return { key: 'ongoing', label: '진행중' };
     return { key: 'finished', label: '행사종료' };
   }
 
   function renderStatusDot(count, key) {
-    if (!count) return '';
-    return '<i class="is-' + key + '"></i>';
+    return count ? '<i class="is-' + key + '"></i>' : '';
   }
 
-  function formatEventTime(startAt, endAt) {
-    var start = parseDateTime(startAt);
-    var end = parseDateTime(endAt);
-    if (!start) return '';
-    var base = start.year + '-' + pad(start.month) + '-' + pad(start.day) + ' ' + pad(start.hour) + ':' + pad(start.minute);
-    if (!end) return base;
-    if (start.year === end.year && start.month === end.month && start.day === end.day) {
-      return base + ' ~ ' + pad(end.hour) + ':' + pad(end.minute);
-    }
-    return base + ' ~ ' + end.year + '-' + pad(end.month) + '-' + pad(end.day) + ' ' + pad(end.hour) + ':' + pad(end.minute);
+  function formatEventTime(item) {
+    var startDate = toDateOnlyValue(item && item.start_at);
+    var endDate = toDateOnlyValue(item && item.end_at);
+    if (!startDate) return '';
+    var start = startDate + ((item && item.start_has_time) ? ' ' + toTimeValue(item.start_at) : '');
+    if (!endDate) return start;
+    var end = endDate + ((item && item.end_has_time) ? ' ' + toTimeValue(item.end_at) : '');
+    return start + ' ~ ' + end;
   }
 
   function parseDateTime(value) {
     var raw = String(value || '').trim();
-    var match = raw.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
-    if (!match) return null;
-    return {
-      year: Number(match[1]),
-      month: Number(match[2]),
-      day: Number(match[3]),
-      hour: Number(match[4]),
-      minute: Number(match[5])
-    };
+    if (!raw) return 0;
+    var parsed = Date.parse(raw.replace(' ', 'T') + '+09:00');
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   function parseDate(value) {
     var raw = String(value || '').trim();
     if (!raw) return null;
-    var parsed = Date.parse(raw.replace(' ', 'T') + '+09:00');
-    return Number.isFinite(parsed) ? new Date(parsed) : null;
+    var date = new Date(raw.replace(' ', 'T') + '+09:00');
+    return isNaN(date.getTime()) ? null : date;
   }
 
   function normalizeCategory(value) {
@@ -323,21 +674,75 @@
     return CATEGORY_META[raw] ? raw : 'WOSM';
   }
 
-  function escape(value) {
-    return GW.escapeHtml(String(value || ''));
-  }
-
   function startOfMonth(date) {
     return new Date(date.getFullYear(), date.getMonth(), 1);
   }
 
   function toDateKey(date) {
-    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+    return [
+      date.getFullYear(),
+      '-',
+      pad(date.getMonth() + 1),
+      '-',
+      pad(date.getDate())
+    ].join('');
   }
 
   function pad(value) {
     return String(value).padStart(2, '0');
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  function toDateOnlyValue(value) {
+    return String(value || '').trim().slice(0, 10);
+  }
+
+  function toTimeValue(value) {
+    var raw = String(value || '').trim();
+    if (!raw || raw.length < 16) return '';
+    return raw.slice(11, 16);
+  }
+
+  function valueOf(id) {
+    var el = document.getElementById(id);
+    return String(el && el.value || '').trim();
+  }
+
+  function setValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.value = value == null ? '' : value;
+  }
+
+  function setHtml(id, html) {
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  }
+
+  function isChecked(id) {
+    var el = document.getElementById(id);
+    return !!(el && el.checked);
+  }
+
+  function setChecked(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.checked = !!value;
+  }
+
+  function setDisabled(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.disabled = !!value;
+  }
+
+  function findItem(id) {
+    return state.items.find(function (item) { return item.id === id; }) || null;
+  }
+
+  function escape(value) {
+    return GW.escapeHtml(value || '');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();

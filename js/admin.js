@@ -124,6 +124,9 @@
   var _glossaryEditingId = null;
   var _calendarItems = [];
   var _calendarEditingId = null;
+  var _calendarTags = [];
+  var _calendarRelatedPost = null;
+  var _calendarSearchTimer = null;
   var _analyticsViewMode = 'chart';
   var _analyticsPayload = null;
   var _adminGroup = 'overview';
@@ -3192,6 +3195,7 @@
   };
 
   function loadCalendarAdmin() {
+    bindCalendarAdminControls();
     GW.apiFetch('/api/calendar')
       .then(function (data) {
         _calendarItems = Array.isArray(data && data.items) ? data.items : [];
@@ -3214,12 +3218,25 @@
       var place = item.location_name || item.location_address || '';
       var category = GW.escapeHtml(item.event_category || 'WOSM');
       var status = getCalendarStatus(item);
+      var displayTitle = item.title || item.title_original || '';
+      var originalTitle = item.title && item.title_original
+        ? '<p class="calendar-admin-item-origin">' + GW.escapeHtml(item.title_original) + '</p>'
+        : '';
+      var tagsHtml = Array.isArray(item.event_tags) && item.event_tags.length
+        ? '<div class="calendar-admin-item-badges">' + item.event_tags.map(function (tag) {
+            return '<span class="calendar-status-badge">' + GW.escapeHtml(tag) + '</span>';
+          }).join('') + '</div>'
+        : '';
+      var relatedHtml = item.related_post_id && item.related_post_title
+        ? '<div class="calendar-admin-item-link">관련 기사: ' + GW.escapeHtml(item.related_post_title) + '</div>'
+        : '';
       return '<article class="calendar-admin-item">' +
         '<div class="calendar-admin-item-head">' +
           '<div>' +
             '<div class="calendar-admin-item-badges"><span class="calendar-category-badge is-' + category.toLowerCase() + '">' + category + '</span><span class="calendar-status-badge is-' + status.key + '">' + GW.escapeHtml(status.label) + '</span></div>' +
-            '<h3>' + GW.escapeHtml(item.title || '') + '</h3>' +
-            '<p>' + GW.escapeHtml(formatCalendarRange(item.start_at, item.end_at)) + '</p>' +
+            '<h3>' + GW.escapeHtml(displayTitle) + '</h3>' +
+            originalTitle +
+            '<p>' + GW.escapeHtml(formatCalendarRange(item)) + '</p>' +
           '</div>' +
           '<div class="calendar-admin-item-actions">' +
             '<button type="button" class="glossary-admin-inline-btn" onclick="editCalendarEvent(' + item.id + ')">수정</button>' +
@@ -3227,10 +3244,83 @@
           '</div>' +
         '</div>' +
         (place ? '<p class="calendar-admin-item-meta">' + GW.escapeHtml(place) + '</p>' : '') +
+        tagsHtml +
         (item.description ? '<p class="calendar-admin-item-desc">' + GW.escapeHtml(item.description) + '</p>' : '') +
+        relatedHtml +
         (item.link_url ? '<a class="calendar-admin-item-link" href="' + GW.escapeHtml(item.link_url) + '" target="_blank" rel="noopener">관련 링크 ↗</a>' : '') +
       '</article>';
     }).join('');
+  }
+
+  function bindCalendarAdminControls() {
+    var queryInput = document.getElementById('calendar-related-post-query');
+    if (queryInput && queryInput.dataset.bound !== 'true') {
+      queryInput.dataset.bound = 'true';
+      queryInput.addEventListener('input', function () {
+        if (_calendarSearchTimer) clearTimeout(_calendarSearchTimer);
+        _calendarSearchTimer = setTimeout(function () {
+          searchCalendarRelatedPosts(queryInput.value || '');
+        }, 180);
+      });
+    }
+    bindCalendarTimeToggle('calendar-start-time-enabled', 'calendar-start-time-input');
+    bindCalendarTimeToggle('calendar-end-time-enabled', 'calendar-end-time-input');
+    renderCalendarTagEditor();
+    renderCalendarRelatedPostSelected();
+  }
+
+  function bindCalendarTimeToggle(toggleId, inputId) {
+    var toggle = document.getElementById(toggleId);
+    var input = document.getElementById(inputId);
+    if (!toggle || !input || toggle.dataset.bound === 'true') return;
+    toggle.dataset.bound = 'true';
+    toggle.addEventListener('change', function () {
+      input.disabled = !toggle.checked;
+      if (!toggle.checked) input.value = '';
+    });
+  }
+
+  function searchCalendarRelatedPosts(query) {
+    var resultsEl = document.getElementById('calendar-related-post-results');
+    if (!resultsEl) return;
+    var term = String(query || '').trim();
+    if (!term) {
+      resultsEl.innerHTML = '';
+      return;
+    }
+    GW.apiFetch('/api/posts?page=1&limit=8&q=' + encodeURIComponent(term))
+      .then(function (data) {
+        var posts = Array.isArray(data && data.posts) ? data.posts : [];
+        if (!posts.length) {
+          resultsEl.innerHTML = '<div class="list-empty">검색 결과가 없습니다.</div>';
+          return;
+        }
+        resultsEl.innerHTML = posts.map(function (post) {
+          return '<button type="button" class="calendar-related-post-option" data-post-id="' + post.id + '">' +
+            '<strong>' + GW.escapeHtml(post.title || '') + '</strong>' +
+            '<span>' + GW.escapeHtml(post.category || '') + '</span>' +
+          '</button>';
+        }).join('');
+        Array.prototype.forEach.call(resultsEl.querySelectorAll('[data-post-id]'), function (btn) {
+          btn.addEventListener('click', function () {
+            var id = parseInt(btn.getAttribute('data-post-id'), 10);
+            var post = posts.find(function (entry) { return entry.id === id; });
+            if (!post) return;
+            _calendarRelatedPost = {
+              id: post.id,
+              title: post.title || '',
+              category: post.category || ''
+            };
+            var input = document.getElementById('calendar-related-post-query');
+            if (input) input.value = '';
+            resultsEl.innerHTML = '';
+            renderCalendarRelatedPostSelected();
+          });
+        });
+      })
+      .catch(function () {
+        resultsEl.innerHTML = '<div class="list-empty">기사를 검색하지 못했습니다.</div>';
+      });
   }
 
   window.editCalendarEvent = function (id) {
@@ -3238,9 +3328,16 @@
     if (!item) return;
     _calendarEditingId = id;
     document.getElementById('calendar-title-input').value = item.title || '';
+    document.getElementById('calendar-title-original-input').value = item.title_original || '';
     document.getElementById('calendar-category-input').value = item.event_category || 'WOSM';
-    document.getElementById('calendar-start-input').value = toDateTimeLocalValue(item.start_at);
-    document.getElementById('calendar-end-input').value = toDateTimeLocalValue(item.end_at);
+    document.getElementById('calendar-start-date-input').value = toDateOnlyValue(item.start_at);
+    document.getElementById('calendar-start-time-enabled').checked = !!item.start_has_time;
+    document.getElementById('calendar-start-time-input').disabled = !item.start_has_time;
+    document.getElementById('calendar-start-time-input').value = item.start_has_time ? toTimeValue(item.start_at) : '';
+    document.getElementById('calendar-end-date-input').value = toDateOnlyValue(item.end_at);
+    document.getElementById('calendar-end-time-enabled').checked = !!item.end_has_time;
+    document.getElementById('calendar-end-time-input').disabled = !item.end_has_time;
+    document.getElementById('calendar-end-time-input').value = item.end_has_time ? toTimeValue(item.end_at) : '';
     document.getElementById('calendar-country-input').value = item.country_name || '';
     document.getElementById('calendar-location-name-input').value = item.location_name || '';
     document.getElementById('calendar-location-address-input').value = item.location_address || '';
@@ -3248,6 +3345,16 @@
     document.getElementById('calendar-lng-input').value = item.longitude == null ? '' : item.longitude;
     document.getElementById('calendar-link-input').value = item.link_url || '';
     document.getElementById('calendar-description-input').value = item.description || '';
+    document.getElementById('calendar-related-post-query').value = '';
+    document.getElementById('calendar-related-post-results').innerHTML = '';
+    _calendarTags = Array.isArray(item.event_tags) ? item.event_tags.slice() : [];
+    _calendarRelatedPost = item.related_post_id ? {
+      id: item.related_post_id,
+      title: item.related_post_title || '',
+      category: item.related_post_category || ''
+    } : null;
+    renderCalendarTagEditor();
+    renderCalendarRelatedPostSelected();
     document.getElementById('calendar-submit-btn').textContent = '일정 수정';
     document.getElementById('calendar-cancel-btn').style.display = '';
     document.getElementById('calendar-title-input').focus();
@@ -3256,9 +3363,16 @@
   window.cancelCalendarEdit = function () {
     _calendarEditingId = null;
     document.getElementById('calendar-title-input').value = '';
+    document.getElementById('calendar-title-original-input').value = '';
     document.getElementById('calendar-category-input').value = 'KOR';
-    document.getElementById('calendar-start-input').value = '';
-    document.getElementById('calendar-end-input').value = '';
+    document.getElementById('calendar-start-date-input').value = '';
+    document.getElementById('calendar-start-time-enabled').checked = false;
+    document.getElementById('calendar-start-time-input').disabled = true;
+    document.getElementById('calendar-start-time-input').value = '';
+    document.getElementById('calendar-end-date-input').value = '';
+    document.getElementById('calendar-end-time-enabled').checked = false;
+    document.getElementById('calendar-end-time-input').disabled = true;
+    document.getElementById('calendar-end-time-input').value = '';
     document.getElementById('calendar-country-input').value = '';
     document.getElementById('calendar-location-name-input').value = '';
     document.getElementById('calendar-location-address-input').value = '';
@@ -3266,30 +3380,101 @@
     document.getElementById('calendar-lng-input').value = '';
     document.getElementById('calendar-link-input').value = '';
     document.getElementById('calendar-description-input').value = '';
+    document.getElementById('calendar-related-post-query').value = '';
+    document.getElementById('calendar-related-post-results').innerHTML = '';
+    _calendarTags = [];
+    _calendarRelatedPost = null;
+    renderCalendarTagEditor();
+    renderCalendarRelatedPostSelected();
     document.getElementById('calendar-submit-btn').textContent = '일정 저장';
     document.getElementById('calendar-cancel-btn').style.display = 'none';
   };
 
+  window.addCalendarTag = function () {
+    var input = document.getElementById('calendar-tags-input');
+    var value = String(input && input.value || '').trim();
+    if (!value) {
+      GW.showToast('추가할 태그를 입력해주세요', 'error');
+      return;
+    }
+    if (_calendarTags.indexOf(value) >= 0) {
+      GW.showToast('이미 추가된 태그입니다', 'error');
+      return;
+    }
+    _calendarTags.push(value);
+    if (input) input.value = '';
+    renderCalendarTagEditor();
+  };
+
+  window.removeCalendarTag = function (tag) {
+    _calendarTags = _calendarTags.filter(function (item) { return item !== tag; });
+    renderCalendarTagEditor();
+  };
+
+  window.clearCalendarRelatedPost = function () {
+    _calendarRelatedPost = null;
+    renderCalendarRelatedPostSelected();
+  };
+
+  function renderCalendarTagEditor() {
+    var list = document.getElementById('calendar-tags-list');
+    if (!list) return;
+    if (!_calendarTags.length) {
+      list.innerHTML = '<div class="list-empty">등록된 행사 태그가 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = _calendarTags.map(function (tag) {
+      return '<button type="button" class="calendar-tag-chip" data-calendar-tag="' + GW.escapeHtml(tag) + '">' +
+        '<span>' + GW.escapeHtml(tag) + '</span><strong>×</strong>' +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(list.querySelectorAll('[data-calendar-tag]'), function (btn) {
+      btn.addEventListener('click', function () {
+        removeCalendarTag(btn.getAttribute('data-calendar-tag') || '');
+      });
+    });
+  }
+
+  function renderCalendarRelatedPostSelected() {
+    var wrap = document.getElementById('calendar-related-post-selected');
+    if (!wrap) return;
+    if (!_calendarRelatedPost || !_calendarRelatedPost.id) {
+      wrap.innerHTML = '<div class="list-empty">선택된 관련 기사가 없습니다.</div>';
+      return;
+    }
+    wrap.innerHTML = '<div class="calendar-related-post-pill">' +
+      '<div><strong>' + GW.escapeHtml(_calendarRelatedPost.title || '') + '</strong>' +
+      (_calendarRelatedPost.category ? '<span>' + GW.escapeHtml(_calendarRelatedPost.category) + '</span>' : '') +
+      '</div>' +
+      '<button type="button" onclick="clearCalendarRelatedPost()">해제</button>' +
+    '</div>';
+  }
+
   window.submitCalendarEvent = function () {
     var payload = {
       title: (document.getElementById('calendar-title-input').value || '').trim(),
+      title_original: (document.getElementById('calendar-title-original-input').value || '').trim(),
       event_category: document.getElementById('calendar-category-input').value || 'WOSM',
-      start_at: document.getElementById('calendar-start-input').value || '',
-      end_at: document.getElementById('calendar-end-input').value || '',
+      start_date: document.getElementById('calendar-start-date-input').value || '',
+      start_time: document.getElementById('calendar-start-time-enabled').checked ? (document.getElementById('calendar-start-time-input').value || '') : '',
+      end_date: document.getElementById('calendar-end-date-input').value || '',
+      end_time: document.getElementById('calendar-end-time-enabled').checked ? (document.getElementById('calendar-end-time-input').value || '') : '',
+      event_tags: _calendarTags.slice(),
       country_name: (document.getElementById('calendar-country-input').value || '').trim(),
       location_name: (document.getElementById('calendar-location-name-input').value || '').trim(),
       location_address: (document.getElementById('calendar-location-address-input').value || '').trim(),
       latitude: document.getElementById('calendar-lat-input').value || '',
       longitude: document.getElementById('calendar-lng-input').value || '',
+      related_post_id: _calendarRelatedPost && _calendarRelatedPost.id ? _calendarRelatedPost.id : null,
       link_url: (document.getElementById('calendar-link-input').value || '').trim(),
       description: (document.getElementById('calendar-description-input').value || '').trim(),
     };
-    if (!payload.title) {
-      GW.showToast('일정 제목을 입력해주세요', 'error');
+    if (!payload.title && !payload.title_original) {
+      GW.showToast('행사명(국문) 또는 원문 제목을 입력해주세요', 'error');
       return;
     }
-    if (!payload.start_at) {
-      GW.showToast('시작 일시를 입력해주세요', 'error');
+    if (!payload.start_date) {
+      GW.showToast('행사 시작 일을 입력해주세요', 'error');
       return;
     }
     var url = _calendarEditingId ? '/api/calendar/' + _calendarEditingId : '/api/calendar';
@@ -3324,13 +3509,27 @@
     return raw.slice(0, 16).replace(' ', 'T');
   }
 
-  function formatCalendarRange(startAt, endAt) {
-    var start = toDateTimeLocalValue(startAt);
-    var end = toDateTimeLocalValue(endAt);
+  function toDateOnlyValue(value) {
+    return String(value || '').trim().slice(0, 10);
+  }
+
+  function toTimeValue(value) {
+    var raw = String(value || '').trim();
+    if (!raw || raw.length < 16) return '';
+    return raw.slice(11, 16);
+  }
+
+  function formatCalendarRange(itemOrStart, endAt) {
+    var item = itemOrStart && typeof itemOrStart === 'object'
+      ? itemOrStart
+      : { start_at: itemOrStart, end_at: endAt, start_has_time: true, end_has_time: true };
+    var start = String(item.start_at || '').trim();
     if (!start) return '';
-    var startLabel = start.replace('T', ' ');
+    var startLabel = start.slice(0, 10) + (item.start_has_time ? ' ' + start.slice(11, 16) : '');
+    var end = String(item.end_at || '').trim();
     if (!end) return startLabel;
-    return startLabel + ' ~ ' + end.replace('T', ' ');
+    var endLabel = end.slice(0, 10) + (item.end_has_time ? ' ' + end.slice(11, 16) : '');
+    return startLabel + ' ~ ' + endLabel;
   }
 
   function getCalendarStatus(item) {

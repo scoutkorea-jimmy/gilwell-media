@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.076.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.077.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.076.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.077.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.076.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.077.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -553,12 +553,16 @@
           <div class="panel-header"><h2>일정 캘린더 관리</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">공개 캘린더 페이지에 노출할 일정을 등록합니다. 등록 즉시 `/calendar.html`에서 확인할 수 있습니다.</p>
-            <div class="glossary-admin-form-grid">
-              <div class="form-group" style="margin:0;">
-                <label for="calendar-title-input">일정 제목</label>
+            <div class="calendar-admin-form">
+              <div class="form-group">
+                <label for="calendar-title-input">행사명(국문)</label>
                 <input type="text" id="calendar-title-input" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
               </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group">
+                <label for="calendar-title-original-input">행사명(원문)</label>
+                <input type="text" id="calendar-title-original-input" maxlength="200" placeholder="예: World Scout Jamboree Planning Meeting" />
+              </div>
+              <div class="form-group">
                 <label for="calendar-category-input">캘린더 분류</label>
                 <select id="calendar-category-input">
                   <option value="KOR">KOR</option>
@@ -570,44 +574,90 @@
                   <option value="WOSM">WOSM</option>
                 </select>
               </div>
-              <div class="form-group" style="margin:0;">
-                <label for="calendar-start-input">시작 일시</label>
-                <input type="datetime-local" id="calendar-start-input" />
-              </div>
-              <div class="form-group" style="margin:0;">
-                <label for="calendar-end-input">종료 일시</label>
-                <input type="datetime-local" id="calendar-end-input" />
-              </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group">
                 <label for="calendar-country-input">국가명</label>
                 <input type="text" id="calendar-country-input" maxlength="120" placeholder="예: 대한민국" />
               </div>
-              <div class="form-group" style="margin:0;">
+
+              <div class="calendar-form-split">
+                <div class="form-group">
+                  <label for="calendar-start-date-input">행사 시작 일</label>
+                  <input type="date" id="calendar-start-date-input" />
+                </div>
+                <div class="form-group">
+                  <label class="calendar-time-toggle">
+                    <input type="checkbox" id="calendar-start-time-enabled">
+                    <span>시작 시간 입력</span>
+                  </label>
+                  <input type="time" id="calendar-start-time-input" disabled />
+                </div>
+              </div>
+
+              <div class="calendar-form-split">
+                <div class="form-group">
+                  <label for="calendar-end-date-input">행사 종료 일</label>
+                  <input type="date" id="calendar-end-date-input" />
+                </div>
+                <div class="form-group">
+                  <label class="calendar-time-toggle">
+                    <input type="checkbox" id="calendar-end-time-enabled">
+                    <span>종료 시간 입력</span>
+                  </label>
+                  <input type="time" id="calendar-end-time-input" disabled />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="calendar-tags-input">행사 태그</label>
+                <div class="calendar-tags-editor">
+                  <div id="calendar-tags-list" class="calendar-tags-list"></div>
+                  <div class="calendar-tags-controls">
+                    <input type="text" id="calendar-tags-input" maxlength="40" placeholder="태그 입력 후 추가" />
+                    <button type="button" class="submit-btn admin-inline-submit" onclick="addCalendarTag()">태그 추가</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label for="calendar-location-name-input">위치 이름</label>
                 <input type="text" id="calendar-location-name-input" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
               </div>
-              <div class="form-group glossary-description-field" style="margin:0;">
+              <div class="form-group">
                 <label for="calendar-location-address-input">주소</label>
                 <input type="text" id="calendar-location-address-input" maxlength="300" placeholder="예: 강원특별자치도 고성군 ..." />
               </div>
-              <div class="form-group glossary-description-field" style="margin:0;">
-                <label for="calendar-link-input">관련 링크</label>
+
+              <div class="form-group">
+                <label for="calendar-related-post-query">관련 기사 연결</label>
+                <input type="text" id="calendar-related-post-query" maxlength="120" placeholder="기사 제목 검색" />
+                <div id="calendar-related-post-selected" class="calendar-related-post-selected"></div>
+                <div id="calendar-related-post-results" class="calendar-related-post-results"></div>
+              </div>
+
+              <div class="form-group">
+                <label for="calendar-link-input">외부 링크</label>
                 <input type="url" id="calendar-link-input" maxlength="500" placeholder="https://..." />
               </div>
-              <div class="form-group" style="margin:0;">
+
+              <div class="calendar-form-split">
+                <div class="form-group">
                 <label for="calendar-lat-input">위도</label>
                 <input type="number" id="calendar-lat-input" step="0.000001" placeholder="예: 37.5665" />
+                </div>
+                <div class="form-group">
+                  <label for="calendar-lng-input">경도</label>
+                  <input type="number" id="calendar-lng-input" step="0.000001" placeholder="예: 126.9780" />
+                </div>
               </div>
-              <div class="form-group" style="margin:0;">
-                <label for="calendar-lng-input">경도</label>
-                <input type="number" id="calendar-lng-input" step="0.000001" placeholder="예: 126.9780" />
-              </div>
-              <div class="form-group glossary-description-field" style="margin:0;">
+
+              <div class="form-group calendar-form-span-full">
                 <label for="calendar-description-input">설명</label>
                 <textarea id="calendar-description-input" rows="3" maxlength="2000" placeholder="일정 설명을 입력하세요."></textarea>
               </div>
-              <button type="button" class="submit-btn admin-inline-submit" id="calendar-submit-btn" onclick="submitCalendarEvent()">일정 저장</button>
-              <button type="button" class="cancel-btn admin-inline-cancel" id="calendar-cancel-btn" onclick="cancelCalendarEdit()" style="display:none;">수정 취소</button>
+              <div class="calendar-form-actions">
+                <button type="button" class="submit-btn admin-inline-submit" id="calendar-submit-btn" onclick="submitCalendarEvent()">일정 저장</button>
+                <button type="button" class="cancel-btn admin-inline-cancel" id="calendar-cancel-btn" onclick="cancelCalendarEdit()" style="display:none;">수정 취소</button>
+              </div>
             </div>
             <div id="calendar-admin-list" class="calendar-admin-list">
               <div class="list-empty">일정을 불러오는 중…</div>
@@ -914,8 +964,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.076.00"></script>
-  <script src="/js/admin.js?v=0.076.00"></script>
+  <script src="/js/main.js?v=0.077.00"></script>
+  <script src="/js/admin.js?v=0.077.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

@@ -3460,6 +3460,19 @@ footer a:hover { color: #ffffff; }
   margin-bottom: 24px;
 }
 
+.calendar-page-head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.calendar-page-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .calendar-page-head h2 {
   margin: 14px 0 10px;
   font-size: clamp(28px, 4vw, 48px);
@@ -3486,6 +3499,23 @@ footer a:hover { color: #ffffff; }
 
 .calendar-map-panel {
   margin-top: 24px;
+}
+
+.calendar-manage-btn,
+.calendar-event-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
 .calendar-toolbar,
@@ -3658,6 +3688,13 @@ footer a:hover { color: #ffffff; }
   padding: 14px;
 }
 
+.calendar-event-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
 .calendar-event-card.is-finished {
   border-color: #d8d8d8;
   background: #f6f6f6;
@@ -3721,6 +3758,14 @@ footer a:hover { color: #ffffff; }
   line-height: 1.25;
 }
 
+.calendar-event-original,
+.calendar-admin-item-origin {
+  margin: -2px 0 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .calendar-event-place,
 .calendar-admin-item-meta {
   margin: 0 0 8px;
@@ -3745,6 +3790,12 @@ footer a:hover { color: #ffffff; }
   font-size: 13px;
 }
 
+.calendar-event-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .calendar-admin-item-head {
   display: flex;
   align-items: flex-start;
@@ -3763,6 +3814,110 @@ footer a:hover { color: #ffffff; }
   display: inline-flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.calendar-admin-form,
+.calendar-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.calendar-form-span-full {
+  grid-column: 1 / -1;
+}
+
+.calendar-form-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.calendar-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+}
+
+.calendar-time-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.calendar-tags-editor,
+.calendar-related-post-selected,
+.calendar-related-post-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calendar-tags-list,
+.calendar-related-post-results,
+.calendar-related-post-selected {
+  min-height: 44px;
+}
+
+.calendar-tags-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.calendar-tag-chip,
+.calendar-related-post-pill,
+.calendar-related-post-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  text-align: left;
+}
+
+.calendar-tag-chip strong,
+.calendar-related-post-pill button {
+  flex-shrink: 0;
+}
+
+.calendar-tag-chip {
+  width: auto;
+  cursor: pointer;
+}
+
+.calendar-related-post-pill span,
+.calendar-related-post-option span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.calendar-related-post-pill button,
+.calendar-related-post-option {
+  cursor: pointer;
+}
+
+.calendar-related-post-option strong {
+  display: block;
+}
+
+.calendar-edit-box {
+  max-width: 840px;
 }
 
 .calendar-map {
@@ -11218,9 +11373,28 @@ body.admin-page .item-meta-chip span {
     padding: 28px 16px 48px;
   }
 
+  .calendar-page-head-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .calendar-day {
     min-height: 78px;
     padding: 8px 6px;
+  }
+
+  .calendar-admin-form,
+  .calendar-modal-grid,
+  .calendar-form-split,
+  .calendar-tags-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-admin-item-head,
+  .calendar-event-card-head,
+  .calendar-form-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .post-location-map {
