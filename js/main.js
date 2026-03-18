@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.072.00';
+  GW.APP_VERSION = '0.072.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -596,7 +596,7 @@
     var slides = Array.isArray(items) ? items.filter(function (item) { return item && item.url; }) : [];
     if (slides.length < 2) return '';
     var className = (options && options.className) ? ' ' + options.className : '';
-    return '<section class="content-gallery' + className + '" data-gallery-interval="5000">' +
+    return '<section class="content-gallery' + className + '" data-gallery-interval="3000">' +
       '<div class="content-gallery-track">' +
         slides.map(function (item, index) {
           var cap = GW.escapeHtml(item.caption || '');
@@ -606,6 +606,8 @@
           '</figure>';
         }).join('') +
       '</div>' +
+      '<button type="button" class="content-gallery-nav content-gallery-prev" aria-label="이전 사진">‹</button>' +
+      '<button type="button" class="content-gallery-nav content-gallery-next" aria-label="다음 사진">›</button>' +
       '<div class="content-gallery-dots">' +
         slides.map(function (_, index) {
           return '<button type="button" class="content-gallery-dot' + (index === 0 ? ' is-active' : '') + '" data-gallery-index="' + index + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
@@ -621,25 +623,96 @@
       gallery.dataset.galleryReady = '1';
       var slides = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-slide'));
       var dots = Array.prototype.slice.call(gallery.querySelectorAll('.content-gallery-dot'));
+      var prevBtn = gallery.querySelector('.content-gallery-prev');
+      var nextBtn = gallery.querySelector('.content-gallery-next');
       if (slides.length < 2) return;
       var current = 0;
-      var intervalMs = parseInt(gallery.getAttribute('data-gallery-interval') || '5000', 10) || 5000;
+      var intervalMs = parseInt(gallery.getAttribute('data-gallery-interval') || '3000', 10) || 3000;
+      var timer = null;
+      var dragStartX = 0;
+      var dragDeltaX = 0;
+      var dragging = false;
       function sync(next) {
-        current = next;
+        current = (next + slides.length) % slides.length;
         slides.forEach(function (slide, idx) { slide.classList.toggle('is-active', idx === current); });
         dots.forEach(function (dot, idx) { dot.classList.toggle('is-active', idx === current); });
       }
       function advance() { sync((current + 1) % slides.length); }
+      function retreat() { sync((current - 1 + slides.length) % slides.length); }
+      function clearTimer() {
+        if (timer) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+      function startTimer() {
+        clearTimer();
+        timer = window.setInterval(advance, intervalMs);
+      }
       dots.forEach(function (dot) {
         dot.addEventListener('click', function () {
           var index = parseInt(dot.getAttribute('data-gallery-index') || '0', 10);
           sync(index);
+          startTimer();
         });
       });
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+          retreat();
+          startTimer();
+        });
+      }
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          advance();
+          startTimer();
+        });
+      }
+      function onPointerDown(clientX) {
+        dragging = true;
+        dragStartX = clientX;
+        dragDeltaX = 0;
+        clearTimer();
+      }
+      function onPointerMove(clientX) {
+        if (!dragging) return;
+        dragDeltaX = clientX - dragStartX;
+      }
+      function onPointerUp() {
+        if (!dragging) return;
+        dragging = false;
+        if (Math.abs(dragDeltaX) > 40) {
+          if (dragDeltaX < 0) advance();
+          else retreat();
+        }
+        dragDeltaX = 0;
+        startTimer();
+      }
+      gallery.addEventListener('touchstart', function (event) {
+        if (!event.touches || !event.touches[0]) return;
+        onPointerDown(event.touches[0].clientX);
+      }, { passive: true });
+      gallery.addEventListener('touchmove', function (event) {
+        if (!event.touches || !event.touches[0]) return;
+        onPointerMove(event.touches[0].clientX);
+      }, { passive: true });
+      gallery.addEventListener('touchend', onPointerUp);
+      gallery.addEventListener('mousedown', function (event) {
+        onPointerDown(event.clientX);
+      });
+      gallery.addEventListener('mousemove', function (event) {
+        onPointerMove(event.clientX);
+      });
+      gallery.addEventListener('mouseup', onPointerUp);
+      gallery.addEventListener('mouseleave', function () {
+        if (dragging) onPointerUp();
+      });
       sync(0);
-      var timer = window.setInterval(advance, intervalMs);
-      gallery.addEventListener('mouseenter', function () { window.clearInterval(timer); });
-      gallery.addEventListener('mouseleave', function () { timer = window.setInterval(advance, intervalMs); });
+      startTimer();
+      gallery.addEventListener('mouseenter', clearTimer);
+      gallery.addEventListener('mouseleave', function () {
+        if (!dragging) startTimer();
+      });
     });
   };
 
