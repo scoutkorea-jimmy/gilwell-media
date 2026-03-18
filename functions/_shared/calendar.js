@@ -29,8 +29,8 @@ export async function ensureCalendarTable(env) {
   await ensureCalendarColumn(env, 'latitude', 'REAL');
   await ensureCalendarColumn(env, 'longitude', 'REAL');
   await ensureCalendarColumn(env, 'related_post_id', 'INTEGER');
-  await ensureCalendarColumn(env, 'start_has_time', 'INTEGER NOT NULL DEFAULT 0');
-  await ensureCalendarColumn(env, 'end_has_time', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureCalendarColumn(env, 'start_has_time', 'INTEGER DEFAULT 0');
+  await ensureCalendarColumn(env, 'end_has_time', 'INTEGER DEFAULT 0');
 }
 
 export function normalizeCalendarInput(body) {
