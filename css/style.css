@@ -2616,7 +2616,21 @@ p { margin-bottom: 6px; }
   height:        auto;
   object-fit:    contain;
   display:       block;
-  margin-top:    24px;
+  margin-top:    0;
+}
+
+.modal-image-frame,
+.post-inline-media {
+  background: var(--bg);
+}
+
+.modal-image-frame {
+  margin-top: 24px;
+}
+
+.post-inline-media {
+  margin: 12px 0;
+  display: block;
 }
 
 .post-image-caption {

@@ -343,7 +343,7 @@
 
     var imgHtml = '';
     if (post.image_url) {
-      imgHtml = '<img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title || '') + '">' +
+      imgHtml = '<div class="modal-image-frame"><img class="modal-img" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title || '') + '"></div>' +
         GW.buildImageCaption(post.image_caption);
     }
     var youtubeHtml = GW.buildYouTubeEmbed(post.youtube_url, post.title);

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.071.00';
+  GW.APP_VERSION = '0.071.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -434,8 +434,13 @@
           canvas.width = width;
           canvas.height = height;
           var ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('이미지 캔버스를 준비하지 못했습니다'));
+            return;
+          }
           ctx.drawImage(img, 0, 0, width, height);
-          var forcePng = !!options.forcePng || GW.isSvgFile(file);
+          var preserveTransparency = /^image\/png$/i.test(file.type || '') || /^image\/webp$/i.test(file.type || '');
+          var forcePng = !!options.forcePng || GW.isSvgFile(file) || preserveTransparency;
           var mime = forcePng ? 'image/png' : 'image/jpeg';
           var quality = forcePng ? 0.92 : (options.quality || 0.82);
           resolve({
@@ -558,7 +563,7 @@
               case 'image': {
                 var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
                 var cap = GW.escapeHtml(b.data.caption || '');
-                var html = '<img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:12px 0;">';
+                var html = '<div class="post-inline-media"><img src="' + GW.escapeHtml(url) + '" alt="' + cap + '" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>';
                 if (cap) html += '<p class="post-image-caption">' + cap + '</p>';
                 return html;
               }

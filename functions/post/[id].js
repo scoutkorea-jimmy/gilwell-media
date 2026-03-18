@@ -146,7 +146,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.071.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.071.01">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -316,7 +316,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.071.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.071.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -436,7 +436,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.071.00"></script>
+  <script src="/js/main.js?v=0.071.01"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1135,7 +1135,7 @@ function renderContent(str) {
             case 'image': {
               const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
               const cap = escapeHtml(b.data.caption || '');
-              let html = `<img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:12px 0;">`;
+              let html = `<div class="post-inline-media"><img src="${escapeHtml(url)}" alt="${cap}" style="max-width:100%;height:auto;display:block;margin:0 auto;"></div>`;
               if (cap) html += `<p class="post-image-caption">${cap}</p>`;
               return html;
             }
