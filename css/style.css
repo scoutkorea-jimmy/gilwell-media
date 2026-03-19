@@ -4097,6 +4097,20 @@ footer a:hover { color: #ffffff; }
   line-height: 1.5;
 }
 
+.calendar-detail-map-frame {
+  margin: 10px 0 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.calendar-detail-map {
+  display: block;
+  width: 100%;
+  height: 240px;
+  border: 0;
+}
+
 .calendar-event-desc,
 .calendar-admin-item-desc {
   margin: 0;
