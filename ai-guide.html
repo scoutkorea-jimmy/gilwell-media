@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.080.07">
+  <link rel="stylesheet" href="/css/style.css?v=0.080.08">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -235,6 +235,10 @@
           <p>RSS 피드에서는 작성자 실명을 노출하지 않습니다. RSS 항목의 날짜는 `publish_at`이 아니라 실제 생성 시각인 `created_at` 기준으로 보내고, 글머리 태그도 함께 포함해 리더와 수집기가 기사 성격을 더 잘 이해할 수 있게 유지합니다.</p>
         </div>
         <div class="contributor-card">
+          <h3>기능 정의서 규칙</h3>
+          <p>새 기능 개발이나 기존 기능 수정 전에는 반드시 <code>docs/feature-definition.md</code>를 먼저 확인합니다. 구현 중간에도 실제 UI와 정의서가 어긋나지 않는지 다시 확인하고, preview/production 반영 전 마지막으로 한 번 더 대조합니다. 오너와 작업자는 이 문서를 같은 기준 문서로 사용합니다.</p>
+        </div>
+        <div class="contributor-card">
           <h3>Production 배포 규칙</h3>
           <p>preview 승인 후에는 preview 페이지의 `본 페이지에 반영하기` 버튼으로 GitHub Actions 승격 워크플로우를 시작하는 것을 기본으로 합니다. 이 버튼은 모든 체크박스가 완료되고 full 관리자 인증이 끝났을 때만 동작하며, 누락 항목이 있으면 토스트가 아니라 차단 모달로 먼저 막아야 합니다. 승격은 preview 브랜치 HEAD를 단순 병합하는 방식이 아니라, 검수 화면이 들고 있는 승인된 preview SHA 자체를 `main`에 올리는 방식으로 유지합니다. 예외적으로 수동 production 배포가 필요할 때만 깨끗한 워크트리의 `main`에서 `./scripts/deploy_production.sh`를 실행합니다.</p>
         </div>
@@ -274,7 +278,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.080.07</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.080.08</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -283,7 +287,7 @@
     </div>
   </footer>
 
-  <script src="/js/main.js?v=0.080.07"></script>
+  <script src="/js/main.js?v=0.080.08"></script>
   <script>
     GW.bootstrapStandardPage();
   </script>

@@ -186,6 +186,17 @@
       attribution: '&copy; OpenStreetMap'
     }).addTo(state.map);
     state.map.on('zoomend moveend', renderMapMarkers);
+    state.map.on('popupopen', function (event) {
+      var popupEl = event && event.popup && event.popup.getElement();
+      if (!popupEl) return;
+      Array.prototype.forEach.call(popupEl.querySelectorAll('[data-calendar-map-detail]'), function (btn) {
+        btn.addEventListener('click', function () {
+          var idValue = parseInt(btn.getAttribute('data-calendar-map-detail'), 10);
+          var item = findItem(idValue);
+          if (item) openDetail(item);
+        });
+      });
+    });
   }
 
   function initModalMap() {
@@ -447,7 +458,7 @@
   function renderEventCard(item) {
     var when = formatEventTime(item);
     var place = item.location_name || item.country_name || '';
-    var address = item.location_address || '';
+    var address = formatCalendarAddressDisplay(item.location_address || '');
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
@@ -470,8 +481,7 @@
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
-    var linkActions = '<button type="button" class="calendar-event-link" data-calendar-detail="' + item.id + '">자세히 보기</button>' +
-      detailToggle +
+    var linkActions = (detailToggle || '<button type="button" class="calendar-event-link" data-calendar-detail="' + item.id + '">자세히 보기</button>') +
       relatedLinks;
     return '<article class="calendar-event-card' + cardClass + '">' +
       '<div class="calendar-event-card-head">' +
@@ -496,7 +506,7 @@
   function renderDetailContent(item) {
     var when = formatEventTime(item);
     var place = item.location_name || item.country_name || '';
-    var address = item.location_address || '';
+    var address = formatCalendarAddressDisplay(item.location_address || '');
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
@@ -515,9 +525,6 @@
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
-    var editAction = state.canManage
-      ? '<button type="button" class="calendar-event-edit-btn" data-calendar-detail-edit="' + item.id + '">일정 수정</button>'
-      : '';
     return '<article class="calendar-event-card calendar-event-card-detail' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
       '<div class="calendar-event-card-head">' +
         '<div>' +
@@ -527,7 +534,6 @@
           '</div>' +
           '<div class="calendar-event-time">' + escape(when) + '</div>' +
         '</div>' +
-        editAction +
       '</div>' +
       '<h3 id="calendar-detail-title">' + escape(title) + '</h3>' +
       originalTitle +
@@ -536,10 +542,10 @@
       tagHtml +
       (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
       (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
-      (state.canManage ? '<div class="calendar-detail-actions">' +
+      '<div class="calendar-detail-actions">' +
         '<button type="button" class="calendar-event-edit-btn" data-calendar-detail-edit="' + item.id + '">일정 수정</button>' +
         '<button type="button" class="cancel-btn admin-inline-cancel" data-calendar-detail-delete="' + item.id + '">일정 삭제</button>' +
-      '</div>' : '') +
+      '</div>' +
     '</article>';
   }
 
@@ -563,7 +569,7 @@
           '<div class="calendar-map-popup">' +
             '<strong>' + escape(group.country_name || '기타 지역') + '</strong>' +
             '<ul>' + group.items.map(function (item) {
-              return '<li>' + escape(item.title || item.title_original || '') + '</li>';
+              return '<li><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></li>';
             }).join('') + '</ul>' +
           '</div>'
         );
@@ -583,9 +589,9 @@
       });
       marker.bindPopup(
         '<div class="calendar-map-popup">' +
-          '<strong>' + escape(item.title || item.title_original || '') + '</strong>' +
+          '<strong><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></strong>' +
           '<div>' + escape(formatEventTime(item)) + '</div>' +
-          '<div>' + escape(item.location_name || item.location_address || item.country_name || '') + '</div>' +
+          '<div>' + escape(item.location_name || formatCalendarAddressDisplay(item.location_address || '') || item.country_name || '') + '</div>' +
         '</div>'
       );
       marker.addTo(state.mapLayer);
@@ -972,8 +978,8 @@
     var lat = Number(item && item.lat);
     var lng = Number(item && item.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    setValue('calendar-modal-location-address-input', item.display_name || '');
-    setValue('calendar-modal-location-name-input', item.name || item.display_name || '');
+    setValue('calendar-modal-location-address-input', buildCalendarAddress(item));
+    setValue('calendar-modal-location-name-input', buildCalendarLocationName(item));
     var country = item.address && (item.address.country || item.address.country_code);
     if (country) setValue('calendar-modal-country-input', country);
     syncModalGeoMarker(lat, lng);
@@ -1379,6 +1385,33 @@
 
   function endOfMonth(date) {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  }
+
+  function buildCalendarLocationName(item) {
+    return (item && (item.name || item.display_name) || '').trim();
+  }
+
+  function buildCalendarAddress(item) {
+    var address = item && item.address;
+    if (!address) return String(item && item.display_name || '').trim();
+    var parts = [
+      address.country,
+      address.state || address.region,
+      address.city || address.county || address.town || address.village,
+      address.suburb || address.neighbourhood,
+      address.road,
+      address.house_number
+    ].filter(Boolean);
+    return parts.join(' ');
+  }
+
+  function formatCalendarAddressDisplay(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.indexOf(',') >= 0) {
+      return raw.split(',').map(function (part) { return part.trim(); }).filter(Boolean).slice(0, 4).join(' ');
+    }
+    return raw;
   }
 
   function addMonths(date, amount) {

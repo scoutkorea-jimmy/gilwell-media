@@ -3430,6 +3430,7 @@
         _calendarItems = Array.isArray(calendarData && calendarData.items) ? calendarData.items : [];
         _calendarTagPresets = Array.isArray(tagData && tagData.items) ? tagData.items : [];
         renderCalendarAdmin();
+        renderCalendarTitleManager();
         renderCalendarTagPresetManager();
         renderCalendarTagEditor();
       })
@@ -3447,7 +3448,7 @@
       return;
     }
     list.innerHTML = _calendarItems.map(function (item) {
-      var place = item.location_name || item.location_address || '';
+      var place = item.location_name || formatCalendarAddressDisplay(item.location_address || '') || '';
       var category = GW.escapeHtml(item.event_category || 'WOSM');
       var status = getCalendarStatus(item);
       var displayTitle = item.title || item.title_original || '';
@@ -3483,6 +3484,28 @@
         relatedHtml +
         (item.link_url ? '<a class="calendar-admin-item-link" href="' + GW.escapeHtml(item.link_url) + '" target="_blank" rel="noopener">관련 링크 ↗</a>' : '') +
       '</article>';
+    }).join('');
+  }
+
+  function renderCalendarTitleManager() {
+    var list = document.getElementById('calendar-title-manager-list');
+    if (!list) return;
+    if (!_calendarItems.length) {
+      list.innerHTML = '<div class="list-empty">등록된 일정이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = _calendarItems.map(function (item) {
+      var label = formatCalendarRange(item);
+      return '<div class="calendar-title-manager-item">' +
+        '<div class="calendar-title-manager-head">' +
+          '<strong>' + GW.escapeHtml(label) + '</strong>' +
+          '<span>' + GW.escapeHtml(item.event_category || 'WOSM') + '</span>' +
+        '</div>' +
+        '<div class="calendar-title-manager-grid">' +
+          '<input type="text" data-calendar-title-id="' + item.id + '" value="' + GW.escapeHtml(item.title || '') + '" placeholder="행사명(국문)">' +
+          '<input type="text" data-calendar-title-original-id="' + item.id + '" value="' + GW.escapeHtml(item.title_original || '') + '" placeholder="행사명(원문)">' +
+        '</div>' +
+      '</div>';
     }).join('');
   }
 
@@ -3611,8 +3634,8 @@
     var lat = Number(item && item.lat);
     var lng = Number(item && item.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    document.getElementById('calendar-location-address-input').value = item.display_name || '';
-    document.getElementById('calendar-location-name-input').value = item.name || item.display_name || '';
+    document.getElementById('calendar-location-address-input').value = buildCalendarAddress(item);
+    document.getElementById('calendar-location-name-input').value = buildCalendarLocationName(item);
     var country = item.address && (item.address.country || item.address.country_code);
     if (country) {
       document.getElementById('calendar-country-input').value = country;
@@ -3850,6 +3873,61 @@
     });
   };
 
+  window.saveCalendarTitles = function () {
+    var titleInputs = document.querySelectorAll('[data-calendar-title-id]');
+    var originalInputs = document.querySelectorAll('[data-calendar-title-original-id]');
+    var originalMap = {};
+    Array.prototype.forEach.call(originalInputs, function (input) {
+      originalMap[input.getAttribute('data-calendar-title-original-id')] = String(input.value || '').trim();
+    });
+    var updates = [];
+    Array.prototype.forEach.call(titleInputs, function (input) {
+      var id = parseInt(input.getAttribute('data-calendar-title-id'), 10);
+      var item = _calendarItems.find(function (entry) { return entry.id === id; });
+      if (!item) return;
+      var nextTitle = String(input.value || '').trim();
+      var nextOriginal = originalMap[String(id)] || '';
+      if (nextTitle === String(item.title || '').trim() && nextOriginal === String(item.title_original || '').trim()) return;
+      updates.push({
+        id: id,
+        payload: {
+          title: nextTitle,
+          title_original: nextOriginal,
+          event_category: item.event_category || 'WOSM',
+          start_date: toDateOnlyValue(item.start_at),
+          start_time: item.start_has_time ? toTimeValue(item.start_at) : '',
+          end_date: toDateOnlyValue(item.end_at),
+          end_time: item.end_has_time ? toTimeValue(item.end_at) : '',
+          event_tags: Array.isArray(item.event_tags) ? item.event_tags.slice() : [],
+          country_name: item.country_name || '',
+          location_name: item.location_name || '',
+          location_address: item.location_address || '',
+          latitude: item.latitude || '',
+          longitude: item.longitude || '',
+          related_post_id: item.related_posts && item.related_posts.length ? item.related_posts[0].id : null,
+          related_posts: Array.isArray(item.related_posts) ? item.related_posts.slice() : [],
+          link_url: item.link_url || '',
+          description: item.description || ''
+        }
+      });
+    });
+    if (!updates.length) {
+      GW.showToast('변경된 제목이 없습니다', 'info');
+      return;
+    }
+    Promise.all(updates.map(function (update) {
+      return GW.apiFetch('/api/calendar/' + update.id, {
+        method: 'PUT',
+        body: JSON.stringify(update.payload)
+      });
+    })).then(function () {
+      GW.showToast('일정 제목이 저장됐습니다', 'success');
+      loadCalendarAdmin();
+    }).catch(function (err) {
+      GW.showToast(err.message || '일정 제목 저장 실패', 'error');
+    });
+  };
+
   window.submitCalendarEvent = function () {
     var payload = {
       title: (document.getElementById('calendar-title-input').value || '').trim(),
@@ -3912,6 +3990,33 @@
 
   function toDateOnlyValue(value) {
     return String(value || '').trim().slice(0, 10);
+  }
+
+  function buildCalendarLocationName(item) {
+    return String(item && (item.name || item.display_name) || '').trim();
+  }
+
+  function buildCalendarAddress(item) {
+    var address = item && item.address;
+    if (!address) return String(item && item.display_name || '').trim();
+    var parts = [
+      address.country,
+      address.state || address.region,
+      address.city || address.county || address.town || address.village,
+      address.suburb || address.neighbourhood,
+      address.road,
+      address.house_number
+    ].filter(Boolean);
+    return parts.join(' ');
+  }
+
+  function formatCalendarAddressDisplay(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.indexOf(',') >= 0) {
+      return raw.split(',').map(function (part) { return part.trim(); }).filter(Boolean).slice(0, 4).join(' ');
+    }
+    return raw;
   }
 
   function toTimeValue(value) {
