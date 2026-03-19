@@ -15,6 +15,7 @@
     items: [],
     month: startOfMonth(new Date()),
     selected: toDateKey(new Date()),
+    viewMode: 'month',
     map: null,
     mapLayer: null,
     allMapCategories: [],
@@ -44,6 +45,7 @@
 
   function bind() {
     bindMonthNavigation();
+    bindViewControls();
     bindManageControls();
     bindModalControls();
     bindTimeToggle('calendar-modal-start-time-enabled', 'calendar-modal-start-time-input');
@@ -63,13 +65,30 @@
     });
   }
 
+  function bindViewControls() {
+    var monthBtn = document.getElementById('calendar-view-month-btn');
+    var yearBtn = document.getElementById('calendar-view-year-btn');
+    if (monthBtn) {
+      monthBtn.addEventListener('click', function () {
+        state.viewMode = 'month';
+        render();
+      });
+    }
+    if (yearBtn) {
+      yearBtn.addEventListener('click', function () {
+        state.viewMode = 'year';
+        render();
+      });
+    }
+  }
+
   function bindManageControls() {
     var addBtn = document.getElementById('calendar-add-event-btn');
     if (addBtn) {
       addBtn.addEventListener('click', function () {
         ensureCalendarAuth(function () {
           openEditor();
-        });
+        }, true);
       });
     }
   }
@@ -174,22 +193,34 @@
   }
 
   function render() {
-    renderGrid();
+    syncViewButtons();
+    if (state.viewMode === 'year') renderYearView();
+    else renderMonthView();
     renderStatusLists();
     renderMapFilters();
     renderMapMarkers();
   }
 
-  function renderGrid() {
+  function syncViewButtons() {
+    var monthBtn = document.getElementById('calendar-view-month-btn');
+    var yearBtn = document.getElementById('calendar-view-year-btn');
+    if (monthBtn) monthBtn.classList.toggle('is-active', state.viewMode === 'month');
+    if (yearBtn) yearBtn.classList.toggle('is-active', state.viewMode === 'year');
+  }
+
+  function renderMonthView() {
     var grid = document.getElementById('calendar-grid');
     var title = document.getElementById('calendar-current-month');
+    var summary = document.getElementById('calendar-view-summary');
     if (!grid || !title) return;
     title.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월';
+    if (summary) summary.textContent = '월간 일정보기입니다. 여러 날 이어지는 일정은 막대형으로 표시됩니다.';
     var firstDay = new Date(state.month.getFullYear(), state.month.getMonth(), 1);
     var lastDay = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0);
     var startWeekday = firstDay.getDay();
     var totalSlots = Math.ceil((startWeekday + lastDay.getDate()) / 7) * 7;
-    var eventMap = buildEventMap(getMonthItems());
+    var monthItems = getMonthItems();
+    var eventMap = buildEventMap(monthItems);
     var cells = [];
     var weekLabels = ['일', '월', '화', '수', '목', '금', '토'];
     cells.push('<div class="calendar-weekdays">' + weekLabels.map(function (label) {
@@ -212,11 +243,7 @@
         '<button type="button" class="calendar-day' + activeClass + todayClass + '" data-date-key="' + key + '">' +
           '<span class="calendar-day-num">' + dayNum + '</span>' +
           '<span class="calendar-day-count">' + (events.length ? events.length + '개' : '') + '</span>' +
-          '<span class="calendar-day-dots">' +
-            renderStatusDot(statusCounts.ongoing, 'ongoing') +
-            renderStatusDot(statusCounts.upcoming, 'upcoming') +
-            renderStatusDot(statusCounts.finished, 'finished') +
-          '</span>' +
+          '<span class="calendar-day-entries">' + renderDayEntries(events, key) + '</span>' +
         '</button>'
       );
     }
@@ -230,15 +257,77 @@
     });
   }
 
+  function renderYearView() {
+    var grid = document.getElementById('calendar-grid');
+    var title = document.getElementById('calendar-current-month');
+    var summary = document.getElementById('calendar-view-summary');
+    if (!grid || !title) return;
+    var year = state.month.getFullYear();
+    title.textContent = year + '년 연간 일정';
+    if (summary) summary.textContent = '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.';
+    var monthHtml = [];
+    for (var monthIndex = 0; monthIndex < 12; monthIndex += 1) {
+      var monthItems = state.items.filter(function (item) {
+        var date = parseDate(item.start_at);
+        return date && date.getFullYear() === year && date.getMonth() === monthIndex;
+      }).sort(compareByStartAtAsc);
+      monthHtml.push(
+        '<section class="calendar-year-month">' +
+          '<div class="calendar-year-month-head">' +
+            '<strong>' + (monthIndex + 1) + '월</strong>' +
+            '<span>' + monthItems.length + '개 일정</span>' +
+          '</div>' +
+          '<div class="calendar-year-month-body">' +
+            (monthItems.length
+              ? monthItems.map(function (item) {
+                  var titleText = item.title || item.title_original || '';
+                  var status = getEventStatus(item);
+                  return '<button type="button" class="calendar-year-event is-' + status.key + '" data-date-key="' + escape((item.start_at || '').slice(0, 10)) + '">' +
+                    '<span class="calendar-year-event-date">' + escape(formatCalendarShortRange(item)) + '</span>' +
+                    '<span class="calendar-year-event-title">' + escape(titleText) + '</span>' +
+                  '</button>';
+                }).join('')
+              : '<div class="list-empty">등록된 일정이 없습니다.</div>') +
+          '</div>' +
+        '</section>'
+      );
+    }
+    grid.innerHTML = '<div class="calendar-year-grid">' + monthHtml.join('') + '</div>';
+    Array.prototype.forEach.call(grid.querySelectorAll('[data-date-key]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var dateKey = btn.getAttribute('data-date-key');
+        if (!dateKey) return;
+        state.selected = dateKey;
+        var date = parseDate(dateKey);
+        if (date) state.month = startOfMonth(date);
+        state.viewMode = 'month';
+        render();
+      });
+    });
+  }
+
   function renderStatusLists() {
     var monthItems = getMonthItems();
     var selectedItems = monthItems.filter(function (item) {
-      return (item.start_at || '').slice(0, 10) === state.selected;
+      return eventIncludesDate(item, state.selected);
     });
-    var baseItems = selectedItems.length ? selectedItems : monthItems;
-    renderStatusList('calendar-ongoing-events', filterByStatus(baseItems, 'ongoing'), '진행중인 일정이 없습니다.');
-    renderStatusList('calendar-upcoming-events', filterByStatus(baseItems, 'upcoming'), '개최예정 일정이 없습니다.');
-    renderStatusList('calendar-finished-events', filterByStatus(baseItems, 'finished'), '행사종료 일정이 없습니다.');
+    var ongoingItems = (selectedItems.length ? selectedItems : monthItems).filter(function (item) {
+      return getEventStatus(item).key === 'ongoing';
+    }).sort(compareByStartAtAsc);
+    var upcomingItems = getUpcomingWindowItems().sort(compareByStartAtAsc);
+    var finishedItems = getFinishedWindowItems().sort(compareByEndAtDesc);
+    renderStatusList('calendar-ongoing-events', ongoingItems, '진행중인 일정이 없습니다.');
+    renderStatusList('calendar-upcoming-events', upcomingItems, '최근 3개월 내 개최예정 일정이 없습니다.');
+    renderStatusList('calendar-finished-events', finishedItems, '최근 3개월 내 종료된 일정이 없습니다.');
+  }
+
+  function eventIncludesDate(item, dateKey) {
+    if (!dateKey) return false;
+    var startKey = toDateOnlyValue(item && item.start_at);
+    var endKey = toDateOnlyValue(item && (item.end_at || item.start_at));
+    if (!startKey) return false;
+    if (!endKey) endKey = startKey;
+    return dateKey >= startKey && dateKey <= endKey;
   }
 
   function renderStatusList(id, items, emptyMessage) {
@@ -250,7 +339,7 @@
         var idValue = parseInt(btn.getAttribute('data-calendar-edit'), 10);
         ensureCalendarAuth(function () {
           openEditor(findItem(idValue));
-        });
+        }, true);
       });
     });
   }
@@ -406,7 +495,11 @@
       });
   }
 
-  function ensureCalendarAuth(onSuccess) {
+  function ensureCalendarAuth(onSuccess, forcePrompt) {
+    if (forcePrompt) {
+      openLogin(onSuccess);
+      return;
+    }
     refreshCalendarAuthState().then(function (canManage) {
       if (canManage) {
         if (typeof onSuccess === 'function') onSuccess();
@@ -689,16 +782,10 @@
     var lat = Number(item && item.lat);
     var lng = Number(item && item.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    if (!valueOf('calendar-modal-location-address-input')) {
-      setValue('calendar-modal-location-address-input', item.display_name || '');
-    }
-    if (!valueOf('calendar-modal-location-name-input')) {
-      setValue('calendar-modal-location-name-input', item.name || item.display_name || '');
-    }
-    if (!valueOf('calendar-modal-country-input')) {
-      var country = item.address && (item.address.country || item.address.country_code);
-      if (country) setValue('calendar-modal-country-input', country);
-    }
+    setValue('calendar-modal-location-address-input', item.display_name || '');
+    setValue('calendar-modal-location-name-input', item.name || item.display_name || '');
+    var country = item.address && (item.address.country || item.address.country_code);
+    if (country) setValue('calendar-modal-country-input', country);
     syncModalGeoMarker(lat, lng);
   }
 
@@ -763,7 +850,7 @@
           }
           GW.showToast(err.message || '일정 저장 실패', 'error');
         });
-    });
+    }, false);
   }
 
   function deleteCalendarEvent() {
@@ -786,27 +873,54 @@
           }
           GW.showToast(err.message || '일정 삭제 실패', 'error');
         });
-    });
+    }, false);
   }
 
   function getMonthItems() {
     var year = state.month.getFullYear();
     var month = state.month.getMonth();
+    var monthStart = new Date(year, month, 1);
+    var monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
     return state.items.filter(function (item) {
-      var date = parseDate(item.start_at);
-      return date && date.getFullYear() === year && date.getMonth() === month;
+      var start = parseDate(item.start_at);
+      var end = parseDate(item.end_at || item.start_at) || start;
+      return start && end && start <= monthEnd && end >= monthStart;
     });
   }
 
   function buildEventMap(items) {
     var map = new Map();
     (Array.isArray(items) ? items : []).forEach(function (item) {
-      var key = item.start_at ? item.start_at.slice(0, 10) : '';
-      if (!key) return;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(item);
+      var start = parseDate(item.start_at);
+      if (!start) return;
+      var end = parseDate(item.end_at || item.start_at) || start;
+      var cursor = startOfDay(start);
+      var last = startOfDay(end);
+      while (cursor <= last) {
+        var key = toDateKey(cursor);
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(item);
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
+      }
     });
     return map;
+  }
+
+  function renderDayEntries(items, dateKey) {
+    if (!Array.isArray(items) || !items.length) {
+      return '<span class="calendar-day-entries-empty"></span>';
+    }
+    return items.slice(0, 2).map(function (item) {
+      var status = getEventStatus(item).key;
+      var startKey = (item.start_at || '').slice(0, 10);
+      var endKey = (item.end_at || startKey).slice(0, 10);
+      var isSpan = !!(endKey && endKey !== startKey);
+      var isStart = !isSpan || startKey === dateKey;
+      var label = isStart ? (item.title || item.title_original || '') : '';
+      return '<span class="calendar-day-entry is-' + status + (isSpan ? ' is-span' : '') + (isStart ? ' is-start' : ' is-continued') + '">' +
+        '<span class="calendar-day-entry-copy">' + escape(label || '') + '</span>' +
+      '</span>';
+    }).join('') + (items.length > 2 ? '<span class="calendar-day-entry-more">+' + (items.length - 2) + '</span>' : '');
   }
 
   function filterByStatus(items, key) {
@@ -833,10 +947,6 @@
     return { key: 'finished', label: '행사종료' };
   }
 
-  function renderStatusDot(count, key) {
-    return count ? '<i class="is-' + key + '"></i>' : '';
-  }
-
   function formatEventTime(item) {
     var startDate = toDateOnlyValue(item && item.start_at);
     var endDate = toDateOnlyValue(item && item.end_at);
@@ -845,6 +955,34 @@
     if (!endDate) return start;
     var end = endDate + ((item && item.end_has_time) ? ' ' + toTimeValue(item.end_at) : '');
     return start + ' ~ ' + end;
+  }
+
+  function formatCalendarShortRange(item) {
+    var start = toDateOnlyValue(item && item.start_at);
+    var end = toDateOnlyValue(item && item.end_at);
+    if (!start) return '';
+    if (!end || end === start) return start.slice(5);
+    return start.slice(5) + ' ~ ' + end.slice(5);
+  }
+
+  function getUpcomingWindowItems() {
+    var now = startOfDay(new Date());
+    var end = addMonths(now, 3);
+    return state.items.filter(function (item) {
+      var status = getEventStatus(item).key;
+      var start = parseDate(item.start_at);
+      return status === 'upcoming' && start && start >= now && start <= end;
+    });
+  }
+
+  function getFinishedWindowItems() {
+    var end = endOfDay(new Date());
+    var start = addMonths(startOfDay(new Date()), -3);
+    return state.items.filter(function (item) {
+      var status = getEventStatus(item).key;
+      var endDate = parseDate(item.end_at || item.start_at);
+      return status === 'finished' && endDate && endDate >= start && endDate <= end;
+    });
   }
 
   function syncMapFilters() {
@@ -900,6 +1038,26 @@
         onToggle(btn.getAttribute('data-calendar-filter') || '');
       });
     });
+  }
+
+  function compareByStartAtAsc(a, b) {
+    return parseDateTime(a && a.start_at) - parseDateTime(b && b.start_at);
+  }
+
+  function compareByEndAtDesc(a, b) {
+    return parseDateTime(b && (b.end_at || b.start_at)) - parseDateTime(a && (a.end_at || a.start_at));
+  }
+
+  function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function endOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+  }
+
+  function addMonths(date, amount) {
+    return new Date(date.getFullYear(), date.getMonth() + amount, date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
   }
 
   function parseDateTime(value) {
