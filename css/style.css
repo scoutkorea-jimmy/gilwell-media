@@ -3620,6 +3620,42 @@ footer a:hover { color: #ffffff; }
   font-size: 20px;
 }
 
+.calendar-toolbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-current-month-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.calendar-today-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.calendar-month-picker {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
 .calendar-view-summary {
   margin: -2px 0 14px;
   color: var(--muted);
@@ -4000,6 +4036,13 @@ footer a:hover { color: #ffffff; }
   font-size: 13px;
 }
 
+.calendar-event-address {
+  margin: -4px 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .calendar-event-desc,
 .calendar-admin-item-desc {
   margin: 0;
@@ -4194,6 +4237,16 @@ footer a:hover { color: #ffffff; }
 .calendar-event-card-detail {
   border: 0;
   padding: 0;
+}
+
+.calendar-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 .calendar-map {
@@ -11790,6 +11843,10 @@ body.admin-page .item-meta-chip span {
     align-items: flex-start;
   }
 
+  .calendar-toolbar {
+    align-items: flex-start;
+  }
+
   .calendar-view-toggle,
   .calendar-map-filters,
   .calendar-geo-search {
@@ -11835,6 +11892,10 @@ body.admin-page .item-meta-chip span {
   .calendar-form-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .calendar-detail-actions {
+    justify-content: stretch;
   }
 
   .post-location-map {
