@@ -458,7 +458,6 @@
   function renderEventCard(item) {
     var when = formatEventTime(item);
     var place = item.location_name || item.country_name || '';
-    var address = formatCalendarAddressDisplay(item.location_address || '');
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
@@ -496,7 +495,6 @@
       '<h4>' + escape(title) + '</h4>' +
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
-      (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
       tagHtml +
       (item.description ? '<div class="calendar-event-inline-detail" data-calendar-inline-detail="' + item.id + '" hidden><p class="calendar-event-desc">' + escape(item.description) + '</p></div>' : '') +
       '<div class="calendar-event-links">' + linkActions + '</div>' +
@@ -511,6 +509,12 @@
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
     var title = item.title || item.title_original || '';
+    var mapFrame = '';
+    if (Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude))) {
+      mapFrame = '<div class="calendar-detail-map-frame">' +
+        '<iframe class="calendar-detail-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' + escape(buildCalendarDetailMapSrc(item.latitude, item.longitude)) + '"></iframe>' +
+      '</div>';
+    }
     var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
     var tagHtml = item.event_tags && item.event_tags.length
       ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
@@ -539,6 +543,7 @@
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
+      mapFrame +
       tagHtml +
       (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
       (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
@@ -1412,6 +1417,18 @@
       return raw.split(',').map(function (part) { return part.trim(); }).filter(Boolean).slice(0, 4).join(' ');
     }
     return raw;
+  }
+
+  function buildCalendarDetailMapSrc(lat, lng) {
+    var nLat = Number(lat);
+    var nLng = Number(lng);
+    var bbox = [
+      (nLng - 0.02).toFixed(6),
+      (nLat - 0.012).toFixed(6),
+      (nLng + 0.02).toFixed(6),
+      (nLat + 0.012).toFixed(6)
+    ].join('%2C');
+    return 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + nLat.toFixed(6) + '%2C' + nLng.toFixed(6);
   }
 
   function addMonths(date, amount) {
