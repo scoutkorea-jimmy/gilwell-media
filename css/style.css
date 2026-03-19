@@ -4398,6 +4398,30 @@ footer a:hover { color: #ffffff; }
 
 .login-btn:hover { background: var(--accent); }
 
+.admin-login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-btn.login-btn-secondary {
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.login-btn.login-btn-secondary:hover {
+  background: rgba(92,42,157,0.08);
+  color: var(--accent);
+}
+
+.admin-login-help {
+  margin: -6px 0 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 .login-error {
   margin-top:  12px;
   font-family: AliceDigitalLearning, sans-serif;

@@ -47,6 +47,33 @@
     naver_verification: '',
   };
   var _siteMetaRevision = null;
+  var _previewAdminCodeRequested = false;
+
+  function isPreviewAdminHost() {
+    var host = String(window.location.hostname || '').toLowerCase();
+    return host === 'preview.gilwell-media.pages.dev';
+  }
+
+  function syncAdminLoginMode() {
+    var previewMode = isPreviewAdminHost();
+    var label = document.getElementById('admin-login-label');
+    var input = document.getElementById('pw-input');
+    var help = document.getElementById('admin-login-help');
+    var requestBtn = document.getElementById('login-request-code-btn');
+    var loginBtn = document.getElementById('login-btn');
+    var turnstile = document.getElementById('login-turnstile');
+    if (label) label.textContent = previewMode ? '인증코드' : '비밀번호';
+    if (input) {
+      input.type = previewMode ? 'text' : 'password';
+      input.inputMode = previewMode ? 'numeric' : 'text';
+      input.autocomplete = previewMode ? 'one-time-code' : 'current-password';
+      input.placeholder = previewMode ? '6자리 인증코드' : '••••••••';
+    }
+    if (help) help.style.display = previewMode ? 'block' : 'none';
+    if (requestBtn) requestBtn.style.display = previewMode ? '' : 'none';
+    if (loginBtn) loginBtn.textContent = previewMode ? '인증코드 확인' : '관리자 입장';
+    if (turnstile) turnstile.style.display = previewMode ? 'none' : '';
+  }
 
   function getFooterEditorValue(id, fallback) {
     var el = document.getElementById(id);
@@ -380,6 +407,7 @@
   // ─── Boot ────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     bindAdminAuthEvents();
+    syncAdminLoginMode();
     bootAdminAccess();
     var pwInput = document.getElementById('pw-input');
     if (pwInput) { pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); }); }
@@ -409,6 +437,10 @@
 
   // ─── Login ───────────────────────────────────────────────
   window.doLogin = function () {
+    if (isPreviewAdminHost()) {
+      doPreviewCodeLogin();
+      return;
+    }
     var pw  = (document.getElementById('pw-input').value || '').trim();
     var err = document.getElementById('login-error');
     var btn = document.getElementById('login-btn');
@@ -445,9 +477,76 @@
       .finally(function () { btn.disabled = false; btn.textContent = '관리자 입장'; });
   };
 
+  window.requestPreviewLoginCode = function () {
+    if (!isPreviewAdminHost()) return;
+    var err = document.getElementById('login-error');
+    var requestBtn = document.getElementById('login-request-code-btn');
+    requestBtn.disabled = true;
+    requestBtn.textContent = '인증코드 전송 중…';
+    err.style.display = 'none';
+    GW.apiFetch('/api/admin/preview-code/request', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+      .then(function () {
+        _previewAdminCodeRequested = true;
+        GW.showToast('info@bpmedia.net 으로 인증코드를 보냈습니다.', 'success');
+        var input = document.getElementById('pw-input');
+        if (input) input.focus();
+      })
+      .catch(function (error) {
+        err.textContent = error.message || '인증코드를 보내지 못했습니다.';
+        err.style.display = 'block';
+      })
+      .finally(function () {
+        requestBtn.disabled = false;
+        requestBtn.textContent = '인증코드 받기';
+      });
+  };
+
+  function doPreviewCodeLogin() {
+    var code = (document.getElementById('pw-input').value || '').trim();
+    var err = document.getElementById('login-error');
+    var btn = document.getElementById('login-btn');
+    if (!code) {
+      err.textContent = '메일로 받은 인증코드를 입력해주세요.';
+      err.style.display = 'block';
+      return;
+    }
+    if (!_previewAdminCodeRequested) {
+      err.textContent = '먼저 인증코드를 요청해주세요.';
+      err.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '확인 중…';
+    err.style.display = 'none';
+    GW.apiFetch('/api/admin/preview-code/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code: code }),
+    })
+      .then(function (data) {
+        GW.setToken(data.token);
+        if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        _adminRole = data.role || 'full';
+        _previewAdminCodeRequested = false;
+        showAdmin();
+      })
+      .catch(function (error) {
+        err.textContent = error.message || '인증코드를 확인해주세요.';
+        err.style.display = 'block';
+        document.getElementById('pw-input').focus();
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.textContent = '인증코드 확인';
+      });
+  }
+
   window.doLogout = function () {
     GW.clearToken();
     _adminRole = 'full';
+    _previewAdminCodeRequested = false;
     showAdminLoginPrompt('');
     document.getElementById('pw-input').value = '';
   };
@@ -493,6 +592,9 @@
   }
 
   function getAdminAccessDeniedMessage(message) {
+    if (!message && isPreviewAdminHost()) {
+      return 'preview 관리자 페이지입니다. info@bpmedia.net 으로 받은 인증코드를 입력해주세요.';
+    }
     return message || '권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.';
   }
 
@@ -530,30 +632,30 @@
     window.addEventListener('pageshow', function () {
       if (!document.body.classList.contains('admin-page')) return;
       if (!GW.getToken()) {
-        showAdminLoginPrompt('권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.');
+        showAdminLoginPrompt('');
         return;
       }
       verifyAdminSession().catch(function () {
-        showAdminLoginPrompt('관리자 세션을 다시 확인해주세요.');
+        showAdminLoginPrompt(isPreviewAdminHost() ? 'preview 관리자 인증코드를 다시 확인해주세요.' : '관리자 세션을 다시 확인해주세요.');
       });
     });
   }
 
   function bootAdminAccess() {
     if (!GW.getToken()) {
-      showAdminLoginPrompt('권한이 없는 사이트에요! 부적절한 접근은 안돼요! 관리자 비밀번호를 입력해주세요.');
+      showAdminLoginPrompt('');
       return;
     }
     verifyAdminSession().then(function (session) {
       if (!session || session.authenticated !== true) {
-        showAdminLoginPrompt('관리자 로그인이 필요합니다.');
+        showAdminLoginPrompt(isPreviewAdminHost() ? 'preview 관리자 인증코드를 다시 입력해주세요.' : '관리자 로그인이 필요합니다.');
         return;
       }
       if (GW.setAdminRole) GW.setAdminRole(session.role || 'full');
       _adminRole = session.role || 'full';
       showAdmin();
     }).catch(function () {
-      showAdminLoginPrompt('관리자 세션을 다시 확인해주세요.');
+      showAdminLoginPrompt(isPreviewAdminHost() ? 'preview 관리자 인증코드를 다시 확인해주세요.' : '관리자 세션을 다시 확인해주세요.');
     });
   }
 
