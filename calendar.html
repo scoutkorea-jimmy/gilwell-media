@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="/css/style.css?v=0.080.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.080.04">
 </head>
 <body>
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -74,7 +74,13 @@
         <section class="calendar-panel">
           <div class="calendar-toolbar">
             <button type="button" class="calendar-nav-btn" id="calendar-prev-btn" aria-label="이전 달">←</button>
-            <h3 id="calendar-current-month">—</h3>
+            <div class="calendar-toolbar-center">
+              <button type="button" class="calendar-current-month-btn" id="calendar-current-month-btn" aria-label="연도와 월 선택">
+                <h3 id="calendar-current-month">—</h3>
+              </button>
+              <button type="button" class="calendar-today-btn" id="calendar-today-btn">오늘로 가기</button>
+              <input type="month" id="calendar-month-picker" class="calendar-month-picker" aria-hidden="true" tabindex="-1">
+            </div>
             <button type="button" class="calendar-nav-btn" id="calendar-next-btn" aria-label="다음 달">→</button>
           </div>
           <div class="calendar-view-summary" id="calendar-view-summary">월간 일정을 불러오는 중입니다.</div>
@@ -151,7 +157,7 @@
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.080.03</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.080.04</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -292,8 +298,8 @@
     </div>
   </div>
 
-  <script src="/js/main.js?v=0.080.03"></script>
+  <script src="/js/main.js?v=0.080.04"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/js/calendar.js?v=0.080.03"></script>
+  <script src="/js/calendar.js?v=0.080.04"></script>
 </body>
 </html>
