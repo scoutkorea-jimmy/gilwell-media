@@ -20,8 +20,8 @@
     mapLayer: null,
     allMapCategories: [],
     allMapTags: [],
-    mapFilterCategory: 'ALL',
-    mapFilterTag: 'ALL',
+    mapFilterCategories: [],
+    mapFilterTags: [],
     editingId: null,
     tags: [],
     tagPresets: [],
@@ -1215,31 +1215,55 @@
     });
     state.allMapCategories = categories.slice();
     state.allMapTags = tags.slice();
-    if (state.mapFilterCategory !== 'ALL' && categories.indexOf(state.mapFilterCategory) < 0) state.mapFilterCategory = 'ALL';
-    if (state.mapFilterTag !== 'ALL' && tags.indexOf(state.mapFilterTag) < 0) state.mapFilterTag = 'ALL';
+    state.mapFilterCategories = state.mapFilterCategories.filter(function (item) { return categories.indexOf(item) >= 0; });
+    state.mapFilterTags = state.mapFilterTags.filter(function (item) { return tags.indexOf(item) >= 0; });
   }
 
   function renderMapFilters() {
-    renderFilterSelect('calendar-map-category-filters', state.mapFilterCategory, state.allMapCategories, function (value) {
-      state.mapFilterCategory = value;
+    renderFilterSelect('calendar-map-category-filters', state.allMapCategories, function (value) {
+      toggleSelectedFilter(state.mapFilterCategories, value, state.allMapCategories);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    });
+    renderFilterSelect('calendar-status-category-filters', state.allMapCategories, function (value) {
+      toggleSelectedFilter(state.mapFilterCategories, value, state.allMapCategories);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    });
+    renderFilterSelect('calendar-map-tag-filters', state.allMapTags, function (value) {
+      toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    });
+    renderFilterSelect('calendar-status-tag-filters', state.allMapTags, function (value) {
+      toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    });
+    renderSelectedFilters('calendar-map-category-selected', state.mapFilterCategories, function (value) {
+      removeSelectedFilter(state.mapFilterCategories, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
     }, true);
-    renderFilterSelect('calendar-status-category-filters', state.mapFilterCategory, state.allMapCategories, function (value) {
-      state.mapFilterCategory = value;
+    renderSelectedFilters('calendar-status-category-selected', state.mapFilterCategories, function (value) {
+      removeSelectedFilter(state.mapFilterCategories, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
     }, true);
-    renderFilterSelect('calendar-map-tag-filters', state.mapFilterTag, state.allMapTags, function (value) {
-      state.mapFilterTag = value;
+    renderSelectedFilters('calendar-map-tag-selected', state.mapFilterTags, function (value) {
+      removeSelectedFilter(state.mapFilterTags, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
     }, false);
-    renderFilterSelect('calendar-status-tag-filters', state.mapFilterTag, state.allMapTags, function (value) {
-      state.mapFilterTag = value;
+    renderSelectedFilters('calendar-status-tag-selected', state.mapFilterTags, function (value) {
+      removeSelectedFilter(state.mapFilterTags, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
@@ -1247,29 +1271,65 @@
   }
 
   function matchesActiveFilters(item) {
-    var categoryAllowed = state.mapFilterCategory === 'ALL'
+    var categoryAllowed = !state.mapFilterCategories.length
       ? true
-      : normalizeCategory(item.event_category) === state.mapFilterCategory;
-    var tagsAllowed = state.mapFilterTag === 'ALL'
+      : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
+    var tagsAllowed = !state.mapFilterTags.length
       ? true
       : ((Array.isArray(item.event_tags) && item.event_tags.length) ? item.event_tags.some(function (tag) {
-          return tag === state.mapFilterTag;
+          return state.mapFilterTags.indexOf(tag) >= 0;
         }) : false);
     return categoryAllowed && tagsAllowed;
   }
 
-  function renderFilterSelect(id, selectedValue, allItems, onChange, isCategory) {
+  function renderFilterSelect(id, allItems, onChange) {
     var select = document.getElementById(id);
     if (!select) return;
     var options = ['<option value="ALL">전체</option>'].concat((allItems || []).map(function (item) {
       return '<option value="' + escape(item) + '">' + escape(item) + '</option>';
     }));
     select.innerHTML = options.join('');
-    select.value = selectedValue || 'ALL';
-    select.className = 'calendar-filter-select' + (isCategory ? ' is-' + String(select.value || 'ALL').toLowerCase() : '');
+    select.value = 'ALL';
+    select.className = 'calendar-filter-select';
     select.onchange = function () {
-      onChange(select.value || 'ALL');
+      var value = select.value || 'ALL';
+      onChange(value);
+      select.value = 'ALL';
     };
+  }
+
+  function renderSelectedFilters(id, selectedItems, onRemove, isCategory) {
+    var wrap = document.getElementById(id);
+    if (!wrap) return;
+    if (!selectedItems.length) {
+      wrap.innerHTML = '<span class="calendar-filter-chip is-all">전체</span>';
+      return;
+    }
+    wrap.innerHTML = selectedItems.map(function (item) {
+      return '<button type="button" class="calendar-filter-chip is-active' + (isCategory ? ' is-' + String(item).toLowerCase() : '') + '" data-calendar-selected-filter="' + escape(item) + '">' +
+        '<span>' + escape(item) + '</span><strong>×</strong>' +
+      '</button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-selected-filter]'), function (btn) {
+      btn.addEventListener('click', function () {
+        onRemove(btn.getAttribute('data-calendar-selected-filter') || '');
+      });
+    });
+  }
+
+  function toggleSelectedFilter(target, value, allItems) {
+    if (value === 'ALL') {
+      target.splice(0, target.length);
+      return;
+    }
+    if (allItems.indexOf(value) < 0) return;
+    if (target.indexOf(value) >= 0) return;
+    target.push(value);
+  }
+
+  function removeSelectedFilter(target, value) {
+    var index = target.indexOf(value);
+    if (index >= 0) target.splice(index, 1);
   }
 
   function compareByStartAtAsc(a, b) {

@@ -3603,6 +3603,23 @@ footer a:hover { color: #ffffff; }
   background: rgba(92, 42, 157, 0.08);
 }
 
+.calendar-filter-selected-list {
+  margin-top: 8px;
+}
+
+.calendar-filter-chip.is-all {
+  color: var(--muted);
+  cursor: default;
+}
+
+.calendar-filter-chip.is-active.is-kor { color: #0f8db3; border-color: rgba(15, 141, 179, 0.35); background-color: rgba(15, 141, 179, 0.06); }
+.calendar-filter-chip.is-active.is-apr { color: #ff5b5b; border-color: rgba(255, 91, 91, 0.35); background-color: rgba(255, 91, 91, 0.06); }
+.calendar-filter-chip.is-active.is-eur { color: #2f8f5b; border-color: rgba(47, 143, 91, 0.35); background-color: rgba(47, 143, 91, 0.06); }
+.calendar-filter-chip.is-active.is-afr { color: #b6761b; border-color: rgba(182, 118, 27, 0.35); background-color: rgba(182, 118, 27, 0.06); }
+.calendar-filter-chip.is-active.is-arb { color: #7b5cff; border-color: rgba(123, 92, 255, 0.35); background-color: rgba(123, 92, 255, 0.06); }
+.calendar-filter-chip.is-active.is-iar { color: #d44f94; border-color: rgba(212, 79, 148, 0.35); background-color: rgba(212, 79, 148, 0.06); }
+.calendar-filter-chip.is-active.is-wosm { color: #2a8b3b; border-color: rgba(42, 139, 59, 0.35); background-color: rgba(42, 139, 59, 0.06); }
+
 .calendar-manage-btn,
 .calendar-event-edit-btn {
   display: inline-flex;
