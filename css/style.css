@@ -4376,6 +4376,98 @@ footer a:hover { color: #ffffff; }
   padding-left: 18px;
 }
 
+.feature-definition-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 16px;
+}
+
+.feature-definition-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feature-definition-pane label {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#feature-definition-input {
+  min-height: 620px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.feature-definition-preview {
+  min-height: 620px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: rgba(92, 42, 157, 0.03);
+  overflow: auto;
+}
+
+.feature-definition-preview h2,
+.feature-definition-preview h3,
+.feature-definition-preview h4 {
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+
+.feature-definition-preview h2 { font-size: 24px; }
+.feature-definition-preview h3 { font-size: 19px; margin-top: 18px; }
+.feature-definition-preview h4 { font-size: 15px; margin-top: 14px; }
+
+.feature-definition-preview p,
+.feature-definition-preview li {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.feature-definition-preview ul {
+  margin: 0 0 14px 18px;
+  padding: 0;
+}
+
+.feature-definition-preview code {
+  padding: 1px 6px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: rgba(17, 17, 17, 0.04);
+  font-size: 12px;
+}
+
+.feature-definition-code-wrap {
+  margin: 14px 0;
+}
+
+.feature-definition-code-label {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.feature-definition-code {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: #111111;
+  color: #f7f4ff;
+  overflow: auto;
+}
+
 /* ════════════════════════════════════════════════════════════
    HERO SEARCH RESULTS (admin)
    ════════════════════════════════════════════════════════════ */
@@ -11989,6 +12081,10 @@ body.admin-page .item-meta-chip span {
   .calendar-form-split,
   .calendar-tags-controls,
   .calendar-title-manager-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-definition-editor {
     grid-template-columns: 1fr;
   }
 
