@@ -3664,12 +3664,16 @@ footer a:hover { color: #ffffff; }
 
 .calendar-toolbar-center {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .calendar-current-month-btn {
+  display: inline-flex;
+  align-items: center;
   border: 0;
   background: transparent;
   color: var(--ink);
@@ -3993,6 +3997,14 @@ footer a:hover { color: #ffffff; }
   padding: 14px;
 }
 
+.calendar-event-card.is-category-kor { border-top: 3px solid #0f8db3; }
+.calendar-event-card.is-category-apr { border-top: 3px solid #ff5b5b; }
+.calendar-event-card.is-category-eur { border-top: 3px solid #2f8f5b; }
+.calendar-event-card.is-category-afr { border-top: 3px solid #b6761b; }
+.calendar-event-card.is-category-arb { border-top: 3px solid #7b5cff; }
+.calendar-event-card.is-category-iar { border-top: 3px solid #d44f94; }
+.calendar-event-card.is-category-wosm { border-top: 3px solid #2a8b3b; }
+
 .calendar-event-card-head {
   display: flex;
   align-items: flex-start;
@@ -4058,7 +4070,7 @@ footer a:hover { color: #ffffff; }
 
 .calendar-event-card h4,
 .calendar-admin-item h3 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   font-size: 19px;
   line-height: 1.25;
 }
@@ -4096,16 +4108,32 @@ footer a:hover { color: #ffffff; }
 .calendar-event-link,
 .calendar-admin-item-link {
   display: inline-flex;
-  margin-top: 10px;
+  align-items: center;
+  justify-content: center;
   color: var(--purple);
   text-decoration: none;
   font-size: 13px;
+  border: 1px solid var(--border);
+  background: rgba(92, 42, 157, 0.04);
+  padding: 8px 12px;
+  min-height: 36px;
+  cursor: pointer;
+  font-family: AliceDigitalLearning, sans-serif;
 }
 
 .calendar-event-links {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.calendar-event-inline-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(17, 17, 17, 0.12);
 }
 
 .calendar-admin-item-head {

@@ -380,22 +380,28 @@
 
   function renderStatusLists() {
     var statusTitle = document.getElementById('calendar-status-title');
+    var monthStart = startOfMonth(state.month);
+    var monthEnd = endOfMonth(state.month);
+    var upcomingEnd = endOfMonth(addMonths(state.month, 2));
+    var finishedStart = startOfMonth(addMonths(state.month, -2));
+    var visibleItems = state.items.filter(matchesActiveFilters);
     if (statusTitle) {
-      statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 상태별 일정';
+      statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 기준 상태별 일정';
     }
-    var monthItems = getMonthItems().filter(matchesActiveFilters);
-    var ongoingItems = monthItems.filter(function (item) {
-      return getEventStatus(item).key === 'ongoing';
+    var ongoingItems = visibleItems.filter(function (item) {
+      return getEventStatus(item).key === 'ongoing' && intersectsRange(item, monthStart, monthEnd);
     }).sort(compareByStartAtAsc);
-    var upcomingItems = monthItems.filter(function (item) {
-      return getEventStatus(item).key === 'upcoming';
+    var upcomingItems = visibleItems.filter(function (item) {
+      var start = parseDate(item.start_at);
+      return getEventStatus(item).key === 'upcoming' && start && start >= monthStart && start <= upcomingEnd;
     }).sort(compareByStartAtAsc);
-    var finishedItems = monthItems.filter(function (item) {
-      return getEventStatus(item).key === 'finished';
+    var finishedItems = visibleItems.filter(function (item) {
+      var end = parseDate(item.end_at || item.start_at);
+      return getEventStatus(item).key === 'finished' && end && end >= finishedStart && end <= monthEnd;
     }).sort(compareByEndAtDesc);
     renderStatusList('calendar-ongoing-events', ongoingItems, '진행중인 일정이 없습니다.');
-    renderStatusList('calendar-upcoming-events', upcomingItems, '이 달에 예정된 일정이 없습니다.');
-    renderStatusList('calendar-finished-events', finishedItems, '이 달에 종료된 일정이 없습니다.');
+    renderStatusList('calendar-upcoming-events', upcomingItems, '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.');
+    renderStatusList('calendar-finished-events', finishedItems, '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.');
   }
 
   function eventIncludesDate(item, dateKey) {
@@ -411,6 +417,23 @@
     var wrap = document.getElementById(id);
     if (!wrap) return;
     wrap.innerHTML = items.length ? items.map(renderEventCard).join('') : '<div class="list-empty">' + emptyMessage + '</div>';
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-detail]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var idValue = parseInt(btn.getAttribute('data-calendar-detail'), 10);
+        openDetail(findItem(idValue));
+      });
+    });
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-toggle-detail]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-calendar-toggle-detail');
+        var detail = targetId ? wrap.querySelector('[data-calendar-inline-detail="' + targetId + '"]') : null;
+        if (!detail) return;
+        var expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        btn.textContent = expanded ? '자세히 보기' : '내용 접기';
+        detail.hidden = expanded;
+      });
+    });
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-edit]'), function (btn) {
       btn.addEventListener('click', function () {
         var idValue = parseInt(btn.getAttribute('data-calendar-edit'), 10);
@@ -428,12 +451,16 @@
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
     var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
+    var cardClass = ' is-category-' + category.toLowerCase() + (status.key === 'finished' ? ' is-finished' : '');
     var title = item.title || item.title_original || '';
     var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
     var tagHtml = item.event_tags && item.event_tags.length
       ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
           return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
         }).join('') + '</div>'
+      : '';
+    var detailToggle = item.description
+      ? '<button type="button" class="calendar-event-link" data-calendar-toggle-detail="' + item.id + '" aria-expanded="false">자세히 보기</button>'
       : '';
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
@@ -443,10 +470,10 @@
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
-    var editAction = state.canManage
-      ? '<button type="button" class="calendar-event-edit-btn" data-calendar-edit="' + item.id + '">수정</button>'
-      : '';
-    return '<article class="calendar-event-card' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
+    var linkActions = '<button type="button" class="calendar-event-link" data-calendar-detail="' + item.id + '">자세히 보기</button>' +
+      detailToggle +
+      relatedLinks;
+    return '<article class="calendar-event-card' + cardClass + '">' +
       '<div class="calendar-event-card-head">' +
         '<div>' +
           '<div class="calendar-event-badges">' +
@@ -455,14 +482,14 @@
           '</div>' +
           '<div class="calendar-event-time">' + escape(when) + '</div>' +
         '</div>' +
-        editAction +
       '</div>' +
       '<h4>' + escape(title) + '</h4>' +
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
       tagHtml +
-      (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
+      (item.description ? '<div class="calendar-event-inline-detail" data-calendar-inline-detail="' + item.id + '" hidden><p class="calendar-event-desc">' + escape(item.description) + '</p></div>' : '') +
+      '<div class="calendar-event-links">' + linkActions + '</div>' +
     '</article>';
   }
 
@@ -757,8 +784,10 @@
     var deleteBtn = body.querySelector('[data-calendar-detail-delete]');
     if (deleteBtn) {
       deleteBtn.addEventListener('click', function () {
-        closeDetail();
-        deleteCalendarEventById(item.id);
+        ensureCalendarAuth(function () {
+          closeDetail();
+          deleteCalendarEventById(item.id);
+        }, true);
       });
     }
     overlay.classList.add('open');
@@ -1346,6 +1375,10 @@
 
   function endOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+  }
+
+  function endOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
   }
 
   function addMonths(date, amount) {
