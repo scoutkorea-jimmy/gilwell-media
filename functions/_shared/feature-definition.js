@@ -1,65 +1,358 @@
-export const DEFAULT_FEATURE_DEFINITION = `# Feature Definition
+export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능 정의서
 
-This document is the working feature definition for BPmedia. Any UI or workflow change should be checked against this file before implementation and again before deploy.
+이 문서는 BP미디어의 공개 홈페이지와 관리자 페이지를 운영·개발할 때 참고하는 기준 문서다. 새로운 개발자는 이 문서만 읽어도 현재 사이트가 어떤 페이지와 영역으로 구성되어 있고, 각 기능이 어떤 규칙으로 동작해야 하는지 이해할 수 있어야 한다.
 
-## Calendar
+## 1. 문서 운영 원칙
 
-- Public calendar has two views: \`월간 일정보기\` and \`연간 일정보기\`.
-- Monthly view is the primary interaction model.
-- Multi-day events should render as a continuous bar across the week row, closer to Google Calendar than per-day isolated chips.
-- Clicking an event in the left calendar opens the event detail modal.
-- Event detail modal must show:
-  - title
-  - original title when present
-  - event time/range
-  - location name
-  - manually managed address
-  - tags
-  - related article links
-  - external link when present
-- Event detail modal must always include \`일정 수정\` and \`일정 삭제\` actions.
-- Those actions must always require a fresh admin password check, even if the user is already logged in.
-- Editing from the public calendar should happen in modal flow, not by redirecting to admin.
+- 관리자 \`기능 정의서 / KMS\` 페이지에 저장된 내용이 운영 기준의 원본이다.
+- \`docs/feature-definition.md\`는 저장소에 남기는 보조 스냅샷이다.
+- 새 기능을 만들거나 기존 기능을 바꿀 때는 구현 전, 구현 중, 배포 직전 최소 3번 이 문서와 실제 UI를 대조한다.
+- 문서가 실제 동작과 어긋나면 코드를 먼저 배포하지 않고 문서와 코드를 함께 수정한다.
+- 기능 이름, 메뉴 이름, 버튼 문구, 상태 라벨처럼 운영자가 직접 이해해야 하는 항목은 문서에도 반드시 같은 이름으로 적는다.
 
-## Calendar Side Panel
+## 2. 사이트 전체 구조
 
-- Right-side event cards should not show description by default.
-- Each card should include \`자세히 보기\` as an inline expansion control.
-- \`관련 기사 읽기\` and \`외부 링크\` should share the same visual style.
-- The side panel title should reflect the currently viewed month.
-- Status grouping rules:
-  - \`진행중\`: events intersecting the selected month
-  - \`개최예정\`: events starting within the selected month and following 2 months
-  - \`행사종료\`: events ended within the selected month and previous 2 months
-- Category color should follow region (\`KOR/APR/EUR/AFR/ARB/IAR/WOSM\`) rather than status color.
+### 2.1 공개 페이지
 
-## Calendar Map
+- \`/\` : 홈
+- \`/latest\` : 최근 1개월 소식
+- \`/korea\`, \`/apr\`, \`/wosm\`, \`/people\` : 카테고리 게시판
+- \`/post/:id\` : 기사 상세
+- \`/calendar.html\` : 일정 캘린더
+- \`/glossary\`, \`/glossary-raw\`, \`/api/glossary/bot\` : 용어집과 RAW export
+- \`/contributors.html\` : 도움을 주신 분들
+- \`/search.html\` : 검색 결과
+- \`/ai-guide.html\` : AI 작업 가이드
+- \`/feature/:category/:slug\` : 특집 기사 컬렉션
 
-- Calendar map should only show \`진행중\` and \`개최예정\` events.
-- Finished events should not appear on the map.
-- When event titles are shown in map popups, clicking the title should open the same calendar detail modal.
+### 2.2 관리자 페이지
 
-## Location Handling
+- \`/admin.html\` : 운영 관리자
+- \`/kms.html\` : 관리자 전용 기능 정의서 / KMS
 
-- Location search may use OSM/Nominatim, but public display should prefer curated fields.
-- The address shown in lists and detail views should be the manually managed address field, not raw OSM display text.
-- Search results may seed location name and address, but saved values should remain editable.
+## 3. 공통 운영 규칙
 
-## Admin Calendar Management
+### 3.1 날짜와 정렬
 
-- Admin calendar needs:
-  - event create/edit/delete
-  - shared calendar tag management
-  - title batch edit for rapid cleanup of overlapping or duplicated titles
-- Batch title editing should let admins edit Korean title and original title for all events in one place.
+- \`created_at\`은 실제 생성 시각이다.
+- \`publish_at\`은 공개 기준 시각이다.
+- 공개 목록의 기본 정렬은 \`publish_at DESC\`, 없으면 \`created_at DESC\`다.
+- 공개 화면 날짜는 \`YYYY년 M월 D일\`까지만 보여준다.
+- 관리자에서는 \`Created / Published / Modified\`를 \`YYYY년 MM월 DD일 HH시 MM분 SS초\` 형식으로 보여준다.
 
-## Development Rule
+### 3.2 공유와 유입 추적
 
-- Before development: check this file.
-- Before preview or production deploy: confirm the implemented behavior still matches this file.
+- 공유 모달은 기본적으로 \`카카오톡\`, \`페이스북\`, \`URL 복사 / 직접 공유\`를 제공한다.
+- 공유 링크에는 채널 구분용 UTM이 자동으로 붙는다.
+- 운영자는 관리자 분석에서 유입 채널, 방문 추이, 조회 추이를 확인할 수 있어야 한다.
+
+### 3.3 디자인 원칙
+
+- 기본 서체는 \`AliceDigitalLearning\` 하나를 전역으로 사용한다.
+- 공개/관리자 모두 같은 타이포 스케일 철학을 따라야 한다.
+- 한글 줄바꿈은 단어 단위 우선(\`word-break: keep-all\`)으로 처리한다.
+- 같은 위계의 버튼은 높이, 패딩, 폰트 크기, 자간을 통일한다.
+
+## 4. 홈 화면
+
+### 4.1 상단 마스트헤드
+
+- 오늘 날짜와 접속 지역 기준 시간이 보인다.
+- 통계, 언어 전환, 검색 입력, 검색 버튼이 들어간다.
+- 상단 네비게이션은 홈, 최근 소식, 카테고리, 캘린더, 용어집, 기여 페이지로 이동한다.
+
+### 4.2 티커
+
+- 관리자 설정 또는 기본 문구를 순환 표시한다.
+- 모바일 기사 상세에서는 헤더 과밀도를 줄이기 위해 숨길 수 있다.
+
+### 4.3 히어로 슬라이드
+
+- 대표 기사 최대 5개를 자동 전환한다.
+- 기사 태그, 카테고리, 제목, 요약, CTA를 보여준다.
+- 자동 전환은 일시정지/재생할 수 있어야 한다.
+- 이미지 위치와 확대는 PC/모바일 각각 따로 조정한다.
+
+### 4.4 메인 스토리
+
+- 대표 기사 1건을 크게 노출한다.
+- 제목, 부제목, 요약, 날짜, 작성자, 읽기 버튼, 공유 버튼을 보여준다.
+- 이미지 위치와 확대는 PC/모바일 각각 따로 조정한다.
+
+### 4.5 최신 소식
+
+- 홈 진입, 탭 복귀, 포커스 복귀 때 최신 데이터를 다시 조회한다.
+- 리스트 카드는 카테고리, 글머리 태그, 제목, 날짜, 공유 액션을 가진다.
+- \`더보기\` 버튼으로 전체 목록으로 이동한다.
+
+### 4.6 인기 소식 / 에디터 추천
+
+- 인기 소식은 조회/운영 기준의 인기 기사 목록이다.
+- 에디터 추천은 운영자가 고른 기사 목록이다.
+- 카드 구조와 버튼 규칙은 최신 소식과 같은 체계를 쓴다.
+
+### 4.7 카테고리 보드
+
+- \`Korea / APR / WOSM / Scout People\` 4개 보드가 있다.
+- 각 보드는 해당 카테고리의 최신 기사 목록을 보여준다.
+- 보드 제목과 더보기 규칙은 홈 전체와 일관되게 맞춘다.
+
+### 4.8 푸터
+
+- 누적 기사 조회수, 누적 방문자수, 오늘 방문자수를 보여준다.
+- 관리자 링크와 \`용어집 RAW로 보기\` 링크를 하단 보조 링크로 둔다.
+- 문구, 메일, 도메인, 안내 문장은 관리자에서 수정 가능하다.
+
+## 5. 게시판 페이지
+
+### 5.1 기본 구조
+
+- 상단 카테고리 배너
+- 정렬된 기사 카드 목록
+- 필요한 경우 글 작성 모달
+
+### 5.2 기사 카드
+
+- 카테고리 태그와 글머리 태그를 함께 보여준다.
+- 제목이 2줄이든 3줄이든 카드 하단 메타는 같은 기준선에 붙는다.
+- 공유하기, 공감, 날짜, 작성자 메타가 카드 하단 고정 영역에 들어간다.
+
+### 5.3 글 작성 모달
+
+- 제목, 부제목, 본문, 대표 이미지, 슬라이드 전용 이미지, 태그, 특집 기사, 위치 정보, SEO 정보를 입력한다.
+- 슬라이드 전용 이미지는 본문 아래에 입력한다.
+- 새 글머리 태그를 인라인으로 추가할 수 있다.
+
+## 6. 기사 상세 페이지
+
+### 6.1 기본 정보
+
+- 뒤로가기, 카테고리/태그, 제목, 부제목, 날짜, 작성자, 공유/수정 버튼을 가진다.
+- 공유/수정 버튼은 태그 줄 아래 같은 줄에 둔다.
+
+### 6.2 본문 아래 구성 순서
+
+- 본문
+- 지도(있을 때 기본 펼침)
+- 사진 슬라이드(2장 이상일 때만)
+- 해시태그
+- 특집 기사 몰아보기
+- 유관 기사
+
+### 6.3 사진 슬라이드
+
+- 슬라이드 전용 이미지가 2장 이상일 때만 활성화한다.
+- 원본 본문 이미지와 별개로 관리한다.
+- 좌우 컨트롤, 하단 인디케이터, 일시정지 버튼, 터치/드래그 전환을 지원한다.
+
+### 6.4 위치 정보
+
+- 위치 이름, 수동 주소, 지도 섹션을 보여준다.
+- 기사 읽기에서는 지도 섹션을 기본 펼침 상태로 둔다.
+
+### 6.5 유관 기사
+
+- 운영자가 직접 연결한 기사 최대 5개를 우선 노출한다.
+- 직접 연결 수가 5개보다 적으면 남는 수는 태그 우선, 제목 보조 기준으로 자동 추천한다.
+- 날짜는 \`YYYY-MM-DD\` 형식으로 보이고, 모바일에서는 제목보다 작은 크기로 보인다.
+
+## 7. 특집 기사 기능
+
+- 모든 카테고리 게시글은 \`특집 기사 묶음명\`을 가질 수 있다.
+- 같은 묶음명과 카테고리를 가진 기사들은 기사 상세 하단 \`특집 기사 몰아보기\` 영역에서 최신순으로 보인다.
+- 처음에는 5개만 보여주고, \`전체 목록 보기\`로 인라인 확장한다.
+- 특집 컬렉션 전용 페이지가 따로 존재한다.
+
+## 8. 용어집
+
+### 8.1 공개 용어집
+
+- 검색 대상은 기본적으로 \`용어 + 설명\`이다.
+- 사용자가 체크박스로 \`용어만\`, \`설명만\`, \`둘 다\`를 고를 수 있다.
+- 둘 다 해제하면 검색 전에 경고 토스트/모달로 막는다.
+
+### 8.2 RAW / 검색용 export
+
+- \`/glossary-raw\`는 검색엔진과 사람이 읽기 좋은 정적형 원문 페이지다.
+- \`/api/glossary/bot\`은 봇/스크립트가 쉽게 가져갈 수 있는 export다.
+
+## 9. 일정 캘린더
+
+### 9.1 보기 모드
+
+- \`월간 일정보기\`
+- \`연간 일정보기\`
+
+### 9.2 월간 캘린더
+
+- 월간 캘린더는 구글 캘린더처럼 주 단위 row 기반으로 구성한다.
+- 여러 날 이어지는 일정은 날짜마다 따로 그리지 않고 하나의 연속 bar처럼 이어진다.
+- 월간 바에는 과한 날짜/시간 정보를 반복해서 넣지 않는다.
+- 모바일에서 일정 bar를 누르면 상세 모달이 열린다.
+
+### 9.3 우측 상태 패널
+
+- 선택한 달 기준으로 상태별 일정을 보여준다.
+- \`진행중\` : 선택 달과 겹치는 일정
+- \`개최예정\` : 선택 달 이후 3개월 안에 시작하는 일정
+- \`행사종료\` : 선택 달 기준 최근 3개월 안에 종료된 일정
+- 카드에는 설명을 기본 표시하지 않는다.
+- 제목 클릭 시 상세 모달이 열린다.
+- 지역별로 묶어서 보여주며, \`KOR\`만 기본 펼침, 나머지는 기본 접힘이다.
+
+### 9.4 하단 캘린더 지도
+
+- \`진행중\`과 \`개최예정\` 일정만 지도에 표시한다.
+- 종료 일정은 지도에 보이지 않는다.
+- 축소 시 국가 단위 배지로 묶고, 배지 안에 일정 개수를 숫자로 보여준다.
+- 확대할수록 세부 행사 위치를 보여준다.
+- 지도 색은 상태색이 아니라 지역색을 따른다.
+
+### 9.5 일정 상세 모달
+
+- 제목(국문 우선, 없으면 원문)
+- 상태
+- 기간
+- 위치 이름
+- 수동 주소
+- 지도
+- 태그
+- 관련 기사 링크
+- 외부 링크
+- 수정 / 삭제 버튼
+
+- 수정/삭제는 로그인 여부와 관계없이 항상 fresh 비밀번호 확인 후에만 열린다.
+- 수정은 별도 페이지 이동이 아니라 모달 안 인라인 수정 흐름으로 처리한다.
+
+### 9.6 일정 등록/수정 폼
+
+- 행사명(국문)
+- 행사명(원문)
+- 시작일 / 종료일
+- 시간 사용 여부
+- 지역 카테고리
+- 행사 태그
+- 외부 링크
+- 관련 기사 다중 연결
+- 지도 검색
+- 위치 이름 / 주소
+- 설명
+
+- 입력 순서는 \`행사 태그 → 외부 링크 → 관련 기사 연결 → 지도 검색 → 위치 이름 / 주소 → 설명\`을 기본으로 유지한다.
+- 지도 검색 결과를 선택하면 위치 이름과 주소가 자동으로 채워진다.
+- 위도/경도는 운영자가 직접 입력하지 않는다.
+
+## 10. 검색 / 기여 / 보조 페이지
+
+### 10.1 검색
+
+- 상단 검색과 검색 페이지는 같은 검색 API를 쓴다.
+- 기사 제목, 부제목, 태그, 요약을 대상으로 검색한다.
+
+### 10.2 도움을 주신 분들
+
+- 관리자에서 기여자 목록과 소개를 수정한다.
+- 공개 페이지는 저장된 순서대로 렌더링한다.
+
+### 10.3 AI 작업 가이드
+
+- AI가 개발 규칙과 운영 문맥을 빠르게 이해하기 위한 페이지다.
+- 기능 정의서의 대체가 아니라 보조 참고 문서다.
+
+## 11. 관리자 페이지
+
+### 11.1 운영 개요
+
+- \`대시보드\`
+  - 게시글 수, 카테고리 분포, 빠른 이동
+- \`분석\`
+  - 방문자/조회수 추이
+  - 차트 모드 전환
+  - 유입 경로
+  - 상위 기사
+  - 운영 인사이트
+
+### 11.2 콘텐츠
+
+- \`글 작성\`
+- \`게시글 목록\`
+- \`용어집\`
+- \`캘린더\`
+
+### 11.3 사이트 설정
+
+- \`설정\`
+- \`히어로 기사 설정\`
+- \`메인 스토리 직접 지정\`
+- \`도움을 주신 분들\`
+- \`UI 번역 관리\`
+- \`버전 기록\`
+- \`기능 정의서 / KMS\`
+
+### 11.4 공통 관리자 규칙
+
+- 관리자 페이지는 모바일 최적화 1단 흐름을 기본으로 한다.
+- PC에서도 모바일 밀도를 확장한 형태로 사용한다.
+- 세션이 없거나 만료되면 바로 로그인 요구 화면으로 돌아간다.
+- 권한이 없는 경우 안내 문구와 함께 로그인 화면만 보여준다.
+
+## 12. 데이터와 연관 정리
+
+- 게시글 삭제 시 글 row만 지우지 않는다.
+- 대표 이미지, 본문 이미지, 슬라이드 전용 이미지, 조회/공감/기록 데이터, 방문 로그까지 함께 정리한다.
+- 태그 삭제는 그 태그를 사용 중인 글이 없어야만 허용한다.
+
+## 13. 검수와 배포
+
+- 공개 UI 변경은 preview 검수 후 production 반영이 기본이다.
+- 관리자/API만 바뀌는 경우는 예외적으로 바로 production 반영이 가능하다.
+- preview의 \`본 페이지에 반영하기\`는 체크리스트 완료와 fresh 비밀번호 확인이 끝났을 때만 허용한다.
+- 반영 전에는 최소한 홈, 카테고리, 기사 상세, 캘린더, 용어집, 관리자 핵심 메뉴를 확인한다.
+
+## 14. 개발 체크리스트
+
+- 새 기능이 이 문서에 정의돼 있는가
+- 새 문구와 메뉴명이 관리자 수정 범위에 포함돼 있는가
+- 공개 날짜 표기와 관리자 날짜 표기가 서로 다른 규칙대로 유지되는가
+- 공개/관리자 버튼 높이와 타이포가 공통 규칙을 따르는가
+- 삭제/수정/저장 동선에서 fresh 비밀번호 확인이 필요한 곳은 빠지지 않았는가
+
+\`\`\`text
+문서 사용 요약
+1. 구현 전에 KMS 문서를 먼저 연다.
+2. 문서에 없는 기능은 먼저 문서에 추가한다.
+3. 구현 후 실제 동작과 문서를 다시 맞춘다.
+4. 배포 전 마지막으로 문서를 갱신한다.
+\`\`\`
+
+\`\`\`json
+{
+  "canonical_source": "관리자 / 기능 정의서 KMS",
+  "snapshot": "docs/feature-definition.md",
+  "requires_update_when": [
+    "새 기능 추가",
+    "버튼/메뉴 문구 변경",
+    "레이아웃 구조 변경",
+    "데이터 규칙 변경",
+    "배포/검수 규칙 변경"
+  ]
+}
+\`\`\`
 `;
+
+function isLegacyFeatureDefinition(value) {
+  var text = String(value || '').trim();
+  if (!text) return true;
+  if (text.indexOf('# Feature Definition') === 0) return true;
+  if (text.indexOf('## Calendar') >= 0 && text.indexOf('## Development Rule') >= 0) return true;
+  return false;
+}
 
 export async function loadFeatureDefinition(env) {
   const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'feature_definition'`).first();
-  return row && row.value ? String(row.value) : DEFAULT_FEATURE_DEFINITION;
+  const stored = row && row.value ? String(row.value) : '';
+  if (!stored || isLegacyFeatureDefinition(stored)) {
+    return DEFAULT_FEATURE_DEFINITION;
+  }
+  return stored;
 }

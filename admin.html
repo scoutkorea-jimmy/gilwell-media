@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.081.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.082.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.081.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.082.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.081.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.082.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -92,9 +92,9 @@
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
           </button>
-          <button class="admin-sidebar-btn" id="tab-btn-feature-definition" data-role-min="full" onclick="showAdminTab('feature-definition')">
-            <span class="admin-sidebar-btn-label">기능 정의서</span>
-            <span class="admin-sidebar-btn-desc">기준 문서 편집과 미리보기</span>
+          <button class="admin-sidebar-btn" id="tab-btn-feature-definition" data-role-min="full" onclick="openKmsPage()">
+            <span class="admin-sidebar-btn-label">기능 정의서 / KMS</span>
+            <span class="admin-sidebar-btn-desc">기준 문서 열기와 편집</span>
           </button>
           <button class="admin-sidebar-btn" id="tab-btn-hero-manager" onclick="showAdminTab('hero-manager')">
             <span class="admin-sidebar-btn-label">히어로 기사 설정</span>
@@ -706,8 +706,8 @@
               </div>
             </div>
             <div class="calendar-settings-card">
-              <div class="panel-header"><h3>캘린더 문구 관리</h3></div>
-              <p class="admin-section-note">공개 캘린더 페이지의 제목, 보기 전환 버튼, 상태 패널 문구를 여기서 바로 수정할 수 있습니다.</p>
+              <div class="panel-header"><h3>캘린더 메뉴명 · 문구 관리</h3></div>
+              <p class="admin-section-note">공개 캘린더 페이지의 제목, 보기 전환 버튼, 상태 패널, 지도 안내처럼 사용자가 읽는 메뉴명과 문구를 여기서 수정합니다.</p>
               <div class="glossary-admin-form-grid">
                 <div class="form-group" style="margin:0;">
                   <label for="calendar-copy-page-title">페이지 제목</label>
@@ -792,16 +792,6 @@
               </div>
               <div class="calendar-form-actions">
                 <button type="button" class="submit-btn admin-inline-submit" onclick="saveCalendarTagPresets()">행사 태그 저장</button>
-              </div>
-            </div>
-            <div class="calendar-settings-card">
-              <div class="panel-header"><h3>일정 제목 일괄 수정</h3></div>
-              <p class="admin-section-note">겹치거나 너무 긴 일정 제목은 여기서 한 번에 정리할 수 있습니다. 국문 제목이 우선 노출되고, 비어 있으면 원문 제목이 대신 보입니다.</p>
-              <div id="calendar-title-manager-list" class="calendar-tag-manager-list">
-                <div class="list-empty">일정을 불러오는 중…</div>
-              </div>
-              <div class="calendar-form-actions">
-                <button type="button" class="submit-btn admin-inline-submit" onclick="saveCalendarTitles()">제목 일괄 저장</button>
               </div>
             </div>
             <div id="calendar-admin-list" class="calendar-admin-list">
@@ -1031,23 +1021,11 @@
 
       <div id="admin-tab-feature-definition" class="admin-tab-panel" data-role-min="full">
         <div class="panel admin-panel-block" id="feature-definition-panel">
-          <div class="panel-header"><h2>기능 정의서</h2></div>
+          <div class="panel-header"><h2>기능 정의서 / KMS</h2></div>
           <div class="panel-body">
-            <p class="admin-section-note">이 페이지를 앞으로 홈페이지/관리자 기능 작업의 기준 문서로 사용합니다. 개발 전, 수정 중, 배포 전 모두 여기 내용을 먼저 확인합니다.</p>
-            <div class="feature-definition-editor">
-              <div class="feature-definition-pane">
-                <label for="feature-definition-input">정의서 원문</label>
-                <textarea id="feature-definition-input" rows="26" placeholder="기능 정의서를 입력하세요."></textarea>
-              </div>
-              <div class="feature-definition-pane">
-                <label>미리보기</label>
-                <div id="feature-definition-preview" class="feature-definition-preview">
-                  <div class="list-empty">정의서를 불러오는 중…</div>
-                </div>
-              </div>
-            </div>
             <div class="calendar-form-actions">
-              <button type="button" class="submit-btn admin-inline-submit" onclick="saveFeatureDefinition()">기능 정의서 저장</button>
+              <p class="admin-section-note">기능 정의서는 이제 별도 관리자 KMS 페이지에서 열고 수정합니다. 앞으로 개발 전·중·배포 전에 그 문서를 기준으로 확인합니다.</p>
+              <button type="button" class="submit-btn admin-inline-submit" onclick="openKmsPage()">KMS 페이지 열기</button>
             </div>
           </div>
         </div>
@@ -1133,8 +1111,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.081.00"></script>
-  <script src="/js/admin.js?v=0.081.00"></script>
+  <script src="/js/main.js?v=0.082.00"></script>
+  <script src="/js/admin.js?v=0.082.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
