@@ -20,8 +20,8 @@
     mapLayer: null,
     allMapCategories: [],
     allMapTags: [],
-    mapFilterCategories: [],
-    mapFilterTags: [],
+    mapFilterCategory: 'ALL',
+    mapFilterTag: 'ALL',
     editingId: null,
     tags: [],
     tagPresets: [],
@@ -31,6 +31,7 @@
     modalMap: null,
     modalMarker: null,
     canManage: false,
+    isSaving: false,
   };
 
   function init() {
@@ -461,7 +462,6 @@
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
       tagHtml +
-      (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
       (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
     '</article>';
   }
@@ -965,6 +965,7 @@
   }
 
   function submitCalendarEvent() {
+    if (state.isSaving) return;
     var payload = {
       title: valueOf('calendar-modal-title-input'),
       title_original: valueOf('calendar-modal-title-original-input'),
@@ -994,7 +995,13 @@
     }
     var url = state.editingId ? '/api/calendar/' + state.editingId : '/api/calendar';
     var method = state.editingId ? 'PUT' : 'POST';
+    var submitBtn = document.getElementById('calendar-modal-submit-btn');
     ensureCalendarAuth(function () {
+      state.isSaving = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = state.editingId ? '저장 중…' : '등록 중…';
+      }
       GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
         .then(function () {
           GW.showToast(state.editingId ? '일정이 수정됐습니다' : '일정이 등록됐습니다', 'success');
@@ -1010,6 +1017,13 @@
             return;
           }
           GW.showToast(err.message || '일정 저장 실패', 'error');
+        })
+        .finally(function () {
+          state.isSaving = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '일정 저장';
+          }
         });
     }, false);
   }
@@ -1201,81 +1215,61 @@
     });
     state.allMapCategories = categories.slice();
     state.allMapTags = tags.slice();
-    state.mapFilterCategories = categories.slice();
-    state.mapFilterTags = tags.slice();
+    if (state.mapFilterCategory !== 'ALL' && categories.indexOf(state.mapFilterCategory) < 0) state.mapFilterCategory = 'ALL';
+    if (state.mapFilterTag !== 'ALL' && tags.indexOf(state.mapFilterTag) < 0) state.mapFilterTag = 'ALL';
   }
 
   function renderMapFilters() {
-    renderFilterGroup('calendar-map-category-filters', state.mapFilterCategories, function (value) {
-      return value;
-    }, function (value) {
-      var index = state.mapFilterCategories.indexOf(value);
-      if (index >= 0) state.mapFilterCategories.splice(index, 1);
-      else state.mapFilterCategories.push(value);
+    renderFilterSelect('calendar-map-category-filters', state.mapFilterCategory, state.allMapCategories, function (value) {
+      state.mapFilterCategory = value;
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
-    }, state.allMapCategories);
-    renderFilterGroup('calendar-status-category-filters', state.mapFilterCategories, function (value) {
-      return value;
-    }, function (value) {
-      var index = state.mapFilterCategories.indexOf(value);
-      if (index >= 0) state.mapFilterCategories.splice(index, 1);
-      else state.mapFilterCategories.push(value);
+    }, true);
+    renderFilterSelect('calendar-status-category-filters', state.mapFilterCategory, state.allMapCategories, function (value) {
+      state.mapFilterCategory = value;
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
-    }, state.allMapCategories);
-    renderFilterGroup('calendar-map-tag-filters', state.mapFilterTags, function (value) {
-      return value;
-    }, function (value) {
-      var index = state.mapFilterTags.indexOf(value);
-      if (index >= 0) state.mapFilterTags.splice(index, 1);
-      else state.mapFilterTags.push(value);
+    }, true);
+    renderFilterSelect('calendar-map-tag-filters', state.mapFilterTag, state.allMapTags, function (value) {
+      state.mapFilterTag = value;
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
-    }, state.allMapTags);
-    renderFilterGroup('calendar-status-tag-filters', state.mapFilterTags, function (value) {
-      return value;
-    }, function (value) {
-      var index = state.mapFilterTags.indexOf(value);
-      if (index >= 0) state.mapFilterTags.splice(index, 1);
-      else state.mapFilterTags.push(value);
+    }, false);
+    renderFilterSelect('calendar-status-tag-filters', state.mapFilterTag, state.allMapTags, function (value) {
+      state.mapFilterTag = value;
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
-    }, state.allMapTags);
+    }, false);
   }
 
   function matchesActiveFilters(item) {
-    var categoryAllowed = !state.allMapCategories.length
+    var categoryAllowed = state.mapFilterCategory === 'ALL'
       ? true
-      : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
-    var tagsAllowed = !state.allMapTags.length
+      : normalizeCategory(item.event_category) === state.mapFilterCategory;
+    var tagsAllowed = state.mapFilterTag === 'ALL'
       ? true
-      : (!(Array.isArray(item.event_tags) && item.event_tags.length) ? false : item.event_tags.some(function (tag) {
-          return state.mapFilterTags.indexOf(tag) >= 0;
-        }));
+      : ((Array.isArray(item.event_tags) && item.event_tags.length) ? item.event_tags.some(function (tag) {
+          return tag === state.mapFilterTag;
+        }) : false);
     return categoryAllowed && tagsAllowed;
   }
 
-  function renderFilterGroup(id, selectedItems, labelFn, onToggle, allItems) {
-    var wrap = document.getElementById(id);
-    if (!wrap) return;
-    if (!allItems.length) {
-      wrap.innerHTML = '<div class="list-empty">표시할 항목이 없습니다.</div>';
-      return;
-    }
-    wrap.innerHTML = allItems.map(function (item) {
-      var active = selectedItems.indexOf(item) >= 0 ? ' is-active' : '';
-      return '<button type="button" class="calendar-filter-chip' + active + '" data-calendar-filter="' + escape(item) + '">' + escape(labelFn(item)) + '</button>';
-    }).join('');
-    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-filter]'), function (btn) {
-      btn.addEventListener('click', function () {
-        onToggle(btn.getAttribute('data-calendar-filter') || '');
-      });
-    });
+  function renderFilterSelect(id, selectedValue, allItems, onChange, isCategory) {
+    var select = document.getElementById(id);
+    if (!select) return;
+    var options = ['<option value="ALL">전체</option>'].concat((allItems || []).map(function (item) {
+      return '<option value="' + escape(item) + '">' + escape(item) + '</option>';
+    }));
+    select.innerHTML = options.join('');
+    select.value = selectedValue || 'ALL';
+    select.className = 'calendar-filter-select' + (isCategory ? ' is-' + String(select.value || 'ALL').toLowerCase() : '');
+    select.onchange = function () {
+      onChange(select.value || 'ALL');
+    };
   }
 
   function compareByStartAtAsc(a, b) {
