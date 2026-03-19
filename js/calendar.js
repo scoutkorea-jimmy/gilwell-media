@@ -31,6 +31,7 @@
     canManage: false,
     isSaving: false,
     copy: null,
+    collapsedRegions: {},
   };
 
   function init() {
@@ -503,15 +504,12 @@
         openDetail(findItem(idValue));
       });
     });
-    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-toggle-detail]'), function (btn) {
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-region-toggle]'), function (btn) {
       btn.addEventListener('click', function () {
-        var targetId = btn.getAttribute('data-calendar-toggle-detail');
-        var detail = targetId ? wrap.querySelector('[data-calendar-inline-detail="' + targetId + '"]') : null;
-        if (!detail) return;
-        var expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-        btn.textContent = expanded ? '자세히 보기' : '내용 접기';
-        detail.hidden = expanded;
+        var category = String(btn.getAttribute('data-calendar-region-toggle') || '').toUpperCase();
+        if (!category) return;
+        state.collapsedRegions[category] = !state.collapsedRegions[category];
+        renderStatusLists();
       });
     });
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-edit]'), function (btn) {
@@ -535,15 +533,24 @@
     return Object.keys(CATEGORY_META).filter(function (key) {
       return grouped[key].length;
     }).map(function (key) {
+      var collapsed = getRegionCollapsedState(key);
       return '<section class="calendar-region-group">' +
-        '<div class="calendar-region-group-head is-' + key.toLowerCase() + '">' +
+        '<button type="button" class="calendar-region-group-head is-' + key.toLowerCase() + (collapsed ? ' is-collapsed' : '') + '" data-calendar-region-toggle="' + key + '">' +
           '<span class="calendar-region-group-dot"></span>' +
           '<strong>' + escape(CATEGORY_META[key].label) + '</strong>' +
           '<span>' + grouped[key].length + '개</span>' +
-        '</div>' +
-        '<div class="calendar-region-group-list">' + grouped[key].map(renderEventCard).join('') + '</div>' +
+          '<span class="calendar-region-group-arrow">' + (collapsed ? '＋' : '－') + '</span>' +
+        '</button>' +
+        '<div class="calendar-region-group-list"' + (collapsed ? ' hidden' : '') + '>' + grouped[key].map(renderEventCard).join('') + '</div>' +
       '</section>';
     }).join('');
+  }
+
+  function getRegionCollapsedState(category) {
+    if (Object.prototype.hasOwnProperty.call(state.collapsedRegions, category)) {
+      return !!state.collapsedRegions[category];
+    }
+    return category !== 'KOR';
   }
 
   function toggleStatusGroup(listId, visible) {
@@ -566,9 +573,6 @@
           return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
         }).join('') + '</div>'
       : '';
-    var detailToggle = item.description
-      ? '<button type="button" class="calendar-event-link" data-calendar-toggle-detail="' + item.id + '" aria-expanded="false">자세히 보기</button>'
-      : '';
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
@@ -577,8 +581,7 @@
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
-    var linkActions = (detailToggle || '<button type="button" class="calendar-event-link" data-calendar-detail="' + item.id + '">자세히 보기</button>') +
-      relatedLinks;
+    var linkActions = relatedLinks;
     return '<article class="calendar-event-card' + cardClass + '">' +
       '<div class="calendar-event-card-head">' +
         '<div>' +
@@ -589,12 +592,11 @@
           (when ? '<div class="calendar-event-time">' + escape(when) + '</div>' : '') +
         '</div>' +
       '</div>' +
-      '<h4>' + escape(title) + '</h4>' +
+      '<h4><button type="button" class="calendar-event-title-btn" data-calendar-detail="' + item.id + '">' + escape(title) + '</button></h4>' +
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       tagHtml +
-      (item.description ? '<div class="calendar-event-inline-detail" data-calendar-inline-detail="' + item.id + '" hidden><p class="calendar-event-desc">' + escape(item.description) + '</p></div>' : '') +
-      '<div class="calendar-event-links">' + linkActions + '</div>' +
+      (linkActions ? '<div class="calendar-event-links">' + linkActions + '</div>' : '') +
     '</article>';
   }
 
@@ -660,12 +662,9 @@
 
     if (state.map.getZoom() <= 4) {
       groupByCountry(items).forEach(function (group) {
-        var marker = L.circleMarker([group.lat, group.lng], {
-          radius: Math.min(18, 8 + group.items.length),
-          color: '#111',
-          weight: 1,
-          fillColor: '#5c2a9d',
-          fillOpacity: 0.78
+        var groupCategory = getDominantCategory(group.items);
+        var marker = L.marker([group.lat, group.lng], {
+          icon: createCalendarMapBadgeIcon(group.items.length, groupCategory)
         });
         marker.bindPopup(
           '<div class="calendar-map-popup">' +
@@ -682,12 +681,8 @@
 
     items.forEach(function (item) {
       var category = normalizeCategory(item.event_category);
-      var marker = L.circleMarker([item.latitude, item.longitude], {
-        radius: 9,
-        color: '#fff',
-        weight: 2,
-        fillColor: CATEGORY_META[category].color,
-        fillOpacity: 0.92
+      var marker = L.marker([item.latitude, item.longitude], {
+        icon: createCalendarMapBadgeIcon(1, category, true)
       });
       marker.bindPopup(
         '<div class="calendar-map-popup">' +
@@ -726,6 +721,33 @@
       var lat = members.reduce(function (sum, item) { return sum + item.latitude; }, 0) / members.length;
       var lng = members.reduce(function (sum, item) { return sum + item.longitude; }, 0) / members.length;
       return { country_name: country, items: members, lat: lat, lng: lng };
+    });
+  }
+
+  function getDominantCategory(items) {
+    var counts = {};
+    var best = 'WOSM';
+    var bestCount = 0;
+    items.forEach(function (item) {
+      var category = normalizeCategory(item.event_category);
+      counts[category] = (counts[category] || 0) + 1;
+      if (counts[category] > bestCount) {
+        best = category;
+        bestCount = counts[category];
+      }
+    });
+    return best;
+  }
+
+  function createCalendarMapBadgeIcon(count, category, isSingle) {
+    var safeCategory = normalizeCategory(category).toLowerCase();
+    var size = isSingle ? 24 : Math.min(34, 24 + Math.max(0, String(count).length - 1) * 4);
+    return L.divIcon({
+      className: 'calendar-map-badge-wrap',
+      html: '<span class="calendar-map-badge is-' + safeCategory + (isSingle ? ' is-single' : '') + '">' + escape(String(count)) + '</span>',
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -Math.round(size / 2)]
     });
   }
 
