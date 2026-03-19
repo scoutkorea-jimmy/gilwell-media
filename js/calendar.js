@@ -18,9 +18,7 @@
     viewMode: 'month',
     map: null,
     mapLayer: null,
-    allMapCategories: [],
     allMapTags: [],
-    mapFilterCategories: [],
     mapFilterTags: [],
     editingId: null,
     tags: [],
@@ -393,8 +391,9 @@
     var lanesHtml = lanes.length ? lanes.map(function (lane) {
       return '<div class="calendar-week-lane">' + lane.map(function (segment) {
         var status = getEventStatus(segment.item).key;
+        var category = normalizeCategory(segment.item.event_category).toLowerCase();
         var label = formatWeekSegmentLabel(segment, weekStart);
-        return '<button type="button" class="calendar-week-bar is-' + status + segment.shapeClass + '" style="grid-column:' + segment.startCol + ' / ' + (segment.endCol + 1) + ';" data-date-key="' + segment.focusKey + '" data-calendar-item-id="' + segment.item.id + '">' +
+        return '<button type="button" class="calendar-week-bar is-' + status + ' is-cat-' + category + segment.shapeClass + '" style="grid-column:' + segment.startCol + ' / ' + (segment.endCol + 1) + ';" data-date-key="' + segment.focusKey + '" data-calendar-item-id="' + segment.item.id + '">' +
           '<span class="calendar-week-bar-copy">' + escape(label) + '</span>' +
         '</button>';
       }).join('') + '</div>';
@@ -482,6 +481,7 @@
     renderStatusList('calendar-ongoing-events', ongoingItems, copyText('ongoing_empty', '진행중인 일정이 없습니다.'));
     renderStatusList('calendar-upcoming-events', upcomingItems, copyText('upcoming_empty', '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.'));
     renderStatusList('calendar-finished-events', finishedItems, copyText('finished_empty', '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.'));
+    toggleStatusGroup('calendar-ongoing-events', !!ongoingItems.length);
   }
 
   function eventIncludesDate(item, dateKey) {
@@ -496,7 +496,7 @@
   function renderStatusList(id, items, emptyMessage) {
     var wrap = document.getElementById(id);
     if (!wrap) return;
-    wrap.innerHTML = items.length ? items.map(renderEventCard).join('') : '<div class="list-empty">' + emptyMessage + '</div>';
+    wrap.innerHTML = items.length ? renderGroupedEventCards(items) : '<div class="list-empty">' + emptyMessage + '</div>';
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-detail]'), function (btn) {
       btn.addEventListener('click', function () {
         var idValue = parseInt(btn.getAttribute('data-calendar-detail'), 10);
@@ -524,8 +524,36 @@
     });
   }
 
+  function renderGroupedEventCards(items) {
+    var grouped = {};
+    Object.keys(CATEGORY_META).forEach(function (key) {
+      grouped[key] = [];
+    });
+    items.forEach(function (item) {
+      grouped[normalizeCategory(item.event_category)].push(item);
+    });
+    return Object.keys(CATEGORY_META).filter(function (key) {
+      return grouped[key].length;
+    }).map(function (key) {
+      return '<section class="calendar-region-group">' +
+        '<div class="calendar-region-group-head is-' + key.toLowerCase() + '">' +
+          '<span class="calendar-region-group-dot"></span>' +
+          '<strong>' + escape(CATEGORY_META[key].label) + '</strong>' +
+          '<span>' + grouped[key].length + '개</span>' +
+        '</div>' +
+        '<div class="calendar-region-group-list">' + grouped[key].map(renderEventCard).join('') + '</div>' +
+      '</section>';
+    }).join('');
+  }
+
+  function toggleStatusGroup(listId, visible) {
+    var wrap = document.getElementById(listId);
+    if (!wrap || !wrap.parentElement) return;
+    wrap.parentElement.hidden = !visible;
+  }
+
   function renderEventCard(item) {
-    var when = formatEventTime(item);
+    var when = formatEventTimeCompact(item);
     var place = item.location_name || item.country_name || '';
     var category = normalizeCategory(item.event_category);
     var status = getEventStatus(item);
@@ -558,7 +586,7 @@
             '<span class="calendar-category-badge' + categoryClass + '">' + category + '</span>' +
             '<span class="calendar-status-badge is-' + status.key + '">' + escape(status.label) + '</span>' +
           '</div>' +
-          '<div class="calendar-event-time">' + escape(when) + '</div>' +
+          (when ? '<div class="calendar-event-time">' + escape(when) + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<h4>' + escape(title) + '</h4>' +
@@ -1243,16 +1271,12 @@
     var item = segment.item;
     var title = item.title || item.title_original || '';
     var start = parseDate(item.start_at);
-    var end = parseDate(item.end_at || item.start_at) || start;
     var isSingleDay = toDateOnlyValue(item.start_at) === toDateOnlyValue(item.end_at || item.start_at);
-    var startsThisWeek = diffInDays(weekStart, startOfDay(start)) >= 0;
     if (isSingleDay && item.start_has_time) {
       return formatTimeOnly(item.start_at) + ' ' + title;
     }
-    if (!isSingleDay && startsThisWeek) {
-      var prefix = start.getMonth() + 1 + '/' + start.getDate();
-      if (item.start_has_time) prefix += ' ' + formatTimeOnly(item.start_at);
-      return prefix + ' ' + title;
+    if (!isSingleDay && item.start_has_time && diffInDays(weekStart, startOfDay(start)) >= 0) {
+      return formatTimeOnly(item.start_at) + ' ' + title;
     }
     return title;
   }
@@ -1303,35 +1327,26 @@
     return start.slice(5) + ' ~ ' + end.slice(5);
   }
 
+  function formatEventTimeCompact(item) {
+    var startTime = item && item.start_has_time ? formatTimeOnly(item.start_at) : '';
+    var endTime = item && item.end_has_time ? formatTimeOnly(item.end_at) : '';
+    if (startTime && endTime) return startTime + ' ~ ' + endTime;
+    if (startTime) return startTime;
+    return '';
+  }
+
   function syncMapFilters() {
-    var categories = [];
     var tags = [];
     state.items.forEach(function (item) {
-      var category = normalizeCategory(item.event_category);
-      if (categories.indexOf(category) < 0) categories.push(category);
       (Array.isArray(item.event_tags) ? item.event_tags : []).forEach(function (tag) {
         if (tags.indexOf(tag) < 0) tags.push(tag);
       });
     });
-    state.allMapCategories = categories.slice();
     state.allMapTags = tags.slice();
-    state.mapFilterCategories = state.mapFilterCategories.filter(function (item) { return categories.indexOf(item) >= 0; });
     state.mapFilterTags = state.mapFilterTags.filter(function (item) { return tags.indexOf(item) >= 0; });
   }
 
   function renderMapFilters() {
-    renderFilterSelect('calendar-map-category-filters', state.allMapCategories, function (value) {
-      toggleSelectedFilter(state.mapFilterCategories, value, state.allMapCategories);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-    });
-    renderFilterSelect('calendar-status-category-filters', state.allMapCategories, function (value) {
-      toggleSelectedFilter(state.mapFilterCategories, value, state.allMapCategories);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-    });
     renderFilterSelect('calendar-map-tag-filters', state.allMapTags, function (value) {
       toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
       renderMapFilters();
@@ -1344,18 +1359,6 @@
       renderStatusLists();
       renderMapMarkers();
     });
-    renderSelectedFilters('calendar-map-category-selected', state.mapFilterCategories, function (value) {
-      removeSelectedFilter(state.mapFilterCategories, value);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-    }, true);
-    renderSelectedFilters('calendar-status-category-selected', state.mapFilterCategories, function (value) {
-      removeSelectedFilter(state.mapFilterCategories, value);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-    }, true);
     renderSelectedFilters('calendar-map-tag-selected', state.mapFilterTags, function (value) {
       removeSelectedFilter(state.mapFilterTags, value);
       renderMapFilters();
@@ -1371,15 +1374,12 @@
   }
 
   function matchesActiveFilters(item) {
-    var categoryAllowed = !state.mapFilterCategories.length
-      ? true
-      : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
     var tagsAllowed = !state.mapFilterTags.length
       ? true
       : ((Array.isArray(item.event_tags) && item.event_tags.length) ? item.event_tags.some(function (tag) {
           return state.mapFilterTags.indexOf(tag) >= 0;
         }) : false);
-    return categoryAllowed && tagsAllowed;
+    return tagsAllowed;
   }
 
   function renderFilterSelect(id, allItems, onChange) {
