@@ -132,10 +132,13 @@
   var _calendarGeoMap = null;
   var _calendarGeoMarker = null;
   var _analyticsViewMode = 'chart';
+  var _analyticsChartModes = { visitors: 'line', views: 'line' };
   var _analyticsPayload = null;
   var _adminGroup = 'overview';
   var _adminActiveTab = 'dashboard';
   var _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
+  var _adminManualRelatedPosts = [];
+  var _adminRelatedSearchTimer = null;
   var _boardLayout = { gap_px: 6 };
   var _boardBannerInfo = {
     items: {
@@ -1128,6 +1131,7 @@
         location_address: locationAddress || null,
         tag: _adminSelTags.length ? _adminSelTags.join(',') : null,
         meta_tags: metaTags || null,
+        manual_related_posts: _adminManualRelatedPosts.slice(),
         author: author || undefined,
         ai_assisted: aiEl ? (aiEl.checked ? 1 : 0) : 0,
         publish_at: (dateEl && dateEl.value) ? GW.normalizePublishAtValue(dateEl.value) : undefined,
@@ -1197,6 +1201,12 @@
         renderAdminCoverPreview();
         _adminGalleryImages = parseGalleryImagesSeed(p.gallery_images);
         renderAdminGalleryPreview();
+        _adminManualRelatedPosts = Array.isArray(p.manual_related_posts) ? p.manual_related_posts.slice(0, 5) : [];
+        renderAdminRelatedPostSelected();
+        var relatedInput = document.getElementById('admin-related-search-input');
+        var relatedResults = document.getElementById('admin-related-search-results');
+        if (relatedInput) relatedInput.value = '';
+        if (relatedResults) relatedResults.innerHTML = '<div class="admin-inline-note">기사 제목으로 검색하면 최대 5개까지 직접 연결할 수 있습니다.</div>';
 
         // Load tag selector (multi-select)
         _adminSelTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
@@ -1253,12 +1263,103 @@
       });
   };
 
+  window.searchAdminRelatedPosts = function () {
+    clearTimeout(_adminRelatedSearchTimer);
+    _adminRelatedSearchTimer = setTimeout(loadAdminRelatedSearchResults, 180);
+  };
+
+  function loadAdminRelatedSearchResults() {
+    var input = document.getElementById('admin-related-search-input');
+    var list = document.getElementById('admin-related-search-results');
+    if (!list) return;
+    var query = input ? (input.value || '').trim() : '';
+    if (!query) {
+      list.innerHTML = '<div class="admin-inline-note">기사 제목으로 검색하면 최대 5개까지 직접 연결할 수 있습니다.</div>';
+      return;
+    }
+    list.innerHTML = '<div class="admin-inline-note">관련 기사를 불러오는 중…</div>';
+    GW.apiFetch('/api/posts?page=1&limit=8&q=' + encodeURIComponent(query))
+      .then(function (data) {
+        var rows = Array.isArray(data && data.posts) ? data.posts : [];
+        var currentId = editingId ? Number(editingId) : 0;
+        rows = rows.filter(function (item) {
+          return Number(item.id) !== currentId;
+        });
+        if (!rows.length) {
+          list.innerHTML = '<div class="admin-inline-note">검색 결과 없음</div>';
+          return;
+        }
+        list.innerHTML = rows.map(function (item) {
+          var selected = _adminManualRelatedPosts.some(function (related) { return Number(related.id) === Number(item.id); });
+          return '<button type="button" class="calendar-related-post-result' + (selected ? ' is-selected' : '') + '" onclick="addAdminManualRelatedPost(' + Number(item.id) + ')">' +
+            '<strong>' + GW.escapeHtml(item.title || '') + '</strong>' +
+            '<span>' + GW.escapeHtml((GW.CATEGORIES[item.category] || GW.CATEGORIES.korea).label) + (selected ? ' · 선택됨' : '') + '</span>' +
+          '</button>';
+        }).join('');
+      })
+      .catch(function () {
+        list.innerHTML = '<div class="admin-inline-note">관련 기사 검색에 실패했습니다</div>';
+      });
+  }
+
+  window.addAdminManualRelatedPost = function (postId) {
+    var numericId = parseInt(postId, 10);
+    if (!Number.isFinite(numericId) || numericId < 1) return;
+    if (_adminManualRelatedPosts.some(function (item) { return Number(item.id) === numericId; })) return;
+    if (_adminManualRelatedPosts.length >= 5) {
+      GW.showToast('유관기사는 최대 5개까지 직접 설정할 수 있습니다', 'error');
+      return;
+    }
+    GW.apiFetch('/api/posts/' + numericId)
+      .then(function (data) {
+        var post = data && data.post ? data.post : null;
+        if (!post) throw new Error('관련 기사를 불러오지 못했습니다');
+        _adminManualRelatedPosts.push({
+          id: post.id,
+          title: post.title || '',
+          category: post.category || '',
+          publish_at: post.publish_at || '',
+          created_at: post.created_at || '',
+        });
+        renderAdminRelatedPostSelected();
+        loadAdminRelatedSearchResults();
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '관련 기사를 추가하지 못했습니다', 'error');
+      });
+  };
+
+  window.removeAdminManualRelatedPost = function (postId) {
+    var numericId = parseInt(postId, 10);
+    _adminManualRelatedPosts = _adminManualRelatedPosts.filter(function (item) {
+      return Number(item.id) !== numericId;
+    });
+    renderAdminRelatedPostSelected();
+    loadAdminRelatedSearchResults();
+  };
+
+  function renderAdminRelatedPostSelected() {
+    var wrap = document.getElementById('admin-related-selected');
+    if (!wrap) return;
+    if (!_adminManualRelatedPosts.length) {
+      wrap.innerHTML = '<div class="admin-inline-note">직접 연결한 유관기사가 없습니다. 비워두면 자동 추천만 사용합니다.</div>';
+      return;
+    }
+    wrap.innerHTML = _adminManualRelatedPosts.map(function (item) {
+      return '<div class="calendar-related-post-pill">' +
+        '<strong>' + GW.escapeHtml(item.title || '') + '</strong>' +
+        '<button type="button" class="calendar-related-post-remove" onclick="removeAdminManualRelatedPost(' + Number(item.id) + ')">제거</button>' +
+      '</div>';
+    }).join('');
+  }
+
   // ─── Cancel edit ──────────────────────────────────────────
   window.cancelEdit = function () {
     editingId = null;
     if (history.replaceState) history.replaceState(null, '', '/admin.html');
     _adminCoverImg = null;
     _adminGalleryImages = [];
+    _adminManualRelatedPosts = [];
     _adminSelTags = [];
     document.getElementById('art-title').value    = '';
     document.getElementById('art-subtitle').value = '';
@@ -1282,6 +1383,11 @@
     if (aiChk) aiChk.checked = false;
     renderAdminCoverPreview();
     renderAdminGalleryPreview();
+    renderAdminRelatedPostSelected();
+    var relatedInput = document.getElementById('admin-related-search-input');
+    var relatedResults = document.getElementById('admin-related-search-results');
+    if (relatedInput) relatedInput.value = '';
+    if (relatedResults) relatedResults.innerHTML = '<div class="admin-inline-note">기사 제목으로 검색하면 최대 5개까지 직접 연결할 수 있습니다.</div>';
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     var inlineTagInput = document.getElementById('art-tag-new-input');
@@ -1363,6 +1469,7 @@
       tags: _adminSelTags.slice(),
       image_url: _adminCoverImg || null,
       gallery_images: _adminGalleryImages.slice(),
+      manual_related_posts: _adminManualRelatedPosts.slice(),
       category: (document.getElementById('art-category') || {}).value || 'korea',
     };
   }
@@ -1386,9 +1493,13 @@
     _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
     _adminCoverImg = draft.image_url || null;
     _adminGalleryImages = parseGalleryImagesSeed(draft.gallery_images);
+    _adminManualRelatedPosts = Array.isArray(draft.manual_related_posts) ? draft.manual_related_posts.slice(0, 5) : [];
     updateCatPreview();
     renderAdminCoverPreview();
     renderAdminGalleryPreview();
+    renderAdminRelatedPostSelected();
+    var relatedResults = document.getElementById('admin-related-search-results');
+    if (relatedResults) relatedResults.innerHTML = '<div class="admin-inline-note">기사 제목으로 검색하면 최대 5개까지 직접 연결할 수 있습니다.</div>';
     var sel = document.getElementById('admin-tag-selector');
     if (sel) _syncTagPills(sel);
     if (_adminEditor && draft.editorData) {
@@ -2456,7 +2567,10 @@
         '<div class="admin-selected-post-title">' + GW.escapeHtml(_homeLeadPost.title || '') + '</div>' +
         (_homeLeadPost.image_url ? (
           '<div class="admin-home-lead-preview">' +
-            buildResponsiveMediaEditor('home-lead-media', _homeLeadMedia, _homeLeadPost.image_url, _homeLeadPost.title || '메인 스토리 미리보기') +
+            '<details class="admin-media-toggle">' +
+              '<summary>이미지 위치 조정 열기</summary>' +
+              buildResponsiveMediaEditor('home-lead-media', _homeLeadMedia, _homeLeadPost.image_url, _homeLeadPost.title || '메인 스토리 미리보기') +
+            '</details>' +
           '</div>'
         ) : '') +
         '<div class="admin-home-lead-actions">' +
@@ -2576,7 +2690,10 @@
             '<span class="hero-slot-title">' + GW.escapeHtml(p.title) + '</span>' +
             '<button onclick="removeHeroSlot(' + i + ')" class="admin-inline-danger">제거</button>' +
           '</div>' +
-          mediaEditor +
+          '<details class="admin-media-toggle">' +
+            '<summary>이미지 위치 조정 열기</summary>' +
+            mediaEditor +
+          '</details>' +
         '</div>';
     }).join('');
     bindHeroDrag();
@@ -2772,6 +2889,13 @@
     _syncAnalyticsViewMode();
   };
 
+  window.setAnalyticsChartMode = function (kind, mode) {
+    if (kind !== 'visitors' && kind !== 'views') return;
+    _analyticsChartModes[kind] = mode === 'bar' ? 'bar' : 'line';
+    syncAnalyticsChartModeButtons();
+    if (_analyticsPayload) renderAnalyticsPage(_analyticsPayload);
+  };
+
   function loadAnalyticsPage(force) {
     if (_analyticsPayload && !force) {
       renderAnalyticsPage(_analyticsPayload);
@@ -2844,6 +2968,7 @@
         meta: metaParts.join(' · '),
       };
     }, '아직 유입 경로 데이터가 없습니다');
+    renderAnalyticsReferrersPie(payload.referrers);
     renderAnalyticsList('analytics-paths', payload.top_paths, function (item) {
       var pageInfo = getAnalyticsPageInfo(item);
       return {
@@ -2857,6 +2982,7 @@
     renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : [], payload.range || fallback.range);
     renderAnalyticsTopPages(payload.views && payload.views.top_paths ? payload.views.top_paths : payload.top_paths);
     _syncAnalyticsViewMode();
+    syncAnalyticsChartModeButtons();
   }
 
   function _syncAnalyticsViewMode() {
@@ -2874,16 +3000,16 @@
   function renderAnalyticsVisitorsChart(rows, range) {
     renderAnalyticsChart('analytics-visitors-chart', rows, [
       { key: 'visits', label: '방문 수', className: 'analytics-bar-fill-visits' },
-    ], '방문 데이터가 없습니다', range);
+    ], '방문 데이터가 없습니다', range, _analyticsChartModes.visitors);
   }
 
   function renderAnalyticsViewsChart(rows, range) {
     renderAnalyticsChart('analytics-views-chart', rows, [
       { key: 'views', label: '조회수', className: 'analytics-bar-fill-views' },
-    ], '조회수 데이터가 없습니다', range);
+    ], '조회수 데이터가 없습니다', range, _analyticsChartModes.views);
   }
 
-  function renderAnalyticsChart(id, rows, seriesDefs, emptyText, range) {
+  function renderAnalyticsChart(id, rows, seriesDefs, emptyText, range, mode) {
     var el = document.getElementById(id);
     if (!el) return;
     if (!rows || !rows.length) {
@@ -2900,6 +3026,10 @@
     var legend = '<div class="analytics-chart-legend">' + seriesDefs.map(function (series) {
       return '<span><i class="analytics-legend-swatch ' + series.className + '"></i>' + GW.escapeHtml(series.label) + '</span>';
     }).join('') + '</div>';
+    if (mode === 'line') {
+      el.innerHTML = legend + buildAnalyticsLineChart(rows, seriesDefs, max, range);
+      return;
+    }
     var items = rows.map(function (row) {
       var bars = seriesDefs.map(function (series) {
         var value = Number(row[series.key] || 0);
@@ -2915,6 +3045,96 @@
       '</div>';
     }).join('');
     el.innerHTML = legend + '<div class="analytics-chart">' + items + '</div>';
+  }
+
+  function buildAnalyticsLineChart(rows, seriesDefs, max, range) {
+    var width = 640;
+    var height = 220;
+    var paddingX = 18;
+    var paddingTop = 16;
+    var paddingBottom = 34;
+    var graphHeight = height - paddingTop - paddingBottom;
+    var stepX = rows.length > 1 ? (width - paddingX * 2) / (rows.length - 1) : 0;
+    var guides = [0, 0.25, 0.5, 0.75, 1].map(function (ratio) {
+      var y = paddingTop + graphHeight - graphHeight * ratio;
+      return '<line x1="' + paddingX + '" y1="' + y.toFixed(1) + '" x2="' + (width - paddingX) + '" y2="' + y.toFixed(1) + '" class="analytics-line-guide"></line>';
+    }).join('');
+    var xLabels = rows.map(function (row, index) {
+      var x = paddingX + stepX * index;
+      return '<text x="' + x.toFixed(1) + '" y="' + (height - 10) + '" text-anchor="middle" class="analytics-line-x-label">' + GW.escapeHtml(getAnalyticsBucketLabel(row, range)) + '</text>';
+    }).join('');
+    var seriesSvg = seriesDefs.map(function (series) {
+      var points = rows.map(function (row, index) {
+        var value = Number(row[series.key] || 0);
+        var x = paddingX + stepX * index;
+        var y = paddingTop + graphHeight - (value / max) * graphHeight;
+        return { x: x, y: y, value: value };
+      });
+      var pointString = points.map(function (point) {
+        return point.x.toFixed(1) + ',' + point.y.toFixed(1);
+      }).join(' ');
+      var circles = points.map(function (point) {
+        return '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="4" class="analytics-line-point ' + series.className + '">' +
+          '<title>' + GW.escapeHtml(series.label + ' ' + formatMetricCompact(point.value)) + '</title>' +
+        '</circle>';
+      }).join('');
+      return '<polyline fill="none" points="' + pointString + '" class="analytics-line-path ' + series.className + '"></polyline>' + circles;
+    }).join('');
+    return '<div class="analytics-line-chart-wrap"><svg viewBox="0 0 ' + width + ' ' + height + '" class="analytics-line-chart" role="img" aria-label="분석 추이 차트">' + guides + seriesSvg + xLabels + '</svg></div>';
+  }
+
+  function renderAnalyticsReferrersPie(items) {
+    var el = document.getElementById('analytics-referrers-pie');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '';
+      return;
+    }
+    var palette = ['#0094B4', '#FF5655', '#248737', '#622599', '#8A5A2B', '#E47A2E', '#5D6F2B', '#5F6B7A'];
+    var total = items.reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0) || 1;
+    var current = -90;
+    var slices = items.slice(0, 8).map(function (item, index) {
+      var value = Number(item.visits || 0);
+      var angle = (value / total) * 360;
+      var next = current + angle;
+      var largeArc = angle > 180 ? 1 : 0;
+      var x1 = 50 + 42 * Math.cos(current * Math.PI / 180);
+      var y1 = 50 + 42 * Math.sin(current * Math.PI / 180);
+      var x2 = 50 + 42 * Math.cos(next * Math.PI / 180);
+      var y2 = 50 + 42 * Math.sin(next * Math.PI / 180);
+      var path = 'M 50 50 L ' + x1.toFixed(3) + ' ' + y1.toFixed(3) + ' A 42 42 0 ' + largeArc + ' 1 ' + x2.toFixed(3) + ' ' + y2.toFixed(3) + ' Z';
+      var color = palette[index % palette.length];
+      current = next;
+      return {
+        path: path,
+        color: color,
+        label: item.source_label || item.source_key || '유입',
+        meta: formatMetricCompact(value) + ' (' + Math.round((value / total) * 100) + '%)',
+      };
+    });
+    el.innerHTML =
+      '<div class="analytics-pie-layout">' +
+        '<svg viewBox="0 0 100 100" class="analytics-pie-chart" role="img" aria-label="유입 경로 분포">' +
+          slices.map(function (slice) {
+            return '<path d="' + slice.path + '" fill="' + slice.color + '"></path>';
+          }).join('') +
+        '</svg>' +
+        '<div class="analytics-pie-legend">' +
+          slices.map(function (slice) {
+            return '<div class="analytics-pie-legend-item"><i style="background:' + slice.color + '"></i><div><strong>' + GW.escapeHtml(slice.label) + '</strong><span>' + GW.escapeHtml(slice.meta) + '</span></div></div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  function syncAnalyticsChartModeButtons() {
+    [['visitors', 'bar'], ['visitors', 'line'], ['views', 'bar'], ['views', 'line']].forEach(function (pair) {
+      var kind = pair[0];
+      var mode = pair[1];
+      var btn = document.getElementById('analytics-' + kind + '-' + mode + '-btn');
+      if (!btn) return;
+      btn.classList.toggle('active', _analyticsChartModes[kind] === mode);
+    });
   }
 
   function renderAnalyticsVisitorsTable(rows, range) {

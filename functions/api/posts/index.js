@@ -121,7 +121,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, manual_related_posts, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -154,6 +154,7 @@ export async function onRequestPost({ request, env }) {
   const safeLocationAddress = sanitizeShortText(location_address, 300);
   const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
+  const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts);
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
 
@@ -171,10 +172,10 @@ export async function onRequestPost({ request, env }) {
 
   try {
     await ensurePostOptionalColumns(env);
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
          RETURNING *`;
-    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeAuthor, safeAiAssisted, publishAtValue];
+    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, publishAtValue];
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
 
     if (results[0]) {
@@ -276,6 +277,7 @@ async function ensurePostOptionalColumns(env) {
   await ensureColumn(env, 'gallery_images');
   await ensureColumn(env, 'location_name');
   await ensureColumn(env, 'location_address');
+  await ensureColumn(env, 'manual_related_posts');
 }
 
 async function ensureColumn(env, columnName) {
@@ -286,6 +288,21 @@ async function ensureColumn(env, columnName) {
     if (msg.indexOf('no such column') === -1) throw err;
     await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} TEXT`).run();
   }
+}
+
+function normalizeManualRelatedPosts(raw) {
+  if (!Array.isArray(raw)) return null;
+  var seen = new Set();
+  var ids = raw.map(function (item) {
+    return typeof item === 'object' && item ? item.id : item;
+  }).map(function (value) {
+    return parseInt(value, 10);
+  }).filter(function (value) {
+    if (!Number.isFinite(value) || value < 1 || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  }).slice(0, 5);
+  return ids.length ? JSON.stringify(ids) : null;
 }
 
 function sanitizeShortText(value, maxLength) {

@@ -2,7 +2,7 @@ import { verifyTokenRole, extractToken } from '../_shared/auth.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../_shared/engagement.js';
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
-import { findRelatedPosts } from '../_shared/related-posts.js';
+import { findManualRelatedPosts, findRelatedPosts } from '../_shared/related-posts.js';
 import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
 
 /**
@@ -56,9 +56,10 @@ export async function onRequestGet({ params, env, request }) {
     const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
     if (counted) post.views = (post.views || 0) + 1;
   }
-  const [likeStats, relatedPosts, specialFeaturePosts] = await Promise.all([
+  const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
     getLikeStats(env, id, viewerKey),
     findRelatedPosts(env, post, 5),
+    findManualRelatedPosts(env, post, 5),
     findSpecialFeaturePosts(env, post, 50),
   ]);
 
@@ -102,6 +103,7 @@ export async function onRequestGet({ params, env, request }) {
     meta_tags: post.meta_tags || '',
     tag: post.tag || '',
     special_feature: post.special_feature || '',
+    manual_related_posts: manualRelatedPosts || [],
     author: post.author || 'Editor A',
     ai_assisted: !!post.ai_assisted,
     publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
@@ -152,7 +154,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.076.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.079.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -325,7 +327,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.076.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.079.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -426,6 +428,16 @@ export async function onRequestGet({ params, env, request }) {
         </div>
       </div>
 
+      <div class="form-group post-edit-related-group">
+        <label for="post-edit-related-search">유관기사 직접 설정 <span class="admin-label-note">(최대 5개)</span></label>
+        <div id="post-edit-related-selected" class="calendar-related-post-selected"></div>
+        <div class="calendar-related-post-search">
+          <input type="text" id="post-edit-related-search" placeholder="기사 제목으로 검색…" />
+        </div>
+        <div id="post-edit-related-results" class="calendar-related-post-results"></div>
+        <p class="post-edit-note">직접 연결한 기사 수만큼 우선 노출되고, 부족한 수는 자동 추천으로 채워집니다.</p>
+      </div>
+
       <div class="form-group">
         <label>본문</label>
         <div id="post-edit-editorjs" class="post-edit-editor-holder"></div>
@@ -469,7 +481,7 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.076.00"></script>
+  <script src="/js/main.js?v=0.079.00"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -484,8 +496,10 @@ export async function onRequestGet({ params, env, request }) {
       coverImage: _postEditSeed.image_url || null,
       galleryImages: [],
       selectedTags: [],
-      activeCategory: _postEditSeed.category || 'korea'
+      activeCategory: _postEditSeed.category || 'korea',
+      manualRelatedPosts: Array.isArray(_postEditSeed.manual_related_posts) ? _postEditSeed.manual_related_posts.slice(0, 5) : []
     };
+    var _postRelatedSearchTimer = null;
 
     function _setBodyModalLock(locked) {
       document.body.style.overflow = locked ? 'hidden' : '';
@@ -685,6 +699,93 @@ export async function onRequestGet({ params, env, request }) {
         });
     }
 
+    function _renderPostManualRelatedSelected() {
+      var wrap = document.getElementById('post-edit-related-selected');
+      if (!wrap) return;
+      if (!_postEditState.manualRelatedPosts.length) {
+        wrap.innerHTML = '<div class="post-edit-note">직접 연결한 유관기사가 없습니다.</div>';
+        return;
+      }
+      wrap.innerHTML = _postEditState.manualRelatedPosts.map(function (item) {
+        return '<div class="calendar-related-post-pill">' +
+          '<strong>' + GW.escapeHtml(item.title || '') + '</strong>' +
+          '<button type="button" class="calendar-related-post-remove" onclick="window._removePostManualRelated(' + Number(item.id) + ')">제거</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function _loadPostManualRelatedResults() {
+      var input = document.getElementById('post-edit-related-search');
+      var list = document.getElementById('post-edit-related-results');
+      if (!list) return;
+      var query = input ? (input.value || '').trim() : '';
+      if (!query) {
+        list.innerHTML = '<div class="post-edit-note">기사 제목으로 검색해 직접 연결할 유관기사를 선택하세요.</div>';
+        return;
+      }
+      list.innerHTML = '<div class="post-edit-note">관련 기사를 불러오는 중…</div>';
+      GW.apiFetch('/api/posts?page=1&limit=8&q=' + encodeURIComponent(query))
+        .then(function (data) {
+          var rows = Array.isArray(data && data.posts) ? data.posts : [];
+          rows = rows.filter(function (item) { return Number(item.id) !== Number(_editPostId); });
+          if (!rows.length) {
+            list.innerHTML = '<div class="post-edit-note">검색 결과 없음</div>';
+            return;
+          }
+          list.innerHTML = rows.map(function (item) {
+            var selected = _postEditState.manualRelatedPosts.some(function (related) { return Number(related.id) === Number(item.id); });
+            return '<button type="button" class="calendar-related-post-result' + (selected ? ' is-selected' : '') + '" onclick="window._addPostManualRelated(' + Number(item.id) + ')">' +
+              '<strong>' + GW.escapeHtml(item.title || '') + '</strong>' +
+              '<span>' + GW.escapeHtml((GW.CATEGORIES[item.category] || GW.CATEGORIES.korea).label) + (selected ? ' · 선택됨' : '') + '</span>' +
+            '</button>';
+          }).join('');
+        })
+        .catch(function () {
+          list.innerHTML = '<div class="post-edit-note">관련 기사 검색에 실패했습니다.</div>';
+        });
+    }
+
+    window._searchPostManualRelated = function () {
+      clearTimeout(_postRelatedSearchTimer);
+      _postRelatedSearchTimer = setTimeout(_loadPostManualRelatedResults, 180);
+    };
+
+    window._addPostManualRelated = function (postId) {
+      var numericId = parseInt(postId, 10);
+      if (!Number.isFinite(numericId) || numericId < 1) return;
+      if (_postEditState.manualRelatedPosts.some(function (item) { return Number(item.id) === numericId; })) return;
+      if (_postEditState.manualRelatedPosts.length >= 5) {
+        GW.showToast('유관기사는 최대 5개까지 직접 연결할 수 있습니다', 'error');
+        return;
+      }
+      GW.apiFetch('/api/posts/' + numericId)
+        .then(function (data) {
+          var post = data && data.post ? data.post : null;
+          if (!post) throw new Error('관련 기사를 불러오지 못했습니다');
+          _postEditState.manualRelatedPosts.push({
+            id: post.id,
+            title: post.title || '',
+            category: post.category || '',
+            publish_at: post.publish_at || '',
+            created_at: post.created_at || '',
+          });
+          _renderPostManualRelatedSelected();
+          _loadPostManualRelatedResults();
+        })
+        .catch(function (err) {
+          GW.showToast((err && err.message) || '관련 기사를 추가하지 못했습니다', 'error');
+        });
+    };
+
+    window._removePostManualRelated = function (postId) {
+      var numericId = parseInt(postId, 10);
+      _postEditState.manualRelatedPosts = _postEditState.manualRelatedPosts.filter(function (item) {
+        return Number(item.id) !== numericId;
+      });
+      _renderPostManualRelatedSelected();
+      _loadPostManualRelatedResults();
+    };
+
     function _addPostManagedTag() {
       var input = document.getElementById('post-tag-new-input');
       var value = (input && input.value || '').trim();
@@ -847,10 +948,15 @@ export async function onRequestGet({ params, env, request }) {
       _postEditState.coverImage = _postEditSeed.image_url || null;
       _postEditState.galleryImages = _parsePostGallerySeed(_postEditSeed.gallery_images);
       _postEditState.selectedTags = _parsePostTags(_postEditSeed.tag);
+      _postEditState.manualRelatedPosts = Array.isArray(_postEditSeed.manual_related_posts) ? _postEditSeed.manual_related_posts.slice(0, 5) : [];
       _postEditState.activeCategory = _postEditSeed.category || 'korea';
       _syncPostCategoryChip(_postEditState.activeCategory);
       _renderPostCoverPreview();
       _renderPostGalleryPreview();
+      _renderPostManualRelatedSelected();
+      var relatedInput = document.getElementById('post-edit-related-search');
+      if (relatedInput) relatedInput.value = '';
+      _loadPostManualRelatedResults();
       _loadPostTagOptions(_postEditState.activeCategory);
       _fillPostAuthorOptions({});
       GW.apiFetch('/api/settings/editors')
@@ -1054,6 +1160,7 @@ export async function onRequestGet({ params, env, request }) {
               location_address: locationAddress || null,
               tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
               meta_tags: metaTags || null,
+              manual_related_posts: _postEditState.manualRelatedPosts || [],
               author: author || null,
               ai_assisted: aiAssisted,
               publish_at: publishDate ? GW.normalizePublishAtValue(publishDate) : undefined
@@ -1126,6 +1233,9 @@ export async function onRequestGet({ params, env, request }) {
     });
     document.getElementById('post-tag-new-btn').addEventListener('click', function () {
       _addPostManagedTag();
+    });
+    document.getElementById('post-edit-related-search').addEventListener('input', function () {
+      window._searchPostManualRelated();
     });
     document.getElementById('post-tag-new-input').addEventListener('keydown', function (event) {
       if (event.key === 'Enter') {
