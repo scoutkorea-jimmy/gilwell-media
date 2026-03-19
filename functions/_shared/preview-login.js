@@ -52,7 +52,8 @@ export async function clearPreviewLoginCode(env) {
 }
 
 export async function sendPreviewLoginEmail(env, code) {
-  if (!env.RESEND_API_KEY) {
+  const resendKey = await getPreviewResendKey(env);
+  if (!resendKey) {
     throw new Error('RESEND_API_KEY secret is missing');
   }
   const to = getPreviewLoginEmail(env);
@@ -76,7 +77,7 @@ export async function sendPreviewLoginEmail(env, code) {
   const response = await fetch(RESEND_API, {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer ' + env.RESEND_API_KEY,
+      'Authorization': 'Bearer ' + resendKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -92,6 +93,16 @@ export async function sendPreviewLoginEmail(env, code) {
     throw new Error('메일 전송에 실패했습니다: ' + textBody);
   }
   return response.json().catch(function () { return { ok: true }; });
+}
+
+async function getPreviewResendKey(env) {
+  if (env && env.RESEND_API_KEY) return String(env.RESEND_API_KEY).trim();
+  try {
+    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = ?`).bind('preview_resend_api_key').first();
+    return row && row.value ? String(row.value).trim() : '';
+  } catch (_) {
+    return '';
+  }
 }
 
 export function generatePreviewLoginCode() {
