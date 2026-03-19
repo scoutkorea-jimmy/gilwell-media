@@ -3942,19 +3942,28 @@ footer a:hover { color: #ffffff; }
   margin-top: 14px;
 }
 
+.calendar-region-group {
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
 .calendar-region-group-head {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-bottom: 8px;
   padding: 10px 12px;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 0;
+  background: transparent;
   text-align: left;
   cursor: pointer;
   font-size: 11px;
   color: var(--muted);
+  list-style: none;
+}
+
+.calendar-region-group-head::-webkit-details-marker {
+  display: none;
 }
 
 .calendar-region-group-head strong {
@@ -3990,6 +3999,7 @@ footer a:hover { color: #ffffff; }
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding: 0 12px 12px;
 }
 
 .calendar-status-head {
@@ -5177,9 +5187,38 @@ footer a:hover { color: #ffffff; }
   width: 100%;
   overflow-x: auto;
 }
+.analytics-line-chart-shell {
+  position: relative;
+}
 .analytics-line-chart {
   width: 100%;
   min-height: 220px;
+}
+.analytics-line-tooltip {
+  position: absolute;
+  z-index: 3;
+  min-width: 120px;
+  max-width: 220px;
+  padding: 10px 12px;
+  border: 1px solid rgba(24, 20, 17, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(24, 20, 17, 0.12);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+.analytics-line-tooltip strong {
+  display: block;
+  font-size: 11px;
+  color: var(--ink);
+}
+.analytics-line-tooltip span,
+.analytics-line-tooltip em {
+  display: block;
+  margin-top: 3px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  font-style: normal;
 }
 .analytics-line-guide {
   stroke: rgba(24, 20, 17, 0.12);
@@ -5205,6 +5244,39 @@ footer a:hover { color: #ffffff; }
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 8px;
   letter-spacing: 0.04em;
+}
+.analytics-line-hit {
+  fill: transparent;
+  stroke: transparent;
+  cursor: pointer;
+}
+.analytics-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.analytics-insight-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 14px;
+}
+.analytics-insight-card strong {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.analytics-insight-value {
+  margin-top: 10px;
+  font-size: 24px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.analytics-insight-card p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 .analytics-pie-wrap {
   margin-bottom: 16px;

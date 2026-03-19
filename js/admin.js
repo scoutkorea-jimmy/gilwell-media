@@ -3025,7 +3025,7 @@
 
   window.setAnalyticsChartMode = function (kind, mode) {
     if (kind !== 'visitors' && kind !== 'views') return;
-    _analyticsChartModes[kind] = mode === 'bar' ? 'bar' : 'line';
+    _analyticsChartModes[kind] = (mode === 'bar' || mode === 'cumulative') ? mode : 'line';
     syncAnalyticsChartModeButtons();
     if (_analyticsPayload) renderAnalyticsPage(_analyticsPayload);
   };
@@ -3115,6 +3115,7 @@
     renderAnalyticsVisitorsTable(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
     renderAnalyticsViewsTable(payload.views && payload.views.series ? payload.views.series : [], payload.range || fallback.range);
     renderAnalyticsTopPages(payload.views && payload.views.top_paths ? payload.views.top_paths : payload.top_paths);
+    renderAnalyticsInsights(payload);
     _syncAnalyticsViewMode();
     syncAnalyticsChartModeButtons();
   }
@@ -3150,21 +3151,24 @@
       el.innerHTML = '<div class="list-empty">' + GW.escapeHtml(emptyText) + '</div>';
       return;
     }
+    var chartRows = mode === 'cumulative' ? buildCumulativeAnalyticsRows(rows, seriesDefs) : rows.slice();
     var max = 0;
-    rows.forEach(function (row) {
+    chartRows.forEach(function (row) {
       seriesDefs.forEach(function (series) {
         max = Math.max(max, Number(row[series.key] || 0));
       });
     });
     max = max || 1;
     var legend = '<div class="analytics-chart-legend">' + seriesDefs.map(function (series) {
-      return '<span><i class="analytics-legend-swatch ' + series.className + '"></i>' + GW.escapeHtml(series.label) + '</span>';
+      var label = mode === 'cumulative' ? (series.label + ' 누적') : series.label;
+      return '<span><i class="analytics-legend-swatch ' + series.className + '"></i>' + GW.escapeHtml(label) + '</span>';
     }).join('') + '</div>';
-    if (mode === 'line') {
-      el.innerHTML = legend + buildAnalyticsLineChart(rows, seriesDefs, max, range);
+    if (mode === 'line' || mode === 'cumulative') {
+      el.innerHTML = legend + buildAnalyticsLineChart(chartRows, seriesDefs, max, range, mode);
+      bindAnalyticsChartTooltip(el);
       return;
     }
-    var items = rows.map(function (row) {
+    var items = chartRows.map(function (row) {
       var bars = seriesDefs.map(function (series) {
         var value = Number(row[series.key] || 0);
         var width = Math.max(4, Math.round((value / max) * 100));
@@ -3181,7 +3185,7 @@
     el.innerHTML = legend + '<div class="analytics-chart">' + items + '</div>';
   }
 
-  function buildAnalyticsLineChart(rows, seriesDefs, max, range) {
+  function buildAnalyticsLineChart(rows, seriesDefs, max, range, mode) {
     var width = 640;
     var height = 220;
     var paddingX = 18;
@@ -3207,14 +3211,58 @@
       var pointString = points.map(function (point) {
         return point.x.toFixed(1) + ',' + point.y.toFixed(1);
       }).join(' ');
-      var circles = points.map(function (point) {
-        return '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="4" class="analytics-line-point ' + series.className + '">' +
-          '<title>' + GW.escapeHtml(series.label + ' ' + formatMetricCompact(point.value)) + '</title>' +
-        '</circle>';
+      var circles = points.map(function (point, pointIndex) {
+        var row = rows[pointIndex];
+        var detailLabel = getAnalyticsBucketFullLabel(row, range);
+        var seriesLabel = mode === 'cumulative' ? (series.label + ' 누적') : series.label;
+        return '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="4" class="analytics-line-point ' + series.className + '"></circle>' +
+          '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="12" class="analytics-line-hit" data-analytics-tooltip="' + GW.escapeHtml(seriesLabel + '|' + detailLabel + '|' + formatMetricExact(point.value)) + '"></circle>';
       }).join('');
       return '<polyline fill="none" points="' + pointString + '" class="analytics-line-path ' + series.className + '"></polyline>' + circles;
     }).join('');
-    return '<div class="analytics-line-chart-wrap"><svg viewBox="0 0 ' + width + ' ' + height + '" class="analytics-line-chart" role="img" aria-label="분석 추이 차트">' + guides + seriesSvg + xLabels + '</svg></div>';
+    return '<div class="analytics-line-chart-shell"><div class="analytics-line-tooltip" hidden></div><div class="analytics-line-chart-wrap"><svg viewBox="0 0 ' + width + ' ' + height + '" class="analytics-line-chart" role="img" aria-label="분석 추이 차트">' + guides + seriesSvg + xLabels + '</svg></div></div>';
+  }
+
+  function buildCumulativeAnalyticsRows(rows, seriesDefs) {
+    var totals = {};
+    seriesDefs.forEach(function (series) {
+      totals[series.key] = 0;
+    });
+    return rows.map(function (row) {
+      var next = Object.assign({}, row);
+      seriesDefs.forEach(function (series) {
+        totals[series.key] += Number(row[series.key] || 0);
+        next[series.key] = totals[series.key];
+      });
+      return next;
+    });
+  }
+
+  function bindAnalyticsChartTooltip(el) {
+    var shell = el.querySelector('.analytics-line-chart-shell');
+    var tooltip = shell && shell.querySelector('.analytics-line-tooltip');
+    if (!shell || !tooltip) return;
+    Array.prototype.forEach.call(shell.querySelectorAll('[data-analytics-tooltip]'), function (node) {
+      function showTooltip(event) {
+        var parts = String(node.getAttribute('data-analytics-tooltip') || '').split('|');
+        tooltip.innerHTML = '<strong>' + GW.escapeHtml(parts[0] || '') + '</strong><span>' + GW.escapeHtml(parts[1] || '') + '</span><em>' + GW.escapeHtml(parts[2] || '') + '</em>';
+        tooltip.hidden = false;
+        var shellRect = shell.getBoundingClientRect();
+        var pointRect = node.getBoundingClientRect();
+        var x = pointRect.left - shellRect.left + (pointRect.width / 2);
+        var y = pointRect.top - shellRect.top - 12;
+        tooltip.style.left = Math.max(12, Math.min(shellRect.width - 12, x)) + 'px';
+        tooltip.style.top = Math.max(10, y) + 'px';
+      }
+      function hideTooltip() {
+        tooltip.hidden = true;
+      }
+      node.addEventListener('mouseenter', showTooltip);
+      node.addEventListener('mousemove', showTooltip);
+      node.addEventListener('mouseleave', hideTooltip);
+      node.addEventListener('focus', showTooltip);
+      node.addEventListener('blur', hideTooltip);
+    });
   }
 
   function renderAnalyticsReferrersPie(items) {
@@ -3262,7 +3310,7 @@
   }
 
   function syncAnalyticsChartModeButtons() {
-    [['visitors', 'bar'], ['visitors', 'line'], ['views', 'bar'], ['views', 'line']].forEach(function (pair) {
+    [['visitors', 'bar'], ['visitors', 'line'], ['visitors', 'cumulative'], ['views', 'bar'], ['views', 'line'], ['views', 'cumulative']].forEach(function (pair) {
       var kind = pair[0];
       var mode = pair[1];
       var btn = document.getElementById('analytics-' + kind + '-' + mode + '-btn');
@@ -3366,6 +3414,14 @@
     return formatAnalyticsDate(row && row.date);
   }
 
+  function getAnalyticsBucketFullLabel(row, range) {
+    if (isHourlyAnalyticsRange(range) && row && row.hour != null) {
+      var date = range && range.start_date ? range.start_date : GW.getKstDateInputValue();
+      return String(date) + ' ' + String(row.hour).padStart(2, '0') + ':00';
+    }
+    return row && row.date ? String(row.date) : getAnalyticsBucketLabel(row, range);
+  }
+
   function isHourlyAnalyticsRange(range) {
     return !!(range && range.granularity === 'hour');
   }
@@ -3405,6 +3461,115 @@
     if (num < 1000) return String(Math.round(num)).padStart(3, '0');
     if (num < 1000000) return trimMetricUnit(num / 1000) + 'k';
     return trimMetricUnit(num / 1000000) + 'm';
+  }
+
+  function formatMetricExact(value) {
+    var num = Number(value || 0);
+    if (!Number.isFinite(num)) return String(value || '0');
+    return num.toLocaleString('ko-KR') + '건';
+  }
+
+  function renderAnalyticsInsights(payload) {
+    var cardsEl = document.getElementById('analytics-insights-cards');
+    var notesEl = document.getElementById('analytics-insights-notes');
+    if (!cardsEl || !notesEl) return;
+
+    var visitorSeries = payload && payload.visitors && Array.isArray(payload.visitors.series) ? payload.visitors.series : [];
+    var viewSeries = payload && payload.views && Array.isArray(payload.views.series) ? payload.views.series : [];
+    var referrers = Array.isArray(payload && payload.referrers) ? payload.referrers : [];
+    var topPaths = Array.isArray(payload && payload.top_paths) ? payload.top_paths : [];
+    var range = payload && payload.range ? payload.range : { granularity: 'day' };
+    var summary = payload && payload.summary ? payload.summary : {};
+
+    var peakVisits = getAnalyticsPeak(visitorSeries, 'visits', range);
+    var peakViews = getAnalyticsPeak(viewSeries, 'views', range);
+    var topChannel = referrers[0] || null;
+    var topArticle = topPaths[0] || null;
+    var shareVisits = referrers.filter(function (item) { return item.source_type === 'share'; }).reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0);
+    var searchVisits = referrers.filter(function (item) { return item.source_type === 'search'; }).reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0);
+    var totalTrackedVisits = referrers.reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0) || 1;
+    var viewsPerVisit = Number(summary.range_visits || 0) ? (Number(summary.range_pageviews || 0) / Number(summary.range_visits || 1)) : 0;
+
+    var cards = [
+      {
+        title: '방문당 조회',
+        value: viewsPerVisit ? viewsPerVisit.toFixed(2) : '0.00',
+        meta: '한 번 들어온 사람이 기사 몇 건을 읽는지 보여줍니다.',
+      },
+      {
+        title: '최고 방문 시점',
+        value: peakVisits ? getAnalyticsBucketLabel(peakVisits.row, range) : '—',
+        meta: peakVisits ? ('방문 ' + formatMetricExact(peakVisits.value)) : '데이터가 없습니다.',
+      },
+      {
+        title: '최고 조회 시점',
+        value: peakViews ? getAnalyticsBucketLabel(peakViews.row, range) : '—',
+        meta: peakViews ? ('조회 ' + formatMetricExact(peakViews.value)) : '데이터가 없습니다.',
+      },
+      {
+        title: '최대 유입 채널',
+        value: topChannel ? (topChannel.source_label || '직접 방문') : '—',
+        meta: topChannel ? ('방문 ' + formatMetricExact(topChannel.visits || 0)) : '유입 데이터가 없습니다.',
+      },
+      {
+        title: '가장 읽힌 기사',
+        value: topArticle ? getAnalyticsPageInfo(topArticle).title : '—',
+        meta: topArticle ? ('조회 ' + formatMetricExact(topArticle.pageviews || 0)) : '상위 기사 데이터가 없습니다.',
+      },
+    ];
+
+    cardsEl.innerHTML = cards.map(function (card) {
+      return '<article class="analytics-insight-card">' +
+        '<strong>' + GW.escapeHtml(card.title) + '</strong>' +
+        '<div class="analytics-insight-value">' + GW.escapeHtml(card.value) + '</div>' +
+        '<p>' + GW.escapeHtml(card.meta) + '</p>' +
+      '</article>';
+    }).join('');
+
+    var notes = [
+      {
+        title: '공유 유입 비중',
+        meta: totalTrackedVisits ? (Math.round((shareVisits / totalTrackedVisits) * 100) + '% · 방문 ' + formatMetricExact(shareVisits)) : '데이터가 없습니다.',
+      },
+      {
+        title: '검색 유입 비중',
+        meta: totalTrackedVisits ? (Math.round((searchVisits / totalTrackedVisits) * 100) + '% · 방문 ' + formatMetricExact(searchVisits)) : '데이터가 없습니다.',
+      },
+      {
+        title: '운영 해석',
+        meta: buildAnalyticsInsightNarrative(viewsPerVisit, topChannel, topArticle),
+      },
+    ];
+    notesEl.innerHTML = notes.map(function (item) {
+      return '<div class="analytics-item">' +
+        '<div><strong>' + GW.escapeHtml(item.title) + '</strong><span>' + GW.escapeHtml(item.meta) + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function getAnalyticsPeak(rows, key, range) {
+    if (!Array.isArray(rows) || !rows.length) return null;
+    return rows.reduce(function (best, row) {
+      var value = Number(row[key] || 0);
+      if (!best || value > best.value) return { row: row, value: value, label: getAnalyticsBucketFullLabel(row, range) };
+      return best;
+    }, null);
+  }
+
+  function buildAnalyticsInsightNarrative(viewsPerVisit, topChannel, topArticle) {
+    var message = [];
+    if (viewsPerVisit >= 1.8) {
+      message.push('방문자가 한 번 들어와 여러 기사를 읽는 흐름이 비교적 잘 보입니다.');
+    } else {
+      message.push('첫 방문 후 추가 기사 탐색을 더 유도할 필요가 있습니다.');
+    }
+    if (topChannel && topChannel.source_label) {
+      message.push('현재 가장 강한 유입 채널은 ' + topChannel.source_label + '입니다.');
+    }
+    if (topArticle) {
+      message.push('대표 성과 기사는 ' + getAnalyticsPageInfo(topArticle).title + '입니다.');
+    }
+    return message.join(' ');
   }
 
   function trimMetricUnit(value) {
