@@ -219,7 +219,7 @@
     var lastDay = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0);
     var startWeekday = firstDay.getDay();
     var totalSlots = Math.ceil((startWeekday + lastDay.getDate()) / 7) * 7;
-    var monthItems = getMonthItems();
+    var monthItems = getMonthItems().sort(compareByStartAtAsc);
     var eventMap = buildEventMap(monthItems);
     var cells = [];
     var weekLabels = ['일', '월', '화', '수', '목', '금', '토'];
@@ -238,7 +238,6 @@
       var events = eventMap.get(key) || [];
       var activeClass = key === state.selected ? ' is-active' : '';
       var todayClass = key === toDateKey(new Date()) ? ' is-today' : '';
-      var statusCounts = countStatuses(events);
       cells.push(
         '<button type="button" class="calendar-day' + activeClass + todayClass + '" data-date-key="' + key + '">' +
           '<span class="calendar-day-num">' + dayNum + '</span>' +
@@ -307,18 +306,23 @@
   }
 
   function renderStatusLists() {
-    var monthItems = getMonthItems();
-    var selectedItems = monthItems.filter(function (item) {
-      return eventIncludesDate(item, state.selected);
-    });
-    var ongoingItems = (selectedItems.length ? selectedItems : monthItems).filter(function (item) {
+    var statusTitle = document.getElementById('calendar-status-title');
+    if (statusTitle) {
+      statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 상태별 일정';
+    }
+    var monthItems = getMonthItems().filter(matchesActiveFilters);
+    var ongoingItems = monthItems.filter(function (item) {
       return getEventStatus(item).key === 'ongoing';
     }).sort(compareByStartAtAsc);
-    var upcomingItems = getUpcomingWindowItems().sort(compareByStartAtAsc);
-    var finishedItems = getFinishedWindowItems().sort(compareByEndAtDesc);
+    var upcomingItems = monthItems.filter(function (item) {
+      return getEventStatus(item).key === 'upcoming';
+    }).sort(compareByStartAtAsc);
+    var finishedItems = monthItems.filter(function (item) {
+      return getEventStatus(item).key === 'finished';
+    }).sort(compareByEndAtDesc);
     renderStatusList('calendar-ongoing-events', ongoingItems, '진행중인 일정이 없습니다.');
-    renderStatusList('calendar-upcoming-events', upcomingItems, '최근 3개월 내 개최예정 일정이 없습니다.');
-    renderStatusList('calendar-finished-events', finishedItems, '최근 3개월 내 종료된 일정이 없습니다.');
+    renderStatusList('calendar-upcoming-events', upcomingItems, '이 달에 예정된 일정이 없습니다.');
+    renderStatusList('calendar-finished-events', finishedItems, '이 달에 종료된 일정이 없습니다.');
   }
 
   function eventIncludesDate(item, dateKey) {
@@ -916,25 +920,24 @@
       var endKey = (item.end_at || startKey).slice(0, 10);
       var isSpan = !!(endKey && endKey !== startKey);
       var isStart = !isSpan || startKey === dateKey;
-      var label = isStart ? (item.title || item.title_original || '') : '';
-      return '<span class="calendar-day-entry is-' + status + (isSpan ? ' is-span' : '') + (isStart ? ' is-start' : ' is-continued') + '">' +
+      var date = parseDate(dateKey);
+      var weekday = date ? date.getDay() : 0;
+      var isRowStart = weekday === 0;
+      var isRowEnd = weekday === 6;
+      var startsBefore = isSpan && startKey < dateKey;
+      var endsAfter = isSpan && endKey > dateKey;
+      var segmentClass = isSpan
+        ? (startsBefore ? (endsAfter ? ' is-middle' : ' is-end') : (endsAfter ? ' is-start' : ' is-single'))
+        : ' is-single';
+      if (isSpan && isRowStart && segmentClass === ' is-middle') segmentClass = ' is-start';
+      if (isSpan && isRowStart && segmentClass === ' is-end') segmentClass = ' is-end';
+      if (isSpan && isRowEnd && segmentClass === ' is-middle') segmentClass = ' is-end';
+      if (isSpan && isRowEnd && segmentClass === ' is-start') segmentClass = ' is-start';
+      var label = (!isSpan || isStart || isRowStart) ? (item.title || item.title_original || '') : '';
+      return '<span class="calendar-day-entry is-' + status + (isSpan ? ' is-span' : '') + segmentClass + '">' +
         '<span class="calendar-day-entry-copy">' + escape(label || '') + '</span>' +
       '</span>';
     }).join('') + (items.length > 2 ? '<span class="calendar-day-entry-more">+' + (items.length - 2) + '</span>' : '');
-  }
-
-  function filterByStatus(items, key) {
-    return (Array.isArray(items) ? items : []).filter(function (item) {
-      return getEventStatus(item).key === key;
-    });
-  }
-
-  function countStatuses(items) {
-    return (Array.isArray(items) ? items : []).reduce(function (acc, item) {
-      var key = getEventStatus(item).key;
-      acc[key] += 1;
-      return acc;
-    }, { ongoing: 0, upcoming: 0, finished: 0 });
   }
 
   function getEventStatus(item) {
@@ -965,26 +968,6 @@
     return start.slice(5) + ' ~ ' + end.slice(5);
   }
 
-  function getUpcomingWindowItems() {
-    var now = startOfDay(new Date());
-    var end = addMonths(now, 3);
-    return state.items.filter(function (item) {
-      var status = getEventStatus(item).key;
-      var start = parseDate(item.start_at);
-      return status === 'upcoming' && start && start >= now && start <= end;
-    });
-  }
-
-  function getFinishedWindowItems() {
-    var end = endOfDay(new Date());
-    var start = addMonths(startOfDay(new Date()), -3);
-    return state.items.filter(function (item) {
-      var status = getEventStatus(item).key;
-      var endDate = parseDate(item.end_at || item.start_at);
-      return status === 'finished' && endDate && endDate >= start && endDate <= end;
-    });
-  }
-
   function syncMapFilters() {
     var categories = [];
     var tags = [];
@@ -1009,6 +992,17 @@
       if (index >= 0) state.mapFilterCategories.splice(index, 1);
       else state.mapFilterCategories.push(value);
       renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    }, state.allMapCategories);
+    renderFilterGroup('calendar-status-category-filters', state.mapFilterCategories, function (value) {
+      return value;
+    }, function (value) {
+      var index = state.mapFilterCategories.indexOf(value);
+      if (index >= 0) state.mapFilterCategories.splice(index, 1);
+      else state.mapFilterCategories.push(value);
+      renderMapFilters();
+      renderStatusLists();
       renderMapMarkers();
     }, state.allMapCategories);
     renderFilterGroup('calendar-map-tag-filters', state.mapFilterTags, function (value) {
@@ -1018,8 +1012,31 @@
       if (index >= 0) state.mapFilterTags.splice(index, 1);
       else state.mapFilterTags.push(value);
       renderMapFilters();
+      renderStatusLists();
       renderMapMarkers();
     }, state.allMapTags);
+    renderFilterGroup('calendar-status-tag-filters', state.mapFilterTags, function (value) {
+      return value;
+    }, function (value) {
+      var index = state.mapFilterTags.indexOf(value);
+      if (index >= 0) state.mapFilterTags.splice(index, 1);
+      else state.mapFilterTags.push(value);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+    }, state.allMapTags);
+  }
+
+  function matchesActiveFilters(item) {
+    var categoryAllowed = !state.allMapCategories.length
+      ? true
+      : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
+    var tagsAllowed = !state.allMapTags.length
+      ? true
+      : (!(Array.isArray(item.event_tags) && item.event_tags.length) ? false : item.event_tags.some(function (tag) {
+          return state.mapFilterTags.indexOf(tag) >= 0;
+        }));
+    return categoryAllowed && tagsAllowed;
   }
 
   function renderFilterGroup(id, selectedItems, labelFn, onToggle, allItems) {
