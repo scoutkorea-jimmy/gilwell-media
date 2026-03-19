@@ -13,6 +13,7 @@ export async function ensureCalendarTable(env) {
       latitude REAL,
       longitude REAL,
       related_post_id INTEGER,
+      related_posts_json TEXT,
       start_at TEXT NOT NULL,
       start_has_time INTEGER NOT NULL DEFAULT 0,
       end_at TEXT,
@@ -29,6 +30,7 @@ export async function ensureCalendarTable(env) {
   await ensureCalendarColumn(env, 'latitude', 'REAL');
   await ensureCalendarColumn(env, 'longitude', 'REAL');
   await ensureCalendarColumn(env, 'related_post_id', 'INTEGER');
+  await ensureCalendarColumn(env, 'related_posts_json', 'TEXT');
   await ensureCalendarColumn(env, 'start_has_time', 'INTEGER DEFAULT 0');
   await ensureCalendarColumn(env, 'end_has_time', 'INTEGER DEFAULT 0');
 }
@@ -56,6 +58,7 @@ export function normalizeCalendarInput(body) {
   );
   const link_url = normalizeUrl(body && body.link_url);
   const related_post_id = normalizeInteger(body && body.related_post_id);
+  const related_posts = normalizeRelatedPosts(body && (body.related_posts || body.related_post_ids));
 
   if (!title && !title_original) return { error: '행사명(국문) 또는 원문 제목을 입력해주세요.' };
   if (!startValue.value) return { error: '행사 시작 일을 입력해주세요.' };
@@ -73,6 +76,7 @@ export function normalizeCalendarInput(body) {
     latitude,
     longitude,
     related_post_id,
+    related_posts_json: JSON.stringify(related_posts),
     start_at: startValue.value,
     start_has_time: startValue.hasTime ? 1 : 0,
     end_at: endValue.value || null,
@@ -98,6 +102,7 @@ export function normalizeCalendarRows(rows) {
       related_post_id: row.related_post_id == null ? null : Number(row.related_post_id),
       related_post_title: row.related_post_title || '',
       related_post_category: row.related_post_category || '',
+      related_posts: parseRelatedPosts(row.related_posts_json, row),
       start_at: row.start_at || '',
       start_has_time: Number(row.start_has_time || 0) === 1,
       end_at: row.end_at || '',
@@ -212,4 +217,41 @@ function parseTags(value) {
   } catch (_) {
     return normalizeTags(String(value).split(','));
   }
+}
+
+function normalizeRelatedPosts(value) {
+  const source = Array.isArray(value) ? value : [];
+  const seen = new Set();
+  return source
+    .map(function (item) {
+      if (!item || typeof item !== 'object') return null;
+      const id = normalizeInteger(item.id);
+      if (!id || seen.has(id)) return null;
+      seen.add(id);
+      return {
+        id: id,
+        title: String(item.title || '').trim().slice(0, 200),
+        category: String(item.category || '').trim().slice(0, 40),
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function parseRelatedPosts(value, row) {
+  if (value) {
+    try {
+      const parsed = JSON.parse(String(value));
+      const normalized = normalizeRelatedPosts(parsed);
+      if (normalized.length) return normalized;
+    } catch (_) {}
+  }
+  if (row && row.related_post_id) {
+    return [{
+      id: Number(row.related_post_id),
+      title: row.related_post_title || '',
+      category: row.related_post_category || '',
+    }];
+  }
+  return [];
 }

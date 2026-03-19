@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   latitude REAL,
   longitude REAL,
   related_post_id INTEGER,
+  related_posts_json TEXT,
   start_at TEXT NOT NULL,
   start_has_time INTEGER NOT NULL DEFAULT 0,
   end_at TEXT,
