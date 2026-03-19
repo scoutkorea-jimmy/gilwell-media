@@ -29,11 +29,13 @@
     relatedSearchTimer: null,
     modalMap: null,
     modalMarker: null,
+    canManage: false,
   };
 
   function init() {
     GW.bootstrapStandardPage();
     bind();
+    refreshCalendarAuthState();
     initMap();
     initModalMap();
     loadTagPresets();
@@ -274,7 +276,7 @@
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
-    var editAction = GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full'
+    var editAction = state.canManage
       ? '<button type="button" class="calendar-event-edit-btn" data-calendar-edit="' + item.id + '">수정</button>'
       : '';
     return '<article class="calendar-event-card' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
@@ -384,12 +386,34 @@
     });
   }
 
-  function ensureCalendarAuth(onSuccess) {
-    if (GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full') {
-      onSuccess();
-      return;
+  function refreshCalendarAuthState() {
+    state.canManage = false;
+    if (!(GW.getToken && GW.getToken())) {
+      renderStatusLists();
+      return Promise.resolve(false);
     }
-    openLogin(onSuccess);
+    return GW.apiFetch('/api/admin/session', { method: 'GET' })
+      .then(function (data) {
+        state.canManage = !!(data && data.authenticated && data.role === 'full');
+        renderStatusLists();
+        return state.canManage;
+      })
+      .catch(function () {
+        if (GW.clearToken) GW.clearToken();
+        state.canManage = false;
+        renderStatusLists();
+        return false;
+      });
+  }
+
+  function ensureCalendarAuth(onSuccess) {
+    refreshCalendarAuthState().then(function (canManage) {
+      if (canManage) {
+        if (typeof onSuccess === 'function') onSuccess();
+        return;
+      }
+      openLogin(onSuccess);
+    });
   }
 
   function openLogin(onSuccess) {
@@ -432,6 +456,7 @@
       }
       GW.setToken(data.token);
       GW.setAdminRole(data.role || 'full');
+      state.canManage = true;
       var modal = document.getElementById('calendar-login-modal');
       var handler = modal && modal._onSuccess;
       closeLogin();
@@ -721,29 +746,47 @@
     }
     var url = state.editingId ? '/api/calendar/' + state.editingId : '/api/calendar';
     var method = state.editingId ? 'PUT' : 'POST';
-    GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
-      .then(function () {
-        GW.showToast(state.editingId ? '일정이 수정됐습니다' : '일정이 등록됐습니다', 'success');
-        closeEditor();
-        loadEvents();
-      })
-      .catch(function (err) {
-        GW.showToast(err.message || '일정 저장 실패', 'error');
-      });
+    ensureCalendarAuth(function () {
+      GW.apiFetch(url, { method: method, body: JSON.stringify(payload) })
+        .then(function () {
+          GW.showToast(state.editingId ? '일정이 수정됐습니다' : '일정이 등록됐습니다', 'success');
+          closeEditor();
+          loadEvents();
+        })
+        .catch(function (err) {
+          if (err && err.status === 401) {
+            state.canManage = false;
+            openLogin(function () {
+              submitCalendarEvent();
+            });
+            return;
+          }
+          GW.showToast(err.message || '일정 저장 실패', 'error');
+        });
+    });
   }
 
   function deleteCalendarEvent() {
     if (!state.editingId) return;
     if (!window.confirm('이 일정을 삭제할까요?')) return;
-    GW.apiFetch('/api/calendar/' + state.editingId, { method: 'DELETE' })
-      .then(function () {
-        GW.showToast('일정이 삭제됐습니다', 'success');
-        closeEditor();
-        loadEvents();
-      })
-      .catch(function (err) {
-        GW.showToast(err.message || '일정 삭제 실패', 'error');
-      });
+    ensureCalendarAuth(function () {
+      GW.apiFetch('/api/calendar/' + state.editingId, { method: 'DELETE' })
+        .then(function () {
+          GW.showToast('일정이 삭제됐습니다', 'success');
+          closeEditor();
+          loadEvents();
+        })
+        .catch(function (err) {
+          if (err && err.status === 401) {
+            state.canManage = false;
+            openLogin(function () {
+              deleteCalendarEvent();
+            });
+            return;
+          }
+          GW.showToast(err.message || '일정 삭제 실패', 'error');
+        });
+    });
   }
 
   function getMonthItems() {
