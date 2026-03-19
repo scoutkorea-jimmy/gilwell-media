@@ -17,16 +17,26 @@
     selected: toDateKey(new Date()),
     map: null,
     mapLayer: null,
+    allMapCategories: [],
+    allMapTags: [],
+    mapFilterCategories: [],
+    mapFilterTags: [],
     editingId: null,
     tags: [],
+    tagPresets: [],
     relatedPost: null,
+    relatedPosts: [],
     relatedSearchTimer: null,
+    modalMap: null,
+    modalMarker: null,
   };
 
   function init() {
     GW.bootstrapStandardPage();
     bind();
     initMap();
+    initModalMap();
+    loadTagPresets();
     loadEvents();
   }
 
@@ -71,6 +81,7 @@
     var editDelete = document.getElementById('calendar-modal-delete-btn');
     var tagAdd = document.getElementById('calendar-modal-tag-add-btn');
     var relatedQuery = document.getElementById('calendar-modal-related-post-query');
+    var geoSearch = document.getElementById('calendar-modal-geo-search-btn');
     var loginModal = document.getElementById('calendar-login-modal');
     var editOverlay = document.getElementById('calendar-edit-overlay');
 
@@ -81,6 +92,7 @@
     if (editSubmit) editSubmit.addEventListener('click', submitCalendarEvent);
     if (editDelete) editDelete.addEventListener('click', deleteCalendarEvent);
     if (tagAdd) tagAdd.addEventListener('click', addModalTag);
+    if (geoSearch) geoSearch.addEventListener('click', searchModalGeo);
     if (relatedQuery) {
       relatedQuery.addEventListener('input', function () {
         if (state.relatedSearchTimer) clearTimeout(state.relatedSearchTimer);
@@ -122,11 +134,35 @@
     state.map.on('zoomend moveend', renderMapMarkers);
   }
 
+  function initModalMap() {
+    if (!window.L) return;
+    var mapEl = document.getElementById('calendar-modal-geo-map');
+    if (!mapEl) return;
+    state.modalMap = L.map(mapEl, { scrollWheelZoom: true }).setView([36.5, 127.9], 3);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(state.modalMap);
+  }
+
+  function loadTagPresets() {
+    fetch('/api/settings/calendar-tags', { cache: 'no-store' })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        state.tagPresets = Array.isArray(data && data.items) ? data.items : [];
+        renderModalTagPresets();
+      })
+      .catch(function () {
+        state.tagPresets = [];
+        renderModalTagPresets();
+      });
+  }
+
   function loadEvents() {
     fetch('/api/calendar', { cache: 'no-store' })
       .then(function (res) { return res.json(); })
       .then(function (data) {
         state.items = Array.isArray(data && data.items) ? data.items : [];
+        syncMapFilters();
         render();
       })
       .catch(function () {
@@ -138,6 +174,7 @@
   function render() {
     renderGrid();
     renderStatusLists();
+    renderMapFilters();
     renderMapMarkers();
   }
 
@@ -230,9 +267,10 @@
         }).join('') + '</div>'
       : '';
     var relatedLinks = '';
-    if (item.related_post_id && item.related_post_title) {
-      relatedLinks += '<a class="calendar-event-link" href="/post/' + item.related_post_id + '">관련 기사 읽기 ↗</a>';
-    }
+    (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
+      if (!related || !related.id) return;
+      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기 ↗</a>';
+    });
     if (item.link_url) {
       relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
     }
@@ -310,7 +348,17 @@
 
   function getMapItems() {
     return state.items.filter(function (item) {
+      var categoryAllowed = !state.allMapCategories.length
+        ? true
+        : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
+      var tagsAllowed = !state.allMapTags.length
+        ? true
+        : (!(Array.isArray(item.event_tags) && item.event_tags.length) ? false : item.event_tags.some(function (tag) {
+        return state.mapFilterTags.indexOf(tag) >= 0;
+      }));
       return getEventStatus(item).key !== 'finished' &&
+        categoryAllowed &&
+        tagsAllowed &&
         Number.isFinite(Number(item.latitude)) &&
         Number.isFinite(Number(item.longitude));
     }).map(function (item) {
@@ -401,11 +449,8 @@
   function openEditor(item) {
     state.editingId = item && item.id ? item.id : null;
     state.tags = item && Array.isArray(item.event_tags) ? item.event_tags.slice() : [];
-    state.relatedPost = item && item.related_post_id ? {
-      id: item.related_post_id,
-      title: item.related_post_title || '',
-      category: item.related_post_category || ''
-    } : null;
+    state.relatedPosts = item && Array.isArray(item.related_posts) ? item.related_posts.slice() : [];
+    state.relatedPost = state.relatedPosts[0] || null;
     setValue('calendar-edit-title', state.editingId ? '일정 수정' : '일정 추가');
     setValue('calendar-modal-title-input', item && item.title || '');
     setValue('calendar-modal-title-original-input', item && item.title_original || '');
@@ -422,13 +467,15 @@
     setValue('calendar-modal-location-name-input', item && item.location_name || '');
     setValue('calendar-modal-location-address-input', item && item.location_address || '');
     setValue('calendar-modal-link-input', item && item.link_url || '');
-    setValue('calendar-modal-lat-input', item && item.latitude != null ? item.latitude : '');
-    setValue('calendar-modal-lng-input', item && item.longitude != null ? item.longitude : '');
+    setValue('calendar-modal-geo-query', '');
+    setHtml('calendar-modal-geo-results', '');
     setValue('calendar-modal-description-input', item && item.description || '');
     setValue('calendar-modal-related-post-query', '');
     setHtml('calendar-modal-related-post-results', '');
     renderModalTags();
+    renderModalTagPresets();
     renderModalRelatedPost();
+    syncModalGeoMarker(item && item.latitude, item && item.longitude);
     var deleteBtn = document.getElementById('calendar-modal-delete-btn');
     if (deleteBtn) deleteBtn.style.display = state.editingId ? '' : 'none';
     var overlay = document.getElementById('calendar-edit-overlay');
@@ -460,6 +507,7 @@
     state.tags.push(value);
     if (input) input.value = '';
     renderModalTags();
+    renderModalTagPresets();
   }
 
   function renderModalTags() {
@@ -479,6 +527,33 @@
         var target = btn.getAttribute('data-calendar-modal-tag') || '';
         state.tags = state.tags.filter(function (tag) { return tag !== target; });
         renderModalTags();
+        renderModalTagPresets();
+      });
+    });
+  }
+
+  function renderModalTagPresets() {
+    var wrap = document.getElementById('calendar-modal-tag-presets');
+    if (!wrap) return;
+    if (!state.tagPresets.length) {
+      wrap.innerHTML = '';
+      return;
+    }
+    wrap.innerHTML = state.tagPresets.map(function (tag) {
+      var active = state.tags.indexOf(tag) >= 0 ? ' is-active' : '';
+      return '<button type="button" class="calendar-tag-chip calendar-tag-preset' + active + '" data-calendar-modal-preset-tag="' + escape(tag) + '">' +
+        '<span>' + escape(tag) + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-modal-preset-tag]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var tag = btn.getAttribute('data-calendar-modal-preset-tag') || '';
+        if (state.tags.indexOf(tag) >= 0) {
+          state.tags = state.tags.filter(function (item) { return item !== tag; });
+        } else {
+          state.tags.push(tag);
+        }
+        renderModalTags();
+        renderModalTagPresets();
       });
     });
   }
@@ -509,7 +584,9 @@
             var id = parseInt(btn.getAttribute('data-post-id'), 10);
             var post = posts.find(function (entry) { return entry.id === id; });
             if (!post) return;
+            if (state.relatedPosts.some(function (entry) { return entry.id === post.id; })) return;
             state.relatedPost = { id: post.id, title: post.title || '', category: post.category || '' };
+            state.relatedPosts.push(state.relatedPost);
             setValue('calendar-modal-related-post-query', '');
             setHtml('calendar-modal-related-post-results', '');
             renderModalRelatedPost();
@@ -524,23 +601,94 @@
   function renderModalRelatedPost() {
     var wrap = document.getElementById('calendar-modal-related-post-selected');
     if (!wrap) return;
-    if (!state.relatedPost || !state.relatedPost.id) {
+    if (!state.relatedPosts.length) {
       wrap.innerHTML = '<div class="list-empty">선택된 관련 기사가 없습니다.</div>';
       return;
     }
-    wrap.innerHTML = '<div class="calendar-related-post-pill">' +
-      '<div><strong>' + escape(state.relatedPost.title || '') + '</strong>' +
-      (state.relatedPost.category ? '<span>' + escape(state.relatedPost.category) + '</span>' : '') +
-      '</div>' +
-      '<button type="button" id="calendar-modal-related-post-clear-btn">해제</button>' +
-    '</div>';
-    var clearBtn = document.getElementById('calendar-modal-related-post-clear-btn');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function () {
-        state.relatedPost = null;
+    wrap.innerHTML = state.relatedPosts.map(function (item) {
+      return '<div class="calendar-related-post-pill">' +
+        '<div><strong>' + escape(item.title || '') + '</strong>' +
+        (item.category ? '<span>' + escape(item.category) + '</span>' : '') +
+        '</div>' +
+        '<button type="button" data-calendar-modal-related-remove="' + item.id + '">해제</button>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-modal-related-remove]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(btn.getAttribute('data-calendar-modal-related-remove'), 10);
+        state.relatedPosts = state.relatedPosts.filter(function (entry) { return entry.id !== id; });
+        state.relatedPost = state.relatedPosts[0] || null;
         renderModalRelatedPost();
       });
+    });
+  }
+
+  function searchModalGeo() {
+    var query = valueOf('calendar-modal-geo-query');
+    var resultsEl = document.getElementById('calendar-modal-geo-results');
+    if (!query) {
+      GW.showToast('검색할 주소나 장소명을 입력해주세요', 'error');
+      return;
     }
+    resultsEl.innerHTML = '<div class="list-empty">지도 검색 중…</div>';
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=' + encodeURIComponent(query), {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (items) {
+        if (!Array.isArray(items) || !items.length) {
+          resultsEl.innerHTML = '<div class="list-empty">검색 결과가 없습니다.</div>';
+          return;
+        }
+        resultsEl.innerHTML = items.map(function (item, index) {
+          return '<button type="button" class="calendar-related-post-option" data-calendar-geo-index="' + index + '">' +
+            '<strong>' + escape(item.name || item.display_name || '지도 결과') + '</strong>' +
+            '<span>' + escape(item.display_name || '') + '</span>' +
+          '</button>';
+        }).join('');
+        Array.prototype.forEach.call(resultsEl.querySelectorAll('[data-calendar-geo-index]'), function (btn) {
+          btn.addEventListener('click', function () {
+            var item = items[parseInt(btn.getAttribute('data-calendar-geo-index'), 10)];
+            if (!item) return;
+            applyModalGeoResult(item);
+            resultsEl.innerHTML = '';
+          });
+        });
+      })
+      .catch(function () {
+        resultsEl.innerHTML = '<div class="list-empty">지도 검색에 실패했습니다.</div>';
+      });
+  }
+
+  function applyModalGeoResult(item) {
+    var lat = Number(item && item.lat);
+    var lng = Number(item && item.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (!valueOf('calendar-modal-location-address-input')) {
+      setValue('calendar-modal-location-address-input', item.display_name || '');
+    }
+    if (!valueOf('calendar-modal-location-name-input')) {
+      setValue('calendar-modal-location-name-input', item.name || item.display_name || '');
+    }
+    if (!valueOf('calendar-modal-country-input')) {
+      var country = item.address && (item.address.country || item.address.country_code);
+      if (country) setValue('calendar-modal-country-input', country);
+    }
+    syncModalGeoMarker(lat, lng);
+  }
+
+  function syncModalGeoMarker(lat, lng) {
+    if (!state.modalMap) return;
+    if (state.modalMarker) {
+      state.modalMap.removeLayer(state.modalMarker);
+      state.modalMarker = null;
+    }
+    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+      state.modalMap.setView([36.5, 127.9], 3);
+      return;
+    }
+    state.modalMarker = L.marker([Number(lat), Number(lng)]).addTo(state.modalMap);
+    state.modalMap.setView([Number(lat), Number(lng)], 11);
   }
 
   function submitCalendarEvent() {
@@ -556,9 +704,10 @@
       country_name: valueOf('calendar-modal-country-input'),
       location_name: valueOf('calendar-modal-location-name-input'),
       location_address: valueOf('calendar-modal-location-address-input'),
-      latitude: valueOf('calendar-modal-lat-input'),
-      longitude: valueOf('calendar-modal-lng-input'),
-      related_post_id: state.relatedPost && state.relatedPost.id ? state.relatedPost.id : null,
+      latitude: state.modalMarker ? state.modalMarker.getLatLng().lat : '',
+      longitude: state.modalMarker ? state.modalMarker.getLatLng().lng : '',
+      related_post_id: state.relatedPosts.length ? state.relatedPosts[0].id : null,
+      related_posts: state.relatedPosts.slice(),
       link_url: valueOf('calendar-modal-link-input'),
       description: valueOf('calendar-modal-description-input'),
     };
@@ -653,6 +802,61 @@
     if (!endDate) return start;
     var end = endDate + ((item && item.end_has_time) ? ' ' + toTimeValue(item.end_at) : '');
     return start + ' ~ ' + end;
+  }
+
+  function syncMapFilters() {
+    var categories = [];
+    var tags = [];
+    state.items.forEach(function (item) {
+      var category = normalizeCategory(item.event_category);
+      if (categories.indexOf(category) < 0) categories.push(category);
+      (Array.isArray(item.event_tags) ? item.event_tags : []).forEach(function (tag) {
+        if (tags.indexOf(tag) < 0) tags.push(tag);
+      });
+    });
+    state.allMapCategories = categories.slice();
+    state.allMapTags = tags.slice();
+    state.mapFilterCategories = categories.slice();
+    state.mapFilterTags = tags.slice();
+  }
+
+  function renderMapFilters() {
+    renderFilterGroup('calendar-map-category-filters', state.mapFilterCategories, function (value) {
+      return value;
+    }, function (value) {
+      var index = state.mapFilterCategories.indexOf(value);
+      if (index >= 0) state.mapFilterCategories.splice(index, 1);
+      else state.mapFilterCategories.push(value);
+      renderMapFilters();
+      renderMapMarkers();
+    }, state.allMapCategories);
+    renderFilterGroup('calendar-map-tag-filters', state.mapFilterTags, function (value) {
+      return value;
+    }, function (value) {
+      var index = state.mapFilterTags.indexOf(value);
+      if (index >= 0) state.mapFilterTags.splice(index, 1);
+      else state.mapFilterTags.push(value);
+      renderMapFilters();
+      renderMapMarkers();
+    }, state.allMapTags);
+  }
+
+  function renderFilterGroup(id, selectedItems, labelFn, onToggle, allItems) {
+    var wrap = document.getElementById(id);
+    if (!wrap) return;
+    if (!allItems.length) {
+      wrap.innerHTML = '<div class="list-empty">표시할 항목이 없습니다.</div>';
+      return;
+    }
+    wrap.innerHTML = allItems.map(function (item) {
+      var active = selectedItems.indexOf(item) >= 0 ? ' is-active' : '';
+      return '<button type="button" class="calendar-filter-chip' + active + '" data-calendar-filter="' + escape(item) + '">' + escape(labelFn(item)) + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-filter]'), function (btn) {
+      btn.addEventListener('click', function () {
+        onToggle(btn.getAttribute('data-calendar-filter') || '');
+      });
+    });
   }
 
   function parseDateTime(value) {

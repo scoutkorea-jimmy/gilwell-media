@@ -2947,6 +2947,10 @@ p { margin-bottom: 6px; }
   pointer-events: none;
 }
 
+body.preview-runtime .toast {
+  bottom: 116px;
+}
+
 .toast.show { transform: translateY(0); opacity: 1; }
 .toast.success { border-left: 4px solid var(--success); }
 .toast.error   { border-left: 4px solid var(--danger);  }
@@ -3501,6 +3505,47 @@ footer a:hover { color: #ffffff; }
   margin-top: 24px;
 }
 
+.calendar-map-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-map-filters strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.calendar-filter-chip-list,
+.calendar-tag-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-filter-chip,
+.calendar-tag-preset {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.calendar-filter-chip.is-active,
+.calendar-tag-preset.is-active {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(92, 42, 157, 0.08);
+}
+
 .calendar-manage-btn,
 .calendar-event-edit-btn {
   display: inline-flex;
@@ -3871,6 +3916,12 @@ footer a:hover { color: #ffffff; }
   gap: 10px;
 }
 
+.calendar-geo-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
 .calendar-tag-chip,
 .calendar-related-post-pill,
 .calendar-related-post-option {
@@ -3887,6 +3938,34 @@ footer a:hover { color: #ffffff; }
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   text-align: left;
+}
+
+.calendar-inline-map {
+  width: 100%;
+  height: 260px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--page-bg);
+}
+
+.calendar-tag-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.calendar-tag-manager-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.calendar-settings-card {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: rgba(92, 42, 157, 0.03);
 }
 
 .calendar-tag-chip strong,
@@ -11376,6 +11455,11 @@ body.admin-page .item-meta-chip span {
   .calendar-page-head-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .calendar-map-filters,
+  .calendar-geo-search {
+    grid-template-columns: 1fr;
   }
 
   .calendar-day {

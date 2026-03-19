@@ -16,9 +16,9 @@ export async function onRequestPut({ request, env, params }) {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
       UPDATE calendar_events
-      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, related_posts_json = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-      RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, start_at, start_has_time, end_at, end_has_time, link_url, created_at, updated_at
+      RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, created_at, updated_at
     `).bind(
       normalized.title,
       normalized.title_original,
@@ -31,6 +31,7 @@ export async function onRequestPut({ request, env, params }) {
       normalized.latitude,
       normalized.longitude,
       normalized.related_post_id,
+      normalized.related_posts_json,
       normalized.start_at,
       normalized.start_has_time,
       normalized.end_at,
