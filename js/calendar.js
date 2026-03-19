@@ -98,6 +98,7 @@
     var loginCancel = document.getElementById('calendar-login-cancel-btn');
     var editClose = document.getElementById('calendar-edit-close-btn');
     var editCancel = document.getElementById('calendar-modal-cancel-btn');
+    var detailClose = document.getElementById('calendar-detail-close-btn');
     var editSubmit = document.getElementById('calendar-modal-submit-btn');
     var editDelete = document.getElementById('calendar-modal-delete-btn');
     var tagAdd = document.getElementById('calendar-modal-tag-add-btn');
@@ -105,11 +106,13 @@
     var geoSearch = document.getElementById('calendar-modal-geo-search-btn');
     var loginModal = document.getElementById('calendar-login-modal');
     var editOverlay = document.getElementById('calendar-edit-overlay');
+    var detailOverlay = document.getElementById('calendar-detail-overlay');
 
     if (loginSubmit) loginSubmit.addEventListener('click', submitLogin);
     if (loginCancel) loginCancel.addEventListener('click', closeLogin);
     if (editClose) editClose.addEventListener('click', closeEditor);
     if (editCancel) editCancel.addEventListener('click', closeEditor);
+    if (detailClose) detailClose.addEventListener('click', closeDetail);
     if (editSubmit) editSubmit.addEventListener('click', submitCalendarEvent);
     if (editDelete) editDelete.addEventListener('click', deleteCalendarEvent);
     if (tagAdd) tagAdd.addEventListener('click', addModalTag);
@@ -130,6 +133,11 @@
     if (editOverlay) {
       editOverlay.addEventListener('click', function (event) {
         if (event.target === editOverlay) closeEditor();
+      });
+    }
+    if (detailOverlay) {
+      detailOverlay.addEventListener('click', function (event) {
+        if (event.target === detailOverlay) closeDetail();
       });
     }
   }
@@ -247,6 +255,10 @@
     grid.innerHTML = cells.join('');
     Array.prototype.forEach.call(grid.querySelectorAll('[data-date-key]'), function (btn) {
       btn.addEventListener('click', function () {
+        if (btn.hasAttribute('data-calendar-item-id')) {
+          openDetail(findItem(parseInt(btn.getAttribute('data-calendar-item-id'), 10)));
+          return;
+        }
         state.selected = btn.getAttribute('data-date-key');
         renderMonthView();
         renderStatusLists();
@@ -277,7 +289,7 @@
       return '<div class="calendar-week-lane">' + lane.map(function (segment) {
         var status = getEventStatus(segment.item).key;
         var label = formatWeekSegmentLabel(segment, weekStart);
-        return '<button type="button" class="calendar-week-bar is-' + status + segment.shapeClass + '" style="grid-column:' + segment.startCol + ' / ' + (segment.endCol + 1) + ';" data-date-key="' + segment.focusKey + '">' +
+        return '<button type="button" class="calendar-week-bar is-' + status + segment.shapeClass + '" style="grid-column:' + segment.startCol + ' / ' + (segment.endCol + 1) + ';" data-date-key="' + segment.focusKey + '" data-calendar-item-id="' + segment.item.id + '">' +
           '<span class="calendar-week-bar-copy">' + escape(label) + '</span>' +
         '</button>';
       }).join('') + '</div>';
@@ -313,7 +325,7 @@
               ? monthItems.map(function (item) {
                   var titleText = item.title || item.title_original || '';
                   var status = getEventStatus(item);
-                  return '<button type="button" class="calendar-year-event is-' + status.key + '" data-date-key="' + escape((item.start_at || '').slice(0, 10)) + '">' +
+                  return '<button type="button" class="calendar-year-event is-' + status.key + '" data-date-key="' + escape((item.start_at || '').slice(0, 10)) + '" data-calendar-item-id="' + item.id + '">' +
                     '<span class="calendar-year-event-date">' + escape(formatCalendarShortRange(item)) + '</span>' +
                     '<span class="calendar-year-event-title">' + escape(titleText) + '</span>' +
                   '</button>';
@@ -326,6 +338,10 @@
     grid.innerHTML = '<div class="calendar-year-grid">' + monthHtml.join('') + '</div>';
     Array.prototype.forEach.call(grid.querySelectorAll('[data-date-key]'), function (btn) {
       btn.addEventListener('click', function () {
+        if (btn.hasAttribute('data-calendar-item-id')) {
+          openDetail(findItem(parseInt(btn.getAttribute('data-calendar-item-id'), 10)));
+          return;
+        }
         var dateKey = btn.getAttribute('data-date-key');
         if (!dateKey) return;
         state.selected = dateKey;
@@ -416,6 +432,50 @@
         editAction +
       '</div>' +
       '<h4>' + escape(title) + '</h4>' +
+      originalTitle +
+      (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
+      tagHtml +
+      (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
+      (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
+    '</article>';
+  }
+
+  function renderDetailContent(item) {
+    var when = formatEventTime(item);
+    var place = item.location_name || item.location_address || item.country_name || '';
+    var category = normalizeCategory(item.event_category);
+    var status = getEventStatus(item);
+    var categoryClass = status.key === 'finished' ? ' is-muted' : ' is-' + category.toLowerCase();
+    var title = item.title || item.title_original || '';
+    var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
+    var tagHtml = item.event_tags && item.event_tags.length
+      ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
+          return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
+        }).join('') + '</div>'
+      : '';
+    var relatedLinks = '';
+    (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
+      if (!related || !related.id) return;
+      relatedLinks += '<a class="calendar-event-link" href="/post/' + related.id + '">관련 기사 읽기 ↗</a>';
+    });
+    if (item.link_url) {
+      relatedLinks += '<a class="calendar-event-link" href="' + escape(item.link_url) + '" target="_blank" rel="noopener">외부 링크 ↗</a>';
+    }
+    var editAction = state.canManage
+      ? '<button type="button" class="calendar-event-edit-btn" data-calendar-detail-edit="' + item.id + '">일정 수정</button>'
+      : '';
+    return '<article class="calendar-event-card calendar-event-card-detail' + (status.key === 'finished' ? ' is-finished' : '') + '">' +
+      '<div class="calendar-event-card-head">' +
+        '<div>' +
+          '<div class="calendar-event-badges">' +
+            '<span class="calendar-category-badge' + categoryClass + '">' + category + '</span>' +
+            '<span class="calendar-status-badge is-' + status.key + '">' + escape(status.label) + '</span>' +
+          '</div>' +
+          '<div class="calendar-event-time">' + escape(when) + '</div>' +
+        '</div>' +
+        editAction +
+      '</div>' +
+      '<h3 id="calendar-detail-title">' + escape(title) + '</h3>' +
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       tagHtml +
@@ -645,6 +705,32 @@
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     state.editingId = null;
+  }
+
+  function openDetail(item) {
+    if (!item) return;
+    var overlay = document.getElementById('calendar-detail-overlay');
+    var body = document.getElementById('calendar-detail-body');
+    if (!overlay || !body) return;
+    body.innerHTML = renderDetailContent(item);
+    var editBtn = body.querySelector('[data-calendar-detail-edit]');
+    if (editBtn) {
+      editBtn.addEventListener('click', function () {
+        closeDetail();
+        ensureCalendarAuth(function () {
+          openEditor(item);
+        }, true);
+      });
+    }
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeDetail() {
+    var overlay = document.getElementById('calendar-detail-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
   }
 
   function addModalTag() {

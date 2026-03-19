@@ -4182,6 +4182,20 @@ footer a:hover { color: #ffffff; }
   max-width: 840px;
 }
 
+.calendar-detail-box {
+  max-width: 720px;
+}
+
+.calendar-detail-body {
+  max-height: min(78vh, 760px);
+  overflow: auto;
+}
+
+.calendar-event-card-detail {
+  border: 0;
+  padding: 0;
+}
+
 .calendar-map {
   width: 100%;
   height: 480px;
