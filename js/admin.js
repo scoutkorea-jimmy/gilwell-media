@@ -612,6 +612,10 @@
     });
   }
 
+  window.openKmsPage = function () {
+    window.location.href = '/kms.html';
+  };
+
   function resolvePreviewReleaseUrl(isPreviewHost) {
     return isPreviewHost
       ? (window.location.origin + '/api/preview/release')
@@ -716,7 +720,10 @@
     if (tab === 'calendar') loadCalendarAdmin();
     if (tab === 'history') loadVersionHistory();
     if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
-    if (tab === 'feature-definition') loadFeatureDefinitionAdmin();
+    if (tab === 'feature-definition') {
+      openKmsPage();
+      return;
+    }
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -3732,7 +3739,6 @@
         _calendarTagPresets = Array.isArray(tagData && tagData.items) ? tagData.items : [];
         populateCalendarCopyEditor(copyData && copyData.copy);
         renderCalendarAdmin();
-        renderCalendarTitleManager();
         renderCalendarTagPresetManager();
         renderCalendarTagEditor();
       })

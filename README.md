@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.081.00`
+- Current version: `V0.082.00`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -18,7 +18,7 @@ All static asset cache-busting query strings should follow this same version.
 Operational references:
 - `docs/release-playbook.md`
 - `docs/preview-release-checklist.md`
-- 관리자 페이지 `기능 정의서` 메뉴
+- 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
 - `docs/writing-regression-checklist.md`
 
@@ -45,11 +45,13 @@ gilwell-media/
 ├── people.html             Scout People board
 ├── glossary.html           Scout glossary board
 ├── admin.html              Admin panel (requires login)
+├── kms.html                Admin-only feature definition / KMS page
 ├── css/style.css           Shared stylesheet
 ├── js/
 │   ├── main.js             Shared utilities (GW namespace)
 │   ├── board.js            Bulletin board component
-│   └── admin.js            Admin panel logic
+│   ├── admin.js            Admin panel logic
+│   └── kms.js              Feature definition / KMS page logic
 ├── assets/                 Static assets (images, icons)
 ├── functions/
 │   ├── _shared/auth.js     HMAC-SHA256 token utilities

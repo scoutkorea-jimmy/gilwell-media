@@ -4598,6 +4598,188 @@ footer a:hover { color: #ffffff; }
   overflow: auto;
 }
 
+.kms-page {
+  background: linear-gradient(180deg, #f8f4ef 0%, #f3ede7 100%);
+}
+
+.kms-screen {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+}
+
+.kms-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.05);
+}
+
+.kms-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kms-header-copy h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.kms-header-copy p {
+  margin: 0;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.kms-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kms-summary {
+  margin-top: 20px;
+}
+
+.kms-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kms-summary-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: rgba(92, 42, 157, 0.03);
+}
+
+.kms-summary-card h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+
+.kms-summary-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.kms-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 20px;
+  align-items: start;
+}
+
+.kms-nav-panel,
+.kms-editor-panel,
+.kms-preview-panel {
+  height: calc(100vh - 230px);
+  min-height: 680px;
+  overflow: hidden;
+}
+
+.kms-nav-panel .panel-body,
+.kms-editor-panel .panel-body,
+.kms-preview-panel .panel-body {
+  height: calc(100% - 62px);
+  overflow: auto;
+}
+
+.kms-section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kms-section-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kms-section-link strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.kms-section-link span {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.kms-editor-input {
+  width: 100%;
+  min-height: 100%;
+  resize: vertical;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 13px;
+  line-height: 1.75;
+  box-sizing: border-box;
+}
+
+.kms-preview-panel .feature-definition-preview {
+  min-height: 100%;
+}
+
+@media (max-width: 1100px) {
+  .kms-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kms-nav-panel,
+  .kms-editor-panel,
+  .kms-preview-panel {
+    height: auto;
+    min-height: 0;
+  }
+
+  .kms-nav-panel .panel-body,
+  .kms-editor-panel .panel-body,
+  .kms-preview-panel .panel-body {
+    height: auto;
+    max-height: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .kms-screen {
+    padding: 16px 14px 32px;
+  }
+
+  .kms-header {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .kms-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ════════════════════════════════════════════════════════════
    HERO SEARCH RESULTS (admin)
    ════════════════════════════════════════════════════════════ */
