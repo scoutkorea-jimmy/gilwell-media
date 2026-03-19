@@ -10,7 +10,7 @@ import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView }
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
-import { findRelatedPosts } from '../../_shared/related-posts.js';
+import { findManualRelatedPosts, findRelatedPosts, parseManualRelatedIds } from '../../_shared/related-posts.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
 import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
@@ -42,14 +42,17 @@ export async function onRequestGet({ params, env, request }) {
       const counted = await recordUniqueView(env, id, viewerKey).catch(() => false);
       if (counted) post.views = (post.views || 0) + 1;
     }
-    const [likeStats, relatedPosts, specialFeaturePosts] = await Promise.all([
+    const [likeStats, relatedPosts, manualRelatedPosts, specialFeaturePosts] = await Promise.all([
       getLikeStats(env, id, viewerKey),
       findRelatedPosts(env, post, 5),
+      findManualRelatedPosts(env, post, 5),
       findSpecialFeaturePosts(env, post, 50),
     ]);
     post.likes = likeStats.likes;
     post.liked = likeStats.liked;
     post.related_posts = relatedPosts;
+    post.manual_related_posts = manualRelatedPosts;
+    post.manual_related_post_ids = parseManualRelatedIds(post.manual_related_posts);
     post.special_feature_posts = specialFeaturePosts;
 
     const origin = new URL(request.url).origin;
@@ -85,7 +88,7 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, manual_related_posts, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
@@ -137,6 +140,7 @@ export async function onRequestPut({ params, request, env }) {
   if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
+  if (manual_related_posts !== undefined) { fields.push('manual_related_posts = ?'); values.push(normalizeManualRelatedPosts(manual_related_posts)); }
   const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
   if (publish_at !== undefined || publish_date !== undefined) {
     if (normalizedPublishAt) {
@@ -414,6 +418,7 @@ async function ensurePostOptionalColumns(env) {
   await ensureColumn(env, 'gallery_images');
   await ensureColumn(env, 'location_name');
   await ensureColumn(env, 'location_address');
+  await ensureColumn(env, 'manual_related_posts');
 }
 
 async function ensureColumn(env, columnName) {
@@ -424,4 +429,19 @@ async function ensureColumn(env, columnName) {
     if (msg.indexOf('no such column') === -1) throw err;
     await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} TEXT`).run();
   }
+}
+
+function normalizeManualRelatedPosts(raw) {
+  if (!Array.isArray(raw)) return null;
+  var seen = new Set();
+  var ids = raw.map(function (item) {
+    return typeof item === 'object' && item ? item.id : item;
+  }).map(function (value) {
+    return parseInt(value, 10);
+  }).filter(function (value) {
+    if (!Number.isFinite(value) || value < 1 || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  }).slice(0, 5);
+  return ids.length ? JSON.stringify(ids) : null;
 }

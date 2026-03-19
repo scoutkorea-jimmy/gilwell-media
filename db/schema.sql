@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS posts (
   image_url    TEXT,
   image_caption TEXT,
   gallery_images TEXT,
+  manual_related_posts TEXT,
   youtube_url  TEXT,
   location_name TEXT,
   location_address TEXT,

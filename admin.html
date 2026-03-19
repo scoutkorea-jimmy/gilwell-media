@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.078.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.079.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.078.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.079.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.078.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.079.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -237,14 +237,26 @@
 
         <div class="dashboard-2col admin-dashboard-grid">
           <div class="panel">
-            <div class="panel-header"><h2>방문자 추이</h2></div>
+            <div class="panel-header panel-header-split">
+              <h2>방문자 추이</h2>
+              <div class="analytics-graph-toggle">
+                <button type="button" id="analytics-visitors-bar-btn" onclick="setAnalyticsChartMode('visitors','bar')">막대</button>
+                <button type="button" id="analytics-visitors-line-btn" class="active" onclick="setAnalyticsChartMode('visitors','line')">꺾은선</button>
+              </div>
+            </div>
             <div class="panel-body">
               <div id="analytics-visitors-chart" class="analytics-chart-wrap"></div>
               <div id="analytics-visitors-table" class="analytics-table-wrap" style="display:none;"></div>
             </div>
           </div>
           <div class="panel">
-            <div class="panel-header"><h2>조회수 추이</h2></div>
+            <div class="panel-header panel-header-split">
+              <h2>조회수 추이</h2>
+              <div class="analytics-graph-toggle">
+                <button type="button" id="analytics-views-bar-btn" onclick="setAnalyticsChartMode('views','bar')">막대</button>
+                <button type="button" id="analytics-views-line-btn" class="active" onclick="setAnalyticsChartMode('views','line')">꺾은선</button>
+              </div>
+            </div>
             <div class="panel-body">
               <div id="analytics-views-chart" class="analytics-chart-wrap"></div>
               <div id="analytics-views-table" class="analytics-table-wrap" style="display:none;"></div>
@@ -256,6 +268,7 @@
           <div class="panel">
             <div class="panel-header"><h2>유입 경로</h2></div>
             <div class="panel-body">
+              <div id="analytics-referrers-pie" class="analytics-pie-wrap"></div>
               <div id="analytics-referrers" class="analytics-list"></div>
             </div>
           </div>
@@ -382,6 +395,16 @@
             <div class="form-group admin-form-group-section">
               <label for="art-metatags">SEO 해시태그 <span class="admin-label-note">(쉼표로 구분)</span></label>
               <input type="text" id="art-metatags" placeholder="예: 스카우트, 잼버리, WOSM" maxlength="500" />
+            </div>
+
+            <div class="form-group admin-form-group-section">
+              <label for="admin-related-search-input">유관기사 직접 설정 <span class="admin-label-note">(최대 5개)</span></label>
+              <div id="admin-related-selected" class="calendar-related-post-selected"></div>
+              <div class="calendar-related-post-search">
+                <input type="text" id="admin-related-search-input" placeholder="기사 제목으로 검색…" oninput="searchAdminRelatedPosts()" />
+              </div>
+              <div id="admin-related-search-results" class="calendar-related-post-results"></div>
+              <p class="admin-field-meta">직접 연결한 기사 수만큼 우선 노출되고, 부족한 수는 자동 추천으로 채웁니다.</p>
             </div>
 
             <div class="form-group admin-inline-check">
@@ -976,8 +999,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.078.00"></script>
-  <script src="/js/admin.js?v=0.078.00"></script>
+  <script src="/js/main.js?v=0.079.00"></script>
+  <script src="/js/admin.js?v=0.079.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
