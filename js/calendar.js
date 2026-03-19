@@ -482,7 +482,6 @@
     renderStatusList('calendar-ongoing-events', ongoingItems, copyText('ongoing_empty', '진행중인 일정이 없습니다.'));
     renderStatusList('calendar-upcoming-events', upcomingItems, copyText('upcoming_empty', '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.'));
     renderStatusList('calendar-finished-events', finishedItems, copyText('finished_empty', '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.'));
-    toggleStatusGroup('calendar-ongoing-events', !!ongoingItems.length);
   }
 
   function eventIncludesDate(item, dateKey) {
@@ -504,12 +503,15 @@
         openDetail(findItem(idValue));
       });
     });
-    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-region-toggle]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var category = String(btn.getAttribute('data-calendar-region-toggle') || '').toUpperCase();
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-region-details]'), function (details) {
+      details.addEventListener('toggle', function () {
+        var category = String(details.getAttribute('data-calendar-region-details') || '').toUpperCase();
         if (!category) return;
-        state.collapsedRegions[category] = !state.collapsedRegions[category];
-        renderStatusLists();
+        state.collapsedRegions[category] = !details.open;
+        var head = details.querySelector('.calendar-region-group-head');
+        var arrow = details.querySelector('.calendar-region-group-arrow');
+        if (head) head.classList.toggle('is-collapsed', !details.open);
+        if (arrow) arrow.textContent = details.open ? '－' : '＋';
       });
     });
     Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-edit]'), function (btn) {
@@ -534,15 +536,15 @@
       return grouped[key].length;
     }).map(function (key) {
       var collapsed = getRegionCollapsedState(key);
-      return '<section class="calendar-region-group">' +
-        '<button type="button" class="calendar-region-group-head is-' + key.toLowerCase() + (collapsed ? ' is-collapsed' : '') + '" data-calendar-region-toggle="' + key + '">' +
+      return '<details class="calendar-region-group" data-calendar-region-details="' + key + '"' + (collapsed ? '' : ' open') + '>' +
+        '<summary class="calendar-region-group-head is-' + key.toLowerCase() + (collapsed ? ' is-collapsed' : '') + '">' +
           '<span class="calendar-region-group-dot"></span>' +
           '<strong>' + escape(CATEGORY_META[key].label) + '</strong>' +
           '<span>' + grouped[key].length + '개</span>' +
           '<span class="calendar-region-group-arrow">' + (collapsed ? '＋' : '－') + '</span>' +
-        '</button>' +
-        '<div class="calendar-region-group-list"' + (collapsed ? ' hidden' : '') + '>' + grouped[key].map(renderEventCard).join('') + '</div>' +
-      '</section>';
+        '</summary>' +
+        '<div class="calendar-region-group-list">' + grouped[key].map(renderEventCard).join('') + '</div>' +
+      '</details>';
     }).join('');
   }
 
@@ -551,12 +553,6 @@
       return !!state.collapsedRegions[category];
     }
     return category !== 'KOR';
-  }
-
-  function toggleStatusGroup(listId, visible) {
-    var wrap = document.getElementById(listId);
-    if (!wrap || !wrap.parentElement) return;
-    wrap.parentElement.hidden = !visible;
   }
 
   function renderEventCard(item) {
@@ -1292,14 +1288,6 @@
   function formatWeekSegmentLabel(segment, weekStart) {
     var item = segment.item;
     var title = item.title || item.title_original || '';
-    var start = parseDate(item.start_at);
-    var isSingleDay = toDateOnlyValue(item.start_at) === toDateOnlyValue(item.end_at || item.start_at);
-    if (isSingleDay && item.start_has_time) {
-      return formatTimeOnly(item.start_at) + ' ' + title;
-    }
-    if (!isSingleDay && item.start_has_time && diffInDays(weekStart, startOfDay(start)) >= 0) {
-      return formatTimeOnly(item.start_at) + ' ' + title;
-    }
     return title;
   }
 
