@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V0.080.11`
+- Current version: `V0.080.12`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -18,7 +18,8 @@ All static asset cache-busting query strings should follow this same version.
 Operational references:
 - `docs/release-playbook.md`
 - `docs/preview-release-checklist.md`
-- `docs/feature-definition.md`
+- 관리자 페이지 `기능 정의서` 메뉴
+- `docs/feature-definition.md` (보조 스냅샷)
 - `docs/writing-regression-checklist.md`
 
 Optional production secrets:
