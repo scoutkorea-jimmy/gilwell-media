@@ -4257,6 +4257,30 @@ footer a:hover { color: #ffffff; }
   gap: 10px;
 }
 
+.calendar-title-manager-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.calendar-title-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.calendar-title-manager-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .calendar-settings-card {
   margin-top: 20px;
   padding: 18px;
@@ -4335,6 +4359,16 @@ footer a:hover { color: #ffffff; }
 .calendar-map-popup strong {
   display: block;
   margin-bottom: 6px;
+}
+
+.calendar-map-popup-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .calendar-map-popup ul {
@@ -11953,7 +11987,8 @@ body.admin-page .item-meta-chip span {
   .calendar-admin-form,
   .calendar-modal-grid,
   .calendar-form-split,
-  .calendar-tags-controls {
+  .calendar-tags-controls,
+  .calendar-title-manager-grid {
     grid-template-columns: 1fr;
   }
 
