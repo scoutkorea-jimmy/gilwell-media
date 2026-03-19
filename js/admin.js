@@ -157,6 +157,7 @@
   var _heroSearchQuery = '';
   var _heroSearchResults = [];
   var _heroSearchBound = false;
+  var _featureDefinitionLoaded = false;
   var _homeLeadPost = null;
   var _homeLeadMedia = defaultHomeLeadMedia();
   var _homeLeadSearchTimer = null;
@@ -713,6 +714,7 @@
     if (tab === 'calendar') loadCalendarAdmin();
     if (tab === 'history') loadVersionHistory();
     if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
+    if (tab === 'settings') loadFeatureDefinitionAdmin();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -758,6 +760,106 @@
     if (siteGroup) syncAdminSidebarGroupVisibility(siteGroup, _adminGroup === 'site');
     var overviewGroup = document.querySelector('.admin-sidebar-group[data-admin-group="overview"]');
     if (overviewGroup) syncAdminSidebarGroupVisibility(overviewGroup, _adminGroup === 'overview');
+  }
+
+  function loadFeatureDefinitionAdmin() {
+    if (_featureDefinitionLoaded) return;
+    _featureDefinitionLoaded = true;
+    GW.apiFetch('/api/settings/feature-definition')
+      .then(function (data) {
+        var content = String(data && data.content || '').trim();
+        var input = document.getElementById('feature-definition-input');
+        if (input) {
+          input.value = content;
+          if (input.dataset.bound !== 'true') {
+            input.dataset.bound = 'true';
+            input.addEventListener('input', function () {
+              renderFeatureDefinitionPreview(input.value || '');
+            });
+          }
+        }
+        renderFeatureDefinitionPreview(content);
+      })
+      .catch(function (err) {
+        var preview = document.getElementById('feature-definition-preview');
+        if (preview) preview.innerHTML = '<div class="list-empty">' + GW.escapeHtml(err.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
+      });
+  }
+
+  function renderFeatureDefinitionPreview(content) {
+    var preview = document.getElementById('feature-definition-preview');
+    if (!preview) return;
+    var text = String(content || '').replace(/\r\n/g, '\n');
+    if (!text.trim()) {
+      preview.innerHTML = '<div class="list-empty">정의서 내용을 입력하면 여기에서 바로 미리볼 수 있습니다.</div>';
+      return;
+    }
+    var parts = text.split(/```/);
+    var html = parts.map(function (part, index) {
+      if (index % 2 === 1) {
+        var lines = part.replace(/^\n+|\n+$/g, '').split('\n');
+        var language = '';
+        if (lines.length && /^[A-Za-z0-9_-]+$/.test(lines[0].trim())) {
+          language = lines.shift().trim();
+        }
+        return '<div class="feature-definition-code-wrap">' +
+          (language ? '<div class="feature-definition-code-label">' + GW.escapeHtml(language) + '</div>' : '') +
+          '<pre class="feature-definition-code"><code>' + GW.escapeHtml(lines.join('\n')) + '</code></pre>' +
+        '</div>';
+      }
+      return renderFeatureDefinitionText(part);
+    }).join('');
+    preview.innerHTML = html;
+  }
+
+  function renderFeatureDefinitionText(text) {
+    var lines = String(text || '').split('\n');
+    var html = [];
+    var inList = false;
+    lines.forEach(function (line) {
+      var raw = line.trim();
+      if (!raw) {
+        if (inList) {
+          html.push('</ul>');
+          inList = false;
+        }
+        return;
+      }
+      if (/^###\s+/.test(raw)) {
+        if (inList) { html.push('</ul>'); inList = false; }
+        html.push('<h4>' + GW.escapeHtml(raw.replace(/^###\s+/, '')) + '</h4>');
+        return;
+      }
+      if (/^##\s+/.test(raw)) {
+        if (inList) { html.push('</ul>'); inList = false; }
+        html.push('<h3>' + GW.escapeHtml(raw.replace(/^##\s+/, '')) + '</h3>');
+        return;
+      }
+      if (/^#\s+/.test(raw)) {
+        if (inList) { html.push('</ul>'); inList = false; }
+        html.push('<h2>' + GW.escapeHtml(raw.replace(/^#\s+/, '')) + '</h2>');
+        return;
+      }
+      if (/^-\s+/.test(raw)) {
+        if (!inList) {
+          html.push('<ul>');
+          inList = true;
+        }
+        html.push('<li>' + formatFeatureDefinitionInline(raw.replace(/^-\s+/, '')) + '</li>');
+        return;
+      }
+      if (inList) {
+        html.push('</ul>');
+        inList = false;
+      }
+      html.push('<p>' + formatFeatureDefinitionInline(raw) + '</p>');
+    });
+    if (inList) html.push('</ul>');
+    return html.join('');
+  }
+
+  function formatFeatureDefinitionInline(text) {
+    return GW.escapeHtml(String(text || '')).replace(/`([^`]+)`/g, '<code>$1</code>');
   }
 
   function syncAdminSidebarGroupVisibility(section, visible) {
@@ -3925,6 +4027,24 @@
       loadCalendarAdmin();
     }).catch(function (err) {
       GW.showToast(err.message || '일정 제목 저장 실패', 'error');
+    });
+  };
+
+  window.saveFeatureDefinition = function () {
+    var input = document.getElementById('feature-definition-input');
+    var content = String(input && input.value || '').trim();
+    if (!content) {
+      GW.showToast('기능 정의서 내용이 비어 있습니다', 'error');
+      return;
+    }
+    GW.apiFetch('/api/settings/feature-definition', {
+      method: 'PUT',
+      body: JSON.stringify({ content: content })
+    }).then(function () {
+      GW.showToast('기능 정의서가 저장됐습니다', 'success');
+      renderFeatureDefinitionPreview(content);
+    }).catch(function (err) {
+      GW.showToast(err.message || '기능 정의서 저장 실패', 'error');
     });
   };
 
