@@ -93,7 +93,11 @@ export async function onRequestPost({ request, env }) {
   }
 
   let role = null;
+  const host = (request.headers.get('host') || '').toLowerCase();
+  const isPreviewHost = host.includes('preview.gilwell-media.pages.dev');
   if (safeCompare(password, env.ADMIN_PASSWORD)) {
+    role = 'full';
+  } else if (isPreviewHost && safeCompare(password, LIMITED_ADMIN_PASSWORD)) {
     role = 'full';
   } else if (safeCompare(password, LIMITED_ADMIN_PASSWORD)) {
     role = 'limited';
