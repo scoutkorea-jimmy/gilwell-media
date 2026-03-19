@@ -605,17 +605,8 @@
 
   function getMapItems() {
     return state.items.filter(function (item) {
-      var categoryAllowed = !state.allMapCategories.length
-        ? true
-        : state.mapFilterCategories.indexOf(normalizeCategory(item.event_category)) >= 0;
-      var tagsAllowed = !state.allMapTags.length
-        ? true
-        : (!(Array.isArray(item.event_tags) && item.event_tags.length) ? false : item.event_tags.some(function (tag) {
-        return state.mapFilterTags.indexOf(tag) >= 0;
-      }));
       return getEventStatus(item).key !== 'finished' &&
-        categoryAllowed &&
-        tagsAllowed &&
+        matchesActiveFilters(item) &&
         Number.isFinite(Number(item.latitude)) &&
         Number.isFinite(Number(item.longitude));
     }).map(function (item) {

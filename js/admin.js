@@ -638,6 +638,7 @@
     glossary: 'content',
     calendar: 'content',
     settings: 'site',
+    'feature-definition': 'site',
     'hero-manager': 'site',
     'home-lead': 'site',
     contributors: 'site',
@@ -714,7 +715,7 @@
     if (tab === 'calendar') loadCalendarAdmin();
     if (tab === 'history') loadVersionHistory();
     if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
-    if (tab === 'settings') loadFeatureDefinitionAdmin();
+    if (tab === 'feature-definition') loadFeatureDefinitionAdmin();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
