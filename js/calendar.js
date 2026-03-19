@@ -220,40 +220,72 @@
     var startWeekday = firstDay.getDay();
     var totalSlots = Math.ceil((startWeekday + lastDay.getDate()) / 7) * 7;
     var monthItems = getMonthItems().sort(compareByStartAtAsc);
-    var eventMap = buildEventMap(monthItems);
     var cells = [];
     var weekLabels = ['일', '월', '화', '수', '목', '금', '토'];
     cells.push('<div class="calendar-weekdays">' + weekLabels.map(function (label) {
       return '<span>' + label + '</span>';
     }).join('') + '</div>');
-    cells.push('<div class="calendar-grid">');
-    for (var slot = 0; slot < totalSlots; slot += 1) {
-      var dayNum = slot - startWeekday + 1;
-      if (dayNum < 1 || dayNum > lastDay.getDate()) {
-        cells.push('<button type="button" class="calendar-day is-empty" disabled aria-hidden="true"></button>');
-        continue;
+    cells.push('<div class="calendar-month-weeks">');
+    for (var weekStartSlot = 0; weekStartSlot < totalSlots; weekStartSlot += 7) {
+      var weekDays = [];
+      for (var offset = 0; offset < 7; offset += 1) {
+        var slot = weekStartSlot + offset;
+        var dayNum = slot - startWeekday + 1;
+        var isInMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
+        var current = isInMonth
+          ? new Date(state.month.getFullYear(), state.month.getMonth(), dayNum)
+          : new Date(state.month.getFullYear(), state.month.getMonth(), dayNum);
+        weekDays.push({
+          date: current,
+          key: toDateKey(current),
+          inMonth: isInMonth
+        });
       }
-      var current = new Date(state.month.getFullYear(), state.month.getMonth(), dayNum);
-      var key = toDateKey(current);
-      var events = eventMap.get(key) || [];
-      var activeClass = key === state.selected ? ' is-active' : '';
-      var todayClass = key === toDateKey(new Date()) ? ' is-today' : '';
-      cells.push(
-        '<button type="button" class="calendar-day' + activeClass + todayClass + '" data-date-key="' + key + '">' +
-          '<span class="calendar-day-num">' + dayNum + '</span>' +
-          '<span class="calendar-day-count">' + (events.length ? events.length + '개' : '') + '</span>' +
-          '<span class="calendar-day-entries">' + renderDayEntries(events, key) + '</span>' +
-        '</button>'
-      );
+      cells.push(renderWeekRow(weekDays, monthItems));
     }
     cells.push('</div>');
     grid.innerHTML = cells.join('');
     Array.prototype.forEach.call(grid.querySelectorAll('[data-date-key]'), function (btn) {
       btn.addEventListener('click', function () {
         state.selected = btn.getAttribute('data-date-key');
+        renderMonthView();
         renderStatusLists();
       });
     });
+  }
+
+  function renderWeekRow(weekDays, monthItems) {
+    var weekStart = weekDays[0].date;
+    var weekEnd = weekDays[6].date;
+    var dayButtons = weekDays.map(function (day) {
+      var activeClass = day.key === state.selected ? ' is-active' : '';
+      var todayClass = day.key === toDateKey(new Date()) ? ' is-today' : '';
+      var mutedClass = day.inMonth ? '' : ' is-outside';
+      var events = monthItems.filter(function (item) {
+        return eventIncludesDate(item, day.key);
+      });
+      return '<button type="button" class="calendar-day' + activeClass + todayClass + mutedClass + '" data-date-key="' + day.key + '">' +
+        '<span class="calendar-day-num">' + day.date.getDate() + '</span>' +
+        '<span class="calendar-day-count">' + (events.length ? events.length + '개' : '') + '</span>' +
+      '</button>';
+    }).join('');
+    var segments = buildWeekSegments(weekDays, monthItems.filter(function (item) {
+      return intersectsRange(item, weekStart, weekEnd);
+    }));
+    var lanes = buildWeekLanes(segments);
+    var lanesHtml = lanes.length ? lanes.map(function (lane) {
+      return '<div class="calendar-week-lane">' + lane.map(function (segment) {
+        var status = getEventStatus(segment.item).key;
+        var label = formatWeekSegmentLabel(segment, weekStart);
+        return '<button type="button" class="calendar-week-bar is-' + status + segment.shapeClass + '" style="grid-column:' + segment.startCol + ' / ' + (segment.endCol + 1) + ';" data-date-key="' + segment.focusKey + '">' +
+          '<span class="calendar-week-bar-copy">' + escape(label) + '</span>' +
+        '</button>';
+      }).join('') + '</div>';
+    }).join('') : '<div class="calendar-week-empty">등록된 일정이 없습니다.</div>';
+    return '<section class="calendar-week-row">' +
+      '<div class="calendar-week-days">' + dayButtons + '</div>' +
+      '<div class="calendar-week-events">' + lanesHtml + '</div>' +
+    '</section>';
   }
 
   function renderYearView() {
@@ -892,52 +924,94 @@
     });
   }
 
-  function buildEventMap(items) {
-    var map = new Map();
-    (Array.isArray(items) ? items : []).forEach(function (item) {
+  function buildWeekSegments(weekDays, items) {
+    var weekStart = startOfDay(weekDays[0].date);
+    var weekEnd = endOfDay(weekDays[6].date);
+    return items.map(function (item) {
       var start = parseDate(item.start_at);
-      if (!start) return;
       var end = parseDate(item.end_at || item.start_at) || start;
-      var cursor = startOfDay(start);
-      var last = startOfDay(end);
-      while (cursor <= last) {
-        var key = toDateKey(cursor);
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(item);
-        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
-      }
+      var segmentStart = start > weekStart ? startOfDay(start) : weekStart;
+      var segmentEnd = end < weekEnd ? startOfDay(end) : startOfDay(weekEnd);
+      var startCol = diffInDays(weekStart, segmentStart) + 1;
+      var endCol = diffInDays(weekStart, segmentEnd) + 1;
+      var startKey = toDateKey(startOfDay(start));
+      var endKey = toDateKey(startOfDay(end));
+      var focusKey = toDateKey(segmentStart);
+      var isMultiDay = startKey !== endKey;
+      var shapeClass = isMultiDay
+        ? (startKey < focusKey
+            ? (endKey > focusKey ? ' is-middle' : ' is-end')
+            : (endKey > focusKey ? ' is-start' : ' is-single'))
+        : ' is-single';
+      return {
+        item: item,
+        startCol: startCol,
+        endCol: endCol,
+        focusKey: focusKey,
+        shapeClass: shapeClass
+      };
+    }).sort(function (a, b) {
+      if (a.startCol !== b.startCol) return a.startCol - b.startCol;
+      return (b.endCol - b.startCol) - (a.endCol - a.startCol);
     });
-    return map;
   }
 
-  function renderDayEntries(items, dateKey) {
-    if (!Array.isArray(items) || !items.length) {
-      return '<span class="calendar-day-entries-empty"></span>';
+  function buildWeekLanes(segments) {
+    var lanes = [];
+    segments.forEach(function (segment) {
+      var placed = false;
+      for (var i = 0; i < lanes.length; i += 1) {
+        if (!laneOverlaps(lanes[i], segment)) {
+          lanes[i].push(segment);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) lanes.push([segment]);
+    });
+    return lanes;
+  }
+
+  function laneOverlaps(lane, segment) {
+    return lane.some(function (existing) {
+      return !(segment.endCol < existing.startCol || segment.startCol > existing.endCol);
+    });
+  }
+
+  function formatWeekSegmentLabel(segment, weekStart) {
+    var item = segment.item;
+    var title = item.title || item.title_original || '';
+    var start = parseDate(item.start_at);
+    var end = parseDate(item.end_at || item.start_at) || start;
+    var isSingleDay = toDateOnlyValue(item.start_at) === toDateOnlyValue(item.end_at || item.start_at);
+    var startsThisWeek = diffInDays(weekStart, startOfDay(start)) >= 0;
+    if (isSingleDay && item.start_has_time) {
+      return formatTimeOnly(item.start_at) + ' ' + title;
     }
-    return items.slice(0, 2).map(function (item) {
-      var status = getEventStatus(item).key;
-      var startKey = (item.start_at || '').slice(0, 10);
-      var endKey = (item.end_at || startKey).slice(0, 10);
-      var isSpan = !!(endKey && endKey !== startKey);
-      var isStart = !isSpan || startKey === dateKey;
-      var date = parseDate(dateKey);
-      var weekday = date ? date.getDay() : 0;
-      var isRowStart = weekday === 0;
-      var isRowEnd = weekday === 6;
-      var startsBefore = isSpan && startKey < dateKey;
-      var endsAfter = isSpan && endKey > dateKey;
-      var segmentClass = isSpan
-        ? (startsBefore ? (endsAfter ? ' is-middle' : ' is-end') : (endsAfter ? ' is-start' : ' is-single'))
-        : ' is-single';
-      if (isSpan && isRowStart && segmentClass === ' is-middle') segmentClass = ' is-start';
-      if (isSpan && isRowStart && segmentClass === ' is-end') segmentClass = ' is-end';
-      if (isSpan && isRowEnd && segmentClass === ' is-middle') segmentClass = ' is-end';
-      if (isSpan && isRowEnd && segmentClass === ' is-start') segmentClass = ' is-start';
-      var label = (!isSpan || isStart || isRowStart) ? (item.title || item.title_original || '') : '';
-      return '<span class="calendar-day-entry is-' + status + (isSpan ? ' is-span' : '') + segmentClass + '">' +
-        '<span class="calendar-day-entry-copy">' + escape(label || '') + '</span>' +
-      '</span>';
-    }).join('') + (items.length > 2 ? '<span class="calendar-day-entry-more">+' + (items.length - 2) + '</span>' : '');
+    if (!isSingleDay && startsThisWeek) {
+      var prefix = start.getMonth() + 1 + '/' + start.getDate();
+      if (item.start_has_time) prefix += ' ' + formatTimeOnly(item.start_at);
+      return prefix + ' ' + title;
+    }
+    return title;
+  }
+
+  function intersectsRange(item, rangeStart, rangeEnd) {
+    var start = parseDate(item.start_at);
+    var end = parseDate(item.end_at || item.start_at) || start;
+    return start && end && start <= rangeEnd && end >= rangeStart;
+  }
+
+  function diffInDays(start, end) {
+    var ms = startOfDay(end).getTime() - startOfDay(start).getTime();
+    return Math.round(ms / 86400000);
+  }
+
+  function formatTimeOnly(value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    var time = raw.slice(11, 16);
+    return time || '';
   }
 
   function getEventStatus(item) {
