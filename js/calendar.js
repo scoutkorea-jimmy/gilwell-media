@@ -32,6 +32,7 @@
     modalMarker: null,
     canManage: false,
     isSaving: false,
+    copy: null,
   };
 
   function init() {
@@ -40,8 +41,76 @@
     refreshCalendarAuthState();
     initMap();
     initModalMap();
+    loadCalendarCopy();
     loadTagPresets();
     loadEvents();
+  }
+
+  function defaultCalendarCopy() {
+    return {
+      page_title: '일정 캘린더',
+      page_description: '등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.',
+      month_view_label: '월간 일정보기',
+      month_view_summary: '월간 일정보기입니다. 여러 날 이어지는 일정은 막대형으로 표시됩니다.',
+      year_view_label: '연간 일정보기',
+      year_view_summary: '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.',
+      today_button_label: '오늘로 가기',
+      add_event_label: '일정 추가',
+      status_panel_label: '상태별 일정',
+      ongoing_label: '진행중',
+      upcoming_label: '개최예정',
+      finished_label: '행사종료',
+      ongoing_empty: '진행중인 일정이 없습니다.',
+      upcoming_empty: '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.',
+      finished_empty: '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.',
+      map_title: '캘린더 지도',
+      map_help: '축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.',
+    };
+  }
+
+  function copyText(key, fallback) {
+    if (!state.copy) state.copy = defaultCalendarCopy();
+    return state.copy[key] || fallback;
+  }
+
+  function loadCalendarCopy() {
+    fetch('/api/settings/calendar-copy', { cache: 'no-store' })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        state.copy = Object.assign(defaultCalendarCopy(), data && data.copy || {});
+        applyCalendarCopy();
+        render();
+      })
+      .catch(function () {
+        state.copy = defaultCalendarCopy();
+        applyCalendarCopy();
+      });
+  }
+
+  function applyCalendarCopy() {
+    var pageTitle = document.getElementById('calendar-page-title');
+    var pageDescription = document.getElementById('calendar-page-description');
+    var monthBtn = document.getElementById('calendar-view-month-btn');
+    var yearBtn = document.getElementById('calendar-view-year-btn');
+    var todayBtn = document.getElementById('calendar-today-btn');
+    var addBtn = document.getElementById('calendar-add-event-btn');
+    var ongoingLabel = document.getElementById('calendar-ongoing-label');
+    var upcomingLabel = document.getElementById('calendar-upcoming-label');
+    var finishedLabel = document.getElementById('calendar-finished-label');
+    var mapTitle = document.getElementById('calendar-map-title');
+    var mapHelp = document.getElementById('calendar-map-help');
+    if (pageTitle) pageTitle.textContent = copyText('page_title', '일정 캘린더');
+    if (pageDescription) pageDescription.textContent = copyText('page_description', '등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.');
+    if (monthBtn) monthBtn.textContent = copyText('month_view_label', '월간 일정보기');
+    if (yearBtn) yearBtn.textContent = copyText('year_view_label', '연간 일정보기');
+    if (todayBtn) todayBtn.textContent = copyText('today_button_label', '오늘로 가기');
+    if (addBtn) addBtn.textContent = copyText('add_event_label', '일정 추가');
+    if (ongoingLabel) ongoingLabel.textContent = copyText('ongoing_label', '진행중');
+    if (upcomingLabel) upcomingLabel.textContent = copyText('upcoming_label', '개최예정');
+    if (finishedLabel) finishedLabel.textContent = copyText('finished_label', '행사종료');
+    if (mapTitle) mapTitle.textContent = copyText('map_title', '캘린더 지도');
+    if (mapHelp) mapHelp.textContent = copyText('map_help', '축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.');
+    document.title = copyText('page_title', '일정 캘린더') + ' — BP미디어';
   }
 
   function bind() {
@@ -258,7 +327,7 @@
     var summary = document.getElementById('calendar-view-summary');
     if (!grid || !title) return;
     title.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월';
-    if (summary) summary.textContent = '월간 일정보기입니다. 여러 날 이어지는 일정은 막대형으로 표시됩니다.';
+    if (summary) summary.textContent = copyText('month_view_summary', '월간 일정보기입니다. 여러 날 이어지는 일정은 막대형으로 표시됩니다.');
     var firstDay = new Date(state.month.getFullYear(), state.month.getMonth(), 1);
     var lastDay = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0);
     var startWeekday = firstDay.getDay();
@@ -343,7 +412,7 @@
     if (!grid || !title) return;
     var year = state.month.getFullYear();
     title.textContent = year + '년 연간 일정';
-    if (summary) summary.textContent = '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.';
+    if (summary) summary.textContent = copyText('year_view_summary', '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.');
     var monthHtml = [];
     for (var monthIndex = 0; monthIndex < 12; monthIndex += 1) {
       var monthItems = state.items.filter(function (item) {
@@ -397,7 +466,7 @@
     var finishedStart = startOfMonth(addMonths(state.month, -2));
     var visibleItems = state.items.filter(matchesActiveFilters);
     if (statusTitle) {
-      statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 기준 상태별 일정';
+      statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 기준 ' + copyText('status_panel_label', '상태별 일정');
     }
     var ongoingItems = visibleItems.filter(function (item) {
       return getEventStatus(item).key === 'ongoing' && intersectsRange(item, monthStart, monthEnd);
@@ -410,9 +479,9 @@
       var end = parseDate(item.end_at || item.start_at);
       return getEventStatus(item).key === 'finished' && end && end >= finishedStart && end <= monthEnd;
     }).sort(compareByEndAtDesc);
-    renderStatusList('calendar-ongoing-events', ongoingItems, '진행중인 일정이 없습니다.');
-    renderStatusList('calendar-upcoming-events', upcomingItems, '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.');
-    renderStatusList('calendar-finished-events', finishedItems, '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.');
+    renderStatusList('calendar-ongoing-events', ongoingItems, copyText('ongoing_empty', '진행중인 일정이 없습니다.'));
+    renderStatusList('calendar-upcoming-events', upcomingItems, copyText('upcoming_empty', '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.'));
+    renderStatusList('calendar-finished-events', finishedItems, copyText('finished_empty', '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.'));
   }
 
   function eventIncludesDate(item, dateKey) {
@@ -1210,10 +1279,10 @@
     var now = Date.now();
     var start = parseDateTime(item && item.start_at);
     var end = parseDateTime(item && item.end_at);
-    if (!start) return { key: 'upcoming', label: '개최예정' };
-    if (start > now) return { key: 'upcoming', label: '개최예정' };
-    if (!end || end >= now) return { key: 'ongoing', label: '진행중' };
-    return { key: 'finished', label: '행사종료' };
+    if (!start) return { key: 'upcoming', label: copyText('upcoming_label', '개최예정') };
+    if (start > now) return { key: 'upcoming', label: copyText('upcoming_label', '개최예정') };
+    if (!end || end >= now) return { key: 'ongoing', label: copyText('ongoing_label', '진행중') };
+    return { key: 'finished', label: copyText('finished_label', '행사종료') };
   }
 
   function formatEventTime(item) {

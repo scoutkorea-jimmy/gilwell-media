@@ -123,6 +123,7 @@
   var _glossaryItems = [];
   var _glossaryEditingId = null;
   var _calendarItems = [];
+  var _calendarCopy = null;
   var _calendarEditingId = null;
   var _calendarTags = [];
   var _calendarTagPresets = [];
@@ -785,6 +786,36 @@
         var preview = document.getElementById('feature-definition-preview');
         if (preview) preview.innerHTML = '<div class="list-empty">' + GW.escapeHtml(err.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
       });
+  }
+
+  function defaultCalendarCopy() {
+    return {
+      page_title: '일정 캘린더',
+      page_description: '등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.',
+      month_view_label: '월간 일정보기',
+      month_view_summary: '월간 일정보기입니다. 여러 날 이어지는 일정은 막대형으로 표시됩니다.',
+      year_view_label: '연간 일정보기',
+      year_view_summary: '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.',
+      today_button_label: '오늘로 가기',
+      add_event_label: '일정 추가',
+      status_panel_label: '상태별 일정',
+      ongoing_label: '진행중',
+      upcoming_label: '개최예정',
+      finished_label: '행사종료',
+      ongoing_empty: '진행중인 일정이 없습니다.',
+      upcoming_empty: '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.',
+      finished_empty: '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.',
+      map_title: '캘린더 지도',
+      map_help: '축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.',
+    };
+  }
+
+  function populateCalendarCopyEditor(copy) {
+    _calendarCopy = Object.assign(defaultCalendarCopy(), copy || {});
+    Object.keys(_calendarCopy).forEach(function (key) {
+      var input = document.getElementById('calendar-copy-' + key.replace(/_/g, '-'));
+      if (input) input.value = _calendarCopy[key] || '';
+    });
   }
 
   function renderFeatureDefinitionPreview(content) {
@@ -3525,13 +3556,16 @@
     bindCalendarAdminControls();
     Promise.all([
       GW.apiFetch('/api/calendar'),
-      GW.apiFetch('/api/settings/calendar-tags').catch(function () { return { items: [] }; })
+      GW.apiFetch('/api/settings/calendar-tags').catch(function () { return { items: [] }; }),
+      GW.apiFetch('/api/settings/calendar-copy').catch(function () { return { copy: defaultCalendarCopy() }; })
     ])
       .then(function (results) {
         var calendarData = results[0];
         var tagData = results[1];
+        var copyData = results[2];
         _calendarItems = Array.isArray(calendarData && calendarData.items) ? calendarData.items : [];
         _calendarTagPresets = Array.isArray(tagData && tagData.items) ? tagData.items : [];
+        populateCalendarCopyEditor(copyData && copyData.copy);
         renderCalendarAdmin();
         renderCalendarTitleManager();
         renderCalendarTagPresetManager();
@@ -3973,6 +4007,23 @@
       renderCalendarTagPresets();
     }).catch(function (err) {
       GW.showToast(err.message || '행사 태그 저장 실패', 'error');
+    });
+  };
+
+  window.saveCalendarCopy = function () {
+    var next = defaultCalendarCopy();
+    Object.keys(next).forEach(function (key) {
+      var input = document.getElementById('calendar-copy-' + key.replace(/_/g, '-'));
+      next[key] = String(input && input.value || '').trim() || next[key];
+    });
+    GW.apiFetch('/api/settings/calendar-copy', {
+      method: 'PUT',
+      body: JSON.stringify({ copy: next })
+    }).then(function () {
+      _calendarCopy = next;
+      GW.showToast('캘린더 문구가 저장됐습니다', 'success');
+    }).catch(function (err) {
+      GW.showToast(err.message || '캘린더 문구 저장 실패', 'error');
     });
   };
 
