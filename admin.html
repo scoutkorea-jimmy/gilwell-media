@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.083.02">
+  <link rel="stylesheet" href="/css/style.css?v=0.084.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.083.02</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.084.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.083.02</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.084.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -67,6 +67,10 @@
           <button class="admin-sidebar-btn" id="tab-btn-analytics" onclick="showAdminTab('analytics')">
             <span class="admin-sidebar-btn-label">분석</span>
             <span class="admin-sidebar-btn-desc">방문, 조회, 유입 경로</span>
+          </button>
+          <button class="admin-sidebar-btn" id="tab-btn-marketing" data-role-min="full" onclick="showAdminTab('marketing')">
+            <span class="admin-sidebar-btn-label">마케팅</span>
+            <span class="admin-sidebar-btn-desc">유입과 고객 여정, 대표 흐름</span>
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="content" hidden>
@@ -306,6 +310,100 @@
               <div id="analytics-insights-notes" class="analytics-list"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="admin-tab-marketing" class="admin-tab-panel" data-role-min="full">
+        <div class="panel">
+          <div class="panel-header"><h2>마케팅 대시보드</h2></div>
+          <div class="panel-body">
+            <div class="analytics-toolbar marketing-toolbar">
+              <div class="analytics-toolbar-group">
+                <label for="marketing-start-date">시작일</label>
+                <input type="date" id="marketing-start-date" onchange="refreshMarketingPage()">
+              </div>
+              <div class="analytics-toolbar-group">
+                <label for="marketing-end-date">종료일</label>
+                <input type="date" id="marketing-end-date" onchange="refreshMarketingPage()">
+              </div>
+              <div class="analytics-toolbar-group">
+                <label>빠른 선택</label>
+                <div class="analytics-view-toggle">
+                  <button type="button" onclick="setMarketingRangePreset(7)">7일</button>
+                  <button type="button" onclick="setMarketingRangePreset(30)">30일</button>
+                  <button type="button" onclick="setMarketingRangePreset(90)">90일</button>
+                  <button type="button" onclick="setMarketingRangePreset(180)">180일</button>
+                </div>
+              </div>
+            </div>
+            <p class="analytics-note" id="marketing-tracking-note">마케팅 데이터를 불러오는 중…</p>
+          </div>
+        </div>
+
+        <div class="dash-stats-row marketing-stats-row" style="margin-top:24px;">
+          <div class="dash-stat-card marketing-stat-card">
+            <div class="dash-stat-num" id="marketing-unique-users">—</div>
+            <div class="dash-stat-label">고유 사용자</div>
+          </div>
+          <div class="dash-stat-card marketing-stat-card">
+            <div class="dash-stat-num" id="marketing-total-pageviews">—</div>
+            <div class="dash-stat-label">전체 페이지뷰</div>
+          </div>
+          <div class="dash-stat-card marketing-stat-card">
+            <div class="dash-stat-num" id="marketing-awareness-users">—</div>
+            <div class="dash-stat-label">Awareness</div>
+          </div>
+          <div class="dash-stat-card marketing-stat-card">
+            <div class="dash-stat-num" id="marketing-interest-users">—</div>
+            <div class="dash-stat-label">Interest</div>
+          </div>
+          <div class="dash-stat-card marketing-stat-card">
+            <div class="dash-stat-num" id="marketing-consideration-users">—</div>
+            <div class="dash-stat-label">Consideration</div>
+          </div>
+        </div>
+
+        <div class="marketing-grid">
+          <section class="panel marketing-panel marketing-panel-wide">
+            <div class="panel-header panel-header-split">
+              <h2>고객 여정 흐름</h2>
+              <span class="marketing-panel-meta" id="marketing-flow-meta">유입 채널 → 단계 → 대표 도착 페이지</span>
+            </div>
+            <div class="panel-body">
+              <div id="marketing-flow" class="marketing-flow-wrap"></div>
+            </div>
+          </section>
+
+          <section class="panel marketing-panel">
+            <div class="panel-header"><h2>스테이지 요약</h2></div>
+            <div class="panel-body">
+              <div id="marketing-funnel" class="marketing-funnel-list"></div>
+            </div>
+          </section>
+
+          <section class="panel marketing-panel">
+            <div class="panel-header"><h2>운영 메모</h2></div>
+            <div class="panel-body">
+              <div id="marketing-notes" class="analytics-list"></div>
+            </div>
+          </section>
+
+          <section class="panel marketing-panel marketing-panel-wide">
+            <div class="panel-header panel-header-split">
+              <h2>페이지 기회 맵</h2>
+              <span class="marketing-panel-meta">고유 사용자 · 재읽기 강도 · 공유 비중</span>
+            </div>
+            <div class="panel-body">
+              <div id="marketing-scatter" class="marketing-scatter-wrap"></div>
+            </div>
+          </section>
+
+          <section class="panel marketing-panel">
+            <div class="panel-header"><h2>대표 이동 경로</h2></div>
+            <div class="panel-body">
+              <div id="marketing-transitions" class="analytics-list"></div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -1111,8 +1209,8 @@
   <div class="toast" id="toast"></div>
 
   </main>
-  <script src="/js/main.js?v=0.083.02"></script>
-  <script src="/js/admin.js?v=0.083.02"></script>
+  <script src="/js/main.js?v=0.084.00"></script>
+  <script src="/js/admin.js?v=0.084.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
