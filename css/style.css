@@ -6055,6 +6055,131 @@ body.kms-page main#main-content {
   color: var(--muted);
   letter-spacing: 0.05em;
 }
+.marketing-stats-row {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.marketing-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.marketing-panel {
+  overflow: hidden;
+}
+.marketing-panel-wide {
+  grid-column: 1 / -1;
+}
+.marketing-panel-meta {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.marketing-flow-wrap,
+.marketing-scatter-wrap {
+  min-height: 280px;
+}
+.marketing-flow-shell,
+.marketing-scatter-shell {
+  width: 100%;
+  overflow-x: auto;
+}
+.marketing-flow-svg,
+.marketing-scatter-svg {
+  display: block;
+  width: 100%;
+  min-width: 980px;
+}
+.marketing-flow-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+}
+.marketing-flow-value {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: AliceDigitalLearning, sans-serif;
+}
+.marketing-funnel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.marketing-funnel-item {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 14px;
+}
+.marketing-funnel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.marketing-funnel-head strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+.marketing-funnel-head span {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+}
+.marketing-funnel-track {
+  height: 12px;
+  margin-top: 12px;
+  background: #f1efea;
+  overflow: hidden;
+}
+.marketing-funnel-fill {
+  display: block;
+  height: 100%;
+}
+.marketing-stage-awareness { background: #ff8c42; }
+.marketing-stage-interest { background: #2f9e44; }
+.marketing-stage-consideration { background: #e64980; }
+.marketing-funnel-item p {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.marketing-scatter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+}
+.marketing-scatter-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.marketing-scatter-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.marketing-axis {
+  stroke: rgba(24, 20, 17, 0.16);
+  stroke-width: 1;
+}
+.marketing-axis-title {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: AliceDigitalLearning, sans-serif;
+  letter-spacing: 0.04em;
+}
+.marketing-scatter-label {
+  fill: var(--ink);
+  font-size: 10px;
+  font-family: AliceDigitalLearning, sans-serif;
+}
 .admin-media-toggle {
   border: 1px solid var(--admin-stroke);
   border-radius: 16px;
@@ -6115,6 +6240,10 @@ body.kms-page main#main-content {
 @media (max-width: 700px) {
   .analytics-stats-row {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .marketing-stats-row,
+  .marketing-grid {
+    grid-template-columns: 1fr;
   }
   .dashboard-2col {
     grid-template-columns: 1fr;
@@ -6937,6 +7066,8 @@ body.kms-page main#main-content {
   .editor-action-row  { flex-direction: column; }
   .dash-stats-row     { grid-template-columns: 1fr; }
   .analytics-stats-row { grid-template-columns: 1fr; }
+  .marketing-stats-row { grid-template-columns: 1fr; }
+  .marketing-grid { grid-template-columns: 1fr; }
   .admin-inline-save  { grid-template-columns: 1fr; }
   .admin-inline-save .submit-btn { width: 100%; }
   .tag-admin-grid     { grid-template-columns: 1fr; }
