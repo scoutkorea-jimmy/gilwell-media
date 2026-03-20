@@ -32,12 +32,13 @@ export async function onRequestGet({ params, env, request }) {
     return notFound();
   }
 
-  let post, disclaimerRow, translationsRow;
+  let post, disclaimerRow, translationsRow, publicRuntimeRow;
   try {
-    [post, disclaimerRow, translationsRow] = await Promise.all([
+    [post, disclaimerRow, translationsRow, publicRuntimeRow] = await Promise.all([
       env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'translations'").first(),
+      env.DB.prepare("SELECT value FROM settings WHERE key = 'public_runtime'").first(),
     ]);
   } catch (err) {
     console.error('GET /post/:id DB error:', err);
@@ -45,6 +46,7 @@ export async function onRequestGet({ params, env, request }) {
   }
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
   const translationStrings = parseTranslationStrings(translationsRow && translationsRow.value);
+  const publicRuntime = parseJsonObject(publicRuntimeRow && publicRuntimeRow.value);
   const navContributors = getKoString(translationStrings, 'nav.contributors', '도움을 주신 분들');
   const navHome = getKoString(translationStrings, 'nav.home', '홈');
   const navLatest = getKoString(translationStrings, 'nav.latest', '1개월 소식');
@@ -164,7 +166,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.085.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.085.02">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -337,7 +339,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V0.085.01</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V0.085.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -491,7 +493,8 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=0.085.01"></script>
+  <script>window.GW_BOOT_RUNTIME=${JSON.stringify(publicRuntime)};window.GW_KAKAO_JS_KEY=${JSON.stringify(String(publicRuntime.kakao_js_key || ''))};</script>
+  <script src="/js/main.js?v=0.085.02"></script>
   <script>
     GW.bootstrapStandardPage();
 
@@ -1666,4 +1669,13 @@ function serializeForScript(value) {
     .replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
+}
+
+function parseJsonObject(raw) {
+  try {
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_) {
+    return {};
+  }
 }

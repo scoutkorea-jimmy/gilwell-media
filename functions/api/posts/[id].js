@@ -211,24 +211,22 @@ export async function onRequestPatch({ params, request, env }) {
   }
 
   fields.push("updated_at = datetime('now')");
-  values.push(id);
 
   try {
-    const { results } = await env.DB.prepare(
-      `UPDATE posts SET ${fields.join(', ')} WHERE id = ? RETURNING *`
-    ).bind(...values).all();
-    if (!results.length) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
-    if (results[0]) {
+    const updatedPost = await runPostUpdate(env, id, fields, values);
+    if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (updatedPost) {
       var summary = [];
       if (body.featured !== undefined) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
       if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
       if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
-      await recordPostHistory(env, id, 'status', results[0], summary.join(' · ') || '상태 변경');
+      await recordPostHistory(env, id, 'status', updatedPost, summary.join(' · ') || '상태 변경');
     }
-    return json({ post: results[0] });
+    return json({ post: updatedPost });
   } catch (err) {
     console.error('PATCH /api/posts/:id error:', err);
-    return json({ error: 'Database error' }, 500);
+    const message = err && err.message ? String(err.message) : 'Database error';
+    return json({ error: message }, 500);
   }
 }
 

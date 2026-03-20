@@ -130,8 +130,8 @@
       screen.setAttribute('aria-hidden', 'false');
     }
     if (saveBtn) {
-      saveBtn.disabled = _kmsRole === 'limited';
-      saveBtn.textContent = _kmsRole === 'limited' ? '읽기 전용 계정' : '정의서 저장';
+      saveBtn.disabled = false;
+      saveBtn.textContent = '정의서 저장';
     }
     if (!_kmsLoaded) {
       loadKmsDefinition();
@@ -181,10 +181,6 @@
 
   function saveKmsDefinition() {
     if (_kmsSaveBusy) return;
-    if (_kmsRole === 'limited') {
-      GW.showToast('full 관리자만 기능 정의서를 저장할 수 있습니다.', 'error');
-      return;
-    }
     var input = document.getElementById('kms-editor-input');
     var content = String(input && input.value || '').trim();
     if (!content) {

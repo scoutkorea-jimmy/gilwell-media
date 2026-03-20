@@ -3,9 +3,9 @@ export async function getViewerKey(request, env) {
     || request.headers.get('x-forwarded-for')
     || request.headers.get('x-real-ip')
     || '';
-  if (!ip) return null;
+  if (!ip || !env || !env.ADMIN_SECRET) return null;
 
-  const input = `${ip}|${env.ADMIN_SECRET || 'bpmedia'}`;
+  const input = `${ip}|${env.ADMIN_SECRET}`;
   const bytes = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   const hash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
