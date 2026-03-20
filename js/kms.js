@@ -4,6 +4,7 @@
   var _kmsLoaded = false;
   var _kmsRole = 'full';
   var _kmsSaveBusy = false;
+  var _kmsMode = 'read';
 
   document.addEventListener('DOMContentLoaded', function () {
     bindKmsAuthEvents();
@@ -16,11 +17,19 @@
     var saveBtn = document.getElementById('kms-save-btn');
     var pwInput = document.getElementById('kms-pw-input');
     var loginBtn = document.getElementById('kms-login-btn');
+    document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
+      if (btn.dataset.bound === 'true') return;
+      btn.dataset.bound = 'true';
+      btn.addEventListener('click', function () {
+        setKmsMode(btn.getAttribute('data-kms-mode') || 'read');
+      });
+    });
     if (input && input.dataset.bound !== 'true') {
       input.dataset.bound = 'true';
       input.addEventListener('input', function () {
-        renderKmsPreview(input.value || '');
+        renderKmsDocument(input.value || '');
         renderKmsSectionList(input.value || '');
+        updateKmsMeta(input.value || '');
       });
     }
     if (saveBtn && saveBtn.dataset.bound !== 'true') {
@@ -128,6 +137,7 @@
       loadKmsDefinition();
       _kmsLoaded = true;
     }
+    setKmsMode('read');
   }
 
   function showKmsLogin(message) {
@@ -152,15 +162,16 @@
   }
 
   function loadKmsDefinition() {
-    var preview = document.getElementById('kms-preview');
+    var preview = document.getElementById('kms-document-body');
     var list = document.getElementById('kms-section-list');
     GW.apiFetch('/api/settings/feature-definition')
       .then(function (data) {
         var content = data && typeof data.content === 'string' ? data.content : '';
         var input = document.getElementById('kms-editor-input');
         if (input) input.value = content;
-        renderKmsPreview(content);
+        renderKmsDocument(content);
         renderKmsSectionList(content);
+        updateKmsMeta(content);
       })
       .catch(function (error) {
         if (preview) preview.innerHTML = '<div class="list-empty">' + GW.escapeHtml(error.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
@@ -192,8 +203,10 @@
     })
       .then(function () {
         GW.showToast('기능 정의서가 저장됐습니다.', 'success');
-        renderKmsPreview(content);
+        renderKmsDocument(content);
         renderKmsSectionList(content);
+        updateKmsMeta(content);
+        setKmsMode('read');
       })
       .catch(function (error) {
         GW.showToast(error.message || '기능 정의서 저장 실패', 'error');
@@ -233,6 +246,22 @@
         btn.textContent = collapsed ? '−' : '+';
       });
     });
+  }
+
+  function setKmsMode(mode) {
+    _kmsMode = mode === 'edit' ? 'edit' : 'read';
+    var editorPanel = document.getElementById('kms-editor-panel');
+    var readBtn = document.getElementById('kms-mode-read');
+    var editBtn = document.getElementById('kms-mode-edit');
+    if (editorPanel) editorPanel.hidden = _kmsMode !== 'edit';
+    if (readBtn) {
+      readBtn.classList.toggle('active', _kmsMode === 'read');
+      readBtn.setAttribute('aria-selected', _kmsMode === 'read' ? 'true' : 'false');
+    }
+    if (editBtn) {
+      editBtn.classList.toggle('active', _kmsMode === 'edit');
+      editBtn.setAttribute('aria-selected', _kmsMode === 'edit' ? 'true' : 'false');
+    }
   }
 
   function extractKmsSections(content) {
@@ -302,8 +331,8 @@
       .replace(/^-+|-+$/g, '') || 'section';
   }
 
-  function renderKmsPreview(content) {
-    var preview = document.getElementById('kms-preview');
+  function renderKmsDocument(content) {
+    var preview = document.getElementById('kms-document-body');
     if (!preview) return;
     var text = String(content || '').replace(/\r\n/g, '\n');
     if (!text.trim()) {
@@ -329,6 +358,26 @@
         return 'kms-section-' + sectionIndex + '-' + slugifyKms(title);
       });
     }).join('');
+  }
+
+  function updateKmsMeta(content) {
+    var text = String(content || '');
+    var lines = text.split('\n');
+    var titleLine = lines.find(function (line) { return /^#\s+/.test(String(line || '').trim()); }) || '';
+    var title = titleLine ? titleLine.replace(/^#\s+/, '').trim() : '기능 정의서 / 운영 기준 문서';
+    var sections = extractKmsSections(text);
+    var detailCount = sections.filter(function (section) { return section.level >= 4; }).length;
+    var summary = '대목차와 세목차를 중심으로 운영 기준, 기능 의도, 세부 규칙, 각주를 문서화합니다.';
+    var titleEl = document.getElementById('kms-document-title');
+    var summaryEl = document.getElementById('kms-document-summary');
+    var buildEl = document.getElementById('kms-build-version');
+    var sectionCountEl = document.getElementById('kms-section-count');
+    var detailCountEl = document.getElementById('kms-detail-count');
+    if (titleEl) titleEl.textContent = title;
+    if (summaryEl) summaryEl.textContent = summary;
+    if (buildEl) buildEl.textContent = 'V' + (GW.APP_VERSION || '');
+    if (sectionCountEl) sectionCountEl.textContent = String(sections.filter(function (section) { return section.level === 2; }).length);
+    if (detailCountEl) detailCountEl.textContent = String(detailCount);
   }
 
   function renderKmsText(text, idBuilder) {
