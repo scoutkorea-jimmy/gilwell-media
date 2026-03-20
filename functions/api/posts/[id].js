@@ -109,14 +109,14 @@ export async function onRequestPut({ params, request, env }) {
   if (title     !== undefined) { fields.push('title = ?');       values.push(title.trim()); }
   if (subtitle  !== undefined) { fields.push('subtitle = ?');    values.push(subtitle ? subtitle.trim().slice(0, 300) : null); }
   if (content   !== undefined) {
-    const upgradedContent = await upgradeEditorContentImages(content.trim(), env, origin, 'inline');
+    const upgradedContent = await safelyUpgradeEditorContentImages(content.trim(), env, origin, 'inline');
     fields.push('content = ?');
     values.push(upgradedContent);
   }
   let oldImageToDelete = '';
   let oldGalleryToDelete = [];
   if (image_url !== undefined) {
-    const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
+    const storedCover = await safelyStoreDataImage(env, sanitizeUrl(image_url, origin), origin, 'cover');
     fields.push('image_url = ?');
     values.push(storedCover.url);
     if (currentPost && currentPost.image_url && currentPost.image_url !== storedCover.url) {
@@ -178,7 +178,8 @@ export async function onRequestPut({ params, request, env }) {
     return json({ post: updatedPost });
   } catch (err) {
     console.error('PUT /api/posts/:id error:', err);
-    return json({ error: 'Database error' }, 500);
+    const message = err && err.message ? String(err.message) : 'Database error';
+    return json({ error: message }, 500);
   }
 }
 
@@ -287,13 +288,13 @@ function normalizeCategory(value) {
   return value;
 }
 
-function sanitizeUrl(url) {
+function sanitizeUrl(url, origin) {
   if (!url || typeof url !== 'string') return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('data:image/')) return trimmed;
   try {
-    const parsed = new URL(trimmed);
+    const parsed = origin ? new URL(trimmed, origin) : new URL(trimmed);
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return trimmed;
   } catch { /* fall through */ }
   return null;
@@ -328,9 +329,9 @@ async function storeGalleryImages(env, rawItems, origin) {
   const items = normalizeGalleryImages(rawItems);
   const stored = [];
   for (const item of items) {
-    const source = sanitizeUrl(item.url);
+    const source = sanitizeUrl(item.url, origin);
     if (!source) continue;
-    const saved = await storeDataImage(env, source, origin, 'gallery');
+    const saved = await safelyStoreDataImage(env, source, origin, 'gallery');
     if (!saved.url) continue;
     stored.push({
       url: saved.url,
@@ -338,6 +339,24 @@ async function storeGalleryImages(env, rawItems, origin) {
     });
   }
   return stored.slice(0, 10);
+}
+
+async function safelyStoreDataImage(env, value, origin, prefix) {
+  try {
+    return await storeDataImage(env, value, origin, prefix);
+  } catch (err) {
+    console.error('safelyStoreDataImage error:', err);
+    return { url: value || null, key: '' };
+  }
+}
+
+async function safelyUpgradeEditorContentImages(content, env, origin, prefix) {
+  try {
+    return await upgradeEditorContentImages(content, env, origin, prefix);
+  } catch (err) {
+    console.error('safelyUpgradeEditorContentImages error:', err);
+    return content;
+  }
 }
 
 function serializeGalleryImages(items) {
