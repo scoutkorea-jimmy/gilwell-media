@@ -251,30 +251,48 @@ async function loadLatestPosts(env, origin, limit) {
 
 async function loadPopular(env, origin, limit) {
   const { results } = await env.DB.prepare(`
-    WITH likes_by_post AS (
-      SELECT post_id, COUNT(*) AS likes
-      FROM post_likes
-      GROUP BY post_id
+    WITH recent_views AS (
+      SELECT CAST(SUBSTR(path, 7) AS INTEGER) AS post_id,
+             COUNT(*) AS recent_views
+        FROM site_visits
+       WHERE path LIKE '/post/%'
+         AND datetime(visited_at, '+9 hours') >= datetime('now', '+9 hours', '-72 hours')
+       GROUP BY CAST(SUBSTR(path, 7) AS INTEGER)
     ),
-    base AS (
-      SELECT p.id, p.category, p.title, p.subtitle, p.image_url, p.image_caption, p.created_at, p.publish_at, p.tag, p.views, p.author, p.youtube_url,
-             COALESCE(l.likes, 0) AS likes
+    recent_totals AS (
+      SELECT COALESCE(SUM(recent_views), 0) AS total_recent_views
+        FROM recent_views
+    ),
+    likes_by_post AS (
+      SELECT post_id, COUNT(*) AS likes
+        FROM post_likes
+       GROUP BY post_id
+    )
+    SELECT p.id,
+           p.category,
+           p.title,
+           p.subtitle,
+           p.image_url,
+           p.image_caption,
+           p.created_at,
+           p.publish_at,
+           p.tag,
+           p.views,
+           p.author,
+           p.youtube_url,
+           COALESCE(l.likes, 0) AS likes,
+           COALESCE(rv.recent_views, 0) AS recent_views
       FROM posts p
       LEFT JOIN likes_by_post l ON l.post_id = p.id
-      WHERE p.published = 1
-    ),
-    maxima AS (
-      SELECT MAX(views) AS max_views, MAX(likes) AS max_likes FROM base
-    )
-    SELECT base.*,
-           ROUND(
-             ((CAST(base.views AS REAL) / CASE WHEN COALESCE(maxima.max_views, 0) > 0 THEN maxima.max_views ELSE 1 END) * 50) +
-             ((CAST(base.likes AS REAL) / CASE WHEN COALESCE(maxima.max_likes, 0) > 0 THEN maxima.max_likes ELSE 1 END) * 50),
-             2
-           ) AS popularity_score
-      FROM base
-      CROSS JOIN maxima
-     ORDER BY popularity_score DESC, likes DESC, views DESC, id DESC
+      LEFT JOIN recent_views rv ON rv.post_id = p.id
+      CROSS JOIN recent_totals rt
+     WHERE p.published = 1
+     ORDER BY
+       CASE WHEN rt.total_recent_views > 0 THEN 0 ELSE 1 END ASC,
+       CASE WHEN rt.total_recent_views > 0 THEN COALESCE(rv.recent_views, 0) END DESC,
+       CASE WHEN rt.total_recent_views > 0 THEN datetime(COALESCE(p.publish_at, p.created_at)) END DESC,
+       CASE WHEN rt.total_recent_views = 0 THEN datetime(COALESCE(p.publish_at, p.created_at)) END DESC,
+       p.id DESC
      LIMIT ?
   `).bind(limit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
