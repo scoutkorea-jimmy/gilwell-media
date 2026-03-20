@@ -10441,7 +10441,9 @@ body.admin-page .admin-pagination {
   padding: 18px 22px !important;
   border-top: 1px solid var(--admin-stroke);
   position: relative;
-  z-index: 6;
+  z-index: 1005;
+  isolation: isolate;
+  pointer-events: auto !important;
 }
 
 body.admin-page .admin-pagination-info,
@@ -10452,7 +10454,7 @@ body.admin-page .admin-pagination-info,
   gap: 8px;
   flex-wrap: wrap;
   position: relative;
-  z-index: 7;
+  z-index: 1006;
   pointer-events: auto !important;
 }
 
@@ -10469,8 +10471,22 @@ body.admin-page .version-history-pagination .admin-page-number {
   font-size: 12px;
   cursor: pointer;
   position: relative;
-  z-index: 8;
+  z-index: 1007;
   pointer-events: auto !important;
+}
+
+body.admin-page .article-list,
+body.admin-page .version-history-list,
+body.admin-page #article-list,
+body.admin-page #version-history-list {
+  position: relative;
+  z-index: 1;
+}
+
+body.admin-page .article-item,
+body.admin-page .version-history-item {
+  position: relative;
+  z-index: 1;
 }
 
 body.admin-page .admin-page-number.active,
