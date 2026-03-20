@@ -215,17 +215,22 @@
       list.innerHTML = '<div class="list-empty">목차를 만들 수 있는 제목이 없습니다.</div>';
       return;
     }
-    list.innerHTML = sections.map(function (section) {
-      return '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(section.id) + '">' +
-        '<strong>' + GW.escapeHtml(section.title) + '</strong>' +
-        '<span>' + GW.escapeHtml(section.levelLabel) + '</span>' +
-      '</button>';
-    }).join('');
+    var tree = buildKmsSectionTree(sections);
+    list.innerHTML = renderKmsTreeNodes(tree);
     Array.prototype.forEach.call(list.querySelectorAll('[data-kms-target]'), function (btn) {
       btn.addEventListener('click', function () {
         var targetId = btn.getAttribute('data-kms-target');
         var target = document.getElementById(targetId);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-kms-toggle]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var node = btn.closest('.kms-tree-node');
+        if (!node) return;
+        var collapsed = node.getAttribute('data-collapsed') === 'true';
+        node.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+        btn.textContent = collapsed ? '−' : '+';
       });
     });
   }
@@ -236,7 +241,7 @@
     var count = 0;
     lines.forEach(function (line) {
       var raw = String(line || '').trim();
-      if (!/^##+\s+/.test(raw)) return;
+      if (!/^#{2,4}\s+/.test(raw)) return;
       var level = raw.match(/^#+/)[0].length;
       var title = raw.replace(/^##+\s+/, '').trim();
       count += 1;
@@ -244,10 +249,50 @@
         id: 'kms-section-' + count + '-' + slugifyKms(title),
         title: title,
         level: level,
-        levelLabel: level === 2 ? '상위 메뉴' : '세부 설명'
+        levelLabel: level === 2 ? '대목차' : level === 3 ? '세목차 / 의도' : '기능 세부 / 각주'
       });
     });
     return sections;
+  }
+
+  function buildKmsSectionTree(sections) {
+    var roots = [];
+    var stack = [];
+    sections.forEach(function (section) {
+      var node = {
+        id: section.id,
+        title: section.title,
+        level: section.level,
+        levelLabel: section.levelLabel,
+        children: [],
+      };
+      while (stack.length && stack[stack.length - 1].level >= node.level) stack.pop();
+      if (stack.length) {
+        stack[stack.length - 1].children.push(node);
+      } else {
+        roots.push(node);
+      }
+      stack.push(node);
+    });
+    return roots;
+  }
+
+  function renderKmsTreeNodes(nodes) {
+    return nodes.map(function (node) {
+      var hasChildren = node.children && node.children.length > 0;
+      return '<div class="kms-tree-node" data-collapsed="' + (hasChildren ? 'false' : 'false') + '">' +
+        '<div class="kms-tree-row">' +
+          (hasChildren
+            ? '<button type="button" class="kms-tree-toggle" data-kms-toggle="true">−</button>'
+            : '<span class="kms-tree-spacer" aria-hidden="true">·</span>') +
+          '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(node.id) + '">' +
+            '<strong>' + GW.escapeHtml(node.title) + '</strong>' +
+            '<span>' + GW.escapeHtml(node.levelLabel) + '</span>' +
+          '</button>' +
+        '</div>' +
+        (hasChildren ? '<div class="kms-tree-children">' + renderKmsTreeNodes(node.children) + '</div>' : '') +
+      '</div>';
+    }).join('');
   }
 
   function slugifyKms(text) {
@@ -297,6 +342,12 @@
           html.push('</ul>');
           inList = false;
         }
+        return;
+      }
+      if (/^####\s+/.test(raw)) {
+        if (inList) { html.push('</ul>'); inList = false; }
+        var detailTitle = raw.replace(/^####\s+/, '');
+        html.push('<h5 id="' + GW.escapeHtml(idBuilder(detailTitle)) + '">' + GW.escapeHtml(detailTitle) + '</h5>');
         return;
       }
       if (/^###\s+/.test(raw)) {
