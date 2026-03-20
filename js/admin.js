@@ -3296,12 +3296,16 @@
     var links = flow.links.slice();
     var columns = [sources, stages, destinations];
     var nodeMap = new Map();
-    var W = 1480;
+    var maxDestinationChars = destinations.reduce(function (acc, item) {
+      return Math.max(acc, String((item && item.label) || '').length);
+    }, 0);
+    var labelSpace = Math.max(320, Math.min(760, maxDestinationChars * 12));
+    var W = 1220 + labelSpace;
     var H = 430;
     var padTop = 18;
     var padBottom = 18;
     var nodeW = 18;
-    var colX = [70, 690, 1310];
+    var colX = [70, 650, 1160];
     var columnInfo = columns.map(function (items, idx) {
       var totals = items.map(function (item) {
         var incoming = links.filter(function (link) { return link.target === item.id; }).reduce(function (sum, link) { return sum + Number(link.value || 0); }, 0);
@@ -3368,14 +3372,14 @@
     }).join('');
 
     var nodeParts = Array.from(nodeMap.values()).map(function (node, index) {
-      var labelX = index < sources.length ? node.x + node.w + 12 : (node.x - 12);
-      var labelAnchor = index < sources.length ? 'start' : 'end';
+      var labelX = node.x + node.w + 12;
+      var labelAnchor = 'start';
       if (node.x === colX[1]) {
         labelX = node.x + node.w + 12;
         labelAnchor = 'start';
       }
       var valueText = formatMetricCompact(node.value || 0);
-      var displayLabel = trimMarketingTitle(node.label, node.x === colX[2] ? 26 : 20);
+      var displayLabel = trimMarketingTitle(node.label, node.x === colX[2] ? 42 : 22);
       var tip = node.label + ' · ' + formatMetricExact(node.value || 0);
       if (String(node.id || '').indexOf('dest:') === 0) tip += ' · ' + String(node.id || '').replace(/^dest:/, '');
       return '<g class="marketing-flow-node" data-tip="' + GW.escapeHtml(tip) + '">' +
@@ -3388,7 +3392,7 @@
     el.innerHTML =
       '<div class="marketing-flow-shell">' +
         '<div class="marketing-hover-tip" aria-hidden="true"></div>' +
-        '<svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="고객 여정 흐름">' +
+        '<svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' +
           linkParts +
           nodeParts +
         '</svg>' +
@@ -3666,6 +3670,8 @@
     setMetricText('analytics-range-visits', payload.summary ? payload.summary.range_visits : '—');
     setMetricText('analytics-total-pageviews', payload.summary ? payload.summary.total_pageviews : '—');
     setMetricText('analytics-range-pageviews', payload.summary ? payload.summary.range_pageviews : '—');
+    setDurationMetricText('analytics-average-dwell', payload.summary ? payload.summary.average_dwell_seconds : 0);
+    setDurationMetricText('analytics-popular-dwell', payload.summary ? payload.summary.popular_post_average_dwell_seconds : 0, payload.summary ? payload.summary.popular_post_title : '');
     setText('analytics-tracking-note', payload.tracking_note || fallback.tracking_note);
     renderAnalyticsList('analytics-referrers', payload.referrers, function (item) {
       var metaParts = [rangeLabel];
@@ -3683,7 +3689,7 @@
       var pageInfo = getAnalyticsPageInfo(item);
       return {
         title: pageInfo.title,
-        meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0),
+        meta: rangeLabel + ' · 방문 ' + formatMetricCompact(item.visits || 0) + ' · 조회 ' + formatMetricCompact(item.pageviews || 0) + ' · 평균 체류 ' + formatDurationShort(item.avg_dwell_seconds || 0),
       };
     }, '아직 상위 기사 데이터가 없습니다');
     renderAnalyticsVisitorsChart(payload.visitors && payload.visitors.series ? payload.visitors.series : [], payload.range || fallback.range);
@@ -3943,9 +3949,18 @@
         '<td><strong>' + GW.escapeHtml(pageInfo.title) + '</strong><div style="font-size:10px;color:var(--muted);margin-top:4px;">' + GW.escapeHtml(pageInfo.path) + '</div></td>' +
         '<td>' + formatMetricCompact(item.visits || 0) + '</td>' +
         '<td>' + formatMetricCompact(item.pageviews || 0) + '</td>' +
+        '<td>' + GW.escapeHtml(formatDurationShort(item.avg_dwell_seconds || 0)) + '</td>' +
       '</tr>';
     }).join('');
-    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>기사</th><th>방문수</th><th>조회수</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+    el.innerHTML = '<div class="analytics-table-scroll"><table class="analytics-table"><thead><tr><th>#</th><th>기사</th><th>방문수</th><th>조회수</th><th>평균 체류시간</th></tr></thead><tbody>' + body + '</tbody></table></div>';
+  }
+
+  function setDurationMetricText(id, seconds, titleText) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var value = formatDurationShort(seconds);
+    el.textContent = value;
+    el.title = titleText ? (String(titleText) + ' · ' + value) : value;
   }
 
   function getAnalyticsPageInfo(item) {
@@ -4045,6 +4060,17 @@
     return num.toLocaleString('ko-KR') + '건';
   }
 
+  function formatDurationShort(value) {
+    var seconds = Math.max(0, Math.round(Number(value || 0)));
+    if (!seconds) return '0초';
+    var hours = Math.floor(seconds / 3600);
+    var minutes = Math.floor((seconds % 3600) / 60);
+    var secs = seconds % 60;
+    if (hours > 0) return hours + '시간 ' + minutes + '분';
+    if (minutes > 0) return minutes + '분 ' + secs + '초';
+    return secs + '초';
+  }
+
   function renderAnalyticsInsights(payload) {
     var cardsEl = document.getElementById('analytics-insights-cards');
     var notesEl = document.getElementById('analytics-insights-notes');
@@ -4065,6 +4091,7 @@
     var searchVisits = referrers.filter(function (item) { return item.source_type === 'search'; }).reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0);
     var totalTrackedVisits = referrers.reduce(function (sum, item) { return sum + Number(item.visits || 0); }, 0) || 1;
     var viewsPerVisit = Number(summary.range_visits || 0) ? (Number(summary.range_pageviews || 0) / Number(summary.range_visits || 1)) : 0;
+    var averageDwell = Number(summary.average_dwell_seconds || 0);
 
     var cards = [
       {
@@ -4091,6 +4118,11 @@
         title: '가장 읽힌 기사',
         value: topArticle ? getAnalyticsPageInfo(topArticle).title : '—',
         meta: topArticle ? ('조회 ' + formatMetricExact(topArticle.pageviews || 0)) : '상위 기사 데이터가 없습니다.',
+      },
+      {
+        title: '평균 체류시간',
+        value: formatDurationShort(averageDwell),
+        meta: '기사 페이지가 실제로 보인 활성 시간 기준입니다.',
       },
     ];
 

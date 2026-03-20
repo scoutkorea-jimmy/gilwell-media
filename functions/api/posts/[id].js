@@ -255,6 +255,7 @@ export async function onRequestDelete({ params, request, env }) {
       env.DB.prepare(`DELETE FROM post_views WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM post_likes WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM post_history WHERE post_id = ?`).bind(id).run().catch(() => {}),
+      env.DB.prepare(`DELETE FROM post_engagement WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM site_visits WHERE path = ?`).bind('/post/' + id).run().catch(() => {}),
     ]);
     const origin = new URL(request.url).origin;

@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.084.03';
+  GW.APP_VERSION = '0.085.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1146,6 +1146,94 @@
     }).catch(function () {});
   };
 
+  GW.trackPostEngagement = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    var match = /^\/post\/(\d+)(?:\/)?$/.exec(window.location.pathname || '');
+    if (!match) return;
+    if (GW.getToken && GW.getToken()) return;
+
+    var postId = parseInt(match[1], 10);
+    if (!Number.isFinite(postId) || postId < 1) return;
+
+    var sessionKey = 'post-' + postId + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    var totalMs = 0;
+    var activeStartedAt = 0;
+    var lastSentSeconds = 0;
+
+    function beginActive(now) {
+      if (document.visibilityState !== 'visible') return;
+      if (!activeStartedAt) activeStartedAt = now || Date.now();
+    }
+
+    function sampleActive(now) {
+      if (!activeStartedAt) return;
+      var current = now || Date.now();
+      totalMs += Math.max(0, current - activeStartedAt);
+      activeStartedAt = current;
+    }
+
+    function currentSeconds() {
+      return Math.floor(totalMs / 1000);
+    }
+
+    function sendPayload(seconds) {
+      if (seconds <= lastSentSeconds) return;
+      lastSentSeconds = seconds;
+      var payload = JSON.stringify({
+        post_id: postId,
+        session_key: sessionKey,
+        engaged_seconds: seconds,
+      });
+      try {
+        if (navigator.sendBeacon) {
+          var blob = new Blob([payload], { type: 'application/json' });
+          navigator.sendBeacon('/api/analytics/post-engagement', blob);
+          return;
+        }
+      } catch (_) {}
+      fetch('/api/analytics/post-engagement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+      }).catch(function () {});
+    }
+
+    function flush(force) {
+      sampleActive(Date.now());
+      var seconds = currentSeconds();
+      if (!force && seconds < 5) return;
+      if (force && seconds < 1) return;
+      sendPayload(seconds);
+    }
+
+    beginActive(Date.now());
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') {
+        flush(true);
+        activeStartedAt = 0;
+      } else {
+        beginActive(Date.now());
+      }
+    });
+
+    window.addEventListener('pagehide', function () {
+      flush(true);
+      activeStartedAt = 0;
+    });
+
+    window.addEventListener('beforeunload', function () {
+      flush(true);
+      activeStartedAt = 0;
+    });
+
+    window.setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      flush(false);
+    }, 15000);
+  };
+
   // ── Cloudflare Turnstile ──────────────────────────────────
   /**
    * Set this to your Cloudflare Turnstile Site Key.
@@ -1157,9 +1245,11 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       GW.trackPageVisit();
+      GW.trackPostEngagement();
     }, { once: true });
   } else {
     GW.trackPageVisit();
+    GW.trackPostEngagement();
   }
 
   /** Lazily load the Turnstile script once, then call cb(). */
