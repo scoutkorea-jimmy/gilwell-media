@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.083.00';
+  GW.APP_VERSION = '0.083.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1270,6 +1270,7 @@
     'stat.unit':  { ko: '건', en: '' },
   };
 
+  GW._customStrings = window.GW_BOOT_CUSTOM_STRINGS || {};
   GW.lang = localStorage.getItem('gw_lang') || 'ko';
 
   /** Return the translated string for the current language. */
@@ -1313,6 +1314,10 @@
   GW.loadTranslations = function () {
     var cacheKey = 'gw_cache_translations_v1';
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 60 * 12);
+    if (GW._customStrings && Object.keys(GW._customStrings).length) {
+      GW.applyLang();
+      if (GW._statsData) GW._renderStats();
+    }
     if (cached && cached.strings) {
       GW._customStrings = cached.strings || {};
       GW.applyLang();
