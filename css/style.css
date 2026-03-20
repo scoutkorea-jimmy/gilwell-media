@@ -6103,16 +6103,17 @@ body.kms-page main#main-content {
 .marketing-scatter-shell {
   width: 100%;
   overflow-x: auto;
+  position: relative;
 }
 .marketing-flow-svg,
 .marketing-scatter-svg {
   display: block;
   width: 100%;
-  min-width: 980px;
+  min-width: 1120px;
 }
 .marketing-flow-label {
   fill: var(--ink);
-  font-size: 12px;
+  font-size: 11px;
   font-family: AliceDigitalLearning, sans-serif;
 }
 .marketing-flow-value {
@@ -6198,6 +6199,26 @@ body.kms-page main#main-content {
   fill: var(--ink);
   font-size: 10px;
   font-family: AliceDigitalLearning, sans-serif;
+}
+.marketing-hover-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  display: none;
+  max-width: 360px;
+  padding: 10px 12px;
+  border: 1px solid rgba(24, 20, 17, 0.12);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 10px 24px rgba(24, 20, 17, 0.12);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--ink);
+  line-height: 1.55;
+  pointer-events: none;
+}
+.marketing-hover-tip.open {
+  display: block;
 }
 .marketing-fullscreen-modal {
   position: fixed;
@@ -6286,7 +6307,7 @@ body.kms-page main#main-content {
 }
 .marketing-fullscreen-body .marketing-flow-svg,
 .marketing-fullscreen-body .marketing-scatter-svg {
-  min-width: 1320px;
+  min-width: 1480px;
 }
 body.marketing-fullscreen-open {
   overflow: hidden;
