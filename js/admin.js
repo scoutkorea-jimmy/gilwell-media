@@ -3377,6 +3377,9 @@
       if (node.x === colX[1]) {
         labelX = node.x + node.w + 12;
         labelAnchor = 'start';
+      } else if (node.x === colX[2]) {
+        labelX = node.x - 12;
+        labelAnchor = 'end';
       }
       var valueText = formatMetricCompact(node.value || 0);
       var displayLabel = trimMarketingTitle(node.label, node.x === colX[2] ? 42 : 22);
