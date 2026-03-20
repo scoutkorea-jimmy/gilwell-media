@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.082.15';
+  GW.APP_VERSION = '0.082.16';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -145,7 +145,7 @@
     return GW.EDITOR_LETTERS.map(function (l) {
       var name  = (editors && editors[l]) || '';
       var label = 'Editor ' + l + (name ? ' — ' + name : '');
-      return '<option value="Editor ' + l + '">' + GW.escapeHtml(label) + '</option>';
+      return '<option value="Editor.' + l + '">' + GW.escapeHtml(label) + '</option>';
     }).join('');
   };
 
