@@ -361,25 +361,23 @@
   }
 
   function getAdminRole() {
-    return _adminRole === 'limited' ? 'limited' : 'full';
+    return 'full';
   }
 
   function isLimitedAdmin() {
-    return getAdminRole() === 'limited';
+    return false;
   }
 
   function isFullAdmin() {
-    return !isLimitedAdmin();
+    return true;
   }
 
   function canAccessAdminTab(tab) {
-    if (isFullAdmin()) return true;
-    return ['dashboard', 'analytics', 'hero-manager', 'history'].indexOf(tab) >= 0;
+    return true;
   }
 
   function canAccessAdminGroup(group) {
-    if (isFullAdmin()) return true;
-    return ['overview', 'site'].indexOf(group) >= 0;
+    return true;
   }
 
   // ─── Boot ────────────────────────────────────────────────

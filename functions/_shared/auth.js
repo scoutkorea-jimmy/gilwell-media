@@ -11,7 +11,7 @@
 /**
  * Create a signed session token valid for 24 hours.
  * @param {string} secret  ADMIN_SECRET environment variable value
- * @param {string} role    full | limited
+ * @param {string} role    full
  * @returns {Promise<string>} token string
  */
 export async function createToken(secret, role = 'full') {
@@ -137,6 +137,6 @@ async function importKey(secret, usages) {
   );
 }
 
-function normalizeRole(role) {
-  return role === 'limited' ? 'limited' : 'full';
+function normalizeRole() {
+  return 'full';
 }

@@ -13,7 +13,10 @@ export async function onRequest(context) {
 
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
-  const translationStrings = await loadTranslationStrings(env);
+  const [translationStrings, publicRuntime] = await Promise.all([
+    loadTranslationStrings(env),
+    loadPublicRuntime(env),
+  ]);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const canonicalPath = getCanonicalPath(url.pathname, pageKey);
   const itemListElements = await loadPageItemList(env, url.origin, pageKey);
@@ -39,7 +42,7 @@ export async function onRequest(context) {
     statusText: response.statusText,
     headers,
   });
-  return applyTranslationBootstrap(baseResponse, translationStrings);
+  return applyTranslationBootstrap(baseResponse, translationStrings, publicRuntime);
 }
 
 function getCanonicalPath(pathname, pageKey) {
@@ -84,9 +87,10 @@ async function loadTranslationStrings(env) {
   }
 }
 
-function applyTranslationBootstrap(response, strings) {
+function applyTranslationBootstrap(response, strings, runtime) {
   const safeStrings = strings && typeof strings === 'object' ? strings : {};
-  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${JSON.stringify(safeStrings)};</script>`;
+  const safeRuntime = runtime && typeof runtime === 'object' ? runtime : {};
+  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${JSON.stringify(safeStrings)};window.GW_BOOT_RUNTIME=${JSON.stringify(safeRuntime)};window.GW_KAKAO_JS_KEY=${JSON.stringify(String(safeRuntime.kakao_js_key || ''))};</script>`;
   return new HTMLRewriter()
     .on('head', {
       element(element) {
@@ -105,6 +109,16 @@ function applyTranslationBootstrap(response, strings) {
       }
     })
     .transform(response);
+}
+
+async function loadPublicRuntime(env) {
+  try {
+    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'public_runtime'`).first();
+    const parsed = row ? JSON.parse(row.value || '{}') : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 function escapeHtml(str) {
