@@ -6246,6 +6246,23 @@ body.kms-page main#main-content {
   font-size: 11px;
   color: var(--muted);
 }
+.marketing-fullscreen-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.marketing-zoom-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 10px 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.marketing-zoom-btn:hover,
 .marketing-fullscreen-close {
   border: 1px solid var(--border);
   background: var(--bg);
@@ -6255,9 +6272,17 @@ body.kms-page main#main-content {
   font-size: 11px;
   cursor: pointer;
 }
+.marketing-fullscreen-close:hover {
+  border-color: var(--black);
+}
 .marketing-fullscreen-body {
   padding: 20px 24px 24px;
   overflow: auto;
+}
+.marketing-fullscreen-zoom-stage {
+  width: max-content;
+  min-width: 100%;
+  transform-origin: top left;
 }
 .marketing-fullscreen-body .marketing-flow-svg,
 .marketing-fullscreen-body .marketing-scatter-svg {
@@ -7158,6 +7183,9 @@ body.marketing-fullscreen-open {
   .marketing-stats-row { grid-template-columns: 1fr; }
   .marketing-grid { grid-template-columns: 1fr; }
   .marketing-fullscreen-card { width: calc(100vw - 20px); height: calc(100vh - 20px); margin: 10px auto; }
+  .marketing-fullscreen-controls {
+    justify-content: flex-start;
+  }
   .admin-inline-save  { grid-template-columns: 1fr; }
   .admin-inline-save .submit-btn { width: 100%; }
   .tag-admin-grid     { grid-template-columns: 1fr; }
