@@ -2382,6 +2382,8 @@ p { margin-bottom: 6px; }
   grid-template-columns: repeat(4, 1fr);
   gap:                   6px;
   margin-top:            6px;
+  position:              relative;
+  z-index:               1;
 }
 
 /* ── Post Card (board pages) ── */
@@ -2389,15 +2391,17 @@ p { margin-bottom: 6px; }
   background:  var(--card-bg);
   border:      1px solid var(--border);
   cursor:      pointer;
-  transition:  transform 0.15s, box-shadow 0.15s;
+  transition:  border-color 0.15s, background 0.15s;
   animation:   fadeUp 0.4s ease both;
   display:     flex;
   flex-direction: column;
+  position:    relative;
+  z-index:     1;
 }
 
 .post-card:hover {
-  transform:  translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-color: var(--card-accent, var(--border));
+  background: rgba(0,0,0,0.01);
 }
 
 .post-card:nth-child(1) { animation-delay: 0.04s; }
@@ -2530,6 +2534,10 @@ p { margin-bottom: 6px; }
   flex-wrap: wrap;
   gap: 8px;
   margin: 36px auto 0;
+  position: relative;
+  z-index: 25;
+  isolation: isolate;
+  pointer-events: auto;
 }
 
 .board-page-btn {
@@ -2542,6 +2550,9 @@ p { margin-bottom: 6px; }
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.15s;
+  position: relative;
+  z-index: 26;
+  pointer-events: auto;
 }
 
 .board-page-btn:hover {

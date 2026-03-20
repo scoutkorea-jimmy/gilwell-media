@@ -1845,6 +1845,7 @@
       state.item.style.transform = '';
       state.item.style.zIndex = '';
       state.item.style.position = '';
+      state.item.style.pointerEvents = '';
     }
     if (state.list && state.itemSelector) _clearDragOver(state.itemSelector, state.list);
     if (state.target) state.target.classList.remove('drag-over');
@@ -1886,10 +1887,12 @@
         state.item.style.transform = 'translateY(' + deltaY + 'px)';
         state.item.style.zIndex = '5';
         state.item.style.position = 'relative';
+        state.item.style.pointerEvents = 'none';
 
         _clearDragOver(state.itemSelector, list);
         var pointerTarget = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
         var overItem = pointerTarget && pointerTarget.closest(state.itemSelector);
+        state.item.style.pointerEvents = '';
         if (!overItem || !list.contains(overItem) || overItem === state.item) {
           state.target = null;
           return;
@@ -2645,6 +2648,10 @@
     var container = document.getElementById('category-copy-manager');
     if (!container) return;
     var keys = [
+      { key: 'nav.korea', label: '공통태그 · Korea' },
+      { key: 'nav.apr', label: '공통태그 · APR' },
+      { key: 'nav.wosm', label: '공통태그 · WOSM' },
+      { key: 'nav.people', label: '공통태그 · Scout People' },
       { key: 'board.apr.desc', label: 'APR 설명' },
       { key: 'board.wosm.desc', label: 'WOSM 설명' },
       { key: 'board.translation.note', label: '번역 안내 문구' },
