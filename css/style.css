@@ -4604,12 +4604,14 @@ footer a:hover { color: #ffffff; }
 }
 
 body.kms-page main#main-content {
-  max-width: none;
-  padding: 24px 0 48px;
+  max-width: none !important;
+  padding: 24px 0 48px !important;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .kms-screen {
-  width: min(1366px, calc(100vw - 48px));
+  width: 1366px;
   margin: 0 auto;
   padding: 0;
 }
@@ -4770,6 +4772,12 @@ body.kms-page main#main-content {
   gap: 18px;
 }
 
+.kms-preview-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .kms-card {
   border: 1px solid rgba(25, 18, 15, 0.1);
   border-radius: 22px;
@@ -4810,6 +4818,98 @@ body.kms-page main#main-content {
   text-transform: uppercase;
 }
 
+.kms-sample-card {
+  padding: 0;
+}
+
+.kms-sample-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 16px 20px 20px;
+}
+
+.kms-sample-block {
+  padding: 16px;
+  border: 1px solid rgba(25, 18, 15, 0.08);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.kms-sample-label {
+  display: inline-flex;
+  margin-bottom: 10px;
+  color: #83796f;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.kms-sample-block h3 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.kms-sample-block p {
+  margin: 0;
+  color: #5b544c;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.kms-sample-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.kms-sample-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 13px;
+  cursor: default;
+}
+
+.kms-sample-btn-primary {
+  border: 1px solid rgba(122, 79, 204, 0.92);
+  background: linear-gradient(135deg, #6d34bf 0%, #8f5cf0 100%);
+  color: #fff;
+}
+
+.kms-sample-btn-secondary {
+  border: 1px solid rgba(25, 18, 15, 0.12);
+  background: #fff;
+  color: #161310;
+}
+
+.kms-sample-btn-ghost {
+  border: 1px dashed rgba(25, 18, 15, 0.18);
+  background: rgba(92, 42, 157, 0.04);
+  color: #5c2a9d;
+}
+
+.kms-sample-spacing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.kms-sample-spacing span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 62px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(92, 42, 157, 0.08);
+  color: #5c2a9d;
+  font-size: 12px;
+}
+
 .kms-rule-list {
   margin: 14px 0 0;
   padding-left: 18px;
@@ -4828,6 +4928,41 @@ body.kms-page main#main-content {
   gap: 8px;
   padding: 16px;
   overflow: auto;
+}
+
+.kms-tree-node {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kms-tree-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.kms-tree-toggle,
+.kms-tree-spacer {
+  width: 26px;
+  height: 26px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.kms-tree-toggle {
+  border: 1px solid rgba(25, 18, 15, 0.08);
+  background: #fff;
+  color: #5c2a9d;
+  cursor: pointer;
+}
+
+.kms-tree-spacer {
+  background: rgba(25, 18, 15, 0.03);
 }
 
 .kms-section-link {
@@ -4861,6 +4996,19 @@ body.kms-page main#main-content {
   font-size: 10px;
   letter-spacing: .14em;
   text-transform: uppercase;
+}
+
+.kms-tree-children {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 18px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(25, 18, 15, 0.08);
+}
+
+.kms-tree-node[data-collapsed="true"] > .kms-tree-children {
+  display: none;
 }
 
 .kms-editor-column .kms-card,
@@ -4907,6 +5055,14 @@ body.kms-page main#main-content {
   font-size: 16px;
 }
 
+.kms-preview-surface h5 {
+  margin: 0 0 10px;
+  color: #5c2a9d;
+  font-size: 14px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
 .kms-preview-surface p,
 .kms-preview-surface li {
   font-size: 14px;
@@ -4919,21 +5075,11 @@ body.kms-page main#main-content {
 
 @media (max-width: 1365px) {
   body.kms-page main#main-content {
-    padding: 16px;
+    padding: 16px 0 32px !important;
   }
 
   .kms-screen {
-    width: 100%;
-  }
-
-  .kms-pc-only-note {
-    display: block;
-  }
-
-  .kms-topbar,
-  .kms-desktop-note,
-  .kms-shell {
-    display: none;
+    margin: 0 16px;
   }
 }
 
