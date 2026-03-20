@@ -9862,6 +9862,36 @@ body.admin-page .hero-slot-item.drag-over {
   background: rgba(98, 37, 153, 0.05);
 }
 
+body.admin-page .article-order-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+body.admin-page .order-shift-btn,
+body.admin-page .admin-inline-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(24, 20, 17, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+body.admin-page .order-shift-btn:disabled,
+body.admin-page .admin-inline-ghost:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 body.admin-page .article-item.is-unpublished {
   opacity: 0.74;
 }
