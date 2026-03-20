@@ -244,6 +244,7 @@
     var card    = document.createElement('article');
     card.className = 'post-card' + (post.image_url ? ' has-thumb' : ' no-thumb');
     card.style.animationDelay = (0.04 + idx * 0.04) + 's';
+    card.style.setProperty('--card-accent', cat.color || '#111111');
 
     var thumb = '';
     if (post.image_url) {

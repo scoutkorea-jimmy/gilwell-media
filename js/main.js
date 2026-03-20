@@ -1297,6 +1297,10 @@
         el.textContent = text;
       }
     });
+    GW.CATEGORIES.korea.label = GW.t('nav.korea');
+    GW.CATEGORIES.apr.label = GW.t('nav.apr');
+    GW.CATEGORIES.wosm.label = GW.t('nav.wosm');
+    GW.CATEGORIES.people.label = GW.t('nav.people');
     // Sync lang button active states
     ['ko', 'en'].forEach(function (l) {
       var btn = document.getElementById('lang-btn-' + l);
