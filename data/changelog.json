@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "0.082.12",
+    "date": "2026-03-20",
+    "type": "Hotfix",
+    "summary": "게시글 수정 시 프로덕션 DB 컬럼 보정 범위가 부족해 발생하던 데이터베이스 불일치 오류를 수정했습니다.",
+    "details": [
+      "게시글 생성/수정 API가 사용하는 선택 컬럼들을 한 번에 자동 보정하도록 확장했습니다.",
+      "special_feature, publish_at, image_caption, youtube_url, meta_tags, author, ai_assisted, sort_order 등 누락 가능성이 있던 컬럼을 함께 보정합니다.",
+      "프로덕션 DB 스키마가 일부 늦어져 있어도 게시글 수정과 저장이 실패하지 않도록 안정성을 높였습니다."
+    ]
+  },
+  {
     "version": "0.082.11",
     "date": "2026-03-20",
     "type": "Hotfix",

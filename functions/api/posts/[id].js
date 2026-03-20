@@ -415,19 +415,27 @@ function diffRemovedGalleryUrls(previousRaw, nextItems) {
 }
 
 async function ensurePostOptionalColumns(env) {
-  await ensureColumn(env, 'gallery_images');
-  await ensureColumn(env, 'location_name');
-  await ensureColumn(env, 'location_address');
-  await ensureColumn(env, 'manual_related_posts');
+  await ensureColumn(env, 'gallery_images', 'TEXT');
+  await ensureColumn(env, 'location_name', 'TEXT');
+  await ensureColumn(env, 'location_address', 'TEXT');
+  await ensureColumn(env, 'manual_related_posts', 'TEXT');
+  await ensureColumn(env, 'special_feature', 'TEXT');
+  await ensureColumn(env, 'publish_at', 'TEXT');
+  await ensureColumn(env, 'image_caption', 'TEXT');
+  await ensureColumn(env, 'youtube_url', 'TEXT');
+  await ensureColumn(env, 'meta_tags', 'TEXT');
+  await ensureColumn(env, 'author', 'TEXT');
+  await ensureColumn(env, 'ai_assisted', 'INTEGER');
+  await ensureColumn(env, 'sort_order', 'INTEGER');
 }
 
-async function ensureColumn(env, columnName) {
+async function ensureColumn(env, columnName, columnType) {
   try {
     await env.DB.prepare(`SELECT ${columnName} FROM posts LIMIT 1`).first();
   } catch (err) {
     var msg = String(err && err.message || err || '');
     if (msg.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} TEXT`).run();
+    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} ${columnType || 'TEXT'}`).run();
   }
 }
 
