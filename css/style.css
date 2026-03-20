@@ -10380,6 +10380,42 @@ body.admin-page .admin-pagination {
   border-top: 1px solid var(--admin-stroke);
 }
 
+body.admin-page .admin-pagination-info,
+.version-history-page-numbers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+body.admin-page .admin-page-number,
+body.admin-page .version-history-pagination .admin-page-number {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgba(24, 20, 17, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--admin-ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+body.admin-page .admin-page-number.active,
+body.admin-page .version-history-pagination .admin-page-number.active {
+  border-color: rgba(98, 37, 153, 0.22);
+  background: rgba(98, 37, 153, 0.08);
+  color: var(--admin-accent);
+}
+
+body.admin-page .admin-page-ellipsis {
+  color: var(--admin-muted);
+  font-size: 12px;
+  padding: 0 2px;
+}
+
 body.admin-page .admin-section-note,
 body.admin-page .admin-inline-note {
   margin: 0 0 14px !important;
