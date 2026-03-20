@@ -10440,6 +10440,8 @@ body.admin-page .admin-pagination {
   gap: 12px;
   padding: 18px 22px !important;
   border-top: 1px solid var(--admin-stroke);
+  position: relative;
+  z-index: 6;
 }
 
 body.admin-page .admin-pagination-info,
@@ -10449,6 +10451,9 @@ body.admin-page .admin-pagination-info,
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 7;
+  pointer-events: auto !important;
 }
 
 body.admin-page .admin-page-number,
@@ -10463,6 +10468,9 @@ body.admin-page .version-history-pagination .admin-page-number {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   cursor: pointer;
+  position: relative;
+  z-index: 8;
+  pointer-events: auto !important;
 }
 
 body.admin-page .admin-page-number.active,
