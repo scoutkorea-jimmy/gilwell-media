@@ -2049,7 +2049,7 @@
     var nextEl = document.getElementById('admin-next-btn');
     if (!pgEl) return;
     pgEl.style.display = totalPages > 1 ? 'flex' : 'none';
-    if (infoEl) infoEl.textContent = _listPage + ' / ' + totalPages;
+    if (infoEl) infoEl.innerHTML = buildPageNumberButtons(_listPage, totalPages, 'setAdminListPage');
     if (prevEl) prevEl.disabled = _listPage <= 1;
     if (nextEl) nextEl.disabled = _listPage >= totalPages;
   }
@@ -2079,6 +2079,16 @@
   window.adminListPageChange = function (delta) {
     var totalPages = Math.max(1, Math.ceil(_listTotal / _PAGE_SIZE));
     _listPage = Math.max(1, Math.min(totalPages, _listPage + delta));
+    loadAdminList();
+  };
+
+  window.setAdminListPage = function (page) {
+    var totalPages = Math.max(1, Math.ceil(_listTotal / _PAGE_SIZE));
+    var nextPage = parseInt(page, 10);
+    if (!Number.isFinite(nextPage)) return;
+    nextPage = Math.max(1, Math.min(totalPages, nextPage));
+    if (nextPage === _listPage) return;
+    _listPage = nextPage;
     loadAdminList();
   };
 
@@ -4538,7 +4548,7 @@
 
     var buttons = [];
     buttons.push('<button type="button" ' + (_historyPage <= 1 ? 'disabled' : '') + ' onclick="changeHistoryPage(-1)">← 이전</button>');
-    buttons.push('<span>' + _historyPage + ' / ' + totalPages + '</span>');
+    buttons.push('<div class="version-history-page-numbers">' + buildPageNumberButtons(_historyPage, totalPages, 'setHistoryPage') + '</div>');
     buttons.push('<button type="button" ' + (_historyPage >= totalPages ? 'disabled' : '') + ' onclick="changeHistoryPage(1)">다음 →</button>');
     pg.innerHTML = buttons.join('');
   }
@@ -4547,6 +4557,40 @@
     _historyPage += delta;
     renderVersionHistory();
   };
+
+  window.setHistoryPage = function (page) {
+    var totalPages = Math.max(1, Math.ceil(_historyItems.length / _HISTORY_PAGE_SIZE));
+    var nextPage = parseInt(page, 10);
+    if (!Number.isFinite(nextPage)) return;
+    nextPage = Math.max(1, Math.min(totalPages, nextPage));
+    if (nextPage === _historyPage) return;
+    _historyPage = nextPage;
+    renderVersionHistory();
+  };
+
+  function buildPageNumberButtons(currentPage, totalPages, handlerName) {
+    var pages = [];
+    if (totalPages <= 7) {
+      for (var page = 1; page <= totalPages; page += 1) pages.push(page);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push('ellipsis-left');
+      for (var inner = Math.max(2, currentPage - 1); inner <= Math.min(totalPages - 1, currentPage + 1); inner += 1) {
+        if (pages.indexOf(inner) === -1) pages.push(inner);
+      }
+      if (currentPage < totalPages - 2) pages.push('ellipsis-right');
+      pages.push(totalPages);
+    }
+    return pages.map(function (entry) {
+      if (String(entry).indexOf('ellipsis') === 0) {
+        return '<span class="admin-page-ellipsis" aria-hidden="true">…</span>';
+      }
+      var active = entry === currentPage;
+      return '<button type="button" class="admin-page-number' + (active ? ' active' : '') + '"' +
+        (active ? ' aria-current="page"' : '') +
+        ' onclick="' + handlerName + '(' + entry + ')">' + entry + '</button>';
+    }).join('');
+  }
 
   function getVersionHistoryType(item, previousItem) {
     var explicitType = normalizeVersionHistoryType(item && item.type);
