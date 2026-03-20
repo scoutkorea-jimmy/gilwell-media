@@ -29,15 +29,21 @@ async function getInternalMetrics(env, range) {
     todayViews,
     totalVisits,
     totalViews,
+    averageDwellSeconds,
     visitSeriesRows,
     viewSeriesRows,
     topPaths,
     referrers,
+    popularPostDwellRow,
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
+    scalar(env, `SELECT ROUND(AVG(engaged_seconds), 1) AS count
+                   FROM post_engagement
+                  WHERE datetime(updated_at, '+9 hours') >= datetime(?)
+                    AND datetime(updated_at, '+9 hours') < datetime(?)`, [chosen.start, chosen.endExclusive]),
     env.DB.prepare(
       useHourlySeries
         ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits
@@ -76,16 +82,24 @@ async function getInternalMetrics(env, range) {
       `SELECT sv.path AS path,
               p.title AS title,
               COUNT(*) AS pageviews,
-              COUNT(DISTINCT sv.viewer_key) AS visits
+              COUNT(DISTINCT sv.viewer_key) AS visits,
+              COALESCE(pe.avg_dwell_seconds, 0) AS avg_dwell_seconds
          FROM site_visits sv
          LEFT JOIN posts p ON sv.path = '/post/' || p.id
+         LEFT JOIN (
+           SELECT post_id, ROUND(AVG(engaged_seconds), 1) AS avg_dwell_seconds
+             FROM post_engagement
+            WHERE datetime(updated_at, '+9 hours') >= datetime(?)
+              AND datetime(updated_at, '+9 hours') < datetime(?)
+            GROUP BY post_id
+         ) pe ON p.id = pe.post_id
         WHERE sv.path LIKE '/post/%'
           AND datetime(sv.visited_at, '+9 hours') >= datetime(?)
           AND datetime(sv.visited_at, '+9 hours') < datetime(?)
         GROUP BY sv.path, p.title
         ORDER BY pageviews DESC, visits DESC, sv.path DESC
         LIMIT 10`
-    ).bind(chosen.start, chosen.endExclusive).all(),
+    ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
       `SELECT referrer_host, referrer_url, utm_source, utm_medium, utm_campaign, COUNT(*) AS pageviews, COUNT(DISTINCT viewer_key) AS visits
          FROM site_visits
@@ -96,6 +110,27 @@ async function getInternalMetrics(env, range) {
         ORDER BY visits DESC, pageviews DESC, referrer_host ASC
         LIMIT 200`
     ).bind(chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `WITH top_post AS (
+         SELECT CAST(substr(path, 7) AS INTEGER) AS post_id
+           FROM site_visits
+          WHERE path LIKE '/post/%'
+            AND datetime(visited_at, '+9 hours') >= datetime(?)
+            AND datetime(visited_at, '+9 hours') < datetime(?)
+          GROUP BY path
+          ORDER BY COUNT(*) DESC, MAX(visited_at) DESC
+          LIMIT 1
+       )
+       SELECT p.title AS title,
+              tp.post_id AS post_id,
+              ROUND(AVG(pe.engaged_seconds), 1) AS avg_dwell_seconds
+         FROM top_post tp
+         LEFT JOIN post_engagement pe
+           ON pe.post_id = tp.post_id
+          AND datetime(pe.updated_at, '+9 hours') >= datetime(?)
+          AND datetime(pe.updated_at, '+9 hours') < datetime(?)
+         LEFT JOIN posts p ON p.id = tp.post_id`
+    ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).first(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -139,6 +174,9 @@ async function getInternalMetrics(env, range) {
       range_visits: rangeVisits,
       total_pageviews: totalViews,
       range_pageviews: rangeViews,
+      average_dwell_seconds: averageDwellSeconds,
+      popular_post_average_dwell_seconds: Number(popularPostDwellRow && popularPostDwellRow.avg_dwell_seconds || 0),
+      popular_post_title: popularPostDwellRow && popularPostDwellRow.title ? popularPostDwellRow.title : '',
       average_daily_visits: range.days ? Math.round((rangeVisits / range.days) * 10) / 10 : 0,
       average_daily_pageviews: range.days ? Math.round((rangeViews / range.days) * 10) / 10 : 0,
     },
@@ -158,6 +196,7 @@ async function getInternalMetrics(env, range) {
         title: item.title || '',
         visits: item.visits || 0,
         pageviews: item.pageviews || 0,
+        avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
       })),
     },
     top_paths: (topPaths.results || []).map((item) => ({
@@ -165,9 +204,10 @@ async function getInternalMetrics(env, range) {
       title: item.title || '',
       visits: item.visits || 0,
       pageviews: item.pageviews || 0,
+      avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
     })),
     referrers: aggregateReferrers(referrers.results || []),
-    tracking_note: `${range.label} 기준 기사 페이지 방문 집계입니다. 방문 수는 기사 페이지를 연 고유 사용자 수, 조회수는 기사 페이지 열린 횟수 기준입니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
+    tracking_note: `${range.label} 기준 기사 페이지 방문 집계입니다. 방문 수는 기사 페이지를 연 고유 사용자 수, 조회수는 기사 페이지 열린 횟수 기준입니다. 평균 체류시간은 기사 페이지가 실제로 보이는 동안의 활성 시간을 post 단위로 누적해 계산합니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
 

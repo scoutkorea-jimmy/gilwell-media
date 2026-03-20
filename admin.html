@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.084.03">
+  <link rel="stylesheet" href="/css/style.css?v=0.085.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.084.03</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.085.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.084.03</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.085.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -240,6 +240,14 @@
           <div class="dash-stat-card">
             <div class="dash-stat-num" id="analytics-range-pageviews">—</div>
             <div class="dash-stat-label">기간 조회수</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-average-dwell">—</div>
+            <div class="dash-stat-label">평균 체류시간</div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dash-stat-num" id="analytics-popular-dwell">—</div>
+            <div class="dash-stat-label">인기 기사 평균 체류</div>
           </div>
         </div>
 
@@ -1233,8 +1241,8 @@
   </div>
 
   </main>
-  <script src="/js/main.js?v=0.084.03"></script>
-  <script src="/js/admin.js?v=0.084.03"></script>
+  <script src="/js/main.js?v=0.085.00"></script>
+  <script src="/js/admin.js?v=0.085.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {

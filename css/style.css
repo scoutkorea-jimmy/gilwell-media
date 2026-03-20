@@ -6108,7 +6108,8 @@ body.kms-page main#main-content {
 .marketing-flow-svg,
 .marketing-scatter-svg {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: none;
   min-width: 1120px;
 }
 .marketing-flow-label {
@@ -6308,6 +6309,8 @@ body.kms-page main#main-content {
 .marketing-fullscreen-body .marketing-flow-svg,
 .marketing-fullscreen-body .marketing-scatter-svg {
   min-width: 1480px;
+  width: auto;
+  max-width: none;
 }
 body.marketing-fullscreen-open {
   overflow: hidden;
