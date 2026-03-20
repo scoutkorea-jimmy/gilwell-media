@@ -1,10 +1,9 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
-import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, ['full', 'limited']))) {
+  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -21,10 +20,8 @@ export async function onRequestGet({ request, env }) {
 }
 
 async function getInternalMetrics(env, range) {
-  await ensureSiteVisitColumns(env);
   const useHourlySeries = range.days === 1;
   const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
-  const allTime = rangeStartEnd(resolveAnalyticsRange(env.CF_ANALYTICS_START_DATE || '2026-03-12', range.endDate));
   const chosen = rangeStartEnd(range);
 
   const [
@@ -39,8 +36,8 @@ async function getInternalMetrics(env, range) {
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
-    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [allTime.start, allTime.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
+    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
     env.DB.prepare(
       useHourlySeries
         ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits

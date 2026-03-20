@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '0.082.16';
+  GW.APP_VERSION = '0.083.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1081,7 +1081,7 @@
   };
   GW.getAdminRole = function () { return localStorage.getItem('admin_role') || 'full'; };
   GW.setAdminRole = function (role) {
-    localStorage.setItem('admin_role', role === 'limited' ? 'limited' : 'full');
+    localStorage.setItem('admin_role', role === 'full' ? 'full' : 'full');
   };
 
   // ── API fetch ─────────────────────────────────────────────

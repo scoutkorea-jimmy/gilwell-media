@@ -2,27 +2,31 @@ export async function onRequestGet({ env }) {
   try {
     const [todayUnique, todayViews, totalUnique, totalViews] = await Promise.all([
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM post_views
-                    WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
+                     FROM site_visits
+                    WHERE path LIKE '/post/%'
+                      AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(*) AS count
-                     FROM post_views
-                    WHERE datetime(viewed_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
+                     FROM site_visits
+                    WHERE path LIKE '/post/%'
+                      AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                     FROM post_views`),
+                     FROM site_visits
+                    WHERE path LIKE '/post/%'`),
       scalar(env, `SELECT COUNT(*) AS count
-                     FROM post_views`),
+                     FROM site_visits
+                    WHERE path LIKE '/post/%'`),
     ]);
 
     return json({
-      provider: 'post_views',
-      provider_label: '기사 조회 집계',
+      provider: 'site_visits',
+      provider_label: '기사 페이지 방문 집계',
       today_unique: todayUnique,
       today_views: todayViews,
       total_unique: totalUnique,
       today_visits: todayUnique,
       total_visits: totalUnique,
       total_pageviews: totalViews,
-      measured_basis: 'post_views',
+      measured_basis: 'site_visits',
       measured_timezone: 'Asia/Seoul',
       measured_date: getKstDateString(new Date()),
     });

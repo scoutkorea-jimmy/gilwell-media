@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "0.083.00",
+    "date": "2026-03-20",
+    "type": "Update",
+    "summary": "관리자 인증 경로와 운영 지표 기준을 정리하고, 게시글/방문 스키마를 런타임 보정 대신 선반영 구조로 정비했습니다.",
+    "details": [
+      "프로덕션에서 하드코딩된 제한 관리자 비밀번호 경로를 제거하고, 관리자 로그인은 ADMIN_PASSWORD만 허용하도록 막았습니다.",
+      "관리자 로그인 시도 제한은 settings 테이블 대신 전용 admin_login_attempts 테이블로 분리했습니다.",
+      "홈페이지 하단 통계와 오늘 분석 API는 post_views가 아니라 site_visits 기준의 기사 페이지 방문 집계로 통일했습니다.",
+      "관리자 분석의 누적 방문/조회도 전체 site_visits 기준으로 맞춰, 공개 화면과 관리자 화면의 기준 차이를 줄였습니다.",
+      "게시글 생성 API는 INSERT ... RETURNING 대신 저장 후 재조회 구조로 바꿨고, posts/site_visits의 런타임 ALTER TABLE 보정 경로를 제거해 마이그레이션 선반영 구조로 정리했습니다."
+    ]
+  },
+  {
     "version": "0.082.16",
     "date": "2026-03-20",
     "type": "Hotfix",

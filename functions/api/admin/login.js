@@ -3,7 +3,7 @@
  * POST /api/admin/login
  *
  * Body:   { "password": "..." }
- * Returns 200: { "token": "...", "role": "full|limited" }
+ * Returns 200: { "token": "...", "role": "full" }
  * Returns 401: { "error": "..." }
  *
  * Required Cloudflare secrets (set in Pages dashboard):
@@ -15,42 +15,42 @@ import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const MAX_ATTEMPTS   = 10;
 const WINDOW_SECONDS = 900; // 15 minutes
-const LIMITED_ADMIN_PASSWORD = 'scout1922';
 
 async function getRateLimit(env, ip) {
   try {
     const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = ?`
-    ).bind(`ratelimit:${ip}`).first();
+      `SELECT attempt_count, first_attempt_at
+         FROM admin_login_attempts
+        WHERE ip = ?`
+    ).bind(ip).first();
     if (!row) return { count: 0, first: 0 };
-    const parts = row.value.split(':');
-    return { count: parseInt(parts[0], 10) || 0, first: parseInt(parts[1], 10) || 0 };
+    return {
+      count: parseInt(row.attempt_count, 10) || 0,
+      first: parseInt(row.first_attempt_at, 10) || 0,
+    };
   } catch { return { count: 0, first: 0 }; }
 }
 
 async function incrementRateLimit(env, ip) {
-  const key = `ratelimit:${ip}`;
   const now = Math.floor(Date.now() / 1000);
   try {
-    const row = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = ?`
-    ).bind(key).first();
-    if (row) {
-      const parts = row.value.split(':');
-      const count = (parseInt(parts[0], 10) || 0) + 1;
-      await env.DB.prepare(`UPDATE settings SET value = ? WHERE key = ?`)
-        .bind(`${count}:${parts[1]}`, key).run();
-    } else {
-      await env.DB.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`)
-        .bind(key, `1:${now}`).run();
-    }
+    const existing = await getRateLimit(env, ip);
+    const nextCount = existing.count > 0 ? existing.count + 1 : 1;
+    const firstAttemptAt = existing.count > 0 && existing.first ? existing.first : now;
+    await env.DB.prepare(
+      `INSERT INTO admin_login_attempts (ip, attempt_count, first_attempt_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT(ip) DO UPDATE SET
+         attempt_count = excluded.attempt_count,
+         first_attempt_at = excluded.first_attempt_at`
+    ).bind(ip, nextCount, firstAttemptAt).run();
   } catch {}
 }
 
 async function clearRateLimit(env, ip) {
   try {
-    await env.DB.prepare(`DELETE FROM settings WHERE key = ?`)
-      .bind(`ratelimit:${ip}`).run();
+    await env.DB.prepare(`DELETE FROM admin_login_attempts WHERE ip = ?`)
+      .bind(ip).run();
   } catch {}
 }
 
@@ -93,14 +93,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   let role = null;
-  const host = (request.headers.get('host') || '').toLowerCase();
-  const isPreviewHost = host.includes('preview.gilwell-media.pages.dev');
   if (safeCompare(password, env.ADMIN_PASSWORD)) {
     role = 'full';
-  } else if (isPreviewHost && safeCompare(password, LIMITED_ADMIN_PASSWORD)) {
-    role = 'full';
-  } else if (safeCompare(password, LIMITED_ADMIN_PASSWORD)) {
-    role = 'limited';
   }
 
   // Timing-safe comparison — prevents brute-force timing attacks

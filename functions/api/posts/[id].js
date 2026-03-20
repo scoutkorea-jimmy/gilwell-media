@@ -76,7 +76,6 @@ export async function onRequestPut({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   let currentPost = null;
-  await ensurePostOptionalColumns(env);
   try {
     currentPost = await env.DB.prepare(`SELECT image_url, gallery_images FROM posts WHERE id = ?`).bind(id).first();
   } catch (_) {}
@@ -163,7 +162,7 @@ export async function onRequestPut({ params, request, env }) {
   values.push(id);
 
   try {
-    const updatedPost = await updatePostWithRetry(env, id, fields, values);
+    const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (oldImageToDelete) {
       await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
@@ -244,7 +243,6 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
-    await ensurePostOptionalColumns(env);
     const existing = await env.DB.prepare(`SELECT image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
     if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const { meta } = await env.DB.prepare(
@@ -415,33 +413,6 @@ function diffRemovedGalleryUrls(previousRaw, nextItems) {
   return uniqueStrings(previous.filter(function (url) { return !next.has(url); }));
 }
 
-async function ensurePostOptionalColumns(env) {
-  await ensureColumn(env, 'subtitle', 'TEXT');
-  await ensureColumn(env, 'tag', 'TEXT');
-  await ensureColumn(env, 'gallery_images', 'TEXT');
-  await ensureColumn(env, 'location_name', 'TEXT');
-  await ensureColumn(env, 'location_address', 'TEXT');
-  await ensureColumn(env, 'manual_related_posts', 'TEXT');
-  await ensureColumn(env, 'special_feature', 'TEXT');
-  await ensureColumn(env, 'publish_at', 'TEXT');
-  await ensureColumn(env, 'image_caption', 'TEXT');
-  await ensureColumn(env, 'youtube_url', 'TEXT');
-  await ensureColumn(env, 'meta_tags', 'TEXT');
-  await ensureColumn(env, 'author', 'TEXT');
-  await ensureColumn(env, 'ai_assisted', 'INTEGER');
-  await ensureColumn(env, 'sort_order', 'INTEGER');
-}
-
-async function ensureColumn(env, columnName, columnType) {
-  try {
-    await env.DB.prepare(`SELECT ${columnName} FROM posts LIMIT 1`).first();
-  } catch (err) {
-    var msg = String(err && err.message || err || '');
-    if (msg.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} ${columnType || 'TEXT'}`).run();
-  }
-}
-
 function normalizeManualRelatedPosts(raw) {
   if (!Array.isArray(raw)) return null;
   var seen = new Set();
@@ -457,17 +428,6 @@ function normalizeManualRelatedPosts(raw) {
   return ids.length ? JSON.stringify(ids) : null;
 }
 
-async function updatePostWithRetry(env, id, fields, values) {
-  try {
-    return await runPostUpdate(env, id, fields, values);
-  } catch (err) {
-    if (!isSchemaMismatchError(err)) throw err;
-    console.warn('PUT /api/posts/:id schema mismatch detected, retrying after ensure:', err && err.message ? err.message : err);
-    await ensurePostOptionalColumns(env);
-    return await runPostUpdate(env, id, fields, values);
-  }
-}
-
 async function runPostUpdate(env, id, fields, values) {
   const bound = values.concat(id);
   const result = await env.DB.prepare(
@@ -475,13 +435,4 @@ async function runPostUpdate(env, id, fields, values) {
   ).bind(...bound).run();
   if (!result || !result.meta || !result.meta.changes) return null;
   return await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
-}
-
-function isSchemaMismatchError(err) {
-  const message = String(err && err.message || err || '').toLowerCase();
-  return (
-    message.indexOf('no such column') >= 0 ||
-    message.indexOf('has no column named') >= 0 ||
-    message.indexOf('sql logic error') >= 0
-  );
 }
