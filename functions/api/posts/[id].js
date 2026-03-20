@@ -137,7 +137,11 @@ export async function onRequestPut({ params, request, env }) {
   if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
   if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
   if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
-  if (author       !== undefined) { fields.push('author = ?');       values.push(author ? String(author).trim().slice(0, 60) : null); }
+  if (author       !== undefined) {
+    var safeAuthor = author ? String(author).trim().slice(0, 60) : '';
+    fields.push('author = ?');
+    values.push(safeAuthor || 'Editor.A');
+  }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
   if (manual_related_posts !== undefined) { fields.push('manual_related_posts = ?'); values.push(normalizeManualRelatedPosts(manual_related_posts)); }

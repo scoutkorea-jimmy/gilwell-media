@@ -104,7 +104,7 @@ export async function onRequestGet({ params, env, request }) {
     tag: post.tag || '',
     special_feature: post.special_feature || '',
     manual_related_posts: manualRelatedPosts || [],
-    author: post.author || 'Editor A',
+    author: post.author || 'Editor.A',
     ai_assisted: !!post.ai_assisted,
     publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
     publish_date: String(publicDateValue || '').slice(0, 10),
@@ -631,8 +631,12 @@ export async function onRequestGet({ params, env, request }) {
     function _fillPostAuthorOptions(editors) {
       var select = document.getElementById('post-edit-author');
       if (!select) return;
-      var current = _postEditSeed.author || 'Editor A';
-      select.innerHTML = GW.buildEditorOptions(editors || {});
+      var current = _postEditSeed.author || 'Editor.A';
+      var options = GW.buildEditorOptions(editors || {});
+      if (current && options.indexOf('value="' + current + '"') === -1) {
+        options = '<option value="' + GW.escapeHtml(current) + '">' + GW.escapeHtml(current) + '</option>' + options;
+      }
+      select.innerHTML = options;
       select.value = current;
     }
 

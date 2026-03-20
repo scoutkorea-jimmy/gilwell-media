@@ -1599,7 +1599,7 @@
     document.getElementById('art-location-address').value = draft.location_address || '';
     var locationToggleEl = document.getElementById('admin-location-toggle');
     if (locationToggleEl) locationToggleEl.open = !!(draft.location_name || draft.location_address);
-    document.getElementById('art-author').value = draft.author || 'Editor A';
+    document.getElementById('art-author').value = draft.author || 'Editor.A';
     document.getElementById('art-date').value = GW.toDatetimeLocalValue(draft.publish_at || draft.publish_date || '') || GW.getKstDateTimeInputValue();
     document.getElementById('art-ai-assisted').checked = !!draft.ai_assisted;
     _adminSelTags = Array.isArray(draft.tags) ? draft.tags.slice() : [];
@@ -2235,8 +2235,12 @@
   function _renderEditorSelect() {
     var sel = document.getElementById('art-author');
     if (!sel || sel.tagName !== 'SELECT') return;
-    var current = sel.value || 'Editor A';
-    sel.innerHTML = GW.buildEditorOptions(_editors);
+    var current = sel.value || 'Editor.A';
+    var options = GW.buildEditorOptions(_editors);
+    if (current && options.indexOf('value="' + current + '"') === -1) {
+      options = '<option value="' + GW.escapeHtml(current) + '">' + GW.escapeHtml(current) + '</option>' + options;
+    }
+    sel.innerHTML = options;
     sel.value = current;
   }
 
