@@ -1158,27 +1158,32 @@ export async function onRequestGet({ params, env, request }) {
             GW.showToast(validation.error, 'error');
             throw new Error('__post_validation__');
           }
+          var payload = {
+            category: category,
+            title: title,
+            subtitle: subtitle || null,
+            special_feature: specialFeature || null,
+            content: JSON.stringify(outputData),
+            image_caption: imageCaption || null,
+            youtube_url: youtubeUrl || null,
+            location_name: locationName || null,
+            location_address: locationAddress || null,
+            tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
+            meta_tags: metaTags || null,
+            manual_related_posts: _postEditState.manualRelatedPosts || [],
+            author: author || null,
+            ai_assisted: aiAssisted,
+            publish_at: publishDate ? GW.normalizePublishAtValue(publishDate) : undefined
+          };
+          if ((_postEditSeed.image_url || '') !== (_postEditState.coverImage || '')) {
+            payload.image_url = _postEditState.coverImage || null;
+          }
+          if (!_samePostGallery(_postEditSeed.gallery_images, _postEditState.galleryImages)) {
+            payload.gallery_images = _postEditState.galleryImages || [];
+          }
           return GW.apiFetch('/api/posts/' + _editPostId, {
             method: 'PUT',
-            body: JSON.stringify({
-              category: category,
-              title: title,
-              subtitle: subtitle || null,
-              special_feature: specialFeature || null,
-              content: JSON.stringify(outputData),
-              image_url: _postEditState.coverImage || null,
-              gallery_images: _postEditState.galleryImages || [],
-              image_caption: imageCaption || null,
-              youtube_url: youtubeUrl || null,
-              location_name: locationName || null,
-              location_address: locationAddress || null,
-              tag: _postEditState.selectedTags.length ? _postEditState.selectedTags.join(',') : null,
-              meta_tags: metaTags || null,
-              manual_related_posts: _postEditState.manualRelatedPosts || [],
-              author: author || null,
-              ai_assisted: aiAssisted,
-              publish_at: publishDate ? GW.normalizePublishAtValue(publishDate) : undefined
-            })
+            body: JSON.stringify(payload)
           });
         })
         .then(function () {
@@ -1202,6 +1207,24 @@ export async function onRequestGet({ params, env, request }) {
           submitBtn.textContent = '수정 완료';
         });
     };
+
+    function _samePostGallery(previousRaw, nextItems) {
+      function normalize(items) {
+        if (!Array.isArray(items)) return [];
+        return items.map(function (item) {
+          if (typeof item === 'string') return { url: item, caption: '' };
+          return {
+            url: item && typeof item.url === 'string' ? item.url : '',
+            caption: item && typeof item.caption === 'string' ? item.caption : ''
+          };
+        }).filter(function (item) {
+          return item.url;
+        }).slice(0, 10);
+      }
+      var previous = normalize(_parsePostGallerySeed(previousRaw));
+      var next = normalize(nextItems);
+      return JSON.stringify(previous) === JSON.stringify(next);
+    }
 
     var _postShareBtn = document.getElementById('post-share-btn');
     if (_postShareBtn) {

@@ -142,8 +142,8 @@ export async function onRequestPost({ request, env }) {
     return json({ error: '내용을 입력해주세요' }, 400);
   }
 
-  const upgradedContent = await upgradeEditorContentImages(content.trim(), env, origin, 'inline');
-  const storedCover = await storeDataImage(env, sanitizeUrl(image_url), origin, 'cover');
+  const upgradedContent = await safelyUpgradeEditorContentImages(content.trim(), env, origin, 'inline');
+  const storedCover = await safelyStoreDataImage(env, sanitizeUrl(image_url, origin), origin, 'cover');
   const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
@@ -186,7 +186,8 @@ export async function onRequestPost({ request, env }) {
     return json({ post: insertedPost }, 201);
   } catch (err) {
     console.error('POST /api/posts error:', err);
-    return json({ error: 'Database error' }, 500);
+    const message = err && err.message ? String(err.message) : 'Database error';
+    return json({ error: message }, 500);
   }
 }
 
@@ -206,13 +207,13 @@ function publicCacheHeaders(maxAge, swr) {
 }
 
 /** Allow http/https URLs and data:image/ base64 strings (cover uploads). */
-function sanitizeUrl(url) {
+function sanitizeUrl(url, origin) {
   if (!url || typeof url !== 'string') return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
   if (trimmed.startsWith('data:image/')) return trimmed;
   try {
-    const parsed = new URL(trimmed);
+    const parsed = origin ? new URL(trimmed, origin) : new URL(trimmed);
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return trimmed;
   } catch { /* fall through */ }
   return null;
@@ -241,9 +242,9 @@ async function storeGalleryImages(env, rawItems, origin) {
   const items = normalizeGalleryImages(rawItems);
   const stored = [];
   for (const item of items) {
-    const source = sanitizeUrl(item.url);
+    const source = sanitizeUrl(item.url, origin);
     if (!source) continue;
-    const saved = await storeDataImage(env, source, origin, 'gallery');
+    const saved = await safelyStoreDataImage(env, source, origin, 'gallery');
     if (!saved.url) continue;
     stored.push({
       url: saved.url,
@@ -251,6 +252,24 @@ async function storeGalleryImages(env, rawItems, origin) {
     });
   }
   return stored.slice(0, 10);
+}
+
+async function safelyStoreDataImage(env, value, origin, prefix) {
+  try {
+    return await storeDataImage(env, value, origin, prefix);
+  } catch (err) {
+    console.error('safelyStoreDataImage error:', err);
+    return { url: value || null, key: '' };
+  }
+}
+
+async function safelyUpgradeEditorContentImages(content, env, origin, prefix) {
+  try {
+    return await upgradeEditorContentImages(content, env, origin, prefix);
+  } catch (err) {
+    console.error('safelyUpgradeEditorContentImages error:', err);
+    return content;
+  }
 }
 
 function serializeGalleryImages(items) {
