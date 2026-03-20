@@ -13,6 +13,7 @@ export async function onRequest(context) {
 
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
+  const translationStrings = await loadTranslationStrings(env);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const canonicalPath = getCanonicalPath(url.pathname, pageKey);
   const itemListElements = await loadPageItemList(env, url.origin, pageKey);
@@ -33,11 +34,12 @@ export async function onRequest(context) {
 
   const headers = new Headers(response.headers);
   headers.set('Content-Type', 'text/html; charset=UTF-8');
-  return new Response(updated, {
+  const baseResponse = new Response(updated, {
     status: response.status,
     statusText: response.statusText,
     headers,
   });
+  return applyTranslationBootstrap(baseResponse, translationStrings);
 }
 
 function getCanonicalPath(pathname, pageKey) {
@@ -70,6 +72,39 @@ async function loadPageItemList(env, origin, pageKey) {
   } catch {
     return [];
   }
+}
+
+async function loadTranslationStrings(env) {
+  try {
+    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
+    const parsed = row ? JSON.parse(row.value || '{}') : {};
+    return parsed && typeof parsed === 'object' ? (parsed.strings || {}) : {};
+  } catch {
+    return {};
+  }
+}
+
+function applyTranslationBootstrap(response, strings) {
+  const safeStrings = strings && typeof strings === 'object' ? strings : {};
+  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${JSON.stringify(safeStrings)};</script>`;
+  return new HTMLRewriter()
+    .on('head', {
+      element(element) {
+        element.append(bootstrap, { html: true });
+      }
+    })
+    .on('[data-i18n]', {
+      element(element) {
+        const key = element.getAttribute('data-i18n');
+        if (!key) return;
+        const entry = safeStrings[key];
+        if (!entry || typeof entry.ko === 'undefined') return;
+        element.setInnerContent(String(entry.ko), {
+          html: element.hasAttribute('data-i18n-html'),
+        });
+      }
+    })
+    .transform(response);
 }
 
 function escapeHtml(str) {

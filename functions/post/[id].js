@@ -32,17 +32,27 @@ export async function onRequestGet({ params, env, request }) {
     return notFound();
   }
 
-  let post, disclaimerRow;
+  let post, disclaimerRow, translationsRow;
   try {
-    [post, disclaimerRow] = await Promise.all([
+    [post, disclaimerRow, translationsRow] = await Promise.all([
       env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
+      env.DB.prepare("SELECT value FROM settings WHERE key = 'translations'").first(),
     ]);
   } catch (err) {
     console.error('GET /post/:id DB error:', err);
     return errorPage();
   }
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
+  const translationStrings = parseTranslationStrings(translationsRow && translationsRow.value);
+  const navContributors = getKoString(translationStrings, 'nav.contributors', '도움을 주신 분들');
+  const navHome = getKoString(translationStrings, 'nav.home', '홈');
+  const navLatest = getKoString(translationStrings, 'nav.latest', '1개월 소식');
+  const navKorea = getKoString(translationStrings, 'nav.korea', 'Korea');
+  const navApr = getKoString(translationStrings, 'nav.apr', 'APR');
+  const navWosm = getKoString(translationStrings, 'nav.wosm', 'WOSM');
+  const navPeople = getKoString(translationStrings, 'nav.people', '스카우트 인물');
+  const navGlossary = getKoString(translationStrings, 'nav.glossary', '용어집');
 
   if (!post) return notFound();
   let isAdmin = false;
@@ -206,15 +216,15 @@ export async function onRequestGet({ params, env, request }) {
       </div>
     </div>
     <nav class="nav">
-      <a href="/contributors.html" data-i18n="nav.contributors">도움을 주신 분들</a>
-      <a href="/" data-i18n="nav.home">홈</a>
-      <a href="/latest" data-i18n="nav.latest">1개월 소식</a>
-      <a href="/korea" data-i18n="nav.korea">Korea</a>
-      <a href="/apr" data-i18n="nav.apr">APR</a>
-      <a href="/wosm" data-i18n="nav.wosm">WOSM</a>
-      <a href="/people" data-i18n="nav.people">스카우트 인물</a>
+      <a href="/contributors.html" data-i18n="nav.contributors">${escapeHtml(navContributors)}</a>
+      <a href="/" data-i18n="nav.home">${escapeHtml(navHome)}</a>
+      <a href="/latest" data-i18n="nav.latest">${escapeHtml(navLatest)}</a>
+      <a href="/korea" data-i18n="nav.korea">${escapeHtml(navKorea)}</a>
+      <a href="/apr" data-i18n="nav.apr">${escapeHtml(navApr)}</a>
+      <a href="/wosm" data-i18n="nav.wosm">${escapeHtml(navWosm)}</a>
+      <a href="/people" data-i18n="nav.people">${escapeHtml(navPeople)}</a>
       <a href="/calendar.html">캘린더</a>
-      <a href="/glossary" data-i18n="nav.glossary">용어집</a>
+      <a href="/glossary" data-i18n="nav.glossary">${escapeHtml(navGlossary)}</a>
     </nav>
   </header>
 
@@ -1308,6 +1318,21 @@ function errorPage() {
     status: 302,
     headers: { Location: '/404.html' },
   });
+}
+
+function parseTranslationStrings(raw) {
+  try {
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? (parsed.strings || {}) : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function getKoString(strings, key, fallback) {
+  const entry = strings && typeof strings === 'object' ? strings[key] : null;
+  if (entry && typeof entry.ko !== 'undefined') return String(entry.ko);
+  return fallback;
 }
 
 function escapeHtml(str) {
