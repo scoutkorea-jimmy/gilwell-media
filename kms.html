@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.082.01">
+  <link rel="stylesheet" href="/css/style.css?v=0.082.02">
 </head>
 <body class="admin-page kms-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -21,63 +21,68 @@
         <label for="kms-pw-input">비밀번호</label>
         <input type="password" id="kms-pw-input" placeholder="••••••••" autocomplete="current-password" />
         <button class="login-btn" id="kms-login-btn">KMS 열기</button>
-        <p class="admin-login-build">Build <span class="site-build-version">V0.082.01</span></p>
+        <p class="admin-login-build">Build <span class="site-build-version">V0.082.02</span></p>
         <div class="login-error" id="kms-login-error"></div>
       </div>
     </div>
 
     <div class="kms-screen" id="kms-screen" hidden aria-hidden="true">
-      <header class="kms-header">
-        <div class="kms-header-copy">
+      <header class="kms-topbar">
+        <div class="kms-topbar-copy">
           <span class="badge">KMS</span>
           <h1>기능 정의서 / 운영 기준 문서</h1>
-          <p>앞으로 홈페이지와 관리자 개발은 이 문서를 기준으로 설계, 구현, 검수, 배포합니다.</p>
+          <p>홈페이지와 관리자 개발은 이 문서를 기준으로 설계, 구현, 검수, 배포합니다.</p>
         </div>
-        <div class="kms-header-actions">
-          <a class="admin-header-link" href="/admin.html">← 관리자 돌아가기</a>
-          <button type="button" class="submit-btn admin-inline-submit" id="kms-save-btn">정의서 저장</button>
+        <div class="kms-topbar-actions">
+          <a class="kms-back-link" href="/admin.html">관리자 돌아가기</a>
+          <button type="button" class="kms-primary-btn" id="kms-save-btn">정의서 저장</button>
         </div>
       </header>
 
-      <section class="kms-summary panel">
-        <div class="panel-header"><h2>KMS 사용 규칙</h2></div>
-        <div class="panel-body kms-summary-grid">
-          <article class="kms-summary-card">
-            <h3>원본</h3>
-            <p>관리자 KMS에 저장된 정의서를 운영 기준의 원본으로 사용합니다.</p>
-          </article>
-          <article class="kms-summary-card">
-            <h3>스냅샷</h3>
-            <p><code>docs/feature-definition.md</code>는 저장소에 남기는 보조 스냅샷입니다.</p>
-          </article>
-          <article class="kms-summary-card">
-            <h3>개발 원칙</h3>
-            <p>새 기능은 먼저 문서에 정의한 뒤 구현하고, 배포 전에 문서와 실제 UI를 다시 맞춥니다.</p>
-          </article>
-        </div>
+      <section class="kms-desktop-note">
+        <strong>운영 규칙</strong>
+        <span>이 페이지는 관리자 전용 KMS이며 데스크톱 작업을 기준으로 최적화되어 있습니다. 구현 전, 구현 중, 배포 전 모두 여기 내용을 먼저 확인합니다.</span>
       </section>
 
-      <div class="kms-layout">
-        <aside class="panel kms-nav-panel">
-          <div class="panel-header"><h2>문서 목차</h2></div>
-          <div class="panel-body">
+      <div class="kms-shell">
+        <aside class="kms-rail">
+          <section class="kms-card kms-card-compact">
+            <h2>KMS 원칙</h2>
+            <ul class="kms-rule-list">
+              <li>관리자 KMS가 운영 기준의 원본입니다.</li>
+              <li>저장소의 <code>docs/feature-definition.md</code>는 보조 스냅샷입니다.</li>
+              <li>기능 변경 시 문서와 코드를 함께 갱신합니다.</li>
+            </ul>
+          </section>
+
+          <section class="kms-card kms-card-fill">
+            <div class="kms-card-head">
+              <h2>문서 목차</h2>
+              <span>빠른 이동</span>
+            </div>
             <div id="kms-section-list" class="kms-section-list">
               <div class="list-empty">정의서를 불러오는 중…</div>
             </div>
-          </div>
+          </section>
         </aside>
 
-        <section class="panel kms-editor-panel">
-          <div class="panel-header"><h2>정의서 원문</h2></div>
-          <div class="panel-body">
-            <textarea id="kms-editor-input" class="kms-editor-input" rows="34" placeholder="기능 정의서를 입력하세요."></textarea>
+        <section class="kms-editor-column">
+          <div class="kms-card kms-card-fill">
+            <div class="kms-card-head">
+              <h2>정의서 원문</h2>
+              <span>Markdown 형식</span>
+            </div>
+            <textarea id="kms-editor-input" class="kms-editor-input" rows="40" placeholder="기능 정의서를 입력하세요."></textarea>
           </div>
         </section>
 
-        <section class="panel kms-preview-panel">
-          <div class="panel-header"><h2>미리보기</h2></div>
-          <div class="panel-body">
-            <div id="kms-preview" class="feature-definition-preview">
+        <section class="kms-preview-column">
+          <div class="kms-card kms-card-fill">
+            <div class="kms-card-head">
+              <h2>실시간 미리보기</h2>
+              <span>문서/코드 샘플 포함</span>
+            </div>
+            <div id="kms-preview" class="feature-definition-preview kms-preview-surface">
               <div class="list-empty">정의서를 불러오는 중…</div>
             </div>
           </div>
@@ -86,7 +91,7 @@
     </div>
   </main>
 
-  <script src="/js/main.js?v=0.082.01"></script>
-  <script src="/js/kms.js?v=0.082.01"></script>
+  <script src="/js/main.js?v=0.082.02"></script>
+  <script src="/js/kms.js?v=0.082.02"></script>
 </body>
 </html>
