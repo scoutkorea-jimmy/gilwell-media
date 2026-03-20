@@ -3296,12 +3296,12 @@
     var links = flow.links.slice();
     var columns = [sources, stages, destinations];
     var nodeMap = new Map();
-    var W = 1080;
+    var W = 1480;
     var H = 430;
     var padTop = 18;
     var padBottom = 18;
     var nodeW = 18;
-    var colX = [60, 505, 930];
+    var colX = [70, 690, 1310];
     var columnInfo = columns.map(function (items, idx) {
       var totals = items.map(function (item) {
         var incoming = links.filter(function (link) { return link.target === item.id; }).reduce(function (sum, link) { return sum + Number(link.value || 0); }, 0);
@@ -3358,9 +3358,11 @@
       var tx = targetNode.x;
       var c1 = sx + 140;
       var c2 = tx - 140;
+      var tipText = (sourceNode.label || '') + ' → ' + (targetNode.label || '') + ' · ' + formatMetricExact(link.value || 0);
+      if (String(link.target || '').indexOf('dest:') === 0) tipText += ' · ' + String(link.target || '').replace(/^dest:/, '');
       return '<path d="M ' + sx + ' ' + sy + ' C ' + c1 + ' ' + sy + ', ' + c2 + ' ' + ty + ', ' + tx + ' ' + ty + '"' +
         ' stroke="' + GW.escapeHtml(link.color || sourceNode.color) + '"' +
-        ' stroke-opacity="0.22" stroke-width="' + thickness.toFixed(2) + '" fill="none" stroke-linecap="round">' +
+        ' stroke-opacity="0.22" stroke-width="' + thickness.toFixed(2) + '" fill="none" stroke-linecap="round" class="marketing-flow-link" data-tip="' + GW.escapeHtml(tipText) + '">' +
         '<title>' + GW.escapeHtml((sourceNode.label || '') + ' → ' + (targetNode.label || '') + ' · ' + formatMetricExact(link.value || 0)) + '</title>' +
       '</path>';
     }).join('');
@@ -3373,20 +3375,25 @@
         labelAnchor = 'start';
       }
       var valueText = formatMetricCompact(node.value || 0);
-      return '<g class="marketing-flow-node">' +
+      var displayLabel = trimMarketingTitle(node.label, node.x === colX[2] ? 26 : 20);
+      var tip = node.label + ' · ' + formatMetricExact(node.value || 0);
+      if (String(node.id || '').indexOf('dest:') === 0) tip += ' · ' + String(node.id || '').replace(/^dest:/, '');
+      return '<g class="marketing-flow-node" data-tip="' + GW.escapeHtml(tip) + '">' +
         '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="7" fill="' + GW.escapeHtml(node.color) + '"></rect>' +
-        '<text x="' + labelX + '" y="' + (node.y + 18) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-label">' + GW.escapeHtml(node.label) + '</text>' +
+        '<text x="' + labelX + '" y="' + (node.y + 18) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-label">' + GW.escapeHtml(displayLabel) + '</text>' +
         '<text x="' + labelX + '" y="' + (node.y + 34) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-value">' + GW.escapeHtml(valueText) + '</text>' +
       '</g>';
     }).join('');
 
     el.innerHTML =
       '<div class="marketing-flow-shell">' +
+        '<div class="marketing-hover-tip" aria-hidden="true"></div>' +
         '<svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="고객 여정 흐름">' +
           linkParts +
           nodeParts +
         '</svg>' +
       '</div>';
+    bindMarketingHoverTips(el);
   }
 
   function renderMarketingScatter(items) {
@@ -3435,7 +3442,8 @@
       var radius = rScale(item.pageviews || 0);
       var color = marketingStageColor(item.stage);
       var label = index < 8 ? '<text x="' + (cx + radius + 6) + '" y="' + (cy + 4) + '" class="marketing-scatter-label">' + GW.escapeHtml(trimMarketingTitle(item.title, 16)) + '</text>' : '';
-      return '<g class="marketing-scatter-point">' +
+      var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + formatMetricExact(item.unique_users) + ' · 페이지뷰 ' + formatMetricExact(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
+      return '<g class="marketing-scatter-point" data-tip="' + GW.escapeHtml(tip) + '">' +
         '<circle cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + radius.toFixed(2) + '" fill="' + color + '" fill-opacity="0.72" stroke="' + color + '" stroke-width="2">' +
           '<title>' + GW.escapeHtml(item.title + ' · 사용자 ' + formatMetricExact(item.unique_users) + ' · 페이지뷰 ' + formatMetricExact(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%') + '</title>' +
         '</circle>' +
@@ -3461,11 +3469,13 @@
     el.innerHTML =
       '<div class="marketing-scatter-legend">' + legend + '</div>' +
       '<div class="marketing-scatter-shell">' +
+        '<div class="marketing-hover-tip" aria-hidden="true"></div>' +
         '<svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="페이지 기회 맵">' +
           axis +
           points +
         '</svg>' +
       '</div>';
+    bindMarketingHoverTips(el);
   }
 
   window.openMarketingFullscreen = function (kind) {
@@ -3490,6 +3500,7 @@
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('marketing-fullscreen-open');
     applyMarketingFullscreenZoom();
+    bindMarketingHoverTips(body);
   };
 
   window.closeMarketingFullscreen = function () {
@@ -3504,7 +3515,7 @@
   };
 
   window.adjustMarketingFullscreenZoom = function (delta) {
-    _marketingFullscreenZoom = Math.max(0.6, Math.min(2.2, Number((_marketingFullscreenZoom + Number(delta || 0)).toFixed(2))));
+    _marketingFullscreenZoom = Math.max(0.5, Math.min(2.2, Number((_marketingFullscreenZoom + Number(delta || 0)).toFixed(2))));
     applyMarketingFullscreenZoom();
   };
 
@@ -3518,6 +3529,31 @@
     if (!stage) return;
     stage.style.setProperty('--marketing-fullscreen-zoom', String(_marketingFullscreenZoom));
     stage.style.zoom = String(_marketingFullscreenZoom);
+  }
+
+  function bindMarketingHoverTips(root) {
+    if (!root || root.dataset.hoverTipsBound === '1') return;
+    root.dataset.hoverTipsBound = '1';
+    var shell = root.querySelector('.marketing-flow-shell, .marketing-scatter-shell');
+    var tooltip = root.querySelector('.marketing-hover-tip');
+    if (!shell || !tooltip) return;
+    shell.addEventListener('mousemove', function (event) {
+      var target = event.target.closest('[data-tip]');
+      if (!target || !shell.contains(target)) {
+        tooltip.classList.remove('open');
+        return;
+      }
+      tooltip.textContent = target.getAttribute('data-tip') || '';
+      tooltip.classList.add('open');
+      var bounds = shell.getBoundingClientRect();
+      var x = event.clientX - bounds.left + 16;
+      var y = event.clientY - bounds.top + 16;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    });
+    shell.addEventListener('mouseleave', function () {
+      tooltip.classList.remove('open');
+    });
   }
 
   function marketingStageColor(stage) {
