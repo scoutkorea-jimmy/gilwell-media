@@ -3467,6 +3467,38 @@
       '</div>';
   }
 
+  window.openMarketingFullscreen = function (kind) {
+    var modal = document.getElementById('marketing-fullscreen-modal');
+    var body = document.getElementById('marketing-fullscreen-body');
+    var title = document.getElementById('marketing-fullscreen-title');
+    var meta = document.getElementById('marketing-fullscreen-meta');
+    if (!modal || !body || !title || !meta) return;
+    var sourceId = kind === 'scatter' ? 'marketing-scatter' : 'marketing-flow';
+    var sourceEl = document.getElementById(sourceId);
+    if (!sourceEl) return;
+    body.innerHTML = sourceEl.innerHTML;
+    if (kind === 'scatter') {
+      title.textContent = '페이지 기회 맵';
+      meta.textContent = '고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.';
+    } else {
+      title.textContent = '고객 여정 흐름';
+      meta.textContent = (document.getElementById('marketing-flow-meta') || {}).textContent || '유입 채널 → 단계 → 대표 도착 페이지';
+    }
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('marketing-fullscreen-open');
+  };
+
+  window.closeMarketingFullscreen = function () {
+    var modal = document.getElementById('marketing-fullscreen-modal');
+    var body = document.getElementById('marketing-fullscreen-body');
+    if (!modal || !body) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    body.innerHTML = '';
+    document.body.classList.remove('marketing-fullscreen-open');
+  };
+
   function marketingStageColor(stage) {
     if (stage === 'awareness') return '#ff8c42';
     if (stage === 'interest') return '#2f9e44';
