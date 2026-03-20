@@ -1073,6 +1073,58 @@
           chip.classList.remove('dragging');
           document.querySelectorAll('.tag-admin-lane').forEach(function (el) { el.classList.remove('drag-over'); });
         });
+        chip.addEventListener('pointerdown', function (event) {
+          if (event.target.closest('.tag-admin-chip-edit, .tag-admin-chip-remove')) return;
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          event.preventDefault();
+          _cleanupPointerSortState();
+          chip.classList.add('dragging');
+          _dragTagValue = chip.dataset.tag || '';
+          _dragTagSource = chip.dataset.source || '';
+          var state = {
+            item: chip,
+            list: document,
+            itemSelector: '.tag-admin-lane',
+            target: null,
+          };
+          state.onMove = function (moveEvent) {
+            if (!_pointerSortState || _pointerSortState !== state) return;
+            moveEvent.preventDefault();
+            chip.style.transform = 'translate(' + (moveEvent.clientX - event.clientX) + 'px,' + (moveEvent.clientY - event.clientY) + 'px)';
+            chip.style.zIndex = '5';
+            chip.style.position = 'relative';
+            document.querySelectorAll('.tag-admin-lane').forEach(function (el) { el.classList.remove('drag-over'); });
+            var target = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+            var laneTarget = target && target.closest('.tag-admin-lane');
+            if (laneTarget) {
+              state.target = laneTarget;
+              laneTarget.classList.add('drag-over');
+            } else {
+              state.target = null;
+            }
+          };
+          state.onUp = function () {
+            if (!_pointerSortState || _pointerSortState !== state) return;
+            var targetLane = state.target;
+            _cleanupPointerSortState();
+            _dragTagValue = chip.dataset.tag || '';
+            _dragTagSource = chip.dataset.source || '';
+            if (targetLane) {
+              var targetKey = targetLane.getAttribute('data-tag-target') || 'common';
+              if (_dragTagValue && targetKey && _dragTagSource !== targetKey) {
+                _moveTagToTarget(_dragTagValue, targetKey);
+                _renderTagSettingsManager();
+                loadTagsForSelector();
+              }
+            }
+            _dragTagValue = '';
+            _dragTagSource = '';
+          };
+          window.addEventListener('pointermove', state.onMove, { passive: false });
+          window.addEventListener('pointerup', state.onUp);
+          window.addEventListener('pointercancel', state.onUp);
+          _pointerSortState = state;
+        });
       });
 
       lane.querySelectorAll('.tag-admin-chip-remove').forEach(function (btn) {
@@ -1859,11 +1911,133 @@
   }
 
   var _dragSrc = null;
+  var _pointerSortState = null;
+
+  function _clearDragOver(selector, scope) {
+    (scope || document).querySelectorAll(selector).forEach(function (node) {
+      node.classList.remove('drag-over');
+    });
+  }
+
+  function _cleanupPointerSortState() {
+    if (!_pointerSortState) return;
+    var state = _pointerSortState;
+    if (state.item) {
+      state.item.classList.remove('is-pointer-sorting');
+      state.item.style.transform = '';
+      state.item.style.zIndex = '';
+      state.item.style.position = '';
+    }
+    if (state.list && state.itemSelector) _clearDragOver(state.itemSelector, state.list);
+    if (state.target) state.target.classList.remove('drag-over');
+    window.removeEventListener('pointermove', state.onMove);
+    window.removeEventListener('pointerup', state.onUp);
+    window.removeEventListener('pointercancel', state.onUp);
+    _pointerSortState = null;
+  }
+
+  function _initPointerSortable(list, options) {
+    if (!list || !options || !options.itemSelector || !options.handleSelector) return;
+    if (list.dataset[options.boundKey] === '1') return;
+    list.dataset[options.boundKey] = '1';
+
+    list.addEventListener('pointerdown', function (event) {
+      var handle = event.target.closest(options.handleSelector);
+      var item = event.target.closest(options.itemSelector);
+      if (!handle || !item || !list.contains(item)) return;
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      event.preventDefault();
+      _cleanupPointerSortState();
+      item.classList.add('is-pointer-sorting');
+
+      var state = {
+        list: list,
+        item: item,
+        itemSelector: options.itemSelector,
+        onCommit: options.onCommit || function () {},
+        startX: event.clientX,
+        startY: event.clientY,
+        target: null,
+      };
+
+      state.onMove = function (moveEvent) {
+        if (!_pointerSortState || _pointerSortState !== state) return;
+        moveEvent.preventDefault();
+        var deltaY = moveEvent.clientY - state.startY;
+        state.item.style.transform = 'translateY(' + deltaY + 'px)';
+        state.item.style.zIndex = '5';
+        state.item.style.position = 'relative';
+
+        _clearDragOver(state.itemSelector, list);
+        var pointerTarget = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+        var overItem = pointerTarget && pointerTarget.closest(state.itemSelector);
+        if (!overItem || !list.contains(overItem) || overItem === state.item) {
+          state.target = null;
+          return;
+        }
+        state.target = overItem;
+        overItem.classList.add('drag-over');
+        var rect = overItem.getBoundingClientRect();
+        var after = moveEvent.clientY > rect.top + rect.height / 2;
+        if (after) {
+          overItem.parentNode.insertBefore(state.item, overItem.nextSibling);
+        } else {
+          overItem.parentNode.insertBefore(state.item, overItem);
+        }
+      };
+
+      state.onUp = function () {
+        if (!_pointerSortState || _pointerSortState !== state) return;
+        _cleanupPointerSortState();
+        state.onCommit(list);
+      };
+
+      window.addEventListener('pointermove', state.onMove, { passive: false });
+      window.addEventListener('pointerup', state.onUp);
+      window.addEventListener('pointercancel', state.onUp);
+      _pointerSortState = state;
+    });
+  }
+
+  function _syncHeroPostsFromDom(list) {
+    var current = _heroPosts.slice();
+    var indices = [];
+    list.querySelectorAll('.hero-slot-item[data-hero-index]').forEach(function (el) {
+      indices.push(parseInt(el.getAttribute('data-hero-index') || '-1', 10));
+    });
+    _heroPosts = indices.map(function (index) { return current[index]; }).filter(Boolean);
+    _heroPostIds = _heroPosts.map(function (post) { return post.id; });
+  }
+
+  function _syncContributorsFromDom(list) {
+    var current = _contributors.slice();
+    var indices = [];
+    list.querySelectorAll('.contributors-admin-item[data-contrib-index]').forEach(function (el) {
+      indices.push(parseInt(el.getAttribute('data-contrib-index') || '-1', 10));
+    });
+    _contributors = indices.map(function (index) { return current[index]; }).filter(Boolean);
+  }
 
   function _initDragAndDrop(list) {
+    _initPointerSortable(list, {
+      boundKey: 'pointerBound',
+      itemSelector: '.article-item',
+      handleSelector: '.drag-handle',
+      onCommit: function (boundList) {
+        syncCurrentListPostsFromDom(boundList);
+        _reorderDirty = true;
+        var btn = document.getElementById('reorder-save-btn');
+        if (btn) btn.style.display = '';
+      }
+    });
     var items = list.querySelectorAll('.article-item');
     items.forEach(function (item) {
       item.addEventListener('dragstart', function (e) {
+        if (!e.target.closest('.drag-handle')) {
+          e.preventDefault();
+          return;
+        }
         _dragSrc = item;
         e.dataTransfer.effectAllowed = 'move';
         item.style.opacity = '0.4';
@@ -2895,6 +3069,16 @@
     var list = document.getElementById('hero-slots');
     if (!list || list.dataset.dragBound === '1') return;
     list.dataset.dragBound = '1';
+    _initPointerSortable(list, {
+      boundKey: 'pointerBound',
+      itemSelector: '.hero-slot-item',
+      handleSelector: '.drag-handle',
+      onCommit: function (boundList) {
+        _syncHeroPostsFromDom(boundList);
+        renderHeroSlots(_heroPosts);
+        _saveHeroIds();
+      }
+    });
 
     list.addEventListener('dragstart', function (event) {
       var item = event.target.closest('.hero-slot-item');
@@ -4637,10 +4821,24 @@
     var list = document.getElementById('contributors-admin-list');
     if (!list || list.dataset.dragBound === '1') return;
     list.dataset.dragBound = '1';
+    _initPointerSortable(list, {
+      boundKey: 'pointerBound',
+      itemSelector: '.contributors-admin-item',
+      handleSelector: '.drag-handle',
+      onCommit: function (boundList) {
+        _syncContributorsFromDom(boundList);
+        renderContributorsAdmin();
+        saveContributorOrder();
+      }
+    });
 
     list.addEventListener('dragstart', function (event) {
       var item = event.target.closest('.contributors-admin-item');
-      if (!item) return;
+      var handle = event.target.closest('.drag-handle');
+      if (!item || !handle) {
+        event.preventDefault();
+        return;
+      }
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', item.getAttribute('data-contrib-index'));
     });

@@ -5066,6 +5066,7 @@ footer a:hover { color: #ffffff; }
   color: var(--ink);
   cursor: grab;
   user-select: none;
+  touch-action: none;
 }
 
 .tag-admin-chip.dragging {
@@ -5874,6 +5875,7 @@ footer a:hover { color: #ffffff; }
   font-size: 14px;
   line-height: 1;
   user-select: none;
+  touch-action: none;
 }
 .drag-handle:active { cursor: grabbing; }
 .article-item.drag-over {
@@ -5884,6 +5886,12 @@ footer a:hover { color: #ffffff; }
 .contributors-admin-item.drag-over {
   border-color: #622599 !important;
   box-shadow: 0 0 0 2px rgba(98,37,153,0.2);
+}
+.article-item.is-pointer-sorting,
+.hero-slot-item.is-pointer-sorting,
+.contributors-admin-item.is-pointer-sorting {
+  opacity: .92;
+  box-shadow: 0 18px 40px rgba(20, 15, 12, 0.14);
 }
 
 .admin-header {
