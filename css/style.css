@@ -6076,6 +6076,25 @@ body.kms-page main#main-content {
   color: var(--muted);
   letter-spacing: 0.06em;
 }
+.marketing-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.marketing-expand-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 8px 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.marketing-expand-btn:hover {
+  border-color: var(--black);
+}
 .marketing-flow-wrap,
 .marketing-scatter-wrap {
   min-height: 280px;
@@ -6180,6 +6199,73 @@ body.kms-page main#main-content {
   font-size: 10px;
   font-family: AliceDigitalLearning, sans-serif;
 }
+.marketing-fullscreen-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  opacity: 0;
+  pointer-events: none;
+}
+.marketing-fullscreen-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.marketing-fullscreen-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 12, 11, 0.72);
+}
+.marketing-fullscreen-card {
+  position: relative;
+  width: min(1500px, calc(100vw - 64px));
+  height: min(860px, calc(100vh - 64px));
+  margin: 32px auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  box-shadow: 0 28px 80px rgba(13, 12, 11, 0.22);
+}
+.marketing-fullscreen-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.marketing-fullscreen-head strong {
+  display: block;
+  font-size: 20px;
+  color: var(--ink);
+}
+.marketing-fullscreen-head span {
+  display: block;
+  margin-top: 6px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+.marketing-fullscreen-close {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  padding: 10px 14px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.marketing-fullscreen-body {
+  padding: 20px 24px 24px;
+  overflow: auto;
+}
+.marketing-fullscreen-body .marketing-flow-svg,
+.marketing-fullscreen-body .marketing-scatter-svg {
+  min-width: 1320px;
+}
+body.marketing-fullscreen-open {
+  overflow: hidden;
+}
 .admin-media-toggle {
   border: 1px solid var(--admin-stroke);
   border-radius: 16px;
@@ -6244,6 +6330,9 @@ body.kms-page main#main-content {
   .marketing-stats-row,
   .marketing-grid {
     grid-template-columns: 1fr;
+  }
+  .marketing-panel-actions {
+    justify-content: flex-start;
   }
   .dashboard-2col {
     grid-template-columns: 1fr;
@@ -7068,6 +7157,7 @@ body.kms-page main#main-content {
   .analytics-stats-row { grid-template-columns: 1fr; }
   .marketing-stats-row { grid-template-columns: 1fr; }
   .marketing-grid { grid-template-columns: 1fr; }
+  .marketing-fullscreen-card { width: calc(100vw - 20px); height: calc(100vh - 20px); margin: 10px auto; }
   .admin-inline-save  { grid-template-columns: 1fr; }
   .admin-inline-save .submit-btn { width: 100%; }
   .tag-admin-grid     { grid-template-columns: 1fr; }
