@@ -149,6 +149,7 @@
       people: { event_name: '', event_date: '' },
     },
   };
+  var _currentListPosts = [];
 
   // Hero search cache
   var _allPosts = [];
@@ -1782,18 +1783,21 @@
   // ─── Admin list loading (paginated) ──────────────────────
   function loadAdminList() {
     var reorderMode = _canReorderCurrentList();
-    var url = '/api/posts?page=' + _listPage + '&limit=' + _PAGE_SIZE;
+    var effectivePage = reorderMode ? 1 : _listPage;
+    var effectiveLimit = reorderMode ? 1000 : _PAGE_SIZE;
+    var url = '/api/posts?page=' + effectivePage + '&limit=' + effectiveLimit;
     if (_listCat !== 'all') url += '&category=' + _listCat;
     if (_listSearch) url += '&q=' + encodeURIComponent(_listSearch);
 
     GW.apiFetch(url)
       .then(function (data) {
         _listTotal = data.total;
+        _currentListPosts = Array.isArray(data.posts) ? data.posts.slice() : [];
         _allPosts  = _allPosts.concat(data.posts || []); // for hero search — rebuild separately
-        renderAdminList(data.posts || []);
+        renderAdminList(_currentListPosts);
         renderPagination(reorderMode);
         renderReorderControls(reorderMode);
-        updateStats(data.posts || []);
+        updateStats(_currentListPosts);
       })
       .catch(function (err) {
         console.error(err);
@@ -1812,12 +1816,17 @@
     }
     var reorderMode = _canReorderCurrentList();
     list.innerHTML = posts.map(function (p) {
+      var index = posts.findIndex(function (entry) { return entry.id === p.id; });
       var cat = GW.CATEGORIES[p.category] || GW.CATEGORIES.korea;
       var isUnpublished = p.published === 0;
       var hasSortOrder = p.sort_order !== null && p.sort_order !== undefined;
       return (
         '<article class="article-item' + (isUnpublished ? ' is-unpublished' : '') + '" draggable="' + (reorderMode ? 'true' : 'false') + '" data-id="' + p.id + '">' +
-          (reorderMode ? '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' : '') +
+          (reorderMode ? '<div class="article-order-tools">' +
+            '<div class="drag-handle" title="드래그로 순서 변경">☰</div>' +
+            '<button type="button" class="order-shift-btn" onclick="moveArticleItem(' + p.id + ', -1)"' + (index <= 0 ? ' disabled' : '') + ' title="위로 이동">↑</button>' +
+            '<button type="button" class="order-shift-btn" onclick="moveArticleItem(' + p.id + ', 1)"' + (index >= posts.length - 1 ? ' disabled' : '') + ' title="아래로 이동">↓</button>' +
+          '</div>' : '') +
           '<div class="article-item-content">' +
             '<div class="article-item-top">' +
               '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">' + cat.label + '</span>' +
@@ -1881,12 +1890,38 @@
           item.parentNode.insertBefore(_dragSrc, item);
         }
         item.classList.remove('drag-over');
+        syncCurrentListPostsFromDom(list);
         _reorderDirty = true;
         var btn = document.getElementById('reorder-save-btn');
         if (btn) btn.style.display = '';
       });
     });
   }
+
+  function syncCurrentListPostsFromDom(list) {
+    var ids = [];
+    list.querySelectorAll('.article-item[data-id]').forEach(function (el) {
+      ids.push(parseInt(el.getAttribute('data-id'), 10));
+    });
+    _currentListPosts = ids.map(function (id) {
+      return (_currentListPosts || []).find(function (entry) { return entry.id === id; });
+    }).filter(Boolean);
+  }
+
+  window.moveArticleItem = function (id, delta) {
+    var currentIndex = _currentListPosts.findIndex(function (entry) { return entry.id === id; });
+    if (currentIndex < 0) return;
+    var nextIndex = currentIndex + delta;
+    if (nextIndex < 0 || nextIndex >= _currentListPosts.length) return;
+    var moved = _currentListPosts.splice(currentIndex, 1)[0];
+    _currentListPosts.splice(nextIndex, 0, moved);
+    _reorderDirty = true;
+    renderAdminList(_currentListPosts);
+    renderPagination(_canReorderCurrentList());
+    renderReorderControls(_canReorderCurrentList());
+    var btn = document.getElementById('reorder-save-btn');
+    if (btn) btn.style.display = '';
+  };
 
   window.saveReorder = function () {
     if (!_canReorderCurrentList()) {
@@ -1895,9 +1930,7 @@
     }
     var list = document.getElementById('article-list');
     var ids = [];
-    list.querySelectorAll('.article-item[data-id]').forEach(function (el) {
-      ids.push(parseInt(el.getAttribute('data-id'), 10));
-    });
+    (_currentListPosts || []).forEach(function (entry) { ids.push(entry.id); });
     GW.apiFetch('/api/posts/reorder', { method: 'PUT', body: JSON.stringify({ order: ids }) })
       .then(function () {
         GW.showToast('순서가 저장됐습니다', 'success');
@@ -1930,12 +1963,12 @@
   }
 
   function _canReorderCurrentList() {
-    return false;
+    return isFullAdmin() && _listCat === 'all' && !_listSearch;
   }
 
   function renderReorderControls(reorderMode) {
     var saveBtn = document.getElementById('reorder-save-btn');
-    if (saveBtn) saveBtn.style.display = 'none';
+    if (saveBtn) saveBtn.style.display = reorderMode && _reorderDirty ? '' : 'none';
     var hintId = 'reorder-mode-hint';
     var count = document.getElementById('article-count');
     if (!count) return;
@@ -1943,6 +1976,12 @@
     if (hint) {
       hint.remove();
     }
+    if (!reorderMode) return;
+    hint = document.createElement('div');
+    hint.id = hintId;
+    hint.className = 'admin-inline-note';
+    hint.textContent = '전체 목록에서 드래그 또는 ↑↓ 버튼으로 순서를 바꾼 뒤 저장할 수 있습니다.';
+    count.insertAdjacentElement('afterend', hint);
   }
 
   window.adminListPageChange = function (delta) {
@@ -2829,6 +2868,8 @@
             '<span class="hero-slot-index">' + (i+1) + '</span>' +
             '<span class="admin-status-pill admin-status-pill-category" style="--pill-color:' + cat.color + ';">'+cat.label+'</span>' +
             '<span class="hero-slot-title">' + GW.escapeHtml(p.title) + '</span>' +
+            '<button type="button" class="admin-inline-ghost" onclick="moveHeroSlot(' + i + ', -1)"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+            '<button type="button" class="admin-inline-ghost" onclick="moveHeroSlot(' + i + ', 1)"' + (i === posts.length - 1 ? ' disabled' : '') + '>↓</button>' +
             '<button onclick="removeHeroSlot(' + i + ')" class="admin-inline-danger">제거</button>' +
           '</div>' +
           '<details class="admin-media-toggle">' +
@@ -2897,6 +2938,16 @@
 
   window.removeHeroSlot = function (index) {
     _heroPostIds.splice(index, 1);
+    _saveHeroIds();
+  };
+
+  window.moveHeroSlot = function (index, delta) {
+    var nextIndex = index + delta;
+    if (index < 0 || nextIndex < 0 || nextIndex >= _heroPosts.length) return;
+    var moved = _heroPosts.splice(index, 1)[0];
+    _heroPosts.splice(nextIndex, 0, moved);
+    _heroPostIds = _heroPosts.map(function (p) { return p.id; });
+    renderHeroSlots(_heroPosts);
     _saveHeroIds();
   };
 
@@ -4573,6 +4624,8 @@
           (c.note ? '<span class="contributors-admin-note">' + GW.escapeHtml(c.note) + '</span>' : '') +
           (c.date ? '<span class="contributors-admin-date">' + GW.escapeHtml(c.date) + '</span>' : '') +
         '</div>' +
+        '<button type="button" class="admin-inline-ghost" onclick="moveContributor(' + i + ', -1)"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button type="button" class="admin-inline-ghost" onclick="moveContributor(' + i + ', 1)"' + (i === _contributors.length - 1 ? ' disabled' : '') + '>↓</button>' +
         '<button onclick="editContributor(' + i + ')" class="btn-edit">수정</button>' +
         '<button onclick="deleteContributor(' + i + ')" class="btn-delete">삭제</button>' +
       '</div>';
@@ -4638,6 +4691,15 @@
         loadContributorsAdmin();
       });
   }
+
+  window.moveContributor = function (index, delta) {
+    var nextIndex = index + delta;
+    if (index < 0 || nextIndex < 0 || nextIndex >= _contributors.length) return;
+    var moved = _contributors.splice(index, 1)[0];
+    _contributors.splice(nextIndex, 0, moved);
+    renderContributorsAdmin();
+    saveContributorOrder();
+  };
   window.editContributor = function (index) {
     var c = _contributors[index]; if (!c) return;
     _editingContributorIdx = index;
