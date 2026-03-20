@@ -775,25 +775,7 @@
   function loadFeatureDefinitionAdmin() {
     if (_featureDefinitionLoaded) return;
     _featureDefinitionLoaded = true;
-    GW.apiFetch('/api/settings/feature-definition')
-      .then(function (data) {
-        var content = String(data && data.content || '').trim();
-        var input = document.getElementById('feature-definition-input');
-        if (input) {
-          input.value = content;
-          if (input.dataset.bound !== 'true') {
-            input.dataset.bound = 'true';
-            input.addEventListener('input', function () {
-              renderFeatureDefinitionPreview(input.value || '');
-            });
-          }
-        }
-        renderFeatureDefinitionPreview(content);
-      })
-      .catch(function (err) {
-        var preview = document.getElementById('feature-definition-preview');
-        if (preview) preview.innerHTML = '<div class="list-empty">' + GW.escapeHtml(err.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
-      });
+    // Feature definition authoring moved to the dedicated /kms page.
   }
 
   function defaultCalendarCopy() {
@@ -826,76 +808,12 @@
     });
   }
 
-  function renderFeatureDefinitionPreview(content) {
-    var preview = document.getElementById('feature-definition-preview');
-    if (!preview) return;
-    var text = String(content || '').replace(/\r\n/g, '\n');
-    if (!text.trim()) {
-      preview.innerHTML = '<div class="list-empty">정의서 내용을 입력하면 여기에서 바로 미리볼 수 있습니다.</div>';
-      return;
-    }
-    var parts = text.split(/```/);
-    var html = parts.map(function (part, index) {
-      if (index % 2 === 1) {
-        var lines = part.replace(/^\n+|\n+$/g, '').split('\n');
-        var language = '';
-        if (lines.length && /^[A-Za-z0-9_-]+$/.test(lines[0].trim())) {
-          language = lines.shift().trim();
-        }
-        return '<div class="feature-definition-code-wrap">' +
-          (language ? '<div class="feature-definition-code-label">' + GW.escapeHtml(language) + '</div>' : '') +
-          '<pre class="feature-definition-code"><code>' + GW.escapeHtml(lines.join('\n')) + '</code></pre>' +
-        '</div>';
-      }
-      return renderFeatureDefinitionText(part);
-    }).join('');
-    preview.innerHTML = html;
+  function renderFeatureDefinitionPreview() {
+    // Safe no-op kept for older cached bundles that may still call it.
   }
 
-  function renderFeatureDefinitionText(text) {
-    var lines = String(text || '').split('\n');
-    var html = [];
-    var inList = false;
-    lines.forEach(function (line) {
-      var raw = line.trim();
-      if (!raw) {
-        if (inList) {
-          html.push('</ul>');
-          inList = false;
-        }
-        return;
-      }
-      if (/^###\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
-        html.push('<h4>' + GW.escapeHtml(raw.replace(/^###\s+/, '')) + '</h4>');
-        return;
-      }
-      if (/^##\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
-        html.push('<h3>' + GW.escapeHtml(raw.replace(/^##\s+/, '')) + '</h3>');
-        return;
-      }
-      if (/^#\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
-        html.push('<h2>' + GW.escapeHtml(raw.replace(/^#\s+/, '')) + '</h2>');
-        return;
-      }
-      if (/^-\s+/.test(raw)) {
-        if (!inList) {
-          html.push('<ul>');
-          inList = true;
-        }
-        html.push('<li>' + formatFeatureDefinitionInline(raw.replace(/^-\s+/, '')) + '</li>');
-        return;
-      }
-      if (inList) {
-        html.push('</ul>');
-        inList = false;
-      }
-      html.push('<p>' + formatFeatureDefinitionInline(raw) + '</p>');
-    });
-    if (inList) html.push('</ul>');
-    return html.join('');
+  function renderFeatureDefinitionText() {
+    return '';
   }
 
   function formatFeatureDefinitionInline(text) {
@@ -4031,25 +3949,7 @@
   }
 
   function renderCalendarTitleManager() {
-    var list = document.getElementById('calendar-title-manager-list');
-    if (!list) return;
-    if (!_calendarItems.length) {
-      list.innerHTML = '<div class="list-empty">등록된 일정이 없습니다.</div>';
-      return;
-    }
-    list.innerHTML = _calendarItems.map(function (item) {
-      var label = formatCalendarRange(item);
-      return '<div class="calendar-title-manager-item">' +
-        '<div class="calendar-title-manager-head">' +
-          '<strong>' + GW.escapeHtml(label) + '</strong>' +
-          '<span>' + GW.escapeHtml(item.event_category || 'WOSM') + '</span>' +
-        '</div>' +
-        '<div class="calendar-title-manager-grid">' +
-          '<input type="text" data-calendar-title-id="' + item.id + '" value="' + GW.escapeHtml(item.title || '') + '" placeholder="행사명(국문)">' +
-          '<input type="text" data-calendar-title-original-id="' + item.id + '" value="' + GW.escapeHtml(item.title_original || '') + '" placeholder="행사명(원문)">' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    // Legacy bulk-title editor removed. Keep as a no-op for compatibility.
   }
 
   function bindCalendarAdminControls() {
@@ -4434,76 +4334,13 @@
   };
 
   window.saveCalendarTitles = function () {
-    var titleInputs = document.querySelectorAll('[data-calendar-title-id]');
-    var originalInputs = document.querySelectorAll('[data-calendar-title-original-id]');
-    var originalMap = {};
-    Array.prototype.forEach.call(originalInputs, function (input) {
-      originalMap[input.getAttribute('data-calendar-title-original-id')] = String(input.value || '').trim();
-    });
-    var updates = [];
-    Array.prototype.forEach.call(titleInputs, function (input) {
-      var id = parseInt(input.getAttribute('data-calendar-title-id'), 10);
-      var item = _calendarItems.find(function (entry) { return entry.id === id; });
-      if (!item) return;
-      var nextTitle = String(input.value || '').trim();
-      var nextOriginal = originalMap[String(id)] || '';
-      if (nextTitle === String(item.title || '').trim() && nextOriginal === String(item.title_original || '').trim()) return;
-      updates.push({
-        id: id,
-        payload: {
-          title: nextTitle,
-          title_original: nextOriginal,
-          event_category: item.event_category || 'WOSM',
-          start_date: toDateOnlyValue(item.start_at),
-          start_time: item.start_has_time ? toTimeValue(item.start_at) : '',
-          end_date: toDateOnlyValue(item.end_at),
-          end_time: item.end_has_time ? toTimeValue(item.end_at) : '',
-          event_tags: Array.isArray(item.event_tags) ? item.event_tags.slice() : [],
-          country_name: item.country_name || '',
-          location_name: item.location_name || '',
-          location_address: item.location_address || '',
-          latitude: item.latitude || '',
-          longitude: item.longitude || '',
-          related_post_id: item.related_posts && item.related_posts.length ? item.related_posts[0].id : null,
-          related_posts: Array.isArray(item.related_posts) ? item.related_posts.slice() : [],
-          link_url: item.link_url || '',
-          description: item.description || ''
-        }
-      });
-    });
-    if (!updates.length) {
-      GW.showToast('변경된 제목이 없습니다', 'info');
-      return;
-    }
-    Promise.all(updates.map(function (update) {
-      return GW.apiFetch('/api/calendar/' + update.id, {
-        method: 'PUT',
-        body: JSON.stringify(update.payload)
-      });
-    })).then(function () {
-      GW.showToast('일정 제목이 저장됐습니다', 'success');
-      loadCalendarAdmin();
-    }).catch(function (err) {
-      GW.showToast(err.message || '일정 제목 저장 실패', 'error');
-    });
+    GW.showToast('일정 제목은 개별 일정 수정 또는 캘린더 문구 관리에서 정리해 주세요.', 'info');
+    showAdminTab('calendar');
   };
 
   window.saveFeatureDefinition = function () {
-    var input = document.getElementById('feature-definition-input');
-    var content = String(input && input.value || '').trim();
-    if (!content) {
-      GW.showToast('기능 정의서 내용이 비어 있습니다', 'error');
-      return;
-    }
-    GW.apiFetch('/api/settings/feature-definition', {
-      method: 'PUT',
-      body: JSON.stringify({ content: content })
-    }).then(function () {
-      GW.showToast('기능 정의서가 저장됐습니다', 'success');
-      renderFeatureDefinitionPreview(content);
-    }).catch(function (err) {
-      GW.showToast(err.message || '기능 정의서 저장 실패', 'error');
-    });
+    GW.showToast('기능 정의서는 전용 KMS 페이지에서 수정해 주세요.', 'info');
+    openKmsPage();
   };
 
   window.submitCalendarEvent = function () {
