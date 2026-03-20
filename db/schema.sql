@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS site_visits (
   visited_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS admin_login_attempts (
+  ip               TEXT PRIMARY KEY,
+  attempt_count    INTEGER NOT NULL DEFAULT 0,
+  first_attempt_at INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS glossary_terms (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   bucket     TEXT    NOT NULL CHECK(bucket IN ('가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하')),
@@ -136,6 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_sv_path_time ON site_visits(path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_viewer_path_time ON site_visits(viewer_key, path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_referrer_host ON site_visits(referrer_host);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sv_unique_bucket ON site_visits(viewer_key, path, visited_bucket);
+CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_first_attempt ON admin_login_attempts(first_attempt_at);
 CREATE INDEX IF NOT EXISTS idx_glossary_bucket_sort ON glossary_terms(bucket, sort_order, term_ko);
 
 INSERT OR IGNORE INTO settings (key, value) VALUES (

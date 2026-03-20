@@ -171,17 +171,19 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    await ensurePostOptionalColumns(env);
     const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))
-         RETURNING *`;
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))`;
     const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, publishAtValue];
-    const { results } = await env.DB.prepare(sql).bind(...bindings).all();
+    const result = await env.DB.prepare(sql).bind(...bindings).run();
+    const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
+    const insertedPost = insertedId
+      ? await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(insertedId).first()
+      : null;
 
-    if (results[0]) {
-      await recordPostHistory(env, results[0].id, 'create', results[0], '게시글 생성');
+    if (insertedPost) {
+      await recordPostHistory(env, insertedPost.id, 'create', insertedPost, '게시글 생성');
     }
-    return json({ post: results[0] }, 201);
+    return json({ post: insertedPost }, 201);
   } catch (err) {
     console.error('POST /api/posts error:', err);
     return json({ error: 'Database error' }, 500);
@@ -271,33 +273,6 @@ function normalizePublishAtInput(publishAt, publishDate) {
   const fallback = String(publishDate || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
   return null;
-}
-
-async function ensurePostOptionalColumns(env) {
-  await ensureColumn(env, 'subtitle', 'TEXT');
-  await ensureColumn(env, 'tag', 'TEXT');
-  await ensureColumn(env, 'gallery_images', 'TEXT');
-  await ensureColumn(env, 'location_name', 'TEXT');
-  await ensureColumn(env, 'location_address', 'TEXT');
-  await ensureColumn(env, 'manual_related_posts', 'TEXT');
-  await ensureColumn(env, 'special_feature', 'TEXT');
-  await ensureColumn(env, 'publish_at', 'TEXT');
-  await ensureColumn(env, 'image_caption', 'TEXT');
-  await ensureColumn(env, 'youtube_url', 'TEXT');
-  await ensureColumn(env, 'meta_tags', 'TEXT');
-  await ensureColumn(env, 'author', 'TEXT');
-  await ensureColumn(env, 'ai_assisted', 'INTEGER');
-  await ensureColumn(env, 'sort_order', 'INTEGER');
-}
-
-async function ensureColumn(env, columnName, columnType) {
-  try {
-    await env.DB.prepare(`SELECT ${columnName} FROM posts LIMIT 1`).first();
-  } catch (err) {
-    var msg = String(err && err.message || err || '');
-    if (msg.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare(`ALTER TABLE posts ADD COLUMN ${columnName} ${columnType || 'TEXT'}`).run();
-  }
 }
 
 function normalizeManualRelatedPosts(raw) {

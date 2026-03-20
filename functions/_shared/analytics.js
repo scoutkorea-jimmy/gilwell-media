@@ -6,7 +6,6 @@ export async function recordSiteVisit(request, env, payload) {
   if (isLikelyNonHumanRequest(request)) return { recorded: false, excluded: 'bot' };
   const viewerKey = await getViewerKey(request, env);
   if (!viewerKey) return { recorded: false };
-  await ensureSiteVisitColumns(env);
 
   const path = sanitizePath(payload && payload.path);
   if (!path || path.startsWith('/api/') || path === '/admin.html' || path === '/admin') {
@@ -77,18 +76,6 @@ function sanitizeUtmValue(value) {
   return normalized ? normalized.slice(0, 80) : null;
 }
 
-export async function ensureSiteVisitColumns(env) {
-  await ensureSiteVisitColumn(env, 'utm_source');
-  await ensureSiteVisitColumn(env, 'utm_medium');
-  await ensureSiteVisitColumn(env, 'utm_campaign');
-}
-
-async function ensureSiteVisitColumn(env, columnName) {
-  try {
-    await env.DB.prepare(`SELECT ${columnName} FROM site_visits LIMIT 1`).first();
-  } catch (err) {
-    const message = String(err && err.message || err || '');
-    if (message.indexOf('no such column') === -1) throw err;
-    await env.DB.prepare(`ALTER TABLE site_visits ADD COLUMN ${columnName} TEXT`).run();
-  }
+export async function ensureSiteVisitColumns() {
+  return true;
 }

@@ -21,11 +21,6 @@ export async function onRequestGet({ request, env }) {
     return json({ authenticated: true, role: 'full' });
   }
 
-  const limited = await verifyTokenRole(token, env.ADMIN_SECRET, ['full', 'limited']);
-  if (limited) {
-    return json({ authenticated: true, role: 'limited' });
-  }
-
   return json({ error: '관리자 세션이 만료되었거나 유효하지 않습니다.' }, 401);
 }
 
