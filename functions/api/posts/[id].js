@@ -159,11 +159,8 @@ export async function onRequestPut({ params, request, env }) {
   values.push(id);
 
   try {
-    const { results } = await env.DB.prepare(
-      `UPDATE posts SET ${fields.join(', ')} WHERE id = ? RETURNING *`
-    ).bind(...values).all();
-
-    if (!results.length) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    const updatedPost = await updatePostWithRetry(env, id, fields, values);
+    if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (oldImageToDelete) {
       await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
     }
@@ -172,10 +169,10 @@ export async function onRequestPut({ params, request, env }) {
         return deleteStoredImageByUrl(env, value, origin).catch(() => {});
       }));
     }
-    if (results[0]) {
-      await recordPostHistory(env, id, 'update', results[0], '게시글 수정');
+    if (updatedPost) {
+      await recordPostHistory(env, id, 'update', updatedPost, '게시글 수정');
     }
-    return json({ post: results[0] });
+    return json({ post: updatedPost });
   } catch (err) {
     console.error('PUT /api/posts/:id error:', err);
     return json({ error: 'Database error' }, 500);
@@ -415,6 +412,8 @@ function diffRemovedGalleryUrls(previousRaw, nextItems) {
 }
 
 async function ensurePostOptionalColumns(env) {
+  await ensureColumn(env, 'subtitle', 'TEXT');
+  await ensureColumn(env, 'tag', 'TEXT');
   await ensureColumn(env, 'gallery_images', 'TEXT');
   await ensureColumn(env, 'location_name', 'TEXT');
   await ensureColumn(env, 'location_address', 'TEXT');
@@ -452,4 +451,33 @@ function normalizeManualRelatedPosts(raw) {
     return true;
   }).slice(0, 5);
   return ids.length ? JSON.stringify(ids) : null;
+}
+
+async function updatePostWithRetry(env, id, fields, values) {
+  try {
+    return await runPostUpdate(env, id, fields, values);
+  } catch (err) {
+    if (!isSchemaMismatchError(err)) throw err;
+    console.warn('PUT /api/posts/:id schema mismatch detected, retrying after ensure:', err && err.message ? err.message : err);
+    await ensurePostOptionalColumns(env);
+    return await runPostUpdate(env, id, fields, values);
+  }
+}
+
+async function runPostUpdate(env, id, fields, values) {
+  const bound = values.concat(id);
+  const result = await env.DB.prepare(
+    `UPDATE posts SET ${fields.join(', ')} WHERE id = ?`
+  ).bind(...bound).run();
+  if (!result || !result.meta || !result.meta.changes) return null;
+  return await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+}
+
+function isSchemaMismatchError(err) {
+  const message = String(err && err.message || err || '').toLowerCase();
+  return (
+    message.indexOf('no such column') >= 0 ||
+    message.indexOf('has no column named') >= 0 ||
+    message.indexOf('sql logic error') >= 0
+  );
 }

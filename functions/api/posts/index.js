@@ -274,6 +274,8 @@ function normalizePublishAtInput(publishAt, publishDate) {
 }
 
 async function ensurePostOptionalColumns(env) {
+  await ensureColumn(env, 'subtitle', 'TEXT');
+  await ensureColumn(env, 'tag', 'TEXT');
   await ensureColumn(env, 'gallery_images', 'TEXT');
   await ensureColumn(env, 'location_name', 'TEXT');
   await ensureColumn(env, 'location_address', 'TEXT');
