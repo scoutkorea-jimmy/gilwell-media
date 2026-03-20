@@ -136,6 +136,7 @@
   var _analyticsChartModes = { visitors: 'line', views: 'line' };
   var _analyticsPayload = null;
   var _marketingPayload = null;
+  var _marketingFullscreenZoom = 1;
   var _adminGroup = 'overview';
   var _adminActiveTab = 'dashboard';
   var _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
@@ -3476,7 +3477,8 @@
     var sourceId = kind === 'scatter' ? 'marketing-scatter' : 'marketing-flow';
     var sourceEl = document.getElementById(sourceId);
     if (!sourceEl) return;
-    body.innerHTML = sourceEl.innerHTML;
+    _marketingFullscreenZoom = 1;
+    body.innerHTML = '<div id="marketing-fullscreen-zoom-stage" class="marketing-fullscreen-zoom-stage">' + sourceEl.innerHTML + '</div>';
     if (kind === 'scatter') {
       title.textContent = '페이지 기회 맵';
       meta.textContent = '고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.';
@@ -3487,6 +3489,7 @@
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('marketing-fullscreen-open');
+    applyMarketingFullscreenZoom();
   };
 
   window.closeMarketingFullscreen = function () {
@@ -3497,7 +3500,25 @@
     modal.setAttribute('aria-hidden', 'true');
     body.innerHTML = '';
     document.body.classList.remove('marketing-fullscreen-open');
+    _marketingFullscreenZoom = 1;
   };
+
+  window.adjustMarketingFullscreenZoom = function (delta) {
+    _marketingFullscreenZoom = Math.max(0.6, Math.min(2.2, Number((_marketingFullscreenZoom + Number(delta || 0)).toFixed(2))));
+    applyMarketingFullscreenZoom();
+  };
+
+  window.resetMarketingFullscreenZoom = function () {
+    _marketingFullscreenZoom = 1;
+    applyMarketingFullscreenZoom();
+  };
+
+  function applyMarketingFullscreenZoom() {
+    var stage = document.getElementById('marketing-fullscreen-zoom-stage');
+    if (!stage) return;
+    stage.style.setProperty('--marketing-fullscreen-zoom', String(_marketingFullscreenZoom));
+    stage.style.zoom = String(_marketingFullscreenZoom);
+  }
 
   function marketingStageColor(stage) {
     if (stage === 'awareness') return '#ff8c42';
