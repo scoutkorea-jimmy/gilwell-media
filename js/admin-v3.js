@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.003.01
+ * Version: V3.003.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1094,8 +1094,13 @@
   var GLOS_BUCKETS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하', GLOS_MISC_BUCKET, GLOS_UNMATCHED_BUCKET];
   var GLOS_CHOSEONG_BUCKETS = ['가','가','나','다','다','라','마','바','바','사','사','아','자','자','차','카','타','파','하'];
 
+  function _glosNormalizeTermValue(value) {
+    var raw = String(value || '').trim();
+    return (raw === '-' || raw === '—') ? '' : raw;
+  }
+
   function _glosInferBucket(termKo) {
-    var first = String(termKo || '').trim().charAt(0);
+    var first = _glosNormalizeTermValue(termKo).charAt(0);
     if (!first) return '';
     var code = first.charCodeAt(0);
     if (code < 0xac00 || code > 0xd7a3) return '';
@@ -1104,19 +1109,19 @@
   }
 
   function _glosIsNumericStart(value) {
-    var first = String(value || '').trim().charAt(0);
+    var first = _glosNormalizeTermValue(value).charAt(0);
     return first >= '0' && first <= '9';
   }
 
   function _glosHasKorean(value) {
-    return !!String(value || '').trim();
+    return !!_glosNormalizeTermValue(value);
   }
 
   function _glosResolveBucket(item) {
     if (_glosIsNumericStart(item.term_ko) || _glosIsNumericStart(item.term_en) || _glosIsNumericStart(item.term_fr)) {
       return GLOS_MISC_BUCKET;
     }
-    if (!_glosHasKorean(item.term_ko) && (String(item.term_en || '').trim() || String(item.term_fr || '').trim())) {
+    if (!_glosHasKorean(item.term_ko) && (_glosNormalizeTermValue(item.term_en) || _glosNormalizeTermValue(item.term_fr))) {
       return GLOS_UNMATCHED_BUCKET;
     }
     return _glosInferBucket(item.term_ko) || item.bucket || '가';
@@ -1186,9 +1191,9 @@
 
   function _saveGlos() {
     var id = document.getElementById('glos-id').value;
-    var ko = document.getElementById('glos-ko').value.trim();
-    var en = document.getElementById('glos-en').value.trim();
-    var fr = document.getElementById('glos-fr').value.trim();
+    var ko = _glosNormalizeTermValue(document.getElementById('glos-ko').value);
+    var en = _glosNormalizeTermValue(document.getElementById('glos-en').value);
+    var fr = _glosNormalizeTermValue(document.getElementById('glos-fr').value);
     if (!ko && !en && !fr) { GW.showToast('한국어, 영어, 프랑스어 중 하나 이상 입력하세요', 'error'); return; }
     var body = {
       term_ko:       ko,
