@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3 Stylesheet
- * Version: V3.001.04
+ * Version: V3.002.00
  */
 
 /* ── Design Tokens ────────────────────────────────────────── */
@@ -417,6 +417,106 @@
   width: 14px; height: 14px; border: none; background: transparent;
   cursor: pointer; color: inherit; padding: 0; display: inline-flex;
   align-items: center; justify-content: center; font-size: 13px;
+}
+
+/* ── Tag Settings ────────────────────────────────────────── */
+.v3-tag-group {
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-l);
+  background: var(--v3-content-bg);
+  padding: 16px;
+  margin-top: 14px;
+}
+.v3-tag-group:first-child { margin-top: 0; }
+.v3-tag-group-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.v3-tag-group-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--v3-text);
+}
+.v3-tag-group-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--v3-text-m);
+}
+.v3-tag-group-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--v3-primary-lt);
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v3-tag-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.v3-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--v3-border-m);
+  border-radius: 12px;
+  background: var(--v3-surface);
+}
+.v3-tag-chip.is-editing {
+  width: 100%;
+  max-width: 520px;
+  padding: 8px;
+}
+.v3-tag-chip-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--v3-text);
+  line-height: 1.4;
+}
+.v3-tag-chip-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.v3-tag-chip-btn {
+  border: none;
+  background: transparent;
+  color: var(--v3-text-m);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.v3-tag-chip-btn:hover { color: var(--v3-text); }
+.v3-tag-chip-btn.is-danger:hover { color: var(--v3-danger); }
+.v3-tag-inline-input { flex: 1; min-width: 180px; }
+.v3-tag-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+.v3-tag-add-input { flex: 1; min-width: 220px; }
+.v3-empty-inline {
+  font-size: 12px;
+  color: var(--v3-text-m);
+  padding: 10px 12px;
+  border: 1px dashed var(--v3-border-m);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.7);
 }
 
 /* ── Gallery ─────────────────────────────────────────────── */
