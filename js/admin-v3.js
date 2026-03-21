@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.07
+ * Version: V3.001.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1089,7 +1089,8 @@
      GLOSSARY
   ══════════════════════════════════════════════════════════ */
   var GLOS_MISC_BUCKET = '기타';
-  var GLOS_BUCKETS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하', GLOS_MISC_BUCKET];
+  var GLOS_UNMATCHED_BUCKET = '국문 미확정 용어';
+  var GLOS_BUCKETS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하', GLOS_MISC_BUCKET, GLOS_UNMATCHED_BUCKET];
   var GLOS_CHOSEONG_BUCKETS = ['가','가','나','다','다','라','마','바','바','사','사','아','자','자','차','카','타','파','하'];
 
   function _glosInferBucket(termKo) {
@@ -1106,9 +1107,16 @@
     return first >= '0' && first <= '9';
   }
 
+  function _glosHasKorean(value) {
+    return !!String(value || '').trim();
+  }
+
   function _glosResolveBucket(item) {
     if (_glosIsNumericStart(item.term_ko) || _glosIsNumericStart(item.term_en) || _glosIsNumericStart(item.term_fr)) {
       return GLOS_MISC_BUCKET;
+    }
+    if (!_glosHasKorean(item.term_ko) && (String(item.term_en || '').trim() || String(item.term_fr || '').trim())) {
+      return GLOS_UNMATCHED_BUCKET;
     }
     return _glosInferBucket(item.term_ko) || item.bucket || '가';
   }
@@ -1148,7 +1156,7 @@
       html += '<div class="v3-bucket-head">' + GW.escapeHtml(bucket) + '</div>';
       grouped[bucket].forEach(function (t) {
         html += '<div class="v3-glos-item" onclick="V3._openGlosItem(' + t.id + ')">' +
-          '<div class="v3-glos-ko">' + GW.escapeHtml(t.term_ko || '') + '</div>' +
+          '<div class="v3-glos-ko">' + (_glosHasKorean(t.term_ko) ? GW.escapeHtml(t.term_ko || '') : '<span class="v3-glos-ko-empty">국문 미확정</span>') + '</div>' +
           '<div class="v3-glos-en">' + GW.escapeHtml(t.term_en || '') + '</div>' +
           '<div class="v3-glos-fr">' + GW.escapeHtml(t.term_fr || '') + '</div>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openGlosItem(' + t.id + ')">수정</button>' +
@@ -1178,13 +1186,15 @@
   function _saveGlos() {
     var id = document.getElementById('glos-id').value;
     var ko = document.getElementById('glos-ko').value.trim();
-    if (!ko) { GW.showToast('한국어 용어를 입력하세요', 'error'); return; }
+    var en = document.getElementById('glos-en').value.trim();
+    var fr = document.getElementById('glos-fr').value.trim();
+    if (!ko && !en && !fr) { GW.showToast('한국어, 영어, 프랑스어 중 하나 이상 입력하세요', 'error'); return; }
     var body = {
       term_ko:       ko,
-      term_en:       document.getElementById('glos-en').value.trim(),
-      term_fr:       document.getElementById('glos-fr').value.trim(),
+      term_en:       en,
+      term_fr:       fr,
       description_ko: document.getElementById('glos-desc').value.trim(),
-      bucket: (_glosIsNumericStart(ko) || _glosIsNumericStart(document.getElementById('glos-en').value.trim()) || _glosIsNumericStart(document.getElementById('glos-fr').value.trim()))
+      bucket: (_glosIsNumericStart(ko) || _glosIsNumericStart(en) || _glosIsNumericStart(fr))
         ? GLOS_MISC_BUCKET
         : _glosInferBucket(ko),
     };
