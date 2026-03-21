@@ -3456,7 +3456,8 @@
       var color = marketingStageColor(item.stage);
       var label = index < 8 ? '<text x="' + (cx + radius + 6) + '" y="' + (cy + 4) + '" class="marketing-scatter-label">' + GW.escapeHtml(trimMarketingTitle(item.title, 16)) + '</text>' : '';
       var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + formatMetricExact(item.unique_users) + ' · 페이지뷰 ' + formatMetricExact(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
-      return '<g class="marketing-scatter-point" data-tip="' + GW.escapeHtml(tip) + '">' +
+      var href = String(item.path || '').indexOf('/post/') === 0 ? item.path : '';
+      return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
         '<circle cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + radius.toFixed(2) + '" fill="' + color + '" fill-opacity="0.72" stroke="' + color + '" stroke-width="2">' +
           '<title>' + GW.escapeHtml(item.title + ' · 사용자 ' + formatMetricExact(item.unique_users) + ' · 페이지뷰 ' + formatMetricExact(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%') + '</title>' +
         '</circle>' +
@@ -3566,6 +3567,13 @@
     });
     shell.addEventListener('mouseleave', function () {
       tooltip.classList.remove('open');
+    });
+    shell.addEventListener('click', function (event) {
+      var target = event.target.closest('[data-href]');
+      if (!target || !shell.contains(target)) return;
+      var href = target.getAttribute('data-href') || '';
+      if (!href) return;
+      window.open(href, '_blank', 'noopener,noreferrer');
     });
   }
 
@@ -3809,7 +3817,7 @@
         return '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="4" class="analytics-line-point ' + series.className + '"></circle>' +
           '<circle cx="' + point.x.toFixed(1) + '" cy="' + point.y.toFixed(1) + '" r="12" class="analytics-line-hit" data-analytics-tooltip="' + GW.escapeHtml(seriesLabel + '|' + detailLabel + '|' + formatMetricExact(point.value)) + '"></circle>';
       }).join('');
-      return '<polyline fill="none" points="' + pointString + '" class="analytics-line-path ' + series.className + '"></polyline>' + circles;
+      return '<polyline points="' + pointString + '" class="analytics-line-path ' + series.className + '"></polyline>' + circles;
     }).join('');
     return '<div class="analytics-line-chart-shell"><div class="analytics-line-tooltip" hidden></div><div class="analytics-line-chart-wrap"><svg viewBox="0 0 ' + width + ' ' + height + '" class="analytics-line-chart" role="img" aria-label="분석 추이 차트">' + guides + seriesSvg + xLabels + '</svg></div></div>';
   }
