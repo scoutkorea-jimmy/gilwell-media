@@ -15,8 +15,13 @@
 
   function byId(id) { return document.getElementById(id); }
 
+  function normalizeTermValue(value) {
+    var raw = String(value || '').trim();
+    return (raw === '-' || raw === '—') ? '' : raw;
+  }
+
   function inferBucket(termKo) {
-    var first = String(termKo || '').trim().charAt(0);
+    var first = normalizeTermValue(termKo).charAt(0);
     if (!first) return '';
     var code = first.charCodeAt(0);
     if (code < 0xac00 || code > 0xd7a3) return '';
@@ -57,11 +62,11 @@
   }
 
   function hasKoreanTerm(item) {
-    return !!String(item && item.term_ko || '').trim();
+    return !!normalizeTermValue(item && item.term_ko);
   }
 
   function isNumericStart(value) {
-    var first = String(value || '').trim().charAt(0);
+    var first = normalizeTermValue(value).charAt(0);
     return first >= '0' && first <= '9';
   }
 
@@ -70,7 +75,7 @@
   }
 
   function isUnmatchedItem(item) {
-    return !hasKoreanTerm(item) && (!!String(item.term_en || '').trim() || !!String(item.term_fr || '').trim());
+    return !hasKoreanTerm(item) && (!!normalizeTermValue(item.term_en) || !!normalizeTermValue(item.term_fr));
   }
 
   function renderTable(items) {

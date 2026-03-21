@@ -59,9 +59,9 @@ export async function onRequestDelete({ request, env, params }) {
 
 function normalizeGlossaryInput(body) {
   const requestedBucket = String(body.bucket || '').trim();
-  const term_ko = String(body.term_ko || '').trim().slice(0, 120);
-  const term_en = String(body.term_en || '').trim().slice(0, 160);
-  const term_fr = String(body.term_fr || '').trim().slice(0, 160);
+  const term_ko = normalizeTermValue(body.term_ko, 120);
+  const term_en = normalizeTermValue(body.term_en, 160);
+  const term_fr = normalizeTermValue(body.term_fr, 160);
   const description_ko = String(body.description_ko || '').trim().slice(0, 800);
   const sort_order = Number.isFinite(Number(body.sort_order)) ? Math.max(0, Math.min(9999, parseInt(body.sort_order, 10))) : 0;
   const bucket = isMiscTerm(term_ko, term_en, term_fr)
@@ -73,7 +73,7 @@ function normalizeGlossaryInput(body) {
 }
 
 function isNumericStart(value) {
-  const first = String(value || '').trim().charAt(0);
+  const first = normalizeTermValue(value, 200).charAt(0);
   return first >= '0' && first <= '9';
 }
 
@@ -82,17 +82,24 @@ function isMiscTerm(termKo, termEn, termFr) {
 }
 
 function isUnmatchedTerm(termKo, termEn, termFr) {
-  return !String(termKo || '').trim() && (!!String(termEn || '').trim() || !!String(termFr || '').trim());
+  return !normalizeTermValue(termKo, 200) && (!!normalizeTermValue(termEn, 200) || !!normalizeTermValue(termFr, 200));
 }
 
 function inferBucket(termKo) {
-  if (!termKo) return '';
-  const first = termKo.trim().charAt(0);
+  const normalized = normalizeTermValue(termKo, 200);
+  if (!normalized) return '';
+  const first = normalized.charAt(0);
   if (!first) return '';
   const code = first.charCodeAt(0);
   if (code < 0xac00 || code > 0xd7a3) return '';
   const choseongIndex = Math.floor((code - 0xac00) / 588);
   return CHOSEONG_BUCKETS[choseongIndex] || '';
+}
+
+function normalizeTermValue(value, limit) {
+  const raw = String(value || '').trim();
+  const normalized = (raw === '-' || raw === '—') ? '' : raw;
+  return normalized.slice(0, limit);
 }
 
 function json(data, status = 200) {
