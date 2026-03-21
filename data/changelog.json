@@ -1,6 +1,17 @@
 {
   "items": [
     {
+      "version": "0.088.00",
+      "date": "2026-03-21",
+      "type": "Update",
+      "summary": "관리자와 KMS 전용 스타일을 css/admin.css로 분리해 공개 스타일과 관리자 스타일의 결합을 줄였습니다.",
+      "details": [
+        "style.css에 섞여 있던 KMS, 마케팅 대시보드, 관리자 후반 스타일 레이어를 css/admin.css로 분리했습니다.",
+        "admin.html과 kms.html은 이제 style.css와 admin.css를 함께 읽어, 공개 페이지와 관리자 페이지의 스타일 책임을 더 명확히 나눕니다.",
+        "다음 단계에서 관리자 공통 컴포넌트와 영역별 스타일을 더 안전하게 쪼갤 수 있는 기반을 마련했습니다."
+      ]
+    },
+    {
       "version": "0.087.00",
       "date": "2026-03-21",
       "type": "Update",
