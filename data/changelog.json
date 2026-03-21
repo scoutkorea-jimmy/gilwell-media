@@ -1,6 +1,17 @@
 {
   "items": [
     {
+      "version": "3.001.02",
+      "date": "2026-03-21",
+      "type": "Hotfix",
+      "summary": "관리자 V3가 기존 설정 API 응답 형식을 잘못 읽어 발생하던 연쇄 API 오류를 수정했습니다.",
+      "changes": [
+        "게시글 목록의 500 오류를 유발하던 /api/posts helper 누락과 V3 쿼리 호환 문제를 바로잡았습니다.",
+        "번역, 편집자, 저자, 기고자, 히어로, 태그, 캘린더 태그 등 V3가 읽고 저장하는 설정 API의 응답/요청 형식을 기존 서버 구조에 맞게 정렬했습니다.",
+        "V3에서 게시글 생성·수정 시 image_data, gallery_images(JSON 문자열), related_posts_json 형식을 기존 API가 그대로 처리하도록 게시글 API 호환 레이어를 보강했습니다."
+      ]
+    },
+    {
       "version": "3.001.01",
       "date": "2026-03-21",
       "type": "Hotfix",
