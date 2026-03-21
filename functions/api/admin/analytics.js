@@ -8,7 +8,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   const url = new URL(request.url);
-  const range = resolveAnalyticsRange(url.searchParams.get('start'), url.searchParams.get('end'));
+  const range = resolveRequestedRange(url.searchParams);
 
   try {
     const internalData = await getInternalMetrics(env, range);
@@ -19,6 +19,15 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
+function resolveRequestedRange(searchParams) {
+  const start = searchParams.get('start');
+  const end = searchParams.get('end');
+  if (start || end) return resolveAnalyticsRange(start, end);
+  const days = Math.max(1, Math.min(90, Number(searchParams.get('days') || 30) || 30));
+  const today = getKstDateString(new Date());
+  return resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
+}
+
 async function getInternalMetrics(env, range) {
   const useHourlySeries = range.days === 1;
   const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
@@ -27,6 +36,8 @@ async function getInternalMetrics(env, range) {
   const [
     todayVisits,
     todayViews,
+    totalPosts,
+    publishedPosts,
     totalVisits,
     totalViews,
     averageDwellSeconds,
@@ -38,6 +49,8 @@ async function getInternalMetrics(env, range) {
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM posts`, []),
+    scalar(env, `SELECT COUNT(*) AS count FROM posts WHERE published = 1`, []),
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
     scalar(env, `SELECT ROUND(AVG(engaged_seconds), 1) AS count
@@ -168,8 +181,18 @@ async function getInternalMetrics(env, range) {
       days: range.days,
       granularity: useHourlySeries ? 'hour' : 'day',
     },
+    today: {
+      visits: todayVisits,
+      views: todayViews,
+    },
+    counts: {
+      total: totalPosts,
+      published: publishedPosts,
+    },
     summary: {
       today_visits: todayVisits,
+      today_pageviews: todayViews,
+      today_views: todayViews,
       total_visits: totalVisits,
       range_visits: rangeVisits,
       total_pageviews: totalViews,
@@ -206,7 +229,21 @@ async function getInternalMetrics(env, range) {
       pageviews: item.pageviews || 0,
       avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
     })),
+    top_posts: (topPaths.results || []).map((item) => ({
+      path: item.path || '/',
+      title: item.title || '',
+      views: item.pageviews || 0,
+      visits: item.visits || 0,
+      avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
+    })),
     referrers: aggregateReferrers(referrers.results || []),
+    sources: aggregateReferrers(referrers.results || []).map((item) => ({
+      referrer_host: item.source_label || item.source_key || '직접',
+      visits: item.visits || 0,
+      pageviews: item.pageviews || 0,
+      source_key: item.source_key || '',
+      source_label: item.source_label || '',
+    })),
     tracking_note: `${range.label} 기준 기사 페이지 방문 집계입니다. 방문 수는 기사 페이지를 연 고유 사용자 수, 조회수는 기사 페이지 열린 횟수 기준입니다. 평균 체류시간은 기사 페이지가 실제로 보이는 동안의 활성 시간을 post 단위로 누적해 계산합니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }

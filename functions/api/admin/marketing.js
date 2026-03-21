@@ -258,6 +258,7 @@ function buildMarketingPayload(range, rows, postRows) {
     .slice(0, 8);
 
   const notes = buildMarketingNotes(stageSummary, sources, destinations, transitionList, scatter);
+  const utmCampaigns = buildUtmCampaigns(rows);
 
   return {
     provider: 'site_visits',
@@ -274,18 +275,49 @@ function buildMarketingPayload(range, rows, postRows) {
       interest_users: stageViewerSets.interest.size,
       consideration_users: stageViewerSets.consideration.size,
     },
-    funnel: stageSummary,
+    funnel: stageSummary.map((item) => ({
+      key: item.key,
+      label: item.label,
+      description: item.description,
+      users: item.users,
+      rate: item.rate,
+      count: item.users,
+      pct: item.rate,
+    })),
     journey_flow: {
       sources,
       stages,
       destinations,
       links: flowLinks,
     },
+    utm_campaigns: utmCampaigns,
     page_opportunities: scatter,
     top_transitions: transitionList,
     notes,
     tracking_note: `${range.label} 기준 전체 공개 페이지 방문 데이터를 바탕으로 유입 채널, 방문 단계, 대표 도착 페이지를 재구성한 마케팅 대시보드입니다. 체류시간·스크롤은 아직 수집하지 않아 페이지 규모, 재읽기 강도, 공유 유입 비중 중심으로 해석합니다.`,
   };
+}
+
+function buildUtmCampaigns(rows) {
+  const map = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const campaign = String(row && row.utm_campaign || '').trim();
+    const source = String(row && row.utm_source || '').trim();
+    const medium = String(row && row.utm_medium || '').trim();
+    if (!campaign && !source && !medium) return;
+    const key = [campaign || '(none)', source || '(none)', medium || '(none)'].join('|');
+    const current = map.get(key) || {
+      campaign: campaign || '(none)',
+      source: source || '(none)',
+      medium: medium || '(none)',
+      visits: 0,
+    };
+    current.visits += 1;
+    map.set(key, current);
+  });
+  return Array.from(map.values())
+    .sort((a, b) => b.visits - a.visits || a.campaign.localeCompare(b.campaign, 'ko'))
+    .slice(0, 12);
 }
 
 function buildStageSummaryItem(key, label, description, users, total) {

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.02
+ * Version: V3.001.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -431,18 +431,22 @@
       GW.apiFetch('/api/admin/analytics').catch(function () { return {}; }),
       GW.apiFetch('/api/posts?limit=8&published=all').catch(function () { return { posts: [] }; }),
       GW.apiFetch('/api/posts/popular?limit=5').catch(function () { return { posts: [] }; }),
+      GW.apiFetch('/api/posts?limit=1&published=1').catch(function () { return { total: 0 }; }),
     ]).then(function (results) {
       var analytics = results[0] || {};
       var recent    = (results[1] && results[1].posts) || [];
       var popular   = (results[2] && results[2].posts) || [];
+      var published = results[3] || {};
 
       // Stats
       var today = analytics.today || {};
-      _setText('dash-stat-visits', _fmt(today.visits || 0));
-      _setText('dash-stat-views',  _fmt(today.views || 0));
+      var visitors = analytics.visitors || {};
+      var summary = analytics.summary || {};
       var counts = analytics.counts || {};
-      _setText('dash-stat-posts', _fmt(counts.total || 0));
-      _setText('dash-stat-pub',   _fmt(counts.published || 0));
+      _setText('dash-stat-visits', _fmt(today.visits || visitors.today_visits || summary.today_visits || 0));
+      _setText('dash-stat-views',  _fmt(today.views || summary.today_pageviews || summary.today_views || 0));
+      _setText('dash-stat-posts', _fmt((results[1] && results[1].total) || counts.total || recent.length || 0));
+      _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
 
       // Recent posts
       var recentEl = document.getElementById('dash-recent-list');
@@ -471,7 +475,7 @@
             '<div style="font-size:11px;font-weight:700;color:#94a3b8;width:18px;flex-shrink:0;">' + (i + 1) + '</div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '') + '</div>' +
-              '<div class="v3-recent-meta">조회 ' + _fmt(p.views || 0) + '</div>' +
+              '<div class="v3-recent-meta">조회 ' + _fmt(p.views || p.pageviews || 0) + '</div>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -1160,17 +1164,19 @@
     GW.apiFetch('/api/admin/analytics?days=' + period).then(function (data) {
       var today    = data.today    || {};
       var summary  = data.summary  || {};
-      var topPosts = data.top_posts || [];
-      var sources  = data.sources  || [];
+      var visitors = data.visitors || {};
+      var views    = data.views    || {};
+      var topPosts = data.top_posts || data.top_paths || (views.top_paths || []);
+      var sources  = data.sources  || data.referrers || [];
 
       // Stats
       statsEl.innerHTML =
-        _statCard('오늘 방문',       _fmt(today.visits  || 0), '오늘') +
-        _statCard('오늘 조회',       _fmt(today.views   || 0), '오늘') +
-        _statCard(period + '일 방문', _fmt(summary.visits || 0), '기간 합계') +
-        _statCard(period + '일 조회', _fmt(summary.views  || 0), '기간 합계') +
-        _statCard('좋아요',          _fmt(summary.likes  || 0), '기간 합계') +
-        _statCard('평균 체류',       (summary.avg_engaged_s || 0) + '초', '기간 평균');
+        _statCard('오늘 방문',       _fmt(today.visits  || visitors.today_visits || summary.today_visits || 0), '오늘') +
+        _statCard('오늘 조회',       _fmt(today.views   || summary.today_pageviews || summary.today_views || 0), '오늘') +
+        _statCard(period + '일 방문', _fmt(summary.range_visits || visitors.range_visits || 0), '기간 합계') +
+        _statCard(period + '일 조회', _fmt(summary.range_pageviews || views.range_pageviews || views.total || 0), '기간 합계') +
+        _statCard('인기 기사 평균 체류', _fmt(summary.popular_post_average_dwell_seconds || 0) + '초', summary.popular_post_title || '대표 기사 기준') +
+        _statCard('평균 체류',       _fmt(summary.average_dwell_seconds || 0) + '초', '기간 평균');
 
       // Top posts bar chart
       var html = '';
@@ -1182,7 +1188,7 @@
           html += '<div class="v3-bar-row">' +
             '<div class="v3-bar-label" title="' + GW.escapeHtml(p.title || '') + '">' + GW.escapeHtml(p.title || '') + '</div>' +
             '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div>' +
-            '<div class="v3-bar-val">' + _fmt(p.views || 0) + '</div>' +
+            '<div class="v3-bar-val">' + _fmt(p.views || p.pageviews || 0) + '</div>' +
           '</div>';
         });
         html += '</div></div>';
@@ -1195,7 +1201,7 @@
         sources.slice(0, 10).forEach(function (s) {
           var pct = maxS > 0 ? Math.round((s.visits || 0) / maxS * 100) : 0;
           html += '<div class="v3-bar-row">' +
-            '<div class="v3-bar-label">' + GW.escapeHtml(s.referrer_host || '직접') + '</div>' +
+            '<div class="v3-bar-label">' + GW.escapeHtml(s.source_label || s.referrer_host || '직접') + '</div>' +
             '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div>' +
             '<div class="v3-bar-val">' + _fmt(s.visits || 0) + '</div>' +
           '</div>';
@@ -1224,6 +1230,8 @@
     GW.apiFetch('/api/admin/marketing').then(function (data) {
       var funnel = data.funnel || [];
       var utms   = data.utm_campaigns || [];
+      var transitions = data.top_transitions || [];
+      var summary = data.summary || {};
       var html   = '';
 
       // Funnel
@@ -1232,8 +1240,8 @@
         funnel.forEach(function (step) {
           html += '<div class="v3-bar-row">' +
             '<div class="v3-bar-label">' + GW.escapeHtml(step.label || step.stage || '') + '</div>' +
-            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + (step.pct || 0) + '%"></div></div>' +
-            '<div class="v3-bar-val">' + _fmt(step.count || 0) + '</div>' +
+            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + (step.pct || step.rate || 0) + '%"></div></div>' +
+            '<div class="v3-bar-val">' + _fmt(step.count || step.users || 0) + '</div>' +
           '</div>';
         });
         html += '</div></div>';
@@ -1250,6 +1258,20 @@
             '<td>' + _fmt(u.visits || 0) + '</td></tr>';
         });
         html += '</tbody></table></div></div>';
+      }
+
+      if (transitions.length) {
+        html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">대표 이동 경로</h2></div><div class="v3-bar-list">';
+        transitions.forEach(function (item) {
+          html += '<div class="v3-bar-row">' +
+            '<div class="v3-bar-label" title="' + GW.escapeHtml((item.from_title || '') + ' → ' + (item.to_title || '')) + '">' +
+              GW.escapeHtml((item.from_title || '') + ' → ' + (item.to_title || '')) +
+            '</div>' +
+            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + Math.max(8, Math.min(100, Math.round((item.users || 0) / Math.max(1, summary.unique_users || 1) * 100))) + '%"></div></div>' +
+            '<div class="v3-bar-val">' + _fmt(item.users || 0) + '</div>' +
+          '</div>';
+        });
+        html += '</div></div>';
       }
 
       if (!html) html = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">마케팅 데이터가 없습니다</div></div></div>';
