@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3 Stylesheet
- * Version: V3.002.00
+ * Version: V3.003.01
  */
 
 /* ── Design Tokens ────────────────────────────────────────── */
@@ -114,6 +114,24 @@
   padding: 20px 18px 16px;
   border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
+}
+.v3-kms-quick {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.v3-kms-quick .v3-nav-item {
+  width: 100%;
+  justify-content: flex-start;
+}
+.v3-kms-quick .v3-nav-item.is-kms {
+  background: rgba(79, 70, 229, .18);
+  color: #eef2ff;
+  border: 1px solid rgba(129, 140, 248, .35);
+}
+.v3-kms-quick .v3-nav-item.is-kms:hover {
+  background: rgba(79, 70, 229, .26);
+  color: #fff;
 }
 .v3-logo-mark { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
 .v3-logo-version {
