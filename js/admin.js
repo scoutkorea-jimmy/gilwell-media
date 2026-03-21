@@ -5,6 +5,8 @@
 (function () {
   'use strict';
 
+  var AdminShared = window.GWAdminShared = window.GWAdminShared || {};
+
   var editingId       = null;
   var _adminEditor    = null;
   var _adminCoverImg  = null;
@@ -477,7 +479,7 @@
       loadEditorsAdmin();
       loadTranslationsAdmin();
       loadAiDisclaimerAdmin();
-      loadContributorsAdmin();
+      if (window.loadContributorsAdmin) window.loadContributorsAdmin();
       loadSiteMetaAdmin();
       loadBoardLayoutAdmin();
       loadBoardBannerAdmin();
@@ -719,9 +721,9 @@
     if (tab === 'analytics') loadAnalyticsPage();
     if (tab === 'marketing') loadMarketingPage();
     if (tab === 'write') _maybeRestoreAdminDraft();
-    if (tab === 'glossary') loadGlossaryAdmin();
+    if (tab === 'glossary' && window.loadGlossaryAdmin) window.loadGlossaryAdmin();
     if (tab === 'calendar') loadCalendarAdmin();
-    if (tab === 'history') loadVersionHistory();
+    if (tab === 'history' && window.loadVersionHistory) window.loadVersionHistory();
     if (tab === 'hero-manager' || tab === 'home-lead') loadHeroAdmin();
     if (tab === 'feature-definition') {
       openKmsPage();
@@ -5330,5 +5332,8 @@
       .then(function () { GW.showToast('AI 도움 문구가 저장됐습니다', 'success'); })
       .catch(function (err) { GW.showToast(err.message || '저장 실패', 'error'); });
   };
+
+  AdminShared.initPointerSortable = _initPointerSortable;
+  AdminShared.buildPageNumberButtons = buildPageNumberButtons;
 
 })();
