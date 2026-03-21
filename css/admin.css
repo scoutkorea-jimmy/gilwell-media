@@ -4595,3 +4595,266 @@ body.admin-page .admin-context-recent-btn:hover {
     gap: 10px !important;
   }
 }
+
+/* Admin v2 shell */
+body.admin-page {
+  background:
+    radial-gradient(circle at top left, rgba(132, 74, 219, 0.1), transparent 32%),
+    linear-gradient(180deg, #f6f2ec 0%, #f1ebe4 100%);
+}
+
+body.admin-page main#main-content {
+  width: 100%;
+  max-width: none !important;
+  padding: 32px 24px 96px !important;
+}
+
+body.admin-page .admin-screen {
+  width: 100%;
+  max-width: 1366px;
+  min-width: 1366px;
+  margin: 0 auto;
+}
+
+body.admin-page .admin-v2-header {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  margin: 0 auto 24px;
+  padding: 24px 28px;
+  border: 1px solid rgba(29, 21, 17, 0.08);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 243, 238, 0.96));
+  box-shadow: 0 20px 44px rgba(25, 18, 15, 0.08);
+}
+
+body.admin-page .admin-v2-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+}
+
+body.admin-page .admin-v2-titleblock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body.admin-page .admin-v2-kicker {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(116, 54, 188, 0.12);
+  color: #652bb2;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+body.admin-page .admin-v2-titleblock h1 {
+  margin: 0;
+  color: #17120f;
+  font-size: 34px;
+  line-height: 1.08;
+}
+
+body.admin-page .admin-v2-titleblock p {
+  margin: 0;
+  max-width: 720px;
+  color: #625950;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+body.admin-page .admin-v2-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  align-items: center;
+}
+
+body.admin-page .admin-v2-build,
+body.admin-page .admin-v2-link,
+body.admin-page .admin-v2-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid rgba(29, 21, 17, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #17120f;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+body.admin-page .admin-v2-build {
+  background: rgba(246, 239, 252, 0.9);
+  color: #6b38b5;
+}
+
+body.admin-page .admin-v2-logout {
+  border-color: rgba(116, 54, 188, 0.35);
+  background: linear-gradient(135deg, #6e36bd 0%, #8f5cef 100%);
+  color: #fff;
+  cursor: pointer;
+}
+
+body.admin-page .admin-v2-groups {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+body.admin-page .admin-v2-groups .admin-group-btn {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(29, 21, 17, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  color: #463d35;
+  font-size: 15px;
+}
+
+body.admin-page .admin-v2-groups .admin-group-btn.active {
+  border-color: rgba(116, 54, 188, 0.22);
+  background: rgba(116, 54, 188, 0.12);
+  color: #5b2ba1;
+}
+
+body.admin-page .admin-v2-shell {
+  display: grid !important;
+  grid-template-columns: 228px 1fr 228px !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 1366px !important;
+  min-width: 1366px !important;
+  margin: 0 auto !important;
+  align-items: start !important;
+}
+
+body.admin-page .admin-v2-sidebar,
+body.admin-page .admin-v2-rail {
+  position: sticky !important;
+  top: 24px !important;
+  align-self: start !important;
+}
+
+body.admin-page .admin-v2-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 228px !important;
+  min-width: 228px !important;
+  max-width: 228px !important;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 18px !important;
+  border: 1px solid rgba(29, 21, 17, 0.09) !important;
+  border-radius: 24px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(25, 18, 15, 0.05) !important;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-tree-head {
+  gap: 6px;
+  padding: 0 0 8px;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-tree-head strong {
+  font-size: 15px;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-tree-head span {
+  font-size: 12px;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-btn {
+  min-height: 74px !important;
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(29, 21, 17, 0.08) !important;
+  background: rgba(248, 245, 240, 0.92) !important;
+  text-align: left !important;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-btn.active {
+  border-color: rgba(116, 54, 188, 0.18) !important;
+  background: rgba(116, 54, 188, 0.1) !important;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-btn-label {
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+}
+
+body.admin-page .admin-v2-sidebar .admin-sidebar-btn-desc {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+body.admin-page .admin-v2-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+}
+
+body.admin-page .admin-v2-content > .admin-tab-panel.active {
+  display: block;
+}
+
+body.admin-page .admin-v2-rail {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 228px !important;
+  min-width: 228px !important;
+  max-width: 228px !important;
+}
+
+body.admin-page .admin-v2-rail .admin-context-card {
+  padding: 18px !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(29, 21, 17, 0.09) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(25, 18, 15, 0.05) !important;
+}
+
+body.admin-page .admin-v2-rail .admin-context-card-head strong {
+  font-size: 14px !important;
+}
+
+body.admin-page .admin-v2-rail .admin-context-card-head span,
+body.admin-page .admin-v2-rail .admin-context-note,
+body.admin-page .admin-v2-rail .admin-context-feature-link em,
+body.admin-page .admin-v2-rail .admin-context-recent-btn span {
+  font-size: 11px !important;
+}
+
+body.admin-page .admin-v2-rail .admin-context-metric {
+  font-size: 30px !important;
+}
+
+body.admin-page .admin-v2-rail .admin-context-feature-link span,
+body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
+  font-size: 13px !important;
+}
+
+@media (max-width: 1365px) {
+  body.admin-page main#main-content {
+    min-width: 1366px !important;
+    overflow-x: auto !important;
+  }
+}
