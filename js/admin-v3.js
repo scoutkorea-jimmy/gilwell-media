@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.002.00
+ * Version: V3.003.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1197,7 +1197,7 @@
       description_ko: document.getElementById('glos-desc').value.trim(),
       bucket: (_glosIsNumericStart(ko) || _glosIsNumericStart(en) || _glosIsNumericStart(fr))
         ? GLOS_MISC_BUCKET
-        : _glosInferBucket(ko),
+        : ((!_glosHasKorean(ko) && (en || fr)) ? GLOS_UNMATCHED_BUCKET : (_glosInferBucket(ko) || GLOS_UNMATCHED_BUCKET)),
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/glossary/' + id : '/api/glossary';

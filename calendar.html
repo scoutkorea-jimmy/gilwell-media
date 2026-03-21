@@ -70,6 +70,56 @@
         </div>
       </div>
 
+      <section class="calendar-panel calendar-map-panel">
+        <div class="calendar-side-head">
+          <h3 id="calendar-map-title">캘린더 지도</h3>
+          <p class="calendar-map-help" id="calendar-map-help">축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.</p>
+        </div>
+        <div id="calendar-map" class="calendar-map"></div>
+      </section>
+
+      <section class="calendar-panel calendar-controls-panel">
+        <div class="calendar-controls-grid">
+          <div>
+            <strong>상태 분류</strong>
+            <select id="calendar-status-filters" class="calendar-filter-select">
+              <option value="ALL">전체</option>
+            </select>
+            <div id="calendar-status-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>지역 구분</strong>
+            <select id="calendar-region-filters" class="calendar-filter-select">
+              <option value="ALL">전체</option>
+            </select>
+            <div id="calendar-region-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>국가 필터</strong>
+            <select id="calendar-country-filters" class="calendar-filter-select">
+              <option value="ALL">전체</option>
+            </select>
+            <div id="calendar-country-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>태그 필터</strong>
+            <select id="calendar-tag-filters" class="calendar-filter-select">
+              <option value="ALL">전체</option>
+            </select>
+            <div id="calendar-tag-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>정렬 기준</strong>
+            <select id="calendar-sort-select" class="calendar-filter-select">
+              <option value="start-asc">날짜 빠른순</option>
+              <option value="start-desc">날짜 최신순</option>
+              <option value="title-asc">제목순</option>
+              <option value="updated-desc">최근 수정순</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
       <div class="calendar-layout">
         <section class="calendar-panel">
           <div class="calendar-toolbar">
@@ -93,15 +143,6 @@
           <div class="calendar-side-head">
             <h3 id="calendar-status-title">이달의 상태별 일정</h3>
           </div>
-          <div class="calendar-map-filters calendar-status-filters">
-            <div>
-              <strong>태그 필터</strong>
-              <select id="calendar-status-tag-filters" class="calendar-filter-select">
-                <option value="ALL">전체</option>
-              </select>
-              <div id="calendar-status-tag-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
-            </div>
-          </div>
           <div class="calendar-status-group">
             <div class="calendar-status-head is-ongoing" id="calendar-ongoing-label">진행중</div>
             <div id="calendar-ongoing-events" class="calendar-events-list">
@@ -122,23 +163,6 @@
           </div>
         </section>
       </div>
-
-      <section class="calendar-panel calendar-map-panel">
-        <div class="calendar-side-head">
-          <h3 id="calendar-map-title">캘린더 지도</h3>
-          <p class="calendar-map-help" id="calendar-map-help">축소 시 국가 단위로 묶이고, 확대할수록 세부 행사 위치를 볼 수 있습니다.</p>
-        </div>
-        <div class="calendar-map-filters">
-          <div>
-            <strong>태그 필터</strong>
-            <select id="calendar-map-tag-filters" class="calendar-filter-select">
-              <option value="ALL">전체</option>
-            </select>
-            <div id="calendar-map-tag-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
-          </div>
-        </div>
-        <div id="calendar-map" class="calendar-map"></div>
-      </section>
     </section>
   </main>
 

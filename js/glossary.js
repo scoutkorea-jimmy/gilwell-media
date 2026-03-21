@@ -2,7 +2,8 @@
   'use strict';
 
   var MISC_BUCKET = '기타';
-  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET];
+  var UNMATCHED_BUCKET = '국문 미확정 용어';
+  var BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET, UNMATCHED_BUCKET];
   var CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
   var _items = [];
   var _bucket = 'all';
@@ -68,6 +69,10 @@
     return isNumericStart(item.term_ko) || isNumericStart(item.term_en) || isNumericStart(item.term_fr);
   }
 
+  function isUnmatchedItem(item) {
+    return !hasKoreanTerm(item) && (!!String(item.term_en || '').trim() || !!String(item.term_fr || '').trim());
+  }
+
   function renderTable(items) {
     var canEdit = !!(GW.getToken && GW.getToken());
     var head = '<thead><tr><th>한국어</th><th>English</th><th>Français</th></tr></thead>';
@@ -128,8 +133,8 @@
     var items = getSearchFilteredItems();
     var miscItems = items.filter(isMiscItem);
     var remainingItems = items.filter(function (item) { return !isMiscItem(item); });
-    var regularItems = remainingItems.filter(hasKoreanTerm);
-    var unmatchedItems = remainingItems.filter(function (item) { return !hasKoreanTerm(item); });
+    var regularItems = remainingItems.filter(function (item) { return !isUnmatchedItem(item); });
+    var unmatchedItems = remainingItems.filter(isUnmatchedItem);
     var meta = byId('glossary-results-meta');
     var list = byId('glossary-results');
     var metaCount = (_bucket === MISC_BUCKET ? miscItems.length : (_bucket === 'all' ? items.length : regularItems.filter(function (item) { return item.bucket === _bucket; }).length));
@@ -300,6 +305,10 @@
         bucketSelect.value = MISC_BUCKET;
         return;
       }
+      if (!ko && (en || fr)) {
+        bucketSelect.value = UNMATCHED_BUCKET;
+        return;
+      }
       var inferred = inferBucket(ko);
       if (inferred) bucketSelect.value = inferred;
     }
@@ -370,7 +379,7 @@
     var payload = {
       bucket: (isNumericStart(ko) || isNumericStart(en) || isNumericStart(fr))
         ? MISC_BUCKET
-        : (byId('glossary-public-bucket').value || '가').trim(),
+        : ((!ko && (en || fr)) ? UNMATCHED_BUCKET : (byId('glossary-public-bucket').value || '가').trim()),
       term_ko: ko,
       term_en: en,
       term_fr: fr,
@@ -403,7 +412,7 @@
     var payload = {
       bucket: (isNumericStart(ko) || isNumericStart(en) || isNumericStart(fr))
         ? MISC_BUCKET
-        : (inferBucket(ko) || '가'),
+        : ((!ko && (en || fr)) ? UNMATCHED_BUCKET : (inferBucket(ko) || '가')),
       term_ko: ko,
       term_en: en,
       term_fr: fr,

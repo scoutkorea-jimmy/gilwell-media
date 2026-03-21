@@ -19,7 +19,14 @@
     map: null,
     mapLayer: null,
     allMapTags: [],
+    allCountries: [],
+    allRegions: Object.keys(CATEGORY_META),
+    allStatuses: ['ongoing', 'upcoming', 'finished'],
     mapFilterTags: [],
+    mapFilterCountries: [],
+    mapFilterRegions: [],
+    mapFilterStatuses: [],
+    sortMode: 'start-asc',
     editingId: null,
     tags: [],
     tagPresets: [],
@@ -115,6 +122,7 @@
   function bind() {
     bindMonthNavigation();
     bindViewControls();
+    bindFilterControls();
     bindManageControls();
     bindModalControls();
     bindTimeToggle('calendar-modal-start-time-enabled', 'calendar-modal-start-time-input');
@@ -182,6 +190,16 @@
         ensureCalendarAuth(function () {
           openEditor();
         }, true);
+      });
+    }
+  }
+
+  function bindFilterControls() {
+    var sortSelect = document.getElementById('calendar-sort-select');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', function () {
+        state.sortMode = sortSelect.value || 'start-asc';
+        render();
       });
     }
   }
@@ -295,7 +313,7 @@
       .then(function (res) { return res.json(); })
       .then(function (data) {
         state.items = Array.isArray(data && data.items) ? data.items : [];
-        syncMapFilters();
+        syncCalendarFilters();
         render();
       })
       .catch(function () {
@@ -331,7 +349,7 @@
     var lastDay = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0);
     var startWeekday = firstDay.getDay();
     var totalSlots = Math.ceil((startWeekday + lastDay.getDate()) / 7) * 7;
-    var monthItems = getMonthItems().sort(compareByStartAtAsc);
+    var monthItems = getMonthItems().sort(compareItemsBySelectedSort);
     var cells = [];
     var weekLabels = ['일', '월', '화', '수', '목', '금', '토'];
     cells.push('<div class="calendar-weekdays">' + weekLabels.map(function (label) {
@@ -415,10 +433,10 @@
     if (summary) summary.textContent = copyText('year_view_summary', '연간 일정보기입니다. 월별로 정렬된 일정을 한 번에 확인할 수 있습니다.');
     var monthHtml = [];
     for (var monthIndex = 0; monthIndex < 12; monthIndex += 1) {
-      var monthItems = state.items.filter(function (item) {
+      var monthItems = getVisibleItems().filter(function (item) {
         var date = parseDate(item.start_at);
         return date && date.getFullYear() === year && date.getMonth() === monthIndex;
-      }).sort(compareByStartAtAsc);
+      }).sort(compareItemsBySelectedSort);
       monthHtml.push(
         '<section class="calendar-year-month">' +
           '<div class="calendar-year-month-head">' +
@@ -464,21 +482,21 @@
     var monthEnd = endOfMonth(state.month);
     var upcomingEnd = endOfMonth(addMonths(state.month, 2));
     var finishedStart = startOfMonth(addMonths(state.month, -2));
-    var visibleItems = state.items.filter(matchesActiveFilters);
+    var visibleItems = getVisibleItems();
     if (statusTitle) {
       statusTitle.textContent = state.month.getFullYear() + '년 ' + String(state.month.getMonth() + 1).padStart(2, '0') + '월 기준 ' + copyText('status_panel_label', '상태별 일정');
     }
     var ongoingItems = visibleItems.filter(function (item) {
       return getEventStatus(item).key === 'ongoing' && intersectsRange(item, monthStart, monthEnd);
-    }).sort(compareByStartAtAsc);
+    }).sort(compareItemsBySelectedSort);
     var upcomingItems = visibleItems.filter(function (item) {
       var start = parseDate(item.start_at);
       return getEventStatus(item).key === 'upcoming' && start && start >= monthStart && start <= upcomingEnd;
-    }).sort(compareByStartAtAsc);
+    }).sort(compareItemsBySelectedSort);
     var finishedItems = visibleItems.filter(function (item) {
       var end = parseDate(item.end_at || item.start_at);
       return getEventStatus(item).key === 'finished' && end && end >= finishedStart && end <= monthEnd;
-    }).sort(compareByEndAtDesc);
+    }).sort(compareItemsBySelectedSort);
     renderStatusList('calendar-ongoing-events', ongoingItems, copyText('ongoing_empty', '진행중인 일정이 없습니다.'));
     renderStatusList('calendar-upcoming-events', upcomingItems, copyText('upcoming_empty', '선택한 달 기준 3개월 안에 예정된 일정이 없습니다.'));
     renderStatusList('calendar-finished-events', finishedItems, copyText('finished_empty', '선택한 달 기준 최근 3개월 안에 종료된 일정이 없습니다.'));
@@ -657,7 +675,7 @@
     if (!items.length) return;
 
     if (state.map.getZoom() <= 4) {
-      groupByCountry(items).forEach(function (group) {
+      groupByCountry(items).sort(compareCountryGroupBySelectedSort).forEach(function (group) {
         var groupCategory = getDominantCategory(group.items);
         var marker = L.marker([group.lat, group.lng], {
           icon: createCalendarMapBadgeIcon(group.items.length, groupCategory)
@@ -692,9 +710,8 @@
   }
 
   function getMapItems() {
-    return state.items.filter(function (item) {
+    return getVisibleItems().filter(function (item) {
       return getEventStatus(item).key !== 'finished' &&
-        matchesActiveFilters(item) &&
         Number.isFinite(Number(item.latitude)) &&
         Number.isFinite(Number(item.longitude));
     }).map(function (item) {
@@ -1345,54 +1362,111 @@
     return '';
   }
 
-  function syncMapFilters() {
+  function syncCalendarFilters() {
     var tags = [];
+    var countries = [];
     state.items.forEach(function (item) {
       (Array.isArray(item.event_tags) ? item.event_tags : []).forEach(function (tag) {
         if (tags.indexOf(tag) < 0) tags.push(tag);
       });
+      var country = String(item.country_name || '').trim();
+      if (country && countries.indexOf(country) < 0) countries.push(country);
     });
     state.allMapTags = tags.slice();
+    state.allCountries = countries.sort();
     state.mapFilterTags = state.mapFilterTags.filter(function (item) { return tags.indexOf(item) >= 0; });
+    state.mapFilterCountries = state.mapFilterCountries.filter(function (item) { return countries.indexOf(item) >= 0; });
+    state.mapFilterRegions = state.mapFilterRegions.filter(function (item) { return state.allRegions.indexOf(item) >= 0; });
+    state.mapFilterStatuses = state.mapFilterStatuses.filter(function (item) { return state.allStatuses.indexOf(item) >= 0; });
   }
 
   function renderMapFilters() {
-    renderFilterSelect('calendar-map-tag-filters', state.allMapTags, function (value) {
+    renderFilterSelect('calendar-tag-filters', state.allMapTags, function (value) {
       toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
+      renderCalendarBody();
     });
-    renderFilterSelect('calendar-status-tag-filters', state.allMapTags, function (value) {
-      toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
+    renderFilterSelect('calendar-country-filters', state.allCountries, function (value) {
+      toggleSelectedFilter(state.mapFilterCountries, value, state.allCountries);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
+      renderCalendarBody();
     });
-    renderSelectedFilters('calendar-map-tag-selected', state.mapFilterTags, function (value) {
+    renderFilterSelect('calendar-region-filters', state.allRegions, function (value) {
+      toggleSelectedFilter(state.mapFilterRegions, value, state.allRegions);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+      renderCalendarBody();
+    }, true);
+    renderFilterSelect('calendar-status-filters', state.allStatuses.map(function (key) {
+      return statusLabelForKey(key);
+    }), function (label) {
+      var key = statusKeyForLabel(label);
+      if (!key) return;
+      toggleSelectedFilter(state.mapFilterStatuses, key, state.allStatuses);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+      renderCalendarBody();
+    });
+    renderSelectedFilters('calendar-tag-selected', state.mapFilterTags, function (value) {
       removeSelectedFilter(state.mapFilterTags, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
+      renderCalendarBody();
     }, false);
-    renderSelectedFilters('calendar-status-tag-selected', state.mapFilterTags, function (value) {
-      removeSelectedFilter(state.mapFilterTags, value);
+    renderSelectedFilters('calendar-country-selected', state.mapFilterCountries, function (value) {
+      removeSelectedFilter(state.mapFilterCountries, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
+      renderCalendarBody();
+    }, false);
+    renderSelectedFilters('calendar-region-selected', state.mapFilterRegions, function (value) {
+      removeSelectedFilter(state.mapFilterRegions, value);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+      renderCalendarBody();
+    }, true);
+    renderSelectedFilters('calendar-status-selected', state.mapFilterStatuses.map(function (key) {
+      return statusLabelForKey(key);
+    }), function (label) {
+      var key = statusKeyForLabel(label);
+      if (!key) return;
+      removeSelectedFilter(state.mapFilterStatuses, key);
+      renderMapFilters();
+      renderStatusLists();
+      renderMapMarkers();
+      renderCalendarBody();
     }, false);
   }
 
   function matchesActiveFilters(item) {
+    var statusKey = getEventStatus(item).key;
     var tagsAllowed = !state.mapFilterTags.length
       ? true
       : ((Array.isArray(item.event_tags) && item.event_tags.length) ? item.event_tags.some(function (tag) {
           return state.mapFilterTags.indexOf(tag) >= 0;
         }) : false);
-    return tagsAllowed;
+    var countryAllowed = !state.mapFilterCountries.length
+      ? true
+      : state.mapFilterCountries.indexOf(String(item.country_name || '').trim()) >= 0;
+    var regionAllowed = !state.mapFilterRegions.length
+      ? true
+      : state.mapFilterRegions.indexOf(normalizeCategory(item.event_category)) >= 0;
+    var statusAllowed = !state.mapFilterStatuses.length
+      ? true
+      : state.mapFilterStatuses.indexOf(statusKey) >= 0;
+    return tagsAllowed && countryAllowed && regionAllowed && statusAllowed;
   }
 
-  function renderFilterSelect(id, allItems, onChange) {
+  function renderFilterSelect(id, allItems, onChange, isCategory) {
     var select = document.getElementById(id);
     if (!select) return;
     var options = ['<option value="ALL">전체</option>'].concat((allItems || []).map(function (item) {
@@ -1406,6 +1480,9 @@
       onChange(value);
       select.value = 'ALL';
     };
+    if (isCategory) {
+      select.classList.add('is-all');
+    }
   }
 
   function renderSelectedFilters(id, selectedItems, onRemove, isCategory) {
@@ -1448,6 +1525,48 @@
 
   function compareByEndAtDesc(a, b) {
     return parseDateTime(b && (b.end_at || b.start_at)) - parseDateTime(a && (a.end_at || a.start_at));
+  }
+
+  function compareItemsBySelectedSort(a, b) {
+    var mode = state.sortMode || 'start-asc';
+    if (mode === 'start-desc') {
+      return compareByStartAtAsc(b, a);
+    }
+    if (mode === 'updated-desc') {
+      return parseDateTime(b && (b.updated_at || b.start_at)) - parseDateTime(a && (a.updated_at || a.start_at));
+    }
+    if (mode === 'title-asc') {
+      return String(a && (a.title || a.title_original || '')).localeCompare(String(b && (b.title || b.title_original || '')), 'ko');
+    }
+    return compareByStartAtAsc(a, b);
+  }
+
+  function compareCountryGroupBySelectedSort(a, b) {
+    var firstA = (a.items || []).slice().sort(compareItemsBySelectedSort)[0];
+    var firstB = (b.items || []).slice().sort(compareItemsBySelectedSort)[0];
+    return compareItemsBySelectedSort(firstA || {}, firstB || {});
+  }
+
+  function getVisibleItems() {
+    return state.items.filter(matchesActiveFilters);
+  }
+
+  function renderCalendarBody() {
+    if (state.viewMode === 'year') renderYearView();
+    else renderMonthView();
+  }
+
+  function statusLabelForKey(key) {
+    if (key === 'ongoing') return copyText('ongoing_label', '진행중');
+    if (key === 'finished') return copyText('finished_label', '행사종료');
+    return copyText('upcoming_label', '개최예정');
+  }
+
+  function statusKeyForLabel(label) {
+    if (label === copyText('ongoing_label', '진행중')) return 'ongoing';
+    if (label === copyText('finished_label', '행사종료')) return 'finished';
+    if (label === copyText('upcoming_label', '개최예정')) return 'upcoming';
+    return '';
   }
 
   function startOfDay(date) {
