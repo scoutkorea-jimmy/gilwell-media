@@ -432,6 +432,15 @@
      DASHBOARD
   ══════════════════════════════════════════════════════════ */
   function _loadDashboard() {
+    var recentEl = document.getElementById('dash-recent-list');
+    var topEl = document.getElementById('dash-top-list');
+    _setText('dash-stat-visits', '—');
+    _setText('dash-stat-views', '—');
+    _setText('dash-stat-posts', '—');
+    _setText('dash-stat-pub', '—');
+    _setText('dash-stat-visits-sub', '불러오는 중');
+    _setText('dash-stat-posts-sub', '불러오는 중');
+
     Promise.allSettled([
       GW.apiFetch('/api/admin/analytics'),
       GW.apiFetch('/api/posts?limit=8&published=all'),
@@ -456,7 +465,6 @@
       _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
 
       // Recent posts
-      var recentEl = document.getElementById('dash-recent-list');
       if (!recent.length) {
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div>';
       } else {
@@ -473,7 +481,6 @@
       }
 
       // Popular posts
-      var topEl = document.getElementById('dash-top-list');
       if (!popular.length) {
         topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">데이터 없음</div></div>';
       } else {
@@ -487,9 +494,27 @@
           '</div>';
         }).join('');
       }
+      if (results[0].status !== 'fulfilled') {
+        _setText('dash-stat-visits-sub', '분석 API 확인 필요');
+      } else {
+        _setText('dash-stat-visits-sub', '오늘');
+      }
+      if (results[1].status !== 'fulfilled') {
+        recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">최근 게시글 API 오류</div></div>';
+      }
+      if (results[2].status !== 'fulfilled') {
+        topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">인기 게시글 API 오류</div></div>';
+      }
+      if (results[3].status !== 'fulfilled') {
+        _setText('dash-stat-posts-sub', '공개 수 집계 오류');
+      } else {
+        _setText('dash-stat-posts-sub', '전체 게시글');
+      }
     }).catch(function (e) {
-      document.getElementById('dash-recent-list').innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
-      document.getElementById('dash-top-list').innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
+      topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
+      _setText('dash-stat-posts-sub', '대시보드 로딩 실패');
     });
   }
 
@@ -1248,6 +1273,7 @@
       bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
+      bodyEl.innerHTML  = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다</div></div></div>';
     });
   }
 
@@ -1315,8 +1341,11 @@
       _renderMarketingNotes(data.notes || []);
       _renderMarketingFlow(data.journey_flow || null);
       _renderMarketingScatter(data.page_opportunities || []);
-    }).catch(function () {
-      el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다</div></div></div>';
+      if ((!data.journey_flow || !(data.journey_flow.nodes || []).length) && (!data.page_opportunities || !data.page_opportunities.length)) {
+        el.insertAdjacentHTML('beforeend', '<div class="v3-card v3-mt-16"><div class="v3-empty"><div class="v3-empty-text">마케팅 차트용 데이터가 아직 충분하지 않거나 응답 구조를 확인해야 합니다.</div></div></div>');
+      }
+    }).catch(function (e) {
+      el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div></div>';
     });
   }
 
