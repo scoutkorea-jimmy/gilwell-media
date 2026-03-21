@@ -159,7 +159,6 @@ export async function onRequestPut({ params, request, env }) {
 
   // Always update the timestamp
   fields.push("updated_at = datetime('now')");
-  values.push(id);
 
   try {
     const updatedPost = await runPostUpdate(env, id, fields, values);
