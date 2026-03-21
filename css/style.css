@@ -5856,15 +5856,20 @@ body.kms-page main#main-content {
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
+  fill: none;
 }
 .analytics-line-path.analytics-bar-fill-visits,
 .analytics-line-point.analytics-bar-fill-visits {
   stroke: var(--tag-korea);
-  fill: var(--tag-korea);
 }
 .analytics-line-path.analytics-bar-fill-views,
 .analytics-line-point.analytics-bar-fill-views {
   stroke: var(--tag-apr);
+}
+.analytics-line-point.analytics-bar-fill-visits {
+  fill: var(--tag-korea);
+}
+.analytics-line-point.analytics-bar-fill-views {
   fill: var(--tag-apr);
 }
 .analytics-line-x-label {
@@ -6055,6 +6060,11 @@ body.kms-page main#main-content {
   color: var(--muted);
   letter-spacing: 0.05em;
 }
+body.admin-page #marketing-transitions.analytics-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .marketing-stats-row {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -6200,6 +6210,18 @@ body.kms-page main#main-content {
   fill: var(--ink);
   font-size: 10px;
   font-family: AliceDigitalLearning, sans-serif;
+}
+.marketing-scatter-point.is-clickable {
+  cursor: pointer;
+}
+.marketing-scatter-point.is-clickable circle {
+  transition: transform 120ms ease, stroke-width 120ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.marketing-scatter-point.is-clickable:hover circle {
+  stroke-width: 3;
+  transform: scale(1.04);
 }
 .marketing-hover-tip {
   position: absolute;
