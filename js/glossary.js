@@ -288,12 +288,24 @@
 
   function bindBucketAutoFill() {
     var koInput = byId('glossary-public-ko');
+    var enInput = byId('glossary-public-en');
+    var frInput = byId('glossary-public-fr');
     var bucketSelect = byId('glossary-public-bucket');
     if (!koInput || !bucketSelect) return;
-    koInput.addEventListener('input', function () {
-      var inferred = inferBucket(koInput.value);
+    function syncBucket() {
+      var ko = (koInput.value || '').trim();
+      var en = enInput ? (enInput.value || '').trim() : '';
+      var fr = frInput ? (frInput.value || '').trim() : '';
+      if (isNumericStart(ko) || isNumericStart(en) || isNumericStart(fr)) {
+        bucketSelect.value = MISC_BUCKET;
+        return;
+      }
+      var inferred = inferBucket(ko);
       if (inferred) bucketSelect.value = inferred;
-    });
+    }
+    koInput.addEventListener('input', syncBucket);
+    if (enInput) enInput.addEventListener('input', syncBucket);
+    if (frInput) frInput.addEventListener('input', syncBucket);
   }
 
   function openLoginModal() {
@@ -352,11 +364,16 @@
 
   function submitPublicTerm() {
     if (!ensureGlossaryAuth()) return;
+    var ko = (byId('glossary-public-ko').value || '').trim();
+    var en = (byId('glossary-public-en').value || '').trim();
+    var fr = (byId('glossary-public-fr').value || '').trim();
     var payload = {
-      bucket: (byId('glossary-public-bucket').value || '가').trim(),
-      term_ko: (byId('glossary-public-ko').value || '').trim(),
-      term_en: (byId('glossary-public-en').value || '').trim(),
-      term_fr: (byId('glossary-public-fr').value || '').trim(),
+      bucket: (isNumericStart(ko) || isNumericStart(en) || isNumericStart(fr))
+        ? MISC_BUCKET
+        : (byId('glossary-public-bucket').value || '가').trim(),
+      term_ko: ko,
+      term_en: en,
+      term_fr: fr,
       description_ko: (byId('glossary-public-description').value || '').trim(),
       sort_order: 0,
     };
@@ -380,11 +397,16 @@
 
   function submitInlineEdit(id) {
     if (!ensureGlossaryAuth()) return;
+    var ko = ((byId('glossary-inline-ko-' + id) || {}).value || '').trim();
+    var en = ((byId('glossary-inline-en-' + id) || {}).value || '').trim();
+    var fr = ((byId('glossary-inline-fr-' + id) || {}).value || '').trim();
     var payload = {
-      bucket: inferBucket((byId('glossary-inline-ko-' + id) || {}).value || '') || '가',
-      term_ko: ((byId('glossary-inline-ko-' + id) || {}).value || '').trim(),
-      term_en: ((byId('glossary-inline-en-' + id) || {}).value || '').trim(),
-      term_fr: ((byId('glossary-inline-fr-' + id) || {}).value || '').trim(),
+      bucket: (isNumericStart(ko) || isNumericStart(en) || isNumericStart(fr))
+        ? MISC_BUCKET
+        : (inferBucket(ko) || '가'),
+      term_ko: ko,
+      term_en: en,
+      term_fr: fr,
       description_ko: ((byId('glossary-inline-description-' + id) || {}).value || '').trim(),
       sort_order: 0,
     };

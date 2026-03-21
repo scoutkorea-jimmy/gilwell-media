@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.05
+ * Version: V3.001.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1303,14 +1303,6 @@
           _statCard('Consideration', _fmt(summary.consideration_users || 0), '기사 읽기 단계') +
         '</div>' +
         '<div class="marketing-grid">' +
-          '<section class="v3-card marketing-panel">' +
-            '<div class="v3-card-head"><h2 class="v3-card-title">퍼널 (Funnel)</h2></div>' +
-            '<div id="marketing-funnel" class="marketing-funnel-list"></div>' +
-          '</section>' +
-          '<section class="v3-card marketing-panel">' +
-            '<div class="v3-card-head"><h2 class="v3-card-title">UTM 캠페인</h2></div>' +
-            '<div id="marketing-utm"></div>' +
-          '</section>' +
           '<section class="v3-card marketing-panel marketing-panel-wide">' +
             '<div class="v3-card-head">' +
               '<div><h2 class="v3-card-title">고객 여정 흐름</h2><div class="marketing-panel-meta" id="marketing-flow-meta">유입 채널 → 단계 → 대표 도착 페이지</div></div>' +
@@ -1324,6 +1316,14 @@
               '<div class="marketing-panel-actions"><button type="button" class="marketing-expand-btn" onclick="V3.openMarketingFullscreen(\'scatter\')">전체화면 보기</button></div>' +
             '</div>' +
             '<div id="marketing-scatter" class="marketing-scatter-wrap"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">퍼널 (Funnel)</h2></div>' +
+            '<div id="marketing-funnel" class="marketing-funnel-list"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">UTM 캠페인</h2></div>' +
+            '<div id="marketing-utm"></div>' +
           '</section>' +
           '<section class="v3-card marketing-panel">' +
             '<div class="v3-card-head"><h2 class="v3-card-title">대표 이동 경로</h2></div>' +
@@ -1341,7 +1341,9 @@
       _renderMarketingNotes(data.notes || []);
       _renderMarketingFlow(data.journey_flow || null);
       _renderMarketingScatter(data.page_opportunities || []);
-      if ((!data.journey_flow || !(data.journey_flow.nodes || []).length) && (!data.page_opportunities || !data.page_opportunities.length)) {
+      var hasFlow = !!(data.journey_flow && Array.isArray(data.journey_flow.links) && data.journey_flow.links.length);
+      var hasScatter = !!(data.page_opportunities && data.page_opportunities.length);
+      if (!hasFlow && !hasScatter) {
         el.insertAdjacentHTML('beforeend', '<div class="v3-card v3-mt-16"><div class="v3-empty"><div class="v3-empty-text">마케팅 차트용 데이터가 아직 충분하지 않거나 응답 구조를 확인해야 합니다.</div></div></div>');
       }
     }).catch(function (e) {
