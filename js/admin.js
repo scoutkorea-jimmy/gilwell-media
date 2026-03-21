@@ -3297,13 +3297,18 @@
     var maxDestinationChars = destinations.reduce(function (acc, item) {
       return Math.max(acc, String((item && item.label) || '').length);
     }, 0);
-    var labelSpace = Math.max(320, Math.min(760, maxDestinationChars * 12));
-    var W = 1220 + labelSpace;
-    var H = 430;
-    var padTop = 18;
-    var padBottom = 18;
+    var padLeft = 40;
+    var padRight = 40;
+    var padTop = 36;
+    var padBottom = 40;
     var nodeW = 18;
-    var colX = [70, 650, 1160];
+    var rightLabelRunway = Math.max(380, Math.min(860, maxDestinationChars * 12));
+    var leftColumnX = padLeft + 44;
+    var middleColumnX = leftColumnX + 520;
+    var rightColumnX = middleColumnX + rightLabelRunway;
+    var colX = [leftColumnX, middleColumnX, rightColumnX];
+    var W = rightColumnX + nodeW + padRight;
+    var baseH = 460;
     var columnInfo = columns.map(function (items, idx) {
       var totals = items.map(function (item) {
         var incoming = links.filter(function (link) { return link.target === item.id; }).reduce(function (sum, link) { return sum + Number(link.value || 0); }, 0);
@@ -3322,8 +3327,9 @@
       return Math.max(acc, col.totalValue);
     }, 1);
     var gap = 14;
-    var availableH = H - padTop - padBottom;
+    var availableH = baseH - padTop - padBottom;
     var scale = Math.max(0.25, (availableH - gap * 5) / maxColumnValue);
+    var maxY = padTop;
 
     columnInfo.forEach(function (column, columnIndex) {
       var y = padTop;
@@ -3343,9 +3349,11 @@
           stage: item.stage || item.key || ''
         };
         nodeMap.set(item.id, node);
+        maxY = Math.max(maxY, y + h);
         y += h + gap;
       });
     });
+    var H = Math.max(baseH, maxY + padBottom);
 
     var linkParts = links.map(function (link) {
       var sourceNode = nodeMap.get(link.source);
