@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.086.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.087.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -24,7 +24,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.086.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.087.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -40,7 +40,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.086.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.087.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -216,7 +216,7 @@
           </div>
         </div>
 
-        <div class="dash-stats-row analytics-stats-row" style="margin-top:24px;">
+        <div class="dash-stats-row analytics-stats-row admin-section-top-gap">
           <div class="dash-stat-card analytics-provider-card">
             <div class="dash-stat-num" id="analytics-provider-label">—</div>
             <div class="dash-stat-label">집계 기준</div>
@@ -263,7 +263,7 @@
             </div>
             <div class="panel-body">
               <div id="analytics-visitors-chart" class="analytics-chart-wrap"></div>
-              <div id="analytics-visitors-table" class="analytics-table-wrap" style="display:none;"></div>
+              <div id="analytics-visitors-table" class="analytics-table-wrap admin-hidden"></div>
             </div>
           </div>
           <div class="panel">
@@ -277,7 +277,7 @@
             </div>
             <div class="panel-body">
               <div id="analytics-views-chart" class="analytics-chart-wrap"></div>
-              <div id="analytics-views-table" class="analytics-table-wrap" style="display:none;"></div>
+              <div id="analytics-views-table" class="analytics-table-wrap admin-hidden"></div>
             </div>
           </div>
         </div>
@@ -348,7 +348,7 @@
           </div>
         </div>
 
-        <div class="dash-stats-row marketing-stats-row" style="margin-top:24px;">
+        <div class="dash-stats-row marketing-stats-row admin-section-top-gap">
           <div class="dash-stat-card marketing-stat-card">
             <div class="dash-stat-num" id="marketing-unique-users">—</div>
             <div class="dash-stat-label">고유 사용자</div>
@@ -441,7 +441,7 @@
               </div>
               <div class="form-group">
                 <label>글머리 태그</label>
-                <div id="admin-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>
+                <div id="admin-tag-selector" class="tag-pill-group"><span class="admin-inline-loading">불러오는 중…</span></div>
                 <div class="admin-write-tag-tools">
                   <input type="text" id="art-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
                   <button type="button" class="admin-inline-tag-add" onclick="addEditorManagedTag()">태그 추가</button>
@@ -467,7 +467,7 @@
             </div>
 
             <div class="form-row">
-              <div class="form-group" style="flex:1;">
+              <div class="form-group admin-flex-1">
                 <label for="art-author">작성자</label>
                 <select id="art-author" class="admin-control-input"><option>불러오는 중…</option></select>
               </div>
@@ -589,11 +589,11 @@
 
           <!-- Category filter tabs -->
           <div class="admin-list-tabs">
-            <button id="admin-tab-all" class="active" onclick="adminListFilter('all')"   style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--black);color:var(--white);">전체</button>
-            <button id="admin-tab-korea" onclick="adminListFilter('korea')" style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">Korea</button>
-            <button id="admin-tab-apr"   onclick="adminListFilter('apr')"   style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">APR</button>
-            <button id="admin-tab-wosm"  onclick="adminListFilter('wosm')"  style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">WOSM</button>
-            <button id="admin-tab-people" onclick="adminListFilter('people')" style="flex:1;padding:10px 0;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--bg);color:var(--muted);">People</button>
+            <button id="admin-tab-all" class="admin-list-tab-btn active" onclick="adminListFilter('all')">전체</button>
+            <button id="admin-tab-korea" class="admin-list-tab-btn" onclick="adminListFilter('korea')">Korea</button>
+            <button id="admin-tab-apr" class="admin-list-tab-btn" onclick="adminListFilter('apr')">APR</button>
+            <button id="admin-tab-wosm" class="admin-list-tab-btn" onclick="adminListFilter('wosm')">WOSM</button>
+            <button id="admin-tab-people" class="admin-list-tab-btn" onclick="adminListFilter('people')">People</button>
           </div>
 
           <div class="article-list" id="article-list">
@@ -630,7 +630,7 @@
             <p class="admin-section-note">가 ~ 하 분류별로 한국어, 영어, 프랑스어 용어를 관리합니다. 공개 페이지에서는 검색과 분류 버튼으로 한눈에 찾을 수 있습니다.</p>
 
             <div class="glossary-admin-toolbar">
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-filter-bucket">분류 보기</label>
                 <select id="glossary-filter-bucket" onchange="filterGlossaryAdmin()">
                   <option value="all">전체</option>
@@ -650,14 +650,14 @@
                   <option value="하">하</option>
                 </select>
               </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-search-admin">용어 검색</label>
                 <input type="text" id="glossary-search-admin" placeholder="한국어, 영어, 프랑스어 검색" oninput="filterGlossaryAdmin()">
               </div>
             </div>
 
             <div class="glossary-admin-form-grid">
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-bucket-input">분류</label>
                 <select id="glossary-bucket-input">
                   <option value="가">가</option>
@@ -677,19 +677,19 @@
                 </select>
                 <small class="admin-field-meta admin-field-meta-block">한국어가 입력되면 초성 기준으로 자동 분류됩니다.</small>
               </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-ko-input">한국어</label>
                 <input type="text" id="glossary-ko-input" maxlength="120" placeholder="예: 대장">
               </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-en-input">영어</label>
                 <input type="text" id="glossary-en-input" maxlength="160" placeholder="예: Patrol Leader">
               </div>
-              <div class="form-group" style="margin:0;">
+              <div class="form-group admin-form-group-reset">
                 <label for="glossary-fr-input">프랑스어</label>
                 <input type="text" id="glossary-fr-input" maxlength="160" placeholder="예: Chef de patrouille">
               </div>
-              <div class="form-group glossary-description-field" style="margin:0;">
+              <div class="form-group glossary-description-field admin-form-group-reset">
                 <label for="glossary-description-input">한국어 설명</label>
                 <textarea id="glossary-description-input" rows="3" maxlength="800" placeholder="용어의 의미나 쓰임을 한국어로 설명합니다."></textarea>
               </div>
@@ -814,78 +814,78 @@
               </div>
               <div class="calendar-form-actions">
                 <button type="button" class="submit-btn admin-inline-submit" id="calendar-submit-btn" onclick="submitCalendarEvent()">일정 저장</button>
-                <button type="button" class="cancel-btn admin-inline-cancel" id="calendar-cancel-btn" onclick="cancelCalendarEdit()" style="display:none;">수정 취소</button>
+                <button type="button" class="cancel-btn admin-inline-cancel admin-hidden" id="calendar-cancel-btn" onclick="cancelCalendarEdit()">수정 취소</button>
               </div>
             </div>
             <div class="calendar-settings-card">
               <div class="panel-header"><h3>캘린더 메뉴명 · 문구 관리</h3></div>
               <p class="admin-section-note">공개 캘린더 페이지의 제목, 보기 전환 버튼, 상태 패널, 지도 안내처럼 사용자가 읽는 메뉴명과 문구를 여기서 수정합니다.</p>
               <div class="glossary-admin-form-grid">
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-page-title">페이지 제목</label>
                   <input type="text" id="calendar-copy-page-title" maxlength="80" placeholder="예: 일정 캘린더">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-page-description">페이지 설명</label>
                   <input type="text" id="calendar-copy-page-description" maxlength="160" placeholder="페이지 상단 설명">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-month-view-label">월간 버튼</label>
                   <input type="text" id="calendar-copy-month-view-label" maxlength="40" placeholder="예: 월간 일정보기">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-year-view-label">연간 버튼</label>
                   <input type="text" id="calendar-copy-year-view-label" maxlength="40" placeholder="예: 연간 일정보기">
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-month-summary">월간 안내 문구</label>
                   <textarea id="calendar-copy-month-summary" rows="2" maxlength="200" placeholder="월간 보기 안내 문구"></textarea>
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-year-summary">연간 안내 문구</label>
                   <textarea id="calendar-copy-year-summary" rows="2" maxlength="200" placeholder="연간 보기 안내 문구"></textarea>
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-today-button-label">오늘 버튼</label>
                   <input type="text" id="calendar-copy-today-button-label" maxlength="40" placeholder="예: 오늘로 가기">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-add-event-label">일정 추가 버튼</label>
                   <input type="text" id="calendar-copy-add-event-label" maxlength="40" placeholder="예: 일정 추가">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-status-panel-label">상태 패널 제목</label>
                   <input type="text" id="calendar-copy-status-panel-label" maxlength="40" placeholder="예: 상태별 일정">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-map-title">지도 제목</label>
                   <input type="text" id="calendar-copy-map-title" maxlength="40" placeholder="예: 캘린더 지도">
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-map-help">지도 안내 문구</label>
                   <textarea id="calendar-copy-map-help" rows="2" maxlength="200" placeholder="지도 안내 문구"></textarea>
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-ongoing-label">진행중 라벨</label>
                   <input type="text" id="calendar-copy-ongoing-label" maxlength="40" placeholder="예: 진행중">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-upcoming-label">개최예정 라벨</label>
                   <input type="text" id="calendar-copy-upcoming-label" maxlength="40" placeholder="예: 개최예정">
                 </div>
-                <div class="form-group" style="margin:0;">
+                <div class="form-group admin-form-group-reset">
                   <label for="calendar-copy-finished-label">행사종료 라벨</label>
                   <input type="text" id="calendar-copy-finished-label" maxlength="40" placeholder="예: 행사종료">
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-ongoing-empty">진행중 없음 문구</label>
                   <textarea id="calendar-copy-ongoing-empty" rows="2" maxlength="160" placeholder="진행중 상태가 없을 때 문구"></textarea>
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-upcoming-empty">개최예정 없음 문구</label>
                   <textarea id="calendar-copy-upcoming-empty" rows="2" maxlength="160" placeholder="개최예정 상태가 없을 때 문구"></textarea>
                 </div>
-                <div class="form-group glossary-description-field" style="margin:0;">
+                <div class="form-group glossary-description-field admin-form-group-reset">
                   <label for="calendar-copy-finished-empty">행사종료 없음 문구</label>
                   <textarea id="calendar-copy-finished-empty" rows="2" maxlength="160" placeholder="행사종료 상태가 없을 때 문구"></textarea>
                 </div>
@@ -999,7 +999,7 @@
           </div>
         </div>
 
-        <div class="panel" id="settings-site-meta" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-spaced" id="settings-site-meta" data-role-min="full">
           <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
@@ -1022,7 +1022,7 @@
                   <label for="site-footer-domain">도메인</label>
                   <input type="text" id="site-footer-domain" maxlength="120" placeholder="bpmedia.net" />
                 </div>
-                <div style="grid-column: 1 / -1;">
+                <div class="admin-grid-span-full">
                   <label for="site-footer-description">소개 문구</label>
                   <textarea id="site-footer-description" rows="4" maxlength="260" placeholder="BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다."></textarea>
                 </div>
@@ -1039,18 +1039,20 @@
                 <div class="share-meta-card-head">미리보기</div>
                 <div id="site-footer-preview" class="footer-editor-preview"></div>
               </div>
-              <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin-top:12px;" onclick="saveSiteMeta()">푸터 문구 저장</button>
+              <button class="submit-btn admin-btn-auto admin-btn-tight admin-btn-top-gap" type="button" onclick="saveSiteMeta()">푸터 문구 저장</button>
             </div>
 
-            <div style="margin-top:18px;">
-              <label style="display:block;font-family: AliceDigitalLearning, sans-serif;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">공유 대표 이미지</label>
-              <button class="submit-btn" type="button" style="width:auto;padding:10px 18px;margin:0;" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
-              <button class="cancel-btn visible" type="button" style="width:auto;padding:10px 18px;margin:0 0 0 8px;" onclick="removeSiteMetaImage()">이미지 제거</button>
-              <div id="site-meta-image-preview" style="margin-top:12px;"></div>
-              <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:8px;">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
+            <div class="admin-share-image-block">
+              <label class="admin-field-label" for="site-meta-image-preview">공유 대표 이미지</label>
+              <div class="admin-inline-actions">
+                <button class="submit-btn admin-btn-auto admin-btn-tight" type="button" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
+                <button class="cancel-btn visible admin-btn-auto admin-btn-tight" type="button" onclick="removeSiteMetaImage()">이미지 제거</button>
+              </div>
+              <div id="site-meta-image-preview" class="admin-preview-top-gap"></div>
+              <p class="admin-help-copy">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
             </div>
 
-            <div class="form-row" style="margin-top:18px;">
+            <div class="form-row admin-form-row-top-gap">
               <div class="form-group">
                 <label for="site-google-verification">Google Search Console 인증 코드</label>
                 <input type="text" id="site-google-verification" placeholder="google-site-verification content 값" maxlength="120" />
@@ -1060,41 +1062,40 @@
                 <input type="text" id="site-naver-verification" placeholder="naver-site-verification content 값" maxlength="120" />
               </div>
             </div>
-            <p style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);margin-top:4px;">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
+            <p class="admin-help-copy admin-help-copy-tight">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
 
-            <button class="submit-btn" style="margin-top:18px;" onclick="saveSiteMeta()">공유 설정 저장</button>
+            <button class="submit-btn admin-btn-top-gap" onclick="saveSiteMeta()">공유 설정 저장</button>
           </div>
         </div>
 
         <!-- Ticker -->
-        <div class="panel" id="settings-ticker" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-spaced" id="settings-ticker" data-role-min="full">
           <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">한 줄에 텍스트 하나씩 입력하세요.</p>
-            <textarea id="ticker-textarea" rows="5" style="width:100%;padding:11px 14px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;color:var(--ink);resize:vertical;outline:none;" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
-            <button class="submit-btn" style="margin-top:12px;" onclick="saveTicker()">티커 저장</button>
+            <textarea id="ticker-textarea" rows="5" class="admin-textarea-standard" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
+            <button class="submit-btn admin-btn-top-gap" onclick="saveTicker()">티커 저장</button>
           </div>
         </div>
 
         <!-- AI Disclaimer -->
-        <div class="panel" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-spaced" data-role-min="full">
           <div class="panel-header"><h2>AI 도움 문구 설정</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">AI 지원 글 하단에 표시될 문구입니다.</p>
             <div class="admin-inline-save">
-              <input type="text" id="ai-disclaimer-input" class="admin-inline-save-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500"
-                style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
+              <input type="text" id="ai-disclaimer-input" class="admin-inline-save-input admin-inline-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500" />
               <button class="submit-btn admin-inline-save-btn admin-inline-save-btn-compact" onclick="saveAiDisclaimer()">저장</button>
             </div>
           </div>
         </div>
 
-        <div class="panel" id="settings-copy" data-role-min="full" style="margin-bottom:24px;">
+        <div class="panel admin-panel-spaced" id="settings-copy" data-role-min="full">
           <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
-            <div id="category-copy-manager" style="display:flex;flex-direction:column;gap:12px;"></div>
-            <button class="submit-btn" style="margin-top:16px;" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
+            <div id="category-copy-manager" class="admin-flex-column-gap"></div>
+            <button class="submit-btn admin-btn-top-gap-lg" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
           </div>
         </div>
 
@@ -1111,21 +1112,21 @@
             <div class="admin-inline-controls">
               <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
               <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
-                style="width:96px;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);box-sizing:border-box;" />
+                class="admin-inline-number-input" />
               <span class="admin-inline-unit">초</span>
-              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
+              <button type="button" class="submit-btn admin-btn-auto admin-btn-compact" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
             </div>
-            <div id="hero-slots" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+            <div id="hero-slots" class="admin-stack-list"></div>
             <div class="admin-settings-actions">
               <span class="admin-inline-note">슬라이드 카드에서 조정한 이미지 위치, 크기, 노출 시간은 아래 저장 버튼으로 함께 반영합니다.</span>
-              <button type="button" class="submit-btn" style="width:auto;padding:9px 16px;margin:0;" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
+              <button type="button" class="submit-btn admin-btn-auto admin-btn-compact" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
             </div>
             <div class="admin-search-panel">
               <div class="admin-search-panel-title">기사 추가</div>
               <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
-                style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                class="admin-search-input"
                 oninput="heroSearch()" />
-              <div id="hero-search-results" style="margin-top:8px;max-height:320px;overflow:auto;"></div>
+              <div id="hero-search-results" class="admin-search-results admin-search-results-lg"></div>
             </div>
           </div>
         </div>
@@ -1154,9 +1155,9 @@
               <div class="admin-search-panel admin-search-panel-soft">
                 <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
                 <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
-                  style="width:100%;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                  class="admin-search-input"
                   oninput="searchHomeLeadPost()" />
-                <div id="home-lead-search-results" style="margin-top:8px;max-height:280px;overflow:auto;"></div>
+                <div id="home-lead-search-results" class="admin-search-results admin-search-results-md"></div>
               </div>
             </div>
           </div>
@@ -1169,25 +1170,25 @@
           <div class="panel-body">
             <p class="admin-section-note">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
             <p class="admin-section-note">행을 드래그해서 순서를 변경할 수 있습니다.</p>
-            <div id="contributors-admin-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
-            <div style="border:1px solid var(--border);padding:16px;background:var(--bg);">
-              <div id="contrib-form-label" style="font-family: AliceDigitalLearning, sans-serif;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">새 분 추가</div>
-              <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <div id="contributors-admin-list" class="admin-stack-list"></div>
+            <div class="admin-contrib-form">
+              <div id="contrib-form-label" class="admin-contrib-form-label">새 분 추가</div>
+              <div class="admin-contrib-row">
                 <input type="text" id="contrib-name-input" placeholder="이름 (최대 60자)" maxlength="60"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
+                  class="admin-contrib-input" />
               </div>
-              <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <div class="admin-contrib-row">
                 <input type="text" id="contrib-note-input" placeholder="도움 내용 (최대 200자)" maxlength="200"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:13px;outline:none;" />
+                  class="admin-contrib-input" />
               </div>
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-                <label style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);white-space:nowrap;margin:0;">도움 날짜</label>
+              <div class="admin-contrib-row admin-contrib-row-date">
+                <label class="admin-contrib-date-label">도움 날짜</label>
                 <input type="date" id="contrib-date-input"
-                  style="flex:1;padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);" />
+                  class="admin-contrib-date-input" />
               </div>
-              <div style="display:flex;gap:8px;">
-                <button class="submit-btn" style="padding:9px 20px;margin:0;" id="contrib-submit-btn" onclick="submitContributor()">추가</button>
-                <button id="contrib-cancel-btn" onclick="cancelEditContributor()" style="display:none;padding:9px 20px;border:1px solid var(--border);background:none;font-family: AliceDigitalLearning, sans-serif;font-size:11px;cursor:pointer;color:var(--muted);">취소</button>
+              <div class="admin-inline-actions">
+                <button class="submit-btn admin-btn-compact" id="contrib-submit-btn" onclick="submitContributor()">추가</button>
+                <button id="contrib-cancel-btn" class="admin-contrib-cancel admin-hidden" onclick="cancelEditContributor()">취소</button>
               </div>
             </div>
           </div>
@@ -1199,10 +1200,10 @@
           <div class="panel-header"><h2>UI 번역 관리</h2></div>
           <div class="panel-body">
             <p class="admin-section-note">버튼과 메뉴의 국문/영문 텍스트를 수정하세요.</p>
-            <div id="translations-table" style="display:flex;flex-direction:column;gap:8px;">
-              <div style="font-size:12px;color:var(--muted);">불러오는 중…</div>
+            <div id="translations-table" class="admin-flex-column-gap">
+              <div class="translations-loading">불러오는 중…</div>
             </div>
-            <button class="submit-btn" style="margin-top:16px;" onclick="saveTranslations()">번역 저장</button>
+            <button class="submit-btn admin-btn-top-gap-lg" onclick="saveTranslations()">번역 저장</button>
           </div>
         </div>
       </div>
@@ -1241,11 +1242,11 @@
   </div>
 
   </main>
-  <script src="/js/main.js?v=0.086.00"></script>
-  <script src="/js/admin.js?v=0.086.00"></script>
-  <script src="/js/admin-glossary.js?v=0.086.00"></script>
-  <script src="/js/admin-history.js?v=0.086.00"></script>
-  <script src="/js/admin-contributors.js?v=0.086.00"></script>
+  <script src="/js/main.js?v=0.087.00"></script>
+  <script src="/js/admin.js?v=0.087.00"></script>
+  <script src="/js/admin-glossary.js?v=0.087.00"></script>
+  <script src="/js/admin-history.js?v=0.087.00"></script>
+  <script src="/js/admin-contributors.js?v=0.087.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
