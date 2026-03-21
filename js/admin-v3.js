@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.01
+ * Version: V3.001.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -892,8 +892,7 @@
   function _populateTagDropdown(cat) {
     var sel = document.getElementById('w-tag');
     var current = sel.value;
-    var cats = (_tagSettings && _tagSettings.categories) ? _tagSettings.categories : {};
-    var tags = (cats[cat] && cats[cat].tags) ? cats[cat].tags : [];
+    var tags = _getCategoryTags(_tagSettings, cat);
     sel.innerHTML = '<option value="">없음</option>' + tags.map(function (t) {
       var label = typeof t === 'string' ? t : (t.label || t.value || t);
       var value = typeof t === 'string' ? t : (t.value || t.label || t);
@@ -915,7 +914,7 @@
       var data = results[0];
       _calItems = (data && data.events) || (data && data.items) || [];
       var tagData = results[1] || {};
-      _calCats = Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []);
+      _calCats = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
 
       // Populate category filter
       var catSel = document.getElementById('cal-filter-cat');
@@ -1267,7 +1266,7 @@
     var el = document.getElementById('hero-slots');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     GW.apiFetch('/api/settings/hero').then(function (data) {
-      _heroPostIds  = (data && data.post_ids)  || [];
+      _heroPostIds  = (data && data.post_ids) || ((data && Array.isArray(data.posts)) ? data.posts.map(function (p) { return p.id; }).filter(Boolean) : []);
       _heroInterval = (data && data.interval_ms) || 3000;
       document.getElementById('hero-interval').value = _heroInterval;
       _renderHeroSlots();
@@ -1361,10 +1360,9 @@
 
   function _renderTagsEditor() {
     var el = document.getElementById('tags-editor');
-    var cats = (_tagSettings && _tagSettings.categories) ? _tagSettings.categories : {};
     var catKeys = ['korea', 'apr', 'wosm', 'people'];
     el.innerHTML = catKeys.map(function (cat) {
-      var tags = (cats[cat] && cats[cat].tags) ? cats[cat].tags : [];
+      var tags = _getCategoryTags(_tagSettings, cat);
       var tagsStr = tags.map(function (t) {
         return typeof t === 'string' ? t : (t.label || t.value || JSON.stringify(t));
       }).join(', ');
@@ -1377,16 +1375,17 @@
   }
 
   function _saveTags() {
+    var common = (_tagSettings && Array.isArray(_tagSettings.common)) ? _tagSettings.common.slice() : [];
     var cats = {};
     ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
       var input = document.getElementById('tags-cat-' + cat);
       var tags = input ? input.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
-      cats[cat] = { tags: tags };
+      cats[cat] = tags;
     });
     document.getElementById('tags-save-btn').disabled = true;
     GW.apiFetch('/api/settings/tags', {
       method: 'PUT',
-      body: JSON.stringify({ categories: cats }),
+      body: JSON.stringify({ common: common, categories: cats }),
     }).then(function () {
       GW.showToast('태그 설정을 저장했습니다', 'success');
       _tagSettings = { categories: cats };
@@ -1479,7 +1478,7 @@
       GW.apiFetch('/api/settings/author').catch(function () { return {}; }),
       GW.apiFetch('/api/settings/ai-disclaimer').catch(function () { return {}; }),
     ]).then(function (results) {
-      document.getElementById('s-author-name').value  = (results[0] && results[0].name) || '';
+      document.getElementById('s-author-name').value  = (results[0] && (results[0].author || results[0].name)) || '';
       document.getElementById('s-ai-disclaimer').value = (results[1] && results[1].text) || '';
     });
   }
@@ -1489,7 +1488,7 @@
     var disc = document.getElementById('s-ai-disclaimer').value.trim();
     document.getElementById('author-save-btn').disabled = true;
     Promise.all([
-      GW.apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ name: name }) }),
+      GW.apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name }) }),
       GW.apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc }) }),
     ]).then(function () {
       GW.showToast('저장했습니다', 'success');
@@ -1562,7 +1561,13 @@
     var el = document.getElementById('contrib-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     GW.apiFetch('/api/settings/contributors').then(function (data) {
-      _contributors = Array.isArray(data) ? data : (data && data.items) || [];
+      _contributors = (Array.isArray(data) ? data : (data && data.items) || []).map(function (item) {
+        return {
+          name: item && item.name || '',
+          role: item && (item.role || item.note) || '',
+          date: item && item.date || '',
+        };
+      });
       _renderContributors();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
@@ -1604,7 +1609,14 @@
       if (_contributors[i]) _contributors[i][field] = input.value;
     });
     document.getElementById('contrib-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: _contributors }) })
+    var payload = _contributors.map(function (item) {
+      return {
+        name: item && item.name || '',
+        note: item && (item.role || item.note) || '',
+        date: item && item.date || '',
+      };
+    });
+    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
       .then(function () { GW.showToast('기고자 목록을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('contrib-save-btn').disabled = false; });
@@ -1617,7 +1629,19 @@
     var el = document.getElementById('editors-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     GW.apiFetch('/api/settings/editors').then(function (data) {
-      _editors = Array.isArray(data) ? data : (data && data.editors) || [];
+      var editors = Array.isArray(data) ? data : (data && data.editors) || [];
+      if (!Array.isArray(editors) && editors && typeof editors === 'object') {
+        _editors = ['A', 'B', 'C'].map(function (letter) {
+          return { key: letter, name: editors[letter] || '' };
+        });
+      } else {
+        _editors = (editors || []).map(function (item, index) {
+          return {
+            key: item && (item.key || item.letter) || String.fromCharCode(65 + index),
+            name: item && item.name || '',
+          };
+        });
+      }
       _renderEditors();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
@@ -1630,12 +1654,8 @@
     }
     el.innerHTML = _editors.map(function (e, i) {
       return '<div class="v3-person-row">' +
+        '<div class="v3-badge v3-badge-gray" style="width:72px;text-align:center;flex:0 0 72px;">Editor ' + GW.escapeHtml(e.key || '') + '</div>' +
         '<input class="v3-input" type="text" value="' + GW.escapeHtml(e.name || '') + '" placeholder="편집자명" data-editor-i="' + i + '" data-field="name" style="flex:1;" />' +
-        '<select class="v3-select" data-editor-i="' + i + '" data-field="level" style="width:120px;">' +
-          '<option value="full"' + (e.level === 'full' ? ' selected' : '') + '>full</option>' +
-          '<option value="editor"' + (e.level === 'editor' ? ' selected' : '') + '>editor</option>' +
-        '</select>' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="V3._removeEditor(' + i + ')">×</button>' +
       '</div>';
     }).join('');
     el.querySelectorAll('[data-editor-i]').forEach(function (input) {
@@ -1650,8 +1670,12 @@
     });
   }
 
-  function _addEditorRow() { _editors.push({ name: '', level: 'editor' }); _renderEditors(); }
-  V3._removeEditor = function (i) { _editors.splice(i, 1); _renderEditors(); };
+  function _addEditorRow() {
+    GW.showToast('편집자 슬롯은 Editor A~C 고정입니다', 'error');
+  }
+  V3._removeEditor = function () {
+    GW.showToast('편집자 슬롯은 삭제할 수 없습니다', 'error');
+  };
 
   function _saveEditors() {
     document.querySelectorAll('#editors-list [data-editor-i]').forEach(function (input) {
@@ -1659,7 +1683,12 @@
       if (_editors[i]) _editors[i][input.dataset.field] = input.value;
     });
     document.getElementById('editors-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: _editors }) })
+    var editorsPayload = {};
+    _editors.forEach(function (item, index) {
+      var key = item && item.key ? item.key : String.fromCharCode(65 + index);
+      editorsPayload[key] = item && item.name ? item.name : '';
+    });
+    GW.apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
       .then(function () { GW.showToast('편집자 설정을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('editors-save-btn').disabled = false; });
@@ -1672,7 +1701,7 @@
     var el = document.getElementById('trans-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     GW.apiFetch('/api/settings/translations').then(function (data) {
-      _translations = data || {};
+      _translations = (data && data.strings) || data || {};
       _renderTranslations();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
@@ -1685,9 +1714,19 @@
       return;
     }
     el.innerHTML = keys.map(function (k) {
+      var value = _translations[k];
+      if (value && typeof value === 'object') {
+        return '<div class="v3-trans-row">' +
+          '<div class="v3-trans-key">' + GW.escapeHtml(k) + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<input class="v3-input" type="text" id="trans-' + _escId(k) + '-ko" value="' + GW.escapeHtml(value.ko || '') + '" placeholder="국문" />' +
+            '<input class="v3-input" type="text" id="trans-' + _escId(k) + '-en" value="' + GW.escapeHtml(value.en || '') + '" placeholder="영문" />' +
+          '</div>' +
+        '</div>';
+      }
       return '<div class="v3-trans-row">' +
         '<div class="v3-trans-key">' + GW.escapeHtml(k) + '</div>' +
-        '<input class="v3-input" type="text" id="trans-' + _escId(k) + '" value="' + GW.escapeHtml(_translations[k] || '') + '" />' +
+        '<input class="v3-input" type="text" id="trans-' + _escId(k) + '" value="' + GW.escapeHtml(value || '') + '" />' +
       '</div>';
     }).join('');
   }
@@ -1695,11 +1734,21 @@
   function _saveTranslations() {
     var result = {};
     Object.keys(_translations).forEach(function (k) {
-      var input = document.getElementById('trans-' + _escId(k));
-      result[k] = input ? input.value : _translations[k];
+      var value = _translations[k];
+      if (value && typeof value === 'object') {
+        var koInput = document.getElementById('trans-' + _escId(k) + '-ko');
+        var enInput = document.getElementById('trans-' + _escId(k) + '-en');
+        result[k] = {
+          ko: koInput ? koInput.value : (value.ko || ''),
+          en: enInput ? enInput.value : (value.en || ''),
+        };
+      } else {
+        var input = document.getElementById('trans-' + _escId(k));
+        result[k] = input ? input.value : value;
+      }
     });
     document.getElementById('trans-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify(result) })
+    GW.apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
       .then(function () { GW.showToast('번역 설정을 저장했습니다', 'success'); _translations = result; })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('trans-save-btn').disabled = false; });
@@ -1738,6 +1787,14 @@
   function _catBadge(cat) {
     var map = { korea: 'v3-badge-blue', apr: 'v3-badge-green', wosm: 'v3-badge-yellow', people: 'v3-badge-blue' };
     return map[cat] || 'v3-badge-gray';
+  }
+
+  function _getCategoryTags(settings, cat) {
+    var categories = settings && settings.categories ? settings.categories : {};
+    var raw = categories[cat];
+    if (Array.isArray(raw)) return raw;
+    if (raw && Array.isArray(raw.tags)) return raw.tags;
+    return [];
   }
 
   function _kstNow() {
