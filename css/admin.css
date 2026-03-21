@@ -4244,6 +4244,49 @@ body.admin-page .admin-selected-post-title {
   }
 }
 
+@media (min-width: 961px) {
+  body.admin-page main#main-content {
+    display: block !important;
+    width: 100% !important;
+    max-width: 1366px !important;
+    margin: 0 auto !important;
+    padding: 24px 20px 72px !important;
+  }
+
+  body.admin-page .admin-screen {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+  }
+
+  body.admin-page .admin-header-top,
+  body.admin-page .admin-shell {
+    width: 100% !important;
+    max-width: 1366px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    justify-items: stretch !important;
+  }
+
+  body.admin-page .admin-header-top {
+    display: grid !important;
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) !important;
+    gap: 18px !important;
+  }
+
+  body.admin-page .admin-shell {
+    display: grid !important;
+    grid-template-columns: 268px minmax(0, 1fr) !important;
+    gap: 18px !important;
+    align-items: start !important;
+  }
+
+  body.admin-page .admin-sidebar {
+    position: sticky !important;
+    top: 18px !important;
+  }
+}
+
 @media (max-width: 420px) {
   body.admin-page .form-row,
   body.admin-page .share-meta-grid,
@@ -4259,4 +4302,3 @@ body.admin-page .admin-selected-post-title {
     flex-basis: 100% !important;
   }
 }
-
