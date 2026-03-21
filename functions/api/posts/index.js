@@ -35,6 +35,7 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
   const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
+  const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
@@ -76,7 +77,12 @@ export async function onRequestGet({ request, env }) {
       conditions.push('featured = 1', 'published = 1');
     } else {
       if (category)  { conditions.push('category = ?'); baseArgs.push(category); }
-      if (!isAdmin)  { conditions.push('published = 1'); }
+      if (!isAdmin)  {
+        conditions.push('published = 1');
+      } else if (publishedParam !== null) {
+        conditions.push('published = ?');
+        baseArgs.push(publishedParam);
+      }
       if (daysFilter > 0) {
         conditions.push("datetime(COALESCE(publish_at, created_at)) >= datetime(?, ?)");
         baseArgs.push('now', '-' + daysFilter + ' days');
@@ -172,7 +178,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   const upgradedContent = await safelyUpgradeEditorContentImages(content.trim(), env, origin, 'inline');
-  const storedCover = await safelyStoreDataImage(env, sanitizeUrl(image_url, origin), origin, 'cover');
+  const resolvedCoverSource = sanitizeUrl(body.image_data, origin) || sanitizeUrl(image_url, origin);
+  const storedCover = await safelyStoreDataImage(env, resolvedCoverSource, origin, 'cover');
   const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
@@ -183,7 +190,7 @@ export async function onRequestPost({ request, env }) {
   const safeLocationAddress = sanitizeShortText(location_address, 300);
   const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
   const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
-  const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts);
+  const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts || body.related_posts_json);
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
 
@@ -255,6 +262,13 @@ function sanitizeCaption(value) {
 }
 
 function normalizeGalleryImages(rawItems) {
+  if (typeof rawItems === 'string') {
+    try {
+      return normalizeGalleryImages(JSON.parse(rawItems));
+    } catch (_) {
+      return [];
+    }
+  }
   if (!Array.isArray(rawItems)) return [];
   return rawItems.map(function (item) {
     if (typeof item === 'string') return { url: item, caption: '' };
@@ -310,6 +324,26 @@ function normalizeCategory(value) {
   return value;
 }
 
+function normalizeDateInput(value) {
+  var trimmed = String(value || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : null;
+}
+
+function normalizeSort(value, hasSearch) {
+  var normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'oldest') return 'oldest';
+  if (normalized === 'views') return 'views';
+  if (normalized === 'manual') return 'manual';
+  if (normalized === 'relevance' && hasSearch) return 'relevance';
+  return 'latest';
+}
+
+function normalizePublishedFilter(value) {
+  if (value === '1' || value === 1 || value === true || value === 'true' || value === 'published') return 1;
+  if (value === '0' || value === 0 || value === false || value === 'false' || value === 'draft') return 0;
+  return null;
+}
+
 function normalizePublishAtInput(publishAt, publishDate) {
   const precise = String(publishAt || '').trim();
   if (precise) {
@@ -324,6 +358,13 @@ function normalizePublishAtInput(publishAt, publishDate) {
 }
 
 function normalizeManualRelatedPosts(raw) {
+  if (typeof raw === 'string') {
+    try {
+      return normalizeManualRelatedPosts(JSON.parse(raw));
+    } catch (_) {
+      return null;
+    }
+  }
   if (!Array.isArray(raw)) return null;
   var seen = new Set();
   var ids = raw.map(function (item) {
