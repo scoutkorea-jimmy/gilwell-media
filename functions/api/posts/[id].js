@@ -53,6 +53,7 @@ export async function onRequestGet({ params, env, request }) {
     post.related_posts = relatedPosts;
     post.manual_related_posts = manualRelatedPosts;
     post.manual_related_post_ids = parseManualRelatedIds(post.manual_related_posts);
+    post.related_posts_json = post.manual_related_posts || JSON.stringify(post.manual_related_post_ids || []);
     post.special_feature_posts = specialFeaturePosts;
 
     const origin = new URL(request.url).origin;
@@ -115,8 +116,8 @@ export async function onRequestPut({ params, request, env }) {
   }
   let oldImageToDelete = '';
   let oldGalleryToDelete = [];
-  if (image_url !== undefined) {
-    const storedCover = await safelyStoreDataImage(env, sanitizeUrl(image_url, origin), origin, 'cover');
+  if (image_url !== undefined || body.image_data !== undefined) {
+    const storedCover = await safelyStoreDataImage(env, sanitizeUrl(body.image_data, origin) || sanitizeUrl(image_url, origin), origin, 'cover');
     fields.push('image_url = ?');
     values.push(storedCover.url);
     if (currentPost && currentPost.image_url && currentPost.image_url !== storedCover.url) {
@@ -143,7 +144,10 @@ export async function onRequestPut({ params, request, env }) {
   }
   if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
   if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
-  if (manual_related_posts !== undefined) { fields.push('manual_related_posts = ?'); values.push(normalizeManualRelatedPosts(manual_related_posts)); }
+  if (manual_related_posts !== undefined || body.related_posts_json !== undefined) {
+    fields.push('manual_related_posts = ?');
+    values.push(normalizeManualRelatedPosts(manual_related_posts !== undefined ? manual_related_posts : body.related_posts_json));
+  }
   const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
   if (publish_at !== undefined || publish_date !== undefined) {
     if (normalizedPublishAt) {
@@ -311,6 +315,13 @@ function sanitizeShortText(value, maxLength) {
 }
 
 function normalizeGalleryImages(rawItems) {
+  if (typeof rawItems === 'string') {
+    try {
+      return normalizeGalleryImages(JSON.parse(rawItems));
+    } catch (_) {
+      return [];
+    }
+  }
   if (!Array.isArray(rawItems)) return [];
   return rawItems.map(function (item) {
     if (typeof item === 'string') return { url: item, caption: '' };
@@ -431,6 +442,13 @@ function diffRemovedGalleryUrls(previousRaw, nextItems) {
 }
 
 function normalizeManualRelatedPosts(raw) {
+  if (typeof raw === 'string') {
+    try {
+      return normalizeManualRelatedPosts(JSON.parse(raw));
+    } catch (_) {
+      return null;
+    }
+  }
   if (!Array.isArray(raw)) return null;
   var seen = new Set();
   var ids = raw.map(function (item) {
