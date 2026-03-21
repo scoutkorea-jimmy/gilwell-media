@@ -1,6 +1,17 @@
 {
   "items": [
     {
+      "version": "3.001.03",
+      "date": "2026-03-21",
+      "type": "Hotfix",
+      "summary": "관리자 V3의 대시보드, 분석, 마케팅 화면이 실제 API 응답과 맞지 않아 0 또는 빈 데이터처럼 보이던 문제를 수정했습니다.",
+      "changes": [
+        "대시보드가 admin analytics의 today/summary/visitors 데이터를 올바르게 읽고 전체/공개 게시글 수도 실제 posts API total 기준으로 표시하도록 고쳤습니다.",
+        "분석 화면이 range_visits, range_pageviews, average_dwell_seconds, top_paths, referrers 같은 실제 응답 필드를 기준으로 카드와 목록을 그리도록 맞췄습니다.",
+        "마케팅 화면은 funnel의 users/rate 구조와 top_transitions, utm_campaigns를 실제 응답 기준으로 렌더링하도록 보강했습니다."
+      ]
+    },
+    {
       "version": "3.001.02",
       "date": "2026-03-21",
       "type": "Hotfix",
