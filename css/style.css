@@ -12137,6 +12137,249 @@ body.admin-page .analytics-item span {
   text-transform: uppercase !important;
 }
 
+body.admin-page .admin-section-top-gap {
+  margin-top: 24px !important;
+}
+
+body.admin-page .admin-hidden {
+  display: none !important;
+}
+
+body.admin-page .admin-inline-loading,
+body.admin-page .translations-loading {
+  font-size: 11px !important;
+  color: var(--muted) !important;
+}
+
+body.admin-page .admin-flex-1 {
+  flex: 1 1 auto !important;
+}
+
+body.admin-page .admin-form-group-reset {
+  margin: 0 !important;
+}
+
+body.admin-page .admin-list-tab-btn {
+  flex: 1 1 0 !important;
+  padding: 10px 0 !important;
+  border: none !important;
+  cursor: pointer !important;
+  background: var(--bg) !important;
+  color: var(--muted) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 10px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+}
+
+body.admin-page .admin-list-tab-btn.active {
+  background: var(--black) !important;
+  color: var(--white) !important;
+}
+
+body.admin-page .admin-panel-spaced {
+  margin-bottom: 24px !important;
+}
+
+body.admin-page .admin-grid-span-full {
+  grid-column: 1 / -1 !important;
+}
+
+body.admin-page .admin-btn-auto {
+  width: auto !important;
+}
+
+body.admin-page .admin-btn-tight {
+  padding: 10px 18px !important;
+  margin: 0 !important;
+}
+
+body.admin-page .admin-btn-compact {
+  width: auto !important;
+  padding: 9px 16px !important;
+  margin: 0 !important;
+}
+
+body.admin-page .admin-btn-top-gap {
+  margin-top: 12px !important;
+}
+
+body.admin-page .admin-btn-top-gap-lg {
+  margin-top: 16px !important;
+}
+
+body.admin-page .admin-share-image-block {
+  margin-top: 18px !important;
+}
+
+body.admin-page .admin-field-label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: var(--muted) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 10px !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}
+
+body.admin-page .admin-inline-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+body.admin-page .admin-preview-top-gap {
+  margin-top: 12px !important;
+}
+
+body.admin-page .admin-help-copy {
+  margin-top: 8px !important;
+  color: var(--muted) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 10px !important;
+}
+
+body.admin-page .admin-help-copy-tight {
+  margin-top: 4px !important;
+}
+
+body.admin-page .admin-form-row-top-gap {
+  margin-top: 18px !important;
+}
+
+body.admin-page .admin-textarea-standard {
+  width: 100% !important;
+  padding: 11px 14px !important;
+  border: 1px solid var(--border) !important;
+  color: var(--ink) !important;
+  resize: vertical !important;
+  outline: none !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 12px !important;
+  box-sizing: border-box !important;
+}
+
+body.admin-page .admin-inline-input {
+  padding: 9px 12px !important;
+  border: 1px solid var(--border) !important;
+  outline: none !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 13px !important;
+}
+
+body.admin-page .admin-flex-column-gap {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+body.admin-page .admin-inline-number-input {
+  width: 96px !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--border) !important;
+  outline: none !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  box-sizing: border-box !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 12px !important;
+}
+
+body.admin-page .admin-stack-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-bottom: 16px !important;
+}
+
+body.admin-page .admin-search-input {
+  width: 100% !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--border) !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 13px !important;
+}
+
+body.admin-page .admin-search-results {
+  margin-top: 8px !important;
+  overflow: auto !important;
+}
+
+body.admin-page .admin-search-results-lg {
+  max-height: 320px !important;
+}
+
+body.admin-page .admin-search-results-md {
+  max-height: 280px !important;
+}
+
+body.admin-page .admin-contrib-form {
+  border: 1px solid var(--border) !important;
+  padding: 16px !important;
+  background: var(--bg) !important;
+}
+
+body.admin-page .admin-contrib-form-label {
+  margin-bottom: 12px !important;
+  color: var(--muted) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 9px !important;
+  letter-spacing: .1em !important;
+  text-transform: uppercase !important;
+}
+
+body.admin-page .admin-contrib-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+body.admin-page .admin-contrib-row-date {
+  align-items: center !important;
+  margin-bottom: 12px !important;
+}
+
+body.admin-page .admin-contrib-input {
+  flex: 1 1 auto !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--border) !important;
+  outline: none !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 13px !important;
+}
+
+body.admin-page .admin-contrib-date-label {
+  margin: 0 !important;
+  white-space: nowrap !important;
+  color: var(--muted) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 10px !important;
+}
+
+body.admin-page .admin-contrib-date-input {
+  flex: 1 1 auto !important;
+  padding: 9px 12px !important;
+  border: 1px solid var(--border) !important;
+  outline: none !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 12px !important;
+}
+
+body.admin-page .admin-contrib-cancel {
+  padding: 9px 20px !important;
+  border: 1px solid var(--border) !important;
+  background: none !important;
+  color: var(--muted) !important;
+  cursor: pointer !important;
+  font-family: AliceDigitalLearning, sans-serif !important;
+  font-size: 11px !important;
+}
+
 body.admin-page .item-meta-chip span {
   font-size: 11px !important;
   line-height: 1.45 !important;
