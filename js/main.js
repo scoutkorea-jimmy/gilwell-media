@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '3.001.05';
+  GW.APP_VERSION = '3.001.06';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1108,7 +1108,7 @@
           if (!(key in err)) err[key] = data[key];
         });
       }
-      if (res.status === 401 && typeof document !== 'undefined' && document.body && document.body.classList.contains('admin-page')) {
+      if (res.status === 401 && typeof document !== 'undefined' && document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) {
         try {
           GW.clearToken();
         } catch (_) {}
