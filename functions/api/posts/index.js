@@ -28,10 +28,13 @@ export async function onRequestGet({ request, env }) {
   const offset       = (page - 1) * pageSize;
   const q            = url.searchParams.get('q') || null;
   const tagFilter    = url.searchParams.get('tag') || null;
+  const startDate    = normalizeDateInput(url.searchParams.get('start_date'));
+  const endDate      = normalizeDateInput(url.searchParams.get('end_date'));
   const featuredOnly = url.searchParams.get('featured') === '1';
   const specialFeature = sanitizeSpecialFeature(url.searchParams.get('special_feature'));
   const allRequested = url.searchParams.get('all') === '1';
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
+  const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
@@ -42,16 +45,32 @@ export async function onRequestGet({ request, env }) {
   const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
   const ORDER_LATEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
+  const ORDER_OLDEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) ASC, id ASC';
+  const ORDER_VIEWS = 'ORDER BY views DESC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
   const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
-  const ORDER = allRequested && isAdmin ? ORDER_MANUAL : ORDER_LATEST;
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, special_feature, views, author, published, sort_order,
+  const searchScoreExpr = q
+    ? `(
+        CASE WHEN title LIKE ? THEN 60 ELSE 0 END +
+        CASE WHEN COALESCE(subtitle, '') LIKE ? THEN 35 ELSE 0 END +
+        CASE WHEN COALESCE(tag, '') LIKE ? THEN 30 ELSE 0 END +
+        CASE WHEN COALESCE(meta_tags, '') LIKE ? THEN 24 ELSE 0 END +
+        CASE WHEN COALESCE(content, '') LIKE ? THEN 10 ELSE 0 END
+      )`
+    : '0';
+  const ORDER_RELEVANCE = `ORDER BY search_score DESC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC`;
+  const ORDER = allRequested && isAdmin
+    ? ORDER_MANUAL
+    : (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)));
+  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
     youtube_url,
+    ${searchScoreExpr} AS search_score,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 
   try {
     // Build WHERE conditions dynamically
     const conditions = [];
     const baseArgs   = [];
+    const scoreArgs  = [];
 
     if (featuredOnly) {
       conditions.push('featured = 1', 'published = 1');
@@ -62,18 +81,28 @@ export async function onRequestGet({ request, env }) {
         conditions.push("datetime(COALESCE(publish_at, created_at)) >= datetime(?, ?)");
         baseArgs.push('now', '-' + daysFilter + ' days');
       }
+      if (startDate) {
+        conditions.push("date(COALESCE(publish_at, created_at)) >= date(?)");
+        baseArgs.push(startDate);
+      }
+      if (endDate) {
+        conditions.push("date(COALESCE(publish_at, created_at)) <= date(?)");
+        baseArgs.push(endDate);
+      }
       if (q) {
-        conditions.push('(title LIKE ? OR subtitle LIKE ? OR tag LIKE ?)');
+        conditions.push('(title LIKE ? OR COALESCE(subtitle, \'\') LIKE ? OR COALESCE(tag, \'\') LIKE ? OR COALESCE(meta_tags, \'\') LIKE ? OR COALESCE(content, \'\') LIKE ?)');
         const qp = `%${q}%`;
-        baseArgs.push(qp, qp, qp);
+        baseArgs.push(qp, qp, qp, qp, qp);
+        scoreArgs.push(qp, qp, qp, qp, qp);
       }
       if (specialFeature) {
         conditions.push('COALESCE(special_feature, \'\') = ?');
         baseArgs.push(specialFeature);
       }
       if (tagFilter) {
-        conditions.push("(',' || tag || ',') LIKE ('%,' || ? || ',%')");
-        baseArgs.push(tagFilter);
+        const tp = `%${tagFilter}%`;
+        conditions.push("(COALESCE(tag, '') LIKE ? OR COALESCE(meta_tags, '') LIKE ?)");
+        baseArgs.push(tp, tp);
       }
     }
 
@@ -84,8 +113,8 @@ export async function onRequestGet({ request, env }) {
     const countQuery = `SELECT COUNT(*) AS total FROM posts ${WHERE}`;
 
     const postsStmt = allRequested && isAdmin
-      ? env.DB.prepare(postsQuery).bind(...baseArgs)
-      : env.DB.prepare(postsQuery).bind(...baseArgs, pageSize, offset);
+      ? env.DB.prepare(postsQuery).bind(...scoreArgs, ...baseArgs)
+      : env.DB.prepare(postsQuery).bind(...scoreArgs, ...baseArgs, pageSize, offset);
     const { results: posts }     = await postsStmt.all();
     const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
     const total = countRows[0]?.total ?? 0;
