@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.04
+ * Version: V3.001.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1063,7 +1063,30 @@
   /* ══════════════════════════════════════════════════════════
      GLOSSARY
   ══════════════════════════════════════════════════════════ */
-  var GLOS_BUCKETS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하'];
+  var GLOS_MISC_BUCKET = '기타';
+  var GLOS_BUCKETS = ['가','나','다','라','마','바','사','아','자','차','카','타','파','하', GLOS_MISC_BUCKET];
+  var GLOS_CHOSEONG_BUCKETS = ['가','가','나','다','다','라','마','바','바','사','사','아','자','자','차','카','타','파','하'];
+
+  function _glosInferBucket(termKo) {
+    var first = String(termKo || '').trim().charAt(0);
+    if (!first) return '';
+    var code = first.charCodeAt(0);
+    if (code < 0xac00 || code > 0xd7a3) return '';
+    var choseongIndex = Math.floor((code - 0xac00) / 588);
+    return GLOS_CHOSEONG_BUCKETS[choseongIndex] || '';
+  }
+
+  function _glosIsNumericStart(value) {
+    var first = String(value || '').trim().charAt(0);
+    return first >= '0' && first <= '9';
+  }
+
+  function _glosResolveBucket(item) {
+    if (_glosIsNumericStart(item.term_ko) || _glosIsNumericStart(item.term_en) || _glosIsNumericStart(item.term_fr)) {
+      return GLOS_MISC_BUCKET;
+    }
+    return _glosInferBucket(item.term_ko) || item.bucket || '가';
+  }
 
   function _loadGlossary() {
     GW.apiFetch('/api/glossary?limit=500').then(function (data) {
@@ -1090,7 +1113,7 @@
     // Group by bucket
     var grouped = {};
     items.forEach(function (t) {
-      var b = t.bucket || '기타';
+      var b = _glosResolveBucket(t);
       if (!grouped[b]) grouped[b] = [];
       grouped[b].push(t);
     });
@@ -1136,6 +1159,9 @@
       term_en:       document.getElementById('glos-en').value.trim(),
       term_fr:       document.getElementById('glos-fr').value.trim(),
       description_ko: document.getElementById('glos-desc').value.trim(),
+      bucket: (_glosIsNumericStart(ko) || _glosIsNumericStart(document.getElementById('glos-en').value.trim()) || _glosIsNumericStart(document.getElementById('glos-fr').value.trim()))
+        ? GLOS_MISC_BUCKET
+        : _glosInferBucket(ko),
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/glossary/' + id : '/api/glossary';
@@ -1242,53 +1268,383 @@
       var utms   = data.utm_campaigns || [];
       var transitions = data.top_transitions || [];
       var summary = data.summary || {};
-      var html   = '';
-
-      // Funnel
-      if (funnel.length) {
-        html += '<div class="v3-card"><div class="v3-card-head"><h2 class="v3-card-title">퍼널 (Funnel)</h2></div><div class="v3-bar-list">';
-        funnel.forEach(function (step) {
-          html += '<div class="v3-bar-row">' +
-            '<div class="v3-bar-label">' + GW.escapeHtml(step.label || step.stage || '') + '</div>' +
-            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + (step.pct || step.rate || 0) + '%"></div></div>' +
-            '<div class="v3-bar-val">' + _fmt(step.count || step.users || 0) + '</div>' +
-          '</div>';
-        });
-        html += '</div></div>';
-      }
-
-      // UTM
-      if (utms.length) {
-        html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">UTM 캠페인</h2></div>';
-        html += '<div class="v3-table-wrap"><table class="v3-table"><thead><tr><th>캠페인</th><th>소스</th><th>매체</th><th>방문</th></tr></thead><tbody>';
-        utms.forEach(function (u) {
-          html += '<tr><td>' + GW.escapeHtml(u.campaign || '') + '</td>' +
-            '<td>' + GW.escapeHtml(u.source || '') + '</td>' +
-            '<td>' + GW.escapeHtml(u.medium || '') + '</td>' +
-            '<td>' + _fmt(u.visits || 0) + '</td></tr>';
-        });
-        html += '</tbody></table></div></div>';
-      }
-
-      if (transitions.length) {
-        html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">대표 이동 경로</h2></div><div class="v3-bar-list">';
-        transitions.forEach(function (item) {
-          html += '<div class="v3-bar-row">' +
-            '<div class="v3-bar-label" title="' + GW.escapeHtml((item.from_title || '') + ' → ' + (item.to_title || '')) + '">' +
-              GW.escapeHtml((item.from_title || '') + ' → ' + (item.to_title || '')) +
+      var html =
+        '<div class="v3-analytics-stats marketing-stats-row">' +
+          _statCard('고유 사용자', _fmt(summary.unique_users || 0), '기간 사용자') +
+          _statCard('페이지뷰', _fmt(summary.total_pageviews || 0), '기간 합계') +
+          _statCard('Awareness', _fmt(summary.awareness_users || 0), '첫 노출 단계') +
+          _statCard('Interest', _fmt(summary.interest_users || 0), '관심 탐색 단계') +
+          _statCard('Consideration', _fmt(summary.consideration_users || 0), '기사 읽기 단계') +
+        '</div>' +
+        '<div class="marketing-grid">' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">퍼널 (Funnel)</h2></div>' +
+            '<div id="marketing-funnel" class="marketing-funnel-list"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">UTM 캠페인</h2></div>' +
+            '<div id="marketing-utm"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel marketing-panel-wide">' +
+            '<div class="v3-card-head">' +
+              '<div><h2 class="v3-card-title">고객 여정 흐름</h2><div class="marketing-panel-meta" id="marketing-flow-meta">유입 채널 → 단계 → 대표 도착 페이지</div></div>' +
+              '<div class="marketing-panel-actions"><button type="button" class="marketing-expand-btn" onclick="V3.openMarketingFullscreen(\'flow\')">전체화면 보기</button></div>' +
             '</div>' +
-            '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + Math.max(8, Math.min(100, Math.round((item.users || 0) / Math.max(1, summary.unique_users || 1) * 100))) + '%"></div></div>' +
-            '<div class="v3-bar-val">' + _fmt(item.users || 0) + '</div>' +
-          '</div>';
-        });
-        html += '</div></div>';
-      }
-
-      if (!html) html = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">마케팅 데이터가 없습니다</div></div></div>';
+            '<div id="marketing-flow" class="marketing-flow-wrap"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel marketing-panel-wide">' +
+            '<div class="v3-card-head">' +
+              '<div><h2 class="v3-card-title">페이지 기회 맵</h2><div class="marketing-panel-meta">고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.</div></div>' +
+              '<div class="marketing-panel-actions"><button type="button" class="marketing-expand-btn" onclick="V3.openMarketingFullscreen(\'scatter\')">전체화면 보기</button></div>' +
+            '</div>' +
+            '<div id="marketing-scatter" class="marketing-scatter-wrap"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">대표 이동 경로</h2></div>' +
+            '<div id="marketing-transitions" class="v3-bar-list"></div>' +
+          '</section>' +
+          '<section class="v3-card marketing-panel">' +
+            '<div class="v3-card-head"><h2 class="v3-card-title">운영 메모</h2></div>' +
+            '<div id="marketing-notes" class="v3-bar-list"></div>' +
+          '</section>' +
+        '</div>';
       el.innerHTML = html;
+      _renderMarketingFunnel(funnel);
+      _renderMarketingUtm(utms);
+      _renderMarketingTransitions(transitions, summary);
+      _renderMarketingNotes(data.notes || []);
+      _renderMarketingFlow(data.journey_flow || null);
+      _renderMarketingScatter(data.page_opportunities || []);
     }).catch(function () {
       el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다</div></div></div>';
     });
+  }
+
+  function _renderMarketingFunnel(items) {
+    var el = document.getElementById('marketing-funnel');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">퍼널 데이터가 없습니다</div></div>';
+      return;
+    }
+    el.innerHTML = items.map(function (item) {
+      var pct = Math.max(8, Math.min(100, Math.round(Number(item.pct || item.rate || 0))));
+      return '<article class="marketing-funnel-item">' +
+        '<div class="marketing-funnel-head"><strong>' + GW.escapeHtml(item.label || item.stage || '') + '</strong><span>' + _fmt(item.count || item.users || 0) + ' · ' + pct + '%</span></div>' +
+        '<div class="marketing-funnel-track"><span class="marketing-funnel-fill marketing-stage-' + GW.escapeHtml(item.key || item.stage || 'awareness').toLowerCase() + '" style="width:' + pct + '%;"></span></div>' +
+        '<p>' + GW.escapeHtml(item.description || '') + '</p>' +
+      '</article>';
+    }).join('');
+  }
+
+  function _renderMarketingUtm(items) {
+    var el = document.getElementById('marketing-utm');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">UTM 데이터가 없습니다</div></div>';
+      return;
+    }
+    el.innerHTML = '<div class="v3-table-wrap"><table class="v3-table"><thead><tr><th>캠페인</th><th>소스</th><th>매체</th><th>방문</th></tr></thead><tbody>' +
+      items.map(function (u) {
+        return '<tr><td>' + GW.escapeHtml(u.campaign || '') + '</td><td>' + GW.escapeHtml(u.source || '') + '</td><td>' + GW.escapeHtml(u.medium || '') + '</td><td>' + _fmt(u.visits || 0) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function _renderMarketingNotes(items) {
+    var el = document.getElementById('marketing-notes');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">운영 메모가 없습니다</div></div>';
+      return;
+    }
+    el.innerHTML = items.map(function (item) {
+      return '<div class="v3-bar-row v3-bar-row-stack"><div class="v3-bar-label-wrap"><div class="v3-bar-title">' + GW.escapeHtml(item.title || '운영 메모') + '</div><div class="v3-bar-meta">' + GW.escapeHtml([item.value || '', item.meta || ''].filter(Boolean).join(' · ')) + '</div></div></div>';
+    }).join('');
+  }
+
+  function _renderMarketingTransitions(items, summary) {
+    var el = document.getElementById('marketing-transitions');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">대표 이동 경로가 없습니다</div></div>';
+      return;
+    }
+    var totalUsers = Math.max(1, Number(summary && summary.unique_users || 1));
+    el.innerHTML = items.map(function (item) {
+      var label = (item.from_title || '시작') + ' → ' + (item.to_title || '도착');
+      var pct = Math.max(8, Math.min(100, Math.round((Number(item.users || 0) / totalUsers) * 100)));
+      return '<div class="v3-bar-row">' +
+        '<div class="v3-bar-label" title="' + GW.escapeHtml(label) + '">' + GW.escapeHtml(label) + '</div>' +
+        '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="v3-bar-val">' + _fmt(item.users || 0) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _renderMarketingFlow(flow) {
+    var el = document.getElementById('marketing-flow');
+    if (!el) return;
+    if (!flow || !Array.isArray(flow.links) || !flow.links.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 흐름 데이터가 없습니다</div></div>';
+      return;
+    }
+    var sources = Array.isArray(flow.sources) ? flow.sources : [];
+    var stages = Array.isArray(flow.stages) ? flow.stages : [];
+    var destinations = Array.isArray(flow.destinations) ? flow.destinations : [];
+    var links = flow.links.slice();
+    var columns = [sources, stages, destinations];
+    var nodeMap = new Map();
+    var maxDestinationChars = destinations.reduce(function (acc, item) {
+      return Math.max(acc, String((item && item.label) || '').length);
+    }, 0);
+    var padLeft = 40;
+    var padRight = 40;
+    var padTop = 36;
+    var padBottom = 40;
+    var nodeW = 18;
+    var rightLabelRunway = Math.max(380, Math.min(860, maxDestinationChars * 12));
+    var leftColumnX = padLeft + 44;
+    var middleColumnX = leftColumnX + 520;
+    var rightColumnX = middleColumnX + rightLabelRunway;
+    var colX = [leftColumnX, middleColumnX, rightColumnX];
+    var W = rightColumnX + nodeW + padRight;
+    var baseH = 460;
+    var columnInfo = columns.map(function (items, idx) {
+      var totals = items.map(function (item) {
+        var incoming = links.filter(function (link) { return link.target === item.id; }).reduce(function (sum, link) { return sum + Number(link.value || 0); }, 0);
+        var outgoing = links.filter(function (link) { return link.source === item.id; }).reduce(function (sum, link) { return sum + Number(link.value || 0); }, 0);
+        var total = idx === 0 ? outgoing : (idx === 2 ? incoming : Math.max(incoming, outgoing, Number(item.value || 0)));
+        return Math.max(total, 1);
+      });
+      var totalValue = totals.reduce(function (sum, value) { return sum + value; }, 0) || 1;
+      return { items: items, totals: totals, totalValue: totalValue };
+    });
+    var maxColumnValue = columnInfo.reduce(function (acc, col) { return Math.max(acc, col.totalValue); }, 1);
+    var gap = 14;
+    var availableH = baseH - padTop - padBottom;
+    var scale = Math.max(0.25, (availableH - gap * 5) / maxColumnValue);
+    var maxY = padTop;
+
+    columnInfo.forEach(function (column, columnIndex) {
+      var y = padTop;
+      column.items.forEach(function (item, itemIndex) {
+        var h = Math.max(26, Math.round(column.totals[itemIndex] * scale));
+        var node = {
+          id: item.id,
+          x: colX[columnIndex],
+          y: y,
+          w: nodeW,
+          h: h,
+          value: column.totals[itemIndex],
+          label: item.label || item.key || '',
+          color: item.color || '#7c4dff',
+          incomingOffset: 0,
+          outgoingOffset: 0
+        };
+        nodeMap.set(item.id, node);
+        maxY = Math.max(maxY, y + h);
+        y += h + gap;
+      });
+    });
+    var H = Math.max(baseH, maxY + padBottom);
+
+    var linkParts = links.map(function (link) {
+      var sourceNode = nodeMap.get(link.source);
+      var targetNode = nodeMap.get(link.target);
+      if (!sourceNode || !targetNode) return '';
+      var thickness = Math.max(4, Number(link.value || 0) * scale);
+      var sy = sourceNode.y + sourceNode.outgoingOffset + (thickness / 2);
+      var ty = targetNode.y + targetNode.incomingOffset + (thickness / 2);
+      sourceNode.outgoingOffset += thickness;
+      targetNode.incomingOffset += thickness;
+      var sx = sourceNode.x + sourceNode.w;
+      var tx = targetNode.x;
+      var c1 = sx + 140;
+      var c2 = tx - 140;
+      var tipText = (sourceNode.label || '') + ' → ' + (targetNode.label || '') + ' · ' + _fmt(link.value || 0);
+      return '<path d="M ' + sx + ' ' + sy + ' C ' + c1 + ' ' + sy + ', ' + c2 + ' ' + ty + ', ' + tx + ' ' + ty + '"' +
+        ' stroke="' + GW.escapeHtml(link.color || sourceNode.color) + '"' +
+        ' stroke-opacity="0.22" stroke-width="' + thickness.toFixed(2) + '" fill="none" stroke-linecap="round" class="marketing-flow-link" data-tip="' + GW.escapeHtml(tipText) + '"></path>';
+    }).join('');
+
+    var nodeParts = Array.from(nodeMap.values()).map(function (node) {
+      var labelX = node.x + node.w + 12;
+      var labelAnchor = 'start';
+      if (node.x === colX[2]) {
+        labelX = node.x - 12;
+        labelAnchor = 'end';
+      }
+      var displayLabel = _trimMarketingTitle(node.label, node.x === colX[2] ? 42 : 22);
+      var tip = node.label + ' · ' + _fmt(node.value || 0);
+      return '<g class="marketing-flow-node" data-tip="' + GW.escapeHtml(tip) + '">' +
+        '<rect x="' + node.x + '" y="' + node.y + '" width="' + node.w + '" height="' + node.h + '" rx="7" fill="' + GW.escapeHtml(node.color) + '"></rect>' +
+        '<text x="' + labelX + '" y="' + (node.y + 18) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-label">' + GW.escapeHtml(displayLabel) + '</text>' +
+        '<text x="' + labelX + '" y="' + (node.y + 34) + '" text-anchor="' + labelAnchor + '" class="marketing-flow-value">' + GW.escapeHtml(_fmt(node.value || 0)) + '</text>' +
+      '</g>';
+    }).join('');
+
+    el.innerHTML = '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div>';
+    _bindMarketingHoverTips(el);
+  }
+
+  function _renderMarketingScatter(items) {
+    var el = document.getElementById('marketing-scatter');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">페이지 기회 맵 데이터가 없습니다</div></div>';
+      return;
+    }
+    var W = 1080;
+    var H = 420;
+    var margin = { top: 20, right: 30, bottom: 52, left: 64 };
+    var innerW = W - margin.left - margin.right;
+    var innerH = H - margin.top - margin.bottom;
+    var maxUsers = items.reduce(function (acc, item) { return Math.max(acc, Number(item.unique_users || 0)); }, 1);
+    var minUsers = items.reduce(function (acc, item) {
+      var value = Number(item.unique_users || 0);
+      return value > 0 ? Math.min(acc, value) : acc;
+    }, maxUsers || 1);
+    var maxDepth = items.reduce(function (acc, item) { return Math.max(acc, Number(item.views_per_user || 0)); }, 1);
+    var minDepth = items.reduce(function (acc, item) { return Math.min(acc, Number(item.views_per_user || 0)); }, maxDepth || 0);
+    var maxPageviews = items.reduce(function (acc, item) { return Math.max(acc, Number(item.pageviews || 0)); }, 1);
+
+    function xScale(value) {
+      var safeMin = Math.max(1, minUsers || 1);
+      var safeMax = Math.max(safeMin + 1, maxUsers || 1);
+      var numerator = Math.log(Math.max(1, value)) - Math.log(safeMin);
+      var denominator = Math.log(safeMax) - Math.log(safeMin) || 1;
+      return margin.left + (numerator / denominator) * innerW;
+    }
+    function yScale(value) {
+      var safeMin = Math.min(minDepth, 0);
+      var safeMax = Math.max(safeMin + 0.5, maxDepth || 1);
+      var ratio = (Number(value || 0) - safeMin) / (safeMax - safeMin || 1);
+      return margin.top + innerH - (ratio * innerH);
+    }
+    function rScale(value) {
+      return 7 + Math.sqrt(Number(value || 0) / maxPageviews) * 26;
+    }
+    var points = items.map(function (item, index) {
+      var cx = xScale(item.unique_users || 1);
+      var cy = yScale(item.views_per_user || 0);
+      var radius = rScale(item.pageviews || 0);
+      var color = _marketingStageColor(item.stage);
+      var label = index < 8 ? '<text x="' + (cx + radius + 6) + '" y="' + (cy + 4) + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, 16)) + '</text>' : '';
+      var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + _fmt(item.unique_users) + ' · 페이지뷰 ' + _fmt(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
+      var href = String(item.path || '').indexOf('/post/') === 0 ? item.path : '';
+      return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
+        '<circle cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + radius.toFixed(2) + '" fill="' + color + '" fill-opacity="0.72" stroke="' + color + '" stroke-width="2"></circle>' +
+        label +
+      '</g>';
+    }).join('');
+    var axis = [
+      '<line x1="' + margin.left + '" y1="' + (margin.top + innerH) + '" x2="' + (margin.left + innerW) + '" y2="' + (margin.top + innerH) + '" class="marketing-axis"></line>',
+      '<line x1="' + margin.left + '" y1="' + margin.top + '" x2="' + margin.left + '" y2="' + (margin.top + innerH) + '" class="marketing-axis"></line>',
+      '<text x="' + (margin.left + innerW / 2) + '" y="' + (H - 12) + '" class="marketing-axis-title" text-anchor="middle">고유 사용자 수 (로그)</text>',
+      '<text x="18" y="' + (margin.top + innerH / 2) + '" class="marketing-axis-title" transform="rotate(-90 18 ' + (margin.top + innerH / 2) + ')" text-anchor="middle">1인당 조회 수</text>'
+    ].join('');
+    var legend = [
+      { key: 'awareness', label: 'Awareness' },
+      { key: 'interest', label: 'Interest' },
+      { key: 'consideration', label: 'Consideration' }
+    ].map(function (item) {
+      return '<span><i style="background:' + _marketingStageColor(item.key) + ';"></i>' + GW.escapeHtml(item.label) + '</span>';
+    }).join('');
+    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="페이지 기회 맵">' + axis + points + '</svg></div>';
+    _bindMarketingHoverTips(el);
+  }
+
+  function _bindMarketingHoverTips(root) {
+    if (!root || root.dataset.hoverTipsBound === '1') return;
+    root.dataset.hoverTipsBound = '1';
+    var shell = root.querySelector('.marketing-flow-shell, .marketing-scatter-shell');
+    var tooltip = root.querySelector('.marketing-hover-tip');
+    if (!shell || !tooltip) return;
+    shell.addEventListener('mousemove', function (event) {
+      var target = event.target.closest('[data-tip]');
+      if (!target || !shell.contains(target)) {
+        tooltip.classList.remove('open');
+        return;
+      }
+      tooltip.textContent = target.getAttribute('data-tip') || '';
+      tooltip.classList.add('open');
+      var bounds = shell.getBoundingClientRect();
+      tooltip.style.left = (event.clientX - bounds.left + 16) + 'px';
+      tooltip.style.top = (event.clientY - bounds.top + 16) + 'px';
+    });
+    shell.addEventListener('mouseleave', function () {
+      tooltip.classList.remove('open');
+    });
+    shell.addEventListener('click', function (event) {
+      var target = event.target.closest('[data-href]');
+      if (!target || !shell.contains(target)) return;
+      var href = target.getAttribute('data-href') || '';
+      if (href) window.open(href, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  function _marketingStageColor(stage) {
+    if (stage === 'awareness') return '#ff8c42';
+    if (stage === 'interest') return '#2f9e44';
+    return '#e64980';
+  }
+
+  function _trimMarketingTitle(value, limit) {
+    var text = String(value || '').trim();
+    if (text.length <= limit) return text;
+    return text.slice(0, Math.max(1, limit - 1)) + '…';
+  }
+
+  var _marketingFullscreenZoom = 1;
+
+  V3.openMarketingFullscreen = function (kind) {
+    var modal = document.getElementById('marketing-fullscreen-modal');
+    var body = document.getElementById('marketing-fullscreen-body');
+    var title = document.getElementById('marketing-fullscreen-title');
+    var meta = document.getElementById('marketing-fullscreen-meta');
+    if (!modal || !body || !title || !meta) return;
+    var sourceId = kind === 'scatter' ? 'marketing-scatter' : 'marketing-flow';
+    var sourceEl = document.getElementById(sourceId);
+    if (!sourceEl) return;
+    _marketingFullscreenZoom = 1;
+    body.innerHTML = '<div id="marketing-fullscreen-zoom-stage" class="marketing-fullscreen-zoom-stage">' + sourceEl.innerHTML + '</div>';
+    title.textContent = kind === 'scatter' ? '페이지 기회 맵' : '고객 여정 흐름';
+    meta.textContent = kind === 'scatter'
+      ? '고유 사용자 · 재읽기 강도 · 공유 비중을 크게 확인합니다.'
+      : ((document.getElementById('marketing-flow-meta') || {}).textContent || '유입 채널 → 단계 → 대표 도착 페이지');
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('marketing-fullscreen-open');
+    V3.resetMarketingFullscreenZoom();
+    _bindMarketingHoverTips(body);
+  };
+
+  V3.closeMarketingFullscreen = function () {
+    var modal = document.getElementById('marketing-fullscreen-modal');
+    var body = document.getElementById('marketing-fullscreen-body');
+    if (!modal || !body) return;
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    body.innerHTML = '';
+    document.body.classList.remove('marketing-fullscreen-open');
+    _marketingFullscreenZoom = 1;
+  };
+
+  V3.adjustMarketingFullscreenZoom = function (delta) {
+    _marketingFullscreenZoom = Math.max(0.5, Math.min(2.2, Number((_marketingFullscreenZoom + Number(delta || 0)).toFixed(2))));
+    _applyMarketingFullscreenZoom();
+  };
+
+  V3.resetMarketingFullscreenZoom = function () {
+    _marketingFullscreenZoom = 1;
+    _applyMarketingFullscreenZoom();
+  };
+
+  function _applyMarketingFullscreenZoom() {
+    var stage = document.getElementById('marketing-fullscreen-zoom-stage');
+    if (!stage) return;
+    stage.style.zoom = String(_marketingFullscreenZoom);
   }
 
   /* ══════════════════════════════════════════════════════════
