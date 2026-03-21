@@ -131,6 +131,7 @@
   var _adminGroup = 'overview';
   var _adminActiveTab = 'dashboard';
   var _adminRole = GW.getAdminRole ? GW.getAdminRole() : 'full';
+  var _adminContextPayload = null;
   var _adminManualRelatedPosts = [];
   var _adminRelatedSearchTimer = null;
   var _boardLayout = { gap_px: 6 };
@@ -157,6 +158,23 @@
   var _homeLeadMedia = defaultHomeLeadMedia();
   var _homeLeadSearchTimer = null;
   var _homeLeadSearchResults = [];
+  var ADMIN_RECENT_PAGES_KEY = 'gw_admin_recent_pages';
+  var ADMIN_TAB_LABELS = {
+    dashboard: '대시보드',
+    analytics: '분석',
+    marketing: '마케팅',
+    write: '글 작성',
+    list: '게시글 목록',
+    glossary: '용어집',
+    calendar: '캘린더',
+    settings: '설정',
+    'feature-definition': '기능 정의서 / KMS',
+    'hero-manager': '히어로 기사 설정',
+    'home-lead': '메인 스토리 직접 지정',
+    contributors: '도움을 주신 분들',
+    translations: 'UI 번역 관리',
+    history: '버전 기록',
+  };
 
   function defaultResponsiveMedia() {
     return {
@@ -458,6 +476,7 @@
     }
     syncAdminPreviewLink();
     applyAdminPermissions();
+    renderRecentAdminPages();
     if (isFullAdmin()) {
       _loadEditorJs(function () {
         _initAdminEditor();
@@ -477,6 +496,7 @@
     }
     loadHeroAdmin();
     loadDashboard();
+    loadAdminContextRail(true);
     if (isFullAdmin()) {
       var dateEl = document.getElementById('art-date');
       if (dateEl && !dateEl.value) dateEl.value = GW.getKstDateTimeInputValue();
@@ -605,6 +625,7 @@
   }
 
   window.openKmsPage = function () {
+    recordRecentAdminPage('feature-definition');
     window.location.href = '/kms.html';
   };
 
@@ -705,6 +726,7 @@
       stripBtn.setAttribute('aria-current', 'page');
     }
     if (!skipGroupSync) showAdminGroup(TAB_GROUPS[tab] || 'overview');
+    recordRecentAdminPage(tab);
     if (tab === 'list') loadAdminList();
     if (tab === 'dashboard') loadDashboard();
     if (tab === 'analytics') loadAnalyticsPage();
@@ -718,6 +740,7 @@
       openKmsPage();
       return;
     }
+    loadAdminContextRail();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   };
 
@@ -818,6 +841,125 @@
     section.hidden = !visible;
     section.setAttribute('aria-hidden', visible ? 'false' : 'true');
     section.classList.toggle('is-open', !!visible);
+  }
+
+  function formatAdminDateTime(value) {
+    if (!value) return '';
+    try {
+      return new Intl.DateTimeFormat('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(value)).replace(/\./g, '').replace(/\s+/g, ' ').trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function loadRecentAdminPages() {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(ADMIN_RECENT_PAGES_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveRecentAdminPages(items) {
+    try {
+      localStorage.setItem(ADMIN_RECENT_PAGES_KEY, JSON.stringify(items.slice(0, 6)));
+    } catch (_) {}
+  }
+
+  function recordRecentAdminPage(tab) {
+    var label = ADMIN_TAB_LABELS[tab];
+    if (!label) return;
+    var items = loadRecentAdminPages().filter(function (item) { return item && item.tab !== tab; });
+    items.unshift({
+      tab: tab,
+      label: label,
+      visited_at: new Date().toISOString()
+    });
+    saveRecentAdminPages(items);
+    renderRecentAdminPages();
+  }
+
+  function renderRecentAdminPages() {
+    var root = document.getElementById('admin-context-recent-pages');
+    if (!root) return;
+    var items = loadRecentAdminPages();
+    if (!items.length) {
+      root.innerHTML = '<div class="admin-context-empty">아직 방문한 메뉴가 없습니다.</div>';
+      return;
+    }
+    root.innerHTML = items.map(function (item) {
+      return '' +
+        '<button type="button" class="admin-context-recent-btn" data-admin-recent-tab="' + GW.escapeHtml(item.tab || '') + '">' +
+          '<strong>' + GW.escapeHtml(item.label || item.tab || '') + '</strong>' +
+          '<span>' + GW.escapeHtml(formatAdminDateTime(item.visited_at)) + '</span>' +
+        '</button>';
+    }).join('');
+    root.querySelectorAll('[data-admin-recent-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tab = btn.getAttribute('data-admin-recent-tab');
+        if (!tab) return;
+        if (tab === 'feature-definition') {
+          openKmsPage();
+          return;
+        }
+        showAdminTab(tab);
+      });
+    });
+  }
+
+  function renderAdminContextSummary(payload) {
+    var summary = payload && payload.summary ? payload.summary : {};
+    var topPaths = payload && payload.top_paths ? payload.top_paths : (payload && payload.views && payload.views.top_paths ? payload.views.top_paths : []);
+    var topPost = Array.isArray(topPaths) && topPaths.length ? topPaths[0] : null;
+    setMetricText('admin-context-today-visits', summary.today_visits || 0);
+    setText('admin-context-today-note', payload && payload.range && payload.range.label ? (payload.range.label + ' 기준 site visit 집계') : '오늘 기준 site visit 집계');
+
+    var topLink = document.getElementById('admin-context-top-post-link');
+    var topTitle = document.getElementById('admin-context-top-post-title');
+    var topMeta = document.getElementById('admin-context-top-post-meta');
+    if (topLink && topTitle && topMeta) {
+      if (topPost) {
+        var pageInfo = getAnalyticsPageInfo(topPost);
+        topTitle.textContent = pageInfo.title || '제목 없음';
+        topMeta.textContent = '방문 ' + formatMetricCompact(topPost.visits || 0) + ' · 조회 ' + formatMetricCompact(topPost.pageviews || 0);
+        topLink.href = pageInfo.path || '/index.html';
+        topLink.target = '_blank';
+        topLink.rel = 'noopener';
+      } else {
+        topTitle.textContent = '오늘 기준 상위 기사가 없습니다.';
+        topMeta.textContent = '집계 데이터 없음';
+        topLink.href = '/index.html';
+        topLink.removeAttribute('target');
+      }
+    }
+  }
+
+  function loadAdminContextRail(force) {
+    if (_adminContextPayload && !force) {
+      renderAdminContextSummary(_adminContextPayload);
+      renderRecentAdminPages();
+      return Promise.resolve(_adminContextPayload);
+    }
+    var today = GW.getKstDateInputValue();
+    return GW.apiFetch('/api/admin/analytics?start=' + encodeURIComponent(today) + '&end=' + encodeURIComponent(today))
+      .then(function (payload) {
+        _adminContextPayload = payload || null;
+        renderAdminContextSummary(payload || null);
+        renderRecentAdminPages();
+        return payload;
+      })
+      .catch(function () {
+        _adminContextPayload = null;
+        renderAdminContextSummary(null);
+        renderRecentAdminPages();
+      });
   }
 
   // ─── Editor.js loader ─────────────────────────────────────

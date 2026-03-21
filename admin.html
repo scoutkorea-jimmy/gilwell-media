@@ -9,8 +9,8 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.092.00">
-  <link rel="stylesheet" href="/css/admin.css?v=0.092.00">
+  <link rel="stylesheet" href="/css/style.css?v=0.093.00">
+  <link rel="stylesheet" href="/css/admin.css?v=0.093.00">
 </head>
 <body class="admin-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -25,7 +25,7 @@
       <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
       <div id="login-turnstile" class="admin-turnstile-slot"></div>
       <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.092.00</span></p>
+      <p class="admin-login-build">Build <span class="site-build-version">V0.093.00</span></p>
       <div class="login-error" id="login-error"></div>
     </div>
   </div>
@@ -41,7 +41,7 @@
           <p class="admin-header-copy">콘텐츠 운영, 분석, 사이트 설정을 한 화면에서 정리합니다.</p>
         </div>
         <div class="header-right admin-header-controls">
-          <span class="admin-build-label">Build <span class="site-build-version">V0.092.00</span></span>
+          <span class="admin-build-label">Build <span class="site-build-version">V0.093.00</span></span>
           <div class="admin-header-box admin-control-card">
             <div class="admin-header-box-row admin-header-box-row-actions">
               <a class="admin-header-link" href="index.html">← 홈페이지 보기</a>
@@ -61,6 +61,10 @@
     <div class="admin-shell">
       <aside class="admin-sidebar">
         <div class="admin-sidebar-group" data-admin-group="overview">
+          <div class="admin-sidebar-tree-head">
+            <strong>운영 개요</strong>
+            <span>대시보드와 분석, 마케팅 흐름</span>
+          </div>
           <button class="admin-sidebar-btn active" id="tab-btn-dashboard" onclick="showAdminTab('dashboard')">
             <span class="admin-sidebar-btn-label">대시보드</span>
             <span class="admin-sidebar-btn-desc">최근 게시글과 운영 현황</span>
@@ -75,6 +79,10 @@
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="content" hidden>
+          <div class="admin-sidebar-tree-head">
+            <strong>콘텐츠</strong>
+            <span>글과 용어집, 캘린더 편집</span>
+          </div>
           <button class="admin-sidebar-btn" id="tab-btn-write" data-role-min="full" onclick="showAdminTab('write')">
             <span class="admin-sidebar-btn-label">글 작성</span>
             <span class="admin-sidebar-btn-desc">새 글 작성과 수정</span>
@@ -93,6 +101,10 @@
           </button>
         </div>
         <div class="admin-sidebar-group" data-admin-group="site" hidden>
+          <div class="admin-sidebar-tree-head">
+            <strong>사이트 설정</strong>
+            <span>메인 화면, 문구, 버전 관리</span>
+          </div>
           <button class="admin-sidebar-btn" id="tab-btn-settings" data-role-min="full" onclick="showAdminTab('settings')">
             <span class="admin-sidebar-btn-label">설정</span>
             <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
@@ -1219,6 +1231,35 @@
         </div>
       </div>
     </div><!-- /admin-tab-content -->
+      <aside class="admin-context-rail">
+        <section class="admin-context-card">
+          <div class="admin-context-card-head">
+            <strong>금일 홈페이지 방문자</strong>
+            <span>오늘 기준</span>
+          </div>
+          <div class="admin-context-metric" id="admin-context-today-visits">—</div>
+          <p class="admin-context-note" id="admin-context-today-note">site visit 기준으로 집계합니다.</p>
+        </section>
+        <section class="admin-context-card">
+          <div class="admin-context-card-head">
+            <strong>금일 최고 관심 기사</strong>
+            <span>방문 기준</span>
+          </div>
+          <a id="admin-context-top-post-link" class="admin-context-feature-link" href="/index.html">
+            <span id="admin-context-top-post-title">데이터를 불러오는 중…</span>
+            <em id="admin-context-top-post-meta">—</em>
+          </a>
+        </section>
+        <section class="admin-context-card">
+          <div class="admin-context-card-head">
+            <strong>최근 방문한 관리자 페이지</strong>
+            <span>이 브라우저 기준</span>
+          </div>
+          <div id="admin-context-recent-pages" class="admin-context-list">
+            <div class="admin-context-empty">아직 방문한 메뉴가 없습니다.</div>
+          </div>
+        </section>
+      </aside>
     </div><!-- /admin-shell -->
   </div><!-- /admin-screen -->
 
@@ -1243,13 +1284,13 @@
   </div>
 
   </main>
-  <script src="/js/main.js?v=0.092.00"></script>
-  <script src="/js/admin.js?v=0.092.00"></script>
-  <script src="/js/admin-marketing.js?v=0.092.00"></script>
-  <script src="/js/admin-calendar.js?v=0.092.00"></script>
-  <script src="/js/admin-glossary.js?v=0.092.00"></script>
-  <script src="/js/admin-history.js?v=0.092.00"></script>
-  <script src="/js/admin-contributors.js?v=0.092.00"></script>
+  <script src="/js/main.js?v=0.093.00"></script>
+  <script src="/js/admin.js?v=0.093.00"></script>
+  <script src="/js/admin-marketing.js?v=0.093.00"></script>
+  <script src="/js/admin-calendar.js?v=0.093.00"></script>
+  <script src="/js/admin-glossary.js?v=0.093.00"></script>
+  <script src="/js/admin-history.js?v=0.093.00"></script>
+  <script src="/js/admin-contributors.js?v=0.093.00"></script>
   <script>
     // Render Turnstile widget on login screen
     GW.loadTurnstile(function () {
