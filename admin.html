@@ -3,1300 +3,804 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BP미디어 · 관리자</title>
-  <meta name="google-adsense-account" content="ca-pub-9517793409283448">
+  <title>BP미디어 · 관리자 V3</title>
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
-  <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=0.093.03">
-  <link rel="stylesheet" href="/css/admin.css?v=0.093.03">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=3.001.00">
+  <meta name="robots" content="noindex,nofollow">
 </head>
-<body class="admin-page">
-  <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+<body class="admin-v3">
 
-  <!-- LOGIN SCREEN -->
-  <main id="main-content">
-  <div class="login-screen" id="login-screen">
-    <div class="login-box">
-      <div class="logo">BP미디어</div>
-      <div class="sub">Admin · The BP Post</div>
-      <label for="pw-input" id="admin-login-label">비밀번호</label>
-      <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" />
-      <div id="login-turnstile" class="admin-turnstile-slot"></div>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">관리자 입장</button>
-      <p class="admin-login-build">Build <span class="site-build-version">V0.093.03</span></p>
-      <div class="login-error" id="login-error"></div>
-    </div>
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="v3-login">
+  <div id="v3-login-box">
+    <div class="v3-login-logo">BP미디어</div>
+    <div class="v3-login-sub">Admin Console · V3</div>
+    <label class="v3-login-label" for="v3-pw">비밀번호</label>
+    <input class="v3-login-input" type="password" id="v3-pw" placeholder="••••••••" autocomplete="current-password" />
+    <div id="v3-login-turnstile"></div>
+    <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
+    <div class="v3-login-err" id="v3-login-err"></div>
+    <div class="v3-login-ver">Build <span class="v3-ver-str">V3.001.00</span></div>
   </div>
+</div>
 
-  <!-- ADMIN PANEL -->
-  <div class="admin-screen" id="admin-screen" hidden aria-hidden="true">
+<!-- ═══════════════════════════════════════════════════════════
+     ADMIN APP
+════════════════════════════════════════════════════════════ -->
+<div id="v3-app" hidden>
 
-    <header class="admin-header admin-v2-header">
-      <div class="admin-v2-topbar">
-        <div class="admin-v2-titleblock">
-          <span class="admin-v2-kicker">BP미디어 관리자</span>
-          <h1>운영 콘솔</h1>
-          <p>콘텐츠 운영, 분석, 일정 관리, 메인 화면 설정을 한 번에 다루는 관리자 전용 작업 화면입니다.</p>
-        </div>
-        <div class="admin-v2-actions">
-          <div class="admin-v2-build">Build <span class="site-build-version">V0.093.03</span></div>
-          <a class="admin-v2-link" href="index.html">← 홈페이지 보기</a>
-          <a class="admin-v2-link admin-preview-link" id="admin-preview-link" href="https://preview.gilwell-media.pages.dev" target="_blank" rel="noopener">프리뷰 보기 ↗</a>
-          <button class="admin-v2-logout" onclick="doLogout()">로그아웃</button>
-        </div>
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside id="v3-sidebar">
+    <div id="v3-sidebar-logo">
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str">V3.001.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔</div>
+    </div>
+
+    <nav id="v3-nav">
+      <!-- 개요 -->
+      <div class="v3-nav-section">
+        <div class="v3-nav-section-label">개요</div>
+        <button class="v3-nav-item active" data-panel="dashboard">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+          대시보드
+        </button>
+        <button class="v3-nav-item" data-panel="analytics">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
+          분석
+        </button>
+        <button class="v3-nav-item" data-panel="marketing">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
+          마케팅
+        </button>
       </div>
-      <nav class="admin-v2-groups" aria-label="관리자 상위 메뉴">
-        <button class="admin-group-btn active" id="group-btn-overview" onclick="showAdminGroup('overview', true)">운영 개요</button>
-        <button class="admin-group-btn" id="group-btn-content" data-role-min="full" onclick="showAdminGroup('content', true)">콘텐츠</button>
-        <button class="admin-group-btn" id="group-btn-site" onclick="showAdminGroup('site', true)">사이트 설정</button>
-      </nav>
+
+      <!-- 콘텐츠 -->
+      <div class="v3-nav-section">
+        <div class="v3-nav-section-label">콘텐츠</div>
+        <button class="v3-nav-item" data-panel="list">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="10" y2="12"/></svg>
+          게시글 목록
+        </button>
+        <button class="v3-nav-item" data-panel="write">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 2 L14 5 L5 14 L1 15 L2 11 Z"/><line x1="9" y1="4" x2="12" y2="7"/></svg>
+          새 글 작성
+        </button>
+        <button class="v3-nav-item" data-panel="calendar">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="12" rx="1.5"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
+          캘린더
+        </button>
+        <button class="v3-nav-item" data-panel="glossary">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2 h10 a1 1 0 0 1 1 1 v11 a1 1 0 0 1 -1 1 H3"/><path d="M3 2 a1 1 0 0 0 -1 1 v11 a1 1 0 0 0 1 1"/><line x1="6" y1="6" x2="11" y2="6"/><line x1="6" y1="9" x2="11" y2="9"/><line x1="6" y1="12" x2="9" y2="12"/></svg>
+          용어집
+        </button>
+      </div>
+
+      <!-- 설정 -->
+      <div class="v3-nav-section">
+        <div class="v3-nav-section-label">사이트 설정</div>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="hero">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="8,1 10,6 15,6 11,9 13,14 8,11 3,14 5,9 1,6 6,6"/></svg>
+          히어로 기사
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="tags">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 8 L8 1 L15 1 L15 8 L8 15 Z"/><circle cx="11.5" cy="4.5" r="1.2" fill="currentColor"/></svg>
+          태그 / 글머리
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="meta">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="7"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="12"/></svg>
+          메타태그 / SEO
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="author">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15 a6 6 0 0 1 12 0"/></svg>
+          저자 / 고지
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="banner">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="1.5"/><line x1="1" y1="7" x2="15" y2="7"/></svg>
+          게시판 배너
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="ticker">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="8" x2="12" y2="8"/><line x1="1" y1="11" x2="9" y2="11"/></svg>
+          티커
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="contributors">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14 a4 4 0 0 1 8 0"/><path d="M7 14 a4 4 0 0 1 8 0"/></svg>
+          기고자
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="editors">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><polyline points="5,7 7,9 11,5"/></svg>
+          편집자 / 접근
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="translations">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3 h6"/><path d="M5 3 v8"/><path d="M1 11 L4 5 L7 11"/><line x1="2" y1="9" x2="6" y2="9"/><path d="M10 5 L13 14"/><path d="M13 5 L10 14"/><line x1="11" y1="10" x2="15" y2="10"/></svg>
+          UI 번역
+        </button>
+      </div>
+    </nav>
+
+    <div id="v3-sidebar-footer">
+      <a class="v3-sidebar-link" href="/" target="_blank">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1 L1 8 L3 8 L3 15 L6 15 L6 11 L10 11 L10 15 L13 15 L13 8 L15 8 Z"/></svg>
+        홈페이지 보기
+      </a>
+      <a class="v3-sidebar-link" id="v3-preview-link" href="https://preview.gilwell-media.pages.dev" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4"/><line x1="6" y1="10" x2="14" y2="2"/></svg>
+        프리뷰 보기
+      </a>
+      <button class="v3-sidebar-link danger" id="v3-logout-btn">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"/><polyline points="11,5 15,8 11,11"/><line x1="15" y1="8" x2="6" y2="8"/></svg>
+        로그아웃
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ────────────────────────────────────────────── -->
+  <div id="v3-main">
+    <!-- Topbar -->
+    <header id="v3-topbar">
+      <div id="v3-breadcrumb">
+        <strong id="v3-panel-title">대시보드</strong>
+      </div>
+      <div id="v3-topbar-actions"></div>
     </header>
 
-    <div class="admin-shell admin-v2-shell">
-      <aside class="admin-sidebar admin-v2-sidebar">
-        <div class="admin-sidebar-group" data-admin-group="overview">
-          <div class="admin-sidebar-tree-head">
-            <strong>운영 개요</strong>
-            <span>대시보드와 분석, 마케팅 흐름</span>
+    <!-- Panels -->
+    <div id="v3-content">
+
+      <!-- ════════════════════ DASHBOARD ════════════════════ -->
+      <div class="v3-panel active" id="panel-dashboard">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">대시보드</h1>
+            <p class="v3-page-desc">운영 현황 요약과 최근 게시글</p>
           </div>
-          <button class="admin-sidebar-btn active" id="tab-btn-dashboard" onclick="showAdminTab('dashboard')">
-            <span class="admin-sidebar-btn-label">대시보드</span>
-            <span class="admin-sidebar-btn-desc">최근 게시글과 운영 현황</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-analytics" onclick="showAdminTab('analytics')">
-            <span class="admin-sidebar-btn-label">분석</span>
-            <span class="admin-sidebar-btn-desc">방문, 조회, 유입 경로</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-marketing" data-role-min="full" onclick="showAdminTab('marketing')">
-            <span class="admin-sidebar-btn-label">마케팅</span>
-            <span class="admin-sidebar-btn-desc">유입과 고객 여정, 대표 흐름</span>
-          </button>
+          <button class="v3-btn v3-btn-outline" id="dash-refresh-btn">새로고침</button>
         </div>
-        <div class="admin-sidebar-group" data-admin-group="content" hidden>
-          <div class="admin-sidebar-tree-head">
-            <strong>콘텐츠</strong>
-            <span>글과 용어집, 캘린더 편집</span>
-          </div>
-          <button class="admin-sidebar-btn" id="tab-btn-write" data-role-min="full" onclick="showAdminTab('write')">
-            <span class="admin-sidebar-btn-label">글 작성</span>
-            <span class="admin-sidebar-btn-desc">새 글 작성과 수정</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-list" data-role-min="full" onclick="showAdminTab('list')">
-            <span class="admin-sidebar-btn-label">게시글 목록</span>
-            <span class="admin-sidebar-btn-desc">정렬, 공개 상태, 삭제</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-glossary" data-role-min="full" onclick="showAdminTab('glossary')">
-            <span class="admin-sidebar-btn-label">용어집</span>
-            <span class="admin-sidebar-btn-desc">국문 · 영문 · 불어 관리</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-calendar" data-role-min="full" onclick="showAdminTab('calendar')">
-            <span class="admin-sidebar-btn-label">캘린더</span>
-            <span class="admin-sidebar-btn-desc">일정 등록과 공개 캘린더 관리</span>
-          </button>
+        <div class="v3-stats-grid" id="dash-stats">
+          <div class="v3-stat"><div class="v3-stat-label">오늘 방문</div><div class="v3-stat-value" id="dash-stat-visits">—</div><div class="v3-stat-sub" id="dash-stat-visits-sub"></div></div>
+          <div class="v3-stat"><div class="v3-stat-label">오늘 조회</div><div class="v3-stat-value" id="dash-stat-views">—</div><div class="v3-stat-sub" id="dash-stat-views-sub"></div></div>
+          <div class="v3-stat"><div class="v3-stat-label">전체 게시글</div><div class="v3-stat-value" id="dash-stat-posts">—</div><div class="v3-stat-sub" id="dash-stat-posts-sub"></div></div>
+          <div class="v3-stat"><div class="v3-stat-label">공개 게시글</div><div class="v3-stat-value" id="dash-stat-pub">—</div><div class="v3-stat-sub">현재 노출 중</div></div>
         </div>
-        <div class="admin-sidebar-group" data-admin-group="site" hidden>
-          <div class="admin-sidebar-tree-head">
-            <strong>사이트 설정</strong>
-            <span>메인 화면, 문구, 버전 관리</span>
+        <div class="v3-dash-cols">
+          <div class="v3-card" id="dash-recent-card">
+            <div class="v3-card-head">
+              <h2 class="v3-card-title">최근 게시글</h2>
+              <button class="v3-btn v3-btn-ghost v3-btn-sm" onclick="V3.showPanel('list')">전체 보기 →</button>
+            </div>
+            <div id="dash-recent-list"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
           </div>
-          <button class="admin-sidebar-btn" id="tab-btn-settings" data-role-min="full" onclick="showAdminTab('settings')">
-            <span class="admin-sidebar-btn-label">설정</span>
-            <span class="admin-sidebar-btn-desc">태그, 메타, 푸터, 문구</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-feature-definition" data-role-min="full" onclick="openKmsPage()">
-            <span class="admin-sidebar-btn-label">기능 정의서 / KMS</span>
-            <span class="admin-sidebar-btn-desc">기준 문서 열기와 편집</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-hero-manager" onclick="showAdminTab('hero-manager')">
-            <span class="admin-sidebar-btn-label">히어로 기사 설정</span>
-            <span class="admin-sidebar-btn-desc">배너 기사, 위치, 노출 시간</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-home-lead" data-role-min="full" onclick="showAdminTab('home-lead')">
-            <span class="admin-sidebar-btn-label">메인 스토리 직접 지정</span>
-            <span class="admin-sidebar-btn-desc">대표 기사와 이미지 위치</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-contributors" data-role-min="full" onclick="showAdminTab('contributors')">
-            <span class="admin-sidebar-btn-label">도움을 주신 분들</span>
-            <span class="admin-sidebar-btn-desc">기여자 목록 관리</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-translations" data-role-min="full" onclick="showAdminTab('translations')">
-            <span class="admin-sidebar-btn-label">UI 번역 관리</span>
-            <span class="admin-sidebar-btn-desc">국문/영문 UI 텍스트</span>
-          </button>
-          <button class="admin-sidebar-btn" id="tab-btn-history" onclick="showAdminTab('history')">
-            <span class="admin-sidebar-btn-label">버전 기록</span>
-            <span class="admin-sidebar-btn-desc">릴리스 이력과 수정사항</span>
-          </button>
-        </div>
-      </aside>
-
-    <div class="admin-tab-content admin-v2-content">
-
-      <!-- ══ TAB: 대시보드 ══ -->
-      <div id="admin-tab-dashboard" class="admin-tab-panel active">
-        <div class="admin-dashboard admin-stack">
-
-          <!-- Stats row -->
-          <div class="dash-stats-row">
-            <div class="dash-stat-card">
-              <div class="dash-stat-num" id="dash-total">—</div>
-              <div class="dash-stat-label">전체 게시글</div>
-            </div>
-            <div class="dash-stat-card">
-              <div class="dash-stat-num" id="dash-korea">—</div>
-              <div class="dash-stat-label">Korea</div>
-            </div>
-            <div class="dash-stat-card">
-              <div class="dash-stat-num" id="dash-apr">—</div>
-              <div class="dash-stat-label">APR</div>
-            </div>
-            <div class="dash-stat-card">
-              <div class="dash-stat-num" id="dash-wosm">—</div>
-              <div class="dash-stat-label">WOSM</div>
-            </div>
-            <div class="dash-stat-card">
-              <div class="dash-stat-num" id="dash-people">—</div>
-              <div class="dash-stat-label">Scout People</div>
-            </div>
-          </div>
-
-          <!-- Quick actions -->
-          <div class="dash-actions">
-            <button class="dash-action-btn" id="dash-action-write" data-role-min="full" onclick="showAdminTab('write')">
-              <span class="dash-action-icon">✏</span>
-              <span class="dash-action-label">새 게시글</span>
-            </button>
-            <button class="dash-action-btn" id="dash-action-list" data-role-min="full" onclick="showAdminTab('list')">
-              <span class="dash-action-icon">📋</span>
-              <span class="dash-action-label">게시글 목록</span>
-            </button>
-            <button class="dash-action-btn" id="dash-action-settings" onclick="showAdminTab('settings')">
-              <span class="dash-action-icon">⚙</span>
-              <span class="dash-action-label">설정</span>
-            </button>
-            <a class="dash-action-btn" href="/index.html">
-              <span class="dash-action-icon">🌐</span>
-              <span class="dash-action-label">홈페이지</span>
-            </a>
-          </div>
-
-          <!-- Recent posts -->
-          <div class="panel">
-            <div class="panel-header"><h2>최근 게시글</h2></div>
-            <div id="dash-recent-list" class="article-list"></div>
-          </div>
-
-        </div>
-      </div>
-
-      <div id="admin-tab-analytics" class="admin-tab-panel">
-        <div class="panel">
-          <div class="panel-header"><h2>방문자수 / 조회수 분석</h2></div>
-          <div class="panel-body">
-            <div class="analytics-toolbar">
-              <div class="analytics-toolbar-group">
-                <label for="analytics-start-date">시작일</label>
-                <input type="date" id="analytics-start-date" onchange="refreshAnalyticsPage()">
+          <div>
+            <div class="v3-card" id="dash-top-posts-card">
+              <div class="v3-card-head">
+                <h2 class="v3-card-title">인기 게시글</h2>
               </div>
-              <div class="analytics-toolbar-group">
-                <label for="analytics-end-date">종료일</label>
-                <input type="date" id="analytics-end-date" onchange="refreshAnalyticsPage()">
-              </div>
-              <div class="analytics-toolbar-group">
-                <label>빠른 선택</label>
-                <div class="analytics-view-toggle">
-                  <button type="button" onclick="setAnalyticsRangePreset(1)">1일</button>
-                  <button type="button" onclick="setAnalyticsRangePreset(7)">7일</button>
-                  <button type="button" onclick="setAnalyticsRangePreset(30)">30일</button>
-                  <button type="button" onclick="setAnalyticsRangePreset(90)">90일</button>
-                </div>
-              </div>
-              <div class="analytics-toolbar-group">
-                <label>보기 방식</label>
-                <div class="analytics-view-toggle">
-                  <button type="button" id="analytics-view-chart" class="active" onclick="setAnalyticsViewMode('chart')">차트</button>
-                  <button type="button" id="analytics-view-table" onclick="setAnalyticsViewMode('table')">표</button>
-                </div>
-              </div>
-            </div>
-            <p class="analytics-note" id="analytics-tracking-note">분석 데이터를 불러오는 중…</p>
-          </div>
-        </div>
-
-        <div class="dash-stats-row analytics-stats-row admin-section-top-gap">
-          <div class="dash-stat-card analytics-provider-card">
-            <div class="dash-stat-num" id="analytics-provider-label">—</div>
-            <div class="dash-stat-label">집계 기준</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-today-visits">—</div>
-            <div class="dash-stat-label">오늘 방문 수</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-total-visits">—</div>
-            <div class="dash-stat-label">누적 방문 수</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-range-visits">—</div>
-            <div class="dash-stat-label">기간 방문 수</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-total-pageviews">—</div>
-            <div class="dash-stat-label">누적 조회수</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-range-pageviews">—</div>
-            <div class="dash-stat-label">기간 조회수</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-average-dwell">—</div>
-            <div class="dash-stat-label">평균 체류시간</div>
-          </div>
-          <div class="dash-stat-card">
-            <div class="dash-stat-num" id="analytics-popular-dwell">—</div>
-            <div class="dash-stat-label">인기 기사 평균 체류</div>
-          </div>
-        </div>
-
-        <div class="dashboard-2col admin-dashboard-grid">
-          <div class="panel">
-            <div class="panel-header panel-header-split">
-              <h2>방문자 추이</h2>
-              <div class="analytics-graph-toggle">
-                <button type="button" id="analytics-visitors-bar-btn" onclick="setAnalyticsChartMode('visitors','bar')">막대</button>
-                <button type="button" id="analytics-visitors-line-btn" class="active" onclick="setAnalyticsChartMode('visitors','line')">꺾은선</button>
-                <button type="button" id="analytics-visitors-cumulative-btn" onclick="setAnalyticsChartMode('visitors','cumulative')">누적</button>
-              </div>
-            </div>
-            <div class="panel-body">
-              <div id="analytics-visitors-chart" class="analytics-chart-wrap"></div>
-              <div id="analytics-visitors-table" class="analytics-table-wrap admin-hidden"></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header panel-header-split">
-              <h2>조회수 추이</h2>
-              <div class="analytics-graph-toggle">
-                <button type="button" id="analytics-views-bar-btn" onclick="setAnalyticsChartMode('views','bar')">막대</button>
-                <button type="button" id="analytics-views-line-btn" class="active" onclick="setAnalyticsChartMode('views','line')">꺾은선</button>
-                <button type="button" id="analytics-views-cumulative-btn" onclick="setAnalyticsChartMode('views','cumulative')">누적</button>
-              </div>
-            </div>
-            <div class="panel-body">
-              <div id="analytics-views-chart" class="analytics-chart-wrap"></div>
-              <div id="analytics-views-table" class="analytics-table-wrap admin-hidden"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dashboard-2col admin-dashboard-grid">
-          <div class="panel">
-            <div class="panel-header"><h2>유입 경로</h2></div>
-            <div class="panel-body">
-              <div id="analytics-referrers-pie" class="analytics-pie-wrap"></div>
-              <div id="analytics-referrers" class="analytics-list"></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><h2>상위 기사</h2></div>
-            <div class="panel-body">
-              <div id="analytics-paths" class="analytics-list"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel admin-panel-spaced">
-          <div class="panel-header"><h2>상위 기사 상세</h2></div>
-          <div class="panel-body">
-            <div id="analytics-top-pages" class="analytics-table-wrap"></div>
-          </div>
-        </div>
-
-        <div class="dashboard-2col admin-dashboard-grid">
-          <div class="panel">
-            <div class="panel-header"><h2>운영 인사이트</h2></div>
-            <div class="panel-body">
-              <div id="analytics-insights-cards" class="analytics-insights-grid"></div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><h2>운영 판단 메모</h2></div>
-            <div class="panel-body">
-              <div id="analytics-insights-notes" class="analytics-list"></div>
+              <div id="dash-top-list"><div class="v3-loading"><div class="v3-spinner"></div></div></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div id="admin-tab-marketing" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header"><h2>마케팅 대시보드</h2></div>
-          <div class="panel-body">
-            <div class="analytics-toolbar marketing-toolbar">
-              <div class="analytics-toolbar-group">
-                <label for="marketing-start-date">시작일</label>
-                <input type="date" id="marketing-start-date" onchange="refreshMarketingPage()">
-              </div>
-              <div class="analytics-toolbar-group">
-                <label for="marketing-end-date">종료일</label>
-                <input type="date" id="marketing-end-date" onchange="refreshMarketingPage()">
-              </div>
-              <div class="analytics-toolbar-group">
-                <label>빠른 선택</label>
-                <div class="analytics-view-toggle">
-                  <button type="button" onclick="setMarketingRangePreset(7)">7일</button>
-                  <button type="button" onclick="setMarketingRangePreset(30)">30일</button>
-                  <button type="button" onclick="setMarketingRangePreset(90)">90일</button>
-                  <button type="button" onclick="setMarketingRangePreset(180)">180일</button>
-                </div>
-              </div>
+      <!-- ════════════════════ POST LIST ════════════════════ -->
+      <div class="v3-panel" id="panel-list">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">게시글 목록</h1>
+            <p class="v3-page-desc">정렬, 공개 상태 전환, 수정, 삭제</p>
+          </div>
+          <button class="v3-btn v3-btn-primary" onclick="V3.openWrite()">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+            새 글 작성
+          </button>
+        </div>
+        <div class="v3-toolbar">
+          <div class="v3-toolbar-left">
+            <div class="v3-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+              <input class="v3-search-input" type="text" id="list-search" placeholder="제목 검색…" />
             </div>
-            <p class="analytics-note" id="marketing-tracking-note">마케팅 데이터를 불러오는 중…</p>
+            <select class="v3-filter-select" id="list-cat">
+              <option value="all">전체 카테고리</option>
+              <option value="korea">Korea / KSA</option>
+              <option value="apr">APR</option>
+              <option value="wosm">WOSM</option>
+              <option value="people">People</option>
+            </select>
+            <select class="v3-filter-select" id="list-pub">
+              <option value="all">공개 + 비공개</option>
+              <option value="published">공개만</option>
+              <option value="draft">비공개만</option>
+            </select>
+            <select class="v3-filter-select" id="list-sort">
+              <option value="latest">최신순</option>
+              <option value="oldest">오래된순</option>
+              <option value="views">조회수순</option>
+            </select>
+          </div>
+          <div class="v3-toolbar-right">
+            <span id="list-count" class="v3-text-m v3-text-s"></span>
           </div>
         </div>
-
-        <div class="dash-stats-row marketing-stats-row admin-section-top-gap">
-          <div class="dash-stat-card marketing-stat-card">
-            <div class="dash-stat-num" id="marketing-unique-users">—</div>
-            <div class="dash-stat-label">고유 사용자</div>
-          </div>
-          <div class="dash-stat-card marketing-stat-card">
-            <div class="dash-stat-num" id="marketing-total-pageviews">—</div>
-            <div class="dash-stat-label">전체 페이지뷰</div>
-          </div>
-          <div class="dash-stat-card marketing-stat-card">
-            <div class="dash-stat-num" id="marketing-awareness-users">—</div>
-            <div class="dash-stat-label">Awareness</div>
-          </div>
-          <div class="dash-stat-card marketing-stat-card">
-            <div class="dash-stat-num" id="marketing-interest-users">—</div>
-            <div class="dash-stat-label">Interest</div>
-          </div>
-          <div class="dash-stat-card marketing-stat-card">
-            <div class="dash-stat-num" id="marketing-consideration-users">—</div>
-            <div class="dash-stat-label">Consideration</div>
-          </div>
+        <div class="v3-table-wrap">
+          <table class="v3-table">
+            <thead>
+              <tr>
+                <th>제목</th>
+                <th>카테고리</th>
+                <th>태그</th>
+                <th>상태</th>
+                <th>날짜</th>
+                <th>조회</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="list-tbody">
+              <tr><td colspan="7"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></td></tr>
+            </tbody>
+          </table>
         </div>
-
-        <div class="marketing-grid">
-          <section class="panel marketing-panel marketing-panel-wide">
-            <div class="panel-header panel-header-split">
-              <h2>고객 여정 흐름</h2>
-              <div class="marketing-panel-actions">
-                <span class="marketing-panel-meta" id="marketing-flow-meta">유입 채널 → 단계 → 대표 도착 페이지</span>
-                <button type="button" class="marketing-expand-btn" onclick="openMarketingFullscreen('flow')">전체화면 보기</button>
-              </div>
-            </div>
-            <div class="panel-body">
-              <div id="marketing-flow" class="marketing-flow-wrap"></div>
-            </div>
-          </section>
-
-          <section class="panel marketing-panel">
-            <div class="panel-header"><h2>스테이지 요약</h2></div>
-            <div class="panel-body">
-              <div id="marketing-funnel" class="marketing-funnel-list"></div>
-            </div>
-          </section>
-
-          <section class="panel marketing-panel">
-            <div class="panel-header"><h2>운영 메모</h2></div>
-            <div class="panel-body">
-              <div id="marketing-notes" class="analytics-list"></div>
-            </div>
-          </section>
-
-          <section class="panel marketing-panel marketing-panel-wide">
-            <div class="panel-header panel-header-split">
-              <h2>페이지 기회 맵</h2>
-              <div class="marketing-panel-actions">
-                <span class="marketing-panel-meta">고유 사용자 · 재읽기 강도 · 공유 비중</span>
-                <button type="button" class="marketing-expand-btn" onclick="openMarketingFullscreen('scatter')">전체화면 보기</button>
-              </div>
-            </div>
-            <div class="panel-body">
-              <div id="marketing-scatter" class="marketing-scatter-wrap"></div>
-            </div>
-          </section>
-
-          <section class="panel marketing-panel marketing-panel-wide">
-            <div class="panel-header"><h2>대표 이동 경로</h2></div>
-            <div class="panel-body">
-              <div id="marketing-transitions" class="analytics-list"></div>
-            </div>
-          </section>
-        </div>
+        <div class="v3-pagination" id="list-pagination"></div>
       </div>
 
-      <!-- ══ TAB: 글 작성 ══ -->
-      <div id="admin-tab-write" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header">
-            <h2 id="form-title">새 게시글 작성</h2>
+      <!-- ════════════════════ WRITE / EDIT ════════════════ -->
+      <div class="v3-panel" id="panel-write">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title" id="write-panel-title">새 글 작성</h1>
           </div>
-          <div class="panel-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="art-category">카테고리</label>
-                <select id="art-category" onchange="updateCatPreview()">
-                  <option value="korea">Korea — 한국스카우트연맹</option>
-                  <option value="apr">APR — 아시아태평양</option>
-                  <option value="wosm">WOSM — 세계스카우트연맹</option>
-                  <option value="people">Scout People — 스카우트 인물</option>
-                </select>
-                <span class="cat-preview tag-korea" id="cat-preview">Korea</span>
-              </div>
-              <div class="form-group">
-                <label>글머리 태그</label>
-                <div id="admin-tag-selector" class="tag-pill-group"><span class="admin-inline-loading">불러오는 중…</span></div>
-                <div class="admin-write-tag-tools">
-                  <input type="text" id="art-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
-                  <button type="button" class="admin-inline-tag-add" onclick="addEditorManagedTag()">태그 추가</button>
+          <div class="v3-flex">
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="write-cancel-btn">취소</button>
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="write-draft-btn">임시저장</button>
+            <button class="v3-btn v3-btn-primary v3-btn-sm" id="write-publish-btn">공개 저장</button>
+          </div>
+        </div>
+        <div class="v3-write-layout">
+          <!-- Main column -->
+          <div class="v3-write-main">
+            <!-- Basic info -->
+            <div class="v3-card">
+              <div class="v3-form-grid">
+                <div class="v3-form-grid v3-form-2col">
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="w-cat">카테고리</label>
+                    <select class="v3-select" id="w-cat">
+                      <option value="korea">Korea / KSA</option>
+                      <option value="apr">APR</option>
+                      <option value="wosm">WOSM</option>
+                      <option value="people">People</option>
+                    </select>
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="w-tag">글머리 태그 <span class="v3-label-opt">선택</span></label>
+                    <select class="v3-select" id="w-tag">
+                      <option value="">없음</option>
+                    </select>
+                  </div>
                 </div>
-                <p class="admin-section-note">새 태그를 추가하면 현재 카테고리 태그 목록에 저장되고 바로 선택됩니다.</p>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="art-title">제목 *</label>
-              <input type="text" id="art-title" placeholder="게시글 제목을 입력하세요" maxlength="200" />
-            </div>
-
-            <div class="form-group">
-              <label for="art-subtitle">부제목</label>
-              <input type="text" id="art-subtitle" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />
-            </div>
-
-            <div class="form-group">
-              <label for="art-special-feature">특집 기사 묶음명</label>
-              <input type="text" id="art-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" />
-              <p class="admin-field-meta">같은 게시판 안에서 같은 묶음명을 가진 글끼리 특집 기사로 함께 노출됩니다.</p>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group admin-flex-1">
-                <label for="art-author">작성자</label>
-                <select id="art-author" class="admin-control-input"><option>불러오는 중…</option></select>
-              </div>
-              <div class="form-group">
-                <label for="art-date">퍼블리싱 시각</label>
-                <input type="datetime-local" id="art-date" class="admin-control-input" />
-                <p id="art-created-at-meta" class="admin-field-meta">생성 시각: 새 글 작성 시 자동 기록</p>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>대표 이미지</label>
-              <div id="admin-cover-wrap" class="cover-upload-wrap">
-                <button type="button" id="admin-cover-btn" class="cover-upload-btn">📷 대표 이미지 선택</button>
-                <div id="admin-cover-preview"></div>
-              </div>
-              <input type="text" id="art-image-caption" class="admin-control-input admin-control-input-spaced" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" />
-              <p class="admin-field-meta">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>
-            </div>
-
-            <div class="form-group">
-              <label for="art-youtube-url">유튜브 영상 링크</label>
-              <input type="url" id="art-youtube-url" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />
-              <p class="admin-field-meta">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>
-            </div>
-
-            <div class="form-group">
-              <label>본문 * <span class="admin-label-note">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>
-              <div id="admin-editorjs" class="board-editorjs-wrap"></div>
-            </div>
-
-            <div class="form-group">
-              <label>슬라이드 전용 이미지 <span class="admin-label-note" id="admin-gallery-count">0/10</span></label>
-              <div class="cover-upload-wrap">
-                <button type="button" id="admin-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>
-                <div id="admin-gallery-preview" class="gallery-upload-preview">
-                  <p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p>
+                <div class="v3-form-group">
+                  <label class="v3-label" for="w-title">제목</label>
+                  <input class="v3-input" type="text" id="w-title" placeholder="기사 제목을 입력하세요" />
+                </div>
+                <div class="v3-form-group">
+                  <label class="v3-label" for="w-subtitle">부제목 <span class="v3-label-opt">선택</span></label>
+                  <input class="v3-input" type="text" id="w-subtitle" placeholder="부제목 또는 요약 문장" />
                 </div>
               </div>
-              <p class="admin-field-meta">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>
             </div>
 
-            <details class="location-form-toggle" id="admin-location-toggle">
-              <summary>위치 정보 추가</summary>
-              <div class="location-form-fields">
-                <div class="form-group">
-                  <label for="art-location-name">위치 이름</label>
-                  <input type="text" id="art-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />
+            <!-- Editor -->
+            <div class="v3-card">
+              <div class="v3-card-head"><h2 class="v3-card-title">본문</h2></div>
+              <div class="v3-editor-wrap">
+                <div id="v3-editorjs"></div>
+              </div>
+            </div>
+
+            <!-- Meta tags -->
+            <div class="v3-card">
+              <div class="v3-card-head"><h2 class="v3-card-title">메타 태그 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">검색·분류용 키워드</span></h2></div>
+              <div class="v3-metatags-input-row">
+                <input class="v3-input" type="text" id="w-metatag-input" placeholder="태그 입력 후 Enter" style="flex:1;" />
+                <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-metatag-add-btn">추가</button>
+              </div>
+              <div class="v3-metatag-chips" id="w-metatag-chips"></div>
+            </div>
+
+            <!-- Cover image -->
+            <div class="v3-card">
+              <div class="v3-card-head">
+                <h2 class="v3-card-title">대표 이미지</h2>
+                <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-cover-btn">이미지 선택</button>
+              </div>
+              <div id="w-cover-preview"></div>
+              <div class="v3-form-group v3-mt-12">
+                <label class="v3-label" for="w-cover-caption">이미지 캡션 <span class="v3-label-opt">선택</span></label>
+                <input class="v3-input" type="text" id="w-cover-caption" placeholder="이미지 설명 또는 출처" />
+              </div>
+              <div class="v3-form-group v3-mt-12">
+                <label class="v3-label" for="w-youtube">YouTube URL <span class="v3-label-opt">선택</span></label>
+                <input class="v3-input" type="url" id="w-youtube" placeholder="https://www.youtube.com/watch?v=..." />
+              </div>
+            </div>
+
+            <!-- Gallery -->
+            <div class="v3-card">
+              <div class="v3-card-head">
+                <h2 class="v3-card-title">갤러리 슬라이드 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">최대 10장</span></h2>
+                <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-gallery-btn">이미지 추가</button>
+              </div>
+              <div class="v3-gallery-grid" id="w-gallery-grid"></div>
+            </div>
+
+            <!-- Location & Special Feature -->
+            <div class="v3-card">
+              <div class="v3-card-head"><h2 class="v3-card-title">위치 / 특집 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">선택</span></h2></div>
+              <div class="v3-form-grid v3-form-2col">
+                <div class="v3-form-group">
+                  <label class="v3-label" for="w-location-name">장소명</label>
+                  <input class="v3-input" type="text" id="w-location-name" placeholder="서울 잠실체육관" />
                 </div>
-                <div class="form-group">
-                  <label for="art-location-address">주소</label>
-                  <input type="text" id="art-location-address" placeholder="예: 강원특별자치도 고성군 토성면 ..." maxlength="300" />
-                  <p class="admin-field-meta">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>
+                <div class="v3-form-group">
+                  <label class="v3-label" for="w-location-addr">주소</label>
+                  <input class="v3-input" type="text" id="w-location-addr" placeholder="서울특별시 송파구…" />
                 </div>
               </div>
-            </details>
-
-            <div class="form-group admin-form-group-section">
-              <label for="art-metatags">SEO 해시태그 <span class="admin-label-note">(쉼표로 구분)</span></label>
-              <input type="text" id="art-metatags" placeholder="예: 스카우트, 잼버리, WOSM" maxlength="500" />
-            </div>
-
-            <div class="form-group admin-form-group-section">
-              <label for="admin-related-search-input">유관기사 직접 설정 <span class="admin-label-note">(최대 5개)</span></label>
-              <div id="admin-related-selected" class="calendar-related-post-selected"></div>
-              <div class="calendar-related-post-search">
-                <input type="text" id="admin-related-search-input" placeholder="기사 제목으로 검색…" oninput="searchAdminRelatedPosts()" />
+              <div class="v3-form-group v3-mt-12">
+                <label class="v3-label" for="w-special">특집 그룹 <span class="v3-label-opt">선택</span></label>
+                <input class="v3-input" type="text" id="w-special" placeholder="특집 시리즈 이름 (예: 잼버리 2023)" />
               </div>
-              <div id="admin-related-search-results" class="calendar-related-post-results"></div>
-              <p class="admin-field-meta">직접 연결한 기사 수만큼 우선 노출되고, 부족한 수는 자동 추천으로 채웁니다.</p>
             </div>
 
-            <div class="form-group admin-inline-check">
-              <input type="checkbox" id="art-ai-assisted" class="admin-inline-checkbox" />
-              <label for="art-ai-assisted" class="admin-inline-check-label">AI 지원 여부 (체크 시 기사 하단에 AI 도움 문구 표시)</label>
+            <!-- Related posts -->
+            <div class="v3-card">
+              <div class="v3-card-head"><h2 class="v3-card-title">관련 기사 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">선택</span></h2></div>
+              <div class="v3-search-wrap" style="width:100%;margin-bottom:8px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                <input class="v3-search-input" type="text" id="w-related-search" placeholder="기사 제목 검색…" style="width:100%;" />
+              </div>
+              <div class="v3-search-results-drop" id="w-related-results" style="display:none;"></div>
+              <div class="v3-related-list" id="w-related-list"></div>
+            </div>
+          </div>
+
+          <!-- Side column -->
+          <div class="v3-write-side">
+            <div class="v3-card">
+              <div class="v3-card-title" style="margin-bottom:12px;">게시 설정</div>
+              <div class="v3-form-grid" style="gap:10px;">
+                <label class="v3-check-row"><input type="checkbox" id="w-published" /><span>공개</span></label>
+                <label class="v3-check-row"><input type="checkbox" id="w-featured" /><span>특집 (홈 노출)</span></label>
+                <label class="v3-check-row"><input type="checkbox" id="w-ai" /><span>AI 도움 사용</span></label>
+              </div>
+              <div class="v3-form-group v3-mt-12">
+                <label class="v3-label" for="w-date">게시 날짜</label>
+                <input class="v3-input" type="datetime-local" id="w-date" />
+              </div>
+              <div class="v3-form-group v3-mt-8">
+                <label class="v3-label" for="w-author">저자</label>
+                <input class="v3-input" type="text" id="w-author" placeholder="BP미디어 취재팀" />
+              </div>
             </div>
 
-            <div id="admin-write-turnstile" class="admin-turnstile-slot admin-turnstile-slot-top"></div>
-            <div class="editor-action-row">
-              <button class="cancel-btn visible" id="admin-draft-btn" onclick="saveAdminDraft()">💾 임시저장</button>
-              <button class="submit-btn" id="submit-btn" onclick="savePost()">게재하기</button>
-              <button class="cancel-btn" id="cancel-btn" onclick="cancelEdit()">수정 취소</button>
-              <button class="cancel-btn" id="back-to-list-btn" onclick="returnToList()">목록으로</button>
-              <button class="btn-delete-soft" id="edit-delete-btn" onclick="deleteEditingPost()">삭제하기</button>
+            <!-- Draft status -->
+            <div class="v3-card" id="write-status-card" style="display:none;">
+              <div class="v3-card-title" style="margin-bottom:8px;">저장 상태</div>
+              <div id="write-status-msg" class="v3-text-m v3-text-s"></div>
+            </div>
+
+            <!-- History shortcut -->
+            <div class="v3-card" id="write-history-card" style="display:none;">
+              <div class="v3-card-title" style="margin-bottom:8px;">수정 기록</div>
+              <div id="write-history-list" class="v3-text-m v3-text-s"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ TAB: 게시글 목록 ══ -->
-      <div id="admin-tab-list" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header admin-panel-header-wrap">
-            <h2>게시글 목록</h2>
-            <div class="article-list-toolbar">
-              <input type="text" id="admin-list-search" placeholder="제목/태그 검색…"
-                class="admin-list-search-input"
-                oninput="adminSearchDebounce()" />
-              <select id="admin-list-page-size" onchange="adminListPageSizeChange(this.value)"
-                class="admin-list-page-size">
-                <option value="10">10개씩</option>
-                <option value="20" selected>20개씩</option>
-                <option value="50">50개씩</option>
-                <option value="100">100개씩</option>
-              </select>
-              <span class="count" id="article-count">0건</span>
-              <button id="reorder-save-btn" class="admin-inline-btn admin-inline-btn-primary" onclick="saveReorder()">순서 저장</button>
-              <button class="admin-inline-btn" onclick="clearReorder()">순서 초기화</button>
-            </div>
+      <!-- ════════════════════ CALENDAR ════════════════════ -->
+      <div class="v3-panel" id="panel-calendar">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">캘린더</h1>
+            <p class="v3-page-desc">일정 등록과 공개 캘린더 관리</p>
           </div>
-
-          <!-- Stats -->
-          <div class="stats-row admin-list-stats">
-            <div class="stat-item"><span class="stat-num" id="stat-korea">—</span><span class="stat-label">Korea</span></div>
-            <div class="stat-item"><span class="stat-num" id="stat-apr">—</span><span class="stat-label">APR</span></div>
-            <div class="stat-item"><span class="stat-num" id="stat-wosm">—</span><span class="stat-label">WOSM</span></div>
-            <div class="stat-item"><span class="stat-num" id="stat-people">—</span><span class="stat-label">People</span></div>
+          <button class="v3-btn v3-btn-primary" id="cal-new-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+            새 일정
+          </button>
+        </div>
+        <div class="v3-toolbar">
+          <div class="v3-toolbar-left">
+            <select class="v3-filter-select" id="cal-filter-year">
+              <option value="all">전체 연도</option>
+            </select>
+            <select class="v3-filter-select" id="cal-filter-cat">
+              <option value="all">전체 분류</option>
+            </select>
           </div>
-
-          <!-- Category filter tabs -->
-          <div class="admin-list-tabs">
-            <button id="admin-tab-all" class="admin-list-tab-btn active" onclick="adminListFilter('all')">전체</button>
-            <button id="admin-tab-korea" class="admin-list-tab-btn" onclick="adminListFilter('korea')">Korea</button>
-            <button id="admin-tab-apr" class="admin-list-tab-btn" onclick="adminListFilter('apr')">APR</button>
-            <button id="admin-tab-wosm" class="admin-list-tab-btn" onclick="adminListFilter('wosm')">WOSM</button>
-            <button id="admin-tab-people" class="admin-list-tab-btn" onclick="adminListFilter('people')">People</button>
-          </div>
-
-          <div class="article-list" id="article-list">
-            <div class="list-empty">로드 중…</div>
-          </div>
-
-          <!-- Pagination -->
-          <div id="admin-pagination" class="admin-pagination">
-            <button id="admin-prev-btn" class="admin-inline-btn" onclick="adminListPageChange(-1)">← 이전</button>
-            <div id="admin-page-info" class="admin-pagination-info">1 / 1</div>
-            <button id="admin-next-btn" class="admin-inline-btn" onclick="adminListPageChange(1)">다음 →</button>
-          </div>
+        </div>
+        <div class="v3-cal-list" id="cal-list">
+          <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
       </div>
 
-      <div id="post-history-modal" class="post-history-modal" aria-hidden="true">
-        <div class="post-history-backdrop" onclick="closePostHistory()"></div>
-        <div class="post-history-card" role="dialog" aria-modal="true" aria-labelledby="post-history-title">
-          <div class="post-history-head">
-            <div>
-              <h3 id="post-history-title">게시글 기록</h3>
-              <p id="post-history-summary" class="post-history-summary">기록을 불러오는 중…</p>
-            </div>
-            <button type="button" class="post-history-close" onclick="closePostHistory()" aria-label="닫기">닫기</button>
+      <!-- ════════════════════ GLOSSARY ════════════════════ -->
+      <div class="v3-panel" id="panel-glossary">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">용어집</h1>
+            <p class="v3-page-desc">국문 · 영문 · 불문 스카우트 용어 관리</p>
           </div>
-          <div id="post-history-list" class="post-history-list"></div>
+          <button class="v3-btn v3-btn-primary" id="glos-new-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+            새 용어
+          </button>
         </div>
-      </div>
-
-      <div id="admin-tab-glossary" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header"><h2>스카우트 용어집 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">가 ~ 하 분류별로 한국어, 영어, 프랑스어 용어를 관리합니다. 공개 페이지에서는 검색과 분류 버튼으로 한눈에 찾을 수 있습니다.</p>
-
-            <div class="glossary-admin-toolbar">
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-filter-bucket">분류 보기</label>
-                <select id="glossary-filter-bucket" onchange="filterGlossaryAdmin()">
-                  <option value="all">전체</option>
-                  <option value="가">가</option>
-                  <option value="나">나</option>
-                  <option value="다">다</option>
-                  <option value="라">라</option>
-                  <option value="마">마</option>
-                  <option value="바">바</option>
-                  <option value="사">사</option>
-                  <option value="아">아</option>
-                  <option value="자">자</option>
-                  <option value="차">차</option>
-                  <option value="카">카</option>
-                  <option value="타">타</option>
-                  <option value="파">파</option>
-                  <option value="하">하</option>
-                </select>
-              </div>
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-search-admin">용어 검색</label>
-                <input type="text" id="glossary-search-admin" placeholder="한국어, 영어, 프랑스어 검색" oninput="filterGlossaryAdmin()">
-              </div>
-            </div>
-
-            <div class="glossary-admin-form-grid">
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-bucket-input">분류</label>
-                <select id="glossary-bucket-input">
-                  <option value="가">가</option>
-                  <option value="나">나</option>
-                  <option value="다">다</option>
-                  <option value="라">라</option>
-                  <option value="마">마</option>
-                  <option value="바">바</option>
-                  <option value="사">사</option>
-                  <option value="아">아</option>
-                  <option value="자">자</option>
-                  <option value="차">차</option>
-                  <option value="카">카</option>
-                  <option value="타">타</option>
-                  <option value="파">파</option>
-                  <option value="하">하</option>
-                </select>
-                <small class="admin-field-meta admin-field-meta-block">한국어가 입력되면 초성 기준으로 자동 분류됩니다.</small>
-              </div>
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-ko-input">한국어</label>
-                <input type="text" id="glossary-ko-input" maxlength="120" placeholder="예: 대장">
-              </div>
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-en-input">영어</label>
-                <input type="text" id="glossary-en-input" maxlength="160" placeholder="예: Patrol Leader">
-              </div>
-              <div class="form-group admin-form-group-reset">
-                <label for="glossary-fr-input">프랑스어</label>
-                <input type="text" id="glossary-fr-input" maxlength="160" placeholder="예: Chef de patrouille">
-              </div>
-              <div class="form-group glossary-description-field admin-form-group-reset">
-                <label for="glossary-description-input">한국어 설명</label>
-                <textarea id="glossary-description-input" rows="3" maxlength="800" placeholder="용어의 의미나 쓰임을 한국어로 설명합니다."></textarea>
-              </div>
-              <button type="button" class="submit-btn admin-inline-submit" id="glossary-submit-btn" onclick="submitGlossaryTerm()">용어 저장</button>
-              <button type="button" class="cancel-btn admin-inline-cancel" id="glossary-cancel-btn" onclick="cancelGlossaryEdit()">수정 취소</button>
-            </div>
-
-            <div id="glossary-admin-list" class="glossary-admin-list">
-              <div class="list-empty">용어를 불러오는 중…</div>
+        <div class="v3-toolbar">
+          <div class="v3-toolbar-left">
+            <div class="v3-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+              <input class="v3-search-input" type="text" id="glos-search" placeholder="용어 검색…" />
             </div>
           </div>
         </div>
+        <div class="v3-card">
+          <div id="glos-list"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
       </div>
 
-      <div id="admin-tab-calendar" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header"><h2>일정 캘린더 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">공개 캘린더 페이지에 노출할 일정을 등록합니다. 등록 즉시 `/calendar.html`에서 확인할 수 있습니다.</p>
-            <div class="calendar-admin-form">
-              <div class="form-group">
-                <label for="calendar-title-input">행사명(국문)</label>
-                <input type="text" id="calendar-title-input" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
-              </div>
-              <div class="form-group">
-                <label for="calendar-title-original-input">행사명(원문)</label>
-                <input type="text" id="calendar-title-original-input" maxlength="200" placeholder="예: World Scout Jamboree Planning Meeting" />
-              </div>
-              <div class="form-group">
-                <label for="calendar-category-input">캘린더 분류</label>
-                <select id="calendar-category-input">
-                  <option value="KOR">KOR</option>
-                  <option value="APR">APR</option>
-                  <option value="EUR">EUR</option>
-                  <option value="AFR">AFR</option>
-                  <option value="ARB">ARB</option>
-                  <option value="IAR">IAR</option>
-                  <option value="WOSM">WOSM</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="calendar-country-input">국가명</label>
-                <input type="text" id="calendar-country-input" maxlength="120" placeholder="예: 대한민국" />
-              </div>
+      <!-- ════════════════════ ANALYTICS ════════════════════ -->
+      <div class="v3-panel" id="panel-analytics">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">분석</h1>
+            <p class="v3-page-desc">방문자 통계, 조회수, 인기 콘텐츠</p>
+          </div>
+          <select class="v3-filter-select" id="analytics-period">
+            <option value="7">최근 7일</option>
+            <option value="30" selected>최근 30일</option>
+            <option value="90">최근 90일</option>
+          </select>
+        </div>
+        <div class="v3-analytics-stats" id="analytics-stats">
+          <div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>
+        </div>
+        <div id="analytics-body"></div>
+      </div>
 
-              <div class="calendar-form-split">
-                <div class="form-group">
-                  <label for="calendar-start-date-input">행사 시작 일</label>
-                  <input type="date" id="calendar-start-date-input" />
+      <!-- ════════════════════ MARKETING ════════════════════ -->
+      <div class="v3-panel" id="panel-marketing">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">마케팅</h1>
+            <p class="v3-page-desc">유입 경로, 고객 여정, 전환 흐름</p>
+          </div>
+        </div>
+        <div id="marketing-body">
+          <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+        </div>
+      </div>
+
+      <!-- ════════════════════ SETTINGS ════════════════════ -->
+      <div class="v3-panel" id="panel-settings">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">사이트 설정</h1>
+            <p class="v3-page-desc">히어로, 태그, 메타, 배너, 기고자 등 사이트 전역 설정</p>
+          </div>
+        </div>
+        <div class="v3-settings-wrap">
+          <!-- Settings nav -->
+          <div class="v3-settings-nav">
+            <button class="v3-settings-nav-btn active" data-section="hero">히어로 기사</button>
+            <button class="v3-settings-nav-btn" data-section="tags">태그 / 글머리</button>
+            <button class="v3-settings-nav-btn" data-section="meta">메타태그 / SEO</button>
+            <button class="v3-settings-nav-btn" data-section="author">저자 / 고지</button>
+            <button class="v3-settings-nav-btn" data-section="banner">게시판 배너</button>
+            <button class="v3-settings-nav-btn" data-section="ticker">티커</button>
+            <button class="v3-settings-nav-btn" data-section="contributors">기고자</button>
+            <button class="v3-settings-nav-btn" data-section="editors">편집자 / 접근</button>
+            <button class="v3-settings-nav-btn" data-section="translations">UI 번역</button>
+          </div>
+
+          <!-- Settings sections -->
+          <div id="settings-sections">
+
+            <!-- HERO -->
+            <div class="v3-settings-section active" id="settings-hero">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">히어로 기사 설정</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="hero-save-btn">저장</button>
                 </div>
-                <div class="form-group">
-                  <label class="calendar-time-toggle">
-                    <input type="checkbox" id="calendar-start-time-enabled">
-                    <span>시작 시간 입력</span>
-                  </label>
-                  <input type="time" id="calendar-start-time-input" disabled />
+                <p class="v3-card-desc v3-mb-16">홈페이지 상단 슬라이더에 표시할 기사를 최대 5개 선택합니다.</p>
+                <div class="v3-search-wrap" style="width:100%;margin-bottom:12px;">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="text" id="hero-search" placeholder="기사 제목 검색…" style="width:100%;" />
+                </div>
+                <div class="v3-search-results-drop" id="hero-search-results" style="display:none;"></div>
+                <div class="v3-hero-list" id="hero-slots"></div>
+                <div class="v3-form-group v3-mt-16">
+                  <label class="v3-label" for="hero-interval">슬라이드 전환 간격 (ms)</label>
+                  <input class="v3-input" type="number" id="hero-interval" value="3000" min="1000" max="10000" step="500" style="width:180px;" />
                 </div>
               </div>
+            </div>
 
-              <div class="calendar-form-split">
-                <div class="form-group">
-                  <label for="calendar-end-date-input">행사 종료 일</label>
-                  <input type="date" id="calendar-end-date-input" />
+            <!-- TAGS -->
+            <div class="v3-settings-section" id="settings-tags">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">태그 / 글머리 설정</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="tags-save-btn">저장</button>
                 </div>
-                <div class="form-group">
-                  <label class="calendar-time-toggle">
-                    <input type="checkbox" id="calendar-end-time-enabled">
-                    <span>종료 시간 입력</span>
-                  </label>
-                  <input type="time" id="calendar-end-time-input" disabled />
+                <p class="v3-card-desc v3-mb-16">각 카테고리별 글머리 태그를 설정합니다. 태그는 게시글 작성 시 선택 가능합니다.</p>
+                <div id="tags-editor">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
                 </div>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="calendar-tags-input">행사 태그</label>
-                <div class="calendar-tags-editor">
-                  <div id="calendar-tags-list" class="calendar-tags-list"></div>
-                  <div id="calendar-tag-presets" class="calendar-tag-presets"></div>
-                  <div class="calendar-tags-controls">
-                    <input type="text" id="calendar-tags-input" maxlength="40" placeholder="태그 입력 후 추가" />
-                    <button type="button" class="submit-btn admin-inline-submit" onclick="addCalendarTag()">태그 추가</button>
+            <!-- META -->
+            <div class="v3-settings-section" id="settings-meta">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">메타태그 / SEO</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="meta-save-btn">저장</button>
+                </div>
+                <div id="meta-editor">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AUTHOR -->
+            <div class="v3-settings-section" id="settings-author">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">저자 / AI 고지</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="author-save-btn">저장</button>
+                </div>
+                <div class="v3-form-grid">
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="s-author-name">기본 저자명</label>
+                    <input class="v3-input" type="text" id="s-author-name" placeholder="BP미디어 취재팀" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="s-ai-disclaimer">AI 고지 문구</label>
+                    <textarea class="v3-textarea" id="s-ai-disclaimer" rows="3" placeholder="이 기사는 AI의 도움을 받아 작성되었습니다…"></textarea>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label for="calendar-link-input">외부 링크</label>
-                <input type="url" id="calendar-link-input" maxlength="500" placeholder="https://..." />
-              </div>
-
-              <div class="form-group">
-                <label for="calendar-related-post-query">관련 기사 연결</label>
-                <input type="text" id="calendar-related-post-query" maxlength="120" placeholder="기사 제목 검색" />
-                <div id="calendar-related-post-selected" class="calendar-related-post-selected"></div>
-                <div id="calendar-related-post-results" class="calendar-related-post-results"></div>
-              </div>
-
-              <div class="form-group calendar-form-span-full">
-                <label for="calendar-geo-query">지도 검색</label>
-                <div class="calendar-geo-search">
-                  <input type="text" id="calendar-geo-query" maxlength="200" placeholder="행사 주소나 장소명을 검색하세요" />
-                  <button type="button" class="submit-btn admin-inline-submit" onclick="searchCalendarGeo()">지도 검색</button>
+            <!-- BANNER -->
+            <div class="v3-settings-section" id="settings-banner">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">게시판 배너</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="banner-save-btn">저장</button>
                 </div>
-                <div id="calendar-geo-results" class="calendar-related-post-results"></div>
-                <div id="calendar-geo-map" class="calendar-inline-map"></div>
-              </div>
-
-              <div class="calendar-form-split calendar-location-fields">
-                <div class="form-group">
-                  <label for="calendar-location-name-input">위치 이름</label>
-                  <input type="text" id="calendar-location-name-input" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
+                <p class="v3-card-desc v3-mb-16">각 게시판 상단에 표시할 이벤트 배너 텍스트를 설정합니다. 비워두면 표시되지 않습니다.</p>
+                <div class="v3-form-grid">
+                  <div class="v3-form-group">
+                    <label class="v3-label">Korea / KSA</label>
+                    <input class="v3-input" type="text" id="banner-korea-name" placeholder="이벤트명" />
+                    <input class="v3-input v3-mt-8" type="date" id="banner-korea-date" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label">APR</label>
+                    <input class="v3-input" type="text" id="banner-apr-name" placeholder="이벤트명" />
+                    <input class="v3-input v3-mt-8" type="date" id="banner-apr-date" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label">WOSM</label>
+                    <input class="v3-input" type="text" id="banner-wosm-name" placeholder="이벤트명" />
+                    <input class="v3-input v3-mt-8" type="date" id="banner-wosm-date" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label">People</label>
+                    <input class="v3-input" type="text" id="banner-people-name" placeholder="이벤트명" />
+                    <input class="v3-input v3-mt-8" type="date" id="banner-people-date" />
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="calendar-location-address-input">주소</label>
-                  <input type="text" id="calendar-location-address-input" maxlength="300" placeholder="예: 강원특별자치도 고성군 ..." />
-                </div>
-              </div>
-
-              <div class="form-group calendar-form-span-full">
-                <label for="calendar-description-input">설명</label>
-                <textarea id="calendar-description-input" rows="3" maxlength="2000" placeholder="일정 설명을 입력하세요."></textarea>
-              </div>
-              <div class="calendar-form-actions">
-                <button type="button" class="submit-btn admin-inline-submit" id="calendar-submit-btn" onclick="submitCalendarEvent()">일정 저장</button>
-                <button type="button" class="cancel-btn admin-inline-cancel admin-hidden" id="calendar-cancel-btn" onclick="cancelCalendarEdit()">수정 취소</button>
               </div>
             </div>
-            <div class="calendar-settings-card">
-              <div class="panel-header"><h3>캘린더 메뉴명 · 문구 관리</h3></div>
-              <p class="admin-section-note">공개 캘린더 페이지의 제목, 보기 전환 버튼, 상태 패널, 지도 안내처럼 사용자가 읽는 메뉴명과 문구를 여기서 수정합니다.</p>
-              <div class="glossary-admin-form-grid">
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-page-title">페이지 제목</label>
-                  <input type="text" id="calendar-copy-page-title" maxlength="80" placeholder="예: 일정 캘린더">
+
+            <!-- TICKER -->
+            <div class="v3-settings-section" id="settings-ticker">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">뉴스 티커</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="ticker-save-btn">저장</button>
                 </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-page-description">페이지 설명</label>
-                  <input type="text" id="calendar-copy-page-description" maxlength="160" placeholder="페이지 상단 설명">
+                <p class="v3-card-desc v3-mb-16">홈페이지 상단 스크롤 티커 문구입니다. 여러 줄 입력 시 순서대로 노출됩니다.</p>
+                <div class="v3-form-group">
+                  <label class="v3-label" for="s-ticker">티커 문구 (줄바꿈으로 구분)</label>
+                  <textarea class="v3-textarea" id="s-ticker" rows="6" placeholder="스카우트 세계잼버리 2027 개최 예정&#10;APR 리더십 컨퍼런스 개막"></textarea>
                 </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-month-view-label">월간 버튼</label>
-                  <input type="text" id="calendar-copy-month-view-label" maxlength="40" placeholder="예: 월간 일정보기">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-year-view-label">연간 버튼</label>
-                  <input type="text" id="calendar-copy-year-view-label" maxlength="40" placeholder="예: 연간 일정보기">
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-month-summary">월간 안내 문구</label>
-                  <textarea id="calendar-copy-month-summary" rows="2" maxlength="200" placeholder="월간 보기 안내 문구"></textarea>
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-year-summary">연간 안내 문구</label>
-                  <textarea id="calendar-copy-year-summary" rows="2" maxlength="200" placeholder="연간 보기 안내 문구"></textarea>
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-today-button-label">오늘 버튼</label>
-                  <input type="text" id="calendar-copy-today-button-label" maxlength="40" placeholder="예: 오늘로 가기">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-add-event-label">일정 추가 버튼</label>
-                  <input type="text" id="calendar-copy-add-event-label" maxlength="40" placeholder="예: 일정 추가">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-status-panel-label">상태 패널 제목</label>
-                  <input type="text" id="calendar-copy-status-panel-label" maxlength="40" placeholder="예: 상태별 일정">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-map-title">지도 제목</label>
-                  <input type="text" id="calendar-copy-map-title" maxlength="40" placeholder="예: 캘린더 지도">
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-map-help">지도 안내 문구</label>
-                  <textarea id="calendar-copy-map-help" rows="2" maxlength="200" placeholder="지도 안내 문구"></textarea>
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-ongoing-label">진행중 라벨</label>
-                  <input type="text" id="calendar-copy-ongoing-label" maxlength="40" placeholder="예: 진행중">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-upcoming-label">개최예정 라벨</label>
-                  <input type="text" id="calendar-copy-upcoming-label" maxlength="40" placeholder="예: 개최예정">
-                </div>
-                <div class="form-group admin-form-group-reset">
-                  <label for="calendar-copy-finished-label">행사종료 라벨</label>
-                  <input type="text" id="calendar-copy-finished-label" maxlength="40" placeholder="예: 행사종료">
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-ongoing-empty">진행중 없음 문구</label>
-                  <textarea id="calendar-copy-ongoing-empty" rows="2" maxlength="160" placeholder="진행중 상태가 없을 때 문구"></textarea>
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-upcoming-empty">개최예정 없음 문구</label>
-                  <textarea id="calendar-copy-upcoming-empty" rows="2" maxlength="160" placeholder="개최예정 상태가 없을 때 문구"></textarea>
-                </div>
-                <div class="form-group glossary-description-field admin-form-group-reset">
-                  <label for="calendar-copy-finished-empty">행사종료 없음 문구</label>
-                  <textarea id="calendar-copy-finished-empty" rows="2" maxlength="160" placeholder="행사종료 상태가 없을 때 문구"></textarea>
-                </div>
-              </div>
-              <div class="calendar-form-actions">
-                <button type="button" class="submit-btn admin-inline-submit" onclick="saveCalendarCopy()">캘린더 문구 저장</button>
+                <div class="v3-ticker-preview" id="ticker-preview"></div>
               </div>
             </div>
-            <div class="calendar-settings-card">
-              <div class="panel-header"><h3>행사 태그 관리</h3></div>
-              <p class="admin-section-note">캘린더에서 자주 쓰는 행사 태그를 저장해두면 공개/관리자 모달에서 빠르게 선택할 수 있습니다.</p>
-              <div id="calendar-tag-manager-list" class="calendar-tag-manager-list"></div>
-              <div class="calendar-tags-controls">
-                <input type="text" id="calendar-tag-manager-new" maxlength="40" placeholder="새 행사 태그 추가" />
-                <button type="button" class="submit-btn admin-inline-submit" onclick="addCalendarTagPreset()">태그 추가</button>
-              </div>
-              <div class="calendar-form-actions">
-                <button type="button" class="submit-btn admin-inline-submit" onclick="saveCalendarTagPresets()">행사 태그 저장</button>
+
+            <!-- CONTRIBUTORS -->
+            <div class="v3-settings-section" id="settings-contributors">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">기고자 목록</h2>
+                  <div class="v3-flex">
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="contrib-add-btn">항목 추가</button>
+                    <button class="v3-btn v3-btn-primary v3-btn-sm" id="contrib-save-btn">저장</button>
+                  </div>
+                </div>
+                <div class="v3-person-list" id="contrib-list">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
               </div>
             </div>
-            <div id="calendar-admin-list" class="calendar-admin-list">
-              <div class="list-empty">일정을 불러오는 중…</div>
+
+            <!-- EDITORS -->
+            <div class="v3-settings-section" id="settings-editors">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">편집자 접근 관리</h2>
+                  <div class="v3-flex">
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="editors-add-btn">편집자 추가</button>
+                    <button class="v3-btn v3-btn-primary v3-btn-sm" id="editors-save-btn">저장</button>
+                  </div>
+                </div>
+                <div class="v3-person-list" id="editors-list">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
             </div>
+
+            <!-- TRANSLATIONS -->
+            <div class="v3-settings-section" id="settings-translations">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">UI 번역 문구</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="trans-save-btn">저장</button>
+                </div>
+                <p class="v3-card-desc v3-mb-16">영어 등 다국어 UI에 표시할 번역 문구를 편집합니다.</p>
+                <div id="trans-editor">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /settings-sections -->
+        </div><!-- /settings-wrap -->
+      </div><!-- /panel-settings -->
+
+    </div><!-- /v3-content -->
+  </div><!-- /v3-main -->
+</div><!-- /v3-app -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════════════════════ -->
+
+<!-- Calendar Modal -->
+<div class="v3-overlay" id="cal-modal" style="display:none;">
+  <div class="v3-modal v3-modal-lg">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title" id="cal-modal-title">일정 추가</h3>
+      <button class="v3-modal-close" id="cal-modal-close">×</button>
+    </div>
+    <div class="v3-modal-body">
+      <input type="hidden" id="cal-id" />
+      <div class="v3-form-grid">
+        <div class="v3-form-group">
+          <label class="v3-label" for="cal-title">제목</label>
+          <input class="v3-input" type="text" id="cal-title" placeholder="일정 제목" />
+        </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="cal-desc">설명 <span class="v3-label-opt">선택</span></label>
+          <textarea class="v3-textarea" id="cal-desc" rows="3" placeholder="일정 상세 내용"></textarea>
+        </div>
+        <div class="v3-form-grid v3-form-2col">
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-start">시작일</label>
+            <input class="v3-input" type="date" id="cal-start" />
           </div>
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-end">종료일 <span class="v3-label-opt">선택</span></label>
+            <input class="v3-input" type="date" id="cal-end" />
+          </div>
+        </div>
+        <div class="v3-form-grid v3-form-2col">
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-cat">분류</label>
+            <select class="v3-select" id="cal-cat">
+              <option value="">미분류</option>
+            </select>
+          </div>
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-country">국가</label>
+            <input class="v3-input" type="text" id="cal-country" placeholder="Korea, Japan…" />
+          </div>
+        </div>
+        <div class="v3-form-grid v3-form-2col">
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-loc-name">장소명 <span class="v3-label-opt">선택</span></label>
+            <input class="v3-input" type="text" id="cal-loc-name" placeholder="한국스카우트회관" />
+          </div>
+          <div class="v3-form-group">
+            <label class="v3-label" for="cal-loc-addr">주소 <span class="v3-label-opt">선택</span></label>
+            <input class="v3-input" type="text" id="cal-loc-addr" />
+          </div>
+        </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="cal-link">링크 URL <span class="v3-label-opt">선택</span></label>
+          <input class="v3-input" type="url" id="cal-link" placeholder="https://…" />
         </div>
       </div>
-
-      <!-- ══ TAB: 설정 ══ -->
-      <div id="admin-tab-settings" class="admin-tab-panel">
-        <div class="admin-subnav">
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-editors" data-role-min="full" onclick="scrollAdminSection('settings-editors')">에디터</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-board" data-role-min="full" onclick="scrollAdminSection('settings-board')">게시판</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-tags" data-role-min="full" onclick="scrollAdminSection('settings-tags')">태그</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-site-meta" data-role-min="full" onclick="scrollAdminSection('settings-site-meta')">공유/푸터</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-ticker" data-role-min="full" onclick="scrollAdminSection('settings-ticker')">티커</button>
-          <button type="button" class="admin-subnav-btn" data-settings-section="settings-copy" data-role-min="full" onclick="scrollAdminSection('settings-copy')">문구</button>
-        </div>
-
-        <!-- Editors A-Z setting -->
-        <div class="panel admin-panel-block" id="settings-editors" data-role-min="full">
-          <div class="panel-header"><h2>에디터 관리 (A–C)</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">각 에디터의 내부 실명을 입력하세요. 실명은 관리자만 볼 수 있으며 기사에는 "Editor A" 형식으로 표시됩니다. 현재는 A~C만 사용합니다.</p>
-            <div id="editors-manager" class="admin-scroll-card"></div>
-            <button class="submit-btn admin-submit-spaced" onclick="saveEditors()">에디터 저장</button>
-          </div>
-        </div>
-
-        <div class="panel admin-panel-block" id="settings-board" data-role-min="full">
-          <div class="panel-header"><h2>게시판 카드 간격</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">Korea, APR, WOSM, Scout People 게시판 카드의 상하 간격입니다. 최소 5px부터 설정할 수 있습니다.</p>
-            <div class="admin-inline-controls">
-              <label for="board-gap-input" class="admin-inline-label">카드 간격</label>
-              <input type="number" id="board-gap-input" min="5" max="40" step="1" value="6"
-                class="admin-control-input admin-control-input-short" />
-              <span class="admin-inline-unit">px</span>
-              <button type="button" class="submit-btn admin-inline-submit" onclick="saveBoardLayout()">간격 저장</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel admin-panel-block" data-role-min="full">
-          <div class="panel-header"><h2>게시판 D-day 설정</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">카테고리 배너 오른쪽 큰 영역에 행사명과 D-day를 표시합니다. 날짜를 비워두면 기존처럼 게시글 수가 표시되며, 모바일에서는 표시되지 않습니다.</p>
-            <div id="board-banner-manager" class="admin-stack-tight"></div>
-            <button type="button" class="submit-btn admin-submit-spaced" onclick="saveBoardBanner()">D-day 설정 저장</button>
-          </div>
-        </div>
-
-        <!-- Tags -->
-        <div class="panel admin-panel-block" id="settings-tags" data-role-min="full">
-          <div class="panel-header"><h2>글머리 태그 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">A는 공통 태그, B는 게시판 전용 태그입니다. 태그를 추가한 뒤 드래그해서 공통과 각 게시판 영역 사이를 이동할 수 있습니다.</p>
-            <div class="tag-admin-toolbar">
-              <input type="text" id="tag-new-input" maxlength="30" placeholder="새 태그 입력" />
-              <select id="tag-new-target">
-                <option value="common">A · 공통 태그</option>
-                <option value="korea">B · Korea 전용</option>
-                <option value="apr">B · APR 전용</option>
-                <option value="wosm">B · WOSM 전용</option>
-                <option value="people">B · Scout People 전용</option>
-              </select>
-              <button class="submit-btn admin-inline-submit" onclick="addManagedTag()">태그 추가</button>
-            </div>
-            <div class="tag-admin-grid">
-              <section class="tag-admin-panel">
-                <div class="tag-admin-panel-head">A · 공통 태그</div>
-                <div id="tag-lane-common" class="tag-admin-lane" data-tag-target="common"></div>
-              </section>
-              <section class="tag-admin-panel">
-                <div class="tag-admin-panel-head">B · Korea 전용</div>
-                <div id="tag-lane-korea" class="tag-admin-lane" data-tag-target="korea"></div>
-              </section>
-              <section class="tag-admin-panel">
-                <div class="tag-admin-panel-head">B · APR 전용</div>
-                <div id="tag-lane-apr" class="tag-admin-lane" data-tag-target="apr"></div>
-              </section>
-              <section class="tag-admin-panel">
-                <div class="tag-admin-panel-head">B · WOSM 전용</div>
-                <div id="tag-lane-wosm" class="tag-admin-lane" data-tag-target="wosm"></div>
-              </section>
-              <section class="tag-admin-panel">
-                <div class="tag-admin-panel-head">B · Scout People 전용</div>
-                <div id="tag-lane-people" class="tag-admin-lane" data-tag-target="people"></div>
-              </section>
-            </div>
-            <button class="submit-btn admin-submit-spaced" onclick="saveTags()">태그 저장</button>
-          </div>
-        </div>
-
-        <div class="panel admin-panel-spaced" id="settings-site-meta" data-role-min="full">
-          <div class="panel-header"><h2>일반 페이지 공유 설정</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">홈, 게시판, 검색, 도움 페이지를 공유할 때 노출될 제목과 설명을 설정합니다.</p>
-            <p class="admin-section-note">특히 `홈 / index` 설명은 구글과 네이버 검색 결과의 사이트 소개 문구로 활용됩니다.</p>
-            <p class="admin-section-note">평균적으로 반영 확인까지 1~10분 정도 걸릴 수 있으며, 카카오톡·페이스북·X 같은 플랫폼은 자체 캐시 때문에 더 오래 보일 수 있습니다.</p>
-
-            <div class="share-meta-grid" id="site-meta-manager"></div>
-
-            <div class="admin-settings-divider"></div>
-
-            <div class="share-meta-card">
-              <div class="share-meta-card-head">푸터 좌측 전체 문구</div>
-              <p class="admin-section-note">푸터 좌측 문구는 아래 필드만 수정하면 자동으로 정리된 형태로 반영됩니다.</p>
-              <div class="share-meta-inline-grid footer-editor-grid">
-                <div>
-                  <label for="site-footer-title">제목</label>
-                  <input type="text" id="site-footer-title" maxlength="80" placeholder="BP미디어" />
-                </div>
-                <div>
-                  <label for="site-footer-domain">도메인</label>
-                  <input type="text" id="site-footer-domain" maxlength="120" placeholder="bpmedia.net" />
-                </div>
-                <div class="admin-grid-span-full">
-                  <label for="site-footer-description">소개 문구</label>
-                  <textarea id="site-footer-description" rows="4" maxlength="260" placeholder="BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다."></textarea>
-                </div>
-                <div>
-                  <label for="site-footer-tip-email">기사제보 메일</label>
-                  <input type="email" id="site-footer-tip-email" maxlength="120" placeholder="story@bpmedia.net" />
-                </div>
-                <div>
-                  <label for="site-footer-contact-email">문의 메일</label>
-                  <input type="email" id="site-footer-contact-email" maxlength="120" placeholder="info@bpmedia.net" />
-                </div>
-              </div>
-              <div class="footer-editor-preview-block">
-                <div class="share-meta-card-head">미리보기</div>
-                <div id="site-footer-preview" class="footer-editor-preview"></div>
-              </div>
-              <button class="submit-btn admin-btn-auto admin-btn-tight admin-btn-top-gap" type="button" onclick="saveSiteMeta()">푸터 문구 저장</button>
-            </div>
-
-            <div class="admin-share-image-block">
-              <label class="admin-field-label" for="site-meta-image-preview">공유 대표 이미지</label>
-              <div class="admin-inline-actions">
-                <button class="submit-btn admin-btn-auto admin-btn-tight" type="button" onclick="uploadSiteMetaImage()">대표 이미지 업로드</button>
-                <button class="cancel-btn visible admin-btn-auto admin-btn-tight" type="button" onclick="removeSiteMetaImage()">이미지 제거</button>
-              </div>
-              <div id="site-meta-image-preview" class="admin-preview-top-gap"></div>
-              <p class="admin-help-copy">권장 1200×630px, PNG/JPG, 1MB 이하. 너무 작은 이미지는 공유 미리보기가 비어 보일 수 있습니다.</p>
-            </div>
-
-            <div class="form-row admin-form-row-top-gap">
-              <div class="form-group">
-                <label for="site-google-verification">Google Search Console 인증 코드</label>
-                <input type="text" id="site-google-verification" placeholder="google-site-verification content 값" maxlength="120" />
-              </div>
-              <div class="form-group">
-                <label for="site-naver-verification">네이버 서치어드바이저 인증 코드</label>
-                <input type="text" id="site-naver-verification" placeholder="naver-site-verification content 값" maxlength="120" />
-              </div>
-            </div>
-            <p class="admin-help-copy admin-help-copy-tight">각 도구에서 발급된 meta verification의 content 값만 입력하면 됩니다.</p>
-
-            <button class="submit-btn admin-btn-top-gap" onclick="saveSiteMeta()">공유 설정 저장</button>
-          </div>
-        </div>
-
-        <!-- Ticker -->
-        <div class="panel admin-panel-spaced" id="settings-ticker" data-role-min="full">
-          <div class="panel-header"><h2>뉴스 티커 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">한 줄에 텍스트 하나씩 입력하세요.</p>
-            <textarea id="ticker-textarea" rows="5" class="admin-textarea-standard" placeholder="BP미디어 소식&#10;The BP Post · bpmedia.net"></textarea>
-            <button class="submit-btn admin-btn-top-gap" onclick="saveTicker()">티커 저장</button>
-          </div>
-        </div>
-
-        <!-- AI Disclaimer -->
-        <div class="panel admin-panel-spaced" data-role-min="full">
-          <div class="panel-header"><h2>AI 도움 문구 설정</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">AI 지원 글 하단에 표시될 문구입니다.</p>
-            <div class="admin-inline-save">
-              <input type="text" id="ai-disclaimer-input" class="admin-inline-save-input admin-inline-input" placeholder="본 글은 AI의 도움을 받아 작성되었습니다." maxlength="500" />
-              <button class="submit-btn admin-inline-save-btn admin-inline-save-btn-compact" onclick="saveAiDisclaimer()">저장</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel admin-panel-spaced" id="settings-copy" data-role-min="full">
-          <div class="panel-header"><h2>카테고리 설명 문구</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">APR, WOSM 카테고리 소개 문구와 번역 안내 문구를 수정합니다.</p>
-            <div id="category-copy-manager" class="admin-flex-column-gap"></div>
-            <button class="submit-btn admin-btn-top-gap-lg" onclick="saveCategoryCopy()">카테고리 문구 저장</button>
-          </div>
-        </div>
-
-      </div><!-- /settings tab -->
-
-      <div id="admin-tab-hero-manager" class="admin-tab-panel">
-        <div class="panel" id="settings-hero-manager">
-          <div class="panel-header"><h2>히어로 기사 설정 (최대 5개)</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">메인 히어로에 노출할 기사를 최대 5개까지 선택하세요. 자동 슬라이드로 순환되며, 기사 추가 목록에는 현재 공개된 최신 기사만 표시됩니다.</p>
-            <p class="admin-section-note">선택된 히어로 카드는 PC 버전과 모바일 버전의 이미지 위치·확대를 각각 따로 저장합니다.</p>
-            <p class="admin-section-note">이미지를 100% 아래로 줄이면 같은 이미지를 흐린 배경으로 깔아 빈 공간이 어색하지 않게 보강합니다.</p>
-            <p class="admin-section-note">카드를 드래그해서 순서를 변경할 수 있습니다.</p>
-            <div class="admin-inline-controls">
-              <label for="hero-interval-input" class="admin-inline-label">기사 노출 시간</label>
-              <input type="number" id="hero-interval-input" min="2" max="15" step="1" value="3"
-                class="admin-inline-number-input" />
-              <span class="admin-inline-unit">초</span>
-              <button type="button" class="submit-btn admin-btn-auto admin-btn-compact" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
-            </div>
-            <div id="hero-slots" class="admin-stack-list"></div>
-            <div class="admin-settings-actions">
-              <span class="admin-inline-note">슬라이드 카드에서 조정한 이미지 위치, 크기, 노출 시간은 아래 저장 버튼으로 함께 반영합니다.</span>
-              <button type="button" class="submit-btn admin-btn-auto admin-btn-compact" onclick="saveHeroSettings()">히어로 관리 설정 저장</button>
-            </div>
-            <div class="admin-search-panel">
-              <div class="admin-search-panel-title">기사 추가</div>
-              <input type="text" id="hero-search-input" placeholder="기사 제목으로 검색…"
-                class="admin-search-input"
-                oninput="heroSearch()" />
-              <div id="hero-search-results" class="admin-search-results admin-search-results-lg"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-tab-feature-definition" class="admin-tab-panel" data-role-min="full">
-        <div class="panel admin-panel-block" id="feature-definition-panel">
-          <div class="panel-header"><h2>기능 정의서 / KMS</h2></div>
-          <div class="panel-body">
-            <div class="calendar-form-actions">
-              <p class="admin-section-note">기능 정의서는 이제 별도 관리자 KMS 페이지에서 열고 수정합니다. 앞으로 개발 전·중·배포 전에 그 문서를 기준으로 확인합니다.</p>
-              <button type="button" class="submit-btn admin-inline-submit" onclick="openKmsPage()">KMS 페이지 열기</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-tab-home-lead" class="admin-tab-panel" data-role-min="full">
-        <div class="panel" id="settings-home-lead">
-          <div class="panel-header"><h2>메인 스토리 직접 지정</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">홈 상단 `메인 스토리` 카드에 노출할 게시글을 직접 선택하고, PC/모바일 이미지 위치를 따로 조정합니다.</p>
-            <p class="admin-section-note">이미지를 100% 아래로 줄이면 같은 이미지를 흐린 배경으로 깔아 빈 공간을 자연스럽게 메웁니다.</p>
-            <div class="admin-settings-block">
-              <div id="home-lead-selected" class="admin-selected-post">불러오는 중…</div>
-              <div class="admin-search-panel admin-search-panel-soft">
-                <div class="admin-search-panel-title">메인 스토리 기사 검색</div>
-                <input type="text" id="home-lead-search-input" placeholder="기사 제목으로 검색…"
-                  class="admin-search-input"
-                  oninput="searchHomeLeadPost()" />
-                <div id="home-lead-search-results" class="admin-search-results admin-search-results-md"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-tab-contributors" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header"><h2>도움을 주신 분들 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">이 홈페이지가 운영될 수 있게 도움을 주신 분들을 관리합니다.</p>
-            <p class="admin-section-note">행을 드래그해서 순서를 변경할 수 있습니다.</p>
-            <div id="contributors-admin-list" class="admin-stack-list"></div>
-            <div class="admin-contrib-form">
-              <div id="contrib-form-label" class="admin-contrib-form-label">새 분 추가</div>
-              <div class="admin-contrib-row">
-                <input type="text" id="contrib-name-input" placeholder="이름 (최대 60자)" maxlength="60"
-                  class="admin-contrib-input" />
-              </div>
-              <div class="admin-contrib-row">
-                <input type="text" id="contrib-note-input" placeholder="도움 내용 (최대 200자)" maxlength="200"
-                  class="admin-contrib-input" />
-              </div>
-              <div class="admin-contrib-row admin-contrib-row-date">
-                <label class="admin-contrib-date-label">도움 날짜</label>
-                <input type="date" id="contrib-date-input"
-                  class="admin-contrib-date-input" />
-              </div>
-              <div class="admin-inline-actions">
-                <button class="submit-btn admin-btn-compact" id="contrib-submit-btn" onclick="submitContributor()">추가</button>
-                <button id="contrib-cancel-btn" class="admin-contrib-cancel admin-hidden" onclick="cancelEditContributor()">취소</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-tab-translations" class="admin-tab-panel" data-role-min="full">
-        <div class="panel">
-          <div class="panel-header"><h2>UI 번역 관리</h2></div>
-          <div class="panel-body">
-            <p class="admin-section-note">버튼과 메뉴의 국문/영문 텍스트를 수정하세요.</p>
-            <div id="translations-table" class="admin-flex-column-gap">
-              <div class="translations-loading">불러오는 중…</div>
-            </div>
-            <button class="submit-btn admin-btn-top-gap-lg" onclick="saveTranslations()">번역 저장</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="admin-tab-history" class="admin-tab-panel">
-        <div class="panel">
-          <div class="panel-header"><h2>버전 기록</h2></div>
-          <div class="panel-body">
-            <div id="version-history-list"></div>
-            <div id="version-history-pagination" class="version-history-pagination"></div>
-          </div>
-        </div>
-      </div>
-    </div><!-- /admin-tab-content -->
-      <aside class="admin-context-rail admin-v2-rail">
-        <section class="admin-context-card">
-          <div class="admin-context-card-head">
-            <strong>금일 홈페이지 방문자</strong>
-            <span>오늘 기준</span>
-          </div>
-          <div class="admin-context-metric" id="admin-context-today-visits">—</div>
-          <p class="admin-context-note" id="admin-context-today-note">site visit 기준으로 집계합니다.</p>
-        </section>
-        <section class="admin-context-card">
-          <div class="admin-context-card-head">
-            <strong>금일 최고 관심 기사</strong>
-            <span>방문 기준</span>
-          </div>
-          <a id="admin-context-top-post-link" class="admin-context-feature-link" href="/index.html">
-            <span id="admin-context-top-post-title">데이터를 불러오는 중…</span>
-            <em id="admin-context-top-post-meta">—</em>
-          </a>
-        </section>
-        <section class="admin-context-card">
-          <div class="admin-context-card-head">
-            <strong>최근 방문한 관리자 페이지</strong>
-            <span>이 브라우저 기준</span>
-          </div>
-          <div id="admin-context-recent-pages" class="admin-context-list">
-            <div class="admin-context-empty">아직 방문한 메뉴가 없습니다.</div>
-          </div>
-        </section>
-      </aside>
-    </div><!-- /admin-shell -->
-  </div><!-- /admin-screen -->
-
-  <div class="toast" id="toast"></div>
-  <div id="marketing-fullscreen-modal" class="marketing-fullscreen-modal" aria-hidden="true">
-    <div class="marketing-fullscreen-backdrop" onclick="closeMarketingFullscreen()"></div>
-    <div class="marketing-fullscreen-card" role="dialog" aria-modal="true" aria-labelledby="marketing-fullscreen-title">
-      <div class="marketing-fullscreen-head">
-        <div>
-          <strong id="marketing-fullscreen-title">전체화면 보기</strong>
-          <span id="marketing-fullscreen-meta">시각화 데이터를 크게 확인합니다.</span>
-        </div>
-        <div class="marketing-fullscreen-controls">
-          <button type="button" class="marketing-zoom-btn" onclick="adjustMarketingFullscreenZoom(-0.1)">축소</button>
-          <button type="button" class="marketing-zoom-btn" onclick="resetMarketingFullscreenZoom()">100%</button>
-          <button type="button" class="marketing-zoom-btn" onclick="adjustMarketingFullscreenZoom(0.1)">확대</button>
-          <button type="button" class="marketing-fullscreen-close" onclick="closeMarketingFullscreen()">닫기</button>
-        </div>
-      </div>
-      <div id="marketing-fullscreen-body" class="marketing-fullscreen-body"></div>
+    </div>
+    <div class="v3-modal-foot">
+      <button class="v3-btn v3-btn-danger v3-btn-sm" id="cal-delete-btn" style="display:none;">삭제</button>
+      <button class="v3-btn v3-btn-outline v3-btn-sm" id="cal-modal-cancel">취소</button>
+      <button class="v3-btn v3-btn-primary v3-btn-sm" id="cal-save-btn">저장</button>
     </div>
   </div>
+</div>
 
-  </main>
-  <script src="/js/main.js?v=0.093.03"></script>
-  <script src="/js/admin.js?v=0.093.03"></script>
-  <script src="/js/admin-marketing.js?v=0.093.03"></script>
-  <script src="/js/admin-calendar.js?v=0.093.03"></script>
-  <script src="/js/admin-glossary.js?v=0.093.03"></script>
-  <script src="/js/admin-history.js?v=0.093.03"></script>
-  <script src="/js/admin-contributors.js?v=0.093.03"></script>
-  <script>
-    // Render Turnstile widget on login screen
-    GW.loadTurnstile(function () {
-      if (window.turnstile && GW.TURNSTILE_SITE_KEY) {
-        window.turnstile.render('#login-turnstile', {
-          sitekey: GW.TURNSTILE_SITE_KEY,
-          theme:   'light',
-        });
-      }
-    });
-  </script>
+<!-- Glossary Modal -->
+<div class="v3-overlay" id="glos-modal" style="display:none;">
+  <div class="v3-modal">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title" id="glos-modal-title">용어 추가</h3>
+      <button class="v3-modal-close" id="glos-modal-close">×</button>
+    </div>
+    <div class="v3-modal-body">
+      <input type="hidden" id="glos-id" />
+      <div class="v3-form-grid">
+        <div class="v3-form-group">
+          <label class="v3-label" for="glos-ko">한국어 용어</label>
+          <input class="v3-input" type="text" id="glos-ko" placeholder="세계잼버리" />
+        </div>
+        <div class="v3-form-grid v3-form-2col">
+          <div class="v3-form-group">
+            <label class="v3-label" for="glos-en">English</label>
+            <input class="v3-input" type="text" id="glos-en" placeholder="World Jamboree" />
+          </div>
+          <div class="v3-form-group">
+            <label class="v3-label" for="glos-fr">Français <span class="v3-label-opt">선택</span></label>
+            <input class="v3-input" type="text" id="glos-fr" placeholder="Jamboree Mondial" />
+          </div>
+        </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="glos-desc">설명 <span class="v3-label-opt">선택</span></label>
+          <textarea class="v3-textarea" id="glos-desc" rows="3" placeholder="용어에 대한 설명"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="v3-modal-foot">
+      <button class="v3-btn v3-btn-danger v3-btn-sm" id="glos-delete-btn" style="display:none;">삭제</button>
+      <button class="v3-btn v3-btn-outline v3-btn-sm" id="glos-modal-cancel">취소</button>
+      <button class="v3-btn v3-btn-primary v3-btn-sm" id="glos-save-btn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="v3-overlay" id="v3-confirm" style="display:none;">
+  <div class="v3-confirm-box">
+    <div class="v3-confirm-icon" id="confirm-icon">⚠️</div>
+    <div class="v3-confirm-title" id="confirm-title">확인</div>
+    <div class="v3-confirm-msg"   id="confirm-msg"></div>
+    <div class="v3-confirm-btns">
+      <button class="v3-btn v3-btn-outline" id="confirm-cancel-btn">취소</button>
+      <button class="v3-btn v3-btn-danger"  id="confirm-ok-btn">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scripts ────────────────────────────────────────────── -->
+<script src="/js/main.js?v=3.001.00"></script>
+<script src="/js/admin-v3.js?v=3.001.00"></script>
 </body>
 </html>
