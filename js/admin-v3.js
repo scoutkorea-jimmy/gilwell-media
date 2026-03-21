@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.03
+ * Version: V3.001.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -212,6 +212,12 @@
     // Ticker preview
     document.getElementById('s-ticker').addEventListener('input', function () {
       _renderTickerPreview(this.value);
+    });
+
+    document.addEventListener('gw:admin-auth-required', function (event) {
+      var detail = event && event.detail ? event.detail : {};
+      GW.showToast((detail.message || '관리자 세션이 만료되었습니다. 다시 로그인해주세요.'), 'error');
+      _showLogin();
     });
   });
 
@@ -426,17 +432,18 @@
      DASHBOARD
   ══════════════════════════════════════════════════════════ */
   function _loadDashboard() {
-    // Load today's summary + recent posts in parallel
-    Promise.all([
-      GW.apiFetch('/api/admin/analytics').catch(function () { return {}; }),
-      GW.apiFetch('/api/posts?limit=8&published=all').catch(function () { return { posts: [] }; }),
-      GW.apiFetch('/api/posts/popular?limit=5').catch(function () { return { posts: [] }; }),
-      GW.apiFetch('/api/posts?limit=1&published=1').catch(function () { return { total: 0 }; }),
+    Promise.allSettled([
+      GW.apiFetch('/api/admin/analytics'),
+      GW.apiFetch('/api/posts?limit=8&published=all'),
+      GW.apiFetch('/api/posts/popular?limit=5'),
+      GW.apiFetch('/api/posts?limit=1&published=1'),
     ]).then(function (results) {
-      var analytics = results[0] || {};
-      var recent    = (results[1] && results[1].posts) || [];
-      var popular   = (results[2] && results[2].posts) || [];
-      var published = results[3] || {};
+      var analytics = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
+      var recentRes = results[1].status === 'fulfilled' ? (results[1].value || {}) : { posts: [] };
+      var popularRes = results[2].status === 'fulfilled' ? (results[2].value || {}) : { posts: [] };
+      var published = results[3].status === 'fulfilled' ? (results[3].value || {}) : { total: 0 };
+      var recent    = recentRes.posts || [];
+      var popular   = popularRes.posts || [];
 
       // Stats
       var today = analytics.today || {};
@@ -445,7 +452,7 @@
       var counts = analytics.counts || {};
       _setText('dash-stat-visits', _fmt(today.visits || visitors.today_visits || summary.today_visits || 0));
       _setText('dash-stat-views',  _fmt(today.views || summary.today_pageviews || summary.today_views || 0));
-      _setText('dash-stat-posts', _fmt((results[1] && results[1].total) || counts.total || recent.length || 0));
+      _setText('dash-stat-posts', _fmt(recentRes.total || counts.total || recent.length || 0));
       _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
 
       // Recent posts
@@ -480,6 +487,9 @@
           '</div>';
         }).join('');
       }
+    }).catch(function (e) {
+      document.getElementById('dash-recent-list').innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
+      document.getElementById('dash-top-list').innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
     });
   }
 
@@ -1209,7 +1219,7 @@
         html += '</div></div>';
       }
 
-      bodyEl.innerHTML = html;
+      bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
     });
