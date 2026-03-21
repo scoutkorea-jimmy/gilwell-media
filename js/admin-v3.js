@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.001.08
+ * Version: V3.002.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -45,6 +45,7 @@
   var _heroPostIds   = [];
   var _heroInterval  = 3000;
   var _tagSettings   = {};
+  var _tagInlineEdit = null;
   var _siteMeta      = {};
   var _contributors  = [];
   var _editors       = [];
@@ -1789,27 +1790,190 @@
 
   function _renderTagsEditor() {
     var el = document.getElementById('tags-editor');
-    var catKeys = ['korea', 'apr', 'wosm', 'people'];
-    el.innerHTML = catKeys.map(function (cat) {
-      var tags = _getCategoryTags(_tagSettings, cat);
-      var tagsStr = tags.map(function (t) {
-        return typeof t === 'string' ? t : (t.label || t.value || JSON.stringify(t));
-      }).join(', ');
-      return '<div class="v3-form-group v3-mt-12">' +
-        '<label class="v3-label">' + GW.escapeHtml(cat.toUpperCase()) + ' 태그</label>' +
-        '<input class="v3-input" type="text" data-cat="' + cat + '" id="tags-cat-' + cat + '" value="' + GW.escapeHtml(tagsStr) + '" placeholder="쉼표로 구분하여 입력" />' +
-        '<div class="v3-input-hint">쉼표(,)로 구분해서 태그를 입력하세요</div>' +
+    var sections = [
+      { key: 'common', label: '공통 태그', desc: '모든 카테고리에서 공통으로 선택 가능한 태그입니다.' },
+      { key: 'korea', label: 'KOREA 태그', desc: 'Korea / KSA 기사에서 사용하는 글머리 태그입니다.' },
+      { key: 'apr', label: 'APR 태그', desc: 'APR 기사에서 사용하는 글머리 태그입니다.' },
+      { key: 'wosm', label: 'WOSM 태그', desc: 'WOSM 기사에서 사용하는 글머리 태그입니다.' },
+      { key: 'people', label: 'PEOPLE 태그', desc: 'People 기사에서 사용하는 글머리 태그입니다.' }
+    ];
+    el.innerHTML = sections.map(function (section) {
+      var tags = _getTagScopeItems(_tagSettings, section.key);
+      return '<section class="v3-tag-group" data-tag-scope-group="' + GW.escapeHtml(section.key) + '">' +
+        '<div class="v3-tag-group-head">' +
+          '<div>' +
+            '<h3 class="v3-tag-group-title">' + GW.escapeHtml(section.label) + '</h3>' +
+            '<p class="v3-tag-group-desc">' + GW.escapeHtml(section.desc) + '</p>' +
+          '</div>' +
+          '<span class="v3-tag-group-count">' + tags.length + '개</span>' +
+        '</div>' +
+        '<div class="v3-tag-chip-list">' + _renderTagChips(section.key, tags) + '</div>' +
+        '<div class="v3-tag-add-row">' +
+          '<input class="v3-input v3-tag-add-input" type="text" id="tags-add-' + _escId(section.key) + '" placeholder="' + GW.escapeHtml(section.label + ' 추가') + '" />' +
+          '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" data-tag-add="' + GW.escapeHtml(section.key) + '">추가</button>' +
+        '</div>' +
+      '</section>';
+    }).join('');
+    _bindTagEditorEvents();
+  }
+
+  function _renderTagChips(scope, tags) {
+    if (!tags.length) {
+      return '<div class="v3-empty-inline">아직 등록된 태그가 없습니다.</div>';
+    }
+    return tags.map(function (tag) {
+      var isEditing = _tagInlineEdit && _tagInlineEdit.scope === scope && _tagInlineEdit.original === tag;
+      if (isEditing) {
+        return '<div class="v3-tag-chip is-editing">' +
+          '<input class="v3-input v3-tag-inline-input" type="text" id="tag-edit-' + _escId(scope + '-' + tag) + '" value="' + GW.escapeHtml(_tagInlineEdit.value || tag) + '" />' +
+          '<button class="v3-btn v3-btn-primary v3-btn-sm" type="button" data-tag-confirm="' + GW.escapeHtml(scope) + '" data-tag-original="' + GW.escapeHtml(tag) + '">확인</button>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" data-tag-cancel="' + GW.escapeHtml(scope) + '" data-tag-original="' + GW.escapeHtml(tag) + '">취소</button>' +
+        '</div>';
+      }
+      return '<div class="v3-tag-chip">' +
+        '<span class="v3-tag-chip-label">' + GW.escapeHtml(tag) + '</span>' +
+        '<div class="v3-tag-chip-actions">' +
+          '<button class="v3-tag-chip-btn" type="button" data-tag-edit="' + GW.escapeHtml(scope) + '" data-tag-value="' + GW.escapeHtml(tag) + '">수정</button>' +
+          '<button class="v3-tag-chip-btn is-danger" type="button" data-tag-remove="' + GW.escapeHtml(scope) + '" data-tag-value="' + GW.escapeHtml(tag) + '">삭제</button>' +
+        '</div>' +
       '</div>';
     }).join('');
+  }
+
+  function _bindTagEditorEvents() {
+    var wrap = document.getElementById('tags-editor');
+    if (!wrap) return;
+    wrap.querySelectorAll('[data-tag-add]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _addTagToScope(btn.getAttribute('data-tag-add') || '');
+      });
+    });
+    wrap.querySelectorAll('[data-tag-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _tagInlineEdit = {
+          scope: btn.getAttribute('data-tag-edit') || '',
+          original: btn.getAttribute('data-tag-value') || '',
+          value: btn.getAttribute('data-tag-value') || ''
+        };
+        _renderTagsEditor();
+        var input = document.getElementById('tag-edit-' + _escId(_tagInlineEdit.scope + '-' + _tagInlineEdit.original));
+        if (input) {
+          input.focus();
+          input.select();
+          input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              _commitTagEdit(_tagInlineEdit.scope, _tagInlineEdit.original);
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              _tagInlineEdit = null;
+              _renderTagsEditor();
+            }
+          });
+        }
+      });
+    });
+    wrap.querySelectorAll('[data-tag-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _removeTagFromScope(btn.getAttribute('data-tag-remove') || '', btn.getAttribute('data-tag-value') || '');
+      });
+    });
+    wrap.querySelectorAll('[data-tag-confirm]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _commitTagEdit(btn.getAttribute('data-tag-confirm') || '', btn.getAttribute('data-tag-original') || '');
+      });
+    });
+    wrap.querySelectorAll('[data-tag-cancel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _tagInlineEdit = null;
+        _renderTagsEditor();
+      });
+    });
+    wrap.querySelectorAll('.v3-tag-add-input').forEach(function (input) {
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          var scope = (input.id || '').replace('tags-add-', '');
+          _addTagToScope(scope);
+        }
+      });
+    });
+  }
+
+  function _getTagScopeItems(settings, scope) {
+    if (!settings || typeof settings !== 'object') return [];
+    if (scope === 'common') {
+      return Array.isArray(settings.common) ? settings.common.slice() : [];
+    }
+    var categories = settings.categories || {};
+    var raw = categories[scope];
+    if (Array.isArray(raw)) return raw.slice();
+    if (raw && Array.isArray(raw.tags)) return raw.tags.slice();
+    return [];
+  }
+
+  function _setTagScopeItems(scope, items) {
+    var nextItems = (Array.isArray(items) ? items : []).map(function (item) {
+      return String(item || '').trim();
+    }).filter(Boolean);
+    nextItems = nextItems.filter(function (item, index) {
+      return nextItems.indexOf(item) === index;
+    });
+    if (scope === 'common') {
+      _tagSettings.common = nextItems;
+      return;
+    }
+    if (!_tagSettings.categories) _tagSettings.categories = {};
+    _tagSettings.categories[scope] = nextItems;
+  }
+
+  function _addTagToScope(scope) {
+    var input = document.getElementById('tags-add-' + _escId(scope));
+    var value = input ? String(input.value || '').trim() : '';
+    if (!value) return;
+    var items = _getTagScopeItems(_tagSettings, scope);
+    if (items.indexOf(value) >= 0) {
+      GW.showToast('이미 등록된 태그입니다', 'error');
+      if (input) input.value = '';
+      return;
+    }
+    items.push(value);
+    _setTagScopeItems(scope, items);
+    _tagInlineEdit = null;
+    if (input) input.value = '';
+    _renderTagsEditor();
+  }
+
+  function _removeTagFromScope(scope, tag) {
+    var items = _getTagScopeItems(_tagSettings, scope).filter(function (item) { return item !== tag; });
+    _setTagScopeItems(scope, items);
+    if (_tagInlineEdit && _tagInlineEdit.scope === scope && _tagInlineEdit.original === tag) _tagInlineEdit = null;
+    _renderTagsEditor();
+  }
+
+  function _commitTagEdit(scope, original) {
+    var input = document.getElementById('tag-edit-' + _escId(scope + '-' + original));
+    var nextValue = input ? String(input.value || '').trim() : '';
+    if (!nextValue) {
+      GW.showToast('태그명을 입력해주세요', 'error');
+      return;
+    }
+    var items = _getTagScopeItems(_tagSettings, scope);
+    if (nextValue !== original && items.indexOf(nextValue) >= 0) {
+      GW.showToast('이미 등록된 태그입니다', 'error');
+      return;
+    }
+    items = items.map(function (item) { return item === original ? nextValue : item; });
+    _setTagScopeItems(scope, items);
+    _tagInlineEdit = null;
+    _renderTagsEditor();
   }
 
   function _saveTags() {
     var common = (_tagSettings && Array.isArray(_tagSettings.common)) ? _tagSettings.common.slice() : [];
     var cats = {};
     ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
-      var input = document.getElementById('tags-cat-' + cat);
-      var tags = input ? input.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
-      cats[cat] = tags;
+      cats[cat] = _getTagScopeItems(_tagSettings, cat);
     });
     document.getElementById('tags-save-btn').disabled = true;
     GW.apiFetch('/api/settings/tags', {
@@ -1817,7 +1981,9 @@
       body: JSON.stringify({ common: common, categories: cats }),
     }).then(function () {
       GW.showToast('태그 설정을 저장했습니다', 'success');
-      _tagSettings = { categories: cats };
+      _tagSettings = { common: common, categories: cats };
+      _tagInlineEdit = null;
+      _loadTagSettings();
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
     }).finally(function () { document.getElementById('tags-save-btn').disabled = false; });
@@ -2219,11 +2385,14 @@
   }
 
   function _getCategoryTags(settings, cat) {
-    var categories = settings && settings.categories ? settings.categories : {};
-    var raw = categories[cat];
-    if (Array.isArray(raw)) return raw;
-    if (raw && Array.isArray(raw.tags)) return raw.tags;
-    return [];
+    var seen = {};
+    var result = [];
+    _getTagScopeItems(settings, 'common').concat(_getTagScopeItems(settings, cat)).forEach(function (item) {
+      if (!item || seen[item]) return;
+      seen[item] = true;
+      result.push(item);
+    });
+    return result;
   }
 
   function _kstNow() {
