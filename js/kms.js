@@ -1228,7 +1228,7 @@
           '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;border:1px solid rgba(31,31,31,0.12);max-width:560px">',
           // Card 1
           '<div class="post-card">',
-          '<img class="post-card-thumb" src="" alt="" style="background:#e8e4de;aspect-ratio:16/9;display:block;width:100%;object-fit:cover" onerror="this.style.background=\'#e8e4de\'">',
+          '<img class="post-card-thumb" src="/img/logo.png" alt="BP미디어 로고" style="aspect-ratio:16/9;display:block;width:100%;object-fit:contain;background:#f5f3ef;padding:12px">',
           '<div class="post-card-body">',
           '<div class="post-card-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span></div>',
           '<h3>스카우트 잼버리 2026 한국 개최 확정 — 5만 명 참가 예상</h3>',
@@ -1237,7 +1237,7 @@
           '</div></div>',
           // Card 2
           '<div class="post-card">',
-          '<img class="post-card-thumb" src="" alt="" style="background:#dde6e4;aspect-ratio:16/9;display:block;width:100%;object-fit:cover" onerror="this.style.background=\'#dde6e4\'">',
+          '<img class="post-card-thumb" src="/img/logo.png" alt="BP미디어 로고" style="aspect-ratio:16/9;display:block;width:100%;object-fit:contain;background:#eef2f0;padding:12px">',
           '<div class="post-card-body">',
           '<div class="post-card-labels"><span class="post-kicker tag-wosm-kicker">WOSM</span></div>',
           '<h3>세계 스카우트 연맹 총회 2025 결과 보고</h3>',
@@ -1346,20 +1346,20 @@
 
   function dsCalendarCard(catClass, badgeClass, badgeMod, title, date, location, tags, targets) {
     var tagHtml = tags.map(function (t) {
-      return '<span class="calendar-status-badge">' + t + '</span>';
+      return '<span class="calendar-status-badge">' + GW.escapeHtml(t) + '</span>';
     }).join('');
     var targetHtml = targets.map(function (t) {
-      return '<span class="calendar-target-chip">' + t + '</span>';
+      return '<span class="calendar-target-chip">' + GW.escapeHtml(t) + '</span>';
     }).join('');
     return '<div class="calendar-event-card ' + catClass + '">' +
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
-        '<span class="calendar-category-badge ' + badgeMod + '">' + badgeClass + '</span>' +
-        (tagHtml || targetHtml ? '<div class="calendar-event-badges" style="display:flex;flex-wrap:wrap;gap:4px">' + tagHtml + targetHtml + '</div>' : '') +
+      '<div class="calendar-event-badges">' +
+        '<span class="calendar-category-badge ' + badgeMod + '">' + GW.escapeHtml(badgeClass) + '</span>' +
+        tagHtml + targetHtml +
       '</div>' +
-      '<h4>' + title + '</h4>' +
+      '<h4>' + GW.escapeHtml(title) + '</h4>' +
       '<div style="font-family:AliceDigitalLearning,sans-serif;font-size:12px;color:rgba(31,31,31,0.58);line-height:1.6">' +
-        '<div>' + date + '</div>' +
-        '<div>' + location + '</div>' +
+        '<div>' + GW.escapeHtml(date) + '</div>' +
+        '<div>' + GW.escapeHtml(location) + '</div>' +
       '</div>' +
       '</div>';
   }

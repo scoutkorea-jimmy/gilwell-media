@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "03.024.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 07·08 섹션 수정 — 게시글 카드 로고 이미지, 캘린더 칩 높이 수정.",
+      "type": "Fix",
+      "scope": "admin",
+      "items": [
+        "07 게시글 카드: 샘플 이미지를 빈 src → /img/logo.png로 교체.",
+        "08 캘린더 행사 카드: dsCalendarCard() 구조 수정 — category badge·status badge·target chip을 모두 .calendar-event-badges 하나에 flat하게 배치. 중첩 div로 인한 칩 높이 불일치 해소.",
+        "Admin v03.023.00 → 03.024.00."
+      ]
+    },
+    {
       "version": "03.023.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 03·버튼 섹션에 관리자 기간 필터 칩 패턴 추가.",
