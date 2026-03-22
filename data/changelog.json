@@ -1,6 +1,21 @@
 {
   "items": [
     {
+      "version": "03.015.00",
+      "date": "2026-03-22",
+      "summary": "전체 버튼 높이 통일: Primary 44px / Secondary 36px 두 티어로 표준화.",
+      "type": "Fix",
+      "scope": "both",
+      "items": [
+        "Primary 버튼(44px): .submit-btn, .cancel-btn, .btn-delete-soft, .write-btn, .calendar-manage-btn, .calendar-event-edit-btn — padding 기반에서 min-height: var(--btn-height-primary)로 통일.",
+        "Secondary 버튼(36px): .filter-btn, .tag-filter-btn, .board-page-btn, .calendar-view-btn, .calendar-today-btn — padding 기반에서 min-height: var(--btn-height-secondary)로 통일.",
+        "모든 버튼에 display:inline-flex + align-items:center 명시하여 수직 정렬 일관성 확보.",
+        ".cancel-btn.visible / .btn-delete-soft.visible: display:block → display:inline-flex 수정.",
+        "KMS 디자인 시스템 버튼 미리보기: Primary/Secondary 두 행으로 구분하여 높이 시각적 통일.",
+        "Site 버전 00.101.01 → 00.102.00, Admin 버전 03.014.00 → 03.015.00."
+      ]
+    },
+    {
       "version": "03.014.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 탭 전면 현행화 — style.css 실제 코드 기준으로 재작성.",

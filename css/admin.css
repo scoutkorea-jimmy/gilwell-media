@@ -1248,15 +1248,17 @@ mark.kms-highlight {
 }
 .kms-ds-preview .form-group input:disabled { opacity: 0.4; }
 
-/* 필터 버튼 — site .filter-btn 재현 */
+/* 필터 버튼 — site .filter-btn 재현 (secondary: 36px) */
 .kms-ds-preview .filter-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 36px;
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding: 5px 12px;
+  padding: 0 12px;
   border: 1px solid rgba(31,31,31,0.18);
   background: transparent;
   color: rgba(31,31,31,0.58);
