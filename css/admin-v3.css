@@ -35,6 +35,8 @@
   --v3-radius-l:      12px;
   --v3-shadow:        0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
   --v3-shadow-m:      0 4px 12px rgba(0,0,0,.10);
+
+  --chip-height:      26px;
 }
 
 /* ── Base ────────────────────────────────────────────────── */
@@ -973,6 +975,122 @@
   max-width: none;
 }
 body.marketing-fullscreen-open { overflow: hidden; }
+
+/* ── 마케팅 기간 컨트롤 (mkt-period-bar) ─────────── */
+.mkt-period-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.mkt-presets { display: flex; gap: 4px; }
+.mkt-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--v3-border);
+  background: none;
+  color: var(--v3-text-m);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 0;
+}
+.mkt-preset-btn:hover,
+.mkt-preset-btn.is-active {
+  background: var(--v3-text);
+  border-color: var(--v3-text);
+  color: #fff;
+}
+.mkt-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mkt-date-input {
+  height: var(--chip-height);
+  padding: 0 8px;
+  border: 1px solid var(--v3-border);
+  background: var(--v3-surface);
+  color: var(--v3-text);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 0;
+}
+.mkt-date-input:focus {
+  outline: none;
+  border-color: var(--v3-text);
+}
+.mkt-date-sep {
+  font-size: 11px;
+  color: var(--v3-text-m);
+}
+.mkt-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 14px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--v3-text);
+  background: var(--v3-text);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 0;
+}
+.mkt-apply-btn:hover { opacity: 0.75; }
+
+/* ── 고객 여정 흐름 줌 버튼 ─────────────────────── */
+.marketing-flow-zoom-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.marketing-flow-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--v3-border);
+  background: none;
+  color: var(--v3-text-m);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 0;
+}
+.marketing-flow-zoom-btn:hover {
+  background: var(--v3-text);
+  border-color: var(--v3-text);
+  color: #fff;
+}
+
+/* ── flow shell pan/zoom 상태 ────────────────────── */
+.marketing-flow-shell.is-panzoom {
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+.marketing-flow-shell.is-panzoom.is-dragging { cursor: grabbing; }
+.marketing-flow-shell.is-panzoom svg {
+  transform-origin: 0 0;
+  will-change: transform;
+}
 .v3-bar-row-stack {
   align-items: flex-start;
 }
