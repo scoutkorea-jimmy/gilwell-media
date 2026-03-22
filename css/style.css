@@ -3631,12 +3631,17 @@ footer a:hover { color: #ffffff; }
 }
 
 .calendar-date-input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
   padding: 5px 8px;
   border: 1px solid var(--border);
+  border-radius: 4px;
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   background: var(--bg);
   color: var(--ink);
+  background-image: none;
 }
 
 .calendar-date-range-sep {
@@ -3720,14 +3725,6 @@ footer a:hover { color: #ffffff; }
   align-items: center;
   gap: 4px;
   flex-wrap: nowrap;
-}
-
-.calendar-date-input {
-  flex: 1 1 0;
-  width: auto !important;
-  min-width: 0;
-  padding-right: 8px !important;
-  background-image: none !important;
 }
 
 .calendar-date-range-sep {
