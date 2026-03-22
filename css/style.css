@@ -3575,6 +3575,10 @@ footer a:hover { color: #ffffff; }
   overflow: hidden;
 }
 
+.calendar-controls-panel {
+  margin-top: 24px;
+}
+
 /* Status panel scrollable */
 .calendar-status-panel {
   display: flex;
@@ -3706,9 +3710,28 @@ footer a:hover { color: #ffffff; }
 
 .calendar-map-filters {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+}
+
+.calendar-date-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-date-input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px !important;
+  background-image: none !important;
+}
+
+.calendar-date-range-sep {
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
 }
 
 .calendar-status-filters {
