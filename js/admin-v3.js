@@ -315,6 +315,7 @@
     analytics: '분석',
     marketing: '마케팅',
     settings:  '사이트 설정',
+    releases:  '버전기록',
   };
 
   V3.showPanel = function (panel, settingsSection) {
@@ -350,6 +351,7 @@
     else if (panel === 'glossary') _loadGlossary();
     else if (panel === 'analytics') _loadAnalytics();
     else if (panel === 'marketing') _loadMarketing();
+    else if (panel === 'releases') _loadReleases();
     else if (panel === 'settings') {
       var sec = settingsSection || _settingsSection;
       _showSettingsSection(sec);
@@ -1477,6 +1479,46 @@
   /* ══════════════════════════════════════════════════════════
      MARKETING
   ══════════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════════
+     RELEASES (버전기록)
+  ══════════════════════════════════════════════════════════ */
+  var _releasesLoaded = false;
+
+  function _loadReleases() {
+    if (_releasesLoaded) return;
+    var el = document.getElementById('releases-list');
+    el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>';
+    fetch('/data/changelog.json', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _releasesLoaded = true;
+        var items = (data && Array.isArray(data.items)) ? data.items : [];
+        if (!items.length) {
+          el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">버전 기록이 없습니다</div></div>';
+          return;
+        }
+        var typeClass = { Bugfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
+        el.innerHTML = items.map(function (item) {
+          var badge = typeClass[item.type] || 'v3-badge-gray';
+          var changeItems = Array.isArray(item.items) ? item.items : [];
+          return '<div class="v3-card v3-release-card">' +
+            '<div class="v3-release-head">' +
+              '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
+              '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(item.type || '') + '</span>' +
+              '<span class="v3-release-date">' + GW.escapeHtml(item.date || '') + '</span>' +
+            '</div>' +
+            '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
+            (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
+              return '<li>' + GW.escapeHtml(c) + '</li>';
+            }).join('') + '</ul>' : '') +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () {
+        el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">⚠️</div><div class="v3-empty-text">버전 기록을 불러오지 못했습니다</div></div>';
+      });
+  }
+
   function _loadMarketing() {
     var el = document.getElementById('marketing-body');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
