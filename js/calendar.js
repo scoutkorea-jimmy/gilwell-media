@@ -771,23 +771,38 @@
     var el = document.getElementById('calendar-map-results');
     if (!el) return;
     if (!items.length) {
-      el.innerHTML = '<div class="list-empty" style="padding:12px;">지도에 표시할 일정이 없습니다.</div>';
+      el.innerHTML = '<div class="calendar-map-results-empty">지도에 표시할 일정이 없습니다.</div>';
       return;
     }
     var sorted = items.slice().sort(compareItemsBySelectedSort);
-    el.innerHTML = '<div class="calendar-map-results-head">' + sorted.length + '개 일정</div>' +
+    el.innerHTML = '<div class="calendar-map-results-head"><strong>' + sorted.length + '개 일정</strong><span>선택한 조건에 맞는 행사 목록입니다.</span></div>' +
       sorted.map(function (item) {
-        var status = getEventStatus(item);
         var cat = normalizeCategory(item.event_category);
         var title = item.title || item.title_original || '';
         var when = formatCalendarShortRange(item);
         var place = item.location_name || item.country_name || '';
-        return '<button type="button" class="calendar-map-result-item" data-calendar-map-detail="' + item.id + '">' +
-          '<span class="calendar-category-badge is-' + cat.toLowerCase() + '">' + cat + '</span>' +
-          '<span class="calendar-map-result-title">' + escape(title) + '</span>' +
-          (when ? '<span class="calendar-map-result-date">' + escape(when) + '</span>' : '') +
-          (place ? '<span class="calendar-map-result-place">' + escape(place) + '</span>' : '') +
-        '</button>';
+        var country = item.country_name || '';
+        var target = cat === 'KOR' && item.target_groups && item.target_groups.length
+          ? '<span class="calendar-map-result-target">' + escape(item.target_groups.join(' · ')) + '</span>'
+          : '';
+        var meta = [];
+        if (when) meta.push('<span class="calendar-map-result-date">' + escape(when) + '</span>');
+        if (place) meta.push('<span class="calendar-map-result-place">' + escape(place) + '</span>');
+        return '<article class="calendar-map-result-card is-' + cat.toLowerCase() + '">' +
+          '<button type="button" class="calendar-map-result-item" data-calendar-map-detail="' + item.id + '">' +
+            '<div class="calendar-map-result-top">' +
+              '<div class="calendar-event-badges">' +
+                '<span class="calendar-category-badge is-' + cat.toLowerCase() + '">' + cat + '</span>' +
+                (country ? '<span class="calendar-status-badge">' + escape(country) + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="calendar-map-result-title-row">' +
+              '<span class="calendar-map-result-title">' + escape(title) + '</span>' +
+              target +
+            '</div>' +
+            (meta.length ? '<div class="calendar-map-result-meta">' + meta.join('') + '</div>' : '') +
+          '</button>' +
+        '</article>';
       }).join('');
     Array.prototype.forEach.call(el.querySelectorAll('[data-calendar-map-detail]'), function (btn) {
       btn.addEventListener('click', function () {
