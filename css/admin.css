@@ -5664,12 +5664,12 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid var(--border);
+  border: 2px solid #1f1f1f;
   table-layout: fixed;
 }
 .kms-ds-table th {
-  padding: 8px 12px;
-  background: var(--ink);
+  padding: 9px 14px;
+  background: #1f1f1f;
   color: #fff;
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
@@ -5677,14 +5677,14 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   text-transform: uppercase;
   font-weight: 400;
   text-align: left;
-  border-right: 1px solid rgba(255,255,255,0.15);
+  border-right: 1px solid rgba(255,255,255,0.25);
 }
 .kms-ds-table th:last-child { border-right: none; }
 .kms-ds-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  vertical-align: middle;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(31,31,31,0.18);
+  border-right: 1px solid rgba(31,31,31,0.18);
+  vertical-align: top;
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   font-weight: 300;
@@ -5694,14 +5694,14 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 .kms-ds-table td:last-child { border-right: none; }
 .kms-ds-table tr:last-child td { border-bottom: none; }
+.kms-ds-table tr:nth-child(even) td { background: #fafaf8; }
 .kms-ds-table .kms-ds-t-name {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--ink);
-  width: 140px;
-  vertical-align: top;
+  width: 150px;
 }
 .kms-ds-table .kms-ds-t-usage {
   font-family: AliceDigitalLearning, sans-serif;
@@ -5709,9 +5709,8 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   font-weight: 300;
   letter-spacing: 0.08em;
   color: var(--muted);
-  width: 200px;
+  width: 220px;
   word-break: break-word;
-  vertical-align: top;
 }
 .kms-ds-table .kms-ds-t-code {
   background: #f5f3ef;
@@ -5724,10 +5723,6 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   white-space: pre-wrap;
   word-break: break-all;
   width: 200px;
-  vertical-align: top;
 }
-.kms-ds-table .kms-ds-t-preview {
-  /* 미리보기 열 — auto width */
-}
-.kms-ds-table .kms-ds-t-preview > * { vertical-align: middle; }
+.kms-ds-table .kms-ds-t-preview { /* auto width */ }
 .kms-ds-table .kms-ds-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
