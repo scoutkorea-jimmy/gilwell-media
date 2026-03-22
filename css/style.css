@@ -3579,6 +3579,27 @@ footer a:hover { color: #ffffff; }
   margin-top: 24px;
 }
 
+.calendar-map-search-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.calendar-map-search-btn {
+  padding: 6px 18px;
+  background: var(--accent, #1a6bcc);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.calendar-map-search-btn:hover {
+  opacity: 0.88;
+}
+
 /* Status panel scrollable */
 .calendar-status-panel {
   display: flex;

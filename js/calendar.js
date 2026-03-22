@@ -212,13 +212,18 @@
     if (dateFrom) {
       dateFrom.addEventListener('change', function () {
         state.mapFilterDateFrom = dateFrom.value || '';
-        renderMapMarkers();
       });
     }
     if (dateTo) {
       dateTo.addEventListener('change', function () {
         state.mapFilterDateTo = dateTo.value || '';
+      });
+    }
+    var searchBtn = document.getElementById('calendar-map-search-btn');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', function () {
         renderMapMarkers();
+        renderMapResultsList(getMapItems());
       });
     }
   }
@@ -609,18 +614,15 @@
     var cardClass = ' is-category-' + category.toLowerCase() + (status.key === 'finished' ? ' is-finished' : '');
     var title = item.title || item.title_original || '';
     var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
-    var tagHtml = item.event_tags && item.event_tags.length
-      ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
-          return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
-        }).join('') + '</div>'
-      : '';
-    var targetGroupsHtml = '';
+    var tagBadges = (item.event_tags && item.event_tags.length)
+      ? item.event_tags.map(function (tag) { return '<span class="calendar-status-badge">' + escape(tag) + '</span>'; })
+      : [];
     if (category === 'KOR' && item.target_groups && item.target_groups.length) {
-      targetGroupsHtml = '<div class="calendar-event-badges calendar-target-groups">' +
-        item.target_groups.map(function (g) {
-          return '<span class="calendar-target-chip">' + escape(g) + '</span>';
-        }).join('') + '</div>';
+      tagBadges = tagBadges.concat(item.target_groups.map(function (g) {
+        return '<span class="calendar-target-chip">' + escape(g) + '</span>';
+      }));
     }
+    var tagHtml = tagBadges.length ? '<div class="calendar-event-badges">' + tagBadges.join('') + '</div>' : '';
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
@@ -644,7 +646,6 @@
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       tagHtml +
-      targetGroupsHtml +
       (linkActions ? '<div class="calendar-event-links">' + linkActions + '</div>' : '') +
     '</article>';
   }
@@ -664,18 +665,15 @@
       '</div>';
     }
     var originalTitle = item.title && item.title_original ? '<p class="calendar-event-original">' + escape(item.title_original) + '</p>' : '';
-    var tagHtml = item.event_tags && item.event_tags.length
-      ? '<div class="calendar-event-badges">' + item.event_tags.map(function (tag) {
-          return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
-        }).join('') + '</div>'
-      : '';
-    var targetGroupsHtml = '';
+    var tagBadges2 = (item.event_tags && item.event_tags.length)
+      ? item.event_tags.map(function (tag) { return '<span class="calendar-status-badge">' + escape(tag) + '</span>'; })
+      : [];
     if (category === 'KOR' && item.target_groups && item.target_groups.length) {
-      targetGroupsHtml = '<div class="calendar-event-badges calendar-target-groups">' +
-        item.target_groups.map(function (g) {
-          return '<span class="calendar-target-chip">' + escape(g) + '</span>';
-        }).join('') + '</div>';
+      tagBadges2 = tagBadges2.concat(item.target_groups.map(function (g) {
+        return '<span class="calendar-target-chip">' + escape(g) + '</span>';
+      }));
     }
+    var tagHtml = tagBadges2.length ? '<div class="calendar-event-badges">' + tagBadges2.join('') + '</div>' : '';
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
@@ -700,7 +698,6 @@
       (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
       mapFrame +
       tagHtml +
-      targetGroupsHtml +
       (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
       (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
       '<div class="calendar-detail-actions">' +
@@ -715,7 +712,6 @@
     if (state.mapLayer) state.map.removeLayer(state.mapLayer);
     state.mapLayer = L.layerGroup().addTo(state.map);
     var items = getMapItems();
-    renderMapResultsList(items);
     if (!items.length) return;
 
     var zoom = state.map.getZoom();
