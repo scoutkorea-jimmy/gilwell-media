@@ -15,6 +15,9 @@
 7. 승인 후 preview 모달 또는 GitHub Actions로 production 승격
 8. 라이브 검증
 
+관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
+관리자(KMS 포함) 변경은 preview 또는 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
+
 ## Preview 배포
 
 ```bash
@@ -146,5 +149,6 @@ wrangler pages deployment list --project-name gilwell-media
 - `deploy_pages.sh`는 이제 preview 배포 래퍼다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, preview와 production 모두 `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
+- 관리자(KMS 포함) 변경은 공개 사이트 production QA를 필수 게이트로 두지 않는다.
 - preview 모달의 `본 페이지에 반영하기`는 GitHub Actions와 Cloudflare API 시크릿이 정상일 때만 동작한다.
 - 승격 기준 브랜치는 항상 `preview`이며, `main`은 검수 완료된 preview 스냅샷을 반영하는 production용 브랜치로 취급한다.
