@@ -1,6 +1,22 @@
 {
   "items": [
     {
+      "version": "03.032.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 표 가독성 전면 개선 — 구분선·스트라이프·호버·인라인 스타일 제거.",
+      "type": "Fix",
+      "scope": "admin",
+      "items": [
+        "셀 구분선: #d0d0cc → #bfbbb5로 명확화.",
+        "짝수 행 스트라이프: tbody tr:nth-child(even) { background: #faf7f3 }",
+        "행 호버: tbody tr:hover { background: #f0ebe3 }",
+        "구분 열: <br><small style=\"...\"> → <span class=\"kms-ds-t-spec\"> 정규 클래스로 전환.",
+        "활용처 열: <br><code style=\"...\"> → <code class=\"kms-ds-t-cls\"> 정규 클래스로 전환.",
+        ".kms-ds-t-cls CSS 클래스 신규 추가 (JetBrains Mono 10px, 회색 계열).",
+        "Admin v03.031.00 → 03.032.00."
+      ]
+    },
+    {
       "version": "03.031.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 표 구분선 강화 — 테두리 2px #1f1f1f, 짝수 행 배경 구분.",
