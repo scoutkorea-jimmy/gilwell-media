@@ -517,7 +517,7 @@
   // ── 탭 시스템 ─────────────────────────────────────────────────
   function setTab(tab) {
     _state.tab = tab;
-    var panels = ['docs', 'api', 'changelog'];
+    var panels = ['docs', 'api', 'changelog', 'design'];
     panels.forEach(function (id) {
       var panel = document.getElementById('kms-tab-' + id);
       if (panel) panel.hidden = id !== tab;
@@ -527,9 +527,16 @@
       btn.classList.toggle('is-active', isActive);
       btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
+    // 모드 스위치 / 저장 버튼: 기능정의서 탭에서만 표시
+    var modeSwitchEl = document.getElementById('kms-mode-switch');
+    var saveBtn = document.getElementById('kms-save-btn');
+    var showEdit = tab === 'docs';
+    if (modeSwitchEl) modeSwitchEl.style.display = showEdit ? '' : 'none';
+    if (saveBtn) saveBtn.style.display = showEdit ? '' : 'none';
     // 탭 전환 시 사이드바 섹션 목록을 해당 탭에 맞게 업데이트
     if (tab === 'api') renderApiSectionList();
     else if (tab === 'changelog') clearSectionList();
+    else if (tab === 'design') { clearSectionList(); renderDesignSystem(); }
     else renderSectionList(_state.docContent);
   }
 
@@ -645,14 +652,10 @@
   function setMode(mode) {
     _state.mode = mode === 'edit' ? 'edit' : 'read';
     var editorPanel = document.getElementById('kms-editor-panel');
-    var saveBtn = document.getElementById('kms-save-btn');
     if (editorPanel) editorPanel.hidden = _state.mode !== 'edit';
     document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
       btn.classList.toggle('is-active', btn.getAttribute('data-kms-mode') === _state.mode);
     });
-    var modeSwitchEl = document.getElementById('kms-mode-switch');
-    if (modeSwitchEl) modeSwitchEl.style.display = _state.tab === 'docs' ? '' : 'none';
-    if (saveBtn) saveBtn.style.display = _state.tab === 'docs' ? '' : 'none';
   }
 
   // ── 문서 렌더링 ───────────────────────────────────────────────
@@ -977,6 +980,157 @@
         changesHtml +
         '</article>';
     }).join('');
+  }
+
+  // ── 디자인 시스템 탭 ──────────────────────────────────────────
+  function renderDesignSystem() {
+    var container = document.getElementById('kms-tab-design');
+    if (!container || container.dataset.rendered) return;
+    container.dataset.rendered = '1';
+
+    var sections = [
+      {
+        title: '색상 토큰 (Color Tokens)',
+        html: [
+          '<div class="kms-ds-swatch-grid">',
+          dsSwatchItem('--color-scout', '#5c2a9d', '스카우트 퍼플 (Accent)'),
+          dsSwatchItem('--color-scout-light', 'rgba(92,42,157,0.07)', '퍼플 배경'),
+          dsSwatchItem('--color-ink', '#161310', '기본 텍스트'),
+          dsSwatchItem('--color-muted', '#7a7168', '보조 텍스트'),
+          dsSwatchItem('--color-surface', '#ffffff', '카드 배경'),
+          dsSwatchItem('--color-surface2', '#faf7f3', '보조 배경'),
+          dsSwatchItem('--color-bg', '#f2ede8', '페이지 배경'),
+          dsSwatchItem('--color-border', 'rgba(22,17,12,0.10)', '테두리'),
+          dsSwatchItem('--kor-color', '#003DA5', 'KOR 파랑'),
+          dsSwatchItem('--apr-color', '#E04B0A', 'APR 주황'),
+          dsSwatchItem('--wosm-color', '#5c2a9d', 'WOSM 퍼플'),
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '버튼 (Buttons)',
+        html: [
+          '<div class="kms-ds-row">',
+          '<button class="v3-btn v3-btn-primary">Primary 버튼</button>',
+          '<button class="v3-btn v3-btn-outline">Outline 버튼</button>',
+          '<button class="v3-btn v3-btn-ghost">Ghost 버튼</button>',
+          '<button class="v3-btn v3-btn-danger">Danger 버튼</button>',
+          '</div>',
+          '<div class="kms-ds-row" style="margin-top:8px">',
+          '<button class="v3-btn v3-btn-primary" style="opacity:.5;cursor:default" disabled>비활성화</button>',
+          '<button class="v3-btn v3-btn-sm v3-btn-primary">Small</button>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '카테고리 칩 (Category Chips)',
+        html: [
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="post-kicker category-badge category-korea">한국스카우트</span>',
+          '<span class="post-kicker category-badge category-apr">APR</span>',
+          '<span class="post-kicker category-badge category-wosm">WOSM</span>',
+          '<span class="post-kicker category-badge category-people">사람들</span>',
+          '<span class="post-kicker category-badge category-latest">최신소식</span>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '캘린더 행사 칩 (Calendar Event Chips)',
+        html: [
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="calendar-category-badge cat-kor">KOR</span>',
+          '<span class="calendar-category-badge cat-apr">APR</span>',
+          '<span class="calendar-category-badge cat-eur">EUR</span>',
+          '<span class="calendar-category-badge cat-wosm">WOSM</span>',
+          '</div>',
+          '<p class="kms-ds-label" style="margin-top:10px">태그 & 대상 칩</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="calendar-tag-chip">훈련</span>',
+          '<span class="calendar-tag-chip">잼버리</span>',
+          '<span class="calendar-target-chip">로버</span>',
+          '<span class="calendar-target-chip">지도자</span>',
+          '<span class="calendar-target-chip">컵스카우트</span>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '게시글 카드 (Post Card)',
+        html: '<div class="v3-post-card" style="max-width:340px">' +
+          '<div class="v3-post-card-thumb" style="background:#e8e0d8;height:140px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;color:#b0a89e;font-size:12px">이미지 영역</div>' +
+          '<div class="v3-post-card-body">' +
+            '<span class="post-kicker category-badge category-korea">한국스카우트</span>' +
+            '<h3 class="v3-post-card-title">스카우트 잼버리 2026 개최 확정</h3>' +
+            '<p class="v3-post-card-excerpt">제23회 세계 잼버리가 한국에서 개최될 예정으로, 약 5만 명의 스카우트가 참가할 것으로 예상됩니다.</p>' +
+            '<div class="v3-post-card-meta"><span>2026-03-22</span><span>조회 1,234</span></div>' +
+          '</div>' +
+          '</div>',
+      },
+      {
+        title: '배지 & 태그 (Badges & Tags)',
+        html: [
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="admin-status-badge badge-published">공개</span>',
+          '<span class="admin-status-badge badge-draft">초안</span>',
+          '<span class="admin-status-badge badge-featured">특집</span>',
+          '<span class="meta-tag">AI 보조</span>',
+          '<span class="meta-tag">스카우팅</span>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '폼 요소 (Form Elements)',
+        html: [
+          '<div class="kms-ds-form-grid">',
+          '<div><label class="kms-ds-label">텍스트 입력</label><input class="v3-input" type="text" placeholder="입력하세요" /></div>',
+          '<div><label class="kms-ds-label">선택 (Select)</label><select class="v3-input"><option>옵션 1</option><option>옵션 2</option></select></div>',
+          '<div><label class="kms-ds-label">검색창</label><input class="v3-input" type="search" placeholder="검색…" /></div>',
+          '<div><label class="kms-ds-label">비활성화</label><input class="v3-input" type="text" placeholder="disabled" disabled /></div>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '알림 토스트 (Toast Notifications)',
+        html: [
+          '<div class="kms-ds-col">',
+          '<div class="gw-toast gw-toast-success">성공 메시지 — 저장이 완료되었습니다.</div>',
+          '<div class="gw-toast gw-toast-error">오류 메시지 — 요청에 실패했습니다.</div>',
+          '<div class="gw-toast gw-toast-info">안내 메시지 — 처리 중입니다.</div>',
+          '</div>',
+        ].join(''),
+      },
+      {
+        title: '타이포그래피 (Typography)',
+        html: [
+          '<div class="kms-ds-col">',
+          '<div class="kms-ds-type-item"><span class="kms-ds-label">H1 — 섹션 제목</span><h1 style="margin:0;font-size:28px;font-weight:700;color:var(--kms-ink)">BP미디어 스카우트 뉴스</h1></div>',
+          '<div class="kms-ds-type-item"><span class="kms-ds-label">H2 — 카드 제목</span><h2 style="margin:0;font-size:20px;font-weight:600;color:var(--kms-ink)">잼버리 2026 개최 확정</h2></div>',
+          '<div class="kms-ds-type-item"><span class="kms-ds-label">Body — 본문</span><p style="margin:0;font-size:14px;line-height:1.7;color:var(--kms-ink)">BP미디어는 스카우트 관련 소식을 빠르고 정확하게 전달합니다. 한국 스카우트연맹의 공식 활동부터 세계 스카우트 기구 WOSM의 국제 소식까지.</p></div>',
+          '<div class="kms-ds-type-item"><span class="kms-ds-label">Caption — 보조</span><p style="margin:0;font-size:12px;color:var(--kms-muted)">2026-03-22 · 조회 1,234 · BP미디어</p></div>',
+          '</div>',
+        ].join(''),
+      },
+    ];
+
+    var bodyEl = container.querySelector('.kms-ds-body');
+    if (!bodyEl) return;
+    bodyEl.innerHTML = sections.map(function (sec) {
+      return '<section class="kms-ds-section">' +
+        '<h3 class="kms-ds-section-title">' + GW.escapeHtml(sec.title) + '</h3>' +
+        '<div class="kms-ds-preview">' + sec.html + '</div>' +
+        '</section>';
+    }).join('');
+  }
+
+  function dsSwatchItem(varName, color, label) {
+    var isBright = color === '#ffffff' || color.includes('0.07') || color.includes('0.10') || color === '#faf7f3' || color === '#f2ede8';
+    return '<div class="kms-ds-swatch">' +
+      '<div class="kms-ds-swatch-color" style="background:' + color + ';border:' + (isBright ? '1px solid rgba(0,0,0,.10)' : 'none') + '"></div>' +
+      '<div class="kms-ds-swatch-info">' +
+        '<code class="kms-ds-swatch-var">' + GW.escapeHtml(varName) + '</code>' +
+        '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
+        '<span class="kms-ds-swatch-hex">' + GW.escapeHtml(color) + '</span>' +
+      '</div>' +
+      '</div>';
   }
 
   // ── 유틸리티 ──────────────────────────────────────────────────
