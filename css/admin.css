@@ -5664,10 +5664,9 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border: 2px solid #1f1f1f;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,244,239,0.96));
-  box-shadow: 0 18px 40px rgba(58, 44, 26, 0.08);
+  border: 1px solid var(--kms-border);
+  border-radius: 8px;
+  background: var(--kms-surface);
 }
 .kms-ds-table {
   width: 100%;
@@ -5676,18 +5675,18 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   table-layout: fixed;
 }
 .kms-ds-table th {
-  padding: 14px 18px;
-  background: #1f1f1f;
-  color: #fff;
+  padding: 9px 12px;
+  background: var(--kms-surface2);
+  color: var(--kms-muted);
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 11px;
+  letter-spacing: .06em;
   text-transform: uppercase;
   font-weight: 400;
   text-align: left;
-  white-space: nowrap;
-  border-right: 1px solid rgba(255,255,255,0.2);
-  border-bottom: 1px solid rgba(255,255,255,0.18);
+  white-space: normal;
+  border-right: 1px solid var(--kms-border);
+  border-bottom: 1px solid var(--kms-border);
 }
 .kms-ds-table th:last-child { border-right: none; }
 .kms-ds-table th:nth-child(1) { width: 23%; }
@@ -5698,60 +5697,60 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   text-align: center;
 }
 .kms-ds-table td {
-  padding: 18px 18px;
-  border-bottom: 1px solid #bfbbb5;
-  border-right: 1px solid #bfbbb5;
+  padding: 12px;
+  border-bottom: 1px solid var(--kms-border);
+  border-right: 1px solid var(--kms-border);
   vertical-align: top;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 300;
   letter-spacing: 0.01em;
-  line-height: 1.75;
-  color: #2d241a;
+  line-height: 1.65;
+  color: var(--kms-ink);
   overflow-wrap: anywhere;
 }
 .kms-ds-table td:last-child { border-right: none; }
 .kms-ds-table tr:last-child td { border-bottom: none; }
-.kms-ds-table tbody tr:nth-child(even) { background: rgba(250, 247, 243, 0.9); }
-.kms-ds-table tbody tr:hover { background: #f3ece3; }
+.kms-ds-table tbody tr:nth-child(even) { background: rgba(252, 250, 247, 0.72); }
+.kms-ds-table tbody tr:hover { background: rgba(246, 241, 235, 0.9); }
 .kms-ds-table .kms-ds-t-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.01em;
   line-height: 1.5;
   white-space: normal;
-  color: #1f1f1f;
+  color: var(--kms-ink);
 }
 .kms-ds-table .kms-ds-t-spec {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0;
-  color: rgba(31,31,31,0.56);
+  color: var(--kms-muted);
   font-family: 'JetBrains Mono', monospace;
   display: block;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid rgba(31,31,31,0.08);
 }
 .kms-ds-table .kms-ds-t-usage {
-  color: rgba(31,31,31,0.78);
-  font-size: 14px;
+  color: var(--kms-ink);
+  font-size: 13px;
 }
 .kms-ds-table .kms-ds-t-cls {
   display: block;
-  margin-top: 10px;
-  padding: 8px 10px;
-  border: 1px solid rgba(31,31,31,0.08);
-  background: rgba(255,255,255,0.72);
+  margin-top: 8px;
+  padding: 1px 0;
+  border: none;
+  background: transparent;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0;
-  color: rgba(31,31,31,0.55);
+  color: var(--kms-muted);
   line-height: 1.5;
 }
 .kms-ds-table .kms-ds-t-code {
-  background: linear-gradient(180deg, #fbf8f3, #f3eee8);
+  background: #1e1e2e;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 400;
@@ -5759,12 +5758,14 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #1f1f1f;
+  color: #cdd6f4;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 .kms-ds-table .kms-ds-t-preview {
   text-align: center;
   vertical-align: middle;
-  background: rgba(255,255,255,0.76);
+  background: rgba(255,255,255,0.4);
 }
 .kms-ds-table .kms-ds-t-preview > * {
   margin-left: auto;
@@ -5784,6 +5785,6 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   }
   .kms-ds-table th,
   .kms-ds-table td {
-    padding: 14px 14px;
+    padding: 10px 10px;
   }
 }
