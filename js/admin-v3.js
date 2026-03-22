@@ -295,6 +295,9 @@
   function _showApp() {
     document.getElementById('v3-login').style.display = 'none';
     document.getElementById('v3-app').hidden = false;
+    // Fill site version from GW.APP_VERSION
+    var siteVer = (GW && GW.APP_VERSION) ? 'V' + GW.APP_VERSION : '—';
+    document.querySelectorAll('.v3-ver-site').forEach(function (el) { el.textContent = siteVer; });
     // Load editor.js
     _loadEditorJS(function () { _initEditor(); });
     // Load tag settings (for write form dropdown)
@@ -1488,8 +1491,7 @@
     if (_releasesLoaded) return;
     var el = document.getElementById('releases-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>';
-    fetch('/data/changelog.json', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/admin/changelog')
       .then(function (data) {
         _releasesLoaded = true;
         var items = (data && Array.isArray(data.items)) ? data.items : [];
@@ -1515,6 +1517,7 @@
         }).join('');
       })
       .catch(function () {
+        _releasesLoaded = false; // allow retry
         el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">⚠️</div><div class="v3-empty-text">버전 기록을 불러오지 못했습니다</div></div>';
       });
   }
