@@ -1,118 +1,404 @@
+/**
+ * BP미디어 KMS (Knowledge Management System)
+ * 기능정의서 · API 가이드 · 버전기록 통합 문서 포털
+ */
 (function () {
   'use strict';
 
-  var _kmsLoaded = false;
-  var _kmsRole = 'full';
-  var _kmsSaveBusy = false;
-  var _kmsMode = 'read';
+  // ── 상태 ──────────────────────────────────────────────────────
+  var _state = {
+    loaded: false,
+    mode: 'read',          // 'read' | 'edit'
+    tab: 'docs',           // 'docs' | 'api' | 'changelog'
+    sidebarOpen: false,
+    searchQuery: '',
+    changelogScope: 'all',
+    changelogItems: null,
+    saveBusy: false,
+    docContent: '',
+  };
 
+  // ── API 가이드 데이터 ──────────────────────────────────────────
+  var API_GROUPS = [
+    {
+      id: 'auth',
+      label: '인증 (Authentication)',
+      desc: 'JWT 토큰 발급 및 세션 검증. 모든 관리자 전용 요청에 토큰이 필요합니다.',
+      endpoints: [
+        {
+          method: 'POST', path: '/api/admin/login', auth: false,
+          summary: '관리자 비밀번호로 JWT 토큰 발급',
+          request: '{ "password": "string" }',
+          response: '{ "token": "string", "role": "full" }',
+          notes: '토큰 유효기간 24시간. 이후 요청에 Authorization: Bearer <token> 헤더 포함 필요.',
+        },
+        {
+          method: 'GET', path: '/api/admin/session', auth: 'optional',
+          summary: '현재 토큰 유효성 및 역할 반환',
+          response: '{ "authenticated": true, "role": "full" }',
+          notes: '토큰 없이 요청하면 authenticated: false 반환. 로그인 상태 확인에 사용.',
+        },
+      ],
+    },
+    {
+      id: 'posts',
+      label: '게시글 (Posts)',
+      desc: '게시글 CRUD, 정렬, 이미지, 편집 이력, 공감 관리.',
+      endpoints: [
+        {
+          method: 'GET', path: '/api/posts', auth: false,
+          summary: '게시글 목록 조회 (페이지네이션)',
+          params: [
+            { name: 'category', desc: 'korea | apr | wosm | people | latest — 카테고리 필터' },
+            { name: 'page', desc: '페이지 번호 (기본 1)' },
+            { name: 'limit', desc: '한 페이지 개수 (기본 20)' },
+            { name: 'sort', desc: 'latest | oldest | views | manual | relevance' },
+            { name: 'q', desc: '검색어 (전문검색, sort=relevance 자동 적용)' },
+            { name: 'tag', desc: '글머리 태그 필터' },
+            { name: 'start_date / end_date', desc: 'YYYY-MM-DD 날짜 범위 필터' },
+            { name: 'days', desc: '최근 N일 이내 필터' },
+            { name: 'featured', desc: 'true — 특집 기사만 조회' },
+            { name: 'published', desc: 'true=공개만(기본), false=전체(admin 전용)' },
+          ],
+          response: '{ "posts": Post[], "total": number, "page": number, "pageSize": number }',
+          notes: '공개 요청: max-age 120s + stale-while-revalidate 600s 캐시. admin 토큰 포함 시 no-cache.',
+        },
+        {
+          method: 'POST', path: '/api/posts', auth: true,
+          summary: '게시글 생성 (관리자 전용)',
+          request: '{ title*, content*, category*, subtitle, image_url, image_caption,\n  gallery_images[], youtube_url, location_name, location_address,\n  tag, meta_tags[], special_feature, ai_assisted, publish_at }',
+          response: '생성된 Post 객체',
+          notes: '* 필수 항목. gallery_images 최대 10장. content는 Editor.js JSON 문자열.',
+        },
+        {
+          method: 'GET', path: '/api/posts/:id', auth: false,
+          summary: '게시글 상세 조회 (본문 포함)',
+          response: 'Post 객체 — content(Editor.js JSON), related_posts[], gallery_images[] 포함',
+        },
+        {
+          method: 'PUT', path: '/api/posts/:id', auth: true,
+          summary: '게시글 수정 (관리자 전용)',
+          request: 'POST와 동일 필드 (부분 업데이트 가능)',
+          response: '수정된 Post 객체',
+          notes: '수정 시 자동으로 post_history에 이전 버전을 저장합니다.',
+        },
+        {
+          method: 'DELETE', path: '/api/posts/:id', auth: true,
+          summary: '게시글 삭제 — 이미지·조회·공감·이력 연관 정리 포함',
+          response: '{ "success": true }',
+          notes: '게시글 row만 삭제하지 않습니다. 연관 데이터 일괄 정리 필수.',
+        },
+        {
+          method: 'GET', path: '/api/posts/popular', auth: false,
+          summary: '인기 게시글 목록 (조회수 기준)',
+          response: 'Post[] — views 내림차순',
+        },
+        {
+          method: 'PUT', path: '/api/posts/reorder', auth: true,
+          summary: '게시글 수동 정렬 순서 변경',
+          request: '{ "ids": [1, 2, 3] }  — 정렬 순서로 나열된 ID 배열',
+          response: '{ "success": true }',
+        },
+        {
+          method: 'GET', path: '/api/posts/special-features', auth: false,
+          summary: '특집 기사 묶음명 목록',
+          params: [{ name: 'category', desc: '카테고리 필터 (선택)' }],
+          response: '{ "items": ["묶음명1", "묶음명2"] }',
+        },
+        {
+          method: 'GET', path: '/api/posts/tags', auth: false,
+          summary: '카테고리별 사용 가능한 태그 목록',
+          params: [{ name: 'category', desc: 'korea | apr | wosm | people' }],
+          response: '{ "items": ["태그1", "태그2"] }',
+        },
+        {
+          method: 'GET', path: '/api/posts/:id/history', auth: true,
+          summary: '게시글 편집 이력 조회',
+          response: '{ "items": PostHistory[] }',
+        },
+        {
+          method: 'GET', path: '/api/posts/:id/image', auth: false,
+          summary: '게시글 대표 이미지 (og:image 용도)',
+          response: '이미지 바이너리 또는 리다이렉트',
+        },
+        {
+          method: 'POST', path: '/api/posts/:id/like', auth: false,
+          summary: '게시글 공감/취소 토글',
+          request: '{ "liked": true }',
+          response: '{ "likes": number }',
+        },
+      ],
+    },
+    {
+      id: 'settings',
+      label: '사이트 설정 (Settings)',
+      desc: '사이트 운영 설정 전반. GET은 공개, PUT은 관리자 전용.',
+      endpoints: [
+        {
+          method: 'GET|PUT', path: '/api/settings/author', auth: 'PUT only',
+          summary: '기본 작성자 이름',
+          response: '{ "value": "편집부" }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/ticker', auth: 'PUT only',
+          summary: '마퀴 티커 항목 목록',
+          response: '{ "items": ["공지1", "공지2"] }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/hero', auth: 'PUT only',
+          summary: '홈 히어로 슬라이드 (최대 5개 + 전환 간격)',
+          response: '{ "items": HeroItem[], "interval": 3000 }',
+          notes: 'HeroItem: { post_id, image_position_pc, image_position_mobile, zoom_pc, zoom_mobile }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/tags', auth: 'PUT only',
+          summary: '카테고리별 태그 목록',
+          response: '{ "common": [], "korea": [], "apr": [], "wosm": [], "people": [] }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/contributors', auth: 'PUT only',
+          summary: '도움을 주신 분들 목록',
+          response: '{ "items": [{ "name": "홍길동", "role": "기자" }] }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/editors', auth: 'PUT only',
+          summary: '편집자 이름 (A / B / C)',
+          response: '{ "A": "편집자A", "B": "편집자B", "C": "편집자C" }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/site-meta', auth: 'PUT only',
+          summary: '사이트 메타 정보 (제목, 설명, OG 이미지)',
+          response: '{ "title": "BP미디어", "description": "…", "image_url": "…" }',
+        },
+        {
+          method: 'POST', path: '/api/settings/site-meta/image', auth: true,
+          summary: '사이트 메타 대표 이미지 업로드',
+          request: '{ "image": "data:image/jpeg;base64,…" }',
+          response: '{ "image_url": "https://…" }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/ai-disclaimer', auth: 'PUT only',
+          summary: 'AI 보조 작성 고지 텍스트',
+          response: '{ "content": "이 기사는 AI의 보조로 작성되었습니다." }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/home-lead', auth: 'PUT only',
+          summary: '홈 메인 스토리 이미지 및 프레이밍 설정',
+          response: '{ "image_url": "…", "framing": { "x": 50, "y": 30 } }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/board-banner', auth: 'PUT only',
+          summary: '카테고리 게시판 커스텀 배너',
+          response: '{ "banners": { "korea": { "image_url": "…", "title": "…" } } }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/board-layout', auth: 'PUT only',
+          summary: '게시판 레이아웃 및 페이지 사이즈 설정',
+          response: '{ "layout": "grid", "pageSize": 20 }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/calendar-copy', auth: 'PUT only',
+          summary: '캘린더 페이지 UI 텍스트 (키-값 쌍)',
+          response: '{ "page_title": "일정 캘린더", "map_title": "캘린더 지도", … }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/calendar-tags', auth: 'PUT only',
+          summary: '캘린더 이벤트 태그 목록',
+          response: '{ "items": ["훈련", "대회", "세미나"] }',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/feature-definition', auth: 'PUT only',
+          summary: 'KMS 기능 정의서 Markdown 원문 저장소',
+          response: '{ "content": "# BP미디어 기능정의서…" }',
+          notes: '이 엔드포인트가 KMS의 단일 진실 원본(single source of truth)입니다.',
+        },
+        {
+          method: 'GET|PUT', path: '/api/settings/translations', auth: 'PUT only',
+          summary: 'UI 다국어 번역 오버라이드 (ko / en)',
+          response: '{ "ko": { "nav.home": "홈" }, "en": { "nav.home": "Home" } }',
+        },
+      ],
+    },
+    {
+      id: 'calendar',
+      label: '캘린더 (Calendar)',
+      desc: '스카우트 행사 일정 조회 및 관리. DB 테이블: calendar_events.',
+      endpoints: [
+        {
+          method: 'GET', path: '/api/calendar', auth: false,
+          summary: '전체 캘린더 이벤트 목록 조회',
+          response: '{ "items": CalendarEvent[] }',
+          notes: 'CalendarEvent: { id, title, title_original, event_category, start_at, end_at, location_name, latitude, longitude, country_name, description, link_url, event_tags[], target_groups[], related_posts[] }',
+        },
+        {
+          method: 'PUT', path: '/api/calendar/:id', auth: true,
+          summary: '캘린더 이벤트 수정 (관리자 전용)',
+          request: '{ title, title_original, event_category, start_at, end_at,\n  location_name, location_address, latitude, longitude, country_name,\n  description, link_url, event_tags[], target_groups[], related_posts[] }',
+          response: '수정된 CalendarEvent 객체',
+          notes: 'event_category: KOR | APR | EUR | AFR | ARB | IAR | WOSM\ntarget_groups (KOR 전용): 비버|컵|스카우트|벤처|로버|지도자|범스카우트|훈련교수회',
+        },
+      ],
+    },
+    {
+      id: 'glossary',
+      label: '용어집 (Glossary)',
+      desc: '스카우트 관련 용어 조회 및 관리. 한국어 가나다 버킷으로 분류.',
+      endpoints: [
+        {
+          method: 'GET', path: '/api/glossary', auth: false,
+          summary: '전체 용어 목록 (가나다 버킷 분류)',
+          params: [{ name: 'q', desc: '검색어 필터 (선택)' }],
+          response: '{ "items": GlossaryTerm[], "buckets": { "가": [], "나": [], … } }',
+          notes: 'GlossaryTerm: { id, ko, en, fr, description }. 숫자 시작→기타, 한국어 없음→국문 미확정.',
+        },
+        {
+          method: 'PUT', path: '/api/glossary/:id', auth: true,
+          summary: '용어 수정 (관리자 전용)',
+          request: '{ "ko": "스카우트", "en": "Scout", "fr": "Scout", "description": "…" }',
+          response: '수정된 GlossaryTerm 객체',
+          notes: '한국어 없이 영어/프랑스어만 있는 용어도 저장 허용 (국문 미확정 버킷으로 분류됨).',
+        },
+        {
+          method: 'GET', path: '/api/glossary/bot', auth: false,
+          summary: 'AI · 봇용 용어 전체 Export',
+          params: [{ name: 'format', desc: 'json | plaintext (기본 json)' }],
+          response: '용어 전체 목록 (JSON 또는 plaintext)',
+        },
+      ],
+    },
+    {
+      id: 'analytics',
+      label: '분석 (Analytics)',
+      desc: '방문 기록, 조회·공감 트래킹, 관리자 대시보드 데이터.',
+      endpoints: [
+        {
+          method: 'POST', path: '/api/analytics/visit', auth: false,
+          summary: '사이트 방문 기록 (페이지 로드 시 자동 호출)',
+          request: '{ "path": "/korea", "referrer": "https://…",\n  "utm_source": "…", "utm_medium": "…", "utm_campaign": "…" }',
+          response: '{ "ok": true }',
+          notes: '운영 분석 기준은 site_visits 테이블입니다. UTM 파라미터는 마케팅 채널 분석에 사용됩니다.',
+        },
+        {
+          method: 'POST', path: '/api/analytics/post-engagement', auth: false,
+          summary: '게시글 조회·공감 이벤트 기록',
+          request: '{ "post_id": 123, "event": "view", "duration_ms": 4500 }',
+          response: '{ "ok": true }',
+          notes: 'event: view | like | unlike. 관리자 세션은 체류시간 집계에서 제외됩니다.',
+        },
+        {
+          method: 'GET', path: '/api/analytics/today', auth: false,
+          summary: '오늘 방문자 수 / 조회수',
+          response: '{ "visitors": 42, "views": 158 }',
+        },
+        {
+          method: 'GET', path: '/api/admin/analytics', auth: true,
+          summary: '관리자 종합 분석 대시보드',
+          response: '{ "daily": [], "top_posts": [], "total_visits": number, "avg_duration": number }',
+        },
+        {
+          method: 'GET', path: '/api/admin/marketing', auth: true,
+          summary: '마케팅 · 유입 채널 분석',
+          response: '{ "funnel": [], "utm_campaigns": [], "referrers": [] }',
+        },
+      ],
+    },
+    {
+      id: 'admin',
+      label: '관리자 전용 (Admin)',
+      desc: 'Changelog 조회, 프리뷰·배포 스냅샷 관리.',
+      endpoints: [
+        {
+          method: 'GET', path: '/api/admin/changelog', auth: true,
+          summary: '버전기록 조회',
+          response: '{ "items": ChangelogItem[] }',
+          notes: 'ChangelogItem: { version, date, summary, type, scope, items[] }. scope: site | admin | both',
+        },
+        {
+          method: 'GET', path: '/api/preview/history', auth: true,
+          summary: '배포 스냅샷 이력',
+          response: '{ "releases": Release[] }',
+        },
+        {
+          method: 'POST', path: '/api/preview/promote', auth: true,
+          summary: '프리뷰 → 프로덕션 반영',
+          request: '{ "version": "00.101.00" }',
+          response: '{ "ok": true }',
+        },
+        {
+          method: 'POST', path: '/api/preview/release', auth: true,
+          summary: '현재 상태를 릴리스 스냅샷으로 저장',
+          request: '{ "label": "v00.101.00", "notes": "KMS 재설계" }',
+          response: '{ "release_id": "abc123" }',
+        },
+        {
+          method: 'POST', path: '/api/preview/rollback', auth: true,
+          summary: '이전 릴리스로 롤백',
+          request: '{ "release_id": "abc123" }',
+          response: '{ "ok": true }',
+        },
+      ],
+    },
+    {
+      id: 'util',
+      label: '유틸리티 (Utilities)',
+      desc: '홈 메타, 이미지 서빙, 공개 통계.',
+      endpoints: [
+        {
+          method: 'GET', path: '/api/home', auth: false,
+          summary: '홈 페이지 메타 및 주요 콘텐츠',
+          response: '{ "hero": HeroItem[], "ticker": string[], "main_story": Post }',
+        },
+        {
+          method: 'GET', path: '/api/images/:key', auth: false,
+          summary: 'R2 또는 DB 저장 이미지 서빙',
+          params: [{ name: 'key', desc: '이미지 키 (URL 인코딩됨)' }],
+          response: '이미지 바이너리 (Content-Type: image/*)',
+        },
+        {
+          method: 'GET', path: '/api/stats', auth: false,
+          summary: '공개 게시글 수 통계',
+          response: '{ "total": 120, "by_category": { "korea": 60, "apr": 30, "wosm": 20, "people": 10 } }',
+        },
+      ],
+    },
+  ];
+
+  // ── DOMContentLoaded ──────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
-    bindKmsAuthEvents();
-    bindKmsUi();
-    bootKmsAccess();
+    bindLoginEvents();
+    bindUiEvents();
+    bootAccess();
   });
 
-  function bindKmsUi() {
-    var input = document.getElementById('kms-editor-input');
-    var saveBtn = document.getElementById('kms-save-btn');
-    var pwInput = document.getElementById('kms-pw-input');
-    var loginBtn = document.getElementById('kms-login-btn');
-    document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
-      if (btn.dataset.bound === 'true') return;
-      btn.dataset.bound = 'true';
-      btn.addEventListener('click', function () {
-        setKmsMode(btn.getAttribute('data-kms-mode') || 'read');
-      });
-    });
-    if (input && input.dataset.bound !== 'true') {
-      input.dataset.bound = 'true';
-      input.addEventListener('input', function () {
-        renderKmsDocument(input.value || '');
-        renderKmsSectionList(input.value || '');
-        updateKmsMeta(input.value || '');
-      });
-    }
-    if (saveBtn && saveBtn.dataset.bound !== 'true') {
-      saveBtn.dataset.bound = 'true';
-      saveBtn.addEventListener('click', saveKmsDefinition);
-    }
-    if (loginBtn && loginBtn.dataset.bound !== 'true') {
-      loginBtn.dataset.bound = 'true';
-      loginBtn.addEventListener('click', doKmsLogin);
-    }
-    if (pwInput && pwInput.dataset.bound !== 'true') {
-      pwInput.dataset.bound = 'true';
-      pwInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') doKmsLogin();
-      });
-    }
-  }
-
-  function bindKmsAuthEvents() {
-    if (document.body.dataset.kmsAuthBound === 'true') return;
-    document.body.dataset.kmsAuthBound = 'true';
-    document.addEventListener('gw:admin-auth-required', function (event) {
-      var detail = event && event.detail ? event.detail : {};
-      showKmsLogin(detail.message || '관리자 로그인이 필요합니다.');
-    });
-  }
-
-  function bootKmsAccess() {
-    if (!GW.getToken()) {
-      showKmsLogin('');
-      return;
-    }
-    verifyKmsSession()
-      .then(function (session) {
-        if (!session || session.authenticated !== true) {
-          showKmsLogin('관리자 로그인이 필요합니다.');
-          return;
-        }
-        _kmsRole = session.role || 'full';
+  // ── 인증 ──────────────────────────────────────────────────────
+  function bootAccess() {
+    if (!GW.getToken()) { showLogin(''); return; }
+    GW.apiFetch('/api/admin/session')
+      .then(function (data) {
+        if (!data || data.authenticated !== true) { showLogin('관리자 로그인이 필요합니다.'); return; }
         showKms();
       })
-      .catch(function () {
-        showKmsLogin('관리자 세션을 다시 확인해주세요.');
-      });
+      .catch(function () { showLogin('관리자 세션을 다시 확인해주세요.'); });
   }
 
-  function verifyKmsSession() {
-    return GW.apiFetch('/api/admin/session', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  function doKmsLogin() {
-    var pw = String(document.getElementById('kms-pw-input').value || '').trim();
-    var err = document.getElementById('kms-login-error');
+  function doLogin() {
+    var pw = String((document.getElementById('kms-pw-input') || {}).value || '').trim();
+    var errEl = document.getElementById('kms-login-error');
     var btn = document.getElementById('kms-login-btn');
-    if (!pw) {
-      if (err) {
-        err.textContent = '비밀번호를 입력해주세요.';
-        err.style.display = 'block';
-      }
-      return;
-    }
+    if (!pw) { showLoginError('비밀번호를 입력해주세요.'); return; }
     btn.disabled = true;
     btn.textContent = '확인 중…';
-    if (err) err.style.display = 'none';
-    GW.apiFetch('/api/admin/login', {
-      method: 'POST',
-      body: JSON.stringify({ password: pw }),
-    })
+    hideLoginError();
+    GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) })
       .then(function (data) {
         GW.setToken(data.token);
         if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
-        _kmsRole = data.role || 'full';
         showKms();
       })
-      .catch(function (error) {
-        if (err) {
-          err.textContent = error.message || '비밀번호가 올바르지 않습니다.';
-          err.style.display = 'block';
-        }
-        document.getElementById('kms-pw-input').value = '';
+      .catch(function (err) {
+        showLoginError(err.message || '비밀번호가 올바르지 않습니다.');
+        var pwEl = document.getElementById('kms-pw-input');
+        if (pwEl) pwEl.value = '';
       })
       .finally(function () {
         btn.disabled = false;
@@ -121,218 +407,261 @@
   }
 
   function showKms() {
-    var login = document.getElementById('kms-login-screen');
-    var screen = document.getElementById('kms-screen');
-    var saveBtn = document.getElementById('kms-save-btn');
-    if (login) login.style.display = 'none';
-    if (screen) {
-      screen.hidden = false;
-      screen.setAttribute('aria-hidden', 'false');
+    var loginEl = document.getElementById('kms-login-screen');
+    var screenEl = document.getElementById('kms-screen');
+    if (loginEl) loginEl.style.display = 'none';
+    if (screenEl) { screenEl.hidden = false; screenEl.setAttribute('aria-hidden', 'false'); }
+    if (!_state.loaded) {
+      _state.loaded = true;
+      loadDefinition();
+      renderApiGuide();
+      loadChangelog();
     }
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = '정의서 저장';
-    }
-    if (!_kmsLoaded) {
-      loadKmsDefinition();
-      _kmsLoaded = true;
-    }
-    setKmsMode('read');
+    updateVersionDisplay();
+    setMode('read');
+    setTab('docs');
   }
 
-  function showKmsLogin(message) {
+  function showLogin(message) {
     GW.clearToken();
-    var login = document.getElementById('kms-login-screen');
-    var screen = document.getElementById('kms-screen');
-    var err = document.getElementById('kms-login-error');
-    if (login) login.style.display = 'flex';
-    if (screen) {
-      screen.hidden = true;
-      screen.setAttribute('aria-hidden', 'true');
-    }
-    if (err) {
-      if (message) {
-        err.textContent = message;
-        err.style.display = 'block';
-      } else {
-        err.textContent = '';
-        err.style.display = 'none';
-      }
-    }
+    var loginEl = document.getElementById('kms-login-screen');
+    var screenEl = document.getElementById('kms-screen');
+    if (loginEl) loginEl.style.display = 'flex';
+    if (screenEl) { screenEl.hidden = true; screenEl.setAttribute('aria-hidden', 'true'); }
+    if (message) showLoginError(message); else hideLoginError();
   }
 
-  function loadKmsDefinition() {
-    var preview = document.getElementById('kms-document-body');
+  function showLoginError(msg) {
+    var el = document.getElementById('kms-login-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  function hideLoginError() {
+    var el = document.getElementById('kms-login-error');
+    if (el) el.hidden = true;
+  }
+
+  // ── 이벤트 바인딩 ─────────────────────────────────────────────
+  function bindLoginEvents() {
+    var loginBtn = document.getElementById('kms-login-btn');
+    var pwInput = document.getElementById('kms-pw-input');
+    if (loginBtn) loginBtn.addEventListener('click', doLogin);
+    if (pwInput) pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+  }
+
+  function bindUiEvents() {
+    // 탭 전환
+    document.querySelectorAll('[data-kms-tab]').forEach(function (btn) {
+      btn.addEventListener('click', function () { setTab(btn.getAttribute('data-kms-tab')); });
+    });
+
+    // 모드 전환 (보기/편집)
+    document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
+      btn.addEventListener('click', function () { setMode(btn.getAttribute('data-kms-mode')); });
+    });
+
+    // 저장
+    var saveBtn = document.getElementById('kms-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', saveDefinition);
+
+    // 사이드바 토글
+    var sidebarToggle = document.getElementById('kms-sidebar-toggle');
+    var overlay = document.getElementById('kms-overlay');
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // 검색
+    var searchInput = document.getElementById('kms-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        _state.searchQuery = searchInput.value.trim();
+        handleSearch(_state.searchQuery);
+      });
+    }
+
+    // 검색 초기화
+    var clearBtn = document.getElementById('kms-search-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        var si = document.getElementById('kms-search-input');
+        if (si) si.value = '';
+        _state.searchQuery = '';
+        handleSearch('');
+      });
+    }
+
+    // 편집기 실시간 미리보기
+    var editorInput = document.getElementById('kms-editor-input');
+    if (editorInput) {
+      editorInput.addEventListener('input', function () {
+        renderDocument(editorInput.value || '');
+        renderSectionList(editorInput.value || '');
+        updateDocMeta(editorInput.value || '');
+      });
+    }
+
+    // Changelog 범위 필터
+    document.querySelectorAll('[data-cl-scope]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _state.changelogScope = btn.getAttribute('data-cl-scope') || 'all';
+        document.querySelectorAll('[data-cl-scope]').forEach(function (b) {
+          b.classList.toggle('is-active', b === btn);
+        });
+        renderChangelog(_state.changelogItems, _state.changelogScope);
+      });
+    });
+  }
+
+  // ── 탭 시스템 ─────────────────────────────────────────────────
+  function setTab(tab) {
+    _state.tab = tab;
+    var panels = ['docs', 'api', 'changelog'];
+    panels.forEach(function (id) {
+      var panel = document.getElementById('kms-tab-' + id);
+      if (panel) panel.hidden = id !== tab;
+    });
+    document.querySelectorAll('[data-kms-tab]').forEach(function (btn) {
+      var isActive = btn.getAttribute('data-kms-tab') === tab;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    // 탭 전환 시 사이드바 섹션 목록을 해당 탭에 맞게 업데이트
+    if (tab === 'api') renderApiSectionList();
+    else if (tab === 'changelog') clearSectionList();
+    else renderSectionList(_state.docContent);
+  }
+
+  // ── 사이드바 ──────────────────────────────────────────────────
+  function toggleSidebar() {
+    _state.sidebarOpen = !_state.sidebarOpen;
+    var sidebar = document.getElementById('kms-sidebar');
+    var overlay = document.getElementById('kms-overlay');
+    if (sidebar) sidebar.classList.toggle('is-open', _state.sidebarOpen);
+    if (overlay) overlay.classList.toggle('is-visible', _state.sidebarOpen);
+  }
+
+  function closeSidebar() {
+    _state.sidebarOpen = false;
+    var sidebar = document.getElementById('kms-sidebar');
+    var overlay = document.getElementById('kms-overlay');
+    if (sidebar) sidebar.classList.remove('is-open');
+    if (overlay) overlay.classList.remove('is-visible');
+  }
+
+  // ── 검색 ──────────────────────────────────────────────────────
+  function handleSearch(query) {
+    var banner = document.getElementById('kms-search-result-banner');
+    var countEl = document.getElementById('kms-search-result-count');
+    if (!query) {
+      if (banner) banner.hidden = true;
+      renderDocument(_state.docContent);
+      renderSectionList(_state.docContent);
+      return;
+    }
+    var q = query.toLowerCase();
+    var sections = extractSections(_state.docContent);
+    var matched = sections.filter(function (s) {
+      return s.title.toLowerCase().indexOf(q) >= 0 || (s.body || '').toLowerCase().indexOf(q) >= 0;
+    });
+    if (banner) banner.hidden = false;
+    if (countEl) countEl.textContent = '"' + query + '" 검색 결과: ' + matched.length + '개 섹션';
+    renderFilteredSections(matched, q);
+    renderSectionList(_state.docContent, q);
+  }
+
+  function renderFilteredSections(sections, q) {
+    var body = document.getElementById('kms-document-body');
+    if (!body) return;
+    if (!sections.length) {
+      body.innerHTML = '<div class="kms-list-empty">일치하는 섹션이 없습니다.</div>';
+      return;
+    }
+    body.innerHTML = sections.map(function (s) {
+      var levelClass = 'kms-search-section kms-search-section-l' + s.level;
+      var titleHighlighted = highlightText(GW.escapeHtml(s.title), q);
+      var bodyRendered = s.body ? '<div class="kms-search-section-body">' + renderKmsText(s.body, function () { return ''; }) + '</div>' : '';
+      return '<div class="' + levelClass + '"><h3 class="kms-search-section-title">' + titleHighlighted + '</h3>' + bodyRendered + '</div>';
+    }).join('');
+  }
+
+  function highlightText(html, q) {
+    if (!q) return html;
+    var escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return html.replace(new RegExp('(' + escaped + ')', 'gi'), '<mark class="kms-highlight">$1</mark>');
+  }
+
+  // ── 기능정의서 ────────────────────────────────────────────────
+  function loadDefinition() {
+    var body = document.getElementById('kms-document-body');
     var list = document.getElementById('kms-section-list');
+    if (body) body.innerHTML = '<div class="kms-list-empty">불러오는 중…</div>';
     GW.apiFetch('/api/settings/feature-definition')
       .then(function (data) {
         var content = data && typeof data.content === 'string' ? data.content : '';
-        var input = document.getElementById('kms-editor-input');
-        if (input) input.value = content;
-        renderKmsDocument(content);
-        renderKmsSectionList(content);
-        updateKmsMeta(content);
+        _state.docContent = content;
+        var editorInput = document.getElementById('kms-editor-input');
+        if (editorInput) editorInput.value = content;
+        renderDocument(content);
+        renderSectionList(content);
+        updateDocMeta(content);
       })
-      .catch(function (error) {
-        if (preview) preview.innerHTML = '<div class="list-empty">' + GW.escapeHtml(error.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
-        if (list) list.innerHTML = '<div class="list-empty">목차를 불러오지 못했습니다.</div>';
+      .catch(function (err) {
+        if (body) body.innerHTML = '<div class="kms-list-empty">' + GW.escapeHtml(err.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
+        if (list) list.innerHTML = '<div class="kms-list-empty">목차를 불러오지 못했습니다.</div>';
       });
   }
 
-  function saveKmsDefinition() {
-    if (_kmsSaveBusy) return;
-    var input = document.getElementById('kms-editor-input');
-    var content = String(input && input.value || '').trim();
-    if (!content) {
-      GW.showToast('기능 정의서 내용이 비어 있습니다.', 'error');
-      return;
-    }
+  function saveDefinition() {
+    if (_state.saveBusy) return;
+    var editorInput = document.getElementById('kms-editor-input');
+    var content = String(editorInput && editorInput.value || '').trim();
+    if (!content) { GW.showToast('기능 정의서 내용이 비어 있습니다.', 'error'); return; }
     var btn = document.getElementById('kms-save-btn');
-    _kmsSaveBusy = true;
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = '저장 중…';
-    }
+    _state.saveBusy = true;
+    if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
     GW.apiFetch('/api/settings/feature-definition', {
       method: 'PUT',
       body: JSON.stringify({ content: content }),
     })
       .then(function () {
+        _state.docContent = content;
         GW.showToast('기능 정의서가 저장됐습니다.', 'success');
-        renderKmsDocument(content);
-        renderKmsSectionList(content);
-        updateKmsMeta(content);
-        setKmsMode('read');
+        renderDocument(content);
+        renderSectionList(content);
+        updateDocMeta(content);
+        setMode('read');
       })
-      .catch(function (error) {
-        GW.showToast(error.message || '기능 정의서 저장 실패', 'error');
+      .catch(function (err) {
+        GW.showToast(err.message || '저장 실패', 'error');
       })
       .finally(function () {
-        _kmsSaveBusy = false;
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '정의서 저장';
-        }
+        _state.saveBusy = false;
+        if (btn) { btn.disabled = false; btn.textContent = '저장'; }
       });
   }
 
-  function renderKmsSectionList(content) {
-    var list = document.getElementById('kms-section-list');
-    if (!list) return;
-    var sections = extractKmsSections(content);
-    if (!sections.length) {
-      list.innerHTML = '<div class="list-empty">목차를 만들 수 있는 제목이 없습니다.</div>';
-      return;
-    }
-    var tree = buildKmsSectionTree(sections);
-    list.innerHTML = renderKmsTreeNodes(tree);
-    Array.prototype.forEach.call(list.querySelectorAll('[data-kms-target]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var targetId = btn.getAttribute('data-kms-target');
-        var target = document.getElementById(targetId);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    });
-    Array.prototype.forEach.call(list.querySelectorAll('[data-kms-toggle]'), function (btn) {
-      btn.addEventListener('click', function () {
-        var node = btn.closest('.kms-tree-node');
-        if (!node) return;
-        var collapsed = node.getAttribute('data-collapsed') === 'true';
-        node.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
-        btn.textContent = collapsed ? '−' : '+';
-      });
-    });
-  }
-
-  function setKmsMode(mode) {
-    _kmsMode = mode === 'edit' ? 'edit' : 'read';
+  function setMode(mode) {
+    _state.mode = mode === 'edit' ? 'edit' : 'read';
     var editorPanel = document.getElementById('kms-editor-panel');
-    var readBtn = document.getElementById('kms-mode-read');
-    var editBtn = document.getElementById('kms-mode-edit');
-    if (editorPanel) editorPanel.hidden = _kmsMode !== 'edit';
-    if (readBtn) {
-      readBtn.classList.toggle('active', _kmsMode === 'read');
-      readBtn.setAttribute('aria-selected', _kmsMode === 'read' ? 'true' : 'false');
-    }
-    if (editBtn) {
-      editBtn.classList.toggle('active', _kmsMode === 'edit');
-      editBtn.setAttribute('aria-selected', _kmsMode === 'edit' ? 'true' : 'false');
-    }
-  }
-
-  function extractKmsSections(content) {
-    var lines = String(content || '').split('\n');
-    var sections = [];
-    var count = 0;
-    lines.forEach(function (line) {
-      var raw = String(line || '').trim();
-      if (!/^#{2,4}\s+/.test(raw)) return;
-      var level = raw.match(/^#+/)[0].length;
-      var title = raw.replace(/^##+\s+/, '').trim();
-      count += 1;
-      sections.push({
-        id: 'kms-section-' + count + '-' + slugifyKms(title),
-        title: title,
-        level: level,
-        levelLabel: level === 2 ? '대목차' : level === 3 ? '세목차 / 의도' : '기능 세부 / 각주'
-      });
+    var saveBtn = document.getElementById('kms-save-btn');
+    if (editorPanel) editorPanel.hidden = _state.mode !== 'edit';
+    document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.getAttribute('data-kms-mode') === _state.mode);
     });
-    return sections;
+    var modeSwitchEl = document.getElementById('kms-mode-switch');
+    if (modeSwitchEl) modeSwitchEl.style.display = _state.tab === 'docs' ? '' : 'none';
+    if (saveBtn) saveBtn.style.display = _state.tab === 'docs' ? '' : 'none';
   }
 
-  function buildKmsSectionTree(sections) {
-    var roots = [];
-    var stack = [];
-    sections.forEach(function (section) {
-      var node = {
-        id: section.id,
-        title: section.title,
-        level: section.level,
-        levelLabel: section.levelLabel,
-        children: [],
-      };
-      while (stack.length && stack[stack.length - 1].level >= node.level) stack.pop();
-      if (stack.length) {
-        stack[stack.length - 1].children.push(node);
-      } else {
-        roots.push(node);
-      }
-      stack.push(node);
-    });
-    return roots;
-  }
-
-  function renderKmsTreeNodes(nodes) {
-    return nodes.map(function (node) {
-      var hasChildren = node.children && node.children.length > 0;
-      return '<div class="kms-tree-node" data-collapsed="' + (hasChildren ? 'false' : 'false') + '">' +
-        '<div class="kms-tree-row">' +
-          (hasChildren
-            ? '<button type="button" class="kms-tree-toggle" data-kms-toggle="true">−</button>'
-            : '<span class="kms-tree-spacer" aria-hidden="true">·</span>') +
-          '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(node.id) + '">' +
-            '<strong>' + GW.escapeHtml(node.title) + '</strong>' +
-            '<span>' + GW.escapeHtml(node.levelLabel) + '</span>' +
-          '</button>' +
-        '</div>' +
-        (hasChildren ? '<div class="kms-tree-children">' + renderKmsTreeNodes(node.children) + '</div>' : '') +
-      '</div>';
-    }).join('');
-  }
-
-  function slugifyKms(text) {
-    return String(text || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'section';
-  }
-
-  function renderKmsDocument(content) {
+  // ── 문서 렌더링 ───────────────────────────────────────────────
+  function renderDocument(content) {
     var preview = document.getElementById('kms-document-body');
     if (!preview) return;
     var text = String(content || '').replace(/\r\n/g, '\n');
     if (!text.trim()) {
-      preview.innerHTML = '<div class="list-empty">정의서를 입력하면 여기에 미리보기가 표시됩니다.</div>';
+      preview.innerHTML = '<div class="kms-list-empty">정의서를 입력하면 여기에 미리보기가 표시됩니다.</div>';
       return;
     }
     var sectionIndex = 0;
@@ -341,39 +670,19 @@
       if (index % 2 === 1) {
         var lines = part.replace(/^\n+|\n+$/g, '').split('\n');
         var language = '';
-        if (lines.length && /^[A-Za-z0-9_-]+$/.test(lines[0].trim())) {
+        if (lines.length && /^[A-Za-z0-9_-]+$/.test((lines[0] || '').trim())) {
           language = lines.shift().trim();
         }
-        return '<div class="feature-definition-code-wrap">' +
-          (language ? '<div class="feature-definition-code-label">' + GW.escapeHtml(language) + '</div>' : '') +
-          '<pre class="feature-definition-code"><code>' + GW.escapeHtml(lines.join('\n')) + '</code></pre>' +
-        '</div>';
+        return '<div class="kms-code-wrap">' +
+          (language ? '<div class="kms-code-label">' + GW.escapeHtml(language) + '</div>' : '') +
+          '<pre class="kms-code"><code>' + GW.escapeHtml(lines.join('\n')) + '</code></pre>' +
+          '</div>';
       }
       return renderKmsText(part, function (title) {
         sectionIndex += 1;
-        return 'kms-section-' + sectionIndex + '-' + slugifyKms(title);
+        return 'kms-s-' + sectionIndex + '-' + slugify(title);
       });
     }).join('');
-  }
-
-  function updateKmsMeta(content) {
-    var text = String(content || '');
-    var lines = text.split('\n');
-    var titleLine = lines.find(function (line) { return /^#\s+/.test(String(line || '').trim()); }) || '';
-    var title = titleLine ? titleLine.replace(/^#\s+/, '').trim() : '기능 정의서 / 운영 기준 문서';
-    var sections = extractKmsSections(text);
-    var detailCount = sections.filter(function (section) { return section.level >= 4; }).length;
-    var summary = '대목차와 세목차를 중심으로 운영 기준, 기능 의도, 세부 규칙, 각주를 문서화합니다.';
-    var titleEl = document.getElementById('kms-document-title');
-    var summaryEl = document.getElementById('kms-document-summary');
-    var buildEl = document.getElementById('kms-build-version');
-    var sectionCountEl = document.getElementById('kms-section-count');
-    var detailCountEl = document.getElementById('kms-detail-count');
-    if (titleEl) titleEl.textContent = title;
-    if (summaryEl) summaryEl.textContent = summary;
-    if (buildEl) buildEl.textContent = 'V' + (GW.APP_VERSION || '');
-    if (sectionCountEl) sectionCountEl.textContent = String(sections.filter(function (section) { return section.level === 2; }).length);
-    if (detailCountEl) detailCountEl.textContent = String(detailCount);
   }
 
   function renderKmsText(text, idBuilder) {
@@ -383,54 +692,301 @@
     lines.forEach(function (line) {
       var raw = line.trim();
       if (!raw) {
-        if (inList) {
-          html.push('</ul>');
-          inList = false;
-        }
+        if (inList) { html.push('</ul>'); inList = false; }
         return;
       }
+      // Frontmatter skip (Obsidian 호환)
+      if (raw === '---') return;
       if (/^####\s+/.test(raw)) {
         if (inList) { html.push('</ul>'); inList = false; }
-        var detailTitle = raw.replace(/^####\s+/, '');
-        html.push('<h5 id="' + GW.escapeHtml(idBuilder(detailTitle)) + '">' + GW.escapeHtml(detailTitle) + '</h5>');
+        var t = raw.replace(/^####\s+/, '');
+        html.push('<h5 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h5">' + formatInline(t) + '</h5>');
         return;
       }
       if (/^###\s+/.test(raw)) {
         if (inList) { html.push('</ul>'); inList = false; }
-        var subTitle = raw.replace(/^###\s+/, '');
-        html.push('<h4 id="' + GW.escapeHtml(idBuilder(subTitle)) + '">' + GW.escapeHtml(subTitle) + '</h4>');
+        var t = raw.replace(/^###\s+/, '');
+        html.push('<h4 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h4">' + formatInline(t) + '</h4>');
         return;
       }
       if (/^##\s+/.test(raw)) {
         if (inList) { html.push('</ul>'); inList = false; }
-        var title = raw.replace(/^##\s+/, '');
-        html.push('<h3 id="' + GW.escapeHtml(idBuilder(title)) + '">' + GW.escapeHtml(title) + '</h3>');
+        var t = raw.replace(/^##\s+/, '');
+        html.push('<h3 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h3">' + formatInline(t) + '</h3>');
         return;
       }
       if (/^#\s+/.test(raw)) {
         if (inList) { html.push('</ul>'); inList = false; }
-        html.push('<h2>' + GW.escapeHtml(raw.replace(/^#\s+/, '')) + '</h2>');
+        html.push('<h2 class="kms-h2">' + formatInline(raw.replace(/^#\s+/, '')) + '</h2>');
         return;
       }
       if (/^-\s+/.test(raw)) {
-        if (!inList) {
-          html.push('<ul>');
-          inList = true;
-        }
-        html.push('<li>' + formatKmsInline(raw.replace(/^-\s+/, '')) + '</li>');
+        if (!inList) { html.push('<ul class="kms-list">'); inList = true; }
+        html.push('<li>' + formatInline(raw.replace(/^-\s+/, '')) + '</li>');
         return;
       }
-      if (inList) {
-        html.push('</ul>');
-        inList = false;
-      }
-      html.push('<p>' + formatKmsInline(raw) + '</p>');
+      if (inList) { html.push('</ul>'); inList = false; }
+      html.push('<p class="kms-p">' + formatInline(raw) + '</p>');
     });
     if (inList) html.push('</ul>');
     return html.join('');
   }
 
-  function formatKmsInline(text) {
-    return GW.escapeHtml(String(text || '')).replace(/`([^`]+)`/g, '<code>$1</code>');
+  function formatInline(text) {
+    var escaped = GW.escapeHtml(String(text || ''));
+    // 위키링크 [[항목명]] → 볼드 처리 (Obsidian 호환)
+    escaped = escaped.replace(/\[\[([^\]]+)\]\]/g, '<span class="kms-wikilink">$1</span>');
+    // 인라인 코드 `…`
+    escaped = escaped.replace(/`([^`]+)`/g, '<code class="kms-inline-code">$1</code>');
+    // 볼드 **…**
+    escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    return escaped;
   }
+
+  // ── 목차 트리 ─────────────────────────────────────────────────
+  function renderSectionList(content, highlightQ) {
+    var list = document.getElementById('kms-section-list');
+    if (!list) return;
+    var sections = extractSections(content).filter(function (s) { return s.level <= 3; });
+    if (!sections.length) {
+      list.innerHTML = '<div class="kms-list-empty">목차를 만들 수 있는 제목이 없습니다.</div>';
+      return;
+    }
+    var filtered = highlightQ
+      ? sections.filter(function (s) { return s.title.toLowerCase().indexOf(highlightQ.toLowerCase()) >= 0; })
+      : sections;
+    if (!filtered.length) {
+      list.innerHTML = '<div class="kms-list-empty">일치하는 목차가 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(function (s) {
+      var indent = s.level === 2 ? '' : s.level === 3 ? 'kms-tree-sub' : 'kms-tree-sub2';
+      var label = s.level === 2 ? '대목차' : s.level === 3 ? '소목차' : '세부';
+      var titleHtml = highlightQ ? highlightText(GW.escapeHtml(s.title), highlightQ) : GW.escapeHtml(s.title);
+      return '<button type="button" class="kms-section-link ' + indent + '" data-kms-target="' + GW.escapeHtml(s.id) + '">' +
+        '<span class="kms-section-label">' + label + '</span>' +
+        '<span class="kms-section-title">' + titleHtml + '</span>' +
+        '</button>';
+    }).join('');
+    list.querySelectorAll('[data-kms-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-kms-target');
+        var target = document.getElementById(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          closeSidebar();
+        }
+      });
+    });
+  }
+
+  function renderApiSectionList() {
+    var list = document.getElementById('kms-section-list');
+    if (!list) return;
+    list.innerHTML = API_GROUPS.map(function (group) {
+      return '<button type="button" class="kms-section-link" data-kms-target="kms-api-' + group.id + '">' +
+        '<span class="kms-section-label">그룹</span>' +
+        '<span class="kms-section-title">' + GW.escapeHtml(group.label) + '</span>' +
+        '</button>';
+    }).join('');
+    list.querySelectorAll('[data-kms-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var targetId = btn.getAttribute('data-kms-target');
+        var target = document.getElementById(targetId);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        closeSidebar();
+      });
+    });
+  }
+
+  function clearSectionList() {
+    var list = document.getElementById('kms-section-list');
+    if (list) list.innerHTML = '<div class="kms-list-empty">버전기록 탭에서는 목차가 제공되지 않습니다.</div>';
+  }
+
+  function extractSections(content) {
+    var lines = String(content || '').split('\n');
+    var sections = [];
+    var count = 0;
+    var currentSection = null;
+    lines.forEach(function (line) {
+      var raw = String(line || '').trim();
+      if (/^#{2,4}\s+/.test(raw)) {
+        if (currentSection) sections.push(currentSection);
+        count += 1;
+        var level = raw.match(/^#+/)[0].length;
+        var title = raw.replace(/^##+\s+/, '').trim();
+        currentSection = { id: 'kms-s-' + count + '-' + slugify(title), title: title, level: level, body: '' };
+      } else if (currentSection) {
+        currentSection.body += line + '\n';
+      }
+    });
+    if (currentSection) sections.push(currentSection);
+    return sections;
+  }
+
+  function updateDocMeta(content) {
+    var text = String(content || '');
+    var lines = text.split('\n');
+    var titleLine = lines.find(function (l) { return /^#\s+/.test(String(l || '').trim()); }) || '';
+    var title = titleLine ? titleLine.replace(/^#\s+/, '').trim() : '기능 정의서 / 운영 기준 문서';
+    var sections = extractSections(text);
+    var h2Count = sections.filter(function (s) { return s.level === 2; }).length;
+    var h4Count = sections.filter(function (s) { return s.level === 4; }).length;
+    var ver = 'V' + (GW.APP_VERSION || '—');
+    setText('kms-document-title', title);
+    setText('kms-build-version', ver);
+    setText('kms-ver-site', ver);
+    setText('kms-section-count', String(h2Count));
+    setText('kms-section-count-doc', String(h2Count));
+    setText('kms-detail-count', String(h4Count));
+  }
+
+  function updateVersionDisplay() {
+    var siteVer = 'V' + (GW.APP_VERSION || '—');
+    var adminVer = 'V' + (GW.ADMIN_VERSION || '—');
+    document.querySelectorAll('.site-build-version').forEach(function (el) { el.textContent = siteVer; });
+    document.querySelectorAll('.admin-build-version').forEach(function (el) { el.textContent = adminVer; });
+    setText('kms-ver-site', siteVer);
+    setText('kms-build-version', siteVer);
+  }
+
+  // ── API 가이드 렌더링 ──────────────────────────────────────────
+  function renderApiGuide() {
+    var container = document.getElementById('kms-api-guide');
+    if (!container) return;
+
+    var methodColors = {
+      'GET': '#22863a', 'POST': '#0069d9', 'PUT': '#b08800',
+      'DELETE': '#cb2431', 'GET|PUT': '#6f42c1',
+    };
+
+    container.innerHTML = API_GROUPS.map(function (group) {
+      var endpointsHtml = group.endpoints.map(function (ep) {
+        var color = methodColors[ep.method] || '#555';
+        var authBadge = ep.auth === false
+          ? '<span class="kms-api-badge kms-api-badge-public">공개</span>'
+          : ep.auth === 'optional'
+          ? '<span class="kms-api-badge kms-api-badge-optional">토큰 선택</span>'
+          : ep.auth === 'PUT only'
+          ? '<span class="kms-api-badge kms-api-badge-admin">PUT 시 admin 필요</span>'
+          : '<span class="kms-api-badge kms-api-badge-admin">admin 전용</span>';
+
+        var paramsHtml = ep.params && ep.params.length
+          ? '<div class="kms-api-section-label">Query Parameters</div>' +
+            '<table class="kms-api-table"><thead><tr><th>이름</th><th>설명</th></tr></thead><tbody>' +
+            ep.params.map(function (p) {
+              return '<tr><td><code>' + GW.escapeHtml(p.name) + '</code></td><td>' + GW.escapeHtml(p.desc) + '</td></tr>';
+            }).join('') +
+            '</tbody></table>'
+          : '';
+
+        var requestHtml = ep.request
+          ? '<div class="kms-api-section-label">Request Body</div><pre class="kms-api-pre"><code>' + GW.escapeHtml(ep.request) + '</code></pre>'
+          : '';
+
+        var responseHtml = ep.response
+          ? '<div class="kms-api-section-label">Response</div><pre class="kms-api-pre"><code>' + GW.escapeHtml(ep.response) + '</code></pre>'
+          : '';
+
+        var notesHtml = ep.notes
+          ? '<div class="kms-api-notes"><span class="kms-api-notes-icon">ℹ</span>' + GW.escapeHtml(ep.notes).replace(/\n/g, '<br>') + '</div>'
+          : '';
+
+        return '<div class="kms-api-endpoint">' +
+          '<div class="kms-api-endpoint-head">' +
+            '<span class="kms-api-method" style="background:' + color + '">' + GW.escapeHtml(ep.method) + '</span>' +
+            '<code class="kms-api-path">' + GW.escapeHtml(ep.path) + '</code>' +
+            authBadge +
+          '</div>' +
+          '<div class="kms-api-summary">' + GW.escapeHtml(ep.summary) + '</div>' +
+          paramsHtml + requestHtml + responseHtml + notesHtml +
+          '</div>';
+      }).join('');
+
+      return '<section class="kms-api-group" id="kms-api-' + group.id + '">' +
+        '<div class="kms-api-group-head">' +
+          '<h3 class="kms-api-group-title">' + GW.escapeHtml(group.label) + '</h3>' +
+          '<p class="kms-api-group-desc">' + GW.escapeHtml(group.desc) + '</p>' +
+        '</div>' +
+        '<div class="kms-api-endpoints">' + endpointsHtml + '</div>' +
+        '</section>';
+    }).join('');
+  }
+
+  // ── 버전기록 ──────────────────────────────────────────────────
+  function loadChangelog() {
+    var container = document.getElementById('kms-changelog');
+    fetch('/data/changelog.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('not ok'); return r.json(); })
+      .then(function (data) {
+        _state.changelogItems = Array.isArray(data) ? data : (Array.isArray(data && data.items) ? data.items : []);
+        renderChangelog(_state.changelogItems, _state.changelogScope);
+      })
+      .catch(function () {
+        if (container) container.innerHTML = '<div class="kms-list-empty">버전기록을 불러오지 못했습니다.</div>';
+      });
+  }
+
+  function renderChangelog(items, scope) {
+    var container = document.getElementById('kms-changelog');
+    if (!container) return;
+    if (!items || !items.length) {
+      container.innerHTML = '<div class="kms-list-empty">버전기록이 없습니다.</div>';
+      return;
+    }
+
+    var filtered = scope === 'all'
+      ? items
+      : items.filter(function (item) {
+          var s = String(item.scope || 'site');
+          if (scope === 'both') return s === 'both';
+          if (scope === 'site') return s === 'site' || s === 'both';
+          if (scope === 'admin') return s === 'admin' || s === 'both';
+          return true;
+        });
+
+    if (!filtered.length) {
+      container.innerHTML = '<div class="kms-list-empty">선택한 범위의 버전기록이 없습니다.</div>';
+      return;
+    }
+
+    var typeColors = { Update: '#0069d9', Bugfix: '#cb2431', Feature: '#22863a', Refactor: '#6f42c1' };
+    var scopeLabels = { site: 'Site', admin: 'Admin', both: 'Site + Admin' };
+
+    container.innerHTML = filtered.map(function (item) {
+      var typeColor = typeColors[item.type] || '#555';
+      var scopeLabel = scopeLabels[item.scope] || String(item.scope || 'Site');
+      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
+      var changesHtml = changesList.length
+        ? '<ul class="kms-cl-changes">' + changesList.map(function (c) {
+            return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+          }).join('') + '</ul>'
+        : '';
+
+      return '<article class="kms-cl-item">' +
+        '<div class="kms-cl-item-head">' +
+          '<div class="kms-cl-item-version">' +
+            '<span class="kms-cl-ver">v' + GW.escapeHtml(String(item.version || '')) + '</span>' +
+            '<span class="kms-cl-type" style="background:' + typeColor + '">' + GW.escapeHtml(String(item.type || '')) + '</span>' +
+            '<span class="kms-cl-scope">' + GW.escapeHtml(scopeLabel) + '</span>' +
+          '</div>' +
+          '<span class="kms-cl-date">' + GW.escapeHtml(String(item.date || '')) + '</span>' +
+        '</div>' +
+        '<p class="kms-cl-summary">' + GW.escapeHtml(String(item.summary || '')) + '</p>' +
+        changesHtml +
+        '</article>';
+    }).join('');
+  }
+
+  // ── 유틸리티 ──────────────────────────────────────────────────
+  function slugify(text) {
+    return String(text || '').toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-+|-+$/g, '') || 'section';
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
 })();
