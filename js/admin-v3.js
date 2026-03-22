@@ -104,10 +104,49 @@
     });
   }
 
+  function _pulseButton(btn) {
+    if (!btn || btn.disabled) return;
+    btn.classList.remove('is-pressed');
+    void btn.offsetWidth;
+    btn.classList.add('is-pressed');
+    window.setTimeout(function () { btn.classList.remove('is-pressed'); }, 140);
+  }
+
+  function _setButtonBusy(btn, busyText) {
+    if (!btn) return;
+    if (!btn.dataset.defaultLabel) btn.dataset.defaultLabel = btn.textContent.trim();
+    btn.disabled = true;
+    btn.classList.remove('is-done');
+    btn.classList.add('is-busy');
+    if (busyText) btn.textContent = busyText;
+  }
+
+  function _clearButtonBusy(btn, doneText) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.classList.remove('is-busy');
+    btn.textContent = btn.dataset.defaultLabel || btn.textContent;
+    if (doneText) {
+      btn.textContent = doneText;
+      btn.classList.add('is-done');
+      window.setTimeout(function () {
+        btn.classList.remove('is-done');
+        btn.textContent = btn.dataset.defaultLabel || btn.textContent;
+      }, 900);
+      return;
+    }
+    btn.classList.remove('is-done');
+  }
+
   /* ══════════════════════════════════════════════════════════
      INIT
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('.v3-btn, .mkt-apply-btn, .v3-login-btn') : null;
+      if (btn) _pulseButton(btn);
+    });
+
     var token = GW.getToken && GW.getToken();
     if (token) {
       _verifySession().then(function (ok) {
@@ -144,7 +183,9 @@
     });
 
     // Dashboard refresh
-    document.getElementById('dash-refresh-btn').addEventListener('click', _loadDashboard);
+    document.getElementById('dash-refresh-btn').addEventListener('click', function () {
+      _loadDashboard(document.getElementById('dash-refresh-btn'));
+    });
 
     // Post list filters
     document.getElementById('list-search').addEventListener('input', function () {
@@ -292,12 +333,12 @@
           var start = _shiftDate(end, -(days - 1));
           toEl.value   = end;
           fromEl.value = start;
-          _loadMarketing();
+          _loadMarketing(btn);
         });
       });
       document.getElementById('mkt-apply-btn').addEventListener('click', function () {
         document.querySelectorAll('.mkt-preset-btn').forEach(function (b) { b.classList.remove('is-active'); });
-        _loadMarketing();
+        _loadMarketing(document.getElementById('mkt-apply-btn'));
       });
       [fromEl, toEl].forEach(function (input) {
         input.addEventListener('change', function () {
@@ -347,7 +388,7 @@
       err.textContent = 'CAPTCHA를 완료해주세요'; err.style.display = 'block'; return;
     }
 
-    btn.disabled = true; btn.textContent = '로그인 중…'; err.style.display = 'none';
+    _setButtonBusy(btn, '로그인 중…'); err.style.display = 'none';
     _apiFetch('/api/admin/login', {
       method: 'POST',
       body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }),
@@ -362,7 +403,7 @@
       document.getElementById('v3-pw').focus();
       if (window.turnstile) window.turnstile.reset();
     }).finally(function () {
-      btn.disabled = false; btn.textContent = '관리자 입장';
+      _clearButtonBusy(btn);
     });
   }
 
@@ -543,9 +584,10 @@
   /* ══════════════════════════════════════════════════════════
      DASHBOARD
   ══════════════════════════════════════════════════════════ */
-  function _loadDashboard() {
+  function _loadDashboard(actionBtn) {
     var recentEl = document.getElementById('dash-recent-list');
     var topEl = document.getElementById('dash-top-list');
+    if (actionBtn) _setButtonBusy(actionBtn, '새로고침 중…');
     _setText('dash-stat-visits', '—');
     _setText('dash-stat-views', '—');
     _setText('dash-stat-posts', '—');
@@ -627,6 +669,8 @@
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
       _setText('dash-stat-posts-sub', '대시보드 로딩 실패');
+    }).finally(function () {
+      if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
   }
 
@@ -858,7 +902,7 @@
     if (!title) { GW.showToast('제목을 입력하세요', 'error'); return; }
 
     var btn = publish ? document.getElementById('write-publish-btn') : document.getElementById('write-draft-btn');
-    btn.disabled = true;
+    _setButtonBusy(btn, publish ? '공개 저장 중…' : '임시저장 중…');
 
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
@@ -900,10 +944,10 @@
       GW.showToast('저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
       document.getElementById('w-published').checked = publish || document.getElementById('w-published').checked;
-      btn.disabled = false;
+      _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
-      btn.disabled = false;
+      _clearButtonBusy(btn);
     });
   }
 
@@ -1008,8 +1052,7 @@
     var prev = document.getElementById('w-location-map-preview');
     var frame = document.getElementById('w-location-map-frame');
     var status = document.getElementById('w-location-map-status');
-    btn.disabled = true;
-    btn.textContent = '검색 중…';
+    _setButtonBusy(btn, '검색 중…');
     status.textContent = '';
     prev.style.display = 'none';
     fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
@@ -1017,9 +1060,8 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (results) {
-        btn.disabled = false;
-        btn.textContent = '지도 확인';
         if (!results || !results.length) {
+          _clearButtonBusy(btn);
           GW.showToast('주소를 지도에서 찾을 수 없습니다. 다른 주소로 시도해보세요.', 'error');
           return;
         }
@@ -1030,10 +1072,10 @@
         frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
         status.textContent = '✓ ' + (loc.display_name || addr);
         prev.style.display = 'block';
+        _clearButtonBusy(btn, '완료');
       })
       .catch(function () {
-        btn.disabled = false;
-        btn.textContent = '지도 확인';
+        _clearButtonBusy(btn);
         GW.showToast('지도 검색 중 오류가 발생했습니다', 'error');
       });
   }
@@ -1561,14 +1603,16 @@
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/calendar/' + id : '/api/calendar';
-    document.getElementById('cal-save-btn').disabled = true;
+    var btn = document.getElementById('cal-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch(url, { method: method, body: JSON.stringify(body) })
       .then(function () {
         GW.showToast('저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
         _closeCalModal();
         _loadCalendar();
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('cal-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   function _deleteCal(id) {
@@ -1703,14 +1747,16 @@
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/glossary/' + id : '/api/glossary';
-    document.getElementById('glos-save-btn').disabled = true;
+    var btn = document.getElementById('glos-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch(url, { method: method, body: JSON.stringify(body) })
       .then(function () {
         GW.showToast('저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
         _closeGlosModal();
         _loadGlossary();
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('glos-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   function _deleteGlos(id) {
@@ -1881,7 +1927,7 @@
     return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
   }
 
-  function _loadMarketing() {
+  function _loadMarketing(actionBtn) {
     var el = document.getElementById('marketing-body');
     var fromEl = document.getElementById('mkt-date-from');
     var toEl   = document.getElementById('mkt-date-to');
@@ -1894,6 +1940,7 @@
     var diffDays = Math.round((endD - startD) / 86400000);
     if (diffDays > 180) { start = _shiftDate(end, -180); if (fromEl) fromEl.value = start; }
     if (startD > endD)  { var tmp = start; start = end; end = tmp; }
+    if (actionBtn) _setButtonBusy(actionBtn, '조회 중…');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     _apiFetch('/api/admin/marketing?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end)).then(function (data) {
       var funnel = data.funnel || [];
@@ -1954,6 +2001,8 @@
       }
     }).catch(function (e) {
       el.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">데이터를 불러올 수 없습니다: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div></div>';
+    }).finally(function () {
+      if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
   }
 
@@ -2430,15 +2479,17 @@
 
   function _saveHero() {
     var interval = parseInt(document.getElementById('hero-interval').value, 10) || 3000;
-    document.getElementById('hero-save-btn').disabled = true;
+    var btn = document.getElementById('hero-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/hero', {
       method: 'PUT',
       body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: interval }),
     }).then(function () {
       GW.showToast('히어로 설정을 저장했습니다', 'success');
+      _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
-    }).finally(function () { document.getElementById('hero-save-btn').disabled = false; });
+    }).finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2640,7 +2691,8 @@
     ['korea', 'apr', 'wosm', 'people'].forEach(function (cat) {
       cats[cat] = _getTagScopeItems(_tagSettings, cat);
     });
-    document.getElementById('tags-save-btn').disabled = true;
+    var btn = document.getElementById('tags-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/tags', {
       method: 'PUT',
       body: JSON.stringify({ common: common, categories: cats }),
@@ -2649,9 +2701,10 @@
       _tagSettings = { common: common, categories: cats };
       _tagInlineEdit = null;
       _loadTagSettings();
+      _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
-    }).finally(function () { document.getElementById('tags-save-btn').disabled = false; });
+    }).finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2723,11 +2776,15 @@
       google_verification: (document.getElementById('meta-google-verify') || {}).value || '',
       naver_verification:  (document.getElementById('meta-naver-verify')  || {}).value || '',
     };
-    document.getElementById('meta-save-btn').disabled = true;
+    var btn = document.getElementById('meta-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
-      .then(function () { GW.showToast('메타태그 설정을 저장했습니다', 'success'); })
+      .then(function () {
+        GW.showToast('메타태그 설정을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('meta-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2746,14 +2803,16 @@
   function _saveAuthor() {
     var name = document.getElementById('s-author-name').value.trim();
     var disc = document.getElementById('s-ai-disclaimer').value.trim();
-    document.getElementById('author-save-btn').disabled = true;
+    var btn = document.getElementById('author-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     Promise.all([
       _apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name }) }),
       _apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc }) }),
     ]).then(function () {
       GW.showToast('저장했습니다', 'success');
+      _clearButtonBusy(btn, '완료');
     }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('author-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2778,11 +2837,15 @@
         event_date: document.getElementById('banner-' + cat + '-date').value || null,
       };
     });
-    document.getElementById('banner-save-btn').disabled = true;
+    var btn = document.getElementById('banner-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/board-banner', { method: 'PUT', body: JSON.stringify({ items: items }) })
-      .then(function () { GW.showToast('배너 설정을 저장했습니다', 'success'); })
+      .then(function () {
+        GW.showToast('배너 설정을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('banner-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2807,11 +2870,15 @@
   function _saveTicker() {
     var text  = document.getElementById('s-ticker').value;
     var lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
-    document.getElementById('ticker-save-btn').disabled = true;
+    var btn = document.getElementById('ticker-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: lines }) })
-      .then(function () { GW.showToast('티커를 저장했습니다', 'success'); })
+      .then(function () {
+        GW.showToast('티커를 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('ticker-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2868,7 +2935,8 @@
       var field = input.dataset.field;
       if (_contributors[i]) _contributors[i][field] = input.value;
     });
-    document.getElementById('contrib-save-btn').disabled = true;
+    var btn = document.getElementById('contrib-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     var payload = _contributors.map(function (item) {
       return {
         name: item && item.name || '',
@@ -2877,9 +2945,12 @@
       };
     });
     _apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
-      .then(function () { GW.showToast('기고자 목록을 저장했습니다', 'success'); })
+      .then(function () {
+        GW.showToast('기고자 목록을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('contrib-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2942,16 +3013,20 @@
       var i = parseInt(input.dataset.editorI, 10);
       if (_editors[i]) _editors[i][input.dataset.field] = input.value;
     });
-    document.getElementById('editors-save-btn').disabled = true;
+    var btn = document.getElementById('editors-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     var editorsPayload = {};
     _editors.forEach(function (item, index) {
       var key = item && item.key ? item.key : String.fromCharCode(65 + index);
       editorsPayload[key] = item && item.name ? item.name : '';
     });
     _apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
-      .then(function () { GW.showToast('편집자 설정을 저장했습니다', 'success'); })
+      .then(function () {
+        GW.showToast('편집자 설정을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('editors-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -3007,11 +3082,16 @@
         result[k] = input ? input.value : value;
       }
     });
-    document.getElementById('trans-save-btn').disabled = true;
+    var btn = document.getElementById('trans-save-btn');
+    _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
-      .then(function () { GW.showToast('번역 설정을 저장했습니다', 'success'); _translations = result; })
+      .then(function () {
+        GW.showToast('번역 설정을 저장했습니다', 'success');
+        _translations = result;
+        _clearButtonBusy(btn, '완료');
+      })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { document.getElementById('trans-save-btn').disabled = false; });
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
 
   /* ══════════════════════════════════════════════════════════
