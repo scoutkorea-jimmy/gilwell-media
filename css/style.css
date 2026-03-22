@@ -1154,7 +1154,7 @@ p { margin-bottom: 6px; }
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding:        2px 7px;
+  padding:        3px 8px;
   border:         1px solid #3f3f3f;
   color:          #3f3f3f;
   font-weight:    500;
@@ -5387,6 +5387,66 @@ footer a:hover { color: #ffffff; }
   padding:        3px 8px;
   color:          var(--white);
   margin-bottom:  24px;
+}
+
+/* ── Public write form tag pills ── */
+.tag-pill-group {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       8px;
+  margin:    8px 0 12px;
+}
+
+.tag-pill {
+  display:       inline-block;
+  padding:       4px 12px;
+  border:        1px solid var(--border);
+  font-family:   AliceDigitalLearning, sans-serif;
+  font-size:     11px;
+  letter-spacing:.08em;
+  color:         var(--muted);
+  cursor:        pointer;
+  background:    var(--bg);
+  transition:    background .15s, color .15s, border-color .15s;
+  user-select:   none;
+}
+
+.tag-pill:hover {
+  border-color: var(--black);
+  color:        var(--ink);
+}
+
+.tag-pill.active {
+  background:   var(--black);
+  color:        var(--white);
+  border-color: var(--black);
+}
+
+.public-tag-add-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.public-tag-add-tools input {
+  min-width: 0;
+}
+
+.public-inline-tag-add {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.public-inline-tag-add:hover {
+  border-color: var(--black);
 }
 
 /* ════════════════════════════════════════════════════════════
