@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.033.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 표 본문 타이포그래피 기준 수정 — --fs-body 14px 적용.",
+      "type": "Fix",
+      "scope": "admin",
+      "items": [
+        "표 td 폰트: 12px → 14px (--fs-body 기준 준수).",
+        "kms-ds-t-name 폰트: 12px → 14px.",
+        "kms-ds-t-usage 폰트: 12px → 14px.",
+        "letter-spacing 0.06em → 0.04em, line-height 1.7 → 1.65 (--lh-copy 기준).",
+        "Admin v03.032.00 → 03.033.00."
+      ]
+    },
+    {
       "version": "03.032.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 표 가독성 전면 개선 — 구분선·스트라이프·호버·인라인 스타일 제거.",
