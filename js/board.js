@@ -590,8 +590,11 @@
           '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
         '</div>' +
         '<div class="form-group">' +
-          '<label for="board-write-special-feature">특집 기사 묶음명</label>' +
-          '<input type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" />' +
+          '<label for="board-write-special-feature">특집 기사 묶음명 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">클릭하여 기존 목록 선택 또는 새 이름 직접 입력</span></label>' +
+          '<div class="sf-autocomplete-wrap" style="position:relative;">' +
+            '<input type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" autocomplete="off" />' +
+            '<div id="board-sf-dropdown" class="sf-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg);border:1px solid var(--border);max-height:180px;overflow-y:auto;"></div>' +
+          '</div>' +
         '</div>' +
         '<div style="display:flex;gap:12px;">' +
           '<div class="form-group" style="flex:1;">' +
@@ -686,6 +689,47 @@
         self._addWriteTag();
       }
     });
+
+    // Special feature autocomplete
+    var sfInput = document.getElementById('board-write-special-feature');
+    var sfDropdown = document.getElementById('board-sf-dropdown');
+    var _sfItems = [];
+    function _loadSfItems() {
+      if (_sfItems.length) return;
+      var cat = self.apiCategory || self.category;
+      fetch('/api/posts/special-features?category=' + encodeURIComponent(cat), { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { _sfItems = (data && Array.isArray(data.items)) ? data.items : []; })
+        .catch(function () {});
+    }
+    function _showSfDropdown(filter) {
+      var filtered = filter ? _sfItems.filter(function (s) { return s.toLowerCase().indexOf(filter.toLowerCase()) >= 0; }) : _sfItems;
+      if (!filtered.length) { sfDropdown.style.display = 'none'; return; }
+      sfDropdown.innerHTML = filtered.map(function (s) {
+        return '<div class="sf-dropdown-item" style="padding:8px 12px;cursor:pointer;font-family:AliceDigitalLearning,sans-serif;font-size:12px;border-bottom:1px solid var(--border);">' + GW.escapeHtml(s) + '</div>';
+      }).join('');
+      sfDropdown.querySelectorAll('.sf-dropdown-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          sfInput.value = item.textContent;
+          sfDropdown.style.display = 'none';
+        });
+        item.addEventListener('mouseenter', function () { item.style.background = 'var(--surface)'; });
+        item.addEventListener('mouseleave', function () { item.style.background = ''; });
+      });
+      sfDropdown.style.display = 'block';
+    }
+    if (sfInput) {
+      sfInput.addEventListener('focus', function () {
+        _loadSfItems();
+        setTimeout(function () { _showSfDropdown(sfInput.value); }, 100);
+      });
+      sfInput.addEventListener('input', function () { _showSfDropdown(sfInput.value); });
+      document.addEventListener('click', function (e) {
+        if (!sfInput.contains(e.target) && !sfDropdown.contains(e.target)) {
+          sfDropdown.style.display = 'none';
+        }
+      });
+    }
 
     // Location map check button
     document.getElementById('board-location-check-btn').addEventListener('click', function () {

@@ -25,7 +25,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">V3.003.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.010.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">V3.003.02</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.010.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -742,6 +742,11 @@
       <div class="v3-panel" id="panel-releases">
         <div class="v3-panel-head"><h1 class="v3-panel-title">버전기록</h1></div>
         <div class="v3-panel-body">
+          <div class="v3-releases-tabs" style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="v3-btn v3-btn-sm v3-releases-tab active" data-scope="all">전체</button>
+            <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="site">Site</button>
+            <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="admin">Admin</button>
+          </div>
           <div id="releases-list">
             <div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>
           </div>

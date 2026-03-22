@@ -6,7 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '3.003.01';
+  GW.APP_VERSION = '00.100.00';
+  GW.ADMIN_VERSION = '03.010.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -380,9 +381,13 @@
   };
 
   GW.syncBuildVersion = function () {
-    var version = 'V' + GW.APP_VERSION;
+    var siteVer  = 'V' + GW.APP_VERSION;
+    var adminVer = 'V' + GW.ADMIN_VERSION;
     document.querySelectorAll('.site-build-version').forEach(function (el) {
-      el.textContent = version;
+      el.textContent = siteVer;
+    });
+    document.querySelectorAll('.admin-build-version').forEach(function (el) {
+      el.textContent = adminVer;
     });
   };
 

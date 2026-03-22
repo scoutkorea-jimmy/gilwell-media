@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: V3.003.02
+ * Version: 03.010.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -302,6 +302,8 @@
     _loadEditorJS(function () { _initEditor(); });
     // Load tag settings (for write form dropdown)
     _loadTagSettings();
+    // Set up release scope tabs
+    _setupReleaseTabs();
     // Show dashboard
     V3.showPanel('dashboard');
   }
@@ -1485,41 +1487,73 @@
   /* ══════════════════════════════════════════════════════════
      RELEASES (버전기록)
   ══════════════════════════════════════════════════════════ */
-  var _releasesLoaded = false;
+  var _releasesData  = null;
+  var _releasesScope = 'all';
 
   function _loadReleases() {
-    if (_releasesLoaded) return;
     var el = document.getElementById('releases-list');
+    if (_releasesData) {
+      _renderReleases(el, _releasesData, _releasesScope);
+      return;
+    }
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>';
-    GW.apiFetch('/api/admin/changelog')
+    fetch('/data/changelog.json', { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('not ok'); return r.json(); })
       .then(function (data) {
-        _releasesLoaded = true;
-        var items = (data && Array.isArray(data.items)) ? data.items : [];
-        if (!items.length) {
-          el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">버전 기록이 없습니다</div></div>';
-          return;
-        }
-        var typeClass = { Bugfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
-        el.innerHTML = items.map(function (item) {
-          var badge = typeClass[item.type] || 'v3-badge-gray';
-          var changeItems = Array.isArray(item.items) ? item.items : [];
-          return '<div class="v3-card v3-release-card">' +
-            '<div class="v3-release-head">' +
-              '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
-              '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(item.type || '') + '</span>' +
-              '<span class="v3-release-date">' + GW.escapeHtml(item.date || '') + '</span>' +
-            '</div>' +
-            '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
-            (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
-              return '<li>' + GW.escapeHtml(c) + '</li>';
-            }).join('') + '</ul>' : '') +
-          '</div>';
-        }).join('');
+        _releasesData = (data && Array.isArray(data.items)) ? data.items : [];
+        _renderReleases(el, _releasesData, _releasesScope);
       })
       .catch(function () {
-        _releasesLoaded = false; // allow retry
         el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">⚠️</div><div class="v3-empty-text">버전 기록을 불러오지 못했습니다</div></div>';
       });
+  }
+
+  function _renderReleases(el, items, scope) {
+    var filtered = scope === 'all' ? items : items.filter(function (item) {
+      var s = item.scope || 'both';
+      return s === scope || s === 'both';
+    });
+    if (!filtered.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">버전 기록이 없습니다</div></div>';
+      return;
+    }
+    var typeClass = { Bugfix: 'v3-badge-gray', Hotfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
+    el.innerHTML = filtered.map(function (item) {
+      var badge = typeClass[item.type] || 'v3-badge-gray';
+      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
+      var s = item.scope || 'both';
+      var scopeLabel = s === 'site' ? ' <span class="v3-badge" style="background:#0d7a5f;font-size:9px;">Site</span>' :
+                       s === 'admin' ? ' <span class="v3-badge" style="background:#7c3aed;font-size:9px;">Admin</span>' : '';
+      return '<div class="v3-card v3-release-card">' +
+        '<div class="v3-release-head">' +
+          '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
+          '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(item.type || '') + '</span>' +
+          scopeLabel +
+          '<span class="v3-release-date">' + GW.escapeHtml(item.date || '') + '</span>' +
+        '</div>' +
+        '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
+        (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
+          return '<li>' + GW.escapeHtml(c) + '</li>';
+        }).join('') + '</ul>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  function _setupReleaseTabs() {
+    document.querySelectorAll('.v3-releases-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _releasesScope = btn.dataset.scope || 'all';
+        document.querySelectorAll('.v3-releases-tab').forEach(function (b) {
+          b.classList.toggle('active', b === btn);
+        });
+        var el = document.getElementById('releases-list');
+        if (_releasesData) {
+          _renderReleases(el, _releasesData, _releasesScope);
+        } else {
+          _loadReleases();
+        }
+      });
+    });
   }
 
   function _loadMarketing() {
