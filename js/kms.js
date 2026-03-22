@@ -1870,6 +1870,38 @@
         '<div class="kms-ds-preview">' + sec.html + '</div>' +
         '</section>';
     }).join('');
+    enhanceDesignSystemTables(bodyEl);
+  }
+
+  function enhanceDesignSystemTables(root) {
+    if (!root) return;
+    root.querySelectorAll('.kms-ds-table').forEach(function (table) {
+      var headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
+        return String(th.textContent || '').trim();
+      });
+      table.classList.toggle('is-reference', headers.length === 4);
+      table.classList.toggle('is-compact', headers.length === 3);
+
+      table.querySelectorAll('tbody tr').forEach(function (row) {
+        Array.from(row.children).forEach(function (cell, index) {
+          var label = headers[index] || '';
+          if (label) cell.setAttribute('data-kms-col', label);
+
+          if (cell.classList.contains('kms-ds-t-name') && !cell.querySelector('.kms-ds-name-block')) {
+            cell.innerHTML = '<div class="kms-ds-name-block">' + cell.innerHTML + '</div>';
+          }
+          if (cell.classList.contains('kms-ds-t-usage') && !cell.querySelector('.kms-ds-usage-block')) {
+            cell.innerHTML = '<div class="kms-ds-usage-block">' + cell.innerHTML + '</div>';
+          }
+          if (cell.classList.contains('kms-ds-t-code') && !cell.querySelector('.kms-ds-code-block')) {
+            cell.innerHTML = '<div class="kms-ds-code-block"><code>' + cell.innerHTML + '</code></div>';
+          }
+          if (cell.classList.contains('kms-ds-t-preview') && !cell.querySelector('.kms-ds-preview-block')) {
+            cell.innerHTML = '<div class="kms-ds-preview-block">' + cell.innerHTML + '</div>';
+          }
+        });
+      });
+    });
   }
 
   function dsSwatchItem(varName, color, label) {
