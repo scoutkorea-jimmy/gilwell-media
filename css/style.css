@@ -3580,9 +3580,9 @@ footer a:hover { color: #ffffff; }
 }
 
 .calendar-map-search-row {
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .calendar-map-search-btn {
@@ -3672,51 +3672,147 @@ footer a:hover { color: #ffffff; }
 
 /* Map results list */
 .calendar-map-results {
-  border-top: 1px solid var(--border);
-  margin-top: 0;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .calendar-map-results-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 0;
+  border-bottom: 0;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+}
+
+.calendar-map-results-head strong {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.calendar-map-results-head span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.calendar-map-results-empty {
+  padding: 20px 0;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .calendar-map-result-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block;
   width: 100%;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  background: none;
+  padding: 18px 20px;
+  border: 0;
+  background: transparent;
   cursor: pointer;
   text-align: left;
-  font-family: AliceDigitalLearning, sans-serif;
-  font-size: 11px;
+  font-family: inherit;
+  font-size: 14px;
 }
 
-.calendar-map-result-item:hover { background: var(--surface); }
+.calendar-map-result-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  margin-bottom: 14px;
+  transition: border-color .18s ease, transform .18s ease;
+}
+
+.calendar-map-result-card.is-kor { border-top: 3px solid #0f8db3; }
+.calendar-map-result-card.is-apr { border-top: 3px solid #ff5b5b; }
+.calendar-map-result-card.is-eur { border-top: 3px solid #2f8f5b; }
+.calendar-map-result-card.is-afr { border-top: 3px solid #b6761b; }
+.calendar-map-result-card.is-arb { border-top: 3px solid #7b5cff; }
+.calendar-map-result-card.is-iar { border-top: 3px solid #d44f94; }
+.calendar-map-result-card.is-wosm { border-top: 3px solid #2a8b3b; }
+
+.calendar-map-result-card:hover {
+  border-color: rgba(92, 42, 157, 0.22);
+  transform: translateY(-1px);
+}
+
+.calendar-map-result-top {
+  margin-bottom: 12px;
+}
+
+.calendar-map-result-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
 
 .calendar-map-result-title {
-  flex: 1;
-  font-weight: 500;
+  display: block;
+  flex: 1 1 auto;
+  font-size: 28px;
+  line-height: 1.28;
+  font-weight: 700;
   color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: keep-all;
+}
+
+.calendar-map-result-target {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(15, 141, 179, 0.26);
+  color: #0f8db3;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: .08em;
   white-space: nowrap;
+}
+
+.calendar-map-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .calendar-map-result-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
-  white-space: nowrap;
 }
 
 .calendar-map-result-place {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
-  white-space: nowrap;
+}
+
+.calendar-map-result-date::before {
+  content: "DATE";
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--purple);
+}
+
+.calendar-map-result-place::before {
+  content: "PLACE";
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: rgba(17, 17, 17, 0.42);
 }
 
 /* Target group chips */
@@ -3737,8 +3833,11 @@ footer a:hover { color: #ffffff; }
 .calendar-map-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  gap: 18px;
   margin-bottom: 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  background: #fbfaf7;
 }
 
 .calendar-date-range-row {
@@ -3761,8 +3860,11 @@ footer a:hover { color: #ffffff; }
 
 .calendar-map-filters strong {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
+  letter-spacing: .08em;
+  color: var(--ink);
 }
 
 .calendar-filter-chip-list,
@@ -3777,13 +3879,13 @@ footer a:hover { color: #ffffff; }
 .calendar-tag-preset {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -3795,8 +3897,8 @@ footer a:hover { color: #ffffff; }
     linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-position:
-    calc(100% - 18px) 14px,
-    calc(100% - 12px) 14px;
+    calc(100% - 18px) 18px,
+    calc(100% - 12px) 18px;
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
   padding-right: 32px;
@@ -3819,7 +3921,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .calendar-filter-selected-list {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .calendar-filter-chip.is-all {
@@ -3850,6 +3952,20 @@ footer a:hover { color: #ffffff; }
   letter-spacing: .1em;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.calendar-page-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid #111;
+  background: #111;
+  color: #fff;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
 .calendar-toolbar,
