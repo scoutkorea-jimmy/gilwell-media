@@ -1,6 +1,24 @@
 {
   "items": [
     {
+      "version": "03.030.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 전반 정교화 — 표 폰트·구분·활용처 개선, 섹션 10·16·18·21 재작성.",
+      "type": "Refactor",
+      "scope": "admin",
+      "items": [
+        "표 본문 폰트: AliceDigitalLearning 12px w300 ls:0.08em (--fs-nav 기준) 적용.",
+        "구분·활용처 열: 영문 클래스명 → 한국어 용도 설명 + 실제 홈페이지 사용 위치 기재.",
+        "05 버튼·06 칩·07 폼·08 아이콘 버튼: 구분·활용처 한국어 전환, 박스 사이즈 규칙 명시.",
+        "09 게시글 카드: note에 내부 패딩 24px·썸네일 16:9·gap 1px 규칙 추가.",
+        "10 캘린더 행사 카드: 표 형식으로 카드 그리드(PC)·모바일 단열·종료 상태 3행으로 분리.",
+        "16 검색 UI: 잘못된 클래스(.search-result-card) 제거 → 실제 .global-search-bar/.global-search-item 기반 재작성.",
+        "18 토스트: position:fixed 박스 외 이탈 방지 → inline-block 렌더링으로 박스 내 고정.",
+        "21 유틸리티: 표 형식으로 미니 리스트·빈 상태·공유 버튼·로딩·skip-link 5개 항목 정리.",
+        "Admin v03.029.00 → 03.030.00."
+      ]
+    },
+    {
       "version": "03.029.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 Elements 섹션 표 형식으로 전환 + 브랜드 border-radius:0 원칙 준수.",
