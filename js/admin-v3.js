@@ -1894,6 +1894,7 @@
     var tooltip = root.querySelector('.marketing-hover-tip');
     if (!shell || !tooltip) return;
     shell.addEventListener('mousemove', function (event) {
+      if (shell._pzDragging) { tooltip.classList.remove('open'); return; }
       var target = event.target.closest('[data-tip]');
       if (!target || !shell.contains(target)) {
         tooltip.classList.remove('open');
@@ -1909,10 +1910,72 @@
       tooltip.classList.remove('open');
     });
     shell.addEventListener('click', function (event) {
+      if (shell._pzHasDragged) return;
       var target = event.target.closest('[data-href]');
       if (!target || !shell.contains(target)) return;
       var href = target.getAttribute('data-href') || '';
       if (href) window.open(href, '_blank', 'noopener,noreferrer');
+    });
+    _bindMarketingPanZoom(shell);
+  }
+
+  function _bindMarketingPanZoom(shell) {
+    if (!shell || shell.dataset.panZoomBound === '1') return;
+    shell.dataset.panZoomBound = '1';
+    var svg = shell.querySelector('svg');
+    if (!svg) return;
+    shell.classList.add('is-panzoom');
+    var pz = { zoom: 1, x: 0, y: 0 };
+    shell._pzDragging = false;
+    shell._pzHasDragged = false;
+    var _startX = 0, _startY = 0, _startPanX = 0, _startPanY = 0;
+
+    function applyTransform() {
+      svg.style.transform = 'translate(' + pz.x + 'px,' + pz.y + 'px) scale(' + pz.zoom + ')';
+    }
+
+    shell.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var step = e.deltaY < 0 ? 0.12 : -0.12;
+      var newZoom = Math.max(0.25, Math.min(5, Number((pz.zoom + step).toFixed(3))));
+      var bounds = shell.getBoundingClientRect();
+      var cx = e.clientX - bounds.left;
+      var cy = e.clientY - bounds.top;
+      pz.x = cx - (cx - pz.x) * (newZoom / pz.zoom);
+      pz.y = cy - (cy - pz.y) * (newZoom / pz.zoom);
+      pz.zoom = newZoom;
+      applyTransform();
+    }, { passive: false });
+
+    shell.addEventListener('mousedown', function (e) {
+      if (e.button !== 0) return;
+      shell._pzDragging = true;
+      shell._pzHasDragged = false;
+      _startX = e.clientX; _startY = e.clientY;
+      _startPanX = pz.x;   _startPanY = pz.y;
+      shell.classList.add('is-dragging');
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!shell._pzDragging) return;
+      var dx = e.clientX - _startX;
+      var dy = e.clientY - _startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) shell._pzHasDragged = true;
+      pz.x = _startPanX + dx;
+      pz.y = _startPanY + dy;
+      applyTransform();
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (!shell._pzDragging) return;
+      shell._pzDragging = false;
+      shell.classList.remove('is-dragging');
+      setTimeout(function () { shell._pzHasDragged = false; }, 0);
+    });
+
+    shell.addEventListener('dblclick', function () {
+      pz.zoom = 1; pz.x = 0; pz.y = 0;
+      applyTransform();
     });
   }
 

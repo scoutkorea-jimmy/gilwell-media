@@ -1,6 +1,22 @@
 {
   "items": [
     {
+      "version": "03.018.00",
+      "date": "2026-03-22",
+      "summary": "마케팅 탭 차트 패널에 마우스 휠 줌 및 드래그 이동(Pan/Zoom) 기능 추가.",
+      "type": "Feature",
+      "scope": "admin",
+      "items": [
+        "고객 여정 흐름 / 페이지 기회 맵 패널: 마우스 휠로 확대·축소, 드래그로 이동 가능.",
+        "줌은 커서 위치를 기준으로 동작 (zoom-to-cursor).",
+        "더블클릭으로 원래 크기(1x)로 초기화.",
+        "드래그 중 툴팁 숨김, 드래그 이동 후 링크 클릭 방지.",
+        "_bindMarketingPanZoom() 함수 신설; _bindMarketingHoverTips()에서 자동 바인딩.",
+        "CSS: .is-panzoom 클래스 추가 시 overflow:hidden + grab 커서 적용.",
+        "Admin v03.017.00 → 03.018.00."
+      ]
+    },
+    {
       "version": "03.017.00",
       "date": "2026-03-22",
       "summary": "지역 색상 토큰 정비: EUR 색상 독립(teal), WOSM 중복값 통일.",

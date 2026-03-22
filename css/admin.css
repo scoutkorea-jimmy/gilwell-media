@@ -2161,12 +2161,27 @@ body.admin-page #marketing-transitions.analytics-list {
   overflow-x: auto;
   position: relative;
 }
+.marketing-flow-shell.is-panzoom,
+.marketing-scatter-shell.is-panzoom {
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+.marketing-flow-shell.is-panzoom.is-dragging,
+.marketing-scatter-shell.is-panzoom.is-dragging {
+  cursor: grabbing;
+}
 .marketing-flow-svg,
 .marketing-scatter-svg {
   display: block;
   width: auto;
   max-width: none;
   min-width: 1120px;
+}
+.marketing-flow-shell.is-panzoom svg,
+.marketing-scatter-shell.is-panzoom svg {
+  transform-origin: 0 0;
+  will-change: transform;
 }
 .marketing-flow-label {
   fill: var(--ink);
