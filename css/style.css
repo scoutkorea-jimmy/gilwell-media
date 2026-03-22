@@ -1294,11 +1294,15 @@ p { margin-bottom: 6px; }
 }
 
 .filter-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  min-height:     var(--btn-height-secondary);
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding:        5px 12px;
+  padding:        0 12px;
   border:         1px solid var(--border);
   background:     none;
   cursor:         pointer;
@@ -2568,7 +2572,11 @@ p { margin-bottom: 6px; }
 }
 
 .board-page-btn {
-  padding: 9px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--btn-height-secondary);
+  padding: 0 12px;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--muted);
@@ -3526,7 +3534,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .calendar-view-btn {
-  min-height: 36px;
+  min-height: var(--btn-height-secondary);
   padding: 0 14px;
   border: 1px solid transparent;
   background: transparent;
@@ -3953,7 +3961,7 @@ footer a:hover { color: #ffffff; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
+  min-height: var(--btn-height-primary);
   padding: 0 16px;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -4024,7 +4032,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .calendar-today-btn {
-  min-height: 32px;
+  min-height: var(--btn-height-secondary);
   padding: 0 12px;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -5250,8 +5258,12 @@ footer a:hover { color: #ffffff; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .submit-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
   width:          100%;
-  padding:        14px;
+  min-height:     var(--btn-height-primary);
+  padding:        0 18px;
   background:     var(--black);
   color:          var(--white);
   border:         none;
@@ -5288,8 +5300,12 @@ footer a:hover { color: #ffffff; }
 }
 
 .cancel-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
   width:          100%;
-  padding:        10px;
+  min-height:     var(--btn-height-primary);
+  padding:        0 18px;
   background:     none;
   color:          var(--muted);
   border:         1px solid var(--border);
@@ -5304,11 +5320,14 @@ footer a:hover { color: #ffffff; }
 }
 
 .cancel-btn:hover    { border-color: var(--ink); color: var(--ink); }
-.cancel-btn.visible  { display: block; }
+.cancel-btn.visible  { display: inline-flex; }
 
 .btn-delete-soft {
   display: none;
-  padding: 10px 14px;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--btn-height-primary);
+  padding: 0 18px;
   background: none;
   color: var(--danger);
   border: 1px solid rgba(204, 68, 68, 0.45);
@@ -5327,7 +5346,7 @@ footer a:hover { color: #ffffff; }
 }
 
 .btn-delete-soft.visible {
-  display: block;
+  display: inline-flex;
 }
 
 /* Category preview tag */
@@ -5527,13 +5546,15 @@ footer a:hover { color: #ffffff; }
 .write-btn {
   display:        inline-flex;
   align-items:    center;
+  justify-content: center;
   gap:            6px;
+  min-height:     var(--btn-height-primary);
   margin-top:     20px;
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding:        10px 22px;
+  padding:        0 22px;
   background:     var(--accent);
   color:          #ffffff;
   border:         none;
@@ -6391,11 +6412,15 @@ footer a:hover { color: #ffffff; }
 }
 
 .tag-filter-btn {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  min-height:     var(--btn-height-secondary);
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding:        5px 14px;
+  padding:        0 14px;
   border:         1px solid var(--border);
   background:     transparent;
   color:          var(--muted);

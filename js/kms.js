@@ -1013,7 +1013,9 @@
     };
 
     // ── 버튼 공통 베이스 스타일 (칩과 동일 원칙: 직각, 1px 테두리, uppercase)
-    var btnBase = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 18px;min-height:36px;';
+    // Primary: 44px (--btn-height-primary) / Secondary: 36px (--btn-height-secondary)
+    var btnBase    = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 18px;min-height:44px;';
+    var btnSec     = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 12px;min-height:36px;';
     var btnFilled  = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';';
     var btnAccent  = btnBase + 'background:' + S.purple + ';color:#fff;border-color:' + S.purple + ';';
     var btnOutline = btnBase + 'background:transparent;color:' + S.black + ';border-color:rgba(31,31,31,0.25);';
@@ -1077,28 +1079,21 @@
         title: '03 · 버튼 (Buttons)',
         note: '버튼은 카테고리 칩과 동일 원칙: 직각(border-radius:0), 1px 테두리, uppercase, letter-spacing 0.1em+. 내부 채움 여부로 Primary / Outline / Danger를 구분.',
         html: [
-          '<p class="kms-ds-note">Primary (Filled Black) — .submit-btn 계열</p>',
-          '<div class="kms-ds-row" style="margin-bottom:12px">',
+          '<p class="kms-ds-note">Primary 44px — .submit-btn / .write-btn / .calendar-manage-btn 계열</p>',
+          '<div class="kms-ds-row" style="margin-bottom:12px;flex-wrap:wrap">',
           '<button style="' + btnFilled + '">저장하기</button>',
-          '<button style="' + btnFilled + 'min-height:44px;width:100%;max-width:220px">전체 너비 (로그인 등)</button>',
+          '<button style="' + btnAccent + '">새 게시글 작성</button>',
+          '<button style="' + btnOutline + '">취소</button>',
+          '<button style="' + btnDanger + '">삭제</button>',
           '<button style="' + btnDisabled + '" disabled>비활성화</button>',
           '</div>',
-          '<p class="kms-ds-note">Accent (Filled Purple) — .write-btn 계열</p>',
-          '<div class="kms-ds-row" style="margin-bottom:12px">',
-          '<button style="' + btnAccent + '">새 게시글 작성</button>',
-          '<button style="' + btnAccent + 'min-height:44px">게시글 등록</button>',
-          '</div>',
-          '<p class="kms-ds-note">Outline — .cancel-btn / .filter-btn / .calendar-view-btn 계열</p>',
-          '<div class="kms-ds-row" style="margin-bottom:12px;flex-wrap:wrap">',
-          '<button style="' + btnOutline + '">취소</button>',
-          '<button style="' + btnOutline + '">목록 보기</button>',
-          '<button style="' + btnOutline + 'min-height:44px;border-color:rgba(31,31,31,0.12);color:rgba(31,31,31,0.58)">달력</button>',
-          '<button style="' + btnOutline + 'min-height:44px;border-color:rgba(31,31,31,0.12);color:rgba(31,31,31,0.58)">지도</button>',
-          '<button style="' + btnBase + 'min-height:44px;background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">목록 (활성)</button>',
-          '</div>',
-          '<p class="kms-ds-note">Danger — .btn-delete-soft 계열</p>',
-          '<div class="kms-ds-row">',
-          '<button style="' + btnDanger + '">삭제</button>',
+          '<p class="kms-ds-note">Secondary 36px — .filter-btn / .calendar-view-btn / .board-page-btn 계열</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">달력</button>',
+          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">목록</button>',
+          '<button style="' + btnSec + 'background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">지도 (활성)</button>',
+          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">전체</button>',
+          '<button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">훈련 (활성)</button>',
           '</div>',
         ].join(''),
       },
