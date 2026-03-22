@@ -254,10 +254,10 @@
 
     var isNew = GW.isPostNew(post);
     var shareHtml = '<div class="post-card-share-row"><button class="post-share-btn post-card-share-btn" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button></div>';
-    var tagHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
+    var kickerHtml = (isNew ? '<span class="post-kicker post-kicker-new">NEW</span>' : '') +
       (post.tag ? post.tag.split(',').map(function(t){ t = t.trim(); return t ? '<span class="post-kicker ' + cat.tagClass + '-kicker">' + GW.escapeHtml(t) + '</span>' : ''; }).join('') : '');
-
-    var labelsHtml = tagHtml || ('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
+    // 게시판 카테고리 태그(채움)와 글머리 태그(아웃라인) 동시 표시
+    var labelsHtml = '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' + kickerHtml;
     var subtitleHtml = post.subtitle
       ? '<p class="post-card-subtitle">' + GW.escapeHtml(post.subtitle) + '</p>'
       : '';
