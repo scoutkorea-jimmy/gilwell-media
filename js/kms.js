@@ -1012,10 +1012,13 @@
       danger:  '#ff5655',
     };
 
-    // ── 버튼 공통 베이스 스타일 (칩과 동일 원칙: 직각, 1px 테두리, uppercase)
-    // Primary: 44px (--btn-height-primary) / Secondary: 36px (--btn-height-secondary)
+    // ── 버튼/칩 높이 기준
+    // Primary 버튼: 44px (--btn-height-primary)
+    // Secondary 버튼: 36px (--btn-height-secondary) — 뷰 토글, 페이지네이션 등
+    // 칩 (chip): 26px (--chip-height) — 필터칩, 태그칩, 대상칩, 행사태그, 상태배지
     var btnBase    = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 18px;min-height:44px;';
     var btnSec     = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 12px;min-height:36px;';
+    var chipBase   = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.10em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 10px;min-height:26px;';
     var btnFilled  = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';';
     var btnAccent  = btnBase + 'background:' + S.purple + ';color:#fff;border-color:' + S.purple + ';';
     var btnOutline = btnBase + 'background:transparent;color:' + S.black + ';border-color:rgba(31,31,31,0.25);';
@@ -1087,13 +1090,23 @@
           '<button style="' + btnDanger + '">삭제</button>',
           '<button style="' + btnDisabled + '" disabled>비활성화</button>',
           '</div>',
-          '<p class="kms-ds-note">Secondary 36px — .filter-btn / .calendar-view-btn / .board-page-btn 계열</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<p class="kms-ds-note">Secondary 36px — .calendar-view-btn / .board-page-btn / .calendar-today-btn 계열 (뷰 토글, 페이지네이션)</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
           '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">달력</button>',
           '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">목록</button>',
           '<button style="' + btnSec + 'background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">지도 (활성)</button>',
-          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">전체</button>',
-          '<button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">훈련 (활성)</button>',
+          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1</button>',
+          '<button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">2 (활성)</button>',
+          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">3</button>',
+          '</div>',
+          '<p class="kms-ds-note">칩(Chip) 26px — .filter-btn / .tag-pill / .calendar-target-chip / .calendar-status-badge / event tag 계열</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">전체</span>',
+          '<span style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">훈련 (활성)</span>',
+          '<span style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">잼버리</span>',
+          '<span style="' + chipBase + 'background:transparent;color:#0094b4;border-color:#0094b4">로버</span>',
+          '<span style="' + chipBase + 'background:transparent;color:#622599;border-color:#622599">예정</span>',
+          '<span style="' + chipBase + 'background:transparent;color:#1e9b60;border-color:#1e9b60">진행 중</span>',
           '</div>',
         ].join(''),
       },
@@ -1148,17 +1161,20 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '06 · 캘린더 태그 & 대상 칩 (Calendar Tag / Target Chips)',
-        note: '행사 카드 안에 인라인으로 표시되는 태그. 이벤트 태그(훈련, 잼버리 등)와 대상 분류(로버, 지도자 등)는 동일 행에 표시.',
+        title: '06 · 칩 (Chips) — 행사태그 / 대상칩 / 상태배지 / 필터칩 / 태그칩',
+        note: '모두 동일 높이 26px (--chip-height). .calendar-status-badge(행사태그·상태배지), .calendar-target-chip(대상칩), .filter-btn(콘텐츠필터), .tag-pill(글머리태그). 직각, 1px 테두리, uppercase.',
         html: [
-          '<p class="kms-ds-note">행사 태그 — 이벤트 유형</p>',
+          '<p class="kms-ds-note">행사 태그 & 상태 배지 — .calendar-status-badge</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
-          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">훈련</span>',
-          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">잼버리</span>',
-          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">세계행사</span>',
+          '<span class="calendar-status-badge">훈련</span>',
+          '<span class="calendar-status-badge">잼버리</span>',
+          '<span class="calendar-status-badge">세계행사</span>',
+          '<span class="calendar-status-badge is-upcoming">예정</span>',
+          '<span class="calendar-status-badge is-ongoing">진행 중</span>',
+          '<span class="calendar-status-badge is-finished">종료</span>',
           '</div>',
-          '<p class="kms-ds-note">대상 칩 (.calendar-target-chip) — KOR 전용, 파랑 테두리</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<p class="kms-ds-note">대상 칩 — .calendar-target-chip (KOR 전용, 파랑 테두리)</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
           '<span class="calendar-target-chip">비버</span>',
           '<span class="calendar-target-chip">컵스카우트</span>',
           '<span class="calendar-target-chip">스카우트</span>',
@@ -1166,11 +1182,19 @@
           '<span class="calendar-target-chip">로버</span>',
           '<span class="calendar-target-chip">지도자</span>',
           '</div>',
-          '<p class="kms-ds-note" style="margin-top:12px">행사 상태 배지 (.calendar-status-badge)</p>',
+          '<p class="kms-ds-note">콘텐츠 필터칩 — .filter-btn / .tag-filter-btn</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
+          '<button class="filter-btn">전체</button>',
+          '<button class="filter-btn active">훈련</button>',
+          '<button class="filter-btn">잼버리</button>',
+          '<button class="filter-btn">교육</button>',
+          '</div>',
+          '<p class="kms-ds-note">글머리 태그 선택 칩 — .tag-pill</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="calendar-status-badge is-upcoming">예정</span>',
-          '<span class="calendar-status-badge is-ongoing">진행 중</span>',
-          '<span class="calendar-status-badge is-finished">종료</span>',
+          '<span class="tag-pill active">훈련</span>',
+          '<span class="tag-pill">잼버리</span>',
+          '<span class="tag-pill">국제행사</span>',
+          '<span class="tag-pill">소식</span>',
           '</div>',
         ].join(''),
       },
@@ -1231,28 +1255,6 @@
         ].join(''),
       },
 
-      // ────────────────────────────────────────────────────────
-      {
-        title: '10 · 태그 필터 칩 (Tag / Filter Chips)',
-        note: '.filter-btn / .tag-filter-btn — 카테고리 칩과 동일 원칙, 활성 시 배경 검정.',
-        html: [
-          '<p class="kms-ds-note">콘텐츠 필터 칩 (.filter-btn)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
-          '<button class="filter-btn">전체</button>',
-          '<button class="filter-btn">훈련</button>',
-          '<button class="filter-btn active">잼버리</button>',
-          '<button class="filter-btn">세계행사</button>',
-          '<button class="filter-btn">교육</button>',
-          '</div>',
-          '<p class="kms-ds-note">글머리 태그 선택 (.tag-pill)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="tag-pill active">훈련</span>',
-          '<span class="tag-pill">잼버리</span>',
-          '<span class="tag-pill">국제행사</span>',
-          '<span class="tag-pill">소식</span>',
-          '</div>',
-        ].join(''),
-      },
 
       // ────────────────────────────────────────────────────────
       {
@@ -1283,8 +1285,9 @@
           dsSpacing('--home-title-gap', '14px', '섹션 타이틀 아래 간격'),
           dsSpacing('카드 패딩', '24px', '.post-card-body padding'),
           dsSpacing('컨테이너 패딩', '20px–28px', '섹션 컨테이너'),
-          dsSpacing('--btn-height-primary', '44px', '주요 버튼 높이'),
-          dsSpacing('--btn-height-secondary', '36px', '보조 버튼 높이'),
+          dsSpacing('--btn-height-primary', '44px', '주요 버튼 (submit, write, manage)'),
+          dsSpacing('--btn-height-secondary', '36px', '보조 버튼 (view-btn, page-btn, today-btn)'),
+          dsSpacing('--chip-height', '26px', '칩 (filter-btn, tag-pill, target-chip, status-badge)'),
           '</div>',
           '<p class="kms-ds-note" style="margin-top:14px">반응형 breakpoints</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap">',
@@ -1322,7 +1325,7 @@
 
   function dsCalendarCard(catClass, badgeClass, badgeMod, title, date, location, tags, targets) {
     var tagHtml = tags.map(function (t) {
-      return '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 6px;border:1px solid rgba(31,31,31,0.2);color:rgba(31,31,31,0.6)">' + t + '</span>';
+      return '<span class="calendar-status-badge">' + t + '</span>';
     }).join('');
     var targetHtml = targets.map(function (t) {
       return '<span class="calendar-target-chip">' + t + '</span>';
