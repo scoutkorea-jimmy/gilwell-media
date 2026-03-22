@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.017.00",
+      "date": "2026-03-22",
+      "summary": "지역 색상 토큰 정비: EUR 색상 독립(teal), WOSM 중복값 통일.",
+      "type": "Fix",
+      "scope": "both",
+      "items": [
+        "EUR 색상: #2f8f5b(WOSM 초록과 유사) → #0c7a8a(teal)로 변경, 시각적 구분 확보.",
+        "WOSM 색상: 캘린더 뱃지에서 사용하던 #2a8b3b → --forest-green(#248737)으로 통일.",
+        "style.css 내 EUR/WOSM 관련 border-color, background rgba 값 전부 재계산 및 교체.",
+        "KMS 디자인 시스템 색상 토큰 스워치: EUR 표시값 및 설명 업데이트.",
+        "Site v00.103.00 → 00.104.00 / Admin v03.016.00 → 03.017.00."
+      ]
+    },
+    {
       "version": "03.016.00",
       "date": "2026-03-22",
       "summary": "칩(Chip) 높이 통일: --chip-height 26px 변수 신설, 모든 필터/태그/대상/상태 칩 적용.",
