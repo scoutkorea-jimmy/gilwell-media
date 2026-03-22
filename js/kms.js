@@ -1080,7 +1080,7 @@
       // ────────────────────────────────────────────────────────
       {
         title: '03 · 버튼 (Buttons)',
-        note: '버튼은 카테고리 칩과 동일 원칙: 직각(border-radius:0), 1px 테두리, uppercase, letter-spacing 0.1em+. 내부 채움 여부로 Primary / Outline / Danger를 구분.',
+        note: '직각(border-radius:0), 1px 테두리, uppercase, letter-spacing 0.1em+. 내부 채움 여부로 Primary / Secondary 두 단계로 구분.',
         html: [
           '<p class="kms-ds-note">Primary 44px — .submit-btn / .write-btn / .calendar-manage-btn 계열</p>',
           '<div class="kms-ds-row" style="margin-bottom:12px;flex-wrap:wrap">',
@@ -1099,43 +1099,13 @@
           '<button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">2 (활성)</button>',
           '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">3</button>',
           '</div>',
-          '<p class="kms-ds-note">칩(Chip) 26px — .filter-btn / .tag-pill / .calendar-target-chip / .calendar-status-badge / event tag 계열</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">전체</span>',
-          '<span style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">훈련 (활성)</span>',
-          '<span style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">잼버리</span>',
-          '<span style="' + chipBase + 'background:transparent;color:#0094b4;border-color:#0094b4">로버</span>',
-          '<span style="' + chipBase + 'background:transparent;color:#622599;border-color:#622599">예정</span>',
-          '<span style="' + chipBase + 'background:transparent;color:#1e9b60;border-color:#1e9b60">진행 중</span>',
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:16px">관리자 전용 — 기간 필터 칩 + 날짜 입력 + 조회 버튼 (admin-v3.css .mkt-* 계열)</p>',
-          '<p class="kms-ds-note" style="font-size:10px;margin-bottom:8px">원칙: 칩과 동일 높이(26px) · letter-spacing:0.12em · uppercase · border-radius:0 · 비활성=테두리만, 활성/hover=검정 채움</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;gap:4px;margin-bottom:10px">',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1일</button>',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">3일</button>',
-          '<button style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">7일 (활성)</button>',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">14일</button>',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">30일</button>',
-          '<span style="display:inline-flex;align-items:center;gap:6px;margin-left:8px">',
-          '<input type="date" style="height:26px;padding:0 8px;border:1px solid rgba(31,31,31,0.18);background:#fff;color:#1f1f1f;font-family:AliceDigitalLearning,sans-serif;font-size:11px;border-radius:0" />',
-          '<span style="font-size:11px;color:rgba(31,31,31,0.58)">~</span>',
-          '<input type="date" style="height:26px;padding:0 8px;border:1px solid rgba(31,31,31,0.18);background:#fff;color:#1f1f1f;font-family:AliceDigitalLearning,sans-serif;font-size:11px;border-radius:0" />',
-          '</span>',
-          '<button style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f;padding:0 14px">조회</button>',
-          '</div>',
-          '<p class="kms-ds-note" style="font-size:10px;margin-bottom:8px">고객 여정 흐름 줌 버튼 (.marketing-flow-zoom-btn)</p>',
-          '<div class="kms-ds-row" style="gap:4px">',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">−</button>',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">100%</button>',
-          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">+</button>',
-          '</div>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
         title: '04 · 게시글 카테고리 칩 (Post Kicker)',
-        note: '.post-kicker 클래스 + 색상 modifier. 아웃라인 스타일(채움 없음), border-radius:0, uppercase, letter-spacing.',
+        note: '.post-kicker 클래스 + 색상 modifier. 아웃라인 스타일(채움 없음), border-radius:0, uppercase, letter-spacing. .category-tag는 홈 레이아웃·히어로·게시글 상세 등에서 지역 카테고리 표시용으로 사용되는 채움형 칩(10px, letter-spacing:0.15em, color:#fff).',
         html: [
           '<p class="kms-ds-note">아웃라인 칩 (.post-kicker + .tag-*-kicker)</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
@@ -1147,17 +1117,26 @@
           '<span class="post-kicker tag-glossary-kicker">용어집</span>',
           '</div>',
           '<p class="kms-ds-note">NEW 칩 (.post-kicker-new) — 채움 검정</p>',
-          '<div class="kms-ds-row">',
+          '<div class="kms-ds-row" style="margin-bottom:12px">',
           '<span class="post-kicker post-kicker-new">NEW</span>',
+          '</div>',
+          '<p class="kms-ds-note">지역 카테고리 태그 (.category-tag + .tag-*) — 채움형, 홈·히어로·게시글 상세 사용</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="category-tag tag-korea">한국스카우트</span>',
+          '<span class="category-tag tag-apr">APR</span>',
+          '<span class="category-tag tag-wosm">WOSM</span>',
+          '<span class="category-tag tag-people">사람들</span>',
+          '<span class="category-tag tag-glossary">용어집</span>',
           '</div>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
-        title: '05 · 캘린더 지역 배지 (Calendar Category Badge)',
-        note: '.calendar-category-badge + .is-* 모디파이어. 아웃라인, border: 1px solid currentColor, 직각.',
+        title: '05 · 캘린더 배지 & 확장 (Calendar Badges & Extended)',
+        note: '.calendar-category-badge + .is-* 모디파이어. 아웃라인, border: 1px solid currentColor, 직각. .calendar-map-badge + .is-* 채움형, 원형. calendar.html 전용 확장 컴포넌트: .calendar-page, .calendar-page-head, .calendar-layout, .calendar-panel, .calendar-toolbar, .calendar-view-btn, .calendar-manage-btn, .calendar-status-head, .calendar-event-card, .calendar-status-badge, .calendar-target-chip, .calendar-filter-select',
         html: [
+          '<p class="kms-ds-note">지역 카테고리 배지 (.calendar-category-badge + .is-*) — 아웃라인</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
           '<span class="calendar-category-badge is-kor">KOR</span>',
           '<span class="calendar-category-badge is-apr">APR</span>',
@@ -1168,7 +1147,7 @@
           '<span class="calendar-category-badge is-wosm">WOSM</span>',
           '</div>',
           '<p class="kms-ds-note">지도 마커 배지 (.calendar-map-badge + .is-*) — 채움, 원형</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:16px">',
           '<span class="calendar-map-badge is-kor">KOR</span>',
           '<span class="calendar-map-badge is-apr">APR</span>',
           '<span class="calendar-map-badge is-eur">EUR</span>',
@@ -1177,13 +1156,63 @@
           '<span class="calendar-map-badge is-iar">IAR</span>',
           '<span class="calendar-map-badge is-wosm">WOSM</span>',
           '</div>',
+          '<p class="kms-ds-note">페이지 헤더 (.calendar-page-head)</p>',
+          '<div class="calendar-page-head" style="margin-bottom:14px;">',
+          '  <div class="calendar-page-head-row">',
+          '    <div>',
+          '      <span class="calendar-page-kicker">Calendar</span>',
+          '      <h2 style="font-family:AliceDigitalLearning,sans-serif;font-size:22px;font-weight:700;margin:4px 0 2px;">일정 캘린더</h2>',
+          '      <p style="font-family:AliceDigitalLearning,sans-serif;font-size:13px;color:rgba(31,31,31,0.58);margin:0;">등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.</p>',
+          '    </div>',
+          '    <div class="calendar-page-head-actions">',
+          '      <div class="calendar-view-toggle">',
+          '        <button type="button" class="calendar-view-btn is-active">월간 일정보기</button>',
+          '        <button type="button" class="calendar-view-btn">연간 일정보기</button>',
+          '      </div>',
+          '      <button type="button" class="calendar-manage-btn">일정 추가</button>',
+          '    </div>',
+          '  </div>',
+          '</div>',
+          '<p class="kms-ds-note">상태별 헤더 & 이벤트 카드</p>',
+          '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">',
+          '  <div class="calendar-status-head is-ongoing">진행중</div>',
+          '  <div class="calendar-status-head is-upcoming">개최예정</div>',
+          '  <div class="calendar-status-head is-finished">행사종료</div>',
+          '</div>',
+          '<p class="kms-ds-note">이벤트 카드 변형</p>',
+          '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">',
+          dsCalendarCard('', 'KOR', 'is-kor', '제19차 세계스카우트잼버리', '2025.08.01 ~ 2025.08.12', '폴란드 그단스크', ['진행중'], ['전회원']),
+          dsCalendarCard('is-finished', 'APR', 'is-apr', '제14차 아태지역 스카우트총회', '2024.11.20 ~ 2024.11.24', '대한민국 서울', ['행사종료'], ['지도자', '임원']),
+          '</div>',
+          '<p class="kms-ds-note">카테고리 배지 & 상태 배지 & 대상 칩</p>',
+          '<div class="kms-ds-row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px;">',
+          '  <span class="calendar-category-badge is-kor">KOR</span>',
+          '  <span class="calendar-category-badge is-apr">APR</span>',
+          '  <span class="calendar-category-badge is-eur">EUR</span>',
+          '  <span class="calendar-category-badge is-wosm">WOSM</span>',
+          '  <span class="calendar-category-badge is-afr">AFR</span>',
+          '  <span class="calendar-category-badge is-arb">ARB</span>',
+          '  <span class="calendar-category-badge is-iar">IAR</span>',
+          '  <span class="calendar-status-badge is-upcoming">개최예정</span>',
+          '  <span class="calendar-status-badge is-ongoing">진행중</span>',
+          '  <span class="calendar-status-badge is-finished">행사종료</span>',
+          '  <span class="calendar-target-chip">전회원</span>',
+          '  <span class="calendar-target-chip">지도자</span>',
+          '  <span class="calendar-target-chip">임원</span>',
+          '</div>',
+          '<p class="kms-ds-note">필터 셀렉트 (.calendar-filter-select)</p>',
+          '<div class="kms-ds-row" style="gap:8px;flex-wrap:wrap;">',
+          '  <select class="calendar-filter-select is-all"><option>전체 지역</option></select>',
+          '  <select class="calendar-filter-select is-kor"><option>Korea</option></select>',
+          '  <select class="calendar-filter-select is-wosm"><option>WOSM</option></select>',
+          '</div>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
         title: '06 · 칩 (Chips) — 행사태그 / 대상칩 / 상태배지 / 필터칩 / 태그칩',
-        note: '모두 동일 높이 26px (--chip-height). .calendar-status-badge(행사태그·상태배지), .calendar-target-chip(대상칩), .filter-btn(콘텐츠필터), .tag-pill(글머리태그). 직각, 1px 테두리, uppercase.',
+        note: '모두 동일 높이 26px (--chip-height). .calendar-status-badge(행사태그·상태배지), .calendar-target-chip(대상칩), .filter-btn(콘텐츠필터), .tag-pill(글머리태그). 원칙: 26px · letter-spacing:0.12em · uppercase · border-radius:0 · 비활성=테두리, 활성=검정 채움. 관리자 전용 기간 필터 칩(.mkt-* 계열)과 고객 여정 흐름 줌 버튼(.marketing-flow-zoom-btn)도 동일 원칙 적용.',
         html: [
           '<p class="kms-ds-note">행사 태그 & 상태 배지 — .calendar-status-badge</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
@@ -1216,6 +1245,27 @@
           '<span class="tag-pill">잼버리</span>',
           '<span class="tag-pill">국제행사</span>',
           '<span class="tag-pill">소식</span>',
+          '</div>',
+          '<p class="kms-ds-note" style="margin-top:16px">관리자 전용 — 기간 필터 칩 + 날짜 입력 + 조회 버튼 (admin-v3.css .mkt-* 계열)</p>',
+          '<p class="kms-ds-note" style="font-size:10px;margin-bottom:8px">원칙: 칩과 동일 높이(26px) · letter-spacing:0.12em · uppercase · border-radius:0 · 비활성=테두리만, 활성/hover=검정 채움</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;gap:4px;margin-bottom:10px">',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1일</button>',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">3일</button>',
+          '<button style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">7일 (활성)</button>',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">14일</button>',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">30일</button>',
+          '<span style="display:inline-flex;align-items:center;gap:6px;margin-left:8px">',
+          '<input type="date" style="height:26px;padding:0 8px;border:1px solid rgba(31,31,31,0.18);background:#fff;color:#1f1f1f;font-family:AliceDigitalLearning,sans-serif;font-size:11px;border-radius:0" />',
+          '<span style="font-size:11px;color:rgba(31,31,31,0.58)">~</span>',
+          '<input type="date" style="height:26px;padding:0 8px;border:1px solid rgba(31,31,31,0.18);background:#fff;color:#1f1f1f;font-family:AliceDigitalLearning,sans-serif;font-size:11px;border-radius:0" />',
+          '</span>',
+          '<button style="' + chipBase + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f;padding:0 14px">조회</button>',
+          '</div>',
+          '<p class="kms-ds-note" style="font-size:10px;margin-bottom:8px">고객 여정 흐름 줌 버튼 (.marketing-flow-zoom-btn)</p>',
+          '<div class="kms-ds-row" style="gap:4px">',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">−</button>',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">100%</button>',
+          '<button style="' + chipBase + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">+</button>',
           '</div>',
         ].join(''),
       },
@@ -1279,7 +1329,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '11 · 그라디언트 토큰 (Gradients)',
+        title: '10 · 그라디언트 토큰 (Gradients)',
         note: 'style.css에 정의된 주요 그라디언트. 홈 섹션 헤더, 히어로 오버레이 등에 사용.',
         html: [
           '<div class="kms-ds-gradient-grid">',
@@ -1295,7 +1345,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '12 · 레이아웃 & 간격 토큰 (Spacing)',
+        title: '11 · 레이아웃 & 간격 토큰 (Spacing)',
         note: ':root에 정의된 간격 변수. 반응형 레이아웃의 기준값.',
         html: [
           '<div class="kms-ds-spacing-grid">',
@@ -1322,7 +1372,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '13 · 헤더 & 네비게이션 (Header & Navigation)',
+        title: '12 · 헤더 & 네비게이션 (Header & Navigation)',
         note: 'masthead / nav. 전 페이지 공통. 주요 클래스: .masthead, .masthead-top, .masthead-logo, .masthead-right, .nav, .lang-btn, .mh-search-input, .mh-search-btn',
         html: [
           '<div style="border:1px solid rgba(31,31,31,0.12);background:#fff;overflow:hidden;">',
@@ -1365,7 +1415,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '14 · 히어로 & 슬라이더 (Hero & Slider)',
+        title: '13 · 히어로 & 슬라이더 (Hero & Slider)',
         note: '홈 페이지 최상단 슬라이더. 주요 클래스: .site-hero-slider, .site-hero, .site-hero-slide.active, .site-hero-content, .site-hero-eyebrow, .site-hero-title, .site-hero-sub, .hero-controls, .hero-dots, .hero-pause-btn',
         html: [
           '<div class="site-hero-slider" style="position:relative;overflow:hidden;">',
@@ -1408,7 +1458,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '15 · 티커 (Ticker)',
+        title: '14 · 티커 (Ticker)',
         note: '전 페이지 히어로 상단의 뉴스 자막 띠. 주요 클래스: .ticker, .ticker-inner, .ticker-diamond. CSS 애니메이션: ticker 60s linear infinite',
         html: [
           '<div class="ticker" style="position:relative;overflow:hidden;">',
@@ -1427,7 +1477,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '16 · 홈 레이아웃 (Home Layout)',
+        title: '15 · 홈 레이아웃 (Home Layout)',
         note: '홈 페이지 콘텐츠 구조. .home-wrapper > .home-priority (메인+사이드) / .home-2col / .home-3col. 섹션 타이틀: .home-section-title + 수식어 클래스. 컬럼 헤더: .home-col-header + 수식어',
         html: [
           '<p class="kms-ds-note">섹션 타이틀 변형</p>',
@@ -1474,7 +1524,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '17 · 로딩 & 상태 (Loading & Status)',
+        title: '16 · 로딩 & 상태 (Loading & Status)',
         note: 'JS 로딩 대기 중 표시. 주요 클래스: .loading-state, .loading-dots span (3개). 빈 상태: .mini-empty, .list-empty',
         html: [
           '<div class="kms-ds-row" style="gap:24px;align-items:flex-start;flex-wrap:wrap;">',
@@ -1496,7 +1546,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '18 · 검색 UI (Search UI)',
+        title: '17 · 검색 UI (Search UI)',
         note: '마스트헤드 인라인 검색 + 전용 검색 페이지(/search.html). 주요 클래스: .mh-search-input, .mh-search-btn (헤더), .search-page-input, .search-page-btn, .search-result-card (전용 페이지)',
         html: [
           '<p class="kms-ds-note">마스트헤드 검색 (.masthead-search)</p>',
@@ -1531,7 +1581,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '19 · 모달 & 오버레이 (Modal & Overlay)',
+        title: '18 · 모달 & 오버레이 (Modal & Overlay)',
         note: '기사 상세 뷰 및 공유 모달. 주요 클래스: .modal-overlay, .modal-overlay.open, .modal, .modal-header, .modal-body, .modal-close, .modal-img, .modal-date',
         html: [
           '<div style="position:relative;border:1px solid rgba(31,31,31,0.12);background:rgba(0,0,0,0.05);padding:20px;min-height:200px;">',
@@ -1554,7 +1604,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '20 · 토스트 & 알림 (Toast & Notifications)',
+        title: '19 · 토스트 & 알림 (Toast & Notifications)',
         note: '하단 고정 알림 스낵바. 주요 클래스: .toast, .toast.show, .toast.success, .toast.error. 위치: 하단 우측 고정(fixed). pull-refresh: .pull-refresh-indicator.visible / .ready',
         html: [
           '<p class="kms-ds-note">토스트 상태 (.toast)</p>',
@@ -1572,7 +1622,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '21 · 푸터 (Footer)',
+        title: '20 · 푸터 (Footer)',
         note: '전 페이지 공통 푸터. 주요 클래스: footer, .footer-inner, .footer-brand, .footer-admin, .footer-bottom, .footer-live-stats, .footer-live-stat, .footer-build',
         html: [
           '<footer style="position:relative;">',
@@ -1606,65 +1656,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '22 · 캘린더 확장 (Calendar Extended)',
-        note: 'calendar.html 전용. 주요 클래스: .calendar-page, .calendar-page-head, .calendar-layout, .calendar-panel, .calendar-toolbar, .calendar-view-btn, .calendar-manage-btn, .calendar-status-head, .calendar-event-card, .calendar-category-badge, .calendar-status-badge, .calendar-target-chip, .calendar-filter-select',
-        html: [
-          '<p class="kms-ds-note">페이지 헤더 (.calendar-page-head)</p>',
-          '<div class="calendar-page-head" style="margin-bottom:14px;">',
-          '  <div class="calendar-page-head-row">',
-          '    <div>',
-          '      <span class="calendar-page-kicker">Calendar</span>',
-          '      <h2 style="font-family:AliceDigitalLearning,sans-serif;font-size:22px;font-weight:700;margin:4px 0 2px;">일정 캘린더</h2>',
-          '      <p style="font-family:AliceDigitalLearning,sans-serif;font-size:13px;color:rgba(31,31,31,0.58);margin:0;">등록된 일정과 행사 정보를 월별로 확인할 수 있습니다.</p>',
-          '    </div>',
-          '    <div class="calendar-page-head-actions">',
-          '      <div class="calendar-view-toggle">',
-          '        <button type="button" class="calendar-view-btn is-active">월간 일정보기</button>',
-          '        <button type="button" class="calendar-view-btn">연간 일정보기</button>',
-          '      </div>',
-          '      <button type="button" class="calendar-manage-btn">일정 추가</button>',
-          '    </div>',
-          '  </div>',
-          '</div>',
-          '<p class="kms-ds-note">상태별 헤더 & 이벤트 카드</p>',
-          '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">',
-          '  <div class="calendar-status-head is-ongoing">진행중</div>',
-          '  <div class="calendar-status-head is-upcoming">개최예정</div>',
-          '  <div class="calendar-status-head is-finished">행사종료</div>',
-          '</div>',
-          '<p class="kms-ds-note">이벤트 카드 변형</p>',
-          '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">',
-          dsCalendarCard('', 'KOR', 'is-kor', '제19차 세계스카우트잼버리', '2025.08.01 ~ 2025.08.12', '폴란드 그단스크', ['진행중'], ['전회원']),
-          dsCalendarCard('is-finished', 'APR', 'is-apr', '제14차 아태지역 스카우트총회', '2024.11.20 ~ 2024.11.24', '대한민국 서울', ['행사종료'], ['지도자', '임원']),
-          '</div>',
-          '<p class="kms-ds-note">카테고리 배지 & 상태 배지 & 대상 칩</p>',
-          '<div class="kms-ds-row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px;">',
-          '  <span class="calendar-category-badge is-kor">KOR</span>',
-          '  <span class="calendar-category-badge is-apr">APR</span>',
-          '  <span class="calendar-category-badge is-eur">EUR</span>',
-          '  <span class="calendar-category-badge is-wosm">WOSM</span>',
-          '  <span class="calendar-category-badge is-afr">AFR</span>',
-          '  <span class="calendar-category-badge is-arb">ARB</span>',
-          '  <span class="calendar-category-badge is-iar">IAR</span>',
-          '  <span class="calendar-status-badge is-upcoming">개최예정</span>',
-          '  <span class="calendar-status-badge is-ongoing">진행중</span>',
-          '  <span class="calendar-status-badge is-finished">행사종료</span>',
-          '  <span class="calendar-target-chip">전회원</span>',
-          '  <span class="calendar-target-chip">지도자</span>',
-          '  <span class="calendar-target-chip">임원</span>',
-          '</div>',
-          '<p class="kms-ds-note">필터 셀렉트 (.calendar-filter-select)</p>',
-          '<div class="kms-ds-row" style="gap:8px;flex-wrap:wrap;">',
-          '  <select class="calendar-filter-select is-all"><option>전체 지역</option></select>',
-          '  <select class="calendar-filter-select is-kor"><option>Korea</option></select>',
-          '  <select class="calendar-filter-select is-wosm"><option>WOSM</option></select>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '23 · 용어집 컴포넌트 (Glossary)',
+        title: '21 · 용어집 컴포넌트 (Glossary)',
         note: 'glossary.html 전용. 주요 클래스: .glossary-page-wrap, .glossary-hero, .glossary-hero-copy, .glossary-search-card, .glossary-search-input, .glossary-letter-bar, .glossary-letter-btn, .glossary-results-meta, .glossary-table, .glossary-admin-toggle-btn, .glossary-login-modal',
         html: [
           '<div class="glossary-page-wrap" style="padding:0;">',
@@ -1713,7 +1705,7 @@
 
       // ────────────────────────────────────────────────────────
       {
-        title: '24 · 아이콘 버튼 & 유틸리티 (Icon Buttons & Utilities)',
+        title: '22 · 아이콘 버튼 & 유틸리티 (Icon Buttons & Utilities)',
         note: '미니 리스트 아이템, 공유 버튼, skip-link 등 페이지 전반 공통 유틸리티. 주요 클래스: .mini-item, .mini-item-row, .mini-thumb, .mini-item-labels, .mini-meta, .mini-share-link, .mini-empty, .skip-link',
         html: [
           '<p class="kms-ds-note">미니 리스트 아이템 (.mini-item)</p>',
