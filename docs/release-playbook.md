@@ -7,12 +7,13 @@
 ## 표준 순서
 
 1. `git status --short`로 워크트리 확인
-2. `cat VERSION`으로 현재 버전 확인
-3. 필요한 경우 기능 변경 커밋 반영
-4. Preview 브랜치 동기화 + Preview 배포
-5. Preview URL 기준 자동/수동 검수
-6. 승인 후 preview 모달 또는 GitHub Actions로 production 승격
-7. 라이브 검증
+2. `cat VERSION`으로 현재 Site 버전 확인
+3. 관리자 전용 변경이면 `js/main.js`의 `GW.ADMIN_VERSION`과 `/admin` 자산 쿼리 버전도 함께 확인
+4. 필요한 경우 기능 변경 커밋 반영
+5. Preview 브랜치 동기화 + Preview 배포
+6. Preview URL 기준 자동/수동 검수
+7. 승인 후 preview 모달 또는 GitHub Actions로 production 승격
+8. 라이브 검증
 
 ## Preview 배포
 
