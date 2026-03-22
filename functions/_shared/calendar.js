@@ -138,25 +138,49 @@ function normalizeCalendarDateTimeValue(rawDateTime, rawDate, rawTime) {
 function normalizeDateTime(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw + ' 00:00:00';
-  const withSpace = raw.replace('T', ' ');
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(withSpace)) return withSpace + ':00';
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(withSpace)) return withSpace;
-  return '';
+  const withSpace = raw.replace('T', ' ').replace(/[./]/g, '-');
+  const dateOnly = normalizeDateOnly(withSpace);
+  if (dateOnly) return dateOnly + ' 00:00:00';
+  const match = withSpace.match(/^(.+?)\s+(\d{1,2}:\d{2}(?::\d{2})?)$/);
+  if (!match) return '';
+  const date = normalizeDateOnly(match[1]);
+  const time = normalizeTimeOnly(match[2]);
+  if (!date || !time) return '';
+  return date + ' ' + time;
 }
 
 function normalizeDateOnly(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+  const normalized = raw.replace(/[./]/g, '-');
+  const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!match) return '';
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return '';
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  return [
+    String(year).padStart(4, '0'),
+    String(month).padStart(2, '0'),
+    String(day).padStart(2, '0'),
+  ].join('-');
 }
 
 function normalizeTimeOnly(value) {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  if (/^\d{2}:\d{2}$/.test(raw)) return raw + ':00';
-  if (/^\d{2}:\d{2}:\d{2}$/.test(raw)) return raw;
-  return '';
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return '';
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] || '0');
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) return '';
+  return [
+    String(hour).padStart(2, '0'),
+    String(minute).padStart(2, '0'),
+    String(second).padStart(2, '0'),
+  ].join(':');
 }
 
 function normalizeUrl(value) {
