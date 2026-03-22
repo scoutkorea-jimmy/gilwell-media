@@ -983,129 +983,320 @@
   }
 
   // ── 디자인 시스템 탭 ──────────────────────────────────────────
+  // 실제 홈페이지 style.css 기준으로 현행화 (2026-03-22)
+  // 버튼은 카테고리 칩과 동일한 기본 형태: 1px 테두리, 직각, uppercase, letter-spacing
   function renderDesignSystem() {
     var container = document.getElementById('kms-tab-design');
     if (!container || container.dataset.rendered) return;
     container.dataset.rendered = '1';
 
+    var S = {
+      // 실제 :root 변수값
+      purple:  '#622599',
+      purpleMid: '#4d006e',
+      black:   '#1f1f1f',
+      white:   '#ffffff',
+      muted:   'rgba(31,31,31,0.58)',
+      border:  'rgba(31,31,31,0.12)',
+      bg:      '#ffffff',
+      // 지역별 카테고리 색상 (style.css 기준)
+      kor:  '#0094b4',
+      apr:  '#ff5655',
+      wosm: '#248737',
+      people: '#622599',
+      eur:  '#2f8f5b',
+      afr:  '#b6761b',
+      arb:  '#7b5cff',
+      iar:  '#d44f94',
+      success: '#248737',
+      danger:  '#ff5655',
+    };
+
+    // ── 버튼 공통 베이스 스타일 (칩과 동일 원칙: 직각, 1px 테두리, uppercase)
+    var btnBase = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 18px;min-height:36px;';
+    var btnFilled  = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';';
+    var btnAccent  = btnBase + 'background:' + S.purple + ';color:#fff;border-color:' + S.purple + ';';
+    var btnOutline = btnBase + 'background:transparent;color:' + S.black + ';border-color:rgba(31,31,31,0.25);';
+    var btnDanger  = btnBase + 'background:transparent;color:' + S.danger + ';border-color:' + S.danger + ';';
+    var btnDisabled = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';opacity:0.4;cursor:default;';
+
     var sections = [
+      // ────────────────────────────────────────────────────────
       {
-        title: '색상 토큰 (Color Tokens)',
+        title: '01 · 색상 토큰 (CSS Custom Properties)',
+        note: ':root에 정의된 변수. 모든 컴포넌트는 이 값을 참조합니다.',
         html: [
+          '<p class="kms-ds-note">브랜드 / 기본 색상</p>',
           '<div class="kms-ds-swatch-grid">',
-          dsSwatchItem('--color-scout', '#5c2a9d', '스카우트 퍼플 (Accent)'),
-          dsSwatchItem('--color-scout-light', 'rgba(92,42,157,0.07)', '퍼플 배경'),
-          dsSwatchItem('--color-ink', '#161310', '기본 텍스트'),
-          dsSwatchItem('--color-muted', '#7a7168', '보조 텍스트'),
-          dsSwatchItem('--color-surface', '#ffffff', '카드 배경'),
-          dsSwatchItem('--color-surface2', '#faf7f3', '보조 배경'),
-          dsSwatchItem('--color-bg', '#f2ede8', '페이지 배경'),
-          dsSwatchItem('--color-border', 'rgba(22,17,12,0.10)', '테두리'),
-          dsSwatchItem('--kor-color', '#003DA5', 'KOR 파랑'),
-          dsSwatchItem('--apr-color', '#E04B0A', 'APR 주황'),
-          dsSwatchItem('--wosm-color', '#5c2a9d', 'WOSM 퍼플'),
+          dsSwatchItem('--scouting-purple', '#622599', '스카우팅 퍼플 — 브랜드 Accent'),
+          dsSwatchItem('--midnight-purple', '#4d006e', '미드나이트 퍼플 — Glossary / People'),
+          dsSwatchItem('--black / --ink',   '#1f1f1f', '잉크 — 기본 텍스트'),
+          dsSwatchItem('--muted',  'rgba(31,31,31,0.58)', '뮤트 — 보조 텍스트'),
+          dsSwatchItem('--border', 'rgba(31,31,31,0.12)', '테두리'),
+          dsSwatchItem('--bg / --card-bg',  '#ffffff', '배경 / 카드 배경'),
+          '</div>',
+          '<p class="kms-ds-note" style="margin-top:16px">지역 카테고리 색상</p>',
+          '<div class="kms-ds-swatch-grid">',
+          dsSwatchItem('--ocean-blue / --tag-korea', '#0094b4', 'KOR — 한국스카우트'),
+          dsSwatchItem('--fire-red   / --tag-apr',   '#ff5655', 'APR — 아시아태평양'),
+          dsSwatchItem('--forest-green / --tag-wosm','#248737', 'WOSM / EUR — 세계/유럽'),
+          dsSwatchItem('--scouting-purple / --tag-people','#622599','People — 사람들'),
+          dsSwatchItem('EUR 전용',  '#2f8f5b', 'EUR — 유럽 (지역 badge 전용)'),
+          dsSwatchItem('AFR 전용',  '#b6761b', 'AFR — 아프리카'),
+          dsSwatchItem('ARB 전용',  '#7b5cff', 'ARB — 아랍'),
+          dsSwatchItem('IAR 전용',  '#d44f94', 'IAR — 인터-아메리카'),
+          '</div>',
+          '<p class="kms-ds-note" style="margin-top:16px">피드백 색상</p>',
+          '<div class="kms-ds-swatch-grid">',
+          dsSwatchItem('--success', '#248737', '성공 (forest-green)'),
+          dsSwatchItem('--danger',  '#ff5655', '위험/삭제 (fire-red)'),
+          dsSwatchItem('진행중',    '#1e9b60', '진행 중 상태 — calendar ongoing'),
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '버튼 (Buttons)',
+        title: '02 · 타이포그래피 (Typography)',
+        note: '폰트: AliceDigitalLearning (weight 300 / 700). 모든 크기는 :root 변수로 관리.',
         html: [
+          '<div class="kms-ds-col">',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-display · 32px · w700</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:32px;font-weight:700;color:#1f1f1f;line-height:1.2">BP미디어 스카우트 뉴스</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-section · 20px · w600</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:20px;font-weight:600;color:#1f1f1f;line-height:1.35">세계 스카우트 연맹 WOSM 공식 발표</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-title / --fs-card-title · 18px · w600</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:18px;font-weight:600;color:#1f1f1f;line-height:1.35">잼버리 2026 한국 개최 확정</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-body · 14px · w300 · lh 1.65</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:14px;font-weight:300;color:#1f1f1f;line-height:1.65">BP미디어는 스카우트 관련 소식을 빠르고 정확하게 전달합니다. 한국 스카우트연맹의 공식 활동부터 세계 스카우트 기구 WOSM의 국제 소식까지.</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-nav · 12px · w300 · ls 0.08em</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:12px;font-weight:300;color:rgba(31,31,31,0.58);letter-spacing:0.08em">한국스카우트 · APR · WOSM · 사람들 · 최신소식</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-meta · 11px · ls 0.12em · uppercase</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(31,31,31,0.58)">2026-03-22 · 조회 1,234</span></div>',
+          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-micro · 10px · ls 0.12em · uppercase</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(31,31,31,0.58)">Korea Scout Association</span></div>',
+          '</div>',
+        ].join(''),
+      },
+
+      // ────────────────────────────────────────────────────────
+      {
+        title: '03 · 버튼 (Buttons)',
+        note: '버튼은 카테고리 칩과 동일 원칙: 직각(border-radius:0), 1px 테두리, uppercase, letter-spacing 0.1em+. 내부 채움 여부로 Primary / Outline / Danger를 구분.',
+        html: [
+          '<p class="kms-ds-note">Primary (Filled Black) — .submit-btn 계열</p>',
+          '<div class="kms-ds-row" style="margin-bottom:12px">',
+          '<button style="' + btnFilled + '">저장하기</button>',
+          '<button style="' + btnFilled + 'min-height:44px;width:100%;max-width:220px">전체 너비 (로그인 등)</button>',
+          '<button style="' + btnDisabled + '" disabled>비활성화</button>',
+          '</div>',
+          '<p class="kms-ds-note">Accent (Filled Purple) — .write-btn 계열</p>',
+          '<div class="kms-ds-row" style="margin-bottom:12px">',
+          '<button style="' + btnAccent + '">새 게시글 작성</button>',
+          '<button style="' + btnAccent + 'min-height:44px">게시글 등록</button>',
+          '</div>',
+          '<p class="kms-ds-note">Outline — .cancel-btn / .filter-btn / .calendar-view-btn 계열</p>',
+          '<div class="kms-ds-row" style="margin-bottom:12px;flex-wrap:wrap">',
+          '<button style="' + btnOutline + '">취소</button>',
+          '<button style="' + btnOutline + '">목록 보기</button>',
+          '<button style="' + btnOutline + 'min-height:44px;border-color:rgba(31,31,31,0.12);color:rgba(31,31,31,0.58)">달력</button>',
+          '<button style="' + btnOutline + 'min-height:44px;border-color:rgba(31,31,31,0.12);color:rgba(31,31,31,0.58)">지도</button>',
+          '<button style="' + btnBase + 'min-height:44px;background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">목록 (활성)</button>',
+          '</div>',
+          '<p class="kms-ds-note">Danger — .btn-delete-soft 계열</p>',
           '<div class="kms-ds-row">',
-          '<button class="v3-btn v3-btn-primary">Primary 버튼</button>',
-          '<button class="v3-btn v3-btn-outline">Outline 버튼</button>',
-          '<button class="v3-btn v3-btn-ghost">Ghost 버튼</button>',
-          '<button class="v3-btn v3-btn-danger">Danger 버튼</button>',
-          '</div>',
-          '<div class="kms-ds-row" style="margin-top:8px">',
-          '<button class="v3-btn v3-btn-primary" style="opacity:.5;cursor:default" disabled>비활성화</button>',
-          '<button class="v3-btn v3-btn-sm v3-btn-primary">Small</button>',
+          '<button style="' + btnDanger + '">삭제</button>',
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '카테고리 칩 (Category Chips)',
+        title: '04 · 게시글 카테고리 칩 (Post Kicker)',
+        note: '.post-kicker 클래스 + 색상 modifier. 아웃라인 스타일(채움 없음), border-radius:0, uppercase, letter-spacing.',
         html: [
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="post-kicker category-badge category-korea">한국스카우트</span>',
-          '<span class="post-kicker category-badge category-apr">APR</span>',
-          '<span class="post-kicker category-badge category-wosm">WOSM</span>',
-          '<span class="post-kicker category-badge category-people">사람들</span>',
-          '<span class="post-kicker category-badge category-latest">최신소식</span>',
+          '<p class="kms-ds-note">아웃라인 칩 (.post-kicker + .tag-*-kicker)</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
+          '<span class="post-kicker tag-korea-kicker">한국스카우트</span>',
+          '<span class="post-kicker tag-apr-kicker">APR</span>',
+          '<span class="post-kicker tag-wosm-kicker">WOSM</span>',
+          '<span class="post-kicker tag-people-kicker">사람들</span>',
+          '<span class="post-kicker tag-latest-kicker">최신소식</span>',
+          '<span class="post-kicker tag-glossary-kicker">용어집</span>',
+          '</div>',
+          '<p class="kms-ds-note">NEW 칩 (.post-kicker-new) — 채움 검정</p>',
+          '<div class="kms-ds-row">',
+          '<span class="post-kicker post-kicker-new">NEW</span>',
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '캘린더 행사 칩 (Calendar Event Chips)',
+        title: '05 · 캘린더 지역 배지 (Calendar Category Badge)',
+        note: '.calendar-category-badge + .is-* 모디파이어. 아웃라인, border: 1px solid currentColor, 직각.',
         html: [
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="calendar-category-badge cat-kor">KOR</span>',
-          '<span class="calendar-category-badge cat-apr">APR</span>',
-          '<span class="calendar-category-badge cat-eur">EUR</span>',
-          '<span class="calendar-category-badge cat-wosm">WOSM</span>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
+          '<span class="calendar-category-badge is-kor">KOR</span>',
+          '<span class="calendar-category-badge is-apr">APR</span>',
+          '<span class="calendar-category-badge is-eur">EUR</span>',
+          '<span class="calendar-category-badge is-afr">AFR</span>',
+          '<span class="calendar-category-badge is-arb">ARB</span>',
+          '<span class="calendar-category-badge is-iar">IAR</span>',
+          '<span class="calendar-category-badge is-wosm">WOSM</span>',
           '</div>',
-          '<p class="kms-ds-label" style="margin-top:10px">태그 & 대상 칩</p>',
+          '<p class="kms-ds-note">지도 마커 배지 (.calendar-map-badge + .is-*) — 채움, 원형</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="calendar-tag-chip">훈련</span>',
-          '<span class="calendar-tag-chip">잼버리</span>',
+          '<span class="calendar-map-badge is-kor">KOR</span>',
+          '<span class="calendar-map-badge is-apr">APR</span>',
+          '<span class="calendar-map-badge is-eur">EUR</span>',
+          '<span class="calendar-map-badge is-afr">AFR</span>',
+          '<span class="calendar-map-badge is-arb">ARB</span>',
+          '<span class="calendar-map-badge is-iar">IAR</span>',
+          '<span class="calendar-map-badge is-wosm">WOSM</span>',
+          '</div>',
+        ].join(''),
+      },
+
+      // ────────────────────────────────────────────────────────
+      {
+        title: '06 · 캘린더 태그 & 대상 칩 (Calendar Tag / Target Chips)',
+        note: '행사 카드 안에 인라인으로 표시되는 태그. 이벤트 태그(훈련, 잼버리 등)와 대상 분류(로버, 지도자 등)는 동일 행에 표시.',
+        html: [
+          '<p class="kms-ds-note">행사 태그 — 이벤트 유형</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
+          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">훈련</span>',
+          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">잼버리</span>',
+          '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 7px;border:1px solid rgba(31,31,31,0.25);color:rgba(31,31,31,0.7)">세계행사</span>',
+          '</div>',
+          '<p class="kms-ds-note">대상 칩 (.calendar-target-chip) — KOR 전용, 파랑 테두리</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="calendar-target-chip">비버</span>',
+          '<span class="calendar-target-chip">컵스카우트</span>',
+          '<span class="calendar-target-chip">스카우트</span>',
+          '<span class="calendar-target-chip">벤처</span>',
           '<span class="calendar-target-chip">로버</span>',
           '<span class="calendar-target-chip">지도자</span>',
-          '<span class="calendar-target-chip">컵스카우트</span>',
           '</div>',
-        ].join(''),
-      },
-      {
-        title: '게시글 카드 (Post Card)',
-        html: '<div class="v3-post-card" style="max-width:340px">' +
-          '<div class="v3-post-card-thumb" style="background:#e8e0d8;height:140px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;color:#b0a89e;font-size:12px">이미지 영역</div>' +
-          '<div class="v3-post-card-body">' +
-            '<span class="post-kicker category-badge category-korea">한국스카우트</span>' +
-            '<h3 class="v3-post-card-title">스카우트 잼버리 2026 개최 확정</h3>' +
-            '<p class="v3-post-card-excerpt">제23회 세계 잼버리가 한국에서 개최될 예정으로, 약 5만 명의 스카우트가 참가할 것으로 예상됩니다.</p>' +
-            '<div class="v3-post-card-meta"><span>2026-03-22</span><span>조회 1,234</span></div>' +
-          '</div>' +
-          '</div>',
-      },
-      {
-        title: '배지 & 태그 (Badges & Tags)',
-        html: [
+          '<p class="kms-ds-note" style="margin-top:12px">행사 상태 배지 (.calendar-status-badge)</p>',
           '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="admin-status-badge badge-published">공개</span>',
-          '<span class="admin-status-badge badge-draft">초안</span>',
-          '<span class="admin-status-badge badge-featured">특집</span>',
-          '<span class="meta-tag">AI 보조</span>',
-          '<span class="meta-tag">스카우팅</span>',
+          '<span class="calendar-status-badge is-upcoming">예정</span>',
+          '<span class="calendar-status-badge is-ongoing">진행 중</span>',
+          '<span class="calendar-status-badge is-finished">종료</span>',
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '폼 요소 (Form Elements)',
+        title: '07 · 게시글 카드 (Post Card)',
+        note: '.post-card + .post-card-thumb / .post-card-body / .post-card-labels / .post-card-meta. border-radius:0, 1px 테두리, 16:9 썸네일.',
+        html: [
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;border:1px solid rgba(31,31,31,0.12);max-width:560px">',
+          // Card 1
+          '<div class="post-card">',
+          '<img class="post-card-thumb" src="" alt="" style="background:#e8e4de;aspect-ratio:16/9;display:block;width:100%;object-fit:cover" onerror="this.style.background=\'#e8e4de\'">',
+          '<div class="post-card-body">',
+          '<div class="post-card-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span></div>',
+          '<h3>스카우트 잼버리 2026 한국 개최 확정 — 5만 명 참가 예상</h3>',
+          '<p class="post-card-excerpt">제23회 세계 잼버리가 한국에서 개최될 예정으로, 약 5만 명의 스카우트가 참가할 것으로 예상됩니다.</p>',
+          '<div class="post-card-footer"><div class="post-card-meta">2026-03-22 · 조회 1,234</div></div>',
+          '</div></div>',
+          // Card 2
+          '<div class="post-card">',
+          '<img class="post-card-thumb" src="" alt="" style="background:#dde6e4;aspect-ratio:16/9;display:block;width:100%;object-fit:cover" onerror="this.style.background=\'#dde6e4\'">',
+          '<div class="post-card-body">',
+          '<div class="post-card-labels"><span class="post-kicker tag-wosm-kicker">WOSM</span></div>',
+          '<h3>세계 스카우트 연맹 총회 2025 결과 보고</h3>',
+          '<p class="post-card-excerpt">WOSM 총회에서 새로운 글로벌 전략 방향이 채택되었습니다.</p>',
+          '<div class="post-card-footer"><div class="post-card-meta">2026-02-10 · 조회 892</div></div>',
+          '</div></div>',
+          '</div>',
+        ].join(''),
+      },
+
+      // ────────────────────────────────────────────────────────
+      {
+        title: '08 · 캘린더 행사 카드 (Calendar Event Card)',
+        note: '.calendar-event-card + .is-category-* (상단 3px 컬러 테두리로 지역 구분). 직각, 1px 테두리.',
+        html: [
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;max-width:700px">',
+          dsCalendarCard('is-category-kor', 'KOR', 'is-kor', '제22차 한국스카우트 대표자 대회', '2026-04-10 ~ 04-12', '수원 월드컵경기장', ['훈련'], ['지도자', '로버']),
+          dsCalendarCard('is-category-apr', 'APR', 'is-apr', 'APR 지역 청소년 지도자 훈련', '2026-05-01 ~ 05-05', '말레이시아 쿠알라룸푸르', ['훈련', '교육'], []),
+          dsCalendarCard('is-category-wosm', 'WOSM', 'is-wosm', '세계 스카우트 의회 2026', '2026-06-15 ~ 06-20', '스위스 제네바', ['세계행사'], []),
+          '</div>',
+        ].join(''),
+      },
+
+      // ────────────────────────────────────────────────────────
+      {
+        title: '09 · 폼 요소 (Form Elements)',
+        note: '.form-group 구조: label(10px uppercase) + input/select/textarea. 1px 테두리, border-radius:0, focus시 border-color:#1f1f1f.',
         html: [
           '<div class="kms-ds-form-grid">',
-          '<div><label class="kms-ds-label">텍스트 입력</label><input class="v3-input" type="text" placeholder="입력하세요" /></div>',
-          '<div><label class="kms-ds-label">선택 (Select)</label><select class="v3-input"><option>옵션 1</option><option>옵션 2</option></select></div>',
-          '<div><label class="kms-ds-label">검색창</label><input class="v3-input" type="search" placeholder="검색…" /></div>',
-          '<div><label class="kms-ds-label">비활성화</label><input class="v3-input" type="text" placeholder="disabled" disabled /></div>',
+          '<div class="form-group"><label>제목 (TEXT INPUT)</label><input type="text" placeholder="게시글 제목을 입력하세요" /></div>',
+          '<div class="form-group"><label>카테고리 (SELECT)</label><select><option>한국스카우트</option><option>APR</option><option>WOSM</option><option>사람들</option></select></div>',
+          '<div class="form-group"><label>날짜 (DATE INPUT)</label><input type="date" /></div>',
+          '<div class="form-group"><label>비활성화</label><input type="text" placeholder="비활성화 입력창" disabled /></div>',
+          '</div>',
+          '<div class="form-group" style="max-width:480px"><label>본문 요약 (TEXTAREA)</label><textarea placeholder="요약 내용을 입력하세요" style="min-height:80px"></textarea></div>',
+        ].join(''),
+      },
+
+      // ────────────────────────────────────────────────────────
+      {
+        title: '10 · 태그 필터 칩 (Tag / Filter Chips)',
+        note: '.filter-btn / .tag-filter-btn — 카테고리 칩과 동일 원칙, 활성 시 배경 검정.',
+        html: [
+          '<p class="kms-ds-note">콘텐츠 필터 칩 (.filter-btn)</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
+          '<button class="filter-btn">전체</button>',
+          '<button class="filter-btn">훈련</button>',
+          '<button class="filter-btn active">잼버리</button>',
+          '<button class="filter-btn">세계행사</button>',
+          '<button class="filter-btn">교육</button>',
+          '</div>',
+          '<p class="kms-ds-note">글머리 태그 선택 (.tag-pill)</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="tag-pill active">훈련</span>',
+          '<span class="tag-pill">잼버리</span>',
+          '<span class="tag-pill">국제행사</span>',
+          '<span class="tag-pill">소식</span>',
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '알림 토스트 (Toast Notifications)',
+        title: '11 · 그라디언트 토큰 (Gradients)',
+        note: 'style.css에 정의된 주요 그라디언트. 홈 섹션 헤더, 히어로 오버레이 등에 사용.',
         html: [
-          '<div class="kms-ds-col">',
-          '<div class="gw-toast gw-toast-success">성공 메시지 — 저장이 완료되었습니다.</div>',
-          '<div class="gw-toast gw-toast-error">오류 메시지 — 요청에 실패했습니다.</div>',
-          '<div class="gw-toast gw-toast-info">안내 메시지 — 처리 중입니다.</div>',
+          '<div class="kms-ds-gradient-grid">',
+          dsGradient('--gradient-ink', 'linear-gradient(90deg,#111 0%,#191717 52%,#221d1c 100%)', 'Ink — 홈 섹션 타이틀 기본'),
+          dsGradient('--gradient-purple', 'linear-gradient(90deg,#622599 0%,#562085 52%,#45186b 100%)', 'Purple — 스카우팅 퍼플'),
+          dsGradient('--gradient-purple-deep', 'linear-gradient(135deg,#622599 0%,#4e1d7a 46%,#2a103f 100%)', 'Purple Deep — 히어로 오버레이'),
+          dsGradient('Latest 섹션', 'linear-gradient(90deg,#4d006e 0%,#37004e 100%)', '최신소식 섹션 헤더'),
+          dsGradient('Popular 섹션', 'linear-gradient(90deg,#d85b1f 0%,#a64016 100%)', '인기 섹션 헤더'),
+          dsGradient('Picks 섹션', 'linear-gradient(90deg,#0d6c57 0%,#0a4f40 100%)', '특집 섹션 헤더'),
           '</div>',
         ].join(''),
       },
+
+      // ────────────────────────────────────────────────────────
       {
-        title: '타이포그래피 (Typography)',
+        title: '12 · 레이아웃 & 간격 토큰 (Spacing)',
+        note: ':root에 정의된 간격 변수. 반응형 레이아웃의 기준값.',
         html: [
-          '<div class="kms-ds-col">',
-          '<div class="kms-ds-type-item"><span class="kms-ds-label">H1 — 섹션 제목</span><h1 style="margin:0;font-size:28px;font-weight:700;color:var(--kms-ink)">BP미디어 스카우트 뉴스</h1></div>',
-          '<div class="kms-ds-type-item"><span class="kms-ds-label">H2 — 카드 제목</span><h2 style="margin:0;font-size:20px;font-weight:600;color:var(--kms-ink)">잼버리 2026 개최 확정</h2></div>',
-          '<div class="kms-ds-type-item"><span class="kms-ds-label">Body — 본문</span><p style="margin:0;font-size:14px;line-height:1.7;color:var(--kms-ink)">BP미디어는 스카우트 관련 소식을 빠르고 정확하게 전달합니다. 한국 스카우트연맹의 공식 활동부터 세계 스카우트 기구 WOSM의 국제 소식까지.</p></div>',
-          '<div class="kms-ds-type-item"><span class="kms-ds-label">Caption — 보조</span><p style="margin:0;font-size:12px;color:var(--kms-muted)">2026-03-22 · 조회 1,234 · BP미디어</p></div>',
+          '<div class="kms-ds-spacing-grid">',
+          dsSpacing('--board-card-gap', '6px', '보드 카드 간격'),
+          dsSpacing('--home-section-gap', '18px', '홈 섹션 간격'),
+          dsSpacing('--home-grid-gap', '24px', '홈 그리드 갭'),
+          dsSpacing('--home-block-bottom', '36px', '홈 블록 하단 여백'),
+          dsSpacing('--home-title-gap', '14px', '섹션 타이틀 아래 간격'),
+          dsSpacing('카드 패딩', '24px', '.post-card-body padding'),
+          dsSpacing('컨테이너 패딩', '20px–28px', '섹션 컨테이너'),
+          dsSpacing('--btn-height-primary', '44px', '주요 버튼 높이'),
+          dsSpacing('--btn-height-secondary', '36px', '보조 버튼 높이'),
+          '</div>',
+          '<p class="kms-ds-note" style="margin-top:14px">반응형 breakpoints</p>',
+          '<div class="kms-ds-row" style="flex-wrap:wrap">',
+          '<span class="kms-ds-bp-badge">1180px — 네비게이션 변경</span>',
+          '<span class="kms-ds-bp-badge">900px — 태블릿</span>',
+          '<span class="kms-ds-bp-badge">768px — 모바일 태블릿</span>',
+          '<span class="kms-ds-bp-badge">480px — 모바일</span>',
           '</div>',
         ].join(''),
       },
@@ -1116,20 +1307,59 @@
     bodyEl.innerHTML = sections.map(function (sec) {
       return '<section class="kms-ds-section">' +
         '<h3 class="kms-ds-section-title">' + GW.escapeHtml(sec.title) + '</h3>' +
+        (sec.note ? '<p class="kms-ds-note kms-ds-note-top">' + GW.escapeHtml(sec.note) + '</p>' : '') +
         '<div class="kms-ds-preview">' + sec.html + '</div>' +
         '</section>';
     }).join('');
   }
 
   function dsSwatchItem(varName, color, label) {
-    var isBright = color === '#ffffff' || color.includes('0.07') || color.includes('0.10') || color === '#faf7f3' || color === '#f2ede8';
+    var isLight = (color.includes('0.58') || color.includes('0.12') || color === '#ffffff');
     return '<div class="kms-ds-swatch">' +
-      '<div class="kms-ds-swatch-color" style="background:' + color + ';border:' + (isBright ? '1px solid rgba(0,0,0,.10)' : 'none') + '"></div>' +
+      '<div class="kms-ds-swatch-color" style="background:' + color + ';' + (isLight ? 'border:1px solid rgba(0,0,0,.12)' : '') + '"></div>' +
       '<div class="kms-ds-swatch-info">' +
         '<code class="kms-ds-swatch-var">' + GW.escapeHtml(varName) + '</code>' +
         '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
         '<span class="kms-ds-swatch-hex">' + GW.escapeHtml(color) + '</span>' +
       '</div>' +
+      '</div>';
+  }
+
+  function dsCalendarCard(catClass, badgeClass, badgeMod, title, date, location, tags, targets) {
+    var tagHtml = tags.map(function (t) {
+      return '<span style="display:inline-block;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;padding:2px 6px;border:1px solid rgba(31,31,31,0.2);color:rgba(31,31,31,0.6)">' + t + '</span>';
+    }).join('');
+    var targetHtml = targets.map(function (t) {
+      return '<span class="calendar-target-chip">' + t + '</span>';
+    }).join('');
+    return '<div class="calendar-event-card ' + catClass + '">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">' +
+        '<span class="calendar-category-badge ' + badgeMod + '">' + badgeClass + '</span>' +
+        (tagHtml || targetHtml ? '<div class="calendar-event-badges" style="display:flex;flex-wrap:wrap;gap:4px">' + tagHtml + targetHtml + '</div>' : '') +
+      '</div>' +
+      '<h4>' + title + '</h4>' +
+      '<div style="font-family:AliceDigitalLearning,sans-serif;font-size:12px;color:rgba(31,31,31,0.58);line-height:1.6">' +
+        '<div>' + date + '</div>' +
+        '<div>' + location + '</div>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function dsGradient(name, value, label) {
+    return '<div class="kms-ds-gradient-item">' +
+      '<div class="kms-ds-gradient-bar" style="background:' + value + '"></div>' +
+      '<div class="kms-ds-swatch-info">' +
+        '<code class="kms-ds-swatch-var">' + GW.escapeHtml(name) + '</code>' +
+        '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function dsSpacing(name, value, label) {
+    return '<div class="kms-ds-spacing-item">' +
+      '<code class="kms-ds-swatch-var">' + GW.escapeHtml(name) + '</code>' +
+      '<strong class="kms-ds-spacing-val">' + GW.escapeHtml(value) + '</strong>' +
+      '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
       '</div>';
   }
 
