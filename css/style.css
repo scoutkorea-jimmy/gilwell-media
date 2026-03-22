@@ -3575,6 +3575,135 @@ footer a:hover { color: #ffffff; }
   overflow: hidden;
 }
 
+/* Status panel scrollable */
+.calendar-status-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendar-status-sticky-head {
+  flex-shrink: 0;
+  background: var(--bg);
+  z-index: 2;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.calendar-status-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.calendar-status-group {
+  margin-bottom: 0;
+}
+
+.calendar-status-group + .calendar-status-group {
+  margin-top: 20px;
+}
+
+/* Compact controls bar */
+.calendar-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.calendar-controls-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.calendar-date-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-date-input {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.calendar-date-range-sep {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Map results list */
+.calendar-map-results {
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+
+.calendar-map-results-head {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar-map-result-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+}
+
+.calendar-map-result-item:hover { background: var(--surface); }
+
+.calendar-map-result-title {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-map-result-date {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.calendar-map-result-place {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Target group chips */
+.calendar-target-chip {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid #0094B4;
+  color: #0094B4;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.calendar-target-groups {
+  margin-top: 4px;
+}
+
 .calendar-map-filters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

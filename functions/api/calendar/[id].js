@@ -16,9 +16,9 @@ export async function onRequestPut({ request, env, params }) {
     await ensureCalendarTable(env);
     const row = await env.DB.prepare(`
       UPDATE calendar_events
-      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, related_posts_json = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, title_original = ?, event_category = ?, event_tags = ?, description = ?, country_name = ?, location_name = ?, location_address = ?, latitude = ?, longitude = ?, related_post_id = ?, related_posts_json = ?, start_at = ?, start_has_time = ?, end_at = ?, end_has_time = ?, link_url = ?, target_groups = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-      RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, created_at, updated_at
+      RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address, latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, target_groups, created_at, updated_at
     `).bind(
       normalized.title,
       normalized.title_original,
@@ -37,6 +37,7 @@ export async function onRequestPut({ request, env, params }) {
       normalized.end_at,
       normalized.end_has_time,
       normalized.link_url,
+      normalized.target_groups,
       id
     ).first();
     if (!row) return json({ error: '일정을 찾을 수 없습니다.' }, 404);
