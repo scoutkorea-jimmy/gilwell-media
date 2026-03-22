@@ -540,6 +540,21 @@
             <h1 class="v3-page-title">마케팅</h1>
             <p class="v3-page-desc">유입 경로, 고객 여정, 전환 흐름</p>
           </div>
+          <div class="mkt-period-bar" id="mkt-period-bar">
+            <div class="mkt-presets">
+              <button type="button" class="mkt-preset-btn" data-days="1">1일</button>
+              <button type="button" class="mkt-preset-btn" data-days="3">3일</button>
+              <button type="button" class="mkt-preset-btn is-active" data-days="7">7일</button>
+              <button type="button" class="mkt-preset-btn" data-days="14">14일</button>
+              <button type="button" class="mkt-preset-btn" data-days="30">30일</button>
+            </div>
+            <div class="mkt-date-range">
+              <input type="date" id="mkt-date-from" class="mkt-date-input" />
+              <span class="mkt-date-sep">~</span>
+              <input type="date" id="mkt-date-to" class="mkt-date-input" />
+              <button type="button" class="mkt-apply-btn" id="mkt-apply-btn">조회</button>
+            </div>
+          </div>
         </div>
         <div id="marketing-body">
           <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>

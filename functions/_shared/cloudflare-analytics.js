@@ -1,7 +1,7 @@
 const DEFAULT_ZONE_TAG = 'd75b127c5c4d4e72a97322776aac7f5e';
 const DEFAULT_HOST = 'bpmedia.net';
 const DEFAULT_START_DATE = '2026-03-12';
-const MAX_RANGE_DAYS = 90;
+const MAX_RANGE_DAYS = 180;
 
 export function isCloudflareAnalyticsConfigured(env) {
   return !!(env && env.CF_ANALYTICS_API_TOKEN);

@@ -2151,6 +2151,83 @@ body.admin-page #marketing-transitions.analytics-list {
 .marketing-expand-btn:hover {
   border-color: var(--black);
 }
+/* ── 마케팅 기간 컨트롤 ─────────────────────────── */
+.mkt-period-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.mkt-presets {
+  display: flex;
+  gap: 4px;
+}
+.mkt-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 10px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+.mkt-preset-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.mkt-preset-btn.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.mkt-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mkt-date-input {
+  height: var(--chip-height);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+.mkt-date-input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.mkt-date-sep {
+  font-size: 11px;
+  color: var(--muted);
+}
+.mkt-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+.mkt-apply-btn:hover {
+  opacity: 0.8;
+}
 .marketing-flow-wrap,
 .marketing-scatter-wrap {
   min-height: 280px;
