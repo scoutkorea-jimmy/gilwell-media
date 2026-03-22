@@ -306,6 +306,8 @@ post_views / post_likes / site_visits
 
 Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는 자동 배포 지연이나 누락이 발생할 수 있습니다.
 이 저장소는 이제 `preview -> approval -> production` 순서로만 반영합니다.
+관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리합니다.
+관리자(KMS 포함) 변경은 preview 또는 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않습니다.
 
 1. `./scripts/deploy_preview.sh` 또는 `./scripts/deploy_pages.sh`
 2. 배포 출력에서 preview URL 확보
