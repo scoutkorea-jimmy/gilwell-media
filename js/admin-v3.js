@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.010.02
+ * Version: 03.004.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -66,6 +66,37 @@
 
   // Confirm
   var _confirmResolve = null;
+
+  function _apiFetch(url, options) {
+    var opts = options ? Object.assign({}, options) : {};
+    var headers = Object.assign({}, opts.headers || {});
+    var token = (GW.getToken && GW.getToken()) || localStorage.getItem('admin_token') || '';
+    if (token) headers.Authorization = 'Bearer ' + token;
+    if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    opts.headers = headers;
+    return fetch(url, opts).then(function (response) {
+      return response.text().then(function (text) {
+        var data = {};
+        if (text) {
+          try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
+        }
+        if (!response.ok) {
+          var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
+          var err = new Error(message);
+          err.status = response.status;
+          err.data = data;
+          if (response.status === 401) {
+            if (GW.clearToken) GW.clearToken();
+            document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
+              detail: { message: message, status: response.status }
+            }));
+          }
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
 
   /* ══════════════════════════════════════════════════════════
      INIT
@@ -237,7 +268,7 @@
      AUTH
   ══════════════════════════════════════════════════════════ */
   function _verifySession() {
-    return GW.apiFetch('/api/admin/session')
+    return _apiFetch('/api/admin/session')
       .then(function (d) { return d && d.authenticated === true; })
       .catch(function () { return false; });
   }
@@ -255,7 +286,7 @@
     }
 
     btn.disabled = true; btn.textContent = '로그인 중…'; err.style.display = 'none';
-    GW.apiFetch('/api/admin/login', {
+    _apiFetch('/api/admin/login', {
       method: 'POST',
       body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }),
     }).then(function (data) {
@@ -461,10 +492,10 @@
     _setText('dash-stat-posts-sub', '불러오는 중');
 
     Promise.allSettled([
-      GW.apiFetch('/api/admin/analytics'),
-      GW.apiFetch('/api/posts?limit=8&published=all'),
-      GW.apiFetch('/api/posts/popular?limit=5'),
-      GW.apiFetch('/api/posts?limit=1&published=1'),
+      _apiFetch('/api/admin/analytics'),
+      _apiFetch('/api/posts?limit=8&published=all'),
+      _apiFetch('/api/posts/popular?limit=5'),
+      _apiFetch('/api/posts?limit=1&published=1'),
     ]).then(function (results) {
       var analytics = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
       var recentRes = results[1].status === 'fulfilled' ? (results[1].value || {}) : { posts: [] };
@@ -554,7 +585,7 @@
     else if (_listPub === 'draft') params.set('published', '0');
     if (_listSort !== 'latest') params.set('sort', _listSort);
 
-    GW.apiFetch('/api/posts?' + params.toString())
+    _apiFetch('/api/posts?' + params.toString())
       .then(function (data) {
         var posts = (data && data.posts) || [];
         _listTotal = (data && data.total) || posts.length;
@@ -606,7 +637,7 @@
   V3.listPage = function (page) { _listPage = page; _loadList(); };
 
   V3.togglePublish = function (id, pub) {
-    GW.apiFetch('/api/posts/' + id, {
+    _apiFetch('/api/posts/' + id, {
       method: 'PUT',
       body: JSON.stringify({ published: pub }),
     }).then(function () {
@@ -620,7 +651,7 @@
   V3.deletePost = function (id) {
     _confirm('게시글 삭제', '이 게시글을 삭제하시겠습니까? 복구할 수 없습니다.').then(function (ok) {
       if (!ok) return;
-      GW.apiFetch('/api/posts/' + id, { method: 'DELETE' })
+      _apiFetch('/api/posts/' + id, { method: 'DELETE' })
         .then(function () {
           GW.showToast('삭제했습니다', 'success');
           _loadList();
@@ -691,7 +722,7 @@
     _metaTags     = [];
     _relatedPosts = [];
 
-    GW.apiFetch('/api/posts/' + id)
+    _apiFetch('/api/posts/' + id)
       .then(function (data) {
         var p = data.post || data;
         document.getElementById('write-panel-title').textContent = '글 수정: ' + (p.title || '');
@@ -800,7 +831,7 @@
       var method = _editingId ? 'PUT' : 'POST';
       var url    = _editingId ? '/api/posts/' + _editingId : '/api/posts';
 
-      return GW.apiFetch(url, { method: method, body: JSON.stringify(body) });
+      return _apiFetch(url, { method: method, body: JSON.stringify(body) });
     }).then(function (data) {
       var saved = data.post || data;
       if (!_editingId && saved.id) _editingId = saved.id;
@@ -818,7 +849,7 @@
     var card = document.getElementById('write-history-card');
     var list = document.getElementById('write-history-list');
     card.style.display = 'block';
-    GW.apiFetch('/api/posts/' + id + '/history').then(function (data) {
+    _apiFetch('/api/posts/' + id + '/history').then(function (data) {
       var items = (data && data.history) || [];
       if (!items.length) { list.textContent = '수정 기록 없음'; return; }
       list.innerHTML = items.slice(0, 5).map(function (h) {
@@ -948,7 +979,7 @@
   /* ── Related posts ── */
   function _searchRelated(q) {
     var results = document.getElementById('w-related-results');
-    GW.apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8').then(function (data) {
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8').then(function (data) {
       var posts = (data && data.posts) || [];
       if (!posts.length) { results.style.display = 'none'; return; }
       results.innerHTML = posts.map(function (p) {
@@ -983,7 +1014,7 @@
      TAG SETTINGS (for write dropdown)
   ══════════════════════════════════════════════════════════ */
   function _loadTagSettings() {
-    GW.apiFetch('/api/settings/tags').then(function (data) {
+    _apiFetch('/api/settings/tags').then(function (data) {
       _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
       _renderWriteTagPills(document.getElementById('w-cat').value);
     }).catch(function () {});
@@ -1050,7 +1081,7 @@
     GW.addManagedTagToCategory(value, cat)
       .then(function (result) {
         _tagSettings = {}; // force reload
-        return GW.apiFetch('/api/settings/tags').then(function (data) {
+        return _apiFetch('/api/settings/tags').then(function (data) {
           _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
           var selectedTag = result && result.selectedTag ? result.selectedTag : value;
           if (_selectedWriteTags.indexOf(selectedTag) < 0) _selectedWriteTags.push(selectedTag);
@@ -1085,8 +1116,8 @@
     var el = document.getElementById('cal-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     Promise.all([
-      GW.apiFetch('/api/calendar?limit=500'),
-      GW.apiFetch('/api/settings/calendar-tags').catch(function () { return { tags: [] }; }),
+      _apiFetch('/api/calendar?limit=500'),
+      _apiFetch('/api/settings/calendar-tags').catch(function () { return { tags: [] }; }),
     ]).then(function (results) {
       var data = results[0];
       _calItems = (data && data.events) || (data && data.items) || [];
@@ -1247,7 +1278,7 @@
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/calendar/' + id : '/api/calendar';
     document.getElementById('cal-save-btn').disabled = true;
-    GW.apiFetch(url, { method: method, body: JSON.stringify(body) })
+    _apiFetch(url, { method: method, body: JSON.stringify(body) })
       .then(function () {
         GW.showToast('저장했습니다', 'success');
         _closeCalModal();
@@ -1259,7 +1290,7 @@
   function _deleteCal(id) {
     _confirm('일정 삭제', '이 일정을 삭제하시겠습니까?').then(function (ok) {
       if (!ok) return;
-      GW.apiFetch('/api/calendar/' + id, { method: 'DELETE' })
+      _apiFetch('/api/calendar/' + id, { method: 'DELETE' })
         .then(function () {
           GW.showToast('삭제했습니다', 'success');
           _closeCalModal();
@@ -1310,7 +1341,7 @@
   }
 
   function _loadGlossary() {
-    GW.apiFetch('/api/glossary?limit=500').then(function (data) {
+    _apiFetch('/api/glossary?limit=500').then(function (data) {
       _glosItems = (data && data.terms) || (data && data.items) || [];
       _renderGlos();
     }).catch(function (e) {
@@ -1389,7 +1420,7 @@
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/glossary/' + id : '/api/glossary';
     document.getElementById('glos-save-btn').disabled = true;
-    GW.apiFetch(url, { method: method, body: JSON.stringify(body) })
+    _apiFetch(url, { method: method, body: JSON.stringify(body) })
       .then(function () {
         GW.showToast('저장했습니다', 'success');
         _closeGlosModal();
@@ -1401,7 +1432,7 @@
   function _deleteGlos(id) {
     _confirm('용어 삭제', '이 용어를 삭제하시겠습니까?').then(function (ok) {
       if (!ok) return;
-      GW.apiFetch('/api/glossary/' + id, { method: 'DELETE' })
+      _apiFetch('/api/glossary/' + id, { method: 'DELETE' })
         .then(function () {
           GW.showToast('삭제했습니다', 'success');
           _closeGlosModal();
@@ -1420,7 +1451,7 @@
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
     bodyEl.innerHTML  = '';
 
-    GW.apiFetch('/api/admin/analytics?days=' + period).then(function (data) {
+    _apiFetch('/api/admin/analytics?days=' + period).then(function (data) {
       var today    = data.today    || {};
       var summary  = data.summary  || {};
       var visitors = data.visitors || {};
@@ -1559,7 +1590,7 @@
   function _loadMarketing() {
     var el = document.getElementById('marketing-body');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/admin/marketing').then(function (data) {
+    _apiFetch('/api/admin/marketing').then(function (data) {
       var funnel = data.funnel || [];
       var utms   = data.utm_campaigns || [];
       var transitions = data.top_transitions || [];
@@ -1954,7 +1985,7 @@
   function _loadHero() {
     var el = document.getElementById('hero-slots');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/hero').then(function (data) {
+    _apiFetch('/api/settings/hero').then(function (data) {
       _heroPostIds  = (data && data.post_ids) || ((data && Array.isArray(data.posts)) ? data.posts.map(function (p) { return p.id; }).filter(Boolean) : []);
       _heroInterval = (data && data.interval_ms) || 3000;
       document.getElementById('hero-interval').value = _heroInterval;
@@ -1970,7 +2001,7 @@
     }
     // Fetch post details for each id
     Promise.all(_heroPostIds.map(function (id) {
-      return GW.apiFetch('/api/posts/' + id).catch(function () { return null; });
+      return _apiFetch('/api/posts/' + id).catch(function () { return null; });
     })).then(function (posts) {
       el.innerHTML = posts.map(function (data, i) {
         var p = data && (data.post || data);
@@ -2000,7 +2031,7 @@
 
   function _searchHero(q) {
     var el = document.getElementById('hero-search-results');
-    GW.apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&published=1').then(function (data) {
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&published=1').then(function (data) {
       var posts = (data && data.posts) || [];
       if (!posts.length) { el.style.display = 'none'; return; }
       el.innerHTML = posts.map(function (p) {
@@ -2025,7 +2056,7 @@
   function _saveHero() {
     var interval = parseInt(document.getElementById('hero-interval').value, 10) || 3000;
     document.getElementById('hero-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/hero', {
+    _apiFetch('/api/settings/hero', {
       method: 'PUT',
       body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: interval }),
     }).then(function () {
@@ -2041,7 +2072,7 @@
   function _loadTagSettingsUI() {
     var el = document.getElementById('tags-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/tags').then(function (data) {
+    _apiFetch('/api/settings/tags').then(function (data) {
       _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
       _renderTagsEditor();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
@@ -2235,7 +2266,7 @@
       cats[cat] = _getTagScopeItems(_tagSettings, cat);
     });
     document.getElementById('tags-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/tags', {
+    _apiFetch('/api/settings/tags', {
       method: 'PUT',
       body: JSON.stringify({ common: common, categories: cats }),
     }).then(function () {
@@ -2257,7 +2288,7 @@
   function _loadMetaUI() {
     var el = document.getElementById('meta-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/site-meta').then(function (data) {
+    _apiFetch('/api/settings/site-meta').then(function (data) {
       _siteMeta = data || {};
       _renderMetaEditor();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
@@ -2318,7 +2349,7 @@
       naver_verification:  (document.getElementById('meta-naver-verify')  || {}).value || '',
     };
     document.getElementById('meta-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
+    _apiFetch('/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
       .then(function () { GW.showToast('메타태그 설정을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('meta-save-btn').disabled = false; });
@@ -2329,8 +2360,8 @@
   ══════════════════════════════════════════════════════════ */
   function _loadAuthorUI() {
     Promise.all([
-      GW.apiFetch('/api/settings/author').catch(function () { return {}; }),
-      GW.apiFetch('/api/settings/ai-disclaimer').catch(function () { return {}; }),
+      _apiFetch('/api/settings/author').catch(function () { return {}; }),
+      _apiFetch('/api/settings/ai-disclaimer').catch(function () { return {}; }),
     ]).then(function (results) {
       document.getElementById('s-author-name').value  = (results[0] && (results[0].author || results[0].name)) || '';
       document.getElementById('s-ai-disclaimer').value = (results[1] && results[1].text) || '';
@@ -2342,8 +2373,8 @@
     var disc = document.getElementById('s-ai-disclaimer').value.trim();
     document.getElementById('author-save-btn').disabled = true;
     Promise.all([
-      GW.apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name }) }),
-      GW.apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc }) }),
+      _apiFetch('/api/settings/author', { method: 'PUT', body: JSON.stringify({ author: name }) }),
+      _apiFetch('/api/settings/ai-disclaimer', { method: 'PUT', body: JSON.stringify({ text: disc }) }),
     ]).then(function () {
       GW.showToast('저장했습니다', 'success');
     }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
@@ -2354,7 +2385,7 @@
      SETTINGS – BANNER
   ══════════════════════════════════════════════════════════ */
   function _loadBannerUI() {
-    GW.apiFetch('/api/settings/board-banner').then(function (data) {
+    _apiFetch('/api/settings/board-banner').then(function (data) {
       _boardBanner = (data && data.items) || {};
       ['korea','apr','wosm','people'].forEach(function (cat) {
         var b = _boardBanner[cat] || {};
@@ -2373,7 +2404,7 @@
       };
     });
     document.getElementById('banner-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/board-banner', { method: 'PUT', body: JSON.stringify({ items: items }) })
+    _apiFetch('/api/settings/board-banner', { method: 'PUT', body: JSON.stringify({ items: items }) })
       .then(function () { GW.showToast('배너 설정을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('banner-save-btn').disabled = false; });
@@ -2383,7 +2414,7 @@
      SETTINGS – TICKER
   ══════════════════════════════════════════════════════════ */
   function _loadTickerUI() {
-    GW.apiFetch('/api/settings/ticker').then(function (data) {
+    _apiFetch('/api/settings/ticker').then(function (data) {
       var lines = Array.isArray(data) ? data : (data && data.items) || (data && data.lines) || [];
       var text  = typeof data === 'string' ? data : lines.join('\n');
       _ticker = text;
@@ -2402,7 +2433,7 @@
     var text  = document.getElementById('s-ticker').value;
     var lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
     document.getElementById('ticker-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: lines }) })
+    _apiFetch('/api/settings/ticker', { method: 'PUT', body: JSON.stringify({ items: lines }) })
       .then(function () { GW.showToast('티커를 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('ticker-save-btn').disabled = false; });
@@ -2414,7 +2445,7 @@
   function _loadContributorsUI() {
     var el = document.getElementById('contrib-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/contributors').then(function (data) {
+    _apiFetch('/api/settings/contributors').then(function (data) {
       _contributors = (Array.isArray(data) ? data : (data && data.items) || []).map(function (item) {
         return {
           name: item && item.name || '',
@@ -2470,7 +2501,7 @@
         date: item && item.date || '',
       };
     });
-    GW.apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
+    _apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
       .then(function () { GW.showToast('기고자 목록을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('contrib-save-btn').disabled = false; });
@@ -2482,7 +2513,7 @@
   function _loadEditorsUI() {
     var el = document.getElementById('editors-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/editors').then(function (data) {
+    _apiFetch('/api/settings/editors').then(function (data) {
       var editors = Array.isArray(data) ? data : (data && data.editors) || [];
       if (!Array.isArray(editors) && editors && typeof editors === 'object') {
         _editors = ['A', 'B', 'C'].map(function (letter) {
@@ -2542,7 +2573,7 @@
       var key = item && item.key ? item.key : String.fromCharCode(65 + index);
       editorsPayload[key] = item && item.name ? item.name : '';
     });
-    GW.apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
+    _apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
       .then(function () { GW.showToast('편집자 설정을 저장했습니다', 'success'); })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('editors-save-btn').disabled = false; });
@@ -2554,7 +2585,7 @@
   function _loadTranslationsUI() {
     var el = document.getElementById('trans-editor');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    GW.apiFetch('/api/settings/translations').then(function (data) {
+    _apiFetch('/api/settings/translations').then(function (data) {
       _translations = (data && data.strings) || data || {};
       _renderTranslations();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
@@ -2602,7 +2633,7 @@
       }
     });
     document.getElementById('trans-save-btn').disabled = true;
-    GW.apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
+    _apiFetch('/api/settings/translations', { method: 'PUT', body: JSON.stringify({ strings: result }) })
       .then(function () { GW.showToast('번역 설정을 저장했습니다', 'success'); _translations = result; })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { document.getElementById('trans-save-btn').disabled = false; });
