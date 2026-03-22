@@ -839,6 +839,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --mobile-user-scale: 1;
   --btn-height-primary: 44px;
   --btn-height-secondary: 36px;
+  --chip-height: 26px;
   --gradient-ink: linear-gradient(90deg, #111111 0%, #191717 52%, #221d1c 100%);
   --gradient-purple: linear-gradient(90deg, #622599 0%, #562085 52%, #45186b 100%);
   --gradient-purple-deep: linear-gradient(135deg, #622599 0%, #4e1d7a 46%, #2a103f 100%);
@@ -1297,7 +1298,7 @@ p { margin-bottom: 6px; }
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
-  min-height:     var(--btn-height-secondary);
+  min-height:     var(--chip-height);
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
@@ -3829,8 +3830,11 @@ footer a:hover { color: #ffffff; }
 
 /* Target group chips */
 .calendar-target-chip {
-  display: inline-block;
-  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 8px;
   border: 1px solid #0094B4;
   color: #0094B4;
   font-family: AliceDigitalLearning, sans-serif;
@@ -4439,7 +4443,8 @@ footer a:hover { color: #ffffff; }
 .calendar-status-badge {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
+  justify-content: center;
+  min-height: var(--chip-height);
   padding: 0 10px;
   border: 1px solid currentColor;
   font-family: AliceDigitalLearning, sans-serif;
@@ -5719,17 +5724,20 @@ footer a:hover { color: #ffffff; }
 }
 
 .tag-pill {
-  display:       inline-block;
-  padding:       4px 12px;
-  border:        1px solid var(--border);
-  font-family:   AliceDigitalLearning, sans-serif;
-  font-size:     11px;
-  letter-spacing:.08em;
-  color:         var(--muted);
-  cursor:        pointer;
-  background:    var(--bg);
-  transition:    background .15s, color .15s, border-color .15s;
-  user-select:   none;
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  min-height:     var(--chip-height);
+  padding:        0 12px;
+  border:         1px solid var(--border);
+  font-family:    AliceDigitalLearning, sans-serif;
+  font-size:      11px;
+  letter-spacing: .08em;
+  color:          var(--muted);
+  cursor:         pointer;
+  background:     var(--bg);
+  transition:     background .15s, color .15s, border-color .15s;
+  user-select:    none;
 }
 
 .tag-pill:hover {
@@ -6415,7 +6423,7 @@ footer a:hover { color: #ffffff; }
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
-  min-height:     var(--btn-height-secondary);
+  min-height:     var(--chip-height);
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;

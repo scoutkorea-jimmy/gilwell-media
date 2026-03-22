@@ -1,6 +1,23 @@
 {
   "items": [
     {
+      "version": "03.016.00",
+      "date": "2026-03-22",
+      "summary": "칩(Chip) 높이 통일: --chip-height 26px 변수 신설, 모든 필터/태그/대상/상태 칩 적용.",
+      "type": "Fix",
+      "scope": "both",
+      "items": [
+        ":root에 --chip-height: 26px 변수 추가.",
+        ".filter-btn: min-height 36px(보조버튼) → 26px(칩)으로 정정.",
+        ".tag-filter-btn: 동일하게 26px으로 정정.",
+        ".tag-pill: display:inline-block + padding:4px → inline-flex + min-height:26px으로 통일.",
+        ".calendar-target-chip: 대상칩 min-height 26px으로 통일.",
+        ".calendar-category-badge / .calendar-status-badge: 28px → 26px으로 통일.",
+        "KMS 디자인 탭: 칩 섹션을 하나로 통합(행사태그·대상칩·필터칩·태그칩 모두 동일 섹션에서 26px 기준 설명).",
+        "Site v00.102.00 → 00.103.00 / Admin v03.015.00 → 03.016.00."
+      ]
+    },
+    {
       "version": "03.015.00",
       "date": "2026-03-22",
       "summary": "전체 버튼 높이 통일: Primary 44px / Secondary 36px 두 티어로 표준화.",
