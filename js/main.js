@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Shared Utilities
- * Exposes a global GW namespace used by board.js and admin.js.
+ * Exposes a global GW namespace used by board.js and admin-v3.js.
  */
 (function () {
   'use strict';
