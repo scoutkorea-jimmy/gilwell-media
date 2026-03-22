@@ -99,7 +99,7 @@ export async function onRequestGet({ params, env, request }) {
   const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
-  const categoryUrl = `${siteUrl}/${post.category}.html`;
+  const categoryUrl = `${siteUrl}/${post.category}`;
   const editSeed = serializeForScript({
     id,
     category: post.category,
@@ -166,7 +166,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=0.093.03">
+  <link rel="stylesheet" href="/css/style.css?v=00.104.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -218,14 +218,14 @@ export async function onRequestGet({ params, env, request }) {
       </div>
     </div>
     <nav class="nav">
-      <a href="/contributors.html" data-i18n="nav.contributors">${escapeHtml(navContributors)}</a>
+      <a href="/contributors" data-i18n="nav.contributors">${escapeHtml(navContributors)}</a>
       <a href="/" data-i18n="nav.home">${escapeHtml(navHome)}</a>
       <a href="/latest" data-i18n="nav.latest">${escapeHtml(navLatest)}</a>
       <a href="/korea" data-i18n="nav.korea">${escapeHtml(navKorea)}</a>
       <a href="/apr" data-i18n="nav.apr">${escapeHtml(navApr)}</a>
       <a href="/wosm" data-i18n="nav.wosm">${escapeHtml(navWosm)}</a>
       <a href="/people" data-i18n="nav.people">${escapeHtml(navPeople)}</a>
-      <a href="/calendar.html">캘린더</a>
+      <a href="/calendar">캘린더</a>
       <a href="/glossary" data-i18n="nav.glossary">${escapeHtml(navGlossary)}</a>
     </nav>
   </header>
@@ -249,7 +249,7 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="post-page-back">
           <a href="javascript:history.back()" class="post-page-back-link">← 뒤로가기</a>
-          <a href="/${post.category}.html" class="post-page-back-link" style="margin-left:16px;">
+          <a href="/${post.category}" class="post-page-back-link" style="margin-left:16px;">
             <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;font-family: AliceDigitalLearning, sans-serif;">${cat.label}</span>
           </a>
         </div>
@@ -301,7 +301,7 @@ export async function onRequestGet({ params, env, request }) {
 
         <div class="pps-section">
           <p class="pps-label">섹션</p>
-          <a href="/${post.category}.html" class="pps-category" style="background:${cat.color};">${cat.label}</a>
+          <a href="/${post.category}" class="pps-category" style="background:${cat.color};">${cat.label}</a>
         </div>
 
         <div class="pps-section">
