@@ -89,6 +89,51 @@
 }
 .v3-login-btn:hover:not(:disabled) { background: var(--v3-primary-h); }
 .v3-login-btn:disabled { opacity: .6; cursor: not-allowed; }
+.v3-btn,
+.mkt-apply-btn,
+.v3-login-btn {
+  position: relative;
+  transition: transform .08s ease, box-shadow .16s ease, opacity .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
+}
+.v3-btn:active,
+.mkt-apply-btn:active,
+.v3-login-btn:active,
+.v3-btn.is-pressed,
+.mkt-apply-btn.is-pressed,
+.v3-login-btn.is-pressed {
+  transform: translateY(1px) scale(0.99);
+}
+.v3-btn.is-busy,
+.mkt-apply-btn.is-busy,
+.v3-login-btn.is-busy {
+  cursor: progress;
+  pointer-events: none;
+  opacity: 0.9;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12);
+}
+.v3-btn.is-done,
+.mkt-apply-btn.is-done,
+.v3-login-btn.is-done {
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+.v3-btn.is-busy::after,
+.mkt-apply-btn.is-busy::after,
+.v3-login-btn.is-busy::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  vertical-align: -2px;
+  animation: v3-btn-spin .7s linear infinite;
+}
+@keyframes v3-btn-spin {
+  to { transform: rotate(360deg); }
+}
 .v3-login-err {
   margin-top: 10px; font-size: 12.5px;
   color: var(--v3-danger); display: none;
