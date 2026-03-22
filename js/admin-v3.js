@@ -244,6 +244,39 @@
     // Analytics period
     document.getElementById('analytics-period').addEventListener('change', _loadAnalytics);
 
+    // Marketing period presets + date range
+    (function () {
+      var today = _kstToday();
+      var fromEl = document.getElementById('mkt-date-from');
+      var toEl   = document.getElementById('mkt-date-to');
+      if (!fromEl || !toEl) return;
+      toEl.value   = today;
+      toEl.max     = today;
+      fromEl.value = _shiftDate(today, -6);
+      fromEl.max   = today;
+      document.querySelectorAll('.mkt-preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          document.querySelectorAll('.mkt-preset-btn').forEach(function (b) { b.classList.remove('is-active'); });
+          btn.classList.add('is-active');
+          var days = parseInt(btn.dataset.days, 10) || 7;
+          var end   = _kstToday();
+          var start = _shiftDate(end, -(days - 1));
+          toEl.value   = end;
+          fromEl.value = start;
+          _loadMarketing();
+        });
+      });
+      document.getElementById('mkt-apply-btn').addEventListener('click', function () {
+        document.querySelectorAll('.mkt-preset-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        _loadMarketing();
+      });
+      [fromEl, toEl].forEach(function (input) {
+        input.addEventListener('change', function () {
+          document.querySelectorAll('.mkt-preset-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        });
+      });
+    }());
+
     // Confirm dialog
     document.getElementById('confirm-cancel-btn').addEventListener('click', function () {
       _closeConfirm(false);
@@ -1587,10 +1620,31 @@
     });
   }
 
+  function _kstToday() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  }
+
+  function _shiftDate(dateStr, offsetDays) {
+    var d = new Date(dateStr + 'T00:00:00+09:00');
+    d.setUTCDate(d.getUTCDate() + offsetDays);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  }
+
   function _loadMarketing() {
     var el = document.getElementById('marketing-body');
+    var fromEl = document.getElementById('mkt-date-from');
+    var toEl   = document.getElementById('mkt-date-to');
+    var today  = _kstToday();
+    var start  = (fromEl && fromEl.value) || _shiftDate(today, -6);
+    var end    = (toEl && toEl.value)   || today;
+    // Clamp max range to 180 days (client-side guard)
+    var startD = new Date(start + 'T00:00:00+09:00');
+    var endD   = new Date(end   + 'T00:00:00+09:00');
+    var diffDays = Math.round((endD - startD) / 86400000);
+    if (diffDays > 180) { start = _shiftDate(end, -180); if (fromEl) fromEl.value = start; }
+    if (startD > endD)  { var tmp = start; start = end; end = tmp; }
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/admin/marketing').then(function (data) {
+    _apiFetch('/api/admin/marketing?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end)).then(function (data) {
       var funnel = data.funnel || [];
       var utms   = data.utm_campaigns || [];
       var transitions = data.top_transitions || [];
