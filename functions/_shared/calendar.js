@@ -33,6 +33,7 @@ export async function ensureCalendarTable(env) {
   await ensureCalendarColumn(env, 'related_posts_json', 'TEXT');
   await ensureCalendarColumn(env, 'start_has_time', 'INTEGER DEFAULT 0');
   await ensureCalendarColumn(env, 'end_has_time', 'INTEGER DEFAULT 0');
+  await ensureCalendarColumn(env, 'target_groups', 'TEXT');
 }
 
 export function normalizeCalendarInput(body) {
@@ -57,6 +58,7 @@ export function normalizeCalendarInput(body) {
     body && body.end_time
   );
   const link_url = normalizeUrl(body && body.link_url);
+  const target_groups = normalizeTargetGroups(body && body.target_groups);
   const related_post_id = normalizeInteger(body && body.related_post_id);
   const related_posts = normalizeRelatedPosts(body && (body.related_posts || body.related_post_ids));
 
@@ -82,6 +84,7 @@ export function normalizeCalendarInput(body) {
     end_at: endValue.value || null,
     end_has_time: endValue.value ? (endValue.hasTime ? 1 : 0) : 0,
     link_url,
+    target_groups: JSON.stringify(target_groups),
   };
 }
 
@@ -108,6 +111,7 @@ export function normalizeCalendarRows(rows) {
       end_at: row.end_at || '',
       end_has_time: Number(row.end_has_time || 0) === 1,
       link_url: row.link_url || '',
+      target_groups: parseTargetGroups(row.target_groups),
       created_at: row.created_at || '',
       updated_at: row.updated_at || '',
     };
@@ -254,4 +258,26 @@ function parseRelatedPosts(value, row) {
     }];
   }
   return [];
+}
+
+function normalizeTargetGroups(value) {
+  const VALID = ['비버', '컵', '스카우트', '벤처', '로버', '지도자', '범스카우트', '훈련교수회'];
+  const source = Array.isArray(value) ? value : [];
+  const seen = new Set();
+  return source.filter(function (item) {
+    const s = String(item || '').trim();
+    if (!s || !VALID.includes(s) || seen.has(s)) return false;
+    seen.add(s);
+    return true;
+  });
+}
+
+function parseTargetGroups(value) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? normalizeTargetGroups(parsed) : [];
+  } catch (_) {
+    return [];
+  }
 }

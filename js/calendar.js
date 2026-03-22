@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  var KOR_TARGET_GROUPS = ['비버', '컵', '스카우트', '벤처', '로버', '지도자', '범스카우트', '훈련교수회'];
+
   var CATEGORY_META = {
     KOR: { label: 'KOR', color: '#0f8db3' },
     APR: { label: 'APR', color: '#ff5b5b' },
@@ -39,6 +41,9 @@
     isSaving: false,
     copy: null,
     collapsedRegions: {},
+    mapFilterDateFrom: '',
+    mapFilterDateTo: '',
+    targetGroups: [],
   };
 
   function init() {
@@ -202,6 +207,20 @@
         render();
       });
     }
+    var dateFrom = document.getElementById('calendar-map-date-from');
+    var dateTo = document.getElementById('calendar-map-date-to');
+    if (dateFrom) {
+      dateFrom.addEventListener('change', function () {
+        state.mapFilterDateFrom = dateFrom.value || '';
+        renderMapMarkers();
+      });
+    }
+    if (dateTo) {
+      dateTo.addEventListener('change', function () {
+        state.mapFilterDateTo = dateTo.value || '';
+        renderMapMarkers();
+      });
+    }
   }
 
   function bindModalControls() {
@@ -228,6 +247,14 @@
     if (editDelete) editDelete.addEventListener('click', deleteCalendarEvent);
     if (tagAdd) tagAdd.addEventListener('click', addModalTag);
     if (geoSearch) geoSearch.addEventListener('click', searchModalGeo);
+    var categoryInput = document.getElementById('calendar-modal-category-input');
+    if (categoryInput) {
+      categoryInput.addEventListener('change', function () {
+        var tgWrap = document.getElementById('calendar-modal-target-groups-wrap');
+        if (tgWrap) tgWrap.style.display = categoryInput.value === 'KOR' ? '' : 'none';
+        renderModalTargetGroups();
+      });
+    }
     if (relatedQuery) {
       relatedQuery.addEventListener('input', function () {
         if (state.relatedSearchTimer) clearTimeout(state.relatedSearchTimer);
@@ -267,7 +294,7 @@
     if (!window.L) return;
     var mapEl = document.getElementById('calendar-map');
     if (!mapEl) return;
-    state.map = L.map(mapEl, { scrollWheelZoom: true, worldCopyJump: true }).setView([20, 10], 2);
+    state.map = L.map(mapEl, { scrollWheelZoom: true, worldCopyJump: true, minZoom: 2 }).setView([20, 10], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap'
     }).addTo(state.map);
@@ -587,6 +614,13 @@
           return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
         }).join('') + '</div>'
       : '';
+    var targetGroupsHtml = '';
+    if (category === 'KOR' && item.target_groups && item.target_groups.length) {
+      targetGroupsHtml = '<div class="calendar-event-badges calendar-target-groups">' +
+        item.target_groups.map(function (g) {
+          return '<span class="calendar-target-chip">' + escape(g) + '</span>';
+        }).join('') + '</div>';
+    }
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
@@ -610,6 +644,7 @@
       originalTitle +
       (place ? '<p class="calendar-event-place">' + escape(place) + '</p>' : '') +
       tagHtml +
+      targetGroupsHtml +
       (linkActions ? '<div class="calendar-event-links">' + linkActions + '</div>' : '') +
     '</article>';
   }
@@ -634,6 +669,13 @@
           return '<span class="calendar-status-badge">' + escape(tag) + '</span>';
         }).join('') + '</div>'
       : '';
+    var targetGroupsHtml = '';
+    if (category === 'KOR' && item.target_groups && item.target_groups.length) {
+      targetGroupsHtml = '<div class="calendar-event-badges calendar-target-groups">' +
+        item.target_groups.map(function (g) {
+          return '<span class="calendar-target-chip">' + escape(g) + '</span>';
+        }).join('') + '</div>';
+    }
     var relatedLinks = '';
     (Array.isArray(item.related_posts) ? item.related_posts : []).forEach(function (related) {
       if (!related || !related.id) return;
@@ -658,6 +700,7 @@
       (address ? '<p class="calendar-event-address">' + escape(address) + '</p>' : '') +
       mapFrame +
       tagHtml +
+      targetGroupsHtml +
       (item.description ? '<p class="calendar-event-desc">' + escape(item.description) + '</p>' : '') +
       (relatedLinks ? '<div class="calendar-event-links">' + relatedLinks + '</div>' : '') +
       '<div class="calendar-detail-actions">' +
@@ -672,48 +715,106 @@
     if (state.mapLayer) state.map.removeLayer(state.mapLayer);
     state.mapLayer = L.layerGroup().addTo(state.map);
     var items = getMapItems();
+    renderMapResultsList(items);
     if (!items.length) return;
 
-    if (state.map.getZoom() <= 4) {
-      groupByCountry(items).sort(compareCountryGroupBySelectedSort).forEach(function (group) {
-        var groupCategory = getDominantCategory(group.items);
-        var marker = L.marker([group.lat, group.lng], {
-          icon: createCalendarMapBadgeIcon(group.items.length, groupCategory)
+    var zoom = state.map.getZoom();
+    var threshold = zoom <= 2 ? 30 : zoom <= 4 ? 10 : zoom <= 6 ? 3 : 0;
+
+    if (threshold > 0) {
+      clusterByProximity(items, threshold).forEach(function (cluster) {
+        if (cluster.items.length === 1) {
+          var item = cluster.items[0];
+          var category = normalizeCategory(item.event_category);
+          var marker = L.marker([item.latitude, item.longitude], {
+            icon: createCalendarMapBadgeIcon(1, category, true)
+          });
+          marker.bindPopup(
+            '<div class="calendar-map-popup">' +
+              '<strong><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></strong>' +
+              '<div>' + escape(formatEventTime(item)) + '</div>' +
+              '<div>' + escape(item.location_name || item.country_name || '') + '</div>' +
+            '</div>'
+          );
+          marker.addTo(state.mapLayer);
+        } else {
+          var groupCategory = getDominantCategory(cluster.items);
+          var marker = L.marker([cluster.lat, cluster.lng], {
+            icon: createCalendarMapBadgeIcon(cluster.items.length, groupCategory)
+          });
+          marker.bindPopup(
+            '<div class="calendar-map-popup">' +
+              '<strong>' + escape(cluster.items[0].country_name || cluster.items[0].location_name || '여러 지역') + ' 외 ' + (cluster.items.length - 1) + '개</strong>' +
+              '<ul>' + cluster.items.slice(0, 5).map(function (item) {
+                return '<li><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></li>';
+              }).join('') + (cluster.items.length > 5 ? '<li>…외 ' + (cluster.items.length - 5) + '개</li>' : '') + '</ul>' +
+            '</div>'
+          );
+          marker.addTo(state.mapLayer);
+        }
+      });
+    } else {
+      items.forEach(function (item) {
+        var category = normalizeCategory(item.event_category);
+        var marker = L.marker([item.latitude, item.longitude], {
+          icon: createCalendarMapBadgeIcon(1, category, true)
         });
         marker.bindPopup(
           '<div class="calendar-map-popup">' +
-            '<strong>' + escape(group.country_name || '기타 지역') + '</strong>' +
-            '<ul>' + group.items.map(function (item) {
-              return '<li><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></li>';
-            }).join('') + '</ul>' +
+            '<strong><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></strong>' +
+            '<div>' + escape(formatEventTime(item)) + '</div>' +
+            '<div>' + escape(item.location_name || item.country_name || '') + '</div>' +
           '</div>'
         );
         marker.addTo(state.mapLayer);
       });
+    }
+  }
+
+  function renderMapResultsList(items) {
+    var el = document.getElementById('calendar-map-results');
+    if (!el) return;
+    if (!items.length) {
+      el.innerHTML = '<div class="list-empty" style="padding:12px;">지도에 표시할 일정이 없습니다.</div>';
       return;
     }
-
-    items.forEach(function (item) {
-      var category = normalizeCategory(item.event_category);
-      var marker = L.marker([item.latitude, item.longitude], {
-        icon: createCalendarMapBadgeIcon(1, category, true)
+    var sorted = items.slice().sort(compareItemsBySelectedSort);
+    el.innerHTML = '<div class="calendar-map-results-head">' + sorted.length + '개 일정</div>' +
+      sorted.map(function (item) {
+        var status = getEventStatus(item);
+        var cat = normalizeCategory(item.event_category);
+        var title = item.title || item.title_original || '';
+        var when = formatCalendarShortRange(item);
+        var place = item.location_name || item.country_name || '';
+        return '<button type="button" class="calendar-map-result-item" data-calendar-map-detail="' + item.id + '">' +
+          '<span class="calendar-category-badge is-' + cat.toLowerCase() + '">' + cat + '</span>' +
+          '<span class="calendar-map-result-title">' + escape(title) + '</span>' +
+          (when ? '<span class="calendar-map-result-date">' + escape(when) + '</span>' : '') +
+          (place ? '<span class="calendar-map-result-place">' + escape(place) + '</span>' : '') +
+        '</button>';
+      }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('[data-calendar-map-detail]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var idValue = parseInt(btn.getAttribute('data-calendar-map-detail'), 10);
+        openDetail(findItem(idValue));
       });
-      marker.bindPopup(
-        '<div class="calendar-map-popup">' +
-          '<strong><button type="button" class="calendar-map-popup-link" data-calendar-map-detail="' + item.id + '">' + escape(item.title || item.title_original || '') + '</button></strong>' +
-          '<div>' + escape(formatEventTime(item)) + '</div>' +
-          '<div>' + escape(item.location_name || formatCalendarAddressDisplay(item.location_address || '') || item.country_name || '') + '</div>' +
-        '</div>'
-      );
-      marker.addTo(state.mapLayer);
     });
   }
 
   function getMapItems() {
+    var from = state.mapFilterDateFrom ? new Date(state.mapFilterDateFrom + 'T00:00:00+09:00') : null;
+    var to = state.mapFilterDateTo ? new Date(state.mapFilterDateTo + 'T23:59:59+09:00') : null;
     return getVisibleItems().filter(function (item) {
-      return getEventStatus(item).key !== 'finished' &&
-        Number.isFinite(Number(item.latitude)) &&
-        Number.isFinite(Number(item.longitude));
+      if (getEventStatus(item).key === 'finished') return false;
+      if (!Number.isFinite(Number(item.latitude)) || !Number.isFinite(Number(item.longitude))) return false;
+      if (from || to) {
+        var itemStart = parseDate(item.start_at);
+        var itemEnd = parseDate(item.end_at || item.start_at) || itemStart;
+        if (!itemStart) return false;
+        if (from && itemEnd < from) return false;
+        if (to && itemStart > to) return false;
+      }
+      return true;
     }).map(function (item) {
       return Object.assign({}, item, {
         latitude: Number(item.latitude),
@@ -750,6 +851,29 @@
       }
     });
     return best;
+  }
+
+  function clusterByProximity(items, thresholdDeg) {
+    var used = new Array(items.length).fill(false);
+    var clusters = [];
+    items.forEach(function (item, i) {
+      if (used[i]) return;
+      var cluster = [item];
+      used[i] = true;
+      for (var j = i + 1; j < items.length; j++) {
+        if (used[j]) continue;
+        var dLat = item.latitude - items[j].latitude;
+        var dLng = item.longitude - items[j].longitude;
+        if (Math.sqrt(dLat * dLat + dLng * dLng) <= thresholdDeg) {
+          cluster.push(items[j]);
+          used[j] = true;
+        }
+      }
+      var lat = cluster.reduce(function (s, c) { return s + c.latitude; }, 0) / cluster.length;
+      var lng = cluster.reduce(function (s, c) { return s + c.longitude; }, 0) / cluster.length;
+      clusters.push({ items: cluster, lat: lat, lng: lng });
+    });
+    return clusters;
   }
 
   function createCalendarMapBadgeIcon(count, category, isSingle) {
@@ -856,6 +980,7 @@
   function openEditor(item) {
     state.editingId = item && item.id ? item.id : null;
     state.tags = item && Array.isArray(item.event_tags) ? item.event_tags.slice() : [];
+    state.targetGroups = item && Array.isArray(item.target_groups) ? item.target_groups.slice() : [];
     state.relatedPosts = item && Array.isArray(item.related_posts) ? item.related_posts.slice() : [];
     state.relatedPost = state.relatedPosts[0] || null;
     setValue('calendar-edit-title', state.editingId ? '일정 수정' : '일정 추가');
@@ -881,6 +1006,9 @@
     setHtml('calendar-modal-related-post-results', '');
     renderModalTags();
     renderModalTagPresets();
+    renderModalTargetGroups();
+    var tgWrap = document.getElementById('calendar-modal-target-groups-wrap');
+    if (tgWrap) tgWrap.style.display = (valueOf('calendar-modal-category-input') === 'KOR') ? '' : 'none';
     renderModalRelatedPost();
     syncModalGeoMarker(item && item.latitude, item && item.longitude);
     var deleteBtn = document.getElementById('calendar-modal-delete-btn');
@@ -970,6 +1098,24 @@
         state.tags = state.tags.filter(function (tag) { return tag !== target; });
         renderModalTags();
         renderModalTagPresets();
+      });
+    });
+  }
+
+  function renderModalTargetGroups() {
+    var wrap = document.getElementById('calendar-modal-target-groups');
+    if (!wrap) return;
+    wrap.innerHTML = KOR_TARGET_GROUPS.map(function (g) {
+      var active = state.targetGroups.indexOf(g) >= 0 ? ' is-active' : '';
+      return '<button type="button" class="calendar-tag-chip calendar-tag-preset' + active + '" data-calendar-target-group="' + escape(g) + '"><span>' + escape(g) + '</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(wrap.querySelectorAll('[data-calendar-target-group]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var g = btn.getAttribute('data-calendar-target-group') || '';
+        var idx = state.targetGroups.indexOf(g);
+        if (idx >= 0) state.targetGroups.splice(idx, 1);
+        else state.targetGroups.push(g);
+        renderModalTargetGroups();
       });
     });
   }
@@ -1147,6 +1293,7 @@
       related_posts: state.relatedPosts.slice(),
       link_url: valueOf('calendar-modal-link-input'),
       description: valueOf('calendar-modal-description-input'),
+      target_groups: state.targetGroups.slice(),
     };
     if (!payload.title && !payload.title_original) {
       GW.showToast('행사명(국문) 또는 원문 제목을 입력해주세요', 'error');
@@ -1364,18 +1511,13 @@
 
   function syncCalendarFilters() {
     var tags = [];
-    var countries = [];
     state.items.forEach(function (item) {
       (Array.isArray(item.event_tags) ? item.event_tags : []).forEach(function (tag) {
         if (tags.indexOf(tag) < 0) tags.push(tag);
       });
-      var country = String(item.country_name || '').trim();
-      if (country && countries.indexOf(country) < 0) countries.push(country);
     });
     state.allMapTags = tags.slice();
-    state.allCountries = countries.sort();
     state.mapFilterTags = state.mapFilterTags.filter(function (item) { return tags.indexOf(item) >= 0; });
-    state.mapFilterCountries = state.mapFilterCountries.filter(function (item) { return countries.indexOf(item) >= 0; });
     state.mapFilterRegions = state.mapFilterRegions.filter(function (item) { return state.allRegions.indexOf(item) >= 0; });
     state.mapFilterStatuses = state.mapFilterStatuses.filter(function (item) { return state.allStatuses.indexOf(item) >= 0; });
   }
@@ -1383,13 +1525,6 @@
   function renderMapFilters() {
     renderFilterSelect('calendar-tag-filters', state.allMapTags, function (value) {
       toggleSelectedFilter(state.mapFilterTags, value, state.allMapTags);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-      renderCalendarBody();
-    });
-    renderFilterSelect('calendar-country-filters', state.allCountries, function (value) {
-      toggleSelectedFilter(state.mapFilterCountries, value, state.allCountries);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
@@ -1415,13 +1550,6 @@
     });
     renderSelectedFilters('calendar-tag-selected', state.mapFilterTags, function (value) {
       removeSelectedFilter(state.mapFilterTags, value);
-      renderMapFilters();
-      renderStatusLists();
-      renderMapMarkers();
-      renderCalendarBody();
-    }, false);
-    renderSelectedFilters('calendar-country-selected', state.mapFilterCountries, function (value) {
-      removeSelectedFilter(state.mapFilterCountries, value);
       renderMapFilters();
       renderStatusLists();
       renderMapMarkers();
@@ -1454,16 +1582,13 @@
       : ((Array.isArray(item.event_tags) && item.event_tags.length) ? item.event_tags.some(function (tag) {
           return state.mapFilterTags.indexOf(tag) >= 0;
         }) : false);
-    var countryAllowed = !state.mapFilterCountries.length
-      ? true
-      : state.mapFilterCountries.indexOf(String(item.country_name || '').trim()) >= 0;
     var regionAllowed = !state.mapFilterRegions.length
       ? true
       : state.mapFilterRegions.indexOf(normalizeCategory(item.event_category)) >= 0;
     var statusAllowed = !state.mapFilterStatuses.length
       ? true
       : state.mapFilterStatuses.indexOf(statusKey) >= 0;
-    return tagsAllowed && countryAllowed && regionAllowed && statusAllowed;
+    return tagsAllowed && regionAllowed && statusAllowed;
   }
 
   function renderFilterSelect(id, allItems, onChange, isCategory) {

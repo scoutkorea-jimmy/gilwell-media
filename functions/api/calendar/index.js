@@ -26,6 +26,7 @@ export async function onRequestGet({ env }) {
         c.end_at,
         c.end_has_time,
         c.link_url,
+        c.target_groups,
         c.created_at,
         c.updated_at
       FROM calendar_events c
@@ -55,11 +56,11 @@ export async function onRequestPost({ request, env }) {
     const row = await env.DB.prepare(`
       INSERT INTO calendar_events (
         title, title_original, event_category, event_tags, description, country_name, location_name, location_address,
-        latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, updated_at
+        latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, target_groups, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       RETURNING id, title, title_original, event_category, event_tags, description, country_name, location_name, location_address,
-        latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, created_at, updated_at
+        latitude, longitude, related_post_id, related_posts_json, start_at, start_has_time, end_at, end_has_time, link_url, target_groups, created_at, updated_at
     `).bind(
       normalized.title,
       normalized.title_original,
@@ -77,7 +78,8 @@ export async function onRequestPost({ request, env }) {
       normalized.start_has_time,
       normalized.end_at,
       normalized.end_has_time,
-      normalized.link_url
+      normalized.link_url,
+      normalized.target_groups
     ).first();
     return json({ item: normalizeCalendarRows([row])[0] }, 201);
   } catch (err) {
