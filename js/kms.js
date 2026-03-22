@@ -1187,194 +1187,206 @@
       // ────────────────────────────────────────────────────────
       {
         title: '05 · 버튼 (Buttons)',
-        note: '모든 버튼: border-radius:0 / 1px solid / uppercase / letter-spacing / AliceDigitalLearning. Primary(44px)와 Secondary(36px) 두 단계로 구분.',
+        note: '공통: border-radius:0 / 1px solid / uppercase / letter-spacing:0.12em / AliceDigitalLearning. 3단계: Primary 44px · Secondary 36px · Chip 26px.',
         html: [
-          // 규칙표
-          '<div class="kms-ds-rules">',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Primary 높이</span><span class="kms-ds-rule-v">44px</span><span class="kms-ds-rule-desc">--btn-height-primary · .submit-btn .write-btn .cancel-btn .btn-delete-soft .calendar-manage-btn</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Primary 폰트</span><span class="kms-ds-rule-v">11px</span><span class="kms-ds-rule-desc">AliceDigitalLearning · letter-spacing: 0.12em · uppercase · border-radius: 0 · 1px solid</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Secondary 높이</span><span class="kms-ds-rule-v">36px</span><span class="kms-ds-rule-desc">--btn-height-secondary · .calendar-view-btn .board-page-btn .calendar-today-btn</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Secondary 폰트</span><span class="kms-ds-rule-v">10px</span><span class="kms-ds-rule-desc">AliceDigitalLearning · letter-spacing: 0.12em · uppercase · border-radius: 0 · 1px solid</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">채움(filled)</span><span class="kms-ds-rule-v">bg #1f1f1f</span><span class="kms-ds-rule-desc">저장·확인 등 주 액션 — 검정 배경, 흰 텍스트</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Accent</span><span class="kms-ds-rule-v">bg #622599</span><span class="kms-ds-rule-desc">작성·등록 등 — 스카우팅 퍼플 배경</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">아웃라인</span><span class="kms-ds-rule-v">bg transparent</span><span class="kms-ds-rule-desc">취소·보조 액션 — 테두리만, 투명 배경</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">Danger</span><span class="kms-ds-rule-v">color #ff5655</span><span class="kms-ds-rule-desc">삭제 액션 — 빨간 테두리·텍스트, 투명 배경</span></div>',
-          '</div>',
-          // HTML 패턴
-          '<p class="kms-ds-note">HTML 패턴</p>',
-          '<pre class="kms-ds-code">' +
-          '&lt;!-- Primary --&gt;\n' +
-          '&lt;button class="submit-btn"&gt;저장하기&lt;/button&gt;\n' +
-          '&lt;button class="cancel-btn visible"&gt;취소&lt;/button&gt;\n' +
-          '&lt;button class="btn-delete-soft visible"&gt;삭제&lt;/button&gt;\n\n' +
-          '&lt;!-- Secondary --&gt;\n' +
-          '&lt;button class="calendar-view-btn"&gt;달력&lt;/button&gt;\n' +
-          '&lt;button class="board-page-btn active"&gt;2&lt;/button&gt;' +
-          '</pre>',
-          // 미리보기
-          '<p class="kms-ds-note">미리보기</p>',
-          '<div class="kms-ds-preview">',
-          '<p class="kms-ds-note">Primary 44px — .submit-btn / .write-btn / .calendar-manage-btn 계열</p>',
-          '<div class="kms-ds-row" style="margin-bottom:12px;flex-wrap:wrap">',
-          '<button style="' + btnFilled + '">저장하기</button>',
-          '<button style="' + btnAccent + '">새 게시글 작성</button>',
-          '<button style="' + btnOutline + '">취소</button>',
-          '<button style="' + btnDanger + '">삭제</button>',
-          '<button style="' + btnDisabled + '" disabled>비활성화</button>',
-          '</div>',
-          '<p class="kms-ds-note">Secondary 36px — .calendar-view-btn / .board-page-btn / .calendar-today-btn 계열</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
-          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">달력</button>',
-          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">목록</button>',
-          '<button style="' + btnSec + 'background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">지도 (활성)</button>',
-          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1</button>',
-          '<button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">2 (활성)</button>',
-          '<button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">3</button>',
-          '</div>',
-          '</div>',
+          '<table class="kms-ds-table">',
+          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
+          '<tbody>',
+          // Primary Filled
+          '<tr>',
+          '<td class="kms-ds-t-name">Primary · Filled<br>44px</td>',
+          '<td class="kms-ds-t-usage">.submit-btn<br>.write-btn<br>.calendar-manage-btn</td>',
+          '<td class="kms-ds-t-code">&lt;button class="submit-btn"&gt;저장하기&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnFilled + '">저장하기</button></td>',
+          '</tr>',
+          // Primary Accent
+          '<tr>',
+          '<td class="kms-ds-t-name">Primary · Accent<br>44px</td>',
+          '<td class="kms-ds-t-usage">.write-btn<br>(작성·등록 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="write-btn"&gt;새 게시글&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnAccent + '">새 게시글 작성</button></td>',
+          '</tr>',
+          // Primary Outline
+          '<tr>',
+          '<td class="kms-ds-t-name">Primary · Outline<br>44px</td>',
+          '<td class="kms-ds-t-usage">.cancel-btn.visible<br>(취소·보조 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="cancel-btn visible"&gt;취소&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnOutline + '">취소</button></td>',
+          '</tr>',
+          // Primary Danger
+          '<tr>',
+          '<td class="kms-ds-t-name">Primary · Danger<br>44px</td>',
+          '<td class="kms-ds-t-usage">.btn-delete-soft.visible<br>(삭제 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="btn-delete-soft visible"&gt;삭제&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnDanger + '">삭제</button></td>',
+          '</tr>',
+          // Primary Disabled
+          '<tr>',
+          '<td class="kms-ds-t-name">Primary · Disabled<br>44px</td>',
+          '<td class="kms-ds-t-usage">모든 Primary 계열<br>disabled 상태</td>',
+          '<td class="kms-ds-t-code">&lt;button class="submit-btn" disabled&gt;저장&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnDisabled + '" disabled>비활성화</button></td>',
+          '</tr>',
+          // Secondary Default
+          '<tr>',
+          '<td class="kms-ds-t-name">Secondary · Default<br>36px</td>',
+          '<td class="kms-ds-t-usage">.calendar-view-btn<br>.board-page-btn<br>.calendar-today-btn</td>',
+          '<td class="kms-ds-t-code">&lt;button class="calendar-view-btn"&gt;달력&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">달력</button><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">목록</button><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1</button></div></td>',
+          '</tr>',
+          // Secondary Active (filled)
+          '<tr>',
+          '<td class="kms-ds-t-name">Secondary · Active<br>36px</td>',
+          '<td class="kms-ds-t-usage">.board-page-btn.active<br>(현재 페이지·선택된 뷰)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="board-page-btn active"&gt;2&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">2 (활성)</button></td>',
+          '</tr>',
+          // Secondary Accent Active
+          '<tr>',
+          '<td class="kms-ds-t-name">Secondary · Accent<br>36px</td>',
+          '<td class="kms-ds-t-usage">.calendar-view-btn.active<br>(뷰 선택 강조)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="calendar-view-btn active"&gt;지도&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="' + btnSec + 'background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">지도 (활성)</button></td>',
+          '</tr>',
+          '</tbody>',
+          '</table>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
         title: '06 · 칩 & 배지 (Chips & Badges)',
-        note: '모두 동일 높이 26px (--chip-height). 비활성=테두리만, 활성=검정 채움. border-radius:0 / uppercase / letter-spacing:0.12em.',
+        note: '공통: 높이 26px (--chip-height) / border-radius:0 / 1px solid / 10px / uppercase / letter-spacing:0.12em. 비활성=테두리만, 활성=검정 채움.',
         html: [
-          // 규칙표
-          '<div class="kms-ds-rules">',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">높이</span><span class="kms-ds-rule-v">26px</span><span class="kms-ds-rule-desc">--chip-height · 모든 칩 공통</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">폰트</span><span class="kms-ds-rule-v">10px</span><span class="kms-ds-rule-desc">AliceDigitalLearning · letter-spacing: 0.12em · uppercase</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">형태</span><span class="kms-ds-rule-v">border-radius:0</span><span class="kms-ds-rule-desc">display:inline-flex · align-items:center · 1px solid</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">비활성</span><span class="kms-ds-rule-v">테두리만</span><span class="kms-ds-rule-desc">background:transparent · border-color:rgba(31,31,31,0.18)</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">활성</span><span class="kms-ds-rule-v">검정 채움</span><span class="kms-ds-rule-desc">background:#1f1f1f · color:#fff · border-color:#1f1f1f</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">클래스 목록</span><span class="kms-ds-rule-v">다수</span><span class="kms-ds-rule-desc">.filter-btn .tag-filter-btn .tag-pill .calendar-status-badge .calendar-target-chip .calendar-category-badge .post-kicker</span></div>',
-          '</div>',
-          // HTML 패턴
-          '<p class="kms-ds-note">HTML 패턴</p>',
-          '<pre class="kms-ds-code">' +
-          '&lt;span class="filter-btn active"&gt;전체&lt;/span&gt;\n' +
-          '&lt;span class="tag-pill"&gt;잼버리&lt;/span&gt;\n' +
-          '&lt;span class="calendar-status-badge is-upcoming"&gt;예정&lt;/span&gt;\n' +
-          '&lt;span class="calendar-target-chip"&gt;지도자&lt;/span&gt;\n' +
-          '&lt;span class="post-kicker tag-korea-kicker"&gt;한국스카우트&lt;/span&gt;' +
-          '</pre>',
-          // 미리보기
-          '<p class="kms-ds-note">미리보기</p>',
-          '<div class="kms-ds-preview">',
-          '<p class="kms-ds-note">아웃라인 칩 (.post-kicker + .tag-*-kicker)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:12px">',
-          '<span class="post-kicker tag-korea-kicker">한국스카우트</span>',
-          '<span class="post-kicker tag-apr-kicker">APR</span>',
-          '<span class="post-kicker tag-wosm-kicker">WOSM</span>',
-          '<span class="post-kicker tag-people-kicker">사람들</span>',
-          '<span class="post-kicker tag-latest-kicker">최신소식</span>',
-          '<span class="post-kicker tag-glossary-kicker">용어집</span>',
-          '<span class="post-kicker post-kicker-new">NEW</span>',
-          '</div>',
-          '<p class="kms-ds-note">행사 상태 배지 (.calendar-status-badge)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
-          '<span class="calendar-status-badge">훈련</span>',
-          '<span class="calendar-status-badge">잼버리</span>',
-          '<span class="calendar-status-badge is-upcoming">예정</span>',
-          '<span class="calendar-status-badge is-ongoing">진행 중</span>',
-          '<span class="calendar-status-badge is-finished">종료</span>',
-          '</div>',
-          '<p class="kms-ds-note">대상 칩 (.calendar-target-chip) / 지역 배지 (.calendar-category-badge)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
-          '<span class="calendar-target-chip">비버</span>',
-          '<span class="calendar-target-chip">컵스카우트</span>',
-          '<span class="calendar-target-chip">지도자</span>',
-          '<span class="calendar-category-badge is-kor">KOR</span>',
-          '<span class="calendar-category-badge is-apr">APR</span>',
-          '<span class="calendar-category-badge is-wosm">WOSM</span>',
-          '</div>',
-          '<p class="kms-ds-note">콘텐츠 필터칩 (.filter-btn) / 태그칩 (.tag-pill)</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap;margin-bottom:10px">',
-          '<button class="filter-btn">전체</button>',
-          '<button class="filter-btn active">훈련</button>',
-          '<button class="filter-btn">잼버리</button>',
-          '<span class="tag-pill active">훈련</span>',
-          '<span class="tag-pill">잼버리</span>',
-          '</div>',
-          '</div>',
+          '<table class="kms-ds-table">',
+          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
+          '<tbody>',
+          // 지역 키커
+          '<tr>',
+          '<td class="kms-ds-t-name">지역 키커<br>26px</td>',
+          '<td class="kms-ds-t-usage">.post-kicker<br>.tag-*-kicker<br>.post-kicker-new</td>',
+          '<td class="kms-ds-t-code">&lt;span class="post-kicker tag-korea-kicker"&gt;한국스카우트&lt;/span&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker tag-apr-kicker">APR</span><span class="post-kicker tag-wosm-kicker">WOSM</span><span class="post-kicker tag-people-kicker">사람들</span><span class="post-kicker tag-latest-kicker">최신소식</span><span class="post-kicker post-kicker-new">NEW</span></div></td>',
+          '</tr>',
+          // 행사 상태 배지
+          '<tr>',
+          '<td class="kms-ds-t-name">행사 상태<br>26px</td>',
+          '<td class="kms-ds-t-usage">.calendar-status-badge<br>.is-upcoming<br>.is-ongoing<br>.is-finished</td>',
+          '<td class="kms-ds-t-code">&lt;span class="calendar-status-badge is-upcoming"&gt;예정&lt;/span&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-status-badge">훈련</span><span class="calendar-status-badge is-upcoming">예정</span><span class="calendar-status-badge is-ongoing">진행 중</span><span class="calendar-status-badge is-finished">종료</span></div></td>',
+          '</tr>',
+          // 대상 칩
+          '<tr>',
+          '<td class="kms-ds-t-name">대상 칩<br>26px</td>',
+          '<td class="kms-ds-t-usage">.calendar-target-chip<br>(행사 대상 표시)</td>',
+          '<td class="kms-ds-t-code">&lt;span class="calendar-target-chip"&gt;지도자&lt;/span&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-target-chip">비버</span><span class="calendar-target-chip">컵스카우트</span><span class="calendar-target-chip">지도자</span><span class="calendar-target-chip">로버</span></div></td>',
+          '</tr>',
+          // 지역 배지
+          '<tr>',
+          '<td class="kms-ds-t-name">지역 배지<br>26px</td>',
+          '<td class="kms-ds-t-usage">.calendar-category-badge<br>.is-kor / .is-apr / .is-wosm</td>',
+          '<td class="kms-ds-t-code">&lt;span class="calendar-category-badge is-kor"&gt;KOR&lt;/span&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-category-badge is-kor">KOR</span><span class="calendar-category-badge is-apr">APR</span><span class="calendar-category-badge is-wosm">WOSM</span></div></td>',
+          '</tr>',
+          // 필터 칩
+          '<tr>',
+          '<td class="kms-ds-t-name">필터 칩<br>26px</td>',
+          '<td class="kms-ds-t-usage">.filter-btn<br>.filter-btn.active<br>.tag-filter-btn</td>',
+          '<td class="kms-ds-t-code">&lt;button class="filter-btn active"&gt;전체&lt;/button&gt;\n&lt;button class="filter-btn"&gt;훈련&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><button class="filter-btn active">전체</button><button class="filter-btn">훈련</button><button class="filter-btn">잼버리</button></div></td>',
+          '</tr>',
+          // 태그 칩
+          '<tr>',
+          '<td class="kms-ds-t-name">태그 칩<br>26px</td>',
+          '<td class="kms-ds-t-usage">.tag-pill<br>.tag-pill.active</td>',
+          '<td class="kms-ds-t-code">&lt;span class="tag-pill active"&gt;훈련&lt;/span&gt;\n&lt;span class="tag-pill"&gt;잼버리&lt;/span&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="tag-pill active">훈련</span><span class="tag-pill">잼버리</span><span class="tag-pill">스카우트</span></div></td>',
+          '</tr>',
+          '</tbody>',
+          '</table>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
         title: '07 · 폼 요소 (Form Elements)',
-        note: '.form-group 구조: label(10px uppercase) + input/select/textarea. 1px 테두리, border-radius:0, focus시 border-color:#1f1f1f.',
+        note: '래퍼 .form-group: label(10px uppercase) + 요소. 공통: 높이 40px / border-radius:0 / 1px solid var(--border) / focus시 border-color:#1f1f1f / 14px AliceDigitalLearning.',
         html: [
-          // 규칙표
-          '<div class="kms-ds-rules">',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">높이</span><span class="kms-ds-rule-v">40px</span><span class="kms-ds-rule-desc">input · select 공통 (textarea 제외)</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">테두리</span><span class="kms-ds-rule-v">1px solid</span><span class="kms-ds-rule-desc">border-color: var(--border) → focus시 #1f1f1f</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">border-radius</span><span class="kms-ds-rule-v">0</span><span class="kms-ds-rule-desc">직각 — 브랜드 원칙</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">폰트</span><span class="kms-ds-rule-v">14px</span><span class="kms-ds-rule-desc">AliceDigitalLearning · color: var(--ink)</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">래퍼</span><span class="kms-ds-rule-v">.form-group</span><span class="kms-ds-rule-desc">label + input/select/textarea를 감싸는 wrapper</span></div>',
-          '</div>',
-          // HTML 패턴
-          '<p class="kms-ds-note">HTML 패턴</p>',
-          '<pre class="kms-ds-code">' +
-          '&lt;div class="form-group"&gt;\n' +
-          '  &lt;label&gt;제목 (TEXT INPUT)&lt;/label&gt;\n' +
-          '  &lt;input type="text" placeholder="게시글 제목을 입력하세요" /&gt;\n' +
-          '&lt;/div&gt;\n\n' +
-          '&lt;div class="form-group"&gt;\n' +
-          '  &lt;label&gt;카테고리 (SELECT)&lt;/label&gt;\n' +
-          '  &lt;select&gt;&lt;option&gt;한국스카우트&lt;/option&gt;&lt;/select&gt;\n' +
-          '&lt;/div&gt;' +
-          '</pre>',
-          // 미리보기
-          '<p class="kms-ds-note">미리보기</p>',
-          '<div class="kms-ds-preview">',
-          '<div class="kms-ds-form-grid">',
-          '<div class="form-group"><label>제목 (TEXT INPUT)</label><input type="text" placeholder="게시글 제목을 입력하세요" /></div>',
-          '<div class="form-group"><label>카테고리 (SELECT)</label><select><option>한국스카우트</option><option>APR</option><option>WOSM</option><option>사람들</option></select></div>',
-          '<div class="form-group"><label>날짜 (DATE INPUT)</label><input type="date" /></div>',
-          '<div class="form-group"><label>비활성화</label><input type="text" placeholder="비활성화 입력창" disabled /></div>',
-          '</div>',
-          '<div class="form-group" style="max-width:480px"><label>본문 요약 (TEXTAREA)</label><textarea placeholder="요약 내용을 입력하세요" style="min-height:80px"></textarea></div>',
-          '</div>',
+          '<table class="kms-ds-table">',
+          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
+          '<tbody>',
+          // Text Input
+          '<tr>',
+          '<td class="kms-ds-t-name">Text Input<br>40px</td>',
+          '<td class="kms-ds-t-usage">.form-group input[type=text]<br>(제목, 검색어 등)</td>',
+          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;제목 (TEXT INPUT)&lt;/label&gt;\n  &lt;input type="text"&gt;\n&lt;/div&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>제목 (TEXT INPUT)</label><input type="text" placeholder="게시글 제목을 입력하세요" /></div></td>',
+          '</tr>',
+          // Select
+          '<tr>',
+          '<td class="kms-ds-t-name">Select<br>40px</td>',
+          '<td class="kms-ds-t-usage">.form-group select<br>(카테고리, 정렬 등)</td>',
+          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;카테고리 (SELECT)&lt;/label&gt;\n  &lt;select&gt;...&lt;/select&gt;\n&lt;/div&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>카테고리 (SELECT)</label><select><option>한국스카우트</option><option>APR</option><option>WOSM</option><option>사람들</option></select></div></td>',
+          '</tr>',
+          // Date Input
+          '<tr>',
+          '<td class="kms-ds-t-name">Date Input<br>40px</td>',
+          '<td class="kms-ds-t-usage">.form-group input[type=date]<br>(날짜 지정)</td>',
+          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;날짜 (DATE INPUT)&lt;/label&gt;\n  &lt;input type="date"&gt;\n&lt;/div&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>날짜 (DATE INPUT)</label><input type="date" /></div></td>',
+          '</tr>',
+          // Textarea
+          '<tr>',
+          '<td class="kms-ds-t-name">Textarea<br>auto</td>',
+          '<td class="kms-ds-t-usage">.form-group textarea<br>(본문, 요약 등)</td>',
+          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;본문 요약 (TEXTAREA)&lt;/label&gt;\n  &lt;textarea&gt;&lt;/textarea&gt;\n&lt;/div&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>본문 요약 (TEXTAREA)</label><textarea placeholder="요약 내용을 입력하세요" style="min-height:70px"></textarea></div></td>',
+          '</tr>',
+          // Disabled
+          '<tr>',
+          '<td class="kms-ds-t-name">Disabled<br>40px</td>',
+          '<td class="kms-ds-t-usage">input[disabled]<br>select[disabled]<br>(비활성 상태)</td>',
+          '<td class="kms-ds-t-code">&lt;input type="text" disabled&gt;</td>',
+          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>비활성화</label><input type="text" placeholder="비활성화 입력창" disabled /></div></td>',
+          '</tr>',
+          '</tbody>',
+          '</table>',
         ].join(''),
       },
 
       // ────────────────────────────────────────────────────────
       {
         title: '08 · 아이콘 버튼 (Icon Buttons)',
-        note: '테이블 행·인라인 액션에 사용. 28×28px, 아이콘 16px, border:none, hover시 배경색 변화.',
+        note: '공통: 28×28px / border:none / background:transparent / 아이콘 16px SVG. hover시 배경색 변화. 텍스트 레이블 없이 aria-label 필수.',
         html: [
-          // 규칙표
-          '<div class="kms-ds-rules">',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">크기</span><span class="kms-ds-rule-v">28×28px</span><span class="kms-ds-rule-desc">.btn-icon 공통 — width/height 고정</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">아이콘</span><span class="kms-ds-rule-v">16px</span><span class="kms-ds-rule-desc">SVG 인라인 또는 폰트 아이콘</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">border</span><span class="kms-ds-rule-v">none</span><span class="kms-ds-rule-desc">테두리 없음 · background:transparent</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">hover</span><span class="kms-ds-rule-v">배경색 변화</span><span class="kms-ds-rule-desc">.btn-icon-danger hover → danger 배경 · .btn-icon-success → success 배경</span></div>',
-          '<div class="kms-ds-rule"><span class="kms-ds-rule-k">클래스</span><span class="kms-ds-rule-v">다수</span><span class="kms-ds-rule-desc">.btn-icon .btn-icon-danger .btn-icon-success .btn-edit .btn-delete</span></div>',
-          '</div>',
-          // HTML 패턴
-          '<p class="kms-ds-note">HTML 패턴</p>',
-          '<pre class="kms-ds-code">' +
-          '&lt;!-- 기본 아이콘 버튼 --&gt;\n' +
-          '&lt;button class="btn-icon" aria-label="편집"&gt;\n' +
-          '  &lt;svg ...&gt;...&lt;/svg&gt;\n' +
-          '&lt;/button&gt;\n\n' +
-          '&lt;!-- 위험 액션 (삭제) --&gt;\n' +
-          '&lt;button class="btn-icon btn-icon-danger" aria-label="삭제"&gt;\n' +
-          '  &lt;svg ...&gt;...&lt;/svg&gt;\n' +
-          '&lt;/button&gt;' +
-          '</pre>',
-          // 미리보기
-          '<p class="kms-ds-note">미리보기</p>',
-          '<div class="kms-ds-preview">',
-          '<div class="kms-ds-row" style="gap:8px;flex-wrap:wrap;align-items:center">',
-          // 기본 아이콘 버튼 (인라인 스타일로 모사)
-          '<button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#1f1f1f" aria-label="편집"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>',
-          '<button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#ff5655" aria-label="삭제"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>',
-          '<button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#248737" aria-label="확인"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>',
-          '<span style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;color:rgba(31,31,31,0.58);letter-spacing:0.08em">기본 / 삭제(danger) / 확인(success)</span>',
-          '</div>',
-          '</div>',
+          '<table class="kms-ds-table">',
+          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
+          '<tbody>',
+          // 기본
+          '<tr>',
+          '<td class="kms-ds-t-name">기본<br>28×28px</td>',
+          '<td class="kms-ds-t-usage">.btn-icon<br>.btn-edit<br>(편집·보기 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="btn-icon" aria-label="편집"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#1f1f1f" aria-label="편집"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>',
+          '</tr>',
+          // Danger
+          '<tr>',
+          '<td class="kms-ds-t-name">Danger<br>28×28px</td>',
+          '<td class="kms-ds-t-usage">.btn-icon.btn-icon-danger<br>.btn-delete<br>(삭제 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="btn-icon btn-icon-danger" aria-label="삭제"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#ff5655" aria-label="삭제"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></td>',
+          '</tr>',
+          // Success
+          '<tr>',
+          '<td class="kms-ds-t-name">Success<br>28×28px</td>',
+          '<td class="kms-ds-t-usage">.btn-icon.btn-icon-success<br>(확인·완료 액션)</td>',
+          '<td class="kms-ds-t-code">&lt;button class="btn-icon btn-icon-success" aria-label="확인"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
+          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#248737" aria-label="확인"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button></td>',
+          '</tr>',
+          '</tbody>',
+          '</table>',
         ].join(''),
       },
 

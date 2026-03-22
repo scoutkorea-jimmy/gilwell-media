@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.029.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 Elements 섹션 표 형식으로 전환 + 브랜드 border-radius:0 원칙 준수.",
+      "type": "Refactor",
+      "scope": "admin",
+      "items": [
+        "Elements 05~08(버튼·칩&배지·폼·아이콘버튼): 기존 규칙표+코드블록+미리보기 3부 구조 → | 구분 | 활용처 | 코드 | 미리보기 | 4열 테이블로 통합.",
+        "각 변형(variant)이 한 행에 구분·클래스명·HTML 스니펫·실제 렌더링을 함께 표시.",
+        ".kms-ds-table / .kms-ds-t-name / .kms-ds-t-usage / .kms-ds-t-code / .kms-ds-t-preview CSS 추가.",
+        "디자인 가이드 자체 border-radius 브랜드 원칙 준수: .kms-ds-section(14px→0) · .kms-ds-swatch(10px→0) · .kms-ds-swatch-color(8px→0) · .kms-ds-gradient-item(10px→0) · .kms-ds-spacing-item(8px→0) · .kms-ds-bp-badge(4px→0) · .kms-ds-note-top(→0).",
+        "Admin v03.028.00 → 03.029.00."
+      ]
+    },
+    {
       "version": "03.028.00",
       "date": "2026-03-22",
       "summary": "KMS 탭별 독립 URL 지원 및 디자인 탭 사이드바 목차 추가.",
