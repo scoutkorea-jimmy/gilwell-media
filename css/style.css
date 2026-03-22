@@ -1147,6 +1147,33 @@ p { margin-bottom: 6px; }
 .tag-wosm  { background: var(--tag-wosm);  }
 .tag-people{ background: var(--tag-people);}
 
+/* ── Post kicker (글머리 태그 — outlined style) ── */
+.post-kicker {
+  display:        inline-block;
+  font-family:    AliceDigitalLearning, sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding:        2px 7px;
+  border:         1px solid #3f3f3f;
+  color:          #3f3f3f;
+  font-weight:    500;
+  border-radius:  0;
+}
+
+.post-kicker-new {
+  background:  #111111;
+  color:       #fff;
+  border-color:#111111;
+}
+
+.tag-korea-kicker   { color: #0094B4; border-color: #0094B4; }
+.tag-apr-kicker     { color: #FF5655; border-color: #FF5655; }
+.tag-wosm-kicker    { color: #248737; border-color: #248737; }
+.tag-people-kicker  { color: #8A5A2B; border-color: #8A5A2B; }
+.tag-latest-kicker  { color: #111111; border-color: #111111; }
+.tag-glossary-kicker{ color: #5D6F2B; border-color: #5D6F2B; }
+
 /* ════════════════════════════════════════════════════════════
    HERO SECTION (index.html)
    ════════════════════════════════════════════════════════════ */

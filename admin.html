@@ -288,10 +288,14 @@
                     </select>
                   </div>
                   <div class="v3-form-group">
-                    <label class="v3-label" for="w-tag">글머리 태그 <span class="v3-label-opt">선택</span></label>
-                    <select class="v3-select" id="w-tag">
-                      <option value="">없음</option>
-                    </select>
+                    <label class="v3-label">글머리 태그 <span class="v3-label-opt">복수 선택</span></label>
+                    <div id="w-tag-pills" class="v3-tag-pill-group">
+                      <button type="button" class="v3-tag-pill active" data-tag="">없음</button>
+                    </div>
+                    <div class="v3-tag-add-row" style="margin-top:6px;display:flex;gap:6px;">
+                      <input class="v3-input v3-input-sm" type="text" id="w-tag-new-input" placeholder="새 태그 추가" maxlength="30" style="flex:1;" />
+                      <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-tag-new-btn">추가</button>
+                    </div>
                   </div>
                 </div>
                 <div class="v3-form-group">
@@ -358,9 +362,16 @@
                   <input class="v3-input" type="text" id="w-location-name" placeholder="서울 잠실체육관" />
                 </div>
                 <div class="v3-form-group">
-                  <label class="v3-label" for="w-location-addr">주소</label>
-                  <input class="v3-input" type="text" id="w-location-addr" placeholder="서울특별시 송파구…" />
+                  <label class="v3-label" for="w-location-addr">주소 <span class="v3-label-opt">OpenStreetMap 기준</span></label>
+                  <div style="display:flex;gap:6px;">
+                    <input class="v3-input" type="text" id="w-location-addr" placeholder="서울특별시 송파구…" style="flex:1;" />
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="w-location-check-btn">지도 확인</button>
+                  </div>
                 </div>
+              </div>
+              <div id="w-location-map-preview" style="display:none;margin-top:8px;border:1px solid var(--v3-border);overflow:hidden;">
+                <iframe id="w-location-map-frame" style="width:100%;height:220px;border:0;display:block;" loading="lazy"></iframe>
+                <div id="w-location-map-status" style="font-size:11px;padding:4px 8px;color:var(--v3-text-l);"></div>
               </div>
               <div class="v3-form-group v3-mt-12">
                 <label class="v3-label" for="w-special">특집 그룹 <span class="v3-label-opt">선택</span></label>
@@ -459,8 +470,8 @@
           <div class="v3-toolbar-right">
             <!-- 정렬 -->
             <select class="v3-filter-select" id="cal-sort">
-              <option value="desc">날짜 최신순 ↓</option>
-              <option value="asc">날짜 오래된순 ↑</option>
+              <option value="asc">행사일 임박순 ↑</option>
+              <option value="desc">행사일 먼 순 ↓</option>
             </select>
             <span id="cal-count" style="font-size:12px;color:var(--v3-text-m);"></span>
           </div>

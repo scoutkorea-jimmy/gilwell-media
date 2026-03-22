@@ -805,6 +805,35 @@ document.addEventListener('keydown', function (event) {
   }
 });
 
+// ── OpenStreetMap location init ──────────────────────────
+(function _initPostPageLocationMaps() {
+  var frames = document.querySelectorAll('.post-location-map-frame[data-location-addr]');
+  frames.forEach(function (frame) {
+    var addr  = frame.getAttribute('data-location-addr') || '';
+    var title = frame.getAttribute('data-location-title') || addr;
+    if (!addr) return;
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
+      headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        if (!results || !results.length) {
+          frame.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:12px;">지도에서 위치를 찾을 수 없습니다</div>';
+          return;
+        }
+        var loc = results[0];
+        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+        var d = 0.01;
+        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+        var src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
+        frame.innerHTML = '<iframe class="post-location-map" src="' + src + '" title="' + GW.escapeHtml(title) + ' 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+      })
+      .catch(function () {
+        frame.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:12px;">지도를 불러오지 못했습니다</div>';
+      });
+  });
+}());
+
 var _postLikeBtn = document.getElementById('post-like-btn');
 if (_postLikeBtn) {
   _postLikeBtn.addEventListener('click', function() {
