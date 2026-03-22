@@ -5703,10 +5703,11 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 .kms-ds-table {
   width: 100%;
-  min-width: 1320px;
+  min-width: 0;
   border-collapse: separate;
-  border-spacing: 0;
+  border-spacing: 0 12px;
   table-layout: fixed;
+  background: transparent;
 }
 .kms-ds-table th {
   padding: 11px 14px;
@@ -5722,26 +5723,36 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-right: 1px solid var(--kms-border);
   border-bottom: 1px solid var(--kms-border);
 }
-.kms-ds-table th:last-child { border-right: none; }
-.kms-ds-table.is-reference th:nth-child(1) { width: 19%; }
-.kms-ds-table.is-reference th:nth-child(2) { width: 27%; }
-.kms-ds-table.is-reference th:nth-child(3) { width: 30%; }
-.kms-ds-table.is-reference th:nth-child(4) {
-  width: 24%;
-  text-align: center;
+.kms-ds-table thead,
+.kms-ds-table tbody {
+  display: block;
 }
-.kms-ds-table.is-compact {
-  min-width: 980px;
+.kms-ds-table thead tr,
+.kms-ds-table tbody tr {
+  display: grid;
+  align-items: stretch;
 }
-.kms-ds-table.is-compact th:nth-child(1) { width: 24%; }
-.kms-ds-table.is-compact th:nth-child(2) { width: 34%; }
-.kms-ds-table.is-compact th:nth-child(3) {
-  width: 42%;
-  text-align: center;
+.kms-ds-table.is-reference thead tr,
+.kms-ds-table.is-reference tbody tr {
+  grid-template-columns: minmax(160px, 1.05fr) minmax(220px, 1.35fr) minmax(240px, 1.45fr) minmax(190px, 1fr);
+}
+.kms-ds-table.is-compact thead tr,
+.kms-ds-table.is-compact tbody tr {
+  grid-template-columns: minmax(180px, 1.05fr) minmax(260px, 1.35fr) minmax(260px, 1.25fr);
+}
+.kms-ds-table thead tr {
+  margin-bottom: 8px;
+}
+.kms-ds-table tbody tr {
+  margin-bottom: 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--kms-surface);
+  box-shadow: 0 10px 24px rgba(31,31,31,0.05);
 }
 .kms-ds-table td {
-  padding: 14px 14px 15px;
-  border-bottom: 1px solid var(--kms-border);
+  padding: 16px;
   border-right: 1px solid var(--kms-border);
   vertical-align: top;
   font-family: AliceDigitalLearning, sans-serif;
@@ -5754,9 +5765,10 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   overflow-wrap: break-word;
 }
 .kms-ds-table td:last-child { border-right: none; }
-.kms-ds-table tr:last-child td { border-bottom: none; }
-.kms-ds-table tbody tr:nth-child(even) { background: rgba(252, 250, 247, 0.72); }
-.kms-ds-table tbody tr:hover { background: rgba(246, 241, 235, 0.9); }
+.kms-ds-table tbody tr:hover {
+  background: rgba(246, 241, 235, 0.9);
+  box-shadow: 0 14px 30px rgba(31,31,31,0.08);
+}
 .kms-ds-table.is-reference td:first-child {
   background: rgba(92,42,157,0.03);
 }
@@ -5818,13 +5830,15 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-height: 100%;
 }
 .kms-ds-table .kms-ds-usage-block {
-  justify-content: center;
+  justify-content: flex-start;
 }
 .kms-ds-table .kms-ds-code-block {
   width: 100%;
-  min-width: 320px;
+  min-width: 0;
+  min-height: 100%;
   padding: 12px 14px;
   border-radius: 8px;
   background: #1e1e2e;
@@ -5845,8 +5859,8 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  min-height: 96px;
-  min-width: 190px;
+  min-height: 100%;
+  min-width: 0;
   padding: 14px;
   border: 1px solid rgba(31,31,31,0.08);
   border-radius: 8px;
@@ -5901,17 +5915,21 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 
 @media (max-width: 1180px) {
-  .kms-ds-table.is-reference {
-    min-width: 1160px;
+  .kms-ds-table {
+    border-spacing: 0 10px;
   }
-  .kms-ds-table.is-compact {
-    min-width: 900px;
+  .kms-ds-table.is-reference thead tr,
+  .kms-ds-table.is-reference tbody tr,
+  .kms-ds-table.is-compact thead tr,
+  .kms-ds-table.is-compact tbody tr {
+    grid-template-columns: minmax(140px, 1fr) minmax(190px, 1.2fr) minmax(220px, 1.25fr) minmax(160px, .9fr);
+  }
+  .kms-ds-table.is-compact thead tr,
+  .kms-ds-table.is-compact tbody tr {
+    grid-template-columns: minmax(150px, .9fr) minmax(220px, 1.25fr) minmax(220px, 1.1fr);
   }
   .kms-ds-table th,
   .kms-ds-table td {
-    padding: 10px 10px;
-  }
-  .kms-ds-table .kms-ds-code-block {
-    min-width: 280px;
+    padding: 12px;
   }
 }
