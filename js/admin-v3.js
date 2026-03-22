@@ -1970,7 +1970,7 @@
       var href = target.getAttribute('data-href') || '';
       if (href) window.open(href, '_blank', 'noopener,noreferrer');
     });
-    _bindMarketingPanZoom(shell);
+    if (shell.classList.contains('marketing-flow-shell')) _bindMarketingPanZoom(shell);
   }
 
   function _bindMarketingPanZoom(shell) {
