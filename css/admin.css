@@ -14,9 +14,12 @@
   --kms-accent-bg: rgba(92, 42, 157, 0.07);
   --kms-header-h:  56px;
   --kms-sidebar-w: 268px;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
   background: var(--kms-bg);
   color: var(--kms-ink);
-  min-height: 100vh;
 }
 
 /* ── 로그인 화면 ─────────────────────────────────────────── */
@@ -115,13 +118,13 @@
 .kms-screen {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ── 헤더 ───────────────────────────────────────────────── */
 .kms-header {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
   display: flex;
   align-items: center;
@@ -266,7 +269,7 @@
 .kms-layout {
   display: flex;
   flex: 1;
-  min-height: 0;
+  overflow: hidden;
   position: relative;
 }
 
@@ -277,9 +280,7 @@
   border-right: 1px solid var(--kms-border);
   background: var(--kms-surface);
   overflow-y: auto;
-  position: sticky;
-  top: var(--kms-header-h);
-  height: calc(100vh - var(--kms-header-h));
+  height: 100%;
 }
 
 .kms-sidebar-inner {
@@ -419,6 +420,7 @@
 .kms-main {
   flex: 1;
   min-width: 0;
+  height: 100%;
   overflow-y: auto;
 }
 
