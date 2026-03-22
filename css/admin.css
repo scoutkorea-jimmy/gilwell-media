@@ -221,6 +221,39 @@
   gap: 8px;
 }
 
+.kms-release-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(92,42,157,0.18);
+  background: linear-gradient(90deg, rgba(92,42,157,0.10), rgba(92,42,157,0.04));
+  color: #3e235f;
+}
+
+.kms-release-note strong {
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #5c2a9d;
+}
+
+.kms-release-note span {
+  font-size: 13px;
+  color: #5b544c;
+}
+
+.kms-release-note code {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid rgba(92,42,157,0.18);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.75);
+  font-size: 11px;
+  color: #5c2a9d;
+  font-family: 'JetBrains Mono', monospace;
+}
+
 .kms-mode-switch {
   display: flex;
   padding: 3px;
