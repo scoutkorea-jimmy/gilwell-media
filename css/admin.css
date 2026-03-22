@@ -1126,14 +1126,147 @@ mark.kms-highlight {
 .kms-ds-swatch-label { font-size: 12px; color: var(--kms-ink); font-weight: 600; }
 .kms-ds-swatch-hex { font-size: 10px; color: var(--kms-muted); font-family: 'JetBrains Mono', monospace; }
 
-/* toast previews in design tab */
-.kms-ds-body .gw-toast {
-  position: static;
-  transform: none;
-  opacity: 1;
-  pointer-events: none;
-  max-width: 420px;
-  margin: 0;
+/* 노트 텍스트 */
+.kms-ds-note {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--kms-muted);
+  line-height: 1.5;
+}
+.kms-ds-note-top {
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--kms-surface2);
+  border-left: 2px solid var(--kms-accent);
+  border-radius: 0 4px 4px 0;
+}
+
+/* 타이포그래피 행 */
+.kms-ds-type-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--kms-border);
+}
+.kms-ds-type-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.kms-ds-type-meta {
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--kms-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 그라디언트 그리드 */
+.kms-ds-gradient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.kms-ds-gradient-item {
+  border: 1px solid var(--kms-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--kms-surface2);
+}
+.kms-ds-gradient-bar {
+  height: 52px;
+  width: 100%;
+}
+.kms-ds-gradient-item .kms-ds-swatch-info {
+  padding: 8px 10px;
+}
+
+/* 간격 그리드 */
+.kms-ds-spacing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.kms-ds-spacing-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--kms-border);
+  border-radius: 8px;
+  background: var(--kms-surface2);
+}
+.kms-ds-spacing-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--kms-accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 브레이크포인트 배지 */
+.kms-ds-bp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px solid var(--kms-border);
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--kms-muted);
+  background: var(--kms-surface2);
+}
+
+/* 폼 요소 — site의 .form-group이 KMS context에서도 보이도록 */
+.kms-ds-preview .form-group {
+  margin-bottom: 0;
+}
+.kms-ds-preview .form-group label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+  margin-bottom: 6px;
+  font-family: AliceDigitalLearning, sans-serif;
+}
+.kms-ds-preview .form-group input,
+.kms-ds-preview .form-group select,
+.kms-ds-preview .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(31,31,31,0.18);
+  background: #fff;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 13px;
+  color: #1f1f1f;
+  outline: none;
+  box-sizing: border-box;
+  border-radius: 0;
+  transition: border-color .15s;
+}
+.kms-ds-preview .form-group input:focus,
+.kms-ds-preview .form-group select:focus,
+.kms-ds-preview .form-group textarea:focus {
+  border-color: #1f1f1f;
+}
+.kms-ds-preview .form-group input:disabled { opacity: 0.4; }
+
+/* 필터 버튼 — site .filter-btn 재현 */
+.kms-ds-preview .filter-btn {
+  display: inline-flex;
+  align-items: center;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 1px solid rgba(31,31,31,0.18);
+  background: transparent;
+  color: rgba(31,31,31,0.58);
+  cursor: pointer;
+}
+.kms-ds-preview .filter-btn.active,
+.kms-ds-preview .filter-btn:hover {
+  background: #1f1f1f;
+  color: #fff;
+  border-color: #1f1f1f;
 }
 
 /* ════════════════════════════════════════════════════════════
