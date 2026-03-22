@@ -703,14 +703,14 @@ function renderPostLocationSection(post) {
   if (!locationAddress) return '';
   const locationName = String(post && post.location_name || '').trim();
   const mapTitle = locationName || locationAddress;
-  const mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
+  // Map is loaded async by post-page.js via Nominatim (OpenStreetMap)
   return `<details class="post-location-section" open>
     <summary>위치 정보 보기</summary>
     <div class="post-location-body">
       ${locationName ? `<div class="post-location-name">${escapeHtml(locationName)}</div>` : ''}
       <div class="post-location-address">${escapeHtml(locationAddress)}</div>
-      <div class="post-location-map-frame">
-        <iframe class="post-location-map" src="${mapUrl}" title="${escapeHtml(mapTitle)} 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="post-location-map-frame" data-location-addr="${escapeHtml(locationAddress)}" data-location-title="${escapeHtml(mapTitle)}">
+        <div class="post-location-map-loading" style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:13px;">지도를 불러오는 중…</div>
       </div>
     </div>
   </details>`;

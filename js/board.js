@@ -389,6 +389,7 @@
       self._closePost();
     });
     GW.initContentGalleries(inner);
+    _initLocationMap(inner);
   };
 
   Board.prototype._closePost = function () {
@@ -415,17 +416,45 @@
     if (!locationAddress) return '';
     var locationName = post && post.location_name ? String(post.location_name).trim() : '';
     var mapTitle = locationName || locationAddress;
-    var mapUrl = 'https://www.google.com/maps?q=' + encodeURIComponent(locationAddress) + '&output=embed';
+    // Map is loaded async via _initLocationMap() after the modal renders
     return '<details class="post-location-section" open>' +
       '<summary>위치 정보 보기</summary>' +
       '<div class="post-location-body">' +
         (locationName ? '<div class="post-location-name">' + GW.escapeHtml(locationName) + '</div>' : '') +
         '<div class="post-location-address">' + GW.escapeHtml(locationAddress) + '</div>' +
-        '<div class="post-location-map-frame">' +
-          '<iframe class="post-location-map" src="' + mapUrl + '" title="' + GW.escapeHtml(mapTitle) + ' 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' +
+        '<div class="post-location-map-frame" data-location-addr="' + GW.escapeHtml(locationAddress) + '" data-location-title="' + GW.escapeHtml(mapTitle) + '">' +
+          '<div class="post-location-map-loading" style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:13px;">지도를 불러오는 중…</div>' +
         '</div>' +
       '</div>' +
     '</details>';
+  }
+
+  function _initLocationMap(container) {
+    var mapFrames = container.querySelectorAll('.post-location-map-frame[data-location-addr]');
+    mapFrames.forEach(function (frame) {
+      var addr  = frame.getAttribute('data-location-addr') || '';
+      var title = frame.getAttribute('data-location-title') || addr;
+      if (!addr) return;
+      fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
+        headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (results) {
+          if (!results || !results.length) {
+            frame.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:12px;">지도에서 위치를 찾을 수 없습니다</div>';
+            return;
+          }
+          var loc = results[0];
+          var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+          var d = 0.01;
+          var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+          var src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
+          frame.innerHTML = '<iframe class="post-location-map" src="' + src + '" title="' + GW.escapeHtml(title) + ' 지도" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+        })
+        .catch(function () {
+          frame.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:12px;">지도를 불러오지 못했습니다</div>';
+        });
+    });
   }
 
   function parseGalleryImages(raw) {
@@ -609,16 +638,23 @@
           '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
         '</div>' +
         '<details class="location-form-toggle" id="board-location-toggle">' +
-          '<summary>위치 정보 추가</summary>' +
+          '<summary>위치 정보 추가 (OpenStreetMap)</summary>' +
           '<div class="location-form-fields">' +
             '<div class="form-group">' +
-              '<label for="board-write-location-name">위치 이름</label>' +
+              '<label for="board-write-location-name">위치 이름 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">내가 지정하는 이름</span></label>' +
               '<input type="text" id="board-write-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />' +
             '</div>' +
             '<div class="form-group">' +
-              '<label for="board-write-location-address">주소</label>' +
-              '<input type="text" id="board-write-location-address" placeholder="예: 강원특별자치도 고성군 토성면 ..." maxlength="300" />' +
-              '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>' +
+              '<label for="board-write-location-address">주소 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">OpenStreetMap 기준 실주소</span></label>' +
+              '<div style="display:flex;gap:8px;align-items:flex-start;">' +
+                '<input type="text" id="board-write-location-address" placeholder="예: 강원도 고성군 토성면 ..." maxlength="300" style="flex:1;" />' +
+                '<button type="button" id="board-location-check-btn" style="white-space:nowrap;padding:9px 12px;border:1px solid var(--border);background:var(--bg);font-family:AliceDigitalLearning,sans-serif;font-size:11px;cursor:pointer;">지도 확인</button>' +
+              '</div>' +
+              '<p style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 게재 전 반드시 지도 확인을 눌러 위치를 검증하세요.</p>' +
+            '</div>' +
+            '<div id="board-location-map-preview" style="display:none;margin-top:8px;border:1px solid var(--border);overflow:hidden;">' +
+              '<iframe id="board-location-map-frame" style="width:100%;height:200px;border:0;display:block;" loading="lazy"></iframe>' +
+              '<div id="board-location-map-status" style="font-size:10px;padding:4px 8px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;"></div>' +
             '</div>' +
           '</div>' +
         '</details>' +
@@ -649,6 +685,15 @@
         event.preventDefault();
         self._addWriteTag();
       }
+    });
+
+    // Location map check button
+    document.getElementById('board-location-check-btn').addEventListener('click', function () {
+      self._checkLocationAddress();
+    });
+    document.getElementById('board-write-location-address').addEventListener('input', function () {
+      var prev = document.getElementById('board-location-map-preview');
+      if (prev) prev.style.display = 'none';
     });
     document.getElementById('board-write-savedraft').addEventListener('click', function () {
       var title    = (document.getElementById('board-write-title-input') || {}).value || '';
@@ -776,6 +821,44 @@
       })
       .catch(function (err) {
         GW.showToast(err && err.message ? err.message : '태그를 추가하지 못했습니다', 'error');
+      });
+  };
+
+  // ── Location address validation (OpenStreetMap / Nominatim) ──
+  Board.prototype._checkLocationAddress = function () {
+    var addr = (document.getElementById('board-write-location-address') || {}).value || '';
+    addr = addr.trim();
+    if (!addr) { GW.showToast('주소를 입력하세요', 'error'); return; }
+    var btn    = document.getElementById('board-location-check-btn');
+    var prev   = document.getElementById('board-location-map-preview');
+    var frame  = document.getElementById('board-location-map-frame');
+    var status = document.getElementById('board-location-map-status');
+    btn.disabled = true;
+    btn.textContent = '검색 중…';
+    prev.style.display = 'none';
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
+      headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        btn.disabled = false;
+        btn.textContent = '지도 확인';
+        if (!results || !results.length) {
+          GW.showToast('주소를 지도에서 찾을 수 없습니다. 다른 주소를 사용해보세요.', 'error');
+          return;
+        }
+        var loc = results[0];
+        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+        var d = 0.01;
+        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+        frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
+        status.textContent = '✓ ' + (loc.display_name || addr);
+        prev.style.display = 'block';
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = '지도 확인';
+        GW.showToast('지도 검색 중 오류가 발생했습니다', 'error');
       });
   };
 

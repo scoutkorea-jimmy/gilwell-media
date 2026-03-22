@@ -44,8 +44,9 @@
   // Settings
   var _heroPostIds   = [];
   var _heroInterval  = 3000;
-  var _tagSettings   = {};
-  var _tagInlineEdit = null;
+  var _tagSettings      = {};
+  var _selectedWriteTags = [];
+  var _tagInlineEdit    = null;
   var _siteMeta      = {};
   var _contributors  = [];
   var _editors       = [];
@@ -144,6 +145,16 @@
     document.getElementById('w-metatag-add-btn').addEventListener('click', _addMetaTag);
     document.getElementById('w-metatag-input').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); _addMetaTag(); }
+    });
+
+    // Location map preview (OpenStreetMap via Nominatim)
+    document.getElementById('w-location-check-btn').addEventListener('click', function () {
+      _checkWriteLocation();
+    });
+    document.getElementById('w-location-addr').addEventListener('input', function () {
+      // Hide preview when address changes after validation
+      var prev = document.getElementById('w-location-map-preview');
+      if (prev) prev.style.display = 'none';
     });
 
     // Related posts search
@@ -625,13 +636,16 @@
     document.getElementById('w-title').value      = '';
     document.getElementById('w-subtitle').value   = '';
     document.getElementById('w-cat').value        = 'korea';
-    document.getElementById('w-tag').value        = '';
+    _selectedWriteTags = [];
+    _renderWriteTagPills(document.getElementById('w-cat').value);
     document.getElementById('w-author').value     = '';
     document.getElementById('w-date').value       = _kstNow();
     document.getElementById('w-youtube').value    = '';
     document.getElementById('w-cover-caption').value = '';
     document.getElementById('w-location-name').value = '';
     document.getElementById('w-location-addr').value = '';
+    var _locPrev = document.getElementById('w-location-map-preview');
+    if (_locPrev) { _locPrev.style.display = 'none'; document.getElementById('w-location-map-frame').src = ''; }
     document.getElementById('w-special').value   = '';
     document.getElementById('w-published').checked = false;
     document.getElementById('w-featured').checked  = false;
@@ -677,12 +691,17 @@
         document.getElementById('w-title').value       = p.title || '';
         document.getElementById('w-subtitle').value    = p.subtitle || '';
         document.getElementById('w-cat').value         = p.category || 'korea';
-        document.getElementById('w-tag').value         = p.tag || '';
+        _selectedWriteTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
+        _renderWriteTagPills(p.category || 'korea');
         document.getElementById('w-author').value      = p.author || '';
         document.getElementById('w-youtube').value     = p.youtube_url || '';
         document.getElementById('w-cover-caption').value = p.image_caption || '';
         document.getElementById('w-location-name').value = p.location_name || '';
         document.getElementById('w-location-addr').value = p.location_address || '';
+        // Auto-preview map if address exists
+        if (p.location_address) {
+          setTimeout(function () { _checkWriteLocation(); }, 400);
+        }
         document.getElementById('w-special').value    = p.special_feature || '';
         document.getElementById('w-published').checked = !!p.published;
         document.getElementById('w-featured').checked  = !!p.featured;
@@ -747,7 +766,7 @@
         title:            title,
         subtitle:         document.getElementById('w-subtitle').value.trim(),
         category:         document.getElementById('w-cat').value,
-        tag:              document.getElementById('w-tag').value,
+        tag:              _selectedWriteTags.join(','),
         author:           document.getElementById('w-author').value.trim(),
         content:          content,
         youtube_url:      document.getElementById('w-youtube').value.trim(),
@@ -881,6 +900,44 @@
   }
   V3._removeMetaTag = function (i) { _metaTags.splice(i, 1); _renderMetaTags(); };
 
+  /* ── Location map (OpenStreetMap / Nominatim) ── */
+  function _checkWriteLocation() {
+    var addr = document.getElementById('w-location-addr').value.trim();
+    if (!addr) { GW.showToast('주소를 입력하세요', 'error'); return; }
+    var btn  = document.getElementById('w-location-check-btn');
+    var prev = document.getElementById('w-location-map-preview');
+    var frame = document.getElementById('w-location-map-frame');
+    var status = document.getElementById('w-location-map-status');
+    btn.disabled = true;
+    btn.textContent = '검색 중…';
+    status.textContent = '';
+    prev.style.display = 'none';
+    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
+      headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        btn.disabled = false;
+        btn.textContent = '지도 확인';
+        if (!results || !results.length) {
+          GW.showToast('주소를 지도에서 찾을 수 없습니다. 다른 주소로 시도해보세요.', 'error');
+          return;
+        }
+        var loc = results[0];
+        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+        var d = 0.01;
+        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+        frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
+        status.textContent = '✓ ' + (loc.display_name || addr);
+        prev.style.display = 'block';
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.textContent = '지도 확인';
+        GW.showToast('지도 검색 중 오류가 발생했습니다', 'error');
+      });
+  }
+
   /* ── Related posts ── */
   function _searchRelated(q) {
     var results = document.getElementById('w-related-results');
@@ -921,24 +978,83 @@
   function _loadTagSettings() {
     GW.apiFetch('/api/settings/tags').then(function (data) {
       _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
-      _populateTagDropdown(document.getElementById('w-cat').value);
+      _renderWriteTagPills(document.getElementById('w-cat').value);
     }).catch(function () {});
 
     document.getElementById('w-cat').addEventListener('change', function () {
-      _populateTagDropdown(this.value);
+      _renderWriteTagPills(this.value);
+    });
+
+    var newBtn   = document.getElementById('w-tag-new-btn');
+    var newInput = document.getElementById('w-tag-new-input');
+    if (newBtn) {
+      newBtn.addEventListener('click', function () { _addWriteTagFromInput(); });
+    }
+    if (newInput) {
+      newInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); _addWriteTagFromInput(); }
+      });
+    }
+  }
+
+  function _renderWriteTagPills(cat) {
+    var container = document.getElementById('w-tag-pills');
+    if (!container) return;
+    var tags = _getCategoryTags(_tagSettings, cat);
+    // Preserve only selected tags that still exist in the new category
+    _selectedWriteTags = _selectedWriteTags.filter(function (t) { return tags.indexOf(t) >= 0; });
+    var html = '<button type="button" class="v3-tag-pill' + (!_selectedWriteTags.length ? ' active' : '') + '" data-tag="">없음</button>';
+    tags.forEach(function (t) {
+      var label = typeof t === 'string' ? t : (t.label || t.value || '');
+      var value = typeof t === 'string' ? t : (t.value || t.label || '');
+      var active = _selectedWriteTags.indexOf(value) >= 0 ? ' active' : '';
+      html += '<button type="button" class="v3-tag-pill' + active + '" data-tag="' + GW.escapeHtml(value) + '">' + GW.escapeHtml(label) + '</button>';
+    });
+    container.innerHTML = html;
+    container.querySelectorAll('.v3-tag-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var val = btn.dataset.tag || '';
+        if (val === '') {
+          _selectedWriteTags = [];
+        } else {
+          var idx = _selectedWriteTags.indexOf(val);
+          if (idx >= 0) _selectedWriteTags.splice(idx, 1);
+          else _selectedWriteTags.push(val);
+        }
+        _syncWriteTagPills();
+      });
     });
   }
 
-  function _populateTagDropdown(cat) {
-    var sel = document.getElementById('w-tag');
-    var current = sel.value;
-    var tags = _getCategoryTags(_tagSettings, cat);
-    sel.innerHTML = '<option value="">없음</option>' + tags.map(function (t) {
-      var label = typeof t === 'string' ? t : (t.label || t.value || t);
-      var value = typeof t === 'string' ? t : (t.value || t.label || t);
-      return '<option value="' + GW.escapeHtml(value) + '">' + GW.escapeHtml(label) + '</option>';
-    }).join('');
-    sel.value = current;
+  function _syncWriteTagPills() {
+    var container = document.getElementById('w-tag-pills');
+    if (!container) return;
+    container.querySelectorAll('.v3-tag-pill').forEach(function (btn) {
+      var t = btn.dataset.tag || '';
+      btn.classList.toggle('active', t === '' ? _selectedWriteTags.length === 0 : _selectedWriteTags.indexOf(t) >= 0);
+    });
+  }
+
+  function _addWriteTagFromInput() {
+    var input = document.getElementById('w-tag-new-input');
+    var value = (input && input.value || '').trim();
+    if (!value) { GW.showToast('태그명을 입력해주세요', 'error'); return; }
+    var cat = document.getElementById('w-cat').value;
+    GW.addManagedTagToCategory(value, cat)
+      .then(function (result) {
+        _tagSettings = {}; // force reload
+        return GW.apiFetch('/api/settings/tags').then(function (data) {
+          _tagSettings = (GW.normalizeTagSettings ? GW.normalizeTagSettings(data) : data) || {};
+          var selectedTag = result && result.selectedTag ? result.selectedTag : value;
+          if (_selectedWriteTags.indexOf(selectedTag) < 0) _selectedWriteTags.push(selectedTag);
+          _renderWriteTagPills(cat);
+          if (input) input.value = '';
+          GW.showToast(result && result.created ? '태그를 추가하고 선택했습니다' : '이미 있는 태그를 선택했습니다', 'success');
+        });
+      })
+      .catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '태그 추가 실패', 'error');
+      });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1010,7 +1126,7 @@
         document.getElementById('cal-filter-status').value = 'all';
         document.getElementById('cal-filter-from').value   = '';
         document.getElementById('cal-filter-to').value     = '';
-        document.getElementById('cal-sort').value          = 'desc';
+        document.getElementById('cal-sort').value          = 'asc';
         _renderCalList();
       });
     }
