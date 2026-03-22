@@ -424,6 +424,15 @@
 .kms-tree-sub { padding-left: 18px; }
 .kms-tree-sub2 { padding-left: 32px; }
 
+.kms-section-group-label {
+  padding: 12px 10px 4px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+}
+
 /* ── 메인 영역 ──────────────────────────────────────────── */
 .kms-main {
   flex: 1;

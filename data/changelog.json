@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.028.00",
+      "date": "2026-03-22",
+      "summary": "KMS 탭별 독립 URL 지원 및 디자인 탭 사이드바 목차 추가.",
+      "type": "Feature",
+      "scope": "admin",
+      "items": [
+        "/kms/function · /kms/api · /kms/version · /kms/design 각 탭 전용 URL 라우팅 (_redirects 200 rewrite).",
+        "탭 클릭 시 history.pushState()로 URL 동기화, 브라우저 뒤로/앞으로 지원.",
+        "직접 URL 접근 시 해당 탭으로 자동 이동 (window.location.pathname 감지).",
+        "디자인 탭 사이드바에 FOUNDATION / ELEMENTS / APPLICATION 그룹 구분 + 섹션 목차 표시.",
+        "Admin v03.027.00 → 03.028.00."
+      ]
+    },
+    {
       "version": "03.027.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 3-레이어 구조로 전면 재설계 — Foundation / Elements / Application.",

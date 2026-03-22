@@ -1,3 +1,7 @@
+/kms/function /kms 200
+/kms/api /kms 200
+/kms/version /kms 200
+/kms/design /kms 200
 /index.html / 301
 /korea.html /korea 301
 /apr.html /apr 301

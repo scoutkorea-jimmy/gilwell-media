@@ -419,7 +419,15 @@
     }
     updateVersionDisplay();
     setMode('read');
-    setTab('docs');
+    var pathTab = _tabFromPath(window.location.pathname);
+    // 초기 URL을 표준화 — /kms 접근 시 /kms/function 으로 교체
+    var canonPath = TAB_PATHS[pathTab] || '/kms/function';
+    if (window.location.pathname !== canonPath) {
+      history.replaceState({ tab: pathTab }, '', canonPath);
+    } else {
+      history.replaceState({ tab: pathTab }, '', window.location.href);
+    }
+    setTab(pathTab, true);
   }
 
   function showLogin(message) {
@@ -502,6 +510,12 @@
       });
     }
 
+    // 브라우저 뒤로/앞으로 버튼
+    window.addEventListener('popstate', function (e) {
+      var tab = (e.state && e.state.tab) ? e.state.tab : _tabFromPath(window.location.pathname);
+      setTab(tab, true);
+    });
+
     // Changelog 범위 필터
     document.querySelectorAll('[data-cl-scope]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -514,8 +528,16 @@
     });
   }
 
+  // ── 탭 ↔ URL 매핑 ─────────────────────────────────────────────
+  var TAB_PATHS = { docs: '/kms/function', api: '/kms/api', changelog: '/kms/version', design: '/kms/design' };
+
+  function _tabFromPath(pathname) {
+    var map = { '/kms/function': 'docs', '/kms/api': 'api', '/kms/version': 'changelog', '/kms/design': 'design' };
+    return map[pathname] || 'docs';
+  }
+
   // ── 탭 시스템 ─────────────────────────────────────────────────
-  function setTab(tab) {
+  function setTab(tab, skipPush) {
     _state.tab = tab;
     var panels = ['docs', 'api', 'changelog', 'design'];
     panels.forEach(function (id) {
@@ -527,6 +549,13 @@
       btn.classList.toggle('is-active', isActive);
       btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
+    // URL 동기화
+    if (!skipPush) {
+      var newPath = TAB_PATHS[tab] || '/kms/function';
+      if (window.location.pathname !== newPath) {
+        history.pushState({ tab: tab }, '', newPath);
+      }
+    }
     // 모드 스위치 / 저장 버튼: 기능정의서 탭에서만 표시
     var modeSwitchEl = document.getElementById('kms-mode-switch');
     var saveBtn = document.getElementById('kms-save-btn');
@@ -536,7 +565,7 @@
     // 탭 전환 시 사이드바 섹션 목록을 해당 탭에 맞게 업데이트
     if (tab === 'api') renderApiSectionList();
     else if (tab === 'changelog') clearSectionList();
-    else if (tab === 'design') { clearSectionList(); renderDesignSystem(); }
+    else if (tab === 'design') { renderDesignSystem(); renderDesignSectionList(); }
     else renderSectionList(_state.docContent);
   }
 
@@ -805,6 +834,37 @@
   function clearSectionList() {
     var list = document.getElementById('kms-section-list');
     if (list) list.innerHTML = '<div class="kms-list-empty">버전기록 탭에서는 목차가 제공되지 않습니다.</div>';
+  }
+
+  function renderDesignSectionList() {
+    var list = document.getElementById('kms-section-list');
+    if (!list) return;
+    // sections 배열은 renderDesignSystem() 내부에 정의되어 있으므로
+    // DOM에 렌더된 요소의 id를 직접 수집한다
+    var container = document.getElementById('kms-tab-design');
+    if (!container) return;
+    var html = [];
+    container.querySelectorAll('.kms-ds-layer-header, .kms-ds-section').forEach(function (el) {
+      if (el.classList.contains('kms-ds-layer-header')) {
+        var strong = el.querySelector('strong');
+        html.push('<div class="kms-section-group-label">' + GW.escapeHtml(strong ? strong.textContent : '') + '</div>');
+      } else {
+        var titleEl = el.querySelector('.kms-ds-section-title');
+        if (!titleEl || !el.id) return;
+        html.push(
+          '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(el.id) + '">' +
+            '<span class="kms-section-title">' + GW.escapeHtml(titleEl.textContent) + '</span>' +
+          '</button>'
+        );
+      }
+    });
+    list.innerHTML = html.join('');
+    list.querySelectorAll('[data-kms-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = document.getElementById(btn.getAttribute('data-kms-target'));
+        if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeSidebar(); }
+      });
+    });
   }
 
   function extractSections(content) {
@@ -1743,7 +1803,8 @@
       if (sec._layer) {
         return '<div class="kms-ds-layer-header"><strong>' + GW.escapeHtml(sec.title) + '</strong><span>' + GW.escapeHtml(sec.sub) + '</span></div>';
       }
-      return '<section class="kms-ds-section">' +
+      var secId = 'kms-ds-' + slugify(sec.title);
+      return '<section class="kms-ds-section" id="' + GW.escapeHtml(secId) + '">' +
         '<h3 class="kms-ds-section-title">' + GW.escapeHtml(sec.title) + '</h3>' +
         (sec.note ? '<p class="kms-ds-note kms-ds-note-top">' + GW.escapeHtml(sec.note) + '</p>' : '') +
         '<div class="kms-ds-preview">' + sec.html + '</div>' +
