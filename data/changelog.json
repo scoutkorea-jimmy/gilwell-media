@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.027.00",
+      "date": "2026-03-22",
+      "summary": "KMS 디자인 시스템 3-레이어 구조로 전면 재설계 — Foundation / Elements / Application.",
+      "type": "Feature",
+      "scope": "admin",
+      "items": [
+        "Foundation(01~04): 색상 토큰·타이포그래피·간격&레이아웃·그라디언트.",
+        "Elements(05~08): 버튼·칩&배지·폼·아이콘버튼 — 각 섹션에 규칙표 + HTML 패턴 코드블록 + 미리보기 3부 구조 적용.",
+        "Application(09~21): 게시글카드·캘린더카드·헤더·히어로·티커·홈레이아웃·로딩·검색·모달·토스트·푸터·용어집·유틸리티.",
+        "레이어 구분선(.kms-ds-layer-header), 규칙표(.kms-ds-rules), 코드블록(.kms-ds-code) CSS 추가.",
+        "Admin v03.026.00 → 03.027.00."
+      ]
+    },
+    {
       "version": "03.026.00",
       "date": "2026-03-22",
       "summary": "KMS 디자인 시스템 섹션 구조 정리 — 중복 제거, 번호 재정렬 (22개 섹션).",
