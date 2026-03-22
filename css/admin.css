@@ -2139,6 +2139,33 @@ body.admin-page #marketing-transitions.analytics-list {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+/* ── 고객 여정 흐름 줌 버튼 ─────────────────────── */
+.marketing-flow-zoom-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.marketing-flow-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  padding: 0 12px;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.marketing-flow-zoom-btn:hover {
+  background: var(--black);
+  border-color: var(--black);
+  color: var(--white);
+}
 .marketing-expand-btn {
   border: 1px solid var(--border);
   background: var(--bg);

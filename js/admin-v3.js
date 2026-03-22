@@ -1870,7 +1870,13 @@
       '</g>';
     }).join('');
 
-    el.innerHTML = '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div>';
+    el.innerHTML =
+      '<div class="marketing-flow-zoom-bar">' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="out">−</button>' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="reset">100%</button>' +
+        '<button type="button" class="marketing-flow-zoom-btn" data-pz="in">+</button>' +
+      '</div>' +
+      '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div>';
     _bindMarketingHoverTips(el);
   }
 
@@ -1988,18 +1994,23 @@
       svg.style.transform = 'translate(' + pz.x + 'px,' + pz.y + 'px) scale(' + pz.zoom + ')';
     }
 
-    shell.addEventListener('wheel', function (e) {
-      e.preventDefault();
-      var step = e.deltaY < 0 ? 0.12 : -0.12;
-      var newZoom = Math.max(0.25, Math.min(5, Number((pz.zoom + step).toFixed(3))));
-      var bounds = shell.getBoundingClientRect();
-      var cx = e.clientX - bounds.left;
-      var cy = e.clientY - bounds.top;
-      pz.x = cx - (cx - pz.x) * (newZoom / pz.zoom);
-      pz.y = cy - (cy - pz.y) * (newZoom / pz.zoom);
-      pz.zoom = newZoom;
+    function adjustZoom(delta) {
+      pz.zoom = Math.max(0.25, Math.min(5, Number((pz.zoom + delta).toFixed(3))));
       applyTransform();
-    }, { passive: false });
+    }
+
+    // 버튼 줌 (shell의 부모 wrap에서 버튼 찾기)
+    var wrap = shell.parentNode;
+    if (wrap) {
+      wrap.querySelectorAll('[data-pz]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var action = btn.getAttribute('data-pz');
+          if (action === 'in')    adjustZoom(0.2);
+          else if (action === 'out')   adjustZoom(-0.2);
+          else if (action === 'reset') { pz.zoom = 1; pz.x = 0; pz.y = 0; applyTransform(); }
+        });
+      });
+    }
 
     shell.addEventListener('mousedown', function (e) {
       if (e.button !== 0) return;
@@ -2027,10 +2038,6 @@
       setTimeout(function () { shell._pzHasDragged = false; }, 0);
     });
 
-    shell.addEventListener('dblclick', function () {
-      pz.zoom = 1; pz.x = 0; pz.y = 0;
-      applyTransform();
-    });
   }
 
   function _marketingStageColor(stage) {
