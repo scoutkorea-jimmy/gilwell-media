@@ -912,7 +912,7 @@
     document.querySelectorAll('.admin-build-version').forEach(function (el) { el.textContent = adminVer; });
     setText('kms-ver-site', siteVer);
     setText('kms-build-version', siteVer);
-    setText('kms-release-note-version', 'Admin ' + adminVer + ' · 표 카드 구조 반영본');
+    setText('kms-release-note-version', 'Admin ' + adminVer + ' · 표 문서형 정리 반영본');
   }
 
   // ── API 가이드 렌더링 ──────────────────────────────────────────
@@ -1876,55 +1876,44 @@
 
   function enhanceDesignSystemTables(root) {
     if (!root) return;
-    root.querySelectorAll('.kms-ds-table-wrap').forEach(function (wrap) {
-      if (wrap.querySelector('.kms-ds-card-list')) return;
-      var table = wrap.querySelector('.kms-ds-table');
-      if (!table) return;
+    root.querySelectorAll('.kms-ds-table').forEach(function (table) {
       var headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
         return String(th.textContent || '').trim();
       });
-      var isReference = headers.length === 4;
-      var isCompact = headers.length === 3;
-      var list = document.createElement('div');
-      list.className = 'kms-ds-card-list ' + (isReference ? 'is-reference' : 'is-compact');
+      table.classList.toggle('is-reference', headers.length === 4);
+      table.classList.toggle('is-compact', headers.length === 3);
+      if (!table.querySelector('colgroup')) {
+        var colgroup = document.createElement('colgroup');
+        headers.forEach(function () {
+          colgroup.appendChild(document.createElement('col'));
+        });
+        table.insertBefore(colgroup, table.firstChild);
+      }
 
       table.querySelectorAll('tbody tr').forEach(function (row) {
-        var card = document.createElement('article');
-        card.className = 'kms-ds-card';
-
         Array.from(row.children).forEach(function (cell, index) {
           var label = headers[index] || '';
-          var section = document.createElement('section');
-          var sectionClass = 'kms-ds-card-cell';
-
-          if (cell.classList.contains('kms-ds-t-name')) sectionClass += ' is-name';
-          else if (cell.classList.contains('kms-ds-t-usage')) sectionClass += ' is-usage';
-          else if (cell.classList.contains('kms-ds-t-code')) sectionClass += ' is-code';
-          else if (cell.classList.contains('kms-ds-t-preview')) sectionClass += ' is-preview';
-
-          section.className = sectionClass;
-          if (label) section.setAttribute('data-kms-col', label);
+          if (label) cell.setAttribute('data-kms-col', label);
 
           if (cell.classList.contains('kms-ds-t-name')) {
-            section.innerHTML = '<div class="kms-ds-name-block">' + cell.innerHTML + '</div>';
+            if (!cell.querySelector('.kms-ds-name-block')) {
+              cell.innerHTML = '<div class="kms-ds-name-block">' + cell.innerHTML + '</div>';
+            }
           } else if (cell.classList.contains('kms-ds-t-usage')) {
-            section.innerHTML = '<div class="kms-ds-usage-block">' + cell.innerHTML + '</div>';
+            if (!cell.querySelector('.kms-ds-usage-block')) {
+              cell.innerHTML = '<div class="kms-ds-usage-block">' + cell.innerHTML + '</div>';
+            }
           } else if (cell.classList.contains('kms-ds-t-code')) {
-            section.innerHTML = '<div class="kms-ds-code-block"><code>' + cell.innerHTML + '</code></div>';
+            if (!cell.querySelector('.kms-ds-code-block')) {
+              cell.innerHTML = '<div class="kms-ds-code-block"><code>' + cell.innerHTML + '</code></div>';
+            }
           } else if (cell.classList.contains('kms-ds-t-preview')) {
-            section.innerHTML = '<div class="kms-ds-preview-block">' + cell.innerHTML + '</div>';
-          } else {
-            section.innerHTML = cell.innerHTML;
+            if (!cell.querySelector('.kms-ds-preview-block')) {
+              cell.innerHTML = '<div class="kms-ds-preview-block">' + cell.innerHTML + '</div>';
+            }
           }
-
-          card.appendChild(section);
         });
-
-        list.appendChild(card);
       });
-
-      wrap.innerHTML = '';
-      wrap.appendChild(list);
     });
   }
 
