@@ -5692,10 +5692,10 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-right: 1px solid #bfbbb5;
   vertical-align: top;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 300;
-  letter-spacing: 0.06em;
-  line-height: 1.7;
+  letter-spacing: 0.04em;
+  line-height: 1.65;
   color: #1f1f1f;
 }
 .kms-ds-table td:last-child { border-right: none; }
@@ -5703,9 +5703,9 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-table tbody tr:nth-child(even) { background: #faf7f3; }
 .kms-ds-table tbody tr:hover { background: #f0ebe3; }
 .kms-ds-table .kms-ds-t-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   width: 1%;
   color: #1f1f1f;
@@ -5721,7 +5721,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 .kms-ds-table .kms-ds-t-usage {
   color: rgba(31,31,31,0.7);
-  font-size: 12px;
+  font-size: 14px;
   min-width: 180px;
 }
 .kms-ds-table .kms-ds-t-cls {
