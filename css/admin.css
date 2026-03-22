@@ -5724,6 +5724,13 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-table tr:last-child td { border-bottom: none; }
 .kms-ds-table tbody tr:nth-child(even) { background: rgba(252, 250, 247, 0.72); }
 .kms-ds-table tbody tr:hover { background: rgba(246, 241, 235, 0.9); }
+.kms-ds-table.is-reference td:first-child {
+  background: rgba(92,42,157,0.03);
+}
+.kms-ds-table.is-reference td:last-child,
+.kms-ds-table.is-compact td:last-child {
+  background: rgba(255,255,255,0.62);
+}
 .kms-ds-table .kms-ds-t-name {
   font-size: 14px;
   font-weight: 700;
@@ -5779,7 +5786,11 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   flex-direction: column;
   gap: 0;
 }
+.kms-ds-table .kms-ds-usage-block {
+  justify-content: center;
+}
 .kms-ds-table .kms-ds-code-block {
+  width: 100%;
   min-width: 320px;
   padding: 12px 14px;
   border-radius: 8px;
@@ -5800,12 +5811,49 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
   min-height: 96px;
   min-width: 190px;
   padding: 14px;
   border: 1px solid rgba(31,31,31,0.08);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,244,239,0.92));
+}
+.kms-ds-preview .glossary-table-wrap {
+  border: 1px solid var(--kms-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--kms-surface);
+}
+.kms-ds-preview .glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.kms-ds-preview .glossary-table th,
+.kms-ds-preview .glossary-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--kms-border);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.kms-ds-preview .glossary-table th {
+  background: var(--kms-surface2);
+  color: var(--kms-muted);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.kms-ds-preview .glossary-table tr:last-child td {
+  border-bottom: none;
+}
+.kms-ds-preview .glossary-table tbody tr:nth-child(even) {
+  background: rgba(252,250,247,0.72);
+}
+.kms-ds-preview .glossary-table tbody tr:hover {
+  background: rgba(246,241,235,0.9);
 }
 .kms-ds-table .kms-ds-t-preview > * {
   margin-left: auto;
