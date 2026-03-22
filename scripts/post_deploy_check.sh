@@ -4,15 +4,15 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-VERSION="$(cat VERSION)"
 BASE_URL="${1:-https://bpmedia.net}"
+EXPECTED_APP_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 
-echo "Checking ${BASE_URL} for V${VERSION}"
+echo "Checking ${BASE_URL} for V${EXPECTED_APP_VERSION}"
 
-MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${VERSION}")"
+MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${EXPECTED_APP_VERSION}")"
 HOME_PAGE="$(curl -fsSL "${BASE_URL}/")"
-BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm.html")"
-PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people.html")"
+BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm")"
+PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people")"
 ADMIN_PAGE="$(curl -fsSL "${BASE_URL}/admin.html")"
 ROBOTS_TXT="$(curl -fsSL "${BASE_URL}/robots.txt")"
 SITEMAP_XML="$(curl -fsSL "${BASE_URL}/sitemap.xml")"
@@ -33,7 +33,7 @@ else
   POST_PAGE=""
 fi
 
-echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${VERSION}'" >/dev/null
+echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${EXPECTED_APP_VERSION}'" >/dev/null
 echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A', 'B', 'C']" >/dev/null
 echo "$HOME_PAGE" | grep -F 'google-adsense-account' >/dev/null
 echo "$HOME_PAGE" | grep -F 'application/ld+json' >/dev/null
