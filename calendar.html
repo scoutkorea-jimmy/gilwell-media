@@ -70,30 +70,6 @@
         </div>
       </div>
 
-      <section class="calendar-panel calendar-controls-panel">
-        <div class="calendar-controls-bar">
-          <select id="calendar-status-filters" class="calendar-filter-select"></select>
-          <select id="calendar-region-filters" class="calendar-filter-select"></select>
-          <select id="calendar-tag-filters" class="calendar-filter-select"></select>
-          <select id="calendar-sort-select" class="calendar-filter-select">
-            <option value="start-asc">날짜 빠른순</option>
-            <option value="start-desc">날짜 최신순</option>
-            <option value="title-asc">제목순</option>
-            <option value="updated-desc">최근 수정순</option>
-          </select>
-          <div class="calendar-date-range">
-            <input type="date" id="calendar-map-date-from" class="calendar-date-input" placeholder="시작일">
-            <span class="calendar-date-range-sep">~</span>
-            <input type="date" id="calendar-map-date-to" class="calendar-date-input" placeholder="종료일">
-          </div>
-        </div>
-        <div class="calendar-controls-chips">
-          <div id="calendar-status-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
-          <div id="calendar-region-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
-          <div id="calendar-tag-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
-        </div>
-      </section>
-
       <div class="calendar-layout">
         <section class="calendar-panel">
           <div class="calendar-toolbar">
@@ -147,6 +123,43 @@
         </div>
         <div id="calendar-map" class="calendar-map"></div>
         <div id="calendar-map-results" class="calendar-map-results"></div>
+      </section>
+
+      <section class="calendar-panel calendar-controls-panel">
+        <div class="calendar-map-filters">
+          <div>
+            <strong>상태 분류</strong>
+            <select id="calendar-status-filters" class="calendar-filter-select"></select>
+            <div id="calendar-status-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>지역 구분</strong>
+            <select id="calendar-region-filters" class="calendar-filter-select"></select>
+            <div id="calendar-region-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>태그 필터</strong>
+            <select id="calendar-tag-filters" class="calendar-filter-select"></select>
+            <div id="calendar-tag-selected" class="calendar-filter-chip-list calendar-filter-selected-list"></div>
+          </div>
+          <div>
+            <strong>정렬 기준</strong>
+            <select id="calendar-sort-select" class="calendar-filter-select">
+              <option value="start-asc">날짜 빠른순</option>
+              <option value="start-desc">날짜 최신순</option>
+              <option value="title-asc">제목순</option>
+              <option value="updated-desc">최근 수정순</option>
+            </select>
+          </div>
+          <div>
+            <strong>날짜 범위</strong>
+            <div class="calendar-date-range-row">
+              <input type="date" id="calendar-map-date-from" class="calendar-filter-select calendar-date-input">
+              <span class="calendar-date-range-sep">~</span>
+              <input type="date" id="calendar-map-date-to" class="calendar-filter-select calendar-date-input">
+            </div>
+          </div>
+        </div>
       </section>
     </section>
   </main>
