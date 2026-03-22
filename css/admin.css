@@ -133,10 +133,10 @@
 /* ── 헤더 ───────────────────────────────────────────────── */
 .kms-header {
   flex-shrink: 0;
-  z-index: 100;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  position: relative;
+  display: flex;
   align-items: center;
+  justify-content: center;
   height: var(--kms-header-h);
   padding: 0 16px;
   border-bottom: 1px solid var(--kms-border);
@@ -146,6 +146,8 @@
 }
 
 .kms-header-left {
+  position: absolute;
+  left: 16px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -212,10 +214,11 @@
 
 /* ── 헤더 우측 액션 ─────────────────────────────────────── */
 .kms-header-right {
+  position: absolute;
+  right: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
-  justify-content: flex-end;
 }
 
 .kms-mode-switch {
