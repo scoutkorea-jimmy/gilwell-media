@@ -944,11 +944,25 @@
   /* ══════════════════════════════════════════════════════════
      CALENDAR
   ══════════════════════════════════════════════════════════ */
+
+  // 행사 상태 판정 (홈페이지 calendar.js 기준과 동일)
+  function _calEventStatus(e) {
+    var now   = Date.now();
+    var start = e.start_at ? new Date(e.start_at).getTime() : null;
+    var end   = e.end_at   ? new Date(e.end_at).getTime()   : null;
+    if (!start || start > now) return 'upcoming';  // 개최예정
+    if (!end || end >= now)   return 'ongoing';    // 진행중
+    return 'finished';                              // 행사종료
+  }
+
+  var CAL_STATUS_LABEL = { upcoming: '개최예정', ongoing: '진행중', finished: '행사종료' };
+  var CAL_STATUS_BADGE = { upcoming: 'v3-badge-blue', ongoing: 'v3-badge-green', finished: 'v3-badge-gray' };
+
   function _loadCalendar() {
     var el = document.getElementById('cal-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     Promise.all([
-      GW.apiFetch('/api/calendar?limit=200'),
+      GW.apiFetch('/api/calendar?limit=500'),
       GW.apiFetch('/api/settings/calendar-tags').catch(function () { return { tags: [] }; }),
     ]).then(function (results) {
       var data = results[0];
@@ -956,19 +970,13 @@
       var tagData = results[1] || {};
       _calCats = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
 
-      // Populate category filter
-      var catSel = document.getElementById('cal-filter-cat');
-      catSel.innerHTML = '<option value="all">전체 분류</option>' + _calCats.map(function (t) {
-        return '<option value="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</option>';
-      }).join('');
-
-      // Populate calendar modal category dropdown
+      // Populate modal category dropdown from settings
       var calCatSel = document.getElementById('cal-cat');
       calCatSel.innerHTML = '<option value="">미분류</option>' + _calCats.map(function (t) {
         return '<option value="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</option>';
       }).join('');
 
-      // Year filter
+      // Year filter (from actual data)
       var years = {};
       _calItems.forEach(function (e) { if (e.start_at) years[e.start_at.slice(0, 4)] = 1; });
       var yearSel = document.getElementById('cal-filter-year');
@@ -976,50 +984,101 @@
         return '<option value="' + y + '">' + y + '</option>';
       }).join('');
 
+      _bindCalFilters();
       _renderCalList();
     }).catch(function (e) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
     });
   }
 
+  function _bindCalFilters() {
+    ['cal-filter-year', 'cal-filter-region', 'cal-filter-status', 'cal-filter-from', 'cal-filter-to', 'cal-sort']
+      .forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && !el.dataset.v3Bound) {
+          el.dataset.v3Bound = '1';
+          el.addEventListener('change', _renderCalList);
+          if (el.type === 'date') el.addEventListener('input', _renderCalList);
+        }
+      });
+    var resetBtn = document.getElementById('cal-filter-reset');
+    if (resetBtn && !resetBtn.dataset.v3Bound) {
+      resetBtn.dataset.v3Bound = '1';
+      resetBtn.addEventListener('click', function () {
+        document.getElementById('cal-filter-year').value   = 'all';
+        document.getElementById('cal-filter-region').value = 'all';
+        document.getElementById('cal-filter-status').value = 'all';
+        document.getElementById('cal-filter-from').value   = '';
+        document.getElementById('cal-filter-to').value     = '';
+        document.getElementById('cal-sort').value          = 'desc';
+        _renderCalList();
+      });
+    }
+  }
+
   function _renderCalList() {
-    var el    = document.getElementById('cal-list');
-    var year  = document.getElementById('cal-filter-year').value;
-    var cat   = document.getElementById('cal-filter-cat').value;
+    var el     = document.getElementById('cal-list');
+    var year   = document.getElementById('cal-filter-year').value;
+    var region = document.getElementById('cal-filter-region').value;
+    var status = document.getElementById('cal-filter-status').value;
+    var from   = document.getElementById('cal-filter-from').value;   // YYYY-MM-DD
+    var to     = document.getElementById('cal-filter-to').value;
+    var sort   = document.getElementById('cal-sort').value;          // asc | desc
+
     var items = _calItems.filter(function (e) {
+      // 연도
       if (year !== 'all' && (!e.start_at || e.start_at.slice(0, 4) !== year)) return false;
-      if (cat !== 'all' && e.event_category !== cat) return false;
+      // 지역 (event_category)
+      if (region !== 'all' && (e.event_category || 'WOSM') !== region) return false;
+      // 행사 상태
+      if (status !== 'all' && _calEventStatus(e) !== status) return false;
+      // 시작일 범위
+      var startStr = e.start_at ? e.start_at.slice(0, 10) : '';
+      if (from && startStr && startStr < from) return false;
+      if (to   && startStr && startStr > to)   return false;
       return true;
     });
-    items.sort(function (a, b) { return (b.start_at || '') < (a.start_at || '') ? -1 : 1; });
+
+    // 정렬
+    items.sort(function (a, b) {
+      var da = a.start_at || '';
+      var db = b.start_at || '';
+      if (sort === 'asc') return da < db ? -1 : da > db ? 1 : 0;
+      return da > db ? -1 : da < db ? 1 : 0;
+    });
+
+    // 건수 표시
+    var countEl = document.getElementById('cal-count');
+    if (countEl) countEl.textContent = items.length + '건';
 
     if (!items.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📅</div><div class="v3-empty-text">일정이 없습니다</div></div>';
       return;
     }
+
     el.innerHTML = items.map(function (e) {
-      var dt = e.start_at ? new Date(e.start_at) : null;
-      var month = dt ? dt.toLocaleString('en', { month: 'short' }).toUpperCase() : '';
-      var day   = dt ? dt.getDate() : '';
+      var dt    = e.start_at ? new Date(e.start_at) : null;
+      var month = dt ? dt.toLocaleString('ko', { month: 'short' }) : '';
+      var day   = dt ? dt.getDate() : '—';
+      var evSt  = _calEventStatus(e);
+      var endStr = e.end_at ? ' ~ ' + e.end_at.slice(0, 10) : '';
       return '<div class="v3-cal-item" onclick="V3._openCalEvent(' + e.id + ')">' +
         '<div class="v3-cal-date-col">' +
-          '<div class="v3-cal-date-m">' + month + '</div>' +
+          '<div class="v3-cal-date-m">' + GW.escapeHtml(month) + '</div>' +
           '<div class="v3-cal-date-d">' + day + '</div>' +
         '</div>' +
         '<div class="v3-cal-info">' +
           '<div class="v3-cal-title">' + GW.escapeHtml(e.title || '') + '</div>' +
           '<div class="v3-cal-meta">' +
-            (e.event_category ? '<span class="v3-badge v3-badge-blue">' + GW.escapeHtml(e.event_category) + '</span> ' : '') +
-            GW.escapeHtml(e.location_name || e.country_name || '') +
+            '<span class="v3-badge ' + CAL_STATUS_BADGE[evSt] + '">' + CAL_STATUS_LABEL[evSt] + '</span> ' +
+            (e.event_category ? '<span class="v3-badge v3-badge-blue" style="margin-left:4px;">' + GW.escapeHtml(e.event_category) + '</span> ' : '') +
+            '<span style="margin-left:4px;">' + GW.escapeHtml(e.location_name || e.country_name || '') + '</span>' +
+            (endStr ? '<span style="margin-left:6px;font-size:11px;color:var(--v3-text-l);">' + GW.escapeHtml((e.start_at || '').slice(0, 10)) + GW.escapeHtml(endStr) + '</span>' : '') +
           '</div>' +
         '</div>' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-btn-sm" onclick="event.stopPropagation();V3._openCalEvent(' + e.id + ')">수정</button>' +
+        '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation();V3._openCalEvent(' + e.id + ')">수정</button>' +
       '</div>';
     }).join('');
-
-    // Re-bind filter handlers
-    document.getElementById('cal-filter-year').onchange = _renderCalList;
-    document.getElementById('cal-filter-cat').onchange  = _renderCalList;
   }
 
   V3._openCalEvent = function (id) {

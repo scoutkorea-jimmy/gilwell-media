@@ -426,14 +426,43 @@
             새 일정
           </button>
         </div>
-        <div class="v3-toolbar">
-          <div class="v3-toolbar-left">
+        <div class="v3-toolbar" style="flex-wrap:wrap;gap:8px;">
+          <div class="v3-toolbar-left" style="flex-wrap:wrap;gap:8px;">
+            <!-- 연도 -->
             <select class="v3-filter-select" id="cal-filter-year">
               <option value="all">전체 연도</option>
             </select>
-            <select class="v3-filter-select" id="cal-filter-cat">
-              <option value="all">전체 분류</option>
+            <!-- 지역 (홈페이지 CATEGORY_META 기준) -->
+            <select class="v3-filter-select" id="cal-filter-region">
+              <option value="all">전체 지역</option>
+              <option value="KOR">KOR · 한국</option>
+              <option value="APR">APR · 아태</option>
+              <option value="EUR">EUR · 유럽</option>
+              <option value="AFR">AFR · 아프리카</option>
+              <option value="ARB">ARB · 아랍</option>
+              <option value="IAR">IAR · 미주</option>
+              <option value="WOSM">WOSM · 세계</option>
             </select>
+            <!-- 행사 상태 (홈페이지 기준) -->
+            <select class="v3-filter-select" id="cal-filter-status">
+              <option value="all">전체 상태</option>
+              <option value="upcoming">개최예정</option>
+              <option value="ongoing">진행중</option>
+              <option value="finished">행사종료</option>
+            </select>
+            <!-- 시작일 범위 -->
+            <input class="v3-input" type="date" id="cal-filter-from" title="시작일 이후" style="width:140px;" />
+            <span style="font-size:12px;color:var(--v3-text-m);align-self:center;">~</span>
+            <input class="v3-input" type="date" id="cal-filter-to" title="시작일 이전" style="width:140px;" />
+            <button class="v3-btn v3-btn-ghost v3-btn-sm" id="cal-filter-reset">초기화</button>
+          </div>
+          <div class="v3-toolbar-right">
+            <!-- 정렬 -->
+            <select class="v3-filter-select" id="cal-sort">
+              <option value="desc">날짜 최신순 ↓</option>
+              <option value="asc">날짜 오래된순 ↑</option>
+            </select>
+            <span id="cal-count" style="font-size:12px;color:var(--v3-text-m);"></span>
           </div>
         </div>
         <div class="v3-cal-list" id="cal-list">
