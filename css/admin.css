@@ -1072,7 +1072,7 @@ mark.kms-highlight {
 .kms-ds-section {
   padding: 20px 22px;
   border: 1px solid var(--kms-border);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--kms-surface);
 }
 
@@ -1119,14 +1119,14 @@ mark.kms-highlight {
   gap: 10px;
   padding: 8px 10px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--kms-surface2);
 }
 
 .kms-ds-swatch-color {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 0;
   flex-shrink: 0;
 }
 
@@ -1147,7 +1147,7 @@ mark.kms-highlight {
   padding: 8px 12px;
   background: var(--kms-surface2);
   border-left: 2px solid var(--kms-accent);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0;
 }
 
 /* 타이포그래피 행 */
@@ -1175,7 +1175,7 @@ mark.kms-highlight {
 }
 .kms-ds-gradient-item {
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--kms-surface2);
 }
@@ -1199,7 +1199,7 @@ mark.kms-highlight {
   gap: 3px;
   padding: 10px 12px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--kms-surface2);
 }
 .kms-ds-spacing-val {
@@ -1215,7 +1215,7 @@ mark.kms-highlight {
   align-items: center;
   padding: 4px 10px;
   border: 1px solid var(--kms-border);
-  border-radius: 4px;
+  border-radius: 0;
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   color: var(--kms-muted);
@@ -5659,3 +5659,66 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   white-space: pre;
   margin: 0 0 16px;
 }
+
+/* 구분 | 활용처 | 코드 | 미리보기 테이블 */
+.kms-ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+  table-layout: fixed;
+}
+.kms-ds-table th {
+  padding: 8px 12px;
+  background: var(--ink);
+  color: #fff;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 400;
+  text-align: left;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+.kms-ds-table th:last-child { border-right: none; }
+.kms-ds-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.kms-ds-table td:last-child { border-right: none; }
+.kms-ds-table tr:last-child td { border-bottom: none; }
+.kms-ds-table .kms-ds-t-name {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  width: 120px;
+}
+.kms-ds-table .kms-ds-t-usage {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  width: 180px;
+  word-break: break-all;
+}
+.kms-ds-table .kms-ds-t-code {
+  background: #f5f3ef;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+  width: 220px;
+}
+.kms-ds-table .kms-ds-t-preview {
+  /* 미리보기 열 — auto width */
+}
+.kms-ds-table .kms-ds-t-preview > * { vertical-align: middle; }
+.kms-ds-table .kms-ds-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
