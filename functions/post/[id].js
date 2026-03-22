@@ -179,8 +179,8 @@ export async function onRequestGet({ params, env, request }) {
         <span class="post-mobile-brand-text">BP미디어</span>
       </a>
       <div class="post-mobile-header-actions">
-        <a href="/${post.category}.html" class="post-mobile-section-chip">${cat.label}</a>
-        <a href="/search.html" class="post-mobile-search" aria-label="검색">⌕</a>
+        <a href="/${post.category}" class="post-mobile-section-chip">${cat.label}</a>
+        <a href="/search" class="post-mobile-search" aria-label="검색">⌕</a>
       </div>
     </div>
     <nav class="post-mobile-quicknav" aria-label="빠른 이동">
