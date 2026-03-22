@@ -3718,11 +3718,13 @@ footer a:hover { color: #ffffff; }
 .calendar-date-range-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .calendar-date-input {
-  flex: 1;
+  flex: 1 1 0;
+  width: auto !important;
   min-width: 0;
   padding-right: 8px !important;
   background-image: none !important;
@@ -3732,6 +3734,7 @@ footer a:hover { color: #ffffff; }
   color: var(--muted);
   font-size: 11px;
   flex-shrink: 0;
+  padding: 0 2px;
 }
 
 .calendar-status-filters {
