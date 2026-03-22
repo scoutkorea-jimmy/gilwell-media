@@ -1136,3 +1136,115 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-release-items li {
   font-size: 12px; color: var(--v3-text-m); line-height: 1.6; margin-bottom: 2px;
 }
+
+/* ── Calendar Modal Enhancements ─────────────────────────── */
+.v3-cal-modal { max-width: 980px; }
+.v3-form-span-full { grid-column: 1 / -1; }
+.v3-label-inline { display: block; margin-bottom: 6px; }
+.v3-cal-chip-list,
+.calendar-tag-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.calendar-time-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+  margin: 2px 0 8px;
+  font-size: 11px;
+  color: var(--v3-text-m);
+}
+.calendar-tags-editor,
+.calendar-related-post-selected,
+.calendar-related-post-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.calendar-tags-list,
+.calendar-related-post-selected,
+.calendar-related-post-results {
+  min-height: 44px;
+}
+.calendar-tags-controls,
+.calendar-geo-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.calendar-tag-chip,
+.calendar-tag-preset,
+.calendar-related-post-pill,
+.calendar-related-post-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid var(--v3-border);
+  background: var(--v3-card);
+  color: var(--v3-text);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  text-align: left;
+}
+.calendar-tag-chip {
+  width: auto;
+  cursor: pointer;
+}
+.calendar-tag-preset,
+.calendar-related-post-option {
+  cursor: pointer;
+}
+.calendar-tag-preset.is-active {
+  border-color: var(--v3-primary);
+  background: rgba(92, 42, 157, 0.08);
+  color: var(--v3-primary);
+}
+.calendar-related-post-pill,
+.calendar-related-post-option {
+  width: 100%;
+}
+.calendar-tag-chip strong,
+.calendar-related-post-pill button {
+  flex-shrink: 0;
+}
+.calendar-related-post-pill span,
+.calendar-related-post-option span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--v3-text-m);
+}
+.calendar-related-post-pill button {
+  border: 0;
+  background: transparent;
+  color: var(--v3-text-m);
+  cursor: pointer;
+  font-family: inherit;
+}
+.calendar-related-post-option strong {
+  display: block;
+}
+.v3-cal-map-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.v3-cal-map-frame {
+  width: 100%;
+  height: 220px;
+  border: 1px solid var(--v3-border);
+  background: var(--v3-bg);
+}
+
+@media (max-width: 900px) {
+  .calendar-tags-controls,
+  .calendar-geo-search {
+    grid-template-columns: 1fr;
+  }
+}

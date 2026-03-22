@@ -912,7 +912,7 @@
     document.querySelectorAll('.admin-build-version').forEach(function (el) { el.textContent = adminVer; });
     setText('kms-ver-site', siteVer);
     setText('kms-build-version', siteVer);
-    setText('kms-release-note-version', 'Admin ' + adminVer + ' · 표 문서형 정리 반영본');
+    setText('kms-release-note-version', 'Admin ' + adminVer + ' · 캘린더 필드 동기화 반영본');
   }
 
   // ── API 가이드 렌더링 ──────────────────────────────────────────
