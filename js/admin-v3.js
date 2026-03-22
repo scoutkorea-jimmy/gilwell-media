@@ -54,10 +54,16 @@
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
+  var _calModalTags  = [];
+  var _calModalTargetGroups = [];
+  var _calModalRelatedPosts = [];
+  var _calRelatedTimer = null;
 
   // Calendar
   var _calItems      = [];
   var _calCats       = [];
+  var CAL_CATEGORY_OPTIONS = ['KOR', 'APR', 'EUR', 'AFR', 'ARB', 'IAR', 'WOSM'];
+  var CAL_KOR_TARGET_GROUPS = ['비버', '컵', '스카우트', '벤처', '로버', '지도자', '범스카우트', '훈련교수회'];
 
   // Glossary
   var _glosItems     = [];
@@ -201,6 +207,29 @@
     document.getElementById('cal-modal-close').addEventListener('click', _closeCalModal);
     document.getElementById('cal-modal-cancel').addEventListener('click', _closeCalModal);
     document.getElementById('cal-save-btn').addEventListener('click', _saveCal);
+    document.getElementById('cal-tags-add-btn').addEventListener('click', _addCalTag);
+    document.getElementById('cal-tags-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); _addCalTag(); }
+    });
+    document.getElementById('cal-start-time-enabled').addEventListener('change', function () {
+      document.getElementById('cal-start-time').disabled = !this.checked;
+      if (!this.checked) document.getElementById('cal-start-time').value = '';
+    });
+    document.getElementById('cal-end-time-enabled').addEventListener('change', function () {
+      document.getElementById('cal-end-time').disabled = !this.checked;
+      if (!this.checked) document.getElementById('cal-end-time').value = '';
+    });
+    document.getElementById('cal-cat').addEventListener('change', _syncCalCategoryUi);
+    document.getElementById('cal-related-query').addEventListener('input', function () {
+      clearTimeout(_calRelatedTimer);
+      var q = this.value.trim();
+      if (!q) {
+        document.getElementById('cal-related-results').innerHTML = '';
+        return;
+      }
+      _calRelatedTimer = setTimeout(function () { _searchCalRelated(q); }, 250);
+    });
+    document.getElementById('cal-geo-search-btn').addEventListener('click', _searchCalGeo);
     document.getElementById('cal-delete-btn').addEventListener('click', function () {
       var id = document.getElementById('cal-id').value;
       if (id) _deleteCal(parseInt(id, 10));
@@ -1155,13 +1184,7 @@
       var data = results[0];
       _calItems = (data && data.events) || (data && data.items) || [];
       var tagData = results[1] || {};
-      _calCats = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
-
-      // Populate modal category dropdown from settings
-      var calCatSel = document.getElementById('cal-cat');
-      calCatSel.innerHTML = '<option value="">미분류</option>' + _calCats.map(function (t) {
-        return '<option value="' + GW.escapeHtml(t) + '">' + GW.escapeHtml(t) + '</option>';
-      }).join('');
+      _calendarTags = Array.isArray(tagData.items) ? tagData.items : (Array.isArray(tagData.tags) ? tagData.tags : (Array.isArray(tagData) ? tagData : []));
 
       // Year filter (from actual data)
       var years = {};
@@ -1273,18 +1296,235 @@
     if (e) _openCalModal(e);
   };
 
+  function _syncCalCategoryUi() {
+    var isKor = document.getElementById('cal-cat').value === 'KOR';
+    var wrap = document.getElementById('cal-target-wrap');
+    if (wrap) wrap.style.display = isKor ? '' : 'none';
+    if (!isKor) _calModalTargetGroups = [];
+    _renderCalTargetGroups();
+  }
+
+  function _addCalTag() {
+    var input = document.getElementById('cal-tags-input');
+    var value = String(input && input.value || '').trim();
+    if (!value) { GW.showToast('추가할 태그를 입력해주세요', 'error'); return; }
+    if (_calModalTags.indexOf(value) >= 0) { GW.showToast('이미 추가된 태그입니다', 'error'); return; }
+    _calModalTags.push(value);
+    if (input) input.value = '';
+    _renderCalTags();
+    _renderCalTagPresets();
+  }
+
+  function _renderCalTags() {
+    var el = document.getElementById('cal-tags-list');
+    if (!el) return;
+    if (!_calModalTags.length) {
+      el.innerHTML = '<div class="v3-input-hint">등록된 행사 태그가 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = _calModalTags.map(function (tag) {
+      return '<button type="button" class="calendar-tag-chip" data-cal-tag="' + GW.escapeHtml(tag) + '">' +
+        '<span>' + GW.escapeHtml(tag) + '</span><strong>×</strong></button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-tag]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var tag = btn.getAttribute('data-cal-tag') || '';
+        _calModalTags = _calModalTags.filter(function (item) { return item !== tag; });
+        _renderCalTags();
+        _renderCalTagPresets();
+      });
+    });
+  }
+
+  function _renderCalTagPresets() {
+    var el = document.getElementById('cal-tag-presets');
+    if (!el) return;
+    if (!_calendarTags.length) { el.innerHTML = ''; return; }
+    el.innerHTML = _calendarTags.map(function (tag) {
+      var active = _calModalTags.indexOf(tag) >= 0 ? ' is-active' : '';
+      return '<button type="button" class="calendar-tag-preset' + active + '" data-cal-preset-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-preset-tag]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var tag = btn.getAttribute('data-cal-preset-tag') || '';
+        if (_calModalTags.indexOf(tag) >= 0) _calModalTags = _calModalTags.filter(function (item) { return item !== tag; });
+        else _calModalTags.push(tag);
+        _renderCalTags();
+        _renderCalTagPresets();
+      });
+    });
+  }
+
+  function _renderCalTargetGroups() {
+    var el = document.getElementById('cal-target-groups');
+    if (!el) return;
+    el.innerHTML = CAL_KOR_TARGET_GROUPS.map(function (group) {
+      var active = _calModalTargetGroups.indexOf(group) >= 0 ? ' is-active' : '';
+      return '<button type="button" class="calendar-tag-preset' + active + '" data-cal-target-group="' + GW.escapeHtml(group) + '">' + GW.escapeHtml(group) + '</button>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-target-group]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var group = btn.getAttribute('data-cal-target-group') || '';
+        var idx = _calModalTargetGroups.indexOf(group);
+        if (idx >= 0) _calModalTargetGroups.splice(idx, 1);
+        else _calModalTargetGroups.push(group);
+        _renderCalTargetGroups();
+      });
+    });
+  }
+
+  function _searchCalRelated(q) {
+    var results = document.getElementById('cal-related-results');
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8').then(function (data) {
+      var posts = (data && data.posts) || [];
+      if (!posts.length) {
+        results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
+        return;
+      }
+      results.innerHTML = posts.map(function (p) {
+        return '<button type="button" class="calendar-related-post-option" data-cal-related-id="' + p.id + '">' +
+          '<div><strong>' + GW.escapeHtml(p.title || '') + '</strong><span>' + GW.escapeHtml(p.category || '') + '</span></div></button>';
+      }).join('');
+      Array.prototype.forEach.call(results.querySelectorAll('[data-cal-related-id]'), function (btn) {
+        btn.addEventListener('click', function () {
+          var id = parseInt(btn.getAttribute('data-cal-related-id'), 10);
+          var post = posts.find(function (item) { return item.id === id; });
+          if (!post || _calModalRelatedPosts.some(function (item) { return item.id === id; })) return;
+          _calModalRelatedPosts.push({ id: post.id, title: post.title || '', category: post.category || '' });
+          document.getElementById('cal-related-query').value = '';
+          results.innerHTML = '';
+          _renderCalRelatedPosts();
+        });
+      });
+    }).catch(function () {
+      results.innerHTML = '<div class="v3-input-hint">기사를 검색하지 못했습니다.</div>';
+    });
+  }
+
+  function _renderCalRelatedPosts() {
+    var el = document.getElementById('cal-related-selected');
+    if (!el) return;
+    if (!_calModalRelatedPosts.length) {
+      el.innerHTML = '<div class="v3-input-hint">선택된 관련 기사가 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = _calModalRelatedPosts.map(function (post) {
+      return '<div class="calendar-related-post-pill">' +
+        '<div><strong>' + GW.escapeHtml(post.title || '') + '</strong>' +
+        (post.category ? '<span>' + GW.escapeHtml(post.category) + '</span>' : '') +
+        '</div>' +
+        '<button type="button" data-cal-related-remove="' + post.id + '">해제</button>' +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call(el.querySelectorAll('[data-cal-related-remove]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(btn.getAttribute('data-cal-related-remove'), 10);
+        _calModalRelatedPosts = _calModalRelatedPosts.filter(function (item) { return item.id !== id; });
+        _renderCalRelatedPosts();
+      });
+    });
+  }
+
+  function _renderCalGeoPreview(lat, lng, label) {
+    var preview = document.getElementById('cal-geo-preview');
+    var frame = document.getElementById('cal-geo-frame');
+    var status = document.getElementById('cal-geo-status');
+    if (!preview || !frame || !status || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+      if (preview) preview.style.display = 'none';
+      return;
+    }
+    var d = 0.01;
+    var bbox = (lng - d) + ',' + (lat - d) + ',' + (lng + d) + ',' + (lat + d);
+    frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lng;
+    status.textContent = label ? ('✓ ' + label) : ('좌표 ' + lat + ', ' + lng);
+    preview.style.display = 'flex';
+  }
+
+  function _applyCalGeoResult(item) {
+    var lat = Number(item && item.lat);
+    var lng = Number(item && item.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    var address = item && (item.display_name || item.name || '');
+    var label = item && (item.name || item.display_name || '');
+    document.getElementById('cal-lat').value = String(lat);
+    document.getElementById('cal-lng').value = String(lng);
+    if (address) document.getElementById('cal-loc-addr').value = address;
+    if (label) document.getElementById('cal-loc-name').value = label;
+    if (item && item.address && item.address.country) document.getElementById('cal-country').value = item.address.country;
+    document.getElementById('cal-geo-results').innerHTML = '';
+    _renderCalGeoPreview(lat, lng, address);
+  }
+
+  function _searchCalGeo() {
+    var query = document.getElementById('cal-geo-query').value.trim();
+    var results = document.getElementById('cal-geo-results');
+    if (!query) { GW.showToast('검색할 주소나 장소명을 입력해주세요', 'error'); return; }
+    results.innerHTML = '<div class="v3-input-hint">지도 검색 중…</div>';
+    fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=' + encodeURIComponent(query), {
+      headers: { 'Accept': 'application/json', 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (items) {
+        if (!Array.isArray(items) || !items.length) {
+          results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
+          return;
+        }
+        results.innerHTML = items.map(function (item, index) {
+          return '<button type="button" class="calendar-related-post-option" data-cal-geo-index="' + index + '">' +
+            '<div><strong>' + GW.escapeHtml(item.name || item.display_name || '지도 결과') + '</strong>' +
+            '<span>' + GW.escapeHtml(item.display_name || '') + '</span></div></button>';
+        }).join('');
+        Array.prototype.forEach.call(results.querySelectorAll('[data-cal-geo-index]'), function (btn) {
+          btn.addEventListener('click', function () {
+            _applyCalGeoResult(items[parseInt(btn.getAttribute('data-cal-geo-index'), 10)]);
+          });
+        });
+      })
+      .catch(function () {
+        results.innerHTML = '<div class="v3-input-hint">지도 검색에 실패했습니다.</div>';
+      });
+  }
+
   function _openCalModal(e) {
-    document.getElementById('cal-id').value          = e ? e.id : '';
+    document.getElementById('cal-id').value = e ? e.id : '';
     document.getElementById('cal-modal-title').textContent = e ? '일정 수정' : '새 일정';
-    document.getElementById('cal-title').value       = e ? (e.title || '') : '';
-    document.getElementById('cal-desc').value        = e ? (e.description || '') : '';
-    document.getElementById('cal-start').value       = e && e.start_at ? e.start_at.slice(0, 10) : '';
-    document.getElementById('cal-end').value         = e && e.end_at   ? e.end_at.slice(0, 10)   : '';
-    document.getElementById('cal-cat').value         = e ? (e.event_category || '') : '';
-    document.getElementById('cal-country').value     = e ? (e.country_name || '') : '';
-    document.getElementById('cal-loc-name').value    = e ? (e.location_name || '') : '';
-    document.getElementById('cal-loc-addr').value    = e ? (e.location_address || '') : '';
-    document.getElementById('cal-link').value        = e ? (e.link_url || '') : '';
+    document.getElementById('cal-title').value = e ? (e.title || '') : '';
+    document.getElementById('cal-title-original').value = e ? (e.title_original || '') : '';
+    document.getElementById('cal-desc').value = e ? (e.description || '') : '';
+    document.getElementById('cal-start').value = e && e.start_at ? e.start_at.slice(0, 10) : '';
+    document.getElementById('cal-start-time-enabled').checked = !!(e && e.start_has_time);
+    document.getElementById('cal-start-time').disabled = !(e && e.start_has_time);
+    document.getElementById('cal-start-time').value = e && e.start_has_time && e.start_at ? e.start_at.slice(11, 16) : '';
+    document.getElementById('cal-end').value = e && e.end_at ? e.end_at.slice(0, 10) : '';
+    document.getElementById('cal-end-time-enabled').checked = !!(e && e.end_has_time);
+    document.getElementById('cal-end-time').disabled = !(e && e.end_has_time);
+    document.getElementById('cal-end-time').value = e && e.end_has_time && e.end_at ? e.end_at.slice(11, 16) : '';
+    document.getElementById('cal-cat').value = e ? (e.event_category || 'KOR') : 'KOR';
+    document.getElementById('cal-country').value = e ? (e.country_name || '') : '';
+    document.getElementById('cal-loc-name').value = e ? (e.location_name || '') : '';
+    document.getElementById('cal-loc-addr').value = e ? (e.location_address || '') : '';
+    document.getElementById('cal-link').value = e ? (e.link_url || '') : '';
+    document.getElementById('cal-lat').value = e && e.latitude != null ? String(e.latitude) : '';
+    document.getElementById('cal-lng').value = e && e.longitude != null ? String(e.longitude) : '';
+    document.getElementById('cal-related-query').value = '';
+    document.getElementById('cal-related-results').innerHTML = '';
+    document.getElementById('cal-geo-query').value = '';
+    document.getElementById('cal-geo-results').innerHTML = '';
+    _calModalTags = e && Array.isArray(e.event_tags) ? e.event_tags.slice() : [];
+    _calModalTargetGroups = e && Array.isArray(e.target_groups) ? e.target_groups.slice() : [];
+    _calModalRelatedPosts = e && Array.isArray(e.related_posts) ? e.related_posts.map(function (item) {
+      return { id: item.id, title: item.title || '', category: item.category || item.related_post_category || '' };
+    }) : [];
+    _renderCalTags();
+    _renderCalTagPresets();
+    _renderCalTargetGroups();
+    _renderCalRelatedPosts();
+    _syncCalCategoryUi();
+    _renderCalGeoPreview(
+      e && e.latitude != null ? Number(e.latitude) : NaN,
+      e && e.longitude != null ? Number(e.longitude) : NaN,
+      e ? (e.location_address || e.location_name || '') : ''
+    );
     document.getElementById('cal-delete-btn').style.display = e ? '' : 'none';
     document.getElementById('cal-modal').style.display = 'flex';
   }
@@ -1294,19 +1534,30 @@
   }
 
   function _saveCal() {
-    var id    = document.getElementById('cal-id').value;
+    var id = document.getElementById('cal-id').value;
     var title = document.getElementById('cal-title').value.trim();
-    if (!title) { GW.showToast('제목을 입력하세요', 'error'); return; }
+    var titleOriginal = document.getElementById('cal-title-original').value.trim();
+    if (!title && !titleOriginal) { GW.showToast('행사명(국문) 또는 원문 제목을 입력해주세요', 'error'); return; }
+    if (!document.getElementById('cal-start').value) { GW.showToast('행사 시작 일을 입력해주세요', 'error'); return; }
     var body = {
-      title:            title,
-      description:      document.getElementById('cal-desc').value.trim(),
-      start_at:         document.getElementById('cal-start').value || null,
-      end_at:           document.getElementById('cal-end').value   || null,
-      event_category:   document.getElementById('cal-cat').value,
-      country_name:     document.getElementById('cal-country').value.trim(),
-      location_name:    document.getElementById('cal-loc-name').value.trim(),
+      title: title,
+      title_original: titleOriginal,
+      description: document.getElementById('cal-desc').value.trim(),
+      start_date: document.getElementById('cal-start').value || '',
+      start_time: document.getElementById('cal-start-time-enabled').checked ? (document.getElementById('cal-start-time').value || '') : '',
+      end_date: document.getElementById('cal-end').value || '',
+      end_time: document.getElementById('cal-end-time-enabled').checked ? (document.getElementById('cal-end-time').value || '') : '',
+      event_category: document.getElementById('cal-cat').value || 'KOR',
+      country_name: document.getElementById('cal-country').value.trim(),
+      location_name: document.getElementById('cal-loc-name').value.trim(),
       location_address: document.getElementById('cal-loc-addr').value.trim(),
-      link_url:         document.getElementById('cal-link').value.trim(),
+      latitude: document.getElementById('cal-lat').value || '',
+      longitude: document.getElementById('cal-lng').value || '',
+      event_tags: _calModalTags.slice(),
+      target_groups: _calModalTargetGroups.slice(),
+      related_post_id: _calModalRelatedPosts.length ? _calModalRelatedPosts[0].id : null,
+      related_posts: _calModalRelatedPosts.slice(),
+      link_url: document.getElementById('cal-link').value.trim(),
     };
     var method = id ? 'PUT' : 'POST';
     var url    = id ? '/api/calendar/' + id : '/api/calendar';

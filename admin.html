@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=03.038.00">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=03.039.00">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -778,42 +778,109 @@
 
 <!-- Calendar Modal -->
 <div class="v3-overlay" id="cal-modal" style="display:none;">
-  <div class="v3-modal v3-modal-lg">
+  <div class="v3-modal v3-modal-lg v3-cal-modal">
     <div class="v3-modal-head">
       <h3 class="v3-modal-title" id="cal-modal-title">일정 추가</h3>
       <button class="v3-modal-close" id="cal-modal-close">×</button>
     </div>
     <div class="v3-modal-body">
       <input type="hidden" id="cal-id" />
+      <input type="hidden" id="cal-lat" />
+      <input type="hidden" id="cal-lng" />
       <div class="v3-form-grid">
         <div class="v3-form-group">
-          <label class="v3-label" for="cal-title">제목</label>
-          <input class="v3-input" type="text" id="cal-title" placeholder="일정 제목" />
+          <label class="v3-label" for="cal-title">행사명(국문)</label>
+          <input class="v3-input" type="text" id="cal-title" maxlength="200" placeholder="예: 세계잼버리 준비 회의" />
+        </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="cal-title-original">행사명(원문) <span class="v3-label-opt">선택</span></label>
+          <input class="v3-input" type="text" id="cal-title-original" maxlength="200" placeholder="예: World Scout Jamboree Planning Meeting" />
         </div>
         <div class="v3-form-group">
           <label class="v3-label" for="cal-desc">설명 <span class="v3-label-opt">선택</span></label>
           <textarea class="v3-textarea" id="cal-desc" rows="3" placeholder="일정 상세 내용"></textarea>
         </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="cal-cat">캘린더 분류</label>
+          <select class="v3-select" id="cal-cat">
+            <option value="KOR">KOR</option>
+            <option value="APR">APR</option>
+            <option value="EUR">EUR</option>
+            <option value="AFR">AFR</option>
+            <option value="ARB">ARB</option>
+            <option value="IAR">IAR</option>
+            <option value="WOSM">WOSM</option>
+          </select>
+        </div>
         <div class="v3-form-grid v3-form-2col">
           <div class="v3-form-group">
-            <label class="v3-label" for="cal-start">시작일</label>
+            <label class="v3-label" for="cal-start">행사 시작 일</label>
             <input class="v3-input" type="date" id="cal-start" />
           </div>
           <div class="v3-form-group">
-            <label class="v3-label" for="cal-end">종료일 <span class="v3-label-opt">선택</span></label>
-            <input class="v3-input" type="date" id="cal-end" />
+            <label class="v3-label v3-label-inline" for="cal-start-time">시작 시간 <span class="v3-label-opt">선택</span></label>
+            <label class="calendar-time-toggle" for="cal-start-time-enabled">
+              <input type="checkbox" id="cal-start-time-enabled">
+              <span>입력</span>
+            </label>
+            <input class="v3-input" type="time" id="cal-start-time" disabled />
           </div>
         </div>
         <div class="v3-form-grid v3-form-2col">
           <div class="v3-form-group">
-            <label class="v3-label" for="cal-cat">분류</label>
-            <select class="v3-select" id="cal-cat">
-              <option value="">미분류</option>
-            </select>
+            <label class="v3-label" for="cal-end">행사 종료 일 <span class="v3-label-opt">선택</span></label>
+            <input class="v3-input" type="date" id="cal-end" />
           </div>
+          <div class="v3-form-group">
+            <label class="v3-label v3-label-inline" for="cal-end-time">종료 시간 <span class="v3-label-opt">선택</span></label>
+            <label class="calendar-time-toggle" for="cal-end-time-enabled">
+              <input type="checkbox" id="cal-end-time-enabled">
+              <span>입력</span>
+            </label>
+            <input class="v3-input" type="time" id="cal-end-time" disabled />
+          </div>
+        </div>
+        <div class="v3-form-grid v3-form-2col">
           <div class="v3-form-group">
             <label class="v3-label" for="cal-country">국가</label>
             <input class="v3-input" type="text" id="cal-country" placeholder="Korea, Japan…" />
+          </div>
+          <div class="v3-form-group v3-cal-target-wrap" id="cal-target-wrap" style="display:none;">
+            <label class="v3-label">대상 <span class="v3-label-opt">KOR 전용</span></label>
+            <div id="cal-target-groups" class="calendar-tag-presets v3-cal-chip-list"></div>
+          </div>
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-label" for="cal-tags-input">행사 태그</label>
+          <div class="calendar-tags-editor">
+            <div id="cal-tags-list" class="calendar-tags-list"></div>
+            <div id="cal-tag-presets" class="calendar-tag-presets v3-cal-chip-list"></div>
+            <div class="calendar-tags-controls">
+              <input class="v3-input" type="text" id="cal-tags-input" maxlength="40" placeholder="태그 입력 후 추가" />
+              <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="cal-tags-add-btn">태그 추가</button>
+            </div>
+          </div>
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-label" for="cal-link">외부 링크 <span class="v3-label-opt">선택</span></label>
+          <input class="v3-input" type="url" id="cal-link" placeholder="https://…" />
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-label" for="cal-related-query">관련 기사 연결</label>
+          <input class="v3-input" type="text" id="cal-related-query" maxlength="120" placeholder="기사 제목 검색" />
+          <div id="cal-related-selected" class="calendar-related-post-selected"></div>
+          <div id="cal-related-results" class="calendar-related-post-results"></div>
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-label" for="cal-geo-query">지도 검색</label>
+          <div class="calendar-geo-search">
+            <input class="v3-input" type="text" id="cal-geo-query" maxlength="200" placeholder="행사 주소나 장소명을 검색하세요" />
+            <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="cal-geo-search-btn">지도 검색</button>
+          </div>
+          <div id="cal-geo-results" class="calendar-related-post-results"></div>
+          <div id="cal-geo-preview" class="v3-cal-map-preview" style="display:none;">
+            <div id="cal-geo-status" class="v3-input-hint"></div>
+            <iframe id="cal-geo-frame" class="v3-cal-map-frame" loading="lazy"></iframe>
           </div>
         </div>
         <div class="v3-form-grid v3-form-2col">
@@ -825,10 +892,6 @@
             <label class="v3-label" for="cal-loc-addr">주소 <span class="v3-label-opt">선택</span></label>
             <input class="v3-input" type="text" id="cal-loc-addr" />
           </div>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="cal-link">링크 URL <span class="v3-label-opt">선택</span></label>
-          <input class="v3-input" type="url" id="cal-link" placeholder="https://…" />
         </div>
       </div>
     </div>
@@ -912,7 +975,7 @@
 </div>
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
-<script src="/js/main.js?v=03.038.00"></script>
-<script src="/js/admin-v3.js?v=03.038.00"></script>
+<script src="/js/main.js?v=03.039.00"></script>
+<script src="/js/admin-v3.js?v=03.039.00"></script>
 </body>
 </html>
