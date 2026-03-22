@@ -42,8 +42,8 @@ echo "$HOME_PAGE" | grep -F 'latest-list' >/dev/null
 echo "$HOME_PAGE" | grep -F '/rss.xml' >/dev/null
 echo "$BOARD_PAGE" | grep -F "WOSM" >/dev/null
 echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
-echo "$ADMIN_PAGE" | grep -F "site-meta-manager" >/dev/null
-echo "$ADMIN_PAGE" | grep -F "analytics-start-date" >/dev/null
+echo "$ADMIN_PAGE" | grep -F 'id="v3-login-btn"' >/dev/null
+echo "$ADMIN_PAGE" | grep -F 'data-panel="analytics"' >/dev/null
 echo "$BOARD_LAYOUT" | grep -F '"gap_px":' >/dev/null
 echo "$POSTS_JSON" | grep -F '"publish_at":' >/dev/null
 echo "$ROBOTS_TXT" | grep -F "Sitemap: ${BASE_URL}/sitemap.xml" >/dev/null

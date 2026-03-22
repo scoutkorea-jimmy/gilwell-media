@@ -303,7 +303,7 @@ function buildWebsiteStructuredData(imageUrl) {
     publisher: PUBLISHER,
     potentialAction: {
       '@type': 'SearchAction',
-      target: `${SITE_ORIGIN}/search.html?q={search_term_string}`,
+      target: `${SITE_ORIGIN}/search?q={search_term_string}`,
       'query-input': 'required name=search_term_string',
     },
   };

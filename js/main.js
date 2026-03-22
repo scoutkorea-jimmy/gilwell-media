@@ -2151,7 +2151,7 @@
     function go(query) {
       var q = String(query || '').trim();
       if (!q) return;
-      window.location.href = '/search.html?q=' + encodeURIComponent(q);
+      window.location.href = '/search?q=' + encodeURIComponent(q);
     }
 
     function submitFromInput() {
