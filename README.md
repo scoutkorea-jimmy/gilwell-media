@@ -313,4 +313,5 @@ Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는
 4. `docs/preview-release-checklist.md` 기준 수동 검수
 5. 승인 후 `main`에서 `./scripts/deploy_production.sh`
 6. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION`
+7. 관리자 전용 변경이면 `/admin` HTML에 연결된 `admin-v3.css/js` 쿼리 버전과 `GW.ADMIN_VERSION`을 함께 확인
 7. `./scripts/post_deploy_check.sh https://bpmedia.net`
