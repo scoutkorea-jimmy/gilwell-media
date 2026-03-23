@@ -1219,9 +1219,10 @@
   function _loadCalendar() {
     var el = document.getElementById('cal-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    var cacheKey = Date.now();
     Promise.all([
-      _apiFetch('/api/calendar?limit=500'),
-      _apiFetch('/api/settings/calendar-tags').catch(function () { return { tags: [] }; }),
+      _apiFetch('/api/calendar?limit=500&_=' + cacheKey),
+      _apiFetch('/api/settings/calendar-tags?_=' + cacheKey).catch(function () { return { tags: [] }; }),
     ]).then(function (results) {
       var data = results[0];
       _calItems = (data && data.events) || (data && data.items) || [];
@@ -1606,7 +1607,14 @@
     var btn = document.getElementById('cal-save-btn');
     _setButtonBusy(btn, '저장 중…');
     _apiFetch(url, { method: method, body: JSON.stringify(body) })
-      .then(function () {
+      .then(function (data) {
+        var saved = data && data.item;
+        if (saved && saved.id) {
+          var index = _calItems.findIndex(function (item) { return item.id === saved.id; });
+          if (index >= 0) _calItems[index] = saved;
+          else _calItems.unshift(saved);
+          _renderCalList();
+        }
         GW.showToast('저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
         _closeCalModal();
