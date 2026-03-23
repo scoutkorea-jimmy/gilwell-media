@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.104.00';
-  GW.ADMIN_VERSION = '03.041.00';
+  GW.APP_VERSION = '00.105.00';
+  GW.ADMIN_VERSION = '03.042.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -541,6 +541,24 @@
     return GW.renderTextWithMedia(str).html;
   };
 
+  GW.renderEditorInlineText = function (value) {
+    return String(value || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+  };
+
+  GW.renderEditorListItems = function (items, listTag) {
+    var childTag = listTag === 'ol' ? 'ol' : 'ul';
+    return (Array.isArray(items) ? items : []).map(function (item) {
+      if (typeof item === 'string') {
+        return '<li>' + GW.renderEditorInlineText(item) + '</li>';
+      }
+      if (!item || typeof item !== 'object') return '';
+      var nested = Array.isArray(item.items) && item.items.length
+        ? '<' + childTag + '>' + GW.renderEditorListItems(item.items, childTag) + '</' + childTag + '>'
+        : '';
+      return '<li>' + GW.renderEditorInlineText(item.content || '') + nested + '</li>';
+    }).join('');
+  };
+
   GW.renderTextWithMedia = function (str) {
     if (!str) return '';
     const trimmed = str.trim();
@@ -553,21 +571,18 @@
           var html = doc.blocks.map(function (b) {
             switch (b.type) {
               case 'paragraph':
-                return '<p>' + (b.data.text || '') + '</p>';
+                return '<p>' + GW.renderEditorInlineText(b.data.text || '') + '</p>';
               case 'header': {
                 var lvl = b.data.level || 2;
-                return '<h' + lvl + '>' + (b.data.text || '') + '</h' + lvl + '>';
+                return '<h' + lvl + '>' + GW.renderEditorInlineText(b.data.text || '') + '</h' + lvl + '>';
               }
               case 'list': {
                 var tag = b.data.style === 'ordered' ? 'ol' : 'ul';
-                var items = (b.data.items || []).map(function (i) {
-                  var txt = typeof i === 'string' ? i : (i.content || '');
-                  return '<li>' + txt + '</li>';
-                }).join('');
+                var items = GW.renderEditorListItems(b.data.items || [], tag);
                 return '<' + tag + '>' + items + '</' + tag + '>';
               }
               case 'quote':
-                return '<blockquote>' + (b.data.text || '') + '</blockquote>';
+                return '<blockquote>' + GW.renderEditorInlineText(b.data.text || '') + '</blockquote>';
               case 'image': {
                 var url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
                 var cap = GW.escapeHtml(b.data.caption || '');
