@@ -121,6 +121,10 @@ function _initPostEditor(callback) {
         holder: 'post-edit-editorjs',
         placeholder: '내용을 수정하세요...',
         tools: {
+          paragraph: {
+            inlineToolbar: true,
+            config: { preserveBlank: true }
+          },
           header: {
             class: window.Header,
             config: { levels: [2, 3, 4], defaultLevel: 2 }

@@ -166,7 +166,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=00.104.00">
+  <link rel="stylesheet" href="/css/style.css?v=00.105.00">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -494,8 +494,8 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${JSON.stringify(publicRuntime)};window.GW_KAKAO_JS_KEY=${JSON.stringify(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${JSON.stringify({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=0.093.03"></script>
-  <script src="/js/post-page.js?v=0.093.03"></script>
+  <script src="/js/main.js?v=00.105.00"></script>
+  <script src="/js/post-page.js?v=00.105.00"></script>
 </body>
 </html>`;
 
@@ -585,21 +585,18 @@ function renderContent(str) {
         const html = doc.blocks.map(b => {
           switch (b.type) {
             case 'paragraph':
-              return '<p>' + (b.data.text || '') + '</p>';
+              return '<p>' + renderEditorInlineText(b.data.text || '') + '</p>';
             case 'header': {
               const lvl = b.data.level || 2;
-              return `<h${lvl}>${b.data.text || ''}</h${lvl}>`;
+              return `<h${lvl}>${renderEditorInlineText(b.data.text || '')}</h${lvl}>`;
             }
             case 'list': {
               const tag   = b.data.style === 'ordered' ? 'ol' : 'ul';
-              const items = (b.data.items || []).map(i => {
-                const txt = typeof i === 'string' ? i : (i.content || '');
-                return `<li>${txt}</li>`;
-              }).join('');
+              const items = renderEditorListItems(b.data.items || [], tag);
               return `<${tag}>${items}</${tag}>`;
             }
             case 'quote':
-              return `<blockquote>${b.data.text || ''}</blockquote>`;
+              return `<blockquote>${renderEditorInlineText(b.data.text || '')}</blockquote>`;
             case 'image': {
               const url = (b.data.file && b.data.file.url) ? b.data.file.url : (b.data.url || '');
               const cap = escapeHtml(b.data.caption || '');
@@ -617,6 +614,22 @@ function renderContent(str) {
 
   if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) return { html: str, gallery: [] };
   return { html: escapeHtml(str).replace(/\n/g, '<br>'), gallery: [] };
+}
+
+function renderEditorInlineText(value) {
+  return String(value || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+}
+
+function renderEditorListItems(items, listTag) {
+  const childTag = listTag === 'ol' ? 'ol' : 'ul';
+  return (Array.isArray(items) ? items : []).map((item) => {
+    if (typeof item === 'string') return `<li>${renderEditorInlineText(item)}</li>`;
+    if (!item || typeof item !== 'object') return '';
+    const nested = Array.isArray(item.items) && item.items.length
+      ? `<${childTag}>${renderEditorListItems(item.items, childTag)}</${childTag}>`
+      : '';
+    return `<li>${renderEditorInlineText(item.content || '')}${nested}</li>`;
+  }).join('');
 }
 
 /** Strip tags/JSON and return plain text truncated to maxLen chars. */
