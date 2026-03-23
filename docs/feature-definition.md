@@ -522,7 +522,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `DELETE /api/calendar/:id` — 삭제 (인증 필요)
 
 **용어집**
-- `GET /api/glossary` — 전체 용어
+- `GET /api/glossary` — 전체 용어. 외부 앱 참조용 공개 API, `bucket`, `q`, `view=grouped` 지원
 - `POST /api/glossary` — 생성 (인증 필요)
 - `PUT /api/glossary/:id` — 수정 (인증 필요)
 - `DELETE /api/glossary/:id` — 삭제 (인증 필요)

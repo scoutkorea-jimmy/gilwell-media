@@ -46,6 +46,15 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: baseHeaders({
+      'Access-Control-Max-Age': '86400',
+    }),
+  });
+}
+
 function renderText(items) {
   return items.map(function (item) {
     return [
@@ -92,6 +101,9 @@ function normalizeGlossaryRows(rows) {
 function baseHeaders(extraHeaders = {}) {
   return Object.assign({
     'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   }, extraHeaders);
 }
 

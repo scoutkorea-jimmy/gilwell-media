@@ -5,14 +5,58 @@ const UNMATCHED_BUCKET = '국문 미확정 용어';
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET, UNMATCHED_BUCKET];
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
 
-export async function onRequestGet({ env }) {
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: baseHeaders({
+      'Access-Control-Max-Age': '86400',
+    }),
+  });
+}
+
+export async function onRequestGet({ request, env }) {
+  const url = new URL(request.url);
+  const bucketFilter = String(url.searchParams.get('bucket') || '').trim();
+  const query = String(url.searchParams.get('q') || '').trim().toLowerCase();
+  const view = String(url.searchParams.get('view') || 'flat').trim().toLowerCase();
   try {
     const { results } = await env.DB.prepare(`
       SELECT id, bucket, term_ko, term_en, term_fr, description_ko, sort_order, created_at, updated_at
       FROM glossary_terms
     `).all();
-    const items = normalizeGlossaryRows(results || []);
-    return json({ buckets: BUCKETS, items }, 200, {
+    var items = normalizeGlossaryRows(results || []);
+    if (bucketFilter && bucketFilter !== 'all') {
+      items = items.filter(function (item) { return item.bucket === bucketFilter; });
+    }
+    if (query) {
+      items = items.filter(function (item) {
+        return [
+          item.term_ko,
+          item.term_en,
+          item.term_fr,
+          item.description_ko,
+          item.bucket,
+        ].some(function (value) {
+          return String(value || '').toLowerCase().includes(query);
+        });
+      });
+    }
+    var payload = {
+      source: 'BP미디어 스카우트 용어집',
+      audience: 'public-external-app',
+      generated_at: new Date().toISOString(),
+      buckets: BUCKETS,
+      count: items.length,
+      items: items,
+    };
+    if (view === 'grouped' || view === 'buckets') {
+      payload.groups = BUCKETS.reduce(function (acc, bucket) {
+        var groupedItems = items.filter(function (item) { return item.bucket === bucket; });
+        if (groupedItems.length) acc.push({ bucket: bucket, items: groupedItems });
+        return acc;
+      }, []);
+    }
+    return json(payload, 200, {
       'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
     });
   } catch (err) {
@@ -121,9 +165,18 @@ function normalizeGlossaryRows(rows) {
     });
 }
 
+function baseHeaders(extraHeaders = {}) {
+  return Object.assign({
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }, extraHeaders);
+}
+
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
+    headers: baseHeaders(extraHeaders),
   });
 }
