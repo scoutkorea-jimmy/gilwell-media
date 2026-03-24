@@ -13,25 +13,35 @@ const DP = (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+  // Parse a DB date/datetime string into a local Date object.
+  // DB stores UTC datetimes as "YYYY-MM-DD HH:MM:SS" (no T, no Z).
+  // Date-only fields like start_date are "YYYY-MM-DD" — treated as local.
+  function _parseDate(s) {
+    if (!s) return null;
+    if (s.includes('T')) return new Date(s);                    // already ISO
+    if (s.includes(' ')) return new Date(s.replace(' ', 'T') + 'Z'); // UTC datetime from DB
+    return new Date(s + 'T00:00:00');                           // date-only → local midnight
+  }
+
   function fmtDate(s) {
-    if (!s) return '';
-    const d = new Date(s.includes('T') ? s : s + 'T00:00:00');
+    const d = _parseDate(s);
+    if (!d || isNaN(d)) return '';
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
   function fmtDateTime(s) {
-    if (!s) return '';
-    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+    const d = _parseDate(s);
+    if (!d || isNaN(d)) return '';
     return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   function fmtFull(s) {
-    if (!s) return '';
-    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+    const d = _parseDate(s);
+    if (!d || isNaN(d)) return '';
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
   function fmtDateHM(s) {
-    if (!s) return '';
-    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+    const d = _parseDate(s);
+    if (!d || isNaN(d)) return '';
     const p = n => String(n).padStart(2, '0');
     return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }
@@ -1303,10 +1313,34 @@ const DP = (() => {
       <div style="display:flex;flex-wrap:wrap;gap:8px">
         ${depts.map(d => `
           <span class="dp-dept-chip">
-            ${esc(d.name)}
+            <span onclick="DP.editDepartment(${d.id}, '${esc(d.name)}')" style="cursor:pointer" title="Click to rename">${esc(d.name)}</span>
             <button onclick="DP.deleteDepartment(${d.id}, '${esc(d.name)}')" title="Delete" style="margin-left:6px;font-size:12px;color:var(--text-3);opacity:.6">×</button>
           </span>`).join('')}
       </div>`;
+  }
+
+  async function editDepartment(id, currentName) {
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Department Name <span class="dp-required">*</span></label>
+          <input id="dept-rename" class="dp-input" type="text" value="${esc(currentName)}" maxlength="100" />
+        </div>
+      </div>
+    `, {
+      title: 'Rename Department',
+      confirmLabel: 'Save',
+      onConfirm: async () => {
+        const name = $('dept-rename')?.value.trim();
+        if (!name) { showToast('Department name is required.', 'error'); return; }
+        const result = await api('PUT', `departments?id=${id}`, { name });
+        if (result) {
+          closeModal();
+          showToast('Department renamed.', 'success');
+          loadDepartments();
+        }
+      },
+    });
   }
 
   async function addDepartment() {
@@ -1828,6 +1862,24 @@ const DP = (() => {
     if (token && currentUser) {
       showApp();
     }
+
+    // Start sidebar clock
+    _startClock();
+  }
+
+  function _startClock() {
+    const isKorea = Intl.DateTimeFormat().resolvedOptions().timeZone === 'Asia/Seoul';
+    function tick() {
+      const now = new Date();
+      const kstStr   = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const localStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const kstEl   = $('dp-clock-kst');
+      const localEl = $('dp-clock-local');
+      if (kstEl)   kstEl.textContent   = kstStr;
+      if (localEl) localEl.textContent = isKorea ? '(same)' : localStr;
+    }
+    tick();
+    setInterval(tick, 1000);
   }
 
   // ── Dev Rules & Version History ────────────────────────────────────────────
@@ -2062,6 +2114,7 @@ const DP = (() => {
     addVersion,
     deleteVersion,
     addDepartment,
+    editDepartment,
     deleteDepartment,
     addComment,
     deleteComment,

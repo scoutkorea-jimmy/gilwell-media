@@ -36,6 +36,23 @@ export async function onRequestPost({ request, env, data }) {
   return json({ id: result.meta.last_row_id, name: name.trim(), ok: true });
 }
 
+export async function onRequestPut({ request, env, data }) {
+  if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
+  const url = new URL(request.url);
+  const id  = parseInt(url.searchParams.get('id') || '', 10);
+  if (!id) return json({ error: 'id is required.' }, 400);
+
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  const { name } = body;
+  if (!name || !name.trim()) return json({ error: 'name is required.' }, 400);
+
+  await env.DB.prepare(`UPDATE dp_departments SET name = ? WHERE id = ?`)
+    .bind(name.trim().slice(0, 100), id).run();
+  return json({ ok: true, name: name.trim() });
+}
+
 export async function onRequestDelete({ request, env, data }) {
   if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
   const url = new URL(request.url);
