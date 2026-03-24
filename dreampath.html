@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dreampath — Project Board</title>
+  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png" />
+  <style>
+    /* ── Reset & Base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --sidebar-bg: #1e2a3a;
+      --sidebar-w: 240px;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #eef2ff;
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-2: #64748b;
+      --text-3: #94a3b8;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+      --green: #10b981;
+      --green-light: #d1fae5;
+      --yellow: #f59e0b;
+      --yellow-light: #fef3c7;
+      --blue: #3b82f6;
+      --blue-light: #dbeafe;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,.12);
+    }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
+    input, textarea, select { font-family: inherit; font-size: inherit; }
+    .dp-hidden { display: none !important; }
+
+    /* ── Login Screen ───────────────────────────────────────────── */
+    #dp-login {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e2a3a 40%, #312e81 100%);
+    }
+    .dp-login-card {
+      background: var(--surface);
+      border-radius: 18px;
+      padding: 48px 44px 44px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+    }
+    .dp-login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .dp-login-logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      border-radius: 16px;
+      font-size: 28px;
+      margin-bottom: 14px;
+    }
+    .dp-login-logo-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.5px;
+    }
+    .dp-login-logo-sub {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-top: 4px;
+    }
+    .dp-login-card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: var(--text);
+    }
+    .dp-login-error {
+      background: var(--red-light);
+      color: #b91c1c;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .dp-login-hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 20px;
+    }
+
+    /* ── App Shell ──────────────────────────────────────────────── */
+    #dp-app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    #dp-sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .dp-sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+    .dp-sidebar-logo-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dp-sidebar-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .dp-sidebar-logo-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: .5px;
+    }
+    .dp-sidebar-logo-tagline {
+      font-size: 10px;
+      color: rgba(255,255,255,.4);
+      letter-spacing: .3px;
+      display: block;
+      margin-top: 1px;
+    }
+
+    /* Nav */
+    .dp-nav {
+      flex: 1;
+      padding: 12px 10px;
+    }
+    .dp-nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.3);
+      padding: 12px 10px 6px;
+    }
+    .dp-nav-sep {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,.07);
+      margin: 8px 10px;
+    }
+    .dp-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: rgba(255,255,255,.65);
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: background .15s, color .15s;
+      user-select: none;
+      margin-bottom: 2px;
+    }
+    .dp-nav-item:hover {
+      background: rgba(255,255,255,.07);
+      color: rgba(255,255,255,.9);
+    }
+    .dp-nav-item--active {
+      background: rgba(79, 70, 229, .25);
+      color: #a5b4fc;
+    }
+    .dp-nav-item--active .dp-nav-icon { color: #818cf8; }
+    .dp-nav-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* Sidebar footer */
+    .dp-sidebar-footer {
+      padding: 14px 12px;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+    .dp-sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .dp-user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .dp-user-avatar--sm {
+      width: 28px;
+      height: 28px;
+      font-size: 11px;
+    }
+    .dp-sidebar-user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.85);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dp-btn-logout {
+      width: 100%;
+      padding: 9px 14px;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.55);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      text-align: center;
+      transition: background .15s, color .15s;
+    }
+    .dp-btn-logout:hover {
+      background: rgba(239,68,68,.2);
+      color: #fca5a5;
+    }
+
+    /* ── Main Content ───────────────────────────────────────────── */
+    #dp-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-height: 100vh;
+      padding: 28px 32px;
+      max-width: calc(100vw - var(--sidebar-w));
+    }
+
+    /* ── Sections ───────────────────────────────────────────────── */
+    .dp-section { animation: dpFadeIn .2s ease; }
+    @keyframes dpFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .dp-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .dp-section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.4px;
+    }
+
+    /* ── Buttons ────────────────────────────────────────────────── */
+    .dp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: background .15s, box-shadow .15s, opacity .15s;
+      white-space: nowrap;
+    }
+    .dp-btn:disabled { opacity: .55; cursor: not-allowed; }
+    .dp-btn--primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(79,70,229,.25);
+    }
+    .dp-btn--primary:hover:not(:disabled) { background: var(--accent-hover); box-shadow: 0 3px 8px rgba(79,70,229,.3); }
+    .dp-btn--ghost {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .dp-btn--ghost:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+    .dp-btn--danger {
+      background: var(--red);
+      color: #fff;
+    }
+    .dp-btn--danger:hover:not(:disabled) { background: #dc2626; }
+    .dp-btn--sm { padding: 7px 14px; font-size: 12.5px; }
+    .dp-btn--xs { padding: 4px 10px; font-size: 12px; }
+    .dp-btn--full { width: 100%; }
+
+    /* ── Forms ──────────────────────────────────────────────────── */
+    .dp-form { display: flex; flex-direction: column; gap: 16px; }
+    .dp-form-row { display: flex; flex-direction: column; gap: 5px; }
+    .dp-form-row--2col { flex-direction: row; gap: 16px; }
+    .dp-form-row--2col > div { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .dp-form-row--check { flex-direction: row; align-items: center; }
+    .dp-form-divider {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-3);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: 4px;
+    }
+    .dp-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .dp-required { color: var(--red); }
+    .dp-input {
+      padding: 9px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+      width: 100%;
+    }
+    .dp-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    }
+    .dp-input:disabled { background: var(--surface2); color: var(--text-2); cursor: not-allowed; }
+    .dp-textarea {
+      resize: vertical;
+      min-height: 110px;
+    }
+    .dp-textarea--sm { min-height: 72px; }
+    .dp-check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .dp-check { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+
+    /* ── Card ───────────────────────────────────────────────────── */
+    .dp-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 22px 24px;
+    }
+    .dp-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--text);
+    }
+
+    /* ── Calendar ───────────────────────────────────────────────── */
+    #dp-calendar {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow);
+    }
+    .dp-cal-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .dp-cal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+    }
+    .dp-cal-nav {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-2);
+      font-size: 20px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s;
+    }
+    .dp-cal-nav:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+    .dp-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .dp-cal-dow {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-3);
+      padding: 6px 0;
+    }
+    .dp-cal-dow--weekend { color: #f87171; }
+    .dp-cal-day {
+      min-height: 72px;
+      border-radius: 8px;
+      padding: 6px 7px;
+      position: relative;
+      border: 1.5px solid transparent;
+      transition: background .12s, border-color .12s;
+    }
+    .dp-cal-day--empty { background: transparent; }
+    .dp-cal-day--today {
+      background: var(--accent-light);
+      border-color: var(--accent) !important;
+    }
+    .dp-cal-day--today .dp-cal-day-num { color: var(--accent); font-weight: 700; }
+    .dp-cal-day--weekend .dp-cal-day-num { color: #f87171; }
+    .dp-cal-day--has-events { background: var(--surface2); border-color: var(--border); }
+    .dp-cal-day--clickable { cursor: pointer; }
+    .dp-cal-day--clickable:hover { background: var(--accent-light); border-color: #c7d2fe; }
+    .dp-cal-day-num {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .dp-cal-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+    }
+    .dp-cal-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dp-cal-dot-more {
+      font-size: 9px;
+      color: var(--text-3);
+      font-weight: 600;
+    }
+
+    /* ── Board Previews ─────────────────────────────────────────── */
+    #dp-board-previews {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .dp-preview-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    .dp-preview-card-header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-preview-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .dp-preview-card-body {
+      flex: 1;
+      padding: 8px 10px;
+    }
+    .dp-preview-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 8px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .12s;
+      margin-bottom: 2px;
+    }
+    .dp-preview-item:hover { background: var(--bg); }
+    .dp-preview-item-title {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dp-preview-item-date {
+      font-size: 11px;
+      color: var(--text-3);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .dp-preview-empty {
+      font-size: 13px;
+      color: var(--text-3);
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .dp-preview-card-footer {
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    /* ── Post List ──────────────────────────────────────────────── */
+    .dp-post-list { display: flex; flex-direction: column; gap: 10px; }
+    .dp-post-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .dp-post-card:hover { border-color: #c7d2fe; box-shadow: var(--shadow-md); }
+    .dp-post-card-inner { flex: 1; min-width: 0; }
+    .dp-post-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .dp-post-author { font-size: 12px; color: var(--text-2); font-weight: 600; }
+    .dp-post-date { font-size: 12px; color: var(--text-3); }
+    .dp-post-file-badge {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-light);
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .dp-post-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .dp-post-excerpt {
+      font-size: 13px;
+      color: var(--text-2);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .dp-post-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .dp-board-pinned {
+      margin-bottom: 18px;
+    }
+    .dp-board-pinned-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+    .dp-pin-icon { font-size: 13px; }
+
+    /* ── Post Detail Modal ──────────────────────────────────────── */
+    .dp-post-detail-meta {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .dp-post-detail-info {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-post-detail-content {
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .dp-post-detail-content p { margin-bottom: 12px; }
+    .dp-post-detail-content p:last-child { margin-bottom: 0; }
+    .dp-post-detail-file {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Event list (in modal) ──────────────────────────────────── */
+    .dp-event-list { display: flex; flex-direction: column; gap: 12px; }
+    .dp-event-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .dp-event-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .dp-event-item-body { flex: 1; }
+    .dp-event-desc { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+
+    /* ── Emergency Contacts ─────────────────────────────────────── */
+    .dp-contacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .dp-contact-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+    .dp-contact-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .dp-contact-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .dp-contact-role {
+      font-size: 12.5px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .dp-contact-dept {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+    .dp-contact-detail {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .dp-contact-icon { font-size: 14px; }
+    .dp-contact-note {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 8px;
+      font-style: italic;
+    }
+    .dp-contact-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 4px;
+    }
+
+    /* ── User Management Table ──────────────────────────────────── */
+    .dp-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .dp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .dp-table th {
+      background: var(--surface2);
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .dp-table tr:last-child td { border-bottom: none; }
+    .dp-table tr:hover td { background: var(--surface2); }
+    .dp-row--inactive td { opacity: .55; }
+    .dp-table-user { display: flex; align-items: center; gap: 10px; }
+    .dp-table-actions { display: flex; gap: 6px; }
+    .dp-table-empty { text-align: center; padding: 32px; color: var(--text-3); }
+
+    /* ── Badges ─────────────────────────────────────────────────── */
+    .dp-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .dp-badge--admin { background: #ede9fe; color: #6d28d9; }
+    .dp-badge--member { background: var(--blue-light); color: #1d4ed8; }
+    .dp-badge--active { background: var(--green-light); color: #065f46; }
+    .dp-badge--inactive { background: var(--red-light); color: #b91c1c; }
+    .dp-badge--board { background: var(--accent-light); color: var(--accent); }
+    .dp-badge--pinned { background: var(--yellow-light); color: #92400e; }
+
+    /* ── My Account ─────────────────────────────────────────────── */
+    .dp-account-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+    .dp-account-profile {
+      text-align: center;
+    }
+    .dp-account-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: #fff;
+      font-size: 26px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 14px;
+    }
+    .dp-account-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .dp-account-username {
+      font-size: 13px;
+      color: var(--text-3);
+      margin-bottom: 10px;
+    }
+    .dp-account-details {
+      margin-top: 18px;
+      text-align: left;
+    }
+    .dp-account-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13.5px;
+      gap: 12px;
+    }
+    .dp-account-detail-row:last-child { border-bottom: none; }
+    .dp-account-detail-row span:first-child { color: var(--text-2); font-weight: 600; flex-shrink: 0; }
+
+    /* ── Empty States ───────────────────────────────────────────── */
+    .dp-empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-3);
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px dashed var(--border);
+    }
+    .dp-empty-state p { margin-bottom: 14px; font-size: 14px; }
+
+    /* ── Typography helpers ─────────────────────────────────────── */
+    .dp-text-muted { color: var(--text-2); font-size: 13px; }
+
+    /* ── Modal ──────────────────────────────────────────────────── */
+    #dp-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(2px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #dp-modal-overlay.dp-modal--open { display: flex; }
+    #dp-modal {
+      background: var(--surface);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+    }
+    #dp-modal.dp-modal--wide { max-width: 700px; }
+    .dp-modal-header {
+      padding: 20px 24px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .dp-modal-header h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+    }
+    .dp-modal-close {
+      color: var(--text-3);
+      font-size: 22px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .dp-modal-close:hover { background: var(--bg); color: var(--text); }
+    .dp-modal-body {
+      padding: 20px 24px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .dp-modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    .dp-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      padding: 12px 18px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      color: #fff;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: transform .3s ease, opacity .3s ease;
+      max-width: 340px;
+    }
+    .dp-toast--show { transform: translateY(0); opacity: 1; }
+    .dp-toast--success { background: #059669; }
+    .dp-toast--error   { background: var(--red); }
+    .dp-toast--info    { background: #0284c7; }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 200px; }
+      #dp-main { padding: 20px 18px; }
+      #dp-board-previews { grid-template-columns: 1fr; }
+      .dp-account-layout { grid-template-columns: 1fr; }
+      .dp-form-row--2col { flex-direction: column; }
+    }
+    @media (max-width: 640px) {
+      #dp-sidebar { display: none; }
+      #dp-main { margin-left: 0; max-width: 100vw; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="dp-login">
+  <div class="dp-login-card">
+    <div class="dp-login-logo">
+      <div class="dp-login-logo-mark">&#127776;</div>
+      <div class="dp-login-logo-title">DREAMPATH</div>
+      <div class="dp-login-logo-sub">Project Management Portal</div>
+    </div>
+
+    <div id="dp-login-error" class="dp-login-error dp-hidden"></div>
+
+    <div class="dp-form" style="margin-bottom:0">
+      <div class="dp-form-row">
+        <label class="dp-label" for="dp-login-username">Username</label>
+        <input
+          id="dp-login-username"
+          class="dp-input"
+          type="text"
+          placeholder="Enter your username"
+          autocomplete="username"
+          autofocus
+        />
+      </div>
+      <div class="dp-form-row">
+        <label class="dp-label" for="dp-login-password">Password</label>
+        <input
+          id="dp-login-password"
+          class="dp-input"
+          type="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        />
+      </div>
+      <button id="dp-login-btn" class="dp-btn dp-btn--primary dp-btn--full" onclick="DP.login()" style="margin-top:4px">
+        Sign In
+      </button>
+    </div>
+
+    <p class="dp-login-hint">Contact your administrator for access</p>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="dp-app" class="dp-hidden">
+
+  <!-- Sidebar -->
+  <nav id="dp-sidebar">
+    <div class="dp-sidebar-logo">
+      <div class="dp-sidebar-logo-inner">
+        <div class="dp-sidebar-logo-icon">&#127776;</div>
+        <div>
+          <div class="dp-sidebar-logo-text">DREAMPATH</div>
+          <span class="dp-sidebar-logo-tagline">Project Portal</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dp-nav">
+      <div class="dp-nav-item dp-nav-item--active" data-section="home" onclick="DP.navigate('home')">
+        <span class="dp-nav-icon">&#127968;</span>
+        <span>Home</span>
+      </div>
+
+      <div class="dp-nav-section-label">Boards</div>
+
+      <div class="dp-nav-item" data-section="announcements" onclick="DP.navigate('announcements')">
+        <span class="dp-nav-icon">&#128226;</span>
+        <span>Announcements</span>
+      </div>
+      <div class="dp-nav-item" data-section="documents" onclick="DP.navigate('documents')">
+        <span class="dp-nav-icon">&#128196;</span>
+        <span>Project Documents</span>
+      </div>
+      <div class="dp-nav-item" data-section="minutes" onclick="DP.navigate('minutes')">
+        <span class="dp-nav-icon">&#128221;</span>
+        <span>Meeting Minutes</span>
+      </div>
+
+      <hr class="dp-nav-sep" />
+
+      <div class="dp-nav-item" data-section="contacts" onclick="DP.navigate('contacts')">
+        <span class="dp-nav-icon">&#128222;</span>
+        <span>Emergency Contacts</span>
+      </div>
+
+      <hr class="dp-nav-sep" />
+
+      <div class="dp-nav-item dp-admin-only" data-section="users" onclick="DP.navigate('users')">
+        <span class="dp-nav-icon">&#128101;</span>
+        <span>User Management</span>
+      </div>
+
+      <div class="dp-nav-item" data-section="account" onclick="DP.navigate('account')">
+        <span class="dp-nav-icon">&#128100;</span>
+        <span>My Account</span>
+      </div>
+    </div>
+
+    <div class="dp-sidebar-footer">
+      <div class="dp-sidebar-user">
+        <div class="dp-user-avatar" id="dp-user-avatar">JD</div>
+        <span class="dp-sidebar-user-name" id="dp-user-name">Loading...</span>
+      </div>
+      <button class="dp-btn-logout" onclick="DP.logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main id="dp-main">
+
+    <!-- Home -->
+    <div id="dp-section-home" class="dp-section">
+      <div id="dp-calendar">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading calendar...</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);margin-bottom:14px">Recent Activity</div>
+      <div id="dp-board-previews">
+        <div id="dp-preview-announcements"></div>
+        <div id="dp-preview-documents"></div>
+        <div id="dp-preview-minutes"></div>
+      </div>
+    </div>
+
+    <!-- Announcements -->
+    <div id="dp-section-announcements" class="dp-section dp-hidden">
+      <div id="dp-board-announcements">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Project Documents -->
+    <div id="dp-section-documents" class="dp-section dp-hidden">
+      <div id="dp-board-documents">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Meeting Minutes -->
+    <div id="dp-section-minutes" class="dp-section dp-hidden">
+      <div id="dp-board-minutes">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Emergency Contacts -->
+    <div id="dp-section-contacts" class="dp-section dp-hidden">
+      <div id="dp-contacts-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- User Management -->
+    <div id="dp-section-users" class="dp-section dp-admin-only dp-hidden">
+      <div id="dp-users-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- My Account -->
+    <div id="dp-section-account" class="dp-section dp-hidden">
+      <div id="dp-account-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════ MODAL ══════════════ -->
+<div id="dp-modal-overlay">
+  <div id="dp-modal">
+    <div class="dp-modal-header">
+      <h3 id="dp-modal-title"></h3>
+      <button class="dp-modal-close" onclick="DP.closeModal()" title="Close">&times;</button>
+    </div>
+    <div class="dp-modal-body" id="dp-modal-body"></div>
+    <div class="dp-modal-footer" id="dp-modal-footer">
+      <button class="dp-btn dp-btn--ghost" onclick="DP.closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/dreampath.js"></script>
+</body>
+</html>
