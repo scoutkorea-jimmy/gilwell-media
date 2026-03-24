@@ -45,6 +45,9 @@ export async function onRequestPost({ request, env }) {
       contentType: file.type || 'application/octet-stream',
       cacheControl: 'public, max-age=31536000, immutable',
     },
+    customMetadata: {
+      originalName: originalName,
+    },
   });
 
   const origin = new URL(request.url).origin;
