@@ -17,3 +17,9 @@ ADMIN_SECRET=replace-with-a-random-64-char-hex-string
 # Required if you want admin analytics and the homepage footer to use
 # Cloudflare metrics instead of the internal fallback counts.
 CF_ANALYTICS_API_TOKEN=replace-with-a-cloudflare-api-token
+
+# Dreampath project board
+DREAMPATH_PASSWORD=change-me-to-a-strong-password
+DREAMPATH_SECRET=replace-with-a-random-64-char-hex-string
+# Initial admin password for jimmy (used only on first login if hash is null)
+JIMMY_PASSWORD=Tiger1420**
