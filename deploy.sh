@@ -79,10 +79,14 @@ fi
 VERSION=$(printf "%02d.%03d.%02d" "$NEW_AA" "$NEW_BBB" "$NEW_CC")
 NOW=$(date -u +"%Y-%m-%d %H:%M:%S")
 
-# ── D1에 버전 기록 삽입 ───────────────────────────────────────────────────────
+# ── D1에 버전 기록 삽입 (SQL 인젝션 방지: 작은따옴표 이스케이프) ────────────────
+# SQLite에서 ' → '' 로 치환하는 방식으로 이스케이프
+DESC_ESC="${DESCRIPTION//\'/\'\'}"
+TYPE_ESC="${TYPE//\'/\'\'}"
+
 echo "📝 Registering v${VERSION} ($TYPE)..."
 wrangler d1 execute "$DB" --remote \
-  --command "INSERT INTO dp_versions (version, aa, bbb, cc, type, description, released_at) VALUES ('${VERSION}', ${NEW_AA}, ${NEW_BBB}, ${NEW_CC}, '${TYPE}', '${DESCRIPTION}', '${NOW}')" \
+  --command "INSERT INTO dp_versions (version, aa, bbb, cc, type, description, released_at) VALUES ('${VERSION}', ${NEW_AA}, ${NEW_BBB}, ${NEW_CC}, '${TYPE_ESC}', '${DESC_ESC}', '${NOW}')" \
   > /dev/null 2>&1
 
 echo ""
