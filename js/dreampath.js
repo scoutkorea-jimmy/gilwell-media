@@ -29,6 +29,12 @@ const DP = (() => {
     const p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
+  function fmtDateHM(s) {
+    if (!s) return '';
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+    const p = n => String(n).padStart(2, '0');
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
 
   // ── Toast notifications ────────────────────────────────────────────────────
   function showToast(msg, type = 'info') {
@@ -296,8 +302,8 @@ const DP = (() => {
              draggable="true"
              ondragstart="event.stopPropagation(); DP._calDragStart(event, ${ev.id})"
              onclick="event.stopPropagation(); DP.viewEvent(${ev.id})"
-             title="${esc(ev.title)}">
-          ${esc(ev.title)}
+             title="${esc(ev.title)}${ev.start_time ? ' · ' + ev.start_time : ''}">
+          ${ev.start_time ? `<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>` : ''}${esc(ev.title)}
         </div>`).join('');
 
       const moreHtml = dayEvents.length > 3
@@ -458,8 +464,7 @@ const DP = (() => {
           <div class="dp-post-card-meta">
             ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
             <span class="dp-post-author">${esc(post.author_name)}</span>
-            <span class="dp-post-date">${esc(fmtDate(post.created_at))}</span>
-            ${post.updated_at && post.updated_at !== post.created_at ? `<span class="dp-post-edited">Edited ${esc(fmtDate(post.updated_at))}</span>` : ''}
+            <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtDateHM(post.updated_at))}` : esc(fmtDateHM(post.created_at))}</span>
             ${post.file_url ? '<span class="dp-post-file-badge">&#128206; File attached</span>' : ''}
           </div>
           <h4 class="dp-post-title">${esc(post.title)}</h4>
@@ -750,13 +755,25 @@ const DP = (() => {
           <label class="dp-label">Title <span class="dp-required">*</span></label>
           <input id="ae-title" class="dp-input" type="text" placeholder="Event title" maxlength="200" />
         </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Start Date <span class="dp-required">*</span></label>
-          <input id="ae-start" class="dp-input" type="date" value="${esc(today)}" />
+        <div style="display:flex;gap:12px">
+          <div class="dp-form-row" style="flex:1">
+            <label class="dp-label">Start Date <span class="dp-required">*</span></label>
+            <input id="ae-start" class="dp-input" type="date" value="${esc(today)}" />
+          </div>
+          <div class="dp-form-row" style="flex:0 0 110px">
+            <label class="dp-label">Start Time</label>
+            <input id="ae-start-time" class="dp-input" type="time" />
+          </div>
         </div>
-        <div class="dp-form-row">
-          <label class="dp-label">End Date</label>
-          <input id="ae-end" class="dp-input" type="date" />
+        <div style="display:flex;gap:12px">
+          <div class="dp-form-row" style="flex:1">
+            <label class="dp-label">End Date</label>
+            <input id="ae-end" class="dp-input" type="date" />
+          </div>
+          <div class="dp-form-row" style="flex:0 0 110px">
+            <label class="dp-label">End Time</label>
+            <input id="ae-end-time" class="dp-input" type="time" />
+          </div>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Type</label>
@@ -786,7 +803,9 @@ const DP = (() => {
 
         const result = await api('POST', 'events', {
           title, start_date,
+          start_time: $('ae-start-time')?.value || null,
           end_date: end_date || null,
+          end_time: $('ae-end-time')?.value || null,
           type, description: description || null,
         });
         if (result) {
@@ -843,7 +862,7 @@ const DP = (() => {
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${typeColors[ev.type] || '#6366f1'}22;color:${typeColors[ev.type] || '#6366f1'}">${esc(typeLabels[ev.type] || ev.type)}</span>
-          <span style="font-size:13px;color:var(--text-3)">${esc(ev.start_date)}${ev.end_date ? ` → ${esc(ev.end_date)}` : ''}</span>
+          <span style="font-size:13px;color:var(--text-3)">${esc(ev.start_date)}${ev.start_time ? ` ${esc(ev.start_time)}` : ''}${ev.end_date ? ` → ${esc(ev.end_date)}${ev.end_time ? ' ' + esc(ev.end_time) : ''}` : ''}</span>
         </div>
         ${ev.description ? `<div class="dp-post-detail-content" style="margin-bottom:16px">${ev.description.split('\n').map(l => esc(l)).join('<br>')}</div>` : ''}
         <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">
@@ -871,14 +890,22 @@ const DP = (() => {
           <label class="dp-label">Description</label>
           <textarea id="ee-desc" class="dp-input dp-textarea">${esc(ev.description || '')}</textarea>
         </div>
-        <div style="display:flex;gap:12px">
-          <div class="dp-form-row" style="flex:1">
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div class="dp-form-row" style="flex:1;min-width:140px">
             <label class="dp-label">Start Date <span class="dp-required">*</span></label>
             <input id="ee-start" class="dp-input" type="date" value="${esc(ev.start_date)}" />
           </div>
-          <div class="dp-form-row" style="flex:1">
+          <div class="dp-form-row" style="flex:0 0 110px">
+            <label class="dp-label">Start Time</label>
+            <input id="ee-start-time" class="dp-input" type="time" value="${esc(ev.start_time || '')}" />
+          </div>
+          <div class="dp-form-row" style="flex:1;min-width:140px">
             <label class="dp-label">End Date</label>
             <input id="ee-end" class="dp-input" type="date" value="${esc(ev.end_date || '')}" />
+          </div>
+          <div class="dp-form-row" style="flex:0 0 110px">
+            <label class="dp-label">End Time</label>
+            <input id="ee-end-time" class="dp-input" type="time" value="${esc(ev.end_time || '')}" />
           </div>
         </div>
         <div class="dp-form-row">
@@ -911,7 +938,9 @@ const DP = (() => {
           title,
           description: $('ee-desc')?.value.trim() || null,
           start_date:  $('ee-start')?.value,
+          start_time:  $('ee-start-time')?.value || null,
           end_date:    $('ee-end')?.value || null,
+          end_time:    $('ee-end-time')?.value || null,
           type:        $('ee-type')?.value,
           edit_note,
         });
@@ -969,10 +998,10 @@ const DP = (() => {
   // ── Emergency Contacts ─────────────────────────────────────────────────────
   async function loadContacts() {
     const data = await api('GET', 'contacts');
-    renderContacts(data?.contacts || []);
+    renderContacts(data?.contacts || [], data?.team || []);
   }
 
-  function renderContacts(contacts) {
+  function renderContacts(contacts, team) {
     const container = $('dp-contacts-content');
     if (!container) return;
 
@@ -981,37 +1010,52 @@ const DP = (() => {
       addBtn = `<button class="dp-btn dp-btn--primary dp-admin-only" onclick="DP.createContact()">+ Add Contact</button>`;
     }
 
-    let cardsHtml = '';
-    if (contacts.length === 0) {
-      cardsHtml = `<div class="dp-empty-state"><p>No emergency contacts listed yet.</p></div>`;
-    } else {
-      cardsHtml = `<div class="dp-contacts-grid">` + contacts.map(c => `
-        <div class="dp-contact-card">
-          <div class="dp-contact-avatar">${esc((c.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
+    function contactCard(c, isTeam) {
+      const initials = (c.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const deptChip = c.department ? `<span class="dp-dept-chip" style="margin-top:4px;display:inline-block">${esc(c.department)}</span>` : '';
+      return `
+        <div class="dp-contact-card${isTeam ? ' dp-contact-card--team' : ''}">
+          <div class="dp-contact-avatar">${esc(initials)}</div>
           <div class="dp-contact-info">
             <h4 class="dp-contact-name">${esc(c.name)}</h4>
             ${c.role_title ? `<p class="dp-contact-role">${esc(c.role_title)}</p>` : ''}
-            ${c.department ? `<p class="dp-contact-dept">${esc(c.department)}</p>` : ''}
+            ${deptChip}
             ${c.phone ? `<p class="dp-contact-detail"><span class="dp-contact-icon">&#128222;</span><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></p>` : ''}
             ${c.email ? `<p class="dp-contact-detail"><span class="dp-contact-icon">&#9993;</span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></p>` : ''}
             ${c.note ? `<p class="dp-contact-note">${esc(c.note)}</p>` : ''}
           </div>
-          ${currentUser?.role === 'admin' ? `
+          ${!isTeam && currentUser?.role === 'admin' ? `
             <div class="dp-contact-actions dp-admin-only">
               <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editContact(${c.id})">Edit</button>
               <button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteContact(${c.id})">Delete</button>
             </div>
           ` : ''}
-        </div>
-      `).join('') + `</div>`;
+        </div>`;
     }
+
+    const teamHtml = team && team.length ? `
+      <div class="dp-contacts-section-label">Team Members</div>
+      <div class="dp-contacts-grid">
+        ${team.map(u => contactCard(u, true)).join('')}
+      </div>` : '';
+
+    const extHtml = contacts.length ? `
+      <div class="dp-contacts-section-label" style="margin-top:24px">External Contacts</div>
+      <div class="dp-contacts-grid">
+        ${contacts.map(c => contactCard(c, false)).join('')}
+      </div>` : '';
+
+    const emptyHtml = (!team || !team.length) && !contacts.length
+      ? `<div class="dp-empty-state"><p>No contacts listed yet.</p></div>` : '';
 
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">Emergency Contacts</h2>
         ${addBtn}
       </div>
-      ${cardsHtml}
+      ${teamHtml}
+      ${extHtml}
+      ${emptyHtml}
     `;
   }
 
@@ -1028,7 +1072,7 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Department</label>
-          <input id="cc-dept" class="dp-input" type="text" maxlength="100" />
+          <select id="cc-dept" class="dp-input"><option value="">— None —</option></select>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Phone</label>
@@ -1065,6 +1109,17 @@ const DP = (() => {
         }
       },
     });
+    api('GET', 'departments').then(d => {
+      const sel = $('cc-dept');
+      if (sel && d?.departments) {
+        d.departments.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept.name;
+          opt.textContent = dept.name;
+          sel.appendChild(opt);
+        });
+      }
+    });
   }
 
   async function editContact(id) {
@@ -1085,7 +1140,7 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Department</label>
-          <input id="ec-dept" class="dp-input" type="text" value="${esc(c.department || '')}" maxlength="100" />
+          <select id="ec-dept" class="dp-input"><option value="">— None —</option></select>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Phone</label>
@@ -1121,6 +1176,18 @@ const DP = (() => {
           loadContacts();
         }
       },
+    });
+    api('GET', 'departments').then(d => {
+      const sel = $('ec-dept');
+      if (sel && d?.departments) {
+        d.departments.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept.name;
+          opt.textContent = dept.name;
+          if (dept.name === c.department) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
     });
   }
 
@@ -1523,6 +1590,21 @@ const DP = (() => {
     const container = $('dp-account-content');
     if (!container) return;
 
+    // Parse phone into cc + number for the form
+    const storedPhone = user.phone || '';
+    let phoneCC = '+82', phoneNum = '';
+    const ccMatch = storedPhone.match(/^(\+\d+)\s(.*)$/);
+    if (ccMatch) { phoneCC = ccMatch[1]; phoneNum = ccMatch[2]; }
+    else if (storedPhone) { phoneNum = storedPhone; }
+
+    const phoneCCOptions = [
+      ['+82','🇰🇷 +82 Korea'],['+1','🇺🇸 +1 US/Canada'],['+44','🇬🇧 +44 UK'],
+      ['+81','🇯🇵 +81 Japan'],['+86','🇨🇳 +86 China'],['+852','🇭🇰 +852 Hong Kong'],
+      ['+65','🇸🇬 +65 Singapore'],['+61','🇦🇺 +61 Australia'],['+49','🇩🇪 +49 Germany'],
+      ['+33','🇫🇷 +33 France'],['+971','🇦🇪 +971 UAE'],['+966','🇸🇦 +966 Saudi Arabia'],
+      ['+91','🇮🇳 +91 India'],['+55','🇧🇷 +55 Brazil'],
+    ].map(([v, l]) => `<option value="${v}"${phoneCC === v ? ' selected' : ''}>${l}</option>`).join('');
+
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">My Account</h2>
@@ -1532,13 +1614,47 @@ const DP = (() => {
           <div class="dp-account-avatar">${esc((user.display_name || user.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
           <h3 class="dp-account-name">${esc(user.display_name)}</h3>
           <p class="dp-account-username">@${esc(user.username)}</p>
-          <div class="dp-account-details">
-            ${user.department ? `<div class="dp-account-detail-row"><span class="dp-text-muted">Department</span><span>${esc(user.department)}</span></div>` : ''}
-            ${user.email ? `<div class="dp-account-detail-row"><span class="dp-text-muted">Email</span><a href="mailto:${esc(user.email)}">${esc(user.email)}</a></div>` : ''}
-            ${user.phone ? `<div class="dp-account-detail-row"><span class="dp-text-muted">Phone</span><a href="tel:${esc(user.phone)}">${esc(user.phone)}</a></div>` : ''}
-            <div class="dp-account-detail-row"><span class="dp-text-muted">Member since</span><span>${esc(fmtDate(user.created_at))}</span></div>
+        </div>
+
+        <div class="dp-card">
+          <h3 class="dp-card-title">Profile & Emergency Contact Info</h3>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">This information is visible in Emergency Contacts.</p>
+          <div class="dp-form">
+            <div class="dp-form-row dp-form-row--2col">
+              <div>
+                <label class="dp-label">Display Name</label>
+                <input id="prof-name" class="dp-input" type="text" value="${esc(user.display_name)}" maxlength="100" />
+              </div>
+              <div>
+                <label class="dp-label">Role / Title</label>
+                <input id="prof-role" class="dp-input" type="text" value="${esc(user.role_title || '')}" placeholder="e.g. Project Manager" maxlength="100" />
+              </div>
+            </div>
+            <div class="dp-form-row dp-form-row--2col">
+              <div>
+                <label class="dp-label">Email</label>
+                <input id="prof-email" class="dp-input" type="email" value="${esc(user.email || '')}" />
+              </div>
+              <div>
+                <label class="dp-label">Department</label>
+                <select id="prof-dept" class="dp-input"><option value="">— None —</option></select>
+              </div>
+            </div>
+            <div class="dp-form-row">
+              <label class="dp-label">Phone</label>
+              <div style="display:flex;gap:8px">
+                <select id="prof-phone-cc" class="dp-input" style="width:180px">${phoneCCOptions}</select>
+                <input id="prof-phone-num" class="dp-input" type="tel" value="${esc(phoneNum)}" placeholder="10-1234-5678" style="flex:1" />
+              </div>
+            </div>
+            <div class="dp-form-row">
+              <label class="dp-label">Emergency Note</label>
+              <textarea id="prof-note" class="dp-input dp-textarea dp-textarea--sm" placeholder="e.g. Contact via KakaoTalk after 6pm" maxlength="500">${esc(user.emergency_note || '')}</textarea>
+            </div>
+            <button class="dp-btn dp-btn--primary" onclick="DP.saveProfile()">Save Profile</button>
           </div>
         </div>
+
         <div class="dp-card dp-account-password">
           <h3 class="dp-card-title">Change Password</h3>
           <div class="dp-form">
@@ -1559,6 +1675,50 @@ const DP = (() => {
         </div>
       </div>
     `;
+
+    // Populate department dropdown
+    api('GET', 'departments').then(d => {
+      const sel = $('prof-dept');
+      if (sel && d?.departments) {
+        d.departments.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept.name;
+          opt.textContent = dept.name;
+          if (dept.name === user.department) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+    });
+  }
+
+  async function saveProfile() {
+    const phone = $('prof-phone-num')?.value.trim()
+      ? $('prof-phone-cc')?.value + ' ' + $('prof-phone-num')?.value.trim()
+      : null;
+    const body = {
+      display_name:    $('prof-name')?.value.trim()  || undefined,
+      email:           $('prof-email')?.value.trim()  || null,
+      phone,
+      department:      $('prof-dept')?.value          || null,
+      role_title:      $('prof-role')?.value.trim()   || null,
+      emergency_note:  $('prof-note')?.value.trim()   || null,
+    };
+    // Remove undefined keys
+    Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
+
+    const result = await api('PUT', 'me', body);
+    if (result) {
+      showToast('Profile saved.', 'success');
+      // Update sidebar name if display_name changed
+      if (result.user?.display_name) {
+        currentUser.display_name = result.user.display_name;
+        localStorage.setItem('dp_user', JSON.stringify(currentUser));
+        $('dp-user-name').textContent = result.user.display_name;
+        const initials = result.user.display_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        $('dp-user-avatar').textContent = initials;
+      }
+      loadAccount();
+    }
   }
 
   async function changePassword() {
@@ -1895,6 +2055,7 @@ const DP = (() => {
     createUser,
     editUser,
     deleteUser,
+    saveProfile,
     changePassword,
     prevMonth,
     nextMonth,
