@@ -842,6 +842,21 @@
     .dp-table-user { display: flex; align-items: center; gap: 10px; }
     .dp-table-actions { display: flex; gap: 6px; }
     .dp-table-empty { text-align: center; padding: 32px; color: var(--text-3); }
+    .dp-table th.dp-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+    .dp-table th.dp-th-sort:hover { color: var(--text-1); }
+    .dp-sort-icon { display: inline-block; margin-left: 4px; opacity: .35; font-style: normal; font-size: 10px; }
+    .dp-th-sort.dp-sort-asc .dp-sort-icon,
+    .dp-th-sort.dp-sort-desc .dp-sort-icon { opacity: 1; color: var(--accent); }
+
+    /* ── User filter bar ─────────────────────────────────────────── */
+    .dp-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 0 16px;
+    }
+    .dp-filter-bar .dp-input { min-width: 180px; flex: 1; }
+    .dp-filter-bar select.dp-input { flex: 0 0 auto; min-width: 120px; }
 
     /* ── Badges ─────────────────────────────────────────────────── */
     .dp-badge {
@@ -1470,7 +1485,7 @@
 
       <div class="dp-nav-item" data-section="contacts" onclick="DP.navigate('contacts')">
         <span class="dp-nav-icon">&#128222;</span>
-        <span>Emergency Contacts</span>
+        <span>Project Team Contacts</span>
       </div>
 
       <hr class="dp-nav-sep" />

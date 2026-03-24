@@ -526,7 +526,7 @@ const DP = (() => {
       <div class="dp-post-attachments">
         <div class="dp-attach-label">Attachments</div>
         ${others.map(f => `
-          <a href="${esc(f.file_url)}" target="_blank" rel="noopener" class="dp-attach-item">
+          <a href="${esc(f.file_url)}" download="${esc(f.file_name)}" class="dp-attach-item">
             <span class="dp-attach-icon">${fileIcon(f.file_type)}</span>
             <span class="dp-attach-name">${esc(f.file_name)}</span>
             <span class="dp-attach-size">${fmtSize(f.file_size)}</span>
@@ -1025,20 +1025,15 @@ const DP = (() => {
     renderContacts(data?.contacts || [], data?.team || []);
   }
 
-  function renderContacts(contacts, team) {
+  function renderContacts(_contacts, team) {
     const container = $('dp-contacts-content');
     if (!container) return;
 
-    let addBtn = '';
-    if (currentUser?.role === 'admin') {
-      addBtn = `<button class="dp-btn dp-btn--primary dp-admin-only" onclick="DP.createContact()">+ Add Contact</button>`;
-    }
-
-    function contactCard(c, isTeam) {
+    function contactCard(c) {
       const initials = (c.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
       const deptChip = c.department ? `<span class="dp-dept-chip" style="margin-top:4px;display:inline-block">${esc(c.department)}</span>` : '';
       return `
-        <div class="dp-contact-card${isTeam ? ' dp-contact-card--team' : ''}">
+        <div class="dp-contact-card dp-contact-card--team">
           <div class="dp-contact-avatar">${esc(initials)}</div>
           <div class="dp-contact-info">
             <h4 class="dp-contact-name">${esc(c.name)}</h4>
@@ -1048,37 +1043,22 @@ const DP = (() => {
             ${c.email ? `<p class="dp-contact-detail"><span class="dp-contact-icon">&#9993;</span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></p>` : ''}
             ${c.note ? `<p class="dp-contact-note">${esc(c.note)}</p>` : ''}
           </div>
-          ${!isTeam && currentUser?.role === 'admin' ? `
-            <div class="dp-contact-actions dp-admin-only">
-              <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editContact(${c.id})">Edit</button>
-              <button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteContact(${c.id})">Delete</button>
-            </div>
-          ` : ''}
         </div>`;
     }
 
     const teamHtml = team && team.length ? `
-      <div class="dp-contacts-section-label">Team Members</div>
       <div class="dp-contacts-grid">
-        ${team.map(u => contactCard(u, true)).join('')}
+        ${team.map(u => contactCard(u)).join('')}
       </div>` : '';
 
-    const extHtml = contacts.length ? `
-      <div class="dp-contacts-section-label" style="margin-top:24px">External Contacts</div>
-      <div class="dp-contacts-grid">
-        ${contacts.map(c => contactCard(c, false)).join('')}
-      </div>` : '';
-
-    const emptyHtml = (!team || !team.length) && !contacts.length
-      ? `<div class="dp-empty-state"><p>No contacts listed yet.</p></div>` : '';
+    const emptyHtml = (!team || !team.length)
+      ? `<div class="dp-empty-state"><p>No team members found.</p></div>` : '';
 
     container.innerHTML = `
       <div class="dp-section-header">
-        <h2 class="dp-section-title">Emergency Contacts</h2>
-        ${addBtn}
+        <h2 class="dp-section-title">Project Team Contacts</h2>
       </div>
       ${teamHtml}
-      ${extHtml}
       ${emptyHtml}
     `;
   }
@@ -1231,51 +1211,105 @@ const DP = (() => {
   }
 
   // ── User Management ────────────────────────────────────────────────────────
+  let _allUsers = [];
+  let _userSort = { col: 'display_name', dir: 'asc' };
+
   async function loadUsers() {
     const data = await api('GET', 'users');
-    renderUsers(data?.users || []);
+    _allUsers = data?.users || [];
+    renderUsers(_allUsers);
     loadDepartments();
+  }
+
+  function filterAndRenderUsers() {
+    const q      = ($('um-search')?.value || '').toLowerCase();
+    const role   = $('um-role')?.value || '';
+    const status = $('um-status')?.value || '';
+    const dept   = $('um-dept')?.value || '';
+
+    let list = _allUsers.filter(u => {
+      if (q && !((u.display_name || '').toLowerCase().includes(q) || (u.username || '').toLowerCase().includes(q))) return false;
+      if (role   && u.role !== role) return false;
+      if (status === 'active'   && !u.is_active) return false;
+      if (status === 'inactive' &&  u.is_active) return false;
+      if (dept   && (u.department || '') !== dept) return false;
+      return true;
+    });
+
+    const { col, dir } = _userSort;
+    list.sort((a, b) => {
+      let av = a[col] ?? '', bv = b[col] ?? '';
+      if (col === 'is_active') { av = a.is_active ? 1 : 0; bv = b.is_active ? 1 : 0; }
+      if (col === 'created_at') { av = a.created_at || ''; bv = b.created_at || ''; }
+      const cmp = typeof av === 'number' ? av - bv : String(av).localeCompare(String(bv), undefined, { sensitivity: 'base' });
+      return dir === 'asc' ? cmp : -cmp;
+    });
+
+    const tbody = document.querySelector('#dp-users-content tbody');
+    if (!tbody) return;
+    tbody.innerHTML = buildUserRows(list);
+  }
+
+  function sortUsers(col) {
+    if (_userSort.col === col) {
+      _userSort.dir = _userSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      _userSort = { col, dir: 'asc' };
+    }
+    // update header classes
+    document.querySelectorAll('#dp-users-content .dp-th-sort').forEach(th => {
+      th.classList.remove('dp-sort-asc', 'dp-sort-desc');
+      if (th.dataset.col === col) th.classList.add(_userSort.dir === 'asc' ? 'dp-sort-asc' : 'dp-sort-desc');
+    });
+    filterAndRenderUsers();
+  }
+
+  function buildUserRows(users) {
+    if (!users.length) return `<tr><td colspan="7" class="dp-table-empty">No users found.</td></tr>`;
+    return users.map(u => {
+      const initials = (u.display_name || u.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const roleBadge = u.role === 'admin'
+        ? `<span class="dp-badge dp-badge--admin">Admin</span>`
+        : `<span class="dp-badge dp-badge--member">Member</span>`;
+      const statusBadge = u.is_active
+        ? `<span class="dp-badge dp-badge--active">Active</span>`
+        : `<span class="dp-badge dp-badge--inactive">Inactive</span>`;
+      const isSelf = u.id === currentUser?.id;
+      return `
+        <tr class="${!u.is_active ? 'dp-row--inactive' : ''}">
+          <td>
+            <div class="dp-table-user">
+              <div class="dp-user-avatar dp-user-avatar--sm">${esc(initials)}</div>
+              <span>${esc(u.display_name)}</span>
+            </div>
+          </td>
+          <td class="dp-text-muted">${esc(u.username)}</td>
+          <td>${roleBadge}</td>
+          <td class="dp-text-muted">${esc(u.department || '—')}</td>
+          <td>${statusBadge}</td>
+          <td class="dp-text-muted">${esc(fmtDate(u.created_at))}</td>
+          <td>
+            <div class="dp-table-actions">
+              ${!isSelf ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editUser(${u.id})">Edit</button>` : ''}
+              ${!isSelf && u.username !== 'jimmy' ? `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteUser(${u.id})">Delete</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
   }
 
   function renderUsers(users) {
     const container = $('dp-users-content');
     if (!container) return;
 
-    let rows = '';
-    if (users.length === 0) {
-      rows = `<tr><td colspan="7" class="dp-table-empty">No users found.</td></tr>`;
-    } else {
-      rows = users.map(u => {
-        const initials = (u.display_name || u.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        const roleBadge = u.role === 'admin'
-          ? `<span class="dp-badge dp-badge--admin">Admin</span>`
-          : `<span class="dp-badge dp-badge--member">Member</span>`;
-        const statusBadge = u.is_active
-          ? `<span class="dp-badge dp-badge--active">Active</span>`
-          : `<span class="dp-badge dp-badge--inactive">Inactive</span>`;
-        const isSelf = u.id === currentUser?.id;
-        return `
-          <tr class="${!u.is_active ? 'dp-row--inactive' : ''}">
-            <td>
-              <div class="dp-table-user">
-                <div class="dp-user-avatar dp-user-avatar--sm">${esc(initials)}</div>
-                <span>${esc(u.display_name)}</span>
-              </div>
-            </td>
-            <td class="dp-text-muted">${esc(u.username)}</td>
-            <td>${roleBadge}</td>
-            <td class="dp-text-muted">${esc(u.department || '—')}</td>
-            <td>${statusBadge}</td>
-            <td class="dp-text-muted">${esc(fmtDate(u.created_at))}</td>
-            <td>
-              <div class="dp-table-actions">
-                ${!isSelf ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editUser(${u.id})">Edit</button>` : ''}
-                ${!isSelf && u.username !== 'jimmy' ? `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteUser(${u.id})">Delete</button>` : ''}
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
+    const depts = [...new Set(users.map(u => u.department).filter(Boolean))].sort();
+    const deptOptions = depts.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+
+    function thSort(col, label) {
+      const isActive = _userSort.col === col;
+      const cls = isActive ? ` dp-sort-${_userSort.dir}` : '';
+      const icon = `<i class="dp-sort-icon">${isActive ? (_userSort.dir === 'asc' ? '▲' : '▼') : '⇅'}</i>`;
+      return `<th class="dp-th-sort${cls}" data-col="${col}" onclick="DP.sortUsers('${col}')">${label}${icon}</th>`;
     }
 
     container.innerHTML = `
@@ -1283,20 +1317,39 @@ const DP = (() => {
         <h2 class="dp-section-title">User Management</h2>
         <button class="dp-btn dp-btn--primary" onclick="DP.createUser()">+ Add User</button>
       </div>
+
+      <div class="dp-filter-bar">
+        <input id="um-search" class="dp-input" type="search" placeholder="Search name or username…" oninput="DP.filterAndRenderUsers()" />
+        <select id="um-role" class="dp-input" onchange="DP.filterAndRenderUsers()">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="member">Member</option>
+        </select>
+        <select id="um-status" class="dp-input" onchange="DP.filterAndRenderUsers()">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <select id="um-dept" class="dp-input" onchange="DP.filterAndRenderUsers()">
+          <option value="">All Departments</option>
+          ${deptOptions}
+        </select>
+      </div>
+
       <div class="dp-table-wrap">
         <table class="dp-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Department</th>
-              <th>Status</th>
-              <th>Joined</th>
+              ${thSort('display_name', 'Name')}
+              ${thSort('username', 'Username')}
+              ${thSort('role', 'Role')}
+              ${thSort('department', 'Department')}
+              ${thSort('is_active', 'Status')}
+              ${thSort('created_at', 'Joined')}
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>${rows}</tbody>
+          <tbody>${buildUserRows(users)}</tbody>
         </table>
       </div>
 
@@ -2237,6 +2290,8 @@ const DP = (() => {
     createUser,
     editUser,
     deleteUser,
+    sortUsers,
+    filterAndRenderUsers,
     saveProfile,
     changePassword,
     prevMonth,

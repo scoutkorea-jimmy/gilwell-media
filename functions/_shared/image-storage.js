@@ -51,6 +51,13 @@ export async function serveStoredBucketImage(env, key) {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('Cache-Control', headers.get('Cache-Control') || 'public, max-age=31536000, immutable');
+
+  const originalName = object.customMetadata?.originalName;
+  if (originalName) {
+    const encoded = encodeURIComponent(originalName).replace(/'/g, '%27');
+    headers.set('Content-Disposition', `attachment; filename*=UTF-8''${encoded}`);
+  }
+
   return new Response(object.body, {
     status: 200,
     headers,
