@@ -447,7 +447,7 @@
     }
     .dp-cal-dow--weekend { color: #f87171; }
     .dp-cal-day {
-      min-height: 72px;
+      min-height: 100px;
       border-radius: 8px;
       padding: 6px 7px;
       position: relative;
@@ -471,21 +471,47 @@
       display: block;
       margin-bottom: 4px;
     }
-    .dp-cal-dots {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
+    .dp-cal-event-strips { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+    .dp-cal-event-strip {
+      font-size: 10px;
+      font-weight: 500;
+      color: white;
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      line-height: 1.5;
     }
-    .dp-cal-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .dp-cal-dot-more {
-      font-size: 9px;
+    .dp-cal-event-strip:hover { opacity: .85; }
+    .dp-cal-more {
+      font-size: 10px;
       color: var(--text-3);
-      font-weight: 600;
+      padding: 1px 4px;
+      cursor: pointer;
+    }
+    .dp-cal-more:hover { color: var(--accent); }
+    .dp-cal-today-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+    }
+    .dp-dept-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
     }
 
     /* ── Board Previews ─────────────────────────────────────────── */
@@ -493,7 +519,10 @@
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 18px;
+      align-items: stretch;
     }
+    #dp-board-previews > div { display: flex; flex-direction: column; }
+    #dp-board-previews .dp-preview-card { flex: 1; }
     .dp-preview-card {
       background: var(--surface);
       border-radius: var(--radius);
@@ -1197,6 +1226,86 @@
     .dp-history-editor { font-weight: 600; color: var(--accent); }
     .dp-history-date { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
     .dp-history-note { color: var(--text-2); font-size: 12px; }
+
+    /* ── Calendar Drag ──────────────────────────────────────────── */
+    .dp-cal-day--dragover {
+      background: #eef2ff !important;
+      outline: 2px dashed var(--accent);
+    }
+    .dp-cal-event-strip[draggable="true"] {
+      cursor: grab;
+    }
+    .dp-cal-event-strip[draggable="true"]:active {
+      cursor: grabbing;
+      opacity: .7;
+    }
+
+    /* ── Comments ───────────────────────────────────────────────── */
+    .dp-comments-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .dp-comments-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-2);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dp-comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .dp-comment-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .dp-comment-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .dp-comment-author {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .dp-comment-date {
+      font-size: 11px;
+      color: var(--text-3);
+      flex: 1;
+    }
+    .dp-comment-delete {
+      font-size: 14px;
+      color: var(--text-3);
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .dp-comment-delete:hover { color: var(--red); }
+    .dp-comment-body {
+      font-size: 13px;
+      color: var(--text-2);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .dp-comment-form {
+      margin-top: 4px;
+    }
+
+    /* ── Post card edited label ─────────────────────────────────── */
+    .dp-post-edited {
+      font-size: 11px;
+      color: var(--text-3);
+      font-style: italic;
+    }
   </style>
 </head>
 <body>

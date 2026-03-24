@@ -28,9 +28,9 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'No file provided.' }, 400);
   }
 
-  const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+  const MAX_SIZE = 100 * 1024 * 1024; // 100 MB
   if (file.size > MAX_SIZE) {
-    return json({ error: 'File too large. Maximum size is 20 MB.' }, 400);
+    return json({ error: 'File too large. Maximum size is 100 MB.' }, 400);
   }
 
   const originalName = file.name || 'file';
