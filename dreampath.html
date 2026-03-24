@@ -1063,6 +1063,140 @@
     .dp-vh-type--feature  { background: var(--blue-light); color: var(--blue); }
     .dp-vh-type--bugfix   { background: var(--green-light); color: var(--green); }
     .dp-vh-type--initial  { background: var(--accent-light); color: var(--accent); }
+
+    /* ── File Upload UI ─────────────────────────────────────────── */
+    .dp-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--surface2);
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-2);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      margin-bottom: 8px;
+    }
+    .dp-upload-btn:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .dp-file-preview-list { display: flex; flex-direction: column; gap: 4px; }
+    .dp-file-preview-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-2);
+      padding: 4px 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+    }
+    .dp-kept-files { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+    .dp-file-kept {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 4px 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      color: var(--text-2);
+    }
+    .dp-file-kept.dp-file-removed { opacity: .35; text-decoration: line-through; }
+    .dp-file-remove {
+      margin-left: auto;
+      font-size: 16px;
+      color: var(--text-3);
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .dp-file-remove:hover { color: var(--red); }
+
+    /* ── Post detail: images + attachments ──────────────────────── */
+    .dp-post-images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .dp-post-thumb {
+      width: 120px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .dp-post-attachments { margin: 12px 0; }
+    .dp-attach-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+    .dp-attach-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .dp-attach-item:hover { background: var(--accent-light); text-decoration: none; }
+    .dp-attach-icon { font-size: 16px; }
+    .dp-attach-name { flex: 1; font-weight: 500; }
+    .dp-attach-size { color: var(--text-3); font-size: 11px; white-space: nowrap; }
+
+    /* ── Edit History ────────────────────────────────────────────── */
+    .dp-post-history {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .dp-post-history-toggle {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .dp-post-history-toggle::-webkit-details-marker { display: none; }
+    .dp-post-history-toggle::before { content: '▶'; font-size: 10px; transition: transform .2s; }
+    details[open] .dp-post-history-toggle::before { transform: rotate(90deg); }
+    .dp-history-count {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      color: var(--text-3);
+    }
+    .dp-history-list { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .dp-history-entry {
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .dp-history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .dp-history-editor { font-weight: 600; color: var(--accent); }
+    .dp-history-date { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+    .dp-history-note { color: var(--text-2); font-size: 12px; }
   </style>
 </head>
 <body>

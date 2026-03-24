@@ -20,8 +20,14 @@ const DP = (() => {
   }
   function fmtDateTime(s) {
     if (!s) return '';
-    const d = new Date(s.includes('T') ? s : s + 'Z');
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
     return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function fmtFull(s) {
+    if (!s) return '';
+    const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z');
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
   // ── Toast notifications ────────────────────────────────────────────────────
@@ -479,22 +485,55 @@ const DP = (() => {
     const p = data.post;
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
 
-    let fileHtml = '';
-    if (p.file_url) {
-      fileHtml = `
-        <div class="dp-post-detail-file">
-          <a href="${esc(p.file_url)}" target="_blank" rel="noopener" class="dp-btn dp-btn--ghost dp-btn--sm">
-            &#128206; ${esc(p.file_name || 'Download File')}
-          </a>
-        </div>
-      `;
-    }
+    // ── Files ──────────────────────────────────────────────────────
+    const images = (p.files || []).filter(f => f.is_image);
+    const others = (p.files || []).filter(f => !f.is_image);
 
-    let contentHtml = '';
-    if (p.content) {
-      // Render newlines as paragraphs — content is plain text
-      contentHtml = `<div class="dp-post-detail-content">${p.content.split('\n\n').map(para => `<p>${esc(para.trim()).replace(/\n/g, '<br>')}</p>`).join('')}</div>`;
-    }
+    const imagesHtml = images.length ? `
+      <div class="dp-post-images">
+        ${images.map(f => `
+          <a href="${esc(f.file_url)}" target="_blank" rel="noopener">
+            <img src="${esc(f.file_url)}" alt="${esc(f.file_name)}" class="dp-post-thumb" />
+          </a>
+        `).join('')}
+      </div>` : '';
+
+    const attachHtml = others.length ? `
+      <div class="dp-post-attachments">
+        <div class="dp-attach-label">Attachments</div>
+        ${others.map(f => `
+          <a href="${esc(f.file_url)}" target="_blank" rel="noopener" class="dp-attach-item">
+            <span class="dp-attach-icon">${fileIcon(f.file_type)}</span>
+            <span class="dp-attach-name">${esc(f.file_name)}</span>
+            <span class="dp-attach-size">${fmtSize(f.file_size)}</span>
+          </a>
+        `).join('')}
+      </div>` : '';
+
+    // ── Content ────────────────────────────────────────────────────
+    const contentHtml = p.content
+      ? `<div class="dp-post-detail-content">${p.content.split('\n\n').map(para => `<p>${esc(para.trim()).replace(/\n/g, '<br>')}</p>`).join('')}</div>`
+      : '';
+
+    // ── Edit History ───────────────────────────────────────────────
+    const history = p.history || [];
+    const historyHtml = history.length ? `
+      <details class="dp-post-history">
+        <summary class="dp-post-history-toggle">
+          Edit History <span class="dp-history-count">${history.length}</span>
+        </summary>
+        <div class="dp-history-list">
+          ${history.map(h => `
+            <div class="dp-history-entry">
+              <div class="dp-history-header">
+                <span class="dp-history-editor">${esc(h.editor_name)}</span>
+                <span class="dp-history-date">${fmtFull(h.edited_at)}</span>
+              </div>
+              ${h.edit_note ? `<div class="dp-history-note">${esc(h.edit_note)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </details>` : '';
 
     openModal(`
       <div class="dp-post-detail">
@@ -504,17 +543,22 @@ const DP = (() => {
         </div>
         <div class="dp-post-detail-info">
           <span class="dp-text-muted">By ${esc(p.author_name)}</span>
-          <span class="dp-text-muted">${esc(fmtDateTime(p.created_at))}</span>
-          ${p.updated_at !== p.created_at ? `<span class="dp-text-muted">(edited ${esc(fmtDateTime(p.updated_at))})</span>` : ''}
+          <span class="dp-text-muted">${fmtFull(p.created_at)}</span>
+          ${p.updated_at !== p.created_at ? `<span class="dp-text-muted">Edited: ${fmtFull(p.updated_at)}</span>` : ''}
         </div>
         ${contentHtml}
-        ${fileHtml}
+        ${imagesHtml}
+        ${attachHtml}
+        ${historyHtml}
       </div>
     `, { title: p.title, wide: true });
   }
 
   async function createPost(boardName) {
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    // pendingFiles holds { url, name, type, size, is_image } objects after upload
+    let pendingFiles = [];
+
     openModal(`
       <div class="dp-form">
         <div class="dp-form-row">
@@ -534,12 +578,12 @@ const DP = (() => {
           <textarea id="fp-content" class="dp-input dp-textarea" placeholder="Post content (optional)"></textarea>
         </div>
         <div class="dp-form-row">
-          <label class="dp-label">File URL</label>
-          <input id="fp-file-url" class="dp-input" type="url" placeholder="https://..." />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">File Name</label>
-          <input id="fp-file-name" class="dp-input" type="text" placeholder="Document.pdf" />
+          <label class="dp-label">Attachments</label>
+          <label class="dp-upload-btn">
+            <span>&#128206; Choose files…</span>
+            <input id="fp-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'fp-filelist')" />
+          </label>
+          <div id="fp-filelist" class="dp-file-preview-list"></div>
         </div>
         <div class="dp-form-row dp-form-row--check">
           <label class="dp-check-label">
@@ -552,24 +596,24 @@ const DP = (() => {
       title: `New Post — ${boardTitles[boardName] || boardName}`,
       confirmLabel: 'Create Post',
       onConfirm: async () => {
-        const board    = $('fp-board').value;
-        const title    = $('fp-title').value.trim();
-        const content  = $('fp-content').value.trim();
-        const file_url = $('fp-file-url').value.trim();
-        const file_name = $('fp-file-name').value.trim();
-        const pinned   = $('fp-pinned').checked;
-
+        const board   = $('fp-board').value;
+        const title   = $('fp-title').value.trim();
+        const content = $('fp-content').value.trim();
+        const pinned  = $('fp-pinned').checked;
         if (!title) { showToast('Title is required.', 'error'); return; }
 
+        // Upload selected files first
+        const fileInput = $('fp-files');
+        const uploadedFiles = await uploadFiles(fileInput, 'fp-filelist');
+        if (uploadedFiles === null) return; // upload error
+
         const result = await api('POST', 'posts', {
-          board, title, content: content || null,
-          file_url: file_url || null,
-          file_name: file_name || null,
-          pinned,
+          board, title, content: content || null, pinned,
+          files: uploadedFiles,
         });
         if (result) {
           closeModal();
-          showToast('Post created successfully.', 'success');
+          showToast('Post created.', 'success');
           loadBoard(board);
           if (activeSection === 'home') loadBoardPreviews();
         }
@@ -581,6 +625,17 @@ const DP = (() => {
     const data = await api('GET', `posts?id=${id}`);
     if (!data?.post) return;
     const p = data.post;
+    // Start with existing files
+    let keptFiles = [...(p.files || [])];
+
+    const existingFilesHtml = keptFiles.length
+      ? keptFiles.map((f, i) => `
+          <div class="dp-file-kept" id="kept-${i}">
+            <span>${f.is_image ? '🖼' : fileIcon(f.file_type)}</span>
+            <span class="dp-attach-name">${esc(f.file_name)}</span>
+            <button type="button" class="dp-file-remove" onclick="DP._removeKeptFile(${i})">×</button>
+          </div>`).join('')
+      : '<span style="font-size:12px;color:var(--text-3)">No attachments</span>';
 
     openModal(`
       <div class="dp-form">
@@ -593,12 +648,20 @@ const DP = (() => {
           <textarea id="ep-content" class="dp-input dp-textarea">${esc(p.content || '')}</textarea>
         </div>
         <div class="dp-form-row">
-          <label class="dp-label">File URL</label>
-          <input id="ep-file-url" class="dp-input" type="url" value="${esc(p.file_url || '')}" />
+          <label class="dp-label">Current Attachments</label>
+          <div id="ep-kept-files" class="dp-kept-files">${existingFilesHtml}</div>
         </div>
         <div class="dp-form-row">
-          <label class="dp-label">File Name</label>
-          <input id="ep-file-name" class="dp-input" type="text" value="${esc(p.file_name || '')}" />
+          <label class="dp-label">Add New Files</label>
+          <label class="dp-upload-btn">
+            <span>&#128206; Choose files…</span>
+            <input id="ep-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'ep-filelist')" />
+          </label>
+          <div id="ep-filelist" class="dp-file-preview-list"></div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Edit Note <span style="color:var(--text-3);font-size:11px">(optional – shown in edit history)</span></label>
+          <input id="ep-note" class="dp-input" type="text" placeholder="What did you change?" maxlength="500" />
         </div>
         <div class="dp-form-row dp-form-row--check">
           <label class="dp-check-label">
@@ -611,19 +674,35 @@ const DP = (() => {
       title: 'Edit Post',
       confirmLabel: 'Save Changes',
       onConfirm: async () => {
-        const title    = $('ep-title').value.trim();
-        const content  = $('ep-content').value.trim();
-        const file_url = $('ep-file-url').value.trim();
-        const file_name = $('ep-file-name').value.trim();
-        const pinned   = $('ep-pinned').checked;
-
+        const title     = $('ep-title').value.trim();
+        const content   = $('ep-content').value.trim();
+        const pinned    = $('ep-pinned').checked;
+        const edit_note = $('ep-note').value.trim();
         if (!title) { showToast('Title is required.', 'error'); return; }
 
+        // Upload new files
+        const fileInput = $('ep-files');
+        const newFiles = await uploadFiles(fileInput, 'ep-filelist');
+        if (newFiles === null) return;
+
+        // Read which kept files are still marked (not removed)
+        const keptEls = document.querySelectorAll('#ep-kept-files .dp-file-kept');
+        const remainingKept = [];
+        keptEls.forEach((el, i) => {
+          if (!el.classList.contains('dp-file-removed') && keptFiles[i]) {
+            remainingKept.push(keptFiles[i]);
+          }
+        });
+
+        const allFiles = [
+          ...remainingKept.map(f => ({ url: f.file_url, name: f.file_name, type: f.file_type, size: f.file_size, is_image: !!f.is_image })),
+          ...newFiles,
+        ];
+
         const result = await api('PUT', `posts?id=${id}`, {
-          title, content: content || null,
-          file_url: file_url || null,
-          file_name: file_name || null,
-          pinned,
+          title, content: content || null, pinned,
+          edit_note: edit_note || null,
+          files: allFiles,
         });
         if (result) {
           closeModal();
@@ -633,6 +712,12 @@ const DP = (() => {
         }
       },
     });
+
+    // Expose remove helper on DP temporarily (scoped to this modal)
+    DP._removeKeptFile = (i) => {
+      const el = document.getElementById(`kept-${i}`);
+      if (el) el.classList.add('dp-file-removed');
+    };
   }
 
   async function deletePost(id, boardName) {
@@ -1389,6 +1474,74 @@ const DP = (() => {
     });
   }
 
+  // ── File helpers ────────────────────────────────────────────────────────────
+  function fileIcon(type = '') {
+    if (type.startsWith('image/'))       return '🖼';
+    if (type === 'application/pdf')      return '📄';
+    if (type.includes('word'))           return '📝';
+    if (type.includes('excel') || type.includes('spreadsheet')) return '📊';
+    if (type.includes('presentation') || type.includes('powerpoint')) return '📊';
+    if (type.includes('zip') || type.includes('compressed')) return '🗜';
+    return '📎';
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  // Called by file input onchange — renders a preview list in the given container
+  function _handleFileSelect(input, listId) {
+    const list = $(listId);
+    if (!list) return;
+    list.innerHTML = '';
+    for (const f of Array.from(input.files || [])) {
+      const div = document.createElement('div');
+      div.className = 'dp-file-preview-item';
+      div.innerHTML = `<span>${f.type.startsWith('image/') ? '🖼' : fileIcon(f.type)}</span> <span class="dp-attach-name">${esc(f.name)}</span> <span class="dp-attach-size">${fmtSize(f.size)}</span>`;
+      list.appendChild(div);
+    }
+  }
+
+  // Uploads all files from a file input; returns array of file objects or [] if none
+  // Returns null on error
+  async function uploadFiles(fileInput, listId) {
+    const files = Array.from(fileInput?.files || []);
+    if (!files.length) return [];
+    const list = $(listId);
+    const results = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (list) {
+        const items = list.querySelectorAll('.dp-file-preview-item');
+        if (items[i]) items[i].innerHTML += ' <span style="color:var(--accent)">↑ Uploading…</span>';
+      }
+      const fd = new FormData();
+      fd.append('file', f);
+      let res;
+      try {
+        const r = await fetch('/api/dreampath/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+        res = await r.json();
+        if (!r.ok) { showToast(res.error || 'Upload failed.', 'error'); return null; }
+      } catch {
+        showToast('Upload failed. Check your connection.', 'error');
+        return null;
+      }
+      if (list) {
+        const items = list.querySelectorAll('.dp-file-preview-item');
+        if (items[i]) items[i].querySelector('span:last-child').textContent = ' ✓';
+      }
+      results.push({ url: res.url, name: res.name, type: res.type, size: res.size, is_image: res.is_image });
+    }
+    return results;
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
   return {
     init,
@@ -1414,6 +1567,8 @@ const DP = (() => {
     nextMonth,
     addVersion,
     deleteVersion,
+    _handleFileSelect,
+    _removeKeptFile: () => {},
   };
 })();
 
