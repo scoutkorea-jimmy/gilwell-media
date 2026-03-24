@@ -3,7 +3,7 @@
  * GET    /api/dreampath/posts?board=X&limit=N  — list posts
  * GET    /api/dreampath/posts?id=N             — single post with files + history
  * POST   /api/dreampath/posts                  — create (admin only)
- * PUT    /api/dreampath/posts?id=N             — update, saves history (admin only)
+ * PUT    /api/dreampath/posts?id=N             — update, saves history (any user, edit_note required)
  * DELETE /api/dreampath/posts?id=N             — delete (admin only)
  *
  * File objects in POST/PUT body.files:
@@ -121,13 +121,16 @@ export async function onRequestPost({ request, env, data }) {
 }
 
 export async function onRequestPut({ request, env, data }) {
-  if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
   if (!id) return json({ error: 'id is required.' }, 400);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+
+  if (!body.edit_note || !body.edit_note.trim()) {
+    return json({ error: 'edit_note (edit reason) is required.' }, 400);
+  }
 
   // Save edit history before making changes
   const current = await env.DB.prepare(
@@ -143,7 +146,7 @@ export async function onRequestPut({ request, env, data }) {
     data.dpUser.name,
     current.title,
     current.content,
-    body.edit_note ? body.edit_note.trim().slice(0, 500) : null
+    body.edit_note.trim().slice(0, 500)
   ).run();
 
   // Build update fields

@@ -240,30 +240,24 @@ const DP = (() => {
     const year  = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
 
-    const monthName = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    // Build a map: date string → array of events
+    // Index events by YYYY-MM-DD
     const eventMap = {};
-    events.forEach(e => {
-      const key = e.start_date.slice(0, 10);
+    for (const ev of events) {
+      const key = ev.start_date.slice(0, 10);
       if (!eventMap[key]) eventMap[key] = [];
-      eventMap[key].push(e);
-    });
+      eventMap[key].push(ev);
+    }
 
-    const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
-    // Convert to Mon-first: Sun=6, Mon=0, Tue=1...
-    const startOffset = (firstDay + 6) % 7;
+    // First day offset (Mon=0)
+    const firstDow = new Date(year, month, 1).getDay();
+    const startOffset = firstDow === 0 ? 6 : firstDow - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const monthName = calendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-    const typeColors = {
-      general:   '#4f46e5',
-      deadline:  '#ef4444',
-      meeting:   '#10b981',
-      milestone: '#f59e0b',
-    };
+    const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
 
     let html = `
       <div class="dp-cal-header">
@@ -282,78 +276,74 @@ const DP = (() => {
         <div class="dp-cal-dow dp-cal-dow--weekend">Sun</div>
     `;
 
-    // Empty cells before first day
+    // Empty leading cells
     for (let i = 0; i < startOffset; i++) {
       html += `<div class="dp-cal-day dp-cal-day--empty"></div>`;
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const m   = String(month + 1).padStart(2, '0');
+      const dd  = String(d).padStart(2, '0');
+      const dateStr   = `${year}-${m}-${dd}`;
       const dayEvents = eventMap[dateStr] || [];
       const isToday   = dateStr === todayStr;
-      const dayOfWeek = (startOffset + d - 1) % 7; // 0=Mon ... 6=Sun
-      const isWeekend = dayOfWeek >= 5;
+      const isWeekend = (() => { const dow = new Date(year, month, d).getDay(); return dow === 0 || dow === 6; })();
 
-      let dotsHtml = '';
-      dayEvents.slice(0, 3).forEach(ev => {
-        const color = typeColors[ev.type] || typeColors.general;
-        dotsHtml += `<span class="dp-cal-dot" style="background:${color}" title="${esc(ev.title)}"></span>`;
-      });
-      if (dayEvents.length > 3) {
-        dotsHtml += `<span class="dp-cal-dot-more">+${dayEvents.length - 3}</span>`;
-      }
+      // Render up to 3 event strips; "+N more" link for overflow
+      const strips = dayEvents.slice(0, 3).map(ev => `
+        <div class="dp-cal-event-strip"
+             style="background:${typeColors[ev.type] || typeColors.general}"
+             draggable="true"
+             ondragstart="event.stopPropagation(); DP._calDragStart(event, ${ev.id})"
+             onclick="event.stopPropagation(); DP.viewEvent(${ev.id})"
+             title="${esc(ev.title)}">
+          ${esc(ev.title)}
+        </div>`).join('');
 
-      const clickable = dayEvents.length > 0 || currentUser?.role === 'admin';
-      const clickAttr = clickable ? `onclick="DP.dayClick('${dateStr}')"` : '';
+      const moreHtml = dayEvents.length > 3
+        ? `<div class="dp-cal-more" onclick="event.stopPropagation(); DP.dayClick('${dateStr}')">+${dayEvents.length - 3} more</div>`
+        : '';
 
       html += `
-        <div class="dp-cal-day${isToday ? ' dp-cal-day--today' : ''}${isWeekend ? ' dp-cal-day--weekend' : ''}${dayEvents.length > 0 ? ' dp-cal-day--has-events' : ''}${clickable ? ' dp-cal-day--clickable' : ''}" ${clickAttr} data-date="${dateStr}">
-          <span class="dp-cal-day-num">${d}</span>
-          <div class="dp-cal-dots">${dotsHtml}</div>
-        </div>
-      `;
+        <div class="dp-cal-day${isToday ? ' dp-cal-day--today' : ''}${isWeekend ? ' dp-cal-day--weekend' : ''}${dayEvents.length > 0 ? ' dp-cal-day--has-events' : ''}"
+             onclick="DP.dayClick('${dateStr}')" style="cursor:pointer"
+             ondragover="event.preventDefault(); DP._calDragOver(event)"
+             ondragleave="DP._calDragLeave(event)"
+             ondrop="event.preventDefault(); DP._calDrop(event, '${dateStr}')">
+          <span class="dp-cal-day-num${isToday ? ' dp-cal-today-num' : ''}">${d}</span>
+          <div class="dp-cal-event-strips">${strips}${moreHtml}</div>
+        </div>`;
     }
 
-    html += `</div>`;
+    html += '</div>'; // close dp-cal-grid
     container.innerHTML = html;
   }
 
   function dayClick(dateStr) {
-    // Build event list for this date
     const month = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`;
     api('GET', `events?month=${month}`).then(data => {
       const events = (data?.events || []).filter(e => e.start_date.slice(0, 10) === dateStr);
+      const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
       const typeLabels = { general: 'General', deadline: 'Deadline', meeting: 'Meeting', milestone: 'Milestone' };
-      const typeColors = { general: '#4f46e5', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
-
       const fmtDateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-      let evHtml = '';
-      if (events.length > 0) {
-        evHtml = events.map(ev => `
-          <div class="dp-event-item">
-            <span class="dp-event-badge" style="background:${typeColors[ev.type] || '#4f46e5'}">${esc(typeLabels[ev.type] || ev.type)}</span>
+      const evHtml = events.length
+        ? events.map(ev => `
+          <div class="dp-event-item" onclick="DP.closeModal(); setTimeout(()=>DP.viewEvent(${ev.id}),80)" style="cursor:pointer">
+            <span class="dp-event-badge" style="background:${typeColors[ev.type] || '#6366f1'};color:#fff">${esc(typeLabels[ev.type] || ev.type)}</span>
             <div class="dp-event-item-body">
               <strong>${esc(ev.title)}</strong>
               ${ev.description ? `<p class="dp-event-desc">${esc(ev.description)}</p>` : ''}
               ${ev.end_date ? `<small class="dp-text-muted">Until ${esc(fmtDate(ev.end_date))}</small>` : ''}
             </div>
-            ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--sm dp-btn--danger" onclick="DP.deleteEvent(${ev.id})">Delete</button>` : ''}
-          </div>
-        `).join('');
-      } else {
-        evHtml = `<p class="dp-text-muted">No events on this date.</p>`;
-      }
+          </div>`).join('')
+        : `<p class="dp-text-muted" style="padding:8px 0">No events on this date.</p>`;
 
-      let addBtn = '';
-      if (currentUser?.role === 'admin') {
-        addBtn = `<div style="margin-top:16px"><button class="dp-btn dp-btn--primary" onclick="DP.closeModal(); DP.addEvent('${dateStr}')">+ Add Event on This Date</button></div>`;
-      }
+      const addBtn = currentUser?.role === 'admin'
+        ? `<div style="margin-top:16px"><button class="dp-btn dp-btn--primary" onclick="DP.closeModal(); DP.addEvent('${dateStr}')">+ Add Event</button></div>`
+        : '';
 
-      openModal(`
-        <div class="dp-event-list">${evHtml}</div>
-        ${addBtn}
-      `, { title: fmtDateStr });
+      openModal(`<div class="dp-event-list">${evHtml}</div>${addBtn}`, { title: fmtDateStr });
     });
   }
 
@@ -454,11 +444,11 @@ const DP = (() => {
       ? post.content.replace(/<[^>]+>/g, '').slice(0, 120) + (post.content.length > 120 ? '...' : '')
       : '';
     let adminBtns = '';
-    if (currentUser?.role === 'admin') {
+    if (currentUser) {
       adminBtns = `
-        <div class="dp-post-actions dp-admin-only">
-          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">Edit</button>
-          <button class="dp-btn dp-btn--xs dp-btn--danger" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>
+        <div class="dp-post-actions">
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">&#9998; Edit</button>
+          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--xs dp-btn--danger dp-admin-only" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>` : ''}
         </div>
       `;
     }
@@ -469,6 +459,7 @@ const DP = (() => {
             ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
             <span class="dp-post-author">${esc(post.author_name)}</span>
             <span class="dp-post-date">${esc(fmtDate(post.created_at))}</span>
+            ${post.updated_at && post.updated_at !== post.created_at ? `<span class="dp-post-edited">Edited ${esc(fmtDate(post.updated_at))}</span>` : ''}
             ${post.file_url ? '<span class="dp-post-file-badge">&#128206; File attached</span>' : ''}
           </div>
           <h4 class="dp-post-title">${esc(post.title)}</h4>
@@ -480,9 +471,13 @@ const DP = (() => {
   }
 
   async function viewPost(id) {
-    const data = await api('GET', `posts?id=${id}`);
-    if (!data?.post) return;
-    const p = data.post;
+    const [postData, commentsData] = await Promise.all([
+      api('GET', `posts?id=${id}`),
+      api('GET', `comments?post_id=${id}`),
+    ]);
+    if (!postData?.post) return;
+    const p = postData.post;
+    const comments = commentsData?.comments || [];
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
 
     // ── Files ──────────────────────────────────────────────────────
@@ -535,6 +530,21 @@ const DP = (() => {
         </div>
       </details>` : '';
 
+    // ── Comments ───────────────────────────────────────────────────
+    const commentsHtml = `
+      <div class="dp-comments-section">
+        <div class="dp-comments-header">Comments <span class="dp-history-count" id="dp-comment-count">${comments.length}</span></div>
+        <div id="dp-comments-list" class="dp-comments-list">
+          ${_renderCommentsHtml(comments, id)}
+        </div>
+        <div class="dp-comment-form">
+          <textarea id="dp-comment-input" class="dp-input dp-textarea dp-textarea--sm" placeholder="Write a comment…" rows="2"></textarea>
+          <div style="margin-top:8px;text-align:right">
+            <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addComment(${id})">Post Comment</button>
+          </div>
+        </div>
+      </div>`;
+
     openModal(`
       <div class="dp-post-detail">
         <div class="dp-post-detail-meta">
@@ -550,6 +560,7 @@ const DP = (() => {
         ${imagesHtml}
         ${attachHtml}
         ${historyHtml}
+        ${commentsHtml}
       </div>
     `, { title: p.title, wide: true });
   }
@@ -561,14 +572,6 @@ const DP = (() => {
 
     openModal(`
       <div class="dp-form">
-        <div class="dp-form-row">
-          <label class="dp-label">Board</label>
-          <select id="fp-board" class="dp-input">
-            <option value="announcements"${boardName === 'announcements' ? ' selected' : ''}>Announcements</option>
-            <option value="documents"${boardName === 'documents' ? ' selected' : ''}>Project Documents</option>
-            <option value="minutes"${boardName === 'minutes' ? ' selected' : ''}>Meeting Minutes</option>
-          </select>
-        </div>
         <div class="dp-form-row">
           <label class="dp-label">Title <span class="dp-required">*</span></label>
           <input id="fp-title" class="dp-input" type="text" placeholder="Post title" maxlength="200" />
@@ -596,7 +599,7 @@ const DP = (() => {
       title: `New Post — ${boardTitles[boardName] || boardName}`,
       confirmLabel: 'Create Post',
       onConfirm: async () => {
-        const board   = $('fp-board').value;
+        const board   = boardName;
         const title   = $('fp-title').value.trim();
         const content = $('fp-content').value.trim();
         const pinned  = $('fp-pinned').checked;
@@ -812,6 +815,157 @@ const DP = (() => {
     });
   }
 
+  async function viewEvent(id) {
+    const data = await api('GET', `events?id=${id}`);
+    if (!data?.event) return;
+    const ev = data.event;
+    const typeLabels = { general: 'General', deadline: 'Deadline', meeting: 'Meeting', milestone: 'Milestone' };
+    const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
+
+    const historyHtml = (ev.history || []).length ? `
+      <details class="dp-post-history" open>
+        <summary class="dp-post-history-toggle">
+          Edit History <span class="dp-history-count">${ev.history.length}</span>
+        </summary>
+        <div class="dp-history-list">
+          ${ev.history.map(h => `
+            <div class="dp-history-entry">
+              <div class="dp-history-header">
+                <span class="dp-history-editor">${esc(h.editor_name)}</span>
+                <span class="dp-history-date">${fmtFull(h.edited_at)}</span>
+              </div>
+              <div class="dp-history-note">${esc(h.edit_note)}</div>
+            </div>`).join('')}
+        </div>
+      </details>` : '';
+
+    openModal(`
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${typeColors[ev.type] || '#6366f1'}22;color:${typeColors[ev.type] || '#6366f1'}">${esc(typeLabels[ev.type] || ev.type)}</span>
+          <span style="font-size:13px;color:var(--text-3)">${esc(ev.start_date)}${ev.end_date ? ` → ${esc(ev.end_date)}` : ''}</span>
+        </div>
+        ${ev.description ? `<div class="dp-post-detail-content" style="margin-bottom:16px">${ev.description.split('\n').map(l => esc(l)).join('<br>')}</div>` : ''}
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">
+          Created by ${esc(ev.created_by_name || 'Unknown')} · ${fmtFull(ev.created_at)}
+        </div>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal(); setTimeout(()=>DP.editEvent(${ev.id}),80)">&#9998; Edit Event</button>
+        ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red);margin-left:8px" onclick="DP.closeModal(); setTimeout(()=>DP.deleteEvent(${ev.id}),80)">Delete</button>` : ''}
+        ${historyHtml}
+      </div>
+    `, { title: esc(ev.title), wide: false });
+  }
+
+  async function editEvent(id) {
+    const data = await api('GET', `events?id=${id}`);
+    if (!data?.event) return;
+    const ev = data.event;
+
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="ee-title" class="dp-input" type="text" value="${esc(ev.title)}" maxlength="200" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Description</label>
+          <textarea id="ee-desc" class="dp-input dp-textarea">${esc(ev.description || '')}</textarea>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div class="dp-form-row" style="flex:1">
+            <label class="dp-label">Start Date <span class="dp-required">*</span></label>
+            <input id="ee-start" class="dp-input" type="date" value="${esc(ev.start_date)}" />
+          </div>
+          <div class="dp-form-row" style="flex:1">
+            <label class="dp-label">End Date</label>
+            <input id="ee-end" class="dp-input" type="date" value="${esc(ev.end_date || '')}" />
+          </div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Type</label>
+          <select id="ee-type" class="dp-input">
+            <option value="general"${ev.type==='general'?' selected':''}>General</option>
+            <option value="deadline"${ev.type==='deadline'?' selected':''}>Deadline</option>
+            <option value="meeting"${ev.type==='meeting'?' selected':''}>Meeting</option>
+            <option value="milestone"${ev.type==='milestone'?' selected':''}>Milestone</option>
+          </select>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label" style="display:flex;gap:6px;align-items:center">
+            Edit Reason <span class="dp-required">*</span>
+            <span style="font-size:11px;font-weight:400;color:var(--text-3)">(required for all edits)</span>
+          </label>
+          <input id="ee-note" class="dp-input" type="text" placeholder="Why are you editing this event?" maxlength="500" />
+        </div>
+      </div>
+    `, {
+      title: 'Edit Event',
+      confirmLabel: 'Save Changes',
+      onConfirm: async () => {
+        const title     = $('ee-title')?.value.trim();
+        const edit_note = $('ee-note')?.value.trim();
+        if (!title)     { showToast('Title is required.', 'error'); return; }
+        if (!edit_note) { showToast('Edit reason is required.', 'error'); return; }
+
+        const result = await api('PUT', `events?id=${id}`, {
+          title,
+          description: $('ee-desc')?.value.trim() || null,
+          start_date:  $('ee-start')?.value,
+          end_date:    $('ee-end')?.value || null,
+          type:        $('ee-type')?.value,
+          edit_note,
+        });
+        if (result) {
+          closeModal();
+          showToast('Event updated.', 'success');
+          loadCalendar();
+        }
+      },
+    });
+  }
+
+  function _renderCommentsHtml(comments, postId) {
+    if (!comments.length) {
+      return `<p class="dp-text-muted" style="font-size:13px;padding:4px 0">No comments yet.</p>`;
+    }
+    return comments.map(c => `
+      <div class="dp-comment-item" id="dp-comment-${c.id}">
+        <div class="dp-comment-meta">
+          <span class="dp-comment-author">${esc(c.author_name)}</span>
+          <span class="dp-comment-date">${fmtFull(c.created_at)}</span>
+          ${(currentUser?.role === 'admin' || c.author_id === currentUser?.id) ? `<button class="dp-comment-delete" onclick="DP.deleteComment(${c.id}, ${postId})" title="Delete">×</button>` : ''}
+        </div>
+        <div class="dp-comment-body">${esc(c.content)}</div>
+      </div>`).join('');
+  }
+
+  async function addComment(postId) {
+    const input   = $('dp-comment-input');
+    const content = input?.value.trim();
+    if (!content) { showToast('Comment cannot be empty.', 'error'); return; }
+    const result = await api('POST', 'comments', { post_id: postId, content });
+    if (result) {
+      input.value = '';
+      const data = await api('GET', `comments?post_id=${postId}`);
+      const list  = $('dp-comments-list');
+      const count = $('dp-comment-count');
+      if (list)  list.innerHTML  = _renderCommentsHtml(data?.comments || [], postId);
+      if (count) count.textContent = String((data?.comments || []).length);
+    }
+  }
+
+  async function deleteComment(commentId, postId) {
+    if (!confirm('Delete this comment?')) return;
+    const result = await api('DELETE', `comments?id=${commentId}`);
+    if (result) {
+      const data  = await api('GET', `comments?post_id=${postId}`);
+      const list  = $('dp-comments-list');
+      const count = $('dp-comment-count');
+      if (list)  list.innerHTML  = _renderCommentsHtml(data?.comments || [], postId);
+      if (count) count.textContent = String((data?.comments || []).length);
+    }
+  }
+
   // ── Emergency Contacts ─────────────────────────────────────────────────────
   async function loadContacts() {
     const data = await api('GET', 'contacts');
@@ -989,6 +1143,7 @@ const DP = (() => {
   async function loadUsers() {
     const data = await api('GET', 'users');
     renderUsers(data?.users || []);
+    loadDepartments();
   }
 
   function renderUsers(users) {
@@ -1053,7 +1208,71 @@ const DP = (() => {
           <tbody>${rows}</tbody>
         </table>
       </div>
+
+      <!-- Departments section -->
+      <div class="dp-card" style="margin-top:24px;padding:0;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <h3 style="font-size:14px;font-weight:700">Departments</h3>
+          <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addDepartment()">+ Add</button>
+        </div>
+        <div id="dp-dept-list" style="padding:16px 20px">Loading departments...</div>
+      </div>
     `;
+  }
+
+  async function loadDepartments() {
+    const data = await api('GET', 'departments');
+    renderDepartments(data?.departments || []);
+  }
+
+  function renderDepartments(depts) {
+    const container = $('dp-dept-list');
+    if (!container) return;
+    if (!depts.length) {
+      container.innerHTML = '<p style="color:var(--text-3);font-size:13px">No departments yet.</p>';
+      return;
+    }
+    container.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${depts.map(d => `
+          <span class="dp-dept-chip">
+            ${esc(d.name)}
+            <button onclick="DP.deleteDepartment(${d.id}, '${esc(d.name)}')" title="Delete" style="margin-left:6px;font-size:12px;color:var(--text-3);opacity:.6">×</button>
+          </span>`).join('')}
+      </div>`;
+  }
+
+  async function addDepartment() {
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Department Name <span class="dp-required">*</span></label>
+          <input id="dept-name" class="dp-input" type="text" placeholder="e.g. Engineering" maxlength="100" />
+        </div>
+      </div>
+    `, {
+      title: 'Add Department',
+      confirmLabel: 'Add',
+      onConfirm: async () => {
+        const name = $('dept-name')?.value.trim();
+        if (!name) { showToast('Department name is required.', 'error'); return; }
+        const result = await api('POST', 'departments', { name });
+        if (result) {
+          closeModal();
+          showToast('Department added.', 'success');
+          loadDepartments();
+        }
+      },
+    });
+  }
+
+  async function deleteDepartment(id, name) {
+    if (!confirm(`Delete department "${name}"? Existing users will keep this department name.`)) return;
+    const result = await api('DELETE', `departments?id=${id}`);
+    if (result) {
+      showToast('Department deleted.', 'success');
+      loadDepartments();
+    }
   }
 
   async function createUser() {
@@ -1082,19 +1301,35 @@ const DP = (() => {
             </select>
           </div>
         </div>
-        <div class="dp-form-row dp-form-row--2col">
-          <div>
-            <label class="dp-label">Email</label>
-            <input id="cu-email" class="dp-input" type="email" />
-          </div>
-          <div>
-            <label class="dp-label">Phone</label>
-            <input id="cu-phone" class="dp-input" type="tel" />
+        <div class="dp-form-row">
+          <label class="dp-label">Email</label>
+          <input id="cu-email" class="dp-input" type="email" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Phone</label>
+          <div style="display:flex;gap:8px">
+            <select id="cu-phone-cc" class="dp-input" style="width:180px">
+              <option value="+82">🇰🇷 +82 Korea</option>
+              <option value="+1">🇺🇸 +1 US/Canada</option>
+              <option value="+44">🇬🇧 +44 UK</option>
+              <option value="+81">🇯🇵 +81 Japan</option>
+              <option value="+86">🇨🇳 +86 China</option>
+              <option value="+852">🇭🇰 +852 Hong Kong</option>
+              <option value="+65">🇸🇬 +65 Singapore</option>
+              <option value="+61">🇦🇺 +61 Australia</option>
+              <option value="+49">🇩🇪 +49 Germany</option>
+              <option value="+33">🇫🇷 +33 France</option>
+              <option value="+971">🇦🇪 +971 UAE</option>
+              <option value="+966">🇸🇦 +966 Saudi Arabia</option>
+              <option value="+91">🇮🇳 +91 India</option>
+              <option value="+55">🇧🇷 +55 Brazil</option>
+            </select>
+            <input id="cu-phone-num" class="dp-input" type="tel" placeholder="10-1234-5678" style="flex:1" />
           </div>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Department</label>
-          <input id="cu-dept" class="dp-input" type="text" maxlength="100" />
+          <select id="cu-dept" class="dp-input"><option value="">— Select Department —</option></select>
         </div>
       </div>
     `, {
@@ -1115,10 +1350,12 @@ const DP = (() => {
           return;
         }
 
+        const phone = $('cu-phone-num').value.trim() ? $('cu-phone-cc').value + ' ' + $('cu-phone-num').value.trim() : null;
+
         const result = await api('POST', 'users', {
           username, display_name, password, role,
           email: $('cu-email').value.trim() || null,
-          phone: $('cu-phone').value.trim() || null,
+          phone,
           department: $('cu-dept').value.trim() || null,
         });
         if (result) {
@@ -1128,6 +1365,17 @@ const DP = (() => {
         }
       },
     });
+    api('GET', 'departments').then(d => {
+      const sel = $('cu-dept');
+      if (sel && d?.departments) {
+        d.departments.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept.name;
+          opt.textContent = dept.name;
+          sel.appendChild(opt);
+        });
+      }
+    });
   }
 
   async function editUser(id) {
@@ -1135,6 +1383,13 @@ const DP = (() => {
     if (!data) return;
     const u = data.users.find(x => x.id === id);
     if (!u) return;
+
+    // Parse stored phone into country code + number
+    const storedPhone = u.phone || '';
+    let phoneCC = '+82', phoneNum = '';
+    const ccMatch = storedPhone.match(/^(\+\d+)\s(.*)$/);
+    if (ccMatch) { phoneCC = ccMatch[1]; phoneNum = ccMatch[2]; }
+    else if (storedPhone) { phoneNum = storedPhone; }
 
     openModal(`
       <div class="dp-form">
@@ -1164,19 +1419,35 @@ const DP = (() => {
             </select>
           </div>
         </div>
-        <div class="dp-form-row dp-form-row--2col">
-          <div>
-            <label class="dp-label">Email</label>
-            <input id="eu-email" class="dp-input" type="email" value="${esc(u.email || '')}" />
-          </div>
-          <div>
-            <label class="dp-label">Phone</label>
-            <input id="eu-phone" class="dp-input" type="tel" value="${esc(u.phone || '')}" />
+        <div class="dp-form-row">
+          <label class="dp-label">Email</label>
+          <input id="eu-email" class="dp-input" type="email" value="${esc(u.email || '')}" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Phone</label>
+          <div style="display:flex;gap:8px">
+            <select id="eu-phone-cc" class="dp-input" style="width:180px">
+              <option value="+82"${phoneCC==='+82'?' selected':''}>🇰🇷 +82 Korea</option>
+              <option value="+1"${phoneCC==='+1'?' selected':''}>🇺🇸 +1 US/Canada</option>
+              <option value="+44"${phoneCC==='+44'?' selected':''}>🇬🇧 +44 UK</option>
+              <option value="+81"${phoneCC==='+81'?' selected':''}>🇯🇵 +81 Japan</option>
+              <option value="+86"${phoneCC==='+86'?' selected':''}>🇨🇳 +86 China</option>
+              <option value="+852"${phoneCC==='+852'?' selected':''}>🇭🇰 +852 Hong Kong</option>
+              <option value="+65"${phoneCC==='+65'?' selected':''}>🇸🇬 +65 Singapore</option>
+              <option value="+61"${phoneCC==='+61'?' selected':''}>🇦🇺 +61 Australia</option>
+              <option value="+49"${phoneCC==='+49'?' selected':''}>🇩🇪 +49 Germany</option>
+              <option value="+33"${phoneCC==='+33'?' selected':''}>🇫🇷 +33 France</option>
+              <option value="+971"${phoneCC==='+971'?' selected':''}>🇦🇪 +971 UAE</option>
+              <option value="+966"${phoneCC==='+966'?' selected':''}>🇸🇦 +966 Saudi Arabia</option>
+              <option value="+91"${phoneCC==='+91'?' selected':''}>🇮🇳 +91 India</option>
+              <option value="+55"${phoneCC==='+55'?' selected':''}>🇧🇷 +55 Brazil</option>
+            </select>
+            <input id="eu-phone-num" class="dp-input" type="tel" value="${esc(phoneNum)}" placeholder="10-1234-5678" style="flex:1" />
           </div>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Department</label>
-          <input id="eu-dept" class="dp-input" type="text" value="${esc(u.department || '')}" maxlength="100" />
+          <select id="eu-dept" class="dp-input"><option value="">— Select Department —</option></select>
         </div>
         <div class="dp-form-divider">Reset Password (optional)</div>
         <div class="dp-form-row">
@@ -1189,12 +1460,13 @@ const DP = (() => {
       confirmLabel: 'Save Changes',
       wide: true,
       onConfirm: async () => {
+        const phone = $('eu-phone-num').value.trim() ? $('eu-phone-cc').value + ' ' + $('eu-phone-num').value.trim() : null;
         const body = {
           display_name: $('eu-name').value.trim(),
           role:         $('eu-role').value,
           is_active:    $('eu-active').value === '1',
           email:        $('eu-email').value.trim() || null,
-          phone:        $('eu-phone').value.trim() || null,
+          phone,
           department:   $('eu-dept').value.trim() || null,
         };
         const pw = $('eu-password').value;
@@ -1210,6 +1482,18 @@ const DP = (() => {
           loadUsers();
         }
       },
+    });
+    api('GET', 'departments').then(d => {
+      const sel = $('eu-dept');
+      if (sel && d?.departments) {
+        d.departments.forEach(dept => {
+          const opt = document.createElement('option');
+          opt.value = dept.name;
+          opt.textContent = dept.name;
+          if (dept.name === u.department) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
     });
   }
 
@@ -1239,10 +1523,6 @@ const DP = (() => {
     const container = $('dp-account-content');
     if (!container) return;
 
-    const roleBadge = user.role === 'admin'
-      ? `<span class="dp-badge dp-badge--admin">Admin</span>`
-      : `<span class="dp-badge dp-badge--member">Member</span>`;
-
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">My Account</h2>
@@ -1252,7 +1532,6 @@ const DP = (() => {
           <div class="dp-account-avatar">${esc((user.display_name || user.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
           <h3 class="dp-account-name">${esc(user.display_name)}</h3>
           <p class="dp-account-username">@${esc(user.username)}</p>
-          ${roleBadge}
           <div class="dp-account-details">
             ${user.department ? `<div class="dp-account-detail-row"><span class="dp-text-muted">Department</span><span>${esc(user.department)}</span></div>` : ''}
             ${user.email ? `<div class="dp-account-detail-row"><span class="dp-text-muted">Email</span><a href="mailto:${esc(user.email)}">${esc(user.email)}</a></div>` : ''}
@@ -1318,6 +1597,47 @@ const DP = (() => {
   function nextMonth() {
     calendarDate.setMonth(calendarDate.getMonth() + 1);
     loadCalendar();
+  }
+
+  function _calDragStart(e, evId) {
+    e.dataTransfer.setData('text/plain', String(evId));
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function _calDragOver(e) {
+    e.currentTarget.classList.add('dp-cal-day--dragover');
+  }
+
+  function _calDragLeave(e) {
+    e.currentTarget.classList.remove('dp-cal-day--dragover');
+  }
+
+  function _calDrop(e, dateStr) {
+    e.currentTarget.classList.remove('dp-cal-day--dragover');
+    const evId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (!evId) return;
+    openModal(`
+      <div class="dp-form">
+        <p style="margin-bottom:14px">Move event to <strong>${esc(dateStr)}</strong>?</p>
+        <div class="dp-form-row">
+          <label class="dp-label">Edit Reason <span class="dp-required">*</span></label>
+          <input id="drag-note" class="dp-input" type="text" placeholder="e.g. Schedule changed" maxlength="300" />
+        </div>
+      </div>
+    `, {
+      title: 'Reschedule Event',
+      confirmLabel: 'Move',
+      onConfirm: async () => {
+        const note = $('drag-note')?.value.trim();
+        if (!note) { showToast('Edit reason is required.', 'error'); return; }
+        const result = await api('PUT', `events?id=${evId}`, { start_date: dateStr, edit_note: note });
+        if (result) {
+          closeModal();
+          showToast('Event rescheduled.', 'success');
+          loadCalendar();
+        }
+      },
+    });
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -1494,6 +1814,13 @@ const DP = (() => {
 
   // Called by file input onchange — renders a preview list in the given container
   function _handleFileSelect(input, listId) {
+    if (Array.from(input.files || []).length > 5) {
+      showToast('Maximum 5 files allowed.', 'error');
+      input.value = '';
+      const list = $(listId);
+      if (list) list.innerHTML = '';
+      return;
+    }
     const list = $(listId);
     if (!list) return;
     list.innerHTML = '';
@@ -1510,6 +1837,10 @@ const DP = (() => {
   async function uploadFiles(fileInput, listId) {
     const files = Array.from(fileInput?.files || []);
     if (!files.length) return [];
+    if (files.length > 5) {
+      showToast('Maximum 5 files allowed per post.', 'error');
+      return null;
+    }
     const list = $(listId);
     const results = [];
     for (let i = 0; i < files.length; i++) {
@@ -1552,6 +1883,8 @@ const DP = (() => {
     dayClick,
     addEvent,
     deleteEvent,
+    viewEvent,
+    editEvent,
     createPost,
     editPost,
     deletePost,
@@ -1567,8 +1900,16 @@ const DP = (() => {
     nextMonth,
     addVersion,
     deleteVersion,
+    addDepartment,
+    deleteDepartment,
+    addComment,
+    deleteComment,
     _handleFileSelect,
     _removeKeptFile: () => {},
+    _calDragStart,
+    _calDragOver,
+    _calDragLeave,
+    _calDrop,
   };
 })();
 
