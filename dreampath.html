@@ -10,29 +10,44 @@
     /* ── Reset & Base ───────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --sidebar-bg: #1e2a3a;
-      --sidebar-w: 240px;
-      --accent: #4f46e5;
-      --accent-hover: #4338ca;
-      --accent-light: #eef2ff;
-      --bg: #f1f5f9;
-      --surface: #ffffff;
-      --surface2: #f8fafc;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --text-2: #64748b;
-      --text-3: #94a3b8;
-      --red: #ef4444;
-      --red-light: #fee2e2;
-      --green: #10b981;
-      --green-light: #d1fae5;
-      --yellow: #f59e0b;
-      --yellow-light: #fef3c7;
-      --blue: #3b82f6;
-      --blue-light: #dbeafe;
-      --radius: 10px;
+      /* ── CUFS Brand Colors ───────────────────── */
+      /* Primary: CUFS Green  PANTONE 315C  R20 G110 B122 */
+      /* Neutral: CUFS Gray   PANTONE CG5C  R218 G218 B221 */
+      /* Dark:    CUFS Navy   PANTONE 7463C R0 G45 B86 */
+      /* Gold:    CUFS Gold   PANTONE 874C  R141 G113 B78 */
+
+      --sidebar-bg:   #002D56;   /* CUFS Navy */
+      --sidebar-w:    240px;
+
+      --accent:       #146E7A;   /* CUFS Green */
+      --accent-hover: #0F5561;
+      --accent-light: #E6F3F4;
+      --accent-mid:   #1A9BAA;   /* lighter teal for gradients */
+
+      --gold:         #8D714E;   /* CUFS Gold */
+      --gold-light:   #F5EFE6;
+
+      --bg:       #F3F4F4;
+      --surface:  #ffffff;
+      --surface2: #F7F8F8;
+      --border:   #DADADD;       /* CUFS Gray */
+
+      --text:   #0F2035;         /* navy-tinted dark */
+      --text-2: #4A5F72;
+      --text-3: #8A9FAF;
+
+      --red:          #DC2626;
+      --red-light:    #FEE2E2;
+      --green:        #059669;
+      --green-light:  #D1FAE5;
+      --yellow:       #D97706;
+      --yellow-light: #FEF3C7;
+      --blue:         #2563EB;
+      --blue-light:   #DBEAFE;
+
+      --radius:    10px;
       --radius-sm: 6px;
-      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
       --shadow-md: 0 4px 12px rgba(0,0,0,.08);
       --shadow-lg: 0 10px 30px rgba(0,0,0,.12);
     }
@@ -57,7 +72,7 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
-      background: linear-gradient(135deg, #0f172a 0%, #1e2a3a 40%, #312e81 100%);
+      background: linear-gradient(135deg, #001833 0%, #002D56 50%, #146E7A 100%);
     }
     .dp-login-card {
       background: var(--surface);
@@ -77,7 +92,7 @@
       justify-content: center;
       width: 64px;
       height: 64px;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       border-radius: 16px;
       font-size: 28px;
       margin-bottom: 14px;
@@ -143,7 +158,7 @@
     .dp-sidebar-logo-icon {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       border-radius: 9px;
       display: flex;
       align-items: center;
@@ -205,7 +220,7 @@
       background: rgba(79, 70, 229, .25);
       color: #a5b4fc;
     }
-    .dp-nav-item--active .dp-nav-icon { color: #818cf8; }
+    .dp-nav-item--active .dp-nav-icon { color: var(--accent-mid); }
     .dp-nav-icon {
       font-size: 15px;
       width: 20px;
@@ -243,7 +258,7 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       color: #fff;
       font-size: 13px;
       font-weight: 700;
@@ -481,7 +496,7 @@
     .dp-cal-day--weekend .dp-cal-day-num { color: #f87171; }
     .dp-cal-day--has-events { background: var(--surface2); border-color: var(--border); }
     .dp-cal-day--clickable { cursor: pointer; }
-    .dp-cal-day--clickable:hover { background: var(--accent-light); border-color: #c7d2fe; }
+    .dp-cal-day--clickable:hover { background: var(--accent-light); border-color: #B3D5D9; }
     .dp-cal-day-num {
       font-size: 13px;
       font-weight: 600;
@@ -617,7 +632,7 @@
       gap: 12px;
       transition: border-color .15s, box-shadow .15s;
     }
-    .dp-post-card:hover { border-color: #c7d2fe; box-shadow: var(--shadow-md); }
+    .dp-post-card:hover { border-color: #B3D5D9; box-shadow: var(--shadow-md); }
     .dp-post-card-inner { flex: 1; min-width: 0; }
     .dp-post-card-meta {
       display: flex;
@@ -742,7 +757,7 @@
       width: 52px;
       height: 52px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       color: #fff;
       font-size: 18px;
       font-weight: 700;
@@ -836,8 +851,8 @@
       font-size: 11.5px;
       font-weight: 700;
     }
-    .dp-badge--admin { background: #ede9fe; color: #6d28d9; }
-    .dp-badge--member { background: var(--blue-light); color: #1d4ed8; }
+    .dp-badge--admin  { background: #E6F3F4; color: #146E7A; }
+    .dp-badge--member { background: #E8EEF4; color: #002D56; }
     .dp-badge--active { background: var(--green-light); color: #065f46; }
     .dp-badge--inactive { background: var(--red-light); color: #b91c1c; }
     .dp-badge--board { background: var(--accent-light); color: var(--accent); }
@@ -1017,7 +1032,7 @@
 
     /* ── Dev Rules Section ───────────────────────────────────── */
     .dp-version-hero {
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       color: white;
       border-radius: var(--radius);
       padding: 28px 32px;
@@ -1101,9 +1116,9 @@
       font-weight: 600;
       text-transform: uppercase;
     }
-    .dp-vh-type--feature  { background: var(--blue-light); color: var(--blue); }
-    .dp-vh-type--bugfix   { background: var(--green-light); color: var(--green); }
-    .dp-vh-type--initial  { background: var(--accent-light); color: var(--accent); }
+    .dp-vh-type--feature  { background: var(--accent-light); color: var(--accent); }
+    .dp-vh-type--bugfix   { background: var(--gold-light); color: var(--gold); }
+    .dp-vh-type--initial  { background: #E8EEF4; color: #002D56; }
 
     /* ── File Upload UI ─────────────────────────────────────────── */
     .dp-upload-btn {
@@ -1241,7 +1256,7 @@
 
     /* ── Calendar Drag ──────────────────────────────────────────── */
     .dp-cal-day--dragover {
-      background: #eef2ff !important;
+      background: var(--accent-light) !important;
       outline: 2px dashed var(--accent);
     }
     .dp-cal-event-strip[draggable="true"] {
@@ -1343,7 +1358,7 @@
       width: 96px;
       height: 96px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
+      background: linear-gradient(135deg, #002D56, #146E7A);
       color: #fff;
       display: flex;
       align-items: center;
