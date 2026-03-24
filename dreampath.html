@@ -212,6 +212,21 @@
       flex-shrink: 0;
     }
 
+    /* Sidebar clock */
+    .dp-sidebar-clock {
+      padding: 10px 16px 8px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+    .dp-clock-row {
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255,255,255,.45);
+      margin-bottom: 2px;
+    }
+    .dp-clock-label { font-weight: 700; color: rgba(255,255,255,.35); }
+
     /* Sidebar footer */
     .dp-sidebar-footer {
       padding: 14px 12px;
@@ -448,6 +463,8 @@
     .dp-cal-dow--weekend { color: #f87171; }
     .dp-cal-day {
       min-height: 100px;
+      min-width: 0;
+      overflow: hidden;
       border-radius: 8px;
       padding: 6px 7px;
       position: relative;
@@ -476,6 +493,9 @@
       font-size: 10px;
       font-weight: 500;
       color: white;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       padding: 1px 5px;
       border-radius: 3px;
       white-space: nowrap;
@@ -521,7 +541,7 @@
       gap: 18px;
       align-items: stretch;
     }
-    #dp-board-previews > div { display: flex; flex-direction: column; }
+    #dp-board-previews > div { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
     #dp-board-previews .dp-preview-card { flex: 1; }
     .dp-preview-card {
       background: var(--surface);
@@ -1430,6 +1450,10 @@
       </div>
     </div>
 
+    <div class="dp-sidebar-clock">
+      <div class="dp-clock-row"><span class="dp-clock-label">KST</span><span id="dp-clock-kst">--:--:--</span></div>
+      <div class="dp-clock-row"><span class="dp-clock-label">Local</span><span id="dp-clock-local">--:--:--</span></div>
+    </div>
     <div class="dp-sidebar-footer">
       <div class="dp-sidebar-user">
         <div class="dp-user-avatar" id="dp-user-avatar">JD</div>
