@@ -287,7 +287,7 @@ const DP = (() => {
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const monthName = calendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-    const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
+    const typeColors = { general: '#146E7A', deadline: '#DC2626', meeting: '#059669', milestone: '#8D714E' };
 
     let html = `
       <div class="dp-cal-header">
@@ -353,14 +353,14 @@ const DP = (() => {
     const month = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`;
     api('GET', `events?month=${month}`).then(data => {
       const events = (data?.events || []).filter(e => e.start_date.slice(0, 10) === dateStr);
-      const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
+      const typeColors = { general: '#146E7A', deadline: '#DC2626', meeting: '#059669', milestone: '#8D714E' };
       const typeLabels = { general: 'General', deadline: 'Deadline', meeting: 'Meeting', milestone: 'Milestone' };
       const fmtDateStr = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       const evHtml = events.length
         ? events.map(ev => `
           <div class="dp-event-item" onclick="DP.closeModal(); setTimeout(()=>DP.viewEvent(${ev.id}),80)" style="cursor:pointer">
-            <span class="dp-event-badge" style="background:${typeColors[ev.type] || '#6366f1'};color:#fff">${esc(typeLabels[ev.type] || ev.type)}</span>
+            <span class="dp-event-badge" style="background:${typeColors[ev.type] || '#146E7A'};color:#fff">${esc(typeLabels[ev.type] || ev.type)}</span>
             <div class="dp-event-item-body">
               <strong>${esc(ev.title)}</strong>
               ${ev.description ? `<p class="dp-event-desc">${esc(ev.description)}</p>` : ''}
@@ -863,7 +863,7 @@ const DP = (() => {
     if (!data?.event) return;
     const ev = data.event;
     const typeLabels = { general: 'General', deadline: 'Deadline', meeting: 'Meeting', milestone: 'Milestone' };
-    const typeColors = { general: '#6366f1', deadline: '#ef4444', meeting: '#10b981', milestone: '#f59e0b' };
+    const typeColors = { general: '#146E7A', deadline: '#DC2626', meeting: '#059669', milestone: '#8D714E' };
 
     const historyHtml = (ev.history || []).length ? `
       <details class="dp-post-history" open>
@@ -885,7 +885,7 @@ const DP = (() => {
     openModal(`
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${typeColors[ev.type] || '#6366f1'}22;color:${typeColors[ev.type] || '#6366f1'}">${esc(typeLabels[ev.type] || ev.type)}</span>
+          <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${typeColors[ev.type] || '#146E7A'}22;color:${typeColors[ev.type] || '#146E7A'}">${esc(typeLabels[ev.type] || ev.type)}</span>
           <span style="font-size:13px;color:var(--text-3)">${esc(ev.start_date)}${ev.start_time ? ` ${esc(ev.start_time)}` : ''}${ev.end_date ? ` → ${esc(ev.end_date)}${ev.end_time ? ' ' + esc(ev.end_time) : ''}` : ''}</span>
         </div>
         ${ev.description ? `<div class="dp-post-detail-content" style="margin-bottom:16px">${ev.description.split('\n').map(l => esc(l)).join('<br>')}</div>` : ''}
