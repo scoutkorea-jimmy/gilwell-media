@@ -28,11 +28,6 @@ const DP = (() => {
     if (!d || isNaN(d)) return '';
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
-  function fmtDateTime(s) {
-    const d = _parseDate(s);
-    if (!d || isNaN(d)) return '';
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
   function fmtFull(s) {
     const d = _parseDate(s);
     if (!d || isNaN(d)) return '';
@@ -596,9 +591,6 @@ const DP = (() => {
 
   async function createPost(boardName) {
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
-    // pendingFiles holds { url, name, type, size, is_image } objects after upload
-    let pendingFiles = [];
-
     openModal(`
       <div class="dp-form">
         <div class="dp-form-row">
@@ -1019,7 +1011,7 @@ const DP = (() => {
     }
   }
 
-  // ── Emergency Contacts ─────────────────────────────────────────────────────
+  // ── Project Team Contacts ──────────────────────────────────────────────────
   async function loadContacts() {
     const data = await api('GET', 'contacts');
     renderContacts(data?.contacts || [], data?.team || []);
@@ -1063,152 +1055,6 @@ const DP = (() => {
     `;
   }
 
-  async function createContact() {
-    openModal(`
-      <div class="dp-form">
-        <div class="dp-form-row">
-          <label class="dp-label">Name <span class="dp-required">*</span></label>
-          <input id="cc-name" class="dp-input" type="text" placeholder="Full name" maxlength="100" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Role / Title</label>
-          <input id="cc-role" class="dp-input" type="text" placeholder="e.g. Project Manager" maxlength="100" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Department</label>
-          <select id="cc-dept" class="dp-input"><option value="">— None —</option></select>
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Phone</label>
-          <input id="cc-phone" class="dp-input" type="tel" placeholder="+1 (555) 000-0000" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Email</label>
-          <input id="cc-email" class="dp-input" type="email" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Note</label>
-          <textarea id="cc-note" class="dp-input dp-textarea dp-textarea--sm" placeholder="Additional notes" maxlength="500"></textarea>
-        </div>
-      </div>
-    `, {
-      title: 'Add Emergency Contact',
-      confirmLabel: 'Add Contact',
-      onConfirm: async () => {
-        const name = $('cc-name').value.trim();
-        if (!name) { showToast('Name is required.', 'error'); return; }
-
-        const result = await api('POST', 'contacts', {
-          name,
-          role_title: $('cc-role').value.trim() || null,
-          department: $('cc-dept').value.trim() || null,
-          phone: $('cc-phone').value.trim() || null,
-          email: $('cc-email').value.trim() || null,
-          note: $('cc-note').value.trim() || null,
-        });
-        if (result) {
-          closeModal();
-          showToast('Contact added.', 'success');
-          loadContacts();
-        }
-      },
-    });
-    api('GET', 'departments').then(d => {
-      const sel = $('cc-dept');
-      if (sel && d?.departments) {
-        d.departments.forEach(dept => {
-          const opt = document.createElement('option');
-          opt.value = dept.name;
-          opt.textContent = dept.name;
-          sel.appendChild(opt);
-        });
-      }
-    });
-  }
-
-  async function editContact(id) {
-    const data = await api('GET', 'contacts');
-    if (!data) return;
-    const c = data.contacts.find(x => x.id === id);
-    if (!c) return;
-
-    openModal(`
-      <div class="dp-form">
-        <div class="dp-form-row">
-          <label class="dp-label">Name <span class="dp-required">*</span></label>
-          <input id="ec-name" class="dp-input" type="text" value="${esc(c.name)}" maxlength="100" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Role / Title</label>
-          <input id="ec-role" class="dp-input" type="text" value="${esc(c.role_title || '')}" maxlength="100" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Department</label>
-          <select id="ec-dept" class="dp-input"><option value="">— None —</option></select>
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Phone</label>
-          <input id="ec-phone" class="dp-input" type="tel" value="${esc(c.phone || '')}" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Email</label>
-          <input id="ec-email" class="dp-input" type="email" value="${esc(c.email || '')}" />
-        </div>
-        <div class="dp-form-row">
-          <label class="dp-label">Note</label>
-          <textarea id="ec-note" class="dp-input dp-textarea dp-textarea--sm" maxlength="500">${esc(c.note || '')}</textarea>
-        </div>
-      </div>
-    `, {
-      title: 'Edit Contact',
-      confirmLabel: 'Save Changes',
-      onConfirm: async () => {
-        const name = $('ec-name').value.trim();
-        if (!name) { showToast('Name is required.', 'error'); return; }
-
-        const result = await api('PUT', `contacts?id=${id}`, {
-          name,
-          role_title: $('ec-role').value.trim() || null,
-          department: $('ec-dept').value.trim() || null,
-          phone: $('ec-phone').value.trim() || null,
-          email: $('ec-email').value.trim() || null,
-          note: $('ec-note').value.trim() || null,
-        });
-        if (result) {
-          closeModal();
-          showToast('Contact updated.', 'success');
-          loadContacts();
-        }
-      },
-    });
-    api('GET', 'departments').then(d => {
-      const sel = $('ec-dept');
-      if (sel && d?.departments) {
-        d.departments.forEach(dept => {
-          const opt = document.createElement('option');
-          opt.value = dept.name;
-          opt.textContent = dept.name;
-          if (dept.name === c.department) opt.selected = true;
-          sel.appendChild(opt);
-        });
-      }
-    });
-  }
-
-  async function deleteContact(id) {
-    openModal(`<p>Are you sure you want to delete this contact?</p>`, {
-      title: 'Delete Contact',
-      confirmLabel: 'Delete',
-      onConfirm: async () => {
-        const result = await api('DELETE', `contacts?id=${id}`);
-        if (result) {
-          closeModal();
-          showToast('Contact deleted.', 'success');
-          loadContacts();
-        }
-      },
-    });
-  }
 
   // ── User Management ────────────────────────────────────────────────────────
   let _allUsers = [];
@@ -1734,7 +1580,7 @@ const DP = (() => {
 
         <div class="dp-card">
           <h3 class="dp-card-title">Profile & Emergency Contact Info</h3>
-          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">This information is visible in Emergency Contacts.</p>
+          <p style="font-size:12px;color:var(--text-3);margin-bottom:16px">This information is visible in Project Team Contacts.</p>
           <div class="dp-form">
             <div class="dp-form-row dp-form-row--2col">
               <div>
@@ -2284,9 +2130,6 @@ const DP = (() => {
     editPost,
     deletePost,
     viewPost,
-    createContact,
-    editContact,
-    deleteContact,
     createUser,
     editUser,
     deleteUser,
