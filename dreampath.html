@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dreampath — Project Board</title>
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png" />
   <style>
     /* ── Reset & Base ───────────────────────────────────────────── */
@@ -476,7 +477,7 @@
       background: var(--accent-light);
       border-color: var(--accent) !important;
     }
-    .dp-cal-day--today .dp-cal-day-num { color: var(--accent); font-weight: 700; }
+    .dp-cal-day--today .dp-cal-day-num:not(.dp-cal-today-num) { color: var(--accent); font-weight: 700; }
     .dp-cal-day--weekend .dp-cal-day-num { color: #f87171; }
     .dp-cal-day--has-events { background: var(--surface2); border-color: var(--border); }
     .dp-cal-day--clickable { cursor: pointer; }
@@ -845,29 +846,16 @@
     /* ── My Account ─────────────────────────────────────────────── */
     .dp-account-layout {
       display: grid;
-      grid-template-columns: 220px 1fr;
+      grid-template-columns: 200px 1fr;
       gap: 20px;
       align-items: start;
     }
     .dp-account-profile {
       text-align: center;
-      padding: 28px 20px;
+      padding: 24px 16px;
     }
     .dp-account-password {
       margin-top: 20px;
-    }
-    .dp-account-avatar {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #818cf8);
-      color: #fff;
-      font-size: 26px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 14px;
     }
     .dp-account-name {
       font-size: 18px;
@@ -1342,6 +1330,44 @@
     }
     .dp-contact-card--team {
       border-left: 3px solid var(--accent);
+    }
+
+    /* ── Profile Avatar ─────────────────────────────────────────── */
+    .dp-account-avatar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .dp-account-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .dp-account-avatar-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ── Version pagination ─────────────────────────────────────── */
+    .dp-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
     }
   </style>
 </head>

@@ -185,15 +185,26 @@ const DP = (() => {
     $('dp-login-error').classList.add('dp-hidden');
   }
 
+  function _updateSidebarAvatar(user) {
+    const el = $('dp-user-avatar');
+    if (!el) return;
+    if (user.avatar_url) {
+      const pos = (user.avatar_pos || '50 50').split(' ');
+      el.innerHTML = `<img src="${esc(user.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:${pos[0]}% ${pos[1]}%;border-radius:50%;">`;
+    } else {
+      const initials = (user.display_name || user.username || '?')
+        .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      el.textContent = initials;
+    }
+  }
+
   function showApp() {
     $('dp-login').classList.add('dp-hidden');
     $('dp-app').classList.remove('dp-hidden');
 
     // Set user info in sidebar
     $('dp-user-name').textContent = currentUser.display_name || currentUser.username;
-    const initials = (currentUser.display_name || currentUser.username || '?')
-      .split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    $('dp-user-avatar').textContent = initials;
+    _updateSidebarAvatar(currentUser);
 
     // Show/hide admin items
     document.querySelectorAll('.dp-admin-only').forEach(el => {
@@ -232,7 +243,10 @@ const DP = (() => {
       case 'documents':    loadBoard('documents'); break;
       case 'minutes':      loadBoard('minutes'); break;
       case 'contacts':     loadContacts(); break;
-      case 'users':        loadUsers(); break;
+      case 'users':
+        if (currentUser?.role !== 'admin') { navigate('home'); return; }
+        loadUsers();
+        break;
       case 'account':      loadAccount(); break;
       case 'devrules':     loadDevRules(); break;
     }
@@ -264,9 +278,9 @@ const DP = (() => {
       eventMap[key].push(ev);
     }
 
-    // First day offset (Mon=0)
+    // First day offset (Sun=0)
     const firstDow = new Date(year, month, 1).getDay();
-    const startOffset = firstDow === 0 ? 6 : firstDow - 1;
+    const startOffset = firstDow; // 0=Sun,1=Mon,...,6=Sat
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const today = new Date();
@@ -283,13 +297,13 @@ const DP = (() => {
         ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--sm dp-btn--primary dp-admin-only" onclick="DP.addEvent()" style="margin-left:auto">+ Add Event</button>` : ''}
       </div>
       <div class="dp-cal-grid">
+        <div class="dp-cal-dow dp-cal-dow--weekend">Sun</div>
         <div class="dp-cal-dow">Mon</div>
         <div class="dp-cal-dow">Tue</div>
         <div class="dp-cal-dow">Wed</div>
         <div class="dp-cal-dow">Thu</div>
         <div class="dp-cal-dow">Fri</div>
         <div class="dp-cal-dow dp-cal-dow--weekend">Sat</div>
-        <div class="dp-cal-dow dp-cal-dow--weekend">Sun</div>
     `;
 
     // Empty leading cells
@@ -1624,7 +1638,6 @@ const DP = (() => {
     const container = $('dp-account-content');
     if (!container) return;
 
-    // Parse phone into cc + number for the form
     const storedPhone = user.phone || '';
     let phoneCC = '+82', phoneNum = '';
     const ccMatch = storedPhone.match(/^(\+\d+)\s(.*)$/);
@@ -1639,14 +1652,30 @@ const DP = (() => {
       ['+91','🇮🇳 +91 India'],['+55','🇧🇷 +55 Brazil'],
     ].map(([v, l]) => `<option value="${v}"${phoneCC === v ? ' selected' : ''}>${l}</option>`).join('');
 
+    const avatarPos = (user.avatar_pos || '50 50').split(' ');
+    const avatarHtml = user.avatar_url
+      ? `<img id="prof-avatar-img" src="${esc(user.avatar_url)}" alt="Profile" style="width:100%;height:100%;object-fit:cover;object-position:${avatarPos[0]}% ${avatarPos[1]}%;border-radius:50%;cursor:grab;">`
+      : `<span id="prof-avatar-initials" style="font-size:32px;font-weight:700;color:#fff">${esc((user.display_name||user.username||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2))}</span>`;
+
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">My Account</h2>
       </div>
       <div class="dp-account-layout">
+
         <div class="dp-card dp-account-profile">
-          <div class="dp-account-avatar">${esc((user.display_name || user.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
-          <h3 class="dp-account-name">${esc(user.display_name)}</h3>
+          <div class="dp-account-avatar-wrap" id="dp-account-avatar-wrap">
+            <div class="dp-account-avatar" id="dp-account-avatar-circle">${avatarHtml}</div>
+            <div class="dp-account-avatar-actions">
+              <label class="dp-btn dp-btn--ghost dp-btn--sm" style="cursor:pointer">
+                ${user.avatar_url ? '🔄 Change Photo' : '📷 Upload Photo'}
+                <input type="file" id="prof-avatar-input" accept="image/*" style="display:none" onchange="DP._handleAvatarSelect(this)" />
+              </label>
+              ${user.avatar_url ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP._removeAvatar()">Remove</button>` : ''}
+            </div>
+            ${user.avatar_url ? `<p style="font-size:11px;color:var(--text-3);margin-top:6px;text-align:center">Drag photo to reposition</p>` : ''}
+          </div>
+          <h3 class="dp-account-name" style="margin-top:12px">${esc(user.display_name)}</h3>
           <p class="dp-account-username">@${esc(user.username)}</p>
         </div>
 
@@ -1685,32 +1714,31 @@ const DP = (() => {
               <label class="dp-label">Emergency Note</label>
               <textarea id="prof-note" class="dp-input dp-textarea dp-textarea--sm" placeholder="e.g. Contact via KakaoTalk after 6pm" maxlength="500">${esc(user.emergency_note || '')}</textarea>
             </div>
-            <button class="dp-btn dp-btn--primary" onclick="DP.saveProfile()">Save Profile</button>
-          </div>
-        </div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+              <button class="dp-btn dp-btn--primary" onclick="DP.saveProfile()">Save Profile</button>
+            </div>
 
-        <div class="dp-card dp-account-password">
-          <h3 class="dp-card-title">Change Password</h3>
-          <div class="dp-form">
+            <div class="dp-form-divider" style="margin-top:24px">Change Password</div>
             <div class="dp-form-row">
               <label class="dp-label">Current Password <span class="dp-required">*</span></label>
               <input id="pw-current" class="dp-input" type="password" autocomplete="current-password" />
             </div>
-            <div class="dp-form-row">
-              <label class="dp-label">New Password <span class="dp-required">*</span></label>
-              <input id="pw-new" class="dp-input" type="password" autocomplete="new-password" placeholder="Min 6 characters" />
+            <div class="dp-form-row dp-form-row--2col">
+              <div>
+                <label class="dp-label">New Password <span class="dp-required">*</span></label>
+                <input id="pw-new" class="dp-input" type="password" autocomplete="new-password" placeholder="Min 6 characters" />
+              </div>
+              <div>
+                <label class="dp-label">Confirm New Password <span class="dp-required">*</span></label>
+                <input id="pw-confirm" class="dp-input" type="password" autocomplete="new-password" />
+              </div>
             </div>
-            <div class="dp-form-row">
-              <label class="dp-label">Confirm New Password <span class="dp-required">*</span></label>
-              <input id="pw-confirm" class="dp-input" type="password" autocomplete="new-password" />
-            </div>
-            <button class="dp-btn dp-btn--primary" onclick="DP.changePassword()">Update Password</button>
+            <button class="dp-btn dp-btn--ghost" onclick="DP.changePassword()">Update Password</button>
           </div>
         </div>
       </div>
     `;
 
-    // Populate department dropdown
     api('GET', 'departments').then(d => {
       const sel = $('prof-dept');
       if (sel && d?.departments) {
@@ -1723,12 +1751,104 @@ const DP = (() => {
         });
       }
     });
+
+    // Set up avatar drag-to-reposition if photo exists
+    if (user.avatar_url) {
+      _initAvatarDrag(user.avatar_pos || '50 50');
+    }
+  }
+
+  // ── Avatar helpers ──────────────────────────────────────────────────────────
+  let _avatarPendingUrl = null; // R2 URL of newly uploaded but not-yet-saved avatar
+
+  async function _handleAvatarSelect(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('Please select an image file.', 'error'); return; }
+
+    const btn = input.parentElement;
+    const origText = btn.textContent.trim();
+    btn.textContent = 'Uploading…';
+
+    const fd = new FormData();
+    fd.append('file', file);
+    let res;
+    try {
+      const r = await fetch('/api/dreampath/upload', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+      res = await r.json();
+      if (!r.ok) { showToast(res.error || 'Upload failed.', 'error'); btn.textContent = origText; return; }
+    } catch {
+      showToast('Upload failed.', 'error');
+      btn.textContent = origText;
+      return;
+    }
+
+    _avatarPendingUrl = res.url;
+
+    // Update preview immediately
+    const circle = $('dp-account-avatar-circle');
+    if (circle) {
+      circle.innerHTML = `<img id="prof-avatar-img" src="${esc(res.url)}" alt="Profile" style="width:100%;height:100%;object-fit:cover;object-position:50% 50%;border-radius:50%;cursor:grab;">`;
+      _initAvatarDrag('50 50');
+    }
+    btn.textContent = '🔄 Change Photo';
+    showToast('Photo uploaded. Save Profile to apply.', 'success');
+  }
+
+  async function _removeAvatar() {
+    if (!confirm('Remove profile photo?')) return;
+    _avatarPendingUrl = '';
+    const result = await api('PUT', 'me', { avatar_url: null, avatar_pos: '50 50' });
+    if (result) {
+      currentUser.avatar_url = null;
+      currentUser.avatar_pos = '50 50';
+      localStorage.setItem('dp_user', JSON.stringify(currentUser));
+      _updateSidebarAvatar(currentUser);
+      showToast('Profile photo removed.', 'success');
+      loadAccount();
+    }
+  }
+
+  function _initAvatarDrag(posStr) {
+    const img = $('prof-avatar-img');
+    if (!img) return;
+    let pos = (posStr || '50 50').split(' ').map(Number);
+    let dragging = false, startX, startY, startPos;
+
+    img.addEventListener('mousedown', e => {
+      e.preventDefault();
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startPos = [...pos];
+      img.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const dx = (e.clientX - startX) / img.parentElement.offsetWidth * 100;
+      const dy = (e.clientY - startY) / img.parentElement.offsetHeight * 100;
+      pos[0] = Math.max(0, Math.min(100, startPos[0] - dx));
+      pos[1] = Math.max(0, Math.min(100, startPos[1] - dy));
+      img.style.objectPosition = `${pos[0]}% ${pos[1]}%`;
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      img.style.cursor = 'grab';
+      // Store pending position so saveProfile can pick it up
+      img.dataset.pos = pos.join(' ');
+    });
   }
 
   async function saveProfile() {
     const phone = $('prof-phone-num')?.value.trim()
       ? $('prof-phone-cc')?.value + ' ' + $('prof-phone-num')?.value.trim()
       : null;
+    const avatarImg = $('prof-avatar-img');
     const body = {
       display_name:    $('prof-name')?.value.trim()  || undefined,
       email:           $('prof-email')?.value.trim()  || null,
@@ -1737,6 +1857,13 @@ const DP = (() => {
       role_title:      $('prof-role')?.value.trim()   || null,
       emergency_note:  $('prof-note')?.value.trim()   || null,
     };
+    if (_avatarPendingUrl !== null) {
+      body.avatar_url = _avatarPendingUrl || null;
+      body.avatar_pos = avatarImg?.dataset.pos || '50 50';
+      _avatarPendingUrl = null;
+    } else if (avatarImg?.dataset.pos) {
+      body.avatar_pos = avatarImg.dataset.pos;
+    }
     // Remove undefined keys
     Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
 
@@ -1744,12 +1871,11 @@ const DP = (() => {
     if (result) {
       showToast('Profile saved.', 'success');
       // Update sidebar name if display_name changed
-      if (result.user?.display_name) {
-        currentUser.display_name = result.user.display_name;
+      if (result.user) {
+        currentUser = { ...currentUser, ...result.user };
         localStorage.setItem('dp_user', JSON.stringify(currentUser));
-        $('dp-user-name').textContent = result.user.display_name;
-        const initials = result.user.display_name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-        $('dp-user-avatar').textContent = initials;
+        $('dp-user-name').textContent = currentUser.display_name;
+        _updateSidebarAvatar(currentUser);
       }
       loadAccount();
     }
@@ -1890,6 +2016,9 @@ const DP = (() => {
     renderDevRules(data?.versions || []);
   }
 
+  let _verPage = 0;
+  const VER_PER_PAGE = 20;
+
   function renderDevRules(versions) {
     const container = $('dp-devrules-content');
     if (!container) return;
@@ -1897,6 +2026,16 @@ const DP = (() => {
     const isAdmin = currentUser?.role === 'admin';
 
     const typeLabel = { feature: 'Feature', bugfix: 'Bugfix', initial: 'Initial' };
+
+    const totalPages = Math.ceil(versions.length / VER_PER_PAGE);
+    const pageVersions = versions.slice(_verPage * VER_PER_PAGE, (_verPage + 1) * VER_PER_PAGE);
+
+    const paginationHtml = totalPages > 1 ? `
+      <div class="dp-pagination">
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" ${_verPage === 0 ? 'disabled' : ''} onclick="DP._verChangePage(-1)">← Prev</button>
+        <span style="font-size:12px;color:var(--text-3)">Page ${_verPage + 1} / ${totalPages}</span>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" ${_verPage >= totalPages - 1 ? 'disabled' : ''} onclick="DP._verChangePage(1)">Next →</button>
+      </div>` : '';
 
     container.innerHTML = `
       <div class="dp-section-header">
@@ -1942,24 +2081,28 @@ const DP = (() => {
                   <th>Type</th>
                   <th>Description</th>
                   <th>Date</th>
-                  ${isAdmin ? '<th></th>' : ''}
                 </tr>
               </thead>
               <tbody>
-                ${versions.map(v => `
+                ${pageVersions.map(v => `
                   <tr>
                     <td><span class="dp-vh-version">v${esc(v.version)}</span></td>
                     <td><span class="dp-vh-type dp-vh-type--${esc(v.type)}">${esc(typeLabel[v.type] || v.type)}</span></td>
                     <td style="color:var(--text-2)">${esc(v.description || '—')}</td>
                     <td style="color:var(--text-3);white-space:nowrap">${fmtDate(v.released_at)}</td>
-                    ${isAdmin ? `<td><button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.deleteVersion(${v.id})">Delete</button></td>` : ''}
                   </tr>
                 `).join('')}
               </tbody>
-            </table>`
+            </table>
+            ${paginationHtml}`
         }
       </div>
     `;
+  }
+
+  function _verChangePage(delta) {
+    _verPage = Math.max(0, _verPage + delta);
+    loadDevRules();
   }
 
   async function addVersion() {
@@ -1990,19 +2133,6 @@ const DP = (() => {
         if ($('dp-version-display')) $('dp-version-display').textContent = `v${data.version}`;
         loadDevRules();
       },
-    });
-  }
-
-  async function deleteVersion(id) {
-    if (!confirm('Delete this version entry?')) return;
-    const data = await api('DELETE', `versions?id=${id}`);
-    if (!data) return;
-    showToast('Version entry deleted.', 'success');
-    loadDevRules();
-    // Refresh footer
-    api('GET', 'versions').then(d => {
-      const v = d?.versions?.[0];
-      if (v && $('dp-version-display')) $('dp-version-display').textContent = `v${v.version}`;
     });
   }
 
@@ -2112,15 +2242,17 @@ const DP = (() => {
     prevMonth,
     nextMonth,
     addVersion,
-    deleteVersion,
     addDepartment,
     editDepartment,
     deleteDepartment,
     addComment,
     deleteComment,
     _handleFileSelect,
+    _handleAvatarSelect,
+    _removeAvatar,
     _removeKeptFile: () => {},
     _calDragStart,
+    _verChangePage,
     _calDragOver,
     _calDragLeave,
     _calDrop,

@@ -7,7 +7,6 @@
  *          Server auto-calculates the new version number:
  *            feature → aa.bbb+1.00  (cc resets to 0)
  *            bugfix  → aa.bbb.cc+1
- * DELETE /api/dreampath/versions?id=N   — delete a version entry (admin only)
  */
 
 function json(data, status = 200) {
@@ -29,7 +28,7 @@ export async function onRequestGet({ env }) {
   const rows = await env.DB.prepare(
     `SELECT id, version, aa, bbb, cc, type, description, released_at
        FROM dp_versions
-      ORDER BY released_at DESC`
+      ORDER BY aa DESC, bbb DESC, cc DESC, id DESC`
   ).all();
   return json({ versions: rows.results || [] });
 }
@@ -83,20 +82,3 @@ export async function onRequestPost({ request, env, data }) {
   return json({ id: result.meta.last_row_id, version, ok: true });
 }
 
-export async function onRequestDelete({ request, env, data }) {
-  if (data.dpUser.role !== 'admin') {
-    return json({ error: 'Admin access required.' }, 403);
-  }
-  const url = new URL(request.url);
-  const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id) return json({ error: 'id is required.' }, 400);
-
-  // Prevent deleting the initial version if it's the only one
-  const count = await env.DB.prepare(`SELECT COUNT(*) as n FROM dp_versions`).first();
-  if (count?.n <= 1) {
-    return json({ error: 'Cannot delete the only version entry.' }, 400);
-  }
-
-  await env.DB.prepare(`DELETE FROM dp_versions WHERE id = ?`).bind(id).run();
-  return json({ ok: true });
-}
