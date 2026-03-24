@@ -27,7 +27,7 @@ function json(data, status = 200) {
 export async function onRequestGet({ env, data }) {
   const user = await env.DB.prepare(
     `SELECT id, username, display_name, role, email, phone, department,
-            role_title, emergency_note, created_at
+            role_title, emergency_note, avatar_url, avatar_pos, created_at
        FROM dp_users WHERE id = ?`
   ).bind(data.dpUser.uid).first();
   if (!user) return json({ error: 'User not found.' }, 404);
@@ -68,6 +68,8 @@ export async function onRequestPut({ request, env, data }) {
   if (body.department      !== undefined) { fields.push('department = ?');      values.push(body.department?.trim() || null); }
   if (body.role_title      !== undefined) { fields.push('role_title = ?');      values.push(body.role_title?.trim().slice(0, 100)  || null); }
   if (body.emergency_note  !== undefined) { fields.push('emergency_note = ?');  values.push(body.emergency_note?.trim().slice(0, 500) || null); }
+  if (body.avatar_url !== undefined) { fields.push('avatar_url = ?'); values.push(body.avatar_url || null); }
+  if (body.avatar_pos !== undefined) { fields.push('avatar_pos = ?'); values.push(body.avatar_pos || '50 50'); }
 
   if (!fields.length) return json({ error: 'No fields to update.' }, 400);
   fields.push("updated_at = datetime('now')");
@@ -78,7 +80,7 @@ export async function onRequestPut({ request, env, data }) {
   // Re-fetch updated user
   const updated = await env.DB.prepare(
     `SELECT id, username, display_name, role, email, phone, department,
-            role_title, emergency_note, created_at
+            role_title, emergency_note, avatar_url, avatar_pos, created_at
        FROM dp_users WHERE id = ?`
   ).bind(data.dpUser.uid).first();
   return json({ ok: true, changed: 'profile', user: updated });
