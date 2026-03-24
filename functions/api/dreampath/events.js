@@ -21,7 +21,7 @@ export async function onRequestGet({ request, env }) {
   // Single event with history
   if (id) {
     const event = await env.DB.prepare(
-      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.type,
+      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
@@ -43,16 +43,16 @@ export async function onRequestGet({ request, env }) {
   let rows;
   if (month && /^\d{4}-\d{2}$/.test(month)) {
     rows = await env.DB.prepare(
-      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.type,
+      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
         WHERE e.start_date BETWEEN ? AND ?
-        ORDER BY e.start_date ASC`
+        ORDER BY e.start_date ASC, e.start_time ASC`
     ).bind(`${month}-01`, `${month}-31`).all();
   } else {
     rows = await env.DB.prepare(
-      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.type,
+      `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
@@ -67,19 +67,22 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { title, description, start_date, end_date, type } = body;
+  const { title, description, start_date, end_date, start_time, end_time, type } = body;
   if (!title || !start_date) return json({ error: 'title and start_date are required.' }, 400);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date)) return json({ error: 'start_date must be YYYY-MM-DD.' }, 400);
 
   const safeType = ['general', 'deadline', 'meeting', 'milestone'].includes(type) ? type : 'general';
+  const safeTime = t => (t && /^\d{2}:\d{2}$/.test(t)) ? t : null;
   const result = await env.DB.prepare(
-    `INSERT INTO dp_events (title, description, start_date, end_date, type, created_by)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_events (title, description, start_date, end_date, start_time, end_time, type, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     title.trim().slice(0, 200),
     description ? description.trim().slice(0, 1000) : null,
     start_date,
     end_date || null,
+    safeTime(start_time),
+    safeTime(end_time),
     safeType,
     data.dpUser.uid
   ).run();
@@ -101,7 +104,7 @@ export async function onRequestPut({ request, env, data }) {
   }
 
   const current = await env.DB.prepare(
-    `SELECT title, description, start_date, end_date, type FROM dp_events WHERE id = ?`
+    `SELECT title, description, start_date, end_date, start_time, end_time, type FROM dp_events WHERE id = ?`
   ).bind(id).first();
   if (!current) return json({ error: 'Event not found.' }, 404);
 
@@ -112,7 +115,10 @@ export async function onRequestPut({ request, env, data }) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, data.dpUser.name,
-    current.title, current.description, current.start_date, current.end_date, current.type,
+    current.title, current.description,
+    current.start_date + (current.start_time ? ' ' + current.start_time : ''),
+    current.end_date ? current.end_date + (current.end_time ? ' ' + current.end_time : '') : null,
+    current.type,
     body.edit_note.trim().slice(0, 500)
   ).run();
 
@@ -122,6 +128,16 @@ export async function onRequestPut({ request, env, data }) {
   if (body.description !== undefined) { fields.push('description = ?'); values.push(body.description ? body.description.trim().slice(0, 1000) : null); }
   if (body.start_date !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(body.start_date)) { fields.push('start_date = ?'); values.push(body.start_date); }
   if (body.end_date !== undefined) { fields.push('end_date = ?'); values.push(body.end_date || null); }
+  if (body.start_time !== undefined) {
+    fields.push('start_time = ?');
+    const t = body.start_time;
+    values.push((t && /^\d{2}:\d{2}$/.test(t)) ? t : null);
+  }
+  if (body.end_time !== undefined) {
+    fields.push('end_time = ?');
+    const t = body.end_time;
+    values.push((t && /^\d{2}:\d{2}$/.test(t)) ? t : null);
+  }
   if (body.type !== undefined) {
     fields.push('type = ?');
     values.push(['general','deadline','meeting','milestone'].includes(body.type) ? body.type : 'general');

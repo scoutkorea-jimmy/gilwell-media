@@ -164,6 +164,26 @@ export async function onRequestPut({ request, env, data }) {
 
   // Replace file attachments if provided
   if (body.files !== undefined) {
+    // Detect file changes and add to history
+    const oldFiles = await env.DB.prepare(
+      `SELECT file_name FROM dp_post_files WHERE post_id = ?`
+    ).bind(id).all();
+    const oldNames = (oldFiles.results || []).map(f => f.file_name).sort();
+    const newNames = (Array.isArray(body.files) ? body.files : []).map(f => f.name).sort();
+    const filesChanged = JSON.stringify(oldNames) !== JSON.stringify(newNames);
+    if (filesChanged) {
+      const removed = oldNames.filter(n => !newNames.includes(n));
+      const added   = newNames.filter(n => !oldNames.includes(n));
+      const fileNote = [
+        removed.length ? `Removed: ${removed.join(', ')}` : null,
+        added.length   ? `Added: ${added.join(', ')}` : null,
+      ].filter(Boolean).join(' / ');
+      await env.DB.prepare(
+        `INSERT INTO dp_post_history (post_id, editor_name, prev_title, prev_content, edit_note)
+         VALUES (?, ?, ?, ?, ?)`
+      ).bind(id, data.dpUser.name, current.title, current.content, `[Files changed] ${fileNote}`).run();
+    }
+
     await env.DB.prepare(`DELETE FROM dp_post_files WHERE post_id = ?`).bind(id).run();
     if (Array.isArray(body.files)) {
       for (const f of body.files) {

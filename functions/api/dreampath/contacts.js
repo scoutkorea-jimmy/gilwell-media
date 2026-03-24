@@ -11,10 +11,17 @@ function json(data, status = 200) {
 }
 
 export async function onRequestGet({ env }) {
-  const rows = await env.DB.prepare(
-    `SELECT id, name, role_title, phone, email, department, note FROM dp_contacts ORDER BY sort_order ASC, id ASC`
+  const contacts = await env.DB.prepare(
+    `SELECT id, name, role_title, department, phone, email, note, sort_order
+       FROM dp_contacts ORDER BY sort_order ASC, name ASC`
   ).all();
-  return json({ contacts: rows.results || [] });
+
+  const team = await env.DB.prepare(
+    `SELECT id, display_name AS name, role_title, department, phone, email, emergency_note AS note
+       FROM dp_users WHERE is_active = 1 ORDER BY display_name ASC`
+  ).all();
+
+  return json({ contacts: contacts.results || [], team: team.results || [] });
 }
 
 export async function onRequestPost({ request, env, data }) {
