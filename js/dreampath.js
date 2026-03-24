@@ -179,6 +179,14 @@ const DP = (() => {
     });
 
     navigate('home');
+
+    // Load and display current version in footer
+    api('GET', 'versions').then(data => {
+      const latest = data?.versions?.[0];
+      if (latest && $('dp-version-display')) {
+        $('dp-version-display').textContent = `v${latest.version}`;
+      }
+    }).catch(() => {});
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
@@ -204,6 +212,7 @@ const DP = (() => {
       case 'contacts':     loadContacts(); break;
       case 'users':        loadUsers(); break;
       case 'account':      loadAccount(); break;
+      case 'devrules':     loadDevRules(); break;
     }
   }
 
@@ -1256,6 +1265,130 @@ const DP = (() => {
     }
   }
 
+  // ── Dev Rules & Version History ────────────────────────────────────────────
+  async function loadDevRules() {
+    const container = $('dp-devrules-content');
+    if (!container) return;
+    const data = await api('GET', 'versions');
+    renderDevRules(data?.versions || []);
+  }
+
+  function renderDevRules(versions) {
+    const container = $('dp-devrules-content');
+    if (!container) return;
+    const latest = versions[0];
+    const isAdmin = currentUser?.role === 'admin';
+
+    const typeLabel = { feature: 'Feature', bugfix: 'Bugfix', initial: 'Initial' };
+
+    container.innerHTML = `
+      <div class="dp-section-header">
+        <h2 class="dp-section-title">Development Rules</h2>
+        ${isAdmin ? `<button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addVersion()">+ Log Version</button>` : ''}
+      </div>
+
+      <div class="dp-version-hero">
+        <div>
+          <div class="dp-version-hero-label">CURRENT VERSION</div>
+          <div class="dp-version-hero-number">${latest ? `v${esc(latest.version)}` : '—'}</div>
+        </div>
+        ${latest ? `<div style="opacity:.7;font-size:13px;margin-left:auto">${esc(latest.description || '')}<br><span style="font-size:11px">${fmtDate(latest.released_at)}</span></div>` : ''}
+      </div>
+
+      <div class="dp-version-rules">
+        <h3>Version Format: <code style="font-size:16px;color:var(--accent)">aa.bbb.cc</code></h3>
+        <div class="dp-version-rule-row">
+          <div class="dp-version-rule-seg">aa</div>
+          <div class="dp-version-rule-desc"><strong>Major version</strong> — Set manually by the project owner. Represents a major milestone or full redesign.</div>
+        </div>
+        <div class="dp-version-rule-row">
+          <div class="dp-version-rule-seg">bbb</div>
+          <div class="dp-version-rule-desc"><strong>Feature version</strong> — Incremented when a new feature is added or an existing feature is significantly changed.</div>
+        </div>
+        <div class="dp-version-rule-row">
+          <div class="dp-version-rule-seg">cc</div>
+          <div class="dp-version-rule-desc"><strong>Fix version</strong> — Incremented for bug fixes and hotfixes. Resets to 00 on each feature increment.</div>
+        </div>
+      </div>
+
+      <div class="dp-card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <h3 style="font-size:14px;font-weight:700">Version History</h3>
+          <span style="font-size:12px;color:var(--text-3)">${versions.length} entries</span>
+        </div>
+        ${versions.length === 0
+          ? `<div class="dp-empty-state"><p>No version entries yet.</p></div>`
+          : `<table class="dp-vh-table">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Date</th>
+                  ${isAdmin ? '<th></th>' : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${versions.map(v => `
+                  <tr>
+                    <td><span class="dp-vh-version">v${esc(v.version)}</span></td>
+                    <td><span class="dp-vh-type dp-vh-type--${esc(v.type)}">${esc(typeLabel[v.type] || v.type)}</span></td>
+                    <td style="color:var(--text-2)">${esc(v.description || '—')}</td>
+                    <td style="color:var(--text-3);white-space:nowrap">${fmtDate(v.released_at)}</td>
+                    ${isAdmin ? `<td><button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.deleteVersion(${v.id})">Delete</button></td>` : ''}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>`
+        }
+      </div>
+    `;
+  }
+
+  async function addVersion() {
+    openModal(`
+      <div class="dp-form-group">
+        <label class="dp-label">Type</label>
+        <select class="dp-input" id="ver-type">
+          <option value="feature">Feature — Increments bbb (e.g. 01.001.00)</option>
+          <option value="bugfix">Bugfix — Increments cc (e.g. 01.000.01)</option>
+        </select>
+      </div>
+      <div class="dp-form-group" style="margin-top:12px">
+        <label class="dp-label">Description <span style="color:var(--red)">*</span></label>
+        <textarea class="dp-input" id="ver-desc" rows="3" placeholder="What changed in this version?"></textarea>
+      </div>
+    `, {
+      title: 'Log New Version',
+      confirmLabel: 'Add Version',
+      onConfirm: async () => {
+        const type = $('ver-type').value;
+        const description = $('ver-desc').value.trim();
+        if (!description) { showToast('Description is required.', 'error'); return; }
+        const data = await api('POST', 'versions', { type, description });
+        if (!data) return;
+        showToast(`Version ${data.version} logged successfully.`, 'success');
+        closeModal();
+        // Update footer
+        if ($('dp-version-display')) $('dp-version-display').textContent = `v${data.version}`;
+        loadDevRules();
+      },
+    });
+  }
+
+  async function deleteVersion(id) {
+    if (!confirm('Delete this version entry?')) return;
+    const data = await api('DELETE', `versions?id=${id}`);
+    if (!data) return;
+    showToast('Version entry deleted.', 'success');
+    loadDevRules();
+    // Refresh footer
+    api('GET', 'versions').then(d => {
+      const v = d?.versions?.[0];
+      if (v && $('dp-version-display')) $('dp-version-display').textContent = `v${v.version}`;
+    });
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
   return {
     init,
@@ -1279,6 +1412,8 @@ const DP = (() => {
     changePassword,
     prevMonth,
     nextMonth,
+    addVersion,
+    deleteVersion,
   };
 })();
 
