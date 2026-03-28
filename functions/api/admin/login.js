@@ -10,7 +10,7 @@
  *   ADMIN_PASSWORD  — the admin password you choose
  *   ADMIN_SECRET    — random string for signing tokens (openssl rand -hex 32)
  */
-import { createToken, safeCompare } from '../../_shared/auth.js';
+import { buildAdminSessionCookie, createToken, safeCompare } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const MAX_ATTEMPTS   = 10;
@@ -110,7 +110,9 @@ export async function onRequestPost({ request, env }) {
 
   // Issue a signed 24-hour session token
   const token = await createToken(env.ADMIN_SECRET, role);
-  return json({ token, role });
+  return json({ token, role }, 200, {
+    'Set-Cookie': buildAdminSessionCookie(token),
+  });
 }
 
 // Only POST is allowed on this endpoint
@@ -118,9 +120,17 @@ export function onRequestGet() {
   return json({ error: 'Method not allowed' }, 405);
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
+  const headers = new Headers({ 'Content-Type': 'application/json' });
+  for (const [key, value] of Object.entries(extraHeaders || {})) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => headers.append(key, item));
+      continue;
+    }
+    headers.set(key, value);
+  }
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers,
   });
 }

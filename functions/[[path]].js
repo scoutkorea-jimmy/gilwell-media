@@ -90,7 +90,7 @@ async function loadTranslationStrings(env) {
 function applyTranslationBootstrap(response, strings, runtime) {
   const safeStrings = strings && typeof strings === 'object' ? strings : {};
   const safeRuntime = runtime && typeof runtime === 'object' ? runtime : {};
-  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${JSON.stringify(safeStrings)};window.GW_BOOT_RUNTIME=${JSON.stringify(safeRuntime)};window.GW_KAKAO_JS_KEY=${JSON.stringify(String(safeRuntime.kakao_js_key || ''))};</script>`;
+  const bootstrap = `<script>window.GW_BOOT_CUSTOM_STRINGS=${serializeForInlineScript(safeStrings)};window.GW_BOOT_RUNTIME=${serializeForInlineScript(safeRuntime)};window.GW_KAKAO_JS_KEY=${serializeForInlineScript(String(safeRuntime.kakao_js_key || ''))};</script>`;
   return new HTMLRewriter()
     .on('head', {
       element(element) {
@@ -104,7 +104,7 @@ function applyTranslationBootstrap(response, strings, runtime) {
         const entry = safeStrings[key];
         if (!entry || typeof entry.ko === 'undefined') return;
         element.setInnerContent(String(entry.ko), {
-          html: element.hasAttribute('data-i18n-html'),
+          html: false,
         });
       }
     })
@@ -128,4 +128,13 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function serializeForInlineScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }

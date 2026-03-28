@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.105.00';
-  GW.ADMIN_VERSION = '03.042.00';
+  GW.APP_VERSION = '00.105.01';
+  GW.ADMIN_VERSION = '03.042.01';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1093,30 +1093,53 @@
   }
 
   // ── Session token ─────────────────────────────────────────
-  GW.getToken  = function () { return localStorage.getItem('admin_token'); };
-  GW.setToken  = function (t) { localStorage.setItem('admin_token', t); };
-  GW.clearToken = function () {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_role');
+  GW.readCookie = function (name) {
+    var cookie = document.cookie || '';
+    var parts = cookie ? cookie.split(/;\s*/) : [];
+    for (var i = 0; i < parts.length; i += 1) {
+      var item = parts[i];
+      var eqIdx = item.indexOf('=');
+      if (eqIdx <= 0) continue;
+      if (item.slice(0, eqIdx) !== name) continue;
+      return decodeURIComponent(item.slice(eqIdx + 1));
+    }
+    return '';
   };
-  GW.getAdminRole = function () { return localStorage.getItem('admin_role') || 'full'; };
+  GW.getToken  = function () {
+    return sessionStorage.getItem('admin_session') || GW.readCookie('admin_session') || '';
+  };
+  GW.setToken  = function () {
+    sessionStorage.setItem('admin_session', '1');
+  };
+  GW.clearToken = function () {
+    sessionStorage.removeItem('admin_session');
+    sessionStorage.removeItem('admin_role');
+    document.cookie = 'admin_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    document.cookie = 'admin_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    fetch('/api/admin/session', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      keepalive: true,
+    }).catch(function () {});
+  };
+  GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || 'full'; };
   GW.setAdminRole = function (role) {
-    localStorage.setItem('admin_role', role === 'full' ? 'full' : 'full');
+    sessionStorage.setItem('admin_role', role === 'full' ? 'full' : 'full');
   };
 
   // ── API fetch ─────────────────────────────────────────────
   /**
    * Fetch a JSON API endpoint.
-   * Automatically attaches the admin token if present.
+   * Uses same-origin cookies for admin auth.
    * Throws an Error with .status if the response is not ok.
    */
   GW.apiFetch = async function (url, options) {
-    const token   = GW.getToken();
     const headers = Object.assign({ 'Content-Type': 'application/json' },
                                    (options && options.headers) || {});
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-
-    const res  = await fetch(url, Object.assign({}, options, { headers }));
+    const res  = await fetch(url, Object.assign({}, options, {
+      headers,
+      credentials: 'same-origin',
+    }));
     const data = await res.json().catch(function () { return {}; });
 
     if (!res.ok) {

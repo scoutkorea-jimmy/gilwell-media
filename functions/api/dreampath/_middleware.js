@@ -36,7 +36,7 @@ export async function onRequest({ request, env, next, data }) {
   if (request.method === 'OPTIONS') return next();
 
   const auth = request.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : readCookie(request, 'dp_token');
 
   if (!token || !env.DREAMPATH_SECRET) return json({ error: 'Authentication required.' }, 401);
 
@@ -45,4 +45,16 @@ export async function onRequest({ request, env, next, data }) {
 
   data.dpUser = user;
   return next();
+}
+
+function readCookie(request, name) {
+  const cookie = request.headers.get('Cookie') || '';
+  const parts = cookie.split(/;\s*/);
+  for (const part of parts) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx <= 0) continue;
+    if (part.slice(0, eqIdx).trim() !== name) continue;
+    return decodeURIComponent(part.slice(eqIdx + 1));
+  }
+  return null;
 }

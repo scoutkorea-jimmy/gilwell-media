@@ -61,7 +61,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=00.105.00">
+  <link rel="stylesheet" href="/css/style.css?v=00.105.01">
   <style>
     .feature-page {
       background:
@@ -465,7 +465,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V00.105.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V00.105.01</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 BP미디어 · bpmedia.net</p>
@@ -473,7 +473,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=00.105.00"></script>
+  <script src="/js/main.js?v=00.105.01"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;

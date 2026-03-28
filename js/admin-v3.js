@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.011.00
+ * Version: 03.042.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -76,10 +76,9 @@
   function _apiFetch(url, options) {
     var opts = options ? Object.assign({}, options) : {};
     var headers = Object.assign({}, opts.headers || {});
-    var token = (GW.getToken && GW.getToken()) || localStorage.getItem('admin_token') || '';
-    if (token) headers.Authorization = 'Bearer ' + token;
     if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
     opts.headers = headers;
+    opts.credentials = 'same-origin';
     return fetch(url, opts).then(function (response) {
       return response.text().then(function (text) {
         var data = {};

@@ -4,7 +4,7 @@
  */
 const DP = (() => {
   // ── State ──────────────────────────────────────────────────────────────────
-  let token       = localStorage.getItem('dp_token') || null;
+  let token       = null;
   let currentUser = JSON.parse(localStorage.getItem('dp_user') || 'null');
   let activeSection = 'home';
   let calendarDate  = new Date();
@@ -12,6 +12,7 @@ const DP = (() => {
   // ── DOM helpers ────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const hasSessionMarker = () => /(?:^|;\s*)dp_session=1(?:;|$)/.test(document.cookie || '');
 
   // Parse a DB date/datetime string into a local Date object.
   // DB stores UTC datetimes as "YYYY-MM-DD HH:MM:SS" (no T, no Z).
@@ -88,9 +89,9 @@ const DP = (() => {
     const opts = {
       method,
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'same-origin',
     };
     if (body !== undefined) opts.body = JSON.stringify(body);
     let res;
@@ -158,9 +159,7 @@ const DP = (() => {
       return;
     }
 
-    token       = data.token;
     currentUser = data.user;
-    localStorage.setItem('dp_token', token);
     localStorage.setItem('dp_user', JSON.stringify(currentUser));
 
     btnEl.disabled = false;
@@ -171,8 +170,14 @@ const DP = (() => {
   function logout() {
     token       = null;
     currentUser = null;
-    localStorage.removeItem('dp_token');
     localStorage.removeItem('dp_user');
+    document.cookie = 'dp_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    document.cookie = 'dp_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    fetch('/api/dreampath/auth', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      keepalive: true,
+    }).catch(() => {});
     $('dp-app').classList.add('dp-hidden');
     $('dp-login').classList.remove('dp-hidden');
     $('dp-login-username').value = '';
@@ -1675,8 +1680,8 @@ const DP = (() => {
     try {
       const r = await fetch('/api/dreampath/upload', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
         body: fd,
+        credentials: 'same-origin',
       });
       res = await r.json();
       if (!r.ok) { showToast(res.error || 'Upload failed.', 'error'); btn.textContent = origText; return; }
@@ -1884,8 +1889,17 @@ const DP = (() => {
     }
 
     // Check if already logged in
-    if (token && currentUser) {
-      showApp();
+    if (hasSessionMarker()) {
+      if (currentUser) {
+        showApp();
+      } else {
+        api('GET', 'me').then((data) => {
+          if (!data || !data.user) return;
+          currentUser = data.user;
+          localStorage.setItem('dp_user', JSON.stringify(currentUser));
+          showApp();
+        });
+      }
     }
 
     // Start sidebar clock
@@ -2096,8 +2110,8 @@ const DP = (() => {
       try {
         const r = await fetch('/api/dreampath/upload', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
           body: fd,
+          credentials: 'same-origin',
         });
         res = await r.json();
         if (!r.ok) { showToast(res.error || 'Upload failed.', 'error'); return null; }
