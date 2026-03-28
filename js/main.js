@@ -1649,7 +1649,14 @@
     return pathname === '/' || pathname === '/index.html' || pathname === '/index';
   };
 
+  GW.isPreviewEnvironment = function () {
+    if (typeof window === 'undefined' || !window.location) return false;
+    var host = String(window.location.hostname || '').toLowerCase();
+    return host === 'preview.gilwell-media.pages.dev' || host.indexOf('.gilwell-media.pages.dev') >= 0;
+  };
+
   GW.initPreviewRuntime = function () {
+    if (!GW.isPreviewEnvironment()) return;
     if (GW._previewRuntimeState.loaded || GW._previewRuntimeState.loading) return;
     GW._previewRuntimeState.loading = true;
     fetch('/api/preview/release', { cache: 'no-store' })
