@@ -1,7 +1,7 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 
-const VISIT_SCOPE_SQL = "(path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))";
+const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -175,7 +175,7 @@ async function getInternalMetrics(env, range) {
 
   return {
     provider: 'site_visits',
-    provider_label: '기사 페이지 + Dreampath 방문 집계',
+    provider_label: '공개 페이지 전체 방문 집계',
     range: {
       start_date: range.startDate,
       end_date: range.endDate,
@@ -246,7 +246,7 @@ async function getInternalMetrics(env, range) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
-    tracking_note: `${range.label} 기준 기사 페이지와 Dreampath 방문 집계입니다. 방문 수는 해당 페이지들을 연 고유 사용자 수, 조회수는 열린 횟수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
+    tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
 
