@@ -14,12 +14,11 @@ export async function onRequest(context) {
   // Continue to the actual route handler
   const response = await next();
 
-  // Clone and attach CORS headers to every response
-  const res = new Response(response.body, response);
+  // Mutate the original response so Set-Cookie headers survive intact.
   for (const [k, v] of Object.entries(corsHeaders(request))) {
-    res.headers.set(k, v);
+    response.headers.set(k, v);
   }
-  return res;
+  return response;
 }
 
 function corsHeaders(request) {
