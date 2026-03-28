@@ -10,7 +10,7 @@ const bufToB64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).r
 
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 900;
-const PBKDF2_ITERATIONS = 120000;
+const PBKDF2_ITERATIONS = 100000;
 
 function safeCompare(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;

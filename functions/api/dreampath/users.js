@@ -7,10 +7,20 @@
  */
 
 const enc = s => new TextEncoder().encode(s);
-async function hashPassword(password, secret) {
-  const key = await crypto.subtle.importKey('raw', enc(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const buf = await crypto.subtle.sign('HMAC', key, enc(password));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+const PBKDF2_ITERATIONS = 100000;
+function bytesToHex(bytes) {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const baseKey = await crypto.subtle.importKey('raw', enc(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({
+    name: 'PBKDF2',
+    hash: 'SHA-256',
+    salt,
+    iterations: PBKDF2_ITERATIONS,
+  }, baseKey, 256);
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${bytesToHex(new Uint8Array(bits))}`;
 }
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
@@ -41,7 +51,7 @@ export async function onRequestPost({ request, env, data }) {
   const existing = await env.DB.prepare(`SELECT id FROM dp_users WHERE username = ?`).bind(safeUsername).first();
   if (existing) return json({ error: `Username "${safeUsername}" is already taken.` }, 409);
 
-  const hash = await hashPassword(password, env.DREAMPATH_SECRET);
+  const hash = await hashPassword(password);
   const safeRole = role === 'admin' ? 'admin' : 'member';
 
   const result = await env.DB.prepare(
@@ -81,7 +91,7 @@ export async function onRequestPut({ request, env, data }) {
   if (body.role !== undefined) { fields.push('role = ?'); values.push(body.role === 'admin' ? 'admin' : 'member'); }
   if (body.is_active !== undefined) { fields.push('is_active = ?'); values.push(body.is_active ? 1 : 0); }
   if (body.new_password) {
-    const hash = await hashPassword(body.new_password, env.DREAMPATH_SECRET);
+    const hash = await hashPassword(body.new_password);
     fields.push('password_hash = ?');
     values.push(hash);
   }
