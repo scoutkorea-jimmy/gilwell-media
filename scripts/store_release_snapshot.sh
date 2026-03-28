@@ -7,6 +7,8 @@ cd "$ROOT_DIR"
 ENVIRONMENT="${1:-production}"
 DEPLOYMENT_URL="${2:-}"
 VERSION="$(cat VERSION)"
+SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
+ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 SHORT_SHA="$(git rev-parse --short HEAD)"
 COMMIT_SHA="$(git rev-parse HEAD)"
 COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
@@ -40,7 +42,7 @@ find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
 
 mkdir -p data snapshots
 
-export SNAPSHOT_ID ARCHIVE_NAME VERSION COMMIT_SHA COMMIT_MESSAGE ENVIRONMENT DEPLOYMENT_URL CURRENT_BRANCH PREV_DIR TMP_DIR
+export SNAPSHOT_ID ARCHIVE_NAME VERSION SITE_VERSION ADMIN_VERSION COMMIT_SHA COMMIT_MESSAGE ENVIRONMENT DEPLOYMENT_URL CURRENT_BRANCH PREV_DIR TMP_DIR
 python3 <<'PY'
 import json
 import os
@@ -79,6 +81,8 @@ shutil.copy2(tmp_dir / os.environ['ARCHIVE_NAME'], new_archive_target)
 new_item = {
     'id': os.environ['SNAPSHOT_ID'],
     'version': os.environ['VERSION'],
+    'site_version': os.environ.get('SITE_VERSION', ''),
+    'admin_version': os.environ.get('ADMIN_VERSION', ''),
     'environment': os.environ['ENVIRONMENT'],
     'commit_sha': os.environ['COMMIT_SHA'],
     'commit_short': os.environ['COMMIT_SHA'][:7],
@@ -93,6 +97,8 @@ manifest_items = [new_item] + items
 manifest_deployments = [{
     'id': os.environ['SNAPSHOT_ID'],
     'version': os.environ['VERSION'],
+    'site_version': os.environ.get('SITE_VERSION', ''),
+    'admin_version': os.environ.get('ADMIN_VERSION', ''),
     'environment': os.environ['ENVIRONMENT'],
     'branch': os.environ['CURRENT_BRANCH'],
     'source': os.environ['COMMIT_SHA'],

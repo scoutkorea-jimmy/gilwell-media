@@ -36,6 +36,8 @@ export async function onRequestGet({ request, env }) {
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
   const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
   const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
+  const compactQuery = q ? q.replace(/\s+/g, '') : '';
+  const fuzzyQuery = q ? '%' + q.trim().split(/\s*/).filter(Boolean).join('%') + '%' : '';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
@@ -52,10 +54,12 @@ export async function onRequestGet({ request, env }) {
   const searchScoreExpr = q
     ? `(
         CASE WHEN title LIKE ? THEN 60 ELSE 0 END +
+        CASE WHEN replace(title, ' ', '') LIKE ? THEN 42 ELSE 0 END +
         CASE WHEN COALESCE(subtitle, '') LIKE ? THEN 35 ELSE 0 END +
         CASE WHEN COALESCE(tag, '') LIKE ? THEN 30 ELSE 0 END +
         CASE WHEN COALESCE(meta_tags, '') LIKE ? THEN 24 ELSE 0 END +
-        CASE WHEN COALESCE(content, '') LIKE ? THEN 10 ELSE 0 END
+        CASE WHEN COALESCE(content, '') LIKE ? THEN 10 ELSE 0 END +
+        CASE WHEN replace(COALESCE(title, ''), ' ', '') LIKE ? THEN 18 ELSE 0 END
       )`
     : '0';
   const ORDER_RELEVANCE = `ORDER BY search_score DESC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC`;
@@ -96,10 +100,12 @@ export async function onRequestGet({ request, env }) {
         baseArgs.push(endDate);
       }
       if (q) {
-        conditions.push('(title LIKE ? OR COALESCE(subtitle, \'\') LIKE ? OR COALESCE(tag, \'\') LIKE ? OR COALESCE(meta_tags, \'\') LIKE ? OR COALESCE(content, \'\') LIKE ?)');
+        conditions.push('(title LIKE ? OR replace(title, \' \', \'\') LIKE ? OR COALESCE(subtitle, \'\') LIKE ? OR COALESCE(tag, \'\') LIKE ? OR COALESCE(meta_tags, \'\') LIKE ? OR COALESCE(content, \'\') LIKE ? OR replace(COALESCE(title, \'\'), \' \', \'\') LIKE ?)');
         const qp = `%${q}%`;
-        baseArgs.push(qp, qp, qp, qp, qp);
-        scoreArgs.push(qp, qp, qp, qp, qp);
+        const cp = `%${compactQuery || q}%`;
+        const fp = fuzzyQuery || qp;
+        baseArgs.push(qp, cp, qp, qp, qp, qp, fp);
+        scoreArgs.push(qp, cp, qp, qp, qp, qp, fp);
       }
       if (specialFeature) {
         conditions.push('COALESCE(special_feature, \'\') = ?');

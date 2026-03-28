@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { logApiError } from '../../_shared/ops-log.js';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -33,6 +34,7 @@ export async function onRequestGet({ request, env }) {
     return json(payload);
   } catch (err) {
     console.error('GET /api/admin/marketing error:', err);
+    await logApiError(env, request, err, { channel: 'admin' });
     return json({ error: 'Database error' }, 500);
   }
 }

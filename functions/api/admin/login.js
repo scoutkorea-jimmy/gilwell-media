@@ -11,6 +11,7 @@
  *   ADMIN_SECRET    — random string for signing tokens (openssl rand -hex 32)
  */
 import { buildAdminSessionCookie, createToken, safeCompare } from '../../_shared/auth.js';
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
 const MAX_ATTEMPTS   = 10;
@@ -100,6 +101,15 @@ export async function onRequestPost({ request, env }) {
   // Timing-safe comparison — prevents brute-force timing attacks
   if (!role) {
     await incrementRateLimit(env, ip);
+    await logOperationalEvent(env, {
+      channel: 'admin',
+      type: 'admin_login_failed',
+      level: 'warn',
+      actor: 'unknown',
+      ip,
+      path: '/api/admin/login',
+      message: '관리자 로그인 실패',
+    });
     // Artificial delay further discourages automated brute-force
     await new Promise(r => setTimeout(r, 400));
     return json({ error: '비밀번호가 올바르지 않습니다' }, 401);
@@ -110,6 +120,15 @@ export async function onRequestPost({ request, env }) {
 
   // Issue a signed 24-hour session token
   const token = await createToken(env.ADMIN_SECRET, role);
+  await logOperationalEvent(env, {
+    channel: 'admin',
+    type: 'admin_login_success',
+    level: 'info',
+    actor: role,
+    ip,
+    path: '/api/admin/login',
+    message: '관리자 로그인 성공',
+  });
   return json({ token, role }, 200, {
     'Set-Cookie': buildAdminSessionCookie(token),
   });

@@ -1,6 +1,7 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { loadSiteMeta, normalizeSiteMeta } from '../../_shared/site-meta.js';
 import { deleteStoredImageByUrl, storeDataImage } from '../../_shared/image-storage.js';
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 
 export async function onRequestGet({ env }) {
   const [meta, revRow] = await Promise.all([
@@ -58,6 +59,15 @@ export async function onRequestPut({ request, env }) {
     if (previous && previous.image_url && previous.image_url !== safe.image_url) {
       await deleteStoredImageByUrl(env, previous.image_url, origin).catch(() => {});
     }
+    await logOperationalEvent(env, {
+      channel: 'admin',
+      type: 'settings_change',
+      level: 'info',
+      actor: 'admin',
+      path: '/api/settings/site-meta',
+      message: 'site_meta 설정 변경',
+      details: { key: 'site_meta', revision: nextRev },
+    });
     safe.revision = nextRev;
     return json(safe);
   } catch (err) {

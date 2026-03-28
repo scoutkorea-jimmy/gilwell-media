@@ -6,6 +6,7 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 
 const DEFAULT_HERO_MEDIA = {
   fit: 'cover',
@@ -131,6 +132,15 @@ export async function onRequestPut({ request, env }) {
       ).bind(String(nextRev)).run(),
     ]);
 
+    await logOperationalEvent(env, {
+      channel: 'admin',
+      type: 'settings_change',
+      level: 'info',
+      actor: 'admin',
+      path: '/api/settings/hero',
+      message: 'hero 설정 변경',
+      details: { key: 'hero', revision: nextRev, post_ids: safeIds },
+    });
     return json({ success: true, post_ids: safeIds, interval_ms: safeInterval, revision: nextRev, media_map: nextMediaMap });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);

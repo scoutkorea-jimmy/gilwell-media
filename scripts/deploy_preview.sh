@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
+chmod +x "$ROOT_DIR/scripts/verify_release_metadata.sh"
+"$ROOT_DIR/scripts/verify_release_metadata.sh"
+
 VERSION="$(cat VERSION)"
 CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || true)"
 COMMIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo local)"
