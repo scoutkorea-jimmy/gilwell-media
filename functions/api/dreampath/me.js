@@ -8,7 +8,7 @@
  */
 
 const enc = s => new TextEncoder().encode(s);
-const PBKDF2_ITERATIONS = 120000;
+const PBKDF2_ITERATIONS = 100000;
 function safeCompare(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
   const len = Math.max(a.length, b.length);
