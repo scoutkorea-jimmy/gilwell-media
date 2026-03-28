@@ -3,23 +3,23 @@ export async function onRequestGet({ env }) {
     const [todayUnique, todayViews, totalUnique, totalViews] = await Promise.all([
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
                      FROM site_visits
-                    WHERE path LIKE '/post/%'
+                    WHERE (path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))
                       AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(*) AS count
                      FROM site_visits
-                    WHERE path LIKE '/post/%'
+                    WHERE (path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))
                       AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
       scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
                      FROM site_visits
-                    WHERE path LIKE '/post/%'`),
+                    WHERE (path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))`),
       scalar(env, `SELECT COUNT(*) AS count
                      FROM site_visits
-                    WHERE path LIKE '/post/%'`),
+                    WHERE (path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))`),
     ]);
 
     return json({
       provider: 'site_visits',
-      provider_label: '기사 페이지 방문 집계',
+      provider_label: '기사 페이지 + Dreampath 방문 집계',
       today_unique: todayUnique,
       today_views: todayViews,
       total_unique: totalUnique,

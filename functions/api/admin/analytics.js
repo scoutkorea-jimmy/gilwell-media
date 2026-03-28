@@ -1,6 +1,8 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 
+const VISIT_SCOPE_SQL = "(path LIKE '/post/%' OR path IN ('/dreampath', '/dreampath.html'))";
+
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
@@ -47,12 +49,12 @@ async function getInternalMetrics(env, range) {
     referrers,
     popularPostDwellRow,
   ] = await Promise.all([
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
-    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%' AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
+    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM posts`, []),
     scalar(env, `SELECT COUNT(*) AS count FROM posts WHERE published = 1`, []),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
-    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE path LIKE '/post/%'`, []),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL}`, []),
+    scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL}`, []),
     scalar(env, `SELECT ROUND(AVG(engaged_seconds), 1) AS count
                    FROM post_engagement
                   WHERE datetime(updated_at, '+9 hours') >= datetime(?)
@@ -61,14 +63,14 @@ async function getInternalMetrics(env, range) {
       useHourlySeries
         ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits
              FROM site_visits
-            WHERE path LIKE '/post/%'
+            WHERE ${VISIT_SCOPE_SQL}
               AND datetime(visited_at, '+9 hours') >= datetime(?)
               AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY visit_hour
             ORDER BY visit_hour ASC`
         : `SELECT date(visited_at, '+9 hours') AS visit_date, COUNT(DISTINCT viewer_key) AS visits
              FROM site_visits
-            WHERE path LIKE '/post/%'
+            WHERE ${VISIT_SCOPE_SQL}
               AND datetime(visited_at, '+9 hours') >= datetime(?)
               AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY visit_date
@@ -78,14 +80,14 @@ async function getInternalMetrics(env, range) {
       useHourlySeries
         ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS view_hour, COUNT(*) AS views
              FROM site_visits
-            WHERE path LIKE '/post/%'
+            WHERE ${VISIT_SCOPE_SQL}
               AND datetime(visited_at, '+9 hours') >= datetime(?)
               AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY view_hour
             ORDER BY view_hour ASC`
         : `SELECT date(visited_at, '+9 hours') AS view_date, COUNT(*) AS views
              FROM site_visits
-            WHERE path LIKE '/post/%'
+            WHERE ${VISIT_SCOPE_SQL}
               AND datetime(visited_at, '+9 hours') >= datetime(?)
               AND datetime(visited_at, '+9 hours') < datetime(?)
             GROUP BY view_date
@@ -93,7 +95,7 @@ async function getInternalMetrics(env, range) {
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
       `SELECT sv.path AS path,
-              p.title AS title,
+              COALESCE(p.title, CASE WHEN sv.path IN ('/dreampath', '/dreampath.html') THEN 'Dreampath' ELSE '' END) AS title,
               COUNT(*) AS pageviews,
               COUNT(DISTINCT sv.viewer_key) AS visits,
               COALESCE(pe.avg_dwell_seconds, 0) AS avg_dwell_seconds
@@ -106,7 +108,7 @@ async function getInternalMetrics(env, range) {
               AND datetime(updated_at, '+9 hours') < datetime(?)
             GROUP BY post_id
          ) pe ON p.id = pe.post_id
-        WHERE sv.path LIKE '/post/%'
+        WHERE ${VISIT_SCOPE_SQL.replaceAll('path', 'sv.path')}
           AND datetime(sv.visited_at, '+9 hours') >= datetime(?)
           AND datetime(sv.visited_at, '+9 hours') < datetime(?)
         GROUP BY sv.path, p.title
@@ -118,7 +120,7 @@ async function getInternalMetrics(env, range) {
          FROM site_visits
         WHERE datetime(visited_at, '+9 hours') >= datetime(?)
           AND datetime(visited_at, '+9 hours') < datetime(?)
-          AND path LIKE '/post/%'
+          AND ${VISIT_SCOPE_SQL}
         GROUP BY referrer_host, referrer_url, utm_source, utm_medium, utm_campaign
         ORDER BY visits DESC, pageviews DESC, referrer_host ASC
         LIMIT 200`
@@ -126,7 +128,7 @@ async function getInternalMetrics(env, range) {
     env.DB.prepare(
       `WITH top_post AS (
          SELECT CAST(substr(path, 7) AS INTEGER) AS post_id
-           FROM site_visits
+          FROM site_visits
           WHERE path LIKE '/post/%'
             AND datetime(visited_at, '+9 hours') >= datetime(?)
             AND datetime(visited_at, '+9 hours') < datetime(?)
@@ -173,7 +175,7 @@ async function getInternalMetrics(env, range) {
 
   return {
     provider: 'site_visits',
-    provider_label: '기사 페이지 방문 집계',
+    provider_label: '기사 페이지 + Dreampath 방문 집계',
     range: {
       start_date: range.startDate,
       end_date: range.endDate,
@@ -244,7 +246,7 @@ async function getInternalMetrics(env, range) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
-    tracking_note: `${range.label} 기준 기사 페이지 방문 집계입니다. 방문 수는 기사 페이지를 연 고유 사용자 수, 조회수는 기사 페이지 열린 횟수 기준입니다. 평균 체류시간은 기사 페이지가 실제로 보이는 동안의 활성 시간을 post 단위로 누적해 계산합니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
+    tracking_note: `${range.label} 기준 기사 페이지와 Dreampath 방문 집계입니다. 방문 수는 해당 페이지들을 연 고유 사용자 수, 조회수는 열린 횟수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
 

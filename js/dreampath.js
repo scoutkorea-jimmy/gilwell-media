@@ -55,6 +55,28 @@ const DP = (() => {
     }, 3200);
   }
 
+  function trackPageVisit() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const path = window.location.pathname || '/dreampath';
+    if (!path || path.indexOf('/api/') === 0) return;
+    const key = 'gw_visit_tracked_' + path;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, '1');
+    } catch (_) {}
+    fetch('/api/analytics/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        path,
+        current_url: window.location.href || '',
+        referrer: document.referrer || '',
+      }),
+      credentials: 'same-origin',
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   // ── Modal system ───────────────────────────────────────────────────────────
   function openModal(html, { title = '', confirmLabel = 'Save', onConfirm = null, wide = false } = {}) {
     const overlay = $('dp-modal-overlay');
@@ -1867,6 +1889,8 @@ const DP = (() => {
 
   // ── Init ───────────────────────────────────────────────────────────────────
   function init() {
+    trackPageVisit();
+
     // Login form — enter key support
     const pwEl = $('dp-login-password');
     if (pwEl) {

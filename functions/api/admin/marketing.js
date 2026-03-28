@@ -356,6 +356,7 @@ function classifyJourneyStage(path) {
     value === '/contributors' ||
     value === '/contributors.html'
   ) return 'awareness';
+  if (value === '/dreampath' || value === '/dreampath.html') return 'interest';
   return 'interest';
 }
 
@@ -382,6 +383,8 @@ function resolvePathTitle(path, postTitleMap) {
     '/glossary.html': '용어집',
     '/contributors': '도움을 주신 분들',
     '/contributors.html': '도움을 주신 분들',
+    '/dreampath': 'Dreampath',
+    '/dreampath.html': 'Dreampath',
     '/search': '검색',
     '/search.html': '검색',
   };
