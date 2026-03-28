@@ -86,7 +86,8 @@ export async function verifyTokenRole(token, secret, allowedRoles = ['full']) {
  */
 export function extractToken(request) {
   const auth = request.headers.get('Authorization') || '';
-  return auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+  return readCookie(request, 'admin_token');
 }
 
 /**
@@ -139,4 +140,41 @@ async function importKey(secret, usages) {
 
 function normalizeRole() {
   return 'full';
+}
+
+export function readCookie(request, name) {
+  const cookie = request.headers.get('Cookie') || '';
+  const parts = cookie.split(/;\s*/);
+  for (const part of parts) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx <= 0) continue;
+    const key = part.slice(0, eqIdx).trim();
+    if (key !== name) continue;
+    return decodeURIComponent(part.slice(eqIdx + 1));
+  }
+  return null;
+}
+
+export function buildAdminSessionCookie(token, maxAgeSeconds = 86400) {
+  const attrs = [
+    'Path=/',
+    'HttpOnly',
+    'Secure',
+    'SameSite=Lax',
+    `Max-Age=${maxAgeSeconds}`,
+  ];
+  return [
+    `admin_token=${encodeURIComponent(token)}; ${attrs.join('; ')}`,
+    `admin_session=1; Path=/; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`,
+    `admin_role=full; Path=/; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`,
+  ];
+}
+
+export function clearAdminSessionCookie() {
+  const expired = 'Path=/; Secure; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  return [
+    `admin_token=; ${expired}; HttpOnly`,
+    `admin_session=; ${expired}`,
+    `admin_role=; ${expired}`,
+  ];
 }
