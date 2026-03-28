@@ -8,6 +8,12 @@ const DP = (() => {
   let currentUser = JSON.parse(localStorage.getItem('dp_user') || 'null');
   let activeSection = 'home';
   let calendarDate  = new Date();
+  let _sessionTimerId = null;
+  let _sessionPromptShown = false;
+
+  const SESSION_DURATION_MS = 60 * 60 * 1000;
+  const SESSION_WARNING_MS = 5 * 60 * 1000;
+  const SESSION_EXPIRY_KEY = 'dp_session_expires_at';
 
   // ── DOM helpers ────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -53,6 +59,97 @@ const DP = (() => {
       t.classList.remove('dp-toast--show');
       setTimeout(() => t.remove(), 350);
     }, 3200);
+  }
+
+  function getSessionExpiry() {
+    const raw = localStorage.getItem(SESSION_EXPIRY_KEY);
+    const parsed = parseInt(raw || '', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function setSessionExpiry(expiresAt) {
+    localStorage.setItem(SESSION_EXPIRY_KEY, String(expiresAt));
+  }
+
+  function clearSessionExpiry() {
+    localStorage.removeItem(SESSION_EXPIRY_KEY);
+  }
+
+  function formatRemaining(ms) {
+    const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return hours > 0
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  function stopSessionTimer() {
+    if (_sessionTimerId) {
+      clearInterval(_sessionTimerId);
+      _sessionTimerId = null;
+    }
+    _sessionPromptShown = false;
+    const timerEl = $('dp-session-timer');
+    const rowEl = $('dp-session-timer-row');
+    if (timerEl) timerEl.textContent = '--:--';
+    if (rowEl) rowEl.classList.remove('is-warning');
+  }
+
+  function extendSession() {
+    setSessionExpiry(Date.now() + SESSION_DURATION_MS);
+    _sessionPromptShown = false;
+    closeModal();
+    updateSessionTimer();
+    showToast('Session extended for 1 hour.', 'success');
+  }
+
+  function updateSessionTimer() {
+    const timerEl = $('dp-session-timer');
+    const rowEl = $('dp-session-timer-row');
+    const expiresAt = getSessionExpiry();
+
+    if (!currentUser || !hasSessionMarker() || !expiresAt) {
+      if (timerEl) timerEl.textContent = '--:--';
+      if (rowEl) rowEl.classList.remove('is-warning');
+      return;
+    }
+
+    const remaining = expiresAt - Date.now();
+    if (timerEl) timerEl.textContent = formatRemaining(remaining);
+    if (rowEl) rowEl.classList.toggle('is-warning', remaining <= SESSION_WARNING_MS);
+
+    if (remaining <= 0) {
+      stopSessionTimer();
+      showToast('Session expired. Signing out.', 'info');
+      logout();
+      return;
+    }
+
+    if (remaining <= SESSION_WARNING_MS && !_sessionPromptShown) {
+      _sessionPromptShown = true;
+      openModal(
+        '<p style="font-size:14px;line-height:1.6;color:var(--text-2)">Your session will end in less than 5 minutes. Do you want to extend it by 1 hour?</p>',
+        {
+          title: 'Extend Session?',
+          confirmLabel: 'Extend 1 Hour',
+          onConfirm: () => extendSession(),
+        }
+      );
+    }
+  }
+
+  function beginSessionTimer(reset) {
+    let expiresAt = getSessionExpiry();
+    if (reset || !expiresAt || expiresAt <= Date.now()) {
+      expiresAt = Date.now() + SESSION_DURATION_MS;
+      setSessionExpiry(expiresAt);
+    }
+    _sessionPromptShown = false;
+    updateSessionTimer();
+    if (_sessionTimerId) clearInterval(_sessionTimerId);
+    _sessionTimerId = setInterval(updateSessionTimer, 1000);
   }
 
   function trackPageVisit() {
@@ -193,6 +290,8 @@ const DP = (() => {
   function logout() {
     token       = null;
     currentUser = null;
+    stopSessionTimer();
+    clearSessionExpiry();
     localStorage.removeItem('dp_user');
     document.cookie = 'dp_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
     document.cookie = 'dp_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
@@ -221,9 +320,10 @@ const DP = (() => {
     }
   }
 
-  function showApp() {
+  function showApp(resetSession = true) {
     $('dp-login').classList.add('dp-hidden');
     $('dp-app').classList.remove('dp-hidden');
+    beginSessionTimer(resetSession);
 
     // Set user info in sidebar
     $('dp-user-name').textContent = currentUser.display_name || currentUser.username;
@@ -277,7 +377,103 @@ const DP = (() => {
 
   // ── Home ───────────────────────────────────────────────────────────────────
   async function loadHome() {
-    await Promise.all([loadCalendar(), loadBoardPreviews()]);
+    const [homeData] = await Promise.all([api('GET', 'home'), loadCalendar(), loadBoardPreviews()]);
+    renderHomeOps(homeData || {});
+  }
+
+  function renderHomeOps(data) {
+    renderHomeAlerts(data.alerts || [], data.my_tasks || []);
+    renderHomeRecent(data.recent_changes || []);
+    bindHomeSearch();
+  }
+
+  function renderHomeAlerts(alerts, myTasks) {
+    const el = $('dp-home-alerts');
+    if (!el) return;
+    const blocks = [];
+    (alerts || []).forEach(item => {
+      blocks.push(`
+        <div class="dp-home-item">
+          <strong>${esc(item.label || 'Alert')} · ${esc(item.title || '')}</strong>
+          <small>${esc(item.meta || '')}</small>
+        </div>
+      `);
+    });
+    (myTasks || []).forEach(task => {
+      blocks.push(`
+        <div class="dp-home-item">
+          <strong>${esc(task.title || '')}</strong>
+          <small>${esc((task.status || 'todo') + (task.due_date ? ' · ' + task.due_date : ''))}</small>
+        </div>
+      `);
+    });
+    el.innerHTML = blocks.length
+      ? `<div class="dp-home-list">${blocks.join('')}</div>`
+      : '<div class="dp-home-item"><strong>No urgent items.</strong><small>You have no active alerts or assigned tasks right now.</small></div>';
+  }
+
+  function renderHomeRecent(items) {
+    const el = $('dp-home-recent');
+    if (!el) return;
+    if (!items.length) {
+      el.innerHTML = '<div class="dp-home-item"><strong>No recent changes yet.</strong><small>Updates to posts, events, and comments will appear here.</small></div>';
+      return;
+    }
+    el.innerHTML = `<div class="dp-home-list">${items.map(item => `
+      <div class="dp-home-item">
+        <strong>${esc(item.title || '')}</strong>
+        <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtDateHM(item.created_at) : ''))}</small>
+        ${item.note ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2)">${esc(String(item.note).slice(0, 140))}</div>` : ''}
+      </div>
+    `).join('')}</div>`;
+  }
+
+  function bindHomeSearch() {
+    const input = $('dp-home-search-input');
+    const btn = $('dp-home-search-btn');
+    if (!input || !btn || btn.dataset.bound === '1') return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', () => runHomeSearch());
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') runHomeSearch();
+    });
+  }
+
+  async function runHomeSearch() {
+    const input = $('dp-home-search-input');
+    const resultsEl = $('dp-home-search-results');
+    const q = (input?.value || '').trim();
+    if (!resultsEl) return;
+    if (!q) {
+      resultsEl.innerHTML = '<div style="color:var(--text-3);font-size:13px">Enter a keyword to search Dreampath.</div>';
+      return;
+    }
+    resultsEl.innerHTML = '<div style="color:var(--text-3);font-size:13px">Searching...</div>';
+    const data = await api('GET', `search?q=${encodeURIComponent(q)}`);
+    const results = data?.results || [];
+    if (!results.length) {
+      resultsEl.innerHTML = '<div class="dp-home-item"><strong>No results found.</strong><small>Try another title, assignee, or keyword.</small></div>';
+      return;
+    }
+    resultsEl.innerHTML = `<div class="dp-search-results-compact">${results.map(item => `
+      <div class="dp-search-hit" data-kind="${esc(item.kind || '')}" data-id="${Number(item.id || 0)}">
+        <span class="dp-search-hit-type">${esc(item.kind || 'item')}</span>
+        <strong>${esc(item.title || '')}</strong>
+        ${item.subtitle ? `<div style="font-size:12px;color:var(--text-2);margin-top:4px">${esc(item.subtitle)}</div>` : ''}
+        ${item.meta ? `<div style="font-size:11px;color:var(--text-3);margin-top:4px">${esc(item.meta)}</div>` : ''}
+      </div>
+    `).join('')}</div>`;
+    resultsEl.querySelectorAll('.dp-search-hit').forEach(node => {
+      node.addEventListener('click', () => {
+        const kind = node.getAttribute('data-kind');
+        const id = parseInt(node.getAttribute('data-id') || '', 10);
+        if (kind === 'post' || kind === 'comment') {
+          viewPost(id);
+          return;
+        }
+        showToast('Task/note search is available. Detail jump can be expanded next.', 'info');
+      });
+    });
   }
 
   async function loadCalendar() {
@@ -1915,14 +2111,19 @@ const DP = (() => {
 
     // Check if already logged in
     if (hasSessionMarker()) {
+      const expiresAt = getSessionExpiry();
+      if (expiresAt && expiresAt <= Date.now()) {
+        logout();
+        return;
+      }
       if (currentUser) {
-        showApp();
+        showApp(false);
       } else {
         api('GET', 'me').then((data) => {
           if (!data || !data.user) return;
           currentUser = data.user;
           localStorage.setItem('dp_user', JSON.stringify(currentUser));
-          showApp();
+          showApp(false);
         });
       }
     }

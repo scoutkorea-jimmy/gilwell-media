@@ -1,5 +1,6 @@
 import { loadSiteMeta } from '../_shared/site-meta.js';
 import { serializePostImage } from '../_shared/images.js';
+import { logApiError } from '../_shared/ops-log.js';
 
 const DEFAULT_TICKER_ITEMS = [
   '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
@@ -91,6 +92,7 @@ export async function onRequestGet({ env, request }) {
     }, 200, publicCacheHeaders(120, 600));
   } catch (err) {
     console.error('GET /api/home error:', err);
+    await logApiError(env, request, err, { channel: 'site' });
     return json({ error: 'Database error' }, 500);
   }
 }

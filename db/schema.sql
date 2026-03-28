@@ -89,6 +89,19 @@ CREATE TABLE IF NOT EXISTS admin_login_attempts (
   first_attempt_at INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS operational_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel    TEXT NOT NULL DEFAULT 'site',
+  type       TEXT NOT NULL,
+  level      TEXT NOT NULL DEFAULT 'info',
+  actor      TEXT,
+  ip         TEXT,
+  path       TEXT,
+  message    TEXT,
+  details    TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS post_engagement (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   post_id         INTEGER NOT NULL,
@@ -154,6 +167,8 @@ CREATE INDEX IF NOT EXISTS idx_sv_viewer_path_time ON site_visits(viewer_key, pa
 CREATE INDEX IF NOT EXISTS idx_sv_referrer_host ON site_visits(referrer_host);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sv_unique_bucket ON site_visits(viewer_key, path, visited_bucket);
 CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_first_attempt ON admin_login_attempts(first_attempt_at);
+CREATE INDEX IF NOT EXISTS idx_operational_events_time ON operational_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_operational_events_level_type ON operational_events(level, type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_post_engagement_post_time ON post_engagement(post_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_post_engagement_time ON post_engagement(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_post_engagement_viewer ON post_engagement(viewer_key, updated_at DESC);

@@ -235,6 +235,32 @@
       font-size: 11px;
       font-variant-numeric: tabular-nums;
     }
+    .dp-session-timer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .dp-session-timer-row.is-warning {
+      background: rgba(220,38,38,.18);
+      border-color: rgba(248,113,113,.38);
+      color: #fff6f6;
+    }
+    .dp-session-timer-label {
+      font-weight: 700;
+      color: rgba(255,255,255,.68);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      font-size: 10px;
+    }
+    .dp-session-timer-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
     .dp-clock-row {
       display: flex;
       justify-content: space-between;
@@ -556,6 +582,71 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 18px;
       align-items: stretch;
+    }
+    .dp-home-grid {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      margin: 0 0 18px;
+    }
+    .dp-home-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .dp-home-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+    }
+    .dp-home-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .dp-home-list {
+      display: grid;
+      gap: 10px;
+    }
+    .dp-home-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      padding: 12px 14px;
+    }
+    .dp-home-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .dp-home-item small {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+    .dp-inline-search {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .dp-search-results-compact {
+      display: grid;
+      gap: 8px;
+    }
+    .dp-search-hit {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+    .dp-search-hit-type {
+      display: inline-block;
+      margin-bottom: 4px;
+      font-size: 11px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
     }
     #dp-board-previews > div { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
     #dp-board-previews .dp-preview-card { flex: 1; }
@@ -1014,6 +1105,7 @@
     @media (max-width: 900px) {
       :root { --sidebar-w: 200px; }
       #dp-main { padding: 20px 18px; }
+      .dp-home-grid { grid-template-columns: 1fr; }
       #dp-board-previews { grid-template-columns: 1fr; }
       .dp-account-layout { grid-template-columns: 1fr; }
       .dp-form-row--2col { flex-direction: column; }
@@ -1507,6 +1599,10 @@
     </div>
 
     <div class="dp-sidebar-clock">
+      <div class="dp-session-timer-row" id="dp-session-timer-row">
+        <span class="dp-session-timer-label">Session</span>
+        <span class="dp-session-timer-value" id="dp-session-timer">--:--</span>
+      </div>
       <div class="dp-clock-row"><span class="dp-clock-label">KST</span><span id="dp-clock-kst">--:--:--</span></div>
       <div class="dp-clock-row"><span class="dp-clock-label">Local</span><span id="dp-clock-local">--:--:--</span></div>
     </div>
@@ -1526,6 +1622,26 @@
     <div id="dp-section-home" class="dp-section">
       <div id="dp-calendar">
         <div style="padding:40px;text-align:center;color:var(--text-3)">Loading calendar...</div>
+      </div>
+      <div class="dp-home-grid">
+        <div class="dp-home-stack">
+          <div class="dp-home-card">
+            <h3>Alerts & My Tasks</h3>
+            <div id="dp-home-alerts"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
+          </div>
+          <div class="dp-home-card">
+            <h3>Dreampath Search</h3>
+            <div class="dp-inline-search">
+              <input id="dp-home-search-input" class="dp-input" type="search" placeholder="Search posts, tasks, notes, comments…" />
+              <button id="dp-home-search-btn" class="dp-btn dp-btn--primary" type="button">Search</button>
+            </div>
+            <div id="dp-home-search-results"><div style="color:var(--text-3);font-size:13px">Search across internal work items.</div></div>
+          </div>
+        </div>
+        <div class="dp-home-card">
+          <h3>Recent Changes</h3>
+          <div id="dp-home-recent"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
+        </div>
       </div>
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);margin-bottom:14px">Recent Activity</div>
       <div id="dp-board-previews">

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=00.105.01">
+  <link rel="stylesheet" href="/css/style.css?v=00.106.00">
   <style>
     .search-page-wrap { max-width: 900px; margin: 0 auto; padding: 40px 10%; }
     .search-page-header { margin-bottom: 32px; border-bottom: 2px solid var(--black); padding-bottom: 20px; }
@@ -18,6 +18,13 @@
       font-size: 28px; font-weight: 700; color: var(--black); margin-bottom: 16px;
     }
     .search-bar-row { display: flex; gap: 8px; }
+    .search-filter-grid { display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap:8px; margin-top:12px; }
+    .search-scope-row { display:flex; gap:8px; margin-bottom:12px; }
+    .search-scope-btn {
+      border:1px solid var(--border); background:#fff; color:var(--ink); padding:9px 14px;
+      font-family: AliceDigitalLearning, sans-serif; font-size:11px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+    }
+    .search-scope-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
     .search-page-input {
       flex: 1; padding: 11px 16px; border: 1px solid var(--border);
       font-family: AliceDigitalLearning, sans-serif; font-size: 15px;
@@ -65,6 +72,13 @@
       font-size: 15px; color: var(--muted); line-height: 1.8;
     }
     .search-no-results strong { display: block; font-size: 18px; color: var(--black); margin-bottom: 8px; }
+    .search-filter-input {
+      width:100%; padding:10px 12px; border:1px solid var(--border); font-family: AliceDigitalLearning, sans-serif; font-size:13px;
+    }
+    @media (max-width: 760px) {
+      .search-filter-grid { grid-template-columns: 1fr 1fr; }
+      .search-scope-row { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
@@ -123,9 +137,25 @@
   <div class="search-page-wrap">
     <div class="search-page-header">
       <h2>전체 검색</h2>
+      <div class="search-scope-row">
+        <button class="search-scope-btn active" id="scope-site-btn" data-scope="site" type="button">Site</button>
+        <button class="search-scope-btn" id="scope-dp-btn" data-scope="dreampath" type="button">Dreampath</button>
+      </div>
       <div class="search-bar-row">
         <input type="text" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" aria-label="검색어 입력" />
         <button class="search-page-btn" id="search-btn">검색</button>
+      </div>
+      <div class="search-filter-grid" id="search-filter-grid">
+        <select id="search-category" class="search-filter-input">
+          <option value="">전체 카테고리</option>
+          <option value="korea">Korea</option>
+          <option value="apr">APR</option>
+          <option value="wosm">WOSM</option>
+          <option value="people">People</option>
+        </select>
+        <input type="date" id="search-start-date" class="search-filter-input" />
+        <input type="date" id="search-end-date" class="search-filter-input" />
+        <input type="text" id="search-tag" class="search-filter-input" placeholder="태그 검색" />
       </div>
     </div>
     <div id="search-count" class="search-count" style="display:none;"></div>
@@ -158,7 +188,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=00.105.01"></script>
-  <script src="/js/search.js?v=0.093.04"></script>
+  <script src="/js/main.js?v=00.106.00"></script>
+  <script src="/js/search.js?v=0.094.00"></script>
 </body>
 </html>

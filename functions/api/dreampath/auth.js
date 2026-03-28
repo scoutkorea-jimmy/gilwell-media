@@ -11,6 +11,7 @@ const bufToB64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).r
 const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 900;
 const PBKDF2_ITERATIONS = 100000;
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 
 function safeCompare(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
@@ -207,6 +208,15 @@ export async function onRequestPost({ request, env }) {
 
   if (!user || !user.is_active) {
     await incrementRateLimit(env, ip);
+    await logOperationalEvent(env, {
+      channel: 'dreampath',
+      type: 'dreampath_login_failed',
+      level: 'warn',
+      actor: safeUsername,
+      ip,
+      path: '/api/dreampath/auth',
+      message: 'Dreampath 로그인 실패',
+    });
     await new Promise((r) => setTimeout(r, 400));
     return json({ error: 'Invalid username or password.' }, 401);
   }
@@ -215,6 +225,15 @@ export async function onRequestPost({ request, env }) {
   if (!user.password_hash && user.role === 'admin' && user.username === 'jimmy') {
     if (!env.JIMMY_PASSWORD || !safeCompare(password, env.JIMMY_PASSWORD)) {
       await incrementRateLimit(env, ip);
+      await logOperationalEvent(env, {
+        channel: 'dreampath',
+        type: 'dreampath_login_failed',
+        level: 'warn',
+        actor: safeUsername,
+        ip,
+        path: '/api/dreampath/auth',
+        message: 'Dreampath 로그인 실패',
+      });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Invalid username or password.' }, 401);
     }
@@ -222,12 +241,30 @@ export async function onRequestPost({ request, env }) {
   } else {
     if (!user.password_hash) {
       await incrementRateLimit(env, ip);
+      await logOperationalEvent(env, {
+        channel: 'dreampath',
+        type: 'dreampath_login_failed',
+        level: 'warn',
+        actor: safeUsername,
+        ip,
+        path: '/api/dreampath/auth',
+        message: 'Dreampath 계정 미설정 로그인 실패',
+      });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Account not set up. Contact admin.' }, 401);
     }
     const verification = await verifyStoredPassword(password, user.password_hash, env.DREAMPATH_SECRET);
     if (!verification.ok) {
       await incrementRateLimit(env, ip);
+      await logOperationalEvent(env, {
+        channel: 'dreampath',
+        type: 'dreampath_login_failed',
+        level: 'warn',
+        actor: safeUsername,
+        ip,
+        path: '/api/dreampath/auth',
+        message: 'Dreampath 로그인 실패',
+      });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Invalid username or password.' }, 401);
     }
@@ -238,6 +275,16 @@ export async function onRequestPost({ request, env }) {
     await env.DB.prepare(`UPDATE dp_users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`)
       .bind(upgradedHash, user.id).run();
   }
+
+  await logOperationalEvent(env, {
+    channel: 'dreampath',
+    type: 'dreampath_login_success',
+    level: 'info',
+    actor: user.username,
+    ip,
+    path: '/api/dreampath/auth',
+    message: 'Dreampath 로그인 성공',
+  });
 
   await clearRateLimit(env, ip);
 

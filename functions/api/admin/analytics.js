@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
+import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
 
@@ -17,6 +18,7 @@ export async function onRequestGet({ request, env }) {
     return json(internalData);
   } catch (err) {
     console.error('GET /api/admin/analytics error:', err);
+    await logApiError(env, request, err, { channel: 'admin' });
     return json({ error: 'Database error' }, 500);
   }
 }
@@ -55,10 +57,31 @@ async function getInternalMetrics(env, range) {
     scalar(env, `SELECT COUNT(*) AS count FROM posts WHERE published = 1`, []),
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL}`, []),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL}`, []),
-    scalar(env, `SELECT ROUND(AVG(engaged_seconds), 1) AS count
-                   FROM post_engagement
-                  WHERE datetime(updated_at, '+9 hours') >= datetime(?)
-                    AND datetime(updated_at, '+9 hours') < datetime(?)`, [chosen.start, chosen.endExclusive]),
+    scalar(env, `WITH scoped_visits AS (
+                    SELECT id, viewer_key, path, visited_at
+                      FROM site_visits
+                     WHERE ${VISIT_SCOPE_SQL}
+                       AND datetime(visited_at, '+9 hours') >= datetime(?)
+                       AND datetime(visited_at, '+9 hours') < datetime(?)
+                  ),
+                  dwell AS (
+                    SELECT path,
+                           CASE
+                             WHEN next_visited_at IS NULL THEN NULL
+                             ELSE ROUND(
+                               MIN(1800, MAX(5, (julianday(next_visited_at) - julianday(visited_at)) * 86400.0)),
+                               1
+                             )
+                           END AS dwell_seconds
+                      FROM (
+                        SELECT path,
+                               visited_at,
+                               LEAD(visited_at) OVER (PARTITION BY viewer_key ORDER BY datetime(visited_at), id) AS next_visited_at
+                          FROM scoped_visits
+                      )
+                  )
+                  SELECT ROUND(AVG(dwell_seconds), 1) AS count
+                    FROM dwell`, [chosen.start, chosen.endExclusive]),
     env.DB.prepare(
       useHourlySeries
         ? `SELECT strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour, COUNT(DISTINCT viewer_key) AS visits
@@ -94,12 +117,35 @@ async function getInternalMetrics(env, range) {
             ORDER BY view_date ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
-      `SELECT sv.path AS path,
+      `WITH scoped_visits AS (
+         SELECT id, viewer_key, path, visited_at
+           FROM site_visits
+          WHERE ${VISIT_SCOPE_SQL.replaceAll('path', 'path')}
+            AND datetime(visited_at, '+9 hours') >= datetime(?)
+            AND datetime(visited_at, '+9 hours') < datetime(?)
+       ),
+       path_dwell AS (
+         SELECT path,
+                ROUND(AVG(
+                  CASE
+                    WHEN next_visited_at IS NULL THEN NULL
+                    ELSE MIN(1800, MAX(5, (julianday(next_visited_at) - julianday(visited_at)) * 86400.0))
+                  END
+                ), 1) AS avg_dwell_seconds
+           FROM (
+             SELECT path,
+                    visited_at,
+                    LEAD(visited_at) OVER (PARTITION BY viewer_key ORDER BY datetime(visited_at), id) AS next_visited_at
+               FROM scoped_visits
+           )
+          GROUP BY path
+       )
+       SELECT sv.path AS path,
               COALESCE(p.title, CASE WHEN sv.path IN ('/dreampath', '/dreampath.html') THEN 'Dreampath' ELSE '' END) AS title,
               COUNT(*) AS pageviews,
               COUNT(DISTINCT sv.viewer_key) AS visits,
-              COALESCE(pe.avg_dwell_seconds, 0) AS avg_dwell_seconds
-         FROM site_visits sv
+              COALESCE(pe.avg_dwell_seconds, pd.avg_dwell_seconds, 0) AS avg_dwell_seconds
+         FROM scoped_visits sv
          LEFT JOIN posts p ON sv.path = '/post/' || p.id
          LEFT JOIN (
            SELECT post_id, ROUND(AVG(engaged_seconds), 1) AS avg_dwell_seconds
@@ -108,9 +154,7 @@ async function getInternalMetrics(env, range) {
               AND datetime(updated_at, '+9 hours') < datetime(?)
             GROUP BY post_id
          ) pe ON p.id = pe.post_id
-        WHERE ${VISIT_SCOPE_SQL.replaceAll('path', 'sv.path')}
-          AND datetime(sv.visited_at, '+9 hours') >= datetime(?)
-          AND datetime(sv.visited_at, '+9 hours') < datetime(?)
+         LEFT JOIN path_dwell pd ON pd.path = sv.path
         GROUP BY sv.path, p.title
         ORDER BY pageviews DESC, visits DESC, sv.path DESC
         LIMIT 10`

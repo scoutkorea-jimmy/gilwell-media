@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.042.01
+ * Version: 03.043.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -587,6 +587,10 @@
   function _loadDashboard(actionBtn) {
     var recentEl = document.getElementById('dash-recent-list');
     var topEl = document.getElementById('dash-top-list');
+    var editorialEl = document.getElementById('dash-ops-editorial');
+    var alertsEl = document.getElementById('dash-ops-alerts');
+    var settingsEl = document.getElementById('dash-ops-settings');
+    var deploymentsEl = document.getElementById('dash-ops-deployments');
     if (actionBtn) _setButtonBusy(actionBtn, '새로고침 중…');
     _setText('dash-stat-visits', '—');
     _setText('dash-stat-views', '—');
@@ -597,14 +601,16 @@
 
     Promise.allSettled([
       _apiFetch('/api/admin/analytics'),
+      _apiFetch('/api/admin/operations'),
       _apiFetch('/api/posts?limit=8&published=all'),
       _apiFetch('/api/posts/popular?limit=5'),
       _apiFetch('/api/posts?limit=1&published=1'),
     ]).then(function (results) {
       var analytics = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
-      var recentRes = results[1].status === 'fulfilled' ? (results[1].value || {}) : { posts: [] };
-      var popularRes = results[2].status === 'fulfilled' ? (results[2].value || {}) : { posts: [] };
-      var published = results[3].status === 'fulfilled' ? (results[3].value || {}) : { total: 0 };
+      var operations = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
+      var recentRes = results[2].status === 'fulfilled' ? (results[2].value || {}) : { posts: [] };
+      var popularRes = results[3].status === 'fulfilled' ? (results[3].value || {}) : { posts: [] };
+      var published = results[4].status === 'fulfilled' ? (results[4].value || {}) : { total: 0 };
       var recent    = recentRes.posts || [];
       var popular   = popularRes.posts || [];
 
@@ -653,13 +659,14 @@
       } else {
         _setText('dash-stat-visits-sub', '오늘');
       }
-      if (results[1].status !== 'fulfilled') {
+      _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations);
+      if (results[2].status !== 'fulfilled') {
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">최근 게시글 API 오류</div></div>';
       }
-      if (results[2].status !== 'fulfilled') {
+      if (results[3].status !== 'fulfilled') {
         topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">인기 게시글 API 오류</div></div>';
       }
-      if (results[3].status !== 'fulfilled') {
+      if (results[4].status !== 'fulfilled') {
         _setText('dash-stat-posts-sub', '공개 수 집계 오류');
       } else {
         _setText('dash-stat-posts-sub', '전체 게시글');
@@ -672,6 +679,88 @@
     }).finally(function () {
       if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
+  }
+
+  function _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations) {
+    if (editorialEl) {
+      var scheduled = operations.scheduled_posts || [];
+      var drafts = operations.draft_posts || [];
+      editorialEl.innerHTML =
+        '<div class="v3-text-s" style="margin-bottom:8px;color:#64748b;">발행 예정</div>' +
+        _renderSimpleRows(scheduled, function (item) {
+          return {
+            title: item.title || '(제목 없음)',
+            meta: (item.category || 'site') + ' · ' + _shortDate(item.publish_at),
+            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
+          };
+        }, '발행 예정 글이 없습니다') +
+        '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 초안</div>' +
+        _renderSimpleRows(drafts, function (item) {
+          return {
+            title: item.title || '(제목 없음)',
+            meta: (item.category || 'site') + ' · ' + _shortDate(item.updated_at),
+            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
+          };
+        }, '최근 초안이 없습니다');
+    }
+    if (alertsEl) {
+      var errors = operations.recent_errors || [];
+      var logins = operations.recent_logins || [];
+      alertsEl.innerHTML =
+        '<div class="v3-text-s" style="margin-bottom:8px;color:#64748b;">최근 API 오류</div>' +
+        _renderSimpleRows(errors, function (item) {
+          return {
+            title: (item.message || item.type || '오류').slice(0, 80),
+            meta: [item.channel || 'site', item.path || '', _shortDate(item.created_at)].filter(Boolean).join(' · '),
+            action: '',
+          };
+        }, '최근 오류 로그가 없습니다') +
+        '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 로그인 시도</div>' +
+        _renderSimpleRows(logins, function (item) {
+          return {
+            title: item.message || item.type || '로그인 이벤트',
+            meta: [item.actor || 'unknown', _shortDate(item.created_at)].filter(Boolean).join(' · '),
+            action: '',
+          };
+        }, '로그인 이벤트가 없습니다');
+    }
+    if (settingsEl) {
+      var settings = operations.recent_settings || [];
+      settingsEl.innerHTML = _renderSimpleRows(settings, function (item) {
+        return {
+          title: item.key || 'setting',
+          meta: _shortDate(item.saved_at),
+          action: '',
+        };
+      }, '최근 설정 변경이 없습니다');
+    }
+    if (deploymentsEl) {
+      var deployments = operations.deployments || [];
+      deploymentsEl.innerHTML = _renderSimpleRows(deployments, function (item) {
+        return {
+          title: [item.environment || 'deploy', item.version || item.site_version || ''].filter(Boolean).join(' · '),
+          meta: [item.status || 'success', item.branch || '', _shortDate(item.created_on)].filter(Boolean).join(' · '),
+          action: item.url ? '<a class="v3-btn v3-btn-ghost v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener">보기</a>' : '',
+        };
+      }, '배포 이력이 없습니다');
+    }
+  }
+
+  function _renderSimpleRows(items, mapFn, emptyText) {
+    var rows = Array.isArray(items) ? items.slice(0, 6) : [];
+    if (!rows.length) {
+      return '<div class="v3-empty"><div class="v3-empty-text">' + GW.escapeHtml(emptyText || '데이터 없음') + '</div></div>';
+    }
+    return rows.map(function (item) {
+      var mapped = mapFn(item) || {};
+      return '<div class="v3-recent-row">' +
+        '<div class="v3-recent-info">' +
+          '<div class="v3-recent-title">' + GW.escapeHtml(mapped.title || '') + '</div>' +
+          '<div class="v3-recent-meta">' + GW.escapeHtml(mapped.meta || '') + '</div>' +
+        '</div>' +
+        (mapped.action ? '<div style="margin-left:10px;flex-shrink:0;">' + mapped.action + '</div>' : '') +
+      '</div>';
+    }).join('');
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -3130,6 +3219,11 @@
 
   function _setText(id, text) {
     var el = document.getElementById(id); if (el) el.textContent = text;
+  }
+
+  function _shortDate(value) {
+    if (!value) return '';
+    return String(value).replace('T', ' ').slice(0, 16);
   }
 
   function _catBadge(cat) {
