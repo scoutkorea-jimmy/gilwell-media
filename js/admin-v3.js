@@ -1883,7 +1883,7 @@
       var summary  = data.summary  || {};
       var visitors = data.visitors || {};
       var views    = data.views    || {};
-      var topPosts = data.top_posts || data.top_paths || (views.top_paths || []);
+      var topPosts = data.article_top_posts || data.top_posts || data.top_paths || (views.top_paths || []);
       var sources  = data.sources  || data.referrers || [];
 
       // Stats
@@ -1903,7 +1903,7 @@
         topPosts.slice(0, 10).forEach(function (p) {
           var pct = maxV > 0 ? Math.round((p.views || 0) / maxV * 100) : 0;
           html += '<div class="v3-bar-row">' +
-            '<div class="v3-bar-label" title="' + GW.escapeHtml(p.title || '') + '">' + GW.escapeHtml(p.title || '') + '</div>' +
+            '<div class="v3-bar-label" title="' + GW.escapeHtml(p.title || p.path || '제목 없음') + '">' + GW.escapeHtml(p.title || p.path || '제목 없음') + '</div>' +
             '<div class="v3-bar-track"><div class="v3-bar-fill" style="width:' + pct + '%"></div></div>' +
             '<div class="v3-bar-val">' + _fmt(p.views || p.pageviews || 0) + '</div>' +
           '</div>';

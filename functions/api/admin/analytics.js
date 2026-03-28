@@ -48,6 +48,7 @@ async function getInternalMetrics(env, range) {
     visitSeriesRows,
     viewSeriesRows,
     topPaths,
+    topArticlePosts,
     referrers,
     popularPostDwellRow,
   ] = await Promise.all([
@@ -157,6 +158,28 @@ async function getInternalMetrics(env, range) {
          LEFT JOIN path_dwell pd ON pd.path = sv.path
         GROUP BY sv.path, p.title
         ORDER BY pageviews DESC, visits DESC, sv.path DESC
+        LIMIT 10`
+    ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT p.id AS post_id,
+              '/post/' || p.id AS path,
+              p.title AS title,
+              COUNT(*) AS pageviews,
+              COUNT(DISTINCT sv.viewer_key) AS visits,
+              COALESCE(pe.avg_dwell_seconds, 0) AS avg_dwell_seconds
+         FROM site_visits sv
+         JOIN posts p ON sv.path = '/post/' || p.id
+         LEFT JOIN (
+           SELECT post_id, ROUND(AVG(engaged_seconds), 1) AS avg_dwell_seconds
+             FROM post_engagement
+            WHERE datetime(updated_at, '+9 hours') >= datetime(?)
+              AND datetime(updated_at, '+9 hours') < datetime(?)
+            GROUP BY post_id
+         ) pe ON p.id = pe.post_id
+        WHERE datetime(sv.visited_at, '+9 hours') >= datetime(?)
+          AND datetime(sv.visited_at, '+9 hours') < datetime(?)
+        GROUP BY p.id, p.title, pe.avg_dwell_seconds
+        ORDER BY pageviews DESC, visits DESC, p.id DESC
         LIMIT 10`
     ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).all(),
     env.DB.prepare(
@@ -277,7 +300,14 @@ async function getInternalMetrics(env, range) {
     })),
     top_posts: (topPaths.results || []).map((item) => ({
       path: item.path || '/',
-      title: item.title || '',
+      title: item.title || item.path || '제목 없음',
+      views: item.pageviews || 0,
+      visits: item.visits || 0,
+      avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
+    })),
+    article_top_posts: (topArticlePosts.results || []).map((item) => ({
+      path: item.path || '/',
+      title: item.title || item.path || '제목 없음',
       views: item.pageviews || 0,
       visits: item.visits || 0,
       avg_dwell_seconds: Number(item.avg_dwell_seconds || 0),
