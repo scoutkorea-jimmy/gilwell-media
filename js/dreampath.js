@@ -138,6 +138,7 @@ const DP = (() => {
       res = await fetch('/api/dreampath/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ username, password }),
       });
     } catch (e) {
