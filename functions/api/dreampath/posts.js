@@ -123,10 +123,13 @@ export async function onRequestPost({ request, env, data }) {
   // Insert approvers for minutes board
   if (board === 'minutes' && Array.isArray(approvers)) {
     for (const name of approvers) {
-      if (!name || !String(name).trim()) continue;
+      const safeName = String(name || '').trim().slice(0, 100);
+      if (!safeName) continue;
+      const u = await env.DB.prepare(`SELECT id FROM dp_users WHERE display_name = ?`).bind(safeName).first();
+      if (!u) continue;
       await env.DB.prepare(
-        `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_name) VALUES (?, ?)`
-      ).bind(postId, String(name).trim().slice(0, 100)).run();
+        `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
+      ).bind(postId, u.id, safeName).run();
     }
   }
 
@@ -219,9 +222,11 @@ export async function onRequestPut({ request, env, data }) {
     // Add new approvers
     for (const name of newNames) {
       if (!existingNames.includes(name)) {
+        const u = await env.DB.prepare(`SELECT id FROM dp_users WHERE display_name = ?`).bind(name.slice(0, 100)).first();
+        if (!u) continue;
         await env.DB.prepare(
-          `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_name) VALUES (?, ?)`
-        ).bind(id, name.slice(0, 100)).run();
+          `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
+        ).bind(id, u.id, name.slice(0, 100)).run();
       }
     }
     // Remove pending approvers not in new list
