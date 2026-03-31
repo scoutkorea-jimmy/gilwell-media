@@ -2367,7 +2367,7 @@ const DP = (() => {
     const latest = versions[0];
     const isAdmin = currentUser?.role === 'admin';
 
-    const typeLabel = { feature: 'Feature', bugfix: 'Bugfix', initial: 'Initial' };
+    const typeLabel = { feature: '기능 / Feature', bugfix: '수정 / Bugfix', initial: '최초 / Initial' };
 
     const totalPages = Math.ceil(versions.length / VER_PER_PAGE);
     const pageVersions = versions.slice(_verPage * VER_PER_PAGE, (_verPage + 1) * VER_PER_PAGE);
