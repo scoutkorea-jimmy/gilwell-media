@@ -1296,8 +1296,9 @@ const DP = (() => {
           <div class="dp-tag-input-wrap" id="fp-approvers-wrap">
             <div class="dp-tag-list" id="fp-approver-tags"></div>
             <div style="display:flex;gap:6px;margin-top:6px">
-              <input type="text" class="dp-input" id="fp-approver-input" placeholder="Type a name and press Enter or click Add" style="flex:1" list="fp-approver-datalist" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();DP._addApproverTag('fp')}" />
-              <datalist id="fp-approver-datalist"></datalist>
+              <select class="dp-input" id="fp-approver-select" style="flex:1">
+                <option value="">Loading team members…</option>
+              </select>
               <button type="button" class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._addApproverTag('fp')">Add</button>
             </div>
           </div>
@@ -1380,8 +1381,7 @@ const DP = (() => {
       api('GET', 'users?picker=1').then(d => {
         if (!d?.users) return;
         _allUsers = d.users;
-        const dl = $('fp-approver-datalist');
-        if (dl) dl.innerHTML = _allUsers.map(u => `<option value="${esc(u.display_name)}">`).join('');
+        _refreshApproverSelect('fp');
       });
     }
   }
@@ -1459,8 +1459,9 @@ const DP = (() => {
           <div class="dp-tag-input-wrap" id="ep-approvers-wrap">
             <div class="dp-tag-list" id="ep-approver-tags"></div>
             <div style="display:flex;gap:6px;margin-top:6px">
-              <input type="text" class="dp-input" id="ep-approver-input" placeholder="Type a name and press Enter or click Add" style="flex:1" list="ep-approver-datalist" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();DP._addApproverTag('ep')}" />
-              <datalist id="ep-approver-datalist"></datalist>
+              <select class="dp-input" id="ep-approver-select" style="flex:1">
+                <option value="">Loading team members…</option>
+              </select>
               <button type="button" class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._addApproverTag('ep')">Add</button>
             </div>
           </div>
@@ -1553,8 +1554,7 @@ const DP = (() => {
       api('GET', 'users?picker=1').then(d => {
         if (!d?.users) return;
         _allUsers = d.users;
-        const dl = $('ep-approver-datalist');
-        if (dl) dl.innerHTML = _allUsers.map(u => `<option value="${esc(u.display_name)}">`).join('');
+        _refreshApproverSelect('ep');
       });
     }
   }
@@ -3582,14 +3582,24 @@ const DP = (() => {
 
   // ── Approver tag input helpers ─────────────────────────────────────────────
   function _addApproverTag(prefix) {
-    const input = $(`${prefix}-approver-input`);
-    const name = input ? input.value.trim() : '';
+    const select = $(`${prefix}-approver-select`);
+    const name = select ? select.value.trim() : '';
     if (!name) return;
     const arr = prefix === 'fp' ? _fpApprovers : _epApprovers;
-    if (arr.includes(name)) { showToast('Already added.', 'info'); return; }
+    if (arr.includes(name)) return;
     arr.push(name);
-    input.value = '';
     _renderApproverTags(prefix);
+    _refreshApproverSelect(prefix);
+  }
+
+  function _refreshApproverSelect(prefix) {
+    const select = $(`${prefix}-approver-select`);
+    if (!select || !_allUsers || !_allUsers.length) return;
+    const arr = prefix === 'fp' ? _fpApprovers : _epApprovers;
+    const available = _allUsers.filter(u => !arr.includes(u.display_name));
+    select.innerHTML = available.length
+      ? `<option value="">— Select a team member —</option>` + available.map(u => `<option value="${esc(u.display_name)}">${esc(u.display_name)}</option>`).join('')
+      : `<option value="">All team members added</option>`;
   }
 
   function _removeApproverTag(prefix, name) {
@@ -3599,6 +3609,7 @@ const DP = (() => {
       _epApprovers = _epApprovers.filter(n => n !== name);
     }
     _renderApproverTags(prefix);
+    _refreshApproverSelect(prefix);
   }
 
   function _renderApproverTags(prefix) {
@@ -3680,6 +3691,7 @@ const DP = (() => {
     _selectApprover,
     _clearApproverPicker,
     _addApproverTag,
+    _refreshApproverSelect,
     _removeApproverTag,
     _submitVote,
     _submitApprovalOverride,
