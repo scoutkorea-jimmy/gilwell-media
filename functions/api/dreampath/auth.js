@@ -288,6 +288,11 @@ export async function onRequestPost({ request, env }) {
 
   await clearRateLimit(env, ip);
 
+  // Update last login timestamp
+  try {
+    await env.DB.prepare(`UPDATE dp_users SET last_login_at = datetime('now') WHERE id = ?`).bind(user.id).run();
+  } catch {}
+
   const token = await createToken(env.DREAMPATH_SECRET, user);
   return json({
     token,

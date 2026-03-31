@@ -93,3 +93,7 @@ echo ""
 echo "✅ Done!  v${VERSION} · ${TYPE}"
 echo "   ${DESCRIPTION}"
 echo ""
+
+# ── Push to remote ────────────────────────────────────────────────────────────
+echo "📤 Pushing to remote..."
+git push

@@ -29,7 +29,7 @@ export async function onRequestGet({ request, env }) {
   if (id) {
     const post = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_id, author_name, pinned, linked_event_id, created_at, updated_at
+              author_id, author_name, pinned, linked_event_id, approver_name, approval_status, created_at, updated_at
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
@@ -52,12 +52,18 @@ export async function onRequestGet({ request, env }) {
       ).bind(post.linked_event_id).first();
     }
 
+    const approvalsRes = await env.DB.prepare(
+      `SELECT id, approver_name, status, voted_at, override_by, override_note, created_at
+         FROM dp_post_approvals WHERE post_id = ? ORDER BY created_at ASC`
+    ).bind(id).all();
+
     return json({
       post: {
         ...post,
         files:        filesRes.results   || [],
         history:      historyRes.results || [],
         linked_event: linkedEvent || null,
+        approvals:    approvalsRes.results || [],
       },
     });
   }
@@ -90,15 +96,16 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { board, title, content, pinned, files, linked_event_id } = body;
+  const { board, title, content, pinned, files, linked_event_id, approver_name, approval_status, approvers } = body;
   if (!board || !title) return json({ error: 'board and title are required.' }, 400);
   if (!VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
   const safeLinkedEventId = linked_event_id ? parseInt(linked_event_id, 10) || null : null;
+  const safeApprovalStatus = ['pending','approved','rejected'].includes(approval_status) ? approval_status : 'pending';
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     board,
     title.trim().slice(0, 200),
@@ -106,10 +113,22 @@ export async function onRequestPost({ request, env, data }) {
     data.dpUser.uid,
     data.dpUser.name,
     pinned ? 1 : 0,
-    safeLinkedEventId
+    safeLinkedEventId,
+    approver_name ? approver_name.trim().slice(0, 100) : null,
+    safeApprovalStatus
   ).run();
 
   const postId = result.meta.last_row_id;
+
+  // Insert approvers for minutes board
+  if (board === 'minutes' && Array.isArray(approvers)) {
+    for (const name of approvers) {
+      if (!name || !String(name).trim()) continue;
+      await env.DB.prepare(
+        `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_name) VALUES (?, ?)`
+      ).bind(postId, String(name).trim().slice(0, 100)).run();
+    }
+  }
 
   // Insert file attachments
   if (Array.isArray(files) && files.length > 0) {
@@ -140,15 +159,23 @@ export async function onRequestPut({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  if (!body.edit_note || !body.edit_note.trim()) {
-    return json({ error: 'edit_note (edit reason) is required.' }, 400);
-  }
 
   // Save edit history before making changes
   const current = await env.DB.prepare(
-    `SELECT title, content FROM dp_board_posts WHERE id = ?`
+    `SELECT title, content, board, approval_status FROM dp_board_posts WHERE id = ?`
   ).bind(id).first();
   if (!current) return json({ error: 'Post not found.' }, 404);
+
+  // Content lock: approved minutes cannot be edited
+  if (current.board === 'minutes' && current.approval_status === 'approved') {
+    const hasContentChange = body.title !== undefined || body.content !== undefined || body.pinned !== undefined;
+    if (hasContentChange) {
+      return json({
+        error: 'LOCKED',
+        message: 'This meeting minutes has been approved by majority vote and is locked. Contact Sonny or Jimmy to request changes.',
+      }, 423);
+    }
+  }
 
   await env.DB.prepare(
     `INSERT INTO dp_post_history (post_id, editor_name, prev_title, prev_content, edit_note)
@@ -158,7 +185,7 @@ export async function onRequestPut({ request, env, data }) {
     data.dpUser.name,
     current.title,
     current.content,
-    body.edit_note.trim().slice(0, 500)
+    (body.edit_note || '').trim().slice(0, 500)
   ).run();
 
   // Build update fields
@@ -168,11 +195,50 @@ export async function onRequestPut({ request, env, data }) {
   if (body.content          !== undefined) { fields.push('content = ?');          values.push(body.content ? body.content.trim().slice(0, 50000) : null); }
   if (body.pinned           !== undefined) { fields.push('pinned = ?');           values.push(body.pinned ? 1 : 0); }
   if (body.linked_event_id  !== undefined) { fields.push('linked_event_id = ?'); values.push(body.linked_event_id ? parseInt(body.linked_event_id, 10) || null : null); }
+  if (body.approver_name !== undefined) { fields.push('approver_name = ?'); values.push(body.approver_name ? body.approver_name.trim().slice(0, 100) : null); }
+  if (body.approval_status !== undefined) {
+    const safeStatus = ['pending','approved','rejected'].includes(body.approval_status) ? body.approval_status : null;
+    if (safeStatus) { fields.push('approval_status = ?'); values.push(safeStatus); }
+  }
 
   if (fields.length > 0) {
     fields.push("updated_at = datetime('now')");
     values.push(id);
     await env.DB.prepare(`UPDATE dp_board_posts SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
+  }
+
+  // Sync approvers list (admin only, minutes board)
+  if (current.board === 'minutes' && data.dpUser.role === 'admin' && Array.isArray(body.approvers)) {
+    const existingRes = await env.DB.prepare(
+      `SELECT approver_name, status FROM dp_post_approvals WHERE post_id = ?`
+    ).bind(id).all();
+    const existing = existingRes.results || [];
+    const existingNames = existing.map(a => a.approver_name);
+    const newNames = body.approvers.map(n => String(n).trim()).filter(Boolean);
+
+    // Add new approvers
+    for (const name of newNames) {
+      if (!existingNames.includes(name)) {
+        await env.DB.prepare(
+          `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_name) VALUES (?, ?)`
+        ).bind(id, name.slice(0, 100)).run();
+      }
+    }
+    // Remove pending approvers not in new list
+    for (const ea of existing) {
+      if (ea.status === 'pending' && !newNames.includes(ea.approver_name)) {
+        await env.DB.prepare(
+          `DELETE FROM dp_post_approvals WHERE post_id = ? AND approver_name = ? AND status = 'pending'`
+        ).bind(id, ea.approver_name).run();
+      }
+    }
+    // Recompute approval_status
+    const allA = await env.DB.prepare(`SELECT status FROM dp_post_approvals WHERE post_id = ?`).bind(id).all();
+    const aRows = allA.results || [];
+    const total = aRows.length;
+    const approvedCount = aRows.filter(r => r.status === 'approved').length;
+    const newApprovalStatus = (total > 0 && approvedCount > total / 2) ? 'approved' : 'pending';
+    await env.DB.prepare(`UPDATE dp_board_posts SET approval_status = ? WHERE id = ?`).bind(newApprovalStatus, id).run();
   }
 
   // Replace file attachments if provided

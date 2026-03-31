@@ -506,7 +506,35 @@
       transition: background .15s;
     }
     .dp-cal-nav:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
-    .dp-cal-grid {
+    .dp-cal-dows {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 2px;
+    }
+    .dp-cal-week { margin-bottom: 3px; }
+    .dp-cal-bar-rows { }
+    .dp-cal-bar-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      height: 22px;
+      padding: 1px 0;
+    }
+    .dp-cal-bar {
+      height: 18px;
+      border-radius: 3px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 0 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      line-height: 18px;
+      margin: 0 2px 0 0;
+    }
+    .dp-cal-bar:hover { opacity: .85; }
+    .dp-cal-week-cells {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 3px;
@@ -532,10 +560,7 @@
       transition: background .12s, border-color .12s;
     }
     .dp-cal-day--empty { background: transparent; }
-    .dp-cal-day--today {
-      background: var(--accent-light);
-      border-color: var(--accent) !important;
-    }
+    .dp-cal-day--today { border-color: var(--accent) !important; }
     .dp-cal-day--today .dp-cal-day-num:not(.dp-cal-today-num) { color: var(--accent); font-weight: 700; }
     .dp-cal-day--weekend .dp-cal-day-num { color: #f87171; }
     .dp-cal-day--has-events { background: var(--surface2); border-color: var(--border); }
@@ -1118,6 +1143,39 @@
     .dp-toast--success { background: #059669; }
     .dp-toast--error   { background: var(--red); }
     .dp-toast--info    { background: #0284c7; }
+
+    /* ── Approval badges ─────────────────────────────────────────── */
+    .dp-approval-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 12px; }
+    .dp-approval-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .dp-approval--pending  { background: #FEF3C7; color: #92400E; }
+    .dp-approval--approved { background: #D1FAE5; color: #065F46; }
+    .dp-approval--rejected { background: #FEE2E2; color: #991B1B; }
+    .dp-approval-approver { font-size: 12px; color: var(--text-3); }
+
+    /* ── Settings console ────────────────────────────────────────── */
+    .dp-color-swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .dp-color-input {
+      width: 32px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
 
     /* ── Responsive ─────────────────────────────────────────────── */
     @media (max-width: 900px) {
@@ -1795,6 +1853,145 @@
       padding: 12px 20px;
       border-top: 1px solid var(--border);
     }
+
+    /* ── Kanban Board ──────────────────────────────────────────────────── */
+    .dp-kanban {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .dp-kanban-col {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .dp-kanban-col-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border-bottom: 2px solid transparent;
+    }
+    .dp-kanban-col-header--todo     { border-color: #6B7280; }
+    .dp-kanban-col-header--progress { border-color: var(--accent); }
+    .dp-kanban-col-header--done     { border-color: #059669; }
+    .dp-kanban-count {
+      background: var(--surface2);
+      color: var(--text-3);
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 12px;
+    }
+    .dp-kanban-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+    .dp-kanban-empty { font-size: 12px; color: var(--text-3); text-align: center; padding: 12px 0; }
+    .dp-task-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .dp-task-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .dp-task-card-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .dp-task-card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .dp-task-assignee { font-size: 11px; color: var(--text-3); }
+    .dp-task-due { font-size: 11px; color: var(--text-3); }
+    .dp-task-due--overdue { color: var(--red); font-weight: 600; }
+    .dp-task-actions { display: flex; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .dp-toggle-group { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .dp-toggle-btn { padding: 5px 12px; font-size: 12px; font-weight: 600; background: transparent; border: none; color: var(--text-3); cursor: pointer; transition: background .12s; }
+    .dp-toggle-btn--active { background: var(--accent); color: #fff; }
+    .dp-toggle-btn:not(.dp-toggle-btn--active):hover { background: var(--surface2); }
+
+    /* ── Notes & Issues ────────────────────────────────────────────────── */
+    .dp-note-list { display: flex; flex-direction: column; gap: 8px; }
+    .dp-note-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .dp-note-row--high { border-left: 3px solid var(--red); }
+    .dp-note-row--resolved { opacity: .6; }
+    .dp-note-row-left { display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0; }
+    .dp-note-row-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .dp-note-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .dp-note-excerpt { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .dp-note-meta { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+    /* ── Tag Input (Approvers) ──────────────────────────────────────── */
+    .dp-tag-input-wrap { }
+    .dp-tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
+    .dp-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .dp-tag-remove {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 0 0 2px;
+      opacity: .7;
+    }
+    .dp-tag-remove:hover { opacity: 1; }
+
+    /* ── Approvals Section ──────────────────────────────────────────── */
+    .dp-approvals-section {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+    }
+    .dp-approvals-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .dp-approvals-list { padding: 4px 0; }
+    .dp-approval-override {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 6px 0 2px;
+    }
+    .dp-input--xs {
+      height: 28px;
+      font-size: 12px;
+      padding: 0 8px;
+    }
+    .dp-approval-lock-notice {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #92400E;
+    }
   </style>
 </head>
 <body>
@@ -1876,6 +2073,14 @@
         <span class="dp-nav-icon">&#128221;</span>
         <span>Meeting Minutes</span>
       </div>
+      <div class="dp-nav-item" data-section="tasks" onclick="DP.navigate('tasks')">
+        <span class="dp-nav-icon">&#9989;</span>
+        <span>Tasks</span>
+      </div>
+      <div class="dp-nav-item" data-section="notes" onclick="DP.navigate('notes')">
+        <span class="dp-nav-icon">&#128203;</span>
+        <span>Notes &amp; Issues</span>
+      </div>
 
       <hr class="dp-nav-sep" />
 
@@ -1894,6 +2099,11 @@
       <div class="dp-nav-item dp-admin-only" data-section="devrules" onclick="DP.navigate('devrules')">
         <span class="dp-nav-icon">&#128196;</span>
         <span>Dev Rules</span>
+      </div>
+
+      <div class="dp-nav-item dp-admin-only" data-section="settings" onclick="DP.navigate('settings')">
+        <span class="dp-nav-icon">&#9881;</span>
+        <span>Settings</span>
       </div>
 
       <div class="dp-nav-item" data-section="account" onclick="DP.navigate('account')">
@@ -1977,6 +2187,20 @@
       </div>
     </div>
 
+    <!-- Tasks -->
+    <div id="dp-section-tasks" class="dp-section dp-hidden">
+      <div id="dp-tasks-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Notes & Issues -->
+    <div id="dp-section-notes" class="dp-section dp-hidden">
+      <div id="dp-notes-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
     <!-- Project Team Contacts -->
     <div id="dp-section-contacts" class="dp-section dp-hidden">
       <div id="dp-contacts-content">
@@ -2001,6 +2225,13 @@
     <!-- Dev Rules -->
     <div id="dp-section-devrules" class="dp-section dp-admin-only dp-hidden">
       <div id="dp-devrules-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="dp-section-settings" class="dp-section dp-admin-only dp-hidden">
+      <div id="dp-settings-content">
         <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
       </div>
     </div>
