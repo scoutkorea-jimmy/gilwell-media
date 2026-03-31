@@ -276,7 +276,7 @@ const DP = (() => {
 
     function renderDrop(list) {
       if (!list.length) {
-        dropEl.innerHTML = '<div class="dp-event-dd-empty">결과 없음 / No results</div>';
+        dropEl.innerHTML = '<div class="dp-event-dd-empty">No results</div>';
       } else {
         const shown = list.slice(0, MAX_SHOW);
         const more  = list.length - MAX_SHOW;
@@ -288,7 +288,7 @@ const DP = (() => {
              </div>`
           ).join('') +
           (more > 0
-            ? `<div class="dp-event-dd-more">+${more}개 더 있음 · 검색어를 입력해 필터링 / Type to filter</div>`
+            ? `<div class="dp-event-dd-more">+${more} more · Type to filter</div>`
             : '');
       }
       dropEl.style.display = 'block';
@@ -347,6 +347,70 @@ const DP = (() => {
     if (hiddenEl) hiddenEl.value = '';
     if (clearBtn) clearBtn.style.display = 'none';
     if (dropEl)   dropEl.style.display = 'none';
+  }
+
+  function _initApproverPicker(prefix, users, selectedName) {
+    const searchEl = $(`${prefix}-approver-search`);
+    const dropEl   = $(`${prefix}-approver-dropdown`);
+    const hiddenEl = $(`${prefix}-approver-name`);
+    const clearBtn = $(`${prefix}-approver-clear`);
+    if (!searchEl || !dropEl || !hiddenEl) return;
+
+    const MAX_SHOW = 5;
+    function renderDrop(list) {
+      if (!list.length) {
+        dropEl.innerHTML = `<div class="dp-event-dd-empty">No users found.</div>`;
+      } else {
+        dropEl.innerHTML = list.slice(0, MAX_SHOW).map(u =>
+          `<div class="dp-event-dd-item" data-name="${esc(u.display_name)}" onclick="DP._selectApprover('${prefix}','${esc(u.display_name)}')">${esc(u.display_name)}</div>`
+        ).join('') + (list.length > MAX_SHOW ? `<div class="dp-event-dd-more">+${list.length - MAX_SHOW} more</div>` : '');
+      }
+      dropEl.style.display = 'block';
+    }
+
+    if (selectedName) {
+      searchEl.value = selectedName;
+      hiddenEl.value = selectedName;
+      if (clearBtn) clearBtn.style.display = '';
+    } else {
+      renderDrop(users.slice(0, MAX_SHOW));
+      dropEl.style.display = 'none';
+    }
+
+    searchEl.addEventListener('focus', () => {
+      const q = searchEl.value.trim().toLowerCase();
+      const filtered = q ? users.filter(u => u.display_name.toLowerCase().includes(q)) : users;
+      renderDrop(filtered);
+    });
+    searchEl.addEventListener('input', () => {
+      const q = searchEl.value.trim().toLowerCase();
+      const filtered = q ? users.filter(u => u.display_name.toLowerCase().includes(q)) : users;
+      renderDrop(filtered);
+      if (!q) { hiddenEl.value = ''; if (clearBtn) clearBtn.style.display = 'none'; }
+    });
+    searchEl.addEventListener('blur', () => {
+      setTimeout(() => { dropEl.style.display = 'none'; }, 160);
+    });
+  }
+
+  function _selectApprover(prefix, name) {
+    const searchEl = $(`${prefix}-approver-search`);
+    const hiddenEl = $(`${prefix}-approver-name`);
+    const dropEl   = $(`${prefix}-approver-dropdown`);
+    const clearBtn = $(`${prefix}-approver-clear`);
+    if (searchEl) searchEl.value = name;
+    if (hiddenEl) hiddenEl.value = name;
+    if (dropEl) dropEl.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = '';
+  }
+
+  function _clearApproverPicker(prefix) {
+    const searchEl = $(`${prefix}-approver-search`);
+    const hiddenEl = $(`${prefix}-approver-name`);
+    const clearBtn = $(`${prefix}-approver-clear`);
+    if (searchEl) searchEl.value = '';
+    if (hiddenEl) hiddenEl.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
   }
 
   // ── Modal system ───────────────────────────────────────────────────────────
@@ -461,6 +525,16 @@ const DP = (() => {
     btnEl.disabled = false;
     btnEl.textContent = 'Sign In';
     showApp();
+
+    // Check for pending tasks assigned to this user
+    setTimeout(() => {
+      api('GET', 'home').then(homeData => {
+        const pending = (homeData?.my_tasks || []).filter(t => t.status === 'todo' || t.status === 'in_progress');
+        if (pending.length > 0) {
+          showToast(`📋 You have ${pending.length} active task${pending.length > 1 ? 's' : ''} assigned to you.`, 'info');
+        }
+      }).catch(() => {});
+    }, 800);
   }
 
   function logout() {
@@ -541,6 +615,8 @@ const DP = (() => {
       case 'announcements': loadBoard('announcements'); break;
       case 'documents':    loadBoard('documents'); break;
       case 'minutes':      loadBoard('minutes'); break;
+      case 'tasks':        loadTasks(); break;
+      case 'notes':        loadNotes(); break;
       case 'contacts':     loadContacts(); break;
       case 'users':
         if (currentUser?.role !== 'admin') { navigate('home'); return; }
@@ -548,6 +624,10 @@ const DP = (() => {
         break;
       case 'account':      loadAccount(); break;
       case 'devrules':     loadDevRules(); break;
+      case 'settings':
+        if (currentUser?.username !== 'jimmy' && currentUser?.role !== 'admin') { navigate('home'); return; }
+        loadSettings();
+        break;
     }
   }
 
@@ -610,7 +690,7 @@ const DP = (() => {
     el.innerHTML = `
       <div class="dp-home-list">${preview.map(_recentItemHtml).join('')}</div>
       ${hasMore ? `<div style="text-align:center;padding:8px 0 2px">
-        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(0)">더보기 / View all (${items.length})</button>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(0)">View all (${items.length})</button>
       </div>` : ''}
     `;
   }
@@ -623,16 +703,16 @@ const DP = (() => {
     const slice = _recentItems.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE);
     const paginationHtml = totalPages > 1 ? `
       <div style="display:flex;gap:8px;justify-content:center;padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">
-        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p - 1})" ${p === 0 ? 'disabled' : ''}>← 이전</button>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p - 1})" ${p === 0 ? 'disabled' : ''}>← Prev</button>
         <span style="font-size:12px;color:var(--text-3);line-height:30px">${p + 1} / ${totalPages}</span>
-        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p + 1})" ${p >= totalPages - 1 ? 'disabled' : ''}>다음 →</button>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p + 1})" ${p >= totalPages - 1 ? 'disabled' : ''}>Next →</button>
       </div>` : '';
     openModal(`
       <div style="max-height:65vh;overflow-y:auto">
         <div class="dp-home-list">${slice.map(_recentItemHtml).join('')}</div>
       </div>
       ${paginationHtml}
-    `, { title: `변경 내역 / Recent Changes (${total})` });
+    `, { title: `Recent Changes (${total})` });
   }
 
   function bindHomeSearch() {
@@ -695,26 +775,85 @@ const DP = (() => {
 
     const year  = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
-
-    // Index events by YYYY-MM-DD
-    const eventMap = {};
-    for (const ev of events) {
-      const key = ev.start_date.slice(0, 10);
-      if (!eventMap[key]) eventMap[key] = [];
-      eventMap[key].push(ev);
-    }
-
-    // First day offset (Sun=0)
-    const firstDow = new Date(year, month, 1).getDay();
-    const startOffset = firstDow; // 0=Sun,1=Mon,...,6=Sat
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDow = new Date(year, month, 1).getDay();
 
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     const monthName = calendarDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-
     const typeColors = { general: '#146E7A', deadline: '#DC2626', meeting: '#059669', milestone: '#8D714E' };
 
+    // Normalize events: parse start/end as Date objects
+    const normed = [];
+    for (const ev of events) {
+      if (!ev.start_date) continue;
+      const s = new Date(ev.start_date.slice(0,10) + 'T00:00:00');
+      if (isNaN(s.getTime())) continue;
+      const eRaw = ev.end_date ? new Date(ev.end_date.slice(0,10) + 'T00:00:00') : s;
+      const e = isNaN(eRaw.getTime()) ? s : eRaw;
+      normed.push({ ...ev, _s: s, _e: e });
+    }
+
+    // Helper: YYYY-MM-DD from Date
+    function dk(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // Split: multi-day events vs single-day per-date map
+    const multiDay = normed.filter(ev => ev._e > ev._s);
+    const singleDay = {};
+    for (const ev of normed) {
+      if (ev._e > ev._s) continue;
+      const k = ev.start_date.slice(0,10);
+      if (!singleDay[k]) singleDay[k] = [];
+      singleDay[k].push(ev);
+    }
+
+    // Build week structures: array of 7-cell arrays (null = empty/out-of-month)
+    const weeks = [];
+    let cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      cells.push({ d, date, dateStr: `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}` });
+      if (cells.length === 7) { weeks.push(cells); cells = []; }
+    }
+    if (cells.length > 0) {
+      while (cells.length < 7) cells.push(null);
+      weeks.push(cells);
+    }
+
+    // For a week row, compute lane assignments for multi-day events
+    function computeLanes(weekCells) {
+      const activeCells = weekCells.filter(Boolean);
+      if (!activeCells.length) return [];
+      const wStart = activeCells[0].date;
+      const wEnd   = activeCells[activeCells.length - 1].date;
+
+      const overlap = multiDay
+        .filter(ev => ev._s <= wEnd && ev._e >= wStart)
+        .sort((a, b) => a._s - b._s);
+
+      const lanes = []; // lane = array of bar items
+      for (const ev of overlap) {
+        const cs = Math.max(0, weekCells.findIndex(c => c && dk(c.date) === dk(ev._s < wStart ? wStart : ev._s)));
+        const ceDate = ev._e > wEnd ? wEnd : ev._e;
+        let ce = weekCells.findIndex(c => c && dk(c.date) === dk(ceDate));
+        if (ce < 0) ce = weekCells.map((c,i) => c ? i : -1).filter(i => i >= 0).slice(-1)[0];
+        const showTitle = ev._s >= wStart; // title if event starts in this week or is leftmost
+
+        const item = { ev, cs, ce: ce + 1, showTitle: showTitle || cs === 0 };
+        let placed = false;
+        for (const lane of lanes) {
+          const last = lane[lane.length - 1];
+          if (cs >= last.ce) { lane.push(item); placed = true; break; }
+        }
+        if (!placed && lanes.length < 2) lanes.push([item]);
+      }
+      return lanes;
+    }
+
+    // Build HTML
     let html = `
       <div class="dp-cal-header">
         <button class="dp-cal-nav" onclick="DP.prevMonth()" title="Previous month">&#8249;</button>
@@ -722,7 +861,7 @@ const DP = (() => {
         <button class="dp-cal-nav" onclick="DP.nextMonth()" title="Next month">&#8250;</button>
         ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--sm dp-btn--primary dp-admin-only" onclick="DP.addEvent()" style="margin-left:auto">+ Add Event</button>` : ''}
       </div>
-      <div class="dp-cal-grid">
+      <div class="dp-cal-dows">
         <div class="dp-cal-dow dp-cal-dow--weekend">Sun</div>
         <div class="dp-cal-dow">Mon</div>
         <div class="dp-cal-dow">Tue</div>
@@ -730,48 +869,72 @@ const DP = (() => {
         <div class="dp-cal-dow">Thu</div>
         <div class="dp-cal-dow">Fri</div>
         <div class="dp-cal-dow dp-cal-dow--weekend">Sat</div>
+      </div>
     `;
 
-    // Empty leading cells
-    for (let i = 0; i < startOffset; i++) {
-      html += `<div class="dp-cal-day dp-cal-day--empty"></div>`;
+    for (const weekCells of weeks) {
+      const lanes = computeLanes(weekCells);
+
+      // Bar layer
+      let barHtml = '';
+      for (const lane of lanes) {
+        let rowHtml = '';
+        let col = 0;
+        for (const item of lane) {
+          if (item.cs > col) rowHtml += `<div style="grid-column:${col+1}/${item.cs+1}"></div>`;
+          const color = typeColors[item.ev.type] || typeColors.general;
+          const label = item.showTitle ? esc(item.ev.title) : '&nbsp;';
+          rowHtml += `<div class="dp-cal-bar" style="grid-column:${item.cs+1}/${item.ce+1};background:${color}"
+            onclick="event.stopPropagation();DP.viewEvent(${item.ev.id})"
+            title="${esc(item.ev.title)}">${label}</div>`;
+          col = item.ce;
+        }
+        if (col < 7) rowHtml += `<div style="grid-column:${col+1}/8"></div>`;
+        barHtml += `<div class="dp-cal-bar-row">${rowHtml}</div>`;
+      }
+
+      // Day cells
+      let cellsHtml = '';
+      for (let ci = 0; ci < 7; ci++) {
+        const cell = weekCells[ci];
+        if (!cell) { cellsHtml += `<div class="dp-cal-day dp-cal-day--empty"></div>`; continue; }
+        const { d, date, dateStr } = cell;
+        const isToday   = dateStr === todayStr;
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        const dayEvs = singleDay[dateStr] || [];
+
+        const strips = dayEvs.slice(0, 2).map(ev => `
+          <div class="dp-cal-event-strip"
+               style="background:${typeColors[ev.type]||typeColors.general}"
+               draggable="true"
+               ondragstart="event.stopPropagation();DP._calDragStart(event,${ev.id})"
+               onclick="event.stopPropagation();DP.viewEvent(${ev.id})"
+               title="${esc(ev.title)}${ev.start_time?' · '+ev.start_time:''}">
+            ${ev.start_time?`<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>`:''}${esc(ev.title)}
+          </div>`).join('');
+
+        const moreHtml = dayEvs.length > 2
+          ? `<div class="dp-cal-more" onclick="event.stopPropagation();DP.dayClick('${dateStr}')">+${dayEvs.length - 2} more</div>`
+          : '';
+
+        const hasEvents = dayEvs.length > 0 || multiDay.some(ev => { const ds = date; return ev._s <= ds && ev._e >= ds; });
+        cellsHtml += `
+          <div class="dp-cal-day${isToday?' dp-cal-day--today':''}${isWeekend?' dp-cal-day--weekend':''}${hasEvents?' dp-cal-day--has-events':''}"
+               onclick="DP.dayClick('${dateStr}')" style="cursor:pointer"
+               ondragover="event.preventDefault();DP._calDragOver(event)"
+               ondragleave="DP._calDragLeave(event)"
+               ondrop="event.preventDefault();DP._calDrop(event,'${dateStr}')">
+            <span class="dp-cal-day-num${isToday?' dp-cal-today-num':''}">${d}</span>
+            <div class="dp-cal-event-strips">${strips}${moreHtml}</div>
+          </div>`;
+      }
+
+      html += `<div class="dp-cal-week">
+        <div class="dp-cal-bar-rows">${barHtml}</div>
+        <div class="dp-cal-week-cells">${cellsHtml}</div>
+      </div>`;
     }
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const m   = String(month + 1).padStart(2, '0');
-      const dd  = String(d).padStart(2, '0');
-      const dateStr   = `${year}-${m}-${dd}`;
-      const dayEvents = eventMap[dateStr] || [];
-      const isToday   = dateStr === todayStr;
-      const isWeekend = (() => { const dow = new Date(year, month, d).getDay(); return dow === 0 || dow === 6; })();
-
-      // Render up to 3 event strips; "+N more" link for overflow
-      const strips = dayEvents.slice(0, 3).map(ev => `
-        <div class="dp-cal-event-strip"
-             style="background:${typeColors[ev.type] || typeColors.general}"
-             draggable="true"
-             ondragstart="event.stopPropagation(); DP._calDragStart(event, ${ev.id})"
-             onclick="event.stopPropagation(); DP.viewEvent(${ev.id})"
-             title="${esc(ev.title)}${ev.start_time ? ' · ' + ev.start_time : ''}">
-          ${ev.start_time ? `<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>` : ''}${esc(ev.title)}
-        </div>`).join('');
-
-      const moreHtml = dayEvents.length > 3
-        ? `<div class="dp-cal-more" onclick="event.stopPropagation(); DP.dayClick('${dateStr}')">+${dayEvents.length - 3} more</div>`
-        : '';
-
-      html += `
-        <div class="dp-cal-day${isToday ? ' dp-cal-day--today' : ''}${isWeekend ? ' dp-cal-day--weekend' : ''}${dayEvents.length > 0 ? ' dp-cal-day--has-events' : ''}"
-             onclick="DP.dayClick('${dateStr}')" style="cursor:pointer"
-             ondragover="event.preventDefault(); DP._calDragOver(event)"
-             ondragleave="DP._calDragLeave(event)"
-             ondrop="event.preventDefault(); DP._calDrop(event, '${dateStr}')">
-          <span class="dp-cal-day-num${isToday ? ' dp-cal-today-num' : ''}">${d}</span>
-          <div class="dp-cal-event-strips">${strips}${moreHtml}</div>
-        </div>`;
-    }
-
-    html += '</div>'; // close dp-cal-grid
     container.innerHTML = html;
   }
 
@@ -916,6 +1079,12 @@ const DP = (() => {
             <span class="dp-post-author">${esc(post.author_name)}</span>
             <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtDateHM(post.updated_at))}` : esc(fmtDateHM(post.created_at))}</span>
             ${post.file_url ? '<span class="dp-post-file-badge">&#128206; File attached</span>' : ''}
+            ${post.board === 'minutes' && post.approval_status ? (() => {
+              const cls = { pending: 'dp-approval--pending', approved: 'dp-approval--approved', rejected: 'dp-approval--rejected' };
+              const lbl = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+              const st = post.approval_status || 'pending';
+              return `<span class="dp-approval-badge ${cls[st]||cls.pending}">${lbl[st]||st}</span>`;
+            })() : ''}
           </div>
           <h4 class="dp-post-title">${esc(post.title)}</h4>
           ${excerpt ? `<p class="dp-post-excerpt">${esc(excerpt)}</p>` : ''}
@@ -965,10 +1134,78 @@ const DP = (() => {
       ? `<div class="dp-post-detail-content">${_sanitizeHtml(_legacyToHtml(p.content))}</div>`
       : '';
 
+    // ── Approval Section (Meeting Minutes only) ────────────────────
+    const CUTOFF_DATE = '2026-04-01';
+    const isPreCutoff = (p.created_at || '').slice(0, 10) < CUTOFF_DATE;
+    const approvals = p.approvals || [];
+    const approvalBadgeHtml = p.board === 'minutes' ? (() => {
+      const total = approvals.length;
+      const approvedCount = approvals.filter(a => a.status === 'approved').length;
+      const hasMajority = total > 0 && approvedCount > total / 2;
+      const userNames = [currentUser?.display_name, currentUser?.username].filter(Boolean).map(s => s.toLowerCase());
+      const isAdmin = currentUser?.role === 'admin';
+
+      const statusIcon = { pending: '⏳', approved: '✅', rejected: '❌' };
+      const statusLabel = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
+
+      const approverRows = approvals.map(a => {
+        const canVote = a.status === 'pending' && userNames.includes(a.approver_name.toLowerCase());
+        const canAdminOverride = isAdmin && isPreCutoff;
+        const overrideControls = canAdminOverride ? `
+          <div class="dp-approval-override" id="override-${a.id}" style="display:none">
+            <select class="dp-input dp-input--xs" id="ov-status-${a.id}">
+              <option value="pending" ${a.status==='pending'?'selected':''}>Pending</option>
+              <option value="approved" ${a.status==='approved'?'selected':''}>Approved</option>
+              <option value="rejected" ${a.status==='rejected'?'selected':''}>Rejected</option>
+            </select>
+            <input type="text" class="dp-input dp-input--xs" id="ov-note-${a.id}" placeholder="Override reason (optional)" style="flex:1" />
+            <button class="dp-btn dp-btn--xs dp-btn--primary" onclick="DP._submitApprovalOverride(${p.id},'${esc(a.approver_name)}',${a.id})">Apply</button>
+            <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="document.getElementById('override-${a.id}').style.display='none'">✕</button>
+          </div>` : '';
+
+        const voteButtons = canVote ? `
+          <button class="dp-btn dp-btn--xs dp-btn--primary" onclick="DP._submitVote(${p.id},'${esc(a.approver_name)}','approved')">✅ Approve</button>
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" style="border-color:var(--red);color:var(--red)" onclick="DP._submitVote(${p.id},'${esc(a.approver_name)}','rejected')">❌ Reject</button>` : '';
+
+        const overrideBtn = canAdminOverride && !canVote ? `
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" style="font-size:10px" onclick="document.getElementById('override-${a.id}').style.display='flex'">Override</button>` : '';
+
+        const overrideTag = a.override_by ? `<span style="font-size:10px;color:var(--text-3)">(overridden by ${esc(a.override_by)})</span>` : '';
+        const votedAt = a.voted_at ? `<span style="font-size:10px;color:var(--text-3)"> · ${esc(a.voted_at.slice(0,10))}</span>` : '';
+
+        return `<div class="dp-approval-row" style="flex-direction:column;gap:4px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>${statusIcon[a.status]||'⏳'}</span>
+            <strong style="font-size:13px">${esc(a.approver_name)}</strong>
+            <span class="dp-approval-badge ${a.status==='approved'?'dp-approval--approved':a.status==='rejected'?'dp-approval--rejected':'dp-approval--pending'}">${statusLabel[a.status]||a.status}</span>
+            ${votedAt}
+            ${overrideTag}
+            ${voteButtons}
+            ${overrideBtn}
+          </div>
+          ${overrideControls}
+        </div>`;
+      }).join('');
+
+      const summaryClass = hasMajority ? 'dp-approval--approved' : 'dp-approval--pending';
+      const summaryText = total === 0 ? 'No approvers assigned'
+        : hasMajority ? `✅ Approved — ${approvedCount}/${total} voted (majority reached)`
+        : `⏳ Pending — ${approvedCount}/${total} approved`;
+
+      return `<div class="dp-approvals-section">
+        <div class="dp-approvals-header">
+          <strong>Approvers</strong>
+          <span class="dp-approval-badge ${summaryClass}" style="font-size:12px">${summaryText}</span>
+        </div>
+        ${approvals.length ? `<div class="dp-approvals-list">${approverRows}</div>` : '<div style="font-size:12px;color:var(--text-3);padding:6px 0">No approvers assigned to this minutes post.</div>'}
+        ${hasMajority ? `<div class="dp-approval-lock-notice">🔒 This minutes post is locked. Contact <strong>Sonny</strong> or <strong>Jimmy</strong> to request changes.</div>` : ''}
+      </div>`;
+    })() : '';
+
     // ── Linked Calendar Event (Meeting Minutes only) ───────────────
     const linkedEventHtml = p.linked_event ? `
       <div class="dp-linked-minutes-section">
-        <div class="dp-linked-section-label">&#128197; 연결된 회의 일정 / Linked Meeting</div>
+        <div class="dp-linked-section-label">&#128197; Linked Meeting</div>
         <div class="dp-linked-event-card" onclick="DP.closeModal(); setTimeout(()=>DP.viewEvent(${p.linked_event.id}),80)">
           <span style="font-size:18px">&#128197;</span>
           <strong>${esc(p.linked_event.title)}</strong>
@@ -1022,6 +1259,7 @@ const DP = (() => {
           <span class="dp-text-muted">${fmtFull(p.created_at)}</span>
           ${p.updated_at !== p.created_at ? `<span class="dp-text-muted">Edited: ${fmtFull(p.updated_at)}</span>` : ''}
         </div>
+        ${approvalBadgeHtml}
         ${contentHtml}
         ${linkedEventHtml}
         ${imagesHtml}
@@ -1043,14 +1281,25 @@ const DP = (() => {
         </div>
         ${isMinutes ? `
         <div class="dp-form-row">
-          <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
+          <label class="dp-label">&#128197; Linked Meeting <span style="color:var(--text-3);font-size:11px">(Optional)</span></label>
           <div class="dp-event-picker" id="fp-event-picker">
             <div class="dp-event-picker-row">
-              <input type="text" class="dp-input" id="fp-event-search" placeholder="일정명 또는 날짜 검색… / Search by title or date" autocomplete="off" />
+              <input type="text" class="dp-input" id="fp-event-search" placeholder="Search by title or date…" autocomplete="off" />
               <button type="button" class="dp-event-clear-btn" id="fp-event-clear" style="display:none" onclick="DP._clearEventPicker('fp')">✕</button>
             </div>
             <div class="dp-event-dropdown" id="fp-event-dropdown"></div>
             <input type="hidden" id="fp-linked-event" value="" />
+          </div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Approvers <span style="color:var(--text-3);font-size:11px">(Optional — each added person must vote Approve)</span></label>
+          <div class="dp-tag-input-wrap" id="fp-approvers-wrap">
+            <div class="dp-tag-list" id="fp-approver-tags"></div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <input type="text" class="dp-input" id="fp-approver-input" placeholder="Type a name and press Enter or click Add" style="flex:1" list="fp-approver-datalist" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();DP._addApproverTag('fp')}" />
+              <datalist id="fp-approver-datalist"></datalist>
+              <button type="button" class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._addApproverTag('fp')">Add</button>
+            </div>
           </div>
         </div>` : ''}
         <div class="dp-form-row">
@@ -1079,7 +1328,7 @@ const DP = (() => {
             <span>&#128206; Choose files…</span>
             <input id="fp-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'fp-filelist')" />
           </label>
-          <p class="dp-attach-hint">최대 5개 · 파일당 최대 100MB · 모든 형식 지원 / Max 5 files · 100 MB each · All file types</p>
+          <p class="dp-attach-hint">Max 5 files · 100 MB each · All file types</p>
           <div id="fp-filelist" class="dp-file-preview-list"></div>
         </div>
         <div class="dp-form-row dp-form-row--check">
@@ -1098,6 +1347,7 @@ const DP = (() => {
         const content = _getTiptapHTML();
         const pinned  = $('fp-pinned').checked;
         const linked_event_id = $('fp-linked-event') ? parseInt($('fp-linked-event').value) || null : null;
+        const approvers = _fpApprovers ? [..._fpApprovers] : [];
         if (!title) { showToast('Title is required.', 'error'); return; }
 
         // Upload selected files first
@@ -1108,6 +1358,7 @@ const DP = (() => {
         const result = await api('POST', 'posts', {
           board, title, content: content || null, pinned,
           files: uploadedFiles, linked_event_id,
+          ...(isMinutes ? { approvers } : {}),
         });
         if (result) {
           closeModal();
@@ -1118,11 +1369,19 @@ const DP = (() => {
       },
     });
     _waitForTiptap(() => _initTiptap('fp-tiptap', null));
+    _fpApprovers = [];
+    _renderApproverTags('fp');
     if (isMinutes) {
       api('GET', 'events').then(d => {
         if (!d?.events) return;
         _allEvents = d.events;
         _initEventPicker('fp', _allEvents, null);
+      });
+      api('GET', 'users?picker=1').then(d => {
+        if (!d?.users) return;
+        _allUsers = d.users;
+        const dl = $('fp-approver-datalist');
+        if (dl) dl.innerHTML = _allUsers.map(u => `<option value="${esc(u.display_name)}">`).join('');
       });
     }
   }
@@ -1131,6 +1390,19 @@ const DP = (() => {
     const data = await api('GET', `posts?id=${id}`);
     if (!data?.post) return;
     const p = data.post;
+
+    // Lock check for approved minutes
+    if (p.board === 'minutes' && p.approval_status === 'approved') {
+      openModal(
+        `<p style="font-size:14px;line-height:1.7;color:var(--text-2)">
+          This meeting minutes has been <strong>approved by majority vote</strong> and is locked.<br><br>
+          To request changes, contact <strong>Sonny</strong> or <strong>Jimmy</strong>.
+        </p>`,
+        { title: '🔒 Minutes Locked' }
+      );
+      return;
+    }
+
     const isMinutes = p.board === 'minutes';
     // Start with existing files
     let keptFiles = [...(p.files || [])];
@@ -1172,14 +1444,25 @@ const DP = (() => {
         </div>
         ${isMinutes ? `
         <div class="dp-form-row">
-          <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
+          <label class="dp-label">&#128197; Linked Meeting <span style="color:var(--text-3);font-size:11px">(Optional)</span></label>
           <div class="dp-event-picker" id="ep-event-picker">
             <div class="dp-event-picker-row">
-              <input type="text" class="dp-input" id="ep-event-search" placeholder="일정명 또는 날짜 검색… / Search by title or date" autocomplete="off" />
+              <input type="text" class="dp-input" id="ep-event-search" placeholder="Search by title or date…" autocomplete="off" />
               <button type="button" class="dp-event-clear-btn" id="ep-event-clear" style="display:none" onclick="DP._clearEventPicker('ep')">✕</button>
             </div>
             <div class="dp-event-dropdown" id="ep-event-dropdown"></div>
             <input type="hidden" id="ep-linked-event" value="" />
+          </div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Approvers <span style="color:var(--text-3);font-size:11px">(Add or remove pending approvers. Already-voted approvers cannot be removed.)</span></label>
+          <div class="dp-tag-input-wrap" id="ep-approvers-wrap">
+            <div class="dp-tag-list" id="ep-approver-tags"></div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <input type="text" class="dp-input" id="ep-approver-input" placeholder="Type a name and press Enter or click Add" style="flex:1" list="ep-approver-datalist" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();DP._addApproverTag('ep')}" />
+              <datalist id="ep-approver-datalist"></datalist>
+              <button type="button" class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._addApproverTag('ep')">Add</button>
+            </div>
           </div>
         </div>` : ''}
         <div class="dp-form-row">
@@ -1192,7 +1475,7 @@ const DP = (() => {
             <span>&#128206; Choose files…</span>
             <input id="ep-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'ep-filelist')" />
           </label>
-          <p class="dp-attach-hint">최대 5개 · 파일당 최대 100MB · 모든 형식 지원 / Max 5 files · 100 MB each · All file types</p>
+          <p class="dp-attach-hint">Max 5 files · 100 MB each · All file types</p>
           <div id="ep-filelist" class="dp-file-preview-list"></div>
         </div>
         <div class="dp-form-row">
@@ -1236,11 +1519,13 @@ const DP = (() => {
         ];
 
         const linked_event_id = $('ep-linked-event') ? parseInt($('ep-linked-event').value) || null : undefined;
+        const approvers = _epApprovers ? [..._epApprovers] : undefined;
         const result = await api('PUT', `posts?id=${id}`, {
           title, content: content || null, pinned,
           edit_note: edit_note || null,
           files: allFiles,
           ...(linked_event_id !== undefined ? { linked_event_id } : {}),
+          ...(isMinutes && approvers !== undefined ? { approvers } : {}),
         });
         if (result) {
           closeModal();
@@ -1257,11 +1542,19 @@ const DP = (() => {
       if (el) el.classList.add('dp-file-removed');
     };
     _waitForTiptap(() => _initTiptap('ep-tiptap', _legacyToHtml(p.content)));
+    _epApprovers = (p.approvals || []).map(a => a.approver_name);
+    _renderApproverTags('ep');
     if (isMinutes) {
       api('GET', 'events').then(d => {
         if (!d?.events) return;
         _allEvents = d.events;
         _initEventPicker('ep', _allEvents, p.linked_event_id || null);
+      });
+      api('GET', 'users?picker=1').then(d => {
+        if (!d?.users) return;
+        _allUsers = d.users;
+        const dl = $('ep-approver-datalist');
+        if (dl) dl.innerHTML = _allUsers.map(u => `<option value="${esc(u.display_name)}">`).join('');
       });
     }
   }
@@ -1399,7 +1692,7 @@ const DP = (() => {
     const linkedMinutes = ev.linked_minutes || [];
     const linkedMinutesHtml = linkedMinutes.length ? `
       <div class="dp-linked-minutes-section">
-        <div class="dp-linked-section-label">&#128221; 회의록 / Meeting Minutes (${linkedMinutes.length})</div>
+        <div class="dp-linked-section-label">&#128221; Meeting Minutes (${linkedMinutes.length})</div>
         ${linkedMinutes.map(m => `
           <div class="dp-linked-minutes-item" onclick="DP.closeModal(); setTimeout(()=>DP.viewPost(${m.id}),80)">
             <span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.title)}</span>
@@ -1407,15 +1700,15 @@ const DP = (() => {
           </div>`).join('')}
         ${currentUser?.role === 'admin' ? `
         <button class="dp-btn dp-btn--ghost dp-btn--sm" style="margin-top:6px" onclick="DP.closeModal(); setTimeout(()=>DP.navigate('minutes'),80);">
-          + 새 회의록 작성
+          + New Minutes Post
         </button>` : ''}
       </div>` : `
       <div class="dp-linked-minutes-section">
-        <div class="dp-linked-section-label">&#128221; 회의록 / Meeting Minutes</div>
-        <div style="font-size:12px;color:var(--text-3);padding:6px 0">아직 연결된 회의록이 없습니다. / No linked minutes yet.</div>
+        <div class="dp-linked-section-label">&#128221; Meeting Minutes</div>
+        <div style="font-size:12px;color:var(--text-3);padding:6px 0">No linked minutes yet.</div>
         ${currentUser?.role === 'admin' ? `
         <button class="dp-btn dp-btn--ghost dp-btn--sm" style="margin-top:4px" onclick="DP.closeModal(); setTimeout(()=>DP.navigate('minutes'),80);">
-          + 새 회의록 작성
+          + New Minutes Post
         </button>` : ''}
       </div>`;
 
@@ -1604,6 +1897,8 @@ const DP = (() => {
 
   // ── User Management ────────────────────────────────────────────────────────
   let _allUsers = [];
+  let _fpApprovers = [];
+  let _epApprovers = [];
   let _userSort = { col: 'display_name', dir: 'asc' };
 
   async function loadUsers() {
@@ -1657,7 +1952,7 @@ const DP = (() => {
   }
 
   function buildUserRows(users) {
-    if (!users.length) return `<tr><td colspan="7" class="dp-table-empty">No users found.</td></tr>`;
+    if (!users.length) return `<tr><td colspan="8" class="dp-table-empty">No users found.</td></tr>`;
     return users.map(u => {
       const initials = (u.display_name || u.username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
       const roleBadge = u.role === 'admin'
@@ -1680,6 +1975,7 @@ const DP = (() => {
           <td class="dp-text-muted">${esc(u.department || '—')}</td>
           <td>${statusBadge}</td>
           <td class="dp-text-muted">${esc(fmtDate(u.created_at))}</td>
+          <td>${u.last_login_at ? fmtDate(u.last_login_at) : '<span style="color:var(--text-3)">—</span>'}</td>
           <td>
             <div class="dp-table-actions">
               ${!isSelf ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editUser(${u.id})">Edit</button>` : ''}
@@ -1738,6 +2034,7 @@ const DP = (() => {
               ${thSort('department', 'Department')}
               ${thSort('is_active', 'Status')}
               ${thSort('created_at', 'Joined')}
+              ${thSort('last_login_at', 'Last Login')}
               <th>Actions</th>
             </tr>
           </thead>
@@ -2751,6 +3048,589 @@ const DP = (() => {
     return results;
   }
 
+  // ── Settings ───────────────────────────────────────────────────────────────
+  async function loadSettings() {
+    const container = $('dp-settings-content');
+    if (!container) return;
+    renderSettings(container);
+  }
+
+  function renderSettings(container) {
+    const tokens = [
+      { key: '--accent',      label: 'Accent',       usage: 'Buttons, active state, links' },
+      { key: '--accent-mid',  label: 'Accent Mid',   usage: 'Active nav icon, highlights' },
+      { key: '--accent-light',label: 'Accent Light', usage: 'Button hover, today cell bg' },
+      { key: '--bg',          label: 'Background',   usage: 'App background' },
+      { key: '--surface',     label: 'Surface',      usage: 'Cards, panels' },
+      { key: '--surface2',    label: 'Surface 2',    usage: 'Secondary surfaces, striped rows' },
+      { key: '--border',      label: 'Border',       usage: 'All borders and dividers' },
+      { key: '--text',        label: 'Text',         usage: 'Primary body text' },
+      { key: '--text-2',      label: 'Text 2',       usage: 'Secondary body text' },
+      { key: '--text-3',      label: 'Text 3',       usage: 'Muted / placeholder text' },
+      { key: '--sidebar-bg',  label: 'Sidebar BG',   usage: 'Sidebar background (CUFS Navy)' },
+      { key: '--red',         label: 'Red / Danger', usage: 'Delete, error states' },
+      { key: '--green',       label: 'Green',        usage: 'Success toasts' },
+    ];
+
+    const rootStyle = getComputedStyle(document.documentElement);
+    const rows = tokens.map(t => {
+      const currentVal = rootStyle.getPropertyValue(t.key).trim();
+      return `<tr>
+        <td style="font-size:12px;font-weight:600;font-family:monospace;color:var(--text-2)">${t.key}</td>
+        <td style="font-size:12px;color:var(--text-3)">${t.label}</td>
+        <td style="font-size:11px;color:var(--text-3)">${t.usage}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="dp-color-swatch" style="background:${currentVal}" title="${currentVal}"></div>
+            <input type="color" class="dp-color-input" value="${currentVal.startsWith('#') ? currentVal : '#146E7A'}"
+              oninput="document.documentElement.style.setProperty('${t.key}', this.value)"
+              title="Click to change ${t.label}" />
+            <span style="font-size:11px;font-family:monospace;color:var(--text-3)">${currentVal}</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="dp-section-header">
+        <h2 class="dp-section-title">Settings</h2>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._settingsReset()" title="Reset to defaults">Reset Colors</button>
+      </div>
+      <div class="dp-card" style="overflow:hidden">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
+          <h3 style="font-size:14px;font-weight:700;margin:0">Color Tokens</h3>
+          <p style="font-size:12px;color:var(--text-3);margin:4px 0 0">Changes apply live. Refresh the page to restore defaults.</p>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dp-table">
+            <thead>
+              <tr>
+                <th>Variable</th>
+                <th>Name</th>
+                <th>Usage</th>
+                <th>Color</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function _settingsReset() {
+    const tokens = ['--accent','--accent-mid','--accent-light','--bg','--surface','--surface2','--border','--text','--text-2','--text-3','--sidebar-bg','--red','--green'];
+    tokens.forEach(t => document.documentElement.style.removeProperty(t));
+    showToast('Colors reset to defaults.', 'success');
+    loadSettings();
+  }
+
+  // ── Tasks ──────────────────────────────────────────────────────────────────
+  let _tasksFilter = 'all'; // 'all' | 'mine'
+  let _allTasks = [];
+
+  async function loadTasks() {
+    const container = $('dp-tasks-content');
+    if (!container) return;
+    const data = await api('GET', 'tasks');
+    _allTasks = data?.tasks || [];
+    renderTasks(_allTasks);
+  }
+
+  function renderTasks(tasks) {
+    const container = $('dp-tasks-content');
+    if (!container) return;
+
+    const filtered = _tasksFilter === 'mine'
+      ? tasks.filter(t => {
+          const name = String(t.assignee || '').trim().toLowerCase();
+          const me = [currentUser?.display_name, currentUser?.username].filter(Boolean).map(s => s.toLowerCase());
+          return me.includes(name);
+        })
+      : tasks;
+
+    const todo       = filtered.filter(t => t.status === 'todo');
+    const inProgress = filtered.filter(t => t.status === 'in_progress');
+    const done       = filtered.filter(t => t.status === 'done');
+
+    const priorityColor = { high: 'var(--red)', normal: 'var(--accent)', low: 'var(--text-3)' };
+    const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
+
+    function taskCard(t) {
+      const isOverdue = t.due_date && new Date(t.due_date + 'T00:00:00') < new Date() && t.status !== 'done';
+      return `<div class="dp-task-card" onclick="DP.viewTask(${t.id})">
+        <div class="dp-task-card-title">${esc(t.title)}</div>
+        <div class="dp-task-card-meta">
+          ${t.assignee ? `<span class="dp-task-assignee">&#128100; ${esc(t.assignee)}</span>` : ''}
+          <span style="color:${priorityColor[t.priority]||'var(--text-3)'}; font-size:11px">${priorityLabel[t.priority]||t.priority}</span>
+          ${t.due_date ? `<span class="dp-task-due${isOverdue?' dp-task-due--overdue':''}">${isOverdue?'⚠️ ':'📅 '}${esc(t.due_date)}</span>` : ''}
+        </div>
+        ${currentUser?.role === 'admin' ? `<div class="dp-task-actions">
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation();DP.editTask(${t.id})">✏ Edit</button>
+          <button class="dp-btn dp-btn--xs dp-btn--danger" onclick="event.stopPropagation();DP.deleteTask(${t.id})">Delete</button>
+        </div>` : ''}
+      </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="dp-section-header">
+        <h2 class="dp-section-title">Tasks</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="dp-toggle-group">
+            <button class="dp-toggle-btn${_tasksFilter==='all'?' dp-toggle-btn--active':''}" onclick="DP._setTaskFilter('all')">All</button>
+            <button class="dp-toggle-btn${_tasksFilter==='mine'?' dp-toggle-btn--active':''}" onclick="DP._setTaskFilter('mine')">Mine</button>
+          </div>
+          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.createTask()">+ New Task</button>` : ''}
+        </div>
+      </div>
+      <div class="dp-kanban">
+        <div class="dp-kanban-col">
+          <div class="dp-kanban-col-header dp-kanban-col-header--todo">
+            <span>📋 Todo</span><span class="dp-kanban-count">${todo.length}</span>
+          </div>
+          <div class="dp-kanban-cards">${todo.map(taskCard).join('') || '<div class="dp-kanban-empty">No tasks</div>'}</div>
+        </div>
+        <div class="dp-kanban-col">
+          <div class="dp-kanban-col-header dp-kanban-col-header--progress">
+            <span>🔄 In Progress</span><span class="dp-kanban-count">${inProgress.length}</span>
+          </div>
+          <div class="dp-kanban-cards">${inProgress.map(taskCard).join('') || '<div class="dp-kanban-empty">No tasks</div>'}</div>
+        </div>
+        <div class="dp-kanban-col">
+          <div class="dp-kanban-col-header dp-kanban-col-header--done">
+            <span>✅ Done</span><span class="dp-kanban-count">${done.length}</span>
+          </div>
+          <div class="dp-kanban-cards">${done.map(taskCard).join('') || '<div class="dp-kanban-empty">No tasks</div>'}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function _setTaskFilter(f) {
+    _tasksFilter = f;
+    renderTasks(_allTasks);
+  }
+
+  async function viewTask(id) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
+    const statusLabel   = { todo: '📋 Todo', in_progress: '🔄 In Progress', done: '✅ Done' };
+    const isOverdue = task.due_date && new Date(task.due_date + 'T00:00:00') < new Date() && task.status !== 'done';
+
+    openModal(`
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="dp-badge" style="background:var(--surface2);color:var(--text-2)">${statusLabel[task.status]||task.status}</span>
+          <span class="dp-badge" style="background:var(--surface2);color:var(--text-2)">${priorityLabel[task.priority]||task.priority}</span>
+          ${isOverdue ? `<span class="dp-badge" style="background:#FEE2E2;color:#991B1B">⚠️ Overdue</span>` : ''}
+        </div>
+        ${task.description ? `<div style="font-size:14px;color:var(--text-2);line-height:1.6">${esc(task.description)}</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-2)">
+          ${task.assignee ? `<div>&#128100; Assignee: <strong>${esc(task.assignee)}</strong></div>` : ''}
+          ${task.due_date ? `<div>📅 Due: <strong>${esc(task.due_date)}</strong></div>` : ''}
+          <div style="color:var(--text-3);font-size:12px">Created: ${fmtFull(task.created_at)}</div>
+          ${task.updated_at !== task.created_at ? `<div style="color:var(--text-3);font-size:12px">Updated: ${fmtFull(task.updated_at)}</div>` : ''}
+        </div>
+        ${task.status !== 'done' ? `
+        <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid var(--border)">
+          ${task.status === 'todo' ? `<button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP._updateTaskStatus(${task.id},'in_progress')">🔄 Start</button>` : ''}
+          ${task.status === 'in_progress' ? `<button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP._updateTaskStatus(${task.id},'done')">✅ Mark Done</button>` : ''}
+        </div>` : ''}
+      </div>
+    `, { title: task.title, wide: false });
+  }
+
+  async function _updateTaskStatus(id, newStatus) {
+    const result = await api('PUT', `tasks?id=${id}`, { status: newStatus });
+    if (result) {
+      closeModal();
+      showToast('Task status updated.', 'success');
+      loadTasks();
+    }
+  }
+
+  async function createTask() {
+    const data = await api('GET', 'users?picker=1');
+    const userList = (data?.users || []).map(u => u.display_name);
+
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="ct-title" class="dp-input" type="text" placeholder="Task title" maxlength="200" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Description</label>
+          <textarea id="ct-desc" class="dp-input dp-textarea" placeholder="Optional description" rows="3"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="dp-form-row">
+            <label class="dp-label">Assignee</label>
+            <input id="ct-assignee" class="dp-input" type="text" list="ct-assignee-list" placeholder="Type name" />
+            <datalist id="ct-assignee-list">${userList.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Status</label>
+            <select id="ct-status" class="dp-input">
+              <option value="todo">📋 Todo</option>
+              <option value="in_progress">🔄 In Progress</option>
+              <option value="done">✅ Done</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Priority</label>
+            <select id="ct-priority" class="dp-input">
+              <option value="normal" selected>🟡 Normal</option>
+              <option value="high">🔴 High</option>
+              <option value="low">⚪ Low</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Due Date</label>
+            <input id="ct-due" class="dp-input" type="date" />
+          </div>
+        </div>
+      </div>
+    `, {
+      title: 'New Task',
+      confirmLabel: 'Create',
+      onConfirm: async () => {
+        const title    = $('ct-title').value.trim();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+        const result = await api('POST', 'tasks', {
+          title,
+          description: $('ct-desc').value.trim() || null,
+          assignee:    $('ct-assignee').value.trim() || null,
+          status:      $('ct-status').value,
+          priority:    $('ct-priority').value,
+          due_date:    $('ct-due').value || null,
+        });
+        if (result) { closeModal(); showToast('Task created.', 'success'); loadTasks(); }
+      },
+    });
+  }
+
+  async function editTask(id) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const data = await api('GET', 'users?picker=1');
+    const userList = (data?.users || []).map(u => u.display_name);
+
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="et-title" class="dp-input" type="text" value="${esc(task.title)}" maxlength="200" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Description</label>
+          <textarea id="et-desc" class="dp-input dp-textarea" rows="3">${esc(task.description||'')}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="dp-form-row">
+            <label class="dp-label">Assignee</label>
+            <input id="et-assignee" class="dp-input" type="text" list="et-assignee-list" value="${esc(task.assignee||'')}" placeholder="Type name" />
+            <datalist id="et-assignee-list">${userList.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Status</label>
+            <select id="et-status" class="dp-input">
+              <option value="todo" ${task.status==='todo'?'selected':''}>📋 Todo</option>
+              <option value="in_progress" ${task.status==='in_progress'?'selected':''}>🔄 In Progress</option>
+              <option value="done" ${task.status==='done'?'selected':''}>✅ Done</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Priority</label>
+            <select id="et-priority" class="dp-input">
+              <option value="normal" ${task.priority==='normal'?'selected':''}>🟡 Normal</option>
+              <option value="high" ${task.priority==='high'?'selected':''}>🔴 High</option>
+              <option value="low" ${task.priority==='low'?'selected':''}>⚪ Low</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Due Date</label>
+            <input id="et-due" class="dp-input" type="date" value="${esc(task.due_date||'')}" />
+          </div>
+        </div>
+      </div>
+    `, {
+      title: 'Edit Task',
+      confirmLabel: 'Save',
+      onConfirm: async () => {
+        const title = $('et-title').value.trim();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+        const result = await api('PUT', `tasks?id=${id}`, {
+          title,
+          description: $('et-desc').value.trim() || null,
+          assignee:    $('et-assignee').value.trim() || null,
+          status:      $('et-status').value,
+          priority:    $('et-priority').value,
+          due_date:    $('et-due').value || null,
+        });
+        if (result) { closeModal(); showToast('Saved.', 'success'); loadTasks(); }
+      },
+    });
+  }
+
+  async function deleteTask(id) {
+    const task = _allTasks.find(t => t.id === id);
+    openModal(
+      `<p style="font-size:14px;color:var(--text-2)">Delete task "<strong>${esc(task?.title||'')}</strong>"?</p>`,
+      {
+        title: 'Delete Task',
+        confirmLabel: 'Delete',
+        onConfirm: async () => {
+          const result = await api('DELETE', `tasks?id=${id}`);
+          if (result) { closeModal(); showToast('Deleted.', 'success'); loadTasks(); }
+        },
+      }
+    );
+  }
+
+  // ── Notes & Issues ─────────────────────────────────────────────────────────
+  let _allNotes = [];
+
+  async function loadNotes() {
+    const container = $('dp-notes-content');
+    if (!container) return;
+    const data = await api('GET', 'notes');
+    _allNotes = data?.notes || [];
+    renderNotes(_allNotes);
+  }
+
+  function renderNotes(notes) {
+    const container = $('dp-notes-content');
+    if (!container) return;
+
+    const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning' };
+    const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626' };
+
+    function noteRow(n) {
+      const isHigh = n.priority === 'high' && n.status === 'open';
+      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}">
+        <div class="dp-note-row-left">
+          <span class="dp-badge" style="background:${typeColor[n.type]||'#146E7A'}20;color:${typeColor[n.type]||'#146E7A'};border:1px solid ${typeColor[n.type]||'#146E7A'}40">${typeLabel[n.type]||n.type}</span>
+          <div>
+            <div class="dp-note-title">${esc(n.title)}</div>
+            ${n.content ? `<div class="dp-note-excerpt">${esc(n.content.slice(0,120))}${n.content.length>120?'…':''}</div>` : ''}
+            <div class="dp-note-meta">${esc(n.added_by)} · ${fmtDate(n.created_at)} · ${n.priority==='high'?'🔴 High':n.priority==='low'?'⚪ Low':'🟡 Normal'}</div>
+          </div>
+        </div>
+        <div class="dp-note-row-right">
+          ${n.status === 'open'
+            ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP._resolveNote(${n.id})">✓ Resolve</button>`
+            : `<span style="font-size:11px;color:var(--text-3)">✅ Resolved</span>`}
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editNote(${n.id})">✏ Edit</button>
+          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteNote(${n.id})">Delete</button>` : ''}
+        </div>
+      </div>`;
+    }
+
+    const open = notes.filter(n => n.status === 'open');
+    const resolved = notes.filter(n => n.status === 'resolved');
+
+    container.innerHTML = `
+      <div class="dp-section-header">
+        <h2 class="dp-section-title">Notes &amp; Issues</h2>
+        <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.createNote()">+ New Note</button>
+      </div>
+      ${open.length ? `<div class="dp-note-list">${open.map(noteRow).join('')}</div>` : ''}
+      ${resolved.length ? `
+        <details style="margin-top:16px">
+          <summary style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);cursor:pointer;padding:8px 0">
+            Resolved (${resolved.length})
+          </summary>
+          <div class="dp-note-list" style="margin-top:8px">${resolved.map(noteRow).join('')}</div>
+        </details>` : ''}
+      ${!open.length && !resolved.length ? '<div class="dp-empty-state"><p>No notes yet.</p></div>' : ''}
+    `;
+  }
+
+  async function _resolveNote(id) {
+    const result = await api('PUT', `notes?id=${id}`, { status: 'resolved' });
+    if (result) { showToast('Marked as resolved.', 'success'); loadNotes(); }
+  }
+
+  async function createNote() {
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="cn-title" class="dp-input" type="text" maxlength="200" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Content</label>
+          <textarea id="cn-content" class="dp-input dp-textarea" rows="3"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="dp-form-row">
+            <label class="dp-label">Type</label>
+            <select id="cn-type" class="dp-input">
+              <option value="note">📝 Note</option>
+              <option value="issue">⚠️ Issue</option>
+              <option value="warning">🚨 Warning</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Priority</label>
+            <select id="cn-priority" class="dp-input">
+              <option value="normal" selected>🟡 Normal</option>
+              <option value="high">🔴 High</option>
+              <option value="low">⚪ Low</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Status</label>
+            <select id="cn-status" class="dp-input">
+              <option value="open">🔓 Open</option>
+              <option value="resolved">✅ Resolved</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `, {
+      title: 'New Note',
+      confirmLabel: 'Create',
+      onConfirm: async () => {
+        const title = $('cn-title').value.trim();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+        const result = await api('POST', 'notes', {
+          title,
+          content:  $('cn-content').value.trim() || null,
+          type:     $('cn-type').value,
+          priority: $('cn-priority').value,
+          status:   $('cn-status').value,
+        });
+        if (result) { closeModal(); showToast('Note created.', 'success'); loadNotes(); }
+      },
+    });
+  }
+
+  async function editNote(id) {
+    const note = _allNotes.find(n => n.id === id);
+    if (!note) return;
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="en-title" class="dp-input" type="text" value="${esc(note.title)}" maxlength="200" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Content</label>
+          <textarea id="en-content" class="dp-input dp-textarea" rows="3">${esc(note.content||'')}</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="dp-form-row">
+            <label class="dp-label">Type</label>
+            <select id="en-type" class="dp-input">
+              <option value="note" ${note.type==='note'?'selected':''}>📝 Note</option>
+              <option value="issue" ${note.type==='issue'?'selected':''}>⚠️ Issue</option>
+              <option value="warning" ${note.type==='warning'?'selected':''}>🚨 Warning</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Priority</label>
+            <select id="en-priority" class="dp-input">
+              <option value="normal" ${note.priority==='normal'?'selected':''}>🟡 Normal</option>
+              <option value="high" ${note.priority==='high'?'selected':''}>🔴 High</option>
+              <option value="low" ${note.priority==='low'?'selected':''}>⚪ Low</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Status</label>
+            <select id="en-status" class="dp-input">
+              <option value="open" ${note.status==='open'?'selected':''}>🔓 Open</option>
+              <option value="resolved" ${note.status==='resolved'?'selected':''}>✅ Resolved</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `, {
+      title: 'Edit Note',
+      confirmLabel: 'Save',
+      onConfirm: async () => {
+        const title = $('en-title').value.trim();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+        const result = await api('PUT', `notes?id=${id}`, {
+          title,
+          content:  $('en-content').value.trim() || null,
+          type:     $('en-type').value,
+          priority: $('en-priority').value,
+          status:   $('en-status').value,
+        });
+        if (result) { closeModal(); showToast('Saved.', 'success'); loadNotes(); }
+      },
+    });
+  }
+
+  async function deleteNote(id) {
+    const note = _allNotes.find(n => n.id === id);
+    openModal(
+      `<p style="font-size:14px;color:var(--text-2)">Delete note "<strong>${esc(note?.title||'')}</strong>"?</p>`,
+      {
+        title: 'Delete Note',
+        confirmLabel: 'Delete',
+        onConfirm: async () => {
+          const result = await api('DELETE', `notes?id=${id}`);
+          if (result) { closeModal(); showToast('Deleted.', 'success'); loadNotes(); }
+        },
+      }
+    );
+  }
+
+  // ── Approver tag input helpers ─────────────────────────────────────────────
+  function _addApproverTag(prefix) {
+    const input = $(`${prefix}-approver-input`);
+    const name = input ? input.value.trim() : '';
+    if (!name) return;
+    const arr = prefix === 'fp' ? _fpApprovers : _epApprovers;
+    if (arr.includes(name)) { showToast('Already added.', 'info'); return; }
+    arr.push(name);
+    input.value = '';
+    _renderApproverTags(prefix);
+  }
+
+  function _removeApproverTag(prefix, name) {
+    if (prefix === 'fp') {
+      _fpApprovers = _fpApprovers.filter(n => n !== name);
+    } else {
+      _epApprovers = _epApprovers.filter(n => n !== name);
+    }
+    _renderApproverTags(prefix);
+  }
+
+  function _renderApproverTags(prefix) {
+    const container = $(`${prefix}-approver-tags`);
+    if (!container) return;
+    const arr = prefix === 'fp' ? _fpApprovers : _epApprovers;
+    container.innerHTML = arr.map(name =>
+      `<span class="dp-tag">${esc(name)}<button type="button" class="dp-tag-remove" onclick="DP._removeApproverTag('${prefix}','${esc(name)}')">&times;</button></span>`
+    ).join('');
+  }
+
+  // ── Approval voting & override ─────────────────────────────────────────────
+  async function _submitVote(postId, approverName, status) {
+    const result = await api('PUT', `approvals?post_id=${postId}&approver=${encodeURIComponent(approverName)}`, { status });
+    if (result) {
+      showToast(`Vote recorded: ${status}.`, 'success');
+      viewPost(postId);
+    }
+  }
+
+  async function _submitApprovalOverride(postId, approverName, approvalId) {
+    const statusEl = document.getElementById(`ov-status-${approvalId}`);
+    const noteEl   = document.getElementById(`ov-note-${approvalId}`);
+    const status   = statusEl ? statusEl.value : 'pending';
+    const note     = noteEl ? noteEl.value.trim() : '';
+    const result = await api('PUT', `approvals?post_id=${postId}&approver=${encodeURIComponent(approverName)}`, { status, override_note: note || undefined });
+    if (result) {
+      showToast('Override applied.', 'success');
+      viewPost(postId);
+    }
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
   return {
     init,
@@ -2795,6 +3675,26 @@ const DP = (() => {
     extendSession,
     _showAllRecent,
     _clearEventPicker,
+    loadSettings,
+    _settingsReset,
+    _selectApprover,
+    _clearApproverPicker,
+    _addApproverTag,
+    _removeApproverTag,
+    _submitVote,
+    _submitApprovalOverride,
+    loadTasks,
+    viewTask,
+    createTask,
+    editTask,
+    deleteTask,
+    _setTaskFilter,
+    _updateTaskStatus,
+    loadNotes,
+    createNote,
+    editNote,
+    deleteNote,
+    _resolveNote,
   };
 })();
 

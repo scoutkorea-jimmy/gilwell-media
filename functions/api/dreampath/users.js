@@ -30,10 +30,18 @@ function requireAdmin(data) {
   return null;
 }
 
-export async function onRequestGet({ env, data }) {
+export async function onRequestGet({ request, env, data }) {
+  const url = new URL(request.url);
+  if (url.searchParams.get('picker') === '1') {
+    // Any authenticated user can get basic user list for approver picker
+    const rows = await env.DB.prepare(
+      `SELECT id, display_name FROM dp_users WHERE is_active = 1 ORDER BY display_name ASC`
+    ).all();
+    return json({ users: rows.results || [] });
+  }
   const err = requireAdmin(data); if (err) return err;
   const rows = await env.DB.prepare(
-    `SELECT id, username, display_name, role, email, phone, department, is_active, created_at FROM dp_users ORDER BY role DESC, username ASC`
+    `SELECT id, username, display_name, role, email, phone, department, is_active, created_at, last_login_at FROM dp_users ORDER BY role DESC, username ASC`
   ).all();
   return json({ users: rows.results || [] });
 }
