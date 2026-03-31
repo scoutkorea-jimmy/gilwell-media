@@ -2308,6 +2308,81 @@ const DP = (() => {
         ${latest ? `<div style="opacity:.7;font-size:13px;margin-left:auto">${esc(latest.description || '')}<br><span style="font-size:11px">${fmtDate(latest.released_at)}</span></div>` : ''}
       </div>
 
+      <div class="dp-ai-notice">
+        <div class="dp-ai-notice-icon">🤖</div>
+        <div>
+          <div class="dp-ai-notice-title">AI 개발자 / AI Developer — 코드 수정 전 전체 내용 숙지 필수</div>
+          <div class="dp-ai-notice-body">
+            이 페이지는 Dreampath의 <strong>공식 개발 핸드북</strong>입니다.
+            Claude, GPT, Gemini 등 AI 에이전트가 개발을 보조하는 경우,
+            <strong>코드를 한 줄도 수정하기 전에</strong> 이 페이지의 모든 섹션을 읽어야 합니다.
+            프로젝트 루트의 <strong>CLAUDE.md</strong>가 이 규칙을 강제합니다.
+            <br>
+            <span style="opacity:.7;font-size:12px">This page is the canonical dev handbook. Any AI agent must read all sections before making code changes. CLAUDE.md at the project root enforces this.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dp-handbook-grid">
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">🏗 Architecture</div>
+          <div class="dp-hb-rule"><strong>Platform:</strong> Cloudflare Pages + D1 (SQLite) + Workers</div>
+          <div class="dp-hb-rule"><strong>No build step</strong> — 파일 그대로 배포 (빌드 없음)</div>
+          <div class="dp-hb-rule"><strong>DB binding:</strong> <code>env.DB</code> (모든 Function 파일에서)</div>
+          <div class="dp-hb-rule"><strong>Auth:</strong> HMAC-SHA256 · <code>functions/_shared/auth.js</code></div>
+          <div class="dp-hb-rule">Admin 세션 24h · Dreampath 세션 1h (쿠키 기반)</div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">📁 Key Files</div>
+          <div class="dp-hb-rule"><code>dreampath.html</code> — Dreampath 전용 인라인 CSS</div>
+          <div class="dp-hb-rule"><code>js/dreampath.js</code> — 모든 프론트엔드 로직 (IIFE)</div>
+          <div class="dp-hb-rule"><code>functions/api/dreampath/</code> — 모든 API 엔드포인트</div>
+          <div class="dp-hb-rule"><code>functions/_shared/auth.js</code> — 인증 코어 (책임자 승인 없이 수정 금지)</div>
+          <div class="dp-hb-rule"><code>deploy.sh</code> — 배포 + 버전 자동 등록</div>
+          <div class="dp-hb-rule"><code>CLAUDE.md</code> — AI 개발자 필독 규칙 (프로젝트 루트)</div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">⚙️ Frontend Conventions</div>
+          <div class="dp-hb-rule">IIFE 구조: <code>const DP = (() => &#123; ... &#125;)()</code> — 절대 분리 금지</div>
+          <div class="dp-hb-rule">모든 public 메서드는 <code>return &#123;&#125;</code> 블록에 반드시 추가</div>
+          <div class="dp-hb-rule">인라인 이벤트: <code>onclick="DP.method()"</code> — 항상 <code>DP.</code> 프리픽스</div>
+          <div class="dp-hb-rule">툴바 버튼은 <code>onmousedown + preventDefault</code> 사용 (에디터 포커스 유지)</div>
+          <div class="dp-hb-rule">색상은 반드시 <code>var(--name)</code> CSS 변수만 사용</div>
+          <div class="dp-hb-rule">CUFS 브랜드: Green <code>#146E7A</code> · Navy <code>#002D56</code> · Gold <code>#8D714E</code></div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">✍️ Rich Text (게시글)</div>
+          <div class="dp-hb-rule"><strong>에디터:</strong> Tiptap (<code>esm.sh</code> CDN) — <code>@tiptap/core@2</code>, <code>@tiptap/starter-kit@2</code></div>
+          <div class="dp-hb-rule"><strong>뷰어:</strong> DOMPurify (cdnjs) — 모든 HTML 출력 정제 필수</div>
+          <div class="dp-hb-rule">기존 plain-text 게시글 → <code>_legacyToHtml()</code>으로 자동 변환</div>
+          <div class="dp-hb-rule"><code>_destroyTiptap()</code>은 <code>closeModal()</code>에서 자동 호출됨</div>
+          <div class="dp-hb-rule">새 에디터 기능 추가 시 <code>_execTiptapCmd</code> 및 <code>_updateTiptapToolbar</code> 함께 수정</div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">🚀 Deployment</div>
+          <div class="dp-hb-rule"><code>./deploy.sh</code> — git 메시지에서 타입 자동 감지</div>
+          <div class="dp-hb-rule"><code>./deploy.sh feature "설명"</code> — <code>bbb</code> 증가 (기능 추가)</div>
+          <div class="dp-hb-rule"><code>./deploy.sh fix "설명"</code> — <code>cc</code> 증가 (버그픽스)</div>
+          <div class="dp-hb-rule"><code>./deploy.sh --skip-version</code> — 버전 기록 없이 배포만</div>
+          <div class="dp-hb-rule">D1 <code>dp_versions</code> 테이블에 자동 등록됨</div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">🚫 Critical Prohibitions</div>
+          <div class="dp-hb-warn"><code>auth.js</code> — 충분한 테스트 없이 수정 금지</div>
+          <div class="dp-hb-warn">사용자 입력 HTML → DOMPurify 없이 <code>innerHTML</code> 금지</div>
+          <div class="dp-hb-warn">인증 토큰을 <code>localStorage</code>에 저장 금지</div>
+          <div class="dp-hb-warn">기존 DB 컬럼 삭제/변경 금지 — 컬럼 추가(ALTER TABLE ADD)만 허용</div>
+          <div class="dp-hb-warn">의미 있는 변경 후 <code>./deploy.sh</code> 버전 등록 생략 금지</div>
+          <div class="dp-hb-warn"><code>dreampath.js</code>의 IIFE 구조를 분리하거나 모듈화 금지</div>
+          <div class="dp-hb-warn">외부 CDN 변경 시 반드시 버전 고정 여부 확인 필수</div>
+        </div>
+      </div>
+
       <div class="dp-version-rules">
         <h3>Version Format: <code style="font-size:16px;color:var(--accent)">aa.bbb.cc</code></h3>
         <div class="dp-version-rule-row">
