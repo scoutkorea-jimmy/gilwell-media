@@ -25,11 +25,11 @@ export async function onRequestGet({ request, env }) {
   const board = url.searchParams.get('board');
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
 
-  // ── Single post with files + history ──────────────────────────
+  // ── Single post with files + history + linked event ───────────
   if (id) {
     const post = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_id, author_name, pinned, created_at, updated_at
+              author_id, author_name, pinned, linked_event_id, created_at, updated_at
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
@@ -44,11 +44,20 @@ export async function onRequestGet({ request, env }) {
          FROM dp_post_history WHERE post_id = ? ORDER BY edited_at DESC`
     ).bind(id).all();
 
+    // Fetch linked calendar event if present
+    let linkedEvent = null;
+    if (post.linked_event_id) {
+      linkedEvent = await env.DB.prepare(
+        `SELECT id, title, start_date, end_date, start_time, type FROM dp_events WHERE id = ?`
+      ).bind(post.linked_event_id).first();
+    }
+
     return json({
       post: {
         ...post,
-        files:   filesRes.results   || [],
-        history: historyRes.results || [],
+        files:        filesRes.results   || [],
+        history:      historyRes.results || [],
+        linked_event: linkedEvent || null,
       },
     });
   }
@@ -81,20 +90,23 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { board, title, content, pinned, files } = body;
+  const { board, title, content, pinned, files, linked_event_id } = body;
   if (!board || !title) return json({ error: 'board and title are required.' }, 400);
   if (!VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
+  const safeLinkedEventId = linked_event_id ? parseInt(linked_event_id, 10) || null : null;
+
   const result = await env.DB.prepare(
-    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     board,
     title.trim().slice(0, 200),
     content ? content.trim().slice(0, 50000) : null,
     data.dpUser.uid,
     data.dpUser.name,
-    pinned ? 1 : 0
+    pinned ? 1 : 0,
+    safeLinkedEventId
   ).run();
 
   const postId = result.meta.last_row_id;
@@ -152,9 +164,10 @@ export async function onRequestPut({ request, env, data }) {
   // Build update fields
   const fields = [];
   const values = [];
-  if (body.title   !== undefined) { fields.push('title = ?');   values.push(body.title.trim().slice(0, 200)); }
-  if (body.content !== undefined) { fields.push('content = ?'); values.push(body.content ? body.content.trim().slice(0, 50000) : null); }
-  if (body.pinned  !== undefined) { fields.push('pinned = ?');  values.push(body.pinned ? 1 : 0); }
+  if (body.title            !== undefined) { fields.push('title = ?');            values.push(body.title.trim().slice(0, 200)); }
+  if (body.content          !== undefined) { fields.push('content = ?');          values.push(body.content ? body.content.trim().slice(0, 50000) : null); }
+  if (body.pinned           !== undefined) { fields.push('pinned = ?');           values.push(body.pinned ? 1 : 0); }
+  if (body.linked_event_id  !== undefined) { fields.push('linked_event_id = ?'); values.push(body.linked_event_id ? parseInt(body.linked_event_id, 10) || null : null); }
 
   if (fields.length > 0) {
     fields.push("updated_at = datetime('now')");

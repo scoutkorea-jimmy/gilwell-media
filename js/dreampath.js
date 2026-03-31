@@ -94,8 +94,10 @@ const DP = (() => {
     _sessionPromptShown = false;
     const timerEl = $('dp-session-timer');
     const rowEl = $('dp-session-timer-row');
+    const extBtn = $('dp-session-extend-btn');
     if (timerEl) timerEl.textContent = '--:--';
     if (rowEl) rowEl.classList.remove('is-warning');
+    if (extBtn) extBtn.style.display = 'none';
   }
 
   function extendSession() {
@@ -111,11 +113,14 @@ const DP = (() => {
     const rowEl = $('dp-session-timer-row');
     const expiresAt = getSessionExpiry();
 
+    const extBtn = $('dp-session-extend-btn');
     if (!currentUser || !hasSessionMarker() || !expiresAt) {
       if (timerEl) timerEl.textContent = '--:--';
       if (rowEl) rowEl.classList.remove('is-warning');
+      if (extBtn) extBtn.style.display = 'none';
       return;
     }
+    if (extBtn) extBtn.style.display = '';
 
     const remaining = expiresAt - Date.now();
     if (timerEl) timerEl.textContent = formatRemaining(remaining);
@@ -842,6 +847,17 @@ const DP = (() => {
       ? `<div class="dp-post-detail-content">${_sanitizeHtml(_legacyToHtml(p.content))}</div>`
       : '';
 
+    // ── Linked Calendar Event (Meeting Minutes only) ───────────────
+    const linkedEventHtml = p.linked_event ? `
+      <div class="dp-linked-minutes-section">
+        <div class="dp-linked-section-label">&#128197; 연결된 회의 일정 / Linked Meeting</div>
+        <div class="dp-linked-event-card" onclick="DP.closeModal(); setTimeout(()=>DP.viewEvent(${p.linked_event.id}),80)">
+          <span style="font-size:18px">&#128197;</span>
+          <strong>${esc(p.linked_event.title)}</strong>
+          <span class="dp-le-date">${esc(p.linked_event.start_date)}${p.linked_event.start_time ? ' ' + esc(p.linked_event.start_time) : ''}</span>
+        </div>
+      </div>` : '';
+
     // ── Edit History ───────────────────────────────────────────────
     const history = p.history || [];
     const historyHtml = history.length ? `
@@ -889,6 +905,7 @@ const DP = (() => {
           ${p.updated_at !== p.created_at ? `<span class="dp-text-muted">Edited: ${fmtFull(p.updated_at)}</span>` : ''}
         </div>
         ${contentHtml}
+        ${linkedEventHtml}
         ${imagesHtml}
         ${attachHtml}
         ${historyHtml}
@@ -899,12 +916,20 @@ const DP = (() => {
 
   async function createPost(boardName) {
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    const isMinutes = boardName === 'minutes';
     openModal(`
       <div class="dp-form">
         <div class="dp-form-row">
           <label class="dp-label">Title <span class="dp-required">*</span></label>
           <input id="fp-title" class="dp-input" type="text" placeholder="Post title" maxlength="200" />
         </div>
+        ${isMinutes ? `
+        <div class="dp-form-row">
+          <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
+          <select id="fp-linked-event" class="dp-input">
+            <option value="">— 연결 안 함 / None —</option>
+          </select>
+        </div>` : ''}
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
           <div class="dp-te-wrapper">
@@ -948,6 +973,7 @@ const DP = (() => {
         const title   = $('fp-title').value.trim();
         const content = _getTiptapHTML();
         const pinned  = $('fp-pinned').checked;
+        const linked_event_id = $('fp-linked-event') ? parseInt($('fp-linked-event').value) || null : null;
         if (!title) { showToast('Title is required.', 'error'); return; }
 
         // Upload selected files first
@@ -957,7 +983,7 @@ const DP = (() => {
 
         const result = await api('POST', 'posts', {
           board, title, content: content || null, pinned,
-          files: uploadedFiles,
+          files: uploadedFiles, linked_event_id,
         });
         if (result) {
           closeModal();
@@ -968,12 +994,25 @@ const DP = (() => {
       },
     });
     _waitForTiptap(() => _initTiptap('fp-tiptap', null));
+    if (isMinutes) {
+      api('GET', 'events').then(d => {
+        const sel = $('fp-linked-event');
+        if (!sel || !d?.events) return;
+        d.events.slice(0, 60).forEach(ev => {
+          const opt = document.createElement('option');
+          opt.value = ev.id;
+          opt.textContent = `${esc(ev.start_date)} · ${esc(ev.title)}`;
+          sel.appendChild(opt);
+        });
+      });
+    }
   }
 
   async function editPost(id) {
     const data = await api('GET', `posts?id=${id}`);
     if (!data?.post) return;
     const p = data.post;
+    const isMinutes = p.board === 'minutes';
     // Start with existing files
     let keptFiles = [...(p.files || [])];
 
@@ -1012,6 +1051,13 @@ const DP = (() => {
             <div id="ep-tiptap"></div>
           </div>
         </div>
+        ${isMinutes ? `
+        <div class="dp-form-row">
+          <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
+          <select id="ep-linked-event" class="dp-input">
+            <option value="">— 연결 안 함 / None —</option>
+          </select>
+        </div>` : ''}
         <div class="dp-form-row">
           <label class="dp-label">Current Attachments</label>
           <div id="ep-kept-files" class="dp-kept-files">${existingFilesHtml}</div>
@@ -1064,10 +1110,12 @@ const DP = (() => {
           ...newFiles,
         ];
 
+        const linked_event_id = $('ep-linked-event') ? parseInt($('ep-linked-event').value) || null : undefined;
         const result = await api('PUT', `posts?id=${id}`, {
           title, content: content || null, pinned,
           edit_note: edit_note || null,
           files: allFiles,
+          ...(linked_event_id !== undefined ? { linked_event_id } : {}),
         });
         if (result) {
           closeModal();
@@ -1084,6 +1132,19 @@ const DP = (() => {
       if (el) el.classList.add('dp-file-removed');
     };
     _waitForTiptap(() => _initTiptap('ep-tiptap', _legacyToHtml(p.content)));
+    if (isMinutes) {
+      api('GET', 'events').then(d => {
+        const sel = $('ep-linked-event');
+        if (!sel || !d?.events) return;
+        d.events.slice(0, 60).forEach(ev => {
+          const opt = document.createElement('option');
+          opt.value = ev.id;
+          opt.textContent = `${esc(ev.start_date)} · ${esc(ev.title)}`;
+          if (p.linked_event_id === ev.id) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      });
+    }
   }
 
   async function deletePost(id, boardName) {
@@ -1216,6 +1277,29 @@ const DP = (() => {
         </div>
       </details>` : '';
 
+    const linkedMinutes = ev.linked_minutes || [];
+    const linkedMinutesHtml = linkedMinutes.length ? `
+      <div class="dp-linked-minutes-section">
+        <div class="dp-linked-section-label">&#128221; 회의록 / Meeting Minutes (${linkedMinutes.length})</div>
+        ${linkedMinutes.map(m => `
+          <div class="dp-linked-minutes-item" onclick="DP.closeModal(); setTimeout(()=>DP.viewPost(${m.id}),80)">
+            <span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.title)}</span>
+            <span style="color:var(--text-3);font-size:12px;white-space:nowrap;flex-shrink:0">${esc(m.author_name)} · ${fmtDate(m.created_at)}</span>
+          </div>`).join('')}
+        ${currentUser?.role === 'admin' ? `
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" style="margin-top:6px" onclick="DP.closeModal(); setTimeout(()=>DP.navigate('minutes'),80);">
+          + 새 회의록 작성
+        </button>` : ''}
+      </div>` : `
+      <div class="dp-linked-minutes-section">
+        <div class="dp-linked-section-label">&#128221; 회의록 / Meeting Minutes</div>
+        <div style="font-size:12px;color:var(--text-3);padding:6px 0">아직 연결된 회의록이 없습니다. / No linked minutes yet.</div>
+        ${currentUser?.role === 'admin' ? `
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" style="margin-top:4px" onclick="DP.closeModal(); setTimeout(()=>DP.navigate('minutes'),80);">
+          + 새 회의록 작성
+        </button>` : ''}
+      </div>`;
+
     openModal(`
       <div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
@@ -1228,6 +1312,7 @@ const DP = (() => {
         </div>
         <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal(); setTimeout(()=>DP.editEvent(${ev.id}),80)">&#9998; Edit Event</button>
         ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red);margin-left:8px" onclick="DP.closeModal(); setTimeout(()=>DP.deleteEvent(${ev.id}),80)">Delete</button>` : ''}
+        ${linkedMinutesHtml}
         ${historyHtml}
       </div>
     `, { title: esc(ev.title), wide: false });
@@ -2384,35 +2469,35 @@ const DP = (() => {
       </div>
 
       <div class="dp-version-rules">
-        <h3>Version Format: <code style="font-size:16px;color:var(--accent)">aa.bbb.cc</code></h3>
+        <h3>버전 형식 / Version Format: <code style="font-size:16px;color:var(--accent)">aa.bbb.cc</code></h3>
         <div class="dp-version-rule-row">
           <div class="dp-version-rule-seg">aa</div>
-          <div class="dp-version-rule-desc"><strong>Major version</strong> — Set manually by the project owner. Represents a major milestone or full redesign.</div>
+          <div class="dp-version-rule-desc"><strong>주요 버전 / Major</strong> — 프로젝트 오너가 수동으로 올림. 전면 재설계 또는 주요 마일스톤.<br><span style="opacity:.7">Set manually by the project owner. Represents a major milestone or full redesign.</span></div>
         </div>
         <div class="dp-version-rule-row">
           <div class="dp-version-rule-seg">bbb</div>
-          <div class="dp-version-rule-desc"><strong>Feature version</strong> — Incremented when a new feature is added or an existing feature is significantly changed.</div>
+          <div class="dp-version-rule-desc"><strong>기능 버전 / Feature</strong> — 새 기능 추가 또는 기존 기능의 유의미한 변경 시 증가.<br><span style="opacity:.7">Incremented when a new feature is added or an existing feature is significantly changed.</span></div>
         </div>
         <div class="dp-version-rule-row">
           <div class="dp-version-rule-seg">cc</div>
-          <div class="dp-version-rule-desc"><strong>Fix version</strong> — Incremented for bug fixes and hotfixes. Resets to 00 on each feature increment.</div>
+          <div class="dp-version-rule-desc"><strong>수정 버전 / Fix</strong> — 버그 수정 및 핫픽스 시 증가. Feature 버전 증가 시 00으로 초기화.<br><span style="opacity:.7">Incremented for bug fixes and hotfixes. Resets to 00 on each feature increment.</span></div>
         </div>
       </div>
 
       <div class="dp-card" style="padding:0;overflow:hidden">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:14px;font-weight:700">Version History</h3>
-          <span style="font-size:12px;color:var(--text-3)">${versions.length} entries</span>
+          <h3 style="font-size:14px;font-weight:700">버전 히스토리 / Version History</h3>
+          <span style="font-size:12px;color:var(--text-3)">${versions.length} 건</span>
         </div>
         ${versions.length === 0
-          ? `<div class="dp-empty-state"><p>No version entries yet.</p></div>`
+          ? `<div class="dp-empty-state"><p>버전 기록이 없습니다. / No version entries yet.</p></div>`
           : `<table class="dp-vh-table">
               <thead>
                 <tr>
-                  <th>Version</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Date</th>
+                  <th>버전 / Version</th>
+                  <th>유형 / Type</th>
+                  <th>설명 / Description</th>
+                  <th>날짜 / Date</th>
                 </tr>
               </thead>
               <tbody>
@@ -2588,6 +2673,7 @@ const DP = (() => {
     _calDragOver,
     _calDragLeave,
     _calDrop,
+    extendSession,
   };
 })();
 
