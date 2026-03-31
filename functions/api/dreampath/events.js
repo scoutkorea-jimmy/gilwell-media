@@ -36,7 +36,15 @@ export async function onRequestGet({ request, env }) {
         ORDER BY edited_at DESC`
     ).bind(id).all();
 
-    return json({ event: { ...event, history: history.results || [] } });
+    // Fetch linked meeting minutes posts
+    const linkedMinutes = await env.DB.prepare(
+      `SELECT id, title, author_name, created_at
+         FROM dp_board_posts
+        WHERE board = 'minutes' AND linked_event_id = ?
+        ORDER BY created_at DESC`
+    ).bind(id).all();
+
+    return json({ event: { ...event, history: history.results || [], linked_minutes: linkedMinutes.results || [] } });
   }
 
   // List by month (or all recent)
