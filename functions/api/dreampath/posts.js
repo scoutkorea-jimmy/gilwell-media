@@ -20,6 +20,7 @@ function json(data, status = 200) {
 }
 
 export async function onRequestGet({ request, env }) {
+  try {
   const url   = new URL(request.url);
   const id    = parseInt(url.searchParams.get('id') || '', 10);
   const board = url.searchParams.get('board');
@@ -88,6 +89,9 @@ export async function onRequestGet({ request, env }) {
     ).bind(limit).all();
   }
   return json({ posts: rows.results || [] });
+  } catch (err) {
+    return json({ error: String(err && err.message ? err.message : err) }, 500);
+  }
 }
 
 export async function onRequestPost({ request, env, data }) {
