@@ -2525,23 +2525,23 @@ const DP = (() => {
   async function addVersion() {
     openModal(`
       <div class="dp-form-group">
-        <label class="dp-label">Type</label>
+        <label class="dp-label">유형 / Type</label>
         <select class="dp-input" id="ver-type">
-          <option value="feature">Feature — Increments bbb (e.g. 01.001.00)</option>
-          <option value="bugfix">Bugfix — Increments cc (e.g. 01.000.01)</option>
+          <option value="feature">기능 / Feature — bbb 증가 (예: 01.001.00)</option>
+          <option value="bugfix">수정 / Bugfix — cc 증가 (예: 01.000.01)</option>
         </select>
       </div>
       <div class="dp-form-group" style="margin-top:12px">
-        <label class="dp-label">Description <span style="color:var(--red)">*</span></label>
-        <textarea class="dp-input" id="ver-desc" rows="3" placeholder="What changed in this version?"></textarea>
+        <label class="dp-label">설명 / Description <span style="color:var(--red)">*</span></label>
+        <textarea class="dp-input" id="ver-desc" rows="3" placeholder="이번 버전에서 변경된 내용 / What changed in this version?"></textarea>
       </div>
     `, {
-      title: 'Log New Version',
-      confirmLabel: 'Add Version',
+      title: '버전 등록 / Log New Version',
+      confirmLabel: '등록 / Add',
       onConfirm: async () => {
         const type = $('ver-type').value;
         const description = $('ver-desc').value.trim();
-        if (!description) { showToast('Description is required.', 'error'); return; }
+        if (!description) { showToast('설명을 입력하세요. / Description is required.', 'error'); return; }
         const data = await api('POST', 'versions', { type, description });
         if (!data) return;
         showToast(`Version ${data.version} logged successfully.`, 'success');
