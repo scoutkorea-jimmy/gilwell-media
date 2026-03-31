@@ -1228,6 +1228,66 @@
     .dp-vh-type--bugfix   { background: var(--gold-light); color: var(--gold); }
     .dp-vh-type--initial  { background: #E8EEF4; color: #002D56; }
 
+    /* ── Development Handbook ───────────────────────────────── */
+    .dp-ai-notice {
+      background: linear-gradient(135deg, #001833, #0F2035);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .dp-ai-notice-icon { font-size: 28px; flex-shrink: 0; }
+    .dp-ai-notice-title {
+      font-size: 12px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .6px;
+      color: #4FC3CE; margin-bottom: 6px;
+    }
+    .dp-ai-notice-body { font-size: 13px; color: #8ECAD0; line-height: 1.65; }
+    .dp-ai-notice-body strong { color: #fff; }
+    .dp-handbook-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .dp-hb-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .dp-hb-card-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--accent); margin-bottom: 10px;
+    }
+    .dp-hb-rule {
+      font-size: 12.5px; color: var(--text-2);
+      line-height: 1.55; padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-hb-rule:last-child { border-bottom: none; }
+    .dp-hb-rule strong { color: var(--text); }
+    .dp-hb-rule code {
+      font-family: 'Courier New', monospace; font-size: 11.5px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 3px; padding: 1px 5px; color: var(--accent);
+    }
+    .dp-hb-warn {
+      font-size: 12.5px; color: var(--red); font-weight: 500;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+      line-height: 1.5;
+    }
+    .dp-hb-warn:last-child { border-bottom: none; }
+    .dp-hb-warn code {
+      font-family: 'Courier New', monospace; font-size: 11.5px;
+      background: var(--red-light); border: 1px solid #FCA5A5;
+      border-radius: 3px; padding: 1px 5px;
+    }
+
     /* ── File Upload UI ─────────────────────────────────────────── */
     .dp-upload-btn {
       display: inline-flex;
