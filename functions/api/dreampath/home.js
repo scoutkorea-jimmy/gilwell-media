@@ -99,7 +99,7 @@ export async function onRequestGet({ env, data }) {
     .sort(function (a, b) {
       return String(b.created_at || '').localeCompare(String(a.created_at || ''));
     })
-    .slice(0, 10);
+    .slice(0, 30);
 
   return json({
     alerts,
