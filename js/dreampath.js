@@ -2661,12 +2661,12 @@ const DP = (() => {
 
   // ── Calendar month navigation ───────────────────────────────────────────────
   function prevMonth() {
-    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
     loadCalendar();
   }
 
   function nextMonth() {
-    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
     loadCalendar();
   }
 
