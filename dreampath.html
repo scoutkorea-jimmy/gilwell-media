@@ -1305,6 +1305,80 @@
       border-radius: 3px; padding: 1px 5px;
     }
 
+    /* ── Event picker (searchable combobox) ─────────────────────── */
+    .dp-event-picker { position: relative; }
+    .dp-event-picker-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .dp-event-picker-row .dp-input { flex: 1; min-width: 0; }
+    .dp-event-clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-3);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 8px;
+      height: 36px;
+      line-height: 1;
+      transition: color .15s, border-color .15s;
+      flex-shrink: 0;
+    }
+    .dp-event-clear-btn:hover { color: var(--red); border-color: var(--red); }
+    .dp-event-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.13);
+      z-index: 300;
+      overflow: hidden;
+      display: none;
+    }
+    .dp-event-dd-item {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: background .1s;
+    }
+    .dp-event-dd-item:hover { background: var(--hover); }
+    .dp-event-dd-date {
+      font-size: 11px;
+      color: var(--text-3);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    .dp-event-dd-title {
+      font-size: 13px;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dp-event-dd-empty,
+    .dp-event-dd-more {
+      padding: 9px 14px;
+      font-size: 12px;
+      color: var(--text-3);
+      text-align: center;
+    }
+    .dp-event-dd-more {
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .dp-attach-hint {
+      font-size: 11px;
+      color: var(--text-3);
+      margin: 5px 0 2px;
+    }
+
     /* ── Linked Event / Minutes (Meeting Minutes ↔ Calendar) ───── */
     .dp-linked-event-card {
       display: flex;

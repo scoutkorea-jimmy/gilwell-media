@@ -11,6 +11,8 @@ const DP = (() => {
   let _sessionTimerId = null;
   let _sessionPromptShown = false;
   let _tiptapEditor = null;
+  let _recentItems  = [];
+  let _allEvents    = [];
 
   const SESSION_DURATION_MS = 60 * 60 * 1000;
   const SESSION_WARNING_MS = 5 * 60 * 1000;
@@ -262,6 +264,91 @@ const DP = (() => {
     }
   }
 
+  // ── Event picker (searchable combobox for linked calendar events) ───────────
+  function _initEventPicker(prefix, events, selectedId) {
+    const searchEl  = $(`${prefix}-event-search`);
+    const dropEl    = $(`${prefix}-event-dropdown`);
+    const hiddenEl  = $(`${prefix}-linked-event`);
+    const clearBtn  = $(`${prefix}-event-clear`);
+    if (!searchEl || !dropEl || !hiddenEl) return;
+
+    const MAX_SHOW = 5;
+
+    function renderDrop(list) {
+      if (!list.length) {
+        dropEl.innerHTML = '<div class="dp-event-dd-empty">결과 없음 / No results</div>';
+      } else {
+        const shown = list.slice(0, MAX_SHOW);
+        const more  = list.length - MAX_SHOW;
+        dropEl.innerHTML =
+          shown.map(ev =>
+            `<div class="dp-event-dd-item" data-id="${ev.id}" data-label="${esc(ev.start_date + ' · ' + ev.title)}">
+               <span class="dp-event-dd-date">${esc(ev.start_date)}</span>
+               <span class="dp-event-dd-title">${esc(ev.title)}</span>
+             </div>`
+          ).join('') +
+          (more > 0
+            ? `<div class="dp-event-dd-more">+${more}개 더 있음 · 검색어를 입력해 필터링 / Type to filter</div>`
+            : '');
+      }
+      dropEl.style.display = 'block';
+    }
+
+    // Pre-select if editing
+    if (selectedId) {
+      const found = events.find(e => e.id === selectedId);
+      if (found) {
+        searchEl.value    = `${found.start_date} · ${found.title}`;
+        hiddenEl.value    = String(selectedId);
+        if (clearBtn) clearBtn.style.display = '';
+      }
+    }
+
+    searchEl.addEventListener('focus', () => {
+      if (!hiddenEl.value) renderDrop(events);
+    });
+
+    searchEl.addEventListener('input', () => {
+      hiddenEl.value = '';
+      if (clearBtn) clearBtn.style.display = 'none';
+      const q = searchEl.value.trim().toLowerCase();
+      renderDrop(q
+        ? events.filter(e => e.title.toLowerCase().includes(q) || e.start_date.includes(q))
+        : events
+      );
+    });
+
+    searchEl.addEventListener('blur', () => {
+      setTimeout(() => {
+        dropEl.style.display = 'none';
+        if (hiddenEl.value) {
+          const found = events.find(e => e.id === parseInt(hiddenEl.value, 10));
+          if (found) searchEl.value = `${found.start_date} · ${found.title}`;
+        }
+      }, 160);
+    });
+
+    dropEl.addEventListener('click', e => {
+      const item = e.target.closest('.dp-event-dd-item');
+      if (!item) return;
+      hiddenEl.value  = item.dataset.id;
+      searchEl.value  = item.dataset.label;
+      dropEl.style.display = 'none';
+      if (clearBtn) clearBtn.style.display = '';
+    });
+  }
+
+  function _clearEventPicker(prefix) {
+    const searchEl = $(`${prefix}-event-search`);
+    const hiddenEl = $(`${prefix}-linked-event`);
+    const clearBtn = $(`${prefix}-event-clear`);
+    const dropEl   = $(`${prefix}-event-dropdown`);
+    if (searchEl) searchEl.value = '';
+    if (hiddenEl) hiddenEl.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (dropEl)   dropEl.style.display = 'none';
+  }
+
   // ── Modal system ───────────────────────────────────────────────────────────
   function openModal(html, { title = '', confirmLabel = 'Save', onConfirm = null, wide = false } = {}) {
     const overlay = $('dp-modal-overlay');
@@ -501,20 +588,51 @@ const DP = (() => {
       : '<div class="dp-home-item"><strong>No urgent items.</strong><small>You have no active alerts or assigned tasks right now.</small></div>';
   }
 
+  function _recentItemHtml(item) {
+    return `<div class="dp-home-item">
+      <strong>${esc(item.title || '')}</strong>
+      <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtDateHM(item.created_at) : ''))}</small>
+      ${item.note ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2)">${esc(String(item.note).slice(0, 140))}</div>` : ''}
+    </div>`;
+  }
+
   function renderHomeRecent(items) {
+    _recentItems = items;
     const el = $('dp-home-recent');
     if (!el) return;
     if (!items.length) {
       el.innerHTML = '<div class="dp-home-item"><strong>No recent changes yet.</strong><small>Updates to posts, events, and comments will appear here.</small></div>';
       return;
     }
-    el.innerHTML = `<div class="dp-home-list">${items.map(item => `
-      <div class="dp-home-item">
-        <strong>${esc(item.title || '')}</strong>
-        <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtDateHM(item.created_at) : ''))}</small>
-        ${item.note ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2)">${esc(String(item.note).slice(0, 140))}</div>` : ''}
+    const PREVIEW = 5;
+    const preview = items.slice(0, PREVIEW);
+    const hasMore = items.length > PREVIEW;
+    el.innerHTML = `
+      <div class="dp-home-list">${preview.map(_recentItemHtml).join('')}</div>
+      ${hasMore ? `<div style="text-align:center;padding:8px 0 2px">
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(0)">더보기 / View all (${items.length})</button>
+      </div>` : ''}
+    `;
+  }
+
+  function _showAllRecent(page) {
+    const PAGE_SIZE = 10;
+    const total = _recentItems.length;
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const p = Math.max(0, Math.min(page, totalPages - 1));
+    const slice = _recentItems.slice(p * PAGE_SIZE, (p + 1) * PAGE_SIZE);
+    const paginationHtml = totalPages > 1 ? `
+      <div style="display:flex;gap:8px;justify-content:center;padding:12px 0 0;border-top:1px solid var(--border);margin-top:8px">
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p - 1})" ${p === 0 ? 'disabled' : ''}>← 이전</button>
+        <span style="font-size:12px;color:var(--text-3);line-height:30px">${p + 1} / ${totalPages}</span>
+        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._showAllRecent(${p + 1})" ${p >= totalPages - 1 ? 'disabled' : ''}>다음 →</button>
+      </div>` : '';
+    openModal(`
+      <div style="max-height:65vh;overflow-y:auto">
+        <div class="dp-home-list">${slice.map(_recentItemHtml).join('')}</div>
       </div>
-    `).join('')}</div>`;
+      ${paginationHtml}
+    `, { title: `변경 내역 / Recent Changes (${total})` });
   }
 
   function bindHomeSearch() {
@@ -926,9 +1044,14 @@ const DP = (() => {
         ${isMinutes ? `
         <div class="dp-form-row">
           <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
-          <select id="fp-linked-event" class="dp-input">
-            <option value="">— 연결 안 함 / None —</option>
-          </select>
+          <div class="dp-event-picker" id="fp-event-picker">
+            <div class="dp-event-picker-row">
+              <input type="text" class="dp-input" id="fp-event-search" placeholder="일정명 또는 날짜 검색… / Search by title or date" autocomplete="off" />
+              <button type="button" class="dp-event-clear-btn" id="fp-event-clear" style="display:none" onclick="DP._clearEventPicker('fp')">✕</button>
+            </div>
+            <div class="dp-event-dropdown" id="fp-event-dropdown"></div>
+            <input type="hidden" id="fp-linked-event" value="" />
+          </div>
         </div>` : ''}
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
@@ -956,6 +1079,7 @@ const DP = (() => {
             <span>&#128206; Choose files…</span>
             <input id="fp-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'fp-filelist')" />
           </label>
+          <p class="dp-attach-hint">최대 5개 · 파일당 최대 100MB · 모든 형식 지원 / Max 5 files · 100 MB each · All file types</p>
           <div id="fp-filelist" class="dp-file-preview-list"></div>
         </div>
         <div class="dp-form-row dp-form-row--check">
@@ -996,14 +1120,9 @@ const DP = (() => {
     _waitForTiptap(() => _initTiptap('fp-tiptap', null));
     if (isMinutes) {
       api('GET', 'events').then(d => {
-        const sel = $('fp-linked-event');
-        if (!sel || !d?.events) return;
-        d.events.slice(0, 60).forEach(ev => {
-          const opt = document.createElement('option');
-          opt.value = ev.id;
-          opt.textContent = `${esc(ev.start_date)} · ${esc(ev.title)}`;
-          sel.appendChild(opt);
-        });
+        if (!d?.events) return;
+        _allEvents = d.events;
+        _initEventPicker('fp', _allEvents, null);
       });
     }
   }
@@ -1054,9 +1173,14 @@ const DP = (() => {
         ${isMinutes ? `
         <div class="dp-form-row">
           <label class="dp-label">&#128197; 연결된 회의 일정 <span style="color:var(--text-3);font-size:11px">(선택사항 / Optional)</span></label>
-          <select id="ep-linked-event" class="dp-input">
-            <option value="">— 연결 안 함 / None —</option>
-          </select>
+          <div class="dp-event-picker" id="ep-event-picker">
+            <div class="dp-event-picker-row">
+              <input type="text" class="dp-input" id="ep-event-search" placeholder="일정명 또는 날짜 검색… / Search by title or date" autocomplete="off" />
+              <button type="button" class="dp-event-clear-btn" id="ep-event-clear" style="display:none" onclick="DP._clearEventPicker('ep')">✕</button>
+            </div>
+            <div class="dp-event-dropdown" id="ep-event-dropdown"></div>
+            <input type="hidden" id="ep-linked-event" value="" />
+          </div>
         </div>` : ''}
         <div class="dp-form-row">
           <label class="dp-label">Current Attachments</label>
@@ -1068,6 +1192,7 @@ const DP = (() => {
             <span>&#128206; Choose files…</span>
             <input id="ep-files" type="file" multiple style="display:none" onchange="DP._handleFileSelect(this, 'ep-filelist')" />
           </label>
+          <p class="dp-attach-hint">최대 5개 · 파일당 최대 100MB · 모든 형식 지원 / Max 5 files · 100 MB each · All file types</p>
           <div id="ep-filelist" class="dp-file-preview-list"></div>
         </div>
         <div class="dp-form-row">
@@ -1134,15 +1259,9 @@ const DP = (() => {
     _waitForTiptap(() => _initTiptap('ep-tiptap', _legacyToHtml(p.content)));
     if (isMinutes) {
       api('GET', 'events').then(d => {
-        const sel = $('ep-linked-event');
-        if (!sel || !d?.events) return;
-        d.events.slice(0, 60).forEach(ev => {
-          const opt = document.createElement('option');
-          opt.value = ev.id;
-          opt.textContent = `${esc(ev.start_date)} · ${esc(ev.title)}`;
-          if (p.linked_event_id === ev.id) opt.selected = true;
-          sel.appendChild(opt);
-        });
+        if (!d?.events) return;
+        _allEvents = d.events;
+        _initEventPicker('ep', _allEvents, p.linked_event_id || null);
       });
     }
   }
@@ -2674,6 +2793,8 @@ const DP = (() => {
     _calDragLeave,
     _calDrop,
     extendSession,
+    _showAllRecent,
+    _clearEventPicker,
   };
 })();
 
