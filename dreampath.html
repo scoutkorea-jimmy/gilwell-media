@@ -511,12 +511,22 @@
       grid-template-columns: repeat(7, 1fr);
       margin-bottom: 2px;
     }
-    .dp-cal-week { margin-bottom: 3px; }
-    .dp-cal-bar-rows { }
+    .dp-cal-week {
+      position: relative;
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-cal-week:last-child { border-bottom: none; }
+    .dp-cal-bar-rows {
+      position: absolute;
+      left: 0; right: 0; bottom: 4px;
+      pointer-events: none;
+      z-index: 1;
+    }
     .dp-cal-bar-row {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      height: 22px;
+      height: 20px;
       padding: 1px 0;
     }
     .dp-cal-bar {
@@ -532,12 +542,13 @@
       cursor: pointer;
       line-height: 18px;
       margin: 0 2px 0 0;
+      pointer-events: auto;
     }
     .dp-cal-bar:hover { opacity: .85; }
     .dp-cal-week-cells {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
+      gap: 0;
     }
     .dp-cal-dow {
       text-align: center;
@@ -550,22 +561,22 @@
     }
     .dp-cal-dow--weekend { color: #f87171; }
     .dp-cal-day {
-      min-height: 100px;
+      min-height: 92px;
       min-width: 0;
       overflow: hidden;
-      border-radius: 8px;
-      padding: 6px 7px;
+      padding: 6px 8px 46px;
       position: relative;
-      border: 1.5px solid transparent;
-      transition: background .12s, border-color .12s;
+      border: none;
+      border-right: 1px solid var(--border);
+      transition: background .12s;
     }
+    .dp-cal-day:nth-child(7n) { border-right: none; }
     .dp-cal-day--empty { background: transparent; }
-    .dp-cal-day--today { border-color: var(--accent) !important; }
-    .dp-cal-day--today .dp-cal-day-num:not(.dp-cal-today-num) { color: var(--accent); font-weight: 700; }
+    .dp-cal-day--today .dp-cal-day-num { color: var(--accent); font-weight: 700; }
     .dp-cal-day--weekend .dp-cal-day-num { color: #f87171; }
-    .dp-cal-day--has-events { background: var(--surface2); border-color: var(--border); }
+    .dp-cal-day--has-events { }
     .dp-cal-day--clickable { cursor: pointer; }
-    .dp-cal-day--clickable:hover { background: var(--accent-light); border-color: #B3D5D9; }
+    .dp-cal-day--clickable:hover { background: var(--accent-light); }
     .dp-cal-day-num {
       font-size: 13px;
       font-weight: 600;
