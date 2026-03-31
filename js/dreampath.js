@@ -10,6 +10,7 @@ const DP = (() => {
   let calendarDate  = new Date();
   let _sessionTimerId = null;
   let _sessionPromptShown = false;
+  let _tiptapEditor = null;
 
   const SESSION_DURATION_MS = 60 * 60 * 1000;
   const SESSION_WARNING_MS = 5 * 60 * 1000;
@@ -174,6 +175,88 @@ const DP = (() => {
     }).catch(() => {});
   }
 
+  // ── Tiptap helpers ─────────────────────────────────────────────────────────
+  function _waitForTiptap(cb) {
+    if (window.__DP_Tiptap) { cb(); return; }
+    const h = () => { window.removeEventListener('tiptap-ready', h); cb(); };
+    window.addEventListener('tiptap-ready', h);
+  }
+
+  function _legacyToHtml(text) {
+    if (!text) return '';
+    if (text.trimStart().startsWith('<')) return text;
+    return text.split('\n\n').map(chunk => `<p>${chunk.trim().replace(/\n/g, '<br>')}</p>`).join('');
+  }
+
+  function _sanitizeHtml(html) {
+    if (window.DOMPurify) return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    div.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
+    return div.innerHTML;
+  }
+
+  function _initTiptap(containerId, initialHtml) {
+    _destroyTiptap();
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const tiptap = window.__DP_Tiptap;
+    if (!tiptap) return;
+    el.classList.add('dp-te-editor');
+    _tiptapEditor = new tiptap.Editor({
+      element: el,
+      extensions: [tiptap.StarterKit],
+      content: initialHtml || '',
+      onTransaction: () => _updateTiptapToolbar(),
+    });
+    setTimeout(() => { if (_tiptapEditor) _tiptapEditor.commands.focus('end'); }, 80);
+  }
+
+  function _updateTiptapToolbar() {
+    if (!_tiptapEditor) return;
+    document.querySelectorAll('.dp-te-btn[data-cmd]').forEach(btn => {
+      const cmd = btn.dataset.cmd;
+      let active = false;
+      if      (cmd === 'bold')        active = _tiptapEditor.isActive('bold');
+      else if (cmd === 'italic')      active = _tiptapEditor.isActive('italic');
+      else if (cmd === 'strike')      active = _tiptapEditor.isActive('strike');
+      else if (cmd === 'h2')          active = _tiptapEditor.isActive('heading', { level: 2 });
+      else if (cmd === 'h3')          active = _tiptapEditor.isActive('heading', { level: 3 });
+      else if (cmd === 'bulletList')  active = _tiptapEditor.isActive('bulletList');
+      else if (cmd === 'orderedList') active = _tiptapEditor.isActive('orderedList');
+      else if (cmd === 'blockquote')  active = _tiptapEditor.isActive('blockquote');
+      else if (cmd === 'code')        active = _tiptapEditor.isActive('code');
+      btn.classList.toggle('is-active', active);
+    });
+  }
+
+  function _execTiptapCmd(cmd) {
+    if (!_tiptapEditor) return;
+    const c = _tiptapEditor.chain().focus();
+    if      (cmd === 'bold')        c.toggleBold().run();
+    else if (cmd === 'italic')      c.toggleItalic().run();
+    else if (cmd === 'strike')      c.toggleStrike().run();
+    else if (cmd === 'h2')          c.toggleHeading({ level: 2 }).run();
+    else if (cmd === 'h3')          c.toggleHeading({ level: 3 }).run();
+    else if (cmd === 'bulletList')  c.toggleBulletList().run();
+    else if (cmd === 'orderedList') c.toggleOrderedList().run();
+    else if (cmd === 'blockquote')  c.toggleBlockquote().run();
+    else if (cmd === 'code')        c.toggleCode().run();
+  }
+
+  function _getTiptapHTML() {
+    if (!_tiptapEditor) return '';
+    const html = _tiptapEditor.getHTML();
+    return (html === '<p></p>' || html === '') ? '' : html;
+  }
+
+  function _destroyTiptap() {
+    if (_tiptapEditor) {
+      try { _tiptapEditor.destroy(); } catch (_) {}
+      _tiptapEditor = null;
+    }
+  }
+
   // ── Modal system ───────────────────────────────────────────────────────────
   function openModal(html, { title = '', confirmLabel = 'Save', onConfirm = null, wide = false } = {}) {
     const overlay = $('dp-modal-overlay');
@@ -200,6 +283,7 @@ const DP = (() => {
   }
 
   function closeModal() {
+    _destroyTiptap();
     $('dp-modal-overlay').classList.remove('dp-modal--open');
   }
 
@@ -755,7 +839,7 @@ const DP = (() => {
 
     // ── Content ────────────────────────────────────────────────────
     const contentHtml = p.content
-      ? `<div class="dp-post-detail-content">${p.content.split('\n\n').map(para => `<p>${esc(para.trim()).replace(/\n/g, '<br>')}</p>`).join('')}</div>`
+      ? `<div class="dp-post-detail-content">${_sanitizeHtml(_legacyToHtml(p.content))}</div>`
       : '';
 
     // ── Edit History ───────────────────────────────────────────────
@@ -823,7 +907,23 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
-          <textarea id="fp-content" class="dp-input dp-textarea" placeholder="Post content (optional)"></textarea>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+            </div>
+            <div id="fp-tiptap"></div>
+          </div>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Attachments</label>
@@ -846,7 +946,7 @@ const DP = (() => {
       onConfirm: async () => {
         const board   = boardName;
         const title   = $('fp-title').value.trim();
-        const content = $('fp-content').value.trim();
+        const content = _getTiptapHTML();
         const pinned  = $('fp-pinned').checked;
         if (!title) { showToast('Title is required.', 'error'); return; }
 
@@ -867,6 +967,7 @@ const DP = (() => {
         }
       },
     });
+    _waitForTiptap(() => _initTiptap('fp-tiptap', null));
   }
 
   async function editPost(id) {
@@ -893,7 +994,23 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
-          <textarea id="ep-content" class="dp-input dp-textarea">${esc(p.content || '')}</textarea>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+            </div>
+            <div id="ep-tiptap"></div>
+          </div>
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Current Attachments</label>
@@ -923,7 +1040,7 @@ const DP = (() => {
       confirmLabel: 'Save Changes',
       onConfirm: async () => {
         const title     = $('ep-title').value.trim();
-        const content   = $('ep-content').value.trim();
+        const content   = _getTiptapHTML();
         const pinned    = $('ep-pinned').checked;
         const edit_note = $('ep-note').value.trim();
         if (!title) { showToast('Title is required.', 'error'); return; }
@@ -966,6 +1083,7 @@ const DP = (() => {
       const el = document.getElementById(`kept-${i}`);
       if (el) el.classList.add('dp-file-removed');
     };
+    _waitForTiptap(() => _initTiptap('ep-tiptap', _legacyToHtml(p.content)));
   }
 
   async function deletePost(id, boardName) {
@@ -2389,6 +2507,7 @@ const DP = (() => {
     _handleAvatarSelect,
     _removeAvatar,
     _removeKeptFile: () => {},
+    _teCmd: _execTiptapCmd,
     _calDragStart,
     _verChangePage,
     _calDragOver,
