@@ -930,8 +930,8 @@ const DP = (() => {
       }
 
       html += `<div class="dp-cal-week">
-        <div class="dp-cal-bar-rows">${barHtml}</div>
         <div class="dp-cal-week-cells">${cellsHtml}</div>
+        <div class="dp-cal-bar-rows">${barHtml}</div>
       </div>`;
     }
 
@@ -1856,41 +1856,50 @@ const DP = (() => {
     renderContacts(data?.contacts || [], data?.team || []);
   }
 
-  function renderContacts(_contacts, team) {
+  function renderContacts(contacts, team) {
     const container = $('dp-contacts-content');
     if (!container) return;
 
-    function contactCard(c) {
-      const initials = (c.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-      const deptChip = c.department ? `<span class="dp-dept-chip" style="margin-top:4px;display:inline-block">${esc(c.department)}</span>` : '';
-      return `
-        <div class="dp-contact-card dp-contact-card--team">
-          <div class="dp-contact-avatar">${esc(initials)}</div>
-          <div class="dp-contact-info">
-            <h4 class="dp-contact-name">${esc(c.name)}</h4>
-            ${c.role_title ? `<p class="dp-contact-role">${esc(c.role_title)}</p>` : ''}
-            ${deptChip}
-            ${c.phone ? `<p class="dp-contact-detail"><span class="dp-contact-icon">&#128222;</span><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></p>` : ''}
-            ${c.email ? `<p class="dp-contact-detail"><span class="dp-contact-icon">&#9993;</span><a href="mailto:${esc(c.email)}">${esc(c.email)}</a></p>` : ''}
-            ${c.note ? `<p class="dp-contact-note">${esc(c.note)}</p>` : ''}
+    const all = [
+      ...(team || []).map(c => ({ ...c, _src: 'team' })),
+      ...(contacts || []).map(c => ({ ...c, _src: 'external' })),
+    ];
+
+    const rows = all.map(c => `
+      <tr>
+        <td>
+          <div class="dp-table-user">
+            <div class="dp-contact-avatar dp-contact-avatar--sm">${esc((c.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2))}</div>
+            <strong>${esc(c.name || '')}</strong>
           </div>
-        </div>`;
-    }
+        </td>
+        <td>${esc(c.role_title || '—')}</td>
+        <td>${c.department ? `<span class="dp-dept-chip">${esc(c.department)}</span>` : '—'}</td>
+        <td>${c.phone ? `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>` : '—'}</td>
+        <td>${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : '—'}</td>
+        <td style="font-size:12px;color:var(--text-3)">${esc(c.note || '')}</td>
+      </tr>`).join('');
 
-    const teamHtml = team && team.length ? `
-      <div class="dp-contacts-grid">
-        ${team.map(u => contactCard(u)).join('')}
-      </div>` : '';
-
-    const emptyHtml = (!team || !team.length)
-      ? `<div class="dp-empty-state"><p>No team members found.</p></div>` : '';
+    const tableHtml = all.length ? `
+      <div class="dp-table-wrap">
+        <table class="dp-table">
+          <thead><tr>
+            <th>Name</th>
+            <th>Role / Title</th>
+            <th>Department</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Note</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>` : `<div class="dp-empty-state"><p>No team members found.</p></div>`;
 
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">Project Team Contacts</h2>
       </div>
-      ${teamHtml}
-      ${emptyHtml}
+      ${tableHtml}
     `;
   }
 
@@ -3404,8 +3413,8 @@ const DP = (() => {
     const container = $('dp-notes-content');
     if (!container) return;
 
-    const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning' };
-    const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626' };
+    const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
+    const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
 
     function noteRow(n) {
       const isHigh = n.priority === 'high' && n.status === 'open';
@@ -3471,6 +3480,7 @@ const DP = (() => {
               <option value="note">📝 Note</option>
               <option value="issue">⚠️ Issue</option>
               <option value="warning">🚨 Warning</option>
+              <option value="suggestion">💡 Suggestion</option>
             </select>
           </div>
           <div class="dp-form-row">
@@ -3528,6 +3538,7 @@ const DP = (() => {
               <option value="note" ${note.type==='note'?'selected':''}>📝 Note</option>
               <option value="issue" ${note.type==='issue'?'selected':''}>⚠️ Issue</option>
               <option value="warning" ${note.type==='warning'?'selected':''}>🚨 Warning</option>
+              <option value="suggestion" ${note.type==='suggestion'?'selected':''}>💡 Suggestion</option>
             </select>
           </div>
           <div class="dp-form-row">

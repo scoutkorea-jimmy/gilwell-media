@@ -13,7 +13,7 @@ function json(data, status = 200) {
   });
 }
 
-const VALID_TYPES      = ['note', 'issue', 'warning'];
+const VALID_TYPES      = ['note', 'issue', 'warning', 'suggestion'];
 const VALID_STATUSES   = ['open', 'resolved'];
 const VALID_PRIORITIES = ['low', 'normal', 'high'];
 
