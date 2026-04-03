@@ -2939,6 +2939,9 @@ const DP = (() => {
           <div class="dp-hb-card-title">📁 Key Files</div>
           <div class="dp-hb-rule"><code>dreampath.html</code> — Dreampath 전용 인라인 CSS</div>
           <div class="dp-hb-rule"><code>js/dreampath.js</code> — 모든 프론트엔드 로직 (IIFE)</div>
+          <div class="dp-hb-rule"><code>functions/api/dreampath/posts.js</code> — 게시글 CRUD + 접근 제어</div>
+          <div class="dp-hb-rule"><code>functions/api/dreampath/approvals.js</code> — 회의록 다중 승인 투표</div>
+          <div class="dp-hb-rule"><code>functions/api/dreampath/upload.js</code> — 파일 업로드 + 확장자 차단</div>
           <div class="dp-hb-rule"><code>functions/api/dreampath/</code> — 모든 API 엔드포인트</div>
           <div class="dp-hb-rule"><code>functions/_shared/auth.js</code> — 인증 코어 (책임자 승인 없이 수정 금지)</div>
           <div class="dp-hb-rule"><code>deploy.sh</code> — 배포 + 버전 자동 등록</div>
@@ -2956,12 +2959,14 @@ const DP = (() => {
         </div>
 
         <div class="dp-hb-card">
-          <div class="dp-hb-card-title">✍️ Rich Text (게시글)</div>
-          <div class="dp-hb-rule"><strong>에디터:</strong> Tiptap (<code>esm.sh</code> CDN) — <code>@tiptap/core@2</code>, <code>@tiptap/starter-kit@2</code></div>
+          <div class="dp-hb-card-title">✍️ Rich Text (게시글 + 노트)</div>
+          <div class="dp-hb-rule"><strong>에디터:</strong> Tiptap (<code>esm.sh</code> CDN) — 탑재 위치: createPost, editPost, createNote, editNote (4곳)</div>
+          <div class="dp-hb-rule"><strong>로드 중인 Extensions:</strong> <code>starter-kit</code>, <code>extension-table</code>, <code>extension-table-row</code>, <code>extension-table-header</code>, <code>extension-table-cell</code></div>
           <div class="dp-hb-rule"><strong>뷰어:</strong> DOMPurify (cdnjs) — 모든 HTML 출력 정제 필수</div>
-          <div class="dp-hb-rule">기존 plain-text 게시글 → <code>_legacyToHtml()</code>으로 자동 변환</div>
+          <div class="dp-hb-rule"><strong>비동기 초기화:</strong> Tiptap은 비동기 로드 → 반드시 <code>_waitForTiptap(cb)</code> 헬퍼로 초기화</div>
+          <div class="dp-hb-rule">기존 plain-text 게시글 → <code>_legacyToHtml()</code>으로 자동 변환 (하위 호환)</div>
           <div class="dp-hb-rule"><code>_destroyTiptap()</code>은 <code>closeModal()</code>에서 자동 호출됨</div>
-          <div class="dp-hb-rule">새 에디터 기능 추가 시 <code>_execTiptapCmd</code> 및 <code>_updateTiptapToolbar</code> 함께 수정</div>
+          <div class="dp-hb-rule">새 extension 추가 시: <code>dreampath.html</code> import + <code>_initTiptap()</code> + <code>_execTiptapCmd</code> + 툴바 HTML 4곳 모두 수정</div>
         </div>
 
         <div class="dp-hb-card">
@@ -2978,10 +2983,32 @@ const DP = (() => {
           <div class="dp-hb-warn"><code>auth.js</code> — 충분한 테스트 없이 수정 금지</div>
           <div class="dp-hb-warn">사용자 입력 HTML → DOMPurify 없이 <code>innerHTML</code> 금지</div>
           <div class="dp-hb-warn">인증 토큰을 <code>localStorage</code>에 저장 금지</div>
-          <div class="dp-hb-warn">기존 DB 컬럼 삭제/변경 금지 — 컬럼 추가(ALTER TABLE ADD)만 허용</div>
+          <div class="dp-hb-warn">기존 DB 컬럼 삭제/변경 금지 — 컬럼 추가(<code>ALTER TABLE ADD COLUMN</code>)만 허용</div>
           <div class="dp-hb-warn">의미 있는 변경 후 <code>./deploy.sh</code> 버전 등록 생략 금지</div>
           <div class="dp-hb-warn"><code>dreampath.js</code>의 IIFE 구조를 분리하거나 모듈화 금지</div>
           <div class="dp-hb-warn">외부 CDN 변경 시 반드시 버전 고정 여부 확인 필수</div>
+          <div class="dp-hb-warn"><code>dp_post_approvals</code> INSERT 시 <code>approver_id</code> (NOT NULL) 반드시 포함</div>
+          <div class="dp-hb-warn"><code>.env</code> 또는 시크릿 값 절대 커밋 금지</div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">🌐 Team Boards</div>
+          <div class="dp-hb-rule"><strong>게시판 목록:</strong> <code>announcements</code>, <code>documents</code>, <code>minutes</code>, <code>team_korea</code>, <code>team_nepal</code>, <code>team_indonesia</code></div>
+          <div class="dp-hb-rule"><strong>접근 규칙:</strong> 어드민 → 모든 게시판 / 일반 유저 → 자기 팀 보드만 읽기·쓰기</div>
+          <div class="dp-hb-rule"><strong>⚠️ <code>department</code>는 JWT에 없음</strong> — <code>data.dpUser</code>: <code>&#123; uid, username, role, name &#125;</code> (department 미포함)</div>
+          <div class="dp-hb-rule">팀 보드 접근 판별 시 항상 DB 별도 조회 필요: <code>SELECT department FROM dp_users WHERE id = ?</code></div>
+          <div class="dp-hb-rule"><strong>매칭 패턴:</strong> <code>department.toLowerCase().includes('korea/nepal/indonesia')</code></div>
+          <div class="dp-hb-rule">프론트엔드: <code>_teamBoard(department)</code> / 백엔드: <code>_deptMatchesBoard(department, board)</code></div>
+        </div>
+
+        <div class="dp-hb-card">
+          <div class="dp-hb-card-title">🔐 API Access Control</div>
+          <div class="dp-hb-rule"><strong>게시글 작성 (POST):</strong> 어드민 → 전체 / 일반 유저 → 자기 팀 보드만</div>
+          <div class="dp-hb-rule"><strong>게시글 수정 (PUT):</strong> 어드민 → 전체 / 일반 유저 → <code>author_id = uid</code> 본인 글만</div>
+          <div class="dp-hb-rule"><strong>회의록 잠금:</strong> <code>approval_status = 'approved'</code>이면 content 수정 → <strong>HTTP 423 LOCKED</strong></div>
+          <div class="dp-hb-rule"><strong>파일 업로드 차단:</strong> <code>.exe .sh .bat .cmd .dll .ps1 .vbs .jar .dmg .pkg .msi</code> 등 실행 파일 전체</div>
+          <div class="dp-hb-rule"><strong>승인 Override:</strong> 어드민의 타인 투표 변경은 <strong>2026-04-01 이전</strong> 생성 게시글만 허용</div>
+          <div class="dp-hb-rule">승인 재계산: 투표/승인자 변경 시 과반수 초과 여부 자동 재계산 → <code>dp_board_posts.approval_status</code> 업데이트</div>
         </div>
       </div>
 
