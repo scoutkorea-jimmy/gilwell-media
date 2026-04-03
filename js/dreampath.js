@@ -237,7 +237,13 @@ const DP = (() => {
     el.classList.add('dp-te-editor');
     _tiptapEditor = new tiptap.Editor({
       element: el,
-      extensions: [tiptap.StarterKit],
+      extensions: [
+        tiptap.StarterKit,
+        tiptap.Table.configure({ resizable: false }),
+        tiptap.TableRow,
+        tiptap.TableHeader,
+        tiptap.TableCell,
+      ],
       content: initialHtml || '',
       onTransaction: () => _updateTiptapToolbar(),
     });
@@ -258,8 +264,11 @@ const DP = (() => {
       else if (cmd === 'orderedList') active = _tiptapEditor.isActive('orderedList');
       else if (cmd === 'blockquote')  active = _tiptapEditor.isActive('blockquote');
       else if (cmd === 'code')        active = _tiptapEditor.isActive('code');
+      else if (cmd === 'insertTable') active = _tiptapEditor.isActive('table');
       btn.classList.toggle('is-active', active);
     });
+    const inTable = _tiptapEditor.isActive('table');
+    document.querySelectorAll('.dp-te-table-only').forEach(el => { el.style.display = inTable ? '' : 'none'; });
   }
 
   function _execTiptapCmd(cmd) {
@@ -274,6 +283,12 @@ const DP = (() => {
     else if (cmd === 'orderedList') c.toggleOrderedList().run();
     else if (cmd === 'blockquote')  c.toggleBlockquote().run();
     else if (cmd === 'code')        c.toggleCode().run();
+    else if (cmd === 'insertTable') c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    else if (cmd === 'addRowAfter') c.addRowAfter().run();
+    else if (cmd === 'deleteRow')   c.deleteRow().run();
+    else if (cmd === 'addColAfter') c.addColumnAfter().run();
+    else if (cmd === 'deleteCol')   c.deleteColumn().run();
+    else if (cmd === 'deleteTable') c.deleteTable().run();
   }
 
   function _getTiptapHTML() {
@@ -1022,7 +1037,7 @@ const DP = (() => {
     const container = $(`dp-preview-${board}`);
     if (!container) return;
 
-    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
     const sectionMap  = { announcements: 'announcements', documents: 'documents', minutes: 'minutes' };
 
     let items = '';
@@ -1112,10 +1127,13 @@ const DP = (() => {
       : '';
     let adminBtns = '';
     if (currentUser) {
+      const isAdmin   = currentUser.role === 'admin';
+      const isAuthor  = post.author_name === (currentUser.display_name || currentUser.username);
+      const canEdit   = isAdmin || isAuthor;
       adminBtns = `
         <div class="dp-post-actions">
-          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">&#9998; Edit</button>
-          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--xs dp-btn--danger dp-admin-only" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>` : ''}
+          ${canEdit ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">&#9998; Edit</button>` : ''}
+          ${isAdmin ? `<button class="dp-btn dp-btn--xs dp-btn--danger dp-admin-only" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>` : ''}
         </div>
       `;
     }
@@ -1150,7 +1168,7 @@ const DP = (() => {
     if (!postData?.post) return;
     const p = postData.post;
     const comments = commentsData?.comments || [];
-    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
 
     // ── Files ──────────────────────────────────────────────────────
     const images = (p.files || []).filter(f => f.is_image);
@@ -1319,7 +1337,7 @@ const DP = (() => {
   }
 
   async function createPost(boardName) {
-    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
     const isMinutes = boardName === 'minutes';
     openModal(`
       <div class="dp-form">
@@ -1367,6 +1385,13 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
             </div>
             <div id="fp-tiptap"></div>
           </div>
@@ -1492,6 +1517,13 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
             </div>
             <div id="ep-tiptap"></div>
           </div>
@@ -3546,6 +3578,13 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
             </div>
             <div id="cn-tiptap"></div>
           </div>
@@ -3622,6 +3661,13 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
             </div>
             <div id="en-tiptap"></div>
           </div>
