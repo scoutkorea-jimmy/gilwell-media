@@ -36,6 +36,17 @@ export async function onRequestPost({ request, env }) {
   const originalName = file.name || 'file';
   const dotIdx = originalName.lastIndexOf('.');
   const ext = dotIdx > 0 ? originalName.slice(dotIdx + 1).toLowerCase().replace(/[^a-z0-9]/g, '') : 'bin';
+
+  // Block executable and script file types
+  const BLOCKED_EXTENSIONS = new Set([
+    'exe','sh','bat','cmd','com','ps1','ps2','vbs','vbe','js','jse',
+    'jar','app','deb','rpm','dmg','pkg','msi','scr','pif','hta',
+    'cpl','dll','sys','drv','inf','reg','lnk',
+  ]);
+  if (BLOCKED_EXTENSIONS.has(ext)) {
+    return json({ error: `File type .${ext} is not allowed for security reasons.` }, 400);
+  }
+
   const key = `dp-files/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const isImage = file.type.startsWith('image/');
 

@@ -18,6 +18,18 @@ const DP = (() => {
   const SESSION_WARNING_MS = 5 * 60 * 1000;
   const SESSION_EXPIRY_KEY = 'dp_session_expires_at';
 
+  // ── Team Board helpers ─────────────────────────────────────────────────────
+  const TEAM_BOARDS = ['team_korea', 'team_nepal', 'team_indonesia'];
+  const TEAM_BOARD_TITLES = { team_korea: 'Team Korea', team_nepal: 'Team Nepal', team_indonesia: 'Team Indonesia' };
+
+  function _teamBoard(department) {
+    const d = (department || '').toLowerCase();
+    if (d.includes('korea'))     return 'team_korea';
+    if (d.includes('nepal'))     return 'team_nepal';
+    if (d.includes('indonesia')) return 'team_indonesia';
+    return null;
+  }
+
   // ── DOM helpers ────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -102,7 +114,10 @@ const DP = (() => {
     if (extBtn) extBtn.style.display = 'none';
   }
 
-  function extendSession() {
+  async function extendSession() {
+    // Verify the server session cookie is still valid before extending the UI timer
+    const data = await api('GET', 'me');
+    if (!data) return; // 401 → api() already called logout()
     setSessionExpiry(Date.now() + SESSION_DURATION_MS);
     _sessionPromptShown = false;
     closeModal();
@@ -197,9 +212,19 @@ const DP = (() => {
 
   function _sanitizeHtml(html) {
     if (window.DOMPurify) return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    // Fallback: remove dangerous elements and event handler attributes
     const div = document.createElement('div');
     div.innerHTML = html;
-    div.querySelectorAll('script,iframe,object,embed,form').forEach(el => el.remove());
+    div.querySelectorAll('script,iframe,object,embed,form,meta,link,style').forEach(el => el.remove());
+    div.querySelectorAll('*').forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        if (/^on/i.test(attr.name)) {
+          el.removeAttribute(attr.name);
+        } else if (['href','src','action','formaction','data'].includes(attr.name) && /^\s*javascript:/i.test(attr.value)) {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
     return div.innerHTML;
   }
 
@@ -584,6 +609,18 @@ const DP = (() => {
       el.classList.toggle('dp-hidden', currentUser.role !== 'admin');
     });
 
+    // Show/hide team board nav items
+    const userTeam = _teamBoard(currentUser.department);
+    const isAdmin  = currentUser.role === 'admin';
+    let anyTeamVisible = false;
+    document.querySelectorAll('.dp-team-nav-item').forEach(el => {
+      const visible = isAdmin || `team_${el.dataset.team}` === userTeam;
+      el.classList.toggle('dp-hidden', !visible);
+      if (visible) anyTeamVisible = true;
+    });
+    const teamLabel = document.querySelector('.dp-team-nav-label');
+    if (teamLabel) teamLabel.classList.toggle('dp-hidden', !anyTeamVisible);
+
     navigate('home');
 
     // Load and display current version in footer
@@ -617,6 +654,10 @@ const DP = (() => {
       case 'minutes':      loadBoard('minutes'); break;
       case 'tasks':        loadTasks(); break;
       case 'notes':        loadNotes(); break;
+      case 'team_korea':
+      case 'team_nepal':
+      case 'team_indonesia':
+        loadBoard(section); break;
       case 'contacts':     loadContacts(); break;
       case 'users':
         if (currentUser?.role !== 'admin') { navigate('home'); return; }
@@ -1020,12 +1061,19 @@ const DP = (() => {
     const container = $(`dp-board-${boardName}`);
     if (!container) return;
 
-    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes' };
+    const boardTitles = {
+      announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes',
+      ...TEAM_BOARD_TITLES,
+    };
     const title = boardTitles[boardName] || boardName;
 
+    const isTeamBoard = TEAM_BOARDS.includes(boardName);
+    const userTeam    = _teamBoard(currentUser?.department);
+    const canCreate   = currentUser?.role === 'admin' || (isTeamBoard && userTeam === boardName);
+
     let addBtn = '';
-    if (currentUser?.role === 'admin') {
-      addBtn = `<button class="dp-btn dp-btn--primary dp-admin-only" onclick="DP.createPost('${boardName}')">+ New Post</button>`;
+    if (canCreate) {
+      addBtn = `<button class="dp-btn dp-btn--primary" onclick="DP.createPost('${boardName}')">+ New Post</button>`;
     }
 
     let pinned = posts.filter(p => p.pinned);
@@ -1043,7 +1091,7 @@ const DP = (() => {
 
     let regularHtml = '';
     if (regular.length === 0 && pinned.length === 0) {
-      regularHtml = `<div class="dp-empty-state"><p>No posts yet.</p>${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--primary dp-admin-only" onclick="DP.createPost('${boardName}')">Create the first post</button>` : ''}</div>`;
+      regularHtml = `<div class="dp-empty-state"><p>No posts yet.</p>${canCreate ? `<button class="dp-btn dp-btn--primary" onclick="DP.createPost('${boardName}')">Create the first post</button>` : ''}</div>`;
     } else {
       regularHtml = regular.map(p => renderPostCard(p, boardName)).join('');
     }
@@ -1373,12 +1421,18 @@ const DP = (() => {
     _fpApprovers = [];
     _renderApproverTags('fp');
     if (isMinutes) {
-      api('GET', 'events').then(d => {
+      const eventsReady = _allEvents.length > 0
+        ? Promise.resolve({ events: _allEvents })
+        : api('GET', 'events');
+      eventsReady.then(d => {
         if (!d?.events) return;
         _allEvents = d.events;
         _initEventPicker('fp', _allEvents, null);
       });
-      api('GET', 'users?picker=1').then(d => {
+      const usersReady = _allUsers.length > 0
+        ? Promise.resolve({ users: _allUsers })
+        : api('GET', 'users?picker=1');
+      usersReady.then(d => {
         if (!d?.users) return;
         _allUsers = d.users;
         _refreshApproverSelect('fp');
@@ -1546,12 +1600,18 @@ const DP = (() => {
     _epApprovers = (p.approvals || []).map(a => a.approver_name);
     _renderApproverTags('ep');
     if (isMinutes) {
-      api('GET', 'events').then(d => {
+      const eventsReady = _allEvents.length > 0
+        ? Promise.resolve({ events: _allEvents })
+        : api('GET', 'events');
+      eventsReady.then(d => {
         if (!d?.events) return;
         _allEvents = d.events;
         _initEventPicker('ep', _allEvents, p.linked_event_id || null);
       });
-      api('GET', 'users?picker=1').then(d => {
+      const usersReady = _allUsers.length > 0
+        ? Promise.resolve({ users: _allUsers })
+        : api('GET', 'users?picker=1');
+      usersReady.then(d => {
         if (!d?.users) return;
         _allUsers = d.users;
         _refreshApproverSelect('ep');
@@ -3418,21 +3478,22 @@ const DP = (() => {
 
     function noteRow(n) {
       const isHigh = n.priority === 'high' && n.status === 'open';
-      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}">
+      const plainContent = n.content ? n.content.replace(/<[^>]+>/g, '') : '';
+      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}" style="cursor:pointer" onclick="DP.viewNote(${n.id})">
         <div class="dp-note-row-left">
           <span class="dp-badge" style="background:${typeColor[n.type]||'#146E7A'}20;color:${typeColor[n.type]||'#146E7A'};border:1px solid ${typeColor[n.type]||'#146E7A'}40">${typeLabel[n.type]||n.type}</span>
           <div>
             <div class="dp-note-title">${esc(n.title)}</div>
-            ${n.content ? `<div class="dp-note-excerpt">${esc(n.content.slice(0,120))}${n.content.length>120?'…':''}</div>` : ''}
+            ${plainContent ? `<div class="dp-note-excerpt">${esc(plainContent.slice(0,120))}${plainContent.length>120?'…':''}</div>` : ''}
             <div class="dp-note-meta">${esc(n.added_by)} · ${fmtDate(n.created_at)} · ${n.priority==='high'?'🔴 High':n.priority==='low'?'⚪ Low':'🟡 Normal'}</div>
           </div>
         </div>
         <div class="dp-note-row-right">
           ${n.status === 'open'
-            ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP._resolveNote(${n.id})">✓ Resolve</button>`
+            ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation();DP._resolveNote(${n.id})">✓ Resolve</button>`
             : `<span style="font-size:11px;color:var(--text-3)">✅ Resolved</span>`}
-          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editNote(${n.id})">✏ Edit</button>
-          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP.deleteNote(${n.id})">Delete</button>` : ''}
+          <button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation();DP.editNote(${n.id})">✏ Edit</button>
+          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="event.stopPropagation();DP.deleteNote(${n.id})">Delete</button>` : ''}
         </div>
       </div>`;
     }
@@ -3471,7 +3532,23 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
-          <textarea id="cn-content" class="dp-input dp-textarea" rows="3"></textarea>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+            </div>
+            <div id="cn-tiptap"></div>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div class="dp-form-row">
@@ -3506,9 +3583,10 @@ const DP = (() => {
       onConfirm: async () => {
         const title = $('cn-title').value.trim();
         if (!title) { showToast('Title is required.', 'error'); return; }
+        const content = _getTiptapHTML();
         const result = await api('POST', 'notes', {
           title,
-          content:  $('cn-content').value.trim() || null,
+          content: content || null,
           type:     $('cn-type').value,
           priority: $('cn-priority').value,
           status:   $('cn-status').value,
@@ -3516,6 +3594,7 @@ const DP = (() => {
         if (result) { closeModal(); showToast('Note created.', 'success'); loadNotes(); }
       },
     });
+    _waitForTiptap(() => _initTiptap('cn-tiptap', null));
   }
 
   async function editNote(id) {
@@ -3529,7 +3608,23 @@ const DP = (() => {
         </div>
         <div class="dp-form-row">
           <label class="dp-label">Content</label>
-          <textarea id="en-content" class="dp-input dp-textarea" rows="3">${esc(note.content||'')}</textarea>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+            </div>
+            <div id="en-tiptap"></div>
+          </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
           <div class="dp-form-row">
@@ -3564,9 +3659,10 @@ const DP = (() => {
       onConfirm: async () => {
         const title = $('en-title').value.trim();
         if (!title) { showToast('Title is required.', 'error'); return; }
+        const content = _getTiptapHTML();
         const result = await api('PUT', `notes?id=${id}`, {
           title,
-          content:  $('en-content').value.trim() || null,
+          content: content || null,
           type:     $('en-type').value,
           priority: $('en-priority').value,
           status:   $('en-status').value,
@@ -3574,6 +3670,38 @@ const DP = (() => {
         if (result) { closeModal(); showToast('Saved.', 'success'); loadNotes(); }
       },
     });
+    _waitForTiptap(() => _initTiptap('en-tiptap', _legacyToHtml(note.content)));
+  }
+
+  function viewNote(id) {
+    const note = _allNotes.find(n => n.id === id);
+    if (!note) return;
+    const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
+    const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
+    const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
+    const color = typeColor[note.type] || '#146E7A';
+    const contentHtml = note.content
+      ? `<div class="dp-post-detail-content" style="margin:16px 0">${_sanitizeHtml(_legacyToHtml(note.content))}</div>`
+      : '';
+
+    openModal(`
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <span class="dp-badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${typeLabel[note.type]||note.type}</span>
+          <span class="dp-badge" style="background:var(--surface2);color:var(--text-2)">${priorityLabel[note.priority]||note.priority}</span>
+          <span class="dp-badge" style="background:var(--surface2);color:var(--text-2)">${note.status==='resolved'?'✅ Resolved':'🔓 Open'}</span>
+        </div>
+        ${contentHtml}
+        <div style="font-size:12px;color:var(--text-3);padding-top:10px;border-top:1px solid var(--border)">
+          ${esc(note.added_by)} · ${fmtDateHM(note.created_at)}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          ${note.status === 'open' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP._resolveNote(${note.id}),80)">✓ Resolve</button>` : ''}
+          <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.editNote(${note.id}),80)">✏ Edit</button>
+          ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.closeModal();setTimeout(()=>DP.deleteNote(${note.id}),80)">Delete</button>` : ''}
+        </div>
+      </div>
+    `, { title: esc(note.title), wide: true });
   }
 
   async function deleteNote(id) {
@@ -3714,6 +3842,7 @@ const DP = (() => {
     _setTaskFilter,
     _updateTaskStatus,
     loadNotes,
+    viewNote,
     createNote,
     editNote,
     deleteNote,

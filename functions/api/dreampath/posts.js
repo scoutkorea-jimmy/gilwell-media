@@ -10,7 +10,16 @@
  *   { url, name, type, size, is_image }
  */
 
-const VALID_BOARDS = ['announcements', 'documents', 'minutes'];
+const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia'];
+const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia'];
+
+// Returns whether a user's department matches a team board
+function _deptMatchesBoard(department, board) {
+  const d = (department || '').toLowerCase();
+  return (board === 'team_korea'     && d.includes('korea'))     ||
+         (board === 'team_nepal'     && d.includes('nepal'))     ||
+         (board === 'team_indonesia' && d.includes('indonesia'));
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -19,11 +28,17 @@ function json(data, status = 200) {
   });
 }
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet({ request, env, data }) {
   const url   = new URL(request.url);
   const id    = parseInt(url.searchParams.get('id') || '', 10);
   const board = url.searchParams.get('board');
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
+
+  // Team board access check for list requests
+  if (board && TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
+    const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+    if (!_deptMatchesBoard(u?.department, board)) return json({ error: 'Access denied.' }, 403);
+  }
 
   // ── Single post with files + history + linked event ───────────
   if (id) {
@@ -33,6 +48,12 @@ export async function onRequestGet({ request, env }) {
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
+
+    // Team board access check for single post
+    if (TEAM_BOARDS.includes(post.board) && data.dpUser.role !== 'admin') {
+      const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+      if (!_deptMatchesBoard(u?.department, post.board)) return json({ error: 'Access denied.' }, 403);
+    }
 
     const filesRes = await env.DB.prepare(
       `SELECT id, file_url, file_name, file_type, file_size, is_image
@@ -91,7 +112,14 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env, data }) {
-  if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
+  if (data.dpUser.role !== 'admin') {
+    // Non-admins can only post in their own team board
+    let body2;
+    try { body2 = await request.clone().json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    if (!TEAM_BOARDS.includes(body2.board)) return json({ error: 'Admin access required.' }, 403);
+    const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+    if (!_deptMatchesBoard(u?.department, body2.board)) return json({ error: 'Access denied.' }, 403);
+  }
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
@@ -120,16 +148,22 @@ export async function onRequestPost({ request, env, data }) {
 
   const postId = result.meta.last_row_id;
 
-  // Insert approvers for minutes board
-  if (board === 'minutes' && Array.isArray(approvers)) {
-    for (const name of approvers) {
-      const safeName = String(name || '').trim().slice(0, 100);
-      if (!safeName) continue;
-      const u = await env.DB.prepare(`SELECT id FROM dp_users WHERE display_name = ?`).bind(safeName).first();
-      if (!u) continue;
-      await env.DB.prepare(
-        `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
-      ).bind(postId, u.id, safeName).run();
+  // Insert approvers for minutes board (batch lookup to avoid N+1)
+  if (board === 'minutes' && Array.isArray(approvers) && approvers.length > 0) {
+    const names = approvers.map(n => String(n || '').trim().slice(0, 100)).filter(Boolean);
+    if (names.length > 0) {
+      const placeholders = names.map(() => '?').join(',');
+      const usersRes = await env.DB.prepare(
+        `SELECT id, display_name FROM dp_users WHERE display_name IN (${placeholders})`
+      ).bind(...names).all();
+      const userMap = Object.fromEntries((usersRes.results || []).map(u => [u.display_name, u.id]));
+      for (const name of names) {
+        const uid = userMap[name];
+        if (!uid) continue;
+        await env.DB.prepare(
+          `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
+        ).bind(postId, uid, name).run();
+      }
     }
   }
 
@@ -165,9 +199,14 @@ export async function onRequestPut({ request, env, data }) {
 
   // Save edit history before making changes
   const current = await env.DB.prepare(
-    `SELECT title, content, board, approval_status FROM dp_board_posts WHERE id = ?`
+    `SELECT title, content, board, approval_status, author_id FROM dp_board_posts WHERE id = ?`
   ).bind(id).first();
   if (!current) return json({ error: 'Post not found.' }, 404);
+
+  // Permission check: admin can edit anything; others can only edit their own posts
+  if (data.dpUser.role !== 'admin' && current.author_id !== data.dpUser.uid) {
+    return json({ error: 'You can only edit your own posts.' }, 403);
+  }
 
   // Content lock: approved minutes cannot be edited
   if (current.board === 'minutes' && current.approval_status === 'approved') {
@@ -219,14 +258,20 @@ export async function onRequestPut({ request, env, data }) {
     const existingNames = existing.map(a => a.approver_name);
     const newNames = body.approvers.map(n => String(n).trim()).filter(Boolean);
 
-    // Add new approvers
-    for (const name of newNames) {
-      if (!existingNames.includes(name)) {
-        const u = await env.DB.prepare(`SELECT id FROM dp_users WHERE display_name = ?`).bind(name.slice(0, 100)).first();
-        if (!u) continue;
+    // Add new approvers (batch lookup to avoid N+1)
+    const toAdd = newNames.filter(n => !existingNames.includes(n));
+    if (toAdd.length > 0) {
+      const placeholders = toAdd.map(() => '?').join(',');
+      const usersRes = await env.DB.prepare(
+        `SELECT id, display_name FROM dp_users WHERE display_name IN (${placeholders})`
+      ).bind(...toAdd.map(n => n.slice(0, 100))).all();
+      const userMap = Object.fromEntries((usersRes.results || []).map(u => [u.display_name, u.id]));
+      for (const name of toAdd) {
+        const uid = userMap[name.slice(0, 100)];
+        if (!uid) continue;
         await env.DB.prepare(
           `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
-        ).bind(id, u.id, name.slice(0, 100)).run();
+        ).bind(id, uid, name.slice(0, 100)).run();
       }
     }
     // Remove pending approvers not in new list
