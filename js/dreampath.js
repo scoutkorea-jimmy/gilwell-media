@@ -1126,10 +1126,17 @@ const DP = (() => {
         return items;
       }
 
-      regularHtml = rootPosts
-        .flatMap(p => flattenChain(p, 0))
-        .map(({ post, depth }) => renderPostCard(post, boardName, depth))
-        .join('');
+      regularHtml = rootPosts.map(root => {
+        const chain = flattenChain(root, 0);
+        // If any version in the chain is approved, supersede all non-approved cards
+        const chainApproved = chain.some(({ post }) => post.approval_status === 'approved');
+        return chain
+          .map(({ post, depth }) => {
+            const superseded = chainApproved && post.approval_status !== 'approved';
+            return renderPostCard(post, boardName, depth, superseded);
+          })
+          .join('');
+      }).join('');
     } else {
       regularHtml = regular.map(p => renderPostCard(p, boardName, 0)).join('');
     }
@@ -1144,14 +1151,15 @@ const DP = (() => {
     `;
   }
 
-  function renderPostCard(post, boardName, depth = 0) {
+  function renderPostCard(post, boardName, depth = 0, superseded = false) {
     const excerpt = post.content
       ? post.content.replace(/<[^>]+>/g, '').slice(0, 120) + (post.content.length > 120 ? '...' : '')
       : '';
 
-    // Card color class based on approval_status (minutes only)
-    const statusCls = boardName === 'minutes' && post.approval_status
-      ? `dp-post-card--${post.approval_status}` : '';
+    // Card color: superseded = gray; otherwise own approval_status color (minutes only)
+    const statusCls = superseded
+      ? 'dp-post-card--superseded'
+      : (boardName === 'minutes' && post.approval_status ? `dp-post-card--${post.approval_status}` : '');
     const depthCls  = depth > 0 ? 'dp-post-card--revision' : '';
 
     let adminBtns = '';

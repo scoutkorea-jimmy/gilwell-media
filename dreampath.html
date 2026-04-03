@@ -779,9 +779,10 @@
     }
     .dp-post-card:hover { border-color: #B3D5D9; box-shadow: var(--shadow-md); }
     /* Minutes approval status tinting */
-    .dp-post-card--approved { background: color-mix(in srgb, #146E7A 9%, var(--surface)); border-left: 3px solid #146E7A; }
-    .dp-post-card--pending  { background: color-mix(in srgb, #D97706 7%, var(--surface)); border-left: 3px solid #D97706; }
-    .dp-post-card--rejected { background: color-mix(in srgb, #DC2626 7%, var(--surface)); border-left: 3px solid #DC2626; }
+    .dp-post-card--approved   { background: color-mix(in srgb, #146E7A 9%, var(--surface)); border-left: 3px solid #146E7A; }
+    .dp-post-card--pending    { background: color-mix(in srgb, #D97706 7%, var(--surface)); border-left: 3px solid #D97706; }
+    .dp-post-card--rejected   { background: color-mix(in srgb, #DC2626 7%, var(--surface)); border-left: 3px solid #DC2626; }
+    .dp-post-card--superseded { background: var(--surface); border-left: 3px solid var(--border); opacity: 0.5; filter: grayscale(0.5); }
     /* Revision chain indentation */
     .dp-post-card--revision { margin-left: 28px; position: relative; }
     .dp-post-card--revision::before {
