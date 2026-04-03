@@ -28,24 +28,35 @@
 **Deploy:** `./deploy.sh feature "설명"` or `./deploy.sh fix "설명"`
 - Auto-increments version and registers in D1 `dp_versions` table
 - Do NOT deploy without running `./deploy.sh`
+- Wrangler 위치: `/opt/homebrew/bin/wrangler` (PATH에 없을 경우 `export PATH="/opt/homebrew/bin:$PATH"`)
 
 ---
 
 ## Key Files
 
 ```
-dreampath.html              — Dreampath 전용 인라인 CSS 전체
-js/dreampath.js             — Dreampath 프론트엔드 로직 전체 (IIFE)
-functions/api/dreampath/    — Dreampath API 엔드포인트 전체
-functions/_shared/auth.js   — 인증 코어 (수정 금지 without sign-off)
-deploy.sh                   — 배포 + 버전 자동 등록 스크립트
-css/style.css               — 메인 사이트 공유 스타일시트
-js/main.js                  — 메인 사이트 공유 유틸리티 (GW namespace)
-js/board.js                 — 게시판 렌더링 (GW.Board)
-js/admin.js                 — 어드민 패널 로직
+# ── Dreampath ─────────────────────────────────────────────────────
+dreampath.html                        — Dreampath 전용 인라인 CSS 전체
+js/dreampath.js                       — Dreampath 프론트엔드 로직 전체 (IIFE)
+functions/api/dreampath/posts.js      — 게시글 CRUD (게시판 접근 제어 포함)
+functions/api/dreampath/approvals.js  — 회의록 다중 승인 투표
+functions/api/dreampath/upload.js     — 파일 업로드 + 확장자 차단
+functions/api/dreampath/             — Dreampath API 엔드포인트 전체
+functions/_shared/auth.js             — 인증 코어 (수정 금지 without sign-off)
+deploy.sh                             — 배포 + 버전 자동 등록 스크립트
+
+# ── Main Site ─────────────────────────────────────────────────────
+css/style.css                         — 메인 사이트 공유 스타일시트
+js/main.js                            — 메인 사이트 공유 유틸리티 (GW namespace)
+js/board.js                           — 게시판 렌더링 (GW.Board)
+js/admin.js                           — 어드민 패널 로직
 ```
 
 ---
+
+## ══════════════════════════════════════════
+##  DREAMPATH
+## ══════════════════════════════════════════
 
 ## Dreampath Frontend Rules
 
@@ -61,11 +72,108 @@ js/admin.js                 — 어드민 패널 로직
 - 색상은 반드시 `:root` CSS 변수 사용: `var(--accent)`, `var(--text)`, etc.
 - CUFS 브랜드 색상: Green `#146E7A` · Navy `#002D56` · Gold `#8D714E`
 
-### Rich Text Editor (게시글)
-- **에디터**: Tiptap (esm.sh CDN) — `@tiptap/core@2`, `@tiptap/starter-kit@2`
+### Rich Text Editor (게시글 + 노트)
+- **에디터**: Tiptap (esm.sh CDN) — 아래 extensions 모두 로드됨
+  ```
+  @tiptap/core@2
+  @tiptap/starter-kit@2
+  @tiptap/extension-table@2
+  @tiptap/extension-table-row@2
+  @tiptap/extension-table-header@2
+  @tiptap/extension-table-cell@2
+  ```
+- **에디터 탑재 위치**: `createPost`, `editPost`, `createNote`, `editNote` (4곳)
 - **뷰어**: DOMPurify (cdnjs CDN) — 모든 HTML 출력에 적용 필수
+- **비동기 초기화**: Tiptap은 비동기 로드 → 반드시 `_waitForTiptap(cb)` 헬퍼를 통해 초기화
 - 기존 plain-text 게시글 → `_legacyToHtml()` 자동 변환 (하위 호환)
 - `_destroyTiptap()`은 `closeModal()`에서 자동 호출됨
+- 새 extension 추가 시: `dreampath.html` import + `_initTiptap()` extensions 배열 + `_execTiptapCmd()` + 툴바 HTML (4곳 모두) 동시에 수정
+
+---
+
+## Team Boards
+
+게시판 목록: `announcements`, `documents`, `minutes`, `team_korea`, `team_nepal`, `team_indonesia`
+
+```javascript
+const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia'];
+const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia'];
+```
+
+### 접근 제어 규칙
+| 역할 | 읽기 | 쓰기 |
+|---|---|---|
+| admin | 모든 게시판 | 모든 게시판 |
+| 일반 유저 | 자기 팀 보드만 | 자기 팀 보드만 |
+
+### 중요: department는 JWT에 없음
+`data.dpUser` 미들웨어 주입 필드: `{ uid, username, role, name }` — **`department` 없음**
+
+팀 보드 접근 판별이 필요한 경우 항상 DB에서 별도 조회해야 함:
+```javascript
+const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+```
+
+### department 매칭 패턴 (`_deptMatchesBoard`)
+```javascript
+const d = (department || '').toLowerCase();
+board === 'team_korea'     && d.includes('korea')
+board === 'team_nepal'     && d.includes('nepal')
+board === 'team_indonesia' && d.includes('indonesia')
+```
+
+프론트엔드에서도 동일 로직 사용: `_teamBoard(department)` in `js/dreampath.js`
+
+---
+
+## API Access Control Patterns
+
+### 게시글 작성 (POST /api/dreampath/posts)
+- **admin**: 모든 게시판 작성 가능
+- **일반 유저**: `TEAM_BOARDS`에 속한 자기 팀 보드에만 작성 가능. 그 외 게시판 → 403
+
+### 게시글 수정 (PUT /api/dreampath/posts?id=N)
+- **admin**: 모든 게시글 수정 가능
+- **일반 유저**: `author_id = data.dpUser.uid`인 본인 게시글만 수정 가능 → 403
+
+### 회의록 잠금 (Minutes Content Lock)
+- `approval_status = 'approved'`인 회의록은 content 수정 불가
+- `title`, `content`, `pinned` 변경 시도 → **HTTP 423** 반환
+  ```json
+  { "error": "LOCKED", "message": "This meeting minutes has been approved..." }
+  ```
+- 프론트엔드에서 423 수신 시 잠금 안내 메시지 표시
+
+### 파일 업로드 차단 확장자
+`upload.js`의 `BLOCKED_EXTENSIONS` — 실행 가능한 파일 유형 전체 차단:
+```
+exe, sh, bat, cmd, com, ps1, vbs, jar, app, deb, rpm, dmg, pkg, msi, dll, sys, reg, lnk 등
+```
+최대 100MB / 파일당, 최대 5개 / 게시글당
+
+---
+
+## Meeting Minutes Approval System
+
+### 테이블: `dp_post_approvals`
+| 컬럼 | 설명 |
+|---|---|
+| `post_id` | 연결된 게시글 ID |
+| `approver_id` | 승인자 `dp_users.id` |
+| `approver_name` | 승인자 display_name |
+| `status` | `pending` / `approved` / `rejected` |
+| `voted_at` | 투표 시각 (UTC) |
+| `override_by` | 어드민 강제 변경자 이름 |
+| `override_note` | 강제 변경 사유 |
+
+### 승인 로직
+- 총 승인자 중 **과반수 초과** `approved` → `dp_board_posts.approval_status = 'approved'` + 게시글 잠금
+- 승인자 추가/제거 후 자동 재계산
+- 투표/재계산 시 `dp_post_history`에 자동 로그 기록
+
+### 어드민 강제 투표 변경 (Override)
+- **2026-04-01 이전** 생성된 회의록에 한해서만 허용 (`CUTOFF = '2026-04-01'`)
+- 이후 생성 게시글의 타인 투표 변경 → 403
 
 ---
 
@@ -102,6 +210,7 @@ js/admin.js                 — 어드민 패널 로직
 6. `js/dreampath.js` IIFE 구조를 분리하거나 ES 모듈로 변환 금지
 7. CDN URL 변경 시 반드시 버전 고정 여부 확인 필수
 8. `.env` 또는 시크릿 값을 절대 커밋 금지
+9. `dp_post_approvals`에 직접 `INSERT` 시 `approver_id` (NOT NULL) 반드시 포함
 
 ---
 
@@ -109,18 +218,26 @@ js/admin.js                 — 어드민 패널 로직
 
 - **Main site admin**: HMAC-SHA256 token → `sessionStorage` (24h)
 - **Dreampath**: cookie `dp_session=1` (httpOnly, 1h) + `localStorage` user profile
-- 세션 타이머: 1h, 5분 전 경고 팝업 → 연장 가능
+- 세션 타이머: 1h, 5분 전 경고 팝업 → 연장 가능 (서버 세션 유효성 확인 후 연장)
 - `functions/api/dreampath/_middleware.js` — 모든 Dreampath API 인증 미들웨어
 
 ---
 
-## Main Site (BP Post / 길웰 미디어) Overview
+## ══════════════════════════════════════════
+##  MAIN SITE (BP Post / 길웰 미디어)
+## ══════════════════════════════════════════
 
 - URL: `bpmedia.net`
 - 게시판: `korea`, `apr`, `worm` (3개 카테고리)
-- 에디터: Editor.js (block-based, 메인 사이트 기사 작성용)
+- 에디터: **Editor.js** (block-based, 메인 사이트 기사 작성용) — Tiptap과 무관
 - 게시글 렌더러: `GW.renderEditorContent()` in `js/main.js`
+- 네임스페이스: `window.GW` — Dreampath의 `window.DP`와 완전히 분리
 - 관련 파일: `js/board.js`, `js/post-page.js`, `js/admin-v3.js`
+
+### 주의사항
+- 메인 사이트 JS/CSS는 Dreampath와 **공유하지 않음**
+- `css/style.css`는 메인 사이트 전용 — Dreampath 스타일은 `dreampath.html` `<style>`에만
+- 메인 사이트 API: `/functions/api/` (dreampath 서브폴더 아님)
 
 ---
 
