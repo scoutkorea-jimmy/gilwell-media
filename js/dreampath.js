@@ -727,7 +727,7 @@ const DP = (() => {
   function _recentItemHtml(item) {
     return `<div class="dp-home-item">
       <strong>${esc(item.title || '')}</strong>
-      <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtDateHM(item.created_at) : ''))}</small>
+      <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtFull(item.created_at) : ''))}</small>
       ${item.note ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2)">${esc(String(item.note).slice(0, 140))}</div>` : ''}
     </div>`;
   }
@@ -1048,7 +1048,7 @@ const DP = (() => {
         <div class="dp-preview-item" onclick="DP.viewPost(${p.id})">
           ${p.pinned ? '<span class="dp-pin-icon" title="Pinned">&#128204;</span>' : ''}
           <span class="dp-preview-item-title">${esc(p.title)}</span>
-          <span class="dp-preview-item-date">${esc(fmtDate(p.created_at))}</span>
+          <span class="dp-preview-item-date">${esc(fmtFull(p.created_at))}</span>
         </div>
       `).join('');
     }
@@ -1143,7 +1143,7 @@ const DP = (() => {
           <div class="dp-post-card-meta">
             ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
             <span class="dp-post-author">${esc(post.author_name)}</span>
-            <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtDateHM(post.updated_at))}` : esc(fmtDateHM(post.created_at))}</span>
+            <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtFull(post.updated_at))}` : esc(fmtFull(post.created_at))}</span>
             ${post.file_url ? '<span class="dp-post-file-badge">&#128206; File attached</span>' : ''}
             ${post.board === 'minutes' && post.approval_status ? (() => {
               const cls = { pending: 'dp-approval--pending', approved: 'dp-approval--approved', rejected: 'dp-approval--rejected' };
@@ -1788,7 +1788,7 @@ const DP = (() => {
         ${linkedMinutes.map(m => `
           <div class="dp-linked-minutes-item" onclick="DP.closeModal(); setTimeout(()=>DP.viewPost(${m.id}),80)">
             <span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.title)}</span>
-            <span style="color:var(--text-3);font-size:12px;white-space:nowrap;flex-shrink:0">${esc(m.author_name)} · ${fmtDate(m.created_at)}</span>
+            <span style="color:var(--text-3);font-size:12px;white-space:nowrap;flex-shrink:0">${esc(m.author_name)} · ${fmtFull(m.created_at)}</span>
           </div>`).join('')}
         ${currentUser?.role === 'admin' ? `
         <button class="dp-btn dp-btn--ghost dp-btn--sm" style="margin-top:6px" onclick="DP.closeModal(); setTimeout(()=>DP.navigate('minutes'),80);">
@@ -2075,8 +2075,8 @@ const DP = (() => {
           <td>${roleBadge}</td>
           <td class="dp-text-muted">${esc(u.department || '—')}</td>
           <td>${statusBadge}</td>
-          <td class="dp-text-muted">${esc(fmtDate(u.created_at))}</td>
-          <td>${u.last_login_at ? fmtDate(u.last_login_at) : '<span style="color:var(--text-3)">—</span>'}</td>
+          <td class="dp-text-muted">${esc(fmtFull(u.created_at))}</td>
+          <td>${u.last_login_at ? fmtFull(u.last_login_at) : '<span style="color:var(--text-3)">—</span>'}</td>
           <td>
             <div class="dp-table-actions">
               ${!isSelf ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="DP.editUser(${u.id})">Edit</button>` : ''}
@@ -3517,7 +3517,7 @@ const DP = (() => {
           <div>
             <div class="dp-note-title">${esc(n.title)}</div>
             ${plainContent ? `<div class="dp-note-excerpt">${esc(plainContent.slice(0,120))}${plainContent.length>120?'…':''}</div>` : ''}
-            <div class="dp-note-meta">${esc(n.added_by)} · ${fmtDate(n.created_at)} · ${n.priority==='high'?'🔴 High':n.priority==='low'?'⚪ Low':'🟡 Normal'}</div>
+            <div class="dp-note-meta">${esc(n.added_by)} · ${fmtFull(n.created_at)} · ${n.priority==='high'?'🔴 High':n.priority==='low'?'⚪ Low':'🟡 Normal'}</div>
           </div>
         </div>
         <div class="dp-note-row-right">
@@ -3739,7 +3739,7 @@ const DP = (() => {
         </div>
         ${contentHtml}
         <div style="font-size:12px;color:var(--text-3);padding-top:10px;border-top:1px solid var(--border)">
-          ${esc(note.added_by)} · ${fmtDateHM(note.created_at)}
+          ${esc(note.added_by)} · ${fmtFull(note.created_at)}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
           ${note.status === 'open' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP._resolveNote(${note.id}),80)">✓ Resolve</button>` : ''}
