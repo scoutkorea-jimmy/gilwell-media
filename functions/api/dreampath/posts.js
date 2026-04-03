@@ -96,14 +96,14 @@ export async function onRequestGet({ request, env, data }) {
   if (board) {
     rows = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_name, pinned, created_at, updated_at
+              author_name, pinned, approval_status, created_at, updated_at
          FROM dp_board_posts WHERE board = ?
         ORDER BY pinned DESC, created_at DESC LIMIT ?`
     ).bind(board, limit).all();
   } else {
     rows = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_name, pinned, created_at, updated_at
+              author_name, pinned, approval_status, created_at, updated_at
          FROM dp_board_posts
         ORDER BY pinned DESC, created_at DESC LIMIT ?`
     ).bind(limit).all();
