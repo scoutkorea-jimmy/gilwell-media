@@ -16,7 +16,7 @@ const CUTOFF = '2026-04-01';
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const postId = parseInt(url.searchParams.get('post_id') || '', 10);
-  if (!postId) return json({ error: 'post_id required' }, 400);
+  if (!postId) return json({ error: 'post_id is required.' }, 400);
   const rows = await env.DB.prepare(
     `SELECT id, approver_name, status, voted_at, override_by, override_note, created_at
        FROM dp_post_approvals WHERE post_id = ? ORDER BY created_at ASC`
@@ -28,7 +28,7 @@ export async function onRequestPut({ request, env, data }) {
   const url = new URL(request.url);
   const postId = parseInt(url.searchParams.get('post_id') || '', 10);
   const approverName = decodeURIComponent(url.searchParams.get('approver') || '').trim();
-  if (!postId || !approverName) return json({ error: 'post_id and approver required' }, 400);
+  if (!postId || !approverName) return json({ error: 'post_id and approver are required.' }, 400);
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
@@ -64,11 +64,10 @@ export async function onRequestPut({ request, env, data }) {
     return json({ error: 'Admin vote override is only allowed for minutes created before April 1, 2026.' }, 403);
   }
 
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   await env.DB.prepare(
-    `UPDATE dp_post_approvals SET status = ?, voted_at = ?, override_by = ?, override_note = ? WHERE id = ?`
+    `UPDATE dp_post_approvals SET status = ?, voted_at = datetime('now'), override_by = ?, override_note = ? WHERE id = ?`
   ).bind(
-    newStatus, now,
+    newStatus,
     isAdminOverride ? data.dpUser.name : null,
     isAdminOverride ? (override_note ? override_note.trim().slice(0, 300) : null) : null,
     approval.id
