@@ -778,6 +778,24 @@
       transition: border-color .15s, box-shadow .15s;
     }
     .dp-post-card:hover { border-color: #B3D5D9; box-shadow: var(--shadow-md); }
+    /* Minutes approval status tinting */
+    .dp-post-card--approved { background: color-mix(in srgb, #146E7A 9%, var(--surface)); border-left: 3px solid #146E7A; }
+    .dp-post-card--pending  { background: color-mix(in srgb, #D97706 7%, var(--surface)); border-left: 3px solid #D97706; }
+    .dp-post-card--rejected { background: color-mix(in srgb, #DC2626 7%, var(--surface)); border-left: 3px solid #DC2626; }
+    /* Revision chain indentation */
+    .dp-post-card--revision { margin-left: 28px; position: relative; }
+    .dp-post-card--revision::before {
+      content: ''; position: absolute; left: -16px; top: 50%;
+      width: 14px; height: 2px; background: var(--border);
+    }
+    /* Version chip */
+    .dp-version-chip {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; letter-spacing: .3px;
+      background: var(--surface2); color: var(--text-2);
+      border: 1px solid var(--border);
+    }
     .dp-post-card-inner { flex: 1; min-width: 0; }
     .dp-post-card-meta {
       display: flex;

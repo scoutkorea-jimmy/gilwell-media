@@ -1091,7 +1091,7 @@ const DP = (() => {
       addBtn = `<button class="dp-btn dp-btn--primary" onclick="DP.createPost('${boardName}')">+ New Post</button>`;
     }
 
-    let pinned = posts.filter(p => p.pinned);
+    let pinned  = posts.filter(p => p.pinned);
     let regular = posts.filter(p => !p.pinned);
 
     let pinnedHtml = '';
@@ -1099,7 +1099,7 @@ const DP = (() => {
       pinnedHtml = `
         <div class="dp-board-pinned">
           <div class="dp-board-pinned-label">Pinned</div>
-          ${pinned.map(p => renderPostCard(p, boardName)).join('')}
+          ${pinned.map(p => renderPostCard(p, boardName, 0)).join('')}
         </div>
       `;
     }
@@ -1107,8 +1107,31 @@ const DP = (() => {
     let regularHtml = '';
     if (regular.length === 0 && pinned.length === 0) {
       regularHtml = `<div class="dp-empty-state"><p>No posts yet.</p>${canCreate ? `<button class="dp-btn dp-btn--primary" onclick="DP.createPost('${boardName}')">Create the first post</button>` : ''}</div>`;
+    } else if (boardName === 'minutes') {
+      // Build version chains: group children under their root post
+      const childrenOf = {};
+      regular.filter(p => p.parent_post_id).forEach(p => {
+        if (!childrenOf[p.parent_post_id]) childrenOf[p.parent_post_id] = [];
+        childrenOf[p.parent_post_id].push(p);
+      });
+      const rootPosts = regular
+        .filter(p => !p.parent_post_id)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+      function flattenChain(post, depth) {
+        const items = [{ post, depth }];
+        const children = (childrenOf[post.id] || [])
+          .sort((a, b) => (a.version_number || 1) - (b.version_number || 1));
+        for (const c of children) items.push(...flattenChain(c, depth + 1));
+        return items;
+      }
+
+      regularHtml = rootPosts
+        .flatMap(p => flattenChain(p, 0))
+        .map(({ post, depth }) => renderPostCard(post, boardName, depth))
+        .join('');
     } else {
-      regularHtml = regular.map(p => renderPostCard(p, boardName)).join('');
+      regularHtml = regular.map(p => renderPostCard(p, boardName, 0)).join('');
     }
 
     container.innerHTML = `
@@ -1121,24 +1144,35 @@ const DP = (() => {
     `;
   }
 
-  function renderPostCard(post, boardName) {
+  function renderPostCard(post, boardName, depth = 0) {
     const excerpt = post.content
       ? post.content.replace(/<[^>]+>/g, '').slice(0, 120) + (post.content.length > 120 ? '...' : '')
       : '';
+
+    // Card color class based on approval_status (minutes only)
+    const statusCls = boardName === 'minutes' && post.approval_status
+      ? `dp-post-card--${post.approval_status}` : '';
+    const depthCls  = depth > 0 ? 'dp-post-card--revision' : '';
+
     let adminBtns = '';
     if (currentUser) {
       const isAdmin   = currentUser.role === 'admin';
       const isAuthor  = post.author_name === (currentUser.display_name || currentUser.username);
       const canEdit   = isAdmin || isAuthor;
+      const canRevise = boardName === 'minutes' && post.approval_status === 'rejected' && (isAdmin || isAuthor);
+      const verBadge  = (post.version_number || 1) > 1
+        ? `<span class="dp-version-chip">V${post.version_number}</span>` : '';
       adminBtns = `
         <div class="dp-post-actions">
+          ${verBadge}
           ${canEdit ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">&#9998; Edit</button>` : ''}
           ${isAdmin ? `<button class="dp-btn dp-btn--xs dp-btn--danger dp-admin-only" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>` : ''}
+          ${canRevise ? `<button class="dp-btn dp-btn--xs dp-btn--primary" onclick="event.stopPropagation(); DP.revisePost(${post.id})">&#8635; Revise</button>` : ''}
         </div>
       `;
     }
     return `
-      <div class="dp-post-card" onclick="DP.viewPost(${post.id})">
+      <div class="dp-post-card ${statusCls} ${depthCls}" onclick="DP.viewPost(${post.id})">
         <div class="dp-post-card-inner">
           <div class="dp-post-card-meta">
             ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
@@ -1336,14 +1370,15 @@ const DP = (() => {
     `, { title: p.title, wide: true });
   }
 
-  async function createPost(boardName) {
+  async function createPost(boardName, revisionOf = null) {
+    // revisionOf = { parentPostId, versionNumber, prefillTitle, prefillContent }
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
     const isMinutes = boardName === 'minutes';
     openModal(`
       <div class="dp-form">
         <div class="dp-form-row">
           <label class="dp-label">Title <span class="dp-required">*</span></label>
-          <input id="fp-title" class="dp-input" type="text" placeholder="Post title" maxlength="200" />
+          <input id="fp-title" class="dp-input" type="text" placeholder="Post title" maxlength="200" value="${esc(revisionOf?.prefillTitle || '')}" />
         </div>
         ${isMinutes ? `
         <div class="dp-form-row">
@@ -1413,8 +1448,10 @@ const DP = (() => {
         </div>
       </div>
     `, {
-      title: `New Post — ${boardTitles[boardName] || boardName}`,
-      confirmLabel: 'Create Post',
+      title: revisionOf
+        ? `Revise V${revisionOf.versionNumber} → V${revisionOf.versionNumber + 1} — ${boardTitles[boardName] || boardName}`
+        : `New Post — ${boardTitles[boardName] || boardName}`,
+      confirmLabel: revisionOf ? 'Submit Revision' : 'Create Post',
       onConfirm: async () => {
         const board   = boardName;
         const title   = $('fp-title').value.trim();
@@ -1433,6 +1470,7 @@ const DP = (() => {
           board, title, content: content || null, pinned,
           files: uploadedFiles, linked_event_id,
           ...(isMinutes ? { approvers } : {}),
+          ...(revisionOf ? { parent_post_id: revisionOf.parentPostId } : {}),
         });
         if (result) {
           closeModal();
@@ -1442,7 +1480,7 @@ const DP = (() => {
         }
       },
     });
-    _waitForTiptap(() => _initTiptap('fp-tiptap', null));
+    _waitForTiptap(() => _initTiptap('fp-tiptap', revisionOf?.prefillContent || null));
     _fpApprovers = [];
     _renderApproverTags('fp');
     if (isMinutes) {
@@ -1649,6 +1687,19 @@ const DP = (() => {
         _refreshApproverSelect('ep');
       });
     }
+  }
+
+  async function revisePost(id) {
+    const postData = await api('GET', `posts?id=${id}`);
+    if (!postData?.post) return;
+    const p = postData.post;
+    closeModal();
+    createPost('minutes', {
+      parentPostId:   p.id,
+      versionNumber:  p.version_number || 1,
+      prefillTitle:   p.title,
+      prefillContent: p.content || '',
+    });
   }
 
   async function deletePost(id, boardName) {
@@ -3916,6 +3967,7 @@ const DP = (() => {
     _updateTaskStatus,
     loadNotes,
     viewNote,
+    revisePost,
     createNote,
     editNote,
     deleteNote,
