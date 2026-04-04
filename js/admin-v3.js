@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.046.08
+ * Version: 03.046.09
  *
  * Versioning:
  *   V3.aaa.bb
@@ -64,6 +64,7 @@
   var _calCats       = [];
   var CAL_CATEGORY_OPTIONS = ['KOR', 'APR', 'EUR', 'AFR', 'ARB', 'IAR', 'WOSM'];
   var CAL_KOR_TARGET_GROUPS = ['비버', '컵', '스카우트', '벤처', '로버', '지도자', '범스카우트', '훈련교수회'];
+  var _simpleRowsSeq = 0;
 
   // Glossary
   var _glosItems     = [];
@@ -747,13 +748,15 @@
   }
 
   function _renderSimpleRows(items, mapFn, emptyText) {
-    var rows = Array.isArray(items) ? items.slice(0, 6) : [];
+    var rows = Array.isArray(items) ? items.slice() : [];
+    var visibleCount = 6;
     if (!rows.length) {
       return '<div class="v3-empty"><div class="v3-empty-text">' + GW.escapeHtml(emptyText || '데이터 없음') + '</div></div>';
     }
-    return rows.map(function (item) {
+    var targetId = 'v3-simple-rows-' + (++_simpleRowsSeq);
+    var body = rows.map(function (item, index) {
       var mapped = mapFn(item) || {};
-      return '<div class="v3-recent-row">' +
+      return '<div class="v3-recent-row' + (index >= visibleCount ? ' is-collapsed' : '') + '" data-v3-simple-row>' +
         '<div class="v3-recent-info">' +
           '<div class="v3-recent-title">' + GW.escapeHtml(mapped.title || '') + '</div>' +
           '<div class="v3-recent-meta">' + GW.escapeHtml(mapped.meta || '') + '</div>' +
@@ -761,7 +764,25 @@
         (mapped.action ? '<div style="margin-left:10px;flex-shrink:0;">' + mapped.action + '</div>' : '') +
       '</div>';
     }).join('');
+    var footer = '';
+    if (rows.length > visibleCount) {
+      footer = '<button type="button" class="v3-more-btn" aria-expanded="false" data-v3-more-target="' + targetId + '" onclick="V3.toggleMoreRows(this)">더보기 (' + (rows.length - visibleCount) + '개)</button>';
+    }
+    return '<div class="v3-simple-rows" id="' + targetId + '" data-v3-expanded="false">' + body + '</div>' + footer;
   }
+
+  V3.toggleMoreRows = function (btn) {
+    if (!btn) return;
+    var targetId = btn.getAttribute('data-v3-more-target');
+    if (!targetId) return;
+    var container = document.getElementById(targetId);
+    if (!container) return;
+    var expanded = container.getAttribute('data-v3-expanded') === 'true';
+    var next = !expanded;
+    container.setAttribute('data-v3-expanded', next ? 'true' : 'false');
+    btn.setAttribute('aria-expanded', next ? 'true' : 'false');
+    btn.textContent = next ? '접기' : ('더보기 (' + container.querySelectorAll('[data-v3-simple-row].is-collapsed').length + '개)');
+  };
 
   /* ══════════════════════════════════════════════════════════
      POST LIST
