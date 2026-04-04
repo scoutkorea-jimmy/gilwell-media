@@ -4805,6 +4805,39 @@ body.admin-page .admin-inline-number-input {
   font-size: 12px !important;
 }
 
+body.admin-page .v3-simple-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body.admin-page .v3-simple-rows[data-v3-expanded="false"] [data-v3-simple-row].is-collapsed {
+  display: none;
+}
+
+body.admin-page .v3-more-btn {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-stroke);
+  border-radius: 999px;
+  background: var(--admin-surface-soft);
+  color: var(--admin-muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+body.admin-page .v3-more-btn:hover {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  border-color: var(--admin-stroke-strong);
+}
+
 body.admin-page .admin-stack-list {
   display: flex !important;
   flex-direction: column !important;
