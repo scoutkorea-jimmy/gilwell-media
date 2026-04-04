@@ -1508,7 +1508,7 @@
 
   function renderDesignModule(module) {
     var runtimeSource = getDesignRuntimeSource(module);
-    return '<article class="kms-ds-module" data-kms-ds-view="code">' +
+    return '<article class="kms-ds-module" data-kms-ds-view="preview">' +
       '<div class="kms-ds-module-head">' +
         '<div class="kms-ds-module-title-block">' +
           '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
@@ -1520,8 +1520,8 @@
       '<div class="kms-ds-module-display">' +
         '<span class="kms-ds-display-label">버튼 보기</span>' +
         '<div class="kms-ds-module-switch" role="tablist" aria-label="디자인 모듈 보기 전환">' +
-          '<button type="button" class="kms-ds-view-btn" data-kms-ds-view-btn="preview" aria-pressed="false">미리보기</button>' +
-          '<button type="button" class="kms-ds-view-btn is-active" data-kms-ds-view-btn="code" aria-pressed="true">코드</button>' +
+          '<button type="button" class="kms-ds-view-btn is-active" data-kms-ds-view-btn="preview" aria-pressed="true">미리보기</button>' +
+          '<button type="button" class="kms-ds-view-btn" data-kms-ds-view-btn="code" aria-pressed="false">코드</button>' +
         '</div>' +
       '</div>' +
       '<div class="kms-ds-module-stage kms-ds-surface-card">' +
@@ -1536,7 +1536,7 @@
         '</div>' +
         '<div class="kms-ds-module-pane kms-ds-module-pane-preview" data-kms-ds-pane="preview">' +
           '<span class="kms-ds-pane-label">코드 혹은 미리보기 내용</span>' +
-          '<div class="kms-ds-preview-canvas" data-kms-ds-preview-canvas></div>' +
+          '<div class="kms-ds-preview-canvas" data-kms-ds-preview-canvas>' + runtimeSource + '</div>' +
           '<template data-kms-ds-preview-template>' + runtimeSource + '</template>' +
         '</div>' +
       '</div>' +
