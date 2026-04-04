@@ -21,7 +21,6 @@ Operational references:
 - `docs/release-playbook.md`
 - 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
-- `docs/writing-regression-checklist.md`
 
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
@@ -227,7 +226,8 @@ git status --short
 
 Notes:
 - Production deploys run from `main`
-- `VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
+- `VERSION`, `ADMIN_VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
+- Run `./scripts/sync_versions.sh` before release verification when you change version numbers
 - When homepage rules change, update `CHATGPT.md`, KMS, `docs/feature-definition.md`, and changelog together
 
 ### Optional R2 binding for images
@@ -247,7 +247,7 @@ If the binding is missing, the app falls back to the previous in-DB image behavi
 1. Navigate to `/admin.html`
 2. Enter the password you set as `ADMIN_PASSWORD` in Cloudflare
 3. The password is sent to `/api/admin/login` and verified server-side
-4. On success, a signed 24-hour token is stored in `sessionStorage`
+4. On success, a signed 24-hour admin session is issued and the browser keeps lightweight login state in `sessionStorage`
 5. You can now create, edit, and delete posts
 
 **Capabilities:**

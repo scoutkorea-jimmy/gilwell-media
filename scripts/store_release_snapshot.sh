@@ -7,8 +7,9 @@ cd "$ROOT_DIR"
 ENVIRONMENT="${1:-production}"
 DEPLOYMENT_URL="${2:-}"
 VERSION="$(cat VERSION)"
-SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
+ADMIN_VERSION_FILE="$(cat ADMIN_VERSION)"
+SITE_VERSION="$(cat VERSION)"
+ADMIN_VERSION="${ADMIN_VERSION_FILE}"
 SHORT_SHA="$(git rev-parse --short HEAD)"
 COMMIT_SHA="$(git rev-parse HEAD)"
 COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
@@ -90,7 +91,7 @@ new_item = {
     'deployment_url': os.environ['DEPLOYMENT_URL'],
     'archived_at': os.popen("date -u +%Y-%m-%dT%H:%M:%SZ").read().strip(),
     'archive_path': 'snapshots/' + os.environ['ARCHIVE_NAME'],
-    'rollback_workflow': 'rollback-snapshot.yml',
+    'rollback_workflow': '',
 }
 
 manifest_items = [new_item] + items

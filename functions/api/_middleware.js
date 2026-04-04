@@ -42,7 +42,6 @@ function getAllowedOrigin(request) {
       requestUrl.hostname,
       'bpmedia.net',
       'www.bpmedia.net',
-      'preview.gilwell-media.pages.dev',
     ]);
     return allowedHosts.has(originUrl.hostname) ? origin : '';
   } catch {

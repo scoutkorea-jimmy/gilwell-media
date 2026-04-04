@@ -12,6 +12,7 @@ import { serializePostImage } from '../../_shared/images.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findManualRelatedPosts, findRelatedPosts, parseManualRelatedIds } from '../../_shared/related-posts.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
+import { normalizePublishAtInput, optionalBooleanFlag, optionalIntegerOrNull, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
@@ -78,7 +79,7 @@ export async function onRequestPut({ params, request, env }) {
 
   let currentPost = null;
   try {
-    currentPost = await env.DB.prepare(`SELECT image_url, gallery_images FROM posts WHERE id = ?`).bind(id).first();
+    currentPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
   } catch (_) {}
 
   let body;
@@ -95,22 +96,32 @@ export async function onRequestPut({ params, request, env }) {
   if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
-  if (title !== undefined && !title.trim()) {
-    return json({ error: '제목을 입력해주세요' }, 400);
-  }
-  if (content !== undefined && !content.trim()) {
-    return json({ error: '내용을 입력해주세요' }, 400);
-  }
+  const safeTitleInput = title === undefined ? { ok: true, provided: false, value: undefined } : requireNonEmptyString(title, '제목', 200);
+  if (!safeTitleInput.ok) return json({ error: safeTitleInput.error }, 400);
+  const safeContentInput = content === undefined ? { ok: true, provided: false, value: undefined } : requireNonEmptyString(content, '내용');
+  if (!safeContentInput.ok) return json({ error: safeContentInput.error }, 400);
+  const safeSubtitleInput = optionalTrimmedString(subtitle, '부제', 300);
+  if (!safeSubtitleInput.ok) return json({ error: safeSubtitleInput.error }, 400);
+  const safeMetaTagsInput = optionalTrimmedString(meta_tags, '메타 태그', 500);
+  if (!safeMetaTagsInput.ok) return json({ error: safeMetaTagsInput.error }, 400);
+  const safeTagInput = optionalTrimmedString(tag, '태그', 200);
+  if (!safeTagInput.ok) return json({ error: safeTagInput.error }, 400);
+  const safeAuthorInput = optionalTrimmedString(author, '작성자', 60);
+  if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
+  const safeSortOrderInput = optionalIntegerOrNull(sort_order, '정렬 순서');
+  if (!safeSortOrderInput.ok) return json({ error: safeSortOrderInput.error }, 400);
+  const safeAiAssistedInput = optionalBooleanFlag(ai_assisted);
+  if (!safeAiAssistedInput.ok) return json({ error: safeAiAssistedInput.error }, 400);
 
   // Build dynamic SET clause from provided fields
   const fields = [];
   const values = [];
 
   if (category  !== undefined) { fields.push('category = ?');   values.push(category); }
-  if (title     !== undefined) { fields.push('title = ?');       values.push(title.trim()); }
-  if (subtitle  !== undefined) { fields.push('subtitle = ?');    values.push(subtitle ? subtitle.trim().slice(0, 300) : null); }
+  if (safeTitleInput.provided) { fields.push('title = ?'); values.push(safeTitleInput.value); }
+  if (safeSubtitleInput.provided) { fields.push('subtitle = ?'); values.push(safeSubtitleInput.value); }
   if (content   !== undefined) {
-    const upgradedContent = await safelyUpgradeEditorContentImages(content.trim(), env, origin, 'inline');
+    const upgradedContent = await safelyUpgradeEditorContentImages(safeContentInput.value, env, origin, 'inline');
     fields.push('content = ?');
     values.push(upgradedContent);
   }
@@ -134,16 +145,16 @@ export async function onRequestPut({ params, request, env }) {
   if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
   if (location_name !== undefined) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
   if (location_address !== undefined) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
-  if (meta_tags !== undefined) { fields.push('meta_tags = ?');   values.push(meta_tags ? String(meta_tags).trim().slice(0, 500) : null); }
-  if (tag          !== undefined) { fields.push('tag = ?');          values.push(tag ? String(tag).trim().slice(0, 200) : null); }
+  if (safeMetaTagsInput.provided) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
+  if (safeTagInput.provided) { fields.push('tag = ?'); values.push(safeTagInput.value); }
   if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
-  if (author       !== undefined) {
-    var safeAuthor = author ? String(author).trim().slice(0, 60) : '';
+  if (safeAuthorInput.provided) {
+    var safeAuthor = safeAuthorInput.value || '';
     fields.push('author = ?');
     values.push(safeAuthor || 'Editor.A');
   }
-  if (ai_assisted  !== undefined) { fields.push('ai_assisted = ?');  values.push(ai_assisted ? 1 : 0); }
-  if (sort_order   !== undefined) { fields.push('sort_order = ?');   values.push(sort_order !== null ? parseInt(sort_order, 10) : null); }
+  if (safeAiAssistedInput.provided) { fields.push('ai_assisted = ?');  values.push(safeAiAssistedInput.value); }
+  if (safeSortOrderInput.provided) { fields.push('sort_order = ?'); values.push(safeSortOrderInput.value); }
   if (manual_related_posts !== undefined || body.related_posts_json !== undefined) {
     fields.push('manual_related_posts = ?');
     values.push(normalizeManualRelatedPosts(manual_related_posts !== undefined ? manual_related_posts : body.related_posts_json));
@@ -176,7 +187,7 @@ export async function onRequestPut({ params, request, env }) {
       }));
     }
     if (updatedPost) {
-      await recordPostHistory(env, id, 'update', updatedPost, '게시글 수정');
+      await recordPostHistory(env, id, 'update', currentPost, updatedPost, '게시글 수정');
     }
     return json({ post: updatedPost });
   } catch (err) {
@@ -204,10 +215,14 @@ export async function onRequestPatch({ params, request, env }) {
 
   const fields = [];
   const values = [];
+  const featuredInput = optionalBooleanFlag(body.featured);
+  const publishedInput = optionalBooleanFlag(body.published);
+  const sortOrderInput = optionalIntegerOrNull(body.sort_order, '정렬 순서');
+  if (!sortOrderInput.ok) return json({ error: sortOrderInput.error }, 400);
 
-  if (body.featured    !== undefined) { fields.push('featured = ?');    values.push(body.featured ? 1 : 0); }
-  if (body.published   !== undefined) { fields.push('published = ?');   values.push(body.published ? 1 : 0); }
-  if (body.sort_order  !== undefined) { fields.push('sort_order = ?');  values.push(body.sort_order !== null ? parseInt(body.sort_order, 10) : null); }
+  if (featuredInput.provided) { fields.push('featured = ?'); values.push(featuredInput.value); }
+  if (publishedInput.provided) { fields.push('published = ?'); values.push(publishedInput.value); }
+  if (sortOrderInput.provided) { fields.push('sort_order = ?'); values.push(sortOrderInput.value); }
 
   if (fields.length === 0) {
     return json({ error: 'featured 또는 published 값을 입력해주세요' }, 400);
@@ -216,6 +231,8 @@ export async function onRequestPatch({ params, request, env }) {
   fields.push("updated_at = datetime('now')");
 
   try {
+    const beforePost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+    if (!beforePost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (updatedPost) {
@@ -223,7 +240,7 @@ export async function onRequestPatch({ params, request, env }) {
       if (body.featured !== undefined) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
       if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
       if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
-      await recordPostHistory(env, id, 'status', updatedPost, summary.join(' · ') || '상태 변경');
+      await recordPostHistory(env, id, 'status', beforePost, updatedPost, summary.join(' · ') || '상태 변경');
     }
     return json({ post: updatedPost });
   } catch (err) {
@@ -370,19 +387,6 @@ async function safelyUpgradeEditorContentImages(content, env, origin, prefix) {
 
 function serializeGalleryImages(items) {
   return items && items.length ? JSON.stringify(items) : null;
-}
-
-function normalizePublishAtInput(publishAt, publishDate) {
-  const precise = String(publishAt || '').trim();
-  if (precise) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(precise)) return `${precise} 12:00:00`;
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(precise)) return `${precise.replace('T', ' ')}:00`;
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(precise)) return `${precise}:00`;
-    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(precise)) return precise.replace('T', ' ');
-  }
-  const fallback = String(publishDate || '').trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
-  return '';
 }
 
 function collectStoredImageUrls(post) {

@@ -8,11 +8,12 @@
 
 1. `git status --short`로 워크트리 확인
 2. `cat VERSION`으로 현재 Site 버전 확인
-3. 관리자 전용 변경이면 `js/main.js`의 `GW.ADMIN_VERSION`과 `/admin` 자산 쿼리 버전도 함께 확인
-4. 필요한 경우 기능 변경 커밋 반영
-5. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
-6. `main` 기준 production 배포
-7. 라이브 검증
+3. `cat ADMIN_VERSION`으로 현재 Admin 버전 확인
+4. `./scripts/sync_versions.sh`로 버전 문자열 동기화
+5. 필요한 경우 기능 변경 커밋 반영
+6. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
+7. `main` 기준 production 배포
+8. 라이브 검증
 
 관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
 관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
@@ -55,13 +56,13 @@ wrangler pages deploy . --project-name gilwell-media --branch main
 - 기존 운영 DB는 `db/migration_*.sql` 중 누락된 파일만 순서대로 적용한다.
 - 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
 - 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
-- 현재 최신 마이그레이션 기준은 `db/migration_016.sql`까지다.
+- 현재 저장소 기준 최신 마이그레이션은 `db/migration_050.sql`이다.
 - R2를 사용할 경우 Pages Functions에 `POST_IMAGES` 버킷 바인딩을 추가한다.
 - 기존 D1 base64 이미지를 R2로 옮길 때는 `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`를 사용한다.
 - Cloudflare 기반 분석을 쓰려면 Pages secret `CF_ANALYTICS_API_TOKEN`을 설정한다.
 
 ```bash
-wrangler d1 execute gilwell-posts --remote --file=./db/migration_016.sql
+wrangler d1 execute gilwell-posts --remote --file=./db/migration_050.sql
 ```
 
 ## Functions 로그 확인 루틴
@@ -81,16 +82,12 @@ wrangler pages deployment list --project-name gilwell-media
 
 - 현재 서비스 도메인: `https://bpmedia.net`
 - Pages 프로젝트명: `gilwell-media`
-- Preview 브랜치명: `preview`
 - Release snapshot 브랜치명: `release-history`
 - 현재 버전 규칙: `Va.bbb.cc`
 - `a`는 오너가 직접 올리라고 한 경우에만 증가한다.
 - `bbb`는 기능 추가가 있을 때만 증가한다.
 - `cc`는 버그 수정, 배너 위치 조정 같은 사소한 수정에만 증가한다.
 - `bbb`가 올라가면 `cc`는 반드시 `00`으로 초기화한다.
-- `deploy_pages.sh`는 이제 preview 배포 래퍼다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
-- Git 자동 배포가 지연되거나 누락될 수 있으므로, preview와 production 모두 `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
+- Git 자동 배포가 지연되거나 누락될 수 있으므로, production `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
 - 관리자(KMS 포함) 변경은 공개 사이트 production QA를 필수 게이트로 두지 않는다.
-- preview 모달의 `본 페이지에 반영하기`는 GitHub Actions와 Cloudflare API 시크릿이 정상일 때만 동작한다.
-- 승격 기준 브랜치는 항상 `preview`이며, `main`은 검수 완료된 preview 스냅샷을 반영하는 production용 브랜치로 취급한다.

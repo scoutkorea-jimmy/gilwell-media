@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS post_history (
   post_id    INTEGER NOT NULL,
   action     TEXT    NOT NULL DEFAULT 'update',
   summary    TEXT,
-  snapshot   TEXT    NOT NULL,
+  snapshot   TEXT,
+  before_snapshot TEXT,
+  after_snapshot TEXT,
   created_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
