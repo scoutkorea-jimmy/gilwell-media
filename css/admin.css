@@ -5985,18 +5985,18 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ds-module-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 18px;
 }
 
 .kms-ds-module {
-  padding: 18px;
+  padding: 20px;
   border: 1px solid rgba(31,31,31,0.08);
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 12px 32px rgba(34, 26, 22, 0.05);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(249,244,238,0.94));
+  box-shadow: 0 14px 34px rgba(34, 26, 22, 0.06);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .kms-ds-module-head {
@@ -6021,14 +6021,28 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   color: var(--kms-ink);
 }
 
+.kms-ds-module-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(31,31,31,0.08);
+}
+
+.kms-ds-display-label {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--kms-muted);
+}
+
 .kms-ds-module-switch {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px;
-  border: 1px solid rgba(31,31,31,0.08);
-  border-radius: 999px;
-  background: rgba(246,241,235,0.82);
+  flex-wrap: wrap;
   flex-shrink: 0;
 }
 
@@ -6036,14 +6050,16 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 26px;
   padding: 0 12px;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
+  border: 1px solid rgba(31,31,31,0.12);
+  border-radius: 0;
+  background: #fff;
   color: var(--kms-muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: background .16s ease, color .16s ease, transform .16s ease;
 }
@@ -6109,10 +6125,10 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 
 .kms-ds-surface-card {
-  padding: 14px;
+  padding: 16px;
   border: 1px solid rgba(31,31,31,0.08);
-  border-radius: 18px;
-  background: rgba(252,249,244,0.94);
+  border-radius: 0;
+  background: rgba(255,255,255,0.92);
 }
 
 .kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
@@ -6123,9 +6139,9 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-code-pane {
   margin: 0;
   min-height: 220px;
-  padding: 16px;
+  padding: 18px;
   overflow: auto;
-  border-radius: 14px;
+  border-radius: 0;
   background: #171822;
   color: #d7def8;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
@@ -6147,7 +6163,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-height: 220px;
   padding: 18px;
   border: 1px solid rgba(31,31,31,0.08);
-  border-radius: 16px;
+  border-radius: 0;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,241,235,0.96));
   overflow: auto;
 }
@@ -6441,6 +6457,11 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   .kms-ds-module-head {
     flex-direction: column;
   }
+
+  .kms-ds-module-display {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
@@ -6452,6 +6473,10 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   .kms-ds-section,
   .kms-ds-module {
     padding: 14px;
+  }
+
+  .kms-ds-module-grid {
+    grid-template-columns: 1fr;
   }
 
   .kms-ds-code-pane,
