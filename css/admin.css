@@ -5882,3 +5882,530 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
     padding: 14px 12px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   KMS 디자인 시스템 — 모듈 카탈로그 리디자인
+   ───────────────────────────────────────────────────────────── */
+
+.kms-ds-overview {
+  padding: 24px;
+  border: 1px solid var(--kms-border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,244,239,0.94));
+}
+
+.kms-ds-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.kms-ds-overview-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.kms-ds-overview-kicker,
+.kms-ds-module-kicker,
+.kms-ds-pane-label,
+.kms-ds-meta-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--kms-accent);
+}
+
+.kms-ds-overview-block h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--kms-ink);
+}
+
+.kms-ds-kind-grid,
+.kms-ds-guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.kms-ds-kind-card,
+.kms-ds-guidance-card {
+  padding: 16px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.82);
+}
+
+.kms-ds-kind-card strong,
+.kms-ds-guidance-card strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: var(--kms-ink);
+}
+
+.kms-ds-kind-card p,
+.kms-ds-guidance-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--kms-muted);
+}
+
+.kms-ds-breakpoint-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-section {
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(252,249,244,0.92));
+}
+
+.kms-ds-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.kms-ds-section-title {
+  margin: 0;
+  padding-bottom: 12px;
+}
+
+.kms-ds-note-top {
+  margin-bottom: 0;
+  background: rgba(98,37,153,0.05);
+  border-left: 2px solid rgba(98,37,153,0.4);
+}
+
+.kms-ds-module-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.kms-ds-module {
+  padding: 18px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 12px 32px rgba(34, 26, 22, 0.05);
+}
+
+.kms-ds-module-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kms-ds-module-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--kms-ink);
+}
+
+.kms-ds-module-summary {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #4b443d;
+}
+
+.kms-ds-module-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kms-ds-meta-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: min(100%, 260px);
+}
+
+.kms-ds-meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border: 1px solid rgba(31,31,31,0.12);
+  background: rgba(246,241,235,0.9);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #4f463e;
+}
+
+.kms-ds-module-stage {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.kms-ds-module-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kms-ds-code-pane {
+  margin: 0;
+  min-height: 220px;
+  padding: 16px;
+  overflow: auto;
+  border-radius: 14px;
+  background: #171822;
+  color: #d7def8;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.kms-ds-code-pane code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.kms-ds-preview-canvas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 220px;
+  padding: 18px;
+  border: 1px solid rgba(31,31,31,0.08);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,241,235,0.96));
+  overflow: auto;
+}
+
+.kms-ds-preview-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kms-ds-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.kms-ds-token-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.88);
+}
+
+.kms-ds-token-chip {
+  display: block;
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.kms-ds-token-chip-light {
+  box-shadow: inset 0 0 0 1px rgba(31,31,31,0.12);
+}
+
+.kms-ds-token-card strong,
+.kms-ds-contract-card strong,
+.kms-ds-device-card span,
+.kms-ds-feedback-card small {
+  color: var(--kms-ink);
+}
+
+.kms-ds-token-card code,
+.kms-ds-scale-meta,
+.kms-ds-mobile-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--kms-muted);
+}
+
+.kms-ds-type-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kms-ds-scale-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(31,31,31,0.08);
+}
+
+.kms-ds-scale-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.kms-ds-scale-item strong {
+  font-size: 30px;
+  line-height: 1.2;
+  color: #1f1f1f;
+}
+
+.kms-ds-scale-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1f1f1f;
+}
+
+.kms-ds-scale-item p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.72;
+  color: #3f3730;
+}
+
+.kms-ds-contract-card {
+  padding: 16px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.92);
+}
+
+.kms-ds-contract-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.kms-ds-contract-kind {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  background: rgba(98,37,153,0.08);
+  color: #622599;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.kms-ds-contract-meta,
+.kms-ds-touch-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kms-ds-contract-meta {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.kms-ds-contract-meta span {
+  padding: 6px 10px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(246,241,235,0.84);
+  font-size: 12px;
+  color: #4f463e;
+}
+
+.kms-ds-contract-bars {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.kms-ds-contract-bars span {
+  display: block;
+  height: 10px;
+  background: linear-gradient(90deg, rgba(98,37,153,0.18), rgba(31,31,31,0.08));
+}
+
+.kms-ds-card-preview {
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.kms-ds-rail-preview {
+  max-width: 100%;
+}
+
+.kms-ds-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kms-ds-shell-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.88);
+  font-size: 12px;
+  color: #5b544c;
+}
+
+.kms-ds-shell-hero {
+  padding: 18px;
+  background: linear-gradient(135deg, #622599 0%, #2a103f 100%);
+  color: #fff;
+}
+
+.kms-ds-shell-hero strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.kms-ds-shell-hero p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.82);
+}
+
+.kms-ds-feedback-grid,
+.kms-ds-device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.kms-ds-feedback-card,
+.kms-ds-device-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: rgba(255,255,255,0.88);
+}
+
+.kms-ds-toast-demo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+
+.kms-ds-toast-demo.is-success {
+  border-left: 4px solid #248737;
+}
+
+.kms-ds-device-frame {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(31,31,31,0.08);
+  background: linear-gradient(180deg, rgba(245,241,235,0.94), rgba(255,255,255,0.96));
+}
+
+.kms-ds-device-frame div {
+  height: 22px;
+  background: rgba(98,37,153,0.12);
+}
+
+.kms-ds-device-frame-desktop {
+  grid-template-columns: 1fr 1.15fr;
+}
+
+.kms-ds-device-frame-mobile {
+  grid-template-columns: 1fr;
+}
+
+.kms-ds-mobile-note {
+  padding: 10px 12px;
+  border: 1px dashed rgba(31,31,31,0.18);
+  background: rgba(255,255,255,0.7);
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .kms-ds-overview-grid,
+  .kms-ds-kind-grid,
+  .kms-ds-guidance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kms-ds-module-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .kms-ds-overview,
+  .kms-ds-section,
+  .kms-ds-module {
+    padding: 18px;
+  }
+
+  .kms-ds-module-title {
+    font-size: 18px;
+  }
+
+  .kms-ds-overview-block h3 {
+    font-size: 18px;
+  }
+
+  .kms-ds-shell-hero strong {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .kms-ds-body {
+    gap: 18px;
+  }
+
+  .kms-ds-overview,
+  .kms-ds-section,
+  .kms-ds-module {
+    padding: 14px;
+  }
+
+  .kms-ds-code-pane,
+  .kms-ds-preview-canvas {
+    min-height: 0;
+  }
+
+  .kms-ds-preview-canvas {
+    padding: 14px;
+  }
+
+  .kms-ds-shell-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .kms-ds-feedback-grid,
+  .kms-ds-device-grid,
+  .kms-ds-token-grid {
+    grid-template-columns: 1fr;
+  }
+}
