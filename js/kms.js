@@ -1126,7 +1126,8 @@
                 summary: '재사용 가능한 디자인은 토큰, 구조, 상태 이름이 분리되어 있어야 합니다. 코드와 미리보기가 1:1로 대응돼야 수정이 쉬워집니다.',
                 meta: [
                   { label: '필수 정보', values: ['kind', 'summary', 'tokens', 'code', 'preview'] },
-                  { label: '상태', values: ['default', 'active', 'disabled', 'danger'] }
+                  { label: '상태', values: ['default', 'active', 'disabled', 'danger'] },
+                  { label: '구현 파일', values: ['css/style.css', 'css/admin-v3.css', 'css/admin.css'] }
                 ],
                 code: [
                   '<article class="design-module">',
@@ -1156,11 +1157,13 @@
                 title: '상태 모듈은 나란히 비교한다',
                 summary: '버튼, 칩, 배지는 반드시 기본/활성/위험 상태가 한 화면에서 같이 보이도록 정리해야 상태 설계가 흔들리지 않습니다.',
                 meta: [
-                  { label: '대상', values: ['.write-btn', '.filter-btn', '.tag-pill'] },
+                  { label: '대상', values: ['.write-btn', '.v3-btn', '.v3-more-btn', '.tag-pill'] },
                   { label: '검토 포인트', values: ['명도 대비', '터치 크기', '비활성 피드백'] }
                 ],
                 code: [
                   '<button class="write-btn">새 게시글 작성</button>',
+                  '<button class="v3-btn v3-btn-primary">저장</button>',
+                  '<button class="v3-more-btn">더보기 (2개)</button>',
                   '<button class="filter-btn active">전체</button>',
                   '<span class="tag-pill">잼버리</span>',
                   '<button class="btn-delete-soft visible">삭제</button>'
@@ -1188,10 +1191,12 @@
               {
                 kind: 'Component',
                 title: '버튼 패밀리',
-                summary: '저장과 작성은 Primary, 취소는 Outline, 목록 토글은 Secondary, 필터는 Chip 레벨로 분리합니다.',
+                summary: '저장과 작성은 Primary, 취소는 Outline, 목록 토글은 Secondary, 필터는 Chip 레벨로 분리합니다. 공개와 관리자에서 기능이 겹치면 같은 위계와 상태를 유지하고 구현 파일만 분리합니다.',
                 meta: [
                   { label: '높이 기준', values: ['44px primary', '36px secondary', '26px chip'] },
-                  { label: '대표 클래스', values: ['.write-btn', '.submit-btn', '.cancel-btn', '.board-page-btn'] }
+                  { label: '공개 클래스', values: ['.write-btn', '.submit-btn', '.cancel-btn', '.board-page-btn'] },
+                  { label: '관리 클래스', values: ['.v3-btn', '.v3-more-btn', '.v3-page-btn', '.mkt-preset-btn'] },
+                  { label: '구현 파일', values: ['css/style.css', 'css/admin-v3.css'] }
                 ],
                 code: [
                   '<div class="kms-action-row">',
@@ -1199,6 +1204,9 @@
                   '  <button class="submit-btn">저장하기</button>',
                   '  <button class="cancel-btn visible">취소</button>',
                   '  <button class="board-page-btn active">2</button>',
+                  '  <button class="v3-btn v3-btn-primary">저장</button>',
+                  '  <button class="v3-more-btn">더보기 (2개)</button>',
+                  '  <button class="v3-page-btn active">2</button>',
                   '</div>'
                 ].join('\n'),
                 preview: [

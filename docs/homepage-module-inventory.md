@@ -92,9 +92,9 @@ KMS 디자인 탭은 이 인벤토리를 시각적으로 보여주는 시작 장
    - 결과물: 공통 카드 구조와 variant 규칙
 
 3. Button / chip family
-   - 대상: write, submit, cancel, filter, tag, status
+   - 대상: write, submit, cancel, filter, tag, status, admin more/page controls
    - 이유: 상태와 높이 체계가 전체 UX 밀도를 결정
-   - 결과물: primary / secondary / chip base + modifiers
+   - 결과물: primary / secondary / chip base + modifiers, public/admin 구현 파일 매핑
 
 ### P1. 구조를 가볍게 만드는 코드 공통화
 
