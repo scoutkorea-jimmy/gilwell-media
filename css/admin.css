@@ -2497,6 +2497,9 @@ body.marketing-fullscreen-open {
   }
   .marketing-stats-row,
   .marketing-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ── Admin Redesign System (V0.062.00) ───────────────────── */
 body.admin-page {
