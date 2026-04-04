@@ -2,7 +2,7 @@
 
 ## 목적
 
-배포가 Git 자동 반영에만 의존하지 않도록, preview 검수와 production 승격 절차를 고정한다.
+배포가 Git 자동 반영에만 의존하지 않도록, 현재 운영 기준의 production 배포와 실환경 검수 절차를 고정한다.
 
 ## 표준 순서
 
@@ -10,83 +10,24 @@
 2. `cat VERSION`으로 현재 Site 버전 확인
 3. 관리자 전용 변경이면 `js/main.js`의 `GW.ADMIN_VERSION`과 `/admin` 자산 쿼리 버전도 함께 확인
 4. 필요한 경우 기능 변경 커밋 반영
-5. Preview 브랜치 동기화 + Preview 배포
-6. Preview URL 기준 자동/수동 검수
-7. 승인 후 preview 모달 또는 GitHub Actions로 production 승격
-8. 라이브 검증
+5. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
+6. `main` 기준 production 배포
+7. 라이브 검증
 
 관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
-관리자(KMS 포함) 변경은 preview 또는 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
-
-## Preview 배포
-
-```bash
-./scripts/deploy_pages.sh
-```
-
-또는:
-
-```bash
-./scripts/deploy_preview.sh
-```
-
-이 스크립트는 현재 HEAD를 `origin/preview`로 밀어 넣은 뒤 preview 배포를 생성한다.
-
-직접 실행이 필요하면:
-
-```bash
-git push origin HEAD:preview --force-with-lease
-wrangler pages deploy . --project-name gilwell-media --branch preview
-```
-
-배포 후 출력된 preview URL을 복사한다.
-
-## Preview 검수
-
-```bash
-./scripts/post_deploy_check.sh <preview-url>
-```
-
-preview 환경 준비물:
-
-- Pages preview secret: `ADMIN_PASSWORD`
-- Pages preview secret: `ADMIN_SECRET`
-- Pages preview secret: `GITHUB_WORKFLOW_TOKEN`
-- Pages preview secret: `CLOUDFLARE_API_TOKEN`
-- Pages preview secret: `CLOUDFLARE_ACCOUNT_ID`
-
-수동 확인 최소 범위:
-
-1. 홈 첫 화면
-2. 최신 기사 상세 1건
-3. 카테고리 보드 1개 이상
-4. 검색 / 용어집
-5. 관리자 진입 화면
-6. 이번 수정 부위의 모바일 화면
+관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
 
 ## Production 배포
 
-preview 승인 후에만 진행한다.
+항상 `main` 브랜치의 깨끗한 워크트리에서 진행한다.
 
 기본 경로:
 
-1. preview 페이지 자동 검수 모달에서 변경 항목과 검수 체크를 모두 완료
-2. full 관리자 인증
-3. `본 페이지에 반영하기` 버튼 실행
-4. GitHub Actions `promote-preview.yml`가 현재 `origin/main`을 백업 브랜치로 저장한 뒤, 검수 완료된 `origin/preview` 스냅샷으로 `main`을 승격
-5. 같은 워크플로우 안에서 `./scripts/deploy_production.sh` 실행
-
-수동 경로가 꼭 필요하면:
-
-```bash
-git switch main
-git fetch origin preview
-PREVIOUS_MAIN_SHA="$(git rev-parse origin/main)"
-git push origin "${PREVIOUS_MAIN_SHA}:refs/heads/backup/main-before-manual-promote-$(date -u +%Y%m%dT%H%M%SZ)"
-git reset --hard origin/preview
-git push --force-with-lease=refs/heads/main:${PREVIOUS_MAIN_SHA} origin HEAD:main
-./scripts/deploy_production.sh
-```
+1. `git switch main`
+2. `git status --short`가 비어 있는지 확인
+3. `./scripts/deploy_production.sh` 실행
+4. 배포 직후 `./scripts/post_deploy_check.sh https://bpmedia.net` 실행
+5. 홈, 대표 기사, 카테고리, 검색, 용어집, 관리자 핵심 화면을 직접 확인
 
 직접 실행이 필요하면:
 
@@ -102,8 +43,11 @@ wrangler pages deploy . --project-name gilwell-media --branch main
 
 추가 확인:
 
-- GitHub Actions `promote-preview.yml` 성공 여부
-- preview 모달 히스토리의 최신 production 스냅샷 반영 여부
+- 홈, 대표 기사, 카테고리, 검색, 용어집, 관리자 화면 응답
+- RSS 응답
+- 공개 posts API의 `publish_at`
+- 관리자 세션 401
+- D1의 `created_at` / `publish_at` / `updated_at` 컬럼 존재
 
 ## 운영 DB 적용 / 복구
 
@@ -115,8 +59,6 @@ wrangler pages deploy . --project-name gilwell-media --branch main
 - R2를 사용할 경우 Pages Functions에 `POST_IMAGES` 버킷 바인딩을 추가한다.
 - 기존 D1 base64 이미지를 R2로 옮길 때는 `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`를 사용한다.
 - Cloudflare 기반 분석을 쓰려면 Pages secret `CF_ANALYTICS_API_TOKEN`을 설정한다.
-
-예시:
 
 ```bash
 wrangler d1 execute gilwell-posts --remote --file=./db/migration_016.sql

@@ -11,6 +11,7 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 - 이 문서는 “현재 사이트가 무엇을 하는가”를 정리하는 설명서가 아니라, “앞으로도 어떻게 만들어야 하는가”를 결정하는 기준서다.
 - 운영자, 디자이너, 인간 개발자, AI 개발자 모두 같은 기준을 보기 위해 KMS를 단일 진실 원본(single source of truth)으로 사용한다.
 - 관리자 페이지의 \`기능 정의서 / KMS\` 페이지가 원본이며, 저장소의 \`docs/feature-definition.md\`는 스냅샷이다.
+- 저장소 루트의 \`CHATGPT.md\`는 메인 홈페이지 AI 작업 기준 문서이며, 기존 \`ai-guide.html\` 기준은 모두 이 문서와 KMS로 이관되었다.
 
 #### 각주
 - 구현이 문서와 다르면 코드를 맞추거나 문서를 업데이트해야 한다. “문서와 실제가 다른 상태”를 방치하지 않는다.
@@ -50,8 +51,6 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 - \`/contributors\` : 도움을 주신 분들
 - \`/search\` : 검색 결과
 - \`/feature/:category/:slug\` : 특집 기사 컬렉션
-- \`/ai-guide\` : AI 운영 가이드
-
 ### 1.2 관리자 구조
 
 #### 기능 세부 설명
@@ -354,7 +353,7 @@ margin-top: 24px;
 ### 11.1 기본 원칙
 
 #### 기능 세부 설명
-- 공개 UI 변경은 preview 검수 후 production 반영이 기본
+- 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
 - 기능정의서는 코드 변경과 함께 갱신
 
@@ -367,6 +366,10 @@ margin-top: 24px;
 - 캘린더
 - 용어집
 - 관리자 핵심 기능
+- RSS 응답
+- 공개 posts API의 \`publish_at\`
+- 관리자 세션 401
+- D1의 \`created_at\` / \`publish_at\` / \`updated_at\` 컬럼 존재
 - 배포 후 버전 문자열
 
 ## 12. 개발자 체크리스트
