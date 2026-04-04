@@ -1514,20 +1514,23 @@
           '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
           '<h4 class="kms-ds-module-title">' + GW.escapeHtml(module.title) + '</h4>' +
         '</div>' +
-        '<div class="kms-ds-module-switch" role="tablist" aria-label="디자인 모듈 보기 전환">' +
-          '<button type="button" class="kms-ds-view-btn is-active" data-kms-ds-view-btn="code" aria-pressed="true">코드 보기</button>' +
-          '<button type="button" class="kms-ds-view-btn" data-kms-ds-view-btn="preview" aria-pressed="false">미리보기</button>' +
-        '</div>' +
       '</div>' +
       '<p class="kms-ds-module-summary">' + GW.escapeHtml(module.summary) + '</p>' +
       '<div class="kms-ds-module-meta">' + renderDesignMeta(module.meta) + '</div>' +
-      '<div class="kms-ds-module-stage">' +
-        '<div class="kms-ds-module-pane kms-ds-module-pane-code kms-ds-surface-card" data-kms-ds-pane="code">' +
-          '<span class="kms-ds-pane-label">Code</span>' +
+      '<div class="kms-ds-module-display">' +
+        '<span class="kms-ds-display-label">버튼 보기</span>' +
+        '<div class="kms-ds-module-switch" role="tablist" aria-label="디자인 모듈 보기 전환">' +
+          '<button type="button" class="kms-ds-view-btn" data-kms-ds-view-btn="preview" aria-pressed="false">미리보기</button>' +
+          '<button type="button" class="kms-ds-view-btn is-active" data-kms-ds-view-btn="code" aria-pressed="true">코드</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="kms-ds-module-stage kms-ds-surface-card">' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-code" data-kms-ds-pane="code">' +
+          '<span class="kms-ds-pane-label">코드</span>' +
           '<pre class="kms-ds-code-pane"><code>' + GW.escapeHtml(module.code || '') + '</code></pre>' +
         '</div>' +
-        '<div class="kms-ds-module-pane kms-ds-module-pane-preview kms-ds-surface-card" data-kms-ds-pane="preview">' +
-          '<span class="kms-ds-pane-label">Preview</span>' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-preview" data-kms-ds-pane="preview">' +
+          '<span class="kms-ds-pane-label">코드 혹은 미리보기 내용</span>' +
           '<div class="kms-ds-preview-canvas" data-kms-ds-preview-canvas></div>' +
           '<template data-kms-ds-preview-template>' + previewMarkup + '</template>' +
         '</div>' +
