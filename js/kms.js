@@ -1026,927 +1026,518 @@
   }
 
   // ── 디자인 시스템 탭 ──────────────────────────────────────────
-  // 실제 홈페이지 style.css 기준으로 현행화 (2026-03-22)
-  // 버튼은 카테고리 칩과 동일한 기본 형태: 1px 테두리, 직각, uppercase, letter-spacing
   function renderDesignSystem() {
     var container = document.getElementById('kms-tab-design');
     if (!container || container.dataset.rendered) return;
     container.dataset.rendered = '1';
 
-    var S = {
-      // 실제 :root 변수값
-      purple:  '#622599',
-      purpleMid: '#4d006e',
-      black:   '#1f1f1f',
-      white:   '#ffffff',
-      muted:   'rgba(31,31,31,0.58)',
-      border:  'rgba(31,31,31,0.12)',
-      bg:      '#ffffff',
-      // 지역별 카테고리 색상 (style.css 기준)
-      kor:  '#0094b4',
-      apr:  '#ff5655',
-      wosm: '#248737',
-      people: '#622599',
-      eur:  '#0c7a8a',
-      afr:  '#b6761b',
-      arb:  '#7b5cff',
-      iar:  '#d44f94',
-      success: '#248737',
-      danger:  '#ff5655',
-    };
-
-    // ── 버튼/칩 높이 기준
-    // Primary 버튼: 44px (--btn-height-primary)
-    // Secondary 버튼: 36px (--btn-height-secondary) — 뷰 토글, 페이지네이션 등
-    // 칩 (chip): 26px (--chip-height) — 필터칩, 태그칩, 대상칩, 행사태그, 상태배지
-    var btnBase    = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 18px;min-height:44px;';
-    var btnSec     = 'display:inline-flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;border:1px solid;cursor:pointer;padding:0 12px;min-height:36px;';
-    var btnFilled  = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';';
-    var btnAccent  = btnBase + 'background:' + S.purple + ';color:#fff;border-color:' + S.purple + ';';
-    var btnOutline = btnBase + 'background:transparent;color:' + S.black + ';border-color:rgba(31,31,31,0.25);';
-    var btnDanger  = btnBase + 'background:transparent;color:' + S.danger + ';border-color:' + S.danger + ';';
-    var btnDisabled = btnBase + 'background:' + S.black + ';color:#fff;border-color:' + S.black + ';opacity:0.4;cursor:default;';
-
-    var sections = [
-      // ════════════════════════════════════════════════════════
-      { _layer: true, title: 'FOUNDATION', sub: '기초 토큰 — 색상·타이포·간격·그라디언트' },
-      // ────────────────────────────────────────────────────────
-      {
-        title: '01 · 색상 토큰 (CSS Custom Properties)',
-        note: ':root에 정의된 변수. 모든 컴포넌트는 이 값을 참조합니다.',
-        html: [
-          '<p class="kms-ds-note">브랜드 / 기본 색상</p>',
-          '<div class="kms-ds-swatch-grid">',
-          dsSwatchItem('--scouting-purple', '#622599', '스카우팅 퍼플 — 브랜드 Accent'),
-          dsSwatchItem('--midnight-purple', '#4d006e', '미드나이트 퍼플 — Glossary / People'),
-          dsSwatchItem('--black / --ink',   '#1f1f1f', '잉크 — 기본 텍스트'),
-          dsSwatchItem('--muted',  'rgba(31,31,31,0.58)', '뮤트 — 보조 텍스트'),
-          dsSwatchItem('--border', 'rgba(31,31,31,0.12)', '테두리'),
-          dsSwatchItem('--bg / --card-bg',  '#ffffff', '배경 / 카드 배경'),
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:16px">지역 카테고리 색상</p>',
-          '<div class="kms-ds-swatch-grid">',
-          dsSwatchItem('--ocean-blue / --tag-korea', '#0094b4', 'KOR — 한국스카우트'),
-          dsSwatchItem('--fire-red   / --tag-apr',   '#ff5655', 'APR — 아시아태평양'),
-          dsSwatchItem('--forest-green / --tag-wosm','#248737', 'WOSM — 세계'),
-          dsSwatchItem('--scouting-purple / --tag-people','#622599','People — 사람들'),
-          dsSwatchItem('EUR 전용',  '#0c7a8a', 'EUR — 유럽 (지역 badge 전용, teal)'),
-          dsSwatchItem('AFR 전용',  '#b6761b', 'AFR — 아프리카'),
-          dsSwatchItem('ARB 전용',  '#7b5cff', 'ARB — 아랍'),
-          dsSwatchItem('IAR 전용',  '#d44f94', 'IAR — 인터-아메리카'),
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:16px">피드백 색상</p>',
-          '<div class="kms-ds-swatch-grid">',
-          dsSwatchItem('--success', '#248737', '성공 (forest-green)'),
-          dsSwatchItem('--danger',  '#ff5655', '위험/삭제 (fire-red)'),
-          dsSwatchItem('진행중',    '#1e9b60', '진행 중 상태 — calendar ongoing'),
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '02 · 타이포그래피 (Typography)',
-        note: '폰트: AliceDigitalLearning (weight 300 / 700). 모든 크기는 :root 변수로 관리.',
-        html: [
-          '<div class="kms-ds-col">',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-display · 32px · w700</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:32px;font-weight:700;color:#1f1f1f;line-height:1.2">BP미디어 스카우트 뉴스</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-section · 20px · w600</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:20px;font-weight:600;color:#1f1f1f;line-height:1.35">세계 스카우트 연맹 WOSM 공식 발표</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-title / --fs-card-title · 18px · w600</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:18px;font-weight:600;color:#1f1f1f;line-height:1.35">잼버리 2026 한국 개최 확정</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-body · 14px · w300 · lh 1.65</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:14px;font-weight:300;color:#1f1f1f;line-height:1.65">BP미디어는 스카우트 관련 소식을 빠르고 정확하게 전달합니다. 한국 스카우트연맹의 공식 활동부터 세계 스카우트 기구 WOSM의 국제 소식까지.</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-nav · 12px · w300 · ls 0.08em</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:12px;font-weight:300;color:rgba(31,31,31,0.58);letter-spacing:0.08em">한국스카우트 · APR · WOSM · 사람들 · 최신소식</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-meta · 11px · ls 0.12em · uppercase</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(31,31,31,0.58)">2026-03-22 · 조회 1,234</span></div>',
-          '<div class="kms-ds-type-row"><span class="kms-ds-type-meta">--fs-micro · 10px · ls 0.12em · uppercase</span><span style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(31,31,31,0.58)">Korea Scout Association</span></div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '03 · 간격 & 레이아웃 토큰 (Spacing)',
-        note: ':root에 정의된 간격 변수. 반응형 레이아웃의 기준값.',
-        html: [
-          '<div class="kms-ds-spacing-grid">',
-          dsSpacing('--board-card-gap', '6px', '보드 카드 간격'),
-          dsSpacing('--home-section-gap', '18px', '홈 섹션 간격'),
-          dsSpacing('--home-grid-gap', '24px', '홈 그리드 갭'),
-          dsSpacing('--home-block-bottom', '36px', '홈 블록 하단 여백'),
-          dsSpacing('--home-title-gap', '14px', '섹션 타이틀 아래 간격'),
-          dsSpacing('카드 패딩', '24px', '.post-card-body padding'),
-          dsSpacing('컨테이너 패딩', '20px–28px', '섹션 컨테이너'),
-          dsSpacing('--btn-height-primary', '44px', '주요 버튼 (submit, write, manage)'),
-          dsSpacing('--btn-height-secondary', '36px', '보조 버튼 (view-btn, page-btn, today-btn)'),
-          dsSpacing('--chip-height', '26px', '칩 (filter-btn, tag-pill, target-chip, status-badge)'),
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:14px">반응형 breakpoints</p>',
-          '<div class="kms-ds-row" style="flex-wrap:wrap">',
-          '<span class="kms-ds-bp-badge">1180px — 네비게이션 변경</span>',
-          '<span class="kms-ds-bp-badge">900px — 태블릿</span>',
-          '<span class="kms-ds-bp-badge">768px — 모바일 태블릿</span>',
-          '<span class="kms-ds-bp-badge">480px — 모바일</span>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '04 · 그라디언트 토큰 (Gradients)',
-        note: 'style.css에 정의된 주요 그라디언트. 홈 섹션 헤더, 히어로 오버레이 등에 사용.',
-        html: [
-          '<div class="kms-ds-gradient-grid">',
-          dsGradient('--gradient-ink', 'linear-gradient(90deg,#111 0%,#191717 52%,#221d1c 100%)', 'Ink — 홈 섹션 타이틀 기본'),
-          dsGradient('--gradient-purple', 'linear-gradient(90deg,#622599 0%,#562085 52%,#45186b 100%)', 'Purple — 스카우팅 퍼플'),
-          dsGradient('--gradient-purple-deep', 'linear-gradient(135deg,#622599 0%,#4e1d7a 46%,#2a103f 100%)', 'Purple Deep — 히어로 오버레이'),
-          dsGradient('Latest 섹션', 'linear-gradient(90deg,#4d006e 0%,#37004e 100%)', '최신소식 섹션 헤더'),
-          dsGradient('Popular 섹션', 'linear-gradient(90deg,#d85b1f 0%,#a64016 100%)', '인기 섹션 헤더'),
-          dsGradient('Picks 섹션', 'linear-gradient(90deg,#0d6c57 0%,#0a4f40 100%)', '특집 섹션 헤더'),
-          '</div>',
-        ].join(''),
-      },
-
-      // ════════════════════════════════════════════════════════
-      { _layer: true, title: 'ELEMENTS', sub: '디자인 요소 — 규칙 + HTML 패턴 + 미리보기' },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '05 · 버튼 (Buttons)',
-        note: '공통: border-radius:0 / 1px solid / uppercase / letter-spacing:0.12em / AliceDigitalLearning. 3단계: Primary 44px · Secondary 36px · Chip 26px.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // Primary Filled
-          '<tr>',
-          '<td class="kms-ds-t-name">저장·제출 버튼<span class="kms-ds-t-spec">Primary 44px · bg #1f1f1f</span></td>',
-          '<td class="kms-ds-t-usage">관리자 게시글 저장, 캘린더 행사 확정, 폼 제출 등 주요 확정 액션<code class="kms-ds-t-cls">.submit-btn .write-btn .calendar-manage-btn</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="submit-btn"&gt;저장하기&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnFilled + '">저장하기</button></td>',
-          '</tr>',
-          // Primary Accent
-          '<tr>',
-          '<td class="kms-ds-t-name">작성·등록 버튼<span class="kms-ds-t-spec">Primary 44px · bg #622599</span></td>',
-          '<td class="kms-ds-t-usage">새 게시글 작성, 캘린더 행사 등록 — 관리자 페이지 상단 고정 버튼<code class="kms-ds-t-cls">.write-btn</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="write-btn"&gt;새 게시글 작성&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnAccent + '">새 게시글 작성</button></td>',
-          '</tr>',
-          // Primary Outline
-          '<tr>',
-          '<td class="kms-ds-t-name">취소 버튼<span class="kms-ds-t-spec">Primary 44px · 아웃라인</span></td>',
-          '<td class="kms-ds-t-usage">작성 취소, 모달 닫기 — 저장 버튼 옆에 나란히 배치<code class="kms-ds-t-cls">.cancel-btn.visible</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="cancel-btn visible"&gt;취소&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnOutline + '">취소</button></td>',
-          '</tr>',
-          // Primary Danger
-          '<tr>',
-          '<td class="kms-ds-t-name">삭제 버튼<span class="kms-ds-t-spec">Primary 44px · 빨간 아웃라인</span></td>',
-          '<td class="kms-ds-t-usage">게시글 삭제, 행사 삭제 — 되돌릴 수 없는 위험 액션<code class="kms-ds-t-cls">.btn-delete-soft.visible</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="btn-delete-soft visible"&gt;삭제&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnDanger + '">삭제</button></td>',
-          '</tr>',
-          // Primary Disabled
-          '<tr>',
-          '<td class="kms-ds-t-name">비활성 버튼<span class="kms-ds-t-spec">Primary 44px · opacity 0.4</span></td>',
-          '<td class="kms-ds-t-usage">요청 처리 중, 유효성 미충족 — 모든 Primary 계열에 적용<code class="kms-ds-t-cls">disabled</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="submit-btn" disabled&gt;저장&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnDisabled + '" disabled>비활성화</button></td>',
-          '</tr>',
-          // Secondary Default
-          '<tr>',
-          '<td class="kms-ds-t-name">뷰전환·페이지 버튼<span class="kms-ds-t-spec">Secondary 36px · 아웃라인</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 달력·목록·지도 뷰 전환, 게시판 페이지네이션 번호<code class="kms-ds-t-cls">.calendar-view-btn .board-page-btn .calendar-today-btn</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="calendar-view-btn"&gt;달력&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">달력</button><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">목록</button><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">1</button><button style="' + btnSec + 'background:transparent;color:rgba(31,31,31,0.58);border-color:rgba(31,31,31,0.18)">2</button></div></td>',
-          '</tr>',
-          // Secondary Active (filled)
-          '<tr>',
-          '<td class="kms-ds-t-name">선택된 뷰·현재 페이지<span class="kms-ds-t-spec">Secondary 36px · bg #1f1f1f</span></td>',
-          '<td class="kms-ds-t-usage">현재 선택된 뷰 강조, 현재 페이지 번호 강조<code class="kms-ds-t-cls">.board-page-btn.active .calendar-view-btn.active</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="board-page-btn active"&gt;2&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnSec + 'background:#1f1f1f;color:#fff;border-color:#1f1f1f">2 (활성)</button></td>',
-          '</tr>',
-          // Secondary Accent Active
-          '<tr>',
-          '<td class="kms-ds-t-name">퍼플 강조 뷰<span class="kms-ds-t-spec">Secondary 36px · 퍼플 bg 연하</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 지도 보기 등 특수 강조 뷰 — 퍼플 계열 식별<code class="kms-ds-t-cls">.calendar-view-btn.active</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="calendar-view-btn active"&gt;지도&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="' + btnSec + 'background:rgba(98,37,153,0.08);color:#622599;border-color:#622599">지도 (활성)</button></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '06 · 칩 & 배지 (Chips & Badges)',
-        note: '공통: 높이 26px (--chip-height) / border-radius:0 / 1px solid / 10px / uppercase / letter-spacing:0.12em. 비활성=테두리만, 활성=검정 채움.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 지역 카테고리 키커
-          '<tr>',
-          '<td class="kms-ds-t-name">지역 카테고리 키커<span class="kms-ds-t-spec">26px · 아웃라인 컬러</span></td>',
-          '<td class="kms-ds-t-usage">게시글 카드 상단 레이블, 기사 상세 페이지 — 지역별 색상 구분<code class="kms-ds-t-cls">.post-kicker .tag-{region}-kicker</code></td>',
-          '<td class="kms-ds-t-code">&lt;span class="post-kicker tag-korea-kicker"&gt;한국스카우트&lt;/span&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker tag-apr-kicker">APR</span><span class="post-kicker tag-wosm-kicker">WOSM</span><span class="post-kicker tag-people-kicker">사람들</span><span class="post-kicker tag-latest-kicker">최신소식</span><span class="post-kicker post-kicker-new">NEW</span></div></td>',
-          '</tr>',
-          // 행사 상태 배지
-          '<tr>',
-          '<td class="kms-ds-t-name">행사 진행 상태 배지<span class="kms-ds-t-spec">26px · 아웃라인 컬러</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 행사 카드 — 예정(퍼플)/진행중(초록)/종료(회색) 상태 구분<code class="kms-ds-t-cls">.calendar-status-badge.is-upcoming / .is-ongoing / .is-finished</code></td>',
-          '<td class="kms-ds-t-code">&lt;span class="calendar-status-badge is-upcoming"&gt;예정&lt;/span&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-status-badge">훈련</span><span class="calendar-status-badge is-upcoming">예정</span><span class="calendar-status-badge is-ongoing">진행 중</span><span class="calendar-status-badge is-finished">종료</span></div></td>',
-          '</tr>',
-          // 대상 칩
-          '<tr>',
-          '<td class="kms-ds-t-name">행사 대상 칩<span class="kms-ds-t-spec">26px · 검정 아웃라인</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 행사 카드 — 참가 대상 스카우트 구분 (비버·컵스·스카우트·지도자·로버)<code class="kms-ds-t-cls">.calendar-target-chip</code></td>',
-          '<td class="kms-ds-t-code">&lt;span class="calendar-target-chip"&gt;지도자&lt;/span&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-target-chip">비버</span><span class="calendar-target-chip">컵스카우트</span><span class="calendar-target-chip">지도자</span><span class="calendar-target-chip">로버</span></div></td>',
-          '</tr>',
-          // 지역 배지
-          '<tr>',
-          '<td class="kms-ds-t-name">행사 지역 배지<span class="kms-ds-t-spec">26px · 지역 컬러 텍스트</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 행사 카드 — 주관 지역 구분 (KOR·APR·WOSM·EUR·AFR 등)<code class="kms-ds-t-cls">.calendar-category-badge.is-kor / .is-apr / .is-wosm</code></td>',
-          '<td class="kms-ds-t-code">&lt;span class="calendar-category-badge is-kor"&gt;KOR&lt;/span&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="calendar-category-badge is-kor">KOR</span><span class="calendar-category-badge is-apr">APR</span><span class="calendar-category-badge is-wosm">WOSM</span><span class="calendar-category-badge is-eur">EUR</span></div></td>',
-          '</tr>',
-          // 필터 칩
-          '<tr>',
-          '<td class="kms-ds-t-name">콘텐츠 필터 칩<span class="kms-ds-t-spec">26px · 토글 방식</span></td>',
-          '<td class="kms-ds-t-usage">게시판 카테고리 필터, 캘린더 행사 유형 필터 탭 — 선택 시 검정 채움<code class="kms-ds-t-cls">.filter-btn / .filter-btn.active</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="filter-btn active"&gt;전체&lt;/button&gt;\n&lt;button class="filter-btn"&gt;훈련&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><button class="filter-btn active">전체</button><button class="filter-btn">훈련</button><button class="filter-btn">잼버리</button></div></td>',
-          '</tr>',
-          // 태그 칩
-          '<tr>',
-          '<td class="kms-ds-t-name">태그 칩<span class="kms-ds-t-spec">26px · 토글 방식</span></td>',
-          '<td class="kms-ds-t-usage">게시글 태그, 검색 결과 태그 필터 — 선택 시 검정 채움<code class="kms-ds-t-cls">.tag-pill / .tag-pill.active</code></td>',
-          '<td class="kms-ds-t-code">&lt;span class="tag-pill active"&gt;훈련&lt;/span&gt;\n&lt;span class="tag-pill"&gt;잼버리&lt;/span&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="kms-ds-row"><span class="tag-pill active">훈련</span><span class="tag-pill">잼버리</span><span class="tag-pill">스카우트</span></div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '07 · 폼 요소 (Form Elements)',
-        note: '래퍼 .form-group: label(10px uppercase) + 요소. 공통: 높이 40px / border-radius:0 / 1px solid var(--border) / focus시 border-color:#1f1f1f / 14px AliceDigitalLearning.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // Text Input
-          '<tr>',
-          '<td class="kms-ds-t-name">단행 텍스트 입력<span class="kms-ds-t-spec">40px · border-radius:0</span></td>',
-          '<td class="kms-ds-t-usage">제목, URL, 검색어 등 한 줄 입력 — 관리자 게시글 폼, 캘린더 행사 폼<code class="kms-ds-t-cls">.form-group input[type=text]</code></td>',
-          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;제목 (TEXT INPUT)&lt;/label&gt;\n  &lt;input type="text"&gt;\n&lt;/div&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>제목 (TEXT INPUT)</label><input type="text" placeholder="게시글 제목을 입력하세요" /></div></td>',
-          '</tr>',
-          // Select
-          '<tr>',
-          '<td class="kms-ds-t-name">선택 드롭다운<span class="kms-ds-t-spec">40px · border-radius:0</span></td>',
-          '<td class="kms-ds-t-usage">카테고리 분류, 상태 선택, 정렬 기준 — 관리자 게시글·캘린더 폼<code class="kms-ds-t-cls">.form-group select</code></td>',
-          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;카테고리 (SELECT)&lt;/label&gt;\n  &lt;select&gt;...&lt;/select&gt;\n&lt;/div&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>카테고리 (SELECT)</label><select><option>한국스카우트</option><option>APR</option><option>WOSM</option><option>사람들</option></select></div></td>',
-          '</tr>',
-          // Date Input
-          '<tr>',
-          '<td class="kms-ds-t-name">날짜 입력<span class="kms-ds-t-spec">40px · border-radius:0</span></td>',
-          '<td class="kms-ds-t-usage">날짜 지정 — 캘린더 행사 시작·종료일, 관리자 기간 필터<code class="kms-ds-t-cls">.form-group input[type=date]</code></td>',
-          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;날짜 (DATE INPUT)&lt;/label&gt;\n  &lt;input type="date"&gt;\n&lt;/div&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>날짜 (DATE INPUT)</label><input type="date" /></div></td>',
-          '</tr>',
-          // Textarea
-          '<tr>',
-          '<td class="kms-ds-t-name">여러 줄 텍스트 입력<span class="kms-ds-t-spec">height:auto · border-radius:0</span></td>',
-          '<td class="kms-ds-t-usage">본문 요약, 기사 내용, 메모 — 관리자 게시글 편집기, 행사 설명<code class="kms-ds-t-cls">.form-group textarea</code></td>',
-          '<td class="kms-ds-t-code">&lt;div class="form-group"&gt;\n  &lt;label&gt;본문 요약 (TEXTAREA)&lt;/label&gt;\n  &lt;textarea&gt;&lt;/textarea&gt;\n&lt;/div&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>본문 요약 (TEXTAREA)</label><textarea placeholder="요약 내용을 입력하세요" style="min-height:70px"></textarea></div></td>',
-          '</tr>',
-          // Disabled
-          '<tr>',
-          '<td class="kms-ds-t-name">비활성 입력<span class="kms-ds-t-spec">40px · opacity 0.4</span></td>',
-          '<td class="kms-ds-t-usage">조건 미충족, 잠긴 필드 — 읽기 전용 설정값, 서버에서 채워지는 필드<code class="kms-ds-t-cls">input[disabled] select[disabled]</code></td>',
-          '<td class="kms-ds-t-code">&lt;input type="text" disabled&gt;</td>',
-          '<td class="kms-ds-t-preview"><div class="form-group" style="min-width:200px"><label>비활성화</label><input type="text" placeholder="비활성화 입력창" disabled /></div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '08 · 아이콘 버튼 (Icon Buttons)',
-        note: '공통: 28×28px / border:none / background:transparent / 아이콘 16px SVG. hover시 배경색 변화. 텍스트 레이블 없이 aria-label 필수.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>활용처</th><th>코드</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 기본
-          '<tr>',
-          '<td class="kms-ds-t-name">편집 아이콘 버튼<span class="kms-ds-t-spec">28×28px · 투명 배경</span></td>',
-          '<td class="kms-ds-t-usage">게시글 목록 편집, 캘린더 행사 수정 — 테이블 행 우측 배치, hover 시 배경 변화<code class="kms-ds-t-cls">.btn-icon .btn-edit</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="btn-icon" aria-label="편집"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#1f1f1f" aria-label="편집"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></td>',
-          '</tr>',
-          // Danger
-          '<tr>',
-          '<td class="kms-ds-t-name">삭제 아이콘 버튼<span class="kms-ds-t-spec">28×28px · 빨간 아이콘</span></td>',
-          '<td class="kms-ds-t-usage">게시글 삭제, 행사 삭제 — 테이블 행 우측 위험 액션, hover 시 danger 배경<code class="kms-ds-t-cls">.btn-icon.btn-icon-danger .btn-delete</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="btn-icon btn-icon-danger" aria-label="삭제"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#ff5655" aria-label="삭제"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button></td>',
-          '</tr>',
-          // Success
-          '<tr>',
-          '<td class="kms-ds-t-name">확인 아이콘 버튼<span class="kms-ds-t-spec">28×28px · 초록 아이콘</span></td>',
-          '<td class="kms-ds-t-usage">용어 승인, 인라인 확인 — 테이블 행 우측 성공 액션, hover 시 success 배경<code class="kms-ds-t-cls">.btn-icon.btn-icon-success</code></td>',
-          '<td class="kms-ds-t-code">&lt;button class="btn-icon btn-icon-success" aria-label="확인"&gt;\n  &lt;svg ...&gt;&lt;/svg&gt;\n&lt;/button&gt;</td>',
-          '<td class="kms-ds-t-preview"><button style="width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;cursor:pointer;color:#248737" aria-label="확인"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ════════════════════════════════════════════════════════
-      { _layer: true, title: 'APPLICATION', sub: '응용 예시 — 요소들이 조합된 실제 사용 사례' },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '09 · 게시글 카드 (Post Card)',
-        note: '박스 규칙: border-radius:0 / border:1px solid var(--border) / 내부 패딩 24px (.post-card-body) / 썸네일 16:9 비율 (.post-card-thumb) / 그리드 gap:1px. 홈 메인 게시글 목록에서 사용.',
-        html: [
-          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;border:1px solid rgba(31,31,31,0.12);max-width:560px">',
-          // Card 1
-          '<div class="post-card">',
-          '<img class="post-card-thumb" src="/img/logo.png" alt="BP미디어 로고" style="aspect-ratio:16/9;display:block;width:100%;object-fit:contain;background:#f5f3ef;padding:12px">',
-          '<div class="post-card-body">',
-          '<div class="post-card-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker post-kicker-new">NEW</span></div>',
-          '<h3>스카우트 잼버리 2026 한국 개최 확정 — 5만 명 참가 예상</h3>',
-          '<p class="post-card-excerpt">제23회 세계 잼버리가 한국에서 개최될 예정으로, 약 5만 명의 스카우트가 참가할 것으로 예상됩니다.</p>',
-          '<div class="post-card-footer"><div class="post-card-meta">2026-03-22 · 조회 1,234</div></div>',
-          '</div></div>',
-          // Card 2
-          '<div class="post-card">',
-          '<img class="post-card-thumb" src="/img/logo.png" alt="BP미디어 로고" style="aspect-ratio:16/9;display:block;width:100%;object-fit:contain;background:#eef2f0;padding:12px">',
-          '<div class="post-card-body">',
-          '<div class="post-card-labels"><span class="post-kicker tag-wosm-kicker">WOSM</span></div>',
-          '<h3>세계 스카우트 연맹 총회 2025 결과 보고</h3>',
-          '<p class="post-card-excerpt">WOSM 총회에서 새로운 글로벌 전략 방향이 채택되었습니다.</p>',
-          '<div class="post-card-footer"><div class="post-card-meta">2026-02-10 · 조회 892</div></div>',
-          '</div></div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '10 · 캘린더 행사 카드 (Calendar Event Card)',
-        note: '박스 규칙: border-radius:0 / border:1px solid var(--border) / 상단 3px 컬러 선으로 지역 구분 (border-top) / 내부 패딩 14px. 캘린더 페이지에서 그리드로 배열. 모바일에서 1열 전체 너비.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>설명</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 카드 그리드 뷰
-          '<tr>',
-          '<td class="kms-ds-t-name">카드 그리드 뷰<span class="kms-ds-t-spec">PC·태블릿 · minmax(220px,1fr)</span></td>',
-          '<td class="kms-ds-t-usage">캘린더 페이지 기본 뷰 — grid-template-columns: repeat(auto-fill, minmax(220px,1fr)) / gap:8px / 지역별 상단 컬러 선 3px<code class="kms-ds-t-cls">.calendar-event-card.is-category-{region}</code></td>',
-          '<td class="kms-ds-t-preview"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">' +
-            dsCalendarCard('is-category-kor', 'KOR', 'is-kor', '제22차 한국스카우트 대표자 대회', '2026-04-10 ~ 04-12', '수원 월드컵경기장', ['훈련'], ['지도자', '로버']) +
-            dsCalendarCard('is-category-wosm', 'WOSM', 'is-wosm', '세계 스카우트 의회 2026', '2026-06-15 ~ 06-20', '스위스 제네바', ['세계행사'], []) +
-          '</div></td>',
-          '</tr>',
-          // 모바일 단열 뷰
-          '<tr>',
-          '<td class="kms-ds-t-name">모바일 단열 뷰<span class="kms-ds-t-spec">480px 이하 · 1열 전체 너비</span></td>',
-          '<td class="kms-ds-t-usage">모바일에서 grid-template-columns: 1fr 으로 변경 — 카드가 전체 너비로 1열 표시<code class="kms-ds-t-cls">@media (max-width:480px)</code></td>',
-          '<td class="kms-ds-t-preview"><div style="display:grid;grid-template-columns:1fr;gap:8px;max-width:320px;">' +
-            dsCalendarCard('is-category-apr', 'APR', 'is-apr', 'APR 지역 청소년 지도자 훈련', '2026-05-01 ~ 05-05', '말레이시아 쿠알라룸푸르', ['훈련', '교육'], []) +
-          '</div></td>',
-          '</tr>',
-          // 종료 행사
-          '<tr>',
-          '<td class="kms-ds-t-name">종료된 행사 카드<span class="kms-ds-t-spec">.is-finished 상태</span></td>',
-          '<td class="kms-ds-t-usage">종료된 행사 — 배경 #f6f6f6, 테두리 #d8d8d8으로 흐리게 처리<code class="kms-ds-t-cls">.calendar-event-card.is-finished</code></td>',
-          '<td class="kms-ds-t-preview"><div style="max-width:280px;">' +
-            dsCalendarCard('is-category-kor is-finished', 'KOR', 'is-kor', '2025 한국스카우트 대회', '2025-09-10 ~ 09-12', '서울', ['훈련'], []) +
-          '</div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '11 · 헤더 & 네비게이션 (Header & Navigation)',
-        note: 'masthead / nav. 전 페이지 공통. 주요 클래스: .masthead, .masthead-top, .masthead-logo, .masthead-right, .nav, .lang-btn, .mh-search-input, .mh-search-btn',
-        html: [
-          '<div style="border:1px solid rgba(31,31,31,0.12);background:#fff;overflow:hidden;">',
-          '  <header class="masthead" style="position:relative;">',
-          '    <div class="masthead-top">',
-          '      <div class="masthead-date" style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.08em;color:rgba(31,31,31,0.58);">2026.03.22 SUN</div>',
-          '      <div class="masthead-logo">',
-          '        <div class="masthead-logo-row">',
-          '          <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">',
-          '          <h1 style="font-family:AliceDigitalLearning,sans-serif;font-size:22px;font-weight:700;color:#1f1f1f;margin:0;">BP미디어</h1>',
-          '        </div>',
-          '        <div class="sub" style="font-family:AliceDigitalLearning,sans-serif;font-size:9px;letter-spacing:0.12em;color:rgba(31,31,31,0.58);text-transform:uppercase;">The BP Post · bpmedia.net</div>',
-          '      </div>',
-          '      <div class="masthead-right">',
-          '        <div class="lang-toggle">',
-          '          <button class="lang-btn active">KOR</button>',
-          '          <button class="lang-btn">ENG</button>',
-          '        </div>',
-          '        <div class="masthead-search">',
-          '          <input class="mh-search-input" placeholder="검색…" style="pointer-events:none;">',
-          '          <button class="mh-search-btn" aria-label="검색"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>',
-          '        </div>',
-          '      </div>',
-          '    </div>',
-          '    <nav class="nav">',
-          '      <a href="#">도움을 주신 분들</a>',
-          '      <a href="#" class="active">홈</a>',
-          '      <a href="#">1개월 소식</a>',
-          '      <a href="#">Korea</a>',
-          '      <a href="#">APR</a>',
-          '      <a href="#">WOSM</a>',
-          '      <a href="#">스카우트 인물</a>',
-          '      <a href="#">캘린더</a>',
-          '      <a href="#">용어집</a>',
-          '    </nav>',
-          '  </header>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '12 · 히어로 & 슬라이더 (Hero & Slider)',
-        note: '홈 페이지 최상단 슬라이더. 주요 클래스: .site-hero-slider, .site-hero, .site-hero-slide.active, .site-hero-content, .site-hero-eyebrow, .site-hero-title, .site-hero-sub, .hero-controls, .hero-dots, .hero-pause-btn',
-        html: [
-          '<div class="site-hero-slider" style="position:relative;overflow:hidden;">',
-          '  <div class="site-hero site-hero-slide active" style="position:relative;">',
-          '    <div class="site-hero-bg-text"></div>',
-          '    <div class="site-hero-content">',
-          '      <div class="site-hero-eyebrow">BP미디어 · bpmedia.net</div>',
-          '      <h2 class="site-hero-title">스카우트 운동의 소식을<br>기록합니다</h2>',
-          '      <p class="site-hero-sub">한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다</p>',
-          '    </div>',
-          '  </div>',
-          '  <div class="hero-controls">',
-          '    <div class="hero-dots">',
-          '      <button class="hero-dot is-active" aria-label="슬라이드 1"></button>',
-          '      <button class="hero-dot" aria-label="슬라이드 2"></button>',
-          '      <button class="hero-dot" aria-label="슬라이드 3"></button>',
-          '    </div>',
-          '    <button type="button" class="hero-pause-btn" aria-pressed="false">일시정지</button>',
-          '  </div>',
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:10px">이미지가 있는 슬라이드: <code>.site-hero.has-bg</code> + <code>.site-hero-media</code> + <code>.site-hero-media-img</code></p>',
-          '<div class="site-hero-slider" style="position:relative;overflow:hidden;margin-top:8px;">',
-          '  <div class="site-hero site-hero-slide active has-bg">',
-          '    <div class="site-hero-content">',
-          '      <div class="site-hero-labels">',
-          '        <span class="category-tag tag-korea">Korea</span>',
-          '        <span class="post-kicker tag-korea-kicker">제19차 세계잼버리</span>',
-          '      </div>',
-          '      <h2 class="site-hero-title">이미지 슬라이드 예시</h2>',
-          '      <p class="site-hero-sub">히어로 이미지가 설정된 경우 — has-bg 클래스 추가</p>',
-          '      <div class="site-hero-actions">',
-          '        <a class="site-hero-cta" href="#">기사 읽기</a>',
-          '        <button class="site-hero-share-btn" type="button">공유하기</button>',
-          '      </div>',
-          '    </div>',
-          '  </div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '13 · 티커 (Ticker)',
-        note: '전 페이지 히어로 상단의 뉴스 자막 띠. 주요 클래스: .ticker, .ticker-inner, .ticker-diamond. CSS 애니메이션: ticker 60s linear infinite',
-        html: [
-          '<div class="ticker" style="position:relative;overflow:hidden;">',
-          '  <div class="ticker-inner" style="animation-play-state:paused;">',
-          '    길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
-          '    &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;',
-          '    한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
-          '    &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;',
-          '    The BP Post · bpmedia.net',
-          '    &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;',
-          '  </div>',
-          '</div>',
-          '<p class="kms-ds-note" style="margin-top:8px"><code>.ticker-inner</code>: white-space:nowrap, animation ticker 60s linear infinite. <code>.ticker-diamond</code>: color: var(--accent)</p>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '14 · 홈 레이아웃 (Home Layout)',
-        note: '홈 페이지 콘텐츠 구조. .home-wrapper > .home-priority (메인+사이드) / .home-2col / .home-3col. 섹션 타이틀: .home-section-title + 수식어 클래스. 컬럼 헤더: .home-col-header + 수식어',
-        html: [
-          '<p class="kms-ds-note">섹션 타이틀 변형</p>',
-          '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">',
-          '  <div class="home-section-title home-section-title-main"><span>메인 스토리</span><div class="rule"></div></div>',
-          '  <div class="home-section-title home-section-title-latest"><span>최신 소식</span><a href="#" class="home-section-more">더보기 →</a><div class="rule"></div></div>',
-          '  <div class="home-section-title home-section-title-popular"><span>인기 소식</span><div class="rule"></div></div>',
-          '  <div class="home-section-title home-section-title-picks"><span>에디터 추천</span><div class="rule"></div></div>',
-          '</div>',
-          '<p class="kms-ds-note">3열 컬럼 헤더</p>',
-          '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">',
-          '  <div class="home-col-header home-col-header-korea"><h3>Korea</h3><a href="#" class="home-section-more">더보기 →</a></div>',
-          '  <div class="home-col-header home-col-header-apr"><h3>APR</h3><a href="#" class="home-section-more">더보기 →</a></div>',
-          '  <div class="home-col-header home-col-header-wosm"><h3>WOSM</h3><a href="#" class="home-section-more">더보기 →</a></div>',
-          '  <div class="home-col-header home-col-header-people"><h3>스카우트 인물</h3><a href="#" class="home-section-more">더보기 →</a></div>',
-          '</div>',
-          '<p class="kms-ds-note">메인 리드 카드 (.home-lead-card) 축약 미리보기</p>',
-          '<article class="home-lead-card" style="max-height:160px;overflow:hidden;">',
-          '  <div class="home-lead-body">',
-          '    <div class="home-lead-copy">',
-          '      <div class="home-lead-labels">',
-          '        <span class="category-tag tag-korea">Korea</span>',
-          '        <span class="home-lead-kicker">메인 스토리</span>',
-          '      </div>',
-          '      <h3><a class="home-lead-link" href="#">한국스카우트연맹 제19차 세계잼버리 파견대 출발</a></h3>',
-          '      <p class="home-lead-excerpt">2025년 8월, 폴란드 그단스크에서 열리는 제19차 세계스카우트잼버리에 한국 파견대가 출발했다…</p>',
-          '    </div>',
-          '    <div class="home-lead-footer">',
-          '      <div class="home-lead-meta">2026.03.22 · 편집부</div>',
-          '      <div class="home-lead-actions">',
-          '        <a class="home-subscribe-btn" href="#">기사 읽기</a>',
-          '        <button class="home-subscribe-btn secondary" type="button">공유하기</button>',
-          '      </div>',
-          '    </div>',
-          '  </div>',
-          '</article>',
-          '<p class="kms-ds-note" style="margin-top:10px">구독/검색 버튼 (.home-subscribe-btn)</p>',
-          '<div class="kms-ds-row" style="gap:8px;margin-top:6px;">',
-          '  <a class="home-subscribe-btn" href="#">RSS 구독</a>',
-          '  <a class="home-subscribe-btn secondary" href="#">사이트 검색</a>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '15 · 로딩 & 상태 (Loading & Status)',
-        note: 'JS 로딩 대기 중 표시. 주요 클래스: .loading-state, .loading-dots span (3개). 빈 상태: .mini-empty, .list-empty',
-        html: [
-          '<div class="kms-ds-row" style="gap:24px;align-items:flex-start;flex-wrap:wrap;">',
-          '  <div>',
-          '    <p class="kms-ds-note">로딩 상태 (.loading-state)</p>',
-          '    <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>',
-          '  </div>',
-          '  <div>',
-          '    <p class="kms-ds-note">빈 상태 — 미니 리스트 (.mini-empty)</p>',
-          '    <div class="mini-empty">게시글이 없습니다</div>',
-          '  </div>',
-          '  <div>',
-          '    <p class="kms-ds-note">빈 상태 — 캘린더 이벤트 목록 (.list-empty)</p>',
-          '    <div class="list-empty">일정이 없습니다</div>',
-          '  </div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '16 · 검색 UI (Search UI)',
-        note: '두 가지 검색 진입점: ① 마스트헤드 아이콘 클릭 → 전역 검색 패널 (.global-search-bar) ② 홈 구독 옆 "사이트 검색" → /search.html 전용 검색 페이지. 검색 결과는 .global-search-item 카드 그리드로 표시.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>설명</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 마스트헤드 인라인 검색
-          '<tr>',
-          '<td class="kms-ds-t-name">마스트헤드 인라인 검색<span class="kms-ds-t-spec">헤더 우측 상단</span></td>',
-          '<td class="kms-ds-t-usage">헤더 우측 검색 아이콘 클릭 시 노출 — 하단 border만 있는 미니멀 입력창<code class="kms-ds-t-cls">.masthead-search .mh-search-input .mh-search-btn</code></td>',
-          '<td class="kms-ds-t-preview"><div style="display:flex;align-items:center;gap:4px;border-bottom:1px solid #1f1f1f;padding-bottom:4px;max-width:220px"><input style="border:none;outline:none;font-family:AliceDigitalLearning,sans-serif;font-size:13px;color:#1f1f1f;flex:1;background:transparent" placeholder="검색…" /><button style="border:none;background:transparent;cursor:pointer;padding:2px;display:flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1f1f1f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button></div></td>',
-          '</tr>',
-          // 전역 검색 패널
-          '<tr>',
-          '<td class="kms-ds-t-name">전역 검색 패널<span class="kms-ds-t-spec">헤더 아래 펼쳐지는 바</span></td>',
-          '<td class="kms-ds-t-usage">마스트헤드 검색 아이콘 클릭 시 헤더 바로 아래 전체 너비로 표시 — 검색어 입력 후 결과를 카드 그리드로 표시<code class="kms-ds-t-cls">.global-search-bar .global-search-input .global-search-btn .global-search-close</code></td>',
-          '<td class="kms-ds-t-preview"><div style="background:#fff;border-bottom:1px solid rgba(31,31,31,0.12);padding:12px 16px"><div style="display:flex;gap:8px;align-items:center"><input style="flex:1;padding:9px 14px;border:1px solid rgba(31,31,31,0.12);font-family:AliceDigitalLearning,sans-serif;font-size:13px;color:#1f1f1f;outline:none" placeholder="검색어를 입력하세요…" /><button style="padding:9px 16px;background:#622599;color:#fff;border:none;font-family:AliceDigitalLearning,sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">검색</button><button style="padding:8px 12px;background:none;border:1px solid rgba(31,31,31,0.12);font-family:AliceDigitalLearning,sans-serif;font-size:10px;color:rgba(31,31,31,0.58);cursor:pointer">닫기</button></div></div></td>',
-          '</tr>',
-          // 검색 결과 카드
-          '<tr>',
-          '<td class="kms-ds-t-name">검색 결과 카드<span class="kms-ds-t-spec">grid minmax(280px,1fr)</span></td>',
-          '<td class="kms-ds-t-usage">전역 검색 결과 그리드 — 카테고리 태그 + 제목 + 요약 + 날짜. border:1px, padding:16px<code class="kms-ds-t-cls">.global-search-results-wrap .global-search-grid .global-search-item</code></td>',
-          '<td class="kms-ds-t-preview"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"><a style="display:block;padding:14px;border:1px solid rgba(31,31,31,0.12);text-decoration:none;color:#1f1f1f" href="#"><span class="category-tag tag-korea">Korea</span><strong style="display:block;font-size:14px;line-height:1.4;margin:6px 0 4px">세계잼버리 파견대 출발</strong><p style="font-size:12px;color:rgba(31,31,31,0.58);margin:0 0 6px;line-height:1.6">2025년 8월 폴란드에서 열리는 잼버리에 한국 파견대가 출발했다.</p><span style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;color:rgba(31,31,31,0.58);letter-spacing:0.12em">2026.03.22</span></a><a style="display:block;padding:14px;border:1px solid rgba(31,31,31,0.12);text-decoration:none;color:#1f1f1f" href="#"><span class="category-tag tag-wosm">WOSM</span><strong style="display:block;font-size:14px;line-height:1.4;margin:6px 0 4px">세계스카우트연맹 총재 선거</strong><p style="font-size:12px;color:rgba(31,31,31,0.58);margin:0 0 6px;line-height:1.6">신임 총재가 제44차 세계스카우트총회에서 선출되었다.</p><span style="font-family:AliceDigitalLearning,sans-serif;font-size:10px;color:rgba(31,31,31,0.58);letter-spacing:0.12em">2026.02.10</span></a></div></td>',
-          '</tr>',
-          // 결과 없음
-          '<tr>',
-          '<td class="kms-ds-t-name">검색 결과 없음<span class="kms-ds-t-spec">빈 상태</span></td>',
-          '<td class="kms-ds-t-usage">검색어에 일치하는 결과가 없을 때 — 중앙 정렬 안내 텍스트<code class="kms-ds-t-cls">.global-search-empty</code></td>',
-          '<td class="kms-ds-t-preview"><div style="text-align:center;padding:24px;font-size:13px;color:rgba(31,31,31,0.58);font-family:AliceDigitalLearning,sans-serif">검색 결과가 없습니다</div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '17 · 모달 & 오버레이 (Modal & Overlay)',
-        note: '기사 상세 뷰 및 공유 모달. 주요 클래스: .modal-overlay, .modal-overlay.open, .modal, .modal-header, .modal-body, .modal-close, .modal-img, .modal-date',
-        html: [
-          '<div style="position:relative;border:1px solid rgba(31,31,31,0.12);background:rgba(0,0,0,0.05);padding:20px;min-height:200px;">',
-          '  <p class="kms-ds-note" style="margin-bottom:8px;">모달 (.modal) — 오버레이 없이 미리보기</p>',
-          '  <div class="modal" style="position:relative;transform:none;max-width:480px;box-shadow:0 4px 24px rgba(0,0,0,0.12);">',
-          '    <div class="modal-header">',
-          '      <span class="category-tag tag-korea">Korea</span>',
-          '      <h2>제19차 세계스카우트잼버리 파견대 출발</h2>',
-          '      <div class="modal-date">2026.03.22 · 편집부</div>',
-          '    </div>',
-          '    <div class="modal-img" style="background:rgba(31,31,31,0.08);min-height:120px;display:flex;align-items:center;justify-content:center;font-family:AliceDigitalLearning,sans-serif;font-size:11px;color:rgba(31,31,31,0.4);">이미지 영역</div>',
-          '    <div class="modal-body">',
-          '      <p style="font-size:14px;line-height:1.7;margin:0;">기사 본문이 이 영역에 렌더링됩니다. 단락, 이미지, 인용문 등이 포함될 수 있습니다.</p>',
-          '    </div>',
-          '    <button class="modal-close" aria-label="닫기">×</button>',
-          '  </div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '18 · 토스트 & 알림 (Toast & Notifications)',
-        note: '토스트: position:fixed / bottom:32px right:32px / 하단 우측 고정. bg:#1f1f1f, color:#fff, 12px AliceDigitalLearning, ls:0.08em / 좌측 4px 컬러 border로 success·error 구분. pull-refresh: 화면 상단 당김 시 표시.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>설명</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 기본 토스트
-          '<tr>',
-          '<td class="kms-ds-t-name">기본 토스트<span class="kms-ds-t-spec">bg #1f1f1f · 흰 텍스트</span></td>',
-          '<td class="kms-ds-t-usage">링크 복사, 일반 알림 — 하단 우측 fixed. .toast.show 시 translateY(0)로 나타남<code class="kms-ds-t-cls">.toast .toast.show</code></td>',
-          '<td class="kms-ds-t-preview"><div style="background:#1f1f1f;color:#fff;font-family:AliceDigitalLearning,sans-serif;font-size:12px;letter-spacing:0.08em;padding:14px 24px;display:inline-block">링크가 클립보드에 복사되었습니다</div></td>',
-          '</tr>',
-          // 성공 토스트
-          '<tr>',
-          '<td class="kms-ds-t-name">성공 토스트<span class="kms-ds-t-spec">좌측 4px #248737</span></td>',
-          '<td class="kms-ds-t-usage">저장 완료, 등록 성공 — 기본 토스트에 좌측 초록 border 추가<code class="kms-ds-t-cls">.toast.show.success</code></td>',
-          '<td class="kms-ds-t-preview"><div style="background:#1f1f1f;color:#fff;font-family:AliceDigitalLearning,sans-serif;font-size:12px;letter-spacing:0.08em;padding:14px 24px;display:inline-block;border-left:4px solid #248737">저장되었습니다</div></td>',
-          '</tr>',
-          // 오류 토스트
-          '<tr>',
-          '<td class="kms-ds-t-name">오류 토스트<span class="kms-ds-t-spec">좌측 4px #ff5655</span></td>',
-          '<td class="kms-ds-t-usage">저장 실패, 오류 발생 — 기본 토스트에 좌측 빨간 border 추가<code class="kms-ds-t-cls">.toast.show.error</code></td>',
-          '<td class="kms-ds-t-preview"><div style="background:#1f1f1f;color:#fff;font-family:AliceDigitalLearning,sans-serif;font-size:12px;letter-spacing:0.08em;padding:14px 24px;display:inline-block;border-left:4px solid #ff5655">오류가 발생했습니다. 다시 시도해주세요.</div></td>',
-          '</tr>',
-          // 당겨서 새로고침
-          '<tr>',
-          '<td class="kms-ds-t-name">당겨서 새로고침<span class="kms-ds-t-spec">모바일 상단 pull</span></td>',
-          '<td class="kms-ds-t-usage">모바일에서 화면 아래로 당겨 새로고침 — 상단 중앙 고정 인디케이터<code class="kms-ds-t-cls">.pull-refresh-indicator.visible / .ready</code></td>',
-          '<td class="kms-ds-t-preview"><div class="pull-refresh-indicator visible" style="position:relative;pointer-events:auto;"><span class="pull-refresh-label">당겨서 새로고침</span></div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '19 · 푸터 (Footer)',
-        note: '전 페이지 공통 푸터. 주요 클래스: footer, .footer-inner, .footer-brand, .footer-admin, .footer-bottom, .footer-live-stats, .footer-live-stat, .footer-build',
-        html: [
-          '<footer style="position:relative;">',
-          '  <div class="footer-inner">',
-          '    <div class="footer-brand">',
-          '      <h4>BP미디어</h4>',
-          '      <p>BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>',
-          '      <p style="margin-top:6px;">bpmedia.net</p>',
-          '      <p>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>',
-          '      <p>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>',
-          '    </div>',
-          '    <div class="footer-admin">',
-          '      <h4>관리자</h4>',
-          '      <a href="#">관리자 페이지 →</a>',
-          '      <a href="#">용어집 RAW로 보기 →</a>',
-          '      <p class="footer-build">Site <span class="site-build-version">0.087</span> · Admin <span class="admin-build-version">0.087</span></p>',
-          '      <div class="footer-live-stats">',
-          '        <p class="footer-live-stat">전체 방문자수 <strong>12,345</strong></p>',
-          '        <p class="footer-live-stat">누적 소식 조회수 <strong>89,012</strong></p>',
-          '        <p class="footer-live-stat">오늘 방문자수 <strong>42</strong></p>',
-          '      </div>',
-          '    </div>',
-          '    <div class="footer-bottom">',
-          '      <p>© 2026 BP미디어 · bpmedia.net</p>',
-          '      <p>BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다.</p>',
-          '    </div>',
-          '  </div>',
-          '</footer>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '20 · 용어집 컴포넌트 (Glossary)',
-        note: 'glossary.html 전용. 주요 클래스: .glossary-page-wrap, .glossary-hero, .glossary-hero-copy, .glossary-search-card, .glossary-search-input, .glossary-letter-bar, .glossary-letter-btn, .glossary-results-meta, .glossary-table, .glossary-admin-toggle-btn, .glossary-login-modal',
-        html: [
-          '<div class="glossary-page-wrap" style="padding:0;">',
-          '  <section class="glossary-hero" style="margin-bottom:14px;">',
-          '    <div class="glossary-hero-copy">',
-          '      <span class="category-tag tag-glossary">용어집</span>',
-          '      <h2 style="font-family:AliceDigitalLearning,sans-serif;font-size:26px;font-weight:700;margin:8px 0 4px;">스카우트 용어집</h2>',
-          '      <p style="font-family:AliceDigitalLearning,sans-serif;font-size:13px;color:rgba(31,31,31,0.58);">스카우트 용어를 국문·영문·불어 3개 국어 기준으로 정리합니다.</p>',
-          '    </div>',
-          '    <div class="glossary-search-card">',
-          '      <label for="kms-ds-glossary-input">용어 검색</label>',
-          '      <input type="search" id="kms-ds-glossary-input" class="glossary-search-input" placeholder="한국어, 영어, 프랑스어로 검색">',
-          '      <div class="glossary-search-options">',
-          '        <label class="glossary-search-check"><input type="checkbox" checked><span>용어</span></label>',
-          '        <label class="glossary-search-check"><input type="checkbox" checked><span>설명</span></label>',
-          '      </div>',
-          '      <p class="glossary-search-help">가~하 + 기타 분류와 검색을 함께 써서 원하는 용어를 빠르게 찾을 수 있습니다.</p>',
-          '    </div>',
-          '  </section>',
-          '  <div class="glossary-public-admin glossary-public-admin-top" style="margin-bottom:10px;">',
-          '    <button type="button" class="glossary-admin-toggle-btn">용어 추가</button>',
-          '  </div>',
-          '  <div class="glossary-toolbar-title" style="margin-bottom:6px;">가 ~ 하 + 기타 분류</div>',
-          '  <div class="glossary-letter-bar" style="margin-bottom:8px;">',
-          '    <button class="glossary-letter-btn active">가</button>',
-          '    <button class="glossary-letter-btn">나</button>',
-          '    <button class="glossary-letter-btn">다</button>',
-          '    <button class="glossary-letter-btn">라</button>',
-          '    <button class="glossary-letter-btn">마</button>',
-          '    <button class="glossary-letter-btn">기타</button>',
-          '  </div>',
-          '  <div class="glossary-results-meta" style="margin-bottom:8px;">총 42개 용어</div>',
-          '  <div class="glossary-table-wrap">',
-          '    <table class="glossary-table">',
-          '      <thead><tr><th>한국어</th><th>영어</th><th>프랑스어</th><th>설명</th></tr></thead>',
-          '      <tbody>',
-          '        <tr><td>스카우팅</td><td>Scouting</td><td>Scoutisme</td><td>청소년의 교육적 운동</td></tr>',
-          '        <tr><td>세계잼버리</td><td>World Scout Jamboree</td><td>Jamboree Scout Mondial</td><td>4년마다 열리는 세계스카우트대회</td></tr>',
-          '        <tr><td>-</td><td>Gilwell Park</td><td>Gilwell Park</td><td>국제 스카우트 훈련 캠핑 장소</td></tr>',
-          '      </tbody>',
-          '    </table>',
-          '  </div>',
-          '</div>',
-        ].join(''),
-      },
-
-      // ────────────────────────────────────────────────────────
-      {
-        title: '21 · 유틸리티 (Utilities)',
-        note: '홈·게시판 사이드바 미니 리스트, 공유 버튼, 빈 상태, 접근성 skip-link. 모두 border-radius:0 / AliceDigitalLearning / --fs-nav 기준 적용.',
-        html: [
-          '<div class="kms-ds-table-wrap"><table class="kms-ds-table">',
-          '<thead><tr><th>구분</th><th>설명</th><th>미리보기</th></tr></thead>',
-          '<tbody>',
-          // 미니 리스트 아이템
-          '<tr>',
-          '<td class="kms-ds-t-name">미니 리스트 아이템<span class="kms-ds-t-spec">.mini-item</span></td>',
-          '<td class="kms-ds-t-usage">홈 사이드바·관련 게시글 목록 — 썸네일(우측) + 레이블 + 제목 + 날짜 + 공유<code class="kms-ds-t-cls">.mini-list .mini-item .mini-item-row .mini-thumb .mini-meta</code></td>',
-          '<td class="kms-ds-t-preview"><div class="mini-list" style="max-width:340px;border:1px solid rgba(31,31,31,0.12)"><article class="mini-item"><div class="mini-item-row"><div class="mini-item-text"><div class="mini-item-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker post-kicker-new">NEW</span></div><h4><a class="mini-item-link" href="#">세계잼버리 2026 한국 개최 확정</a></h4><div class="mini-meta">2026.03.22</div><div class="mini-item-actions"><button class="mini-share-link" type="button">공유하기</button></div></div><img class="mini-thumb" src="/img/logo.png" alt="" style="object-fit:cover;"></div></article><article class="mini-item"><div class="mini-item-row"><div class="mini-item-text"><div class="mini-item-labels"><span class="post-kicker tag-wosm-kicker">WOSM</span></div><h4><a class="mini-item-link" href="#">세계스카우트연맹 총재 선거 결과</a></h4><div class="mini-meta">2026.02.10</div></div></div></article></div></td>',
-          '</tr>',
-          // 빈 상태
-          '<tr>',
-          '<td class="kms-ds-t-name">빈 상태 메시지<span class="kms-ds-t-spec">.mini-empty / .list-empty</span></td>',
-          '<td class="kms-ds-t-usage">게시글·일정이 없을 때 표시 — 중앙 정렬 안내 텍스트<code class="kms-ds-t-cls">.mini-empty .list-empty</code></td>',
-          '<td class="kms-ds-t-preview"><div style="display:flex;flex-direction:column;gap:8px"><div class="mini-empty">게시글이 없습니다</div><div class="list-empty">일정이 없습니다</div></div></td>',
-          '</tr>',
-          // 공유 버튼
-          '<tr>',
-          '<td class="kms-ds-t-name">공유 버튼<span class="kms-ds-t-spec">.mini-share-link</span></td>',
-          '<td class="kms-ds-t-usage">미니 리스트 아이템 하단 — 링크 클립보드 복사 후 토스트 알림 트리거<code class="kms-ds-t-cls">.mini-share-link</code></td>',
-          '<td class="kms-ds-t-preview"><button class="mini-share-link" type="button">공유하기</button></td>',
-          '</tr>',
-          // 로딩 상태
-          '<tr>',
-          '<td class="kms-ds-t-name">로딩 상태<span class="kms-ds-t-spec">.loading-state</span></td>',
-          '<td class="kms-ds-t-usage">API 데이터 요청 중 표시 — 3점 애니메이션 (loading-dots · 3 × span)<code class="kms-ds-t-cls">.loading-state .loading-dots span</code></td>',
-          '<td class="kms-ds-t-preview"><div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div></td>',
-          '</tr>',
-          // skip-link
-          '<tr>',
-          '<td class="kms-ds-t-name">접근성 건너뛰기 링크<span class="kms-ds-t-spec">.skip-link (포커스 시 노출)</span></td>',
-          '<td class="kms-ds-t-usage">키보드 사용자 — Tab 첫 포커스 시 화면에 나타나 본문으로 바로 이동<code class="kms-ds-t-cls">.skip-link</code></td>',
-          '<td class="kms-ds-t-preview"><div style="position:relative;overflow:hidden;height:36px;border:1px solid rgba(31,31,31,0.12);"><a class="skip-link" style="position:absolute;top:0;left:0;transform:none;opacity:1;pointer-events:auto;" href="#">본문으로 건너뛰기</a></div></td>',
-          '</tr>',
-          '</tbody>',
-          '</table></div>',
-        ].join(''),
-      },
-    ];
-
     var bodyEl = container.querySelector('.kms-ds-body');
     if (!bodyEl) return;
-    bodyEl.innerHTML = sections.map(function (sec) {
-      if (sec._layer) {
-        return '<div class="kms-ds-layer-header"><strong>' + GW.escapeHtml(sec.title) + '</strong><span>' + GW.escapeHtml(sec.sub) + '</span></div>';
-      }
-      var secId = 'kms-ds-' + slugify(sec.title);
-      return '<section class="kms-ds-section" id="' + GW.escapeHtml(secId) + '">' +
-        '<h3 class="kms-ds-section-title">' + GW.escapeHtml(sec.title) + '</h3>' +
-        (sec.note ? '<p class="kms-ds-note kms-ds-note-top">' + GW.escapeHtml(sec.note) + '</p>' : '') +
-        '<div class="kms-ds-preview">' + sec.html + '</div>' +
-        '</section>';
-    }).join('');
-    enhanceDesignSystemTables(bodyEl);
-  }
+    var overview = {
+      kinds: [
+        { title: 'Foundation', desc: '색상, 타이포, 간격처럼 모든 화면이 공유하는 기본 토큰입니다.' },
+        { title: 'Component', desc: '버튼, 칩, 카드, 폼처럼 재사용 가능한 UI 블록입니다.' },
+        { title: 'Pattern', desc: '헤더, 히어로, 섹션 레일처럼 여러 모듈을 묶어 쓰는 조합입니다.' },
+        { title: 'Responsive', desc: '데스크톱과 모바일에서 같은 구조를 무리 없이 보여주는 기준입니다.' }
+      ],
+      rules: [
+        { title: '모듈 단위로 본다', desc: '각 카드에 종류, 토큰/클래스, 코드, 미리보기를 함께 둡니다.' },
+        { title: '코드를 바로 읽는다', desc: 'HTML 구조와 핵심 클래스가 보이도록 코드 블록을 항상 노출합니다.' },
+        { title: '같은 정보를 두 번 검증한다', desc: '코드로 확인하고, 오른쪽 미리보기로 즉시 시각 검증합니다.' }
+      ],
+      breakpoints: ['Desktop 1180+', 'Tablet 900+', 'Mobile 768-', 'Compact 480-']
+    };
 
-  function enhanceDesignSystemTables(root) {
-    if (!root) return;
-    root.querySelectorAll('.kms-ds-table').forEach(function (table) {
-      var headers = Array.from(table.querySelectorAll('thead th')).map(function (th) {
-        return String(th.textContent || '').trim();
-      });
-      table.classList.toggle('is-reference', headers.length === 4);
-      table.classList.toggle('is-compact', headers.length === 3);
-      if (!table.querySelector('colgroup')) {
-        var colgroup = document.createElement('colgroup');
-        headers.forEach(function () {
-          colgroup.appendChild(document.createElement('col'));
-        });
-        table.insertBefore(colgroup, table.firstChild);
-      }
-
-      table.querySelectorAll('tbody tr').forEach(function (row) {
-        Array.from(row.children).forEach(function (cell, index) {
-          var label = headers[index] || '';
-          if (label) cell.setAttribute('data-kms-col', label);
-
-          if (cell.classList.contains('kms-ds-t-name')) {
-            if (!cell.querySelector('.kms-ds-name-block')) {
-              cell.innerHTML = '<div class="kms-ds-name-block">' + cell.innerHTML + '</div>';
-            }
-          } else if (cell.classList.contains('kms-ds-t-usage')) {
-            if (!cell.querySelector('.kms-ds-usage-block')) {
-              cell.innerHTML = '<div class="kms-ds-usage-block">' + cell.innerHTML + '</div>';
-            }
-          } else if (cell.classList.contains('kms-ds-t-code')) {
-            if (!cell.querySelector('.kms-ds-code-block')) {
-              cell.innerHTML = '<div class="kms-ds-code-block"><code>' + cell.innerHTML + '</code></div>';
-            }
-          } else if (cell.classList.contains('kms-ds-t-preview')) {
-            if (!cell.querySelector('.kms-ds-preview-block')) {
-              cell.innerHTML = '<div class="kms-ds-preview-block">' + cell.innerHTML + '</div>';
-            }
+    var layers = [
+      {
+        title: 'FOUNDATION',
+        sub: '디자인의 종류와 기본 토큰부터 먼저 파악합니다.',
+        sections: [
+          {
+            title: '01 · 디자인 종류 맵',
+            note: '이 탭에서 다루는 디자인 범위 자체를 먼저 분류합니다. 새 컴포넌트를 만들 때는 이 4개 분류 중 어디에 속하는지부터 정리합니다.',
+            modules: [
+              {
+                kind: 'Foundation',
+                title: '브랜드 팔레트 & 태그 토큰',
+                summary: '색상은 독립적인 장식이 아니라 태그, 섹션 헤더, CTA 강조에 재사용되는 토큰 집합으로 관리합니다.',
+                meta: [
+                  { label: '토큰', values: ['--scouting-purple', '--midnight-purple', '--ink', '--border'] },
+                  { label: '연결 클래스', values: ['.category-tag', '.post-kicker', '.home-section-title'] }
+                ],
+                code: [
+                  '<span class="category-tag tag-korea">Korea</span>',
+                  '<span class="post-kicker tag-wosm-kicker">WOSM</span>',
+                  '<div class="home-section-title home-section-title-latest">',
+                  '  <span>최신 소식</span>',
+                  '  <div class="rule"></div>',
+                  '</div>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="kms-ds-token-grid">',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#622599"></span><strong>Brand Purple</strong><code>#622599</code></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#4d006e"></span><strong>Midnight</strong><code>#4d006e</code></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#1f1f1f"></span><strong>Ink</strong><code>#1f1f1f</code></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip kms-ds-token-chip-light" style="background:#ffffff"></span><strong>Surface</strong><code>#ffffff</code></div>',
+                  '  </div>',
+                  '  <div class="kms-ds-row">',
+                  '    <span class="category-tag tag-korea">Korea</span>',
+                  '    <span class="post-kicker tag-apr-kicker">APR</span>',
+                  '    <span class="post-kicker tag-wosm-kicker">WOSM</span>',
+                  '    <span class="post-kicker tag-people-kicker">사람들</span>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Foundation',
+                title: '타이포 스케일 & 읽기 리듬',
+                summary: '제목, 본문, 메타는 크기보다 역할로 구분합니다. 같은 모듈 안에서도 읽기 순서가 바로 느껴져야 합니다.',
+                meta: [
+                  { label: '타이포', values: ['--fs-display', '--fs-title', '--fs-body', '--fs-meta'] },
+                  { label: '간격', values: ['--home-title-gap', '--home-grid-gap', '--chip-height'] }
+                ],
+                code: [
+                  '<article class="post-card-body">',
+                  '  <h3>세계 스카우트 연맹 총회 2026 결과 보고</h3>',
+                  '  <p class="post-card-excerpt">핵심 내용은 2~3줄 안에서 바로 이해되도록 정리합니다.</p>',
+                  '  <div class="post-card-meta">2026.04.04 · 조회 1,204</div>',
+                  '</article>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-type-scale">',
+                  '  <div class="kms-ds-scale-item"><span class="kms-ds-scale-meta">Display · 32 / 700</span><strong>BP미디어 디자인 시스템</strong></div>',
+                  '  <div class="kms-ds-scale-item"><span class="kms-ds-scale-meta">Title · 18 / 600</span><span class="kms-ds-scale-title">기사 카드 제목은 빠르게 스캔되어야 합니다.</span></div>',
+                  '  <div class="kms-ds-scale-item"><span class="kms-ds-scale-meta">Body · 14 / 300</span><p>본문은 1.65 전후의 줄높이로 읽기 리듬을 확보하고, 메타 정보는 더 작고 옅게 분리합니다.</p></div>',
+                  '  <div class="kms-ds-scale-item"><span class="kms-ds-scale-meta">Meta · 11 / uppercase</span><code>2026.04.04 · design review</code></div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          },
+          {
+            title: '02 · 모듈 계약서',
+            note: '이제 모든 디자인은 섹션 설명이 아니라 모듈 계약으로 봅니다. 어떤 종류인지, 무엇을 쓰는지, 코드가 어떤지, 상태가 어떻게 변하는지가 한 카드 안에 있어야 합니다.',
+            modules: [
+              {
+                kind: 'Module',
+                title: '컴포넌트 모듈 기본 구조',
+                summary: '재사용 가능한 디자인은 토큰, 구조, 상태 이름이 분리되어 있어야 합니다. 코드와 미리보기가 1:1로 대응돼야 수정이 쉬워집니다.',
+                meta: [
+                  { label: '필수 정보', values: ['kind', 'summary', 'tokens', 'code', 'preview'] },
+                  { label: '상태', values: ['default', 'active', 'disabled', 'danger'] }
+                ],
+                code: [
+                  '<article class="design-module">',
+                  '  <header class="design-module-head">...</header>',
+                  '  <div class="design-module-meta">토큰 / 클래스 / 상태</div>',
+                  '  <pre class="design-module-code"><code>HTML snippet</code></pre>',
+                  '  <div class="design-module-preview">실제 렌더</div>',
+                  '</article>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-contract-card">',
+                  '  <div class="kms-ds-contract-top">',
+                  '    <span class="kms-ds-contract-kind">Module</span>',
+                  '    <strong>Action Button Set</strong>',
+                  '  </div>',
+                  '  <div class="kms-ds-contract-meta">',
+                  '    <span>토큰 4개</span><span>상태 3개</span><span>구조 2줄</span>',
+                  '  </div>',
+                  '  <div class="kms-ds-contract-bars">',
+                  '    <span></span><span></span><span></span>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'State',
+                title: '상태 모듈은 나란히 비교한다',
+                summary: '버튼, 칩, 배지는 반드시 기본/활성/위험 상태가 한 화면에서 같이 보이도록 정리해야 상태 설계가 흔들리지 않습니다.',
+                meta: [
+                  { label: '대상', values: ['.write-btn', '.filter-btn', '.tag-pill'] },
+                  { label: '검토 포인트', values: ['명도 대비', '터치 크기', '비활성 피드백'] }
+                ],
+                code: [
+                  '<button class="write-btn">새 게시글 작성</button>',
+                  '<button class="filter-btn active">전체</button>',
+                  '<span class="tag-pill">잼버리</span>',
+                  '<button class="btn-delete-soft visible">삭제</button>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="kms-ds-row"><button class="write-btn">새 게시글 작성</button><button class="cancel-btn visible">취소</button></div>',
+                  '  <div class="kms-ds-row"><button class="filter-btn active">전체</button><button class="filter-btn">훈련</button><span class="tag-pill active">NEW</span><span class="tag-pill">Jamboree</span></div>',
+                  '  <div class="kms-ds-row"><button class="btn-delete-soft visible">삭제</button></div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
           }
-        });
-      });
-    });
+        ]
+      },
+      {
+        title: 'COMPONENTS',
+        sub: '실제 운영에서 자주 손대는 버튼, 칩, 카드, 폼 모듈입니다.',
+        sections: [
+          {
+            title: '03 · 액션 컴포넌트',
+            note: '행동을 만드는 UI는 크기와 우선순위가 바로 보여야 합니다. Primary / Secondary / Chip 계층이 섞이지 않도록 정리합니다.',
+            modules: [
+              {
+                kind: 'Component',
+                title: '버튼 패밀리',
+                summary: '저장과 작성은 Primary, 취소는 Outline, 목록 토글은 Secondary, 필터는 Chip 레벨로 분리합니다.',
+                meta: [
+                  { label: '높이 기준', values: ['44px primary', '36px secondary', '26px chip'] },
+                  { label: '대표 클래스', values: ['.write-btn', '.submit-btn', '.cancel-btn', '.board-page-btn'] }
+                ],
+                code: [
+                  '<div class="kms-action-row">',
+                  '  <button class="write-btn">새 게시글 작성</button>',
+                  '  <button class="submit-btn">저장하기</button>',
+                  '  <button class="cancel-btn visible">취소</button>',
+                  '  <button class="board-page-btn active">2</button>',
+                  '</div>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="kms-ds-row"><button class="write-btn">새 게시글 작성</button><button class="submit-btn">저장하기</button></div>',
+                  '  <div class="kms-ds-row"><button class="cancel-btn visible">취소</button><button class="board-page-btn active">2</button><button class="board-page-btn">3</button></div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Component',
+                title: '칩 & 배지 패밀리',
+                summary: '카테고리, 태그, 상태, 대상 배지는 모두 작은 정보 단위지만 색과 상태 규칙은 명확히 분리해야 합니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.post-kicker', '.tag-pill', '.calendar-status-badge', '.calendar-target-chip'] },
+                  { label: '사용 맥락', values: ['기사 카드', '검색 결과', '캘린더 상태', '대상 필터'] }
+                ],
+                code: [
+                  '<span class="post-kicker tag-korea-kicker">한국스카우트</span>',
+                  '<span class="tag-pill active">훈련</span>',
+                  '<span class="calendar-status-badge is-upcoming">예정</span>',
+                  '<span class="calendar-target-chip">지도자</span>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="kms-ds-row"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker tag-wosm-kicker">WOSM</span><span class="post-kicker post-kicker-new">NEW</span></div>',
+                  '  <div class="kms-ds-row"><span class="tag-pill active">훈련</span><span class="tag-pill">잼버리</span><span class="calendar-status-badge is-upcoming">예정</span><span class="calendar-target-chip">지도자</span></div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          },
+          {
+            title: '04 · 콘텐츠 표면',
+            note: '정보량이 많은 카드와 폼은 시각적 밀도 조절이 중요합니다. 코드 블록은 가볍고, 미리보기는 실제 사용 맥락을 보여주도록 구성합니다.',
+            modules: [
+              {
+                kind: 'Component',
+                title: '게시글 카드',
+                summary: '썸네일, 카테고리, 제목, 요약, 메타가 고정된 순서로 배치되어야 스캔 속도가 유지됩니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.post-card', '.post-card-thumb', '.post-card-body', '.post-card-meta'] },
+                  { label: '레이아웃', values: ['16:9 thumb', '24px body padding', '1px border'] }
+                ],
+                code: [
+                  '<article class="post-card">',
+                  '  <img class="post-card-thumb" src="/img/logo.png" alt="">',
+                  '  <div class="post-card-body">',
+                  '    <div class="post-card-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span></div>',
+                  '    <h3>세계잼버리 2026 한국 개최 확정</h3>',
+                  '    <p class="post-card-excerpt">핵심 요약은 2~3줄 안으로 유지합니다.</p>',
+                  '    <div class="post-card-meta">2026.04.04 · 조회 1,204</div>',
+                  '  </div>',
+                  '</article>'
+                ].join('\n'),
+                preview: [
+                  '<article class="post-card kms-ds-card-preview">',
+                  '  <img class="post-card-thumb" src="/img/logo.png" alt="BP미디어 로고" style="background:#f5f3ef;object-fit:contain;padding:14px;">',
+                  '  <div class="post-card-body">',
+                  '    <div class="post-card-labels"><span class="post-kicker tag-korea-kicker">한국스카우트</span><span class="post-kicker post-kicker-new">NEW</span></div>',
+                  '    <h3>세계잼버리 2026 한국 개최 확정</h3>',
+                  '    <p class="post-card-excerpt">핵심 요약은 두세 줄 안에서 읽히게 유지합니다.</p>',
+                  '    <div class="post-card-meta">2026.04.04 · 조회 1,204</div>',
+                  '  </div>',
+                  '</article>'
+                ].join(''),
+              },
+              {
+                kind: 'Component',
+                title: '관리자 폼 블록',
+                summary: '폼은 라벨, 입력, 힌트가 한 덩어리로 보여야 하고 모바일에서도 터치 영역이 좁아지지 않아야 합니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.form-group', 'input', 'select', 'textarea'] },
+                  { label: '검토 포인트', values: ['40px input height', '라벨 가독성', 'textarea 확장성'] }
+                ],
+                code: [
+                  '<div class="form-group">',
+                  '  <label>카테고리</label>',
+                  '  <select><option>한국스카우트</option></select>',
+                  '</div>',
+                  '<div class="form-group">',
+                  '  <label>본문 요약</label>',
+                  '  <textarea></textarea>',
+                  '</div>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-form-grid">',
+                  '  <div class="form-group"><label>카테고리</label><select><option>한국스카우트</option><option>APR</option><option>WOSM</option></select></div>',
+                  '  <div class="form-group"><label>게시일</label><input type="date"></div>',
+                  '  <div class="form-group" style="grid-column:1 / -1;"><label>본문 요약</label><textarea placeholder="요약을 입력하세요"></textarea></div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          }
+        ]
+      },
+      {
+        title: 'PATTERNS',
+        sub: '여러 컴포넌트를 묶어서 실제 페이지 경험을 만드는 패턴입니다.',
+        sections: [
+          {
+            title: '05 · 페이지 패턴',
+            note: '헤더와 히어로, 섹션 레일은 한 개 컴포넌트보다 더 큰 구조입니다. 배치 규칙과 정보 우선순위를 같이 읽어야 합니다.',
+            modules: [
+              {
+                kind: 'Pattern',
+                title: '마스트헤드 + 히어로 조합',
+                summary: '로고, 언어, 검색, 히어로 메시지가 한 화면에 모일 때도 정보 계층이 무너지지 않도록 간격과 폭을 관리합니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.masthead', '.nav', '.site-hero', '.hero-controls'] },
+                  { label: '핵심 원칙', values: ['header는 가볍게', 'hero는 큰 메시지', 'CTA는 2개 이내'] }
+                ],
+                code: [
+                  '<header class="masthead">...</header>',
+                  '<section class="site-hero site-hero-slide active">',
+                  '  <div class="site-hero-content">',
+                  '    <h2 class="site-hero-title">스카우트 운동의 소식을 기록합니다</h2>',
+                  '    <p class="site-hero-sub">핵심 소개 문구는 짧고 명확하게 유지합니다.</p>',
+                  '  </div>',
+                  '</section>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-shell">',
+                  '  <div class="kms-ds-shell-bar"><span>BP미디어</span><span>KOR · ENG</span><span>검색</span></div>',
+                  '  <div class="kms-ds-shell-hero">',
+                  '    <span class="category-tag tag-korea">Korea</span>',
+                  '    <strong>스카우트 운동의 소식을 기록합니다</strong>',
+                  '    <p>큰 메시지와 짧은 설명, 그리고 1~2개의 CTA만 남깁니다.</p>',
+                  '    <div class="kms-ds-row"><a class="home-subscribe-btn" href="#">기사 읽기</a><a class="home-subscribe-btn secondary" href="#">공유하기</a></div>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Pattern',
+                title: '홈 섹션 레일',
+                summary: '섹션 타이틀, 더보기 링크, 카드 그리드를 하나의 레일로 묶어 반복 사용하면 화면 전체의 리듬이 안정됩니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.home-section-title', '.home-col-header', '.home-lead-card'] },
+                  { label: '레이아웃', values: ['lead + rail', '2col/3col 변형', '카테고리별 gradient'] }
+                ],
+                code: [
+                  '<div class="home-section-title home-section-title-latest">',
+                  '  <span>최신 소식</span>',
+                  '  <a class="home-section-more" href="#">더보기 →</a>',
+                  '</div>',
+                  '<article class="home-lead-card">...</article>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="home-section-title home-section-title-latest"><span>최신 소식</span><a href="#" class="home-section-more">더보기 →</a><div class="rule"></div></div>',
+                  '  <article class="home-lead-card kms-ds-rail-preview">',
+                  '    <div class="home-lead-body">',
+                  '      <div class="home-lead-copy">',
+                  '        <div class="home-lead-labels"><span class="category-tag tag-wosm">WOSM</span><span class="home-lead-kicker">메인 스토리</span></div>',
+                  '        <h3><a class="home-lead-link" href="#">세계 스카우트 총회 주요 결론 정리</a></h3>',
+                  '        <p class="home-lead-excerpt">메인 카드와 서브 레일의 밀도를 분리해 읽기 우선순위를 만듭니다.</p>',
+                  '      </div>',
+                  '    </div>',
+                  '  </article>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          },
+          {
+            title: '06 · 피드백 패턴',
+            note: '로딩, 빈 상태, 토스트는 작아 보이지만 운영 품질에 직접 연결됩니다. 별도 패턴으로 분리해 보여주는 편이 안전합니다.',
+            modules: [
+              {
+                kind: 'Pattern',
+                title: '로딩 / 빈 상태 / 알림',
+                summary: '데이터가 없거나 기다리는 순간에도 사용자가 길을 잃지 않도록 최소한의 피드백 모듈을 묶어서 검토합니다.',
+                meta: [
+                  { label: '대표 클래스', values: ['.loading-state', '.mini-empty', '.list-empty', '.toast'] },
+                  { label: '검토 포인트', values: ['문구 길이', '가독성', '모바일 하단 노출'] }
+                ],
+                code: [
+                  '<div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>',
+                  '<div class="mini-empty">게시글이 없습니다</div>',
+                  '<div class="toast show success">저장되었습니다</div>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-feedback-grid">',
+                  '  <div class="kms-ds-feedback-card"><div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div><small>Loading</small></div>',
+                  '  <div class="kms-ds-feedback-card"><div class="mini-empty">게시글이 없습니다</div><small>Empty</small></div>',
+                  '  <div class="kms-ds-feedback-card"><div class="kms-ds-toast-demo is-success">저장되었습니다</div><small>Toast</small></div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          }
+        ]
+      },
+      {
+        title: 'RESPONSIVE',
+        sub: '같은 디자인을 PC와 모바일 모두에서 편하게 보이게 하는 최종 규칙입니다.',
+        sections: [
+          {
+            title: '07 · 반응형 블루프린트',
+            note: '새 모듈을 추가할 때는 데스크톱 완성 후 모바일을 붙이는 방식이 아니라, 처음부터 두 환경에서 어떻게 접히는지 같이 설계합니다.',
+            modules: [
+              {
+                kind: 'Responsive',
+                title: '데스크톱 2패널 → 모바일 1열',
+                summary: '이 KMS 디자인 탭 자체도 같은 원칙을 따릅니다. 데스크톱에서는 코드와 미리보기를 좌우로, 모바일에서는 위아래로 쌓습니다.',
+                meta: [
+                  { label: '데스크톱', values: ['code | preview split', 'wider reading lane', 'section rail'] },
+                  { label: '모바일', values: ['single column', 'preview first scan', 'comfortable touch gap'] }
+                ],
+                code: [
+                  '.kms-ds-module-stage {',
+                  '  display: grid;',
+                  '  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);',
+                  '}',
+                  '@media (max-width: 900px) {',
+                  '  .kms-ds-module-stage { grid-template-columns: 1fr; }',
+                  '}'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-device-grid">',
+                  '  <div class="kms-ds-device-card"><span>Desktop</span><div class="kms-ds-device-frame kms-ds-device-frame-desktop"><div></div><div></div></div></div>',
+                  '  <div class="kms-ds-device-card"><span>Mobile</span><div class="kms-ds-device-frame kms-ds-device-frame-mobile"><div></div><div></div><div></div></div></div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Responsive',
+                title: '터치 친화 프리뷰 캔버스',
+                summary: '모바일에서는 코드보다 미리보기를 먼저 훑게 되므로, 프리뷰 영역은 좁아져도 숨지 않고 터치 대상 간격이 유지되어야 합니다.',
+                meta: [
+                  { label: '기준', values: ['320px safe width', 'wrap allowed', '12~16px touch gaps'] },
+                  { label: '주의', values: ['wide tables 금지', 'hidden code 금지', '미리보기 clipping 금지'] }
+                ],
+                code: [
+                  '.kms-ds-preview-canvas {',
+                  '  min-height: 220px;',
+                  '  overflow: auto;',
+                  '  padding: 18px;',
+                  '}',
+                  '.kms-ds-row { flex-wrap: wrap; gap: 10px; }'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-touch-stack">',
+                  '  <div class="kms-ds-row"><button class="filter-btn active">전체</button><button class="filter-btn">훈련</button><button class="filter-btn">교육</button></div>',
+                  '  <div class="kms-ds-row"><a class="home-subscribe-btn" href="#">RSS 구독</a><a class="home-subscribe-btn secondary" href="#">사이트 검색</a></div>',
+                  '  <div class="kms-ds-mobile-note">좁은 화면에서도 버튼이 겹치지 않고 자연스럽게 줄바꿈되어야 합니다.</div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    bodyEl.innerHTML = renderDesignOverview(overview) + layers.map(renderDesignLayer).join('');
   }
 
-  function dsSwatchItem(varName, color, label) {
-    var isLight = (color.includes('0.58') || color.includes('0.12') || color === '#ffffff');
-    return '<div class="kms-ds-swatch">' +
-      '<div class="kms-ds-swatch-color" style="background:' + color + ';' + (isLight ? 'border:1px solid rgba(0,0,0,.12)' : '') + '"></div>' +
-      '<div class="kms-ds-swatch-info">' +
-        '<code class="kms-ds-swatch-var">' + GW.escapeHtml(varName) + '</code>' +
-        '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
-        '<span class="kms-ds-swatch-hex">' + GW.escapeHtml(color) + '</span>' +
+  function renderDesignOverview(overview) {
+    return '<section class="kms-ds-overview">' +
+      '<div class="kms-ds-overview-grid">' +
+        '<div class="kms-ds-overview-block">' +
+          '<span class="kms-ds-overview-kicker">Design Types</span>' +
+          '<h3>디자인 종류를 먼저 구분합니다</h3>' +
+          '<div class="kms-ds-kind-grid">' +
+            overview.kinds.map(function (kind) {
+              return '<article class="kms-ds-kind-card"><strong>' + GW.escapeHtml(kind.title) + '</strong><p>' + GW.escapeHtml(kind.desc) + '</p></article>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="kms-ds-overview-block">' +
+          '<span class="kms-ds-overview-kicker">Module Rules</span>' +
+          '<h3>모든 카드는 코드와 프리뷰를 같이 보여줍니다</h3>' +
+          '<div class="kms-ds-guidance-grid">' +
+            overview.rules.map(function (rule) {
+              return '<article class="kms-ds-guidance-card"><strong>' + GW.escapeHtml(rule.title) + '</strong><p>' + GW.escapeHtml(rule.desc) + '</p></article>';
+            }).join('') +
+          '</div>' +
+          '<div class="kms-ds-breakpoint-row">' +
+            overview.breakpoints.map(function (bp) {
+              return '<span class="kms-ds-bp-badge">' + GW.escapeHtml(bp) + '</span>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
       '</div>' +
-      '</div>';
+    '</section>';
   }
 
-  function dsCalendarCard(catClass, badgeClass, badgeMod, title, date, location, tags, targets) {
-    var tagHtml = tags.map(function (t) {
-      return '<span class="calendar-status-badge">' + GW.escapeHtml(t) + '</span>';
+  function renderDesignLayer(layer) {
+    return '<div class="kms-ds-layer-header"><strong>' + GW.escapeHtml(layer.title) + '</strong><span>' + GW.escapeHtml(layer.sub) + '</span></div>' +
+      layer.sections.map(renderDesignSection).join('');
+  }
+
+  function renderDesignSection(section) {
+    var secId = 'kms-ds-' + slugify(section.title);
+    return '<section class="kms-ds-section" id="' + GW.escapeHtml(secId) + '">' +
+      '<div class="kms-ds-section-head">' +
+        '<h3 class="kms-ds-section-title">' + GW.escapeHtml(section.title) + '</h3>' +
+        (section.note ? '<p class="kms-ds-note kms-ds-note-top">' + GW.escapeHtml(section.note) + '</p>' : '') +
+      '</div>' +
+      '<div class="kms-ds-module-grid">' + section.modules.map(renderDesignModule).join('') + '</div>' +
+      '</section>';
+  }
+
+  function renderDesignModule(module) {
+    return '<article class="kms-ds-module">' +
+      '<div class="kms-ds-module-head">' +
+        '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
+        '<h4 class="kms-ds-module-title">' + GW.escapeHtml(module.title) + '</h4>' +
+      '</div>' +
+      '<p class="kms-ds-module-summary">' + GW.escapeHtml(module.summary) + '</p>' +
+      '<div class="kms-ds-module-meta">' + renderDesignMeta(module.meta) + '</div>' +
+      '<div class="kms-ds-module-stage">' +
+        '<div class="kms-ds-module-pane">' +
+          '<span class="kms-ds-pane-label">Code</span>' +
+          '<pre class="kms-ds-code-pane"><code>' + GW.escapeHtml(module.code || '') + '</code></pre>' +
+        '</div>' +
+        '<div class="kms-ds-module-pane">' +
+          '<span class="kms-ds-pane-label">Preview</span>' +
+          '<div class="kms-ds-preview-canvas">' + (module.preview || '') + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderDesignMeta(groups) {
+    if (!Array.isArray(groups) || !groups.length) return '';
+    return groups.map(function (group) {
+      return '<div class="kms-ds-meta-group">' +
+        '<span class="kms-ds-meta-label">' + GW.escapeHtml(group.label || '') + '</span>' +
+        '<div class="kms-ds-meta-pills">' +
+          (Array.isArray(group.values) ? group.values : []).map(function (value) {
+            return '<span class="kms-ds-meta-pill">' + GW.escapeHtml(String(value || '')) + '</span>';
+          }).join('') +
+        '</div>' +
+      '</div>';
     }).join('');
-    var targetHtml = targets.map(function (t) {
-      return '<span class="calendar-target-chip">' + GW.escapeHtml(t) + '</span>';
-    }).join('');
-    return '<div class="calendar-event-card ' + catClass + '">' +
-      '<div class="calendar-event-badges">' +
-        '<span class="calendar-category-badge ' + badgeMod + '">' + GW.escapeHtml(badgeClass) + '</span>' +
-        tagHtml + targetHtml +
-      '</div>' +
-      '<h4>' + GW.escapeHtml(title) + '</h4>' +
-      '<div style="font-family:AliceDigitalLearning,sans-serif;font-size:12px;color:rgba(31,31,31,0.58);line-height:1.6">' +
-        '<div>' + GW.escapeHtml(date) + '</div>' +
-        '<div>' + GW.escapeHtml(location) + '</div>' +
-      '</div>' +
-      '</div>';
-  }
-
-  function dsGradient(name, value, label) {
-    return '<div class="kms-ds-gradient-item">' +
-      '<div class="kms-ds-gradient-bar" style="background:' + value + '"></div>' +
-      '<div class="kms-ds-swatch-info">' +
-        '<code class="kms-ds-swatch-var">' + GW.escapeHtml(name) + '</code>' +
-        '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
-      '</div>' +
-      '</div>';
-  }
-
-  function dsSpacing(name, value, label) {
-    return '<div class="kms-ds-spacing-item">' +
-      '<code class="kms-ds-swatch-var">' + GW.escapeHtml(name) + '</code>' +
-      '<strong class="kms-ds-spacing-val">' + GW.escapeHtml(value) + '</strong>' +
-      '<span class="kms-ds-swatch-label">' + GW.escapeHtml(label) + '</span>' +
-      '</div>';
   }
 
   // ── 유틸리티 ──────────────────────────────────────────────────
