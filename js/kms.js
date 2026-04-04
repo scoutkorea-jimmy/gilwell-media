@@ -1507,7 +1507,7 @@
   }
 
   function renderDesignModule(module) {
-    var previewMarkup = module.preview || module.code || '';
+    var runtimeSource = getDesignRuntimeSource(module);
     return '<article class="kms-ds-module" data-kms-ds-view="code">' +
       '<div class="kms-ds-module-head">' +
         '<div class="kms-ds-module-title-block">' +
@@ -1527,12 +1527,17 @@
       '<div class="kms-ds-module-stage kms-ds-surface-card">' +
         '<div class="kms-ds-module-pane kms-ds-module-pane-code" data-kms-ds-pane="code">' +
           '<span class="kms-ds-pane-label">코드</span>' +
-          '<pre class="kms-ds-code-pane"><code>' + GW.escapeHtml(module.code || '') + '</code></pre>' +
+          '<p class="kms-ds-editor-hint">여기서 코드의 텍스트나 클래스 한두 개를 직접 바꾼 뒤 미리보기로 바로 확인할 수 있습니다.</p>' +
+          '<textarea class="kms-ds-code-editor" data-kms-ds-code-editor spellcheck="false">' + escapeHtmlForTextarea(runtimeSource) + '</textarea>' +
+          '<div class="kms-ds-editor-actions">' +
+            '<button type="button" class="kms-ds-editor-btn kms-ds-editor-btn-primary" data-kms-ds-editor-action="preview">미리보기 반영</button>' +
+            '<button type="button" class="kms-ds-editor-btn" data-kms-ds-editor-action="reset">원본으로</button>' +
+          '</div>' +
         '</div>' +
         '<div class="kms-ds-module-pane kms-ds-module-pane-preview" data-kms-ds-pane="preview">' +
           '<span class="kms-ds-pane-label">코드 혹은 미리보기 내용</span>' +
           '<div class="kms-ds-preview-canvas" data-kms-ds-preview-canvas></div>' +
-          '<template data-kms-ds-preview-template>' + previewMarkup + '</template>' +
+          '<template data-kms-ds-preview-template>' + runtimeSource + '</template>' +
         '</div>' +
       '</div>' +
     '</article>';
@@ -1543,7 +1548,14 @@
     root.dataset.kmsDsBound = '1';
     root.addEventListener('click', function (event) {
       var btn = event.target && event.target.closest ? event.target.closest('[data-kms-ds-view-btn]') : null;
-      if (!btn) return;
+      if (!btn) {
+        var actionBtn = event.target && event.target.closest ? event.target.closest('[data-kms-ds-editor-action]') : null;
+        if (!actionBtn) return;
+        var actionModule = actionBtn.closest('.kms-ds-module');
+        if (!actionModule) return;
+        handleDesignEditorAction(actionModule, actionBtn.getAttribute('data-kms-ds-editor-action'));
+        return;
+      }
       var moduleEl = btn.closest('.kms-ds-module');
       if (!moduleEl) return;
       var nextView = btn.getAttribute('data-kms-ds-view-btn');
@@ -1559,12 +1571,38 @@
   }
 
   function hydrateDesignPreview(moduleEl) {
-    if (!moduleEl || moduleEl.dataset.kmsDsHydrated === '1') return;
+    if (!moduleEl) return;
     var canvas = moduleEl.querySelector('[data-kms-ds-preview-canvas]');
+    var editor = moduleEl.querySelector('[data-kms-ds-code-editor]');
     var template = moduleEl.querySelector('[data-kms-ds-preview-template]');
-    if (!canvas || !template) return;
-    canvas.innerHTML = template.innerHTML;
+    if (!canvas) return;
+    var source = editor ? editor.value : '';
+    if (!source && template) source = template.innerHTML;
+    canvas.innerHTML = source;
     moduleEl.dataset.kmsDsHydrated = '1';
+  }
+
+  function handleDesignEditorAction(moduleEl, action) {
+    if (!moduleEl) return;
+    var editor = moduleEl.querySelector('[data-kms-ds-code-editor]');
+    var template = moduleEl.querySelector('[data-kms-ds-preview-template]');
+    if (!editor || !template) return;
+
+    if (action === 'reset') {
+      editor.value = template.innerHTML;
+      if (moduleEl.getAttribute('data-kms-ds-view') === 'preview') hydrateDesignPreview(moduleEl);
+      return;
+    }
+
+    if (action === 'preview') {
+      hydrateDesignPreview(moduleEl);
+      moduleEl.setAttribute('data-kms-ds-view', 'preview');
+      moduleEl.querySelectorAll('[data-kms-ds-view-btn]').forEach(function (item) {
+        var active = item.getAttribute('data-kms-ds-view-btn') === 'preview';
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
   }
 
   function renderDesignMeta(groups) {
@@ -1584,6 +1622,17 @@
   // ── 유틸리티 ──────────────────────────────────────────────────
   function slugify(text) {
     return String(text || '').toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-+|-+$/g, '') || 'section';
+  }
+
+  function getDesignRuntimeSource(module) {
+    return String((module && (module.renderCode || module.preview || module.code)) || '');
+  }
+
+  function escapeHtmlForTextarea(text) {
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   function setText(id, text) {
