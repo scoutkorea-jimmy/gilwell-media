@@ -7,7 +7,7 @@ Independent Scout Media — bpmedia.net
 ## Versioning
 
 - Current site version: `V00.107.00`
-- Current admin version: `V03.045.00`
+- Current admin version: `V03.046.00`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -21,6 +21,7 @@ Operational references:
 - `docs/release-playbook.md`
 - 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
+- `docs/homepage-module-inventory.md`  # 홈페이지 UI / 코드 모듈 분해 기준
 
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics

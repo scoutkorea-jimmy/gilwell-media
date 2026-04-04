@@ -5998,9 +5998,17 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ds-module-head {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.kms-ds-module-title-block {
+  display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 10px;
+  min-width: 0;
 }
 
 .kms-ds-module-title {
@@ -6008,6 +6016,42 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   font-size: 20px;
   line-height: 1.3;
   color: var(--kms-ink);
+}
+
+.kms-ds-module-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(31,31,31,0.08);
+  border-radius: 999px;
+  background: rgba(246,241,235,0.82);
+  flex-shrink: 0;
+}
+
+.kms-ds-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--kms-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.kms-ds-view-btn.is-active {
+  background: #1f1f1f;
+  color: #fff;
+}
+
+.kms-ds-view-btn:hover {
+  transform: translateY(-1px);
 }
 
 .kms-ds-module-summary {
@@ -6051,10 +6095,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 
 .kms-ds-module-stage {
-  display: grid;
-  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
-  gap: 16px;
-  align-items: stretch;
+  display: block;
 }
 
 .kms-ds-module-pane {
@@ -6062,6 +6103,11 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+}
+
+.kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
+.kms-ds-module[data-kms-ds-view="preview"] [data-kms-ds-pane="code"] {
+  display: none;
 }
 
 .kms-ds-code-pane {
@@ -6353,10 +6399,6 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   .kms-ds-guidance-grid {
     grid-template-columns: 1fr;
   }
-
-  .kms-ds-module-stage {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 900px) {
@@ -6376,6 +6418,10 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
   .kms-ds-shell-hero strong {
     font-size: 22px;
+  }
+
+  .kms-ds-module-head {
+    flex-direction: column;
   }
 }
 

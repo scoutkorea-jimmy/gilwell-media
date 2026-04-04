@@ -20,6 +20,7 @@
 - 운영 기준의 원본은 관리자 KMS이며, `docs/feature-definition.md`는 보조 스냅샷으로만 봅니다.
 - AI 작업 기준 문서의 원본은 저장소 루트의 `CHATGPT.md`입니다.
 - 기존 `ai-guide.html`은 폐기되었으며, 관련 기준은 `CHATGPT.md`와 KMS 문서로 이관되었습니다.
+- 홈페이지 UI/코드 모듈 분해 기준은 `docs/homepage-module-inventory.md`를 함께 참고합니다.
 - `DreamPath` 규칙을 메인 사이트에 섞지 않습니다.
 
 ---
@@ -65,6 +66,30 @@
 
 ---
 
+## Module Layers
+
+- 홈페이지는 `Foundation / Component / Pattern / Template / Code Module` 단위로 나눠서 생각합니다.
+- 새 UI를 만들 때는 먼저 기존 `Component`나 `Pattern`을 재사용할 수 있는지부터 확인합니다.
+- `Foundation`은 색상, 타이포, 간격, 상태 언어처럼 전체가 공유하는 기준입니다.
+- `Component`는 버튼, 태그, 카드, 입력처럼 독립적으로 재사용 가능한 UI입니다.
+- `Pattern`은 마스트헤드, 히어로, 섹션 레일, 검색 패널처럼 여러 컴포넌트를 묶은 구조입니다.
+- `Template`은 홈, 게시판, 기사 상세, 검색, 용어집 같은 페이지 수준 조합입니다.
+- `Code Module`은 constants, utils, renderers, feature init, API helper처럼 책임이 분리된 코드 단위입니다.
+- 모듈 분해 기준 문서는 `docs/homepage-module-inventory.md`를 사용합니다.
+
+---
+
+## Module Priorities
+
+- P0 공통화 우선순위는 `section rail`, `post card shell`, `button/chip family` 입니다.
+- 홈의 `latest / popular / picks / category rail`은 하나의 section rail 패턴으로 봅니다.
+- 카드류는 shell과 content variant를 분리하고, 제목/요약/메타의 순서를 공통화합니다.
+- 버튼은 `primary / secondary / chip` 위계로 통일하고, 상태는 `default / active / disabled / danger` 기준으로 맞춥니다.
+- category/tag/route/date formatting 같은 구조값은 점진적으로 constants / utils 모듈로 분리합니다.
+- 큰 파일은 panel, section, feature slice 기준으로 나눕니다.
+
+---
+
 ## Site Structure
 
 - 홈은 마스트헤드, 티커, 히어로, 메인 스토리, 최신 소식, 인기 소식, 에디터 추천, 카테고리 보드, 푸터 통계로 구성합니다.
@@ -105,6 +130,19 @@
 - `더보기` 링크는 모든 섹션에서 같은 스타일을 사용합니다.
 - 한글 본문과 제목은 기본적으로 `word-break: keep-all`을 우선합니다.
 - 모바일에서는 가로 스크롤을 허용하지 않습니다.
+
+---
+
+## Design Guide
+
+- 디자인은 장식보다 `역할`, `상태`, `재사용 위치`가 먼저 정의돼야 합니다.
+- 하나의 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 합니다.
+- 코드와 미리보기는 분리된 설명이 아니라 같은 모듈의 두 표현입니다.
+- KMS 디자인 탭에서는 각 항목별로 `코드 보기`와 `미리보기`를 바로 전환할 수 있어야 합니다.
+- KMS에서 `미리보기`를 눌렀을 때는 해당 코드 구조가 즉시 렌더링된 결과를 보여줘야 합니다.
+- KMS에서 `코드 보기`를 누르면 다시 코드 스니펫을 읽을 수 있어야 합니다.
+- KMS 디자인 탭은 단순 샘플 모음이 아니라 홈페이지 모듈 시스템의 시각적 레퍼런스입니다.
+- 새 디자인 추가 시에는 KMS 디자인 탭, `docs/homepage-module-inventory.md`, `CHATGPT.md`를 함께 갱신합니다.
 
 ---
 
