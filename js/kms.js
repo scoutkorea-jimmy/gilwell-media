@@ -1507,6 +1507,7 @@
   }
 
   function renderDesignModule(module) {
+    var previewMarkup = module.preview || module.code || '';
     return '<article class="kms-ds-module" data-kms-ds-view="code">' +
       '<div class="kms-ds-module-head">' +
         '<div class="kms-ds-module-title-block">' +
@@ -1521,13 +1522,14 @@
       '<p class="kms-ds-module-summary">' + GW.escapeHtml(module.summary) + '</p>' +
       '<div class="kms-ds-module-meta">' + renderDesignMeta(module.meta) + '</div>' +
       '<div class="kms-ds-module-stage">' +
-        '<div class="kms-ds-module-pane kms-ds-module-pane-code" data-kms-ds-pane="code">' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-code kms-ds-surface-card" data-kms-ds-pane="code">' +
           '<span class="kms-ds-pane-label">Code</span>' +
           '<pre class="kms-ds-code-pane"><code>' + GW.escapeHtml(module.code || '') + '</code></pre>' +
         '</div>' +
-        '<div class="kms-ds-module-pane kms-ds-module-pane-preview" data-kms-ds-pane="preview">' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-preview kms-ds-surface-card" data-kms-ds-pane="preview">' +
           '<span class="kms-ds-pane-label">Preview</span>' +
-          '<div class="kms-ds-preview-canvas">' + (module.preview || '') + '</div>' +
+          '<div class="kms-ds-preview-canvas" data-kms-ds-preview-canvas></div>' +
+          '<template data-kms-ds-preview-template>' + previewMarkup + '</template>' +
         '</div>' +
       '</div>' +
     '</article>';
@@ -1543,6 +1545,7 @@
       if (!moduleEl) return;
       var nextView = btn.getAttribute('data-kms-ds-view-btn');
       if (nextView !== 'code' && nextView !== 'preview') return;
+      if (nextView === 'preview') hydrateDesignPreview(moduleEl);
       moduleEl.setAttribute('data-kms-ds-view', nextView);
       moduleEl.querySelectorAll('[data-kms-ds-view-btn]').forEach(function (item) {
         var active = item.getAttribute('data-kms-ds-view-btn') === nextView;
@@ -1550,6 +1553,15 @@
         item.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     });
+  }
+
+  function hydrateDesignPreview(moduleEl) {
+    if (!moduleEl || moduleEl.dataset.kmsDsHydrated === '1') return;
+    var canvas = moduleEl.querySelector('[data-kms-ds-preview-canvas]');
+    var template = moduleEl.querySelector('[data-kms-ds-preview-template]');
+    if (!canvas || !template) return;
+    canvas.innerHTML = template.innerHTML;
+    moduleEl.dataset.kmsDsHydrated = '1';
   }
 
   function renderDesignMeta(groups) {
