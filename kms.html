@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <link rel="stylesheet" href="/css/style.css?v=00.107.00">
-  <link rel="stylesheet" href="/css/admin.css?v=03.046.06">
+  <link rel="stylesheet" href="/css/admin.css?v=03.046.07">
 </head>
 <body class="kms-page">
 
@@ -62,7 +62,7 @@
     <div class="kms-release-note" id="kms-release-note" role="status" aria-live="polite">
       <strong>KMS 업데이트 확인용 노트</strong>
       <span>Admin V3 본문 서식 렌더 보정 반영본이 내려와야 정상입니다.</span>
-      <code id="kms-release-note-version">Admin v03.046.06</code>
+      <code id="kms-release-note-version">Admin v03.046.07</code>
     </div>
 
     <!-- 레이아웃 -->
@@ -107,7 +107,7 @@
               <h2 id="kms-document-title">기능 정의서</h2>
               <p id="kms-document-summary">대목차와 세목차를 중심으로 운영 기준, 기능 의도, 세부 규칙, 각주를 문서화합니다.</p>
             </div>
-            <div class="kms-panel-header-meta">
+            <div class="kms-panel-header-side kms-panel-header-meta">
               <span>Site&nbsp;<strong id="kms-build-version">—</strong></span>
               <span>대목차&nbsp;<strong id="kms-section-count-doc">0</strong></span>
               <span>세부항목&nbsp;<strong id="kms-detail-count">0</strong></span>
@@ -140,7 +140,7 @@
               <h2>API 가이드 / 연동 매뉴얼</h2>
               <p>BP미디어 백엔드 전체 엔드포인트 목록입니다. 인증이 필요한 항목은 <code>Authorization: Bearer &lt;token&gt;</code> 헤더를 포함하세요.</p>
             </div>
-            <div class="kms-panel-header-meta">
+            <div class="kms-panel-header-side kms-panel-header-meta">
               <span>Base URL&nbsp;<strong>https://bpmedia.net</strong></span>
               <span>DB&nbsp;<strong>Cloudflare D1 (SQLite)</strong></span>
             </div>
@@ -166,11 +166,13 @@
               <h2>버전기록 / Changelog</h2>
               <p>사이트와 관리자 시스템의 변경 이력입니다. 어떤 기능이 언제 추가되었고, 무엇이 수정·보완되었는지 확인할 수 있습니다.</p>
             </div>
-            <div class="kms-cl-filter" role="group" aria-label="범위 필터">
-              <button type="button" class="kms-chip is-active" data-cl-scope="all">전체</button>
-              <button type="button" class="kms-chip" data-cl-scope="site">Site</button>
-              <button type="button" class="kms-chip" data-cl-scope="admin">Admin</button>
-              <button type="button" class="kms-chip" data-cl-scope="both">Both</button>
+            <div class="kms-panel-header-side kms-panel-header-side--chips">
+              <div class="kms-cl-filter" role="group" aria-label="범위 필터">
+                <button type="button" class="kms-chip is-active" data-cl-scope="all">전체</button>
+                <button type="button" class="kms-chip" data-cl-scope="site">Site</button>
+                <button type="button" class="kms-chip" data-cl-scope="admin">Admin</button>
+                <button type="button" class="kms-chip" data-cl-scope="both">Both</button>
+              </div>
             </div>
           </div>
           <div id="kms-changelog" class="kms-changelog">
@@ -186,6 +188,11 @@
               <h2>디자인 시스템</h2>
               <p>디자인 종류를 한눈에 정리하고, 각 모듈의 코드와 실제 미리보기를 나란히 확인할 수 있도록 다시 설계한 레퍼런스입니다. 데스크톱과 모바일 기준도 함께 봅니다.</p>
             </div>
+            <div class="kms-panel-header-side kms-panel-header-meta">
+              <span>기본 보기&nbsp;<strong>Preview</strong></span>
+              <span>편집 흐름&nbsp;<strong>코드 → 반영</strong></span>
+              <span>모듈 구조&nbsp;<strong>4 Layers</strong></span>
+            </div>
           </div>
           <div class="kms-ds-body"></div>
         </div>
@@ -194,7 +201,7 @@
     </div><!-- /.kms-layout -->
   </div><!-- /#kms-screen -->
 
-  <script src="/js/main.js?v=03.046.06"></script>
-  <script src="/js/kms.js?v=03.046.06"></script>
+  <script src="/js/main.js?v=03.046.07"></script>
+  <script src="/js/kms.js?v=03.046.07"></script>
 </body>
 </html>

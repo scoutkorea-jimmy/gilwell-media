@@ -481,21 +481,21 @@
 
 /* ── 패널 헤더 ──────────────────────────────────────────── */
 .kms-panel-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 20px;
   margin-bottom: 28px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--kms-border);
-  flex-wrap: wrap;
 }
 
 .kms-panel-header-text {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 680px;
 }
 
 .kms-kicker {
@@ -527,12 +527,17 @@
   font-size: 12px;
 }
 
-.kms-panel-header-meta {
+.kms-panel-header-side {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-  min-width: 160px;
+  gap: 8px;
+  align-self: start;
+  justify-self: end;
+  min-width: 190px;
+}
+
+.kms-panel-header-meta {
+  min-width: 0;
 }
 
 .kms-panel-header-meta span {
@@ -548,6 +553,14 @@
 }
 
 .kms-panel-header-meta strong { color: var(--kms-ink); font-size: 12px; }
+
+.kms-panel-header-side--chips {
+  min-width: auto;
+}
+
+.kms-panel-header-side--chips .kms-cl-filter {
+  justify-content: flex-end;
+}
 
 /* ── 검색 결과 배너 ─────────────────────────────────────── */
 .kms-search-result-banner {
@@ -1055,8 +1068,11 @@ mark.kms-highlight {
 
   .kms-header-title { display: none; }
   .kms-tab-btn { padding: 6px 10px; font-size: 12px; }
-  .kms-panel-header { flex-direction: column; }
-  .kms-panel-header-meta { min-width: 0; width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .kms-panel-header { grid-template-columns: 1fr; }
+  .kms-panel-header-side,
+  .kms-panel-header-meta { min-width: 0; width: 100%; justify-self: stretch; }
+  .kms-panel-header-meta { flex-direction: row; flex-wrap: wrap; }
+  .kms-panel-header-side--chips .kms-cl-filter { justify-content: flex-start; }
   .kms-tab-panel { padding: 16px 14px 40px; }
 }
 
