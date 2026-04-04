@@ -18,6 +18,8 @@
 
 **홈페이지 관련 작업에서는 `DreamPath` 규칙을 기본값으로 적용하지 마십시오.**
 
+**메인 홈페이지 관련 파일, 디자인, 배포, 관리자, 게시글, 문서 기준은 모두 `CHATGPT.md`를 따르십시오.**
+
 **Dreampath 개발 작업 시:** `/dreampath` 사이트에 로그인 → 사이드바 "Dev Rules" 섹션에서 전체 핸드북을 확인하십시오. 그 곳이 모든 규칙의 정식 출처입니다.
 
 ---
@@ -51,11 +53,6 @@ functions/api/dreampath/             — Dreampath API 엔드포인트 전체
 functions/_shared/auth.js             — 인증 코어 (수정 금지 without sign-off)
 deploy.sh                             — 배포 + 버전 자동 등록 스크립트
 
-# ── Main Site ─────────────────────────────────────────────────────
-css/style.css                         — 메인 사이트 공유 스타일시트
-js/main.js                            — 메인 사이트 공유 유틸리티 (GW namespace)
-js/board.js                           — 게시판 렌더링 (GW.Board)
-js/admin.js                           — 어드민 패널 로직
 ```
 
 ---

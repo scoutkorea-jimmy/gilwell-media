@@ -6,7 +6,8 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current version: `V00.106.00`
+- Current site version: `V00.107.00`
+- Current admin version: `V03.044.00`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -16,8 +17,8 @@ Independent Scout Media — bpmedia.net
 All static asset cache-busting query strings should follow this same version.
 
 Operational references:
+- `CHATGPT.md`  # 메인 홈페이지 AI 작업 기준 원본
 - `docs/release-playbook.md`
-- `docs/preview-release-checklist.md`
 - 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
 - `docs/writing-regression-checklist.md`
@@ -25,12 +26,9 @@ Operational references:
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
 
-Preview environment secrets:
+Required app secrets:
 - `ADMIN_PASSWORD`
 - `ADMIN_SECRET`
-- `GITHUB_WORKFLOW_TOKEN`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
 
 ---
 
@@ -44,15 +42,18 @@ gilwell-media/
 ├── wosm.html               WOSM bulletin board
 ├── people.html             Scout People board
 ├── glossary.html           Scout glossary board
+├── glossary-raw            Search/index-friendly glossary raw view
 ├── admin.html              Admin panel (requires login)
 ├── kms.html                Admin-only feature definition / KMS page
+├── CHATGPT.md              Homepage AI guide (canonical AI-facing guide)
 ├── css/style.css           Shared stylesheet
 ├── js/
 │   ├── main.js             Shared utilities (GW namespace)
 │   ├── board.js            Bulletin board component
-│   ├── admin.js            Admin panel logic
+│   ├── admin-v3.js         Admin panel logic
+│   ├── post-page.js        Post detail interactions
 │   └── kms.js              Feature definition / KMS page logic
-├── assets/                 Static assets (images, icons)
+├── img/                    Static assets (images, icons)
 ├── functions/
 │   ├── _shared/auth.js     HMAC-SHA256 token utilities
 │   └── api/
@@ -79,13 +80,18 @@ gilwell-media/
 | Auth | HMAC-SHA256 signed session tokens |
 | Frontend | Plain HTML / CSS / Vanilla JS |
 
+Homepage AI/documentation rules:
+- Homepage work should follow `CHATGPT.md`
+- KMS in the admin page is the operational source of truth
+- `docs/feature-definition.md` is the repository snapshot of that KMS content
+
 **Auth flow:**
 1. Admin POSTs password to `/api/admin/login`
 2. Server compares password against `ADMIN_PASSWORD` secret (never exposed to browser)
-3. On success, server returns a signed 24-hour token
-4. Client stores token in `sessionStorage`
-5. All write API calls send `Authorization: Bearer <token>`
-6. Server validates token signature + expiry before any mutation
+3. On success, server issues a signed 24-hour admin session and sets the auth cookie server-side
+4. Client keeps lightweight login state in `sessionStorage`, but authenticated requests use same-origin cookies
+5. Admin write requests are sent with browser cookies, not a client-managed `Authorization: Bearer` flow
+6. Server validates the signed session cookie before any mutation
 
 ---
 
@@ -171,8 +177,9 @@ In the Pages project, go to **Settings → Environment variables**:
 
 | Variable | Value | Where |
 |---|---|---|
-| `ADMIN_PASSWORD` | Your chosen admin password | Production & Preview |
-| `ADMIN_SECRET` | A long random string (see below) | Production & Preview |
+| `ADMIN_PASSWORD` | Your chosen admin password | Production |
+| `ADMIN_SECRET` | A long random string (see below) | Production |
+| `CF_ANALYTICS_API_TOKEN` | Optional analytics token | Production |
 
 Generate a strong `ADMIN_SECRET`:
 ```bash
@@ -205,11 +212,23 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 
 - `./scripts/bootstrap_local_db.sh gilwell-posts`
 - `./scripts/smoke_check.sh gilwell-posts`
-- `./scripts/deploy_pages.sh`  # preview deploy wrapper
-- `./scripts/deploy_preview.sh`
 - `./scripts/deploy_production.sh`
 - `./scripts/post_deploy_check.sh`
 - `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`
+
+### Production release flow
+
+```bash
+git switch main
+git status --short
+./scripts/deploy_production.sh
+./scripts/post_deploy_check.sh https://bpmedia.net
+```
+
+Notes:
+- Production deploys run from `main`
+- `VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
+- When homepage rules change, update `CHATGPT.md`, KMS, `docs/feature-definition.md`, and changelog together
 
 ### Optional R2 binding for images
 
@@ -264,6 +283,7 @@ posts (
   ai_assisted  INTEGER NOT NULL DEFAULT 0,
   sort_order   INTEGER,
   created_at   TEXT    NOT NULL,
+  publish_at   TEXT,
   updated_at   TEXT    NOT NULL
 )
 
@@ -305,15 +325,12 @@ post_views / post_likes / site_visits
 ## 9. Redeploy After Changes
 
 Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는 자동 배포 지연이나 누락이 발생할 수 있습니다.
-이 저장소는 이제 `preview -> approval -> production` 순서로만 반영합니다.
 관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리합니다.
-관리자(KMS 포함) 변경은 preview 또는 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않습니다.
+관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않습니다.
 
-1. `./scripts/deploy_preview.sh` 또는 `./scripts/deploy_pages.sh`
-2. 배포 출력에서 preview URL 확보
-3. `./scripts/post_deploy_check.sh <preview-url>`
-4. `docs/preview-release-checklist.md` 기준 수동 검수
-5. 승인 후 `main`에서 `./scripts/deploy_production.sh`
-6. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION`
-7. 관리자 전용 변경이면 `/admin` HTML에 연결된 `admin-v3.css/js` 쿼리 버전과 `GW.ADMIN_VERSION`을 함께 확인
-7. `./scripts/post_deploy_check.sh https://bpmedia.net`
+1. `git switch main`
+2. `git status --short`
+3. `./scripts/deploy_production.sh`
+4. 라이브 `https://bpmedia.net/js/main.js?v=<VERSION>` 의 `GW.APP_VERSION` 확인
+5. 관리자 전용 변경이면 `/admin` HTML에 연결된 `admin-v3.css/js` 쿼리 버전과 `GW.ADMIN_VERSION`을 함께 확인
+6. `./scripts/post_deploy_check.sh https://bpmedia.net`
