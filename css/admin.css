@@ -6153,29 +6153,73 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   background: var(--kms-surface);
 }
 
-.kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
-.kms-ds-module[data-kms-ds-view="preview"] [data-kms-ds-pane="code"] {
-  display: none;
+.kms-ds-editor-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--kms-muted);
 }
 
-.kms-ds-code-pane {
-  margin: 0;
-  min-height: 220px;
-  padding: 18px;
-  overflow: auto;
+.kms-ds-code-editor {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(31,31,31,0.08);
   border-radius: 8px;
   background: #171822;
   color: #d7def8;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
-}
-
-.kms-ds-code-pane code {
-  display: block;
-  white-space: pre-wrap;
-  word-break: break-word;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   line-height: 1.8;
+  resize: vertical;
+  outline: none;
+}
+
+.kms-ds-code-editor:focus {
+  border-color: rgba(92,42,157,0.34);
+  box-shadow: 0 0 0 3px rgba(92,42,157,0.08);
+}
+
+.kms-ds-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kms-ds-editor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--kms-border);
+  border-radius: 999px;
+  background: var(--kms-surface);
+  color: var(--kms-muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.kms-ds-editor-btn:hover {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+}
+
+.kms-ds-editor-btn-primary {
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
+  border-color: rgba(92,42,157,.3);
+  font-weight: bold;
+}
+
+.kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
+.kms-ds-module[data-kms-ds-view="preview"] [data-kms-ds-pane="code"] {
+  display: none;
 }
 
 .kms-ds-preview-canvas {
@@ -6498,6 +6542,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   }
 
   .kms-ds-code-pane,
+  .kms-ds-code-editor,
   .kms-ds-preview-canvas {
     min-height: 0;
   }
