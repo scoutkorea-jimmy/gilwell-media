@@ -4,13 +4,19 @@
 >
 > 이 파일은 Claude Code 및 모든 AI 개발 도구가 자동으로 로드하는 프로젝트 규칙 파일입니다.
 > **코드를 단 한 줄도 수정하기 전에** 반드시 아래 내용을 읽고,
-> Dreampath 앱 내의 **Dev Rules 페이지** (`/dreampath` → 사이드바 "Dev Rules")를 확인하십시오.
+> 작업 대상에 따라 아래 우선 문서를 먼저 확인하십시오.
+> - **메인 홈페이지 작업:** `CHATGPT.md`
+> - **Dreampath 작업:** Dreampath 앱 내의 **Dev Rules 페이지** (`/dreampath` → 사이드바 "Dev Rules")
 >
 > _This file is auto-loaded by Claude Code and AI tools. You MUST read it fully before any code change._
 
 ---
 
 ## MANDATORY FIRST STEP
+
+**메인 홈페이지 개발 작업 시:** 저장소 루트의 `CHATGPT.md`를 먼저 확인하십시오. 메인 사이트 규칙의 우선 기준 문서입니다.
+
+**홈페이지 관련 작업에서는 `DreamPath` 규칙을 기본값으로 적용하지 마십시오.**
 
 **Dreampath 개발 작업 시:** `/dreampath` 사이트에 로그인 → 사이드바 "Dev Rules" 섹션에서 전체 핸드북을 확인하십시오. 그 곳이 모든 규칙의 정식 출처입니다.
 
@@ -216,28 +222,9 @@ exe, sh, bat, cmd, com, ps1, vbs, jar, app, deb, rpm, dmg, pkg, msi, dll, sys, r
 
 ## Authentication Details
 
-- **Main site admin**: HMAC-SHA256 token → `sessionStorage` (24h)
 - **Dreampath**: cookie `dp_session=1` (httpOnly, 1h) + `localStorage` user profile
 - 세션 타이머: 1h, 5분 전 경고 팝업 → 연장 가능 (서버 세션 유효성 확인 후 연장)
 - `functions/api/dreampath/_middleware.js` — 모든 Dreampath API 인증 미들웨어
-
----
-
-## ══════════════════════════════════════════
-##  MAIN SITE (BP Post / 길웰 미디어)
-## ══════════════════════════════════════════
-
-- URL: `bpmedia.net`
-- 게시판: `korea`, `apr`, `worm` (3개 카테고리)
-- 에디터: **Editor.js** (block-based, 메인 사이트 기사 작성용) — Tiptap과 무관
-- 게시글 렌더러: `GW.renderEditorContent()` in `js/main.js`
-- 네임스페이스: `window.GW` — Dreampath의 `window.DP`와 완전히 분리
-- 관련 파일: `js/board.js`, `js/post-page.js`, `js/admin-v3.js`
-
-### 주의사항
-- 메인 사이트 JS/CSS는 Dreampath와 **공유하지 않음**
-- `css/style.css`는 메인 사이트 전용 — Dreampath 스타일은 `dreampath.html` `<style>`에만
-- 메인 사이트 API: `/functions/api/` (dreampath 서브폴더 아님)
 
 ---
 

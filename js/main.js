@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.106.00';
-  GW.ADMIN_VERSION = '03.043.01';
+  GW.APP_VERSION = '00.107.00';
+  GW.ADMIN_VERSION = '03.044.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -2350,7 +2350,6 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     GW.setupMastheadSearch();
-    GW.initPreviewRuntime();
     GW.initContentGalleries(document);
   });
 

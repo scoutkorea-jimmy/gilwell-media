@@ -9,7 +9,7 @@ chmod +x "$ROOT_DIR/scripts/verify_release_metadata.sh"
 
 CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || true)"
 if [[ "${CURRENT_BRANCH}" != "main" ]]; then
-  echo "Production deploys must run from the main branch after preview approval."
+  echo "Production deploys must run from the main branch."
   echo "Current branch: ${CURRENT_BRANCH:-detached}"
   exit 1
 fi

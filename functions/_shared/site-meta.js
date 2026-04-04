@@ -51,10 +51,6 @@ const DEFAULT_SITE_META = {
       title: '스카우트 용어집 · BP미디어',
       description: '국문·영문·불어 3개 국어 기준의 스카우트 용어집입니다.',
     },
-    ai_guide: {
-      title: 'AI 작업 가이드 · BP미디어',
-      description: 'BP미디어 작업 환경과 운영 맥락을 요약한 내부 가이드입니다.',
-    },
     contributors: {
       title: '도움을 주신 분들 · BP미디어',
       description: 'BP미디어 운영에 도움을 주신 분들을 소개합니다.',
@@ -140,7 +136,6 @@ export function getSitePageKey(pathname) {
     '/people.html': 'people',
     '/glossary': 'glossary',
     '/glossary.html': 'glossary',
-    '/ai-guide.html': 'ai_guide',
     '/contributors.html': 'contributors',
     '/search.html': 'search',
   };
