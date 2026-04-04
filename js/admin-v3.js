@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.046.09
+ * Version: 03.046.10
  *
  * Versioning:
  *   V3.aaa.bb
@@ -354,6 +354,11 @@
     document.getElementById('confirm-ok-btn').addEventListener('click', function () {
       _closeConfirm(true);
     });
+    document.getElementById('v3-more-modal-close').addEventListener('click', V3.closeMoreRowsModal);
+    document.getElementById('v3-more-modal-done').addEventListener('click', V3.closeMoreRowsModal);
+    document.getElementById('v3-more-modal').addEventListener('click', function (event) {
+      if (event.target === this) V3.closeMoreRowsModal();
+    });
 
     // Ticker preview
     document.getElementById('s-ticker').addEventListener('input', function () {
@@ -694,7 +699,7 @@
             meta: (item.category || 'site') + ' · ' + _shortDate(item.publish_at),
             action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
           };
-        }, '발행 예정 글이 없습니다') +
+        }, '발행 예정 글이 없습니다', '발행 예정 글') +
         '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 초안</div>' +
         _renderSimpleRows(drafts, function (item) {
           return {
@@ -702,7 +707,7 @@
             meta: (item.category || 'site') + ' · ' + _shortDate(item.updated_at),
             action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
           };
-        }, '최근 초안이 없습니다');
+        }, '최근 초안이 없습니다', '최근 초안');
     }
     if (alertsEl) {
       var errors = operations.recent_errors || [];
@@ -715,7 +720,7 @@
             meta: [item.channel || 'site', item.path || '', _shortDate(item.created_at)].filter(Boolean).join(' · '),
             action: '',
           };
-        }, '최근 오류 로그가 없습니다') +
+        }, '최근 오류 로그가 없습니다', '최근 API 오류') +
         '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 로그인 시도</div>' +
         _renderSimpleRows(logins, function (item) {
           return {
@@ -723,7 +728,7 @@
             meta: [item.actor || 'unknown', _shortDate(item.created_at)].filter(Boolean).join(' · '),
             action: '',
           };
-        }, '로그인 이벤트가 없습니다');
+        }, '로그인 이벤트가 없습니다', '최근 로그인 시도');
     }
     if (settingsEl) {
       var settings = operations.recent_settings || [];
@@ -733,7 +738,7 @@
           meta: _shortDate(item.saved_at),
           action: '',
         };
-      }, '최근 설정 변경이 없습니다');
+      }, '최근 설정 변경이 없습니다', '최근 설정 변경');
     }
     if (deploymentsEl) {
       var deployments = operations.deployments || [];
@@ -743,11 +748,11 @@
           meta: [item.status || 'success', item.branch || '', _shortDate(item.created_on)].filter(Boolean).join(' · '),
           action: item.url ? '<a class="v3-btn v3-btn-ghost v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener">보기</a>' : '',
         };
-      }, '릴리스 이력이 없습니다');
+      }, '릴리스 이력이 없습니다', '릴리스 이력');
     }
   }
 
-  function _renderSimpleRows(items, mapFn, emptyText) {
+  function _renderSimpleRows(items, mapFn, emptyText, moreTitle) {
     var rows = Array.isArray(items) ? items.slice() : [];
     var visibleCount = 6;
     if (!rows.length) {
@@ -763,25 +768,34 @@
         '</div>' +
         (mapped.action ? '<div style="margin-left:10px;flex-shrink:0;">' + mapped.action + '</div>' : '') +
       '</div>';
-    }).join('');
+      }).join('');
     var footer = '';
     if (rows.length > visibleCount) {
-      footer = '<button type="button" class="v3-more-btn" aria-expanded="false" data-v3-more-target="' + targetId + '" onclick="V3.toggleMoreRows(this)">더보기 (' + (rows.length - visibleCount) + '개)</button>';
+      footer = '<button type="button" class="v3-more-btn" data-v3-more-target="' + targetId + '" data-v3-more-title="' + GW.escapeHtml(moreTitle || '기록') + '" onclick="V3.openMoreRowsModal(this)">더보기 (' + (rows.length - visibleCount) + '개)</button>';
     }
-    return '<div class="v3-simple-rows" id="' + targetId + '" data-v3-expanded="false">' + body + '</div>' + footer;
+    return '<div class="v3-simple-rows" id="' + targetId + '" data-v3-expanded="false">' + body + '</div>' +
+      '<template id="' + targetId + '-template">' + body + '</template>' + footer;
   }
 
-  V3.toggleMoreRows = function (btn) {
+  V3.openMoreRowsModal = function (btn) {
     if (!btn) return;
     var targetId = btn.getAttribute('data-v3-more-target');
     if (!targetId) return;
-    var container = document.getElementById(targetId);
-    if (!container) return;
-    var expanded = container.getAttribute('data-v3-expanded') === 'true';
-    var next = !expanded;
-    container.setAttribute('data-v3-expanded', next ? 'true' : 'false');
-    btn.setAttribute('aria-expanded', next ? 'true' : 'false');
-    btn.textContent = next ? '접기' : ('더보기 (' + container.querySelectorAll('[data-v3-simple-row].is-collapsed').length + '개)');
+    var template = document.getElementById(targetId + '-template');
+    var modal = document.getElementById('v3-more-modal');
+    var body = document.getElementById('v3-more-modal-body');
+    var title = document.getElementById('v3-more-modal-title');
+    if (!template || !modal || !body || !title) return;
+    title.textContent = btn.getAttribute('data-v3-more-title') || '로그 기록';
+    body.innerHTML = template.innerHTML;
+    modal.style.display = 'flex';
+  };
+
+  V3.closeMoreRowsModal = function () {
+    var modal = document.getElementById('v3-more-modal');
+    var body = document.getElementById('v3-more-modal-body');
+    if (modal) modal.style.display = 'none';
+    if (body) body.innerHTML = '';
   };
 
   /* ══════════════════════════════════════════════════════════
