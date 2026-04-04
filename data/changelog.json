@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.046.00",
+      "date": "2026-04-04",
+      "summary": "홈페이지 모듈 기준을 문서화하고 KMS 디자인 항목에 코드/미리보기 전환을 추가했습니다.",
+      "type": "Feature",
+      "scope": "admin",
+      "items": [
+        "CHATGPT.md에 Foundation, Component, Pattern, Template, Code Module 기준과 P0 모듈 우선순위를 명시했습니다.",
+        "홈페이지 UI와 코드 구조를 모듈 관점으로 정리한 docs/homepage-module-inventory.md 문서를 추가했습니다.",
+        "docs/feature-definition.md에도 모듈 레이어, 디자인 모듈 계약, KMS 디자인 탭 동작 규칙을 반영했습니다.",
+        "KMS 디자인 카드에서 코드 보기와 미리보기를 항목별로 전환할 수 있게 바꾸고, 같은 모듈의 두 표현을 바로 비교할 수 있게 했습니다.",
+        "Admin v03.045.00 → 03.046.00."
+      ]
+    },
+    {
       "version": "03.045.00",
       "date": "2026-04-04",
       "summary": "KMS 디자인 탭을 모듈 카탈로그형 구조로 전면 재설계했습니다.",

@@ -181,6 +181,35 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - `--v3-sidebar-bg` : `#161c2d` (다크 네이비) — 사이드바 배경
 - `--v3-content-bg` : `#f1f5f9` (라이트 슬레이트) — 콘텐츠 영역 배경
 
+### 3.5 모듈 레이어 기준
+
+#### 기능 세부 설명
+- 홈페이지는 `Foundation / Component / Pattern / Template / Code Module` 레이어로 나눠서 설계한다.
+- `Foundation`은 색상, 타이포, 간격, 상태 언어처럼 전역 기준을 다룬다.
+- `Component`는 버튼, 태그, 카드, 입력 요소처럼 독립적으로 재사용 가능한 UI 블록이다.
+- `Pattern`은 마스트헤드, 히어로, 섹션 레일, 검색 패널처럼 여러 컴포넌트를 묶은 구조다.
+- `Template`은 홈, 게시판, 기사 상세, 검색, 용어집처럼 페이지 단위 조합이다.
+- `Code Module`은 constants, utils, renderers, feature init, API helper처럼 책임 단위가 분리된 코드 구조다.
+- 모듈 분해와 우선순위 판단은 `docs/homepage-module-inventory.md`를 함께 기준으로 본다.
+
+### 3.6 디자인 모듈 계약
+
+#### 기능 세부 설명
+- 하나의 디자인 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 한다.
+- 새 UI는 먼저 기존 `Component` 또는 `Pattern`으로 흡수 가능한지 검토하고, 불가능할 때만 신규 모듈로 추가한다.
+- 같은 역할의 버튼은 같은 위계 체계(`primary / secondary / chip`)를 따른다.
+- 카드류는 shell과 content variant를 분리하고 제목, 요약, 메타의 순서를 공통화한다.
+- 상태는 최소한 `default / active / disabled / danger` 언어를 공유한다.
+
+### 3.7 KMS 디자인 탭 동작 규칙
+
+#### 기능 세부 설명
+- KMS 디자인 탭은 단순 정적 문서가 아니라 홈페이지 모듈 시스템의 시각적 레퍼런스다.
+- 각 디자인 항목은 `코드 보기`와 `미리보기`를 개별적으로 전환할 수 있어야 한다.
+- `미리보기`를 누르면 해당 모듈의 코드 구조가 즉시 렌더링된 결과를 보여준다.
+- `코드 보기`를 누르면 같은 항목의 코드 스니펫을 다시 읽을 수 있어야 한다.
+- 코드와 미리보기는 같은 모듈의 두 표현이며, 어느 한쪽만 문서화된 상태를 허용하지 않는다.
+
 ## 4. 마케팅 대시보드
 
 ### 4.1 의도

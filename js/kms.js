@@ -1457,6 +1457,7 @@
     ];
 
     bodyEl.innerHTML = renderDesignOverview(overview) + layers.map(renderDesignLayer).join('');
+    initDesignSystemInteractions(bodyEl);
   }
 
   function renderDesignOverview(overview) {
@@ -1506,24 +1507,49 @@
   }
 
   function renderDesignModule(module) {
-    return '<article class="kms-ds-module">' +
+    return '<article class="kms-ds-module" data-kms-ds-view="code">' +
       '<div class="kms-ds-module-head">' +
-        '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
-        '<h4 class="kms-ds-module-title">' + GW.escapeHtml(module.title) + '</h4>' +
+        '<div class="kms-ds-module-title-block">' +
+          '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
+          '<h4 class="kms-ds-module-title">' + GW.escapeHtml(module.title) + '</h4>' +
+        '</div>' +
+        '<div class="kms-ds-module-switch" role="tablist" aria-label="디자인 모듈 보기 전환">' +
+          '<button type="button" class="kms-ds-view-btn is-active" data-kms-ds-view-btn="code" aria-pressed="true">코드 보기</button>' +
+          '<button type="button" class="kms-ds-view-btn" data-kms-ds-view-btn="preview" aria-pressed="false">미리보기</button>' +
+        '</div>' +
       '</div>' +
       '<p class="kms-ds-module-summary">' + GW.escapeHtml(module.summary) + '</p>' +
       '<div class="kms-ds-module-meta">' + renderDesignMeta(module.meta) + '</div>' +
       '<div class="kms-ds-module-stage">' +
-        '<div class="kms-ds-module-pane">' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-code" data-kms-ds-pane="code">' +
           '<span class="kms-ds-pane-label">Code</span>' +
           '<pre class="kms-ds-code-pane"><code>' + GW.escapeHtml(module.code || '') + '</code></pre>' +
         '</div>' +
-        '<div class="kms-ds-module-pane">' +
+        '<div class="kms-ds-module-pane kms-ds-module-pane-preview" data-kms-ds-pane="preview">' +
           '<span class="kms-ds-pane-label">Preview</span>' +
           '<div class="kms-ds-preview-canvas">' + (module.preview || '') + '</div>' +
         '</div>' +
       '</div>' +
     '</article>';
+  }
+
+  function initDesignSystemInteractions(root) {
+    if (!root || root.dataset.kmsDsBound === '1') return;
+    root.dataset.kmsDsBound = '1';
+    root.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('[data-kms-ds-view-btn]') : null;
+      if (!btn) return;
+      var moduleEl = btn.closest('.kms-ds-module');
+      if (!moduleEl) return;
+      var nextView = btn.getAttribute('data-kms-ds-view-btn');
+      if (nextView !== 'code' && nextView !== 'preview') return;
+      moduleEl.setAttribute('data-kms-ds-view', nextView);
+      moduleEl.querySelectorAll('[data-kms-ds-view-btn]').forEach(function (item) {
+        var active = item.getAttribute('data-kms-ds-view-btn') === nextView;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    });
   }
 
   function renderDesignMeta(groups) {
