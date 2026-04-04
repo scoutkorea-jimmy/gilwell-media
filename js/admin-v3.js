@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.046.07
+ * Version: 03.046.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3223,7 +3223,8 @@
 
   function _shortDate(value) {
     if (!value) return '';
-    return String(value).replace('T', ' ').slice(0, 16);
+    if (GW.formatDateTimeCompactKst) return GW.formatDateTimeCompactKst(value);
+    return String(value).replace('T', ' ').slice(0, 16) + ' KST';
   }
 
   function _catBadge(cat) {

@@ -7,7 +7,7 @@
 
   const GW = window.GW = {};
   GW.APP_VERSION = '00.107.00';
-  GW.ADMIN_VERSION = '03.046.07';
+  GW.ADMIN_VERSION = '03.046.08';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -22,29 +22,54 @@
   };
 
   // ── Date formatting ───────────────────────────────────────
+  function _getKstDateParts(dateStr) {
+    if (!dateStr) return null;
+    const normalized = String(dateStr).trim().replace(' ', 'T');
+    const withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+00:00';
+    const d = new Date(withZone);
+    if (isNaN(d.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(d);
+    const out = {};
+    parts.forEach(function (part) {
+      if (part.type !== 'literal') out[part.type] = part.value;
+    });
+    return out;
+  }
+
   /** Format an ISO date string as Korean: 2026년 3월 12일 */
   GW.formatDate = function (dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
+    return Number(parts.year) + '년 ' + Number(parts.month) + '월 ' + Number(parts.day) + '일';
   };
 
   GW.formatDateTime = function (dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    function pad(value) {
-      return String(value).padStart(2, '0');
-    }
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
     return [
-      d.getFullYear() + '년',
-      pad(d.getMonth() + 1) + '월',
-      pad(d.getDate()) + '일',
-      pad(d.getHours()) + '시',
-      pad(d.getMinutes()) + '분',
-      pad(d.getSeconds()) + '초'
+      parts.year + '년',
+      parts.month + '월',
+      parts.day + '일',
+      parts.hour + '시',
+      parts.minute + '분',
+      parts.second + '초',
+      'KST'
     ].join(' ');
+  };
+
+  GW.formatDateTimeCompactKst = function (dateStr) {
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return dateStr || '';
+    return parts.year + '-' + parts.month + '-' + parts.day + ' ' + parts.hour + ':' + parts.minute + ' KST';
   };
 
   GW.formatNumber = function (value) {
