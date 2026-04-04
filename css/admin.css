@@ -91,11 +91,12 @@
 
 .kms-login-btn {
   margin-top: 4px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 10px;
-  background: var(--kms-accent);
-  color: #fff;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(92, 42, 157, 0.24);
+  border-radius: 999px;
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 14px;
   cursor: pointer;
@@ -158,7 +159,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--kms-surface);
   color: var(--kms-ink);
   cursor: pointer;
@@ -198,9 +199,10 @@
 }
 
 .kms-tab-btn {
-  padding: 6px 16px;
-  border: none;
-  border-radius: 8px;
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   background: transparent;
   color: var(--kms-muted);
   font-family: AliceDigitalLearning, sans-serif;
@@ -210,8 +212,8 @@
   white-space: nowrap;
 }
 
-.kms-tab-btn:hover { background: var(--kms-accent-bg); color: var(--kms-accent); }
-.kms-tab-btn.is-active { background: var(--kms-accent-bg); color: var(--kms-accent); font-weight: bold; }
+.kms-tab-btn:hover { background: var(--kms-accent-bg); color: var(--kms-accent); border-color: rgba(92,42,157,.24); }
+.kms-tab-btn.is-active { background: var(--kms-accent-bg); color: var(--kms-accent); border-color: rgba(92,42,157,.3); font-weight: bold; }
 
 /* ── 헤더 우측 액션 ─────────────────────────────────────── */
 .kms-header-right {
@@ -258,14 +260,15 @@
   display: flex;
   padding: 3px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--kms-surface2);
 }
 
 .kms-mode-btn {
-  padding: 4px 12px;
+  min-height: 30px;
+  padding: 0 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
   color: var(--kms-muted);
   font-family: AliceDigitalLearning, sans-serif;
@@ -280,11 +283,12 @@
 }
 
 .kms-save-btn {
-  padding: 7px 16px;
-  border: none;
-  border-radius: 8px;
-  background: var(--kms-accent);
-  color: #fff;
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(92,42,157,.24);
+  border-radius: 999px;
+  background: var(--kms-accent-bg);
+  color: var(--kms-accent);
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 12px;
   cursor: pointer;
@@ -294,9 +298,12 @@
 .kms-save-btn:disabled { opacity: 0.5; cursor: default; }
 
 .kms-back-link {
-  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--kms-surface);
   color: var(--kms-muted);
   font-size: 12px;
@@ -578,9 +585,10 @@
 }
 
 .kms-search-clear-btn {
-  padding: 4px 10px;
+  min-height: 30px;
+  padding: 0 12px;
   border: 1px solid rgba(92, 42, 157, 0.2);
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
   color: var(--kms-accent);
   font-family: AliceDigitalLearning, sans-serif;
@@ -2761,9 +2769,9 @@ body.admin-page .admin-inline-danger {
   gap: 8px;
   min-height: 44px !important;
   padding: 0 16px !important;
-  border-radius: 16px !important;
+  border-radius: 999px !important;
   border: 1px solid var(--admin-stroke) !important;
-  background: #fff !important;
+  background: var(--admin-surface-soft) !important;
   color: var(--admin-ink) !important;
   font-size: 14px !important;
   line-height: 1 !important;
@@ -2794,13 +2802,15 @@ body.admin-page .admin-inline-danger:hover {
 body.admin-page .logout-btn,
 body.admin-page .submit-btn,
 body.admin-page .dash-action-btn {
-  background: linear-gradient(135deg, #622599, #8244c1) !important;
-  color: #fff !important;
-  border-color: transparent !important;
+  background: var(--admin-accent-soft) !important;
+  color: var(--admin-accent) !important;
+  border-color: var(--admin-stroke-strong) !important;
 }
 
 body.admin-page .logout-btn {
-  background: linear-gradient(135deg, #181411, #37302b) !important;
+  background: rgba(181, 62, 62, 0.08) !important;
+  color: var(--admin-danger) !important;
+  border-color: rgba(181, 62, 62, 0.18) !important;
 }
 
 body.admin-page .admin-group-btn.active,
@@ -2842,15 +2852,15 @@ body.admin-page .admin-sidebar-btn {
   display: block;
   width: 100%;
   padding: 14px 16px !important;
-  border: 1px solid transparent !important;
-  border-radius: 18px !important;
+  border: 1px solid var(--admin-stroke) !important;
+  border-radius: 999px !important;
   background: transparent !important;
   text-align: left;
 }
 
 body.admin-page .admin-sidebar-btn.active {
-  background: #1d1916 !important;
-  border-color: #1d1916 !important;
+  background: var(--admin-accent-soft) !important;
+  border-color: var(--admin-stroke-strong) !important;
 }
 
 body.admin-page .admin-sidebar-btn-label {
@@ -2870,7 +2880,66 @@ body.admin-page .admin-sidebar-btn-desc {
 
 body.admin-page .admin-sidebar-btn.active .admin-sidebar-btn-label,
 body.admin-page .admin-sidebar-btn.active .admin-sidebar-btn-desc {
-  color: #fff !important;
+  color: var(--admin-accent) !important;
+}
+
+body.admin-page .v3-modal-close,
+body.admin-page .marketing-zoom-btn,
+body.admin-page .marketing-fullscreen-close,
+body.admin-page .mkt-preset-btn,
+body.admin-page .mkt-apply-btn,
+body.admin-page .v3-page-btn,
+body.admin-page .v3-more-btn {
+  border-radius: 999px !important;
+}
+
+body.admin-page .v3-modal-close {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-stroke);
+  background: var(--admin-surface-soft);
+  color: var(--admin-muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+body.admin-page .v3-modal-close:hover {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  border-color: var(--admin-stroke-strong);
+}
+
+body.admin-page .v3-more-btn {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-stroke);
+  border-radius: 999px;
+  background: var(--admin-surface-soft);
+  color: var(--admin-muted);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+body.admin-page .v3-more-btn:hover {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+  border-color: var(--admin-stroke-strong);
+}
+
+body.admin-page #v3-more-modal .v3-modal {
+  width: min(860px, calc(100vw - 48px));
+}
+
+body.admin-page #v3-more-modal .v3-modal-body {
+  max-height: min(62vh, 720px);
+  overflow: auto;
 }
 
 body.admin-page .admin-tab-content {
