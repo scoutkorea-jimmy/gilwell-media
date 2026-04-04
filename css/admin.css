@@ -5994,6 +5994,9 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border: 1px solid rgba(31,31,31,0.08);
   background: rgba(255,255,255,0.9);
   box-shadow: 0 12px 32px rgba(34, 26, 22, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .kms-ds-module-head {
@@ -6055,7 +6058,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 
 .kms-ds-module-summary {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 14px;
   line-height: 1.75;
   color: #4b443d;
@@ -6065,7 +6068,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .kms-ds-meta-group {
@@ -6105,6 +6108,13 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-width: 0;
 }
 
+.kms-ds-surface-card {
+  padding: 14px;
+  border: 1px solid rgba(31,31,31,0.08);
+  border-radius: 18px;
+  background: rgba(252,249,244,0.94);
+}
+
 .kms-ds-module[data-kms-ds-view="code"] [data-kms-ds-pane="preview"],
 .kms-ds-module[data-kms-ds-view="preview"] [data-kms-ds-pane="code"] {
   display: none;
@@ -6140,6 +6150,14 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,241,235,0.96));
   overflow: auto;
+}
+
+.kms-ds-preview-canvas:empty::before {
+  content: '미리보기 버튼을 누르면 이 항목의 코드가 바로 렌더됩니다.';
+  display: block;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--kms-muted);
 }
 
 .kms-ds-preview-stack {
