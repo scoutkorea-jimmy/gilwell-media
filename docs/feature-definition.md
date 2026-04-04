@@ -198,8 +198,10 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 하나의 디자인 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 한다.
 - 새 UI는 먼저 기존 `Component` 또는 `Pattern`으로 흡수 가능한지 검토하고, 불가능할 때만 신규 모듈로 추가한다.
 - 같은 역할의 버튼은 같은 위계 체계(`primary / secondary / chip`)를 따른다.
+- 공개 화면과 관리자/KMS에서 역할이 겹치는 버튼, 칩, 페이지 토글은 같은 위계와 상태 언어를 공유한다.
 - 카드류는 shell과 content variant를 분리하고 제목, 요약, 메타의 순서를 공통화한다.
 - 상태는 최소한 `default / active / disabled / danger` 언어를 공유한다.
+- 공통 액션 모듈은 공개 구현(`css/style.css`)과 관리자 구현(`css/admin-v3.css`)을 함께 갱신한다.
 
 ### 3.7 KMS 디자인 탭 동작 규칙
 
@@ -209,6 +211,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - `미리보기`를 누르면 해당 모듈의 코드 구조가 즉시 렌더링된 결과를 보여준다.
 - `코드 보기`를 누르면 같은 항목의 코드 스니펫을 다시 읽을 수 있어야 한다.
 - 코드와 미리보기는 같은 모듈의 두 표현이며, 어느 한쪽만 문서화된 상태를 허용하지 않는다.
+- 공개/관리 양쪽에 존재하는 모듈은 KMS 카드 안에 구현 대상 파일(`css/style.css`, `css/admin-v3.css`, 필요 시 `css/admin.css`)을 같이 명시한다.
 
 ## 4. 마케팅 대시보드
 

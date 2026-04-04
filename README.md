@@ -7,7 +7,7 @@ Independent Scout Media — bpmedia.net
 ## Versioning
 
 - Current site version: `V00.107.00`
-- Current admin version: `V03.046.11`
+- Current admin version: `V03.046.12`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`

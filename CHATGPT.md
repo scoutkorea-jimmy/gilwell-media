@@ -85,6 +85,7 @@
 - 홈의 `latest / popular / picks / category rail`은 하나의 section rail 패턴으로 봅니다.
 - 카드류는 shell과 content variant를 분리하고, 제목/요약/메타의 순서를 공통화합니다.
 - 버튼은 `primary / secondary / chip` 위계로 통일하고, 상태는 `default / active / disabled / danger` 기준으로 맞춥니다.
+- 공개 화면과 관리자/KMS에서 역할이 겹치는 버튼·칩·페이지 토글은 같은 위계와 상태 언어를 유지합니다.
 - category/tag/route/date formatting 같은 구조값은 점진적으로 constants / utils 모듈로 분리합니다.
 - 큰 파일은 panel, section, feature slice 기준으로 나눕니다.
 
@@ -138,10 +139,12 @@
 - 디자인은 장식보다 `역할`, `상태`, `재사용 위치`가 먼저 정의돼야 합니다.
 - 하나의 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 합니다.
 - 코드와 미리보기는 분리된 설명이 아니라 같은 모듈의 두 표현입니다.
+- KMS에 정의된 공통 액션 모듈은 구현 파일에도 반영돼야 하며, 공개는 `css/style.css`, 관리자는 `css/admin-v3.css`를 함께 봅니다.
 - KMS 디자인 탭에서는 각 항목별로 `코드 보기`와 `미리보기`를 바로 전환할 수 있어야 합니다.
 - KMS에서 `미리보기`를 눌렀을 때는 해당 코드 구조가 즉시 렌더링된 결과를 보여줘야 합니다.
 - KMS에서 `코드 보기`를 누르면 다시 코드 스니펫을 읽을 수 있어야 합니다.
 - KMS 디자인 탭은 단순 샘플 모음이 아니라 홈페이지 모듈 시스템의 시각적 레퍼런스입니다.
+- 공개/관리 양쪽에 존재하는 모듈은 KMS 카드 안에 구현 대상 파일(`css/style.css`, `css/admin-v3.css`, 필요 시 `css/admin.css`)을 함께 적습니다.
 - 새 디자인 추가 시에는 KMS 디자인 탭, `docs/homepage-module-inventory.md`, `CHATGPT.md`를 함께 갱신합니다.
 
 ---
