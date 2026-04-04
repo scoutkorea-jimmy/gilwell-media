@@ -123,6 +123,7 @@
 #### 기능 세부 설명
 - 게시글 삭제 시 게시글 row만 삭제하면 안 된다.
 - 대표 이미지, 슬라이드 이미지, 본문 연관 이미지, 조회 데이터, 공감 데이터, 기록 데이터까지 정리한다.
+- 게시글 수정 이력은 `post_history`에 남기며, 생성/수정/상태 변경 모두 `before_snapshot`과 `after_snapshot` 기준으로 저장한다.
 - 태그 삭제는 실제 사용 중인 게시글이 없을 때만 허용한다.
 
 ## 3. 디자인 시스템
@@ -380,7 +381,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 행사 분류 태그 (`/api/settings/calendar-tags`에서 관리)
 
 #### 각주
-- 일정은 중요한 운영 기능이므로 항상 인증 토큰이 필요하다.
+- 일정은 중요한 운영 기능이므로 항상 관리자 세션 인증이 필요하다.
 
 ### 10.8 관리자 캘린더 필터
 
@@ -396,12 +397,13 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 ### 11.1 구조
 
 #### 기능 세부 설명
-- 인증: 비밀번호 + HMAC-SHA256 서명 토큰 (24시간 유효)
+- 인증: 비밀번호 + HMAC-SHA256 signed cookie session (24시간 유효)
 - 레이아웃: 좌측 고정 사이드바(248px) + 우측 스크롤 가능 콘텐츠 영역
 - 패널 목록:
   - 개요: `대시보드`, `분석`, `마케팅`
   - 콘텐츠: `게시글 목록`, `새 글 작성`, `캘린더`, `용어집`
   - 사이트 설정: `히어로 기사`, `태그/글머리`, `메타태그/SEO`, `저자/고지`, `게시판 배너`, `티커`, `기고자`, `편집자/접근`, `UI 번역`
+- 대시보드 하단 운영 카드에는 `발행 예정 / 초안`, `오류 / 로그인 시도`, `최근 설정 변경`, `릴리스 이력`을 표시한다.
 
 ### 11.2 관리자 UI 규칙
 
@@ -438,7 +440,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 
 #### 기능 세부 설명
 - 프론트엔드 API 호출은 모두 `GW.apiFetch(url, options)`를 사용한다.
-- 토큰 주입, 에러 파싱, JSON 직렬화를 자동 처리한다.
+- same-origin cookie 유지, 에러 파싱, JSON 직렬화를 자동 처리한다.
 - `options.body`는 `JSON.stringify()` 후 전달한다.
 
 #### 코드 예시
@@ -483,7 +485,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
   "posts": [ { "id": 1, "title": "...", "category": "korea", ... } ],
   "total": 42,
   "page": 1,
-  "limit": 20
+  "pageSize": 20
 }
 
 // GET /api/posts/:id
@@ -509,9 +511,10 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `POST /api/posts` — 생성 (인증 필요)
 - `GET /api/posts/:id` — 상세
 - `PUT /api/posts/:id` — 수정 (인증 필요)
+- `PATCH /api/posts/:id` — 공개/추천/정렬 상태 변경 (인증 필요)
 - `DELETE /api/posts/:id` — 삭제 (인증 필요)
-- `PUT /api/posts/:id/image` — 대표 이미지 업로드
-- `GET /api/posts/:id/history` — 수정 기록
+- `GET /api/posts/:id/image` — 대표 이미지 응답 (OG 이미지 용도)
+- `GET /api/posts/:id/history` — 수정 기록 (`before_snapshot`, `after_snapshot` 포함)
 - `POST /api/posts/:id/like` — 공감
 - `GET /api/posts/popular` — 인기 기사
 - `PUT /api/posts/reorder` — 순서 변경
@@ -533,21 +536,27 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET/PUT /api/settings/hero` — 히어로 기사 설정
 - `GET/PUT /api/settings/tags` — 글머리 태그 설정
 - `GET/PUT /api/settings/site-meta` — 메타태그/SEO/푸터
+- `POST /api/settings/site-meta/image` — 사이트 메타 대표 이미지 업로드
 - `GET/PUT /api/settings/author` — 저자명
 - `GET/PUT /api/settings/ai-disclaimer` — AI 고지 문구
+- `GET/PUT /api/settings/home-lead` — 홈 메인 스토리 프레이밍 설정
 - `GET/PUT /api/settings/board-banner` — 게시판 배너
+- `GET/PUT /api/settings/board-layout` — 게시판 레이아웃/페이지 사이즈
 - `GET/PUT /api/settings/ticker` — 뉴스 티커
 - `GET/PUT /api/settings/contributors` — 기고자 목록
 - `GET/PUT /api/settings/editors` — 편집자 접근 관리
 - `GET/PUT /api/settings/translations` — UI 번역
+- `GET/PUT /api/settings/calendar-copy` — 캘린더 카피 설정
 - `GET/PUT /api/settings/calendar-tags` — 캘린더 분류 태그
 - `GET/PUT /api/settings/feature-definition` — KMS 문서
 
 **분석**
 - `GET /api/admin/analytics` — 관리자 통계 대시보드
 - `GET /api/admin/marketing` — 마케팅 퍼널 데이터
+- `GET /api/admin/operations` — 운영 대시보드/릴리스 이력
 - `POST /api/analytics/visit` — 방문 기록 (공개)
 - `POST /api/analytics/post-engagement` — 체류시간 기록 (공개)
+- `GET /api/analytics/today` — 오늘 방문자/조회수
 
 **피드/메타**
 - `GET /api/home` — 홈 화면 데이터
@@ -568,10 +577,11 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 ### 13.1 기본 원칙
 
 #### 기능 세부 설명
-- 배포 도구: `npx wrangler pages deploy . --project-name gilwell-media`
+- 배포 기본 경로: `./scripts/deploy_production.sh`
 - 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
-- 배포 전 `VERSION` 파일을 갱신하고 커밋한다.
+- 배포 전 `VERSION`, `ADMIN_VERSION`을 확인하고 `./scripts/sync_versions.sh`로 버전 문자열을 동기화한다.
+- production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
 
 ### 13.2 스모크 체크 기준
 
@@ -585,6 +595,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - RSS 응답
 - 공개 posts API의 `publish_at`
 - 관리자 세션 401
+- 게시글 history API의 `before_snapshot` / `after_snapshot`
 - D1의 `created_at` / `publish_at` / `updated_at` 컬럼 존재
 - 배포 후 버전 문자열 확인 (`V3.aaa.bb` 형식)
 
