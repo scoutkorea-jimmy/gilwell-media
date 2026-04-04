@@ -61,7 +61,8 @@
   - Site: `00.101.01`
   - Admin: `03.011.00`
 - `VERSION` 파일에는 항상 현재 Site 버전을 저장한다.
-- Admin 버전은 `js/main.js` 의 `GW.ADMIN_VERSION`과 관리자 자산 쿼리 버전으로 관리한다.
+- `ADMIN_VERSION` 파일에는 항상 현재 Admin 버전을 저장한다.
+- `./scripts/sync_versions.sh`가 `js/main.js`의 `GW.APP_VERSION`, `GW.ADMIN_VERSION`, 관리자 자산 쿼리 버전, 공개 HTML 자산 쿼리 버전을 함께 맞춘다.
 
 #### 각주
 - 공개 홈페이지만 바뀌면 Site 버전만 올린다.
@@ -427,9 +428,10 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 ### 12.1 인증 구조
 
 #### 기능 세부 설명
-- 모든 관리자 API는 `Authorization: Bearer <token>` 헤더가 필요하다.
-- 토큰은 로그인(`POST /api/admin/login`) 후 발급되며 `localStorage`에 저장된다.
-- 토큰 유효 기간: 24시간 (HMAC-SHA256 서명, 만료 시 자동 로그아웃)
+- 로그인(`POST /api/admin/login`) 성공 시 서버가 signed 24시간 관리자 세션 쿠키를 발급한다.
+- 클라이언트는 `sessionStorage`에 lightweight 로그인 상태만 보조 저장한다.
+- 관리자 API 인증은 same-origin cookie 기반으로 처리한다.
+- `Authorization: Bearer <token>` 흐름을 기준으로 새 기능을 설계하지 않는다.
 - 공개 읽기 API(`GET /api/posts`, `GET /api/calendar` 등)는 인증 불필요.
 
 ### 12.2 GW.apiFetch 사용법

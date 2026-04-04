@@ -23,20 +23,20 @@
     {
       id: 'auth',
       label: '인증 (Authentication)',
-      desc: 'JWT 토큰 발급 및 세션 검증. 모든 관리자 전용 요청에 토큰이 필요합니다.',
+      desc: '서명된 관리자 세션 쿠키 발급 및 세션 검증.',
       endpoints: [
         {
           method: 'POST', path: '/api/admin/login', auth: false,
-          summary: '관리자 비밀번호로 JWT 토큰 발급',
+          summary: '관리자 비밀번호로 서명된 세션 쿠키 발급',
           request: '{ "password": "string" }',
           response: '{ "token": "string", "role": "full" }',
-          notes: '토큰 유효기간 24시간. 이후 요청에 Authorization: Bearer <token> 헤더 포함 필요.',
+          notes: '유효기간 24시간. 브라우저는 HttpOnly 세션 쿠키를 받고, 클라이언트는 sessionStorage에 lightweight 상태만 보조 저장한다.',
         },
         {
           method: 'GET', path: '/api/admin/session', auth: 'optional',
-          summary: '현재 토큰 유효성 및 역할 반환',
+          summary: '현재 세션 유효성 및 역할 반환',
           response: '{ "authenticated": true, "role": "full" }',
-          notes: '토큰 없이 요청하면 authenticated: false 반환. 로그인 상태 확인에 사용.',
+          notes: 'same-origin cookie 기반 로그인 상태 확인에 사용한다.',
         },
       ],
     },
@@ -305,7 +305,7 @@
     {
       id: 'admin',
       label: '관리자 전용 (Admin)',
-      desc: 'Changelog 조회, 프리뷰·배포 스냅샷 관리.',
+      desc: 'Changelog 조회와 운영 대시보드, 릴리스 이력 확인.',
       endpoints: [
         {
           method: 'GET', path: '/api/admin/changelog', auth: true,
@@ -314,27 +314,9 @@
           notes: 'ChangelogItem: { version, date, summary, type, scope, items[] }. scope: site | admin | both',
         },
         {
-          method: 'GET', path: '/api/preview/history', auth: true,
-          summary: '배포 스냅샷 이력',
-          response: '{ "releases": Release[] }',
-        },
-        {
-          method: 'POST', path: '/api/preview/promote', auth: true,
-          summary: '프리뷰 → 프로덕션 반영',
-          request: '{ "version": "00.101.00" }',
-          response: '{ "ok": true }',
-        },
-        {
-          method: 'POST', path: '/api/preview/release', auth: true,
-          summary: '현재 상태를 릴리스 스냅샷으로 저장',
-          request: '{ "label": "v00.101.00", "notes": "KMS 재설계" }',
-          response: '{ "release_id": "abc123" }',
-        },
-        {
-          method: 'POST', path: '/api/preview/rollback', auth: true,
-          summary: '이전 릴리스로 롤백',
-          request: '{ "release_id": "abc123" }',
-          response: '{ "ok": true }',
+          method: 'GET', path: '/api/admin/operations', auth: true,
+          summary: '운영 대시보드 및 릴리스 이력 조회',
+          response: '{ "scheduled_posts": [], "draft_posts": [], "recent_errors": [], "recent_logins": [], "recent_settings": [], "deployments": [] }',
         },
       ],
     },

@@ -20,14 +20,27 @@ export async function onRequestGet({ params, request, env }) {
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
     const { results } = await env.DB.prepare(
-      `SELECT id, action, summary, snapshot, created_at
+      `SELECT id, action, summary, snapshot, before_snapshot, after_snapshot, created_at
          FROM post_history
         WHERE post_id = ?
         ORDER BY created_at DESC, id DESC
         LIMIT 50`
     ).bind(id).all();
 
-    return json({ post, history: results || [] });
+    return json({
+      post,
+      history: (results || []).map(function (item) {
+        return {
+          id: item.id || 0,
+          action: item.action || 'update',
+          summary: item.summary || '',
+          snapshot: item.snapshot || null,
+          before_snapshot: item.before_snapshot || item.snapshot || null,
+          after_snapshot: item.after_snapshot || item.snapshot || null,
+          created_at: item.created_at || '',
+        };
+      }),
+    });
   } catch (err) {
     console.error('GET /api/posts/:id/history error:', err);
     return json({ error: 'Database error' }, 500);

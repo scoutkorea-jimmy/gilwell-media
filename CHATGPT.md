@@ -50,8 +50,8 @@
 - Database: Cloudflare D1
 - Images: R2 사용 가능
 - Frontend: Plain HTML / CSS / Vanilla JS
-- Auth: HMAC-SHA256 signed token
-- 메인 사이트 관리자 인증은 `sessionStorage` 기반 24시간 토큰을 사용합니다.
+- Auth: HMAC-SHA256 signed admin session cookie
+- 메인 사이트 관리자 인증은 24시간 signed cookie를 사용하고, 클라이언트는 `sessionStorage`에 lightweight 상태만 보조 저장합니다.
 
 ---
 
@@ -176,6 +176,8 @@
 - 버전 형식은 `Va.bbb.cc`를 따릅니다.
 - `bbb`가 올라가면 `cc`는 `00`으로 초기화합니다.
 - 정적 자산 캐시 무효화 쿼리도 같은 버전을 사용합니다.
+- Site 버전 원본은 `VERSION`, Admin 버전 원본은 `ADMIN_VERSION`입니다.
+- 릴리즈 전에는 `./scripts/sync_versions.sh`로 버전 문자열을 먼저 동기화합니다.
 - 관리자 버전은 `GW.ADMIN_VERSION`과 관리자 자산 버전 문자열을 함께 올립니다.
 - production 배포는 `./scripts/deploy_production.sh`로 진행합니다.
 - 배포 후 점검에는 `./scripts/post_deploy_check.sh <url>`를 사용합니다.

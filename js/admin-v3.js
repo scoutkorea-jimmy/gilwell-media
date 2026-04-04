@@ -738,11 +738,11 @@
       var deployments = operations.deployments || [];
       deploymentsEl.innerHTML = _renderSimpleRows(deployments, function (item) {
         return {
-          title: [item.environment || 'deploy', item.version || item.site_version || ''].filter(Boolean).join(' · '),
+          title: [item.environment || 'release', item.version || item.site_version || ''].filter(Boolean).join(' · '),
           meta: [item.status || 'success', item.branch || '', _shortDate(item.created_on)].filter(Boolean).join(' · '),
           action: item.url ? '<a class="v3-btn v3-btn-ghost v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener">보기</a>' : '',
         };
-      }, '배포 이력이 없습니다');
+      }, '릴리스 이력이 없습니다');
     }
   }
 

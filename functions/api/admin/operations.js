@@ -1,5 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
-import { fetchReleaseDeployments, fetchReleaseSnapshots } from '../../_shared/preview-ops.js';
+import { fetchReleaseDeployments, fetchReleaseSnapshots } from '../../_shared/release-history.js';
 import { ensureOperationalEventsTable } from '../../_shared/ops-log.js';
 
 export async function onRequestGet({ request, env }) {
@@ -142,4 +142,3 @@ function json(data, status) {
     },
   });
 }
-

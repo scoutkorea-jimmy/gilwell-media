@@ -121,25 +121,29 @@ export function normalizeSiteMeta(raw) {
 }
 
 export function getSitePageKey(pathname) {
-  const normalized = pathname === '/' ? '/index.html' : pathname;
+  const normalized = normalizePagePath(pathname);
   const mapping = {
     '/index.html': 'home',
     '/latest': 'latest',
-    '/latest.html': 'latest',
     '/korea': 'korea',
-    '/korea.html': 'korea',
     '/apr': 'apr',
-    '/apr.html': 'apr',
     '/wosm': 'wosm',
-    '/wosm.html': 'wosm',
     '/people': 'people',
-    '/people.html': 'people',
     '/glossary': 'glossary',
-    '/glossary.html': 'glossary',
-    '/contributors.html': 'contributors',
-    '/search.html': 'search',
+    '/contributors': 'contributors',
+    '/search': 'search',
   };
   return mapping[normalized] || null;
+}
+
+export function normalizePagePath(pathname) {
+  const raw = String(pathname || '/').trim() || '/';
+  let normalized = raw;
+  if (!normalized.startsWith('/')) normalized = '/' + normalized;
+  normalized = normalized.replace(/\/+$/, '') || '/';
+  if (normalized === '/index' || normalized === '/index.html') return '/index.html';
+  if (normalized.endsWith('.html')) normalized = normalized.slice(0, -5) || '/';
+  return normalized === '/' ? '/index.html' : normalized;
 }
 
 export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl, googleVerification, naverVerification, itemListElements }) {

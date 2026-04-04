@@ -10,6 +10,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
+import { normalizePublishAtInput, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
@@ -176,32 +177,40 @@ export async function onRequestPost({ request, env }) {
   if (!VALID_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
-  if (!title || !title.trim()) {
-    return json({ error: '제목을 입력해주세요' }, 400);
-  }
-  if (!content || !content.trim()) {
-    return json({ error: '내용을 입력해주세요' }, 400);
-  }
+  const safeTitleInput = requireNonEmptyString(title, '제목', 200);
+  if (!safeTitleInput.ok) return json({ error: safeTitleInput.error }, 400);
+  const safeContentInput = requireNonEmptyString(content, '내용');
+  if (!safeContentInput.ok) return json({ error: safeContentInput.error }, 400);
+  const safeSubtitleInput = optionalTrimmedString(subtitle, '부제', 300);
+  if (!safeSubtitleInput.ok) return json({ error: safeSubtitleInput.error }, 400);
+  const safeTagInput = optionalTrimmedString(tag, '태그', 200);
+  if (!safeTagInput.ok) return json({ error: safeTagInput.error }, 400);
+  const safeMetaTagsInput = optionalTrimmedString(meta_tags, '메타 태그', 500);
+  if (!safeMetaTagsInput.ok) return json({ error: safeMetaTagsInput.error }, 400);
+  const safeAuthorInput = body.author === undefined
+    ? { ok: true, provided: false, value: null }
+    : optionalTrimmedString(body.author, '작성자', 60);
+  if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
 
-  const upgradedContent = await safelyUpgradeEditorContentImages(content.trim(), env, origin, 'inline');
+  const upgradedContent = await safelyUpgradeEditorContentImages(safeContentInput.value, env, origin, 'inline');
   const resolvedCoverSource = sanitizeUrl(body.image_data, origin) || sanitizeUrl(image_url, origin);
   const storedCover = await safelyStoreDataImage(env, resolvedCoverSource, origin, 'cover');
   const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
-  const safeSubtitle  = (subtitle && typeof subtitle === 'string') ? subtitle.trim().slice(0, 300) : null;
-  const safeTag       = (tag && typeof tag === 'string') ? tag.trim().slice(0, 200) : null;
+  const safeSubtitle  = safeSubtitleInput.value;
+  const safeTag       = safeTagInput.value;
   const safeLocationName = sanitizeShortText(location_name, 120);
   const safeLocationAddress = sanitizeShortText(location_address, 300);
   const safeSpecialFeature = sanitizeSpecialFeature(special_feature);
-  const safeMetaTags  = (meta_tags && typeof meta_tags === 'string') ? meta_tags.trim().slice(0, 500) : null;
+  const safeMetaTags  = safeMetaTagsInput.value;
   const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts || body.related_posts_json);
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
 
   // Get default author from settings if not provided in body
-  const bodyAuthor = (body.author && typeof body.author === 'string') ? body.author.trim().slice(0, 60) : null;
+  const bodyAuthor = safeAuthorInput.value;
   let safeAuthor = bodyAuthor;
   if (!safeAuthor) {
     try {
@@ -215,7 +224,7 @@ export async function onRequestPost({ request, env }) {
   try {
     const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, created_at, publish_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))`;
-    const bindings = [category, title.trim(), safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, publishAtValue];
+    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, publishAtValue];
     const result = await env.DB.prepare(sql).bind(...bindings).run();
     const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
     const insertedPost = insertedId
@@ -223,7 +232,7 @@ export async function onRequestPost({ request, env }) {
       : null;
 
     if (insertedPost) {
-      await recordPostHistory(env, insertedPost.id, 'create', insertedPost, '게시글 생성');
+      await recordPostHistory(env, insertedPost.id, 'create', null, insertedPost, '게시글 생성');
     }
     return json({ post: insertedPost }, 201);
   } catch (err) {
@@ -347,19 +356,6 @@ function normalizeSort(value, hasSearch) {
 function normalizePublishedFilter(value) {
   if (value === '1' || value === 1 || value === true || value === 'true' || value === 'published') return 1;
   if (value === '0' || value === 0 || value === false || value === 'false' || value === 'draft') return 0;
-  return null;
-}
-
-function normalizePublishAtInput(publishAt, publishDate) {
-  const precise = String(publishAt || '').trim();
-  if (precise) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(precise)) return `${precise} 12:00:00`;
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(precise)) return `${precise.replace('T', ' ')}:00`;
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(precise)) return `${precise}:00`;
-    if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(precise)) return precise.replace('T', ' ');
-  }
-  const fallback = String(publishDate || '').trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;
   return null;
 }
 
