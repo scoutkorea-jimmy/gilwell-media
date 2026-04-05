@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.13';
-  GW.ADMIN_VERSION = '03.052.09';
+  GW.APP_VERSION = '00.111.14';
+  GW.ADMIN_VERSION = '03.052.10';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -571,8 +571,57 @@
     return GW.renderTextWithMedia(str).html;
   };
 
+  GW.normalizeInlineHref = function (value) {
+    var raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+    if (/^(\/|#|\?|\.\.?\/)/.test(raw)) return raw;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.indexOf('//') === 0) return '';
+    return '/' + raw.replace(/^\/+/, '');
+  };
+
+  GW.sanitizeEditorInlineHtml = function (value) {
+    var source = String(value || '').replace(/\r\n?/g, '\n');
+    if (!source) return '';
+    var tokens = [];
+    var anchorDepth = 0;
+    var tokenized = source.replace(/<(\/?)(a|strong|b|em|i|u|s|mark|code|br)\b([^>]*)>/gi, function (_, closing, tagName, attrs) {
+      var tag = String(tagName || '').toLowerCase();
+      var replacement = '';
+      if (tag === 'br') {
+        replacement = '<br>';
+      } else if (closing) {
+        if (tag === 'a') {
+          if (!anchorDepth) return '';
+          anchorDepth -= 1;
+        }
+        replacement = '</' + tag + '>';
+      } else if (tag === 'a') {
+        var hrefMatch = String(attrs || '').match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+        var normalizedHref = GW.normalizeInlineHref(hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '');
+        if (!normalizedHref) {
+          return '';
+        }
+        anchorDepth += 1;
+        var external = /^https?:/i.test(normalizedHref);
+        replacement = '<a href="' + GW.escapeHtml(normalizedHref) + '"' +
+          (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>';
+      } else {
+        replacement = '<' + tag + '>';
+      }
+      var token = '%%GW_INLINE_' + tokens.length + '%%';
+      tokens.push({ token: token, html: replacement });
+      return token;
+    });
+    var escaped = GW.escapeHtml(tokenized).replace(/\n/g, '<br>');
+    tokens.forEach(function (entry) {
+      escaped = escaped.replace(entry.token, entry.html);
+    });
+    return escaped;
+  };
+
   GW.renderEditorInlineText = function (value) {
-    return String(value || '').replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+    return GW.sanitizeEditorInlineHtml(value);
   };
 
   GW.renderEditorListItems = function (items, listTag) {
