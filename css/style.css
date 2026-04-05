@@ -9081,11 +9081,19 @@ body.admin-page .item-meta-chip span {
   margin: 28px auto 0;
   padding: 0 10% 72px;
 }
+.members-board-shell {
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+}
 .members-toolbar {
   display: grid;
   grid-template-columns: 1.5fr .8fr;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
+  padding: 18px 20px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-bottom: none;
+  background: #fcfcfc;
 }
 .members-search-wrap,
 .members-filter-wrap {
@@ -9112,20 +9120,26 @@ body.admin-page .item-meta-chip span {
   font-size: 14px;
 }
 .members-results-meta {
-  margin-bottom: 14px;
+  margin: 0;
+  padding: 12px 20px;
   font-size: 13px;
   color: var(--gray);
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-bottom: none;
+  background: #fff;
 }
 .members-table-wrap {
   display: block;
   border: 1px solid rgba(17, 17, 17, 0.08);
+  border-top: none;
   background: #fff;
   overflow: auto;
 }
 .members-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 860px;
+  min-width: 980px;
+  table-layout: fixed;
 }
 .members-table th,
 .members-table td {
@@ -9140,6 +9154,21 @@ body.admin-page .item-meta-chip span {
   text-transform: uppercase;
   color: var(--gray);
   background: #fafafa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.members-table th:nth-child(1) { width: 28%; }
+.members-table th:nth-child(2) { width: 22%; }
+.members-table th:nth-child(3) { width: 12%; }
+.members-table th:nth-child(4) { width: 38%; }
+.members-table td:nth-child(2),
+.members-table td:nth-child(3) {
+  white-space: nowrap;
+}
+.members-table td:nth-child(4) {
+  color: var(--gray);
+  line-height: 1.7;
 }
 .member-country-names {
   display: flex;
@@ -9201,6 +9230,20 @@ body.admin-page .item-meta-chip span {
 
   .members-hero-copy {
     padding: 22px 20px;
+  }
+
+  .members-toolbar {
+    padding: 0;
+    border: none;
+    background: transparent;
+    margin-bottom: 14px;
+  }
+
+  .members-results-meta {
+    padding: 0;
+    margin-bottom: 14px;
+    border: none;
+    background: transparent;
   }
 
   .members-hero-stats,

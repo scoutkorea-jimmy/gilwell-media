@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=03.048.00">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=03.049.00">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -25,7 +25,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.048.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.049.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.048.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.049.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -876,13 +876,23 @@
                 <div class="v3-card-head">
                   <div>
                     <h2 class="v3-card-title">세계연맹 회원국 현황</h2>
-                    <p class="v3-card-desc">XLSX를 가져오면 영어/프랑스어를 자동 매핑하고, 한국어명은 여기서 계속 보완할 수 있습니다.</p>
+                    <p class="v3-card-desc">XLSX를 불러온 뒤 한국어, 영어, 프랑스어, 회원 자격, 회원 수, 상태 설명을 계속 수정합니다. PC에서는 표 중심 편집, 모바일에서는 카드형 입력으로 보입니다.</p>
                   </div>
                   <div class="v3-flex">
                     <input type="file" id="wosm-members-file" accept=".xlsx,.xls" hidden>
                     <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-import-btn">XLSX 불러오기</button>
                     <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-add-btn">항목 추가</button>
                     <button class="v3-btn v3-btn-primary v3-btn-sm" id="wosm-members-save-btn">저장</button>
+                  </div>
+                </div>
+                <div class="v3-import-panel">
+                  <div class="v3-import-panel-copy">
+                    <strong>XLSX 업로드</strong>
+                    <p>영어는 <code>Country Name option 1 E</code>, 프랑스어는 <code>Country Name option 1 F</code>를 기준으로 읽습니다. 기존 항목이 있으면 영어+프랑스어 조합으로 한국어명을 이어받습니다.</p>
+                  </div>
+                  <div class="v3-import-panel-actions">
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-import-btn-inline">파일 선택</button>
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-add-btn-inline">빈 항목 추가</button>
                   </div>
                 </div>
                 <div class="v3-form-grid">
@@ -1141,7 +1151,7 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/js/main.js?v=03.048.00"></script>
-<script src="/js/admin-v3.js?v=03.048.00"></script>
+<script src="/js/main.js?v=03.049.00"></script>
+<script src="/js/admin-v3.js?v=03.049.00"></script>
 </body>
 </html>
