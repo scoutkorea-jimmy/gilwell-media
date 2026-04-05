@@ -1153,6 +1153,27 @@ const DP = (() => {
           })
           .join('');
       }).join('');
+    } else if (isTeamBoard) {
+      // Thread replies under parent posts for team boards
+      const replyMap = {};
+      regular.filter(p => p.reply_to_id).forEach(p => {
+        if (!replyMap[p.reply_to_id]) replyMap[p.reply_to_id] = [];
+        replyMap[p.reply_to_id].push(p);
+      });
+      const rootPosts = regular.filter(p => !p.reply_to_id);
+
+      function flattenReplies(post, depth) {
+        const items = [{ post, depth }];
+        const children = (replyMap[post.id] || [])
+          .sort((a, b) => a.created_at.localeCompare(b.created_at));
+        for (const c of children) items.push(...flattenReplies(c, depth + 1));
+        return items;
+      }
+
+      regularHtml = rootPosts.map(root => {
+        const flat = flattenReplies(root, 0);
+        return flat.map(({ post, depth }) => renderPostCard(post, boardName, depth)).join('');
+      }).join('');
     } else {
       regularHtml = regular.map(p => renderPostCard(p, boardName, 0)).join('');
     }
@@ -1176,7 +1197,9 @@ const DP = (() => {
     const statusCls = superseded
       ? 'dp-post-card--superseded'
       : (boardName === 'minutes' && post.approval_status ? `dp-post-card--${post.approval_status}` : '');
-    const depthCls  = depth > 0 ? 'dp-post-card--revision' : '';
+    const isReply   = !!post.reply_to_id;
+    const depthCls  = depth > 0 ? (isReply ? 'dp-post-card--reply' : 'dp-post-card--revision') : '';
+    const isTeamBoard = TEAM_BOARDS.includes(boardName);
 
     let adminBtns = '';
     if (currentUser) {
@@ -1184,11 +1207,13 @@ const DP = (() => {
       const isAuthor  = post.author_name === (currentUser.display_name || currentUser.username);
       const canEdit   = isAdmin || isAuthor;
       const canRevise = boardName === 'minutes' && post.approval_status === 'rejected' && (isAdmin || isAuthor);
+      const canReply  = isTeamBoard && !isReply;
       const verBadge  = (post.version_number || 1) > 1
         ? `<span class="dp-version-chip">V${post.version_number}</span>` : '';
       adminBtns = `
         <div class="dp-post-actions">
           ${verBadge}
+          ${canReply ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.replyToPost(${post.id},'${boardName}')">&#8617; Reply</button>` : ''}
           ${canEdit ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation(); DP.editPost(${post.id})">&#9998; Edit</button>` : ''}
           ${isAdmin ? `<button class="dp-btn dp-btn--xs dp-btn--danger dp-admin-only" onclick="event.stopPropagation(); DP.deletePost(${post.id}, '${boardName}')">Delete</button>` : ''}
           ${canRevise ? `<button class="dp-btn dp-btn--xs dp-btn--primary" onclick="event.stopPropagation(); DP.revisePost(${post.id})">&#8635; Revise</button>` : ''}
@@ -1196,9 +1221,10 @@ const DP = (() => {
       `;
     }
     return `
-      <div class="dp-post-card ${statusCls} ${depthCls}" onclick="DP.viewPost(${post.id})">
+      <div class="dp-post-card ${statusCls} ${depthCls}" style="${depth > 0 ? `margin-left:${Math.min(depth, 3) * 28}px` : ''}" onclick="DP.viewPost(${post.id})">
         <div class="dp-post-card-inner">
           <div class="dp-post-card-meta">
+            ${isReply ? '<span class="dp-reply-badge">&#8617; Reply</span>' : ''}
             ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
             <span class="dp-post-author">${esc(post.author_name)}</span>
             <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtFull(post.updated_at))}` : esc(fmtFull(post.created_at))}</span>
@@ -1219,16 +1245,13 @@ const DP = (() => {
   }
 
   async function viewPost(id) {
-    const [postData, commentsData, repliesData] = await Promise.all([
+    const [postData, commentsData] = await Promise.all([
       api('GET', `posts?id=${id}`),
       api('GET', `comments?post_id=${id}`),
-      api('GET', `replies?parent_type=post&parent_id=${id}`),
     ]);
     if (!postData?.post) return;
     const p = postData.post;
     const comments = commentsData?.comments || [];
-    const replies = repliesData?.replies || [];
-    const showReplies = TEAM_BOARDS.includes(p.board);
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
 
     // ── Files ──────────────────────────────────────────────────────
@@ -1360,21 +1383,6 @@ const DP = (() => {
         </div>
       </details>` : '';
 
-    // ── Replies (Team Boards) ─────────────────────────────────────
-    const repliesHtml = showReplies ? `
-      <div class="dp-replies-section">
-        <div class="dp-replies-header">Replies <span class="dp-history-count" id="dp-reply-count">${replies.length}</span></div>
-        <div id="dp-replies-list" class="dp-replies-list">
-          ${_renderRepliesHtml(replies, 'post', id)}
-        </div>
-        <div class="dp-reply-form">
-          <textarea id="dp-reply-input" class="dp-input dp-textarea" placeholder="Write a reply…" rows="4"></textarea>
-          <div style="margin-top:8px;text-align:right">
-            <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addReply('post',${id})">Post Reply</button>
-          </div>
-        </div>
-      </div>` : '';
-
     // ── Comments ───────────────────────────────────────────────────
     const commentsHtml = `
       <div class="dp-comments-section">
@@ -1407,10 +1415,87 @@ const DP = (() => {
         ${imagesHtml}
         ${attachHtml}
         ${historyHtml}
-        ${repliesHtml}
         ${commentsHtml}
       </div>
     `, { title: p.title, wide: true });
+  }
+
+  async function replyToPost(parentPostId, boardName) {
+    const parentData = await api('GET', `posts?id=${parentPostId}`);
+    if (!parentData?.post) return;
+    const parent = parentData.post;
+    const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
+
+    openModal(`
+      <div class="dp-form">
+        <div style="margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent)">
+          <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Replying to</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${esc(parent.title)}</div>
+          <div style="font-size:12px;color:var(--text-3)">by ${esc(parent.author_name)}</div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="fp-title" class="dp-input" type="text" placeholder="Reply title" maxlength="200" value="Re: ${esc(parent.title).slice(0, 180)}" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Content</label>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
+            </div>
+            <div id="fp-tiptap"></div>
+          </div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Attachments <span style="color:var(--text-3);font-size:11px">(Max 5 files, 100 MB each)</span></label>
+          <input type="file" id="fp-files" class="dp-input" multiple onchange="DP._handleFileSelect(this,'fp-filelist')" />
+          <div id="fp-filelist" class="dp-file-list"></div>
+        </div>
+      </div>
+    `, {
+      title: `Reply — ${boardTitles[boardName] || boardName}`,
+      fullpage: true,
+      confirmLabel: 'Post Reply',
+      onConfirm: async () => {
+        const title   = $('fp-title').value.trim();
+        const content = _getTiptapHTML();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+
+        const fileInput = $('fp-files');
+        const uploadedFiles = await uploadFiles(fileInput, 'fp-filelist');
+        if (uploadedFiles === null) return;
+
+        const result = await api('POST', 'posts', {
+          board: boardName, title, content: content || null, pinned: false,
+          files: uploadedFiles, reply_to_id: parentPostId,
+        });
+        if (result) {
+          closeModal();
+          showToast('Reply posted.', 'success');
+          loadBoard(boardName);
+          if (activeSection === 'home') loadBoardPreviews();
+        }
+      },
+    });
+    _waitForTiptap(() => _initTiptap('fp-tiptap', null));
   }
 
   async function createPost(boardName, revisionOf = null) {
@@ -2035,49 +2120,6 @@ const DP = (() => {
       const count = $('dp-comment-count');
       if (list)  list.innerHTML  = _renderCommentsHtml(data?.comments || [], postId);
       if (count) count.textContent = String((data?.comments || []).length);
-    }
-  }
-
-  // ── Replies (답글) ──────────────────────────────────────────────────────────
-  function _renderRepliesHtml(replies, parentType, parentId) {
-    if (!replies.length) {
-      return `<p class="dp-text-muted" style="font-size:13px;padding:4px 0">No replies yet.</p>`;
-    }
-    return replies.map(r => `
-      <div class="dp-reply-item" id="dp-reply-${r.id}">
-        <div class="dp-reply-header">
-          <span class="dp-reply-author">${esc(r.author_name)}</span>
-          <span class="dp-reply-date">${fmtFull(r.created_at)}</span>
-          ${(currentUser?.role === 'admin' || r.author_id === currentUser?.id) ? `<button class="dp-reply-delete" onclick="DP.deleteReply(${r.id},'${parentType}',${parentId})" title="Delete">&times;</button>` : ''}
-        </div>
-        <div class="dp-reply-body">${_sanitizeHtml(r.content)}</div>
-      </div>`).join('');
-  }
-
-  async function addReply(parentType, parentId) {
-    const input   = $('dp-reply-input');
-    const content = input?.value.trim();
-    if (!content) { showToast('Reply cannot be empty.', 'error'); return; }
-    const result = await api('POST', 'replies', { parent_type: parentType, parent_id: parentId, content });
-    if (result) {
-      input.value = '';
-      const data = await api('GET', `replies?parent_type=${parentType}&parent_id=${parentId}`);
-      const list  = $('dp-replies-list');
-      const count = $('dp-reply-count');
-      if (list)  list.innerHTML  = _renderRepliesHtml(data?.replies || [], parentType, parentId);
-      if (count) count.textContent = String((data?.replies || []).length);
-    }
-  }
-
-  async function deleteReply(replyId, parentType, parentId) {
-    if (!confirm('Delete this reply?')) return;
-    const result = await api('DELETE', `replies?id=${replyId}`);
-    if (result) {
-      const data = await api('GET', `replies?parent_type=${parentType}&parent_id=${parentId}`);
-      const list  = $('dp-replies-list');
-      const count = $('dp-reply-count');
-      if (list)  list.innerHTML  = _renderRepliesHtml(data?.replies || [], parentType, parentId);
-      if (count) count.textContent = String((data?.replies || []).length);
     }
   }
 
@@ -3674,11 +3716,13 @@ const DP = (() => {
     const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
     const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
 
-    function noteRow(n) {
+    function noteRow(n, depth = 0) {
       const isHigh = n.priority === 'high' && n.status === 'open';
+      const isReply = !!n.reply_to_id;
       const plainContent = n.content ? n.content.replace(/<[^>]+>/g, '') : '';
-      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}" style="cursor:pointer" onclick="DP.viewNote(${n.id})">
+      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}${isReply?' dp-note-row--reply':''}" style="cursor:pointer;${depth > 0 ? `margin-left:${Math.min(depth, 3) * 28}px` : ''}" onclick="DP.viewNote(${n.id})">
         <div class="dp-note-row-left">
+          ${isReply ? '<span class="dp-reply-badge" style="margin-right:4px">&#8617; Reply</span>' : ''}
           <span class="dp-badge" style="background:${typeColor[n.type]||'#146E7A'}20;color:${typeColor[n.type]||'#146E7A'};border:1px solid ${typeColor[n.type]||'#146E7A'}40">${typeLabel[n.type]||n.type}</span>
           <div>
             <div class="dp-note-title">${esc(n.title)}</div>
@@ -3687,6 +3731,7 @@ const DP = (() => {
           </div>
         </div>
         <div class="dp-note-row-right">
+          ${!isReply ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation();DP.replyToNote(${n.id})">&#8617; Reply</button>` : ''}
           ${n.status === 'open'
             ? `<button class="dp-btn dp-btn--xs dp-btn--ghost" onclick="event.stopPropagation();DP._resolveNote(${n.id})">✓ Resolve</button>`
             : `<span style="font-size:11px;color:var(--text-3)">✅ Resolved</span>`}
@@ -3696,21 +3741,44 @@ const DP = (() => {
       </div>`;
     }
 
-    const open = notes.filter(n => n.status === 'open');
-    const resolved = notes.filter(n => n.status === 'resolved');
+    // Build reply tree
+    const replyMap = {};
+    notes.filter(n => n.reply_to_id).forEach(n => {
+      if (!replyMap[n.reply_to_id]) replyMap[n.reply_to_id] = [];
+      replyMap[n.reply_to_id].push(n);
+    });
+
+    function flattenNoteTree(note, depth) {
+      const items = [{ note, depth }];
+      const children = (replyMap[note.id] || [])
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      for (const c of children) items.push(...flattenNoteTree(c, depth + 1));
+      return items;
+    }
+
+    const rootNotes = notes.filter(n => !n.reply_to_id);
+    const open = rootNotes.filter(n => n.status === 'open');
+    const resolved = rootNotes.filter(n => n.status === 'resolved');
+
+    function renderNoteGroup(roots) {
+      return roots.map(root => {
+        const flat = flattenNoteTree(root, 0);
+        return flat.map(({ note: n, depth: d }) => noteRow(n, d)).join('');
+      }).join('');
+    }
 
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">Notes &amp; Issues</h2>
         <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.createNote()">+ New Note</button>
       </div>
-      ${open.length ? `<div class="dp-note-list">${open.map(noteRow).join('')}</div>` : ''}
+      ${open.length ? `<div class="dp-note-list">${renderNoteGroup(open)}</div>` : ''}
       ${resolved.length ? `
         <details style="margin-top:16px">
           <summary style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);cursor:pointer;padding:8px 0">
             Resolved (${resolved.length})
           </summary>
-          <div class="dp-note-list" style="margin-top:8px">${resolved.map(noteRow).join('')}</div>
+          <div class="dp-note-list" style="margin-top:8px">${renderNoteGroup(resolved)}</div>
         </details>` : ''}
       ${!open.length && !resolved.length ? '<div class="dp-empty-state"><p>No notes yet.</p></div>' : ''}
     `;
@@ -3719,6 +3787,89 @@ const DP = (() => {
   async function _resolveNote(id) {
     const result = await api('PUT', `notes?id=${id}`, { status: 'resolved' });
     if (result) { showToast('Marked as resolved.', 'success'); loadNotes(); }
+  }
+
+  function replyToNote(parentId) {
+    const parent = _allNotes.find(n => n.id === parentId);
+    if (!parent) return;
+
+    openModal(`
+      <div class="dp-form">
+        <div style="margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--accent)">
+          <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Replying to</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${esc(parent.title)}</div>
+          <div style="font-size:12px;color:var(--text-3)">by ${esc(parent.added_by)}</div>
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Title <span class="dp-required">*</span></label>
+          <input id="cn-title" class="dp-input" type="text" maxlength="200" value="Re: ${esc(parent.title).slice(0, 180)}" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Content</label>
+          <div class="dp-te-wrapper">
+            <div class="dp-te-toolbar">
+              <button type="button" class="dp-te-btn" data-cmd="bold" onmousedown="event.preventDefault();DP._teCmd('bold')" title="Bold"><b>B</b></button>
+              <button type="button" class="dp-te-btn" data-cmd="italic" onmousedown="event.preventDefault();DP._teCmd('italic')" title="Italic"><i>I</i></button>
+              <button type="button" class="dp-te-btn" data-cmd="strike" onmousedown="event.preventDefault();DP._teCmd('strike')" title="Strikethrough"><s>S</s></button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="h2" onmousedown="event.preventDefault();DP._teCmd('h2')" title="Heading 2">H2</button>
+              <button type="button" class="dp-te-btn" data-cmd="h3" onmousedown="event.preventDefault();DP._teCmd('h3')" title="Heading 3">H3</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="bulletList" onmousedown="event.preventDefault();DP._teCmd('bulletList')" title="Bullet List">&#8226; List</button>
+              <button type="button" class="dp-te-btn" data-cmd="orderedList" onmousedown="event.preventDefault();DP._teCmd('orderedList')" title="Numbered List">1. List</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
+              <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addColAfter" onmousedown="event.preventDefault();DP._teCmd('addColAfter')" title="Add Column Right" style="display:none">+Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteCol" onmousedown="event.preventDefault();DP._teCmd('deleteCol')" title="Delete Column" style="display:none">&minus;Col</button>
+              <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteTable" onmousedown="event.preventDefault();DP._teCmd('deleteTable')" title="Delete Table" style="display:none;color:var(--red)">&#8864; Del</button>
+            </div>
+            <div id="cn-tiptap"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="dp-form-row">
+            <label class="dp-label">Type</label>
+            <select id="cn-type" class="dp-input">
+              <option value="note">📝 Note</option>
+              <option value="issue">⚠️ Issue</option>
+              <option value="warning">🚨 Warning</option>
+              <option value="suggestion">💡 Suggestion</option>
+            </select>
+          </div>
+          <div class="dp-form-row">
+            <label class="dp-label">Priority</label>
+            <select id="cn-priority" class="dp-input">
+              <option value="normal" selected>🟡 Normal</option>
+              <option value="high">🔴 High</option>
+              <option value="low">⚪ Low</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    `, {
+      title: 'Reply to Note',
+      confirmLabel: 'Post Reply',
+      onConfirm: async () => {
+        const title = $('cn-title').value.trim();
+        if (!title) { showToast('Title is required.', 'error'); return; }
+        const content = _getTiptapHTML();
+        const result = await api('POST', 'notes', {
+          title,
+          content: content || null,
+          type:     $('cn-type').value,
+          priority: $('cn-priority').value,
+          added_by: currentUser?.display_name || currentUser?.username || '익명',
+          reply_to_id: parentId,
+        });
+        if (result) { closeModal(); showToast('Reply posted.', 'success'); loadNotes(); }
+      },
+    });
+    _waitForTiptap(() => _initTiptap('cn-tiptap', null));
   }
 
   async function createNote() {
@@ -3885,11 +4036,9 @@ const DP = (() => {
     _waitForTiptap(() => _initTiptap('en-tiptap', _legacyToHtml(note.content)));
   }
 
-  async function viewNote(id) {
+  function viewNote(id) {
     const note = _allNotes.find(n => n.id === id);
     if (!note) return;
-    const repliesData = await api('GET', `replies?parent_type=note&parent_id=${id}`);
-    const replies = repliesData?.replies || [];
     const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
     const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
     const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
@@ -3910,21 +4059,10 @@ const DP = (() => {
           ${esc(note.added_by)} · ${fmtFull(note.created_at)}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
+          ${!note.reply_to_id ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.replyToNote(${note.id}),80)">&#8617; Reply</button>` : ''}
           ${note.status === 'open' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP._resolveNote(${note.id}),80)">✓ Resolve</button>` : ''}
           <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.editNote(${note.id}),80)">✏ Edit</button>
           ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.closeModal();setTimeout(()=>DP.deleteNote(${note.id}),80)">Delete</button>` : ''}
-        </div>
-        <div class="dp-replies-section" style="margin-top:20px">
-          <div class="dp-replies-header">Replies <span class="dp-history-count" id="dp-reply-count">${replies.length}</span></div>
-          <div id="dp-replies-list" class="dp-replies-list">
-            ${_renderRepliesHtml(replies, 'note', id)}
-          </div>
-          <div class="dp-reply-form">
-            <textarea id="dp-reply-input" class="dp-input dp-textarea" placeholder="Write a reply…" rows="4"></textarea>
-            <div style="margin-top:8px;text-align:right">
-              <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addReply('note',${id})">Post Reply</button>
-            </div>
-          </div>
         </div>
       </div>
     `, { title: esc(note.title), wide: true });
@@ -4074,8 +4212,8 @@ const DP = (() => {
     editNote,
     deleteNote,
     _resolveNote,
-    addReply,
-    deleteReply,
+    replyToPost,
+    replyToNote,
   };
 })();
 

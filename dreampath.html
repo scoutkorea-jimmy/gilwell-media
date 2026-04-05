@@ -789,6 +789,21 @@
       content: ''; position: absolute; left: -16px; top: 50%;
       width: 14px; height: 2px; background: var(--border);
     }
+    /* Reply child indentation */
+    .dp-post-card--reply { position: relative; border-left: 3px solid var(--accent); }
+    .dp-post-card--reply::before {
+      content: ''; position: absolute; left: -16px; top: 50%;
+      width: 14px; height: 2px; background: var(--accent);
+    }
+    .dp-reply-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      background: var(--accent-light, rgba(20,110,122,.1)); color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .dp-note-row--reply { border-left: 3px solid var(--accent); }
+
     /* Version chip */
     .dp-version-chip {
       display: inline-flex; align-items: center;
