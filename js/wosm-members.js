@@ -57,7 +57,7 @@
     var select = document.getElementById('wosm-members-category');
     if (!select) return;
     var categories = Array.from(new Set((items || []).map(function (item) {
-      return String(item.membership_category || '').trim();
+      return String(getRegionValue(item) || '').trim();
     }).filter(Boolean))).sort();
     select.innerHTML = '<option value="all">전체</option>' + categories.map(function (category) {
       return '<option value="' + GW.escapeHtml(category) + '">' + GW.escapeHtml(category) + '</option>';
@@ -81,7 +81,7 @@
 
   function getFilteredItems() {
     return state.items.filter(function (item) {
-      var category = String(item.membership_category || '').trim();
+      var category = String(getRegionValue(item) || '').trim();
       var matchesCategory = state.category === 'all' || category === state.category;
       if (!matchesCategory) return false;
       if (!state.query) return true;
@@ -169,6 +169,18 @@
     if (!item || !column) return '';
     if (column.key === 'membership_category' || column.key === 'status_description') return item[column.key] || '';
     return item.extra_fields && typeof item.extra_fields === 'object' ? (item.extra_fields[column.key] || '') : '';
+  }
+
+  function getRegionValue(item) {
+    if (!item) return '';
+    if (item.extra_fields && typeof item.extra_fields === 'object') {
+      if (item.extra_fields.column_1) return item.extra_fields.column_1;
+      var regionKey = Object.keys(item.extra_fields).find(function (key) {
+        return /region/i.test(key);
+      });
+      if (regionKey) return item.extra_fields[regionKey];
+    }
+    return '';
   }
 
   function renderNameBlock(item) {
