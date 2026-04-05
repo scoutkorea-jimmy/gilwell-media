@@ -41,9 +41,11 @@ export function sanitizeWosmMemberItem(item, index) {
   Object.keys(source).forEach((key) => {
     if (!BASE_ITEM_KEYS.has(key)) unknownTopLevel[key] = source[key];
   });
+  const countryEn = sanitizeText(source.country_en, 160);
+  const countryKo = sanitizeText(source.country_ko, 120) || countryEn;
   return {
-    country_ko: sanitizeText(source.country_ko, 120),
-    country_en: sanitizeText(source.country_en, 160),
+    country_ko: countryKo,
+    country_en: countryEn,
     country_fr: sanitizeText(source.country_fr, 160),
     membership_category: sanitizeText(source.membership_category, 160),
     status_description: sanitizeText(source.status_description, 260),
