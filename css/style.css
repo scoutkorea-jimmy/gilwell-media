@@ -9103,7 +9103,17 @@ body.wosm-members-page #main-content {
 }
 .members-table th,
 .members-table td {
-  vertical-align: top;
+  vertical-align: middle;
+  text-align: left;
+}
+.members-table th:first-child,
+.members-table td:first-child,
+.members-table th:nth-child(3),
+.members-table td:nth-child(3),
+.members-table th:nth-child(5),
+.members-table td:nth-child(5),
+.members-table th:last-child,
+.members-table td:last-child {
   text-align: center;
 }
 .members-table td {
@@ -9122,7 +9132,7 @@ body.wosm-members-page #main-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
 }
 .member-country-names strong {
   font-size: 18px;
