@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.14';
-  GW.ADMIN_VERSION = '03.052.10';
+  GW.APP_VERSION = '00.111.15';
+  GW.ADMIN_VERSION = '03.052.11';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -581,7 +581,10 @@
   };
 
   GW.sanitizeEditorInlineHtml = function (value) {
-    var source = String(value || '').replace(/\r\n?/g, '\n');
+    var source = String(value || '')
+      .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
+      .replace(/\u00A0/g, ' ')
+      .replace(/\r\n?/g, '\n');
     if (!source) return '';
     var tokens = [];
     var anchorDepth = 0;
