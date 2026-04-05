@@ -1118,6 +1118,21 @@
       flex-direction: column;
     }
     #dp-modal.dp-modal--wide { max-width: 700px; }
+    @media (min-width: 769px) {
+      #dp-modal.dp-modal--fullpage {
+        max-width: calc(100vw - var(--sidebar-w) - 48px);
+        width: 100%;
+        max-height: calc(100vh - 48px);
+        margin-left: var(--sidebar-w);
+      }
+    }
+    @media (max-width: 768px) {
+      #dp-modal.dp-modal--fullpage {
+        max-width: 100%;
+        width: 100%;
+        max-height: calc(100vh - 24px);
+      }
+    }
     .dp-modal-header {
       padding: 20px 24px 0;
       display: flex;
@@ -1968,7 +1983,39 @@
     .dp-note-excerpt { font-size: 12px; color: var(--text-3); margin-top: 2px; }
     .dp-note-meta { font-size: 11px; color: var(--text-3); margin-top: 4px; }
 
-    /* ── Tag Input (Approvers) ──────────────────────────────────────── */
+    /* ── Replies (답글) ───────��─────────────────────────────────────── */
+    .dp-replies-section { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+    .dp-replies-header {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dp-replies-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .dp-reply-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .dp-reply-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px; font-size: 12px;
+    }
+    .dp-reply-author { font-weight: 700; color: var(--accent); }
+    .dp-reply-date { color: var(--text-3); }
+    .dp-reply-delete {
+      margin-left: auto; background: none; border: none;
+      color: var(--text-3); font-size: 16px; cursor: pointer;
+      padding: 0 4px; line-height: 1; border-radius: 4px;
+    }
+    .dp-reply-delete:hover { color: var(--red); background: var(--surface2); }
+    .dp-reply-body {
+      font-size: 14px; line-height: 1.6; color: var(--text);
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .dp-reply-form { border-top: 1px solid var(--border); padding-top: 12px; }
+
+    /* ── Tag Input (Approvers) ───────────────���──────────────────────── */
     .dp-tag-input-wrap { }
     .dp-tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 0; }
     .dp-tag {

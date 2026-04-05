@@ -106,6 +106,7 @@ const DP = (() => {
       _sessionTimerId = null;
     }
     _sessionPromptShown = false;
+    document.removeEventListener('click', _renewSessionOnActivity);
     const timerEl = $('dp-session-timer');
     const rowEl = $('dp-session-timer-row');
     const extBtn = $('dp-session-extend-btn');
@@ -163,6 +164,14 @@ const DP = (() => {
     }
   }
 
+  function _renewSessionOnActivity() {
+    if (!currentUser || !hasSessionMarker()) return;
+    const expiresAt = getSessionExpiry();
+    if (!expiresAt || expiresAt <= Date.now()) return;
+    setSessionExpiry(Date.now() + SESSION_DURATION_MS);
+    _sessionPromptShown = false;
+  }
+
   function beginSessionTimer(reset) {
     let expiresAt = getSessionExpiry();
     if (reset || !expiresAt || expiresAt <= Date.now()) {
@@ -173,6 +182,10 @@ const DP = (() => {
     updateSessionTimer();
     if (_sessionTimerId) clearInterval(_sessionTimerId);
     _sessionTimerId = setInterval(updateSessionTimer, 1000);
+
+    // Auto-renew session on user interaction
+    document.removeEventListener('click', _renewSessionOnActivity);
+    document.addEventListener('click', _renewSessionOnActivity);
   }
 
   function trackPageVisit() {
@@ -454,7 +467,7 @@ const DP = (() => {
   }
 
   // ── Modal system ───────────────────────────────────────────────────────────
-  function openModal(html, { title = '', confirmLabel = 'Save', onConfirm = null, wide = false } = {}) {
+  function openModal(html, { title = '', confirmLabel = 'Save', onConfirm = null, wide = false, fullpage = false } = {}) {
     const overlay = $('dp-modal-overlay');
     const modalEl = $('dp-modal');
     const titleEl = $('dp-modal-title');
@@ -463,7 +476,8 @@ const DP = (() => {
 
     titleEl.textContent = title;
     bodyEl.innerHTML = html;
-    modalEl.classList.toggle('dp-modal--wide', !!wide);
+    modalEl.classList.toggle('dp-modal--wide', !!wide && !fullpage);
+    modalEl.classList.toggle('dp-modal--fullpage', !!fullpage);
 
     if (onConfirm) {
       footerEl.innerHTML = `
@@ -480,6 +494,8 @@ const DP = (() => {
 
   function closeModal() {
     _destroyTiptap();
+    const modalEl = $('dp-modal');
+    modalEl.classList.remove('dp-modal--fullpage');
     $('dp-modal-overlay').classList.remove('dp-modal--open');
   }
 
@@ -1203,13 +1219,16 @@ const DP = (() => {
   }
 
   async function viewPost(id) {
-    const [postData, commentsData] = await Promise.all([
+    const [postData, commentsData, repliesData] = await Promise.all([
       api('GET', `posts?id=${id}`),
       api('GET', `comments?post_id=${id}`),
+      api('GET', `replies?parent_type=post&parent_id=${id}`),
     ]);
     if (!postData?.post) return;
     const p = postData.post;
     const comments = commentsData?.comments || [];
+    const replies = repliesData?.replies || [];
+    const showReplies = TEAM_BOARDS.includes(p.board);
     const boardTitles = { announcements: 'Announcements', documents: 'Project Documents', minutes: 'Meeting Minutes', ...TEAM_BOARD_TITLES };
 
     // ── Files ──────────────────────────────────────────────────────
@@ -1341,6 +1360,21 @@ const DP = (() => {
         </div>
       </details>` : '';
 
+    // ── Replies (Team Boards) ─────────────────────────────────────
+    const repliesHtml = showReplies ? `
+      <div class="dp-replies-section">
+        <div class="dp-replies-header">Replies <span class="dp-history-count" id="dp-reply-count">${replies.length}</span></div>
+        <div id="dp-replies-list" class="dp-replies-list">
+          ${_renderRepliesHtml(replies, 'post', id)}
+        </div>
+        <div class="dp-reply-form">
+          <textarea id="dp-reply-input" class="dp-input dp-textarea" placeholder="Write a reply…" rows="4"></textarea>
+          <div style="margin-top:8px;text-align:right">
+            <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addReply('post',${id})">Post Reply</button>
+          </div>
+        </div>
+      </div>` : '';
+
     // ── Comments ───────────────────────────────────────────────────
     const commentsHtml = `
       <div class="dp-comments-section">
@@ -1373,6 +1407,7 @@ const DP = (() => {
         ${imagesHtml}
         ${attachHtml}
         ${historyHtml}
+        ${repliesHtml}
         ${commentsHtml}
       </div>
     `, { title: p.title, wide: true });
@@ -1459,6 +1494,7 @@ const DP = (() => {
       title: revisionOf
         ? `Revise V${revisionOf.versionNumber} → V${revisionOf.versionNumber + 1} — ${boardTitles[boardName] || boardName}`
         : `New Post — ${boardTitles[boardName] || boardName}`,
+      fullpage: true,
       confirmLabel: revisionOf ? 'Submit Revision' : 'Create Post',
       onConfirm: async () => {
         const board   = boardName;
@@ -1624,6 +1660,7 @@ const DP = (() => {
       </div>
     `, {
       title: 'Edit Post',
+      fullpage: true,
       confirmLabel: 'Save Changes',
       onConfirm: async () => {
         const title     = $('ep-title').value.trim();
@@ -1998,6 +2035,49 @@ const DP = (() => {
       const count = $('dp-comment-count');
       if (list)  list.innerHTML  = _renderCommentsHtml(data?.comments || [], postId);
       if (count) count.textContent = String((data?.comments || []).length);
+    }
+  }
+
+  // ── Replies (답글) ──────────────────────────────────────────────────────────
+  function _renderRepliesHtml(replies, parentType, parentId) {
+    if (!replies.length) {
+      return `<p class="dp-text-muted" style="font-size:13px;padding:4px 0">No replies yet.</p>`;
+    }
+    return replies.map(r => `
+      <div class="dp-reply-item" id="dp-reply-${r.id}">
+        <div class="dp-reply-header">
+          <span class="dp-reply-author">${esc(r.author_name)}</span>
+          <span class="dp-reply-date">${fmtFull(r.created_at)}</span>
+          ${(currentUser?.role === 'admin' || r.author_id === currentUser?.id) ? `<button class="dp-reply-delete" onclick="DP.deleteReply(${r.id},'${parentType}',${parentId})" title="Delete">&times;</button>` : ''}
+        </div>
+        <div class="dp-reply-body">${_sanitizeHtml(r.content)}</div>
+      </div>`).join('');
+  }
+
+  async function addReply(parentType, parentId) {
+    const input   = $('dp-reply-input');
+    const content = input?.value.trim();
+    if (!content) { showToast('Reply cannot be empty.', 'error'); return; }
+    const result = await api('POST', 'replies', { parent_type: parentType, parent_id: parentId, content });
+    if (result) {
+      input.value = '';
+      const data = await api('GET', `replies?parent_type=${parentType}&parent_id=${parentId}`);
+      const list  = $('dp-replies-list');
+      const count = $('dp-reply-count');
+      if (list)  list.innerHTML  = _renderRepliesHtml(data?.replies || [], parentType, parentId);
+      if (count) count.textContent = String((data?.replies || []).length);
+    }
+  }
+
+  async function deleteReply(replyId, parentType, parentId) {
+    if (!confirm('Delete this reply?')) return;
+    const result = await api('DELETE', `replies?id=${replyId}`);
+    if (result) {
+      const data = await api('GET', `replies?parent_type=${parentType}&parent_id=${parentId}`);
+      const list  = $('dp-replies-list');
+      const count = $('dp-reply-count');
+      if (list)  list.innerHTML  = _renderRepliesHtml(data?.replies || [], parentType, parentId);
+      if (count) count.textContent = String((data?.replies || []).length);
     }
   }
 
@@ -3805,9 +3885,11 @@ const DP = (() => {
     _waitForTiptap(() => _initTiptap('en-tiptap', _legacyToHtml(note.content)));
   }
 
-  function viewNote(id) {
+  async function viewNote(id) {
     const note = _allNotes.find(n => n.id === id);
     if (!note) return;
+    const repliesData = await api('GET', `replies?parent_type=note&parent_id=${id}`);
+    const replies = repliesData?.replies || [];
     const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
     const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
     const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
@@ -3831,6 +3913,18 @@ const DP = (() => {
           ${note.status === 'open' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP._resolveNote(${note.id}),80)">✓ Resolve</button>` : ''}
           <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.editNote(${note.id}),80)">✏ Edit</button>
           ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.closeModal();setTimeout(()=>DP.deleteNote(${note.id}),80)">Delete</button>` : ''}
+        </div>
+        <div class="dp-replies-section" style="margin-top:20px">
+          <div class="dp-replies-header">Replies <span class="dp-history-count" id="dp-reply-count">${replies.length}</span></div>
+          <div id="dp-replies-list" class="dp-replies-list">
+            ${_renderRepliesHtml(replies, 'note', id)}
+          </div>
+          <div class="dp-reply-form">
+            <textarea id="dp-reply-input" class="dp-input dp-textarea" placeholder="Write a reply…" rows="4"></textarea>
+            <div style="margin-top:8px;text-align:right">
+              <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addReply('note',${id})">Post Reply</button>
+            </div>
+          </div>
         </div>
       </div>
     `, { title: esc(note.title), wide: true });
@@ -3980,6 +4074,8 @@ const DP = (() => {
     editNote,
     deleteNote,
     _resolveNote,
+    addReply,
+    deleteReply,
   };
 })();
 
