@@ -4,6 +4,7 @@
   var state = {
     items: [],
     columns: [],
+    registeredCount: 176,
     query: '',
     category: 'all',
   };
@@ -34,8 +35,9 @@
       .then(function (data) {
         state.items = Array.isArray(data && data.items) ? data.items : [];
         state.columns = Array.isArray(data && data.columns) && data.columns.length ? data.columns : getDefaultColumns();
+        state.registeredCount = Math.max(0, parseInt(data && data.registered_count, 10) || 176);
         populateCategories(state.items);
-        renderSummary(state.items);
+        renderSummary();
         render();
       })
       .catch(function () {
@@ -62,21 +64,10 @@
     }).join('');
   }
 
-  function renderSummary(items) {
+  function renderSummary() {
     var wrap = document.getElementById('wosm-members-summary');
     if (!wrap) return;
-    var categories = {};
-    (items || []).forEach(function (item) {
-      var key = String(item.membership_category || '기타').trim() || '기타';
-      categories[key] = (categories[key] || 0) + 1;
-    });
-    var summaryCards = [
-      '<div class="members-summary-card"><strong>' + GW.formatNumber(items.length) + '</strong><span>등록 국가</span></div>'
-    ];
-    Object.keys(categories).slice(0, 4).forEach(function (key) {
-      summaryCards.push('<div class="members-summary-card"><strong>' + GW.formatNumber(categories[key]) + '</strong><span>' + GW.escapeHtml(key) + '</span></div>');
-    });
-    wrap.innerHTML = summaryCards.join('');
+    wrap.textContent = '등록 국가 ' + GW.formatNumber(state.registeredCount) + '개국';
   }
 
   function render() {

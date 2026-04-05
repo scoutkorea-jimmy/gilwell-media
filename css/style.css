@@ -9071,30 +9071,12 @@ body.wosm-members-page #main-content {
 .members-filter-select:focus {
   border-color: var(--accent);
 }
-.members-summary-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
-}
-.members-summary-card {
-  min-height: 96px;
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.members-summary-card strong {
+.members-summary-inline {
+  margin-top: 16px;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 28px;
-  line-height: 1;
-  color: var(--ink);
-}
-.members-summary-card span {
   font-size: 12px;
-  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 .members-page-wrap {
@@ -9182,21 +9164,9 @@ body.wosm-members-page #main-content {
   color: var(--muted);
 }
 
-@media (max-width: 900px) {
-  .members-summary-strip {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 @media (max-width: 640px) {
   .members-page-wrap {
     padding-bottom: 60px;
-  }
-
-  .members-summary-strip {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
   }
 
   .members-search-card {

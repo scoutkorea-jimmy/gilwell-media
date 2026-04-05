@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.00
+ * Version: 03.052.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -59,6 +59,7 @@
   var _picksSearchTimer = null;
   var _wosmMembers   = [];
   var _wosmColumns   = [];
+  var _wosmRegisteredCount = 176;
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
   var _wosmImportSavedMapping = {
@@ -3674,6 +3675,7 @@
       _wosmMembers = Array.isArray(data && data.items) ? data.items : [];
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : _getDefaultWosmColumns();
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || {});
+      _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || 176);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || 0;
       _renderWosmMembersEditor();
     }).catch(function () {
@@ -3689,6 +3691,8 @@
     if (!el) return;
     _renderWosmImportDefaultFields();
     _renderWosmColumnsEditor();
+    var countInput = document.getElementById('wosm-registered-count');
+    if (countInput) countInput.value = String(_wosmRegisteredCount);
     var visibleItems = _getFilteredWosmMembers();
     var editableColumns = _getEditableWosmColumns();
     if (meta) {
@@ -3902,14 +3906,16 @@
     });
     var columns = _normalizeWosmColumnsBeforeSave();
     var importMapping = _collectWosmImportDefaultFields();
+    var registeredCount = Math.max(0, parseInt(((document.getElementById('wosm-registered-count') || {}).value || _wosmRegisteredCount), 10) || 0);
     _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/wosm-members', {
       method: 'PUT',
-      body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, if_revision: _wosmMembersRevision }),
+      body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, registered_count: registeredCount, if_revision: _wosmMembersRevision }),
     }).then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : payload;
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : columns;
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || importMapping);
+      _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || registeredCount);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
       GW.showToast('세계연맹 회원국 현황을 저장했습니다', 'success');
       _renderWosmMembersEditor();
