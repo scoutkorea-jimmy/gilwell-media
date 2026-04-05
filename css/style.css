@@ -1077,6 +1077,14 @@ p { margin-bottom: 6px; }
   margin:      0 auto;
 }
 
+.nav[data-managed-nav] {
+  min-height: 48px;
+}
+
+.nav[data-managed-nav]:not(.is-ready) {
+  visibility: hidden;
+}
+
 .nav a {
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-meta);
@@ -9106,27 +9114,30 @@ body.wosm-members-page #main-content {
   vertical-align: middle;
   text-align: left;
 }
-.members-table th:first-child,
-.members-table td:first-child,
-.members-table th:nth-child(3),
-.members-table td:nth-child(3),
-.members-table th:nth-child(5),
-.members-table td:nth-child(5),
-.members-table th:last-child,
-.members-table td:last-child {
+.members-table .members-col--sort,
+.members-table .members-col--code,
+.members-table .members-col--region,
+.members-table .members-col--language {
   text-align: center;
 }
 .members-table td {
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-.members-table td:nth-child(2),
-.members-table td:last-child {
+.members-table .members-col--sort,
+.members-table .members-col--code,
+.members-table .members-col--language {
   white-space: nowrap;
 }
-.members-table td:nth-child(3),
-.members-table td:nth-child(4) {
+.members-table .members-col--organization,
+.members-table .members-col--status {
   color: var(--muted);
+}
+.members-row.is-representative td {
+  background: rgba(36, 135, 55, 0.045);
+}
+.members-row.is-representative td:first-child {
+  box-shadow: inset 3px 0 0 rgba(36, 135, 55, 0.75);
 }
 .member-country-names {
   display: flex;
@@ -9154,11 +9165,34 @@ body.wosm-members-page #main-content {
   border-radius: 10px;
   box-shadow: 0 6px 14px rgba(0,0,0,0.04);
 }
+.member-country-card.is-representative {
+  border-color: rgba(36, 135, 55, 0.26);
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.06), #fff 28%);
+}
 .member-country-meta-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 14px;
+}
+.members-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(31,31,31,0.12);
+  background: rgba(31,31,31,0.04);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.members-pill.is-representative {
+  border-color: rgba(36, 135, 55, 0.28);
+  background: rgba(36, 135, 55, 0.12);
+  color: #1b5f29;
 }
 .member-country-label {
   display: block;

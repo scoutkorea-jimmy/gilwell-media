@@ -108,7 +108,8 @@
     var head = document.getElementById('wosm-members-head');
     if (!head) return;
     head.innerHTML = '<tr>' + state.columns.map(function (column) {
-      return '<th>' + formatColumnLabel(column) + '</th>';
+      var role = getColumnRole(column);
+      return '<th class="members-col members-col--' + role + '">' + formatColumnLabel(column) + '</th>';
     }).join('') + '</tr>';
   }
 
@@ -116,7 +117,8 @@
     var colgroup = document.getElementById('wosm-members-colgroup');
     if (!colgroup) return;
     colgroup.innerHTML = state.columns.map(function (column) {
-      return '<col style="width:' + getColumnWidth(column) + ';">';
+      var role = getColumnRole(column);
+      return '<col class="members-col members-col--' + role + '" style="width:' + getColumnWidth(column) + ';">';
     }).join('');
   }
 
@@ -128,8 +130,10 @@
       return;
     }
     body.innerHTML = items.map(function (item) {
-      return '<tr>' + state.columns.map(function (column) {
-        return '<td>' + renderColumnValue(item, column) + '</td>';
+      var rowClass = isRepresentativeMembership(item.membership_category) ? ' members-row is-representative' : ' members-row';
+      return '<tr class="' + rowClass.trim() + '">' + state.columns.map(function (column) {
+        var role = getColumnRole(column);
+        return '<td class="members-col members-col--' + role + '">' + renderColumnValue(item, column) + '</td>';
       }).join('') + '</tr>';
     }).join('');
   }
@@ -145,7 +149,8 @@
       var restColumns = state.columns.filter(function (column) {
         return column && column.key !== 'country_names';
       });
-      return '<article class="member-country-card">' +
+      var cardClass = isRepresentativeMembership(item.membership_category) ? 'member-country-card is-representative' : 'member-country-card';
+      return '<article class="' + cardClass + '">' +
         '<div class="member-country-head">' + renderNameBlock(item) + '</div>' +
         '<div class="member-country-meta-grid">' +
           restColumns.map(function (column) {
@@ -158,11 +163,19 @@
 
   function renderColumnValue(item, column) {
     if (!column || column.key === 'country_names') return renderNameBlock(item);
-    return GW.escapeHtml(getPlainColumnValue(item, column) || '—');
+    return renderValueMarkup(item, column);
   }
 
   function renderCardValue(item, column) {
-    return GW.escapeHtml(getPlainColumnValue(item, column) || '—');
+    return renderValueMarkup(item, column);
+  }
+
+  function renderValueMarkup(item, column) {
+    var value = getPlainColumnValue(item, column) || '—';
+    if (column && column.key === 'membership_category') {
+      return renderMembershipBadge(value);
+    }
+    return GW.escapeHtml(value);
   }
 
   function getPlainColumnValue(item, column) {
@@ -193,17 +206,42 @@
   }
 
   function getColumnWidth(column) {
+    var role = getColumnRole(column);
+    if (role === 'country') return '24%';
+    if (role === 'sort') return '7%';
+    if (role === 'code') return '10%';
+    if (role === 'organization') return '23%';
+    if (role === 'region') return '12%';
+    if (role === 'language') return '10%';
+    if (role === 'membership') return '12%';
+    if (role === 'status') return '16%';
+    return '14%';
+  }
+
+  function getColumnRole(column) {
     var key = String(column && column.key || '').toLowerCase();
     var label = String(column && column.label || '').toLowerCase();
-    if (key === 'country_names') return '32%';
-    if (key.indexOf('sort') >= 0 || label.indexOf('정렬') >= 0 || label.indexOf('순번') >= 0) return '8%';
-    if (key.indexOf('language') >= 0 || label.indexOf('언어') >= 0) return '10%';
-    if (key.indexOf('region') >= 0 || label.indexOf('지역') >= 0) return '13%';
-    if (key.indexOf('nso') >= 0 || key.indexOf('nsa') >= 0 || label.indexOf('nso') >= 0 || label.indexOf('nsa') >= 0) return '11%';
-    if (key.indexOf('category') >= 0 || label.indexOf('자격') >= 0) return '14%';
-    if (key.indexOf('organization') >= 0 || label.indexOf('연맹 명칭') >= 0 || label.indexOf('조직') >= 0) return '22%';
-    if (key.indexOf('status') >= 0 || label.indexOf('상태') >= 0) return '18%';
-    return '14%';
+    if (key === 'country_names') return 'country';
+    if (key.indexOf('sort') >= 0 || label.indexOf('정렬') >= 0 || label.indexOf('순번') >= 0) return 'sort';
+    if (key.indexOf('nso') >= 0 || key.indexOf('nsa') >= 0 || label.indexOf('nso') >= 0 || label.indexOf('nsa') >= 0) return 'code';
+    if (key.indexOf('organization') >= 0 || label.indexOf('연맹 명칭') >= 0 || label.indexOf('조직') >= 0) return 'organization';
+    if (key.indexOf('region') >= 0 || label.indexOf('지역') >= 0) return 'region';
+    if (key.indexOf('language') >= 0 || label.indexOf('언어') >= 0) return 'language';
+    if (key.indexOf('category') >= 0 || label.indexOf('자격') >= 0) return 'membership';
+    if (key.indexOf('status') >= 0 || label.indexOf('상태') >= 0) return 'status';
+    return 'custom';
+  }
+
+  function renderMembershipBadge(value) {
+    var text = String(value || '').trim() || '—';
+    var representative = isRepresentativeMembership(text);
+    var className = representative ? 'members-pill is-representative' : 'members-pill';
+    return '<span class="' + className + '">' + GW.escapeHtml(text) + '</span>';
+  }
+
+  function isRepresentativeMembership(value) {
+    var normalized = String(value || '').trim().toLowerCase();
+    return normalized === 'nso' || normalized === 'nso federation';
   }
 
   function formatColumnLabel(column) {
