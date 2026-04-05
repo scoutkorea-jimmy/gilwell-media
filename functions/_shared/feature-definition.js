@@ -577,7 +577,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET/PUT /api/settings/board-layout\` — 게시판 레이아웃/페이지 사이즈
 - \`GET/PUT /api/settings/ticker\` — 뉴스 티커
 - \`GET/PUT /api/settings/contributors\` — 기고자 목록
-- \`GET/PUT /api/settings/wosm-members\` — 세계연맹 회원국 현황. WOSM 제공 \`xlsx\`를 관리자에서 가져온 뒤 한국어 / 영어 / 프랑스어 / 회원 자격 / 회원 수 / 상태 설명을 계속 수정한다.
+- \`GET/PUT /api/settings/board-copy\` — 공개 게시판 상단 설명 문구 설정
+- \`GET/PUT /api/settings/wosm-members\` — 세계연맹 회원국 현황. WOSM 제공 \`xlsx\`를 관리자에서 가져온 뒤 시트/열 매핑을 선택하고 한국어 / 영어 / 프랑스어 / 회원 자격 / 상태 설명을 계속 수정한다.
 - \`GET/PUT /api/settings/editors\` — 편집자 접근 관리
 - \`GET/PUT /api/settings/translations\` — UI 번역
 - \`GET/PUT /api/settings/calendar-copy\` — 캘린더 카피 설정

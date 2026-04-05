@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.109.02';
-  GW.ADMIN_VERSION = '03.049.01';
+  GW.APP_VERSION = '00.110.00';
+  GW.ADMIN_VERSION = '03.050.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1467,6 +1467,7 @@
       if (btn) btn.classList.toggle('active', l === GW.lang);
     });
     document.documentElement.lang = GW.lang === 'en' ? 'en' : 'ko';
+    if (GW._boardCopyData) GW.applyBoardCopySettings(GW._boardCopyData);
   };
 
   /** Load custom translation overrides from API then apply. */
@@ -1539,6 +1540,34 @@
       .catch(function () {});
   };
 
+  GW.applyBoardCopySettings = function (data) {
+    var copy = data && typeof data === 'object' ? data : {};
+    document.querySelectorAll('[data-board-copy-key]').forEach(function (el) {
+      var key = el.getAttribute('data-board-copy-key');
+      if (!key) return;
+      var entry = copy[key];
+      if (!entry || !entry.description) return;
+      el.textContent = entry.description;
+    });
+  };
+
+  GW.loadBoardCopySettings = function () {
+    var cacheKey = 'gw_cache_board_copy_v1';
+    var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
+    if (cached) {
+      GW._boardCopyData = cached;
+      GW.applyBoardCopySettings(cached);
+    }
+    fetch('/api/settings/board-copy', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        GW.writeCachedPayload(cacheKey, data);
+        GW._boardCopyData = data;
+        GW.applyBoardCopySettings(data);
+      })
+      .catch(function () {});
+  };
+
   GW._renderStats = function () {
     var d   = GW._statsData;
     if (!d) return;
@@ -1607,6 +1636,7 @@
     if (opts.setDate !== false) GW.setMastheadDate();
     if (opts.markActiveNav !== false) GW.markActiveNav();
     GW.loadBoardLayoutSettings();
+    if (opts.loadBoardCopy !== false) GW.loadBoardCopySettings();
     if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
     if (opts.loadStats !== false) GW.loadStats();
     if (opts.loadTranslations !== false) GW.loadTranslations();

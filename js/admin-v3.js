@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.049.01
+ * Version: 03.050.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -48,6 +48,8 @@
   var _selectedWriteTags = [];
   var _tagInlineEdit    = null;
   var _siteMeta      = {};
+  var _boardCopy     = {};
+  var _boardCopyRevision = 0;
   var _contributors  = [];
   var _editors       = [];
   var _translations  = {};
@@ -306,6 +308,7 @@
     document.getElementById('hero-save-btn').addEventListener('click', _saveHero);
     document.getElementById('tags-save-btn').addEventListener('click', _saveTags);
     document.getElementById('meta-save-btn').addEventListener('click', _saveMeta);
+    document.getElementById('board-copy-save-btn').addEventListener('click', _saveBoardCopy);
     document.getElementById('author-save-btn').addEventListener('click', _saveAuthor);
     document.getElementById('banner-save-btn').addEventListener('click', _saveBanner);
     document.getElementById('ticker-save-btn').addEventListener('click', _saveTicker);
@@ -572,7 +575,7 @@
 
   function _sectionLabel(s) {
     var labels = {
-      hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO',
+      hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
     };
@@ -593,6 +596,7 @@
     else if (section === 'picks')   _loadPicksUI();
     else if (section === 'tags')    _loadTagSettingsUI();
     else if (section === 'meta')    _loadMetaUI();
+    else if (section === 'board-copy') _loadBoardCopy();
     else if (section === 'author')  _loadAuthorUI();
     else if (section === 'banner')  _loadBannerUI();
     else if (section === 'ticker')  _loadTickerUI();
@@ -3283,6 +3287,68 @@
     _apiFetch('/api/settings/site-meta', { method: 'PUT', body: JSON.stringify(body) })
       .then(function () {
         GW.showToast('메타태그 설정을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
+      .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SETTINGS – BOARD COPY
+  ══════════════════════════════════════════════════════════ */
+  var BOARD_COPY_PAGES = [
+    { key: 'latest', label: '최근 1개월 소식', note: '/latest' },
+    { key: 'korea', label: 'Korea / KSA', note: '/korea' },
+    { key: 'apr', label: 'APR', note: '/apr' },
+    { key: 'wosm', label: 'WOSM', note: '/wosm' },
+    { key: 'people', label: '스카우트 인물', note: '/people' },
+    { key: 'glossary', label: '용어집', note: '/glossary' },
+    { key: 'calendar', label: '캘린더', note: '/calendar' },
+    { key: 'contributors', label: '도움을 주신 분들', note: '/contributors' },
+    { key: 'wosm_members', label: '세계연맹 회원국 현황', note: '/wosm-members' },
+  ];
+
+  function _loadBoardCopy() {
+    var el = document.getElementById('board-copy-editor');
+    if (!el) return;
+    el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    _apiFetch('/api/settings/board-copy').then(function (data) {
+      _boardCopy = data || {};
+      _boardCopyRevision = parseInt(data && data.revision, 10) || 0;
+      _renderBoardCopyEditor();
+    }).catch(function () {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+    });
+  }
+
+  function _renderBoardCopyEditor() {
+    var el = document.getElementById('board-copy-editor');
+    if (!el) return;
+    el.innerHTML = '<div class="v3-board-copy-grid">' + BOARD_COPY_PAGES.map(function (page) {
+      var item = _boardCopy[page.key] || {};
+      return '<div class="v3-board-copy-card">' +
+        '<strong>' + GW.escapeHtml(page.label) + '</strong>' +
+        '<span>' + GW.escapeHtml(page.note) + '</span>' +
+        '<textarea class="v3-textarea" rows="4" id="board-copy-' + page.key + '" placeholder="게시판 설명을 입력하세요.">' + GW.escapeHtml(item.description || '') + '</textarea>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function _saveBoardCopy() {
+    var payload = {};
+    BOARD_COPY_PAGES.forEach(function (page) {
+      payload[page.key] = {
+        description: ((document.getElementById('board-copy-' + page.key) || {}).value || '').trim(),
+      };
+    });
+    payload.if_revision = _boardCopyRevision;
+    var btn = document.getElementById('board-copy-save-btn');
+    _setButtonBusy(btn, '저장 중…');
+    _apiFetch('/api/settings/board-copy', { method: 'PUT', body: JSON.stringify(payload) })
+      .then(function (data) {
+        _boardCopy = data || payload;
+        _boardCopyRevision = parseInt(data && data.revision, 10) || (_boardCopyRevision + 1);
+        GW.showToast('게시판 설명을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
       })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })

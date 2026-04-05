@@ -90,11 +90,13 @@
       .then(function (data) {
         state.copy = Object.assign(defaultCalendarCopy(), data && data.copy || {});
         applyCalendarCopy();
+        if (window.GW && GW.loadBoardCopySettings) GW.loadBoardCopySettings();
         render();
       })
       .catch(function () {
         state.copy = defaultCalendarCopy();
         applyCalendarCopy();
+        if (window.GW && GW.loadBoardCopySettings) GW.loadBoardCopySettings();
       });
   }
 

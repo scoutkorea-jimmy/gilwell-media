@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=03.049.01">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=03.050.00">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -25,7 +25,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.049.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.050.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.049.01</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.050.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -111,6 +111,10 @@
         <button class="v3-nav-item" data-panel="settings" data-settings-section="meta">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="7"/><line x1="8" y1="4" x2="8" y2="8"/><line x1="8" y1="10" x2="8" y2="12"/></svg>
           메타태그 / SEO
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="board-copy">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5h12"/><path d="M2 8h12"/><path d="M2 12.5h8"/><circle cx="12.5" cy="12.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+          게시판 설명
         </button>
         <button class="v3-nav-item" data-panel="settings" data-settings-section="author">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15 a6 6 0 0 1 12 0"/></svg>
@@ -605,6 +609,7 @@
             <button class="v3-settings-nav-btn" data-section="picks">에디터 추천</button>
             <button class="v3-settings-nav-btn" data-section="tags">태그 / 글머리</button>
             <button class="v3-settings-nav-btn" data-section="meta">메타태그 / SEO</button>
+            <button class="v3-settings-nav-btn" data-section="board-copy">게시판 설명</button>
             <button class="v3-settings-nav-btn" data-section="author">저자 / 고지</button>
             <button class="v3-settings-nav-btn" data-section="banner">게시판 배너</button>
             <button class="v3-settings-nav-btn" data-section="ticker">티커</button>
@@ -763,6 +768,19 @@
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="meta-save-btn">저장</button>
                 </div>
                 <div id="meta-editor">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="v3-settings-section" id="settings-board-copy">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <h2 class="v3-card-title">게시판 설명</h2>
+                  <button class="v3-btn v3-btn-primary v3-btn-sm" id="board-copy-save-btn">저장</button>
+                </div>
+                <p class="v3-card-desc v3-mb-16">각 공개 게시판 상단 설명 문구를 여기에서 직접 수정합니다. 저장 후 최신 문구가 공개 페이지에 반영됩니다.</p>
+                <div id="board-copy-editor">
                   <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
                 </div>
               </div>
@@ -1227,7 +1245,7 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/js/main.js?v=03.049.01"></script>
-<script src="/js/admin-v3.js?v=03.049.01"></script>
+<script src="/js/main.js?v=03.050.00"></script>
+<script src="/js/admin-v3.js?v=03.050.00"></script>
 </body>
 </html>
