@@ -90,7 +90,6 @@
       var haystack = [
         item.country_ko,
         item.country_en,
-        item.country_fr,
         item.membership_category,
         item.status_description,
       ].concat(extra).join(' ').toLowerCase();
@@ -165,11 +164,9 @@
   function renderNameBlock(item) {
     var ko = String(item.country_ko || '').trim();
     var en = String(item.country_en || '').trim();
-    var fr = String(item.country_fr || '').trim();
     return '<div class="member-country-names">' +
       '<strong>' + GW.escapeHtml(ko || '한국어 미입력') + '</strong>' +
       '<span>' + GW.escapeHtml(en || '—') + '</span>' +
-      '<span>' + GW.escapeHtml(fr || '—') + '</span>' +
     '</div>';
   }
 

@@ -24,7 +24,7 @@ export const DEFAULT_BOARD_COPY = Object.freeze({
     description: '도움을 주신 모든 분들께 진심으로 감사드립니다.',
   },
   wosm_members: {
-    description: 'WOSM 회원국 현황을 한국어, 영어, 프랑스어 기준으로 함께 확인합니다. 원본 파일은 관리자에서 `xlsx`를 가져온 뒤 열 매핑을 선택해 불러오고 계속 수정할 수 있습니다.',
+    description: 'WOSM 회원국 현황을 한국어와 영어 기준으로 확인하고, 필요한 공개 열은 관리자에서 직접 구성할 수 있습니다. 원본 파일은 `xlsx` 업로드 뒤 열 매핑과 미리보기를 거쳐 불러옵니다.',
   },
 });
 
