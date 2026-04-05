@@ -6,8 +6,8 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.09`
-- Current admin version: `V03.052.06`
+- Current site version: `V00.111.10`
+- Current admin version: `V03.052.07`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -87,7 +87,7 @@ Homepage AI/documentation rules:
 - Homepage work should follow `CHATGPT.md`
 - KMS in the admin page is the operational source of truth
 - `docs/feature-definition.md` is the repository snapshot of that KMS content
-- `wosm-members` data is imported from WOSM-provided `xlsx` files and then maintained in the admin settings UI
+- `wosm-members` data is imported from WOSM-provided `xlsx` files, fills missing Korean country names from English on first import, and is then maintained in the admin settings UI
 
 **Auth flow:**
 1. Admin POSTs password to `/api/admin/login`
