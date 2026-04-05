@@ -846,12 +846,17 @@
 .v3-mb-16 { margin-bottom: 16px; }
 
 /* ── Marketing V3 ───────────────────────────────────────── */
+.marketing-layout-shell {
+  width: min(1760px, 100%);
+  margin: 0 auto;
+}
 .marketing-stats-row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .marketing-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   margin-top: 24px;
+  align-items: start;
 }
 .marketing-panel { overflow: hidden; }
 .marketing-panel-wide { grid-column: 1 / -1; }
@@ -893,12 +898,19 @@
   overflow-x: auto;
   position: relative;
 }
+.marketing-chart-stage {
+  width: max-content;
+  min-width: 100%;
+  display: flex;
+  justify-content: center;
+}
 .marketing-flow-svg,
 .marketing-scatter-svg {
   display: block;
   width: auto;
   max-width: none;
   min-width: 1120px;
+  margin: 0 auto;
 }
 .marketing-flow-label,
 .marketing-flow-value,
@@ -1235,6 +1247,9 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 @media (max-width: 1200px) {
+  .marketing-layout-shell {
+    width: 100%;
+  }
   .marketing-grid,
   .marketing-stats-row {
     grid-template-columns: 1fr;
