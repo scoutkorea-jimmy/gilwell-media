@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.050.00
+ * Version: 03.051.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -60,6 +60,13 @@
   var _wosmMembers   = [];
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
+  var _wosmImportSavedMapping = {
+    country_ko: '',
+    country_en: 'Country Name option 1 E',
+    country_fr: 'Country Name option 1 F',
+    membership_category: 'WOSM membership category',
+    status_description: 'Status description',
+  };
   var _wosmImportFileName = '';
   var _wosmImportSheets = [];
   var _wosmImportSheetIndex = 0;
@@ -3672,6 +3679,7 @@
     if (meta) meta.textContent = '불러오는 중…';
     _apiFetch('/api/settings/wosm-members').then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : [];
+      _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || {});
       _wosmMembersRevision = parseInt(data && data.revision, 10) || 0;
       _renderWosmMembersEditor();
     }).catch(function () {
@@ -3684,6 +3692,7 @@
     var el = document.getElementById('wosm-members-editor');
     var meta = document.getElementById('wosm-members-meta');
     if (!el) return;
+    _renderWosmImportDefaultFields();
     var visibleItems = _getFilteredWosmMembers();
     if (meta) {
       meta.textContent = '총 ' + _wosmMembers.length + '개 항목 · 현재 표시 ' + visibleItems.length + '개 · revision ' + _wosmMembersRevision;
@@ -3729,6 +3738,30 @@
         _renderWosmMembersEditor();
       });
     });
+  }
+
+  function _renderWosmImportDefaultFields() {
+    var fields = {
+      'wosm-default-map-country-ko': _wosmImportSavedMapping.country_ko || '',
+      'wosm-default-map-country-en': _wosmImportSavedMapping.country_en || '',
+      'wosm-default-map-country-fr': _wosmImportSavedMapping.country_fr || '',
+      'wosm-default-map-category': _wosmImportSavedMapping.membership_category || '',
+      'wosm-default-map-status': _wosmImportSavedMapping.status_description || '',
+    };
+    Object.keys(fields).forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.value = fields[id];
+    });
+  }
+
+  function _collectWosmImportDefaultFields() {
+    return {
+      country_ko: ((document.getElementById('wosm-default-map-country-ko') || {}).value || '').trim(),
+      country_en: ((document.getElementById('wosm-default-map-country-en') || {}).value || '').trim(),
+      country_fr: ((document.getElementById('wosm-default-map-country-fr') || {}).value || '').trim(),
+      membership_category: ((document.getElementById('wosm-default-map-category') || {}).value || '').trim(),
+      status_description: ((document.getElementById('wosm-default-map-status') || {}).value || '').trim(),
+    };
   }
 
   function _renderWosmMemberCell(index, field, label, value, placeholder) {
@@ -3788,12 +3821,14 @@
     }).filter(function (item) {
       return item.country_ko || item.country_en || item.country_fr;
     });
+    var importMapping = _collectWosmImportDefaultFields();
     _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/wosm-members', {
       method: 'PUT',
-      body: JSON.stringify({ items: payload, if_revision: _wosmMembersRevision }),
+      body: JSON.stringify({ items: payload, import_mapping: importMapping, if_revision: _wosmMembersRevision }),
     }).then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : payload;
+      _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || importMapping);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
       GW.showToast('세계연맹 회원국 현황을 저장했습니다', 'success');
       _renderWosmMembersEditor();
@@ -3908,11 +3943,11 @@
   function _ensureWosmImportMapping() {
     if (_wosmImportMapping) return;
     _wosmImportMapping = {
-      'wosm-map-country-ko': '',
-      'wosm-map-country-en': '',
-      'wosm-map-country-fr': '',
-      'wosm-map-category': '',
-      'wosm-map-status': '',
+      'wosm-map-country-ko': _wosmImportSavedMapping.country_ko || '',
+      'wosm-map-country-en': _wosmImportSavedMapping.country_en || '',
+      'wosm-map-country-fr': _wosmImportSavedMapping.country_fr || '',
+      'wosm-map-category': _wosmImportSavedMapping.membership_category || '',
+      'wosm-map-status': _wosmImportSavedMapping.status_description || '',
     };
   }
 
@@ -3934,11 +3969,21 @@
   function _syncWosmImportMappingDefaults() {
     _ensureWosmImportMapping();
     var headers = _getCurrentWosmImportSheet().headers || [];
-    _wosmImportMapping['wosm-map-country-ko'] = _wosmImportMapping['wosm-map-country-ko'] || _guessWosmImportHeader(headers, ['Country name option 1 K', 'Country Name option 1 K', 'Country name ko', 'Country KO', '국가명', '한국어']);
-    _wosmImportMapping['wosm-map-country-en'] = _guessWosmImportHeader(headers, ['Country name option 1 E', 'Country Name option 1 E', 'Country name option 1 English', 'English', 'Country']);
-    _wosmImportMapping['wosm-map-country-fr'] = _guessWosmImportHeader(headers, ['Country name option 1 F', 'Country Name option 1 F', 'French', 'Francais', 'Français']);
-    _wosmImportMapping['wosm-map-category'] = _wosmImportMapping['wosm-map-category'] || _guessWosmImportHeader(headers, ['WOSM membership category', 'WOSM Membership category', 'Membership category', 'Category']);
-    _wosmImportMapping['wosm-map-status'] = _wosmImportMapping['wosm-map-status'] || _guessWosmImportHeader(headers, ['Status description', 'Status Description', 'Status', 'Description', '비고']);
+    _wosmImportMapping['wosm-map-country-ko'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_ko) || _guessWosmImportHeader(headers, ['Country name option 1 K', 'Country Name option 1 K', 'Country name ko', 'Country KO', '국가명', '한국어']);
+    _wosmImportMapping['wosm-map-country-en'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_en) || _guessWosmImportHeader(headers, ['Country name option 1 E', 'Country Name option 1 E', 'Country name option 1 English', 'English', 'Country']);
+    _wosmImportMapping['wosm-map-country-fr'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_fr) || _guessWosmImportHeader(headers, ['Country name option 1 F', 'Country Name option 1 F', 'French', 'Francais', 'Français']);
+    _wosmImportMapping['wosm-map-category'] = _findMatchingHeader(headers, _wosmImportSavedMapping.membership_category) || _guessWosmImportHeader(headers, ['WOSM membership category', 'WOSM Membership category', 'Membership category', 'Category']);
+    _wosmImportMapping['wosm-map-status'] = _findMatchingHeader(headers, _wosmImportSavedMapping.status_description) || _guessWosmImportHeader(headers, ['Status description', 'Status Description', 'Status', 'Description', '비고']);
+  }
+
+  function _findMatchingHeader(headers, preferred) {
+    var list = Array.isArray(headers) ? headers : [];
+    var normalizedPreferred = _normalizeImportHeader(preferred);
+    if (!normalizedPreferred) return '';
+    for (var i = 0; i < list.length; i += 1) {
+      if (_normalizeImportHeader(list[i]) === normalizedPreferred) return list[i];
+    }
+    return '';
   }
 
   function _openWosmImportModal() {

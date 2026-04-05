@@ -91,7 +91,7 @@
 - `/admin` : 관리자 콘솔 V3 (사이드바 기반 단일 페이지)
 - `/kms` : 관리자만 접근 가능한 KMS (기능정의서)
 - 관리자 콘솔은 좌측 고정 사이드바 + 우측 콘텐츠 패널 구조다.
-- 사이드바 섹션: `개요`, `콘텐츠`, `사이트 설정`
+- 사이드바 섹션: `운영`, `콘텐츠 제작`, `콘텐츠 데이터`, `홈 · 노출`, `시스템 설정`
 - 패널 전환은 사이드바 항목 클릭으로 이루어지며, URL 변경 없이 단일 페이지 내에서 전환된다.
 
 ## 2. 공통 데이터 규칙
@@ -578,7 +578,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET/PUT /api/settings/ticker` — 뉴스 티커
 - `GET/PUT /api/settings/contributors` — 기고자 목록
 - `GET/PUT /api/settings/board-copy` — 공개 게시판 상단 설명 문구 설정
-- `GET/PUT /api/settings/wosm-members` — 세계연맹 회원국 현황. WOSM 제공 `xlsx`를 관리자에서 가져온 뒤 시트/열 매핑을 선택하고 한국어 / 영어 / 프랑스어 / 회원 자격 / 상태 설명을 계속 수정한다.
+- `GET/PUT /api/settings/wosm-members` — 세계연맹 회원국 현황. WOSM 제공 `xlsx`를 관리자에서 가져온 뒤 시트/열 매핑을 선택하고 한국어 / 영어 / 프랑스어 / 회원 자격 / 상태 설명을 계속 수정한다. 기본 열 이름도 관리자 설정에 저장한다.
 - `GET/PUT /api/settings/editors` — 편집자 접근 관리
 - `GET/PUT /api/settings/translations` — UI 번역
 - `GET/PUT /api/settings/calendar-copy` — 캘린더 카피 설정
