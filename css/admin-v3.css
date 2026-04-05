@@ -981,7 +981,7 @@
 }
 .v3-members-head {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(180px, .9fr) minmax(96px, .45fr) minmax(0, 1.3fr) 92px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(180px, .9fr) minmax(0, 1.3fr) 92px;
   gap: 10px;
   padding: 0 12px;
 }
@@ -993,7 +993,7 @@
 }
 .v3-members-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(180px, .9fr) minmax(96px, .45fr) minmax(0, 1.3fr) auto;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(180px, .9fr) minmax(0, 1.3fr) auto;
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--v3-border);
@@ -1023,6 +1023,67 @@
   color: var(--v3-text-m);
   text-align: center;
 }
+.v3-import-map-meta {
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--v3-text-m);
+}
+.v3-import-map-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.v3-import-preview {
+  margin-top: 18px;
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-l);
+  background: var(--v3-surface);
+}
+.v3-import-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--v3-border);
+}
+.v3-import-preview-head strong {
+  font-size: 13px;
+  color: var(--v3-text);
+}
+.v3-import-preview-head span {
+  font-size: 12px;
+  color: var(--v3-text-m);
+}
+.v3-import-preview-table-wrap {
+  overflow: auto;
+}
+.v3-import-preview-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+.v3-import-preview-table th,
+.v3-import-preview-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--v3-border);
+  text-align: left;
+  vertical-align: top;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.v3-import-preview-table th {
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--v3-text-m);
+  background: rgba(248,250,252,.85);
+}
+.v3-import-preview-empty {
+  padding: 18px 14px;
+  color: var(--v3-text-m);
+  text-align: center;
+}
 @media (max-width: 1400px) {
   .v3-import-panel {
     align-items: stretch;
@@ -1039,6 +1100,9 @@
   }
 }
 @media (max-width: 760px) {
+  .v3-import-map-grid {
+    grid-template-columns: 1fr;
+  }
   .v3-members-row {
     grid-template-columns: 1fr;
   }
