@@ -128,6 +128,9 @@ export function parseWosmMembersColumns(rawValue) {
 }
 
 export function normalizeWosmRegisteredCount(value) {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') {
+    return DEFAULT_WOSM_MEMBERS.registered_count;
+  }
   var num = Number(value);
   if (!Number.isFinite(num) || num < 0) return DEFAULT_WOSM_MEMBERS.registered_count;
   return Math.round(num);
