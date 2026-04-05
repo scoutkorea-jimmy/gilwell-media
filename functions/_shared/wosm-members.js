@@ -23,6 +23,7 @@ export const DEFAULT_WOSM_MEMBERS = {
     country_en: 'Country Name option 1 E',
     country_fr: 'Country Name option 1 F',
   },
+  registered_count: 176,
   revision: 0,
 };
 
@@ -126,11 +127,18 @@ export function parseWosmMembersColumns(rawValue) {
   }
 }
 
-export function normalizeWosmMembersResponse(items, columns, importMapping, revision) {
+export function normalizeWosmRegisteredCount(value) {
+  var num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return DEFAULT_WOSM_MEMBERS.registered_count;
+  return Math.round(num);
+}
+
+export function normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision) {
   return {
     items: sanitizeWosmMembersItems(items),
     columns: normalizeWosmMembersColumns(columns),
     import_mapping: normalizeWosmImportMapping(importMapping),
+    registered_count: normalizeWosmRegisteredCount(registeredCount),
     revision: Number.isFinite(Number(revision)) ? Number(revision) : 0,
   };
 }
