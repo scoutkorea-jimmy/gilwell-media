@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.051.00
+ * Version: 03.052.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -58,14 +58,13 @@
   var _picksPosts    = [];
   var _picksSearchTimer = null;
   var _wosmMembers   = [];
+  var _wosmColumns   = [];
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
   var _wosmImportSavedMapping = {
     country_ko: '',
     country_en: 'Country Name option 1 E',
     country_fr: 'Country Name option 1 F',
-    membership_category: 'WOSM membership category',
-    status_description: 'Status description',
   };
   var _wosmImportFileName = '';
   var _wosmImportSheets = [];
@@ -338,6 +337,7 @@
     document.getElementById('wosm-members-file').addEventListener('change', _handleWosmMembersImport);
     document.getElementById('wosm-members-add-btn').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-members-add-btn-inline').addEventListener('click', _addWosmMemberRow);
+    document.getElementById('wosm-column-add-btn').addEventListener('click', _addWosmColumnRow);
     document.getElementById('wosm-members-save-btn').addEventListener('click', _saveWosmMembers);
     document.getElementById('wosm-import-close').addEventListener('click', _closeWosmImportModal);
     document.getElementById('wosm-import-cancel').addEventListener('click', _closeWosmImportModal);
@@ -349,15 +349,6 @@
       _wosmImportSheetIndex = Math.max(0, parseInt(this.value, 10) || 0);
       _syncWosmImportMappingDefaults();
       _renderWosmImportModal();
-    });
-    ['wosm-map-country-ko', 'wosm-map-country-en', 'wosm-map-country-fr', 'wosm-map-category', 'wosm-map-status'].forEach(function (id) {
-      var select = document.getElementById(id);
-      if (!select) return;
-      select.addEventListener('change', function () {
-        _ensureWosmImportMapping();
-        _wosmImportMapping[id] = select.value || '';
-        _renderWosmImportPreview();
-      });
     });
     document.getElementById('wosm-members-search').addEventListener('input', function () {
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
@@ -3674,16 +3665,20 @@
   ══════════════════════════════════════════════════════════ */
   function _loadWosmMembersUI() {
     var el = document.getElementById('wosm-members-editor');
+    var columnsEl = document.getElementById('wosm-columns-editor');
     var meta = document.getElementById('wosm-members-meta');
     if (el) el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (columnsEl) columnsEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
     _apiFetch('/api/settings/wosm-members').then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : [];
+      _wosmColumns = Array.isArray(data && data.columns) ? data.columns : _getDefaultWosmColumns();
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || {});
       _wosmMembersRevision = parseInt(data && data.revision, 10) || 0;
       _renderWosmMembersEditor();
     }).catch(function () {
       if (el) el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (columnsEl) columnsEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (meta) meta.textContent = '불러오기 실패';
     });
   }
@@ -3693,9 +3688,11 @@
     var meta = document.getElementById('wosm-members-meta');
     if (!el) return;
     _renderWosmImportDefaultFields();
+    _renderWosmColumnsEditor();
     var visibleItems = _getFilteredWosmMembers();
+    var editableColumns = _getEditableWosmColumns();
     if (meta) {
-      meta.textContent = '총 ' + _wosmMembers.length + '개 항목 · 현재 표시 ' + visibleItems.length + '개 · revision ' + _wosmMembersRevision;
+      meta.textContent = '총 ' + _wosmMembers.length + '개 항목 · 현재 표시 ' + visibleItems.length + '개 · 표 열 ' + _wosmColumns.length + '개 · revision ' + _wosmMembersRevision;
     }
     if (!visibleItems.length) {
       el.innerHTML = '<div class="v3-members-empty">조건에 맞는 항목이 없습니다. XLSX를 가져오거나 새 항목을 추가하세요.</div>';
@@ -3706,8 +3703,9 @@
         '<span>한국어</span>' +
         '<span>영어</span>' +
         '<span>프랑스어</span>' +
-        '<span>회원 자격</span>' +
-        '<span>상태 설명</span>' +
+        editableColumns.map(function (column) {
+          return '<span>' + GW.escapeHtml(column.label || column.key) + '</span>';
+        }).join('') +
         '<span>작업</span>' +
       '</div>' +
       visibleItems.map(function (entry) {
@@ -3717,8 +3715,15 @@
         _renderWosmMemberCell(i, 'country_ko', '한국어', item.country_ko || '', '국가명(한국어)') +
         _renderWosmMemberCell(i, 'country_en', '영어', item.country_en || '', 'Country Name option 1 E') +
         _renderWosmMemberCell(i, 'country_fr', '프랑스어', item.country_fr || '', 'Country Name option 1 F') +
-        _renderWosmMemberCell(i, 'membership_category', '회원 자격', item.membership_category || '', 'Member country of WOSM') +
-        _renderWosmMemberCell(i, 'status_description', '상태 설명', item.status_description || '', '비고 또는 상태 설명') +
+        editableColumns.map(function (column) {
+          return _renderWosmMemberCell(
+            i,
+            column.key,
+            column.label || column.key,
+            _getWosmColumnValue(item, column),
+            column.default_header || (column.label || column.key)
+          );
+        }).join('') +
         '<div class="v3-members-actions"><button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-wosm-remove="' + i + '">삭제</button></div>' +
       '</div>';
     }).join('') + '</div>';
@@ -3728,7 +3733,7 @@
         var index = parseInt(input.getAttribute('data-wosm-index'), 10);
         var field = input.getAttribute('data-wosm-field');
         if (!_wosmMembers[index]) return;
-        _wosmMembers[index][field] = input.value;
+        _setWosmColumnValue(_wosmMembers[index], field, input.value);
       });
     });
     el.querySelectorAll('[data-wosm-remove]').forEach(function (btn) {
@@ -3745,8 +3750,6 @@
       'wosm-default-map-country-ko': _wosmImportSavedMapping.country_ko || '',
       'wosm-default-map-country-en': _wosmImportSavedMapping.country_en || '',
       'wosm-default-map-country-fr': _wosmImportSavedMapping.country_fr || '',
-      'wosm-default-map-category': _wosmImportSavedMapping.membership_category || '',
-      'wosm-default-map-status': _wosmImportSavedMapping.status_description || '',
     };
     Object.keys(fields).forEach(function (id) {
       var input = document.getElementById(id);
@@ -3759,14 +3762,12 @@
       country_ko: ((document.getElementById('wosm-default-map-country-ko') || {}).value || '').trim(),
       country_en: ((document.getElementById('wosm-default-map-country-en') || {}).value || '').trim(),
       country_fr: ((document.getElementById('wosm-default-map-country-fr') || {}).value || '').trim(),
-      membership_category: ((document.getElementById('wosm-default-map-category') || {}).value || '').trim(),
-      status_description: ((document.getElementById('wosm-default-map-status') || {}).value || '').trim(),
     };
   }
 
   function _renderWosmMemberCell(index, field, label, value, placeholder) {
     var id = 'wosm-member-' + field + '-' + index;
-    if (field === 'status_description') {
+    if (field === 'status_description' || String(field).indexOf('description') >= 0 || String(field).indexOf('note') >= 0) {
       return '<div class="v3-members-cell">' +
         '<label for="' + id + '">' + GW.escapeHtml(label) + '</label>' +
         '<textarea class="v3-input v3-textarea" rows="2" id="' + id + '" data-wosm-index="' + index + '" data-wosm-field="' + GW.escapeHtml(field) + '" placeholder="' + GW.escapeHtml(placeholder || '') + '">' + GW.escapeHtml(value || '') + '</textarea>' +
@@ -3784,13 +3785,14 @@
     }
     return _wosmMembers.map(function (item, index) { return { item: item, index: index }; }).filter(function (entry) {
       var item = entry.item || {};
+      var extraValues = item.extra_fields && typeof item.extra_fields === 'object' ? Object.keys(item.extra_fields).map(function (key) { return item.extra_fields[key]; }) : [];
       var haystack = [
         item.country_ko,
         item.country_en,
         item.country_fr,
         item.membership_category,
         item.status_description,
-      ].join(' ').toLowerCase();
+      ].concat(extraValues).join(' ').toLowerCase();
       return haystack.indexOf(_wosmMembersSearch) >= 0;
     });
   }
@@ -3802,32 +3804,111 @@
       country_fr: '',
       membership_category: '',
       status_description: '',
+      extra_fields: _createEmptyWosmExtraFields(),
       sort_order: _wosmMembers.length,
     });
     _renderWosmMembersEditor();
   }
 
+  function _addWosmColumnRow() {
+    var key = _createUniqueWosmColumnKey();
+    _wosmColumns.push({
+      key: key,
+      label: '새 열',
+      type: 'field',
+      default_header: '',
+      system: false,
+    });
+    _wosmMembers.forEach(function (item) {
+      item.extra_fields = item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+      if (typeof item.extra_fields[key] === 'undefined') item.extra_fields[key] = '';
+    });
+    _renderWosmMembersEditor();
+  }
+
+  function _renderWosmColumnsEditor() {
+    var el = document.getElementById('wosm-columns-editor');
+    if (!el) return;
+    el.innerHTML = '<div class="v3-members-editor">' +
+      '<div class="v3-members-head">' +
+        '<span>열 제목</span>' +
+        '<span>키</span>' +
+        '<span>기본 XLSX 열 이름</span>' +
+        '<span>상태</span>' +
+        '<span>작업</span>' +
+      '</div>' +
+      _wosmColumns.map(function (column, index) {
+        var removable = column.key !== 'country_names';
+        return '<div class="v3-members-row">' +
+          '<div class="v3-members-cell"><label for="wosm-column-label-' + index + '">열 제목</label><input class="v3-input" type="text" id="wosm-column-label-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="label" value="' + GW.escapeHtml(column.label || '') + '" placeholder="예: 상태 설명"></div>' +
+          '<div class="v3-members-cell"><label for="wosm-column-key-' + index + '">키</label><input class="v3-input" type="text" id="wosm-column-key-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="key" value="' + GW.escapeHtml(column.key || '') + '" placeholder="예: member_status"' + (column.system ? ' readonly' : '') + '></div>' +
+          '<div class="v3-members-cell"><label for="wosm-column-header-' + index + '">기본 XLSX 열 이름</label><input class="v3-input" type="text" id="wosm-column-header-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="default_header" value="' + GW.escapeHtml(column.default_header || '') + '" placeholder="예: Status description"' + (column.key === 'country_names' ? ' readonly' : '') + '></div>' +
+          '<div class="v3-members-cell"><label>상태</label><div class="v3-inline-meta">' + (column.key === 'country_names' ? '필수 고정 열' : (column.system ? '기본 열' : '커스텀 열')) + '</div></div>' +
+          '<div class="v3-members-actions">' + (removable ? '<button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-wosm-column-remove="' + index + '">삭제</button>' : '<span class="v3-inline-meta">유지</span>') + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    el.querySelectorAll('[data-wosm-column-field]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var index = parseInt(input.getAttribute('data-wosm-column-index'), 10);
+        var field = input.getAttribute('data-wosm-column-field');
+        var column = _wosmColumns[index];
+        if (!column) return;
+        if (field === 'key' && !column.system) {
+          var oldKey = column.key;
+          var nextKey = _sanitizeWosmColumnKey(input.value) || oldKey;
+          if (nextKey !== oldKey && !_hasWosmColumnKey(nextKey, index)) {
+            column.key = nextKey;
+            _renameWosmExtraField(oldKey, nextKey);
+          }
+          input.value = column.key;
+          return;
+        }
+        if (field === 'default_header' && column.key === 'country_names') {
+          input.value = '';
+          return;
+        }
+        column[field] = input.value;
+      });
+    });
+    el.querySelectorAll('[data-wosm-column-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-wosm-column-remove'), 10);
+        var column = _wosmColumns[index];
+        if (!column || column.key === 'country_names') return;
+        _wosmColumns.splice(index, 1);
+        _removeWosmColumnFromItems(column.key);
+        _renderWosmMembersEditor();
+      });
+    });
+  }
+
   function _saveWosmMembers() {
     var btn = document.getElementById('wosm-members-save-btn');
     var payload = _wosmMembers.map(function (item, index) {
-      return {
+      var normalized = {
         country_ko: String(item.country_ko || '').trim(),
         country_en: String(item.country_en || '').trim(),
         country_fr: String(item.country_fr || '').trim(),
         membership_category: String(item.membership_category || '').trim(),
         status_description: String(item.status_description || '').trim(),
+        extra_fields: _collectWosmExtraFields(item),
         sort_order: index,
       };
+      return normalized;
     }).filter(function (item) {
       return item.country_ko || item.country_en || item.country_fr;
     });
+    var columns = _normalizeWosmColumnsBeforeSave();
     var importMapping = _collectWosmImportDefaultFields();
     _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/wosm-members', {
       method: 'PUT',
-      body: JSON.stringify({ items: payload, import_mapping: importMapping, if_revision: _wosmMembersRevision }),
+      body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, if_revision: _wosmMembersRevision }),
     }).then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : payload;
+      _wosmColumns = Array.isArray(data && data.columns) ? data.columns : columns;
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || importMapping);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
       GW.showToast('세계연맹 회원국 현황을 저장했습니다', 'success');
@@ -3892,17 +3973,25 @@
       var korean = _readMappedImportCell(row, map['wosm-map-country-ko']);
       var english = _readMappedImportCell(row, map['wosm-map-country-en']);
       var french = _readMappedImportCell(row, map['wosm-map-country-fr']);
-      var membershipCategory = _readMappedImportCell(row, map['wosm-map-category']);
-      var statusDescription = _readMappedImportCell(row, map['wosm-map-status']);
       var match = byKey.get(_wosmMemberMatchKey(english, french));
-      return {
+      var nextItem = {
         country_ko: String((korean || (match ? match.country_ko : '') || '')).trim(),
         country_en: String(english || '').trim(),
         country_fr: String(french || '').trim(),
-        membership_category: String(membershipCategory || '').trim(),
-        status_description: String(statusDescription || '').trim(),
+        membership_category: String(match && match.membership_category || '').trim(),
+        status_description: String(match && match.status_description || '').trim(),
+        extra_fields: _createEmptyWosmExtraFields(match && match.extra_fields),
         sort_order: index,
       };
+      _getEditableWosmColumns().forEach(function (column) {
+        var value = _readMappedImportCell(row, map[_getWosmImportMapKey(column.key)]);
+        if (column.key === 'membership_category' || column.key === 'status_description') {
+          nextItem[column.key] = String((value || nextItem[column.key] || '')).trim();
+          return;
+        }
+        nextItem.extra_fields[column.key] = String((value || nextItem.extra_fields[column.key] || '')).trim();
+      });
+      return nextItem;
     }).filter(function (item) {
       return item.country_ko || item.country_en || item.country_fr;
     });
@@ -3946,9 +4035,10 @@
       'wosm-map-country-ko': _wosmImportSavedMapping.country_ko || '',
       'wosm-map-country-en': _wosmImportSavedMapping.country_en || '',
       'wosm-map-country-fr': _wosmImportSavedMapping.country_fr || '',
-      'wosm-map-category': _wosmImportSavedMapping.membership_category || '',
-      'wosm-map-status': _wosmImportSavedMapping.status_description || '',
     };
+    _getEditableWosmColumns().forEach(function (column) {
+      _wosmImportMapping[_getWosmImportMapKey(column.key)] = column.default_header || '';
+    });
   }
 
   function _getCurrentWosmImportSheet() {
@@ -3972,8 +4062,11 @@
     _wosmImportMapping['wosm-map-country-ko'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_ko) || _guessWosmImportHeader(headers, ['Country name option 1 K', 'Country Name option 1 K', 'Country name ko', 'Country KO', '국가명', '한국어']);
     _wosmImportMapping['wosm-map-country-en'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_en) || _guessWosmImportHeader(headers, ['Country name option 1 E', 'Country Name option 1 E', 'Country name option 1 English', 'English', 'Country']);
     _wosmImportMapping['wosm-map-country-fr'] = _findMatchingHeader(headers, _wosmImportSavedMapping.country_fr) || _guessWosmImportHeader(headers, ['Country name option 1 F', 'Country Name option 1 F', 'French', 'Francais', 'Français']);
-    _wosmImportMapping['wosm-map-category'] = _findMatchingHeader(headers, _wosmImportSavedMapping.membership_category) || _guessWosmImportHeader(headers, ['WOSM membership category', 'WOSM Membership category', 'Membership category', 'Category']);
-    _wosmImportMapping['wosm-map-status'] = _findMatchingHeader(headers, _wosmImportSavedMapping.status_description) || _guessWosmImportHeader(headers, ['Status description', 'Status Description', 'Status', 'Description', '비고']);
+    _getEditableWosmColumns().forEach(function (column) {
+      var preferred = column.default_header || '';
+      var guessed = preferred ? _findMatchingHeader(headers, preferred) : '';
+      _wosmImportMapping[_getWosmImportMapKey(column.key)] = guessed || preferred || '';
+    });
   }
 
   function _findMatchingHeader(headers, preferred) {
@@ -4015,36 +4108,69 @@
   }
 
   function _renderWosmImportMappingFields() {
+    var wrap = document.getElementById('wosm-import-map-fields');
     var headers = _getCurrentWosmImportSheet().headers || [];
     _ensureWosmImportMapping();
-    ['wosm-map-country-ko', 'wosm-map-country-en', 'wosm-map-country-fr', 'wosm-map-category', 'wosm-map-status'].forEach(function (id) {
-      var select = document.getElementById(id);
+    if (!wrap) return;
+    var optionHtml = '<option value="">선택 안 함</option>' + headers.map(function (header) {
+      return '<option value="' + GW.escapeHtml(header) + '">' + GW.escapeHtml(header) + '</option>';
+    }).join('');
+    var fields = [
+      { key: 'wosm-map-country-ko', label: '한국어 국가명', optional: true },
+      { key: 'wosm-map-country-en', label: '영어 국가명', optional: false },
+      { key: 'wosm-map-country-fr', label: '프랑스어 국가명', optional: false },
+    ].concat(_getEditableWosmColumns().map(function (column) {
+      return {
+        key: _getWosmImportMapKey(column.key),
+        label: column.label || column.key,
+        optional: column.key !== 'membership_category' && column.key !== 'status_description',
+      };
+    }));
+    wrap.innerHTML = fields.map(function (field) {
+      return '<div class="v3-form-group">' +
+        '<label class="v3-label" for="' + field.key + '">' + GW.escapeHtml(field.label) + (field.optional ? ' <span class="v3-label-opt">선택</span>' : '') + '</label>' +
+        '<select class="v3-select" id="' + field.key + '">' + optionHtml + '</select>' +
+      '</div>';
+    }).join('');
+    fields.forEach(function (field) {
+      var select = document.getElementById(field.key);
       if (!select) return;
-      select.innerHTML = '<option value="">선택 안 함</option>' + headers.map(function (header) {
-        return '<option value="' + GW.escapeHtml(header) + '">' + GW.escapeHtml(header) + '</option>';
-      }).join('');
-      select.value = _wosmImportMapping[id] || '';
+      select.value = _wosmImportMapping[field.key] || '';
+      select.addEventListener('change', function () {
+        _ensureWosmImportMapping();
+        _wosmImportMapping[field.key] = select.value || '';
+        _renderWosmImportPreview();
+      });
     });
   }
 
   function _renderWosmImportPreview() {
+    var head = document.getElementById('wosm-import-preview-head');
     var body = document.getElementById('wosm-import-preview-body');
     var meta = document.getElementById('wosm-import-preview-meta');
     if (!body) return;
     var sheet = _getCurrentWosmImportSheet();
     var mapped = _mapWosmMemberRows(sheet.rows || [], _wosmImportMapping).slice(0, 5);
+    var previewColumns = ['한국어', '영어', '프랑스어'].concat(_getEditableWosmColumns().map(function (column) { return column.label || column.key; }));
+    if (head) {
+      head.innerHTML = '<tr>' + previewColumns.map(function (label) {
+        return '<th>' + GW.escapeHtml(label) + '</th>';
+      }).join('') + '</tr>';
+    }
     if (meta) meta.textContent = '미리보기 ' + GW.formatNumber(mapped.length) + '행 / 원본 ' + GW.formatNumber((sheet.rows || []).length) + '행';
     if (!mapped.length) {
-      body.innerHTML = '<tr><td colspan="5"><div class="v3-import-preview-empty">현재 매핑으로 가져올 항목이 없습니다.</div></td></tr>';
+      body.innerHTML = '<tr><td colspan="' + previewColumns.length + '"><div class="v3-import-preview-empty">현재 매핑으로 가져올 항목이 없습니다.</div></td></tr>';
       return;
     }
     body.innerHTML = mapped.map(function (item) {
+      var extraCells = _getEditableWosmColumns().map(function (column) {
+        return '<td>' + GW.escapeHtml(_getWosmColumnValue(item, column) || '—') + '</td>';
+      }).join('');
       return '<tr>' +
         '<td>' + GW.escapeHtml(item.country_ko || '—') + '</td>' +
         '<td>' + GW.escapeHtml(item.country_en || '—') + '</td>' +
         '<td>' + GW.escapeHtml(item.country_fr || '—') + '</td>' +
-        '<td>' + GW.escapeHtml(item.membership_category || '—') + '</td>' +
-        '<td>' + GW.escapeHtml(item.status_description || '—') + '</td>' +
+        extraCells +
       '</tr>';
     }).join('');
   }
@@ -4058,7 +4184,113 @@
     _wosmMembers = mapped;
     _closeWosmImportModal();
     _renderWosmMembersEditor();
-    GW.showToast('XLSX를 가져왔습니다. 필요한 한국어명과 상태 설명을 이어서 수정하세요.', 'success');
+    GW.showToast('XLSX를 가져왔습니다. 필요한 값은 계속 수정해서 저장하세요.', 'success');
+  }
+
+  function _getDefaultWosmColumns() {
+    return [
+      { key: 'country_names', label: '국가명', type: 'country_names', system: true, default_header: '' },
+      { key: 'membership_category', label: '회원 자격', type: 'field', system: true, default_header: 'WOSM membership category' },
+      { key: 'status_description', label: '상태 설명', type: 'field', system: true, default_header: 'Status description' }
+    ];
+  }
+
+  function _getEditableWosmColumns() {
+    return (_wosmColumns || []).filter(function (column) { return column && column.key !== 'country_names'; });
+  }
+
+  function _getWosmColumnValue(item, column) {
+    if (!item || !column) return '';
+    if (column.key === 'membership_category' || column.key === 'status_description') return item[column.key] || '';
+    return item.extra_fields && typeof item.extra_fields === 'object' ? (item.extra_fields[column.key] || '') : '';
+  }
+
+  function _setWosmColumnValue(item, key, value) {
+    if (!item) return;
+    if (key === 'country_ko' || key === 'country_en' || key === 'country_fr' || key === 'membership_category' || key === 'status_description') {
+      item[key] = value;
+      return;
+    }
+    item.extra_fields = item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+    item.extra_fields[key] = value;
+  }
+
+  function _createEmptyWosmExtraFields(source) {
+    var base = {};
+    var initial = source && typeof source === 'object' ? source : {};
+    _getEditableWosmColumns().forEach(function (column) {
+      if (column.key === 'membership_category' || column.key === 'status_description') return;
+      base[column.key] = String(initial[column.key] || '').trim();
+    });
+    return base;
+  }
+
+  function _collectWosmExtraFields(item) {
+    var result = {};
+    var source = item && item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+    _getEditableWosmColumns().forEach(function (column) {
+      if (column.key === 'membership_category' || column.key === 'status_description') return;
+      result[column.key] = String(source[column.key] || '').trim();
+    });
+    return result;
+  }
+
+  function _createUniqueWosmColumnKey() {
+    var index = 1;
+    while (_hasWosmColumnKey('column_' + index)) index += 1;
+    return 'column_' + index;
+  }
+
+  function _hasWosmColumnKey(key, skipIndex) {
+    return (_wosmColumns || []).some(function (column, index) {
+      return index !== skipIndex && column && column.key === key;
+    });
+  }
+
+  function _sanitizeWosmColumnKey(value) {
+    return String(value || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  }
+
+  function _renameWosmExtraField(oldKey, nextKey) {
+    if (!oldKey || !nextKey || oldKey === nextKey) return;
+    _wosmMembers.forEach(function (item) {
+      item.extra_fields = item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+      if (typeof item.extra_fields[oldKey] !== 'undefined' && typeof item.extra_fields[nextKey] === 'undefined') {
+        item.extra_fields[nextKey] = item.extra_fields[oldKey];
+      }
+      delete item.extra_fields[oldKey];
+    });
+  }
+
+  function _removeWosmColumnFromItems(key) {
+    _wosmMembers.forEach(function (item) {
+      if (item && item.extra_fields && typeof item.extra_fields === 'object') delete item.extra_fields[key];
+    });
+  }
+
+  function _normalizeWosmColumnsBeforeSave() {
+    var seen = {};
+    var next = [];
+    (_wosmColumns || []).forEach(function (column) {
+      if (!column) return;
+      var key = _sanitizeWosmColumnKey(column.key) || _createUniqueWosmColumnKey();
+      if (seen[key]) return;
+      seen[key] = true;
+      next.push({
+        key: key,
+        label: String(column.label || key).trim() || key,
+        type: key === 'country_names' ? 'country_names' : 'field',
+        system: key === 'country_names' || key === 'membership_category' || key === 'status_description',
+        default_header: key === 'country_names' ? '' : String(column.default_header || '').trim(),
+      });
+    });
+    if (!seen.country_names) next.unshift({ key: 'country_names', label: '국가명', type: 'country_names', system: true, default_header: '' });
+    _wosmColumns = next;
+    return next;
+  }
+
+  function _getWosmImportMapKey(columnKey) {
+    return 'wosm-map-field-' + columnKey;
   }
 
   /* ══════════════════════════════════════════════════════════
