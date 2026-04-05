@@ -3,6 +3,7 @@
 
   var state = {
     items: [],
+    columns: [],
     query: '',
     category: 'all',
   };
@@ -32,6 +33,7 @@
       .then(function (response) { return response.json(); })
       .then(function (data) {
         state.items = Array.isArray(data && data.items) ? data.items : [];
+        state.columns = Array.isArray(data && data.columns) && data.columns.length ? data.columns : getDefaultColumns();
         populateCategories(state.items);
         renderSummary(state.items);
         render();
@@ -39,6 +41,14 @@
       .catch(function () {
         renderError();
       });
+  }
+
+  function getDefaultColumns() {
+    return [
+      { key: 'country_names', label: '국가명' },
+      { key: 'membership_category', label: '회원 자격' },
+      { key: 'status_description', label: '상태 설명' }
+    ];
   }
 
   function populateCategories(items) {
@@ -72,6 +82,7 @@
   function render() {
     var filtered = getFilteredItems();
     renderMeta(filtered);
+    renderHead();
     renderTable(filtered);
     renderCards(filtered);
   }
@@ -82,13 +93,16 @@
       var matchesCategory = state.category === 'all' || category === state.category;
       if (!matchesCategory) return false;
       if (!state.query) return true;
+      var extra = item.extra_fields && typeof item.extra_fields === 'object'
+        ? Object.keys(item.extra_fields).map(function (key) { return item.extra_fields[key]; })
+        : [];
       var haystack = [
         item.country_ko,
         item.country_en,
         item.country_fr,
         item.membership_category,
         item.status_description,
-      ].join(' ').toLowerCase();
+      ].concat(extra).join(' ').toLowerCase();
       return haystack.indexOf(state.query) >= 0;
     });
   }
@@ -99,19 +113,25 @@
     meta.textContent = '총 ' + GW.formatNumber(items.length) + '개 국가가 표시됩니다.';
   }
 
+  function renderHead() {
+    var head = document.getElementById('wosm-members-head');
+    if (!head) return;
+    head.innerHTML = '<tr>' + state.columns.map(function (column) {
+      return '<th>' + GW.escapeHtml(column.label || column.key) + '</th>';
+    }).join('') + '</tr>';
+  }
+
   function renderTable(items) {
     var body = document.getElementById('wosm-members-body');
     if (!body) return;
     if (!items.length) {
-      body.innerHTML = '<tr><td colspan="3"><div class="members-empty">조건에 맞는 국가가 없습니다.</div></td></tr>';
+      body.innerHTML = '<tr><td colspan="' + state.columns.length + '"><div class="members-empty">조건에 맞는 국가가 없습니다.</div></td></tr>';
       return;
     }
     body.innerHTML = items.map(function (item) {
-      return '<tr>' +
-        '<td>' + renderNameBlock(item) + '</td>' +
-        '<td>' + GW.escapeHtml(item.membership_category || '—') + '</td>' +
-        '<td>' + GW.escapeHtml(item.status_description || '—') + '</td>' +
-      '</tr>';
+      return '<tr>' + state.columns.map(function (column) {
+        return '<td>' + renderColumnValue(item, column) + '</td>';
+      }).join('') + '</tr>';
     }).join('');
   }
 
@@ -123,14 +143,32 @@
       return;
     }
     wrap.innerHTML = items.map(function (item) {
+      var firstColumn = state.columns[0] || { key: 'country_names', label: '국가명' };
+      var restColumns = state.columns.slice(1);
       return '<article class="member-country-card">' +
-        '<div class="member-country-head">' + renderNameBlock(item) + '</div>' +
+        '<div class="member-country-head">' + renderColumnValue(item, firstColumn) + '</div>' +
         '<div class="member-country-meta-grid">' +
-          '<div><span class="member-country-label">회원 자격</span><strong>' + GW.escapeHtml(item.membership_category || '—') + '</strong></div>' +
+          restColumns.map(function (column) {
+            return '<div><span class="member-country-label">' + GW.escapeHtml(column.label || column.key) + '</span><strong>' + renderCardValue(item, column) + '</strong></div>';
+          }).join('') +
         '</div>' +
-        '<p class="member-country-status">' + GW.escapeHtml(item.status_description || '상태 설명이 없습니다.') + '</p>' +
       '</article>';
     }).join('');
+  }
+
+  function renderColumnValue(item, column) {
+    if (!column || column.key === 'country_names') return renderNameBlock(item);
+    return GW.escapeHtml(getPlainColumnValue(item, column) || '—');
+  }
+
+  function renderCardValue(item, column) {
+    return GW.escapeHtml(getPlainColumnValue(item, column) || '—');
+  }
+
+  function getPlainColumnValue(item, column) {
+    if (!item || !column) return '';
+    if (column.key === 'membership_category' || column.key === 'status_description') return item[column.key] || '';
+    return item.extra_fields && typeof item.extra_fields === 'object' ? (item.extra_fields[column.key] || '') : '';
   }
 
   function renderNameBlock(item) {

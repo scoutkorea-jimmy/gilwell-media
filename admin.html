@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=03.051.00">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=03.052.00">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -25,7 +25,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.051.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.052.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.051.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.052.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -924,11 +924,23 @@
                 <div class="v3-import-panel">
                   <div class="v3-import-panel-copy">
                     <strong>XLSX 업로드</strong>
-                    <p>XLSX를 올리면 시트와 열 매핑을 먼저 선택합니다. 아래에 저장한 기본 열 이름을 우선 적용하고, 업로드 모달에서 파일마다 다시 바꿀 수 있습니다.</p>
+                    <p>XLSX를 올리면 먼저 시트와 열 매핑 모달이 열립니다. 아래에서 표 열을 추가/삭제하고 기본 XLSX 열 이름을 정해두면, 업로드 모달이 그 구성을 기준으로 매핑과 미리보기를 제공합니다.</p>
                   </div>
                   <div class="v3-import-panel-actions">
                     <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-import-btn-inline">파일 선택</button>
                     <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-members-add-btn-inline">빈 항목 추가</button>
+                  </div>
+                </div>
+                <div class="v3-card v3-card-soft v3-mb-16">
+                  <div class="v3-card-head">
+                    <div>
+                      <h3 class="v3-card-title">표 열 구성</h3>
+                      <p class="v3-card-desc">공개 표에 어떤 열을 보여줄지 정합니다. 커스텀 열은 추가/삭제할 수 있고, 업로드 모달도 이 구성을 그대로 따릅니다.</p>
+                    </div>
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="wosm-column-add-btn">열 추가</button>
+                  </div>
+                  <div id="wosm-columns-editor">
+                    <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
                   </div>
                 </div>
                 <div class="v3-import-map-grid v3-mb-16">
@@ -943,14 +955,6 @@
                   <div class="v3-form-group">
                     <label class="v3-label" for="wosm-default-map-country-fr">기본 프랑스어 열 이름</label>
                     <input class="v3-input" type="text" id="wosm-default-map-country-fr" placeholder="예: Country Name option 1 F">
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label" for="wosm-default-map-category">기본 회원 자격 열 이름 <span class="v3-label-opt">선택</span></label>
-                    <input class="v3-input" type="text" id="wosm-default-map-category" placeholder="예: WOSM membership category">
-                  </div>
-                  <div class="v3-form-group">
-                    <label class="v3-label" for="wosm-default-map-status">기본 상태 설명 열 이름 <span class="v3-label-opt">선택</span></label>
-                    <input class="v3-input" type="text" id="wosm-default-map-status" placeholder="예: Status description">
                   </div>
                 </div>
                 <div class="v3-form-grid">
@@ -1201,28 +1205,7 @@
           <select class="v3-select" id="wosm-import-sheet"></select>
         </div>
       </div>
-      <div class="v3-import-map-grid">
-        <div class="v3-form-group">
-          <label class="v3-label" for="wosm-map-country-ko">한국어 국가명 <span class="v3-label-opt">선택</span></label>
-          <select class="v3-select" id="wosm-map-country-ko"></select>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="wosm-map-country-en">영어 국가명</label>
-          <select class="v3-select" id="wosm-map-country-en"></select>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="wosm-map-country-fr">프랑스어 국가명</label>
-          <select class="v3-select" id="wosm-map-country-fr"></select>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="wosm-map-category">회원 자격 <span class="v3-label-opt">선택</span></label>
-          <select class="v3-select" id="wosm-map-category"></select>
-        </div>
-        <div class="v3-form-group">
-          <label class="v3-label" for="wosm-map-status">상태 설명 <span class="v3-label-opt">선택</span></label>
-          <select class="v3-select" id="wosm-map-status"></select>
-        </div>
-      </div>
+      <div class="v3-import-map-grid" id="wosm-import-map-fields"></div>
       <div class="v3-import-preview">
         <div class="v3-import-preview-head">
           <strong>미리보기</strong>
@@ -1230,15 +1213,7 @@
         </div>
         <div class="v3-import-preview-table-wrap">
           <table class="v3-import-preview-table">
-            <thead>
-              <tr>
-                <th>한국어</th>
-                <th>영어</th>
-                <th>프랑스어</th>
-                <th>회원 자격</th>
-                <th>상태 설명</th>
-              </tr>
-            </thead>
+            <thead id="wosm-import-preview-head"></thead>
             <tbody id="wosm-import-preview-body"></tbody>
           </table>
         </div>
@@ -1273,7 +1248,7 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/js/main.js?v=03.051.00"></script>
-<script src="/js/admin-v3.js?v=03.051.00"></script>
+<script src="/js/main.js?v=03.052.00"></script>
+<script src="/js/admin-v3.js?v=03.052.00"></script>
 </body>
 </html>

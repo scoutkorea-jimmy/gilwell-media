@@ -9111,7 +9111,7 @@ body.wosm-members-page #main-content {
 }
 .members-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 860px;
   table-layout: fixed;
 }
 .members-table th {
@@ -9119,9 +9119,10 @@ body.wosm-members-page #main-content {
   top: 0;
   z-index: 1;
 }
-.members-table th:nth-child(1) { width: 34%; }
-.members-table th:nth-child(2) { width: 26%; }
-.members-table th:nth-child(3) { width: 40%; }
+.members-table th:first-child,
+.members-table td:first-child {
+  width: 34%;
+}
 .members-table td:nth-child(2) {
   white-space: nowrap;
 }
