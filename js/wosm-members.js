@@ -142,10 +142,11 @@
       return;
     }
     wrap.innerHTML = items.map(function (item) {
-      var firstColumn = state.columns[0] || { key: 'country_names', label: '국가명' };
-      var restColumns = state.columns.slice(1);
+      var restColumns = state.columns.filter(function (column) {
+        return column && column.key !== 'country_names';
+      });
       return '<article class="member-country-card">' +
-        '<div class="member-country-head">' + renderColumnValue(item, firstColumn) + '</div>' +
+        '<div class="member-country-head">' + renderNameBlock(item) + '</div>' +
         '<div class="member-country-meta-grid">' +
           restColumns.map(function (column) {
             return '<div><span class="member-country-label">' + GW.escapeHtml(column.label || column.key) + '</span><strong>' + renderCardValue(item, column) + '</strong></div>';
