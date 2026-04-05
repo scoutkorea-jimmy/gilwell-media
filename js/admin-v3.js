@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.047.00
+ * Version: 03.048.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -51,6 +51,10 @@
   var _contributors  = [];
   var _editors       = [];
   var _translations  = {};
+  var _homeLeadPost  = null;
+  var _homeLeadMedia = null;
+  var _picksPosts    = [];
+  var _picksSearchTimer = null;
   var _wosmMembers   = [];
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
@@ -306,6 +310,9 @@
     document.getElementById('editors-save-btn').addEventListener('click', _saveEditors);
     document.getElementById('editors-add-btn').addEventListener('click', _addEditorRow);
     document.getElementById('trans-save-btn').addEventListener('click', _saveTranslations);
+    document.getElementById('home-lead-save-btn').addEventListener('click', _saveHomeLead);
+    document.getElementById('home-lead-clear-btn').addEventListener('click', _clearHomeLeadSelection);
+    document.getElementById('picks-refresh-btn').addEventListener('click', _loadPicksUI);
     document.getElementById('wosm-members-import-btn').addEventListener('click', function () {
       var input = document.getElementById('wosm-members-file');
       if (input) input.click();
@@ -323,6 +330,24 @@
       var q = this.value.trim();
       if (!q) { document.getElementById('hero-search-results').style.display = 'none'; return; }
       _searchHero(q);
+    });
+    document.getElementById('home-lead-search').addEventListener('input', function () {
+      var q = this.value.trim();
+      if (!q) { document.getElementById('home-lead-search-results').style.display = 'none'; return; }
+      _searchHomeLead(q);
+    });
+    ['home-lead-fit', 'home-lead-desktop-x', 'home-lead-desktop-y', 'home-lead-desktop-zoom', 'home-lead-mobile-x', 'home-lead-mobile-y', 'home-lead-mobile-zoom'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', _handleHomeLeadControlChange);
+    });
+    document.getElementById('picks-search').addEventListener('input', function () {
+      var q = this.value.trim();
+      clearTimeout(_picksSearchTimer);
+      if (!q) {
+        document.getElementById('picks-search-results').style.display = 'none';
+        return;
+      }
+      _picksSearchTimer = setTimeout(function () { _searchPicks(q); }, 220);
     });
 
     // Analytics period
@@ -518,7 +543,7 @@
 
   function _sectionLabel(s) {
     var labels = {
-      hero: '히어로 기사', tags: '태그 / 글머리', meta: '메타태그 / SEO',
+      hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
     };
@@ -535,6 +560,8 @@
     });
     // Load section data
     if (section === 'hero')         _loadHero();
+    else if (section === 'home-lead') _loadHomeLeadUI();
+    else if (section === 'picks')   _loadPicksUI();
     else if (section === 'tags')    _loadTagSettingsUI();
     else if (section === 'meta')    _loadMetaUI();
     else if (section === 'author')  _loadAuthorUI();
@@ -2652,6 +2679,290 @@
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
     }).finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SETTINGS – HOME LEAD
+  ══════════════════════════════════════════════════════════ */
+  function _defaultHomeLeadMedia() {
+    return {
+      fit: 'cover',
+      desktop: { position_x: 50, position_y: 50, zoom: 100 },
+      mobile: { position_x: 50, position_y: 50, zoom: 100 },
+    };
+  }
+
+  function _cloneHomeLeadMedia(source) {
+    var raw = source && typeof source === 'object' ? source : {};
+    var base = _defaultHomeLeadMedia();
+    return {
+      fit: raw.fit === 'contain' ? 'contain' : 'cover',
+      desktop: {
+        position_x: _clampNumber(raw.desktop && raw.desktop.position_x, 0, 100, base.desktop.position_x),
+        position_y: _clampNumber(raw.desktop && raw.desktop.position_y, 0, 100, base.desktop.position_y),
+        zoom: _clampNumber(raw.desktop && raw.desktop.zoom, 60, 150, base.desktop.zoom),
+      },
+      mobile: {
+        position_x: _clampNumber(raw.mobile && raw.mobile.position_x, 0, 100, base.mobile.position_x),
+        position_y: _clampNumber(raw.mobile && raw.mobile.position_y, 0, 100, base.mobile.position_y),
+        zoom: _clampNumber(raw.mobile && raw.mobile.zoom, 60, 150, base.mobile.zoom),
+      },
+    };
+  }
+
+  function _loadHomeLeadUI() {
+    var wrap = document.getElementById('home-lead-selected');
+    if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    _apiFetch('/api/settings/home-lead').then(function (data) {
+      _homeLeadPost = data && data.post ? data.post : null;
+      _homeLeadMedia = _cloneHomeLeadMedia(data && data.media);
+      _syncHomeLeadControls();
+      _renderHomeLeadSelected();
+    }).catch(function () {
+      if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+    });
+  }
+
+  function _syncHomeLeadControls() {
+    var media = _homeLeadMedia || _defaultHomeLeadMedia();
+    _homeLeadMedia = media;
+    _setControlValue('home-lead-fit', media.fit || 'cover');
+    _setRangeValue('home-lead-desktop-x', media.desktop.position_x);
+    _setRangeValue('home-lead-desktop-y', media.desktop.position_y);
+    _setRangeValue('home-lead-desktop-zoom', media.desktop.zoom);
+    _setRangeValue('home-lead-mobile-x', media.mobile.position_x);
+    _setRangeValue('home-lead-mobile-y', media.mobile.position_y);
+    _setRangeValue('home-lead-mobile-zoom', media.mobile.zoom);
+    _setText('home-lead-desktop-x-value', media.desktop.position_x + '%');
+    _setText('home-lead-desktop-y-value', media.desktop.position_y + '%');
+    _setText('home-lead-desktop-zoom-value', media.desktop.zoom + '%');
+    _setText('home-lead-mobile-x-value', media.mobile.position_x + '%');
+    _setText('home-lead-mobile-y-value', media.mobile.position_y + '%');
+    _setText('home-lead-mobile-zoom-value', media.mobile.zoom + '%');
+  }
+
+  function _renderHomeLeadSelected() {
+    var wrap = document.getElementById('home-lead-selected');
+    if (!wrap) return;
+    if (!_homeLeadPost) {
+      wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">메인 스토리 지정 글이 없습니다.</div></div>';
+      _renderHomeLeadPreview(null);
+      return;
+    }
+    wrap.innerHTML = '<div class="v3-selected-post-card">' +
+      '<div class="v3-selected-post-head">' +
+        '<span class="v3-badge ' + _catBadge(_homeLeadPost.category) + '">' + GW.escapeHtml(_homeLeadPost.category || '') + '</span>' +
+        '<span class="v3-selected-post-meta">' + GW.escapeHtml(_homeLeadPost.publish_at || _homeLeadPost.created_at || '') + '</span>' +
+      '</div>' +
+      '<div class="v3-selected-post-title">' + GW.escapeHtml(_homeLeadPost.title || '(제목 없음)') + '</div>' +
+      (_homeLeadPost.subtitle ? '<div class="v3-selected-post-subtitle">' + GW.escapeHtml(_homeLeadPost.subtitle) + '</div>' : '') +
+      '<div class="v3-selected-post-actions">' +
+        '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" onclick="V3._clearHomeLead()">해제</button>' +
+      '</div>' +
+    '</div>';
+    _renderHomeLeadPreview(_homeLeadPost.image_url || '');
+  }
+
+  function _renderHomeLeadPreview(imageUrl) {
+    ['desktop', 'mobile'].forEach(function (device) {
+      var frame = document.getElementById('home-lead-preview-' + device);
+      if (!frame) return;
+      if (!imageUrl) {
+        frame.innerHTML = '<div class="v3-media-preview-empty">대표 이미지가 있는 게시글을 선택하면 여기서 프레이밍을 확인할 수 있습니다.</div>';
+        return;
+      }
+      var media = _homeLeadMedia || _defaultHomeLeadMedia();
+      var settings = media[device];
+      var fit = media.fit === 'contain' ? 'contain' : 'cover';
+      var showBackdrop = fit === 'contain' || settings.zoom < 100;
+      var imgStyle = 'object-fit:' + fit + ';object-position:' + settings.position_x + '% ' + settings.position_y + '%;transform:scale(' + (settings.zoom / 100) + ');';
+      frame.innerHTML =
+        '<div class="v3-media-preview-backdrop' + (showBackdrop ? ' is-visible' : '') + '" style="background-image:url(' + GW.escapeHtml(imageUrl) + ')"></div>' +
+        '<img src="' + GW.escapeHtml(imageUrl) + '" alt="" style="' + imgStyle + '">';
+    });
+  }
+
+  function _searchHomeLead(q) {
+    var el = document.getElementById('home-lead-search-results');
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&published=1').then(function (data) {
+      var posts = (data && data.posts) || [];
+      if (!posts.length) {
+        el.style.display = 'none';
+        return;
+      }
+      el.innerHTML = posts.map(function (p) {
+        return '<div class="v3-search-result-item" onclick="V3._selectHomeLead(' + p.id + ')">' +
+          '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
+          '<div class="v3-search-result-meta">' + GW.escapeHtml(p.category || '') + '</div>' +
+        '</div>';
+      }).join('');
+      el.style.display = 'block';
+    }).catch(function () {
+      el.style.display = 'none';
+    });
+  }
+
+  V3._selectHomeLead = function (id) {
+    _apiFetch('/api/posts/' + id).then(function (data) {
+      var post = data && (data.post || data);
+      if (!post || !post.published) {
+        GW.showToast('공개된 게시글만 선택할 수 있습니다', 'error');
+        return;
+      }
+      _homeLeadPost = post;
+      if (!_homeLeadMedia) _homeLeadMedia = _defaultHomeLeadMedia();
+      _renderHomeLeadSelected();
+      document.getElementById('home-lead-search-results').style.display = 'none';
+      document.getElementById('home-lead-search').value = '';
+    }).catch(function (e) {
+      GW.showToast(e.message || '게시글을 불러오지 못했습니다', 'error');
+    });
+  };
+
+  V3._clearHomeLead = function () {
+    _clearHomeLeadSelection();
+  };
+
+  function _clearHomeLeadSelection() {
+    _homeLeadPost = null;
+    _homeLeadMedia = _defaultHomeLeadMedia();
+    _syncHomeLeadControls();
+    _renderHomeLeadSelected();
+  }
+
+  function _handleHomeLeadControlChange() {
+    if (!_homeLeadMedia) _homeLeadMedia = _defaultHomeLeadMedia();
+    _homeLeadMedia.fit = document.getElementById('home-lead-fit').value === 'contain' ? 'contain' : 'cover';
+    _homeLeadMedia.desktop.position_x = _getRangeNumber('home-lead-desktop-x', 50);
+    _homeLeadMedia.desktop.position_y = _getRangeNumber('home-lead-desktop-y', 50);
+    _homeLeadMedia.desktop.zoom = _getRangeNumber('home-lead-desktop-zoom', 100);
+    _homeLeadMedia.mobile.position_x = _getRangeNumber('home-lead-mobile-x', 50);
+    _homeLeadMedia.mobile.position_y = _getRangeNumber('home-lead-mobile-y', 50);
+    _homeLeadMedia.mobile.zoom = _getRangeNumber('home-lead-mobile-zoom', 100);
+    _syncHomeLeadControls();
+    _renderHomeLeadPreview(_homeLeadPost && _homeLeadPost.image_url ? _homeLeadPost.image_url : '');
+  }
+
+  function _saveHomeLead() {
+    var btn = document.getElementById('home-lead-save-btn');
+    var payload = _homeLeadPost ? { post_id: _homeLeadPost.id, media: _homeLeadMedia || _defaultHomeLeadMedia() } : { post_id: null };
+    _setButtonBusy(btn, '저장 중…');
+    _apiFetch('/api/settings/home-lead', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }).then(function () {
+      GW.showToast('메인 스토리 설정을 저장했습니다', 'success');
+      _clearButtonBusy(btn, '완료');
+      _loadHomeLeadUI();
+    }).catch(function (e) {
+      GW.showToast(e.message || '저장 실패', 'error');
+    }).finally(function () {
+      if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SETTINGS – EDITOR PICKS
+  ══════════════════════════════════════════════════════════ */
+  function _loadPicksUI() {
+    var wrap = document.getElementById('picks-selected');
+    var meta = document.getElementById('picks-meta');
+    if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (meta) meta.textContent = '불러오는 중…';
+    _apiFetch('/api/posts?featured=1&limit=20&published=1').then(function (data) {
+      _picksPosts = (data && data.posts) || [];
+      _renderPicksSelected();
+    }).catch(function () {
+      if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (meta) meta.textContent = '불러오기 실패';
+    });
+  }
+
+  function _renderPicksSelected() {
+    var wrap = document.getElementById('picks-selected');
+    var meta = document.getElementById('picks-meta');
+    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개';
+    if (!wrap) return;
+    if (!_picksPosts.length) {
+      wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택된 에디터 추천 게시글이 없습니다.</div></div>';
+      return;
+    }
+    wrap.innerHTML = '<div class="v3-picks-list">' + _picksPosts.map(function (post) {
+      return '<div class="v3-pick-row">' +
+        '<div class="v3-pick-copy">' +
+          '<div class="v3-pick-badges"><span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span><span class="v3-badge v3-badge-yellow">추천</span></div>' +
+          '<div class="v3-pick-title">' + GW.escapeHtml(post.title || '(제목 없음)') + '</div>' +
+          '<div class="v3-pick-meta">' + GW.escapeHtml(post.publish_at || post.created_at || '') + '</div>' +
+        '</div>' +
+        '<div class="v3-pick-actions">' +
+          '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" onclick="V3._removePick(' + post.id + ')">제외</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function _searchPicks(q) {
+    var el = document.getElementById('picks-search-results');
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=10&published=1').then(function (data) {
+      var posts = (data && data.posts) || [];
+      if (!posts.length) {
+        el.style.display = 'none';
+        return;
+      }
+      el.innerHTML = posts.map(function (p) {
+        var already = _picksPosts.some(function (item) { return item.id === p.id; });
+        return '<div class="v3-search-result-item' + (already ? ' is-disabled' : '') + '"' + (already ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
+          '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
+          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + (already ? ' · 이미 선택됨' : '')) + '</div>' +
+        '</div>';
+      }).join('');
+      el.style.display = 'block';
+    }).catch(function () {
+      el.style.display = 'none';
+    });
+  }
+
+  V3._addPick = function (id) {
+    _togglePick(id, true);
+  };
+
+  V3._removePick = function (id) {
+    _togglePick(id, false);
+  };
+
+  function _togglePick(id, enabled) {
+    _apiFetch('/api/posts/' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ featured: !!enabled }),
+    }).then(function () {
+      GW.showToast(enabled ? '에디터 추천에 추가했습니다' : '에디터 추천에서 제외했습니다', 'success');
+      document.getElementById('picks-search-results').style.display = 'none';
+      document.getElementById('picks-search').value = '';
+      _loadPicksUI();
+    }).catch(function (e) {
+      GW.showToast(e.message || '처리 실패', 'error');
+    });
+  }
+
+  function _setControlValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.value = value;
+  }
+
+  function _setRangeValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.value = String(value);
+  }
+
+  function _getRangeNumber(id, fallback) {
+    var el = document.getElementById(id);
+    return _clampNumber(el ? el.value : fallback, 0, 999, fallback);
+  }
+
+  function _clampNumber(value, min, max, fallback) {
+    var parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(min, Math.min(max, parsed));
   }
 
   /* ══════════════════════════════════════════════════════════
