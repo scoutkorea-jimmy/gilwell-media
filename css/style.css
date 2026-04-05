@@ -9093,7 +9093,7 @@ body.wosm-members-page #main-content {
 }
 .members-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 1120px;
   table-layout: fixed;
 }
 .members-table th {
@@ -9101,20 +9101,26 @@ body.wosm-members-page #main-content {
   top: 0;
   z-index: 1;
 }
-.members-table th:first-child,
-.members-table td:first-child {
-  width: 34%;
+.members-table th,
+.members-table td {
+  vertical-align: top;
 }
-.members-table td:nth-child(2) {
+.members-table td {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.members-table td:nth-child(2),
+.members-table td:last-child {
   white-space: nowrap;
 }
-.members-table td:nth-child(3) {
+.members-table td:nth-child(3),
+.members-table td:nth-child(4) {
   color: var(--muted);
 }
 .member-country-names {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .member-country-names strong {
   font-size: 18px;
@@ -9123,7 +9129,7 @@ body.wosm-members-page #main-content {
 }
 .member-country-names span {
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--muted);
 }
 .members-cards {

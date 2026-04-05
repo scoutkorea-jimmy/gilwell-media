@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.04
+ * Version: 03.052.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3987,8 +3987,9 @@
       var korean = _readMappedImportCell(row, map['wosm-map-country-ko']);
       var english = _readMappedImportCell(row, map['wosm-map-country-en']);
       var match = byKey.get(_wosmMemberMatchKey(english, korean));
+      var sampleKo = String((korean || (match ? match.country_ko : '') || english || '')).trim();
       var nextItem = {
-        country_ko: String((korean || (match ? match.country_ko : '') || '')).trim(),
+        country_ko: sampleKo,
         country_en: String(english || '').trim(),
         membership_category: String(match && match.membership_category || '').trim(),
         status_description: String(match && match.status_description || '').trim(),

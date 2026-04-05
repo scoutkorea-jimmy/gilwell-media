@@ -73,6 +73,7 @@
   function render() {
     var filtered = getFilteredItems();
     renderMeta(filtered);
+    renderColgroup();
     renderHead();
     renderTable(filtered);
     renderCards(filtered);
@@ -109,6 +110,14 @@
     head.innerHTML = '<tr>' + state.columns.map(function (column) {
       return '<th>' + GW.escapeHtml(column.label || column.key) + '</th>';
     }).join('') + '</tr>';
+  }
+
+  function renderColgroup() {
+    var colgroup = document.getElementById('wosm-members-colgroup');
+    if (!colgroup) return;
+    colgroup.innerHTML = state.columns.map(function (column) {
+      return '<col style="width:' + getColumnWidth(column) + ';">';
+    }).join('');
   }
 
   function renderTable(items) {
@@ -165,16 +174,31 @@
     var ko = String(item.country_ko || '').trim();
     var en = String(item.country_en || '').trim();
     return '<div class="member-country-names">' +
-      '<strong>' + GW.escapeHtml(ko || '한국어 미입력') + '</strong>' +
+      '<strong>' + GW.escapeHtml(ko || en || '국가명 미입력') + '</strong>' +
       '<span>' + GW.escapeHtml(en || '—') + '</span>' +
     '</div>';
+  }
+
+  function getColumnWidth(column) {
+    var key = String(column && column.key || '').toLowerCase();
+    var label = String(column && column.label || '').toLowerCase();
+    if (key === 'country_names') return '32%';
+    if (key.indexOf('sort') >= 0 || label.indexOf('정렬') >= 0 || label.indexOf('순번') >= 0) return '8%';
+    if (key.indexOf('language') >= 0 || label.indexOf('언어') >= 0) return '10%';
+    if (key.indexOf('region') >= 0 || label.indexOf('지역') >= 0) return '13%';
+    if (key.indexOf('nso') >= 0 || key.indexOf('nsa') >= 0 || label.indexOf('nso') >= 0 || label.indexOf('nsa') >= 0) return '11%';
+    if (key.indexOf('category') >= 0 || label.indexOf('자격') >= 0) return '14%';
+    if (key.indexOf('organization') >= 0 || label.indexOf('연맹 명칭') >= 0 || label.indexOf('조직') >= 0) return '22%';
+    if (key.indexOf('status') >= 0 || label.indexOf('상태') >= 0) return '18%';
+    return '14%';
   }
 
   function renderError() {
     var body = document.getElementById('wosm-members-body');
     var cards = document.getElementById('wosm-members-cards');
     var meta = document.getElementById('wosm-members-results-meta');
-    if (body) body.innerHTML = '<tr><td colspan="3"><div class="members-empty">데이터를 불러오지 못했습니다.</div></td></tr>';
+    var colCount = Math.max(1, state.columns.length || 1);
+    if (body) body.innerHTML = '<tr><td colspan="' + colCount + '"><div class="members-empty">데이터를 불러오지 못했습니다.</div></td></tr>';
     if (cards) cards.innerHTML = '<div class="members-empty">데이터를 불러오지 못했습니다.</div>';
     if (meta) meta.textContent = '데이터를 불러오지 못했습니다.';
   }
