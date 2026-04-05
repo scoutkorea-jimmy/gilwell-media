@@ -19,7 +19,7 @@ const VALID_PRIORITIES = ['low', 'normal', 'high'];
 
 export async function onRequestGet({ env }) {
   const rows = await env.DB.prepare(
-    `SELECT id, title, content, type, status, priority, added_by, created_at, updated_at
+    `SELECT id, title, content, type, status, priority, added_by, reply_to_id, created_at, updated_at
        FROM dp_notes
       ORDER BY
         CASE status WHEN 'open' THEN 0 ELSE 1 END,
@@ -34,7 +34,7 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { title, content, type, priority, added_by } = body;
+  const { title, content, type, priority, added_by, reply_to_id } = body;
   if (!title || typeof title !== 'string' || !title.trim()) {
     return json({ error: '제목을 입력해주세요.' }, 400);
   }
@@ -44,11 +44,12 @@ export async function onRequestPost({ request, env }) {
   const safeType     = VALID_TYPES.includes(type) ? type : 'note';
   const safePriority = VALID_PRIORITIES.includes(priority) ? priority : 'normal';
   const safeAddedBy  = added_by ? added_by.trim().slice(0, 50) : '익명';
+  const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_notes (title, content, type, priority, added_by)
-     VALUES (?, ?, ?, ?, ?)`
-  ).bind(safeTitle, safeContent, safeType, safePriority, safeAddedBy).run();
+    `INSERT INTO dp_notes (title, content, type, priority, added_by, reply_to_id)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).bind(safeTitle, safeContent, safeType, safePriority, safeAddedBy, safeReplyToId).run();
 
   return json({ id: result.meta.last_row_id, ok: true });
 }

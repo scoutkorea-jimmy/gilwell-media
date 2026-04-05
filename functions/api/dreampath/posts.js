@@ -96,14 +96,14 @@ export async function onRequestGet({ request, env, data }) {
   if (board) {
     rows = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_name, pinned, approval_status, parent_post_id, version_number, created_at, updated_at
+              author_name, pinned, approval_status, parent_post_id, version_number, reply_to_id, created_at, updated_at
          FROM dp_board_posts WHERE board = ?
         ORDER BY pinned DESC, created_at DESC LIMIT ?`
     ).bind(board, limit).all();
   } else {
     rows = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_name, pinned, approval_status, parent_post_id, version_number, created_at, updated_at
+              author_name, pinned, approval_status, parent_post_id, version_number, reply_to_id, created_at, updated_at
          FROM dp_board_posts
         ORDER BY pinned DESC, created_at DESC LIMIT ?`
     ).bind(limit).all();
@@ -124,13 +124,14 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { board, title, content, pinned, files, linked_event_id, approver_name, approval_status, approvers, parent_post_id } = body;
+  const { board, title, content, pinned, files, linked_event_id, approver_name, approval_status, approvers, parent_post_id, reply_to_id } = body;
   if (!board || !title) return json({ error: 'board and title are required.' }, 400);
   if (!VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
   const safeLinkedEventId = linked_event_id ? parseInt(linked_event_id, 10) || null : null;
   const safeApprovalStatus = ['pending','approved','rejected'].includes(approval_status) ? approval_status : 'pending';
   const safeParentId = parent_post_id ? parseInt(parent_post_id, 10) || null : null;
+  const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
 
   // Calculate version_number for revisions
   let version_number = 1;
@@ -142,8 +143,8 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status, parent_post_id, version_number)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status, parent_post_id, version_number, reply_to_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     board,
     title.trim().slice(0, 200),
@@ -155,7 +156,8 @@ export async function onRequestPost({ request, env, data }) {
     approver_name ? approver_name.trim().slice(0, 100) : null,
     safeApprovalStatus,
     safeParentId,
-    version_number
+    version_number,
+    safeReplyToId
   ).run();
 
   const postId = result.meta.last_row_id;
