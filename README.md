@@ -6,8 +6,8 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.107.00`
-- Current admin version: `V03.046.14`
+- Current site version: `V00.108.00`
+- Current admin version: `V03.047.00`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -41,6 +41,7 @@ gilwell-media/
 ├── apr.html                APR bulletin board
 ├── wosm.html               WOSM bulletin board
 ├── people.html             Scout People board
+├── wosm-members.html       WOSM member countries status page
 ├── glossary.html           Scout glossary board
 ├── glossary-raw            Search/index-friendly glossary raw view
 ├── admin.html              Admin panel (requires login)
@@ -52,6 +53,7 @@ gilwell-media/
 │   ├── board.js            Bulletin board component
 │   ├── admin-v3.js         Admin panel logic
 │   ├── post-page.js        Post detail interactions
+│   ├── wosm-members.js     WOSM member countries page logic
 │   └── kms.js              Feature definition / KMS page logic
 ├── img/                    Static assets (images, icons)
 ├── functions/
@@ -59,6 +61,7 @@ gilwell-media/
 │   └── api/
 │       ├── _middleware.js  CORS headers for all /api/* routes
 │       ├── admin/login.js  POST /api/admin/login
+│       ├── settings/wosm-members.js  GET/PUT WOSM member countries data
 │       └── posts/
 │           ├── index.js    GET /api/posts, POST /api/posts
 │           └── [id].js     GET/PUT/DELETE /api/posts/:id
@@ -84,6 +87,7 @@ Homepage AI/documentation rules:
 - Homepage work should follow `CHATGPT.md`
 - KMS in the admin page is the operational source of truth
 - `docs/feature-definition.md` is the repository snapshot of that KMS content
+- `wosm-members` data is imported from WOSM-provided `xlsx` files and then maintained in the admin settings UI
 
 **Auth flow:**
 1. Admin POSTs password to `/api/admin/login`

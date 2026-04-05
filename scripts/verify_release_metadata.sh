@@ -40,6 +40,7 @@ SITE_STYLE_FILES=(
   korea.html
   apr.html
   wosm.html
+  wosm-members.html
   people.html
   glossary.html
   contributors.html
@@ -56,6 +57,7 @@ SITE_MAIN_JS_FILES=(
   korea.html
   apr.html
   wosm.html
+  wosm-members.html
   people.html
   glossary.html
   contributors.html
@@ -71,6 +73,11 @@ for file in "${SITE_STYLE_FILES[@]}"; do
     exit 1
   }
 done
+
+grep -F "/js/wosm-members.js?v=${SITE_VERSION}" wosm-members.html >/dev/null || {
+  echo "Missing wosm-members.js version in wosm-members.html"
+  exit 1
+}
 
 for file in "${SITE_MAIN_JS_FILES[@]}"; do
   grep -F "/js/main.js?v=${SITE_VERSION}" "$file" >/dev/null || {

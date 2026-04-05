@@ -756,7 +756,7 @@
 .v3-bar-val   { font-size: 12px; color: var(--v3-text-m); width: 44px; text-align: right; flex-shrink: 0; }
 
 /* ── Settings ────────────────────────────────────────────── */
-.v3-settings-wrap { display: grid; grid-template-columns: 180px 1fr; gap: 20px; align-items: start; }
+.v3-settings-wrap { display: grid; grid-template-columns: 210px 1fr; gap: 20px; align-items: start; }
 @media (max-width: 880px) { .v3-settings-wrap { grid-template-columns: 1fr; } }
 .v3-settings-nav { position: sticky; top: 0; }
 .v3-settings-nav-btn {
@@ -769,6 +769,61 @@
 .v3-settings-nav-btn.active { background: var(--v3-primary-lt); color: var(--v3-primary); font-weight: 600; }
 .v3-settings-section { display: none; }
 .v3-settings-section.active { display: block; }
+.v3-inline-meta {
+  margin: 14px 0 12px;
+  font-size: 12px;
+  color: var(--v3-text-m);
+}
+.v3-members-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.v3-members-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(180px, .9fr) minmax(96px, .45fr) minmax(0, 1.3fr) auto;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-l);
+  background: var(--v3-surface);
+}
+.v3-members-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.v3-members-cell label {
+  font-size: 11px;
+  color: var(--v3-text-m);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.v3-members-actions {
+  display: flex;
+  align-items: flex-end;
+}
+.v3-members-empty {
+  padding: 24px 18px;
+  border: 1px dashed var(--v3-border);
+  border-radius: var(--v3-radius-l);
+  color: var(--v3-text-m);
+  text-align: center;
+}
+@media (max-width: 1400px) {
+  .v3-members-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .v3-members-actions {
+    justify-content: flex-end;
+  }
+}
+@media (max-width: 760px) {
+  .v3-members-row {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ── Hero Manager ────────────────────────────────────────── */
 .v3-hero-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }

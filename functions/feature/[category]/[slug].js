@@ -61,7 +61,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=00.107.00">
+  <link rel="stylesheet" href="/css/style.css?v=00.108.00">
   <style>
     .feature-page {
       background:
@@ -382,6 +382,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       <a href="/korea" data-i18n="nav.korea">Korea</a>
       <a href="/apr" data-i18n="nav.apr">APR</a>
       <a href="/wosm" data-i18n="nav.wosm">WOSM</a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members">세계연맹 회원국 현황</a>
       <a href="/people" data-i18n="nav.people">스카우트 인물</a>
       <a href="/calendar">캘린더</a>
       <a href="/glossary" data-i18n="nav.glossary">용어집</a>
@@ -465,7 +466,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V00.107.00</span></p>
+        <p class="footer-build">Build <span class="site-build-version">V00.108.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 BP미디어 · bpmedia.net</p>
@@ -473,7 +474,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=00.107.00"></script>
+  <script src="/js/main.js?v=00.108.00"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;

@@ -80,6 +80,7 @@
 - `/post/:id` : 기사 상세
 - `/calendar` : 일정 캘린더
 - `/glossary` : 용어집
+- `/wosm-members` : 세계연맹 회원국 현황
 - `/contributors` : 도움을 주신 분들
 - `/search` : 검색 결과
 - `/feature/:category/:slug` : 특집 기사 컬렉션
@@ -434,7 +435,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 패널 목록:
   - 개요: `대시보드`, `분석`, `마케팅`
   - 콘텐츠: `게시글 목록`, `새 글 작성`, `캘린더`, `용어집`
-  - 사이트 설정: `히어로 기사`, `태그/글머리`, `메타태그/SEO`, `저자/고지`, `게시판 배너`, `티커`, `기고자`, `편집자/접근`, `UI 번역`
+  - 사이트 설정: `히어로 기사`, `태그/글머리`, `메타태그/SEO`, `저자/고지`, `게시판 배너`, `티커`, `기고자`, `세계연맹 회원국`, `편집자/접근`, `UI 번역`
 - 대시보드 하단 운영 카드에는 `발행 예정 / 초안`, `오류 / 로그인 시도`, `최근 설정 변경`, `릴리스 이력`을 표시한다.
 
 ### 11.2 관리자 UI 규칙
@@ -576,6 +577,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET/PUT /api/settings/board-layout` — 게시판 레이아웃/페이지 사이즈
 - `GET/PUT /api/settings/ticker` — 뉴스 티커
 - `GET/PUT /api/settings/contributors` — 기고자 목록
+- `GET/PUT /api/settings/wosm-members` — 세계연맹 회원국 현황. WOSM 제공 `xlsx`를 관리자에서 가져온 뒤 한국어 / 영어 / 프랑스어 / 회원 자격 / 회원 수 / 상태 설명을 계속 수정한다.
 - `GET/PUT /api/settings/editors` — 편집자 접근 관리
 - `GET/PUT /api/settings/translations` — UI 번역
 - `GET/PUT /api/settings/calendar-copy` — 캘린더 카피 설정

@@ -51,6 +51,7 @@ function getCanonicalPath(pathname, pageKey) {
   if (pageKey === 'korea') return '/korea';
   if (pageKey === 'apr') return '/apr';
   if (pageKey === 'wosm') return '/wosm';
+  if (pageKey === 'wosm_members') return '/wosm-members';
   if (pageKey === 'people') return '/people';
   if (pageKey === 'glossary') return '/glossary';
   return pathname;

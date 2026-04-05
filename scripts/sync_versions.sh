@@ -18,6 +18,7 @@ SITE_FILES=(
   korea.html
   apr.html
   wosm.html
+  wosm-members.html
   people.html
   glossary.html
   contributors.html
@@ -29,7 +30,7 @@ SITE_FILES=(
 )
 
 for file in "${SITE_FILES[@]}"; do
-  perl -0pi -e "s/\\/css\\/style\\.css\\?v=[0-9.]+/\\/css\\/style.css?v=${SITE_VERSION}/g; s/\\/js\\/main\\.js\\?v=[0-9.]+/\\/js\\/main.js?v=${SITE_VERSION}/g; s/\\/js\\/post-page\\.js\\?v=[0-9.]+/\\/js\\/post-page.js?v=${SITE_VERSION}/g" "$file"
+  perl -0pi -e "s/\\/css\\/style\\.css\\?v=[0-9.]+/\\/css\\/style.css?v=${SITE_VERSION}/g; s/\\/js\\/main\\.js\\?v=[0-9.]+/\\/js\\/main.js?v=${SITE_VERSION}/g; s/\\/js\\/post-page\\.js\\?v=[0-9.]+/\\/js\\/post-page.js?v=${SITE_VERSION}/g; s/\\/js\\/wosm-members\\.js\\?v=[0-9.]+/\\/js\\/wosm-members.js?v=${SITE_VERSION}/g" "$file"
 done
 
 perl -0pi -e "s/GW\\.APP_VERSION = '[0-9.]+'/GW.APP_VERSION = '${SITE_VERSION}'/g; s/GW\\.ADMIN_VERSION = '[0-9.]+'/GW.ADMIN_VERSION = '${ADMIN_VERSION}'/g" js/main.js
