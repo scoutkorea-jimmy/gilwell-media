@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.10';
-  GW.ADMIN_VERSION = '03.052.07';
+  GW.APP_VERSION = '00.111.11';
+  GW.ADMIN_VERSION = '03.052.08';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -414,6 +414,11 @@
     document.querySelectorAll('.admin-build-version').forEach(function (el) {
       el.textContent = adminVer;
     });
+  };
+
+  GW.getVersionedCacheKey = function (baseKey, version) {
+    var suffix = version || GW.APP_VERSION || 'v1';
+    return String(baseKey || 'gw_cache') + '_' + String(suffix);
   };
 
   GW.readCachedPayload = function (key, maxAgeMs) {
@@ -1093,7 +1098,7 @@
   };
 
   GW.applyManagedFooter = function () {
-    var cacheKey = 'gw_cache_site_meta_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_site_meta', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW.applyManagedFooterData(cached);
@@ -1364,6 +1369,7 @@
     'nav.wosm':   { ko: 'WOSM',  en: 'WOSM' },
     'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
+    'nav.calendar': { ko: '캘린더', en: 'Calendar' },
     'nav.glossary': { ko: '용어집', en: 'Glossary' },
 
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
@@ -1440,6 +1446,37 @@
     return entry[lang] !== undefined ? entry[lang] : (entry.ko || key);
   };
 
+  GW.NAV_ITEMS = [
+    { href: '/contributors', key: 'nav.contributors' },
+    { href: '/', key: 'nav.home' },
+    { href: '/latest', key: 'nav.latest' },
+    { href: '/korea', key: 'nav.korea' },
+    { href: '/apr', key: 'nav.apr' },
+    { href: '/wosm', key: 'nav.wosm' },
+    { href: '/wosm-members', key: 'nav.wosm_members' },
+    { href: '/people', key: 'nav.people' },
+    { href: '/calendar', key: 'nav.calendar' },
+    { href: '/glossary', key: 'nav.glossary' },
+  ];
+
+  GW.renderManagedNav = function () {
+    var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    document.querySelectorAll('.nav[data-managed-nav]').forEach(function (nav) {
+      nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
+        var href = item.href;
+        var isActive = href === '/'
+          ? currentPath === '/'
+          : currentPath === href;
+        var classes = isActive ? ' class="active"' : '';
+        return '<a href="' + GW.escapeHtml(href) + '"' + classes +
+          ' data-i18n="' + GW.escapeHtml(item.key) + '">' +
+          GW.escapeHtml(GW.t(item.key)) +
+        '</a>';
+      }).join('');
+      nav.classList.add('is-ready');
+    });
+  };
+
   /** Switch language and reload (guarantees consistent state). */
   GW.setLang = function (lang) {
     localStorage.setItem('gw_lang', lang);
@@ -1457,6 +1494,7 @@
         el.textContent = text;
       }
     });
+    GW.renderManagedNav();
     GW.CATEGORIES.korea.label = GW.t('nav.korea');
     GW.CATEGORIES.apr.label = GW.t('nav.apr');
     GW.CATEGORIES.wosm.label = GW.t('nav.wosm');
@@ -1472,7 +1510,7 @@
 
   /** Load custom translation overrides from API then apply. */
   GW.loadTranslations = function () {
-    var cacheKey = 'gw_cache_translations_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_translations', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 60 * 12);
     if (GW._customStrings && Object.keys(GW._customStrings).length) {
       GW.applyLang();
@@ -1497,7 +1535,7 @@
 
   /** Fetch article counts and show in masthead stats bar. */
   GW.loadStats = function () {
-    var cacheKey = 'gw_cache_stats_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_stats', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 5);
     if (cached) {
       GW._statsData = cached;
@@ -1526,7 +1564,7 @@
   };
 
   GW.loadBoardLayoutSettings = function () {
-    var cacheKey = 'gw_cache_board_layout_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_layout', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW.applyBoardLayoutSettings(cached);
@@ -1552,7 +1590,7 @@
   };
 
   GW.loadBoardCopySettings = function () {
-    var cacheKey = 'gw_cache_board_copy_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_copy', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW._boardCopyData = cached;
@@ -1597,7 +1635,7 @@
   GW.loadTicker = function (innerId) {
     var inner = document.getElementById(innerId || 'ticker-inner');
     if (!inner) return;
-    var cacheKey = 'gw_cache_ticker_v1';
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_ticker', 'v1_' + GW.APP_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached && Array.isArray(cached.items)) {
       GW.renderTickerItems(innerId, cached.items || []);
@@ -1634,6 +1672,7 @@
   GW.bootstrapStandardPage = function (opts) {
     opts = opts || {};
     if (opts.setDate !== false) GW.setMastheadDate();
+    if (opts.renderManagedNav !== false) GW.renderManagedNav();
     if (opts.markActiveNav !== false) GW.markActiveNav();
     GW.loadBoardLayoutSettings();
     if (opts.loadBoardCopy !== false) GW.loadBoardCopySettings();
