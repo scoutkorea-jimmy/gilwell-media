@@ -108,7 +108,7 @@
     var head = document.getElementById('wosm-members-head');
     if (!head) return;
     head.innerHTML = '<tr>' + state.columns.map(function (column) {
-      return '<th>' + GW.escapeHtml(column.label || column.key) + '</th>';
+      return '<th>' + formatColumnLabel(column) + '</th>';
     }).join('') + '</tr>';
   }
 
@@ -204,6 +204,12 @@
     if (key.indexOf('organization') >= 0 || label.indexOf('연맹 명칭') >= 0 || label.indexOf('조직') >= 0) return '22%';
     if (key.indexOf('status') >= 0 || label.indexOf('상태') >= 0) return '18%';
     return '14%';
+  }
+
+  function formatColumnLabel(column) {
+    var label = String(column && column.label || column && column.key || '').trim();
+    if (label === '공식정렬 순번') return '공식정렬 순<br>번';
+    return GW.escapeHtml(label);
   }
 
   function renderError() {
