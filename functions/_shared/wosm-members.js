@@ -1,3 +1,5 @@
+import { isCountryNameFallbackValue, translateCountryNameToKorean } from './country-name-ko.js';
+
 const BASE_ITEM_KEYS = new Set([
   'country_ko',
   'country_en',
@@ -42,7 +44,11 @@ export function sanitizeWosmMemberItem(item, index) {
     if (!BASE_ITEM_KEYS.has(key)) unknownTopLevel[key] = source[key];
   });
   const countryEn = sanitizeText(source.country_en, 160);
-  const countryKo = sanitizeText(source.country_ko, 120) || countryEn;
+  const translatedKo = translateCountryNameToKorean(countryEn);
+  const rawCountryKo = sanitizeText(source.country_ko, 120);
+  const countryKo = isCountryNameFallbackValue(rawCountryKo, countryEn)
+    ? (translatedKo || countryEn)
+    : rawCountryKo;
   return {
     country_ko: countryKo,
     country_en: countryEn,

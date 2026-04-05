@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.06
+ * Version: 03.052.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3985,7 +3985,8 @@
       var korean = _readMappedImportCell(row, map['wosm-map-country-ko']);
       var english = _readMappedImportCell(row, map['wosm-map-country-en']);
       var match = byKey.get(_wosmMemberMatchKey(english, korean));
-      var sampleKo = String((korean || (match ? match.country_ko : '') || english || '')).trim();
+      var translatedKo = _translateCountryNameToKorean(english);
+      var sampleKo = String((korean || (match ? match.country_ko : '') || translatedKo || english || '')).trim();
       var nextItem = {
         country_ko: sampleKo,
         country_en: String(english || '').trim(),
@@ -4034,6 +4035,11 @@
 
   function _normalizeImportHeader(value) {
     return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
+  function _translateCountryNameToKorean(value) {
+    if (!window.GW_COUNTRY_NAME_KO || typeof window.GW_COUNTRY_NAME_KO.translate !== 'function') return '';
+    return window.GW_COUNTRY_NAME_KO.translate(value);
   }
 
   function _wosmMemberMatchKey(english, french) {

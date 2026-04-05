@@ -208,7 +208,7 @@
 
   function formatColumnLabel(column) {
     var label = String(column && column.label || column && column.key || '').trim();
-    if (label === '공식정렬 순번') return '공식정렬 순<br>번';
+    if (label === '공식정렬 순번') return '공식정렬<br>순번';
     return GW.escapeHtml(label);
   }
 
