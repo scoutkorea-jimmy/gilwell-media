@@ -113,11 +113,7 @@ export function normalizeWosmMembersColumns(raw) {
     }
   });
 
-  return result.sort((a, b) => {
-    if (a.key === 'country_names') return -1;
-    if (b.key === 'country_names') return 1;
-    return 0;
-  });
+  return prioritizeWosmColumns(result);
 }
 
 export function parseWosmMembersColumns(rawValue) {
@@ -182,6 +178,27 @@ function sanitizeColumnKey(value) {
     .replace(/[^a-z0-9_]+/g, '_')
     .replace(/^_+|_+$/g, '')
     .slice(0, 40);
+}
+
+function prioritizeWosmColumns(columns) {
+  const list = Array.isArray(columns) ? columns.slice() : [];
+  const sortColumns = [];
+  const others = [];
+  list.forEach((column) => {
+    if (isSortPriorityColumn(column)) sortColumns.push(column);
+    else others.push(column);
+  });
+  return sortColumns.concat(others);
+}
+
+function isSortPriorityColumn(column) {
+  const key = String(column && column.key || '').toLowerCase();
+  const label = String(column && column.label || '').toLowerCase();
+  const header = String(column && column.default_header || '').toLowerCase();
+  return key.includes('sort')
+    || label.includes('정렬')
+    || label.includes('순번')
+    || header.includes('strict order');
 }
 
 function sanitizeText(value, maxLen) {

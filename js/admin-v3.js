@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.05
+ * Version: 03.052.06
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3837,18 +3837,16 @@
       '</div>' +
       _wosmColumns.map(function (column, index) {
         var removable = column.key !== 'country_names';
-        var movableUp = index > 1;
-        var movableDown = index < (_wosmColumns.length - 1) && column.key !== 'country_names';
+        var movableUp = index > 0;
+        var movableDown = index < (_wosmColumns.length - 1);
         return '<div class="v3-members-row">' +
           '<div class="v3-members-cell"><label for="wosm-column-label-' + index + '">열 제목</label><input class="v3-input" type="text" id="wosm-column-label-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="label" value="' + GW.escapeHtml(column.label || '') + '" placeholder="예: 상태 설명"></div>' +
           '<div class="v3-members-cell"><label for="wosm-column-key-' + index + '">키</label><input class="v3-input" type="text" id="wosm-column-key-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="key" value="' + GW.escapeHtml(column.key || '') + '" placeholder="예: member_status"' + (column.system ? ' readonly' : '') + '></div>' +
           '<div class="v3-members-cell"><label for="wosm-column-header-' + index + '">기본 XLSX 열 이름</label><input class="v3-input" type="text" id="wosm-column-header-' + index + '" data-wosm-column-index="' + index + '" data-wosm-column-field="default_header" value="' + GW.escapeHtml(column.default_header || '') + '" placeholder="예: Status description"' + (column.key === 'country_names' ? ' readonly' : '') + '></div>' +
-          '<div class="v3-members-cell"><label>상태</label><div class="v3-inline-meta">' + (column.key === 'country_names' ? '필수 고정 열' : (column.system ? '기본 열' : '커스텀 열')) + '</div></div>' +
+          '<div class="v3-members-cell"><label>상태</label><div class="v3-inline-meta">' + (column.key === 'country_names' ? '필수 열' : (column.system ? '기본 열' : '커스텀 열')) + '</div></div>' +
           '<div class="v3-members-actions">' +
-            (column.key === 'country_names'
-              ? '<span class="v3-inline-meta">첫 열 고정</span>'
-              : '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-wosm-column-move="up" data-wosm-column-index="' + index + '"' + (movableUp ? '' : ' disabled') + '>위로</button>' +
-                '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-wosm-column-move="down" data-wosm-column-index="' + index + '"' + (movableDown ? '' : ' disabled') + '>아래로</button>') +
+            '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-wosm-column-move="up" data-wosm-column-index="' + index + '"' + (movableUp ? '' : ' disabled') + '>위로</button>' +
+            '<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-wosm-column-move="down" data-wosm-column-index="' + index + '"' + (movableDown ? '' : ' disabled') + '>아래로</button>' +
             (removable ? '<button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-wosm-column-remove="' + index + '">삭제</button>' : '') +
           '</div>' +
         '</div>';
@@ -4279,11 +4277,11 @@
 
   function _moveWosmColumn(index, delta) {
     var nextIndex = index + delta;
-    if (index <= 0 || nextIndex <= 0) return;
+    if (index < 0 || nextIndex < 0) return;
     if (index >= _wosmColumns.length || nextIndex >= _wosmColumns.length) return;
     var current = _wosmColumns[index];
     var target = _wosmColumns[nextIndex];
-    if (!current || !target || current.key === 'country_names') return;
+    if (!current || !target) return;
     _wosmColumns[index] = target;
     _wosmColumns[nextIndex] = current;
     _renderWosmMembersEditor();
@@ -4305,9 +4303,30 @@
         default_header: key === 'country_names' ? '' : String(column.default_header || '').trim(),
       });
     });
-    if (!seen.country_names) next.unshift({ key: 'country_names', label: '국가명', type: 'country_names', system: true, default_header: '' });
-    _wosmColumns = next;
-    return next;
+    if (!seen.country_names) next.push({ key: 'country_names', label: '국가명', type: 'country_names', system: true, default_header: '' });
+    _wosmColumns = _prioritizeWosmColumns(next);
+    return _wosmColumns;
+  }
+
+  function _prioritizeWosmColumns(columns) {
+    var list = Array.isArray(columns) ? columns.slice() : [];
+    var sortColumns = [];
+    var others = [];
+    list.forEach(function (column) {
+      if (_isWosmSortPriorityColumn(column)) sortColumns.push(column);
+      else others.push(column);
+    });
+    return sortColumns.concat(others);
+  }
+
+  function _isWosmSortPriorityColumn(column) {
+    var key = String(column && column.key || '').toLowerCase();
+    var label = String(column && column.label || '').toLowerCase();
+    var header = String(column && column.default_header || '').toLowerCase();
+    return key.indexOf('sort') >= 0
+      || label.indexOf('정렬') >= 0
+      || label.indexOf('순번') >= 0
+      || header.indexOf('strict order') >= 0;
   }
 
   function _getWosmImportMapKey(columnKey) {
