@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.02
+ * Version: 03.052.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -339,6 +339,7 @@
     document.getElementById('wosm-members-add-btn').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-members-add-btn-inline').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-column-add-btn').addEventListener('click', _addWosmColumnRow);
+    document.getElementById('wosm-columns-save-btn').addEventListener('click', _saveWosmMembers);
     document.getElementById('wosm-members-save-btn').addEventListener('click', _saveWosmMembers);
     document.getElementById('wosm-import-close').addEventListener('click', _closeWosmImportModal);
     document.getElementById('wosm-import-cancel').addEventListener('click', _closeWosmImportModal);
