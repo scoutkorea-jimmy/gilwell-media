@@ -1471,6 +1471,50 @@
 }
 body.marketing-fullscreen-open { overflow: hidden; }
 
+.global-scroll-top-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 14010;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.94);
+  color: var(--v3-text);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity .18s ease, transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
+}
+.global-scroll-top-btn.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.global-scroll-top-btn:hover {
+  background: var(--v3-primary-lt);
+  border-color: rgba(99,102,241,.28);
+  color: var(--v3-primary-h);
+}
+.global-scroll-top-btn span {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 15px;
+  line-height: 1;
+}
+.global-scroll-top-btn em {
+  font-style: normal;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
 /* ── 마케팅 기간 컨트롤 (mkt-period-bar) ─────────── */
 .mkt-period-bar {
   display: flex;
@@ -1746,6 +1790,83 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 @media (max-width: 900px) {
+  .admin-v3 {
+    height: auto;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+  #v3-app {
+    height: auto;
+    min-height: 100dvh;
+    flex-direction: column;
+    overflow: visible;
+  }
+  #v3-sidebar {
+    width: 100%;
+    overflow: visible;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  #v3-sidebar-logo {
+    padding: 14px 14px 12px;
+  }
+  .v3-kms-quick,
+  #v3-sidebar-footer {
+    display: none;
+  }
+  #v3-nav {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 12px 12px;
+    scrollbar-width: none;
+  }
+  #v3-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .v3-nav-section {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+  }
+  .v3-nav-section-label {
+    display: none;
+  }
+  .v3-nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0 14px;
+    min-width: fit-content;
+    height: 36px;
+    white-space: nowrap;
+  }
+  #v3-main {
+    overflow: visible;
+  }
+  #v3-topbar {
+    height: auto;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #v3-content {
+    overflow: visible;
+    padding: 14px;
+  }
+  .v3-page-head {
+    margin-bottom: 14px;
+  }
+  .v3-page-title {
+    font-size: 18px;
+  }
+  .v3-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .global-scroll-top-btn {
+    right: 14px;
+    bottom: 14px;
+  }
   .calendar-tags-controls,
   .calendar-geo-search {
     grid-template-columns: 1fr;

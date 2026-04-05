@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.08
+ * Version: 03.052.09
  *
  * Versioning:
  *   V3.aaa.bb
@@ -161,6 +161,7 @@
      INIT
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
+    if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     document.addEventListener('click', function (event) {
       var btn = event.target && event.target.closest ? event.target.closest('.v3-btn, .mkt-apply-btn, .v3-login-btn') : null;
       if (btn) _pulseButton(btn);

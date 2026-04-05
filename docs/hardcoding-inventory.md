@@ -15,13 +15,13 @@
 
 | 위치 | 현재 값 예시 | 위험도 | 권장 조치 |
 | --- | --- | --- | --- |
-| `VERSION` | `00.111.12` | 중간 | Site 버전 소스 오브 트루스로 유지 |
-| `ADMIN_VERSION` | `03.052.08` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
+| `VERSION` | `00.111.13` | 중간 | Site 버전 소스 오브 트루스로 유지 |
+| `ADMIN_VERSION` | `03.052.09` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
 | `js/main.js` | `GW.APP_VERSION`, `GW.ADMIN_VERSION` | 높음 | sync 스크립트로 자동 주입 |
-| `admin.html` | `admin-v3.css/js?v=03.052.08`, 화면 표시 버전 | 높음 | sync 스크립트로 자동 주입 |
+| `admin.html` | `admin-v3.css/js?v=03.052.09`, 화면 표시 버전 | 높음 | sync 스크립트로 자동 주입 |
 | `kms.html` | `style/admin.css/main.js/kms.js` 쿼리 버전 | 높음 | sync 스크립트로 자동 주입 |
-| 공개 HTML (`index.html`, `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `wosm-members.html`, `people.html`, `glossary.html`, `contributors.html`, `search.html`, `calendar.html`) | `?v=00.111.12` | 높음 | sync 스크립트로 자동 주입 |
-| SSR 파일 (`functions/post/[id].js`, `functions/feature/[category]/[slug].js`, `functions/glossary-raw.js`) | `?v=00.111.12` | 높음 | sync 스크립트로 자동 주입 |
+| 공개 HTML (`index.html`, `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `wosm-members.html`, `people.html`, `glossary.html`, `contributors.html`, `search.html`, `calendar.html`) | `?v=00.111.13` | 높음 | sync 스크립트로 자동 주입 |
+| SSR 파일 (`functions/post/[id].js`, `functions/feature/[category]/[slug].js`, `functions/glossary-raw.js`) | `?v=00.111.13` | 높음 | sync 스크립트로 자동 주입 |
 | `js/admin-v3.js` | header 주석 버전 | 중간 | sync 스크립트로 자동 주입 |
 
 ## Route And Meta Hardcodes
