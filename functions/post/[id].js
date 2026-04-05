@@ -167,7 +167,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=00.111.13">
+  <link rel="stylesheet" href="/css/style.css?v=00.111.14">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -496,8 +496,8 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=00.111.13"></script>
-  <script src="/js/post-page.js?v=00.111.13"></script>
+  <script src="/js/main.js?v=00.111.14"></script>
+  <script src="/js/post-page.js?v=00.111.14"></script>
 </body>
 </html>`;
 
@@ -548,6 +548,56 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function normalizeInlineHref(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^(https?:|mailto:|tel:)/i.test(raw)) return raw;
+  if (/^(\/|#|\?|\.\.?\/)/.test(raw)) return raw;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.indexOf('//') === 0) return '';
+  return '/' + raw.replace(/^\/+/, '');
+}
+
+function sanitizeEditorInlineHtml(value) {
+  const source = String(value || '').replace(/\r\n?/g, '\n');
+  if (!source) return '';
+  const tokens = [];
+  let anchorDepth = 0;
+  const tokenized = source.replace(/<(\/?)(a|strong|b|em|i|u|s|mark|code|br)\b([^>]*)>/gi, (_, closing, tagName, attrs) => {
+    const tag = String(tagName || '').toLowerCase();
+    let replacement = '';
+    if (tag === 'br') {
+      replacement = '<br>';
+    } else if (closing) {
+      if (tag === 'a') {
+        if (!anchorDepth) {
+          return '';
+        }
+        anchorDepth -= 1;
+      }
+      replacement = `</${tag}>`;
+    } else if (tag === 'a') {
+      const hrefMatch = String(attrs || '').match(/href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+      const normalizedHref = normalizeInlineHref(hrefMatch ? (hrefMatch[1] || hrefMatch[2] || hrefMatch[3] || '') : '');
+      if (!normalizedHref) {
+        return '';
+      }
+      anchorDepth += 1;
+      const external = /^https?:/i.test(normalizedHref);
+      replacement = `<a href="${escapeHtml(normalizedHref)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>`;
+    } else {
+      replacement = `<${tag}>`;
+    }
+    const token = `%%INLINE_${tokens.length}%%`;
+    tokens.push({ token, html: replacement });
+    return token;
+  });
+  let escaped = escapeHtml(tokenized).replace(/\n/g, '<br>');
+  tokens.forEach((entry) => {
+    escaped = escaped.replace(entry.token, entry.html);
+  });
+  return escaped;
 }
 
 function formatDate(dateStr) {
@@ -618,7 +668,7 @@ function renderContent(str) {
 }
 
 function renderEditorInlineText(value) {
-  return escapeHtml(String(value || '').replace(/\r\n?/g, '\n')).replace(/\n/g, '<br>');
+  return sanitizeEditorInlineHtml(value);
 }
 
 function renderEditorListItems(items, listTag) {
