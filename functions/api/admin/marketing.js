@@ -356,7 +356,9 @@ function classifyJourneyStage(path) {
     value === '/calendar' ||
     value === '/calendar.html' ||
     value === '/contributors' ||
-    value === '/contributors.html'
+    value === '/contributors.html' ||
+    value === '/wosm-members' ||
+    value === '/wosm-members.html'
   ) return 'awareness';
   if (value === '/dreampath' || value === '/dreampath.html') return 'interest';
   return 'interest';
@@ -377,6 +379,8 @@ function resolvePathTitle(path, postTitleMap) {
     '/apr.html': 'APR',
     '/wosm': 'WOSM',
     '/wosm.html': 'WOSM',
+    '/wosm-members': '세계연맹 회원국 현황',
+    '/wosm-members.html': '세계연맹 회원국 현황',
     '/people': 'Scout People',
     '/people.html': 'Scout People',
     '/calendar': '캘린더',

@@ -9,7 +9,7 @@
 
 - 대상: `bpmedia.net` 메인 사이트
 - 제외: `DreamPath`, `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`
-- 공개 표면: 홈, 카테고리 보드, 기사 상세, 검색, 용어집, 도움 페이지, 관리자
+- 공개 표면: 홈, 카테고리 보드, 기사 상세, 검색, 용어집, 세계연맹 회원국 현황, 도움 페이지, 관리자
 
 ---
 
@@ -29,7 +29,9 @@
 
 - `index.html`: 홈
 - `korea.html`, `apr.html`, `wosm.html`, `people.html`: 공개 카테고리 보드
+- `wosm-members.html`: 세계연맹 회원국 현황
 - `glossary.html`: 용어집
+- `js/wosm-members.js`: 세계연맹 회원국 현황 공개 페이지 로직
 - `search.html`: 검색
 - `admin.html`: 관리자
 - `kms.html`: 기능 정의서 / KMS
@@ -39,6 +41,7 @@
 - `js/post-page.js`: 기사 상세 페이지 로직
 - `js/admin-v3.js`: 관리자 로직
 - `functions/api/*`: 메인 사이트 API
+- `functions/api/settings/wosm-members.js`: 세계연맹 회원국 현황 데이터 저장 API
 - `functions/[[path]].js`: 일반 페이지 공유 메타 주입
 - `functions/post/[id].js`: 기사 상세 서버 렌더링
 
@@ -94,9 +97,11 @@
 ## Site Structure
 
 - 홈은 마스트헤드, 티커, 히어로, 메인 스토리, 최신 소식, 인기 소식, 에디터 추천, 카테고리 보드, 푸터 통계로 구성합니다.
-- 공개 표면은 홈, Korea, APR, WOSM, Scout People, 검색, 용어집, 기사 상세, 도움 페이지로 유지합니다.
+- 공개 표면은 홈, Korea, APR, WOSM, 세계연맹 회원국 현황, Scout People, 검색, 용어집, 기사 상세, 도움 페이지로 유지합니다.
+- `세계연맹 회원국 현황`은 공개 페이지 `/wosm-members`와 관리자 설정 `세계연맹 회원국`을 한 세트로 봅니다.
+- 원본 `xlsx`는 관리자에서 가져오고, 가져온 뒤에는 관리자 입력 필드에서 한국어/영어/프랑스어와 상태 설명을 계속 수정할 수 있어야 합니다.
 - 관리자 정보 구조는 `운영 개요 / 콘텐츠 / 사이트 설정` 세 축을 유지합니다.
-- 중요 URL은 `/admin.html`, `/glossary`, `/post/:id`, `/sitemap.xml`, `/robots.txt`를 기준으로 봅니다.
+- 중요 URL은 `/admin.html`, `/glossary`, `/wosm-members`, `/post/:id`, `/sitemap.xml`, `/robots.txt`를 기준으로 봅니다.
 
 ---
 

@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.107.00';
-  GW.ADMIN_VERSION = '03.046.14';
+  GW.APP_VERSION = '00.108.00';
+  GW.ADMIN_VERSION = '03.047.00';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1362,6 +1362,7 @@
     'nav.korea':  { ko: 'Korea', en: 'Korea' },
     'nav.apr':    { ko: 'APR',   en: 'APR' },
     'nav.wosm':   { ko: 'WOSM',  en: 'WOSM' },
+    'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
     'nav.glossary': { ko: '용어집', en: 'Glossary' },
 

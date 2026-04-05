@@ -9027,3 +9027,194 @@ body.admin-page .item-meta-chip span {
     height: 220px;
   }
 }
+
+/* ── WOSM Members ───────────────────────────────────────── */
+.members-hero {
+  max-width: 1200px;
+  margin: 40px auto 0;
+  padding: 0 10%;
+  display: grid;
+  grid-template-columns: 1.3fr .9fr;
+  gap: 24px;
+  align-items: start;
+}
+.members-hero-copy {
+  padding: 28px 32px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%);
+}
+.members-hero-copy h2 {
+  margin: 14px 0 10px;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.08;
+}
+.members-hero-copy p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--gray);
+}
+.members-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.members-summary-card {
+  min-height: 120px;
+  padding: 18px 20px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.members-summary-card strong {
+  font-size: 28px;
+  line-height: 1;
+}
+.members-summary-card span {
+  font-size: 12px;
+  color: var(--gray);
+}
+.members-page-wrap {
+  max-width: 1200px;
+  margin: 28px auto 0;
+  padding: 0 10% 72px;
+}
+.members-toolbar {
+  display: grid;
+  grid-template-columns: 1.5fr .8fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.members-search-wrap,
+.members-filter-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.members-search-wrap label,
+.members-filter-wrap label {
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+.members-search-input,
+.members-filter-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--black);
+  background: #fff;
+  color: var(--black);
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 14px;
+}
+.members-results-meta {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--gray);
+}
+.members-table-wrap {
+  display: block;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+  overflow: auto;
+}
+.members-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+.members-table th,
+.members-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+.members-table th {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gray);
+  background: #fafafa;
+}
+.member-country-names {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.member-country-names strong {
+  font-size: 15px;
+  color: var(--black);
+}
+.member-country-names span {
+  font-size: 12px;
+  color: var(--gray);
+}
+.members-cards {
+  display: none;
+}
+.member-country-card {
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+  padding: 18px;
+}
+.member-country-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+.member-country-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+.member-country-status {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--gray);
+}
+.members-empty {
+  padding: 36px 18px;
+  text-align: center;
+  color: var(--gray);
+}
+
+@media (max-width: 900px) {
+  .members-hero {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+    margin-top: 24px;
+  }
+
+  .members-page-wrap {
+    padding: 0 16px 56px;
+  }
+
+  .members-hero-copy {
+    padding: 22px 20px;
+  }
+
+  .members-hero-stats,
+  .members-toolbar,
+  .member-country-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .members-table-wrap {
+    display: none;
+  }
+
+  .members-cards {
+    display: grid;
+    gap: 12px;
+  }
+}
