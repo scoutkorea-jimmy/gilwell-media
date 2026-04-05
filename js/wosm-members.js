@@ -103,14 +103,13 @@
     var body = document.getElementById('wosm-members-body');
     if (!body) return;
     if (!items.length) {
-      body.innerHTML = '<tr><td colspan="4"><div class="members-empty">조건에 맞는 국가가 없습니다.</div></td></tr>';
+      body.innerHTML = '<tr><td colspan="3"><div class="members-empty">조건에 맞는 국가가 없습니다.</div></td></tr>';
       return;
     }
     body.innerHTML = items.map(function (item) {
       return '<tr>' +
         '<td>' + renderNameBlock(item) + '</td>' +
         '<td>' + GW.escapeHtml(item.membership_category || '—') + '</td>' +
-        '<td>' + GW.escapeHtml(item.membership_total == null ? '—' : GW.formatNumber(item.membership_total)) + '</td>' +
         '<td>' + GW.escapeHtml(item.status_description || '—') + '</td>' +
       '</tr>';
     }).join('');
@@ -128,7 +127,6 @@
         '<div class="member-country-head">' + renderNameBlock(item) + '</div>' +
         '<div class="member-country-meta-grid">' +
           '<div><span class="member-country-label">회원 자격</span><strong>' + GW.escapeHtml(item.membership_category || '—') + '</strong></div>' +
-          '<div><span class="member-country-label">회원 수</span><strong>' + GW.escapeHtml(item.membership_total == null ? '—' : GW.formatNumber(item.membership_total)) + '</strong></div>' +
         '</div>' +
         '<p class="member-country-status">' + GW.escapeHtml(item.status_description || '상태 설명이 없습니다.') + '</p>' +
       '</article>';
@@ -150,7 +148,7 @@
     var body = document.getElementById('wosm-members-body');
     var cards = document.getElementById('wosm-members-cards');
     var meta = document.getElementById('wosm-members-results-meta');
-    if (body) body.innerHTML = '<tr><td colspan="4"><div class="members-empty">데이터를 불러오지 못했습니다.</div></td></tr>';
+    if (body) body.innerHTML = '<tr><td colspan="3"><div class="members-empty">데이터를 불러오지 못했습니다.</div></td></tr>';
     if (cards) cards.innerHTML = '<div class="members-empty">데이터를 불러오지 못했습니다.</div>';
     if (meta) meta.textContent = '데이터를 불러오지 못했습니다.';
   }

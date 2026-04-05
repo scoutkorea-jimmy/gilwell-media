@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.049.00
+ * Version: 03.049.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -58,6 +58,10 @@
   var _wosmMembers   = [];
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
+  var _wosmImportFileName = '';
+  var _wosmImportSheets = [];
+  var _wosmImportSheetIndex = 0;
+  var _wosmImportMapping = null;
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -325,6 +329,26 @@
     document.getElementById('wosm-members-add-btn').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-members-add-btn-inline').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-members-save-btn').addEventListener('click', _saveWosmMembers);
+    document.getElementById('wosm-import-close').addEventListener('click', _closeWosmImportModal);
+    document.getElementById('wosm-import-cancel').addEventListener('click', _closeWosmImportModal);
+    document.getElementById('wosm-import-apply').addEventListener('click', _applyWosmImportMapping);
+    document.getElementById('wosm-import-modal').addEventListener('click', function (event) {
+      if (event.target && event.target.id === 'wosm-import-modal') _closeWosmImportModal();
+    });
+    document.getElementById('wosm-import-sheet').addEventListener('change', function () {
+      _wosmImportSheetIndex = Math.max(0, parseInt(this.value, 10) || 0);
+      _syncWosmImportMappingDefaults();
+      _renderWosmImportModal();
+    });
+    ['wosm-map-country-ko', 'wosm-map-country-en', 'wosm-map-country-fr', 'wosm-map-category', 'wosm-map-status'].forEach(function (id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      select.addEventListener('change', function () {
+        _ensureWosmImportMapping();
+        _wosmImportMapping[id] = select.value || '';
+        _renderWosmImportPreview();
+      });
+    });
     document.getElementById('wosm-members-search').addEventListener('input', function () {
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
       _renderWosmMembersEditor();
@@ -3608,7 +3632,6 @@
         '<span>영어</span>' +
         '<span>프랑스어</span>' +
         '<span>회원 자격</span>' +
-        '<span>회원 수</span>' +
         '<span>상태 설명</span>' +
         '<span>작업</span>' +
       '</div>' +
@@ -3620,7 +3643,6 @@
         _renderWosmMemberCell(i, 'country_en', '영어', item.country_en || '', 'Country Name option 1 E') +
         _renderWosmMemberCell(i, 'country_fr', '프랑스어', item.country_fr || '', 'Country Name option 1 F') +
         _renderWosmMemberCell(i, 'membership_category', '회원 자격', item.membership_category || '', 'Member country of WOSM') +
-        _renderWosmMemberCell(i, 'membership_total', '회원 수', item.membership_total == null ? '' : String(item.membership_total), '176') +
         _renderWosmMemberCell(i, 'status_description', '상태 설명', item.status_description || '', '비고 또는 상태 설명') +
         '<div class="v3-members-actions"><button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-wosm-remove="' + i + '">삭제</button></div>' +
       '</div>';
@@ -3631,9 +3653,7 @@
         var index = parseInt(input.getAttribute('data-wosm-index'), 10);
         var field = input.getAttribute('data-wosm-field');
         if (!_wosmMembers[index]) return;
-        _wosmMembers[index][field] = field === 'membership_total'
-          ? _normalizeWosmMemberCount(input.value)
-          : input.value;
+        _wosmMembers[index][field] = input.value;
       });
     });
     el.querySelectorAll('[data-wosm-remove]').forEach(function (btn) {
@@ -3655,7 +3675,7 @@
     }
     return '<div class="v3-members-cell">' +
       '<label for="' + id + '">' + GW.escapeHtml(label) + '</label>' +
-      '<input class="v3-input" type="' + (field === 'membership_total' ? 'number' : 'text') + '" id="' + id + '" data-wosm-index="' + index + '" data-wosm-field="' + GW.escapeHtml(field) + '" value="' + GW.escapeHtml(value || '') + '" placeholder="' + GW.escapeHtml(placeholder || '') + '">' +
+      '<input class="v3-input" type="text" id="' + id + '" data-wosm-index="' + index + '" data-wosm-field="' + GW.escapeHtml(field) + '" value="' + GW.escapeHtml(value || '') + '" placeholder="' + GW.escapeHtml(placeholder || '') + '">' +
     '</div>';
   }
 
@@ -3682,7 +3702,6 @@
       country_en: '',
       country_fr: '',
       membership_category: '',
-      membership_total: null,
       status_description: '',
       sort_order: _wosmMembers.length,
     });
@@ -3697,7 +3716,6 @@
         country_en: String(item.country_en || '').trim(),
         country_fr: String(item.country_fr || '').trim(),
         membership_category: String(item.membership_category || '').trim(),
-        membership_total: _normalizeWosmMemberCount(item.membership_total),
         status_description: String(item.status_description || '').trim(),
         sort_order: index,
       };
@@ -3734,17 +3752,24 @@
       try {
         var data = loadEvent && loadEvent.target ? loadEvent.target.result : null;
         var workbook = window.XLSX.read(data, { type: 'array' });
-        var sheetName = workbook.SheetNames[0];
-        var sheet = workbook.Sheets[sheetName];
-        var rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
-        var imported = _mapWosmMemberRows(rows);
-        if (!imported.length) {
-          GW.showToast('가져올 항목이 없습니다. 열 이름을 확인해주세요.', 'error');
+        var sheets = (workbook.SheetNames || []).map(function (sheetName) {
+          var sheet = workbook.Sheets[sheetName];
+          var rows = window.XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          var headers = rows.length ? Object.keys(rows[0]) : [];
+          return { name: sheetName, rows: rows, headers: headers };
+        }).filter(function (sheet) {
+          return Array.isArray(sheet.rows) && sheet.rows.length;
+        });
+        if (!sheets.length) {
+          GW.showToast('가져올 시트가 없습니다.', 'error');
           return;
         }
-        _wosmMembers = imported;
-        _renderWosmMembersEditor();
-        GW.showToast('XLSX를 불러왔습니다. 한국어명은 이어서 수정할 수 있습니다.', 'success');
+        _wosmImportFileName = file.name || '업로드 파일';
+        _wosmImportSheets = sheets;
+        _wosmImportSheetIndex = 0;
+        _wosmImportMapping = null;
+        _syncWosmImportMappingDefaults();
+        _openWosmImportModal();
       } catch (err) {
         console.error('WOSM members XLSX import error:', err);
         GW.showToast('XLSX를 읽지 못했습니다', 'error');
@@ -3755,31 +3780,42 @@
     reader.readAsArrayBuffer(file);
   }
 
-  function _mapWosmMemberRows(rows) {
+  function _mapWosmMemberRows(rows, mapping) {
     var byKey = new Map();
     _wosmMembers.forEach(function (item) {
       var key = _wosmMemberMatchKey(item.country_en, item.country_fr);
       if (key) byKey.set(key, item);
     });
+    var map = mapping || {};
     return (Array.isArray(rows) ? rows : []).map(function (row, index) {
-      var english = _readImportCell(row, ['Country name option 1 E', 'Country Name option 1 E']);
-      var french = _readImportCell(row, ['Country name option 1 F', 'Country Name option 1 F']);
-      var membershipCategory = _readImportCell(row, ['WOSM membership category', 'WOSM Membership category']);
-      var membershipTotal = _readImportCell(row, ['WOSM Memb', 'WOSM Mem', 'WOSM Members']);
-      var statusDescription = _readImportCell(row, ['Status description', 'Status Description']);
+      var korean = _readMappedImportCell(row, map['wosm-map-country-ko']);
+      var english = _readMappedImportCell(row, map['wosm-map-country-en']);
+      var french = _readMappedImportCell(row, map['wosm-map-country-fr']);
+      var membershipCategory = _readMappedImportCell(row, map['wosm-map-category']);
+      var statusDescription = _readMappedImportCell(row, map['wosm-map-status']);
       var match = byKey.get(_wosmMemberMatchKey(english, french));
       return {
-        country_ko: match ? String(match.country_ko || '') : '',
+        country_ko: String((korean || (match ? match.country_ko : '') || '')).trim(),
         country_en: String(english || '').trim(),
         country_fr: String(french || '').trim(),
         membership_category: String(membershipCategory || '').trim(),
-        membership_total: _normalizeWosmMemberCount(membershipTotal),
         status_description: String(statusDescription || '').trim(),
         sort_order: index,
       };
     }).filter(function (item) {
-      return item.country_en || item.country_fr;
+      return item.country_ko || item.country_en || item.country_fr;
     });
+  }
+
+  function _readMappedImportCell(row, headerName) {
+    if (!headerName) return '';
+    var source = row && typeof row === 'object' ? row : {};
+    var normalized = _normalizeImportHeader(headerName);
+    var keys = Object.keys(source);
+    for (var i = 0; i < keys.length; i += 1) {
+      if (_normalizeImportHeader(keys[i]) === normalized) return source[keys[i]];
+    }
+    return '';
   }
 
   function _readImportCell(row, aliases) {
@@ -3803,11 +3839,115 @@
     return [String(english || '').trim().toLowerCase(), String(french || '').trim().toLowerCase()].join('::');
   }
 
-  function _normalizeWosmMemberCount(value) {
-    var text = String(value == null ? '' : value).trim();
-    if (!text) return null;
-    var numeric = parseInt(text.replace(/[^\d-]/g, ''), 10);
-    return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+  function _ensureWosmImportMapping() {
+    if (_wosmImportMapping) return;
+    _wosmImportMapping = {
+      'wosm-map-country-ko': '',
+      'wosm-map-country-en': '',
+      'wosm-map-country-fr': '',
+      'wosm-map-category': '',
+      'wosm-map-status': '',
+    };
+  }
+
+  function _getCurrentWosmImportSheet() {
+    return _wosmImportSheets[_wosmImportSheetIndex] || { name: '', rows: [], headers: [] };
+  }
+
+  function _guessWosmImportHeader(headers, aliases) {
+    var list = Array.isArray(headers) ? headers : [];
+    for (var i = 0; i < aliases.length; i += 1) {
+      var alias = _normalizeImportHeader(aliases[i]);
+      for (var j = 0; j < list.length; j += 1) {
+        if (_normalizeImportHeader(list[j]) === alias) return list[j];
+      }
+    }
+    return '';
+  }
+
+  function _syncWosmImportMappingDefaults() {
+    _ensureWosmImportMapping();
+    var headers = _getCurrentWosmImportSheet().headers || [];
+    _wosmImportMapping['wosm-map-country-ko'] = _wosmImportMapping['wosm-map-country-ko'] || _guessWosmImportHeader(headers, ['Country name option 1 K', 'Country Name option 1 K', 'Country name ko', 'Country KO', '국가명', '한국어']);
+    _wosmImportMapping['wosm-map-country-en'] = _guessWosmImportHeader(headers, ['Country name option 1 E', 'Country Name option 1 E', 'Country name option 1 English', 'English', 'Country']);
+    _wosmImportMapping['wosm-map-country-fr'] = _guessWosmImportHeader(headers, ['Country name option 1 F', 'Country Name option 1 F', 'French', 'Francais', 'Français']);
+    _wosmImportMapping['wosm-map-category'] = _wosmImportMapping['wosm-map-category'] || _guessWosmImportHeader(headers, ['WOSM membership category', 'WOSM Membership category', 'Membership category', 'Category']);
+    _wosmImportMapping['wosm-map-status'] = _wosmImportMapping['wosm-map-status'] || _guessWosmImportHeader(headers, ['Status description', 'Status Description', 'Status', 'Description', '비고']);
+  }
+
+  function _openWosmImportModal() {
+    _renderWosmImportModal();
+    var modal = document.getElementById('wosm-import-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function _closeWosmImportModal() {
+    var modal = document.getElementById('wosm-import-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function _renderWosmImportModal() {
+    var sheetSelect = document.getElementById('wosm-import-sheet');
+    var meta = document.getElementById('wosm-import-meta');
+    if (sheetSelect) {
+      sheetSelect.innerHTML = _wosmImportSheets.map(function (sheet, index) {
+        return '<option value="' + index + '">' + GW.escapeHtml(sheet.name) + ' · ' + GW.formatNumber(sheet.rows.length) + '행</option>';
+      }).join('');
+      sheetSelect.value = String(_wosmImportSheetIndex);
+    }
+    var sheet = _getCurrentWosmImportSheet();
+    if (meta) {
+      meta.textContent = (_wosmImportFileName || '업로드 파일') + ' · ' + GW.formatNumber(sheet.rows.length) + '행 · 헤더 ' + GW.formatNumber((sheet.headers || []).length) + '개';
+    }
+    _renderWosmImportMappingFields();
+    _renderWosmImportPreview();
+  }
+
+  function _renderWosmImportMappingFields() {
+    var headers = _getCurrentWosmImportSheet().headers || [];
+    _ensureWosmImportMapping();
+    ['wosm-map-country-ko', 'wosm-map-country-en', 'wosm-map-country-fr', 'wosm-map-category', 'wosm-map-status'].forEach(function (id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      select.innerHTML = '<option value="">선택 안 함</option>' + headers.map(function (header) {
+        return '<option value="' + GW.escapeHtml(header) + '">' + GW.escapeHtml(header) + '</option>';
+      }).join('');
+      select.value = _wosmImportMapping[id] || '';
+    });
+  }
+
+  function _renderWosmImportPreview() {
+    var body = document.getElementById('wosm-import-preview-body');
+    var meta = document.getElementById('wosm-import-preview-meta');
+    if (!body) return;
+    var sheet = _getCurrentWosmImportSheet();
+    var mapped = _mapWosmMemberRows(sheet.rows || [], _wosmImportMapping).slice(0, 5);
+    if (meta) meta.textContent = '미리보기 ' + GW.formatNumber(mapped.length) + '행 / 원본 ' + GW.formatNumber((sheet.rows || []).length) + '행';
+    if (!mapped.length) {
+      body.innerHTML = '<tr><td colspan="5"><div class="v3-import-preview-empty">현재 매핑으로 가져올 항목이 없습니다.</div></td></tr>';
+      return;
+    }
+    body.innerHTML = mapped.map(function (item) {
+      return '<tr>' +
+        '<td>' + GW.escapeHtml(item.country_ko || '—') + '</td>' +
+        '<td>' + GW.escapeHtml(item.country_en || '—') + '</td>' +
+        '<td>' + GW.escapeHtml(item.country_fr || '—') + '</td>' +
+        '<td>' + GW.escapeHtml(item.membership_category || '—') + '</td>' +
+        '<td>' + GW.escapeHtml(item.status_description || '—') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function _applyWosmImportMapping() {
+    var mapped = _mapWosmMemberRows(_getCurrentWosmImportSheet().rows || [], _wosmImportMapping);
+    if (!mapped.length) {
+      GW.showToast('현재 매핑으로 가져올 항목이 없습니다.', 'error');
+      return;
+    }
+    _wosmMembers = mapped;
+    _closeWosmImportModal();
+    _renderWosmMembersEditor();
+    GW.showToast('XLSX를 가져왔습니다. 필요한 한국어명과 상태 설명을 이어서 수정하세요.', 'success');
   }
 
   /* ══════════════════════════════════════════════════════════
