@@ -45,7 +45,7 @@ const DEFAULT_SITE_META = {
     },
     wosm_members: {
       title: '세계연맹 회원국 현황 · BP미디어',
-      description: 'WOSM 회원국 현황을 한국어, 영어, 프랑스어 기준으로 확인합니다.',
+      description: 'WOSM 회원국 현황을 한국어와 영어 기준으로 확인합니다.',
     },
     people: {
       title: '스카우트 인물 · BP미디어',
