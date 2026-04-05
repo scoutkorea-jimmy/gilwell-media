@@ -478,6 +478,7 @@ const DP = (() => {
     bodyEl.innerHTML = html;
     modalEl.classList.toggle('dp-modal--wide', !!wide && !fullpage);
     modalEl.classList.toggle('dp-modal--fullpage', !!fullpage);
+    overlay.classList.toggle('dp-modal--fullpage-overlay', !!fullpage);
 
     if (onConfirm) {
       footerEl.innerHTML = `
@@ -495,8 +496,9 @@ const DP = (() => {
   function closeModal() {
     _destroyTiptap();
     const modalEl = $('dp-modal');
-    modalEl.classList.remove('dp-modal--fullpage');
-    $('dp-modal-overlay').classList.remove('dp-modal--open');
+    const overlay = $('dp-modal-overlay');
+    modalEl.classList.remove('dp-modal--fullpage', 'dp-modal--wide');
+    overlay.classList.remove('dp-modal--fullpage-overlay', 'dp-modal--open');
   }
 
   // ── API helper ─────────────────────────────────────────────────────────────
@@ -3946,6 +3948,7 @@ const DP = (() => {
           type:     $('cn-type').value,
           priority: $('cn-priority').value,
           status:   $('cn-status').value,
+          added_by: currentUser?.display_name || currentUser?.username || '익명',
         });
         if (result) { closeModal(); showToast('Note created.', 'success'); loadNotes(); }
       },
