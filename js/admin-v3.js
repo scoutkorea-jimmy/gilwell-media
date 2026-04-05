@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.046.13
+ * Version: 03.046.14
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2321,8 +2321,9 @@
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">페이지 기회 맵 데이터가 없습니다</div></div>';
       return;
     }
-    var W = 1080;
-    var H = 420;
+    var availableWidth = Math.max(920, Math.min(1360, ((el.clientWidth || (el.parentElement && el.parentElement.clientWidth) || 1080) - 8)));
+    var W = availableWidth;
+    var H = Math.max(420, Math.min(560, Math.round(W * 0.42)));
     var margin = { top: 20, right: 30, bottom: 52, left: 64 };
     var innerW = W - margin.left - margin.right;
     var innerH = H - margin.top - margin.bottom;
@@ -2348,15 +2349,27 @@
       var ratio = (Number(value || 0) - safeMin) / (safeMax - safeMin || 1);
       return margin.top + innerH - (ratio * innerH);
     }
+    var minRadius = 7;
+    var maxRadius = Math.max(18, Math.min(24, innerH * 0.08));
+
     function rScale(value) {
-      return 7 + Math.sqrt(Number(value || 0) / maxPageviews) * 26;
+      var ratio = Math.sqrt(Math.max(0, Number(value || 0)) / maxPageviews);
+      return minRadius + (ratio * (maxRadius - minRadius));
+    }
+    function clamp(num, min, max) {
+      return Math.max(min, Math.min(max, num));
     }
     var points = items.map(function (item, index) {
-      var cx = xScale(item.unique_users || 1);
-      var cy = yScale(item.views_per_user || 0);
       var radius = rScale(item.pageviews || 0);
+      var cx = clamp(xScale(item.unique_users || 1), margin.left + radius + 4, margin.left + innerW - radius - 4);
+      var cy = clamp(yScale(item.views_per_user || 0), margin.top + radius + 4, margin.top + innerH - radius - 4);
       var color = _marketingStageColor(item.stage);
-      var label = index < 8 ? '<text x="' + (cx + radius + 6) + '" y="' + (cy + 4) + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, 16)) + '</text>' : '';
+      var labelRightX = cx + radius + 6;
+      var labelLeftX = cx - radius - 6;
+      var labelFitsRight = labelRightX < (margin.left + innerW - 110);
+      var labelX = labelFitsRight ? labelRightX : labelLeftX;
+      var labelAnchor = labelFitsRight ? 'start' : 'end';
+      var label = index < 8 ? '<text x="' + labelX + '" y="' + (cy + 4) + '" text-anchor="' + labelAnchor + '" class="marketing-scatter-label">' + GW.escapeHtml(_trimMarketingTitle(item.title, 16)) + '</text>' : '';
       var tip = item.title + ' · 경로 ' + item.path + ' · 사용자 ' + _fmt(item.unique_users) + ' · 페이지뷰 ' + _fmt(item.pageviews) + ' · 1인당 조회 ' + item.views_per_user + '회 · 공유 유입 ' + Math.round((item.share_ratio || 0) * 100) + '%';
       var href = String(item.path || '').indexOf('/post/') === 0 ? item.path : '';
       return '<g class="marketing-scatter-point' + (href ? ' is-clickable' : '') + '" data-tip="' + GW.escapeHtml(tip) + '"' + (href ? ' data-href="' + GW.escapeHtml(href) + '"' : '') + '>' +
