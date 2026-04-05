@@ -9029,29 +9029,35 @@ body.admin-page .item-meta-chip span {
 }
 
 /* ── WOSM Members ───────────────────────────────────────── */
+body.wosm-members-page #main-content {
+  min-height: calc(100vh - 280px);
+}
+
 .members-hero {
-  max-width: 1200px;
+  width: min(1680px, calc(100vw - 96px));
+  max-width: none;
   margin: 40px auto 0;
-  padding: 0 10%;
+  padding: 0;
   display: grid;
-  grid-template-columns: 1.3fr .9fr;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+  gap: 28px;
   align-items: start;
 }
 .members-hero-copy {
-  padding: 28px 32px;
+  padding: 34px 38px;
   border: 1px solid rgba(17, 17, 17, 0.08);
   background: linear-gradient(180deg, #ffffff 0%, #f8fcf9 100%);
 }
 .members-hero-copy h2 {
   margin: 14px 0 10px;
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(32px, 2.7vw, 52px);
   line-height: 1.08;
 }
 .members-hero-copy p {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.8;
+  max-width: 52ch;
+  font-size: 16px;
+  line-height: 1.85;
   color: var(--gray);
 }
 .members-hero-stats {
@@ -9060,8 +9066,8 @@ body.admin-page .item-meta-chip span {
   gap: 12px;
 }
 .members-summary-card {
-  min-height: 120px;
-  padding: 18px 20px;
+  min-height: 132px;
+  padding: 22px 24px;
   border: 1px solid rgba(17, 17, 17, 0.08);
   background: #fff;
   display: flex;
@@ -9069,17 +9075,18 @@ body.admin-page .item-meta-chip span {
   justify-content: space-between;
 }
 .members-summary-card strong {
-  font-size: 28px;
+  font-size: 36px;
   line-height: 1;
 }
 .members-summary-card span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gray);
 }
 .members-page-wrap {
-  max-width: 1200px;
+  width: min(1680px, calc(100vw - 96px));
+  max-width: none;
   margin: 28px auto 0;
-  padding: 0 10% 72px;
+  padding: 0 0 72px;
 }
 .members-board-shell {
   border: 1px solid rgba(17, 17, 17, 0.08);
@@ -9087,10 +9094,10 @@ body.admin-page .item-meta-chip span {
 }
 .members-toolbar {
   display: grid;
-  grid-template-columns: 1.5fr .8fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.7fr);
+  gap: 16px;
   margin-bottom: 0;
-  padding: 18px 20px;
+  padding: 20px 24px;
   border: 1px solid rgba(17, 17, 17, 0.08);
   border-bottom: none;
   background: #fcfcfc;
@@ -9111,18 +9118,18 @@ body.admin-page .item-meta-chip span {
 .members-search-input,
 .members-filter-select {
   width: 100%;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 48px;
+  padding: 0 16px;
   border: 1px solid var(--black);
   background: #fff;
   color: var(--black);
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
 }
 .members-results-meta {
   margin: 0;
-  padding: 12px 20px;
-  font-size: 13px;
+  padding: 14px 24px;
+  font-size: 14px;
   color: var(--gray);
   border: 1px solid rgba(17, 17, 17, 0.08);
   border-bottom: none;
@@ -9138,18 +9145,18 @@ body.admin-page .item-meta-chip span {
 .members-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 980px;
+  min-width: 1280px;
   table-layout: fixed;
 }
 .members-table th,
 .members-table td {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-bottom: 1px solid rgba(17, 17, 17, 0.08);
   text-align: left;
   vertical-align: top;
 }
 .members-table th {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--gray);
@@ -9158,29 +9165,31 @@ body.admin-page .item-meta-chip span {
   top: 0;
   z-index: 1;
 }
-.members-table th:nth-child(1) { width: 28%; }
-.members-table th:nth-child(2) { width: 22%; }
+.members-table th:nth-child(1) { width: 31%; }
+.members-table th:nth-child(2) { width: 24%; }
 .members-table th:nth-child(3) { width: 12%; }
-.members-table th:nth-child(4) { width: 38%; }
+.members-table th:nth-child(4) { width: 33%; }
 .members-table td:nth-child(2),
 .members-table td:nth-child(3) {
   white-space: nowrap;
+  font-size: 14px;
 }
 .members-table td:nth-child(4) {
   color: var(--gray);
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.8;
 }
 .member-country-names {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 .member-country-names strong {
-  font-size: 15px;
+  font-size: 18px;
   color: var(--black);
 }
 .member-country-names span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--gray);
 }
 .members-cards {
@@ -9217,14 +9226,31 @@ body.admin-page .item-meta-chip span {
   color: var(--gray);
 }
 
+@media (min-width: 1680px) {
+  .members-hero-copy {
+    padding: 38px 42px;
+  }
+
+  .members-summary-card {
+    min-height: 144px;
+  }
+
+  .members-table th,
+  .members-table td {
+    padding: 18px 20px;
+  }
+}
+
 @media (max-width: 900px) {
   .members-hero {
+    width: auto;
     grid-template-columns: 1fr;
     padding: 0 16px;
     margin-top: 24px;
   }
 
   .members-page-wrap {
+    width: auto;
     padding: 0 16px 56px;
   }
 
