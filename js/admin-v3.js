@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.046.12
+ * Version: 03.046.13
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2080,6 +2080,7 @@
       var transitions = data.top_transitions || [];
       var summary = data.summary || {};
       var html =
+        '<div class="marketing-layout-shell">' +
         '<div class="v3-analytics-stats marketing-stats-row">' +
           _statCard('고유 사용자', _fmt(summary.unique_users || 0), '기간 사용자') +
           _statCard('페이지뷰', _fmt(summary.total_pageviews || 0), '기간 합계') +
@@ -2118,6 +2119,7 @@
             '<div class="v3-card-head"><h2 class="v3-card-title">운영 메모</h2></div>' +
             '<div id="marketing-notes" class="v3-bar-list"></div>' +
           '</section>' +
+        '</div>' +
         '</div>';
       el.innerHTML = html;
       _renderMarketingFunnel(funnel);
@@ -2308,7 +2310,7 @@
         '<button type="button" class="marketing-flow-zoom-btn" data-pz="reset">100%</button>' +
         '<button type="button" class="marketing-flow-zoom-btn" data-pz="in">+</button>' +
       '</div>' +
-      '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div>';
+      '<div class="marketing-flow-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-flow-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="고객 여정 흐름">' + linkParts + nodeParts + '</svg></div></div>';
     _bindMarketingHoverTips(el);
   }
 
@@ -2375,7 +2377,7 @@
     ].map(function (item) {
       return '<span><i style="background:' + _marketingStageColor(item.key) + ';"></i>' + GW.escapeHtml(item.label) + '</span>';
     }).join('');
-    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="페이지 기회 맵">' + axis + points + '</svg></div>';
+    el.innerHTML = '<div class="marketing-scatter-legend">' + legend + '</div><div class="marketing-scatter-shell"><div class="marketing-hover-tip" aria-hidden="true"></div><div class="marketing-chart-stage"><svg class="marketing-scatter-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="페이지 기회 맵">' + axis + points + '</svg></div></div>';
     _bindMarketingHoverTips(el);
   }
 
