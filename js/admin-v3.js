@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.048.00
+ * Version: 03.049.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -317,8 +317,13 @@
       var input = document.getElementById('wosm-members-file');
       if (input) input.click();
     });
+    document.getElementById('wosm-members-import-btn-inline').addEventListener('click', function () {
+      var input = document.getElementById('wosm-members-file');
+      if (input) input.click();
+    });
     document.getElementById('wosm-members-file').addEventListener('change', _handleWosmMembersImport);
     document.getElementById('wosm-members-add-btn').addEventListener('click', _addWosmMemberRow);
+    document.getElementById('wosm-members-add-btn-inline').addEventListener('click', _addWosmMemberRow);
     document.getElementById('wosm-members-save-btn').addEventListener('click', _saveWosmMembers);
     document.getElementById('wosm-members-search').addEventListener('input', function () {
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
@@ -3597,7 +3602,17 @@
       el.innerHTML = '<div class="v3-members-empty">조건에 맞는 항목이 없습니다. XLSX를 가져오거나 새 항목을 추가하세요.</div>';
       return;
     }
-    el.innerHTML = '<div class="v3-members-editor">' + visibleItems.map(function (entry) {
+    el.innerHTML = '<div class="v3-members-editor">' +
+      '<div class="v3-members-head">' +
+        '<span>한국어</span>' +
+        '<span>영어</span>' +
+        '<span>프랑스어</span>' +
+        '<span>회원 자격</span>' +
+        '<span>회원 수</span>' +
+        '<span>상태 설명</span>' +
+        '<span>작업</span>' +
+      '</div>' +
+      visibleItems.map(function (entry) {
       var item = entry.item;
       var i = entry.index;
       return '<div class="v3-members-row">' +
