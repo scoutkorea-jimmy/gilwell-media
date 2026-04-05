@@ -29,7 +29,7 @@ export async function onRequestGet({ env }) {
   return json({ notes: rows.results || [] });
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
@@ -46,10 +46,19 @@ export async function onRequestPost({ request, env }) {
   const safeAddedBy  = added_by ? added_by.trim().slice(0, 50) : '익명';
   const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
 
+  // Validate reply_to_id exists
+  if (safeReplyToId) {
+    const parent = await env.DB.prepare(`SELECT id FROM dp_notes WHERE id = ?`).bind(safeReplyToId).first();
+    if (!parent) return json({ error: 'Parent note does not exist.' }, 400);
+  }
+
+  // Use authenticated user name, ignore body.added_by for attribution integrity
+  const authorName = data.dpUser?.name || safeAddedBy;
+
   const result = await env.DB.prepare(
     `INSERT INTO dp_notes (title, content, type, priority, added_by, reply_to_id)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(safeTitle, safeContent, safeType, safePriority, safeAddedBy, safeReplyToId).run();
+  ).bind(safeTitle, safeContent, safeType, safePriority, authorName, safeReplyToId).run();
 
   return json({ id: result.meta.last_row_id, ok: true });
 }

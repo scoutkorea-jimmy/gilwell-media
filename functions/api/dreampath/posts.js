@@ -133,6 +133,12 @@ export async function onRequestPost({ request, env, data }) {
   const safeParentId = parent_post_id ? parseInt(parent_post_id, 10) || null : null;
   const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
 
+  // Validate reply_to_id exists
+  if (safeReplyToId) {
+    const parent = await env.DB.prepare(`SELECT id FROM dp_board_posts WHERE id = ?`).bind(safeReplyToId).first();
+    if (!parent) return json({ error: 'Parent post does not exist.' }, 400);
+  }
+
   // Calculate version_number for revisions
   let version_number = 1;
   if (safeParentId) {
