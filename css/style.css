@@ -6048,9 +6048,9 @@ footer a:hover { color: #ffffff; }
   }
   /* ── Masthead: stack into two rows ── */
   .masthead-top {
-    padding:     10px 16px;
+    padding:     8px 12px;
     flex-wrap:   wrap;
-    gap:         6px;
+    gap:         5px;
     display:     flex;
   }
   /* Hide date/time/tagline — too much for small screens */
@@ -6061,11 +6061,12 @@ footer a:hover { color: #ffffff; }
     order:    -1;
     flex:     1 0 100%;
     text-align: center;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
-  .masthead-logo h1   { font-size: calc(32px * var(--mobile-user-scale)); }
-  .masthead-logo .sub { font-size: var(--mobile-fs-micro); letter-spacing: 0.12em; }
-  .masthead-logo-img  { width: 56px; height: 56px; }
+  .masthead-logo-row { gap: 2px; }
+  .masthead-logo h1   { font-size: calc(26px * var(--mobile-user-scale)); }
+  .masthead-logo .sub { font-size: 9px; letter-spacing: 0.1em; margin-top: 1px; }
+  .masthead-logo-img  { width: 42px; height: 42px; }
   .masthead-type-controls {
     display: inline-flex;
     align-items: center;
@@ -6084,13 +6085,16 @@ footer a:hover { color: #ffffff; }
     min-width:  0;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-left: auto;
   }
   .masthead-stats     { display: none; }
+  .lang-btn { padding: 3px 6px; font-size: 8px; }
+  .mh-search-input { width: 0; min-width: 0; }
   /* Search expands to full width when active */
   .masthead-search:focus-within .mh-search-input,
-  .mh-search-input:focus { width: 120px; }
+  .mh-search-input:focus { width: 88px; }
+  .mh-search-btn { width: 28px; height: 28px; }
 
   .mini-item h4 {
     font-size: var(--mobile-fs-title);
@@ -6109,8 +6113,15 @@ footer a:hover { color: #ffffff; }
   }
 
   /* Nav */
-  .nav                { padding: 0 16px; }
-  .nav a              { padding: 10px 14px; font-size: var(--mobile-fs-meta); }
+  .nav                { padding: 0 10px; min-height: 40px; }
+  .nav a              { padding: 8px 10px; font-size: 10px; letter-spacing: 0.08em; }
+
+  .global-scroll-top-btn {
+    right: 14px;
+    bottom: 14px;
+    width: 50px;
+    height: 50px;
+  }
 
   body.post-page .masthead,
   body.post-page .ticker {
@@ -9193,6 +9204,50 @@ body.wosm-members-page #main-content {
   border-color: rgba(36, 135, 55, 0.28);
   background: rgba(36, 135, 55, 0.12);
   color: #1b5f29;
+}
+
+.global-scroll-top-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 260;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(0,0,0,0.14);
+  border-radius: 999px;
+  background: rgba(255,252,247,0.94);
+  color: var(--ink);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity .18s ease, transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
+}
+.global-scroll-top-btn.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.global-scroll-top-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.global-scroll-top-btn span {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 16px;
+  line-height: 1;
+}
+.global-scroll-top-btn em {
+  font-style: normal;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.14em;
 }
 .member-country-label {
   display: block;

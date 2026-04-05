@@ -6,8 +6,8 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.12';
-  GW.ADMIN_VERSION = '03.052.08';
+  GW.APP_VERSION = '00.111.13';
+  GW.ADMIN_VERSION = '03.052.09';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1112,6 +1112,54 @@
       .catch(function () {});
   };
 
+  GW.setupScrollTopButton = function () {
+    var button = document.getElementById('global-scroll-top-btn');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.id = 'global-scroll-top-btn';
+      button.className = 'global-scroll-top-btn';
+      button.setAttribute('aria-label', '맨 위로 이동');
+      button.innerHTML = '<span aria-hidden="true">↑</span><em>TOP</em>';
+      document.body.appendChild(button);
+    }
+
+    var scrollContainer = document.querySelector('#v3-content');
+    var isWindowMode = !scrollContainer;
+
+    function getTop() {
+      if (isWindowMode) {
+        return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      }
+      return scrollContainer.scrollTop || 0;
+    }
+
+    function toggleVisibility() {
+      button.classList.toggle('is-visible', getTop() > 240);
+    }
+
+    function scrollToTop() {
+      if (isWindowMode) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    button.onclick = scrollToTop;
+    if (button.dataset.bound === '1') {
+      toggleVisibility();
+      return;
+    }
+    button.dataset.bound = '1';
+    if (isWindowMode) {
+      window.addEventListener('scroll', toggleVisibility, { passive: true });
+    } else {
+      scrollContainer.addEventListener('scroll', toggleVisibility, { passive: true });
+    }
+    toggleVisibility();
+  };
+
   GW.renderManagedFooterHtml = function (rawText) {
     return String(rawText || '').trim();
   };
@@ -1674,6 +1722,7 @@
     if (opts.setDate !== false) GW.setMastheadDate();
     if (opts.renderManagedNav !== false) GW.renderManagedNav();
     if (opts.markActiveNav !== false) GW.markActiveNav();
+    if (opts.enableScrollTop !== false) GW.setupScrollTopButton();
     GW.loadBoardLayoutSettings();
     if (opts.loadBoardCopy !== false) GW.loadBoardCopySettings();
     if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
