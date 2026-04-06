@@ -1081,10 +1081,6 @@ p { margin-bottom: 6px; }
   min-height: 48px;
 }
 
-.nav[data-managed-nav]:not(.is-ready) {
-  visibility: hidden;
-}
-
 .nav a {
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      var(--fs-meta);
