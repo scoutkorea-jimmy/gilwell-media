@@ -118,6 +118,45 @@ grep -F "/js/dreampath.js?v=${ASSET_VERSION_FILE}" dreampath.html >/dev/null || 
   exit 1
 }
 
+node - <<'NODE'
+const fs = require('fs');
+const managedNavFiles = [
+  'index.html',
+  'latest.html',
+  'korea.html',
+  'apr.html',
+  'wosm.html',
+  'wosm-members.html',
+  'people.html',
+  'glossary.html',
+  'contributors.html',
+  'search.html',
+  'calendar.html',
+];
+const mainJs = fs.readFileSync('js/main.js', 'utf8');
+const itemRe = /\{\s*href:\s*'([^']+)'/g;
+const expected = [];
+let match;
+while ((match = itemRe.exec(mainJs))) expected.push(match[1]);
+if (!expected.length) {
+  console.error('Could not parse GW.NAV_ITEMS from js/main.js');
+  process.exit(1);
+}
+for (const file of managedNavFiles) {
+  const html = fs.readFileSync(file, 'utf8');
+  const navMatch = html.match(/<nav class="nav" data-managed-nav>([\s\S]*?)<\/nav>/);
+  if (!navMatch) {
+    console.error(`Missing managed nav fallback in ${file}`);
+    process.exit(1);
+  }
+  const hrefs = Array.from(navMatch[1].matchAll(/href="([^"]+)"/g)).map((entry) => entry[1]);
+  if (hrefs.length !== expected.length || hrefs.some((href, idx) => href !== expected[idx])) {
+    console.error(`Managed nav fallback mismatch in ${file}`);
+    process.exit(1);
+  }
+}
+NODE
+
 for file in "${SITE_MAIN_JS_FILES[@]}"; do
   grep -F "/js/main.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site main.js version in $file"

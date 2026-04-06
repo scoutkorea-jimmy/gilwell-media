@@ -15,9 +15,9 @@
       '</div>';
   }
 
-  function renderError(searchRes) {
+  function renderError(searchRes, message) {
     searchRes.innerHTML =
-      '<div class="search-no-results"><strong>오류가 발생했습니다</strong>잠시 후 다시 시도해주세요.</div>';
+      '<div class="search-no-results"><strong>오류가 발생했습니다</strong>' + GW.escapeHtml(message || '잠시 후 다시 시도해주세요.') + '</div>';
   }
 
   function renderResults(searchRes, posts, scope) {
@@ -110,11 +110,15 @@
         })
         .catch(function (error) {
           if (activeScope === 'dreampath') {
-            searchRes.innerHTML =
-              '<div class="search-no-results"><strong>Dreampath 로그인이 필요합니다</strong>내부 검색은 로그인한 상태에서 사용할 수 있습니다.</div>';
+            if (error && Number(error.status) === 401) {
+              searchRes.innerHTML =
+                '<div class="search-no-results"><strong>Dreampath 로그인이 필요합니다</strong>내부 검색은 로그인한 상태에서 사용할 수 있습니다.</div>';
+              return;
+            }
+            renderError(searchRes, (error && error.message) ? 'Dreampath 검색 중 오류가 발생했습니다. ' + error.message : 'Dreampath 검색 중 오류가 발생했습니다.');
             return;
           }
-          renderError(searchRes, error);
+          renderError(searchRes, (error && error.message) ? error.message : '');
         });
     }
 

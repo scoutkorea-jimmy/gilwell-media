@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.20';
-  GW.ADMIN_VERSION = '03.052.15';
-  GW.ASSET_VERSION = '20260406122105';
+  GW.APP_VERSION = '00.111.21';
+  GW.ADMIN_VERSION = '03.052.16';
+  GW.ASSET_VERSION = '20260406124217';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1162,7 +1162,9 @@
         GW.writeCachedPayload(cacheKey, data);
         GW.applyManagedFooterData(data);
       })
-      .catch(function () {});
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('푸터 설정', err, !!cached);
+      });
   };
 
   GW.setupScrollTopButton = function () {
@@ -1256,6 +1258,13 @@
   GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || 'full'; };
   GW.setAdminRole = function (role) {
     sessionStorage.setItem('admin_role', role === 'full' ? 'full' : 'full');
+  };
+  GW._publicLoadWarnings = {};
+  GW.handlePublicLoadFailure = function (scope, err, hasFallback) {
+    try { console.warn('[GW public-load-failed]', scope, err); } catch (_) {}
+    if (hasFallback || GW._publicLoadWarnings[scope]) return;
+    GW._publicLoadWarnings[scope] = true;
+    if (GW.showToast) GW.showToast(scope + '을(를) 최신 상태로 불러오지 못했습니다.', 'error');
   };
 
   // ── API fetch ─────────────────────────────────────────────
@@ -1652,7 +1661,10 @@
         // Re-render stats if already loaded
         if (GW._statsData) GW._renderStats();
       })
-      .catch(function () { GW.applyLang(); });
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('번역 설정', err, !!cached || !!(GW._customStrings && Object.keys(GW._customStrings).length));
+        GW.applyLang();
+      });
   };
 
   /** Fetch article counts and show in masthead stats bar. */
@@ -1670,7 +1682,9 @@
         GW._statsData = d;
         GW._renderStats();
       })
-      .catch(function () {});
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('홈 통계', err, !!cached);
+      });
   };
 
   GW.applyBoardLayoutSettings = function (data) {
@@ -1697,7 +1711,9 @@
         GW.writeCachedPayload(cacheKey, data);
         GW.applyBoardLayoutSettings(data);
       })
-      .catch(function () {});
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('게시판 레이아웃', err, !!cached);
+      });
   };
 
   GW.applyBoardCopySettings = function (data) {
@@ -1725,7 +1741,9 @@
         GW._boardCopyData = data;
         GW.applyBoardCopySettings(data);
       })
-      .catch(function () {});
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('게시판 설명', err, !!cached);
+      });
   };
 
   GW._renderStats = function () {
@@ -1769,7 +1787,9 @@
         GW.writeCachedPayload(cacheKey, data);
         GW.renderTickerItems(innerId, data.items || []);
       })
-      .catch(function () { /* keep static fallback */ });
+      .catch(function (err) {
+        GW.handlePublicLoadFailure('상단 티커', err, !!(cached && Array.isArray(cached.items) && cached.items.length));
+      });
   };
 
   GW.renderTickerItems = function (innerId, items) {

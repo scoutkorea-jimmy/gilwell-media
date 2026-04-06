@@ -112,6 +112,10 @@ export async function onRequestPut({ params, request, env }) {
   if (!safeSortOrderInput.ok) return json({ error: safeSortOrderInput.error }, 400);
   const safeAiAssistedInput = optionalBooleanFlag(ai_assisted);
   if (!safeAiAssistedInput.ok) return json({ error: safeAiAssistedInput.error }, 400);
+  const safePublishedInput = optionalBooleanFlag(body.published);
+  if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
+  const safeFeaturedInput = optionalBooleanFlag(body.featured);
+  if (!safeFeaturedInput.ok) return json({ error: safeFeaturedInput.error }, 400);
 
   // Build dynamic SET clause from provided fields
   const fields = [];
@@ -176,6 +180,30 @@ export async function onRequestPut({ params, request, env }) {
   fields.push("updated_at = datetime('now')");
 
   try {
+    var nextPublished = safePublishedInput.provided ? safePublishedInput.value : !!(currentPost && currentPost.published);
+    var nextFeatured = safeFeaturedInput.provided ? safeFeaturedInput.value : !!(currentPost && currentPost.featured);
+    if (!nextPublished) nextFeatured = false;
+    if (safePublishedInput.provided) {
+      fields.push('published = ?');
+      values.push(nextPublished ? 1 : 0);
+    }
+    if (safeFeaturedInput.provided || (safePublishedInput.provided && !nextFeatured && currentPost && Number(currentPost.featured || 0) === 1)) {
+      fields.push('featured = ?');
+      values.push(nextFeatured ? 1 : 0);
+    }
+    const wasPublicFeatured = Number(currentPost && currentPost.featured || 0) === 1 && Number(currentPost && currentPost.published || 0) === 1;
+    if (nextFeatured && !wasPublicFeatured) {
+      const featuredCountRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`).first();
+      const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
+      if (featuredCount >= 4) {
+        return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
+      }
+      const leadRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+      const leadPostId = leadRow ? parseInt(leadRow.value, 10) : 0;
+      if (leadPostId && Number(leadPostId) === Number(id)) {
+        return json({ error: '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다.' }, 409);
+      }
+    }
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (oldImageToDelete) {
@@ -213,27 +241,32 @@ export async function onRequestPatch({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const fields = [];
-  const values = [];
   const featuredInput = optionalBooleanFlag(body.featured);
   const publishedInput = optionalBooleanFlag(body.published);
   const sortOrderInput = optionalIntegerOrNull(body.sort_order, '정렬 순서');
   if (!sortOrderInput.ok) return json({ error: sortOrderInput.error }, 400);
 
-  if (featuredInput.provided) { fields.push('featured = ?'); values.push(featuredInput.value); }
-  if (publishedInput.provided) { fields.push('published = ?'); values.push(publishedInput.value); }
-  if (sortOrderInput.provided) { fields.push('sort_order = ?'); values.push(sortOrderInput.value); }
-
-  if (fields.length === 0) {
+  if (!featuredInput.provided && !publishedInput.provided && !sortOrderInput.provided) {
     return json({ error: 'featured 또는 published 값을 입력해주세요' }, 400);
   }
-
-  fields.push("updated_at = datetime('now')");
 
   try {
     const beforePost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
     if (!beforePost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
-    if (featuredInput.provided && featuredInput.value && Number(beforePost.featured || 0) !== 1) {
+    const fields = [];
+    const values = [];
+    const nextPublished = publishedInput.provided ? publishedInput.value : Number(beforePost.published || 0) === 1;
+    const requestedFeatured = featuredInput.provided ? featuredInput.value : Number(beforePost.featured || 0) === 1;
+    const nextFeatured = nextPublished ? requestedFeatured : false;
+
+    if (publishedInput.provided) { fields.push('published = ?'); values.push(nextPublished ? 1 : 0); }
+    if (featuredInput.provided || (publishedInput.provided && !nextFeatured && Number(beforePost.featured || 0) === 1)) {
+      fields.push('featured = ?'); values.push(nextFeatured ? 1 : 0);
+    }
+    if (sortOrderInput.provided) { fields.push('sort_order = ?'); values.push(sortOrderInput.value); }
+
+    const wasPublicFeatured = Number(beforePost.featured || 0) === 1 && Number(beforePost.published || 0) === 1;
+    if (nextFeatured && !wasPublicFeatured) {
       const featuredCountRow = await env.DB.prepare(
         `SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`
       ).first();
@@ -241,7 +274,13 @@ export async function onRequestPatch({ params, request, env }) {
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
+      const leadRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+      const leadPostId = leadRow ? parseInt(leadRow.value, 10) : 0;
+      if (leadPostId && Number(leadPostId) === Number(id)) {
+        return json({ error: '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다.' }, 409);
+      }
     }
+    fields.push("updated_at = datetime('now')");
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (updatedPost) {
