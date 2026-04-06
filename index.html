@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260406120630">
+  <link rel="stylesheet" href="/css/style.css?v=20260406121232">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;}</style></noscript>
 </head>
 <body data-home-bootstrap="1">
@@ -258,7 +258,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=20260406120630"></script>
+  <script src="/js/main.js?v=20260406121232"></script>
   <script>
     GW.bootstrapStandardPage({
       loadTicker: false,
@@ -734,9 +734,7 @@
       var columns = data.columns || {};
       var leadPost = (data.lead && data.lead.post) || (picksPosts.length ? picksPosts[0] : latestPosts[0]) || null;
       var latestRail = latestPosts.slice(0, 3);
-      var picksRail = picksPosts.filter(function (post) {
-        return !leadPost || post.id !== leadPost.id;
-      }).slice(0, 4);
+      var picksRail = picksPosts.slice(0, 4);
 
       var leadMedia = (data.lead && data.lead.post && leadPost && data.lead.post.id === leadPost.id) ? data.lead.media : null;
       renderLeadStory(document.getElementById('home-lead-story'), leadPost, (data.lead && data.lead.post) ? '메인 스토리' : (picksPosts.length ? '추천 기사' : '대표 기사'), leadMedia);

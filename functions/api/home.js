@@ -65,7 +65,7 @@ export async function onRequestGet({ env, request }) {
       loadHomeLead(env, origin),
       loadLatestPosts(env, origin, 4),
       loadPopular(env, origin, 4),
-      loadPostList(env, origin, { featured: true, limit: 5 }),
+      loadPostList(env, origin, { featured: true, limit: 4 }),
       loadPostList(env, origin, { category: 'korea', limit: 4 }),
       loadPostList(env, origin, { category: 'apr', limit: 4 }),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }),
