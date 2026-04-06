@@ -6,15 +6,15 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.16`
-- Current admin version: `V03.052.12`
+- Current site version: `V00.111.17`
+- Current admin version: `V03.052.13`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
 - `cc`: fix-only increment; in the history UI this maps to `Hotfix` or `Bugfix`
 - When `bbb` increases, `cc` resets to `00`
 
-Static asset cache-busting query strings are generated automatically from `ASSET_VERSION`, separate from product versions.
+Static asset cache-busting query strings are generated automatically from `ASSET_VERSION`, separate from product versions. `./scripts/sync_versions.sh` refreshes that token with a new UTC timestamp each release-prep run.
 
 Operational references:
 - `CHATGPT.md`  # 메인 홈페이지 AI 작업 기준 원본
@@ -231,8 +231,8 @@ git status --short
 
 Notes:
 - Production deploys run from `main`
-- `VERSION`, `ADMIN_VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
-- Run `./scripts/sync_versions.sh` before release verification when you change version numbers
+- `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
+- Run `./scripts/sync_versions.sh` before release verification when you change version numbers or want fresh asset cache-busting
 - When homepage rules change, update `CHATGPT.md`, KMS, `docs/feature-definition.md`, and changelog together
 
 ### Optional R2 binding for images
@@ -336,6 +336,6 @@ Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는
 1. `git switch main`
 2. `git status --short`
 3. `./scripts/deploy_production.sh`
-4. 라이브 `https://bpmedia.net/js/main.js?v=<ASSET_VERSION>` 의 `GW.APP_VERSION` 확인
+4. 라이브 `https://bpmedia.net/js/main.js?v=<ASSET_VERSION>` 의 `GW.APP_VERSION`, `GW.ADMIN_VERSION`, `GW.ASSET_VERSION` 확인
 5. 관리자 전용 변경이면 `/admin` HTML에 연결된 `admin-v3.css/js` 쿼리 버전과 `GW.ADMIN_VERSION`을 함께 확인
 6. `./scripts/post_deploy_check.sh https://bpmedia.net`

@@ -7,8 +7,7 @@ cd "$ROOT_DIR"
 SITE_VERSION="$(tr -d '\n' < VERSION)"
 ADMIN_VERSION="$(tr -d '\n' < ADMIN_VERSION)"
 BUILD_STAMP="${ASSET_BUST_STAMP:-$(date -u +%Y%m%d%H%M%S)}"
-GIT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo local)"
-ASSET_VERSION="${BUILD_STAMP}-${GIT_SHA}"
+ASSET_VERSION="${BUILD_STAMP}"
 
 printf '%s\n' "$ASSET_VERSION" > ASSET_VERSION
 

@@ -20,11 +20,13 @@ if [[ -n "$(git status --short)" ]]; then
 fi
 
 VERSION="$(cat VERSION)"
+ASSET_VERSION="$(cat ASSET_VERSION)"
 COMMIT_SHA="$(git rev-parse --short HEAD)"
 COMMIT_MESSAGE="$(git log -1 --pretty=%s)"
 
 echo "Deploying production for gilwell-media"
 echo "Version: V${VERSION}"
+echo "Assets: ${ASSET_VERSION}"
 echo "Commit: ${COMMIT_SHA}"
 
 wrangler pages deploy . \

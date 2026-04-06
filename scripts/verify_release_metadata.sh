@@ -74,6 +74,14 @@ SITE_MAIN_JS_FILES=(
   functions/feature/'[category]'/'[slug]'.js
 )
 
+BOARD_JS_FILES=(
+  latest.html
+  korea.html
+  apr.html
+  wosm.html
+  people.html
+)
+
 for file in "${SITE_STYLE_FILES[@]}"; do
   grep -F "/css/style.css?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site stylesheet version in $file"
@@ -83,6 +91,30 @@ done
 
 grep -F "/js/wosm-members.js?v=${ASSET_VERSION_FILE}" wosm-members.html >/dev/null || {
   echo "Missing wosm-members.js version in wosm-members.html"
+  exit 1
+}
+
+for file in "${BOARD_JS_FILES[@]}"; do
+  grep -F "/js/board.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
+    echo "Missing board.js asset version in $file"
+    exit 1
+  }
+done
+
+grep -F "/js/glossary.js?v=${ASSET_VERSION_FILE}" glossary.html >/dev/null || {
+  echo "Missing glossary.js asset version in glossary.html"
+  exit 1
+}
+grep -F "/js/search.js?v=${ASSET_VERSION_FILE}" search.html >/dev/null || {
+  echo "Missing search.js asset version in search.html"
+  exit 1
+}
+grep -F "/js/calendar.js?v=${ASSET_VERSION_FILE}" calendar.html >/dev/null || {
+  echo "Missing calendar.js asset version in calendar.html"
+  exit 1
+}
+grep -F "/js/dreampath.js?v=${ASSET_VERSION_FILE}" dreampath.html >/dev/null || {
+  echo "Missing dreampath.js asset version in dreampath.html"
   exit 1
 }
 
