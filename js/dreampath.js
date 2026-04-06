@@ -1252,7 +1252,7 @@ const DP = (() => {
               return `<span class="dp-approval-badge ${cls[st]||cls.pending}">${lbl[st]||st}</span>`;
             })() : ''}
           </div>
-          <h4 class="dp-post-title">${esc(post.title)}</h4>
+          <h4 class="dp-post-title">${esc(post.title)}${post.comment_count ? ` <span class="dp-comment-count-badge">(${post.comment_count})</span>` : ''}</h4>
           ${excerpt ? `<p class="dp-post-excerpt">${esc(excerpt)}</p>` : ''}
         </div>
         ${adminBtns}
