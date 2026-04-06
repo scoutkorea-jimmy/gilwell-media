@@ -222,8 +222,9 @@
 
 - 버전 형식은 `Va.bbb.cc`를 따릅니다.
 - `bbb`가 올라가면 `cc`는 `00`으로 초기화합니다.
-- 정적 자산 캐시 무효화 쿼리도 같은 버전을 사용합니다.
+- 정적 자산 캐시 무효화 쿼리는 자동 생성되는 `ASSET_VERSION`을 사용합니다.
 - Site 버전 원본은 `VERSION`, Admin 버전 원본은 `ADMIN_VERSION`입니다.
+- 자산 캐시 버스팅 원본은 `ASSET_VERSION`입니다.
 - 릴리즈 전에는 `./scripts/sync_versions.sh`로 버전 문자열을 먼저 동기화합니다.
 - 관리자 버전은 `GW.ADMIN_VERSION`과 관리자 자산 버전 문자열을 함께 올립니다.
 - production 배포는 `./scripts/deploy_production.sh`로 진행합니다.

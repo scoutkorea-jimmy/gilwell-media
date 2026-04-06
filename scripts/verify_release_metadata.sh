@@ -6,13 +6,15 @@ cd "$ROOT_DIR"
 
 SITE_VERSION="$(cat VERSION)"
 ADMIN_VERSION_FILE="$(cat ADMIN_VERSION)"
+ASSET_VERSION_FILE="$(cat ASSET_VERSION)"
 MAIN_SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
+MAIN_ASSET_VERSION="$(sed -n "s/.*GW.ASSET_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 ADMIN_HTML_VERSION="$(sed -n "s/.*v3-ver-admin\">\\([^<]*\\)<.*/\\1/p" admin.html | head -n 1)"
 KMS_ADMIN_VERSION="$(sed -n "s/.*Admin v\\([0-9.]*\\).*/\\1/p" kms.html | head -n 1)"
 ADMIN_JS_VERSION="$(sed -n "s/.*Version: \\([0-9.]*\\).*/\\1/p" js/admin-v3.js | head -n 1)"
 
-if [[ -z "$SITE_VERSION" || -z "$MAIN_SITE_VERSION" || -z "$ADMIN_VERSION" || -z "$ADMIN_VERSION_FILE" ]]; then
+if [[ -z "$SITE_VERSION" || -z "$MAIN_SITE_VERSION" || -z "$ADMIN_VERSION" || -z "$ADMIN_VERSION_FILE" || -z "$ASSET_VERSION_FILE" || -z "$MAIN_ASSET_VERSION" ]]; then
   echo "Version metadata is missing."
   exit 1
 fi
@@ -24,6 +26,11 @@ fi
 
 if [[ "$ADMIN_VERSION_FILE" != "$ADMIN_VERSION" ]]; then
   echo "ADMIN_VERSION ($ADMIN_VERSION_FILE) and js/main.js ADMIN_VERSION ($ADMIN_VERSION) do not match."
+  exit 1
+fi
+
+if [[ "$ASSET_VERSION_FILE" != "$MAIN_ASSET_VERSION" ]]; then
+  echo "ASSET_VERSION ($ASSET_VERSION_FILE) and js/main.js ASSET_VERSION ($MAIN_ASSET_VERSION) do not match."
   exit 1
 fi
 
@@ -68,23 +75,36 @@ SITE_MAIN_JS_FILES=(
 )
 
 for file in "${SITE_STYLE_FILES[@]}"; do
-  grep -F "/css/style.css?v=${SITE_VERSION}" "$file" >/dev/null || {
+  grep -F "/css/style.css?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site stylesheet version in $file"
     exit 1
   }
 done
 
-grep -F "/js/wosm-members.js?v=${SITE_VERSION}" wosm-members.html >/dev/null || {
+grep -F "/js/wosm-members.js?v=${ASSET_VERSION_FILE}" wosm-members.html >/dev/null || {
   echo "Missing wosm-members.js version in wosm-members.html"
   exit 1
 }
 
 for file in "${SITE_MAIN_JS_FILES[@]}"; do
-  grep -F "/js/main.js?v=${SITE_VERSION}" "$file" >/dev/null || {
+  grep -F "/js/main.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site main.js version in $file"
     exit 1
   }
 done
+
+grep -F "/css/admin-v3.css?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
+  echo "Missing admin stylesheet asset version in admin.html"
+  exit 1
+}
+grep -F "/js/admin-v3.js?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
+  echo "Missing admin JS asset version in admin.html"
+  exit 1
+}
+grep -F "/js/shared-country-name-ko.js?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
+  echo "Missing shared-country-name-ko asset version in admin.html"
+  exit 1
+}
 
 node - <<'NODE'
 const fs = require('fs');
