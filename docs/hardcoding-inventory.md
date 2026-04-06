@@ -15,9 +15,9 @@
 
 | 위치 | 현재 값 예시 | 위험도 | 권장 조치 |
 | --- | --- | --- | --- |
-| `VERSION` | `00.111.16` | 중간 | Site 버전 소스 오브 트루스로 유지 |
-| `ADMIN_VERSION` | `03.052.12` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
-| `ASSET_VERSION` | `20260406114820-f511718` | 낮음 | sync 스크립트가 배포 준비 시 자동 생성 |
+| `VERSION` | `00.111.17` | 중간 | Site 버전 소스 오브 트루스로 유지 |
+| `ADMIN_VERSION` | `03.052.13` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
+| `ASSET_VERSION` | `<UTC timestamp>` | 낮음 | sync 스크립트가 배포 준비 시 자동 생성 |
 | `js/main.js` | `GW.APP_VERSION`, `GW.ADMIN_VERSION`, `GW.ASSET_VERSION` | 높음 | sync 스크립트로 자동 주입 |
 | `admin.html` | `admin-v3.css/js?v=<asset_version>`, 화면 표시 버전 | 높음 | sync 스크립트로 자동 주입 |
 | `kms.html` | `style/admin.css/main.js/kms.js` 쿼리 버전 | 높음 | sync 스크립트로 자동 주입 |
