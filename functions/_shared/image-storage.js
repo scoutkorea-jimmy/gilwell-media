@@ -52,10 +52,13 @@ export async function serveStoredBucketImage(env, key) {
   object.writeHttpMetadata(headers);
   headers.set('Cache-Control', headers.get('Cache-Control') || 'public, max-age=31536000, immutable');
 
+  const contentType = headers.get('Content-Type') || '';
+  const isImage = contentType.startsWith('image/');
   const originalName = object.customMetadata?.originalName;
   if (originalName) {
     const encoded = encodeURIComponent(originalName).replace(/'/g, '%27');
-    headers.set('Content-Disposition', `attachment; filename*=UTF-8''${encoded}`);
+    const disposition = isImage ? 'inline' : 'attachment';
+    headers.set('Content-Disposition', `${disposition}; filename*=UTF-8''${encoded}`);
   }
 
   return new Response(object.body, {
