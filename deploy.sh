@@ -38,16 +38,6 @@ if [[ "$SKIP_VERSION" == false && -z "$TYPE" ]]; then
   fi
 fi
 
-# ── 배포 ──────────────────────────────────────────────────────────────────────
-echo ""
-echo "🚀 Deploying to Cloudflare Pages..."
-wrangler pages deploy . --project-name "$PROJECT"
-
-if [[ "$SKIP_VERSION" == true ]]; then
-  echo "⏭  Version registration skipped."
-  exit 0
-fi
-
 # ── 최신 버전 조회 ────────────────────────────────────────────────────────────
 echo ""
 echo "📦 Fetching latest version from D1..."
@@ -67,20 +57,45 @@ else:
 read -r CUR_AA CUR_BBB CUR_CC <<< "$LATEST"
 
 # ── 다음 버전 계산 ────────────────────────────────────────────────────────────
-NEW_AA=$CUR_AA
-if [[ "$TYPE" == "feature" ]]; then
-  NEW_BBB=$((CUR_BBB + 1))
-  NEW_CC=0
+if [[ "$SKIP_VERSION" == true ]]; then
+  VERSION=$(printf "%02d.%03d.%02d" "$CUR_AA" "$CUR_BBB" "$CUR_CC")
 else
-  NEW_BBB=$CUR_BBB
-  NEW_CC=$((CUR_CC + 1))
+  NEW_AA=$CUR_AA
+  if [[ "$TYPE" == "feature" ]]; then
+    NEW_BBB=$((CUR_BBB + 1))
+    NEW_CC=0
+  else
+    NEW_BBB=$CUR_BBB
+    NEW_CC=$((CUR_CC + 1))
+  fi
+  VERSION=$(printf "%02d.%03d.%02d" "$NEW_AA" "$NEW_BBB" "$NEW_CC")
 fi
 
-VERSION=$(printf "%02d.%03d.%02d" "$NEW_AA" "$NEW_BBB" "$NEW_CC")
-NOW=$(date -u +"%Y-%m-%d %H:%M:%S")
+# ── 캐시 버스팅: HTML 파일의 ?v= 쿼리스트링을 새 버전으로 치환 ────────────────
+echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
+HTML_FILES=$(find . -maxdepth 1 -name '*.html' -type f)
+for f in $HTML_FILES; do
+  # ?v=숫자.숫자.숫자 패턴을 새 버전으로 치환
+  sed -i '' "s/?v=[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/?v=${VERSION}/g" "$f"
+done
 
-# ── D1에 버전 기록 삽입 (SQL 인젝션 방지: 작은따옴표 이스케이프) ────────────────
-# SQLite에서 ' → '' 로 치환하는 방식으로 이스케이프
+# ── 배포 ──────────────────────────────────────────────────────────────────────
+echo ""
+echo "🚀 Deploying to Cloudflare Pages..."
+wrangler pages deploy . --project-name "$PROJECT"
+
+# ── HTML 원복 (git working tree를 깨끗하게 유지) ──────────────────────────────
+for f in $HTML_FILES; do
+  git checkout -- "$f" 2>/dev/null || true
+done
+
+if [[ "$SKIP_VERSION" == true ]]; then
+  echo "⏭  Version registration skipped."
+  exit 0
+fi
+
+# ── D1에 버전 기록 삽입 ───────────────────────────────────────────────────────
+NOW=$(date -u +"%Y-%m-%d %H:%M:%S")
 DESC_ESC="${DESCRIPTION//\'/\'\'}"
 TYPE_ESC="${TYPE//\'/\'\'}"
 
