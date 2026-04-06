@@ -666,8 +666,22 @@ const DP = (() => {
   }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
+  // ── Mobile sidebar toggle ──────────────────────────────────────────────────
+  function toggleSidebar() {
+    const sidebar = $('dp-sidebar');
+    const overlay = $('dp-sidebar-overlay');
+    const isOpen = sidebar.classList.toggle('dp-sidebar--open');
+    overlay.classList.toggle('dp-sidebar-overlay--open', isOpen);
+  }
+
   function navigate(section) {
     activeSection = section;
+
+    // Close mobile sidebar on navigate
+    const sidebar = $('dp-sidebar');
+    const overlay = $('dp-sidebar-overlay');
+    if (sidebar) sidebar.classList.remove('dp-sidebar--open');
+    if (overlay) overlay.classList.remove('dp-sidebar-overlay--open');
 
     // Update nav highlights
     document.querySelectorAll('.dp-nav-item').forEach(el => {
@@ -2087,24 +2101,64 @@ const DP = (() => {
     if (!comments.length) {
       return `<p class="dp-text-muted" style="font-size:13px;padding:4px 0">No comments yet.</p>`;
     }
-    return comments.map(c => `
-      <div class="dp-comment-item" id="dp-comment-${c.id}">
-        <div class="dp-comment-meta">
-          <span class="dp-comment-author">${esc(c.author_name)}</span>
-          <span class="dp-comment-date">${fmtFull(c.created_at)}</span>
-          ${(currentUser?.role === 'admin' || c.author_id === currentUser?.id) ? `<button class="dp-comment-delete" onclick="DP.deleteComment(${c.id}, ${postId})" title="Delete">×</button>` : ''}
+    // Build parent-child tree
+    const childMap = {};
+    comments.filter(c => c.parent_id).forEach(c => {
+      if (!childMap[c.parent_id]) childMap[c.parent_id] = [];
+      childMap[c.parent_id].push(c);
+    });
+    const roots = comments.filter(c => !c.parent_id);
+
+    function renderComment(c, isChild) {
+      const childCls = isChild ? ' dp-comment-item--child' : '';
+      const children = (childMap[c.id] || []).sort((a, b) => a.created_at.localeCompare(b.created_at));
+      return `
+        <div class="dp-comment-item${childCls}" id="dp-comment-${c.id}">
+          <div class="dp-comment-meta">
+            <span class="dp-comment-author">${esc(c.author_name)}</span>
+            <span class="dp-comment-date">${fmtFull(c.created_at)}</span>
+            <button class="dp-comment-reply-btn" onclick="event.stopPropagation();DP._showCommentReply(${c.id},${postId})">Reply</button>
+            ${(currentUser?.role === 'admin' || c.author_id === currentUser?.id) ? `<button class="dp-comment-delete" onclick="DP.deleteComment(${c.id}, ${postId})" title="Delete">&times;</button>` : ''}
+          </div>
+          <div class="dp-comment-body">${esc(c.content)}</div>
+          <div id="dp-comment-reply-form-${c.id}"></div>
         </div>
-        <div class="dp-comment-body">${esc(c.content)}</div>
-      </div>`).join('');
+        ${children.map(ch => renderComment(ch, true)).join('')}`;
+    }
+
+    return roots.map(c => renderComment(c, false)).join('');
   }
 
-  async function addComment(postId) {
-    const input   = $('dp-comment-input');
+  function _showCommentReply(commentId, postId) {
+    // Remove any other open reply forms first
+    document.querySelectorAll('.dp-comment-reply-form').forEach(el => { el.innerHTML = ''; });
+    const container = $(`dp-comment-reply-form-${commentId}`);
+    if (!container) return;
+    container.innerHTML = `
+      <div class="dp-comment-reply-form">
+        <textarea id="dp-reply-comment-${commentId}" class="dp-input dp-textarea dp-textarea--sm" placeholder="Write a reply..." rows="2"></textarea>
+        <div style="margin-top:6px;display:flex;gap:6px;justify-content:flex-end">
+          <button class="dp-btn dp-btn--ghost dp-btn--xs" onclick="document.getElementById('dp-comment-reply-form-${commentId}').innerHTML=''">Cancel</button>
+          <button class="dp-btn dp-btn--primary dp-btn--xs" onclick="DP.addComment(${postId},${commentId})">Reply</button>
+        </div>
+      </div>`;
+    $(`dp-reply-comment-${commentId}`)?.focus();
+  }
+
+  async function addComment(postId, parentId) {
+    let input;
+    if (parentId) {
+      input = $(`dp-reply-comment-${parentId}`);
+    } else {
+      input = $('dp-comment-input');
+    }
     const content = input?.value.trim();
     if (!content) { showToast('Comment cannot be empty.', 'error'); return; }
-    const result = await api('POST', 'comments', { post_id: postId, content });
+    const body = { post_id: postId, content };
+    if (parentId) body.parent_id = parentId;
+    const result = await api('POST', 'comments', body);
     if (result) {
-      input.value = '';
+      if (input) input.value = '';
       const data = await api('GET', `comments?post_id=${postId}`);
       const list  = $('dp-comments-list');
       const count = $('dp-comment-count');
@@ -4154,6 +4208,7 @@ const DP = (() => {
     login,
     logout,
     navigate,
+    toggleSidebar,
     closeModal,
     dayClick,
     addEvent,
@@ -4179,6 +4234,7 @@ const DP = (() => {
     deleteDepartment,
     addComment,
     deleteComment,
+    _showCommentReply,
     _handleFileSelect,
     _handleAvatarSelect,
     _removeAvatar,
