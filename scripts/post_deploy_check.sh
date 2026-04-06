@@ -6,10 +6,11 @@ cd "$ROOT_DIR"
 
 BASE_URL="${1:-https://bpmedia.net}"
 EXPECTED_APP_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
+EXPECTED_ASSET_VERSION="$(cat ASSET_VERSION)"
 
 echo "Checking ${BASE_URL} for V${EXPECTED_APP_VERSION}"
 
-MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${EXPECTED_APP_VERSION}")"
+MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${EXPECTED_ASSET_VERSION}")"
 HOME_PAGE="$(curl -fsSL "${BASE_URL}/")"
 BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm")"
 PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people")"

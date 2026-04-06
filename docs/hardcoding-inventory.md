@@ -8,20 +8,21 @@
 
 - 운영값: `settings` 또는 관리자 UI/API로 이동
 - 구조상수: 공통 constants 모듈로 이동
-- 릴리즈값: `VERSION`, `ADMIN_VERSION`, 자동 동기화 스크립트로 관리
+- 릴리즈값: `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`, 자동 동기화 스크립트로 관리
 - 폐기 기능값: 코드와 문서에서 삭제
 
 ## Version Hardcodes
 
 | 위치 | 현재 값 예시 | 위험도 | 권장 조치 |
 | --- | --- | --- | --- |
-| `VERSION` | `00.111.15` | 중간 | Site 버전 소스 오브 트루스로 유지 |
-| `ADMIN_VERSION` | `03.052.11` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
-| `js/main.js` | `GW.APP_VERSION`, `GW.ADMIN_VERSION` | 높음 | sync 스크립트로 자동 주입 |
-| `admin.html` | `admin-v3.css/js?v=03.052.11`, 화면 표시 버전 | 높음 | sync 스크립트로 자동 주입 |
+| `VERSION` | `00.111.16` | 중간 | Site 버전 소스 오브 트루스로 유지 |
+| `ADMIN_VERSION` | `03.052.12` | 낮음 | Admin 버전 소스 오브 트루스로 유지 |
+| `ASSET_VERSION` | `20260406114820-f511718` | 낮음 | sync 스크립트가 배포 준비 시 자동 생성 |
+| `js/main.js` | `GW.APP_VERSION`, `GW.ADMIN_VERSION`, `GW.ASSET_VERSION` | 높음 | sync 스크립트로 자동 주입 |
+| `admin.html` | `admin-v3.css/js?v=<asset_version>`, 화면 표시 버전 | 높음 | sync 스크립트로 자동 주입 |
 | `kms.html` | `style/admin.css/main.js/kms.js` 쿼리 버전 | 높음 | sync 스크립트로 자동 주입 |
-| 공개 HTML (`index.html`, `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `wosm-members.html`, `people.html`, `glossary.html`, `contributors.html`, `search.html`, `calendar.html`) | `?v=00.111.15` | 높음 | sync 스크립트로 자동 주입 |
-| SSR 파일 (`functions/post/[id].js`, `functions/feature/[category]/[slug].js`, `functions/glossary-raw.js`) | `?v=00.111.15` | 높음 | sync 스크립트로 자동 주입 |
+| 공개 HTML (`index.html`, `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `wosm-members.html`, `people.html`, `glossary.html`, `contributors.html`, `search.html`, `calendar.html`) | `?v=<asset_version>` | 높음 | sync 스크립트로 자동 주입 |
+| SSR 파일 (`functions/post/[id].js`, `functions/feature/[category]/[slug].js`, `functions/glossary-raw.js`) | `?v=<asset_version>` | 높음 | sync 스크립트로 자동 주입 |
 | `js/admin-v3.js` | header 주석 버전 | 중간 | sync 스크립트로 자동 주입 |
 
 ## Route And Meta Hardcodes

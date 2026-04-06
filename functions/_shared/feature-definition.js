@@ -62,7 +62,8 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
   - Admin: \`03.011.00\`
 - \`VERSION\` 파일에는 항상 현재 Site 버전을 저장한다.
 - \`ADMIN_VERSION\` 파일에는 항상 현재 Admin 버전을 저장한다.
-- \`./scripts/sync_versions.sh\`가 \`js/main.js\`의 \`GW.APP_VERSION\`, \`GW.ADMIN_VERSION\`, 관리자 자산 쿼리 버전, 공개 HTML 자산 쿼리 버전을 함께 맞춘다.
+- \`ASSET_VERSION\` 파일에는 현재 배포 자산 캐시 버스팅 토큰을 저장한다.
+- \`./scripts/sync_versions.sh\`가 \`js/main.js\`의 \`GW.APP_VERSION\`, \`GW.ADMIN_VERSION\`, \`GW.ASSET_VERSION\`, 관리자 자산 쿼리 버전, 공개 HTML 자산 쿼리 버전을 함께 맞춘다.
 
 #### 각주
 - 공개 홈페이지만 바뀌면 Site 버전만 올린다.
@@ -615,7 +616,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 배포 기본 경로: \`./scripts/deploy_production.sh\`
 - 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
-- 배포 전 \`VERSION\`, \`ADMIN_VERSION\`을 확인하고 \`./scripts/sync_versions.sh\`로 버전 문자열을 동기화한다.
+- 배포 전 \`VERSION\`, \`ADMIN_VERSION\`, \`ASSET_VERSION\`을 확인하고 \`./scripts/sync_versions.sh\`로 버전 문자열과 자산 토큰을 동기화한다.
 - production 배포는 \`main\`의 깨끗한 워크트리에서만 진행한다.
 
 ### 13.2 스모크 체크 기준

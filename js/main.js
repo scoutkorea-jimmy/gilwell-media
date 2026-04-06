@@ -6,8 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.15';
-  GW.ADMIN_VERSION = '03.052.11';
+  GW.APP_VERSION = '00.111.16';
+  GW.ADMIN_VERSION = '03.052.12';
+  GW.ASSET_VERSION = '20260406114820-f511718';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -417,7 +418,7 @@
   };
 
   GW.getVersionedCacheKey = function (baseKey, version) {
-    var suffix = version || GW.APP_VERSION || 'v1';
+    var suffix = version || GW.ASSET_VERSION || GW.APP_VERSION || 'v1';
     return String(baseKey || 'gw_cache') + '_' + String(suffix);
   };
 
@@ -1150,7 +1151,7 @@
   };
 
   GW.applyManagedFooter = function () {
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_site_meta', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_site_meta', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW.applyManagedFooterData(cached);
@@ -1610,7 +1611,7 @@
 
   /** Load custom translation overrides from API then apply. */
   GW.loadTranslations = function () {
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_translations', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_translations', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 60 * 12);
     if (GW._customStrings && Object.keys(GW._customStrings).length) {
       GW.applyLang();
@@ -1635,7 +1636,7 @@
 
   /** Fetch article counts and show in masthead stats bar. */
   GW.loadStats = function () {
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_stats', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_stats', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 5);
     if (cached) {
       GW._statsData = cached;
@@ -1664,7 +1665,7 @@
   };
 
   GW.loadBoardLayoutSettings = function () {
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_layout', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_layout', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW.applyBoardLayoutSettings(cached);
@@ -1690,7 +1691,7 @@
   };
 
   GW.loadBoardCopySettings = function () {
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_copy', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_board_copy', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached) {
       GW._boardCopyData = cached;
@@ -1735,7 +1736,7 @@
   GW.loadTicker = function (innerId) {
     var inner = document.getElementById(innerId || 'ticker-inner');
     if (!inner) return;
-    var cacheKey = GW.getVersionedCacheKey('gw_cache_ticker', 'v1_' + GW.APP_VERSION);
+    var cacheKey = GW.getVersionedCacheKey('gw_cache_ticker', 'v1_' + GW.ASSET_VERSION);
     var cached = GW.readCachedPayload(cacheKey, 1000 * 60 * 30);
     if (cached && Array.isArray(cached.items)) {
       GW.renderTickerItems(innerId, cached.items || []);
