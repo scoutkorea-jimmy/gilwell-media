@@ -10,7 +10,7 @@ import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
-import { normalizePublishAtInput, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
+import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
@@ -191,6 +191,10 @@ export async function onRequestPost({ request, env }) {
     ? { ok: true, provided: false, value: null }
     : optionalTrimmedString(body.author, '작성자', 60);
   if (!safeAuthorInput.ok) return json({ error: safeAuthorInput.error }, 400);
+  const safePublishedInput = optionalBooleanFlag(body.published);
+  if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
+  const safeFeaturedInput = optionalBooleanFlag(body.featured);
+  if (!safeFeaturedInput.ok) return json({ error: safeFeaturedInput.error }, 400);
 
   const upgradedContent = await safelyUpgradeEditorContentImages(safeContentInput.value, env, origin, 'inline');
   const resolvedCoverSource = sanitizeUrl(body.image_data, origin) || sanitizeUrl(image_url, origin);
@@ -208,6 +212,8 @@ export async function onRequestPost({ request, env }) {
   const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts || body.related_posts_json);
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
+  const safePublished = safePublishedInput.provided ? safePublishedInput.value : false;
+  const safeFeatured = safePublished && safeFeaturedInput.provided ? safeFeaturedInput.value : false;
 
   // Get default author from settings if not provided in body
   const bodyAuthor = safeAuthorInput.value;
@@ -222,9 +228,16 @@ export async function onRequestPost({ request, env }) {
   const safeAiAssisted = ai_assisted ? 1 : 0;
 
   try {
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))`;
-    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, publishAtValue];
+    if (safeFeatured) {
+      const featuredCountRow = await env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`).first();
+      const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
+      if (featuredCount >= 4) {
+        return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
+      }
+    }
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, published, featured, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))`;
+    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, publishAtValue];
     const result = await env.DB.prepare(sql).bind(...bindings).run();
     const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
     const insertedPost = insertedId

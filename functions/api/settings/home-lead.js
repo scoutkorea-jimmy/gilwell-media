@@ -69,8 +69,11 @@ export async function onRequestPut({ env, request }) {
     }
 
     if (hasPostId) {
-      const post = await env.DB.prepare(`SELECT id FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
+      const post = await env.DB.prepare(`SELECT id, featured FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
       if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
+      if (Number(post.featured || 0) === 1) {
+        return json({ error: '에디터 추천 글은 메인 스토리로 동시에 지정할 수 없습니다. 추천에서 제외한 뒤 다시 시도해주세요.' }, 409);
+      }
       await env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`

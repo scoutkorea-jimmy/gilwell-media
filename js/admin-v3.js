@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.15
+ * Version: 03.052.16
  *
  * Versioning:
  *   V3.aaa.bb
@@ -236,6 +236,7 @@
     document.getElementById('write-publish-btn').addEventListener('click', function () {
       _savePost(true);
     });
+    document.getElementById('w-published').addEventListener('change', _syncWriteFeaturedState);
     document.getElementById('w-cover-btn').addEventListener('click', _pickCover);
     document.getElementById('w-gallery-btn').addEventListener('click', _pickGallery);
 
@@ -1001,6 +1002,7 @@
     _renderGallery();
     _renderMetaTags();
     _renderRelated();
+    _syncWriteFeaturedState();
     _editorClear();
   }
 
@@ -1049,6 +1051,7 @@
         document.getElementById('w-published').checked = !!p.published;
         document.getElementById('w-featured').checked  = !!p.featured;
         document.getElementById('w-ai').checked        = !!p.ai_assisted;
+        _syncWriteFeaturedState();
 
         // Date
         if (p.publish_at) {
@@ -1105,6 +1108,7 @@
 
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
+      var publishedChecked = publish ? true : document.getElementById('w-published').checked;
       var body = {
         title:            title,
         subtitle:         document.getElementById('w-subtitle').value.trim(),
@@ -1117,8 +1121,8 @@
         location_name:    document.getElementById('w-location-name').value.trim(),
         location_address: document.getElementById('w-location-addr').value.trim(),
         special_feature:  document.getElementById('w-special').value.trim(),
-        published:        publish ? true : document.getElementById('w-published').checked,
-        featured:         document.getElementById('w-featured').checked,
+        published:        publishedChecked,
+        featured:         publishedChecked && document.getElementById('w-featured').checked,
         ai_assisted:      document.getElementById('w-ai').checked,
         meta_tags:        _metaTags.join(','),
         publish_at:       dateVal ? new Date(dateVal).toISOString() : undefined,
@@ -1143,11 +1147,20 @@
       GW.showToast('저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
       document.getElementById('w-published').checked = publish || document.getElementById('w-published').checked;
+      _syncWriteFeaturedState();
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');
       _clearButtonBusy(btn);
     });
+  }
+
+  function _syncWriteFeaturedState() {
+    var published = document.getElementById('w-published');
+    var featured = document.getElementById('w-featured');
+    if (!published || !featured) return;
+    if (!published.checked) featured.checked = false;
+    featured.disabled = !published.checked;
   }
 
   function _loadPostHistory(id) {
@@ -2824,9 +2837,11 @@
         return;
       }
       el.innerHTML = posts.map(function (p) {
-        return '<div class="v3-search-result-item" onclick="V3._selectHomeLead(' + p.id + ')">' +
+        var blocked = _picksPosts.some(function (item) { return item.id === p.id; });
+        var suffix = blocked ? ' · 에디터 추천에서 제외 후 선택 가능' : '';
+        return '<div class="v3-search-result-item' + (blocked ? ' is-disabled' : '') + '"' + (blocked ? '' : ' onclick="V3._selectHomeLead(' + p.id + ')"') + '>' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
-          '<div class="v3-search-result-meta">' + GW.escapeHtml(p.category || '') + '</div>' +
+          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
         '</div>';
       }).join('');
       el.style.display = 'block';
@@ -2840,6 +2855,10 @@
       var post = data && (data.post || data);
       if (!post || !post.published) {
         GW.showToast('공개된 게시글만 선택할 수 있습니다', 'error');
+        return;
+      }
+      if (_picksPosts.some(function (item) { return item.id === post.id; })) {
+        _alert('메인 스토리 선택 제한', '에디터 추천 글은 메인 스토리로 동시에 지정할 수 없습니다. 추천에서 제외한 뒤 다시 시도해주세요.');
         return;
       }
       _homeLeadPost = post;
@@ -2902,7 +2921,7 @@
     var meta = document.getElementById('picks-meta');
     if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
-    _apiFetch('/api/posts?featured=1&limit=20&published=1').then(function (data) {
+    _apiFetch('/api/posts?featured=1&limit=20&published=all').then(function (data) {
       _picksPosts = (data && data.posts) || [];
       _renderPicksSelected();
     }).catch(function () {
@@ -2921,9 +2940,11 @@
       return;
     }
     wrap.innerHTML = '<div class="v3-picks-list">' + _picksPosts.map(function (post) {
+      var badges = '<span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span><span class="v3-badge v3-badge-yellow">추천</span>';
+      if (!post.published) badges += '<span class="v3-badge v3-badge-gray">비공개</span>';
       return '<div class="v3-pick-row">' +
         '<div class="v3-pick-copy">' +
-          '<div class="v3-pick-badges"><span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span><span class="v3-badge v3-badge-yellow">추천</span></div>' +
+          '<div class="v3-pick-badges">' + badges + '</div>' +
           '<div class="v3-pick-title">' + GW.escapeHtml(post.title || '(제목 없음)') + '</div>' +
           '<div class="v3-pick-meta">' + GW.escapeHtml(post.publish_at || post.created_at || '') + '</div>' +
         '</div>' +
@@ -2945,8 +2966,11 @@
       }
       el.innerHTML = posts.map(function (p) {
         var already = _picksPosts.some(function (item) { return item.id === p.id; });
-        var disabled = already || (isFull && !already);
-        var suffix = already ? ' · 이미 선택됨' : (isFull ? ' · 최대 4개 선택됨' : '');
+        var isLead = _homeLeadPost && Number(_homeLeadPost.id) === Number(p.id);
+        var disabled = already || isLead || (isFull && !already);
+        var suffix = already
+          ? ' · 이미 선택됨'
+          : (isLead ? ' · 메인 스토리에서 제외 후 선택 가능' : (isFull ? ' · 최대 4개 선택됨' : ''));
         return '<div class="v3-search-result-item' + (disabled ? ' is-disabled' : '') + '"' + (disabled ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
           '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
@@ -2961,6 +2985,10 @@
   V3._addPick = function (id) {
     if (_picksPosts.length >= 4 && !_picksPosts.some(function (item) { return item.id === id; })) {
       _alert('에디터 추천 제한', '에디터 추천은 최대 4개까지 선택할 수 있습니다. 기존 추천을 하나 제외한 뒤 다시 시도해주세요.');
+      return;
+    }
+    if (_homeLeadPost && Number(_homeLeadPost.id) === Number(id)) {
+      _alert('에디터 추천 제한', '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다. 메인 스토리에서 제외한 뒤 다시 시도해주세요.');
       return;
     }
     _togglePick(id, true);
