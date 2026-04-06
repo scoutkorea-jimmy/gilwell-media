@@ -276,6 +276,8 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 최신 소식은 진입/복귀 시 다시 조회한다.
 - 인기 소식은 운영 정의에 따른 인기 기사 목록이다.
 - 에디터 추천은 운영자 수동 추천 영역이다.
+- 에디터 추천은 최대 4개까지만 유지하며, 이 제한은 관리자 UI와 서버 저장 API 모두에서 강제한다.
+- 홈의 에디터 추천 / 카테고리 보드 노출 정렬은 게시판 수동 정렬(`sort_order`)과 분리하고 `publish_at` 기준 최신순을 우선한다.
 - 카드의 버튼/태그/날짜 위치는 공통 규칙을 따른다.
 
 ## 6. 게시판 페이지
@@ -546,6 +548,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET /api/posts/:id\` — 상세
 - \`PUT /api/posts/:id\` — 수정 (인증 필요)
 - \`PATCH /api/posts/:id\` — 공개/추천/정렬 상태 변경 (인증 필요)
+- \`PATCH /api/posts/:id\` 에서 \`featured=1\` 저장 시 공개 추천 글이 이미 4개면 \`409\`로 거부한다.
 - \`DELETE /api/posts/:id\` — 삭제 (인증 필요)
 - \`GET /api/posts/:id/image\` — 대표 이미지 응답 (OG 이미지 용도)
 - \`GET /api/posts/:id/history\` — 수정 기록 (\`before_snapshot\`, \`after_snapshot\` 포함)

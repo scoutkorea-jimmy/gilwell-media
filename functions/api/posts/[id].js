@@ -233,6 +233,15 @@ export async function onRequestPatch({ params, request, env }) {
   try {
     const beforePost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
     if (!beforePost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (featuredInput.provided && featuredInput.value && Number(beforePost.featured || 0) !== 1) {
+      const featuredCountRow = await env.DB.prepare(
+        `SELECT COUNT(*) AS n FROM posts WHERE featured = 1 AND published = 1`
+      ).first();
+      const featuredCount = Number(featuredCountRow && featuredCountRow.n || 0);
+      if (featuredCount >= 4) {
+        return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
+      }
+    }
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     if (updatedPost) {

@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.19';
-  GW.ADMIN_VERSION = '03.052.14';
-  GW.ASSET_VERSION = '20260406121232';
+  GW.APP_VERSION = '00.111.20';
+  GW.ADMIN_VERSION = '03.052.15';
+  GW.ASSET_VERSION = '20260406122105';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1563,17 +1563,38 @@
   GW.renderManagedNav = function () {
     var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
     document.querySelectorAll('.nav[data-managed-nav]').forEach(function (nav) {
-      nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
-        var href = item.href;
-        var isActive = href === '/'
-          ? currentPath === '/'
-          : currentPath === href;
-        var classes = isActive ? ' class="active"' : '';
-        return '<a href="' + GW.escapeHtml(href) + '"' + classes +
-          ' data-i18n="' + GW.escapeHtml(item.key) + '">' +
-          GW.escapeHtml(GW.t(item.key)) +
-        '</a>';
-      }).join('');
+      var anchors = Array.from(nav.querySelectorAll('a'));
+      var byHref = new Map();
+      anchors.forEach(function (anchor) {
+        var href = (anchor.getAttribute('href') || '').replace(/\/+$/, '') || '/';
+        if (!byHref.has(href)) byHref.set(href, anchor);
+      });
+      var canPatchInPlace = anchors.length === GW.NAV_ITEMS.length
+        && GW.NAV_ITEMS.every(function (item) { return byHref.has(item.href); });
+      if (canPatchInPlace) {
+        GW.NAV_ITEMS.forEach(function (item) {
+          var anchor = byHref.get(item.href);
+          var href = item.href;
+          var isActive = href === '/'
+            ? currentPath === '/'
+            : currentPath === href;
+          anchor.setAttribute('data-i18n', item.key);
+          anchor.textContent = GW.t(item.key);
+          anchor.classList.toggle('active', isActive);
+        });
+      } else {
+        nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
+          var href = item.href;
+          var isActive = href === '/'
+            ? currentPath === '/'
+            : currentPath === href;
+          var classes = isActive ? ' class="active"' : '';
+          return '<a href="' + GW.escapeHtml(href) + '"' + classes +
+            ' data-i18n="' + GW.escapeHtml(item.key) + '">' +
+            GW.escapeHtml(GW.t(item.key)) +
+          '</a>';
+        }).join('');
+      }
       nav.classList.add('is-ready');
     });
   };
