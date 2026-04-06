@@ -19,7 +19,7 @@ export async function onRequestGet({ request, env }) {
   if (!post_id) return json({ error: 'post_id is required.' }, 400);
 
   const rows = await env.DB.prepare(
-    `SELECT id, author_id, author_name, content, created_at
+    `SELECT id, author_id, author_name, content, parent_id, created_at
        FROM dp_post_comments
       WHERE post_id = ?
       ORDER BY created_at ASC`
@@ -31,18 +31,24 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { post_id, content } = body;
+  const { post_id, content, parent_id } = body;
   if (!post_id || !content?.trim()) {
     return json({ error: 'post_id and content are required.' }, 400);
+  }
+
+  const safeParentId = parent_id ? parseInt(parent_id, 10) || null : null;
+  if (safeParentId) {
+    const parent = await env.DB.prepare(`SELECT id FROM dp_post_comments WHERE id = ?`).bind(safeParentId).first();
+    if (!parent) return json({ error: 'Parent comment not found.' }, 400);
   }
 
   const uid  = data.dpUser.uid;
   const name = data.dpUser.name;
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_post_comments (post_id, author_id, author_name, content)
-     VALUES (?, ?, ?, ?)`
-  ).bind(post_id, uid, name, content.trim().slice(0, 2000)).run();
+    `INSERT INTO dp_post_comments (post_id, author_id, author_name, content, parent_id)
+     VALUES (?, ?, ?, ?, ?)`
+  ).bind(post_id, uid, name, content.trim().slice(0, 2000), safeParentId).run();
 
   return json({ id: result.meta.last_row_id, ok: true });
 }
