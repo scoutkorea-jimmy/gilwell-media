@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.13
+ * Version: 03.052.14
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2914,7 +2914,7 @@
   function _renderPicksSelected() {
     var wrap = document.getElementById('picks-selected');
     var meta = document.getElementById('picks-meta');
-    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개';
+    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개 / 최대 4개';
     if (!wrap) return;
     if (!_picksPosts.length) {
       wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택된 에디터 추천 게시글이 없습니다.</div></div>';
@@ -2938,15 +2938,18 @@
     var el = document.getElementById('picks-search-results');
     _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=10&published=1').then(function (data) {
       var posts = (data && data.posts) || [];
+      var isFull = _picksPosts.length >= 4;
       if (!posts.length) {
         el.style.display = 'none';
         return;
       }
       el.innerHTML = posts.map(function (p) {
         var already = _picksPosts.some(function (item) { return item.id === p.id; });
-        return '<div class="v3-search-result-item' + (already ? ' is-disabled' : '') + '"' + (already ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
+        var disabled = already || (isFull && !already);
+        var suffix = already ? ' · 이미 선택됨' : (isFull ? ' · 최대 4개 선택됨' : '');
+        return '<div class="v3-search-result-item' + (disabled ? ' is-disabled' : '') + '"' + (disabled ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
-          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + (already ? ' · 이미 선택됨' : '')) + '</div>' +
+          '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
         '</div>';
       }).join('');
       el.style.display = 'block';
@@ -2956,6 +2959,10 @@
   }
 
   V3._addPick = function (id) {
+    if (_picksPosts.length >= 4 && !_picksPosts.some(function (item) { return item.id === id; })) {
+      _alert('에디터 추천 제한', '에디터 추천은 최대 4개까지 선택할 수 있습니다. 기존 추천을 하나 제외한 뒤 다시 시도해주세요.');
+      return;
+    }
     _togglePick(id, true);
   };
 
@@ -4343,16 +4350,26 @@
   /* ══════════════════════════════════════════════════════════
      CONFIRM DIALOG
   ══════════════════════════════════════════════════════════ */
-  function _confirm(title, msg) {
+  function _confirm(title, msg, opts) {
+    opts = opts || {};
     return new Promise(function (resolve) {
       _confirmResolve = resolve;
       document.getElementById('confirm-title').textContent = title;
       document.getElementById('confirm-msg').textContent   = msg;
+      document.getElementById('confirm-ok-btn').textContent = opts.okText || '확인';
+      document.getElementById('confirm-cancel-btn').textContent = opts.cancelText || '취소';
+      document.getElementById('confirm-cancel-btn').style.display = opts.hideCancel ? 'none' : '';
       document.getElementById('v3-confirm').style.display  = 'flex';
     });
   }
+  function _alert(title, msg) {
+    return _confirm(title, msg, { hideCancel: true, okText: '확인' });
+  }
   function _closeConfirm(ok) {
     document.getElementById('v3-confirm').style.display = 'none';
+    document.getElementById('confirm-cancel-btn').style.display = '';
+    document.getElementById('confirm-ok-btn').textContent = '확인';
+    document.getElementById('confirm-cancel-btn').textContent = '취소';
     if (_confirmResolve) { _confirmResolve(ok); _confirmResolve = null; }
   }
 
