@@ -20,6 +20,7 @@ export function buildContentPurgeUrls(origin, options = {}) {
   const safeOrigin = String(origin || '').replace(/\/+$/, '');
   if (!safeOrigin) return [];
   const postId = Number(options.postId || 0);
+  const postIds = Array.isArray(options.postIds) ? options.postIds : [];
   const categories = Array.isArray(options.categories) ? options.categories : [];
   const urls = new Set(DEFAULT_CONTENT_URLS.map((path) => safeOrigin + path));
   categories
@@ -30,10 +31,14 @@ export function buildContentPurgeUrls(origin, options = {}) {
       urls.add(`${safeOrigin}/api/posts?page=1&category=${category}`);
       urls.add(`${safeOrigin}/api/posts?page=1&limit=16&category=${category}`);
     });
-  if (postId > 0) {
-    urls.add(`${safeOrigin}/post/${postId}`);
-    urls.add(`${safeOrigin}/api/posts/${postId}`);
-  }
+  const allPostIds = postIds.concat(postId > 0 ? [postId] : []);
+  allPostIds
+    .map((value) => Number(value || 0))
+    .filter((value, index, arr) => value > 0 && arr.indexOf(value) === index)
+    .forEach((value) => {
+      urls.add(`${safeOrigin}/post/${value}`);
+      urls.add(`${safeOrigin}/api/posts/${value}`);
+    });
   return Array.from(urls);
 }
 

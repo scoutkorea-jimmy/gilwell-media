@@ -1,6 +1,7 @@
 import { loadSiteMeta } from '../_shared/site-meta.js';
 import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
+import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 
 const DEFAULT_TICKER_ITEMS = [
   '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
@@ -41,6 +42,9 @@ const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), date
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
+    await ensureDuePostsPublished(env, origin).catch((err) => {
+      console.error('GET /api/home auto publish error:', err);
+    });
 
     const [
       siteMeta,

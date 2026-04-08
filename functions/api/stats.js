@@ -5,6 +5,10 @@
  */
 export async function onRequestGet({ env }) {
   try {
+    const { ensureDuePostsPublished } = await import('../_shared/publish-due-posts.js');
+    await ensureDuePostsPublished(env).catch((err) => {
+      console.error('GET /api/stats auto publish error:', err);
+    });
     // Use KST (UTC+9) for "today" so the count matches Korean local midnight
     const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const today = nowKST.toISOString().slice(0, 10); // YYYY-MM-DD in KST

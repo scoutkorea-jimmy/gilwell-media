@@ -4,6 +4,7 @@ import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
 import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 import { findManualRelatedPosts, findRelatedPosts } from '../_shared/related-posts.js';
 import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
+import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -31,6 +32,10 @@ export async function onRequestGet({ params, env, request }) {
   if (!Number.isFinite(id) || id < 1) {
     return notFound();
   }
+
+  await ensureDuePostsPublished(env, new URL(request.url).origin).catch((err) => {
+    console.error('GET /post/:id auto publish error:', err);
+  });
 
   let post, disclaimerRow, translationsRow, publicRuntimeRow;
   try {
@@ -172,7 +177,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260408034306">
+  <link rel="stylesheet" href="/css/style.css?v=20260408034832">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -501,8 +506,8 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260408034306"></script>
-  <script src="/js/post-page.js?v=20260408034306"></script>
+  <script src="/js/main.js?v=20260408034832"></script>
+  <script src="/js/post-page.js?v=20260408034832"></script>
 </body>
 </html>`;
 

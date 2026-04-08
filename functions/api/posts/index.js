@@ -13,6 +13,7 @@ import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
+import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 16;
@@ -23,6 +24,9 @@ const PAGE_SIZE = 16;
 export async function onRequestGet({ request, env }) {
   const url          = new URL(request.url);
   const origin       = url.origin;
+  await ensureDuePostsPublished(env, origin).catch((err) => {
+    console.error('GET /api/posts auto publish error:', err);
+  });
   const category     = normalizeCategory(url.searchParams.get('category') || null);
   const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const requestedLimit = parseInt(url.searchParams.get('limit') || String(PAGE_SIZE), 10);

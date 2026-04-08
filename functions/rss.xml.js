@@ -4,6 +4,10 @@ export async function onRequestGet({ request, env }) {
   const siteUrl = `${origin}/`;
 
   try {
+    const { ensureDuePostsPublished } = await import('./_shared/publish-due-posts.js');
+    await ensureDuePostsPublished(env, origin).catch((err) => {
+      console.error('GET /rss.xml auto publish error:', err);
+    });
     const { results } = await env.DB.prepare(
       `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, tag, published
          FROM posts

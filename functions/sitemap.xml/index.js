@@ -8,6 +8,10 @@ export async function onRequestHead(context) {
 
 async function buildSitemapResponse({ request, env }, headOnly) {
   const origin = new URL(request.url).origin;
+  const { ensureDuePostsPublished } = await import('../_shared/publish-due-posts.js');
+  await ensureDuePostsPublished(env, origin).catch((err) => {
+    console.error('GET /sitemap.xml auto publish error:', err);
+  });
   const staticPages = [
     { path: '/', priority: '1.0', category: null },
     { path: '/latest', priority: '0.9', category: null },
