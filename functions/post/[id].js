@@ -76,7 +76,8 @@ export async function onRequestGet({ params, env, request }) {
     findSpecialFeaturePosts(env, post, 50),
   ]);
 
-  const siteUrl  = new URL(request.url).origin;
+  const requestUrlObj = new URL(request.url);
+  const siteUrl  = requestUrlObj.origin;
   const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
   const titleText = post.title || '';
   const subtitleText = post.subtitle || '';
@@ -100,6 +101,9 @@ export async function onRequestGet({ params, env, request }) {
   const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const postUrl  = `${siteUrl}/post/${id}`;
+  const shareMetaUrl = requestUrlObj.searchParams.has('fb_share_ref')
+    ? requestUrlObj.toString()
+    : postUrl;
   const categoryUrl = `${siteUrl}/${post.category}`;
   const editSeed = serializeForScript({
     id,
@@ -150,7 +154,7 @@ export async function onRequestGet({ params, env, request }) {
   <meta property="og:type"        content="article"/>
   <meta property="og:title"       content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url"         content="${postUrl}"/>
+  <meta property="og:url"         content="${escapeHtml(shareMetaUrl)}"/>
   ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
   <meta property="og:site_name"   content="BP미디어 · bpmedia.net"/>
   <meta property="article:published_time" content="${escapeHtml(publishedIso)}"/>
@@ -167,7 +171,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260408032841">
+  <link rel="stylesheet" href="/css/style.css?v=20260408033352">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -496,16 +500,17 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260408032841"></script>
-  <script src="/js/post-page.js?v=20260408032841"></script>
+  <script src="/js/main.js?v=20260408033352"></script>
+  <script src="/js/post-page.js?v=20260408033352"></script>
 </body>
 </html>`;
 
+  const isFacebookShareRequest = requestUrlObj.searchParams.has('fb_share_ref');
   return new Response(html, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': isAdmin ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300',
+      'Cache-Control': (isAdmin || isFacebookShareRequest) ? 'no-store' : 'public, max-age=60, stale-while-revalidate=300',
     },
   });
 }
