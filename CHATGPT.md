@@ -21,8 +21,9 @@
 - AI 작업 기준 문서의 원본은 저장소 루트의 `CHATGPT.md`입니다.
 - 기존 `ai-guide.html`은 폐기되었으며, 관련 기준은 `CHATGPT.md`와 KMS 문서로 이관되었습니다.
 - 홈페이지 UI/코드 모듈 분해 기준은 `docs/homepage-module-inventory.md`를 함께 참고합니다.
-- Obsidian에서 모듈을 추적할 때는 `docs/modules/README.md`와 `docs/modules/Homepage Runtime Map.md`를 우선 진입점으로 사용합니다.
+- Obsidian에서 문서를 추적할 때는 `docs/features/README.md`와 `docs/features/Feature Map.md`를 1차 진입점으로 사용하고, `docs/modules/*`는 참고 라이브러리로 봅니다.
 - Obsidian 그래프뷰를 위해 모듈 문서는 `모듈 ↔ 템플릿 ↔ API`가 서로 위키링크로 연결된 라이브러리 구조를 유지합니다.
+- Obsidian 그래프뷰 기준 최상위 축은 `문서명`이 아니라 `기능(feature)`입니다.
 - `DreamPath` 규칙을 메인 사이트에 섞지 않습니다.
 
 ---
@@ -82,8 +83,10 @@
 - `Code Module`은 constants, utils, renderers, feature init, API helper처럼 책임이 분리된 코드 단위입니다.
 - 모듈 분해 기준 문서는 `docs/homepage-module-inventory.md`를 사용합니다.
 - Obsidian용 모듈 문서는 허브형 구조를 유지합니다.
+- Obsidian 문서 구조는 `Feature Hub → Module / Template / API Library` 순서를 기본으로 합니다.
 - 모듈 문서는 가능한 한 “한 파일 = 한 책임” 원칙으로 쪼개고, 인덱스 문서에서 위키링크로 연결합니다.
 - 새 모듈 문서를 추가할 때는 `docs/modules/README.md`, `docs/modules/Homepage Runtime Map.md`에 함께 등록합니다.
+- 새 기능 문서를 추가할 때는 `docs/features/README.md`, `docs/features/Feature Map.md`에 함께 등록합니다.
 - Obsidian 문서 안에서는 긴 설명보다 `역할 / Code Entry / 책임 / 의존성 / 분리 후보` 구조를 우선합니다.
 - 모듈 문서를 추가하거나 쪼갤 때는 대응되는 `Template` 노트와 `API` 노트도 함께 연결해 그래프에서 고립 노드가 생기지 않게 합니다.
 
