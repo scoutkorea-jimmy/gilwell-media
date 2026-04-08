@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260408125154">
+  <link rel="stylesheet" href="/css/style.css?v=20260408130147">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="wosm-members-page">
@@ -75,11 +75,15 @@
       <div class="glossary-search-card members-search-card">
         <label for="wosm-members-search">국가 검색</label>
         <input type="search" id="wosm-members-search" class="glossary-search-input members-search-input" placeholder="한국어, 영어로 검색" autocomplete="off" />
-        <label for="wosm-members-category" class="members-filter-label">소속 지역연맹</label>
-        <select id="wosm-members-category" class="members-filter-select">
-          <option value="all">전체</option>
-        </select>
-        <p class="glossary-search-help">용어집과 같은 레이아웃 규칙으로, 데스크톱에서는 표 중심, 모바일에서는 카드 중심으로 읽히게 구성합니다.</p>
+        <div class="members-view-picker">
+          <span class="members-filter-label">보기 방식</span>
+          <div class="members-view-chips" role="tablist" aria-label="회원국 현황 보기 방식">
+            <button type="button" class="members-view-chip active" data-members-view="country" role="tab" aria-selected="true">국가별 보기</button>
+            <button type="button" class="members-view-chip" data-members-view="region" role="tab" aria-selected="false">지역연맹별 보기</button>
+            <button type="button" class="members-view-chip" data-members-view="language" role="tab" aria-selected="false">언어별 보기</button>
+          </div>
+        </div>
+        <p class="glossary-search-help">대표 연맹을 먼저 보고, 같은 국가의 추가 회원연맹은 필요할 때 펼쳐볼 수 있습니다. 검색 결과에 하위 연맹이 포함되면 해당 그룹은 자동으로 펼쳐집니다.</p>
       </div>
     </section>
 
@@ -130,8 +134,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=20260408125154"></script>
-  <script src="/js/site-chrome.js?v=20260408125154"></script>
-  <script src="/js/wosm-members.js?v=20260408125154"></script>
+  <script src="/js/main.js?v=20260408130147"></script>
+  <script src="/js/site-chrome.js?v=20260408130147"></script>
+  <script src="/js/wosm-members.js?v=20260408130147"></script>
 </body>
 </html>
