@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.27';
+  GW.APP_VERSION = '00.111.28';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408034832';
+  GW.ASSET_VERSION = '20260408035748';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -918,6 +918,11 @@
     return /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
   };
 
+  GW.createShareRef = function () {
+    var seed = GW.ASSET_VERSION || Date.now().toString();
+    return seed + '-' + Date.now().toString();
+  };
+
   GW.buildShareUrl = function (url, source) {
     var raw = String(url || window.location.href || '').trim();
     var channel = String(source || 'share').trim().toLowerCase() || 'share';
@@ -932,12 +937,49 @@
     parsed.searchParams.delete('utm_campaign');
     parsed.searchParams.delete('fb_share_ref');
     parsed.searchParams.delete('share_ref');
-    parsed.searchParams.set('share_ref', GW.ASSET_VERSION || Date.now().toString());
+    parsed.searchParams.set('share_ref', GW.createShareRef());
     return parsed.toString();
   };
 
   GW.buildFacebookShareTarget = function (url) {
     return GW.buildShareUrl(url, 'facebook');
+  };
+
+  GW.openSharePopup = function (shareUrl, options) {
+    var width = (options && options.width) || 640;
+    var height = (options && options.height) || 680;
+    var name = (options && options.name) || 'bpmedia_share_popup';
+    var screenLeft = typeof window.screenLeft === 'number' ? window.screenLeft : (window.screenX || 0);
+    var screenTop = typeof window.screenTop === 'number' ? window.screenTop : (window.screenY || 0);
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || screen.width || width;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || screen.height || height;
+    var left = Math.max(screenLeft + Math.round((viewportWidth - width) / 2), 0);
+    var top = Math.max(screenTop + Math.round((viewportHeight - height) / 2), 0);
+    var features = [
+      'popup=yes',
+      'toolbar=no',
+      'menubar=no',
+      'location=yes',
+      'status=no',
+      'resizable=yes',
+      'scrollbars=yes',
+      'width=' + width,
+      'height=' + height,
+      'left=' + left,
+      'top=' + top
+    ].join(',');
+    var popup = window.open('', name, features);
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      return null;
+    }
+    try {
+      popup.opener = null;
+    } catch (_) {}
+    popup.location.replace(shareUrl);
+    try {
+      popup.focus();
+    } catch (_) {}
+    return popup;
   };
 
   GW.ensureShareModal = function () {
@@ -1083,13 +1125,19 @@
     if (channel === 'facebook') {
       var facebookTarget = GW.buildFacebookShareTarget(state.url || trackedUrl || '');
       var facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(facebookTarget);
-      var popup = window.open(
-        facebookUrl,
-        '_blank',
-        'noopener,noreferrer,width=640,height=680'
-      );
+      var popup = GW.openSharePopup(facebookUrl, {
+        name: 'bpmedia_facebook_share',
+        width: 640,
+        height: 680
+      });
       if (!popup) {
-        window.location.href = facebookUrl;
+        GW.copyText(facebookTarget)
+          .then(function () {
+            GW.showToast('팝업이 차단되어 공유 링크를 복사했습니다. 팝업 차단을 해제한 뒤 다시 시도해주세요.', 'success');
+          })
+          .catch(function () {
+            GW.showToast('팝업이 차단되어 공유 창을 열지 못했습니다. 팝업 차단을 해제해주세요.', 'error');
+          });
         return;
       }
       GW.showToast('페이스북 공유 창을 열었습니다.', 'success');

@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.27`
+- Current site version: `V00.111.28`
 - Current admin version: `V03.052.16`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
@@ -218,6 +218,7 @@ Instead, apply only the missing files from `db/migration_001.sql` onward, in ord
 
 - `./scripts/bootstrap_local_db.sh gilwell-posts`
 - `./scripts/smoke_check.sh gilwell-posts`
+- `./scripts/audit_public_posts.sh https://bpmedia.net`  # published post + shared preview audit
 - `./scripts/deploy_production.sh`
 - `./scripts/post_deploy_check.sh`
 - `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`
