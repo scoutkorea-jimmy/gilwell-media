@@ -234,6 +234,7 @@
 - 관리자 버전은 `GW.ADMIN_VERSION`과 관리자 자산 버전 문자열을 함께 올립니다.
 - production 배포는 `./scripts/deploy_production.sh`로 진행합니다.
 - 배포 후 점검에는 `./scripts/post_deploy_check.sh <url>`를 사용합니다.
+- 게시글 생성/수정/삭제 뒤에는 관련 공개 경로 캐시를 자동 퍼지하고, 핵심 공개 API는 stale 응답이 남지 않도록 즉시 반영 기준으로 유지합니다.
 - 공개 UI 변경은 오너 확인 후 production 배포를 진행합니다.
 - 예외적으로 관리자 UI만 수정되었거나 관리자/API 계열만 수정된 경우는 바로 production 반영이 가능합니다.
 - 공개 규칙 문서 변경 시에는 KMS 원본, `docs/feature-definition.md`, `CHATGPT.md`, changelog를 함께 맞춥니다.

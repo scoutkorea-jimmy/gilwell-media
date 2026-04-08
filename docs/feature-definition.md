@@ -558,6 +558,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `POST /api/posts/:id/like` — 공감
 - `GET /api/posts/popular` — 인기 기사
 - `PUT /api/posts/reorder` — 순서 변경
+- `GET /api/posts`, `GET /api/posts/popular`, `GET /api/home`, `GET /api/stats` 는 게시글 반영 지연을 줄이기 위해 `no-store` 기준으로 응답한다.
 
 **캘린더**
 - `GET /api/calendar` — 전체 일정
@@ -624,6 +625,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
 - 배포 전 `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`을 확인하고 `./scripts/sync_versions.sh`로 버전 문자열과 새 자산 토큰을 동기화한다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
+- 선택 사항: `CF_ZONE_ID`, `CF_PURGE_API_TOKEN` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
 
 ### 13.2 스모크 체크 기준
 

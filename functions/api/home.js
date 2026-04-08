@@ -89,7 +89,7 @@ export async function onRequestGet({ env, request }) {
         wosm: { posts: wosm },
         people: { posts: people },
       },
-    }, 200, publicCacheHeaders(120, 600));
+    }, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/home error:', err);
     await logApiError(env, request, err, { channel: 'site' });

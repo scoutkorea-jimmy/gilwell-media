@@ -12,6 +12,7 @@ import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-
 import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
+import { purgeContentCache } from '../../_shared/cache-purge.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 16;
@@ -137,7 +138,7 @@ export async function onRequestGet({ request, env }) {
     return json(
       { posts: hydrated, total, page, pageSize: effectivePageSize },
       200,
-      isAdmin ? { 'Cache-Control': 'no-store' } : publicCacheHeaders(120, 600)
+      { 'Cache-Control': 'no-store' }
     );
   } catch (err) {
     console.error('GET /api/posts error:', err);
@@ -246,6 +247,9 @@ export async function onRequestPost({ request, env }) {
 
     if (insertedPost) {
       await recordPostHistory(env, insertedPost.id, 'create', null, insertedPost, '게시글 생성');
+      await purgeContentCache(env, origin, { postId: insertedPost.id, categories: [insertedPost.category] }).catch(function (err) {
+        console.error('POST /api/posts cache purge error:', err);
+      });
     }
     return json({ post: insertedPost }, 201);
   } catch (err) {

@@ -46,7 +46,7 @@ export async function onRequestGet({ env, request }) {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=180, s-maxage=180, stale-while-revalidate=900',
+        'Cache-Control': 'no-store',
       },
     });
   } catch (err) {

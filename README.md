@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.21`
+- Current site version: `V00.111.22`
 - Current admin version: `V03.052.16`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
@@ -25,6 +25,8 @@ Operational references:
 
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
+- `CF_ZONE_ID`: optional Cloudflare zone id for runtime cache purge after content writes
+- `CF_PURGE_API_TOKEN`: optional Cloudflare API token with cache purge permission
 
 Required app secrets:
 - `ADMIN_PASSWORD`
