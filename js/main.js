@@ -1686,6 +1686,124 @@
       }
       nav.classList.add('is-ready');
     });
+    if (GW.syncMobileCompactNav) GW.syncMobileCompactNav();
+  };
+
+  GW.ensureMobileCompactHeader = function () {
+    if (typeof document === 'undefined') return null;
+    if (document.getElementById('mobile-compact-header')) {
+      return {
+        header: document.getElementById('mobile-compact-header'),
+        overlay: document.getElementById('mobile-compact-overlay'),
+        drawer: document.getElementById('mobile-compact-drawer'),
+        nav: document.getElementById('mobile-compact-nav')
+      };
+    }
+    if (!document.body || document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3')) return null;
+    if (!document.querySelector('.masthead')) return null;
+
+    var shell = document.createElement('div');
+    shell.innerHTML =
+      '<div class="mobile-compact-header" id="mobile-compact-header" aria-hidden="true">' +
+        '<button type="button" class="mobile-compact-toggle" id="mobile-compact-toggle" aria-label="메뉴 열기" aria-expanded="false" aria-controls="mobile-compact-drawer">' +
+          '<span></span><span></span><span></span>' +
+        '</button>' +
+        '<a href="/" class="mobile-compact-brand" aria-label="BP미디어 홈으로 이동">' +
+          '<img src="/img/logo.svg" alt="" class="mobile-compact-brand-mark" aria-hidden="true">' +
+          '<span class="mobile-compact-brand-text">BP미디어</span>' +
+        '</a>' +
+        '<a href="/search" class="mobile-compact-search" aria-label="검색">⌕</a>' +
+      '</div>' +
+      '<div class="mobile-compact-overlay" id="mobile-compact-overlay" hidden></div>' +
+      '<aside class="mobile-compact-drawer" id="mobile-compact-drawer" aria-hidden="true">' +
+        '<div class="mobile-compact-drawer-head">' +
+          '<strong class="mobile-compact-drawer-title">메뉴</strong>' +
+          '<button type="button" class="mobile-compact-drawer-close" id="mobile-compact-drawer-close" aria-label="메뉴 닫기">×</button>' +
+        '</div>' +
+        '<nav class="mobile-compact-nav" id="mobile-compact-nav" aria-label="모바일 메뉴"></nav>' +
+      '</aside>';
+    document.body.appendChild(shell);
+
+    var refs = {
+      header: document.getElementById('mobile-compact-header'),
+      overlay: document.getElementById('mobile-compact-overlay'),
+      drawer: document.getElementById('mobile-compact-drawer'),
+      nav: document.getElementById('mobile-compact-nav'),
+      toggle: document.getElementById('mobile-compact-toggle'),
+      close: document.getElementById('mobile-compact-drawer-close')
+    };
+
+    function closeDrawer() {
+      document.body.classList.remove('mobile-compact-drawer-open');
+      refs.drawer.setAttribute('aria-hidden', 'true');
+      refs.overlay.hidden = true;
+      refs.toggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function openDrawer() {
+      document.body.classList.add('mobile-compact-drawer-open');
+      refs.drawer.setAttribute('aria-hidden', 'false');
+      refs.overlay.hidden = false;
+      refs.toggle.setAttribute('aria-expanded', 'true');
+    }
+
+    refs.toggle.addEventListener('click', function () {
+      if (document.body.classList.contains('mobile-compact-drawer-open')) closeDrawer();
+      else openDrawer();
+    });
+    refs.close.addEventListener('click', closeDrawer);
+    refs.overlay.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') closeDrawer();
+    });
+    refs.nav.addEventListener('click', function (event) {
+      var link = event.target.closest('a');
+      if (link) closeDrawer();
+    });
+
+    return refs;
+  };
+
+  GW.syncMobileCompactNav = function () {
+    var refs = GW.ensureMobileCompactHeader();
+    if (!refs || !refs.nav) return;
+    var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    refs.nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
+      var href = item.href;
+      var isActive = href === '/' ? currentPath === '/' : currentPath === href;
+      return '<a href="' + GW.escapeHtml(href) + '"' + (isActive ? ' class="active"' : '') + '>' +
+        GW.escapeHtml(GW.t(item.key)) +
+      '</a>';
+    }).join('');
+  };
+
+  GW.setupMobileCompactHeader = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (document.body && document.body.classList.contains('post-page')) return;
+    var refs = GW.ensureMobileCompactHeader();
+    if (!refs || refs.header.dataset.bound === '1') {
+      if (refs && refs.header) GW.syncMobileCompactNav();
+      return;
+    }
+
+    function updateVisibility() {
+      var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+      var shouldShow = isMobile && (window.pageYOffset || document.documentElement.scrollTop || 0) > 72;
+      refs.header.classList.toggle('is-visible', shouldShow);
+      refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+      if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {
+        document.body.classList.remove('mobile-compact-drawer-open');
+        refs.drawer.setAttribute('aria-hidden', 'true');
+        refs.overlay.hidden = true;
+        refs.toggle.setAttribute('aria-expanded', 'false');
+      }
+    }
+
+    refs.header.dataset.bound = '1';
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    window.addEventListener('resize', updateVisibility);
+    GW.syncMobileCompactNav();
+    updateVisibility();
   };
 
   /** Switch language and reload (guarantees consistent state). */
@@ -1912,6 +2030,7 @@
     if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
     if (opts.loadStats !== false) GW.loadStats();
     if (shouldLoadTranslations) GW.loadTranslations();
+    GW.setupMobileCompactHeader();
   };
 
   GW.setupMastheadSearch = function () {
@@ -2078,6 +2197,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     GW.setupMastheadSearch();
+    GW.setupMobileCompactHeader();
     GW.initContentGalleries(document);
   });
 
