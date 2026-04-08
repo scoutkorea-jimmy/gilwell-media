@@ -5760,7 +5760,8 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #b995ff;
+  color: #f3e9ff;
+  text-shadow: 0 0 10px rgba(185,149,255,0.22);
 }
 .kms-ds-layer-header span {
   font-size: 11px;
