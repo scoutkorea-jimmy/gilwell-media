@@ -36,6 +36,8 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
+const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
+
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
@@ -242,7 +244,7 @@ async function loadPostList(env, origin, opts = {}) {
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE ${conditions.join(' AND ')}
-      ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
       LIMIT ?`
   ).bind(...bindings, limit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
@@ -255,7 +257,7 @@ async function loadLatestPosts(env, origin, limit) {
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
        FROM posts
       WHERE published = 1
-      ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
       LIMIT ?`
   ).bind(safeLimit).all();
   return (results || []).map((post) => serializePostImage(post, origin));
