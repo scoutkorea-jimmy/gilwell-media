@@ -9334,6 +9334,7 @@ body.wosm-members-page #main-content {
   background: transparent;
 }
 .members-section-bar {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -9343,12 +9344,22 @@ body.wosm-members-page #main-content {
   border: 1px solid var(--border);
   border-bottom: none;
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
 }
 .members-section-title-wrap,
 .members-card-section-title-wrap {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.members-section-heading {
+  margin: 0;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--ink);
 }
 .members-section-eyebrow {
   font-style: normal;
@@ -9368,6 +9379,23 @@ body.wosm-members-page #main-content {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
+}
+.members-section-meta-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.members-section-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.72);
+  color: var(--ink);
 }
 .members-table .members-col--sort,
 .members-table .members-col--code,
@@ -9473,6 +9501,7 @@ body.wosm-members-page #main-content {
   margin-top: 20px;
 }
 .members-card-section-head {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -9481,6 +9510,9 @@ body.wosm-members-page #main-content {
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
   border-radius: 10px;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
 }
 .members-card-section-head strong {
   font-family: AliceDigitalLearning, sans-serif;

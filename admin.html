@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260408130731">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260408131245">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.053.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.053.01</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -975,6 +975,44 @@
                     <input class="v3-input" type="text" id="wosm-default-map-country-en" placeholder="예: Country Name option 1 E">
                   </div>
                 </div>
+                <div class="v3-card v3-card-soft v3-mb-16">
+                  <div class="v3-card-head">
+                    <div>
+                      <h3 class="v3-card-title">공개 문구</h3>
+                      <p class="v3-card-desc">회원국 현황 화면의 안내 문구와 그룹 메타 문구를 직접 수정합니다. 아래 템플릿에서는 `{countryCount}`, `{memberCount}`, `{viewLabel}`, `{collapsibleCount}`, `{childLabel}` 변수를 사용할 수 있습니다.</p>
+                    </div>
+                  </div>
+                  <div class="v3-form-grid">
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-helper-text">상단 도움말</label>
+                      <textarea class="v3-textarea" id="wosm-public-helper-text" rows="3" placeholder="상단 검색 카드 아래에 노출될 안내 문구"></textarea>
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-overview-template">기본 상태 안내 문구</label>
+                      <textarea class="v3-textarea" id="wosm-public-overview-template" rows="3" placeholder="{countryCount}개국 · {memberCount}개 회원연맹을 {viewLabel} 기준으로 정리했습니다."></textarea>
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-search-template">검색 결과 안내 문구</label>
+                      <textarea class="v3-textarea" id="wosm-public-search-template" rows="3" placeholder="검색 결과 {countryCount}개국 · {memberCount}개 회원연맹이 {viewLabel} 기준으로 표시됩니다."></textarea>
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-section-template">섹션 메타 문구</label>
+                      <input class="v3-input" type="text" id="wosm-public-section-template" placeholder="{countryCount}개국 · {memberCount}개 회원연맹">
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-child-label">하위 연맹 표기</label>
+                      <input class="v3-input" type="text" id="wosm-public-child-label" placeholder="예: 소속 회원연맹">
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-region-label">지역 섹션 라벨</label>
+                      <input class="v3-input" type="text" id="wosm-public-region-label" placeholder="예: 지역연맹">
+                    </div>
+                    <div class="v3-form-group">
+                      <label class="v3-label" for="wosm-public-language-label">언어 섹션 라벨</label>
+                      <input class="v3-input" type="text" id="wosm-public-language-label" placeholder="예: 공식 언어">
+                    </div>
+                  </div>
+                </div>
                 <div class="v3-form-grid">
                   <div class="v3-form-group">
                     <label class="v3-label" for="wosm-members-search">항목 검색</label>
@@ -1266,8 +1304,8 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/js/main.js?v=20260408130731"></script>
-<script src="/js/shared-country-name-ko.js?v=20260408130731"></script>
-<script src="/js/admin-v3.js?v=20260408130731"></script>
+<script src="/js/main.js?v=20260408131245"></script>
+<script src="/js/shared-country-name-ko.js?v=20260408131245"></script>
+<script src="/js/admin-v3.js?v=20260408131245"></script>
 </body>
 </html>

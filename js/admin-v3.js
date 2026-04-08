@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.053.00
+ * Version: 03.053.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -61,6 +61,7 @@
   var _wosmMembers   = [];
   var _wosmColumns   = [];
   var _wosmRegisteredCount = 176;
+  var _wosmPublicCopy = {};
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
   var _wosmImportSavedMapping = {
@@ -3790,6 +3791,7 @@
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : _getDefaultWosmColumns();
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || {});
       _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || 176);
+      _wosmPublicCopy = _normalizeWosmPublicCopy(data && data.public_copy);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || 0;
       _renderWosmMembersEditor();
     }).catch(function () {
@@ -3805,6 +3807,7 @@
     if (!el) return;
     _renderWosmImportDefaultFields();
     _renderWosmColumnsEditor();
+    _renderWosmPublicCopyFields();
     var countInput = document.getElementById('wosm-registered-count');
     if (countInput) countInput.value = String(_wosmRegisteredCount);
     var visibleItems = _getFilteredWosmMembers();
@@ -3869,6 +3872,48 @@
     Object.keys(fields).forEach(function (id) {
       var input = document.getElementById(id);
       if (input) input.value = fields[id];
+    });
+  }
+
+  function _normalizeWosmPublicCopy(raw) {
+    var source = raw && typeof raw === 'object' ? raw : {};
+    return {
+      overview_template: String(source.overview_template || '{countryCount}개국 · {memberCount}개 회원연맹을 {viewLabel} 기준으로 정리했습니다. {collapsibleCount}개국은 {childLabel}을 접어둘 수 있습니다.').trim(),
+      search_template: String(source.search_template || '검색 결과 {countryCount}개국 · {memberCount}개 회원연맹이 {viewLabel} 기준으로 표시됩니다.').trim(),
+      section_meta_template: String(source.section_meta_template || '{countryCount}개국 · {memberCount}개 회원연맹').trim(),
+      helper_text: String(source.helper_text || '대표 연맹을 먼저 보고, 같은 국가의 소속 회원연맹은 필요할 때 펼쳐볼 수 있습니다. 검색 결과에 하위 연맹이 포함되면 해당 그룹은 자동으로 펼쳐집니다.').trim(),
+      child_label: String(source.child_label || '소속 회원연맹').trim(),
+      section_region_label: String(source.section_region_label || '지역연맹').trim(),
+      section_language_label: String(source.section_language_label || '공식 언어').trim(),
+    };
+  }
+
+  function _renderWosmPublicCopyFields() {
+    var copy = _normalizeWosmPublicCopy(_wosmPublicCopy);
+    var fields = {
+      'wosm-public-helper-text': copy.helper_text,
+      'wosm-public-overview-template': copy.overview_template,
+      'wosm-public-search-template': copy.search_template,
+      'wosm-public-section-template': copy.section_meta_template,
+      'wosm-public-child-label': copy.child_label,
+      'wosm-public-region-label': copy.section_region_label,
+      'wosm-public-language-label': copy.section_language_label,
+    };
+    Object.keys(fields).forEach(function (id) {
+      var input = document.getElementById(id);
+      if (input) input.value = fields[id];
+    });
+  }
+
+  function _collectWosmPublicCopyFields() {
+    return _normalizeWosmPublicCopy({
+      helper_text: ((document.getElementById('wosm-public-helper-text') || {}).value || '').trim(),
+      overview_template: ((document.getElementById('wosm-public-overview-template') || {}).value || '').trim(),
+      search_template: ((document.getElementById('wosm-public-search-template') || {}).value || '').trim(),
+      section_meta_template: ((document.getElementById('wosm-public-section-template') || {}).value || '').trim(),
+      child_label: ((document.getElementById('wosm-public-child-label') || {}).value || '').trim(),
+      section_region_label: ((document.getElementById('wosm-public-region-label') || {}).value || '').trim(),
+      section_language_label: ((document.getElementById('wosm-public-language-label') || {}).value || '').trim(),
     });
   }
 
@@ -4026,16 +4071,18 @@
     });
     var columns = _normalizeWosmColumnsBeforeSave();
     var importMapping = _collectWosmImportDefaultFields();
+    var publicCopy = _collectWosmPublicCopyFields();
     var registeredCount = Math.max(0, parseInt(((document.getElementById('wosm-registered-count') || {}).value || _wosmRegisteredCount), 10) || 0);
     _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/wosm-members', {
       method: 'PUT',
-      body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, registered_count: registeredCount, if_revision: _wosmMembersRevision }),
+      body: JSON.stringify({ items: payload, columns: columns, import_mapping: importMapping, registered_count: registeredCount, public_copy: publicCopy, if_revision: _wosmMembersRevision }),
     }).then(function (data) {
       _wosmMembers = Array.isArray(data && data.items) ? data.items : payload;
       _wosmColumns = Array.isArray(data && data.columns) ? data.columns : columns;
       _wosmImportSavedMapping = Object.assign({}, _wosmImportSavedMapping, data && data.import_mapping || importMapping);
       _wosmRegisteredCount = Math.max(0, parseInt(data && data.registered_count, 10) || registeredCount);
+      _wosmPublicCopy = _normalizeWosmPublicCopy(data && data.public_copy || publicCopy);
       _wosmMembersRevision = parseInt(data && data.revision, 10) || (_wosmMembersRevision + 1);
       GW.showToast('세계연맹 회원국 현황을 저장했습니다', 'success');
       _renderWosmMembersEditor();
