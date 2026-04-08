@@ -10,12 +10,13 @@
 3. [[Public Site Chrome]]
 4. [[Homepage Runtime]]
 5. [[Board Runtime]]
-6. [[Post Page Runtime]]
-7. [[Glossary Runtime]]
-8. [[Search Runtime]]
-9. [[Calendar Runtime]]
-10. [[WOSM Members Runtime]]
-11. [[Admin V3 Runtime]]
+6. [[Board Write Runtime]]
+7. [[Post Page Runtime]]
+8. [[Glossary Runtime]]
+9. [[Search Runtime]]
+10. [[Calendar Runtime]]
+11. [[WOSM Members Runtime]]
+12. [[Admin V3 Runtime]]
 
 ## 레이어 요약
 
@@ -26,7 +27,7 @@
   - `js/site-chrome.js`
   - 공개 페이지 공통 셸, 상단 메뉴, 번역, 푸터, 통계
 - Page Runtime
-  - `js/home.js`, `js/board.js`, `js/post-page.js`, `js/search.js`, `js/glossary.js`, `js/calendar.js`, `js/wosm-members.js`
+  - `js/home.js`, `js/board.js`, `js/board-write.js`, `js/post-page.js`, `js/search.js`, `js/glossary.js`, `js/calendar.js`, `js/wosm-members.js`
   - 페이지별 기능 구현
 - Admin Runtime
   - `js/admin-v3.js`, `js/kms.js`

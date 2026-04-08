@@ -20,7 +20,7 @@
 | 페이지 | 엔트리 | 로드 순서 | 비고 |
 | --- | --- | --- | --- |
 | 홈 | `index.html` | `main.js` → `site-chrome.js` → `home.js` | 홈 전용 데이터 렌더 |
-| 게시판 | `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `people.html` | `main.js` → `site-chrome.js` → `board.js` | `GW.bootstrapStandardPage()` 후 `new GW.Board()` |
+| 게시판 | `latest.html`, `korea.html`, `apr.html`, `wosm.html`, `people.html` | `main.js` → `site-chrome.js` → `board.js` → `board-write.js` | `GW.bootstrapStandardPage()` 후 `new GW.Board()` |
 | 검색 | `search.html` | `main.js` → `site-chrome.js` → `search.js` | 검색 전용 UI |
 | 용어집 | `glossary.html` | `main.js` → `site-chrome.js` → `glossary.js` | 공개 + 일부 로그인 액션 |
 | 캘린더 | `calendar.html` | `main.js` → `site-chrome.js` → `calendar.js` | 지도/필터/상세 포함 |
@@ -38,6 +38,7 @@
 - Page Runtime:
   - [[Homepage Runtime]]
   - [[Board Runtime]]
+  - [[Board Write Runtime]]
   - [[Post Page Runtime]]
   - [[Search Runtime]]
   - [[Glossary Runtime]]
