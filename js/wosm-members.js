@@ -322,16 +322,22 @@
     if (state.view !== 'country') {
       var tagName = state.view === 'region' ? 'h2' : 'h3';
       var collapsed = !isSectionExpanded(section);
+      var titleMarkup = state.view === 'region'
+        ? '<' + tagName + ' class="members-section-heading"><button type="button" class="members-section-heading-btn" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '">' + GW.escapeHtml(section.label) + '</button></' + tagName + '>'
+        : '<' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '>';
+      var toggleMarkup = state.view === 'region'
+        ? '<button type="button" class="members-section-toggle-btn" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-label="' + GW.escapeHtml(section.label) + ' 섹션 ' + (collapsed ? '펼치기' : '접기') + '"><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></button>'
+        : '';
       rows.push(
         '<tr class="members-section-row">' +
           '<td colspan="' + state.columns.length + '">' +
-            '<button type="button" class="members-section-bar ' + (section.toneClass || '') + '" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '">' +
+            '<div class="members-section-bar ' + (section.toneClass || '') + '">' +
               '<div class="members-section-title-wrap">' +
                 '<em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em>' +
-                '<' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '>' +
+                titleMarkup +
               '</div>' +
-              '<div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></div>' +
-            '</button>' +
+              '<div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span>' + toggleMarkup + '</div>' +
+            '</div>' +
           '</td>' +
         '</tr>'
       );
@@ -415,9 +421,15 @@
   function renderCardSection(section) {
     var collapsed = state.view === 'region' ? !isSectionExpanded(section) : false;
     var tagName = state.view === 'region' ? 'h2' : 'h3';
+    var titleMarkup = state.view === 'region'
+      ? '<' + tagName + ' class="members-section-heading"><button type="button" class="members-section-heading-btn" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '">' + GW.escapeHtml(section.label) + '</button></' + tagName + '>'
+      : '<' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '>';
+    var toggleMarkup = state.view === 'region'
+      ? '<button type="button" class="members-section-toggle-btn" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '" aria-label="' + GW.escapeHtml(section.label) + ' 섹션 ' + (collapsed ? '펼치기' : '접기') + '"><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></button>'
+      : '';
     return '<section class="members-card-section">' +
       (state.view !== 'country'
-        ? '<button type="button" class="members-card-section-head ' + (section.toneClass || '') + '" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '"><div class="members-card-section-title-wrap"><em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em><' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '></div><div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></div></button>'
+        ? '<div class="members-card-section-head ' + (section.toneClass || '') + '"><div class="members-card-section-title-wrap"><em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em>' + titleMarkup + '</div><div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span>' + toggleMarkup + '</div></div>'
         : '') +
       ((state.view !== 'country' && collapsed) ? [] : section.groups).map(function (group) {
         return renderCountryCard(group);
