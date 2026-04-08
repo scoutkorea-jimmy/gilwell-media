@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260408071046">
+  <link rel="stylesheet" href="/css/style.css?v=20260408072303">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body data-home-bootstrap="1">
@@ -259,7 +259,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=20260408071046"></script>
+  <script src="/js/main.js?v=20260408072303"></script>
   <script>
     GW.bootstrapStandardPage({
       renderManagedNav: false,
@@ -401,7 +401,7 @@
       var thumb = post.image_url
         ? '<a class="home-lead-thumb-link' + (isTransparentPng(post.image_url) ? ' is-png' : '') + '" style="' + getHomeLeadMediaStyle(leadMedia) + '" href="/post/' + post.id + '">' +
             '<span class="home-lead-thumb-backdrop" aria-hidden="true" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></span>' +
-            '<img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="lazy">' +
+            '<img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="eager" fetchpriority="high" decoding="async">' +
           '</a>'
         : '';
       el.innerHTML =
@@ -499,7 +499,7 @@
       var _paused = false;
       var _suppressClickUntil = 0;
 
-      function buildSlide(post) {
+      function buildSlide(post, index) {
         var cat    = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
         var isNew  = GW.isPostNew(post);
         var heroTags = getSortedPostTags(post);
@@ -509,11 +509,13 @@
         div.setAttribute('data-post-id', post.id);
         var mediaMarkup = '';
         if (post.image_url) {
+          var loadingAttr = index === 0 ? 'eager' : 'lazy';
+          var fetchPriorityAttr = index === 0 ? 'high' : 'auto';
           div.classList.add('has-bg');
           mediaMarkup =
             '<div class="site-hero-media' + (isTransparentPng(post.image_url) ? ' is-png' : '') + '" aria-hidden="true" style="' + getResponsiveMediaStyle(post.media) + '">' +
               '<div class="site-hero-media-backdrop" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></div>' +
-              '<img class="site-hero-media-img" src="' + GW.escapeHtml(post.image_url) + '" alt="">' +
+              '<img class="site-hero-media-img" src="' + GW.escapeHtml(post.image_url) + '" alt="" loading="' + loadingAttr + '" fetchpriority="' + fetchPriorityAttr + '" decoding="async">' +
             '</div>';
         }
         div.innerHTML =
@@ -701,7 +703,7 @@
       if (staticSlide) staticSlide.remove();
 
       posts.forEach(function (post, i) {
-        var slide = buildSlide(post);
+        var slide = buildSlide(post, i);
         if (i === 0) {
           slide.classList.add('active');
           slide.style.visibility = 'visible';

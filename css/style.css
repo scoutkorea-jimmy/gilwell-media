@@ -847,7 +847,15 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 }
 
 /* ── Base ────────────────────────────────────────────────────── */
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+img {
+  max-width: 100%;
+}
 
 body {
   background:  var(--bg);
@@ -1072,9 +1080,15 @@ p { margin-bottom: 6px; }
   gap:         0;
   padding:     0 48px;
   overflow-x:  auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   border-top:  1px solid var(--border);
   max-width:   1366px;
   margin:      0 auto;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav[data-managed-nav] {
@@ -1098,6 +1112,7 @@ p { margin-bottom: 6px; }
   text-decoration: none;
   padding:        12px 20px;
   white-space:    nowrap;
+  flex:           0 0 auto;
   transition:     color 0.15s;
   background:     none;
   border:         none;
@@ -1600,6 +1615,9 @@ p { margin-bottom: 6px; }
   object-position: var(--media-pos-x-desktop, 50%) var(--media-pos-y-desktop, 50%);
   transform: scale(var(--media-zoom-desktop, 1));
   transform-origin: var(--media-origin-x-desktop, 50%) var(--media-origin-y-desktop, 50%);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .site-hero.has-bg::after {
@@ -1805,6 +1823,9 @@ p { margin-bottom: 6px; }
   transform: scale(var(--media-zoom-desktop, 1));
   transform-origin: var(--media-origin-x-desktop, 50%) var(--media-origin-y-desktop, 50%);
   transition: transform 0.18s ease;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .home-lead-body {
@@ -6118,7 +6139,7 @@ footer a:hover { color: #ffffff; }
 
   /* Nav */
   .nav                { padding: 0 10px; min-height: 40px; }
-  .nav a              { padding: 8px 10px; font-size: 10px; letter-spacing: 0.08em; }
+  .nav a              { padding: 8px 10px; font-size: clamp(10px, 2.7vw, 11px); letter-spacing: 0.06em; }
 
   .global-scroll-top-btn {
     right: 14px;
