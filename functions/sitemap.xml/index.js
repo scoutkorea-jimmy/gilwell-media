@@ -20,16 +20,16 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/wosm', priority: '0.9', category: 'wosm' },
     { path: '/wosm-members', priority: '0.8', category: null },
     { path: '/people', priority: '0.9', category: 'people' },
-    { path: '/calendar.html', priority: '0.8', category: null },
+    { path: '/calendar', priority: '0.8', category: null },
     { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/glossary-raw', priority: '0.8', category: 'glossary' },
-    { path: '/contributors.html', priority: '0.5', category: null },
+    { path: '/contributors', priority: '0.5', category: null },
   ];
 
   let posts = [];
   let staticLastmods = {};
   try {
-    const [postResult, lastmodResult] = await Promise.all([
+    const [postResult, lastmodResult, glossaryLastmodResult] = await Promise.all([
       env.DB.prepare(
         `SELECT id, updated_at, publish_at, created_at
            FROM posts
@@ -42,11 +42,16 @@ async function buildSitemapResponse({ request, env }, headOnly) {
           WHERE published = 1
           GROUP BY category`
       ).all(),
+      env.DB.prepare(
+        `SELECT MAX(COALESCE(updated_at, created_at)) AS updated_at
+           FROM glossary_terms`
+      ).all(),
     ]);
     posts = postResult.results || [];
     (lastmodResult.results || []).forEach((row) => {
       if (row.category) staticLastmods[row.category] = row.updated_at || null;
     });
+    staticLastmods.glossary = (glossaryLastmodResult.results && glossaryLastmodResult.results[0] && glossaryLastmodResult.results[0].updated_at) || null;
     staticLastmods.home = posts.length ? (posts[0].updated_at || posts[0].publish_at || posts[0].created_at || null) : null;
   } catch (err) {
     console.error('GET /sitemap.xml error:', err);

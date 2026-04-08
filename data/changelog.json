@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "00.112.04",
+      "date": "2026-04-08",
+      "summary": "sitemap canonical 경로와 용어집 lastmod 기준을 보강하고 운영 가이드에도 관련 규칙을 추가했습니다.",
+      "type": "Hotfix",
+      "scope": "site",
+      "items": [
+        "sitemap의 정적 공개 경로는 `/calendar`, `/contributors`처럼 canonical 기준으로 통일했습니다.",
+        "용어집과 glossary-raw는 `glossary_terms`의 실제 최신 수정 시각을 읽어 sitemap `lastmod`를 채우도록 보강했습니다.",
+        "CHATGPT.md에 `canonical / robots.txt / sitemap.xml`을 한 세트로 관리하고 production 검수에 함께 확인한다는 가이드를 추가했습니다.",
+        "사이트 버전 00.112.03 → 00.112.04."
+      ]
+    },
+    {
       "version": "00.112.03",
       "date": "2026-04-08",
       "summary": "홈 초기 부트스트랩에서도 상단 메뉴를 먼저 그리지 않도록 막아 설정 전 메뉴 플래시를 더 줄였습니다.",
