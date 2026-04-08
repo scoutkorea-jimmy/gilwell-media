@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.24';
+  GW.APP_VERSION = '00.111.25';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408033352';
+  GW.ASSET_VERSION = '20260408033806';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -927,24 +927,17 @@
     } catch (_) {
       return raw;
     }
-    parsed.searchParams.set('utm_source', channel);
-    parsed.searchParams.set('utm_medium', 'social-share');
-    parsed.searchParams.set('utm_campaign', 'bpmedia-share');
+    parsed.searchParams.delete('utm_source');
+    parsed.searchParams.delete('utm_medium');
+    parsed.searchParams.delete('utm_campaign');
+    parsed.searchParams.delete('fb_share_ref');
+    parsed.searchParams.delete('share_ref');
+    parsed.searchParams.set('share_ref', GW.ASSET_VERSION || Date.now().toString());
     return parsed.toString();
   };
 
   GW.buildFacebookShareTarget = function (url) {
-    var raw = String(url || window.location.href || '').trim();
-    try {
-      var parsed = new URL(raw, window.location.origin);
-      parsed.searchParams.delete('utm_source');
-      parsed.searchParams.delete('utm_medium');
-      parsed.searchParams.delete('utm_campaign');
-      parsed.searchParams.set('fb_share_ref', GW.ASSET_VERSION || Date.now().toString());
-      return parsed.toString();
-    } catch (_) {
-      return raw;
-    }
+    return GW.buildShareUrl(url, 'facebook');
   };
 
   GW.ensureShareModal = function () {
