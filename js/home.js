@@ -241,7 +241,7 @@
     var animating = false;
     var intervalMs = (data && data.interval_ms) || 3000;
     var touchState = null;
-    var paused = false;
+    var paused = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var suppressClickUntil = 0;
 
     function buildSlide(post, index) {
@@ -303,7 +303,7 @@
         return;
       }
       dotsEl.innerHTML = Array.from({ length: count }, function (_, index) {
-        return '<button class="hero-dot' + (index === active ? ' active' : '') + '" aria-label="슬라이드 ' + (index + 1) + '"></button>';
+        return '<button type="button" class="hero-dot' + (index === active ? ' active' : '') + '" aria-label="슬라이드 ' + (index + 1) + '"' + (index === active ? ' aria-current="true"' : ' aria-current="false"') + '></button>';
       }).join('');
       dotsEl.querySelectorAll('.hero-dot').forEach(function (btn, index) {
         btn.addEventListener('click', function () {
@@ -327,6 +327,7 @@
       btn.hidden = slides.length <= 1;
       btn.textContent = paused ? '재생' : '일시정지';
       btn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+      btn.setAttribute('aria-label', paused ? '메인 슬라이드 자동 전환 다시 재생' : '메인 슬라이드 자동 전환 일시정지');
       btn.classList.toggle('is-paused', paused);
     }
 

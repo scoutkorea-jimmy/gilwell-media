@@ -1141,6 +1141,7 @@ body[data-home-bootstrap] .masthead {
   white-space:   nowrap;
   display:       flex;
   align-items:   center;
+  position:      relative;
 }
 
 .ticker-inner {
@@ -1154,6 +1155,27 @@ body[data-home-bootstrap] .masthead {
 }
 
 .ticker-diamond { color: var(--accent); }
+
+.ticker.is-paused .ticker-inner {
+  animation-play-state: paused;
+}
+
+.ticker-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
 
 @keyframes ticker {
   from { transform: translateX(0); }
@@ -1568,6 +1590,21 @@ body[data-home-bootstrap] .masthead {
 }
 .hero-dot.active {
   background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-inner {
+    animation: none !important;
+    transform: none !important;
+  }
+  .site-hero-slider .site-hero-slide,
+  .site-hero-slider .site-hero-slide.transitioning,
+  .hero-pause-btn,
+  .hero-dot,
+  .mobile-compact-header,
+  .mobile-compact-drawer {
+    transition: none !important;
+  }
 }
 
 .site-hero {
@@ -2092,7 +2129,7 @@ body[data-home-bootstrap] .masthead {
   padding:        13px 18px;
   border:         none;
   background-size: 100% 100%;
-  margin-bottom:  var(--home-title-gap, 14px);
+  margin:         0 0 var(--home-title-gap, 14px);
   display:        flex;
   align-items:    center;
   gap:            12px;
