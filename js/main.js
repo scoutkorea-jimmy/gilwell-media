@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.29';
+  GW.APP_VERSION = '00.111.30';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408041214';
+  GW.ASSET_VERSION = '20260408044210';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
