@@ -52,15 +52,15 @@ export async function onRequestGet({ params, env, request }) {
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
   const translationStrings = parseTranslationStrings(translationsRow && translationsRow.value);
   const publicRuntime = parseJsonObject(publicRuntimeRow && publicRuntimeRow.value);
-  const navContributors = getKoString(translationStrings, 'nav.contributors', '도움을 주신 분들');
-  const navHome = getKoString(translationStrings, 'nav.home', '홈');
-  const navLatest = getKoString(translationStrings, 'nav.latest', '1개월 소식');
-  const navKorea = getKoString(translationStrings, 'nav.korea', 'Korea');
-  const navApr = getKoString(translationStrings, 'nav.apr', 'APR');
-  const navWosm = getKoString(translationStrings, 'nav.wosm', 'WOSM');
-  const navWosmMembers = getKoString(translationStrings, 'nav.wosm_members', '세계연맹 회원국 현황');
-  const navPeople = getKoString(translationStrings, 'nav.people', '스카우트 인물');
-  const navGlossary = getKoString(translationStrings, 'nav.glossary', '용어집');
+  const navContributors = '도움을 주신 분들';
+  const navHome = '홈';
+  const navLatest = '1개월 소식';
+  const navKorea = 'Korea';
+  const navApr = 'APR';
+  const navWosm = 'WOSM';
+  const navWosmMembers = '세계연맹 회원국 현황';
+  const navPeople = '스카우트 인물';
+  const navGlossary = '용어집';
 
   if (!post) return notFound();
   let isAdmin = false;
@@ -177,7 +177,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260408044210">
+  <link rel="stylesheet" href="/css/style.css?v=20260408045613">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -506,8 +506,8 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260408044210"></script>
-  <script src="/js/post-page.js?v=20260408044210"></script>
+  <script src="/js/main.js?v=20260408045613"></script>
+  <script src="/js/post-page.js?v=20260408045613"></script>
 </body>
 </html>`;
 
