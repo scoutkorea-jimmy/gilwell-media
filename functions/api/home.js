@@ -37,6 +37,19 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
+const LOCKED_TRANSLATION_KEYS = {
+  'nav.contributors': true,
+  'nav.home': true,
+  'nav.latest': true,
+  'nav.korea': true,
+  'nav.apr': true,
+  'nav.wosm': true,
+  'nav.wosm_members': true,
+  'nav.people': true,
+  'nav.calendar': true,
+  'nav.glossary': true,
+};
+
 const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
 
 export async function onRequestGet({ env, request }) {
@@ -106,10 +119,20 @@ export async function onRequestGet({ env, request }) {
 async function loadTranslations(env) {
   try {
     const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    return row ? JSON.parse(row.value || '{}') : {};
+    return sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
   } catch {
     return {};
   }
+}
+
+function sanitizeTranslationStrings(strings) {
+  if (!strings || typeof strings !== 'object') return {};
+  const sanitized = {};
+  Object.keys(strings).forEach((key) => {
+    if (LOCKED_TRANSLATION_KEYS[key]) return;
+    sanitized[key] = strings[key];
+  });
+  return sanitized;
 }
 
 async function loadTicker(env) {
