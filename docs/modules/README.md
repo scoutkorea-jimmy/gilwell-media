@@ -1,24 +1,26 @@
 # Homepage Modules Hub
 
-> Obsidian에서 BP미디어 메인 사이트 모듈을 따라가기 위한 허브 문서입니다.
-> 이 문서는 `[[Homepage Runtime Map]]`과 각 개별 모듈 노트의 진입점입니다.
+> 이 문서는 기능 허브 아래의 참고 라이브러리입니다.
+> Obsidian에서는 먼저 `[[Homepage Features Hub]]`를 보고, 그 다음에 이 문서로 내려오는 흐름을 권장합니다.
 
 ## 읽는 순서
 
-1. [[Homepage Runtime Map]]
-2. [[Templates Library]]
-3. [[API Library]]
-4. [[GW Foundation]]
-5. [[Public Site Chrome]]
-6. [[Homepage Runtime]]
-7. [[Board Runtime]]
-8. [[Board Write Runtime]]
-9. [[Post Page Runtime]]
-10. [[Glossary Runtime]]
-11. [[Search Runtime]]
-12. [[Calendar Runtime]]
-13. [[WOSM Members Runtime]]
-14. [[Admin V3 Runtime]]
+1. [[Homepage Features Hub]]
+2. [[Feature Map]]
+3. [[Homepage Runtime Map]]
+4. [[Templates Library]]
+5. [[API Library]]
+6. [[GW Foundation]]
+7. [[Public Site Chrome]]
+8. [[Homepage Runtime]]
+9. [[Board Runtime]]
+10. [[Board Write Runtime]]
+11. [[Post Page Runtime]]
+12. [[Glossary Runtime]]
+13. [[Search Runtime]]
+14. [[Calendar Runtime]]
+15. [[WOSM Members Runtime]]
+16. [[Admin V3 Runtime]]
 
 ## 레이어 요약
 
@@ -43,6 +45,8 @@
 
 ## 관련 문서
 
+- [[Homepage Features Hub]]
+- [[Feature Map]]
 - [[Homepage Runtime Map]]
 - [[Templates Library]]
 - [[API Library]]
