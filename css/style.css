@@ -9437,6 +9437,36 @@ body.wosm-members-page #main-content {
 .members-row.is-representative td:first-child {
   box-shadow: inset 3px 0 0 rgba(36, 135, 55, 0.75);
 }
+.members-row.is-representative.is-africa td {
+  background: rgba(171, 80, 39, 0.055);
+}
+.members-row.is-representative.is-africa td:first-child {
+  box-shadow: inset 3px 0 0 rgba(171, 80, 39, 0.8);
+}
+.members-row.is-representative.is-arab td {
+  background: rgba(150, 96, 17, 0.055);
+}
+.members-row.is-representative.is-arab td:first-child {
+  box-shadow: inset 3px 0 0 rgba(150, 96, 17, 0.8);
+}
+.members-row.is-representative.is-asia-pacific td {
+  background: rgba(255, 86, 85, 0.06);
+}
+.members-row.is-representative.is-asia-pacific td:first-child {
+  box-shadow: inset 3px 0 0 rgba(255, 86, 85, 0.82);
+}
+.members-row.is-representative.is-european td {
+  background: rgba(0, 148, 180, 0.06);
+}
+.members-row.is-representative.is-european td:first-child {
+  box-shadow: inset 3px 0 0 rgba(0, 148, 180, 0.82);
+}
+.members-row.is-representative.is-interamerican td {
+  background: rgba(36, 135, 55, 0.055);
+}
+.members-row.is-representative.is-interamerican td:first-child {
+  box-shadow: inset 3px 0 0 rgba(36, 135, 55, 0.8);
+}
 .members-row.is-parent td {
   border-bottom-color: rgba(0, 0, 0, 0.04);
 }
@@ -9581,6 +9611,26 @@ body.wosm-members-page #main-content {
 .member-country-card.is-representative {
   border-color: rgba(36, 135, 55, 0.26);
   background: linear-gradient(180deg, rgba(36, 135, 55, 0.06), #fff 28%);
+}
+.member-country-card.is-representative.is-africa {
+  border-color: rgba(171, 80, 39, 0.26);
+  background: linear-gradient(180deg, rgba(171, 80, 39, 0.08), #fff 28%);
+}
+.member-country-card.is-representative.is-arab {
+  border-color: rgba(150, 96, 17, 0.28);
+  background: linear-gradient(180deg, rgba(150, 96, 17, 0.08), #fff 28%);
+}
+.member-country-card.is-representative.is-asia-pacific {
+  border-color: rgba(255, 86, 85, 0.28);
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.08), #fff 28%);
+}
+.member-country-card.is-representative.is-european {
+  border-color: rgba(0, 148, 180, 0.28);
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.08), #fff 28%);
+}
+.member-country-card.is-representative.is-interamerican {
+  border-color: rgba(36, 135, 55, 0.28);
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.08), #fff 28%);
 }
 .member-country-meta-grid {
   display: grid;

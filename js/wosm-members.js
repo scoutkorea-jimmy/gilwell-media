@@ -360,7 +360,10 @@
   }
 
   function renderRepresentativeRow(group) {
-    var rowClass = isRepresentativeMembership(group.representative && group.representative.membership_category) ? ' members-row is-representative is-parent' : ' members-row is-parent';
+    var toneClass = getRegionToneClass(group.region);
+    var rowClass = isRepresentativeMembership(group.representative && group.representative.membership_category)
+      ? ' members-row is-representative is-parent ' + toneClass
+      : ' members-row is-parent';
     return '<tr class="' + rowClass.trim() + '">' + state.columns.map(function (column) {
       var role = getColumnRole(column);
       return '<td class="members-col members-col--' + role + '">' + renderRepresentativeCell(group, column) + '</td>';
@@ -439,7 +442,7 @@
 
   function renderCountryCard(group) {
     var cardClass = isRepresentativeMembership(group.representative && group.representative.membership_category)
-      ? 'member-country-card is-representative'
+      ? 'member-country-card is-representative ' + getRegionToneClass(group.region)
       : 'member-country-card';
     var visibleChildren = getVisibleChildren(group);
     return '<article class="' + cardClass + '">' +
@@ -518,6 +521,10 @@
       return 'is-generic';
     }
     return '';
+  }
+
+  function getRegionToneClass(region) {
+    return getSectionToneClass('region', region);
   }
 
   function getFirstFilledValue(items, getter) {
