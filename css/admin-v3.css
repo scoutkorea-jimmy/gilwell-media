@@ -350,6 +350,8 @@
 .v3-badge-yellow { background: var(--v3-warning-lt); color: #92400e; }
 .v3-badge-gray   { background: #f1f5f9; color: var(--v3-text-m); }
 .v3-badge-blue   { background: var(--v3-primary-lt); color: #3730a3; }
+.v3-badge-site   { background: #0d7a5f; color: #fff; }
+.v3-badge-admin  { background: #7c3aed; color: #fff; }
 
 /* ── Buttons ─────────────────────────────────────────────── */
 .v3-btn {
