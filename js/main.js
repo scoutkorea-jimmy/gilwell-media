@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.22';
+  GW.APP_VERSION = '00.111.23';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408032326';
+  GW.ASSET_VERSION = '20260408032841';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -933,6 +933,20 @@
     return parsed.toString();
   };
 
+  GW.buildFacebookShareTarget = function (url) {
+    var raw = String(url || window.location.href || '').trim();
+    try {
+      var parsed = new URL(raw, window.location.origin);
+      parsed.searchParams.delete('utm_source');
+      parsed.searchParams.delete('utm_medium');
+      parsed.searchParams.delete('utm_campaign');
+      parsed.searchParams.set('fb_share_ref', GW.ASSET_VERSION || Date.now().toString());
+      return parsed.toString();
+    } catch (_) {
+      return raw;
+    }
+  };
+
   GW.ensureShareModal = function () {
     if (document.getElementById('share-modal')) return;
     var overlay = document.createElement('div');
@@ -1074,8 +1088,8 @@
     if (!state || !state.url) return;
     var trackedUrl = GW.buildShareUrl(state.url, channel || 'share');
     if (channel === 'facebook') {
-      var canonicalUrl = String(state.url || trackedUrl || '').trim() || trackedUrl;
-      var facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(canonicalUrl);
+      var facebookTarget = GW.buildFacebookShareTarget(state.url || trackedUrl || '');
+      var facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(facebookTarget);
       var popup = window.open(
         facebookUrl,
         '_blank',
