@@ -1,6 +1,10 @@
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
 export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
 const SITE_ORIGIN = 'https://bpmedia.net';
+const DEFAULT_SHARE_IMAGE_PATH = '/img/og-default.png';
+const DEFAULT_SHARE_IMAGE_WIDTH = 1200;
+const DEFAULT_SHARE_IMAGE_HEIGHT = 630;
+const DEFAULT_SHARE_IMAGE_ALT = 'BP미디어 스카우트 뉴스 아카이브 대표 이미지';
 const HOME_SEARCH_DESCRIPTION = 'BP미디어는 스카우트 뉴스와 활동 기록을 전하는 독립 미디어 아카이브입니다. 한국스카우트연맹, APR, WOSM, 스카우트 인물, 용어집까지 bpmedia.net에서 한 번에 확인할 수 있습니다.';
 const LEGACY_HOME_DESCRIPTIONS = [
   '스카우트 운동의 소식을 기록하는 독립 미디어입니다.',
@@ -11,6 +15,7 @@ const LEGACY_HOME_TITLES = [
 ];
 const PUBLISHER = {
   '@type': 'Organization',
+  '@id': `${SITE_ORIGIN}/#organization`,
   name: 'BP미디어',
   alternateName: ['비피미디어', 'BPmedia', 'The BP Post'],
   url: SITE_ORIGIN,
@@ -156,6 +161,9 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
   const safeDesc = escapeHtml(description || DEFAULT_SITE_META.pages.home.description);
   const safeUrl = escapeHtml(url || 'https://bpmedia.net');
   const safeImage = imageUrl ? escapeHtml(imageUrl) : '';
+  const safeImageAlt = safeImage ? escapeHtml(DEFAULT_SHARE_IMAGE_ALT) : '';
+  const imageType = imageUrl ? getShareImageMimeType(imageUrl) : '';
+  const imageDimensions = imageUrl ? getShareImageDimensions(imageUrl) : null;
   const twitterCard = safeImage ? 'summary_large_image' : 'summary';
   const robots = pageKey === 'search'
     ? '<meta name="robots" content="noindex,follow"/>'
@@ -173,11 +181,17 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     `<meta property="og:description" content="${safeDesc}"/>`,
     `<meta property="og:url" content="${safeUrl}"/>`,
     safeImage ? `<meta property="og:image" content="${safeImage}"/>` : '',
+    safeImage ? `<meta property="og:image:secure_url" content="${safeImage}"/>` : '',
+    imageType ? `<meta property="og:image:type" content="${escapeHtml(imageType)}"/>` : '',
+    imageDimensions ? `<meta property="og:image:width" content="${imageDimensions.width}"/>` : '',
+    imageDimensions ? `<meta property="og:image:height" content="${imageDimensions.height}"/>` : '',
+    safeImageAlt ? `<meta property="og:image:alt" content="${safeImageAlt}"/>` : '',
     `<meta property="og:site_name" content="BP미디어 · bpmedia.net"/>`,
     `<meta name="twitter:card" content="${twitterCard}"/>`,
     `<meta name="twitter:title" content="${safeTitle}"/>`,
     `<meta name="twitter:description" content="${safeDesc}"/>`,
     safeImage ? `<meta name="twitter:image" content="${safeImage}"/>` : '',
+    safeImageAlt ? `<meta name="twitter:image:alt" content="${safeImageAlt}"/>` : '',
     googleVerification ? `<meta name="google-site-verification" content="${escapeHtml(googleVerification)}"/>` : '',
     naverVerification ? `<meta name="naver-site-verification" content="${escapeHtml(naverVerification)}"/>` : '',
     `<link rel="canonical" href="${safeUrl}"/>`,
@@ -186,7 +200,7 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
 }
 
 export function getResolvedShareImage(siteMeta, origin) {
-  if (!siteMeta || !siteMeta.image_url) return `${origin}/img/logo.png`;
+  if (!siteMeta || !siteMeta.image_url) return `${origin}${DEFAULT_SHARE_IMAGE_PATH}`;
   if (siteMeta.image_url.startsWith('http')) return siteMeta.image_url;
   return `${origin}/api/settings/site-meta/image`;
 }
@@ -439,6 +453,36 @@ function buildItemListStructuredData({ pageKey, url, itemListElements }) {
 
 function safeJsonLd(value) {
   return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+function getShareImageMimeType(url) {
+  const value = String(url || '').trim();
+  if (!value) return '';
+  if (value.startsWith('data:image/')) {
+    const match = value.match(/^data:(image\/[^;]+)/i);
+    return match ? match[1].toLowerCase() : '';
+  }
+  const normalized = value.toLowerCase();
+  if (normalized.includes(`${DEFAULT_SHARE_IMAGE_PATH.toLowerCase()}?`) || normalized.endsWith(DEFAULT_SHARE_IMAGE_PATH.toLowerCase())) {
+    return 'image/png';
+  }
+  if (normalized.includes('.png')) return 'image/png';
+  if (normalized.includes('.webp')) return 'image/webp';
+  if (normalized.includes('.gif')) return 'image/gif';
+  if (normalized.includes('.jpg') || normalized.includes('.jpeg')) return 'image/jpeg';
+  return '';
+}
+
+function getShareImageDimensions(url) {
+  const value = String(url || '').trim().toLowerCase();
+  if (!value) return null;
+  if (value.includes(`${DEFAULT_SHARE_IMAGE_PATH.toLowerCase()}?`) || value.endsWith(DEFAULT_SHARE_IMAGE_PATH.toLowerCase())) {
+    return {
+      width: DEFAULT_SHARE_IMAGE_WIDTH,
+      height: DEFAULT_SHARE_IMAGE_HEIGHT,
+    };
+  }
+  return null;
 }
 
 export { DEFAULT_SITE_META };
