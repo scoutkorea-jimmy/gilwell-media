@@ -9313,9 +9313,13 @@ body.wosm-members-page #main-content {
 .members-table .members-col--language {
   white-space: nowrap;
 }
-.members-table .members-col--organization,
-.members-table .members-col--status {
+.members-table td.members-col--organization,
+.members-table td.members-col--status {
   color: var(--muted);
+}
+.members-table th.members-col--organization,
+.members-table th.members-col--status {
+  color: #ffffff;
 }
 .members-row.is-representative td {
   background: rgba(36, 135, 55, 0.045);
