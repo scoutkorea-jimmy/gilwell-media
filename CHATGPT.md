@@ -208,6 +208,10 @@
 - 게시글 삭제 시 글 row만 지우지 말고 연관 이미지, 기록, 조회/공감 데이터, 상세 URL 로그까지 함께 정리합니다.
 - 공유 메타는 `functions/[[path]].js` 기준으로 주입합니다.
 - 대표 이미지는 `site_meta.image_url` 또는 기본 이미지를 사용합니다.
+- `canonical`, `robots.txt`, `sitemap.xml`은 한 세트로 관리합니다.
+- sitemap에는 공개 canonical 경로만 넣고, `.html` 직접 경로가 canonical이 아니면 sitemap에도 넣지 않습니다.
+- sitemap의 `lastmod`는 가능하면 해당 공개 표면의 실제 데이터 수정 시각을 기준으로 채웁니다.
+- 공개 경로를 추가하거나 canonical 경로를 바꾸면 `functions/sitemap.xml/index.js`, `functions/robots.txt.js`, `functions/[[path]].js`를 함께 점검합니다.
 
 ---
 
@@ -251,6 +255,8 @@
 
 - 중요한 변경이나 배포 전후에는 최소한 홈, 대표 기사 상세, 카테고리 보드, 검색, 용어집, 관리자 진입 화면, 모바일 레이아웃을 확인합니다.
 - 스모크 체크는 단순 HTML 응답만 보지 말고 홈, 관리자, 대표 기사, 카테고리 페이지, RSS 응답까지 함께 확인합니다.
+- `robots.txt`와 `sitemap.xml`이 실제 production에서 열리는지, sitemap의 주요 공개 canonical 경로가 빠지지 않았는지 확인합니다.
+- sitemap의 경로가 canonical과 어긋나지 않는지, `lastmod`가 비어 있는 핵심 공개 표면이 없는지 함께 확인합니다.
 - 공개 posts API의 `publish_at`, 관리자 세션 401 처리, D1의 `created_at`, `publish_at`, `updated_at` 컬럼 존재까지 함께 점검합니다.
 - 홈 최신 갱신, 공유 버튼 위치, 수정 모달 같은 상호작용 변경은 hard refresh 없이도 직접 검수합니다.
 - 구현 중간에도 실제 UI와 기능 정의서가 어긋나지 않는지 다시 확인합니다.
