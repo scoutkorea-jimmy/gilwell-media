@@ -1,5 +1,7 @@
 # Homepage Module Inventory
 
+> Obsidian에서 읽을 때는 먼저 `docs/modules/README.md`와 `docs/modules/Homepage Runtime Map.md`를 함께 여는 것을 권장합니다.
+
 ## 목적
 
 이 문서는 BP미디어 홈페이지를 디자인과 코드 양쪽에서 모듈 단위로 다시 바라보기 위한 기준 인벤토리다.
@@ -204,3 +206,5 @@ css/
 - 저장소 스냅샷: `docs/feature-definition.md`
 - 하드코딩 정리 기준: `docs/hardcoding-inventory.md`
 - 모듈 분해 기준: `docs/homepage-module-inventory.md`
+- Obsidian 허브: `docs/modules/README.md`
+- 런타임 맵: `docs/modules/Homepage Runtime Map.md`
