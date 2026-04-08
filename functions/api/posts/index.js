@@ -70,7 +70,8 @@ export async function onRequestGet({ request, env }) {
       )`
     : '0';
   const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const ORDER = allRequested && isAdmin
+  const useManualOrder = (allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tag);
+  const ORDER = useManualOrder
     ? ORDER_MANUAL
     : (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)));
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,

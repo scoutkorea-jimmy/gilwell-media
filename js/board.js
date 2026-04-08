@@ -24,7 +24,10 @@
     this.category = opts.category;
     this.apiCategory = Object.prototype.hasOwnProperty.call(opts, 'apiCategory') ? opts.apiCategory : opts.category;
     this.enableWrite = opts.enableWrite !== false;
-    this.extraParams = opts.extraParams || {};
+    this.extraParams = Object.assign({}, opts.extraParams || {});
+    if (this.apiCategory && this.category !== 'latest' && !Object.prototype.hasOwnProperty.call(this.extraParams, 'sort')) {
+      this.extraParams.sort = 'manual';
+    }
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');

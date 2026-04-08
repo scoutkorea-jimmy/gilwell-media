@@ -1,5 +1,6 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { purgeContentCache } from '../../_shared/cache-purge.js';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
@@ -40,6 +41,7 @@ export async function onRequestGet({ env, request }) {
 }
 
 export async function onRequestPut({ env, request }) {
+  const origin = new URL(request.url).origin;
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
@@ -65,15 +67,20 @@ export async function onRequestPut({ env, request }) {
     if (hasPostId && !postId) {
       await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run();
       await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run();
+      await purgeContentCache(env, origin).catch((err) => {
+        console.error('PUT /api/settings/home-lead cache purge error:', err);
+      });
       return json({ success: true, post_id: null, media: DEFAULT_HOME_LEAD_MEDIA });
     }
 
+    var leadCategory = '';
     if (hasPostId) {
       const post = await env.DB.prepare(`SELECT id, featured FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
       if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
       if (Number(post.featured || 0) === 1) {
         return json({ error: '에디터 추천 글은 메인 스토리로 동시에 지정할 수 없습니다. 추천에서 제외한 뒤 다시 시도해주세요.' }, 409);
       }
+      leadCategory = String(post.category || '').trim();
       await env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -92,6 +99,13 @@ export async function onRequestPut({ env, request }) {
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(JSON.stringify(media)).run();
     }
+
+    await purgeContentCache(env, origin, {
+      postId: hasPostId ? postId : currentPostId,
+      categories: leadCategory ? [leadCategory] : [],
+    }).catch((err) => {
+      console.error('PUT /api/settings/home-lead cache purge error:', err);
+    });
 
     return json({
       success: true,

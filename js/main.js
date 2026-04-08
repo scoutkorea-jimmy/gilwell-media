@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.28';
+  GW.APP_VERSION = '00.111.29';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408035748';
+  GW.ASSET_VERSION = '20260408041214';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1318,7 +1318,7 @@
   };
   GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || 'full'; };
   GW.setAdminRole = function (role) {
-    sessionStorage.setItem('admin_role', role === 'full' ? 'full' : 'full');
+    sessionStorage.setItem('admin_role', role === 'editor' ? 'editor' : 'full');
   };
   GW._publicLoadWarnings = {};
   GW.handlePublicLoadFailure = function (scope, err, hasFallback) {
