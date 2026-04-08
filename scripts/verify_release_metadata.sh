@@ -98,6 +98,14 @@ BOARD_JS_FILES=(
   people.html
 )
 
+BOARD_WRITE_JS_FILES=(
+  latest.html
+  korea.html
+  apr.html
+  wosm.html
+  people.html
+)
+
 for file in "${SITE_STYLE_FILES[@]}"; do
   grep -F "/css/style.css?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site stylesheet version in $file"
@@ -113,6 +121,13 @@ grep -F "/js/wosm-members.js?v=${ASSET_VERSION_FILE}" wosm-members.html >/dev/nu
 for file in "${BOARD_JS_FILES[@]}"; do
   grep -F "/js/board.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing board.js asset version in $file"
+    exit 1
+  }
+done
+
+for file in "${BOARD_WRITE_JS_FILES[@]}"; do
+  grep -F "/js/board-write.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
+    echo "Missing board-write.js asset version in $file"
     exit 1
   }
 done

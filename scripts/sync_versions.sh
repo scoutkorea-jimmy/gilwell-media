@@ -49,7 +49,7 @@ PUBLIC_HTML_FILES=(
 )
 
 for file in "${PUBLIC_HTML_FILES[@]}"; do
-  perl -0pi -e "s/\\/js\\/board\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/board.js?v=${ASSET_VERSION}/g; s/\\/js\\/glossary\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/glossary.js?v=${ASSET_VERSION}/g; s/\\/js\\/search\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/search.js?v=${ASSET_VERSION}/g; s/\\/js\\/calendar\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/calendar.js?v=${ASSET_VERSION}/g" "$file"
+  perl -0pi -e "s/\\/js\\/board\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/board.js?v=${ASSET_VERSION}/g; s/\\/js\\/board-write\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/board-write.js?v=${ASSET_VERSION}/g; s/\\/js\\/glossary\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/glossary.js?v=${ASSET_VERSION}/g; s/\\/js\\/search\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/search.js?v=${ASSET_VERSION}/g; s/\\/js\\/calendar\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/calendar.js?v=${ASSET_VERSION}/g" "$file"
 done
 
 perl -0pi -e "s/\\/js\\/dreampath\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/dreampath.js?v=${ASSET_VERSION}/g" dreampath.html
