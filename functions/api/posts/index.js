@@ -49,10 +49,11 @@ export async function onRequestGet({ request, env }) {
   const token   = extractToken(request);
   const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
 
-  const ORDER_LATEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
-  const ORDER_OLDEST = 'ORDER BY datetime(COALESCE(publish_at, created_at)) ASC, id ASC';
-  const ORDER_VIEWS = 'ORDER BY views DESC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
-  const ORDER_MANUAL = 'ORDER BY sort_order IS NULL ASC, sort_order ASC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC';
+  const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
+  const ORDER_LATEST = `ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`;
+  const ORDER_OLDEST = `ORDER BY ${PUBLIC_DATE_EXPR} ASC, id ASC`;
+  const ORDER_VIEWS = `ORDER BY views DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
+  const ORDER_MANUAL = `ORDER BY sort_order IS NULL ASC, sort_order ASC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const searchScoreExpr = q
     ? `(
         CASE WHEN title LIKE ? THEN 60 ELSE 0 END +
@@ -64,7 +65,7 @@ export async function onRequestGet({ request, env }) {
         CASE WHEN replace(COALESCE(title, ''), ' ', '') LIKE ? THEN 18 ELSE 0 END
       )`
     : '0';
-  const ORDER_RELEVANCE = `ORDER BY search_score DESC, datetime(COALESCE(publish_at, created_at)) DESC, id DESC`;
+  const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const ORDER = allRequested && isAdmin
     ? ORDER_MANUAL
     : (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)));
