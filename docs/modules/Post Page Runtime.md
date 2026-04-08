@@ -29,6 +29,16 @@
 - `functions/post/[id].js`
 - `functions/api/posts/*`
 
+## 관련 템플릿
+
+- [[Post Detail Template]]
+
+## 관련 API
+
+- [[Posts API]]
+- [[Settings API]]
+- [[Admin Session API]]
+
 ## 분리 후보
 
 - post edit runtime

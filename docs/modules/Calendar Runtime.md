@@ -22,6 +22,17 @@
 - 지도/장소 표현
 - 로그인 후 일정 추가/수정 보조 흐름
 
+## 관련 템플릿
+
+- [[Calendar Template]]
+
+## 관련 API
+
+- [[Calendar API]]
+- [[Settings API]]
+- [[Posts API]]
+- [[Admin Session API]]
+
 ## 분리 후보
 
 - calendar public renderer

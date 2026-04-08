@@ -20,6 +20,15 @@
 - 공개 검색과 필터
 - 로그인 후 편집/관리 보조 흐름
 
+## 관련 템플릿
+
+- [[Glossary Template]]
+
+## 관련 API
+
+- [[Settings API]]
+- [[Admin Session API]]
+
 ## 분리 후보
 
 - glossary search runtime

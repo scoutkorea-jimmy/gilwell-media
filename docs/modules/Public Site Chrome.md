@@ -45,8 +45,11 @@
 
 ## 이 레이어 아래에 있는 노트
 
+- [[Templates Library]]
+- [[API Library]]
 - [[Homepage Runtime]]
 - [[Board Runtime]]
+- [[Board Write Runtime]]
 - [[Post Page Runtime]]
 - [[Search Runtime]]
 - [[Glossary Runtime]]
@@ -59,6 +62,11 @@
   - [[GW Foundation]]
 - 후행 소비
   - 대부분의 공개 페이지 런타임
+
+## 관련 API
+
+- [[Settings API]]
+- [[Home and Stats API]]
 
 ## 분리 후보
 

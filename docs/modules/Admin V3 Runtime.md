@@ -15,6 +15,17 @@
 
 - [[GW Foundation]]
 
+## 관련 템플릿
+
+- [[Admin Template]]
+
+## 관련 API
+
+- [[Posts API]]
+- [[Settings API]]
+- [[Calendar API]]
+- [[Admin Session API]]
+
 ## 주 책임
 
 - 대시보드

@@ -15,6 +15,16 @@
 - [[Public Site Chrome]]
 - [[Board Runtime]]
 
+## 관련 템플릿
+
+- [[Board Template]]
+
+## 관련 API
+
+- [[Posts API]]
+- [[Settings API]]
+- [[Admin Session API]]
+
 ## 이 파일에서 담당하는 것
 
 - `_setupWriteFeature()`

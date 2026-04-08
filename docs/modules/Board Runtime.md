@@ -39,6 +39,15 @@
 - [[GW Foundation]]
 - [[Public Site Chrome]]
 
+## 관련 템플릿
+
+- [[Board Template]]
+
+## 관련 API
+
+- [[Posts API]]
+- [[Settings API]]
+
 ## 읽는 순서
 
 1. 생성자
