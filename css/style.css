@@ -6988,7 +6988,151 @@ footer a:hover { color: #ffffff; }
   display: none;
 }
 
+.mobile-compact-header,
+.mobile-compact-overlay,
+.mobile-compact-drawer {
+  display: none;
+}
+
 @media (max-width: 900px) {
+  .mobile-compact-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 180;
+    padding: 10px 12px;
+    background: rgba(255, 252, 247, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    transform: translateY(-110%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .mobile-compact-header.is-visible {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .mobile-compact-toggle,
+  .mobile-compact-search,
+  .mobile-compact-drawer-close {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.88);
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-family: AliceDigitalLearning, sans-serif;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .mobile-compact-toggle {
+    gap: 3px;
+    flex-direction: column;
+    padding: 0;
+  }
+  .mobile-compact-toggle span {
+    display: block;
+    width: 16px;
+    height: 1.5px;
+    background: currentColor;
+  }
+  .mobile-compact-brand {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .mobile-compact-brand-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .mobile-compact-brand-text {
+    font-family: AliceDigitalLearning, sans-serif;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .mobile-compact-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 181;
+    background: rgba(17, 17, 17, 0.42);
+  }
+  .mobile-compact-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 182;
+    width: min(84vw, 320px);
+    background: rgba(255, 252, 247, 0.98);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.12);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .mobile-compact-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mobile-compact-drawer-title {
+    font-family: AliceDigitalLearning, sans-serif;
+    font-size: 17px;
+    line-height: 1.1;
+  }
+  .mobile-compact-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px 24px;
+  }
+  .mobile-compact-nav a {
+    display: block;
+    padding: 12px 10px;
+    color: var(--ink);
+    text-decoration: none;
+    font-family: AliceDigitalLearning, sans-serif;
+    font-size: 13px;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+  .mobile-compact-nav a.active {
+    color: var(--accent);
+  }
+  body.mobile-compact-drawer-open {
+    overflow: hidden;
+  }
+  body.mobile-compact-drawer-open .mobile-compact-overlay {
+    display: block;
+  }
+  body.mobile-compact-drawer-open .mobile-compact-drawer {
+    display: block;
+    transform: translateX(0);
+  }
+
   .post-page-wrap {
     padding: 32px 24px 60px;
   }

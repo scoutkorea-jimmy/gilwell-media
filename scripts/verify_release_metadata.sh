@@ -164,6 +164,11 @@ for file in "${SITE_MAIN_JS_FILES[@]}"; do
   }
 done
 
+grep -F "/js/home.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
+  echo "Missing home.js asset version in index.html"
+  exit 1
+}
+
 grep -F "/css/admin-v3.css?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
   echo "Missing admin stylesheet asset version in admin.html"
   exit 1
