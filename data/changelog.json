@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "00.112.12",
+      "date": "2026-04-08",
+      "summary": "공개 공유 메타와 배포 검수를 GEO 기준으로 보강했습니다.",
+      "type": "Hotfix",
+      "scope": "site",
+      "items": [
+        "기본 공유 이미지를 정사각 로고 대신 `1200x630` 비율의 전용 Open Graph 이미지 `img/og-default.png`로 교체했습니다.",
+        "공개 페이지 메타는 이제 `og:image:secure_url`, `og:image:type`, `og:image:width`, `og:image:height`, `og:image:alt`, `twitter:image:alt`까지 함께 내려줘 AI 크롤러와 SNS 미리보기가 이미지를 더 안정적으로 이해할 수 있습니다.",
+        "운영 가이드와 post-deploy check에도 live HTML 기준 GEO 검수 규칙을 추가해 `description`, `og:*`, `twitter:*`, `canonical`, `lang`, JSON-LD 누락을 함께 확인하도록 보강했습니다.",
+        "사이트 버전 00.112.11 → 00.112.12."
+      ]
+    },
+    {
       "version": "00.112.11",
       "date": "2026-04-08",
       "summary": "공개 게시판 글쓰기 런타임을 분리해 목록/읽기와 작성 흐름의 변경 범위를 나눴습니다.",

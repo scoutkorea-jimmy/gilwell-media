@@ -12,6 +12,7 @@ echo "Checking ${BASE_URL} for V${EXPECTED_APP_VERSION}"
 
 MAIN_JS="$(curl -fsSL "${BASE_URL}/js/main.js?v=${EXPECTED_ASSET_VERSION}")"
 HOME_PAGE="$(curl -fsSL "${BASE_URL}/")"
+SEARCH_PAGE="$(curl -fsSL "${BASE_URL}/search?q=test")"
 BOARD_PAGE="$(curl -fsSL "${BASE_URL}/wosm")"
 PEOPLE_PAGE="$(curl -fsSL "${BASE_URL}/people")"
 ADMIN_PAGE="$(curl -fsSL "${BASE_URL}/admin.html")"
@@ -36,11 +37,23 @@ fi
 
 echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${EXPECTED_APP_VERSION}'" >/dev/null
 echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A', 'B', 'C']" >/dev/null
+echo "$HOME_PAGE" | grep -F '<html lang="ko">' >/dev/null
 echo "$HOME_PAGE" | grep -F 'google-adsense-account' >/dev/null
+echo "$HOME_PAGE" | grep -F 'meta name="description"' >/dev/null
+echo "$HOME_PAGE" | grep -F 'property="og:title"' >/dev/null
+echo "$HOME_PAGE" | grep -F 'property="og:image"' >/dev/null
+echo "$HOME_PAGE" | grep -F 'property="og:image:alt"' >/dev/null
+echo "$HOME_PAGE" | grep -F 'name="twitter:card"' >/dev/null
+echo "$HOME_PAGE" | grep -F 'name="twitter:image:alt"' >/dev/null
+echo "$HOME_PAGE" | grep -F "<link rel=\"canonical\" href=\"${BASE_URL}/\"" >/dev/null
 echo "$HOME_PAGE" | grep -F 'application/ld+json' >/dev/null
 echo "$HOME_PAGE" | grep -F 'home-lead-story' >/dev/null
 echo "$HOME_PAGE" | grep -F 'latest-list' >/dev/null
 echo "$HOME_PAGE" | grep -F '/rss.xml' >/dev/null
+echo "$SEARCH_PAGE" | grep -F '<html lang="ko">' >/dev/null
+echo "$SEARCH_PAGE" | grep -F 'meta name="description"' >/dev/null
+echo "$SEARCH_PAGE" | grep -F 'property="og:title"' >/dev/null
+echo "$SEARCH_PAGE" | grep -F '<meta name="robots" content="noindex,follow"/>' >/dev/null
 echo "$BOARD_PAGE" | grep -F "WOSM" >/dev/null
 echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
 echo "$ADMIN_PAGE" | grep -F 'id="v3-login-btn"' >/dev/null
