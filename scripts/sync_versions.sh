@@ -34,7 +34,7 @@ SITE_FILES=(
 )
 
 for file in "${SITE_FILES[@]}"; do
-  perl -0pi -e "s/\\/css\\/style\\.css\\?v=[0-9A-Za-z.-]+/\\/css\\/style.css?v=${ASSET_VERSION}/g; s/\\/js\\/main\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/main.js?v=${ASSET_VERSION}/g; s/\\/js\\/home\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/home.js?v=${ASSET_VERSION}/g; s/\\/js\\/post-page\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/post-page.js?v=${ASSET_VERSION}/g; s/\\/js\\/wosm-members\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/wosm-members.js?v=${ASSET_VERSION}/g" "$file"
+  perl -0pi -e "s/\\/css\\/style\\.css\\?v=[0-9A-Za-z.-]+/\\/css\\/style.css?v=${ASSET_VERSION}/g; s/\\/js\\/main\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/main.js?v=${ASSET_VERSION}/g; s/\\/js\\/site-chrome\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/site-chrome.js?v=${ASSET_VERSION}/g; s/\\/js\\/home\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/home.js?v=${ASSET_VERSION}/g; s/\\/js\\/post-page\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/post-page.js?v=${ASSET_VERSION}/g; s/\\/js\\/wosm-members\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/wosm-members.js?v=${ASSET_VERSION}/g" "$file"
 done
 
 PUBLIC_HTML_FILES=(
