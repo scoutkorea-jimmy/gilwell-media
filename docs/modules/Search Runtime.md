@@ -20,3 +20,11 @@
 - 검색 API 호출
 - 결과 렌더
 - 페이지 내 검색 UX
+
+## 관련 템플릿
+
+- [[Search Template]]
+
+## 관련 API
+
+- [[Posts API]]

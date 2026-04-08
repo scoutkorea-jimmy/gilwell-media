@@ -34,6 +34,15 @@
 - `index.html`
 - `functions/api/home.js`
 
+## 관련 템플릿
+
+- [[Homepage Template]]
+
+## 관련 API
+
+- [[Home and Stats API]]
+- [[Settings API]]
+
 ## 분리 후보
 
 - hero renderer

@@ -33,6 +33,9 @@
 
 ## 따라가기 링크
 
+- Libraries:
+  - [[Templates Library]]
+  - [[API Library]]
 - Foundation: [[GW Foundation]]
 - Public Shell: [[Public Site Chrome]]
 - Page Runtime:

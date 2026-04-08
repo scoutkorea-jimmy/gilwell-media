@@ -42,9 +42,12 @@
 
 ## 직접 의존하는 대표 노트
 
+- [[Templates Library]]
+- [[API Library]]
 - [[Public Site Chrome]]
 - [[Homepage Runtime]]
 - [[Board Runtime]]
+- [[Board Write Runtime]]
 - [[Post Page Runtime]]
 - [[Admin V3 Runtime]]
 

@@ -6,17 +6,19 @@
 ## 읽는 순서
 
 1. [[Homepage Runtime Map]]
-2. [[GW Foundation]]
-3. [[Public Site Chrome]]
-4. [[Homepage Runtime]]
-5. [[Board Runtime]]
-6. [[Board Write Runtime]]
-7. [[Post Page Runtime]]
-8. [[Glossary Runtime]]
-9. [[Search Runtime]]
-10. [[Calendar Runtime]]
-11. [[WOSM Members Runtime]]
-12. [[Admin V3 Runtime]]
+2. [[Templates Library]]
+3. [[API Library]]
+4. [[GW Foundation]]
+5. [[Public Site Chrome]]
+6. [[Homepage Runtime]]
+7. [[Board Runtime]]
+8. [[Board Write Runtime]]
+9. [[Post Page Runtime]]
+10. [[Glossary Runtime]]
+11. [[Search Runtime]]
+12. [[Calendar Runtime]]
+13. [[WOSM Members Runtime]]
+14. [[Admin V3 Runtime]]
 
 ## 레이어 요약
 
@@ -42,5 +44,7 @@
 ## 관련 문서
 
 - [[Homepage Runtime Map]]
+- [[Templates Library]]
+- [[API Library]]
 - `docs/homepage-module-inventory.md`
 - `CHATGPT.md`

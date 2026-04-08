@@ -19,3 +19,11 @@
 - 회원국 현황 데이터 로딩
 - 검색/필터
 - 테이블 렌더
+
+## 관련 템플릿
+
+- [[WOSM Members Template]]
+
+## 관련 API
+
+- [[Settings API]]
