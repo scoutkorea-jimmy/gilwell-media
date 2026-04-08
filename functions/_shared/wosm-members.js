@@ -26,6 +26,15 @@ export const DEFAULT_WOSM_MEMBERS = {
     country_fr: 'Country Name option 1 F',
   },
   registered_count: 176,
+  public_copy: {
+    overview_template: '{countryCount}개국 · {memberCount}개 회원연맹을 {viewLabel} 기준으로 정리했습니다. {collapsibleCount}개국은 {childLabel}을 접어둘 수 있습니다.',
+    search_template: '검색 결과 {countryCount}개국 · {memberCount}개 회원연맹이 {viewLabel} 기준으로 표시됩니다.',
+    section_meta_template: '{countryCount}개국 · {memberCount}개 회원연맹',
+    helper_text: '대표 연맹을 먼저 보고, 같은 국가의 소속 회원연맹은 필요할 때 펼쳐볼 수 있습니다. 검색 결과에 하위 연맹이 포함되면 해당 그룹은 자동으로 펼쳐집니다.',
+    child_label: '소속 회원연맹',
+    section_region_label: '지역연맹',
+    section_language_label: '공식 언어',
+  },
   revision: 0,
 };
 
@@ -140,14 +149,38 @@ export function normalizeWosmRegisteredCount(value) {
   return Math.round(num);
 }
 
-export function normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision) {
+export function normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision, publicCopy) {
   return {
     items: sanitizeWosmMembersItems(items),
     columns: normalizeWosmMembersColumns(columns),
     import_mapping: normalizeWosmImportMapping(importMapping),
     registered_count: normalizeWosmRegisteredCount(registeredCount),
+    public_copy: normalizeWosmPublicCopy(publicCopy),
     revision: Number.isFinite(Number(revision)) ? Number(revision) : 0,
   };
+}
+
+export function normalizeWosmPublicCopy(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const defaults = DEFAULT_WOSM_MEMBERS.public_copy;
+  return {
+    overview_template: sanitizeText(source.overview_template, 320) || defaults.overview_template,
+    search_template: sanitizeText(source.search_template, 240) || defaults.search_template,
+    section_meta_template: sanitizeText(source.section_meta_template, 120) || defaults.section_meta_template,
+    helper_text: sanitizeText(source.helper_text, 360) || defaults.helper_text,
+    child_label: sanitizeText(source.child_label, 40) || defaults.child_label,
+    section_region_label: sanitizeText(source.section_region_label, 30) || defaults.section_region_label,
+    section_language_label: sanitizeText(source.section_language_label, 30) || defaults.section_language_label,
+  };
+}
+
+export function parseWosmPublicCopy(rawValue) {
+  try {
+    const parsed = rawValue ? JSON.parse(rawValue) : {};
+    return normalizeWosmPublicCopy(parsed);
+  } catch {
+    return normalizeWosmPublicCopy({});
+  }
 }
 
 function sanitizeWosmMembersColumn(column, index) {

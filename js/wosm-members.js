@@ -19,9 +19,11 @@
     items: [],
     columns: [],
     registeredCount: 176,
+    publicCopy: {},
     query: '',
     view: 'country',
     expandedGroups: {},
+    expandedSections: {},
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -55,6 +57,7 @@
         state.items = Array.isArray(data && data.items) ? data.items : [];
         state.columns = Array.isArray(data && data.columns) && data.columns.length ? data.columns : getDefaultColumns();
         state.registeredCount = Math.max(0, parseInt(data && data.registered_count, 10) || 176);
+        state.publicCopy = normalizePublicCopy(data && data.public_copy);
         renderSummary();
         render();
       })
@@ -78,8 +81,22 @@
     wrap.textContent = GW.formatNumber(state.registeredCount) + '개국 · ' + GW.formatNumber(state.items.length) + '개 회원연맹';
   }
 
+  function normalizePublicCopy(raw) {
+    var source = raw && typeof raw === 'object' ? raw : {};
+    return {
+      overview_template: String(source.overview_template || '{countryCount}개국 · {memberCount}개 회원연맹을 {viewLabel} 기준으로 정리했습니다. {collapsibleCount}개국은 {childLabel}을 접어둘 수 있습니다.').trim(),
+      search_template: String(source.search_template || '검색 결과 {countryCount}개국 · {memberCount}개 회원연맹이 {viewLabel} 기준으로 표시됩니다.').trim(),
+      section_meta_template: String(source.section_meta_template || '{countryCount}개국 · {memberCount}개 회원연맹').trim(),
+      helper_text: String(source.helper_text || '대표 연맹을 먼저 보고, 같은 국가의 소속 회원연맹은 필요할 때 펼쳐볼 수 있습니다. 검색 결과에 하위 연맹이 포함되면 해당 그룹은 자동으로 펼쳐집니다.').trim(),
+      child_label: String(source.child_label || '소속 회원연맹').trim(),
+      section_region_label: String(source.section_region_label || '지역연맹').trim(),
+      section_language_label: String(source.section_language_label || '공식 언어').trim(),
+    };
+  }
+
   function render() {
     updateViewChips();
+    updateHelperText();
     renderColgroup();
     renderHead();
 
@@ -90,7 +107,13 @@
     renderMeta(sections, filteredGroups);
     renderTable(sections);
     renderCards(sections);
-    bindToggleButtons();
+    bindInteractionButtons();
+  }
+
+  function updateHelperText() {
+    var el = document.querySelector('.glossary-search-help');
+    if (!el) return;
+    el.textContent = normalizePublicCopy(state.publicCopy).helper_text;
   }
 
   function updateViewChips() {
@@ -196,7 +219,7 @@
         key: key,
         label: key,
         toneClass: getSectionToneClass(state.view, key),
-        eyebrow: state.view === 'region' ? '지역연맹' : '공식 언어',
+        eyebrow: state.view === 'region' ? normalizePublicCopy(state.publicCopy).section_region_label : normalizePublicCopy(state.publicCopy).section_language_label,
         meta: makeSectionMeta(sectionGroups),
         groups: sectionGroups,
       };
@@ -243,11 +266,23 @@
     }).length;
 
     if (state.query) {
-      meta.textContent = '검색 결과 ' + GW.formatNumber(groups.length) + '개국 · ' + GW.formatNumber(visibleMemberCount) + '개 회원연맹이 ' + VIEW_LABELS[state.view] + ' 기준으로 표시됩니다.';
+      meta.textContent = applyCopyTemplate(normalizePublicCopy(state.publicCopy).search_template, {
+        countryCount: GW.formatNumber(groups.length),
+        memberCount: GW.formatNumber(visibleMemberCount),
+        viewLabel: VIEW_LABELS[state.view],
+        collapsibleCount: GW.formatNumber(hiddenSupportCount),
+        childLabel: normalizePublicCopy(state.publicCopy).child_label,
+      });
       return;
     }
 
-    meta.textContent = GW.formatNumber(state.registeredCount) + '개국 · ' + GW.formatNumber(state.items.length) + '개 회원연맹을 ' + VIEW_LABELS[state.view] + ' 기준으로 정리했습니다. ' + GW.formatNumber(hiddenSupportCount) + '개국은 소속 회원연맹을 접어둘 수 있습니다.';
+    meta.textContent = applyCopyTemplate(normalizePublicCopy(state.publicCopy).overview_template, {
+      countryCount: GW.formatNumber(state.registeredCount),
+      memberCount: GW.formatNumber(state.items.length),
+      viewLabel: VIEW_LABELS[state.view],
+      collapsibleCount: GW.formatNumber(hiddenSupportCount),
+      childLabel: normalizePublicCopy(state.publicCopy).child_label,
+    });
   }
 
   function renderHead() {
@@ -285,19 +320,25 @@
   function renderSectionRows(section) {
     var rows = [];
     if (state.view !== 'country') {
+      var tagName = state.view === 'region' ? 'h2' : 'h3';
+      var collapsed = !isSectionExpanded(section);
       rows.push(
         '<tr class="members-section-row">' +
           '<td colspan="' + state.columns.length + '">' +
-            '<div class="members-section-bar ' + (section.toneClass || '') + '">' +
+            '<button type="button" class="members-section-bar ' + (section.toneClass || '') + '" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '">' +
               '<div class="members-section-title-wrap">' +
                 '<em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em>' +
-                '<strong>' + GW.escapeHtml(section.label) + '</strong>' +
+                '<' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '>' +
               '</div>' +
-              '<span>' + GW.formatNumber(section.meta.countryCount) + '개국 · ' + GW.formatNumber(section.meta.memberCount) + '개 회원연맹</span>' +
-            '</div>' +
+              '<div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></div>' +
+            '</button>' +
           '</td>' +
         '</tr>'
       );
+    }
+
+    if (state.view !== 'country' && !isSectionExpanded(section)) {
+      return rows.join('');
     }
 
     section.groups.forEach(function (group) {
@@ -335,7 +376,7 @@
   function renderChildCell(group, item, column) {
     if (!column) return '—';
     if (column.key === 'country_names') {
-      return '<div class="member-country-subline"><span>소속 회원연맹</span><strong>' + GW.escapeHtml(group.country_ko || group.country_en || '국가명 미입력') + '</strong></div>';
+      return '<div class="member-country-subline"><span>' + GW.escapeHtml(normalizePublicCopy(state.publicCopy).child_label) + '</span><strong>' + GW.escapeHtml(group.country_ko || group.country_en || '국가명 미입력') + '</strong></div>';
     }
     return renderValueMarkup(item, column);
   }
@@ -347,7 +388,7 @@
     if (hasChildren) {
       button = '<button type="button" class="member-country-toggle" data-group-toggle="' + GW.escapeHtml(group.key) + '" aria-expanded="' + (isGroupExpanded(group) ? 'true' : 'false') + '">' +
         '<span class="member-country-toggle-icon">' + (isGroupExpanded(group) ? '−' : '+') + '</span>' +
-        '<span>' + (isGroupExpanded(group) ? '접기' : '소속 회원연맹 보기') + '</span>' +
+        '<span>' + (isGroupExpanded(group) ? '접기' : normalizePublicCopy(state.publicCopy).child_label + ' 보기') + '</span>' +
         '<span class="member-country-toggle-count">' + GW.formatNumber(group.children.length) + '개</span>' +
       '</button>';
     }
@@ -372,11 +413,13 @@
   }
 
   function renderCardSection(section) {
+    var collapsed = state.view === 'region' ? !isSectionExpanded(section) : false;
+    var tagName = state.view === 'region' ? 'h2' : 'h3';
     return '<section class="members-card-section">' +
       (state.view !== 'country'
-        ? '<div class="members-card-section-head ' + (section.toneClass || '') + '"><div class="members-card-section-title-wrap"><em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em><strong>' + GW.escapeHtml(section.label) + '</strong></div><span>' + GW.formatNumber(section.meta.countryCount) + '개국 · ' + GW.formatNumber(section.meta.memberCount) + '개 회원연맹</span></div>'
+        ? '<button type="button" class="members-card-section-head ' + (section.toneClass || '') + '" data-section-toggle="' + GW.escapeHtml(section.key) + '" aria-expanded="' + (collapsed ? 'false' : 'true') + '"><div class="members-card-section-title-wrap"><em class="members-section-eyebrow">' + GW.escapeHtml(section.eyebrow || '그룹') + '</em><' + tagName + ' class="members-section-heading">' + GW.escapeHtml(section.label) + '</' + tagName + '></div><div class="members-section-meta-wrap"><span>' + GW.escapeHtml(buildSectionMetaText(section.meta)) + '</span><strong class="members-section-toggle-icon">' + (collapsed ? '+' : '−') + '</strong></div></button>'
         : '') +
-      section.groups.map(function (group) {
+      ((state.view !== 'country' && collapsed) ? [] : section.groups).map(function (group) {
         return renderCountryCard(group);
       }).join('') +
     '</section>';
@@ -396,7 +439,7 @@
       '</div>' +
       (visibleChildren.length ? '<div class="member-country-children">' + visibleChildren.map(function (item) {
         return '<div class="member-country-child-card">' +
-          '<span class="member-country-label">소속 회원연맹</span>' +
+          '<span class="member-country-label">' + GW.escapeHtml(normalizePublicCopy(state.publicCopy).child_label) + '</span>' +
           '<div>' + renderCardValue(item, findColumn('membership_category')) + '</div>' +
           '<strong>' + renderCardValue(item, findColumn('status_description')) + '</strong>' +
         '</div>';
@@ -564,18 +607,51 @@
     return base + getVisibleChildren(group).length;
   }
 
+  function buildSectionMetaText(meta) {
+    return applyCopyTemplate(normalizePublicCopy(state.publicCopy).section_meta_template, {
+      countryCount: GW.formatNumber(meta.countryCount || 0),
+      memberCount: GW.formatNumber(meta.memberCount || 0),
+      viewLabel: VIEW_LABELS[state.view],
+      collapsibleCount: '0',
+      childLabel: normalizePublicCopy(state.publicCopy).child_label,
+    });
+  }
+
+  function isSectionExpanded(section) {
+    if (!section || state.view !== 'region') return true;
+    if (state.query) return true;
+    return !!state.expandedSections[section.key];
+  }
+
+  function applyCopyTemplate(template, values) {
+    var source = String(template || '').trim();
+    var map = values || {};
+    return source.replace(/\{([a-zA-Z0-9_]+)\}/g, function (_, key) {
+      return Object.prototype.hasOwnProperty.call(map, key) ? String(map[key]) : '';
+    });
+  }
+
   function flattenSectionGroups(sections) {
     return (sections || []).reduce(function (list, section) {
       return list.concat(section.groups || []);
     }, []);
   }
 
-  function bindToggleButtons() {
+  function bindInteractionButtons() {
     Array.prototype.forEach.call(document.querySelectorAll('[data-group-toggle]'), function (button) {
       button.addEventListener('click', function () {
         var key = button.getAttribute('data-group-toggle');
         if (!key || state.query) return;
         state.expandedGroups[key] = !state.expandedGroups[key];
+        render();
+      });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-section-toggle]'), function (button) {
+      button.addEventListener('click', function () {
+        if (state.view !== 'region' || state.query) return;
+        var key = button.getAttribute('data-section-toggle');
+        if (!key) return;
+        state.expandedSections[key] = !state.expandedSections[key];
         render();
       });
     });
