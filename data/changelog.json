@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "00.112.05",
+      "date": "2026-04-08",
+      "summary": "게시판 목록이 manual 정렬 요청에서 실패하던 서버 예외를 수정했습니다.",
+      "type": "Hotfix",
+      "scope": "site",
+      "items": [
+        "공개 게시판 페이지가 붙이는 `sort=manual` 요청에서 존재하지 않는 `tag` 변수를 참조하던 버그를 `tagFilter` 기준으로 바로잡았습니다.",
+        "이제 `korea`, `apr`, `wosm`, `people` 게시판 목록이 다시 정상 조회됩니다.",
+        "사이트 버전 00.112.04 → 00.112.05."
+      ]
+    },
+    {
       "version": "00.112.04",
       "date": "2026-04-08",
       "summary": "sitemap canonical 경로와 용어집 lastmod 기준을 보강하고 운영 가이드에도 관련 규칙을 추가했습니다.",

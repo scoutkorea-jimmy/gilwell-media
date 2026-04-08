@@ -70,7 +70,7 @@ export async function onRequestGet({ request, env }) {
       )`
     : '0';
   const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const useManualOrder = (allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tag);
+  const useManualOrder = (allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tagFilter);
   const ORDER = useManualOrder
     ? ORDER_MANUAL
     : (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)));
