@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.32';
-  GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408045842';
+  GW.APP_VERSION = '00.112.00';
+  GW.ADMIN_VERSION = '03.053.00';
+  GW.ASSET_VERSION = '20260408064451';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1607,6 +1607,7 @@
   };
 
   GW._customStrings = window.GW_BOOT_CUSTOM_STRINGS || {};
+  GW._navLabels = window.GW_BOOT_NAV_LABELS || {};
   GW.lang = localStorage.getItem('gw_lang') || 'ko';
   GW.LOCKED_TRANSLATION_KEYS = {
     'nav.contributors': true,
@@ -1623,6 +1624,11 @@
 
   /** Return the translated string for the current language. */
   GW.t = function (key) {
+    if (GW.LOCKED_TRANSLATION_KEYS[key]) {
+      var navEntry = (GW._navLabels && GW._navLabels[key]) || (GW.STRINGS[key] || {});
+      var navLang = GW.lang;
+      return navEntry[navLang] !== undefined ? navEntry[navLang] : (navEntry.ko || key);
+    }
     var custom = GW._customStrings || {};
     var lang   = GW.lang;
     var useCustom = !GW.LOCKED_TRANSLATION_KEYS[key] && custom[key];
@@ -1723,6 +1729,7 @@
     }
     if (cached && cached.strings) {
       GW._customStrings = cached.strings || {};
+      GW._navLabels = cached.nav_labels || GW._navLabels || {};
       GW.applyLang();
       if (GW._statsData) GW._renderStats();
     }
@@ -1731,6 +1738,7 @@
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW._customStrings = data.strings || {};
+        GW._navLabels = data.nav_labels || GW._navLabels || {};
         GW.applyLang();
         // Re-render stats if already loaded
         if (GW._statsData) GW._renderStats();

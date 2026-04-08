@@ -5,6 +5,7 @@
  * PUT /api/settings/translations  ← admin only, saves custom overrides
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { loadNavLabels } from '../../_shared/nav-labels.js';
 
 const LOCKED_TRANSLATION_KEYS = {
   'nav.contributors': true,
@@ -22,11 +23,12 @@ const LOCKED_TRANSLATION_KEYS = {
 // ── GET /api/settings/translations ───────────────────────────
 export async function onRequestGet({ env }) {
   try {
-    const row    = await env.DB.prepare(
-      `SELECT value FROM settings WHERE key = 'translations'`
-    ).first();
+    const [row, navLabels] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first(),
+      loadNavLabels(env),
+    ]);
     const custom = sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
-    return json({ strings: custom }, 200, publicCacheHeaders(300, 1800));
+    return json({ strings: custom, nav_labels: navLabels }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/translations error:', err);
     return json({ error: 'Database error' }, 500);

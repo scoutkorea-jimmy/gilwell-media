@@ -2,6 +2,7 @@ import { loadSiteMeta } from '../_shared/site-meta.js';
 import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
+import { loadNavLabels } from '../_shared/nav-labels.js';
 
 const DEFAULT_TICKER_ITEMS = [
   '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
@@ -37,19 +38,6 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
-const LOCKED_TRANSLATION_KEYS = {
-  'nav.contributors': true,
-  'nav.home': true,
-  'nav.latest': true,
-  'nav.korea': true,
-  'nav.apr': true,
-  'nav.wosm': true,
-  'nav.wosm_members': true,
-  'nav.people': true,
-  'nav.calendar': true,
-  'nav.glossary': true,
-};
-
 const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
 
 export async function onRequestGet({ env, request }) {
@@ -61,6 +49,7 @@ export async function onRequestGet({ env, request }) {
 
     const [
       siteMeta,
+      navLabels,
       translations,
       ticker,
       stats,
@@ -76,6 +65,7 @@ export async function onRequestGet({ env, request }) {
       people,
     ] = await Promise.all([
       loadSiteMeta(env),
+      loadNavLabels(env),
       loadTranslations(env),
       loadTicker(env),
       loadStats(env),
@@ -93,6 +83,7 @@ export async function onRequestGet({ env, request }) {
 
     return json({
       site_meta: siteMeta,
+      nav_labels: navLabels,
       translations: { strings: translations },
       ticker: { items: ticker },
       stats,
@@ -129,7 +120,7 @@ function sanitizeTranslationStrings(strings) {
   if (!strings || typeof strings !== 'object') return {};
   const sanitized = {};
   Object.keys(strings).forEach((key) => {
-    if (LOCKED_TRANSLATION_KEYS[key]) return;
+    if (key.indexOf('nav.') === 0) return;
     sanitized[key] = strings[key];
   });
   return sanitized;
