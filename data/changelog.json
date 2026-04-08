@@ -1,6 +1,18 @@
 {
   "items": [
     {
+      "version": "00.112.02",
+      "date": "2026-04-08",
+      "summary": "강제 새로고침 순간 정적 HTML 원문에 남아 있던 기본 메뉴 텍스트도 비워 플래시를 더 줄였습니다.",
+      "type": "Hotfix",
+      "scope": "site",
+      "items": [
+        "정적 공개 페이지의 managed nav anchor 본문은 비우고 data-fallback-label만 남겨, CSS·JS보다 HTML 원문이 먼저 그려져도 Korea / APR / WOSM 같은 기본 메뉴명이 잠깐 보이지 않도록 조정했습니다.",
+        "noscript 환경에서는 data-fallback-label을 pseudo content로 보여 주도록 fallback을 유지했습니다.",
+        "사이트 버전 00.112.01 → 00.112.02."
+      ]
+    },
+    {
       "version": "00.112.01",
       "date": "2026-04-08",
       "summary": "상단 메뉴는 최신 메뉴명이 준비되기 전까지 렌더를 미뤄 초기 플래시를 더 줄였습니다.",
