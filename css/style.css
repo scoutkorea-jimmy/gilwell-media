@@ -902,6 +902,10 @@ p { margin-bottom: 6px; }
   background:    var(--bg);
 }
 
+body[data-home-bootstrap] .masthead {
+  position: relative;
+}
+
 .masthead-top {
   display:         grid;
   grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
