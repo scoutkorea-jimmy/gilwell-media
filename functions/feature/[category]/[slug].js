@@ -50,6 +50,16 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const footerDomain = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.domain_label) || 'bpmedia.net');
   const footerTipEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.tip_email) || 'story@bpmedia.net');
   const footerContactEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.contact_email) || 'info@bpmedia.net');
+  const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
+  const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
+  const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
+  const navKorea = getNavLabel(navLabels, 'nav.korea', 'ko');
+  const navApr = getNavLabel(navLabels, 'nav.apr', 'ko');
+  const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
+  const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
+  const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
+  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
+  const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
 
   const body = `<!doctype html>
 <html lang="ko">
@@ -601,13 +611,3 @@ function escapeHtml(value) {
 function notFound() {
   return new Response('Not Found', { status: 404 });
 }
-  const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
-  const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
-  const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
-  const navKorea = getNavLabel(navLabels, 'nav.korea', 'ko');
-  const navApr = getNavLabel(navLabels, 'nav.apr', 'ko');
-  const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
-  const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
-  const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
-  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
-  const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
