@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260408133616">
+  <link rel="stylesheet" href="/css/style.css?v=20260408134635">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body data-home-bootstrap="1">
@@ -35,9 +35,9 @@
       </div>
       <div class="masthead-right">
         <div class="masthead-stats" id="masthead-stats"></div>
-        <div class="lang-toggle">
-          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')">KOR</button>
-          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
+        <div class="lang-toggle" aria-label="언어 선택" role="group">
+          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')" aria-pressed="true" aria-label="한국어로 보기">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')" aria-pressed="false" aria-label="영어로 보기">ENG</button>
         </div>
         <div class="masthead-search">
           <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
@@ -46,16 +46,16 @@
       </div>
     </div>
     <nav class="nav" data-managed-nav>
-      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
-      <a href="/" class="active" data-i18n="nav.home" data-fallback-label="홈"></a>
-      <a href="/latest" data-i18n="nav.latest" data-fallback-label="1개월 소식"></a>
-      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
-      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
-      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="WOSM"></a>
-      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
-      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
-      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
-      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들" aria-label="도움을 주신 분들"></a>
+      <a href="/" class="active" data-i18n="nav.home" data-fallback-label="홈" aria-label="홈"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="1개월 소식" aria-label="1개월 소식"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea" aria-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR" aria-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="WOSM" aria-label="WOSM"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황" aria-label="세계연맹 회원국 현황"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물" aria-label="스카우트 인물"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더" aria-label="캘린더"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집" aria-label="용어집"></a>
     </nav>
   </header>
 
@@ -76,6 +76,7 @@
       The BP Post · bpmedia.net
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
     </div>
+    <button type="button" class="ticker-toggle-btn" id="ticker-toggle-btn" aria-pressed="false" aria-label="상단 소식 흐름 일시정지">일시정지</button>
   </div>
 
   <!-- ── SITE HERO (slider) ── -->
@@ -99,21 +100,21 @@
   <div class="home-wrapper">
     <section class="home-priority">
       <div class="home-priority-main">
-        <div class="home-section-title home-section-title-main">
+        <h2 class="home-section-title home-section-title-main">
           <span>메인 스토리</span>
-          <div class="rule"></div>
-        </div>
+          <span class="rule" aria-hidden="true"></span>
+        </h2>
         <div id="home-lead-story" class="home-lead-story">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
       <aside class="home-priority-side">
         <div class="home-priority-latest">
-          <div class="home-section-title home-section-title-latest">
+          <h2 class="home-section-title home-section-title-latest">
             <span data-i18n="section.latest">최신 소식</span>
             <a href="/latest" class="home-section-more" data-i18n="home.more">더보기 →</a>
-            <div class="rule"></div>
-          </div>
+            <span class="rule" aria-hidden="true"></span>
+          </h2>
           <div class="home-rail-card">
             <div class="mini-list" id="latest-list">
               <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
@@ -129,20 +130,20 @@
 
     <div class="home-mobile-stack">
       <div>
-        <div class="home-section-title home-section-title-picks">
+        <h2 class="home-section-title home-section-title-picks">
           <span data-i18n="section.picks">에디터 추천</span>
-          <div class="rule"></div>
-        </div>
+          <span class="rule" aria-hidden="true"></span>
+        </h2>
         <div class="mini-list" id="picks-list-mobile">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
 
       <div>
-        <div class="home-section-title home-section-title-popular">
+        <h2 class="home-section-title home-section-title-popular">
           <span data-i18n="section.popular">인기 소식</span>
-          <div class="rule"></div>
-        </div>
+          <span class="rule" aria-hidden="true"></span>
+        </h2>
         <div class="mini-list" id="popular-list-mobile">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
@@ -155,10 +156,10 @@
 
       <!-- Popular posts -->
       <div>
-        <div class="home-section-title home-section-title-popular">
+        <h2 class="home-section-title home-section-title-popular">
           <span data-i18n="section.popular">인기 소식</span>
-          <div class="rule"></div>
-        </div>
+          <span class="rule" aria-hidden="true"></span>
+        </h2>
         <div class="mini-list" id="popular-list">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
@@ -166,10 +167,10 @@
 
       <!-- Editor's picks -->
       <div>
-        <div class="home-section-title home-section-title-picks">
+        <h2 class="home-section-title home-section-title-picks">
           <span data-i18n="section.picks">에디터 추천</span>
-          <div class="rule"></div>
-        </div>
+          <span class="rule" aria-hidden="true"></span>
+        </h2>
         <div class="mini-list" id="picks-list">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
@@ -259,8 +260,8 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/main.js?v=20260408133616"></script>
-  <script src="/js/site-chrome.js?v=20260408133616"></script>
-  <script src="/js/home.js?v=20260408133616"></script>
+  <script src="/js/main.js?v=20260408134635"></script>
+  <script src="/js/site-chrome.js?v=20260408134635"></script>
+  <script src="/js/home.js?v=20260408134635"></script>
 </body>
 </html>
