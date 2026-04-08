@@ -14,6 +14,7 @@ import { findManualRelatedPosts, findRelatedPosts, parseManualRelatedIds } from 
 import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalIntegerOrNull, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
+import { purgeContentCache } from '../../_shared/cache-purge.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -216,6 +217,12 @@ export async function onRequestPut({ params, request, env }) {
     }
     if (updatedPost) {
       await recordPostHistory(env, id, 'update', currentPost, updatedPost, '게시글 수정');
+      await purgeContentCache(env, origin, {
+        postId: updatedPost.id,
+        categories: [currentPost && currentPost.category, updatedPost.category].filter(Boolean),
+      }).catch(function (err) {
+        console.error('PUT /api/posts/:id cache purge error:', err);
+      });
     }
     return json({ post: updatedPost });
   } catch (err) {
@@ -228,6 +235,7 @@ export async function onRequestPut({ params, request, env }) {
 // ── PATCH /api/posts/:id ──────────────────────────────────────
 // Toggle featured or published flag. Requires valid admin token.
 export async function onRequestPatch({ params, request, env }) {
+  const origin = new URL(request.url).origin;
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
@@ -289,6 +297,12 @@ export async function onRequestPatch({ params, request, env }) {
       if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
       if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
       await recordPostHistory(env, id, 'status', beforePost, updatedPost, summary.join(' · ') || '상태 변경');
+      await purgeContentCache(env, origin, {
+        postId: updatedPost.id,
+        categories: [beforePost && beforePost.category, updatedPost.category].filter(Boolean),
+      }).catch(function (err) {
+        console.error('PATCH /api/posts/:id cache purge error:', err);
+      });
     }
     return json({ post: updatedPost });
   } catch (err) {
@@ -301,6 +315,7 @@ export async function onRequestPatch({ params, request, env }) {
 // ── DELETE /api/posts/:id ─────────────────────────────────────
 // Deletes a post. Requires valid admin token.
 export async function onRequestDelete({ params, request, env }) {
+  const origin = new URL(request.url).origin;
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
@@ -310,7 +325,7 @@ export async function onRequestDelete({ params, request, env }) {
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
 
   try {
-    const existing = await env.DB.prepare(`SELECT image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
+    const existing = await env.DB.prepare(`SELECT category, image_url, gallery_images, content FROM posts WHERE id = ?`).bind(id).first();
     if (!existing) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const { meta } = await env.DB.prepare(
       `DELETE FROM posts WHERE id = ?`
@@ -324,11 +339,13 @@ export async function onRequestDelete({ params, request, env }) {
       env.DB.prepare(`DELETE FROM post_engagement WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM site_visits WHERE path = ?`).bind('/post/' + id).run().catch(() => {}),
     ]);
-    const origin = new URL(request.url).origin;
     const imageUrls = collectStoredImageUrls(existing, origin);
     await Promise.all(imageUrls.map(function (value) {
       return deleteStoredImageByUrl(env, value, origin).catch(() => {});
     }));
+    await purgeContentCache(env, origin, { postId: id, categories: [existing && existing.category].filter(Boolean) }).catch(function (err) {
+      console.error('DELETE /api/posts/:id cache purge error:', err);
+    });
     return json({ success: true });
   } catch (err) {
     console.error('DELETE /api/posts/:id error:', err);

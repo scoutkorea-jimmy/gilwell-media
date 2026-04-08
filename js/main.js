@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.21';
+  GW.APP_VERSION = '00.111.22';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260406124217';
+  GW.ASSET_VERSION = '20260408032326';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1074,11 +1074,17 @@
     if (!state || !state.url) return;
     var trackedUrl = GW.buildShareUrl(state.url, channel || 'share');
     if (channel === 'facebook') {
-      window.open(
-        'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(trackedUrl),
+      var canonicalUrl = String(state.url || trackedUrl || '').trim() || trackedUrl;
+      var facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(canonicalUrl);
+      var popup = window.open(
+        facebookUrl,
         '_blank',
         'noopener,noreferrer,width=640,height=680'
       );
+      if (!popup) {
+        window.location.href = facebookUrl;
+        return;
+      }
       GW.showToast('페이스북 공유 창을 열었습니다.', 'success');
       GW.closeShareModal();
       return;

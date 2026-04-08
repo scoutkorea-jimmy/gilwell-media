@@ -35,7 +35,7 @@ function json(data, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+      'Cache-Control': 'no-store',
     },
   });
 }
