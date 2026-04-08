@@ -1,4 +1,5 @@
 import { serializePostImage } from '../../_shared/images.js';
+import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 
 /**
  * GET /api/posts/popular
@@ -8,6 +9,9 @@ import { serializePostImage } from '../../_shared/images.js';
 export async function onRequestGet({ env, request }) {
   try {
     const origin = new URL(request.url).origin;
+    await ensureDuePostsPublished(env, origin).catch((err) => {
+      console.error('GET /api/posts/popular auto publish error:', err);
+    });
     const { results } = await env.DB.prepare(`
       WITH likes_by_post AS (
         SELECT post_id, COUNT(*) AS likes

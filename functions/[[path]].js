@@ -1,9 +1,13 @@
 import { buildShareMetaBlock, getResolvedShareImage, getSitePageKey, loadSiteMeta } from './_shared/site-meta.js';
+import { ensureDuePostsPublished } from './_shared/publish-due-posts.js';
 
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const pageKey = getSitePageKey(url.pathname);
+  await ensureDuePostsPublished(env, url.origin).catch((err) => {
+    console.error('[[path]] auto publish error:', err);
+  });
 
   const response = await context.next();
   if (!pageKey) return response;

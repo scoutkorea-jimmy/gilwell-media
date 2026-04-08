@@ -15,6 +15,7 @@ import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalIntegerOrNull, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
 import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
+import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 
 const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -23,6 +24,9 @@ const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 export async function onRequestGet({ params, env, request }) {
   const id = parseId(params.id);
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
+  await ensureDuePostsPublished(env, new URL(request.url).origin).catch((err) => {
+    console.error('GET /api/posts/:id auto publish error:', err);
+  });
 
   try {
     const post = await env.DB.prepare(
