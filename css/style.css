@@ -9345,8 +9345,6 @@ body.wosm-members-page #main-content {
   border-bottom: none;
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
   text-align: left;
-  appearance: none;
-  cursor: pointer;
 }
 .members-section-title-wrap,
 .members-card-section-title-wrap {
@@ -9360,6 +9358,21 @@ body.wosm-members-page #main-content {
   font-size: 24px;
   line-height: 1.15;
   color: var(--ink);
+}
+.members-section-heading-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.members-section-heading-btn:hover {
+  color: var(--accent);
 }
 .members-section-eyebrow {
   font-style: normal;
@@ -9385,6 +9398,14 @@ body.wosm-members-page #main-content {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+.members-section-toggle-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
 }
 .members-section-toggle-icon {
   display: inline-flex;
@@ -9511,8 +9532,6 @@ body.wosm-members-page #main-content {
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
   border-radius: 10px;
   text-align: left;
-  appearance: none;
-  cursor: pointer;
 }
 .members-card-section-head strong {
   font-family: AliceDigitalLearning, sans-serif;
