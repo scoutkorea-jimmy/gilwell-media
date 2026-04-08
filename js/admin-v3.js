@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.053.01
+ * Version: 03.053.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2107,8 +2107,8 @@
       var badge = typeClass[item.type] || 'v3-badge-gray';
       var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
       var s = item.scope || 'both';
-      var scopeLabel = s === 'site' ? ' <span class="v3-badge" style="background:#0d7a5f;font-size:9px;">Site</span>' :
-                       s === 'admin' ? ' <span class="v3-badge" style="background:#7c3aed;font-size:9px;">Admin</span>' : '';
+      var scopeLabel = s === 'site' ? ' <span class="v3-badge v3-badge-site" style="font-size:9px;">Site</span>' :
+                       s === 'admin' ? ' <span class="v3-badge v3-badge-admin" style="font-size:9px;">Admin</span>' : '';
       return '<div class="v3-card v3-release-card">' +
         '<div class="v3-release-head">' +
           '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
