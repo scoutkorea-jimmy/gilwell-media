@@ -9344,6 +9344,21 @@ body.wosm-members-page #main-content {
   border-bottom: none;
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
 }
+.members-section-title-wrap,
+.members-card-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.members-section-eyebrow {
+  font-style: normal;
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(77, 0, 110, 0.72);
+}
 .members-section-bar strong {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 14px;
@@ -9462,7 +9477,10 @@ body.wosm-members-page #main-content {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
+  border-radius: 10px;
 }
 .members-card-section-head strong {
   font-family: AliceDigitalLearning, sans-serif;
@@ -9473,6 +9491,34 @@ body.wosm-members-page #main-content {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 11px;
   color: var(--muted);
+}
+.members-section-bar.is-africa,
+.members-card-section-head.is-africa {
+  background: linear-gradient(180deg, rgba(171, 80, 39, 0.12), rgba(171, 80, 39, 0.04));
+}
+.members-section-bar.is-arab,
+.members-card-section-head.is-arab {
+  background: linear-gradient(180deg, rgba(150, 96, 17, 0.12), rgba(150, 96, 17, 0.04));
+}
+.members-section-bar.is-asia-pacific,
+.members-card-section-head.is-asia-pacific {
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.12), rgba(255, 86, 85, 0.04));
+}
+.members-section-bar.is-european,
+.members-card-section-head.is-european {
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.12), rgba(0, 148, 180, 0.04));
+}
+.members-section-bar.is-interamerican,
+.members-card-section-head.is-interamerican {
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.12), rgba(36, 135, 55, 0.04));
+}
+.members-section-bar.is-language-english,
+.members-card-section-head.is-language-english {
+  background: linear-gradient(180deg, rgba(77, 0, 110, 0.12), rgba(77, 0, 110, 0.04));
+}
+.members-section-bar.is-language-french,
+.members-card-section-head.is-language-french {
+  background: linear-gradient(180deg, rgba(34, 92, 160, 0.12), rgba(34, 92, 160, 0.04));
 }
 .member-country-card {
   border: 1px solid var(--border);
