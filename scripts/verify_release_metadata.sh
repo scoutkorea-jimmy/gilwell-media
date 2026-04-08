@@ -74,6 +74,22 @@ SITE_MAIN_JS_FILES=(
   functions/feature/'[category]'/'[slug]'.js
 )
 
+SITE_CHROME_JS_FILES=(
+  index.html
+  latest.html
+  korea.html
+  apr.html
+  wosm.html
+  wosm-members.html
+  people.html
+  glossary.html
+  contributors.html
+  search.html
+  calendar.html
+  functions/post/'[id]'.js
+  functions/feature/'[category]'/'[slug]'.js
+)
+
 BOARD_JS_FILES=(
   latest.html
   korea.html
@@ -133,13 +149,13 @@ const managedNavFiles = [
   'search.html',
   'calendar.html',
 ];
-const mainJs = fs.readFileSync('js/main.js', 'utf8');
+const siteChromeJs = fs.readFileSync('js/site-chrome.js', 'utf8');
 const itemRe = /\{\s*href:\s*'([^']+)'/g;
 const expected = [];
 let match;
-while ((match = itemRe.exec(mainJs))) expected.push(match[1]);
+while ((match = itemRe.exec(siteChromeJs))) expected.push(match[1]);
 if (!expected.length) {
-  console.error('Could not parse GW.NAV_ITEMS from js/main.js');
+  console.error('Could not parse GW.NAV_ITEMS from js/site-chrome.js');
   process.exit(1);
 }
 for (const file of managedNavFiles) {
@@ -160,6 +176,13 @@ NODE
 for file in "${SITE_MAIN_JS_FILES[@]}"; do
   grep -F "/js/main.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
     echo "Missing site main.js version in $file"
+    exit 1
+  }
+done
+
+for file in "${SITE_CHROME_JS_FILES[@]}"; do
+  grep -F "/js/site-chrome.js?v=${ASSET_VERSION_FILE}" "$file" >/dev/null || {
+    echo "Missing site-chrome.js asset version in $file"
     exit 1
   }
 done
