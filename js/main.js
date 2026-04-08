@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.112.00';
+  GW.APP_VERSION = '00.112.01';
   GW.ADMIN_VERSION = '03.053.00';
-  GW.ASSET_VERSION = '20260408064451';
+  GW.ASSET_VERSION = '20260408065116';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1893,17 +1893,25 @@
     return window.innerWidth <= 640;
   };
 
+  GW.hasNavLabels = function () {
+    var labels = GW._navLabels;
+    return !!(labels && typeof labels === 'object' && Object.keys(labels).length);
+  };
+
   GW.bootstrapStandardPage = function (opts) {
     opts = opts || {};
+    var shouldLoadTranslations = opts.loadTranslations !== false;
+    var hasManagedNav = !!document.querySelector('.nav[data-managed-nav]');
+    var canRenderManagedNavNow = !hasManagedNav || GW.hasNavLabels() || !shouldLoadTranslations;
     if (opts.setDate !== false) GW.setMastheadDate();
-    if (opts.renderManagedNav !== false) GW.renderManagedNav();
-    if (opts.markActiveNav !== false) GW.markActiveNav();
+    if (opts.renderManagedNav !== false && canRenderManagedNavNow) GW.renderManagedNav();
+    if (opts.markActiveNav !== false && canRenderManagedNavNow) GW.markActiveNav();
     if (opts.enableScrollTop !== false) GW.setupScrollTopButton();
     GW.loadBoardLayoutSettings();
     if (opts.loadBoardCopy !== false) GW.loadBoardCopySettings();
     if (opts.loadTicker !== false) GW.loadTicker(opts.tickerId || 'ticker-inner');
     if (opts.loadStats !== false) GW.loadStats();
-    if (opts.loadTranslations !== false) GW.loadTranslations();
+    if (shouldLoadTranslations) GW.loadTranslations();
   };
 
   GW.setupMastheadSearch = function () {
