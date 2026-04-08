@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.052.16
+ * Version: 03.053.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -52,6 +52,7 @@
   var _boardCopyRevision = 0;
   var _contributors  = [];
   var _editors       = [];
+  var _navLabels     = {};
   var _translations  = {};
   var _homeLeadPost  = null;
   var _homeLeadMedia = null;
@@ -324,6 +325,7 @@
     document.getElementById('contrib-add-btn').addEventListener('click', _addContributorRow);
     document.getElementById('editors-save-btn').addEventListener('click', _saveEditors);
     document.getElementById('editors-add-btn').addEventListener('click', _addEditorRow);
+    document.getElementById('nav-labels-save-btn').addEventListener('click', _saveNavLabels);
     document.getElementById('trans-save-btn').addEventListener('click', _saveTranslations);
     document.getElementById('home-lead-save-btn').addEventListener('click', _saveHomeLead);
     document.getElementById('home-lead-clear-btn').addEventListener('click', _clearHomeLeadSelection);
@@ -578,7 +580,7 @@
     var labels = {
       hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
-      contributors: '기고자', editors: '편집자 / 접근', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
+      contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
     };
     return labels[s] || s;
   }
@@ -603,6 +605,7 @@
     else if (section === 'ticker')  _loadTickerUI();
     else if (section === 'contributors') _loadContributorsUI();
     else if (section === 'editors') _loadEditorsUI();
+    else if (section === 'nav-labels') _loadNavLabelsUI();
     else if (section === 'translations') _loadTranslationsUI();
     else if (section === 'wosm-members') _loadWosmMembersUI();
   }
@@ -3626,6 +3629,81 @@
     _apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
       .then(function () {
         GW.showToast('편집자 설정을 저장했습니다', 'success');
+        _clearButtonBusy(btn, '완료');
+      })
+      .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
+      .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     SETTINGS – NAV LABELS
+  ══════════════════════════════════════════════════════════ */
+  function _loadNavLabelsUI() {
+    var el = document.getElementById('nav-labels-editor');
+    el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    _apiFetch('/api/settings/nav-labels').then(function (data) {
+      _navLabels = (data && data.labels) || {};
+      _renderNavLabels();
+    }).catch(function () {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+    });
+  }
+
+  function _renderNavLabels() {
+    var el = document.getElementById('nav-labels-editor');
+    var rows = [
+      { key: 'nav.contributors', label: '도움을 주신 분들' },
+      { key: 'nav.home', label: '홈' },
+      { key: 'nav.latest', label: '1개월 소식' },
+      { key: 'nav.korea', label: 'Korea' },
+      { key: 'nav.apr', label: 'APR' },
+      { key: 'nav.wosm', label: 'WOSM' },
+      { key: 'nav.wosm_members', label: '세계연맹 회원국 현황' },
+      { key: 'nav.people', label: '스카우트 인물' },
+      { key: 'nav.calendar', label: '캘린더' },
+      { key: 'nav.glossary', label: '용어집' }
+    ];
+    el.innerHTML = rows.map(function (row) {
+      var value = _navLabels[row.key] || {};
+      return '<div class="v3-trans-row">' +
+        '<div class="v3-trans-key">' + GW.escapeHtml(row.label) + '<div class="v3-help">키: ' + GW.escapeHtml(row.key) + '</div></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+          '<input class="v3-input" type="text" id="nav-label-' + _escId(row.key) + '-ko" value="' + GW.escapeHtml(value.ko || '') + '" placeholder="국문" />' +
+          '<input class="v3-input" type="text" id="nav-label-' + _escId(row.key) + '-en" value="' + GW.escapeHtml(value.en || '') + '" placeholder="영문" />' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _saveNavLabels() {
+    var rows = [
+      'nav.contributors',
+      'nav.home',
+      'nav.latest',
+      'nav.korea',
+      'nav.apr',
+      'nav.wosm',
+      'nav.wosm_members',
+      'nav.people',
+      'nav.calendar',
+      'nav.glossary'
+    ];
+    var result = {};
+    rows.forEach(function (key) {
+      var koInput = document.getElementById('nav-label-' + _escId(key) + '-ko');
+      var enInput = document.getElementById('nav-label-' + _escId(key) + '-en');
+      result[key] = {
+        ko: koInput ? koInput.value : '',
+        en: enInput ? enInput.value : '',
+      };
+    });
+    var btn = document.getElementById('nav-labels-save-btn');
+    _setButtonBusy(btn, '저장 중…');
+    _apiFetch('/api/settings/nav-labels', { method: 'PUT', body: JSON.stringify({ labels: result }) })
+      .then(function (data) {
+        GW.showToast('상단 메뉴명을 저장했습니다', 'success');
+        _navLabels = (data && data.labels) || result;
+        _renderNavLabels();
         _clearButtonBusy(btn, '완료');
       })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })

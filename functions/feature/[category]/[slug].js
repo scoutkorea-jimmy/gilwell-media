@@ -1,5 +1,6 @@
 import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../../_shared/site-meta.js';
 import { getSpecialFeatureCollection } from '../../_shared/special-features.js';
+import { getNavLabel, loadNavLabels } from '../../_shared/nav-labels.js';
 
 const CATEGORY_META = {
   korea: { label: 'Korea', color: '#0094B4' },
@@ -26,6 +27,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
 
   const origin = new URL(request.url).origin;
   const siteMeta = await loadSiteMeta(env);
+  const navLabels = await loadNavLabels(env);
   const categoryMeta = CATEGORY_META[category] || CATEGORY_META.korea;
   const leadItem = collection.items[0];
   const restItems = collection.items.slice(1);
@@ -61,7 +63,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260408045842">
+  <link rel="stylesheet" href="/css/style.css?v=20260408064451">
   <style>
     .feature-page {
       background:
@@ -376,16 +378,16 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
     <nav class="nav">
-      <a href="/contributors" data-i18n="nav.contributors">도움을 주신 분들</a>
-      <a href="/" data-i18n="nav.home">홈</a>
-      <a href="/latest" data-i18n="nav.latest">1개월 소식</a>
-      <a href="/korea" data-i18n="nav.korea">Korea</a>
-      <a href="/apr" data-i18n="nav.apr">APR</a>
-      <a href="/wosm" data-i18n="nav.wosm">WOSM</a>
-      <a href="/wosm-members" data-i18n="nav.wosm_members">세계연맹 회원국 현황</a>
-      <a href="/people" data-i18n="nav.people">스카우트 인물</a>
-      <a href="/calendar">캘린더</a>
-      <a href="/glossary" data-i18n="nav.glossary">용어집</a>
+      <a href="/contributors" data-i18n="nav.contributors">${escapeHtml(navContributors)}</a>
+      <a href="/" data-i18n="nav.home">${escapeHtml(navHome)}</a>
+      <a href="/latest" data-i18n="nav.latest">${escapeHtml(navLatest)}</a>
+      <a href="/korea" data-i18n="nav.korea">${escapeHtml(navKorea)}</a>
+      <a href="/apr" data-i18n="nav.apr">${escapeHtml(navApr)}</a>
+      <a href="/wosm" data-i18n="nav.wosm">${escapeHtml(navWosm)}</a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members">${escapeHtml(navWosmMembers)}</a>
+      <a href="/people" data-i18n="nav.people">${escapeHtml(navPeople)}</a>
+      <a href="/calendar" data-i18n="nav.calendar">${escapeHtml(navCalendar)}</a>
+      <a href="/glossary" data-i18n="nav.glossary">${escapeHtml(navGlossary)}</a>
     </nav>
   </header>
 
@@ -474,7 +476,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=20260408045842"></script>
+  <script src="/js/main.js?v=20260408064451"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;
@@ -599,3 +601,13 @@ function escapeHtml(value) {
 function notFound() {
   return new Response('Not Found', { status: 404 });
 }
+  const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
+  const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
+  const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
+  const navKorea = getNavLabel(navLabels, 'nav.korea', 'ko');
+  const navApr = getNavLabel(navLabels, 'nav.apr', 'ko');
+  const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
+  const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
+  const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
+  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
+  const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');

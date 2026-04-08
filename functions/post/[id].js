@@ -5,6 +5,7 @@ import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
 import { findManualRelatedPosts, findRelatedPosts } from '../_shared/related-posts.js';
 import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
+import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -37,30 +38,30 @@ export async function onRequestGet({ params, env, request }) {
     console.error('GET /post/:id auto publish error:', err);
   });
 
-  let post, disclaimerRow, translationsRow, publicRuntimeRow;
+  let post, disclaimerRow, publicRuntimeRow, navLabels;
   try {
-    [post, disclaimerRow, translationsRow, publicRuntimeRow] = await Promise.all([
+    [post, disclaimerRow, publicRuntimeRow, navLabels] = await Promise.all([
       env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
-      env.DB.prepare("SELECT value FROM settings WHERE key = 'translations'").first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'public_runtime'").first(),
+      loadNavLabels(env),
     ]);
   } catch (err) {
     console.error('GET /post/:id DB error:', err);
     return errorPage();
   }
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
-  const translationStrings = parseTranslationStrings(translationsRow && translationsRow.value);
   const publicRuntime = parseJsonObject(publicRuntimeRow && publicRuntimeRow.value);
-  const navContributors = '도움을 주신 분들';
-  const navHome = '홈';
-  const navLatest = '1개월 소식';
-  const navKorea = 'Korea';
-  const navApr = 'APR';
-  const navWosm = 'WOSM';
-  const navWosmMembers = '세계연맹 회원국 현황';
-  const navPeople = '스카우트 인물';
-  const navGlossary = '용어집';
+  const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
+  const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
+  const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
+  const navKorea = getNavLabel(navLabels, 'nav.korea', 'ko');
+  const navApr = getNavLabel(navLabels, 'nav.apr', 'ko');
+  const navWosm = getNavLabel(navLabels, 'nav.wosm', 'ko');
+  const navWosmMembers = getNavLabel(navLabels, 'nav.wosm_members', 'ko');
+  const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
+  const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
+  const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
 
   if (!post) return notFound();
   let isAdmin = false;
@@ -177,7 +178,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260408045842">
+  <link rel="stylesheet" href="/css/style.css?v=20260408064451">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -237,7 +238,7 @@ export async function onRequestGet({ params, env, request }) {
       <a href="/wosm" data-i18n="nav.wosm">${escapeHtml(navWosm)}</a>
       <a href="/wosm-members" data-i18n="nav.wosm_members">${escapeHtml(navWosmMembers)}</a>
       <a href="/people" data-i18n="nav.people">${escapeHtml(navPeople)}</a>
-      <a href="/calendar">캘린더</a>
+      <a href="/calendar" data-i18n="nav.calendar">${escapeHtml(navCalendar)}</a>
       <a href="/glossary" data-i18n="nav.glossary">${escapeHtml(navGlossary)}</a>
     </nav>
   </header>
@@ -506,8 +507,8 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260408045842"></script>
-  <script src="/js/post-page.js?v=20260408045842"></script>
+  <script src="/js/main.js?v=20260408064451"></script>
+  <script src="/js/post-page.js?v=20260408064451"></script>
 </body>
 </html>`;
 
