@@ -1043,7 +1043,8 @@
       rules: [
         { title: '모듈 단위로 본다', desc: '각 카드에 종류, 토큰/클래스, 코드, 미리보기를 함께 둡니다.' },
         { title: '코드를 바로 읽는다', desc: 'HTML 구조와 핵심 클래스가 보이도록 코드 블록을 항상 노출합니다.' },
-        { title: '같은 정보를 두 번 검증한다', desc: '코드로 확인하고, 오른쪽 미리보기로 즉시 시각 검증합니다.' }
+        { title: '같은 정보를 두 번 검증한다', desc: '코드로 확인하고, 오른쪽 미리보기로 즉시 시각 검증합니다.' },
+        { title: '접근성을 먼저 본다', desc: '특히 어두운 배경 위 텍스트는 충분한 대비를 유지하고, 작은 보조 문구도 흐려지지 않게 확인합니다.' }
       ],
       breakpoints: ['Desktop 1180+', 'Tablet 900+', 'Mobile 768-', 'Compact 480-']
     };
@@ -1318,7 +1319,8 @@
                 summary: '로고, 언어, 검색, 히어로 메시지가 한 화면에 모일 때도 정보 계층이 무너지지 않도록 간격과 폭을 관리합니다.',
                 meta: [
                   { label: '대표 클래스', values: ['.masthead', '.nav', '.site-hero', '.hero-controls'] },
-                  { label: '핵심 원칙', values: ['header는 가볍게', 'hero는 큰 메시지', 'CTA는 2개 이내'] }
+                  { label: '핵심 원칙', values: ['header는 가볍게', 'hero는 큰 메시지', 'CTA는 2개 이내'] },
+                  { label: '접근성', values: ['dark surface는 고대비 텍스트', '보조 문구도 본문 대비 유지'] }
                 ],
                 code: [
                   '<header class="masthead">...</header>',
@@ -1332,7 +1334,7 @@
                 preview: [
                   '<div class="kms-ds-shell">',
                   '  <div class="kms-ds-shell-bar"><span>BP미디어</span><span>KOR · ENG</span><span>검색</span></div>',
-                  '  <div class="kms-ds-shell-hero">',
+                  '  <div class="kms-ds-shell-hero kms-ds-dark-surface">',
                   '    <span class="category-tag tag-korea">Korea</span>',
                   '    <strong>스카우트 운동의 소식을 기록합니다</strong>',
                   '    <p>큰 메시지와 짧은 설명, 그리고 1~2개의 CTA만 남깁니다.</p>',
@@ -1394,7 +1396,7 @@
                   '<div class="kms-ds-feedback-grid">',
                   '  <div class="kms-ds-feedback-card"><div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div><small>Loading</small></div>',
                   '  <div class="kms-ds-feedback-card"><div class="mini-empty">게시글이 없습니다</div><small>Empty</small></div>',
-                  '  <div class="kms-ds-feedback-card"><div class="kms-ds-toast-demo is-success">저장되었습니다</div><small>Toast</small></div>',
+                  '  <div class="kms-ds-feedback-card"><div class="kms-ds-toast-demo kms-ds-dark-surface is-success">저장되었습니다</div><small>Toast</small></div>',
                   '</div>'
                 ].join(''),
               }
