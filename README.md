@@ -6,7 +6,7 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.28`
+- Current site version: `V00.111.29`
 - Current admin version: `V03.052.16`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
@@ -15,6 +15,7 @@ Independent Scout Media — bpmedia.net
 - When `bbb` increases, `cc` resets to `00`
 
 Static asset cache-busting query strings are generated automatically from `ASSET_VERSION`, separate from product versions. `./scripts/sync_versions.sh` refreshes that token with a new UTC timestamp each release-prep run.
+Scheduled posts are checked by a Cloudflare scheduled worker every 5 minutes through `/api/jobs/publish-due`, so overdue reserved posts do not wait for the first public read request.
 
 Operational references:
 - `CHATGPT.md`  # 메인 홈페이지 AI 작업 기준 원본

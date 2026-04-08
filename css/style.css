@@ -1079,6 +1079,14 @@ p { margin-bottom: 6px; }
 
 .nav[data-managed-nav] {
   min-height: 48px;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.nav[data-managed-nav].is-ready {
+  visibility: visible;
+  opacity: 1;
 }
 
 .nav a {

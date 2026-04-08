@@ -35,6 +35,20 @@ wrangler pages deploy . \
   --commit-hash "${COMMIT_SHA}" \
   --commit-message "${COMMIT_MESSAGE}"
 
+if [[ -f "$ROOT_DIR/wrangler.publish-due.toml" ]]; then
+  wrangler deploy --config "$ROOT_DIR/wrangler.publish-due.toml"
+fi
+
+if [[ -x "$ROOT_DIR/scripts/post_deploy_check.sh" || -f "$ROOT_DIR/scripts/post_deploy_check.sh" ]]; then
+  chmod +x "$ROOT_DIR/scripts/post_deploy_check.sh"
+  "$ROOT_DIR/scripts/post_deploy_check.sh" "https://bpmedia.net"
+fi
+
+if [[ -x "$ROOT_DIR/scripts/audit_public_posts.sh" || -f "$ROOT_DIR/scripts/audit_public_posts.sh" ]]; then
+  chmod +x "$ROOT_DIR/scripts/audit_public_posts.sh"
+  "$ROOT_DIR/scripts/audit_public_posts.sh" "https://bpmedia.net"
+fi
+
 if [[ -x "$ROOT_DIR/scripts/store_release_snapshot.sh" || -f "$ROOT_DIR/scripts/store_release_snapshot.sh" ]]; then
   chmod +x "$ROOT_DIR/scripts/store_release_snapshot.sh"
   GITHUB_REF_NAME=main "$ROOT_DIR/scripts/store_release_snapshot.sh" production "https://bpmedia.net"
