@@ -6,13 +6,26 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 
+const LOCKED_TRANSLATION_KEYS = {
+  'nav.contributors': true,
+  'nav.home': true,
+  'nav.latest': true,
+  'nav.korea': true,
+  'nav.apr': true,
+  'nav.wosm': true,
+  'nav.wosm_members': true,
+  'nav.people': true,
+  'nav.calendar': true,
+  'nav.glossary': true,
+};
+
 // ── GET /api/settings/translations ───────────────────────────
 export async function onRequestGet({ env }) {
   try {
     const row    = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'translations'`
     ).first();
-    const custom = row ? JSON.parse(row.value || '{}') : {};
+    const custom = sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
     return json({ strings: custom }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/translations error:', err);
@@ -32,7 +45,7 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const strings = body.strings || {};
+  const strings = sanitizeTranslationStrings(body.strings || {});
 
   try {
     await env.DB.prepare(
@@ -58,4 +71,14 @@ function publicCacheHeaders(maxAge, swr) {
   return {
     'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
   };
+}
+
+function sanitizeTranslationStrings(strings) {
+  if (!strings || typeof strings !== 'object') return {};
+  const sanitized = {};
+  Object.keys(strings).forEach((key) => {
+    if (LOCKED_TRANSLATION_KEYS[key]) return;
+    sanitized[key] = strings[key];
+  });
+  return sanitized;
 }

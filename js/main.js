@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.111.30';
+  GW.APP_VERSION = '00.111.31';
   GW.ADMIN_VERSION = '03.052.16';
-  GW.ASSET_VERSION = '20260408044210';
+  GW.ASSET_VERSION = '20260408045613';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -1608,12 +1608,25 @@
 
   GW._customStrings = window.GW_BOOT_CUSTOM_STRINGS || {};
   GW.lang = localStorage.getItem('gw_lang') || 'ko';
+  GW.LOCKED_TRANSLATION_KEYS = {
+    'nav.contributors': true,
+    'nav.home': true,
+    'nav.latest': true,
+    'nav.korea': true,
+    'nav.apr': true,
+    'nav.wosm': true,
+    'nav.wosm_members': true,
+    'nav.people': true,
+    'nav.calendar': true,
+    'nav.glossary': true,
+  };
 
   /** Return the translated string for the current language. */
   GW.t = function (key) {
     var custom = GW._customStrings || {};
     var lang   = GW.lang;
-    var entry  = (custom[key]) ? custom[key] : (GW.STRINGS[key] || {});
+    var useCustom = !GW.LOCKED_TRANSLATION_KEYS[key] && custom[key];
+    var entry  = useCustom ? custom[key] : (GW.STRINGS[key] || {});
     return entry[lang] !== undefined ? entry[lang] : (entry.ko || key);
   };
 
