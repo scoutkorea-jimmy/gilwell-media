@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.054.00
+ * Version: 03.055.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -77,6 +77,9 @@
   var _homepageIssuesFilterStatus = 'all';
   var _homepageIssuesFilterSeverity = 'all';
   var _homepageIssueEditingId = null;
+  var _geoAudienceData = null;
+  var _geoAudienceMap = null;
+  var _geoAudienceMapLayer = null;
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -412,6 +415,8 @@
 
     // Analytics period
     document.getElementById('analytics-period').addEventListener('change', _loadAnalytics);
+    document.getElementById('geo-audience-period').addEventListener('change', _loadGeoAudience);
+    document.getElementById('geo-audience-refresh-btn').addEventListener('click', _loadGeoAudience);
 
     // Marketing period presets + date range
     (function () {
@@ -557,6 +562,7 @@
     calendar:  '캘린더',
     glossary:  '용어집',
     analytics: '분석',
+    'geo-audience': '접속 국가/도시',
     marketing: '마케팅',
     settings:  '사이트 설정',
     releases:  '버전기록',
@@ -595,6 +601,7 @@
     else if (panel === 'calendar') _loadCalendar();
     else if (panel === 'glossary') _loadGlossary();
     else if (panel === 'analytics') _loadAnalytics();
+    else if (panel === 'geo-audience') _loadGeoAudience();
     else if (panel === 'marketing') _loadMarketing();
     else if (panel === 'releases') _loadReleases();
     else if (panel === 'settings') {
@@ -2090,6 +2097,137 @@
     return '<div class="v3-stat"><div class="v3-stat-label">' + GW.escapeHtml(label) + '</div>' +
       '<div class="v3-stat-value">' + GW.escapeHtml(String(value)) + '</div>' +
       '<div class="v3-stat-sub">' + GW.escapeHtml(sub) + '</div></div>';
+  }
+
+  function _loadGeoAudience() {
+    var period = document.getElementById('geo-audience-period').value;
+    var statsEl = document.getElementById('geo-audience-stats');
+    var noteEl = document.getElementById('geo-audience-note');
+    var countryEl = document.getElementById('geo-audience-country-list');
+    var cityEl = document.getElementById('geo-audience-city-list');
+    statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
+    noteEl.textContent = '불러오는 중…';
+    countryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    cityEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+
+    _apiFetch('/api/admin/geo-audience?days=' + period).then(function (data) {
+      _geoAudienceData = data || {};
+      var summary = _geoAudienceData.summary || {};
+      var range = _geoAudienceData.range || {};
+      var countries = Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [];
+      var cities = Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [];
+
+      statsEl.innerHTML =
+        _statCard('국가 수', _fmt(summary.countries || countries.length || 0), range.label || '집계 기간') +
+        _statCard('도시 수', _fmt(summary.cities || 0), '도시 식별 기준') +
+        _statCard('방문 수', _fmt(summary.visits || 0), (range.days || period) + '일 고유 방문') +
+        _statCard('페이지뷰', _fmt(summary.pageviews || 0), (range.days || period) + '일 전체 조회');
+
+      noteEl.textContent = (_geoAudienceData.tracking_note || '') + (range.label ? ' · ' + range.label + ' 기준' : '');
+      countryEl.innerHTML = _renderGeoCountryTable(countries);
+      cityEl.innerHTML = _renderGeoCityTable(cities);
+      _renderGeoAudienceMap(countries);
+    }).catch(function (e) {
+      statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
+      noteEl.textContent = '지리 집계를 불러오지 못했습니다.';
+      countryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">국가 데이터를 불러오지 못했습니다.</div></div>';
+      cityEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">도시 데이터를 불러오지 못했습니다.</div></div>';
+      _renderGeoAudienceMap([]);
+    });
+  }
+
+  function _renderGeoCountryTable(items) {
+    if (!items.length) {
+      return '<div class="v3-empty"><div class="v3-empty-text">국가별 접속 기록이 아직 없습니다.</div></div>';
+    }
+    return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
+      '<th>국가</th><th>방문</th><th>페이지뷰</th><th>도시 수</th><th>최근 접속</th>' +
+      '</tr></thead><tbody>' +
+      items.slice(0, 120).map(function (item) {
+        return '<tr>' +
+          '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><span class="v3-geo-sub">' + GW.escapeHtml(item.country_code || 'N/A') + '</span></div></td>' +
+          '<td>' + _fmt(item.visits || 0) + '</td>' +
+          '<td>' + _fmt(item.pageviews || 0) + '</td>' +
+          '<td>' + _fmt(item.city_count || 0) + '</td>' +
+          '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function _renderGeoCityTable(items) {
+    if (!items.length) {
+      return '<div class="v3-empty"><div class="v3-empty-text">도시별 접속 기록이 아직 없습니다.</div></div>';
+    }
+    return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
+      '<th>도시</th><th>국가</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +
+      '</tr></thead><tbody>' +
+      items.slice(0, 120).map(function (item) {
+        return '<tr>' +
+          '<td><strong>' + GW.escapeHtml(item.city_name || '도시 미확인') + '</strong></td>' +
+          '<td><span class="v3-geo-pill">' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</span></td>' +
+          '<td>' + _fmt(item.visits || 0) + '</td>' +
+          '<td>' + _fmt(item.pageviews || 0) + '</td>' +
+          '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function _renderGeoAudienceMap(items) {
+    var mapEl = document.getElementById('geo-audience-map');
+    if (!mapEl) return;
+    if (!window.L) {
+      mapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">지도 라이브러리를 불러오지 못했습니다.</div></div>';
+      return;
+    }
+    if (!_geoAudienceMap) {
+      _geoAudienceMap = L.map(mapEl, {
+        worldCopyJump: true,
+        minZoom: 1,
+        maxZoom: 6,
+      }).setView([24, 15], 1.4);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 6,
+        minZoom: 1,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(_geoAudienceMap);
+    }
+    if (_geoAudienceMapLayer) {
+      _geoAudienceMap.removeLayer(_geoAudienceMapLayer);
+    }
+    _geoAudienceMapLayer = L.layerGroup().addTo(_geoAudienceMap);
+
+    var valid = (Array.isArray(items) ? items : []).filter(function (item) {
+      return Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
+    });
+    if (!valid.length) {
+      window.setTimeout(function () { _geoAudienceMap.invalidateSize(); }, 30);
+      return;
+    }
+    var maxVisits = Math.max.apply(null, valid.map(function (item) { return Number(item.visits || 0); }));
+    valid.forEach(function (item) {
+      var visits = Number(item.visits || 0);
+      var radius = Math.max(6, Math.min(28, 6 + Math.round((visits / Math.max(1, maxVisits)) * 22)));
+      L.circleMarker([Number(item.latitude), Number(item.longitude)], {
+        radius: radius,
+        weight: 1.5,
+        color: '#6d28d9',
+        fillColor: '#8b5cf6',
+        fillOpacity: 0.45,
+      }).bindPopup(
+        '<strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><br>' +
+        '방문 ' + _fmt(visits) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0) + '<br>' +
+        '도시 ' + _fmt(item.city_count || 0)
+      ).addTo(_geoAudienceMapLayer);
+    });
+    window.setTimeout(function () { _geoAudienceMap.invalidateSize(); }, 30);
+  }
+
+  function _formatDateTimeCompact(value) {
+    if (!value) return '-';
+    if (GW && typeof GW.formatDateTimeCompactKst === 'function') return GW.formatDateTimeCompactKst(value);
+    return String(value).slice(0, 16).replace('T', ' ');
   }
 
   /* ══════════════════════════════════════════════════════════
