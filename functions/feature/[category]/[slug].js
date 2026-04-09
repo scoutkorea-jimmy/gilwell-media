@@ -73,7 +73,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260409124643">
+  <link rel="stylesheet" href="/css/style.css?v=20260409125024">
   <style>
     .feature-page {
       background:
@@ -486,8 +486,8 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=20260409124643"></script>
-  <script src="/js/site-chrome.js?v=20260409124643"></script>
+  <script src="/js/main.js?v=20260409125024"></script>
+  <script src="/js/site-chrome.js?v=20260409125024"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;
