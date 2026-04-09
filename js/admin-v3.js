@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.053.02
+ * Version: 03.054.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -72,6 +72,11 @@
   var _wosmImportSheets = [];
   var _wosmImportSheetIndex = 0;
   var _wosmImportMapping = null;
+  var _homepageIssues = [];
+  var _homepageIssuesSearch = '';
+  var _homepageIssuesFilterStatus = 'all';
+  var _homepageIssuesFilterSeverity = 'all';
+  var _homepageIssueEditingId = null;
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -207,6 +212,25 @@
     // Dashboard refresh
     document.getElementById('dash-refresh-btn').addEventListener('click', function () {
       _loadDashboard(document.getElementById('dash-refresh-btn'));
+    });
+    document.getElementById('homepage-issues-refresh-btn').addEventListener('click', function () {
+      _loadHomepageIssues(document.getElementById('homepage-issues-refresh-btn'));
+    });
+    document.getElementById('homepage-issues-new-btn').addEventListener('click', _resetHomepageIssueForm);
+    document.getElementById('homepage-issue-save-btn').addEventListener('click', _saveHomepageIssue);
+    document.getElementById('homepage-issue-reset-btn').addEventListener('click', _resetHomepageIssueForm);
+    document.getElementById('homepage-issue-delete-btn').addEventListener('click', _deleteHomepageIssue);
+    document.getElementById('homepage-issues-search').addEventListener('input', function () {
+      _homepageIssuesSearch = String(this.value || '').trim().toLowerCase();
+      _renderHomepageIssues();
+    });
+    document.getElementById('homepage-issues-filter-status').addEventListener('change', function () {
+      _homepageIssuesFilterStatus = this.value || 'all';
+      _renderHomepageIssues();
+    });
+    document.getElementById('homepage-issues-filter-severity').addEventListener('change', function () {
+      _homepageIssuesFilterSeverity = this.value || 'all';
+      _renderHomepageIssues();
     });
 
     // Post list filters
@@ -527,6 +551,7 @@
   ══════════════════════════════════════════════════════════ */
   var PANEL_LABELS = {
     dashboard: '대시보드',
+    'homepage-issues': '홈 오류/이슈 기록',
     list:      '게시글 목록',
     write:     '새 글 작성',
     calendar:  '캘린더',
@@ -564,6 +589,7 @@
 
     // Load panel data
     if (panel === 'dashboard') _loadDashboard();
+    else if (panel === 'homepage-issues') _loadHomepageIssues();
     else if (panel === 'list')     _loadList();
     else if (panel === 'write' && !_editingId) _resetWrite();
     else if (panel === 'calendar') _loadCalendar();
@@ -2139,6 +2165,266 @@
         }
       });
     });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     HOMEPAGE ISSUES
+  ══════════════════════════════════════════════════════════ */
+  function _loadHomepageIssues(actionBtn) {
+    var listEl = document.getElementById('homepage-issues-list');
+    var metaEl = document.getElementById('homepage-issues-meta');
+    if (!listEl) return;
+    if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
+    listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (metaEl) metaEl.textContent = '불러오는 중…';
+    _apiFetch('/api/admin/homepage-issues?limit=200')
+      .then(function (data) {
+        _homepageIssues = Array.isArray(data && data.items) ? data.items : [];
+        _renderHomepageIssues();
+      })
+      .catch(function (e) {
+        listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '불러오기 실패') + '</div></div>';
+        if (metaEl) metaEl.textContent = '기록을 불러오지 못했습니다.';
+      })
+      .finally(function () {
+        if (actionBtn && actionBtn.classList.contains('is-busy')) _clearButtonBusy(actionBtn);
+      });
+  }
+
+  function _renderHomepageIssues() {
+    var listEl = document.getElementById('homepage-issues-list');
+    var metaEl = document.getElementById('homepage-issues-meta');
+    if (!listEl) return;
+    var items = (_homepageIssues || []).filter(function (item) {
+      if (_homepageIssuesFilterStatus !== 'all' && item.status !== _homepageIssuesFilterStatus) return false;
+      if (_homepageIssuesFilterSeverity !== 'all' && item.severity !== _homepageIssuesFilterSeverity) return false;
+      if (!_homepageIssuesSearch) return true;
+      var haystack = [
+        item.title,
+        item.summary,
+        item.impact,
+        item.cause,
+        item.action_items,
+        item.source_path,
+        item.reporter
+      ].join(' ').toLowerCase();
+      return haystack.indexOf(_homepageIssuesSearch) >= 0;
+    });
+    if (metaEl) {
+      metaEl.textContent = items.length + '건 표시 · 전체 ' + (_homepageIssues || []).length + '건';
+    }
+    if (!items.length) {
+      listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 홈 오류/이슈 기록이 없습니다.</div></div>';
+      return;
+    }
+    listEl.innerHTML =
+      '<div class="v3-table-wrap v3-issues-table">' +
+        '<table class="v3-table">' +
+          '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th><th>관리</th></tr></thead>' +
+          '<tbody>' +
+            items.map(function (item) {
+              return '<tr>' +
+                '<td>' +
+                  '<div class="v3-table-title">' + GW.escapeHtml(item.title || '(제목 없음)') + '</div>' +
+                  '<div class="v3-issues-meta-line">' +
+                    '<span class="v3-badge ' + _homepageIssueTypeBadge(item.issue_type) + '">' + GW.escapeHtml(_homepageIssueTypeLabel(item.issue_type)) + '</span>' +
+                    (item.source_path ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.source_path) + '</span>' : '') +
+                  '</div>' +
+                  (item.summary ? '<div class="v3-issues-note">' + GW.escapeHtml(item.summary) + '</div>' : '') +
+                '</td>' +
+                '<td><span class="v3-badge ' + _homepageIssueStatusBadge(item.status) + '">' + GW.escapeHtml(_homepageIssueStatusLabel(item.status)) + '</span></td>' +
+                '<td><span class="v3-badge ' + _homepageIssueSeverityBadge(item.severity) + '">' + GW.escapeHtml(_homepageIssueSeverityLabel(item.severity)) + '</span></td>' +
+                '<td>' + GW.escapeHtml(_homepageIssueAreaLabel(item.area)) + '</td>' +
+                '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.updated_at || item.created_at)) + '</td>' +
+                '<td><button class="v3-btn v3-btn-outline v3-btn-xs" type="button" data-homepage-issue-edit="' + item.id + '">편집</button></td>' +
+              '</tr>';
+            }).join('') +
+          '</tbody>' +
+        '</table>' +
+      '</div>';
+    listEl.querySelectorAll('[data-homepage-issue-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _startHomepageIssueEdit(parseInt(btn.getAttribute('data-homepage-issue-edit'), 10));
+      });
+    });
+  }
+
+  function _collectHomepageIssueForm() {
+    return {
+      title: (document.getElementById('homepage-issue-title') || {}).value || '',
+      issue_type: (document.getElementById('homepage-issue-type') || {}).value || 'issue',
+      status: (document.getElementById('homepage-issue-status') || {}).value || 'open',
+      severity: (document.getElementById('homepage-issue-severity') || {}).value || 'medium',
+      area: (document.getElementById('homepage-issue-area') || {}).value || 'homepage',
+      source_path: (document.getElementById('homepage-issue-path') || {}).value || '',
+      summary: (document.getElementById('homepage-issue-summary') || {}).value || '',
+      impact: (document.getElementById('homepage-issue-impact') || {}).value || '',
+      cause: (document.getElementById('homepage-issue-cause') || {}).value || '',
+      action_items: (document.getElementById('homepage-issue-action-items') || {}).value || '',
+      reporter: (document.getElementById('homepage-issue-reporter') || {}).value || '',
+      occurred_at: (document.getElementById('homepage-issue-occurred-at') || {}).value || '',
+    };
+  }
+
+  function _fillHomepageIssueForm(item) {
+    var issue = item || {};
+    document.getElementById('homepage-issue-title').value = issue.title || '';
+    document.getElementById('homepage-issue-type').value = issue.issue_type || 'issue';
+    document.getElementById('homepage-issue-status').value = issue.status || 'open';
+    document.getElementById('homepage-issue-severity').value = issue.severity || 'medium';
+    document.getElementById('homepage-issue-area').value = issue.area || 'homepage';
+    document.getElementById('homepage-issue-path').value = issue.source_path || '';
+    document.getElementById('homepage-issue-summary').value = issue.summary || '';
+    document.getElementById('homepage-issue-impact').value = issue.impact || '';
+    document.getElementById('homepage-issue-cause').value = issue.cause || '';
+    document.getElementById('homepage-issue-action-items').value = issue.action_items || '';
+    document.getElementById('homepage-issue-reporter').value = issue.reporter || '';
+    document.getElementById('homepage-issue-occurred-at').value = _toDatetimeLocalInput(issue.occurred_at);
+  }
+
+  function _resetHomepageIssueForm() {
+    _homepageIssueEditingId = null;
+    _fillHomepageIssueForm({
+      issue_type: 'issue',
+      status: 'open',
+      severity: 'medium',
+      area: 'homepage',
+      occurred_at: _kstNow(),
+    });
+    var metaEl = document.getElementById('homepage-issues-form-meta');
+    if (metaEl) metaEl.textContent = '새 기록을 작성합니다.';
+    document.getElementById('homepage-issue-delete-btn').style.display = 'none';
+  }
+
+  function _startHomepageIssueEdit(id) {
+    var item = (_homepageIssues || []).find(function (entry) { return Number(entry.id) === Number(id); });
+    if (!item) return;
+    _homepageIssueEditingId = Number(id);
+    _fillHomepageIssueForm(item);
+    var metaEl = document.getElementById('homepage-issues-form-meta');
+    if (metaEl) metaEl.textContent = '기록 #' + item.id + ' 수정 중 · 마지막 업데이트 ' + _shortDate(item.updated_at || item.created_at);
+    document.getElementById('homepage-issue-delete-btn').style.display = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function _saveHomepageIssue() {
+    var body = _collectHomepageIssueForm();
+    var btn = document.getElementById('homepage-issue-save-btn');
+    var isEdit = !!_homepageIssueEditingId;
+    _setButtonBusy(btn, isEdit ? '수정 중…' : '저장 중…');
+    _apiFetch(isEdit ? '/api/admin/homepage-issues/' + _homepageIssueEditingId : '/api/admin/homepage-issues', {
+      method: isEdit ? 'PATCH' : 'POST',
+      body: JSON.stringify(body)
+    }).then(function (data) {
+      var item = data && data.item ? data.item : null;
+      if (item) {
+        if (isEdit) {
+          _homepageIssues = (_homepageIssues || []).map(function (entry) {
+            return Number(entry.id) === Number(item.id) ? item : entry;
+          });
+        } else {
+          _homepageIssues = [item].concat(_homepageIssues || []);
+        }
+      }
+      _renderHomepageIssues();
+      _resetHomepageIssueForm();
+      GW.showToast(isEdit ? '홈 이슈 기록을 수정했습니다' : '홈 이슈 기록을 저장했습니다', 'success');
+      _clearButtonBusy(btn, '완료');
+    }).catch(function (e) {
+      GW.showToast(e.message || '저장 실패', 'error');
+    }).finally(function () {
+      if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
+    });
+  }
+
+  function _deleteHomepageIssue() {
+    if (!_homepageIssueEditingId) return;
+    _confirm('기록 삭제', '이 홈 오류/이슈 기록을 삭제하시겠습니까?').then(function (ok) {
+      if (!ok) return;
+      var btn = document.getElementById('homepage-issue-delete-btn');
+      _setButtonBusy(btn, '삭제 중…');
+      _apiFetch('/api/admin/homepage-issues/' + _homepageIssueEditingId, {
+        method: 'DELETE'
+      }).then(function () {
+        _homepageIssues = (_homepageIssues || []).filter(function (entry) {
+          return Number(entry.id) !== Number(_homepageIssueEditingId);
+        });
+        _renderHomepageIssues();
+        _resetHomepageIssueForm();
+        GW.showToast('홈 이슈 기록을 삭제했습니다', 'success');
+      }).catch(function (e) {
+        GW.showToast(e.message || '삭제 실패', 'error');
+      }).finally(function () {
+        if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
+      });
+    });
+  }
+
+  function _homepageIssueTypeLabel(value) {
+    return {
+      error: '오류',
+      issue: '이슈',
+      risk: '리스크',
+      improvement: '개선 과제'
+    }[value] || '이슈';
+  }
+
+  function _homepageIssueTypeBadge(value) {
+    return {
+      error: 'v3-badge-red',
+      issue: 'v3-badge-issue',
+      risk: 'v3-badge-risk',
+      improvement: 'v3-badge-improvement'
+    }[value] || 'v3-badge-gray';
+  }
+
+  function _homepageIssueStatusLabel(value) {
+    return {
+      open: '열림',
+      monitoring: '모니터링',
+      resolved: '해결됨',
+      archived: '보관'
+    }[value] || value;
+  }
+
+  function _homepageIssueStatusBadge(value) {
+    return {
+      open: 'v3-badge-open',
+      monitoring: 'v3-badge-monitoring',
+      resolved: 'v3-badge-resolved',
+      archived: 'v3-badge-archived'
+    }[value] || 'v3-badge-gray';
+  }
+
+  function _homepageIssueSeverityLabel(value) {
+    return {
+      high: '높음',
+      medium: '중간',
+      low: '낮음'
+    }[value] || value;
+  }
+
+  function _homepageIssueSeverityBadge(value) {
+    return {
+      high: 'v3-badge-red',
+      medium: 'v3-badge-yellow',
+      low: 'v3-badge-blue'
+    }[value] || 'v3-badge-gray';
+  }
+
+  function _homepageIssueAreaLabel(value) {
+    return {
+      homepage: '홈 본문',
+      api: '홈 API',
+      ui: 'UI',
+      data: '데이터',
+      mobile: '모바일',
+      accessibility: '접근성',
+      seo: 'SEO / GEO',
+      performance: '성능',
+      analytics: '통계 / 계측',
+      other: '기타'
+    }[value] || value;
   }
 
   function _kstToday() {
@@ -4571,6 +4857,12 @@
     var pad = function (n) { return String(n).padStart(2, '0'); };
     return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()) +
       'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+  }
+
+  function _toDatetimeLocalInput(value) {
+    if (!value) return '';
+    if (GW.toDatetimeLocalValue) return GW.toDatetimeLocalValue(value);
+    return String(value).replace(' ', 'T').slice(0, 16);
   }
 
   function _escJs(str) {

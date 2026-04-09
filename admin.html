@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260409122851">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260409123734">
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -25,7 +25,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.053.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.054.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -40,7 +40,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.053.02</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.054.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -69,6 +69,10 @@
         <button class="v3-nav-item" data-panel="releases">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="14" height="14" rx="2"/><line x1="4" y1="5" x2="9" y2="5"/><line x1="4" y1="8" x2="12" y2="8"/><line x1="4" y1="11" x2="10" y2="11"/><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/></svg>
           버전기록
+        </button>
+        <button class="v3-nav-item" data-panel="homepage-issues">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><line x1="8" y1="5" x2="8" y2="9"/><circle cx="8" cy="11.4" r="0.8" fill="currentColor" stroke="none"/></svg>
+          홈 오류/이슈 기록
         </button>
       </div>
 
@@ -1045,6 +1049,143 @@
         </div>
       </div><!-- /panel-releases -->
 
+      <div class="v3-panel" id="panel-homepage-issues">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">홈 오류/이슈 기록</h1>
+            <p class="v3-page-desc">홈페이지에서 발견된 오류, 이슈, 리스크, 개선 포인트를 누적 기록해 안정성 개선 이력으로 관리합니다.</p>
+          </div>
+          <div class="v3-flex">
+            <button class="v3-btn v3-btn-outline" id="homepage-issues-refresh-btn">새로고침</button>
+            <button class="v3-btn v3-btn-primary" id="homepage-issues-new-btn">새 기록</button>
+          </div>
+        </div>
+        <div class="v3-dash-cols">
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">이슈 등록 / 수정</h2>
+                <p class="v3-card-desc">상태와 원인, 영향, 조치 계획까지 남겨두면 이후 AI나 운영자가 같은 문제를 더 빨리 복기할 수 있습니다.</p>
+              </div>
+            </div>
+            <div class="v3-inline-meta" id="homepage-issues-form-meta">새 기록을 작성합니다.</div>
+            <div class="v3-form-grid v3-form-2col">
+              <div class="v3-form-group" style="grid-column:1 / -1;">
+                <label class="v3-label" for="homepage-issue-title">제목</label>
+                <input class="v3-input" type="text" id="homepage-issue-title" placeholder="예: 홈 API 일부 실패 시 전체 화면이 비어 보임">
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-type">기록 종류</label>
+                <select class="v3-select" id="homepage-issue-type">
+                  <option value="error">오류</option>
+                  <option value="issue">이슈</option>
+                  <option value="risk">리스크</option>
+                  <option value="improvement">개선 과제</option>
+                </select>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-status">상태</label>
+                <select class="v3-select" id="homepage-issue-status">
+                  <option value="open">열림</option>
+                  <option value="monitoring">모니터링</option>
+                  <option value="resolved">해결됨</option>
+                  <option value="archived">보관</option>
+                </select>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-severity">심각도</label>
+                <select class="v3-select" id="homepage-issue-severity">
+                  <option value="high">높음</option>
+                  <option value="medium">중간</option>
+                  <option value="low">낮음</option>
+                </select>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-area">영역</label>
+                <select class="v3-select" id="homepage-issue-area">
+                  <option value="homepage">홈 본문</option>
+                  <option value="api">홈 API</option>
+                  <option value="ui">UI</option>
+                  <option value="data">데이터</option>
+                  <option value="mobile">모바일</option>
+                  <option value="accessibility">접근성</option>
+                  <option value="seo">SEO / GEO</option>
+                  <option value="performance">성능</option>
+                  <option value="analytics">통계 / 계측</option>
+                  <option value="other">기타</option>
+                </select>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-path">관련 경로 / 파일</label>
+                <input class="v3-input" type="text" id="homepage-issue-path" placeholder="예: / /api/home /js/home.js">
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-occurred-at">발생 시각 <span class="v3-label-opt">선택</span></label>
+                <input class="v3-input" type="datetime-local" id="homepage-issue-occurred-at">
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-reporter">기록자 <span class="v3-label-opt">선택</span></label>
+                <input class="v3-input" type="text" id="homepage-issue-reporter" placeholder="예: 운영자 / Codex">
+              </div>
+              <div class="v3-form-group" style="grid-column:1 / -1;">
+                <label class="v3-label" for="homepage-issue-summary">증상 / 요약</label>
+                <textarea class="v3-textarea" id="homepage-issue-summary" rows="4" placeholder="무슨 문제가 보였는지, 어떤 상황에서 재현되는지"></textarea>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-impact">영향 범위</label>
+                <textarea class="v3-textarea" id="homepage-issue-impact" rows="4" placeholder="사용자 혼선, 노출 저하, 데이터 오차 등"></textarea>
+              </div>
+              <div class="v3-form-group">
+                <label class="v3-label" for="homepage-issue-cause">원인 메모</label>
+                <textarea class="v3-textarea" id="homepage-issue-cause" rows="4" placeholder="확정 원인 또는 의심 원인"></textarea>
+              </div>
+              <div class="v3-form-group" style="grid-column:1 / -1;">
+                <label class="v3-label" for="homepage-issue-action-items">조치 / 후속 계획</label>
+                <textarea class="v3-textarea" id="homepage-issue-action-items" rows="4" placeholder="수정 방향, 재검토 포인트, 추적 계획"></textarea>
+              </div>
+            </div>
+            <div class="v3-form-actions v3-mt-16">
+              <button class="v3-btn v3-btn-primary" id="homepage-issue-save-btn">기록 저장</button>
+              <button class="v3-btn v3-btn-outline" id="homepage-issue-reset-btn">초기화</button>
+              <button class="v3-btn v3-btn-danger" id="homepage-issue-delete-btn" style="display:none;">기록 삭제</button>
+            </div>
+          </div>
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">누적 기록</h2>
+                <p class="v3-card-desc">열림 이슈를 우선 보고, 해결된 항목은 후속 회귀 참고용으로 남깁니다.</p>
+              </div>
+            </div>
+            <div class="v3-toolbar">
+              <div class="v3-toolbar-left">
+                <div class="v3-search-wrap">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="search" id="homepage-issues-search" placeholder="제목, 원인, 경로 검색">
+                </div>
+                <select class="v3-filter-select" id="homepage-issues-filter-status">
+                  <option value="all">전체 상태</option>
+                  <option value="open">열림</option>
+                  <option value="monitoring">모니터링</option>
+                  <option value="resolved">해결됨</option>
+                  <option value="archived">보관</option>
+                </select>
+                <select class="v3-filter-select" id="homepage-issues-filter-severity">
+                  <option value="all">전체 심각도</option>
+                  <option value="high">높음</option>
+                  <option value="medium">중간</option>
+                  <option value="low">낮음</option>
+                </select>
+              </div>
+            </div>
+            <div class="v3-inline-meta" id="homepage-issues-meta">불러오는 중…</div>
+            <div id="homepage-issues-list">
+              <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-homepage-issues -->
+
     </div><!-- /v3-content -->
   </div><!-- /v3-main -->
 </div><!-- /v3-app -->
@@ -1304,8 +1445,8 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="/js/main.js?v=20260409122851"></script>
-<script src="/js/shared-country-name-ko.js?v=20260409122851"></script>
-<script src="/js/admin-v3.js?v=20260409122851"></script>
+<script src="/js/main.js?v=20260409123734"></script>
+<script src="/js/shared-country-name-ko.js?v=20260409123734"></script>
+<script src="/js/admin-v3.js?v=20260409123734"></script>
 </body>
 </html>

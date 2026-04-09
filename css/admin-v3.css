@@ -797,6 +797,60 @@
   font-size: 12px;
   color: var(--v3-text-m);
 }
+.v3-issues-table .v3-table-title {
+  max-width: 420px;
+  white-space: normal;
+  line-height: 1.45;
+}
+.v3-issues-note {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--v3-text-m);
+  line-height: 1.55;
+}
+.v3-issues-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.v3-issues-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.v3-badge-risk {
+  background: #ffedd5;
+  color: #9a3412;
+}
+.v3-badge-issue {
+  background: #e0f2fe;
+  color: #075985;
+}
+.v3-badge-improvement {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.v3-badge-open {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.v3-badge-monitoring {
+  background: #fef3c7;
+  color: #92400e;
+}
+.v3-badge-resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+.v3-badge-archived {
+  background: #e2e8f0;
+  color: #475569;
+}
+.v3-issues-empty {
+  display: grid;
+  gap: 10px;
+}
 .v3-search-result-title {
   font-weight: 600;
   color: var(--v3-text);
