@@ -92,8 +92,11 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 - \`/admin\` : 관리자 콘솔 V3 (사이드바 기반 단일 페이지)
 - \`/kms\` : 관리자만 접근 가능한 KMS (기능정의서)
 - 관리자 콘솔은 좌측 고정 사이드바 + 우측 콘텐츠 패널 구조다.
-- 사이드바 섹션: \`개요\`, \`콘텐츠\`, \`사이트 설정\`
+- 사이드바 섹션: \`운영\`, \`콘텐츠 제작\`, \`콘텐츠 데이터\`, \`홈 · 노출\`, \`시스템 설정\`
+- 운영 섹션에는 \`분석\`, \`접속 국가/도시\`, \`마케팅\`, \`버전기록\`, \`홈 오류/이슈 기록\` 패널이 포함된다.
+- \`홈 오류/이슈 기록\`은 운영자가 수동으로 남길 수도 있지만, 홈 API 섹션 실패와 홈 프런트 초기 로딩 실패/백그라운드 새로고침 실패/런타임 오류를 자동 집계하는 용도로 우선 사용한다.
 - 패널 전환은 사이드바 항목 클릭으로 이루어지며, URL 변경 없이 단일 페이지 내에서 전환된다.
+- 사이트 설정 내부의 보조 섹션 메뉴는 메인 영역에 중복 노출하지 않고, 좌측 사이드바와 상단 패널 제목을 기준 탐색으로 사용한다.
 
 ## 2. 공통 데이터 규칙
 
@@ -116,6 +119,9 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 #### 기능 세부 설명
 - 운영 분석의 기준은 \`site_visits\` 중심으로 맞춘다.
 - \`site_visits\`에는 국가/도시/좌표 같은 익명 위치 정보가 저장될 수 있지만, IP 원문은 저장하지 않는다.
+- 국가/도시 집계는 Cloudflare 요청 메타를 사용하며, 사용자의 별도 위치 권한 요청 없이 서버 기준으로 기록한다.
+- \`접속 국가/도시\` 패널의 위치 데이터는 기능 배포 이후 새 방문부터 누적될 수 있으므로, 초기에는 국가/도시 목록이 비어 있을 수 있다.
+- 국가명 표시는 주요 ISO 국가코드에 대한 고정 한국어 매핑을 우선 사용하고, 없는 경우에만 환경 fallback을 쓴다.
 - \`누적 기사 조회수\`는 마케팅/노출 기준으로 볼 수 있다.
 - 기사 상세 평균 체류시간은 \`post_engagement\`에 쌓인 활성 체류시간을 기준으로 계산하고, 관리자 자신의 편집 세션은 제외한다.
 - \`방문자수\`와 \`조회수\`는 같은 의미가 아니므로 혼용하지 않는다.
@@ -605,8 +611,12 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 **분석**
 - \`GET /api/admin/analytics\` — 관리자 통계 대시보드
+- \`GET /api/admin/geo-audience\` — 관리자 접속 국가/도시 지도 및 테이블 집계
 - \`GET /api/admin/marketing\` — 마케팅 퍼널 데이터
 - \`GET /api/admin/operations\` — 운영 대시보드/릴리스 이력
+- \`GET/POST /api/admin/homepage-issues\`
+- \`PATCH/DELETE /api/admin/homepage-issues/:id\`
+- \`POST /api/homepage-issues/report\` — 홈 공개 화면 자동 오류 보고
 - \`POST /api/analytics/visit\` — 방문 기록 (공개)
 - \`POST /api/analytics/post-engagement\` — 체류시간 기록 (공개)
 - \`GET /api/analytics/today\` — 오늘 방문자/조회수
@@ -634,6 +644,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
 - 배포 전 \`VERSION\`, \`ADMIN_VERSION\`, \`ASSET_VERSION\`을 확인하고 \`./scripts/sync_versions.sh\`로 버전 문자열과 새 자산 토큰을 동기화한다.
+- \`접속 국가/도시\` 기능이 포함된 배포에서는 \`./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote\`로 원격 D1의 \`site_visits\` 지리 컬럼과 인덱스를 먼저 선반영한다.
 - production 배포는 \`main\`의 깨끗한 워크트리에서만 진행한다.
 - 선택 사항: \`CF_ZONE_ID\`, \`CF_PURGE_API_TOKEN\` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
 

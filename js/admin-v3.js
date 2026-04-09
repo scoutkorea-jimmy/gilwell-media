@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.055.02
+ * Version: 03.056.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2371,6 +2371,8 @@
                   '<div class="v3-issues-meta-line">' +
                     '<span class="v3-badge ' + _homepageIssueTypeBadge(item.issue_type) + '">' + GW.escapeHtml(_homepageIssueTypeLabel(item.issue_type)) + '</span>' +
                     (item.source_path ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.source_path) + '</span>' : '') +
+                    ((Number(item.occurrence_count || 1) > 1) ? '<span class="v3-badge v3-badge-gray">반복 ' + GW.escapeHtml(String(item.occurrence_count)) + '회</span>' : '') +
+                    (item.last_seen_at ? '<span class="v3-badge v3-badge-gray">마지막 감지 ' + GW.escapeHtml(_shortDate(item.last_seen_at)) + '</span>' : '') +
                   '</div>' +
                   (item.summary ? '<div class="v3-issues-note">' + GW.escapeHtml(item.summary) + '</div>' : '') +
                 '</td>' +

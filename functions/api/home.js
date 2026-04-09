@@ -3,6 +3,7 @@ import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { loadNavLabels } from '../_shared/nav-labels.js';
+import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 
 const DEFAULT_TICKER_ITEMS = [
   '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
@@ -39,6 +40,23 @@ const DEFAULT_HERO_MEDIA = {
 };
 
 const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
+const HOME_SECTION_ISSUE_DEFS = {
+  site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
+  nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },
+  translations: { title: '홈 번역 문자열 로드 실패', severity: 'medium', area: 'ui', source_path: '/api/home /api/settings/translations' },
+  ticker: { title: '홈 티커 로드 실패', severity: 'low', area: 'homepage', source_path: '/api/home /api/settings/ticker' },
+  stats: { title: '홈 통계 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home' },
+  analytics: { title: '홈 푸터 분석 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home /site_visits' },
+  hero: { title: '홈 히어로 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  lead: { title: '홈 메인 스토리 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  latest: { title: '홈 최신 소식 로드 실패', severity: 'high', area: 'homepage', source_path: '/api/home' },
+  popular: { title: '홈 인기 소식 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  picks: { title: '홈 에디터 추천 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  korea: { title: '홈 Korea 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  apr: { title: '홈 APR 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  wosm: { title: '홈 WOSM 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+  people: { title: '홈 Scout People 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
+};
 
 export async function onRequestGet({ env, request }) {
   try {
@@ -51,9 +69,10 @@ export async function onRequestGet({ env, request }) {
     const resolveSection = (key, loader, fallback) =>
       Promise.resolve()
         .then(loader)
-        .catch((err) => {
+        .catch(async (err) => {
           issues[key] = true;
           console.error(`GET /api/home section "${key}" failed:`, err);
+          await recordHomeSectionIssue(env, key, err);
           return fallback;
         });
 
@@ -129,9 +148,42 @@ export async function onRequestGet({ env, request }) {
     }, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/home error:', err);
+    await recordHomepageIssue(env, {
+      title: '홈 API 전체 응답 실패',
+      issue_type: 'error',
+      status: 'open',
+      severity: 'high',
+      area: 'api',
+      source_path: '/api/home',
+      summary: '홈 API가 전체적으로 실패해 주요 데이터 응답을 만들지 못했습니다.',
+      impact: '홈페이지 전체가 초기 fallback 상태로 보이거나 데이터가 비어 보일 수 있습니다.',
+      cause: trimMessage(err && err.message),
+      action_items: 'Functions 로그와 D1 응답 상태, 최근 배포 변경사항을 우선 점검합니다.',
+      reporter: 'system:auto-home',
+      occurred_at: nowUtcText(),
+    });
     await logApiError(env, request, err, { channel: 'site' });
     return json({ error: 'Database error' }, 500);
   }
+}
+
+async function recordHomeSectionIssue(env, key, err) {
+  const meta = HOME_SECTION_ISSUE_DEFS[key];
+  if (!meta) return null;
+  return recordHomepageIssue(env, {
+    title: meta.title,
+    issue_type: 'error',
+    status: 'open',
+    severity: meta.severity,
+    area: meta.area,
+    source_path: meta.source_path,
+    summary: meta.title + '가 감지되어 해당 섹션은 fallback 데이터로 내려갔습니다.',
+    impact: '홈 일부 영역이 비어 보이거나 기본값으로 대체될 수 있습니다.',
+    cause: trimMessage(err && err.message),
+    action_items: '해당 로더와 관련 settings/posts 쿼리, Functions 로그를 점검합니다.',
+    reporter: 'system:auto-home',
+    occurred_at: nowUtcText(),
+  });
 }
 
 async function loadTranslations(env) {
@@ -460,6 +512,16 @@ function json(data, status = 200, extraHeaders = {}) {
     status,
     headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
+}
+
+function trimMessage(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.length > 500 ? text.slice(0, 500) : text;
+}
+
+function nowUtcText() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
 function publicCacheHeaders(maxAge, swr) {

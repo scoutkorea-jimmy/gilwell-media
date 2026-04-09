@@ -37,6 +37,40 @@
     el.innerHTML = '<div class="mini-empty">' + GW.escapeHtml(getHomeBlockErrorMessage(key)) + '</div>';
   }
 
+  function reportHomepageIssue(code, detail) {
+    var reportCode = String(code || '').trim();
+    if (!reportCode || typeof fetch !== 'function') return;
+    var fingerprint = reportCode + '|' + JSON.stringify(detail || {});
+    try {
+      var sessionKey = '__gw_home_issue__' + fingerprint;
+      if (window.sessionStorage && window.sessionStorage.getItem(sessionKey)) return;
+      if (window.sessionStorage) window.sessionStorage.setItem(sessionKey, '1');
+    } catch (_) {}
+
+    var payload = JSON.stringify({
+      code: reportCode,
+      detail: detail || {}
+    });
+
+    try {
+      if (navigator.sendBeacon) {
+        var blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon('/api/homepage-issues/report', blob);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      fetch('/api/homepage-issues/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+        keepalive: true,
+        credentials: 'same-origin'
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
   function getSortedPostTags(post) {
     return String((post && post.tag) || '')
       .split(',')
@@ -530,6 +564,7 @@
     var latestRefreshAt = 0;
     var latestRefreshBusy = false;
     var latestRefreshTimer = null;
+    var runtimeReportBound = false;
 
     function fetchHomeData(options) {
       var opts = options || {};
@@ -615,6 +650,12 @@
       var issues = getHomeIssueMap(data);
       if (issues.latest) {
         try { console.warn('[GW home-latest-refresh-issue]', issues); } catch (_) {}
+        reportHomepageIssue('home_latest_refresh_failed', {
+          section: 'latest',
+          code: 'section_issue',
+          message: 'latest section returned fallback issue state',
+          path: '/ /api/home'
+        });
         return;
       }
       var latestPosts = sortPostsLatest(data.latest && data.latest.posts ? data.latest.posts : []);
@@ -632,8 +673,37 @@
         .then(function (data) { applyLatestRail(data); })
         .catch(function (err) {
           try { console.warn('[GW home-latest-refresh-failed]', err); } catch (_) {}
+          reportHomepageIssue('home_latest_refresh_failed', {
+            section: 'latest',
+            message: (err && err.message) || 'latest refresh failed',
+            path: '/ /api/home'
+          });
         })
         .finally(function () { latestRefreshBusy = false; });
+    }
+
+    function bindRuntimeIssueReporting() {
+      if (runtimeReportBound) return;
+      runtimeReportBound = true;
+
+      window.addEventListener('error', function (event) {
+        reportHomepageIssue('home_client_runtime_error', {
+          message: event && event.message ? String(event.message) : 'runtime error',
+          path: event && event.filename ? String(event.filename) : window.location.pathname,
+          source: event && event.filename ? String(event.filename) : '',
+          code: event && event.lineno ? String(event.lineno) + ':' + String(event.colno || 0) : ''
+        });
+      });
+
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event && event.reason;
+        reportHomepageIssue('home_client_promise_rejection', {
+          message: reason && reason.message ? String(reason.message) : String(reason || 'promise rejection'),
+          path: window.location.pathname,
+          source: '',
+          code: 'unhandledrejection'
+        });
+      });
     }
 
     function renderLoadFailure() {
@@ -735,10 +805,17 @@
         loadStats: false,
         loadTranslations: false
       });
+      bindRuntimeIssueReporting();
 
       fetchHomeData({ fresh: true })
         .then(function (data) { applyData(data); })
-        .catch(function () { renderLoadFailure(); });
+        .catch(function (err) {
+          renderLoadFailure();
+          reportHomepageIssue('home_initial_fetch_failed', {
+            message: (err && err.message) || 'initial home fetch failed',
+            path: '/ /api/home'
+          });
+        });
 
       initRefreshLifecycle();
       initPullToRefresh();

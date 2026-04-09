@@ -12,8 +12,9 @@
 4. `./scripts/sync_versions.sh`로 버전 문자열 동기화
 5. 필요한 경우 기능 변경 커밋 반영
 6. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
-7. `main` 기준 production 배포
-8. 라이브 검증
+7. `접속 국가/도시` 관련 변경이면 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote` 선실행
+8. `main` 기준 production 배포
+9. 라이브 검증
 
 관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
 관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
@@ -56,13 +57,14 @@ wrangler pages deploy . --project-name gilwell-media --branch main
 - 기존 운영 DB는 `db/migration_*.sql` 중 누락된 파일만 순서대로 적용한다.
 - 로컬 초기화는 `./scripts/bootstrap_local_db.sh gilwell-posts`를 사용한다.
 - 스키마/시드 점검은 `./scripts/smoke_check.sh gilwell-posts`로 확인한다.
-- 현재 저장소 기준 최신 마이그레이션은 `db/migration_050.sql`이다.
+- 현재 저장소 기준 최신 마이그레이션은 `db/migration_055.sql`이다.
 - R2를 사용할 경우 Pages Functions에 `POST_IMAGES` 버킷 바인딩을 추가한다.
 - 기존 D1 base64 이미지를 R2로 옮길 때는 `node ./scripts/migrate_existing_images_to_r2.mjs gilwell-posts gilwell-media-images https://bpmedia.net`를 사용한다.
 - Cloudflare 기반 분석을 쓰려면 Pages secret `CF_ANALYTICS_API_TOKEN`을 설정한다.
+- `접속 국가/도시` 관련 배포 전에는 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote`로 원격 D1 지리 컬럼과 인덱스를 먼저 선반영한다.
 
 ```bash
-wrangler d1 execute gilwell-posts --remote --file=./db/migration_050.sql
+wrangler d1 execute gilwell-posts --remote --file=./db/migration_055.sql
 ```
 
 ## Functions 로그 확인 루틴
