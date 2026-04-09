@@ -81,6 +81,13 @@ CREATE TABLE IF NOT EXISTS site_visits (
   utm_source    TEXT,
   utm_medium    TEXT,
   utm_campaign  TEXT,
+  country_code  TEXT,
+  country_name  TEXT,
+  city_name     TEXT,
+  region_code   TEXT,
+  continent_code TEXT,
+  latitude      REAL,
+  longitude     REAL,
   visited_bucket TEXT,
   visited_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
@@ -167,6 +174,8 @@ CREATE INDEX IF NOT EXISTS idx_sv_time ON site_visits(visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_path_time ON site_visits(path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_viewer_path_time ON site_visits(viewer_key, path, visited_at);
 CREATE INDEX IF NOT EXISTS idx_sv_referrer_host ON site_visits(referrer_host);
+CREATE INDEX IF NOT EXISTS idx_site_visits_country_code ON site_visits(country_code);
+CREATE INDEX IF NOT EXISTS idx_site_visits_city_name ON site_visits(city_name);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sv_unique_bucket ON site_visits(viewer_key, path, visited_bucket);
 CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_first_attempt ON admin_login_attempts(first_attempt_at);
 CREATE INDEX IF NOT EXISTS idx_operational_events_time ON operational_events(created_at DESC);

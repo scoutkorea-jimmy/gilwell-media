@@ -59,6 +59,7 @@
 - Frontend: Plain HTML / CSS / Vanilla JS
 - Auth: HMAC-SHA256 signed admin session cookie
 - 메인 사이트 관리자 인증은 24시간 signed cookie를 사용하고, 클라이언트는 `sessionStorage`에 lightweight 상태만 보조 저장합니다.
+- 운영 분석용 `site_visits`에는 국가/도시/좌표 같은 익명 위치 정보가 저장될 수 있지만, IP 원문은 저장하지 않습니다.
 
 ---
 

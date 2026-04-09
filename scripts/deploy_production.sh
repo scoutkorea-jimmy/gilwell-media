@@ -29,6 +29,11 @@ echo "Version: V${VERSION}"
 echo "Assets: ${ASSET_VERSION}"
 echo "Commit: ${COMMIT_SHA}"
 
+if [[ -x "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh" || -f "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh" ]]; then
+  chmod +x "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh"
+  "$ROOT_DIR/scripts/ensure_site_visits_geo_columns.sh" gilwell-posts --remote
+fi
+
 wrangler pages deploy . \
   --project-name gilwell-media \
   --branch main \

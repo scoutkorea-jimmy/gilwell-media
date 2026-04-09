@@ -1,4 +1,5 @@
 import { getViewerKey, isLikelyNonHumanRequest } from './engagement.js';
+import { resolveCountryLabelKo } from './country-code-labels.js';
 
 const VISIT_WINDOW_MINUTES = 30;
 
@@ -158,10 +159,5 @@ function sanitizeCoordinate(value, min, max) {
 }
 
 function resolveCountryName(countryCode) {
-  try {
-    var display = new Intl.DisplayNames(['ko', 'en'], { type: 'region' });
-    return display.of(countryCode) || countryCode;
-  } catch (_) {
-    return countryCode;
-  }
+  return resolveCountryLabelKo(countryCode, countryCode);
 }

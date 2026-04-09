@@ -1,0 +1,87 @@
+export const COUNTRY_CODE_LABELS_KO = {
+  AE: '아랍에미리트',
+  AR: '아르헨티나',
+  AT: '오스트리아',
+  AU: '호주',
+  BD: '방글라데시',
+  BE: '벨기에',
+  BR: '브라질',
+  CA: '캐나다',
+  CH: '스위스',
+  CL: '칠레',
+  CN: '중국',
+  CO: '콜롬비아',
+  CZ: '체코',
+  DE: '독일',
+  DK: '덴마크',
+  EG: '이집트',
+  ES: '스페인',
+  FI: '핀란드',
+  FR: '프랑스',
+  GB: '영국',
+  GR: '그리스',
+  HK: '홍콩',
+  HR: '크로아티아',
+  HU: '헝가리',
+  ID: '인도네시아',
+  IE: '아일랜드',
+  IL: '이스라엘',
+  IN: '인도',
+  IQ: '이라크',
+  IR: '이란',
+  IT: '이탈리아',
+  JO: '요르단',
+  JP: '일본',
+  KE: '케냐',
+  KR: '한국',
+  KW: '쿠웨이트',
+  KZ: '카자흐스탄',
+  LK: '스리랑카',
+  MA: '모로코',
+  MX: '멕시코',
+  MY: '말레이시아',
+  NG: '나이지리아',
+  NL: '네덜란드',
+  NO: '노르웨이',
+  NP: '네팔',
+  NZ: '뉴질랜드',
+  OM: '오만',
+  PE: '페루',
+  PH: '필리핀',
+  PK: '파키스탄',
+  PL: '폴란드',
+  PT: '포르투갈',
+  QA: '카타르',
+  RO: '루마니아',
+  RS: '세르비아',
+  RU: '러시아',
+  SA: '사우디아라비아',
+  SE: '스웨덴',
+  SG: '싱가포르',
+  SI: '슬로베니아',
+  SK: '슬로바키아',
+  TH: '태국',
+  TR: '터키',
+  TW: '대만',
+  UA: '우크라이나',
+  US: '미국',
+  UY: '우루과이',
+  UZ: '우즈베키스탄',
+  VE: '베네수엘라',
+  VN: '베트남',
+  ZA: '남아프리카공화국',
+};
+
+export function resolveCountryLabelKo(countryCode, fallbackLabel) {
+  const code = String(countryCode || '').trim().toUpperCase();
+  if (!code) return String(fallbackLabel || '').trim() || '';
+  if (COUNTRY_CODE_LABELS_KO[code]) return COUNTRY_CODE_LABELS_KO[code];
+  const fallback = String(fallbackLabel || '').trim();
+  if (fallback) return fallback;
+  try {
+    const display = new Intl.DisplayNames(['ko', 'en'], { type: 'region' });
+    return display.of(code) || code;
+  } catch (_) {
+    return code;
+  }
+}
