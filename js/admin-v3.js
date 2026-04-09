@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.00
+ * Version: 03.056.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -219,10 +219,6 @@
     document.getElementById('homepage-issues-refresh-btn').addEventListener('click', function () {
       _loadHomepageIssues(document.getElementById('homepage-issues-refresh-btn'));
     });
-    document.getElementById('homepage-issues-new-btn').addEventListener('click', _resetHomepageIssueForm);
-    document.getElementById('homepage-issue-save-btn').addEventListener('click', _saveHomepageIssue);
-    document.getElementById('homepage-issue-reset-btn').addEventListener('click', _resetHomepageIssueForm);
-    document.getElementById('homepage-issue-delete-btn').addEventListener('click', _deleteHomepageIssue);
     document.getElementById('homepage-issues-search').addEventListener('input', function () {
       _homepageIssuesSearch = String(this.value || '').trim().toLowerCase();
       _renderHomepageIssues();
@@ -2362,7 +2358,7 @@
     listEl.innerHTML =
       '<div class="v3-table-wrap v3-issues-table">' +
         '<table class="v3-table">' +
-          '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th><th>관리</th></tr></thead>' +
+          '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th></tr></thead>' +
           '<tbody>' +
             items.map(function (item) {
               return '<tr>' +
@@ -2380,128 +2376,11 @@
                 '<td><span class="v3-badge ' + _homepageIssueSeverityBadge(item.severity) + '">' + GW.escapeHtml(_homepageIssueSeverityLabel(item.severity)) + '</span></td>' +
                 '<td>' + GW.escapeHtml(_homepageIssueAreaLabel(item.area)) + '</td>' +
                 '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.updated_at || item.created_at)) + '</td>' +
-                '<td><button class="v3-btn v3-btn-outline v3-btn-xs" type="button" data-homepage-issue-edit="' + item.id + '">편집</button></td>' +
               '</tr>';
             }).join('') +
           '</tbody>' +
         '</table>' +
       '</div>';
-    listEl.querySelectorAll('[data-homepage-issue-edit]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _startHomepageIssueEdit(parseInt(btn.getAttribute('data-homepage-issue-edit'), 10));
-      });
-    });
-  }
-
-  function _collectHomepageIssueForm() {
-    return {
-      title: (document.getElementById('homepage-issue-title') || {}).value || '',
-      issue_type: (document.getElementById('homepage-issue-type') || {}).value || 'issue',
-      status: (document.getElementById('homepage-issue-status') || {}).value || 'open',
-      severity: (document.getElementById('homepage-issue-severity') || {}).value || 'medium',
-      area: (document.getElementById('homepage-issue-area') || {}).value || 'homepage',
-      source_path: (document.getElementById('homepage-issue-path') || {}).value || '',
-      summary: (document.getElementById('homepage-issue-summary') || {}).value || '',
-      impact: (document.getElementById('homepage-issue-impact') || {}).value || '',
-      cause: (document.getElementById('homepage-issue-cause') || {}).value || '',
-      action_items: (document.getElementById('homepage-issue-action-items') || {}).value || '',
-      reporter: (document.getElementById('homepage-issue-reporter') || {}).value || '',
-      occurred_at: (document.getElementById('homepage-issue-occurred-at') || {}).value || '',
-    };
-  }
-
-  function _fillHomepageIssueForm(item) {
-    var issue = item || {};
-    document.getElementById('homepage-issue-title').value = issue.title || '';
-    document.getElementById('homepage-issue-type').value = issue.issue_type || 'issue';
-    document.getElementById('homepage-issue-status').value = issue.status || 'open';
-    document.getElementById('homepage-issue-severity').value = issue.severity || 'medium';
-    document.getElementById('homepage-issue-area').value = issue.area || 'homepage';
-    document.getElementById('homepage-issue-path').value = issue.source_path || '';
-    document.getElementById('homepage-issue-summary').value = issue.summary || '';
-    document.getElementById('homepage-issue-impact').value = issue.impact || '';
-    document.getElementById('homepage-issue-cause').value = issue.cause || '';
-    document.getElementById('homepage-issue-action-items').value = issue.action_items || '';
-    document.getElementById('homepage-issue-reporter').value = issue.reporter || '';
-    document.getElementById('homepage-issue-occurred-at').value = _toDatetimeLocalInput(issue.occurred_at);
-  }
-
-  function _resetHomepageIssueForm() {
-    _homepageIssueEditingId = null;
-    _fillHomepageIssueForm({
-      issue_type: 'issue',
-      status: 'open',
-      severity: 'medium',
-      area: 'homepage',
-      occurred_at: _kstNow(),
-    });
-    var metaEl = document.getElementById('homepage-issues-form-meta');
-    if (metaEl) metaEl.textContent = '새 기록을 작성합니다.';
-    document.getElementById('homepage-issue-delete-btn').style.display = 'none';
-  }
-
-  function _startHomepageIssueEdit(id) {
-    var item = (_homepageIssues || []).find(function (entry) { return Number(entry.id) === Number(id); });
-    if (!item) return;
-    _homepageIssueEditingId = Number(id);
-    _fillHomepageIssueForm(item);
-    var metaEl = document.getElementById('homepage-issues-form-meta');
-    if (metaEl) metaEl.textContent = '기록 #' + item.id + ' 수정 중 · 마지막 업데이트 ' + _shortDate(item.updated_at || item.created_at);
-    document.getElementById('homepage-issue-delete-btn').style.display = '';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function _saveHomepageIssue() {
-    var body = _collectHomepageIssueForm();
-    var btn = document.getElementById('homepage-issue-save-btn');
-    var isEdit = !!_homepageIssueEditingId;
-    _setButtonBusy(btn, isEdit ? '수정 중…' : '저장 중…');
-    _apiFetch(isEdit ? '/api/admin/homepage-issues/' + _homepageIssueEditingId : '/api/admin/homepage-issues', {
-      method: isEdit ? 'PATCH' : 'POST',
-      body: JSON.stringify(body)
-    }).then(function (data) {
-      var item = data && data.item ? data.item : null;
-      if (item) {
-        if (isEdit) {
-          _homepageIssues = (_homepageIssues || []).map(function (entry) {
-            return Number(entry.id) === Number(item.id) ? item : entry;
-          });
-        } else {
-          _homepageIssues = [item].concat(_homepageIssues || []);
-        }
-      }
-      _renderHomepageIssues();
-      _resetHomepageIssueForm();
-      GW.showToast(isEdit ? '홈 이슈 기록을 수정했습니다' : '홈 이슈 기록을 저장했습니다', 'success');
-      _clearButtonBusy(btn, '완료');
-    }).catch(function (e) {
-      GW.showToast(e.message || '저장 실패', 'error');
-    }).finally(function () {
-      if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
-    });
-  }
-
-  function _deleteHomepageIssue() {
-    if (!_homepageIssueEditingId) return;
-    _confirm('기록 삭제', '이 홈 오류/이슈 기록을 삭제하시겠습니까?').then(function (ok) {
-      if (!ok) return;
-      var btn = document.getElementById('homepage-issue-delete-btn');
-      _setButtonBusy(btn, '삭제 중…');
-      _apiFetch('/api/admin/homepage-issues/' + _homepageIssueEditingId, {
-        method: 'DELETE'
-      }).then(function () {
-        _homepageIssues = (_homepageIssues || []).filter(function (entry) {
-          return Number(entry.id) !== Number(_homepageIssueEditingId);
-        });
-        _renderHomepageIssues();
-        _resetHomepageIssueForm();
-        GW.showToast('홈 이슈 기록을 삭제했습니다', 'success');
-      }).catch(function (e) {
-        GW.showToast(e.message || '삭제 실패', 'error');
-      }).finally(function () {
-        if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
-      });
-    });
   }
 
   function _homepageIssueTypeLabel(value) {

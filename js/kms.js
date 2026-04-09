@@ -307,15 +307,10 @@
           response: '{ "funnel": [], "utm_campaigns": [], "referrers": [] }',
         },
         {
-          method: 'GET|POST', path: '/api/admin/homepage-issues', auth: true,
-          summary: '홈 오류/이슈 기록 조회 및 생성',
+          method: 'GET', path: '/api/admin/homepage-issues', auth: true,
+          summary: '홈 오류/이슈 기록 조회',
           response: '{ "items": HomepageIssue[] }',
-          notes: 'HomepageIssue: { id, title, issue_type, status, severity, area, summary, impact, cause, action_items, source_path, reporter, occurred_at, last_seen_at, occurrence_count }',
-        },
-        {
-          method: 'PATCH|DELETE', path: '/api/admin/homepage-issues/:id', auth: true,
-          summary: '홈 오류/이슈 기록 수정 및 삭제',
-          response: '{ "item": HomepageIssue } | { "ok": true }',
+          notes: 'HomepageIssue: { id, title, issue_type, status, severity, area, summary, impact, cause, action_items, source_path, reporter, occurred_at, last_seen_at, occurrence_count } · 관리자에서는 읽기 전용으로 확인만 합니다.',
         },
         {
           method: 'POST', path: '/api/homepage-issues/report', auth: false,

@@ -94,7 +94,7 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 - 관리자 콘솔은 좌측 고정 사이드바 + 우측 콘텐츠 패널 구조다.
 - 사이드바 섹션: \`운영\`, \`콘텐츠 제작\`, \`콘텐츠 데이터\`, \`홈 · 노출\`, \`시스템 설정\`
 - 운영 섹션에는 \`분석\`, \`접속 국가/도시\`, \`마케팅\`, \`버전기록\`, \`홈 오류/이슈 기록\` 패널이 포함된다.
-- \`홈 오류/이슈 기록\`은 운영자가 수동으로 남길 수도 있지만, 홈 API 섹션 실패와 홈 프런트 초기 로딩 실패/백그라운드 새로고침 실패/런타임 오류를 자동 집계하는 용도로 우선 사용한다.
+- \`홈 오류/이슈 기록\`은 운영자가 직접 입력/수정/삭제하지 않고, 홈 API 섹션 실패와 홈 프런트 초기 로딩 실패/백그라운드 새로고침 실패/런타임 오류를 자동 집계하는 읽기 전용 패널로 사용한다.
 - 패널 전환은 사이드바 항목 클릭으로 이루어지며, URL 변경 없이 단일 페이지 내에서 전환된다.
 - 사이트 설정 내부의 보조 섹션 메뉴는 메인 영역에 중복 노출하지 않고, 좌측 사이드바와 상단 패널 제목을 기준 탐색으로 사용한다.
 
@@ -614,8 +614,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET /api/admin/geo-audience\` — 관리자 접속 국가/도시 지도 및 테이블 집계
 - \`GET /api/admin/marketing\` — 마케팅 퍼널 데이터
 - \`GET /api/admin/operations\` — 운영 대시보드/릴리스 이력
-- \`GET/POST /api/admin/homepage-issues\`
-- \`PATCH/DELETE /api/admin/homepage-issues/:id\`
+- \`GET /api/admin/homepage-issues\`
 - \`POST /api/homepage-issues/report\` — 홈 공개 화면 자동 오류 보고
 - \`POST /api/analytics/visit\` — 방문 기록 (공개)
 - \`POST /api/analytics/post-engagement\` — 체류시간 기록 (공개)
