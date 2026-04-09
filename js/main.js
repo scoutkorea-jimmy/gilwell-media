@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.112.24';
+  GW.APP_VERSION = '00.112.25';
   GW.ADMIN_VERSION = '03.053.02';
-  GW.ASSET_VERSION = '20260408141932';
+  GW.ASSET_VERSION = '20260409122851';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -150,9 +150,10 @@
 
   GW.isTodayKst = function (dateStr) {
     if (!dateStr) return false;
-    var current = GW.getKstDateInputValue();
-    var source = String(dateStr).slice(0, 10);
-    return source === current;
+    var parts = _getKstDateParts(dateStr);
+    if (!parts) return false;
+    var source = parts.year + '-' + parts.month + '-' + parts.day;
+    return source === GW.getKstDateInputValue();
   };
 
   GW.getPostPublicDate = function (post) {

@@ -5,18 +5,6 @@
 
   var GW = window.GW;
   var HOME_COLUMN_KEYS = ['korea', 'apr', 'wosm', 'people'];
-  var HOME_EMPTY_TARGETS = [
-    'home-lead-story',
-    'latest-list',
-    'popular-list',
-    'popular-list-mobile',
-    'picks-list',
-    'picks-list-mobile',
-    'col-korea',
-    'col-apr',
-    'col-wosm',
-    'col-people'
-  ];
   var HOME_MINI_SECTIONS = [
     { id: 'latest-list', source: 'latestRail', empty: '아직 게시글이 없습니다' },
     { id: 'popular-list', source: 'popularRail', empty: '아직 게시글이 없습니다' },
@@ -24,6 +12,30 @@
     { id: 'picks-list', source: 'picksRail', empty: '에디터 추천 게시글이 없습니다' },
     { id: 'picks-list-mobile', source: 'picksRail', empty: '에디터 추천 게시글이 없습니다' }
   ];
+  var HOME_FAILURE_MESSAGES = {
+    home: '홈 화면 데이터를 잠시 불러오지 못했습니다',
+    lead: '메인 스토리를 잠시 불러오지 못했습니다',
+    latest: '최신 소식을 잠시 불러오지 못했습니다',
+    popular: '인기 소식을 잠시 불러오지 못했습니다',
+    picks: '에디터 추천을 잠시 불러오지 못했습니다',
+    korea: 'Korea 소식을 잠시 불러오지 못했습니다',
+    apr: 'APR 소식을 잠시 불러오지 못했습니다',
+    wosm: 'WOSM 소식을 잠시 불러오지 못했습니다',
+    people: '스카우트 인물 소식을 잠시 불러오지 못했습니다'
+  };
+
+  function getHomeIssueMap(data) {
+    return data && data.issues && typeof data.issues === 'object' ? data.issues : {};
+  }
+
+  function getHomeBlockErrorMessage(key) {
+    return HOME_FAILURE_MESSAGES[key] || HOME_FAILURE_MESSAGES.home;
+  }
+
+  function renderHomeBlockError(el, key) {
+    if (!el) return;
+    el.innerHTML = '<div class="mini-empty">' + GW.escapeHtml(getHomeBlockErrorMessage(key)) + '</div>';
+  }
 
   function getSortedPostTags(post) {
     return String((post && post.tag) || '')
@@ -149,8 +161,13 @@
     );
   }
 
-  function renderLeadStory(el, post, label, leadMedia) {
+  function renderLeadStory(el, post, label, leadMedia, options) {
     if (!el) return;
+    var opts = options || {};
+    if (opts.error) {
+      renderHomeBlockError(el, 'lead');
+      return;
+    }
     if (!post) {
       el.innerHTML = '<div class="mini-empty">대표 기사를 준비 중입니다</div>';
       return;
@@ -199,6 +216,11 @@
 
   function renderMiniList(el, posts, emptyMsg, options) {
     if (!el) return;
+    var opts = options || {};
+    if (opts.errorKey) {
+      renderHomeBlockError(el, opts.errorKey);
+      return;
+    }
     if (!posts || !posts.length) {
       el.innerHTML = '<div class="mini-empty">' + (emptyMsg || '게시글이 없습니다') + '</div>';
       return;
@@ -243,6 +265,24 @@
     var touchState = null;
     var paused = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var suppressClickUntil = 0;
+    var slider = document.getElementById('site-hero-slider');
+    var controls = document.getElementById('hero-controls');
+
+    function ensureStaticSlide() {
+      if (!slider || slider.querySelector('#site-hero-static')) return;
+      if (!slider.dataset.staticMarkup) return;
+      if (controls) controls.insertAdjacentHTML('beforebegin', slider.dataset.staticMarkup);
+      else slider.insertAdjacentHTML('afterbegin', slider.dataset.staticMarkup);
+    }
+
+    if (!slider) return;
+    if (!slider.dataset.staticMarkup) {
+      var initialStatic = document.getElementById('site-hero-static');
+      if (initialStatic) slider.dataset.staticMarkup = initialStatic.outerHTML;
+    }
+    if (GW._homeHeroState && typeof GW._homeHeroState.destroy === 'function') {
+      GW._homeHeroState.destroy();
+    }
 
     function buildSlide(post, index) {
       var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
@@ -344,7 +384,7 @@
 
     function bindTouchNavigation(slider) {
       if (!slider || slides.length <= 1) return;
-      slider.addEventListener('touchstart', function (event) {
+      var onTouchStart = function (event) {
         if (!event.touches || event.touches.length !== 1) return;
         var touch = event.touches[0];
         touchState = {
@@ -353,16 +393,16 @@
           deltaX: 0,
           deltaY: 0,
         };
-      }, { passive: true });
+      };
 
-      slider.addEventListener('touchmove', function (event) {
+      var onTouchMove = function (event) {
         if (!touchState || !event.touches || event.touches.length !== 1) return;
         var touch = event.touches[0];
         touchState.deltaX = touch.clientX - touchState.startX;
         touchState.deltaY = touch.clientY - touchState.startY;
-      }, { passive: true });
+      };
 
-      slider.addEventListener('touchend', function () {
+      var onTouchEnd = function () {
         if (!touchState) return;
         var deltaX = touchState.deltaX;
         var deltaY = touchState.deltaY;
@@ -370,7 +410,16 @@
         if (Math.abs(deltaX) < 36 || Math.abs(deltaX) < Math.abs(deltaY) || animating) return;
         suppressClickUntil = Date.now() + 450;
         goTo(current + (deltaX < 0 ? 1 : -1), deltaX < 0 ? 1 : -1);
-      });
+      };
+      slider.addEventListener('touchstart', onTouchStart, { passive: true });
+      slider.addEventListener('touchmove', onTouchMove, { passive: true });
+      slider.addEventListener('touchend', onTouchEnd);
+      GW._homeHeroState = GW._homeHeroState || {};
+      GW._homeHeroState.touch = {
+        start: onTouchStart,
+        move: onTouchMove,
+        end: onTouchEnd
+      };
     }
 
     function normalizeOffscreen(slide, direction) {
@@ -434,10 +483,11 @@
     }
 
     var posts = data && data.posts ? data.posts : [];
-    if (!posts.length) return;
+    if (!posts.length) {
+      ensureStaticSlide();
+      return;
+    }
 
-    var slider = document.getElementById('site-hero-slider');
-    if (!slider) return;
     var staticSlide = document.getElementById('site-hero-static');
     if (staticSlide) staticSlide.remove();
 
@@ -461,6 +511,19 @@
     bindTouchNavigation(slider);
     bindPauseButton();
     setAutoTimer();
+    GW._homeHeroState = Object.assign(GW._homeHeroState || {}, {
+      destroy: function () {
+        clearInterval(timer);
+        if (GW._homeHeroState && GW._homeHeroState.touch && slider) {
+          slider.removeEventListener('touchstart', GW._homeHeroState.touch.start);
+          slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);
+          slider.removeEventListener('touchend', GW._homeHeroState.touch.end);
+        }
+        slider.querySelectorAll('.site-hero-slide[data-post-id]').forEach(function (node) {
+          node.remove();
+        });
+      }
+    });
   }
 
   GW.HomePage = (function () {
@@ -477,6 +540,7 @@
     }
 
     function buildHomeSections(data) {
+      var issues = getHomeIssueMap(data);
       var latestPosts = sortPostsLatest(data.latest && data.latest.posts ? data.latest.posts : []);
       var popularPosts = data.popular && data.popular.posts ? data.popular.posts : [];
       var picksPosts = data.picks && data.picks.posts ? data.picks.posts : [];
@@ -486,17 +550,22 @@
         picksPosts: picksPosts,
         columns: data.columns || {},
         latestRail: latestPosts.slice(0, 3),
-        popularRail: (popularPosts.length ? popularPosts : latestPosts).slice(0, 4),
+        popularRail: issues.popular ? [] : (popularPosts.length ? popularPosts : latestPosts).slice(0, 4),
         picksRail: picksPosts.slice(0, 4)
       };
     }
 
-    function applyMiniSections(viewModel) {
+    function applyMiniSections(viewModel, issues) {
       HOME_MINI_SECTIONS.forEach(function (section) {
         renderMiniList(
           document.getElementById(section.id),
           viewModel[section.source] || [],
-          section.empty
+          section.empty,
+          {
+            errorKey: issues[section.source === 'latestRail' ? 'latest' : section.source === 'popularRail' ? 'popular' : section.source === 'picksRail' ? 'picks' : '']
+              ? (section.source === 'latestRail' ? 'latest' : section.source === 'popularRail' ? 'popular' : 'picks')
+              : ''
+          }
         );
       });
 
@@ -505,12 +574,16 @@
           document.getElementById('col-' + key),
           viewModel.columns[key] && viewModel.columns[key].posts ? viewModel.columns[key].posts.slice(0, 4) : [],
           '게시글이 없습니다',
-          { hideCategoryChip: true }
+          {
+            hideCategoryChip: true,
+            errorKey: issues[key] ? key : ''
+          }
         );
       });
     }
 
     function applyData(data) {
+      var issues = getHomeIssueMap(data);
       if (data.site_meta) {
         GW._siteMetaData = data.site_meta;
         GW.applyManagedFooterData(data.site_meta);
@@ -531,13 +604,19 @@
         document.getElementById('home-lead-story'),
         leadPost,
         (data.lead && data.lead.post) ? '메인 스토리' : (viewModel.picksPosts.length ? '추천 기사' : '대표 기사'),
-        leadMedia
+        leadMedia,
+        { error: !!issues.lead }
       );
-      applyMiniSections(viewModel);
+      applyMiniSections(viewModel, issues);
       latestRefreshAt = Date.now();
     }
 
     function applyLatestRail(data) {
+      var issues = getHomeIssueMap(data);
+      if (issues.latest) {
+        try { console.warn('[GW home-latest-refresh-issue]', issues); } catch (_) {}
+        return;
+      }
       var latestPosts = sortPostsLatest(data.latest && data.latest.posts ? data.latest.posts : []);
       renderMiniList(document.getElementById('latest-list'), latestPosts.slice(0, 3), '아직 게시글이 없습니다');
       latestRefreshAt = Date.now();
@@ -551,7 +630,9 @@
       latestRefreshBusy = true;
       return fetchHomeData({ fresh: true })
         .then(function (data) { applyLatestRail(data); })
-        .catch(function () {})
+        .catch(function (err) {
+          try { console.warn('[GW home-latest-refresh-failed]', err); } catch (_) {}
+        })
         .finally(function () { latestRefreshBusy = false; });
     }
 
@@ -559,10 +640,16 @@
       GW.loadTicker('ticker-inner');
       GW.loadStats();
       GW.loadTranslations();
-      HOME_EMPTY_TARGETS.forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.innerHTML = '<div class="mini-empty">불러오지 못했습니다</div>';
-      });
+      renderHomeBlockError(document.getElementById('home-lead-story'), 'lead');
+      renderHomeBlockError(document.getElementById('latest-list'), 'latest');
+      renderHomeBlockError(document.getElementById('popular-list'), 'popular');
+      renderHomeBlockError(document.getElementById('popular-list-mobile'), 'popular');
+      renderHomeBlockError(document.getElementById('picks-list'), 'picks');
+      renderHomeBlockError(document.getElementById('picks-list-mobile'), 'picks');
+      renderHomeBlockError(document.getElementById('col-korea'), 'korea');
+      renderHomeBlockError(document.getElementById('col-apr'), 'apr');
+      renderHomeBlockError(document.getElementById('col-wosm'), 'wosm');
+      renderHomeBlockError(document.getElementById('col-people'), 'people');
     }
 
     function initRefreshLifecycle() {

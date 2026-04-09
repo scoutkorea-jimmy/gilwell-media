@@ -198,8 +198,7 @@
     if (cached) {
       GW.applyManagedFooterData(cached);
     }
-    fetch('/api/settings/site-meta', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/site-meta', { cache: 'no-store' })
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW.applyManagedFooterData(data);
@@ -480,8 +479,7 @@
       GW.applyLang();
       if (GW._statsData) GW._renderStats();
     }
-    fetch('/api/settings/translations')
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/translations')
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW._customStrings = data.strings || {};
@@ -502,8 +500,7 @@
       GW._statsData = cached;
       GW._renderStats();
     }
-    fetch('/api/stats')
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/stats')
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW._statsData = data;
@@ -532,8 +529,7 @@
     if (cached) {
       GW.applyBoardLayoutSettings(cached);
     }
-    fetch('/api/settings/board-layout', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/board-layout', { cache: 'no-store' })
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW.applyBoardLayoutSettings(data);
@@ -561,8 +557,7 @@
       GW._boardCopyData = cached;
       GW.applyBoardCopySettings(cached);
     }
-    fetch('/api/settings/board-copy', { cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/board-copy', { cache: 'no-store' })
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW._boardCopyData = data;
@@ -603,8 +598,7 @@
       GW.renderTickerItems(innerId, cached.items || []);
     }
 
-    fetch('/api/settings/ticker')
-      .then(function (r) { return r.json(); })
+    GW.apiFetch('/api/settings/ticker')
       .then(function (data) {
         GW.writeCachedPayload(cacheKey, data);
         GW.renderTickerItems(innerId, data.items || []);
