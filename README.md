@@ -6,8 +6,8 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.111.29`
-- Current admin version: `V03.052.16`
+- Current site version: `V00.112.25`
+- Current admin version: `V03.056.00`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -90,7 +90,9 @@ Homepage AI/documentation rules:
 - Homepage work should follow `CHATGPT.md`
 - KMS in the admin page is the operational source of truth
 - `docs/feature-definition.md` is the repository snapshot of that KMS content
+- When policy/rule documents change, update KMS, `docs/feature-definition.md`, `CHATGPT.md`, and changelog together
 - `wosm-members` data is imported from WOSM-provided `xlsx` files, fills missing Korean country names from English on first import, and is then maintained in the admin settings UI
+- `site_visits` may store anonymous country/city/lat/lng analytics derived from Cloudflare request metadata, but raw IP must not be stored
 
 **Auth flow:**
 1. Admin POSTs password to `/api/admin/login`
@@ -238,6 +240,7 @@ Notes:
 - `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
 - Run `./scripts/sync_versions.sh` before release verification when you change version numbers or want fresh asset cache-busting
 - When homepage rules change, update `CHATGPT.md`, KMS, `docs/feature-definition.md`, and changelog together
+- When `접속 국가/도시` changes are included, run `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote` before production deploy
 
 ### Optional R2 binding for images
 

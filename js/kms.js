@@ -296,9 +296,32 @@
           response: '{ "daily": [], "top_posts": [], "total_visits": number, "avg_duration": number }',
         },
         {
+          method: 'GET', path: '/api/admin/geo-audience', auth: true,
+          summary: '관리자 접속 국가/도시 지도 및 테이블 집계',
+          response: '{ "summary": { countries, cities, visits, pageviews }, "countries": [], "cities": [] }',
+          notes: 'Cloudflare 요청 메타의 국가/도시/좌표를 기반으로 집계합니다. IP 원문은 저장하지 않으며, 초기 데이터는 기능 배포 이후 새 방문부터 누적됩니다.',
+        },
+        {
           method: 'GET', path: '/api/admin/marketing', auth: true,
           summary: '마케팅 · 유입 채널 분석',
           response: '{ "funnel": [], "utm_campaigns": [], "referrers": [] }',
+        },
+        {
+          method: 'GET|POST', path: '/api/admin/homepage-issues', auth: true,
+          summary: '홈 오류/이슈 기록 조회 및 생성',
+          response: '{ "items": HomepageIssue[] }',
+          notes: 'HomepageIssue: { id, title, issue_type, status, severity, area, summary, impact, cause, action_items, source_path, reporter, occurred_at, last_seen_at, occurrence_count }',
+        },
+        {
+          method: 'PATCH|DELETE', path: '/api/admin/homepage-issues/:id', auth: true,
+          summary: '홈 오류/이슈 기록 수정 및 삭제',
+          response: '{ "item": HomepageIssue } | { "ok": true }',
+        },
+        {
+          method: 'POST', path: '/api/homepage-issues/report', auth: false,
+          summary: '홈 공개 화면 자동 오류 보고',
+          response: '{ "ok": true, "item": HomepageIssue }',
+          notes: '홈 초기 로드 실패, 백그라운드 최신 소식 새로고침 실패, 런타임 오류를 같은 이슈 기준으로 자동 누적합니다.',
         },
       ],
     },
@@ -894,7 +917,7 @@
     document.querySelectorAll('.admin-build-version').forEach(function (el) { el.textContent = adminVer; });
     setText('kms-ver-site', siteVer);
     setText('kms-build-version', siteVer);
-    setText('kms-release-note-version', 'Site ' + siteVer + ' · 홈 접근성/KMS 최신화 반영본');
+    setText('kms-release-note-version', 'Site ' + siteVer + ' · 정책/KMS 최신화 반영본');
   }
 
   // ── API 가이드 렌더링 ──────────────────────────────────────────
