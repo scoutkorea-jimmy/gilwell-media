@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.055.01
+ * Version: 03.055.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2116,6 +2116,7 @@
       var range = _geoAudienceData.range || {};
       var countries = Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [];
       var cities = Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [];
+      var warmupNote = String(_geoAudienceData.warmup_note || '').trim();
 
       statsEl.innerHTML =
         _statCard('국가 수', _fmt(summary.countries || countries.length || 0), range.label || '집계 기간') +
@@ -2124,6 +2125,9 @@
         _statCard('페이지뷰', _fmt(summary.pageviews || 0), (range.days || period) + '일 전체 조회');
 
       noteEl.textContent = (_geoAudienceData.tracking_note || '') + (range.label ? ' · ' + range.label + ' 기준' : '');
+      if (!countries.length && warmupNote) {
+        noteEl.textContent += ' · ' + warmupNote;
+      }
       countryEl.innerHTML = _renderGeoCountryTable(countries);
       cityEl.innerHTML = _renderGeoCityTable(cities);
       _renderGeoAudienceMap(countries);
@@ -2138,7 +2142,7 @@
 
   function _renderGeoCountryTable(items) {
     if (!items.length) {
-      return '<div class="v3-empty"><div class="v3-empty-text">국가별 접속 기록이 아직 없습니다.</div></div>';
+      return '<div class="v3-empty"><div class="v3-empty-text">국가별 접속 기록이 아직 없습니다.</div><div class="v3-issues-note">위치 데이터는 배포 이후 새 방문부터 누적됩니다. 초기에는 비어 있을 수 있습니다.</div></div>';
     }
     return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
       '<th>국가</th><th>방문</th><th>페이지뷰</th><th>도시 수</th><th>최근 접속</th>' +
@@ -2157,7 +2161,7 @@
 
   function _renderGeoCityTable(items) {
     if (!items.length) {
-      return '<div class="v3-empty"><div class="v3-empty-text">도시별 접속 기록이 아직 없습니다.</div></div>';
+      return '<div class="v3-empty"><div class="v3-empty-text">도시별 접속 기록이 아직 없습니다.</div><div class="v3-issues-note">일부 요청은 Cloudflare에서 도시 정보를 주지 않아 `도시 미확인`으로 집계될 수 있습니다.</div></div>';
     }
     return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
       '<th>도시</th><th>국가</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +

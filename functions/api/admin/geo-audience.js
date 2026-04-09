@@ -1,6 +1,7 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
+import { resolveCountryLabelKo } from '../../_shared/country-code-labels.js';
 import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
@@ -88,6 +89,7 @@ export async function onRequestGet({ request, env }) {
       countries: normalizeRows(countryRows.results || []),
       cities: normalizeRows(cityRows.results || []),
       tracking_note: '사용자 추가 입력 없이 Cloudflare 요청 메타의 국가/도시/좌표를 바탕으로 집계합니다. IP 원문은 저장하지 않습니다.',
+      warmup_note: '위치 데이터는 2026-04-09 배포 이후 새 방문부터 누적됩니다. 초기에는 국가/도시 목록이 비어 있을 수 있습니다.',
     });
   } catch (err) {
     console.error('GET /api/admin/geo-audience error:', err);
@@ -100,7 +102,7 @@ function normalizeRows(rows) {
   return (Array.isArray(rows) ? rows : []).map(function (row) {
     return {
       country_code: row.country_code || '',
-      country_name: row.country_name || row.country_code || 'Unknown',
+      country_name: resolveCountryLabelKo(row.country_code || '', row.country_name || row.country_code || 'Unknown'),
       city_name: row.city_name || '',
       visits: Number(row.visits || 0),
       pageviews: Number(row.pageviews || 0),
