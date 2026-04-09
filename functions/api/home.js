@@ -47,6 +47,16 @@ export async function onRequestGet({ env, request }) {
       console.error('GET /api/home auto publish error:', err);
     });
 
+    const issues = {};
+    const resolveSection = (key, loader, fallback) =>
+      Promise.resolve()
+        .then(loader)
+        .catch((err) => {
+          issues[key] = true;
+          console.error(`GET /api/home section "${key}" failed:`, err);
+          return fallback;
+        });
+
     const [
       siteMeta,
       navLabels,
@@ -64,21 +74,37 @@ export async function onRequestGet({ env, request }) {
       wosm,
       people,
     ] = await Promise.all([
-      loadSiteMeta(env),
-      loadNavLabels(env),
-      loadTranslations(env),
-      loadTicker(env),
-      loadStats(env),
-      loadFooterAnalytics(env),
-      loadHero(env, origin),
-      loadHomeLead(env, origin),
-      loadLatestPosts(env, origin, 4),
-      loadPopular(env, origin, 4),
-      loadPostList(env, origin, { featured: true, limit: 4 }),
-      loadPostList(env, origin, { category: 'korea', limit: 4 }),
-      loadPostList(env, origin, { category: 'apr', limit: 4 }),
-      loadPostList(env, origin, { category: 'wosm', limit: 4 }),
-      loadPostList(env, origin, { category: 'people', limit: 4 }),
+      resolveSection('site_meta', () => loadSiteMeta(env), null),
+      resolveSection('nav_labels', () => loadNavLabels(env), {}),
+      resolveSection('translations', () => loadTranslations(env), {}),
+      resolveSection('ticker', () => loadTicker(env), DEFAULT_TICKER_ITEMS),
+      resolveSection('stats', () => loadStats(env), {
+        korea: 0,
+        apr: 0,
+        wosm: 0,
+        people: 0,
+        today: 0,
+      }),
+      resolveSection('analytics', () => loadFooterAnalytics(env), {
+        provider: 'site_visits',
+        provider_label: '공개 페이지 전체 방문 집계',
+        today_unique: 0,
+        today_views: 0,
+        total_unique: 0,
+        today_visits: 0,
+        total_visits: 0,
+        total_pageviews: 0,
+        measured_basis: 'site_visits',
+      }),
+      resolveSection('hero', () => loadHero(env, origin), { posts: [], interval_ms: 3000 }),
+      resolveSection('lead', () => loadHomeLead(env, origin), { post: null, media: DEFAULT_HOME_LEAD_MEDIA }),
+      resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
+      resolveSection('popular', () => loadPopular(env, origin, 4), []),
+      resolveSection('picks', () => loadPostList(env, origin, { featured: true, limit: 4 }), []),
+      resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
+      resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
+      resolveSection('wosm', () => loadPostList(env, origin, { category: 'wosm', limit: 4 }), []),
+      resolveSection('people', () => loadPostList(env, origin, { category: 'people', limit: 4 }), []),
     ]);
 
     return json({
@@ -99,6 +125,7 @@ export async function onRequestGet({ env, request }) {
         wosm: { posts: wosm },
         people: { posts: people },
       },
+      issues,
     }, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/home error:', err);
@@ -136,14 +163,18 @@ async function loadTicker(env) {
 }
 
 async function loadStats(env) {
-  const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const today = nowKST.toISOString().slice(0, 10);
   const [koreaRow, aprRow, wosmRow, peopleRow, todayRow] = await Promise.all([
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'korea' AND published = 1`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr' AND published = 1`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm' AND published = 1`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-    env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(COALESCE(publish_at, created_at)) = ? AND published = 1`).bind(today).first(),
+    env.DB.prepare(`
+      SELECT COUNT(*) AS n
+        FROM posts
+       WHERE published = 1
+         AND datetime(${PUBLIC_DATE_EXPR}, '+9 hours') >= datetime(date('now', '+9 hours'))
+         AND datetime(${PUBLIC_DATE_EXPR}, '+9 hours') < datetime(date('now', '+9 hours', '+1 day'))
+    `).first(),
   ]);
   return {
     korea: koreaRow?.n ?? 0,
@@ -322,8 +353,8 @@ async function loadPopular(env, origin, limit) {
      ORDER BY
        CASE WHEN rt.total_recent_views > 0 THEN 0 ELSE 1 END ASC,
        CASE WHEN rt.total_recent_views > 0 THEN COALESCE(rv.recent_views, 0) END DESC,
-       CASE WHEN rt.total_recent_views > 0 THEN datetime(COALESCE(p.publish_at, p.created_at)) END DESC,
-       CASE WHEN rt.total_recent_views = 0 THEN datetime(COALESCE(p.publish_at, p.created_at)) END DESC,
+       CASE WHEN rt.total_recent_views > 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
+       CASE WHEN rt.total_recent_views = 0 THEN ${PUBLIC_DATE_EXPR} END DESC,
        p.id DESC
      LIMIT ?
   `).bind(limit).all();
