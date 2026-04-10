@@ -848,6 +848,7 @@
       margin-bottom: 4px;
     }
     .dp-comment-count-badge { font-size: 12px; font-weight: 500; color: var(--text-3); }
+    .dp-view-count-badge { font-size: 11px; font-weight: 400; color: var(--text-3); margin-left: 4px; }
     .dp-post-excerpt {
       font-size: 13px;
       color: var(--text-2);
@@ -2238,6 +2239,10 @@
         <span class="dp-nav-icon">&#127984;</span>
         <span>Team Indonesia</span>
       </div>
+      <div class="dp-nav-item dp-team-nav-item dp-hidden" data-section="team_pakistan" data-team="pakistan" onclick="DP.navigate('team_pakistan')">
+        <span class="dp-nav-icon">&#127984;</span>
+        <span>Team Pakistan</span>
+      </div>
 
       <hr class="dp-nav-sep dp-team-nav-label" />
 
@@ -2375,6 +2380,13 @@
     <!-- Team Indonesia -->
     <div id="dp-section-team_indonesia" class="dp-section dp-hidden">
       <div id="dp-board-team_indonesia">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Team Pakistan -->
+    <div id="dp-section-team_pakistan" class="dp-section dp-hidden">
+      <div id="dp-board-team_pakistan">
         <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
       </div>
     </div>

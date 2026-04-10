@@ -7,10 +7,55 @@
  * DELETE /api/dreampath/events?id=N           — delete (admin only)
  */
 
+const VALID_RECURRENCE = ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'];
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { 'Content-Type': 'application/json' },
   });
+}
+
+// Expand recurring events into individual occurrences within a date range
+function expandRecurring(events, rangeStart, rangeEnd) {
+  const result = [];
+  for (const ev of events) {
+    result.push(ev);
+    if (!ev.recurrence_type || !VALID_RECURRENCE.includes(ev.recurrence_type)) continue;
+
+    const s = new Date(ev.start_date + 'T00:00:00');
+    const dur = ev.end_date ? (new Date(ev.end_date + 'T00:00:00') - s) : 0;
+    const recEnd = ev.recurrence_end ? new Date(ev.recurrence_end + 'T00:00:00') : new Date(rangeEnd + 'T00:00:00');
+    const limit = 60; // safety cap
+    let count = 0;
+    let cur = new Date(s);
+
+    while (count < limit) {
+      // Advance to next occurrence
+      switch (ev.recurrence_type) {
+        case 'daily':    cur.setDate(cur.getDate() + 1); break;
+        case 'weekly':   cur.setDate(cur.getDate() + 7); break;
+        case 'biweekly': cur.setDate(cur.getDate() + 14); break;
+        case 'monthly':  cur.setMonth(cur.getMonth() + 1); break;
+        case 'yearly':   cur.setFullYear(cur.getFullYear() + 1); break;
+      }
+      count++;
+      if (cur > recEnd) break;
+
+      const occStart = cur.toISOString().slice(0, 10);
+      const occEnd = dur ? new Date(cur.getTime() + dur).toISOString().slice(0, 10) : null;
+      if (occStart > rangeEnd) break;
+      if ((occEnd || occStart) < rangeStart) continue;
+
+      result.push({
+        ...ev,
+        start_date: occStart,
+        end_date: occEnd,
+        _recurring_instance: true,
+        _original_date: ev.start_date,
+      });
+    }
+  }
+  return result;
 }
 
 export async function onRequestGet({ request, env }) {
@@ -22,6 +67,7 @@ export async function onRequestGet({ request, env }) {
   if (id) {
     const event = await env.DB.prepare(
       `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
+              e.recurrence_type, e.recurrence_end,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
@@ -50,17 +96,25 @@ export async function onRequestGet({ request, env }) {
   // List by month (or all recent)
   let rows;
   if (month && /^\d{4}-\d{2}$/.test(month)) {
+    const rangeStart = `${month}-01`;
+    const rangeEnd = `${month}-31`;
+    // Fetch events in this month + recurring events that started before this month
     rows = await env.DB.prepare(
       `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
+              e.recurrence_type, e.recurrence_end,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
         WHERE e.start_date BETWEEN ? AND ?
+           OR (e.recurrence_type IS NOT NULL AND e.start_date <= ? AND (e.recurrence_end IS NULL OR e.recurrence_end >= ?))
         ORDER BY e.start_date ASC, e.start_time ASC`
-    ).bind(`${month}-01`, `${month}-31`).all();
+    ).bind(rangeStart, rangeEnd, rangeEnd, rangeStart).all();
+    const expanded = expandRecurring(rows.results || [], rangeStart, rangeEnd);
+    return json({ events: expanded });
   } else {
     rows = await env.DB.prepare(
       `SELECT e.id, e.title, e.description, e.start_date, e.end_date, e.start_time, e.end_time, e.type,
+              e.recurrence_type, e.recurrence_end,
               u.display_name AS created_by_name, e.created_at
          FROM dp_events e
          LEFT JOIN dp_users u ON u.id = e.created_by
@@ -75,15 +129,17 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { title, description, start_date, end_date, start_time, end_time, type } = body;
+  const { title, description, start_date, end_date, start_time, end_time, type, recurrence_type, recurrence_end } = body;
   if (!title || !start_date) return json({ error: 'title and start_date are required.' }, 400);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date)) return json({ error: 'start_date must be YYYY-MM-DD.' }, 400);
 
   const safeType = ['general', 'deadline', 'meeting', 'milestone'].includes(type) ? type : 'general';
   const safeTime = t => (t && /^\d{2}:\d{2}$/.test(t)) ? t : null;
+  const safeRecurrence = VALID_RECURRENCE.includes(recurrence_type) ? recurrence_type : null;
+  const safeRecEnd = (safeRecurrence && recurrence_end && /^\d{4}-\d{2}-\d{2}$/.test(recurrence_end)) ? recurrence_end : null;
   const result = await env.DB.prepare(
-    `INSERT INTO dp_events (title, description, start_date, end_date, start_time, end_time, type, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_events (title, description, start_date, end_date, start_time, end_time, type, recurrence_type, recurrence_end, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     title.trim().slice(0, 200),
     description ? description.trim().slice(0, 1000) : null,
@@ -92,6 +148,8 @@ export async function onRequestPost({ request, env, data }) {
     safeTime(start_time),
     safeTime(end_time),
     safeType,
+    safeRecurrence,
+    safeRecEnd,
     data.dpUser.uid
   ).run();
   return json({ id: result.meta.last_row_id, ok: true });
@@ -149,6 +207,14 @@ export async function onRequestPut({ request, env, data }) {
   if (body.type !== undefined) {
     fields.push('type = ?');
     values.push(['general','deadline','meeting','milestone'].includes(body.type) ? body.type : 'general');
+  }
+  if (body.recurrence_type !== undefined) {
+    fields.push('recurrence_type = ?');
+    values.push(VALID_RECURRENCE.includes(body.recurrence_type) ? body.recurrence_type : null);
+  }
+  if (body.recurrence_end !== undefined) {
+    fields.push('recurrence_end = ?');
+    values.push((body.recurrence_end && /^\d{4}-\d{2}-\d{2}$/.test(body.recurrence_end)) ? body.recurrence_end : null);
   }
   if (fields.length) {
     values.push(id);

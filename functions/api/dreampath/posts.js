@@ -10,15 +10,16 @@
  *   { url, name, type, size, is_image }
  */
 
-const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia'];
-const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia'];
+const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
+const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
 
 // Returns whether a user's department matches a team board
 function _deptMatchesBoard(department, board) {
   const d = (department || '').toLowerCase();
   return (board === 'team_korea'     && d.includes('korea'))     ||
          (board === 'team_nepal'     && d.includes('nepal'))     ||
-         (board === 'team_indonesia' && d.includes('indonesia'));
+         (board === 'team_indonesia' && d.includes('indonesia')) ||
+         (board === 'team_pakistan'   && d.includes('pakistan'));
 }
 
 function json(data, status = 200) {
@@ -42,9 +43,11 @@ export async function onRequestGet({ request, env, data }) {
 
   // ── Single post with files + history + linked event ───────────
   if (id) {
+    // Increment view count and fetch post in one go
+    await env.DB.prepare(`UPDATE dp_board_posts SET view_count = COALESCE(view_count, 0) + 1 WHERE id = ?`).bind(id).run();
     const post = await env.DB.prepare(
       `SELECT id, board, title, content, file_url, file_name,
-              author_id, author_name, pinned, linked_event_id, approver_name, approval_status, created_at, updated_at
+              author_id, author_name, pinned, linked_event_id, approver_name, approval_status, view_count, created_at, updated_at
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
@@ -96,7 +99,7 @@ export async function onRequestGet({ request, env, data }) {
   if (board) {
     rows = await env.DB.prepare(
       `SELECT p.id, p.board, p.title, p.content, p.file_url, p.file_name,
-              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.created_at, p.updated_at,
+              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
               (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
          FROM dp_board_posts p WHERE p.board = ?
         ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
@@ -104,7 +107,7 @@ export async function onRequestGet({ request, env, data }) {
   } else {
     rows = await env.DB.prepare(
       `SELECT p.id, p.board, p.title, p.content, p.file_url, p.file_name,
-              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.created_at, p.updated_at,
+              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
               (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
          FROM dp_board_posts p
         ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
