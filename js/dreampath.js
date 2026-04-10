@@ -19,14 +19,15 @@ const DP = (() => {
   const SESSION_EXPIRY_KEY = 'dp_session_expires_at';
 
   // ── Team Board helpers ─────────────────────────────────────────────────────
-  const TEAM_BOARDS = ['team_korea', 'team_nepal', 'team_indonesia'];
-  const TEAM_BOARD_TITLES = { team_korea: 'Team Korea', team_nepal: 'Team Nepal', team_indonesia: 'Team Indonesia' };
+  const TEAM_BOARDS = ['team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
+  const TEAM_BOARD_TITLES = { team_korea: 'Team Korea', team_nepal: 'Team Nepal', team_indonesia: 'Team Indonesia', team_pakistan: 'Team Pakistan' };
 
   function _teamBoard(department) {
     const d = (department || '').toLowerCase();
     if (d.includes('korea'))     return 'team_korea';
     if (d.includes('nepal'))     return 'team_nepal';
     if (d.includes('indonesia')) return 'team_indonesia';
+    if (d.includes('pakistan'))   return 'team_pakistan';
     return null;
   }
 
@@ -704,6 +705,7 @@ const DP = (() => {
       case 'team_korea':
       case 'team_nepal':
       case 'team_indonesia':
+      case 'team_pakistan':
         loadBoard(section); break;
       case 'contacts':     loadContacts(); break;
       case 'users':
@@ -971,7 +973,7 @@ const DP = (() => {
         for (const item of lane) {
           if (item.cs > col) rowHtml += `<div style="grid-column:${col+1}/${item.cs+1}"></div>`;
           const color = typeColors[item.ev.type] || typeColors.general;
-          const label = item.showTitle ? esc(item.ev.title) : '&nbsp;';
+          const label = item.showTitle ? (item.ev.recurrence_type ? '&#128260; ' : '') + esc(item.ev.title) : '&nbsp;';
           rowHtml += `<div class="dp-cal-bar" style="grid-column:${item.cs+1}/${item.ce+1};background:${color}"
             onclick="event.stopPropagation();DP.viewEvent(${item.ev.id})"
             title="${esc(item.ev.title)}">${label}</div>`;
@@ -998,7 +1000,7 @@ const DP = (() => {
                ondragstart="event.stopPropagation();DP._calDragStart(event,${ev.id})"
                onclick="event.stopPropagation();DP.viewEvent(${ev.id})"
                title="${esc(ev.title)}${ev.start_time?' · '+ev.start_time:''}">
-            ${ev.start_time?`<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>`:''}${esc(ev.title)}
+            ${ev.start_time?`<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>`:''}${ev.recurrence_type?'&#128260; ':''}${esc(ev.title)}
           </div>`).join('');
 
         const moreHtml = dayEvs.length > 2
@@ -1252,7 +1254,7 @@ const DP = (() => {
               return `<span class="dp-approval-badge ${cls[st]||cls.pending}">${lbl[st]||st}</span>`;
             })() : ''}
           </div>
-          <h4 class="dp-post-title">${esc(post.title)}${post.comment_count ? ` <span class="dp-comment-count-badge">(${post.comment_count})</span>` : ''}</h4>
+          <h4 class="dp-post-title">${esc(post.title)}${post.comment_count ? ` <span class="dp-comment-count-badge">(${post.comment_count})</span>` : ''}${post.view_count ? ` <span class="dp-view-count-badge">&#128065; ${post.view_count}</span>` : ''}</h4>
           ${excerpt ? `<p class="dp-post-excerpt">${esc(excerpt)}</p>` : ''}
         </div>
         ${adminBtns}
@@ -1424,6 +1426,7 @@ const DP = (() => {
           <span class="dp-text-muted">By ${esc(p.author_name)}</span>
           <span class="dp-text-muted">${fmtFull(p.created_at)}</span>
           ${p.updated_at !== p.created_at ? `<span class="dp-text-muted">Edited: ${fmtFull(p.updated_at)}</span>` : ''}
+          <span class="dp-text-muted">&#128065; ${p.view_count || 0} views</span>
         </div>
         ${approvalBadgeHtml}
         ${contentHtml}
@@ -1905,6 +1908,21 @@ const DP = (() => {
           </select>
         </div>
         <div class="dp-form-row">
+          <label class="dp-label">Repeat</label>
+          <select id="ae-recurrence" class="dp-input" onchange="document.getElementById('ae-rec-end-row').style.display = this.value ? 'block' : 'none'">
+            <option value="">No repeat</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 weeks</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="dp-form-row" id="ae-rec-end-row" style="display:none">
+          <label class="dp-label">Repeat Until</label>
+          <input id="ae-rec-end" class="dp-input" type="date" />
+        </div>
+        <div class="dp-form-row">
           <label class="dp-label">Description</label>
           <textarea id="ae-desc" class="dp-input dp-textarea dp-textarea--sm" placeholder="Optional description"></textarea>
         </div>
@@ -1918,6 +1936,8 @@ const DP = (() => {
         const end_date   = $('ae-end').value;
         const type       = $('ae-type').value;
         const description = $('ae-desc').value.trim();
+        const recurrence_type = $('ae-recurrence')?.value || null;
+        const recurrence_end = $('ae-rec-end')?.value || null;
 
         if (!title || !start_date) { showToast('Title and start date are required.', 'error'); return; }
 
@@ -1927,6 +1947,7 @@ const DP = (() => {
           end_date: end_date || null,
           end_time: $('ae-end-time')?.value || null,
           type, description: description || null,
+          recurrence_type, recurrence_end,
         });
         if (result) {
           closeModal();
@@ -2006,6 +2027,7 @@ const DP = (() => {
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
           <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${typeColors[ev.type] || '#146E7A'}22;color:${typeColors[ev.type] || '#146E7A'}">${esc(typeLabels[ev.type] || ev.type)}</span>
           <span style="font-size:13px;color:var(--text-3)">${esc(ev.start_date)}${ev.start_time ? ` ${esc(ev.start_time)}` : ''}${ev.end_date ? ` → ${esc(ev.end_date)}${ev.end_time ? ' ' + esc(ev.end_time) : ''}` : ''}</span>
+          ${ev.recurrence_type ? `<span style="font-size:12px;padding:2px 8px;border-radius:12px;background:var(--accent-bg,#146E7A22);color:var(--accent,#146E7A)">&#128260; ${({daily:'Daily',weekly:'Weekly',biweekly:'Every 2 weeks',monthly:'Monthly',yearly:'Yearly'})[ev.recurrence_type] || ev.recurrence_type}${ev.recurrence_end ? ' until ' + esc(ev.recurrence_end) : ''}</span>` : ''}
         </div>
         ${ev.description ? `<div class="dp-post-detail-content" style="margin-bottom:16px">${ev.description.split('\n').map(l => esc(l)).join('<br>')}</div>` : ''}
         <div style="font-size:12px;color:var(--text-3);margin-bottom:16px">
@@ -2062,6 +2084,21 @@ const DP = (() => {
           </select>
         </div>
         <div class="dp-form-row">
+          <label class="dp-label">Repeat</label>
+          <select id="ee-recurrence" class="dp-input" onchange="document.getElementById('ee-rec-end-row').style.display = this.value ? 'block' : 'none'">
+            <option value="">No repeat</option>
+            <option value="daily"${ev.recurrence_type==='daily'?' selected':''}>Daily</option>
+            <option value="weekly"${ev.recurrence_type==='weekly'?' selected':''}>Weekly</option>
+            <option value="biweekly"${ev.recurrence_type==='biweekly'?' selected':''}>Every 2 weeks</option>
+            <option value="monthly"${ev.recurrence_type==='monthly'?' selected':''}>Monthly</option>
+            <option value="yearly"${ev.recurrence_type==='yearly'?' selected':''}>Yearly</option>
+          </select>
+        </div>
+        <div class="dp-form-row" id="ee-rec-end-row" style="${ev.recurrence_type ? '' : 'display:none'}">
+          <label class="dp-label">Repeat Until</label>
+          <input id="ee-rec-end" class="dp-input" type="date" value="${esc(ev.recurrence_end || '')}" />
+        </div>
+        <div class="dp-form-row">
           <label class="dp-label" style="display:flex;gap:6px;align-items:center">
             Edit Reason <span class="dp-required">*</span>
             <span style="font-size:11px;font-weight:400;color:var(--text-3)">(required for all edits)</span>
@@ -2086,6 +2123,8 @@ const DP = (() => {
           end_date:    $('ee-end')?.value || null,
           end_time:    $('ee-end-time')?.value || null,
           type:        $('ee-type')?.value,
+          recurrence_type: $('ee-recurrence')?.value || null,
+          recurrence_end:  $('ee-rec-end')?.value || null,
           edit_note,
         });
         if (result) {
@@ -3230,11 +3269,11 @@ const DP = (() => {
 
         <div class="dp-hb-card">
           <div class="dp-hb-card-title">🌐 Team Boards</div>
-          <div class="dp-hb-rule"><strong>게시판 목록:</strong> <code>announcements</code>, <code>documents</code>, <code>minutes</code>, <code>team_korea</code>, <code>team_nepal</code>, <code>team_indonesia</code></div>
+          <div class="dp-hb-rule"><strong>게시판 목록:</strong> <code>announcements</code>, <code>documents</code>, <code>minutes</code>, <code>team_korea</code>, <code>team_nepal</code>, <code>team_indonesia</code>, <code>team_pakistan</code></div>
           <div class="dp-hb-rule"><strong>접근 규칙:</strong> 어드민 → 모든 게시판 / 일반 유저 → 자기 팀 보드만 읽기·쓰기</div>
           <div class="dp-hb-rule"><strong>⚠️ <code>department</code>는 JWT에 없음</strong> — <code>data.dpUser</code>: <code>&#123; uid, username, role, name &#125;</code> (department 미포함)</div>
           <div class="dp-hb-rule">팀 보드 접근 판별 시 항상 DB 별도 조회 필요: <code>SELECT department FROM dp_users WHERE id = ?</code></div>
-          <div class="dp-hb-rule"><strong>매칭 패턴:</strong> <code>department.toLowerCase().includes('korea/nepal/indonesia')</code></div>
+          <div class="dp-hb-rule"><strong>매칭 패턴:</strong> <code>department.toLowerCase().includes('korea/nepal/indonesia/pakistan')</code></div>
           <div class="dp-hb-rule">프론트엔드: <code>_teamBoard(department)</code> / 백엔드: <code>_deptMatchesBoard(department, board)</code></div>
         </div>
 
