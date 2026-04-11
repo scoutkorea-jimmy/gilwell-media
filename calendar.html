@@ -30,9 +30,9 @@
       </div>
       <div class="masthead-right">
         <div class="masthead-stats" id="masthead-stats"></div>
-        <div class="lang-toggle">
-          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')">KOR</button>
-          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')" aria-pressed="false" aria-label="English">ENG</button>
         </div>
         <div class="masthead-search">
           <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
@@ -194,7 +194,7 @@
     </div>
   </footer>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <div id="calendar-login-modal" class="board-pw-overlay" aria-hidden="true">
     <div class="board-pw-box" role="dialog" aria-modal="true" aria-labelledby="calendar-login-title">

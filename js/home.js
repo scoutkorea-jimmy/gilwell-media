@@ -178,7 +178,7 @@
 
   function buildMiniItem(post, options) {
     var thumb = post.image_url
-      ? '<img class="mini-thumb" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="">'
+      ? '<img class="mini-thumb" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
       : '';
     return (
       '<article class="mini-item">' +

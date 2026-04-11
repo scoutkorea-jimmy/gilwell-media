@@ -1058,7 +1058,12 @@ body[data-home-bootstrap] .masthead {
   font-size:      9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  padding:        3px 8px;
+  padding:        6px 10px;
+  min-height:     44px;
+  min-width:      44px;
+  display:        inline-flex;
+  align-items:    center;
+  justify-content:center;
   border:         none;
   background:     transparent;
   color:          var(--muted);
@@ -1165,14 +1170,14 @@ body[data-home-bootstrap] .masthead {
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 0 14px;
   border: 1px solid rgba(255,255,255,0.28);
   border-radius: 999px;
   background: rgba(255,255,255,0.08);
   color: #fff;
   font-family: AliceDigitalLearning, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   cursor: pointer;
 }
@@ -6155,12 +6160,12 @@ footer a:hover { color: #ffffff; }
     margin-left: auto;
   }
   .masthead-stats     { display: none; }
-  .lang-btn { padding: 3px 6px; font-size: 8px; }
+  .lang-btn { padding: 4px 8px; font-size: 9px; min-height: 44px; min-width: 44px; }
   .mh-search-input { width: 0; min-width: 0; }
   /* Search expands to full width when active */
   .masthead-search:focus-within .mh-search-input,
   .mh-search-input:focus { width: 88px; }
-  .mh-search-btn { width: 28px; height: 28px; }
+  .mh-search-btn { width: 44px; height: 44px; }
 
   .mini-item h4 {
     font-size: var(--mobile-fs-title);
@@ -7791,6 +7796,7 @@ footer a:hover { color: #ffffff; }
   padding: 5px 6px; border: none;
   background: none; cursor: pointer;
   color: var(--muted);
+  min-width: 44px; min-height: 44px;
   display: flex; align-items: center; justify-content: center;
   transition: color 0.15s;
 }

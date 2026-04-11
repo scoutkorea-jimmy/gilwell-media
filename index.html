@@ -104,7 +104,7 @@
           <span>메인 스토리</span>
           <span class="rule" aria-hidden="true"></span>
         </h2>
-        <div id="home-lead-story" class="home-lead-story">
+        <div id="home-lead-story" class="home-lead-story" aria-live="polite">
           <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
         </div>
       </div>
@@ -116,7 +116,7 @@
             <span class="rule" aria-hidden="true"></span>
           </h2>
           <div class="home-rail-card">
-            <div class="mini-list" id="latest-list">
+            <div class="mini-list" id="latest-list" aria-live="polite">
               <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
             </div>
             <div class="home-rail-actions">
@@ -258,7 +258,7 @@
     </div>
   </footer>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="/js/main.js?v=20260409132230" onerror="document.body.classList.add('gw-script-error')"></script>
   <script src="/js/site-chrome.js?v=20260409132230" onerror="console.error('site-chrome.js load failed')"></script>
