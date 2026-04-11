@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, board]
+aliases: [Board Write Runtime, 게시판 쓰기 런타임]
+scope: homepage
+layer: runtime
+---
 # Board Write Runtime
 
 ## 역할

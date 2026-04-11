@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, search]
+aliases: [Search Feature, 검색]
+scope: homepage
+---
 # Search Feature
 
 ## 기능 역할

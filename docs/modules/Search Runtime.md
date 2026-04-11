@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, search]
+aliases: [Search Runtime, 검색 런타임]
+scope: homepage
+layer: runtime
+---
 # Search Runtime
 
 ## 역할

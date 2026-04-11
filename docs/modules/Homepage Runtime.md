@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage]
+aliases: [Homepage Runtime, 홈 런타임]
+scope: homepage
+layer: runtime
+---
 # Homepage Runtime
 
 ## 역할

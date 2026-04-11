@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, post]
+aliases: [Post Detail Template, 기사 상세 템플릿]
+scope: homepage
+---
 # Post Detail Template
 
 ## 엔트리

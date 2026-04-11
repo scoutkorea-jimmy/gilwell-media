@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage]
+aliases: [Contributors Template, 기여자 템플릿]
+scope: homepage
+---
 # Contributors Template
 
 ## 엔트리

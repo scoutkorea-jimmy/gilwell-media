@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, post]
+aliases: [Post Page Runtime, 기사 런타임]
+scope: homepage
+layer: runtime
+---
 # Post Page Runtime
 
 ## 역할

@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, glossary]
+aliases: [Glossary Runtime, 용어집 런타임]
+scope: homepage
+layer: runtime
+---
 # Glossary Runtime
 
 ## 역할

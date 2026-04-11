@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, calendar]
+aliases: [Calendar Feature, 캘린더]
+scope: homepage
+---
 # Calendar Feature
 
 ## 기능 역할

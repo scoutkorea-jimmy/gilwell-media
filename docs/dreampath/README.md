@@ -1,13 +1,20 @@
 ---
-tags: [hub, dreampath, api]
+tags: [hub, dreampath, api, entry-point]
 aliases: [Dreampath Hub, 드림패스 허브]
+scope: dreampath
 ---
 
 # Dreampath Hub
 
-> [!note] 진입점
-> Dreampath 내부 협업 앱의 기능과 API를 한눈에 파악하는 허브입니다.
+## 이 문서의 목적
+
+> [!abstract] Purpose & Scope
+> **목적**: Dreampath 내부 협업 앱의 **기능, API, DB 구조**를 한눈에 파악하는 레퍼런스 허브
+> **범위**: Dreampath 전용 (`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)
+> **제외**: 메인 홈페이지 (`index.html`, `js/main.js` 등) → [[CHATGPT]] 참조
+>
 > 정식 Dev Rules는 `/dreampath` → 사이드바 "Dev Rules"에서 확인하십시오.
+> 프로젝트 공통 규칙(아키텍처, DB, 배포)은 [[CLAUDE]] 참조.
 
 ## Architecture
 
@@ -94,5 +101,18 @@ functions/api/dreampath/ → API Workers (D1 + R2)
 
 ## 관련 문서
 
-- [[CLAUDE]] — AI 프로젝트 규칙 (Dreampath 섹션 포함)
-- [[CHATGPT]] — 메인 홈페이지 가이드 (Dreampath 제외)
+### 프로젝트 공통
+- [[CLAUDE]] — 프로젝트 전체 AI 규칙 (Dreampath 섹션 포함)
+
+### 홈페이지 (별도 도메인)
+- [[CHATGPT]] — 메인 홈페이지 가이드
+- [[docs/features/README|Homepage Features Hub]] — 홈페이지 기능 허브
+- [[docs/modules/README|Homepage Modules Hub]] — 홈페이지 모듈 라이브러리
+
+### 운영
+- [[docs/release-playbook|Release Playbook]] — 배포 절차
+- [[docs/stability-implementation-plan|Stability Plan]] — 안정성 계획
+
+> [!tip] Obsidian 그래프 탐색
+> `scope: dreampath` 태그로 필터링하면 Dreampath 관련 문서만 볼 수 있습니다.
+> 홈페이지와의 경계는 `scope: homepage` vs `scope: dreampath`로 구분됩니다.

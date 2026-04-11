@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, board]
+aliases: [Board Read Feature, 게시판 읽기]
+scope: homepage
+---
 # Board Read Feature
 
 ## 기능 역할

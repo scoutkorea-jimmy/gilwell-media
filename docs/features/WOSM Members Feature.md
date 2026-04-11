@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, wosm]
+aliases: [WOSM Members Feature, 회원국 현황]
+scope: homepage
+---
 # WOSM Members Feature
 
 ## 기능 역할

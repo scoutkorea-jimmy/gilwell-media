@@ -1,3 +1,8 @@
+---
+tags: [api, home, stats, homepage]
+aliases: [Home and Stats API, 홈/통계 API]
+scope: homepage
+---
 # Home and Stats API
 
 ## 역할

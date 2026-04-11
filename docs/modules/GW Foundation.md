@@ -1,3 +1,9 @@
+---
+tags: [module, foundation, homepage]
+aliases: [GW Foundation, GW 기반]
+scope: homepage
+layer: foundation
+---
 # GW Foundation
 
 ## 역할

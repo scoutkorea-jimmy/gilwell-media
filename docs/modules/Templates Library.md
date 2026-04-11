@@ -1,3 +1,8 @@
+---
+tags: [hub, template, homepage]
+aliases: [Templates Library, 템플릿 라이브러리]
+scope: homepage
+---
 # Templates Library
 
 ## 역할

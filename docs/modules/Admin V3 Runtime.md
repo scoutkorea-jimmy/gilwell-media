@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, admin]
+aliases: [Admin V3 Runtime, 관리자 런타임]
+scope: admin
+layer: runtime
+---
 # Admin V3 Runtime
 
 ## 역할
