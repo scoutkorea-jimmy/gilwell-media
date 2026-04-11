@@ -10,16 +10,31 @@
  *   { url, name, type, size, is_image }
  */
 
-const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
-const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
+// Hardcoded fallbacks — overridden at runtime by DB lookup
+const FALLBACK_VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
+const FALLBACK_TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
+
+// Load boards from DB, falling back to hardcoded lists
+async function _loadBoards(env) {
+  try {
+    const rows = await env.DB.prepare(`SELECT slug, board_type FROM dp_boards`).all();
+    const all = (rows.results || []);
+    return {
+      valid: all.map(b => b.slug),
+      teams: all.filter(b => b.board_type === 'team').map(b => b.slug),
+    };
+  } catch {
+    return { valid: FALLBACK_VALID_BOARDS, teams: FALLBACK_TEAM_BOARDS };
+  }
+}
 
 // Returns whether a user's department matches a team board
 function _deptMatchesBoard(department, board) {
   const d = (department || '').toLowerCase();
-  return (board === 'team_korea'     && d.includes('korea'))     ||
-         (board === 'team_nepal'     && d.includes('nepal'))     ||
-         (board === 'team_indonesia' && d.includes('indonesia')) ||
-         (board === 'team_pakistan'   && d.includes('pakistan'));
+  // For team_xxx boards, check if department contains the country keyword
+  if (!board.startsWith('team_')) return false;
+  const country = board.slice(5); // e.g. 'korea', 'nepal', 'pakistan'
+  return d.includes(country);
 }
 
 function json(data, status = 200) {
@@ -34,6 +49,8 @@ export async function onRequestGet({ request, env, data }) {
   const id    = parseInt(url.searchParams.get('id') || '', 10);
   const board = url.searchParams.get('board');
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
+
+  const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
 
   // Team board access check for list requests
   if (board && TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
@@ -117,6 +134,8 @@ export async function onRequestGet({ request, env, data }) {
 }
 
 export async function onRequestPost({ request, env, data }) {
+  const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
+
   if (data.dpUser.role !== 'admin') {
     // Non-admins can only post in their own team board
     let body2;

@@ -13,6 +13,31 @@ export async function onRequestGet({ env, data }) {
     .filter(Boolean)
     .map(function (value) { return value.toLowerCase(); });
 
+  // Determine which boards this user can access
+  const isAdmin = user.role === 'admin';
+  let accessibleBoards = [];
+  try {
+    const boardRows = await env.DB.prepare(`SELECT slug, board_type FROM dp_boards`).all();
+    const allBoards = boardRows.results || [];
+    if (isAdmin) {
+      accessibleBoards = allBoards.map(function (b) { return b.slug; });
+    } else {
+      const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(user.uid).first();
+      const dept = (u && u.department || '').toLowerCase();
+      accessibleBoards = allBoards.filter(function (b) {
+        if (b.board_type !== 'team') return true; // non-team boards are accessible to all
+        var country = b.slug.slice(5); // team_xxx -> xxx
+        return dept.includes(country);
+      }).map(function (b) { return b.slug; });
+    }
+  } catch (e) {
+    // Fallback: show all non-team boards
+    accessibleBoards = ['announcements', 'documents', 'minutes'];
+  }
+
+  // Build SQL IN clause for accessible boards
+  const boardPlaceholders = accessibleBoards.map(function () { return '?'; }).join(',');
+
   const [taskRows, noteRows, postHistoryRows, eventHistoryRows, commentRows] = await Promise.all([
     env.DB.prepare(
       `SELECT id, title, assignee, status, priority, due_date, updated_at
@@ -34,12 +59,13 @@ export async function onRequestGet({ env, data }) {
         LIMIT 20`
     ).all(),
     env.DB.prepare(
-      `SELECT h.post_id, h.editor_name, h.edit_note, h.edited_at, p.title
+      `SELECT h.post_id, h.editor_name, h.edit_note, h.edited_at, p.title, p.board
          FROM dp_post_history h
          JOIN dp_board_posts p ON p.id = h.post_id
+        WHERE p.board IN (${boardPlaceholders})
         ORDER BY datetime(h.edited_at) DESC, h.id DESC
         LIMIT 12`
-    ).all(),
+    ).bind(...accessibleBoards).all(),
     env.DB.prepare(
       `SELECT h.event_id, h.editor_name, h.edit_note, h.edited_at, e.title
          FROM dp_event_history h
@@ -48,12 +74,13 @@ export async function onRequestGet({ env, data }) {
         LIMIT 12`
     ).all(),
     env.DB.prepare(
-      `SELECT c.id, c.post_id, c.author_name, c.content, c.created_at, p.title
+      `SELECT c.id, c.post_id, c.author_name, c.content, c.created_at, p.title, p.board
          FROM dp_post_comments c
          JOIN dp_board_posts p ON p.id = c.post_id
+        WHERE p.board IN (${boardPlaceholders})
         ORDER BY datetime(c.created_at) DESC, c.id DESC
         LIMIT 12`
-    ).all(),
+    ).bind(...accessibleBoards).all(),
   ]);
 
   const tasks = (taskRows.results || []);
