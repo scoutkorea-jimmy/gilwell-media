@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, wosm]
+aliases: [WOSM Members Template, 회원국 템플릿]
+scope: homepage
+---
 # WOSM Members Template
 
 ## 엔트리

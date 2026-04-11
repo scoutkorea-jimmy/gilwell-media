@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, glossary]
+aliases: [Glossary Template, 용어집 템플릿]
+scope: homepage
+---
 # Glossary Template
 
 ## 엔트리

@@ -1,3 +1,8 @@
+---
+tags: [api, posts, homepage]
+aliases: [Posts API, 게시글 API]
+scope: homepage
+---
 # Posts API
 
 ## 역할

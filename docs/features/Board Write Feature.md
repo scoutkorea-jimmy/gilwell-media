@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, board]
+aliases: [Board Write Feature, 게시판 글쓰기]
+scope: homepage
+---
 # Board Write Feature
 
 ## 기능 역할

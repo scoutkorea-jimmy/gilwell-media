@@ -1,3 +1,8 @@
+---
+tags: [api, auth, admin]
+aliases: [Admin Session API, 관리자 세션 API]
+scope: admin
+---
 # Admin Session API
 
 ## 역할

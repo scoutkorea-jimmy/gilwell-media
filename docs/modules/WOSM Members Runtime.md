@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, wosm]
+aliases: [WOSM Members Runtime, 회원국 런타임]
+scope: homepage
+layer: runtime
+---
 # WOSM Members Runtime
 
 ## 역할

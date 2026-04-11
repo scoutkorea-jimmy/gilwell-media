@@ -1,3 +1,8 @@
+---
+tags: [template, kms]
+aliases: [KMS Template, KMS 템플릿]
+scope: kms
+---
 # KMS Template
 
 ## 엔트리

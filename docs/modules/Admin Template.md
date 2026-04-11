@@ -1,3 +1,8 @@
+---
+tags: [template, admin]
+aliases: [Admin Template, 관리자 템플릿]
+scope: admin
+---
 # Admin Template
 
 ## 엔트리

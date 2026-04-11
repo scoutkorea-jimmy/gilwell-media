@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, glossary]
+aliases: [Glossary Feature, 용어집]
+scope: homepage
+---
 # Glossary Feature
 
 ## 기능 역할

@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, feed]
+aliases: [Homepage Feed Feature, 홈 피드]
+scope: homepage
+---
 # Homepage Feed Feature
 
 ## 기능 역할

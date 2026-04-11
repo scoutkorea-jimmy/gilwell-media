@@ -1,3 +1,8 @@
+---
+tags: [api, calendar, homepage]
+aliases: [Calendar API, 캘린더 API]
+scope: homepage
+---
 # Calendar API
 
 ## 역할

@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, post]
+aliases: [Post Detail Feature, 기사 상세]
+scope: homepage
+---
 # Post Detail Feature
 
 ## 기능 역할

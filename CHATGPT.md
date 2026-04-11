@@ -1,14 +1,29 @@
 ---
-tags: [ai-guide, homepage, entry-point]
-aliases: [Homepage Guide, 홈페이지 가이드]
+tags: [ai-guide, homepage, entry-point, public, admin]
+aliases: [Homepage Guide, 홈페이지 가이드, CHATGPT]
+scope: homepage
 ---
 
 # CHATGPT.md — 메인 홈페이지 개발 가이드
 
-> [!warning] Scope
-> 이 문서는 **BP미디어 메인 홈페이지** 전용 AI 작업 가이드입니다.
-> DreamPath 관련 파일(`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)은 대상이 아닙니다.
-> DreamPath 작업 시 → [[CLAUDE]] 참조
+## 이 문서의 목적
+
+> [!abstract] Purpose & Scope
+> **목적**: **메인 홈페이지**(공개 사이트 + 관리자 V3 + KMS) 전용 AI 작업 가이드
+> **범위**: UI, 모듈, 디자인, 컨텐츠, 태그, 배포 등 **홈페이지 도메인의 모든 규칙**
+> **제외**: DreamPath 관련 파일 일체 (`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)
+>
+> DreamPath 작업 시 → [[CLAUDE]] + [[docs/dreampath/README|Dreampath Hub]] 참조
+
+### 이 문서와 다른 문서의 관계
+
+| 문서 | 역할 | 우선순위 |
+|---|---|---|
+| **KMS** (관리자 페이지) | 운영 기준 **정식 원본** | 1순위 |
+| **이 문서** (`CHATGPT.md`) | AI 작업 기준 원본 | 2순위 |
+| [[docs/feature-definition\|Feature Definition]] | KMS 보조 스냅샷 | 3순위 |
+| [[docs/features/README\|Homepage Features Hub]] | 기능 중심 탐색 | 참고 |
+| [[docs/modules/README\|Homepage Modules Hub]] | 모듈 라이브러리 | 참고 |
 
 ---
 
@@ -17,7 +32,7 @@ aliases: [Homepage Guide, 홈페이지 가이드]
 - **안정성 우선** — 새 기능보다 기존 기능의 안정적 동작이 중요
 - 운영 기준 원본: 관리자 **KMS** (`/admin.html` → KMS 메뉴)
 - AI 작업 기준 원본: 이 파일 (`CHATGPT.md`)
-- `docs/feature-definition.md`는 KMS의 보조 스냅샷으로만 참고
+- [[docs/feature-definition|Feature Definition]]은 KMS의 보조 스냅샷으로만 참고
 - DreamPath 규칙을 메인 사이트에 혼용하지 않음
 
 ---
@@ -217,31 +232,42 @@ aliases: [Homepage Guide, 홈페이지 가이드]
 - [[CLAUDE]] — AI 프로젝트 전체 규칙 (Dreampath 포함)
 - [[docs/features/README|Homepage Features Hub]] — 기능 중심 진입점
 - [[docs/modules/README|Homepage Modules Hub]] — 모듈 라이브러리
-- [[docs/feature-definition|Feature Definition (KMS Snapshot)]]
-- [[docs/release-playbook|Release Playbook]]
-- [[docs/stability-implementation-plan|Stability Plan]]
-- [[docs/homepage-module-inventory|Module Inventory]]
+### 기능 문서 (scope: homepage)
+- [[docs/features/README|Homepage Features Hub]] — 기능 진입점
+- [[docs/features/Feature Map|Feature Map]] — 전체 기능 맵
+- [[docs/modules/README|Homepage Modules Hub]] — 모듈 라이브러리
+- [[docs/modules/Homepage Runtime Map|Runtime Map]] — 런타임 의존성 맵
+
+### KMS / 스냅샷 (scope: kms)
+- [[docs/feature-definition|Feature Definition]] — KMS 보조 스냅샷
+- [[docs/homepage-module-inventory|Module Inventory]] — 모듈 인벤토리
+
+### 운영 (scope: ops)
+- [[docs/release-playbook|Release Playbook]] — 배포 절차
+- [[docs/stability-implementation-plan|Stability Plan]] — 안정성 로드맵
+- [[docs/hardcoding-inventory|Hardcoding Inventory]] — 하드코딩 감사
+
+### 프로젝트 공통
+- [[CLAUDE]] — 프로젝트 전체 AI 규칙
+- [[docs/dreampath/README|Dreampath Hub]] — Dreampath 레퍼런스 (별도 도메인)
 
 ---
 
-## Obsidian Navigation
+## Obsidian Graph Map
+
+> [!note] 그래프 클러스터
+> Obsidian 그래프에서 `scope` 태그로 필터링하면 4개 도메인 클러스터가 보입니다.
 
 ```
-CHATGPT.md (이 문서)
-├── docs/features/README.md  → Feature Hub
-│   ├── Feature Map
-│   ├── Public Site Chrome Feature
-│   ├── Homepage Feed Feature
-│   └── ... (11개 기능 문서)
-├── docs/modules/README.md   → Module Hub
-│   ├── Homepage Runtime Map
-│   ├── Templates Library
-│   ├── API Library
-│   └── ... (16개 모듈 문서)
-└── docs/
-    ├── feature-definition.md
-    ├── release-playbook.md
-    ├── stability-implementation-plan.md
-    ├── hardcoding-inventory.md
-    └── homepage-module-inventory.md
+[homepage]  CHATGPT.md ─── Features Hub ─── 11개 Feature 문서
+                │               │
+                │          Modules Hub ── 16개 Module 문서 (Runtime/Template/API)
+                │
+[admin]     Admin Session Feature ── Admin Operations Feature ── Admin V3 Runtime
+                │
+[kms]       KMS Template ── Feature Definition (snapshot)
+                │
+[dreampath] CLAUDE.md ── Dreampath Hub ── 기능/API/DB 레퍼런스
+                │
+[ops]       Release Playbook ── Stability Plan ── Hardcoding Inventory
 ```

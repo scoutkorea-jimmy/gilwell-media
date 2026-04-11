@@ -1,3 +1,8 @@
+---
+tags: [feature, admin, operations]
+aliases: [Admin Operations Feature, 관리자 운영]
+scope: admin
+---
 # Admin Operations Feature
 
 ## 기능 역할

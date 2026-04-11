@@ -1,3 +1,8 @@
+---
+tags: [feature, admin, auth]
+aliases: [Admin Session Feature, 관리자 인증]
+scope: admin
+---
 # Admin Session Feature
 
 ## 기능 역할

@@ -1,3 +1,8 @@
+---
+tags: [api, settings, homepage, admin]
+aliases: [Settings API, 설정 API]
+scope: homepage
+---
 # Settings API
 
 ## 역할

@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, search]
+aliases: [Search Template, 검색 템플릿]
+scope: homepage
+---
 # Search Template
 
 ## 엔트리

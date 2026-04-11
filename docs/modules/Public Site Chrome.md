@@ -1,3 +1,9 @@
+---
+tags: [module, shell, public, homepage]
+aliases: [Public Site Chrome, 공개 셸 모듈]
+scope: homepage
+layer: shell
+---
 # Public Site Chrome
 
 ## 역할

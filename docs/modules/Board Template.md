@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, board]
+aliases: [Board Template, 게시판 템플릿]
+scope: homepage
+---
 # Board Template
 
 ## 엔트리

@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage, calendar]
+aliases: [Calendar Template, 캘린더 템플릿]
+scope: homepage
+---
 # Calendar Template
 
 ## 엔트리

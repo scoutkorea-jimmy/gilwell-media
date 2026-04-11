@@ -1,20 +1,41 @@
 ---
-tags: [ai-guide, dreampath, entry-point]
-aliases: [Claude Rules, AI Dev Rules]
+tags: [ai-guide, dreampath, entry-point, project-root]
+aliases: [Claude Rules, AI Dev Rules, 프로젝트 규칙]
+scope: project
 ---
 
 # CLAUDE.md — Gilwell Media
 
-> [!warning] AI 개발자 필독
-> 이 파일은 Claude Code 및 모든 AI 도구가 **자동 로드**하는 프로젝트 규칙입니다.
-> 코드를 수정하기 전에 반드시 작업 대상을 확인하십시오.
+## 이 문서의 목적
+
+> [!abstract] Purpose & Scope
+> **목적**: Claude Code가 자동 로드하는 **프로젝트 전체 규칙** 파일
+> **범위**: 아키텍처, 배포, DB, 인증 등 **공통 인프라** + **Dreampath 전용 규칙**
+> **대상 독자**: AI 개발 도구 (Claude Code, ChatGPT 등)
 >
-> | 작업 대상 | 우선 문서 |
-> |---|---|
-> | **메인 홈페이지** | [[CHATGPT]] — 홈페이지 전용 규칙 |
-> | **Dreampath** | `/dreampath` → 사이드바 "Dev Rules" (정식 출처) |
->
+> 이 문서는 홈페이지와 Dreampath **양쪽에 공통**되는 기술 규칙을 정의합니다.
+> 각 도메인의 세부 규칙은 아래 전용 문서에서 관리합니다.
+
+### 문서 계층 구조
+
+```
+CLAUDE.md (이 문서) ← 프로젝트 공통 + Dreampath 규칙
+├── CHATGPT.md         ← 메인 홈페이지 전용 규칙
+├── Dreampath Hub      ← Dreampath 기능/API 레퍼런스
+├── Homepage Features Hub ← 홈페이지 기능 중심 문서
+└── KMS (admin page)   ← 운영 기준 원본 (코드 외부)
+```
+
+| 작업 대상 | 우선 문서 | 비고 |
+|---|---|---|
+| **프로젝트 공통** | 이 문서 (`CLAUDE.md`) | 아키텍처, DB, 배포, 인증 |
+| **메인 홈페이지** | [[CHATGPT]] | UI, 모듈, 디자인, 컨텐츠 규칙 |
+| **Dreampath** | [[docs/dreampath/README\|Dreampath Hub]] + Dev Rules | 기능/API/DB 레퍼런스 |
+| **기능 정의 원본** | 관리자 KMS (`/admin.html`) | 운영 기준 정식 출처 |
+
+> [!warning] 경계 규칙
 > 홈페이지 작업에 Dreampath 규칙을 적용하지 마십시오.
+> Dreampath 작업에 홈페이지 모듈/디자인 규칙을 적용하지 마십시오.
 
 ---
 
@@ -224,11 +245,24 @@ function _deptMatchesBoard(department, board) {
 
 ## Related Docs
 
+### 홈페이지 (scope: homepage)
 - [[CHATGPT]] — 메인 홈페이지 개발 가이드
 - [[docs/features/README|Homepage Features Hub]] — 기능 중심 문서 진입점
 - [[docs/modules/README|Homepage Modules Hub]] — 모듈 참고 라이브러리
+- [[docs/features/Feature Map|Feature Map]] — 전체 기능 맵
+
+### Dreampath (scope: dreampath)
+- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
+
+### 운영 (scope: ops)
 - [[docs/release-playbook|Release Playbook]] — 배포 절차
 - [[docs/stability-implementation-plan|Stability Plan]] — 안정성 개선 로드맵
+- [[docs/hardcoding-inventory|Hardcoding Inventory]] — 하드코딩 감사
+
+### KMS (scope: kms)
+- [[docs/feature-definition|Feature Definition]] — KMS 보조 스냅샷
+- [[docs/homepage-module-inventory|Module Inventory]] — 모듈 인벤토리
 
 > [!tip] Dev Rules 정식 출처
-> Dreampath 앱 (`/dreampath` → Dev Rules)에서 항상 최신본을 확인하십시오.
+> Dreampath → `/dreampath` 사이드바 "Dev Rules"
+> 홈페이지 → 관리자 KMS (`/admin.html` → KMS 메뉴)

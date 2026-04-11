@@ -1,3 +1,9 @@
+---
+tags: [module, runtime, homepage, calendar]
+aliases: [Calendar Runtime, 캘린더 런타임]
+scope: homepage
+layer: runtime
+---
 # Calendar Runtime
 
 ## 역할

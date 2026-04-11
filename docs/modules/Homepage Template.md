@@ -1,3 +1,8 @@
+---
+tags: [template, public, homepage]
+aliases: [Homepage Template, 홈 템플릿]
+scope: homepage
+---
 # Homepage Template
 
 ## 엔트리

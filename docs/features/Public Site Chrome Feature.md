@@ -1,3 +1,8 @@
+---
+tags: [feature, public, homepage, shell]
+aliases: [Public Site Chrome Feature, 공개 셸]
+scope: homepage
+---
 # Public Site Chrome Feature
 
 ## 기능 역할

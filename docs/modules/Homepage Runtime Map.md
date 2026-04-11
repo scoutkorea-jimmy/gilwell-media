@@ -1,3 +1,8 @@
+---
+tags: [map, runtime, homepage]
+aliases: [Homepage Runtime Map, 런타임 맵]
+scope: homepage
+---
 # Homepage Runtime Map
 
 ## 목적
