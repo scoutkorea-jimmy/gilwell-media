@@ -1010,7 +1010,8 @@
       if (event.target === overlay) GW.closeShareModal();
     });
     document.body.appendChild(overlay);
-    document.getElementById('share-modal-close').addEventListener('click', GW.closeShareModal);
+    var closeBtn = document.getElementById('share-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', GW.closeShareModal);
     overlay.querySelectorAll('[data-share-channel]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         GW.handleShareChannel(btn.getAttribute('data-share-channel') || '');
@@ -1197,7 +1198,7 @@
       method: 'DELETE',
       credentials: 'same-origin',
       keepalive: true,
-    }).catch(function () {});
+    }).catch(function (e) { console.warn('[GW] logout cleanup failed:', e); });
   };
   GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || 'full'; };
   GW.setAdminRole = function (role) {
@@ -1270,7 +1271,7 @@
         referrer: document.referrer || '',
       }),
       keepalive: true,
-    }).catch(function () {});
+    }).catch(function (e) { console.warn('[GW] visit track failed:', e); });
   };
 
   GW.trackPostEngagement = function () {
@@ -1323,7 +1324,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: payload,
         keepalive: true,
-      }).catch(function () {});
+      }).catch(function (e) { console.warn('[GW] engagement track failed:', e); });
     }
 
     function flush(force) {
@@ -1384,9 +1385,11 @@
     if (!GW.TURNSTILE_SITE_KEY) { cb(); return; }
     if (window.turnstile) { cb(); return; }
     if (document.querySelector('script[data-turnstile]')) {
-      // Script already loading — wait for it
+      // Script already loading — wait for it with timeout
+      var attempts = 0;
       var wait = setInterval(function () {
-        if (window.turnstile) { clearInterval(wait); cb(); }
+        if (window.turnstile) { clearInterval(wait); cb(); return; }
+        if (++attempts > 100) { clearInterval(wait); console.warn('[GW] Turnstile load timeout'); cb(); }
       }, 100);
       return;
     }
@@ -1395,6 +1398,7 @@
     s.defer = true;
     s.setAttribute('data-turnstile', '1');
     s.onload = function () { cb(); };
+    s.onerror = function () { console.warn('[GW] Turnstile CDN load failed'); cb(); };
     document.head.appendChild(s);
   };
 

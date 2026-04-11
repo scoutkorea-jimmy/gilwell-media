@@ -52,6 +52,7 @@ export async function onRequestGet({ params, env, request }) {
   }
   const aiDisclaimer = disclaimerRow?.value || '본 글은 AI의 도움을 받아 작성되었습니다.';
   const publicRuntime = parseJsonObject(publicRuntimeRow && publicRuntimeRow.value);
+  if (!publicRuntimeRow) console.warn('[post/:id] public_runtime setting not found — using empty fallback');
   const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
   const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
   const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');

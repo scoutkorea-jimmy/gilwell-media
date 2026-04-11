@@ -96,6 +96,10 @@ function _loadPostEditorAssets(callback) {
       script.dataset.loaded = '1';
       done();
     }, { once: true });
+    script.addEventListener('error', function () {
+      console.error('[post-page] Failed to load script: ' + src);
+      done();
+    }, { once: true });
     document.head.appendChild(script);
   }
 
@@ -116,6 +120,10 @@ function _loadPostEditorAssets(callback) {
 
 function _initPostEditor(callback) {
   _loadPostEditorAssets(function () {
+    if (!window.EditorJS) {
+      GW.showToast('에디터 로드에 실패했습니다. 페이지를 새로고침해 주세요.', 'error');
+      return;
+    }
     if (!_postEditState.editor) {
       _postEditState.editor = new window.EditorJS({
         holder: 'post-edit-editorjs',
