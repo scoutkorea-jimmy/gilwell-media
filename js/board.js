@@ -181,8 +181,8 @@
         self._renderPagination();
       })
       .catch(function (err) {
-        console.error(err);
-        self._showError();
+        console.error('[board] load failed:', err);
+        try { self._showError(); } catch (_) {}
       })
       .finally(function () {
         self.loading = false;
@@ -441,7 +441,7 @@
       fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
         headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
       })
-        .then(function (r) { return r.json(); })
+        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
         .then(function (results) {
           if (!results || !results.length) {
             frame.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:#888;font-size:12px;">지도에서 위치를 찾을 수 없습니다</div>';

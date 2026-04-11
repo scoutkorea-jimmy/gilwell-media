@@ -77,7 +77,8 @@ async function loadPageItemList(env, origin, pageKey) {
       url: `${origin}/post/${item.id}`,
       title: item.title || `post-${item.id}`,
     }));
-  } catch {
+  } catch (err) {
+    console.error('[path] DB query failed for page:', pageKey, err);
     return [];
   }
 }

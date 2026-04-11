@@ -18,6 +18,13 @@
   ══════════════════════════════════════════════════════════ */
   var V3 = window.V3 = {};
 
+  // Null-safe element binding helper
+  function _el(id) { return document.getElementById(id); }
+  function _bindEl(id, evt, fn) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener(evt, fn);
+  }
+
   var _panel         = 'dashboard';
   var _settingsSection = 'hero';
 
@@ -188,13 +195,13 @@
     }
 
     // Login
-    document.getElementById('v3-login-btn').addEventListener('click', _doLogin);
-    document.getElementById('v3-pw').addEventListener('keydown', function (e) {
+    _bindEl('v3-login-btn', 'click', _doLogin);
+    _bindEl('v3-pw', 'keydown', function (e) {
       if (e.key === 'Enter') _doLogin();
     });
 
     // Logout
-    document.getElementById('v3-logout-btn').addEventListener('click', _doLogout);
+    _bindEl('v3-logout-btn', 'click', _doLogout);
 
     // Sidebar nav
     document.querySelectorAll('#v3-nav .v3-nav-item').forEach(function (btn) {
@@ -213,206 +220,193 @@
     });
 
     // Dashboard refresh
-    document.getElementById('dash-refresh-btn').addEventListener('click', function () {
-      _loadDashboard(document.getElementById('dash-refresh-btn'));
+    _bindEl('dash-refresh-btn', 'click', function () {
+      _loadDashboard(_el('dash-refresh-btn'));
     });
-    document.getElementById('homepage-issues-refresh-btn').addEventListener('click', function () {
-      _loadHomepageIssues(document.getElementById('homepage-issues-refresh-btn'));
+    _bindEl('homepage-issues-refresh-btn', 'click', function () {
+      _loadHomepageIssues(_el('homepage-issues-refresh-btn'));
     });
-    document.getElementById('homepage-issues-search').addEventListener('input', function () {
+    _bindEl('homepage-issues-search', 'input', function () {
       _homepageIssuesSearch = String(this.value || '').trim().toLowerCase();
       _renderHomepageIssues();
     });
-    document.getElementById('homepage-issues-filter-status').addEventListener('change', function () {
+    _bindEl('homepage-issues-filter-status', 'change', function () {
       _homepageIssuesFilterStatus = this.value || 'all';
       _renderHomepageIssues();
     });
-    document.getElementById('homepage-issues-filter-severity').addEventListener('change', function () {
+    _bindEl('homepage-issues-filter-severity', 'change', function () {
       _homepageIssuesFilterSeverity = this.value || 'all';
       _renderHomepageIssues();
     });
 
     // Post list filters
-    document.getElementById('list-search').addEventListener('input', function () {
+    _bindEl('list-search', 'input', function () {
       clearTimeout(_listSearchTimer);
       _listSearchTimer = setTimeout(function () {
-        _listSearch = document.getElementById('list-search').value.trim();
+        var el = _el('list-search');
+        _listSearch = el ? el.value.trim() : '';
         _listPage = 1;
         _loadList();
       }, 350);
     });
-    document.getElementById('list-cat').addEventListener('change', function () {
+    _bindEl('list-cat', 'change', function () {
       _listCat = this.value; _listPage = 1; _loadList();
     });
-    document.getElementById('list-pub').addEventListener('change', function () {
+    _bindEl('list-pub', 'change', function () {
       _listPub = this.value; _listPage = 1; _loadList();
     });
-    document.getElementById('list-sort').addEventListener('change', function () {
+    _bindEl('list-sort', 'change', function () {
       _listSort = this.value; _listPage = 1; _loadList();
     });
 
     // Write form
-    document.getElementById('write-cancel-btn').addEventListener('click', function () {
-      V3.showPanel('list');
-    });
-    document.getElementById('write-draft-btn').addEventListener('click', function () {
-      _savePost(false);
-    });
-    document.getElementById('write-publish-btn').addEventListener('click', function () {
-      _savePost(true);
-    });
-    document.getElementById('w-published').addEventListener('change', _syncWriteFeaturedState);
-    document.getElementById('w-cover-btn').addEventListener('click', _pickCover);
-    document.getElementById('w-gallery-btn').addEventListener('click', _pickGallery);
+    _bindEl('write-cancel-btn', 'click', function () { V3.showPanel('list'); });
+    _bindEl('write-draft-btn', 'click', function () { _savePost(false); });
+    _bindEl('write-publish-btn', 'click', function () { _savePost(true); });
+    _bindEl('w-published', 'change', _syncWriteFeaturedState);
+    _bindEl('w-cover-btn', 'click', _pickCover);
+    _bindEl('w-gallery-btn', 'click', _pickGallery);
 
     // Meta tags
-    document.getElementById('w-metatag-add-btn').addEventListener('click', _addMetaTag);
-    document.getElementById('w-metatag-input').addEventListener('keydown', function (e) {
+    _bindEl('w-metatag-add-btn', 'click', _addMetaTag);
+    _bindEl('w-metatag-input', 'keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); _addMetaTag(); }
     });
 
     // Location map preview (OpenStreetMap via Nominatim)
-    document.getElementById('w-location-check-btn').addEventListener('click', function () {
-      _checkWriteLocation();
-    });
-    document.getElementById('w-location-addr').addEventListener('input', function () {
-      // Hide preview when address changes after validation
-      var prev = document.getElementById('w-location-map-preview');
+    _bindEl('w-location-check-btn', 'click', function () { _checkWriteLocation(); });
+    _bindEl('w-location-addr', 'input', function () {
+      var prev = _el('w-location-map-preview');
       if (prev) prev.style.display = 'none';
     });
 
     // Related posts search
-    document.getElementById('w-related-search').addEventListener('input', function () {
+    _bindEl('w-related-search', 'input', function () {
       clearTimeout(_relatedTimer);
       var q = this.value.trim();
-      if (!q) { document.getElementById('w-related-results').style.display = 'none'; return; }
+      if (!q) { var r = _el('w-related-results'); if (r) r.style.display = 'none'; return; }
       _relatedTimer = setTimeout(function () { _searchRelated(q); }, 300);
     });
 
     // Calendar
-    document.getElementById('cal-new-btn').addEventListener('click', function () { _openCalModal(null); });
-    document.getElementById('cal-modal-close').addEventListener('click', _closeCalModal);
-    document.getElementById('cal-modal-cancel').addEventListener('click', _closeCalModal);
-    document.getElementById('cal-save-btn').addEventListener('click', _saveCal);
-    document.getElementById('cal-tags-add-btn').addEventListener('click', _addCalTag);
-    document.getElementById('cal-tags-input').addEventListener('keydown', function (e) {
+    _bindEl('cal-new-btn', 'click', function () { _openCalModal(null); });
+    _bindEl('cal-modal-close', 'click', _closeCalModal);
+    _bindEl('cal-modal-cancel', 'click', _closeCalModal);
+    _bindEl('cal-save-btn', 'click', _saveCal);
+    _bindEl('cal-tags-add-btn', 'click', _addCalTag);
+    _bindEl('cal-tags-input', 'keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); _addCalTag(); }
     });
-    document.getElementById('cal-start-time-enabled').addEventListener('change', function () {
-      document.getElementById('cal-start-time').disabled = !this.checked;
-      if (!this.checked) document.getElementById('cal-start-time').value = '';
+    _bindEl('cal-start-time-enabled', 'change', function () {
+      var t = _el('cal-start-time');
+      if (t) { t.disabled = !this.checked; if (!this.checked) t.value = ''; }
     });
-    document.getElementById('cal-end-time-enabled').addEventListener('change', function () {
-      document.getElementById('cal-end-time').disabled = !this.checked;
-      if (!this.checked) document.getElementById('cal-end-time').value = '';
+    _bindEl('cal-end-time-enabled', 'change', function () {
+      var t = _el('cal-end-time');
+      if (t) { t.disabled = !this.checked; if (!this.checked) t.value = ''; }
     });
-    document.getElementById('cal-cat').addEventListener('change', _syncCalCategoryUi);
-    document.getElementById('cal-related-query').addEventListener('input', function () {
+    _bindEl('cal-cat', 'change', _syncCalCategoryUi);
+    _bindEl('cal-related-query', 'input', function () {
       clearTimeout(_calRelatedTimer);
       var q = this.value.trim();
-      if (!q) {
-        document.getElementById('cal-related-results').innerHTML = '';
-        return;
-      }
+      if (!q) { var r = _el('cal-related-results'); if (r) r.innerHTML = ''; return; }
       _calRelatedTimer = setTimeout(function () { _searchCalRelated(q); }, 250);
     });
-    document.getElementById('cal-geo-search-btn').addEventListener('click', _searchCalGeo);
-    document.getElementById('cal-delete-btn').addEventListener('click', function () {
-      var id = document.getElementById('cal-id').value;
+    _bindEl('cal-geo-search-btn', 'click', _searchCalGeo);
+    _bindEl('cal-delete-btn', 'click', function () {
+      var idEl = _el('cal-id');
+      var id = idEl ? idEl.value : '';
       if (id) _deleteCal(parseInt(id, 10));
     });
 
     // Glossary
     document.getElementById('glos-new-btn').addEventListener('click', function () { _openGlosModal(null); });
-    document.getElementById('glos-modal-close').addEventListener('click', _closeGlosModal);
-    document.getElementById('glos-modal-cancel').addEventListener('click', _closeGlosModal);
-    document.getElementById('glos-save-btn').addEventListener('click', _saveGlos);
-    document.getElementById('glos-delete-btn').addEventListener('click', function () {
-      var id = document.getElementById('glos-id').value;
+    _bindEl('glos-modal-close', 'click', _closeGlosModal);
+    _bindEl('glos-modal-cancel', 'click', _closeGlosModal);
+    _bindEl('glos-save-btn', 'click', _saveGlos);
+    _bindEl('glos-delete-btn', 'click', function () {
+      var idEl = _el('glos-id');
+      var id = idEl ? idEl.value : '';
       if (id) _deleteGlos(parseInt(id, 10));
     });
-    document.getElementById('glos-search').addEventListener('input', function () {
+    _bindEl('glos-search', 'input', function () {
       clearTimeout(_glosSearchTimer);
       var q = this.value;
       _glosSearchTimer = setTimeout(function () { _glosSearch = q; _renderGlos(); }, 250);
     });
 
     // Settings saves
-    document.getElementById('hero-save-btn').addEventListener('click', _saveHero);
-    document.getElementById('tags-save-btn').addEventListener('click', _saveTags);
-    document.getElementById('meta-save-btn').addEventListener('click', _saveMeta);
-    document.getElementById('board-copy-save-btn').addEventListener('click', _saveBoardCopy);
-    document.getElementById('author-save-btn').addEventListener('click', _saveAuthor);
-    document.getElementById('banner-save-btn').addEventListener('click', _saveBanner);
-    document.getElementById('ticker-save-btn').addEventListener('click', _saveTicker);
-    document.getElementById('contrib-save-btn').addEventListener('click', _saveContributors);
-    document.getElementById('contrib-add-btn').addEventListener('click', _addContributorRow);
-    document.getElementById('editors-save-btn').addEventListener('click', _saveEditors);
-    document.getElementById('editors-add-btn').addEventListener('click', _addEditorRow);
-    document.getElementById('nav-labels-save-btn').addEventListener('click', _saveNavLabels);
-    document.getElementById('trans-save-btn').addEventListener('click', _saveTranslations);
-    document.getElementById('home-lead-save-btn').addEventListener('click', _saveHomeLead);
-    document.getElementById('home-lead-clear-btn').addEventListener('click', _clearHomeLeadSelection);
-    document.getElementById('picks-refresh-btn').addEventListener('click', _loadPicksUI);
-    document.getElementById('wosm-members-import-btn').addEventListener('click', function () {
-      var input = document.getElementById('wosm-members-file');
+    _bindEl('hero-save-btn', 'click', _saveHero);
+    _bindEl('tags-save-btn', 'click', _saveTags);
+    _bindEl('meta-save-btn', 'click', _saveMeta);
+    _bindEl('board-copy-save-btn', 'click', _saveBoardCopy);
+    _bindEl('author-save-btn', 'click', _saveAuthor);
+    _bindEl('banner-save-btn', 'click', _saveBanner);
+    _bindEl('ticker-save-btn', 'click', _saveTicker);
+    _bindEl('contrib-save-btn', 'click', _saveContributors);
+    _bindEl('contrib-add-btn', 'click', _addContributorRow);
+    _bindEl('editors-save-btn', 'click', _saveEditors);
+    _bindEl('editors-add-btn', 'click', _addEditorRow);
+    _bindEl('nav-labels-save-btn', 'click', _saveNavLabels);
+    _bindEl('trans-save-btn', 'click', _saveTranslations);
+    _bindEl('home-lead-save-btn', 'click', _saveHomeLead);
+    _bindEl('home-lead-clear-btn', 'click', _clearHomeLeadSelection);
+    _bindEl('picks-refresh-btn', 'click', _loadPicksUI);
+    _bindEl('wosm-members-import-btn', 'click', function () {
+      var input = _el('wosm-members-file');
       if (input) input.click();
     });
-    document.getElementById('wosm-members-import-btn-inline').addEventListener('click', function () {
-      var input = document.getElementById('wosm-members-file');
+    _bindEl('wosm-members-import-btn-inline', 'click', function () {
+      var input = _el('wosm-members-file');
       if (input) input.click();
     });
-    document.getElementById('wosm-members-file').addEventListener('change', _handleWosmMembersImport);
-    document.getElementById('wosm-members-add-btn').addEventListener('click', _addWosmMemberRow);
-    document.getElementById('wosm-members-add-btn-inline').addEventListener('click', _addWosmMemberRow);
-    document.getElementById('wosm-column-add-btn').addEventListener('click', _addWosmColumnRow);
-    document.getElementById('wosm-columns-save-btn').addEventListener('click', _saveWosmMembers);
-    document.getElementById('wosm-members-save-btn').addEventListener('click', _saveWosmMembers);
-    document.getElementById('wosm-import-close').addEventListener('click', _closeWosmImportModal);
-    document.getElementById('wosm-import-cancel').addEventListener('click', _closeWosmImportModal);
-    document.getElementById('wosm-import-apply').addEventListener('click', _applyWosmImportMapping);
-    document.getElementById('wosm-import-modal').addEventListener('click', function (event) {
+    _bindEl('wosm-members-file', 'change', _handleWosmMembersImport);
+    _bindEl('wosm-members-add-btn', 'click', _addWosmMemberRow);
+    _bindEl('wosm-members-add-btn-inline', 'click', _addWosmMemberRow);
+    _bindEl('wosm-column-add-btn', 'click', _addWosmColumnRow);
+    _bindEl('wosm-columns-save-btn', 'click', _saveWosmMembers);
+    _bindEl('wosm-members-save-btn', 'click', _saveWosmMembers);
+    _bindEl('wosm-import-close', 'click', _closeWosmImportModal);
+    _bindEl('wosm-import-cancel', 'click', _closeWosmImportModal);
+    _bindEl('wosm-import-apply', 'click', _applyWosmImportMapping);
+    _bindEl('wosm-import-modal', 'click', function (event) {
       if (event.target && event.target.id === 'wosm-import-modal') _closeWosmImportModal();
     });
-    document.getElementById('wosm-import-sheet').addEventListener('change', function () {
+    _bindEl('wosm-import-sheet', 'change', function () {
       _wosmImportSheetIndex = Math.max(0, parseInt(this.value, 10) || 0);
       _syncWosmImportMappingDefaults();
       _renderWosmImportModal();
     });
-    document.getElementById('wosm-members-search').addEventListener('input', function () {
+    _bindEl('wosm-members-search', 'input', function () {
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
       _renderWosmMembersEditor();
     });
 
     // Hero search
-    document.getElementById('hero-search').addEventListener('input', function () {
+    _bindEl('hero-search', 'input', function () {
       var q = this.value.trim();
-      if (!q) { document.getElementById('hero-search-results').style.display = 'none'; return; }
+      if (!q) { var r = _el('hero-search-results'); if (r) r.style.display = 'none'; return; }
       _searchHero(q);
     });
-    document.getElementById('home-lead-search').addEventListener('input', function () {
+    _bindEl('home-lead-search', 'input', function () {
       var q = this.value.trim();
-      if (!q) { document.getElementById('home-lead-search-results').style.display = 'none'; return; }
+      if (!q) { var r = _el('home-lead-search-results'); if (r) r.style.display = 'none'; return; }
       _searchHomeLead(q);
     });
     ['home-lead-fit', 'home-lead-desktop-x', 'home-lead-desktop-y', 'home-lead-desktop-zoom', 'home-lead-mobile-x', 'home-lead-mobile-y', 'home-lead-mobile-zoom'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener('input', _handleHomeLeadControlChange);
+      _bindEl(id, 'input', _handleHomeLeadControlChange);
     });
-    document.getElementById('picks-search').addEventListener('input', function () {
+    _bindEl('picks-search', 'input', function () {
       var q = this.value.trim();
       clearTimeout(_picksSearchTimer);
-      if (!q) {
-        document.getElementById('picks-search-results').style.display = 'none';
-        return;
-      }
+      if (!q) { var r = _el('picks-search-results'); if (r) r.style.display = 'none'; return; }
       _picksSearchTimer = setTimeout(function () { _searchPicks(q); }, 220);
     });
 
     // Analytics period
-    document.getElementById('analytics-period').addEventListener('change', _loadAnalytics);
-    document.getElementById('geo-audience-period').addEventListener('change', _loadGeoAudience);
-    document.getElementById('geo-audience-refresh-btn').addEventListener('click', _loadGeoAudience);
+    _bindEl('analytics-period', 'change', _loadAnalytics);
+    _bindEl('geo-audience-period', 'change', _loadGeoAudience);
+    _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
 
     // Marketing period presets + date range
     (function () {
@@ -436,9 +430,9 @@
           _loadMarketing(btn);
         });
       });
-      document.getElementById('mkt-apply-btn').addEventListener('click', function () {
+      _bindEl('mkt-apply-btn', 'click', function () {
         document.querySelectorAll('.mkt-preset-btn').forEach(function (b) { b.classList.remove('is-active'); });
-        _loadMarketing(document.getElementById('mkt-apply-btn'));
+        _loadMarketing(_el('mkt-apply-btn'));
       });
       [fromEl, toEl].forEach(function (input) {
         input.addEventListener('change', function () {
@@ -448,13 +442,9 @@
     }());
 
     // Confirm dialog
-    document.getElementById('confirm-cancel-btn').addEventListener('click', function () {
-      _closeConfirm(false);
-    });
-    document.getElementById('confirm-ok-btn').addEventListener('click', function () {
-      _closeConfirm(true);
-    });
-    document.getElementById('v3-more-modal-close').addEventListener('click', V3.closeMoreRowsModal);
+    _bindEl('confirm-cancel-btn', 'click', function () { _closeConfirm(false); });
+    _bindEl('confirm-ok-btn', 'click', function () { _closeConfirm(true); });
+    _bindEl('v3-more-modal-close', 'click', V3.closeMoreRowsModal);
     document.getElementById('v3-more-modal-done').addEventListener('click', V3.closeMoreRowsModal);
     document.getElementById('v3-more-modal').addEventListener('click', function (event) {
       if (event.target === this) V3.closeMoreRowsModal();

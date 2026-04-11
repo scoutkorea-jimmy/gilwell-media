@@ -42,8 +42,10 @@ export async function onRequestGet({ request, env }) {
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
   const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
   const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
-  const compactQuery = q ? q.replace(/\s+/g, '') : '';
-  const fuzzyQuery = q ? '%' + q.trim().split(/\s*/).filter(Boolean).join('%') + '%' : '';
+  // Limit query length to prevent abuse
+  const safeQ = q ? q.slice(0, 200) : null;
+  const compactQuery = safeQ ? safeQ.replace(/\s+/g, '') : '';
+  const fuzzyQuery = safeQ ? '%' + safeQ.trim().split(/\s*/).filter(Boolean).join('%') + '%' : '';
 
   if (category && !VALID_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);

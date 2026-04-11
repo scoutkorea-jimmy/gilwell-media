@@ -44,7 +44,8 @@ function getAllowedOrigin(request) {
       'www.bpmedia.net',
     ]);
     return allowedHosts.has(originUrl.hostname) ? origin : '';
-  } catch {
+  } catch (err) {
+    console.warn('[CORS] malformed origin:', origin, err?.message);
     return '';
   }
 }
