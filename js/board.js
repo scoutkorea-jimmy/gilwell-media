@@ -252,7 +252,7 @@
     var thumb = '';
     if (post.image_url) {
       thumb = '<img class="post-card-thumb" src="' + GW.escapeHtml(post.image_url)
-            + '" alt="" loading="lazy">';
+            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
     }
 
     var isNew = GW.isPostNew(post);

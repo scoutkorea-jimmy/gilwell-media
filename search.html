@@ -24,11 +24,12 @@
     .search-scope-btn {
       border:1px solid var(--border); background:#fff; color:var(--ink); padding:9px 14px;
       font-family: AliceDigitalLearning, sans-serif; font-size:11px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+      min-height:44px;
     }
     .search-scope-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
     .search-page-input {
       flex: 1; padding: 11px 16px; border: 1px solid var(--border);
-      font-family: AliceDigitalLearning, sans-serif; font-size: 15px;
+      font-family: AliceDigitalLearning, sans-serif; font-size: 16px;
       color: var(--ink); outline: none; transition: border-color 0.15s;
     }
     .search-page-input:focus { border-color: var(--accent); }
@@ -101,9 +102,9 @@
       </div>
       <div class="masthead-right">
         <div class="masthead-stats" id="masthead-stats"></div>
-        <div class="lang-toggle">
-          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')">KOR</button>
-          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')">ENG</button>
+        <div class="lang-toggle" role="group" aria-label="언어 선택">
+          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')" aria-pressed="true" aria-label="한국어">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')" aria-pressed="false" aria-label="English">ENG</button>
         </div>
         <div class="masthead-search">
           <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
@@ -140,25 +141,25 @@
   <div class="search-page-wrap">
     <div class="search-page-header">
       <h2>전체 검색</h2>
-      <div class="search-scope-row">
-        <button class="search-scope-btn active" id="scope-site-btn" data-scope="site" type="button">Site</button>
-        <button class="search-scope-btn" id="scope-dp-btn" data-scope="dreampath" type="button">Dreampath</button>
+      <div class="search-scope-row" role="group" aria-label="검색 범위">
+        <button class="search-scope-btn active" id="scope-site-btn" data-scope="site" type="button" aria-pressed="true" aria-label="사이트 검색">Site</button>
+        <button class="search-scope-btn" id="scope-dp-btn" data-scope="dreampath" type="button" aria-pressed="false" aria-label="Dreampath 검색">Dreampath</button>
       </div>
       <div class="search-bar-row">
-        <input type="text" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" aria-label="검색어 입력" />
-        <button class="search-page-btn" id="search-btn">검색</button>
+        <input type="search" id="search-input" class="search-page-input" placeholder="검색어를 입력하세요…" autocomplete="off" aria-label="검색어 입력" />
+        <button class="search-page-btn" id="search-btn" type="button" aria-label="검색 실행">검색</button>
       </div>
-      <div class="search-filter-grid" id="search-filter-grid">
-        <select id="search-category" class="search-filter-input">
+      <div class="search-filter-grid" id="search-filter-grid" role="group" aria-label="검색 필터">
+        <select id="search-category" class="search-filter-input" aria-label="카테고리 필터">
           <option value="">전체 카테고리</option>
           <option value="korea">Korea</option>
           <option value="apr">APR</option>
           <option value="wosm">WOSM</option>
           <option value="people">People</option>
         </select>
-        <input type="date" id="search-start-date" class="search-filter-input" />
-        <input type="date" id="search-end-date" class="search-filter-input" />
-        <input type="text" id="search-tag" class="search-filter-input" placeholder="태그 검색" />
+        <input type="date" id="search-start-date" class="search-filter-input" aria-label="시작 날짜" />
+        <input type="date" id="search-end-date" class="search-filter-input" aria-label="종료 날짜" />
+        <input type="text" id="search-tag" class="search-filter-input" placeholder="태그 검색" aria-label="태그 필터" />
       </div>
     </div>
     <div id="search-count" class="search-count" style="display:none;"></div>
@@ -189,7 +190,7 @@
     </div>
   </footer>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="/js/main.js?v=20260409132230"></script>
   <script src="/js/site-chrome.js?v=20260409132230"></script>
