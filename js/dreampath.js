@@ -643,17 +643,20 @@ const DP = (() => {
       el.classList.toggle('dp-hidden', currentUser.role !== 'admin');
     });
 
-    // Show/hide team board nav items
-    const userTeam = _teamBoard(currentUser.department);
-    const isAdmin  = currentUser.role === 'admin';
-    let anyTeamVisible = false;
-    document.querySelectorAll('.dp-team-nav-item').forEach(el => {
-      const visible = isAdmin || `team_${el.dataset.team}` === userTeam;
-      el.classList.toggle('dp-hidden', !visible);
-      if (visible) anyTeamVisible = true;
+    // Load dynamic boards and refresh sidebar
+    _refreshSidebar().then(() => {
+      // Show/hide team board nav items
+      const userTeam = _teamBoard(currentUser.department);
+      const isAdmin  = currentUser.role === 'admin';
+      let anyTeamVisible = false;
+      document.querySelectorAll('.dp-team-nav-item').forEach(el => {
+        const visible = isAdmin || `team_${el.dataset.team}` === userTeam;
+        el.classList.toggle('dp-hidden', !visible);
+        if (visible) anyTeamVisible = true;
+      });
+      const teamLabel = document.querySelector('.dp-team-nav-label');
+      if (teamLabel) teamLabel.classList.toggle('dp-hidden', !anyTeamVisible);
     });
-    const teamLabel = document.querySelector('.dp-team-nav-label');
-    if (teamLabel) teamLabel.classList.toggle('dp-hidden', !anyTeamVisible);
 
     navigate('home');
 
@@ -702,11 +705,6 @@ const DP = (() => {
       case 'minutes':      loadBoard('minutes'); break;
       case 'tasks':        loadTasks(); break;
       case 'notes':        loadNotes(); break;
-      case 'team_korea':
-      case 'team_nepal':
-      case 'team_indonesia':
-      case 'team_pakistan':
-        loadBoard(section); break;
       case 'contacts':     loadContacts(); break;
       case 'users':
         if (currentUser?.role !== 'admin') { navigate('home'); return; }
@@ -717,6 +715,10 @@ const DP = (() => {
       case 'settings':
         if (currentUser?.username !== 'jimmy' && currentUser?.role !== 'admin') { navigate('home'); return; }
         loadSettings();
+        break;
+      default:
+        // Dynamic boards (custom general or team boards)
+        if ($(`dp-board-${section}`)) loadBoard(section);
         break;
     }
   }
@@ -3456,10 +3458,11 @@ const DP = (() => {
   async function loadSettings() {
     const container = $('dp-settings-content');
     if (!container) return;
-    renderSettings(container);
+    const boardsData = await api('GET', 'boards');
+    renderSettings(container, boardsData?.boards || []);
   }
 
-  function renderSettings(container) {
+  function renderSettings(container, boards) {
     const tokens = [
       { key: '--accent',      label: 'Accent',       usage: 'Buttons, active state, links' },
       { key: '--accent-mid',  label: 'Accent Mid',   usage: 'Active nav icon, highlights' },
@@ -3477,7 +3480,7 @@ const DP = (() => {
     ];
 
     const rootStyle = getComputedStyle(document.documentElement);
-    const rows = tokens.map(t => {
+    const colorRows = tokens.map(t => {
       const currentVal = rootStyle.getPropertyValue(t.key).trim();
       return `<tr>
         <td style="font-size:12px;font-weight:600;font-family:monospace;color:var(--text-2)">${t.key}</td>
@@ -3495,31 +3498,194 @@ const DP = (() => {
       </tr>`;
     }).join('');
 
+    // Board management
+    const coreBoards = ['announcements', 'documents', 'minutes'];
+    const generalBoards = boards.filter(b => b.board_type === 'board');
+    const teamBoards = boards.filter(b => b.board_type === 'team');
+
+    const boardRow = b => {
+      const isCore = coreBoards.includes(b.slug);
+      return `<tr>
+        <td style="font-size:13px;font-weight:600">${esc(b.title)}</td>
+        <td style="font-size:12px;font-family:monospace;color:var(--text-3)">${esc(b.slug)}</td>
+        <td style="font-size:12px;color:var(--text-3)">${b.post_count || 0}</td>
+        <td>
+          ${isCore
+            ? '<span style="font-size:11px;color:var(--text-3)">Core (protected)</span>'
+            : (b.post_count > 0
+              ? '<span style="font-size:11px;color:var(--text-3)" title="Remove all posts first">Has posts</span>'
+              : `<button class="dp-btn dp-btn--xs dp-btn--danger" onclick="DP._deleteBoard(${b.id},'${esc(b.title)}')">Delete</button>`
+            )
+          }
+        </td>
+      </tr>`;
+    };
+
     container.innerHTML = `
       <div class="dp-section-header">
         <h2 class="dp-section-title">Settings</h2>
-        <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._settingsReset()" title="Reset to defaults">Reset Colors</button>
       </div>
+
+      <div class="dp-card" style="overflow:hidden;margin-bottom:20px">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h3 style="font-size:14px;font-weight:700;margin:0">Board Management</h3>
+            <p style="font-size:12px;color:var(--text-3);margin:4px 0 0">Create and manage boards. Boards with posts cannot be deleted.</p>
+          </div>
+          <button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP._addBoard()">+ New Board</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="dp-table">
+            <thead><tr><th colspan="4" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);background:var(--surface2)">General Boards</th></tr>
+              <tr><th>Title</th><th>Slug</th><th>Posts</th><th>Actions</th></tr>
+            </thead>
+            <tbody>${generalBoards.map(boardRow).join('')}</tbody>
+          </table>
+          <table class="dp-table" style="margin-top:0;border-top:2px solid var(--border)">
+            <thead><tr><th colspan="4" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);background:var(--surface2)">Team Boards</th></tr>
+              <tr><th>Title</th><th>Slug</th><th>Posts</th><th>Actions</th></tr>
+            </thead>
+            <tbody>${teamBoards.map(boardRow).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="dp-card" style="overflow:hidden">
-        <div style="padding:14px 20px;border-bottom:1px solid var(--border)">
-          <h3 style="font-size:14px;font-weight:700;margin:0">Color Tokens</h3>
-          <p style="font-size:12px;color:var(--text-3);margin:4px 0 0">Changes apply live. Refresh the page to restore defaults.</p>
+        <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h3 style="font-size:14px;font-weight:700;margin:0">Color Tokens</h3>
+            <p style="font-size:12px;color:var(--text-3);margin:4px 0 0">Changes apply live. Refresh the page to restore defaults.</p>
+          </div>
+          <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP._settingsReset()" title="Reset to defaults">Reset Colors</button>
         </div>
         <div style="overflow-x:auto">
           <table class="dp-table">
             <thead>
-              <tr>
-                <th>Variable</th>
-                <th>Name</th>
-                <th>Usage</th>
-                <th>Color</th>
-              </tr>
+              <tr><th>Variable</th><th>Name</th><th>Usage</th><th>Color</th></tr>
             </thead>
-            <tbody>${rows}</tbody>
+            <tbody>${colorRows}</tbody>
           </table>
         </div>
       </div>
     `;
+  }
+
+  function _addBoard() {
+    openModal(`
+      <div class="dp-form">
+        <div class="dp-form-row">
+          <label class="dp-label">Board Name <span class="dp-required">*</span></label>
+          <input id="ab-title" class="dp-input" type="text" placeholder="e.g. Research, Pakistan" maxlength="50" />
+        </div>
+        <div class="dp-form-row">
+          <label class="dp-label">Type</label>
+          <select id="ab-type" class="dp-input">
+            <option value="board">General Board</option>
+            <option value="team">Team Board</option>
+          </select>
+          <p style="font-size:11px;color:var(--text-3);margin:4px 0 0">Team boards are only accessible by users whose department matches the board name.</p>
+        </div>
+      </div>
+    `, {
+      title: 'Create New Board',
+      confirmLabel: 'Create',
+      onConfirm: async () => {
+        const title = $('ab-title')?.value.trim();
+        const board_type = $('ab-type')?.value;
+        if (!title) { showToast('Board name is required.', 'error'); return; }
+        const result = await api('POST', 'boards', { title, board_type });
+        if (result?.ok) {
+          closeModal();
+          showToast(`Board "${result.title}" created.`, 'success');
+          _refreshSidebar();
+          loadSettings();
+        }
+      },
+    });
+  }
+
+  async function _deleteBoard(id, title) {
+    openModal(`<p>Are you sure you want to delete <strong>${esc(title)}</strong>?</p>`, {
+      title: 'Delete Board',
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        const result = await api('DELETE', `boards?id=${id}`);
+        if (result?.ok) {
+          closeModal();
+          showToast('Board deleted.', 'success');
+          _refreshSidebar();
+          loadSettings();
+        }
+      },
+    });
+  }
+
+  // Refresh sidebar board list dynamically from DB
+  async function _refreshSidebar() {
+    const data = await api('GET', 'boards');
+    if (!data?.boards) return;
+    const boards = data.boards;
+
+    // Update in-memory constants
+    TEAM_BOARDS.length = 0;
+    Object.keys(TEAM_BOARD_TITLES).forEach(k => delete TEAM_BOARD_TITLES[k]);
+    boards.filter(b => b.board_type === 'team').forEach(b => {
+      TEAM_BOARDS.push(b.slug);
+      TEAM_BOARD_TITLES[b.slug] = b.title;
+    });
+
+    // Rebuild dynamic board nav items
+    const teamNav = document.querySelector('.dp-team-nav-label');
+    if (!teamNav) return;
+
+    // Remove old dynamic nav items
+    document.querySelectorAll('.dp-team-nav-item').forEach(el => el.remove());
+    document.querySelectorAll('.dp-board-nav-item').forEach(el => el.remove());
+
+    const isAdmin = currentUser?.role === 'admin';
+    const userTeam = _teamBoard(currentUser?.department);
+
+    // Insert custom general boards (non-core) before team label
+    boards.filter(b => b.board_type === 'board' && !['announcements','documents','minutes'].includes(b.slug)).forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'dp-nav-item dp-board-nav-item';
+      div.dataset.section = b.slug;
+      div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
+      div.innerHTML = `<span class="dp-nav-icon">&#128196;</span><span>${esc(b.title)}</span>`;
+      teamNav.insertAdjacentElement('beforebegin', div);
+    });
+
+    // Insert team boards after team label
+    let insertAfter = teamNav;
+    boards.filter(b => b.board_type === 'team').forEach(b => {
+      const visible = isAdmin || b.slug === userTeam;
+      const div = document.createElement('div');
+      div.className = `dp-nav-item dp-team-nav-item${visible ? '' : ' dp-hidden'}`;
+      div.dataset.section = b.slug;
+      div.dataset.team = b.slug.replace('team_', '');
+      div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
+      div.innerHTML = `<span class="dp-nav-icon">&#127984;</span><span>${esc(b.title)}</span>`;
+      insertAfter.insertAdjacentElement('afterend', div);
+      insertAfter = div;
+    });
+
+    // Ensure section containers exist for all boards
+    const main = $('dp-main');
+    if (main) {
+      boards.forEach(b => {
+        if (!$(`dp-section-${b.slug}`)) {
+          const sec = document.createElement('div');
+          sec.id = `dp-section-${b.slug}`;
+          sec.className = 'dp-section dp-hidden';
+          sec.innerHTML = `<div id="dp-board-${b.slug}"><div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div></div>`;
+          main.appendChild(sec);
+        }
+      });
+    }
+
+    // Show/hide team label
+    const anyTeam = boards.some(b => b.board_type === 'team' && (isAdmin || b.slug === userTeam));
+    teamNav.classList.toggle('dp-hidden', !anyTeam);
   }
 
   function _settingsReset() {
@@ -4289,6 +4455,9 @@ const DP = (() => {
     _clearEventPicker,
     loadSettings,
     _settingsReset,
+    _addBoard,
+    _deleteBoard,
+    _refreshSidebar,
     _selectApprover,
     _clearApproverPicker,
     _addApproverTag,
