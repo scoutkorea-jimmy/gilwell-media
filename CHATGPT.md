@@ -1,297 +1,247 @@
-# CHATGPT.md — Gilwell Media Homepage Guide
-
-> 이 문서는 `DreamPath`를 제외한 **BP미디어 메인 홈페이지 개발 기준**만 정리한 AI 작업 가이드입니다.
-> 홈페이지 관련 작업에서는 이 문서를 우선 기준으로 따릅니다.
-
+---
+tags: [ai-guide, homepage, entry-point]
+aliases: [Homepage Guide, 홈페이지 가이드]
 ---
 
-## Scope
+# CHATGPT.md — 메인 홈페이지 개발 가이드
 
-- 대상: `bpmedia.net` 메인 사이트
-- 제외: `DreamPath`, `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`
-- 공개 표면: 홈, 카테고리 보드, 기사 상세, 검색, 용어집, 세계연맹 회원국 현황, 도움 페이지, 관리자
+> [!warning] Scope
+> 이 문서는 **BP미디어 메인 홈페이지** 전용 AI 작업 가이드입니다.
+> DreamPath 관련 파일(`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)은 대상이 아닙니다.
+> DreamPath 작업 시 → [[CLAUDE]] 참조
 
 ---
 
 ## Core Principle
 
-- 변경은 항상 안정성 우선으로 진행합니다.
-- 새 기능이나 기존 기능 수정 전에는 관리자 `기능 정의서 / KMS`를 먼저 확인합니다.
-- 운영 기준의 원본은 관리자 KMS이며, `docs/feature-definition.md`는 보조 스냅샷으로만 봅니다.
-- AI 작업 기준 문서의 원본은 저장소 루트의 `CHATGPT.md`입니다.
-- 기존 `ai-guide.html`은 폐기되었으며, 관련 기준은 `CHATGPT.md`와 KMS 문서로 이관되었습니다.
-- 홈페이지 UI/코드 모듈 분해 기준은 `docs/homepage-module-inventory.md`를 함께 참고합니다.
-- Obsidian에서 문서를 추적할 때는 `docs/features/README.md`와 `docs/features/Feature Map.md`를 1차 진입점으로 사용하고, `docs/modules/*`는 참고 라이브러리로 봅니다.
-- Obsidian 그래프뷰를 위해 모듈 문서는 `모듈 ↔ 템플릿 ↔ API`가 서로 위키링크로 연결된 라이브러리 구조를 유지합니다.
-- Obsidian 그래프뷰 기준 최상위 축은 `문서명`이 아니라 `기능(feature)`입니다.
-- `DreamPath` 규칙을 메인 사이트에 섞지 않습니다.
+- **안정성 우선** — 새 기능보다 기존 기능의 안정적 동작이 중요
+- 운영 기준 원본: 관리자 **KMS** (`/admin.html` → KMS 메뉴)
+- AI 작업 기준 원본: 이 파일 (`CHATGPT.md`)
+- `docs/feature-definition.md`는 KMS의 보조 스냅샷으로만 참고
+- DreamPath 규칙을 메인 사이트에 혼용하지 않음
 
 ---
 
 ## Key Files
 
-- `index.html`: 홈
-- `korea.html`, `apr.html`, `wosm.html`, `people.html`: 공개 카테고리 보드
-- `wosm-members.html`: 세계연맹 회원국 현황
-- `glossary.html`: 용어집
-- `js/wosm-members.js`: 세계연맹 회원국 현황 공개 페이지 로직
-- `search.html`: 검색
-- `admin.html`: 관리자
-- `kms.html`: 기능 정의서 / KMS
-- `css/style.css`: 메인 사이트 공유 스타일
-- `js/main.js`: `window.GW` 네임스페이스 및 공용 유틸
-- `js/board.js`: 게시판 렌더링
-- `js/post-page.js`: 기사 상세 페이지 로직
-- `js/admin-v3.js`: 관리자 로직
-- `functions/api/*`: 메인 사이트 API
-- `functions/api/settings/wosm-members.js`: 세계연맹 회원국 현황 데이터 저장 API
-- `functions/[[path]].js`: 일반 페이지 공유 메타 주입
-- `functions/post/[id].js`: 기사 상세 서버 렌더링
+| 파일 | 역할 |
+|---|---|
+| `index.html` | 홈 |
+| `korea.html`, `apr.html`, `wosm.html`, `people.html` | 공개 카테고리 보드 |
+| `wosm-members.html` | 세계연맹 회원국 현황 |
+| `glossary.html` | 용어집 |
+| `search.html` | 검색 |
+| `admin.html` | 관리자 |
+| `kms.html` | 기능 정의서 / KMS |
+| `css/style.css` | 메인 사이트 공유 스타일 |
+| `js/main.js` | `window.GW` 네임스페이스 + 공용 유틸 |
+| `js/board.js` | 게시판 렌더링 |
+| `js/post-page.js` | 기사 상세 페이지 |
+| `js/admin-v3.js` | 관리자 로직 |
+| `functions/api/*` | 메인 사이트 API |
+| `functions/[[path]].js` | 공유 메타 주입 |
+| `functions/post/[id].js` | 기사 상세 서버 렌더링 |
 
 ---
 
 ## Architecture
 
-- Hosting: Cloudflare Pages
-- API: Cloudflare Functions
-- Database: Cloudflare D1
-- Images: R2 사용 가능
-- Frontend: Plain HTML / CSS / Vanilla JS
-- Auth: HMAC-SHA256 signed admin session cookie
-- 메인 사이트 관리자 인증은 24시간 signed cookie를 사용하고, 클라이언트는 `sessionStorage`에 lightweight 상태만 보조 저장합니다.
-- 운영 분석용 `site_visits`에는 국가/도시/좌표 같은 익명 위치 정보가 저장될 수 있지만, IP 원문은 저장하지 않습니다.
-- 국가/도시 집계는 Cloudflare 요청 메타를 사용하며, 사용자의 별도 위치 권한 요청 없이 서버 기준으로 기록합니다.
+| Layer | Stack |
+|---|---|
+| Hosting | Cloudflare Pages |
+| API | Cloudflare Functions |
+| DB | Cloudflare D1 |
+| Images | R2 |
+| Frontend | Plain HTML / CSS / Vanilla JS |
+| Auth | HMAC-SHA256 signed admin cookie (24h) |
 
----
-
-## Frontend Rules
-
-- 메인 사이트 네임스페이스는 `window.GW`를 사용합니다.
-- 메인 사이트 JS/CSS는 `DreamPath`와 공유하지 않습니다.
-- 메인 사이트 스타일은 `css/style.css`를 기준으로 유지합니다.
-- 메인 사이트 에디터는 `Editor.js` 기반이며, `DreamPath`의 Tiptap 규칙과 무관합니다.
-- 게시글 렌더링은 `GW.renderEditorContent()` 기준을 따릅니다.
+- 네임스페이스: `window.GW` (DreamPath의 `window.DP`와 공유하지 않음)
+- 에디터: **Editor.js** 기반 (DreamPath의 Tiptap과 무관)
+- 스타일: `css/style.css` 기준 유지
 
 ---
 
 ## Module Layers
 
-- 홈페이지는 `Foundation / Component / Pattern / Template / Code Module` 단위로 나눠서 생각합니다.
-- 새 UI를 만들 때는 먼저 기존 `Component`나 `Pattern`을 재사용할 수 있는지부터 확인합니다.
-- `Foundation`은 색상, 타이포, 간격, 상태 언어처럼 전체가 공유하는 기준입니다.
-- `Component`는 버튼, 태그, 카드, 입력처럼 독립적으로 재사용 가능한 UI입니다.
-- `Pattern`은 마스트헤드, 히어로, 섹션 레일, 검색 패널처럼 여러 컴포넌트를 묶은 구조입니다.
-- `Template`은 홈, 게시판, 기사 상세, 검색, 용어집 같은 페이지 수준 조합입니다.
-- `Code Module`은 constants, utils, renderers, feature init, API helper처럼 책임이 분리된 코드 단위입니다.
-- 모듈 분해 기준 문서는 `docs/homepage-module-inventory.md`를 사용합니다.
-- Obsidian용 모듈 문서는 허브형 구조를 유지합니다.
-- Obsidian 문서 구조는 `Feature Hub → Module / Template / API Library` 순서를 기본으로 합니다.
-- 모듈 문서는 가능한 한 “한 파일 = 한 책임” 원칙으로 쪼개고, 인덱스 문서에서 위키링크로 연결합니다.
-- 새 모듈 문서를 추가할 때는 `docs/modules/README.md`, `docs/modules/Homepage Runtime Map.md`에 함께 등록합니다.
-- 새 기능 문서를 추가할 때는 `docs/features/README.md`, `docs/features/Feature Map.md`에 함께 등록합니다.
-- Obsidian 문서 안에서는 긴 설명보다 `역할 / Code Entry / 책임 / 의존성 / 분리 후보` 구조를 우선합니다.
-- 모듈 문서를 추가하거나 쪼갤 때는 대응되는 `Template` 노트와 `API` 노트도 함께 연결해 그래프에서 고립 노드가 생기지 않게 합니다.
+> [!note] 모듈 구조
+> `Foundation → Component → Pattern → Template → Code Module`
+> 새 UI는 기존 Component/Pattern 재사용부터 확인
 
----
+| Layer | 예시 |
+|---|---|
+| Foundation | 색상, 타이포, 간격, 상태 언어 |
+| Component | 버튼, 태그, 카드, 입력 |
+| Pattern | 마스트헤드, 히어로, 섹션 레일 |
+| Template | 홈, 게시판, 기사 상세 |
+| Code Module | constants, utils, renderers, API helpers |
 
-## Module Priorities
-
-- P0 공통화 우선순위는 `section rail`, `post card shell`, `button/chip family` 입니다.
-- 홈의 `latest / popular / picks / category rail`은 하나의 section rail 패턴으로 봅니다.
-- 카드류는 shell과 content variant를 분리하고, 제목/요약/메타의 순서를 공통화합니다.
-- 버튼은 `primary / secondary / chip` 위계로 통일하고, 상태는 `default / active / disabled / danger` 기준으로 맞춥니다.
-- 공개 화면과 관리자/KMS에서 역할이 겹치는 버튼·칩·페이지 토글은 같은 위계와 상태 언어를 유지합니다.
-- category/tag/route/date formatting 같은 구조값은 점진적으로 constants / utils 모듈로 분리합니다.
-- 큰 파일은 panel, section, feature slice 기준으로 나눕니다.
+- P0 공통화: `section rail`, `post card shell`, `button/chip family`
+- 모듈 분해 기준: `docs/homepage-module-inventory.md`
+- Obsidian 문서 구조: `Feature Hub → Module / Template / API Library`
 
 ---
 
 ## Site Structure
 
-- 홈은 마스트헤드, 티커, 히어로, 메인 스토리, 최신 소식, 인기 소식, 에디터 추천, 카테고리 보드, 푸터 통계로 구성합니다.
-- 에디터 추천은 최대 4개까지 유지하며, 이 제한은 관리자 UI뿐 아니라 서버에서도 강제합니다.
-- 메인 스토리와 에디터 추천은 서로 겹치지 않게 유지하고, 관리자 검색 결과와 저장 API 모두에서 이 충돌을 막습니다.
-- 홈의 에디터 추천 / 카테고리 보드 노출 순서는 게시판 수동 정렬(`sort_order`)과 분리하고, 공개 시각(`publish_at` 우선) 기준으로 최신순 노출합니다.
-- 공개 카테고리 게시판 기본 목록은 검색/태그 필터가 없을 때 관리자 수동 정렬(`sort_order`)을 따르고, 필터가 붙을 때만 최신순/관련도 기준으로 전환합니다.
-- 공개 표면은 홈, Korea, APR, WOSM, 세계연맹 회원국 현황, Scout People, 검색, 용어집, 기사 상세, 도움 페이지로 유지합니다.
-- `세계연맹 회원국 현황`은 공개 페이지 `/wosm-members`와 관리자 설정 `세계연맹 회원국`을 한 세트로 봅니다.
-- 원본 `xlsx`는 관리자에서 가져오고, 가져온 뒤에는 관리자 입력 필드에서 한국어/영어 국가명, 상태 설명, 커스텀 열을 계속 수정할 수 있어야 합니다.
-- `xlsx` 업로드 시 한국어 국가명 열이 비어 있으면 영어 국가명을 기준으로 한국어 샘플명을 자동 채우고, 운영자가 이후 직접 수정할 수 있게 유지합니다.
-- 관리자 정보 구조는 `운영 개요 / 콘텐츠 / 사이트 설정` 세 축을 유지합니다.
-- 중요 URL은 `/admin.html`, `/glossary`, `/wosm-members`, `/post/:id`, `/sitemap.xml`, `/robots.txt`를 기준으로 봅니다.
+- 공개 표면: 홈, Korea, APR, WOSM, Scout People, 검색, 용어집, 회원국 현황, 기사 상세, 도움
+- 홈 구성: 마스트헤드 → 티커 → 히어로 → 메인 스토리 → 최신 → 인기 → 에디터 추천 → 카테고리 → 푸터 통계
+- 에디터 추천: 최대 4개, 서버에서도 강제
+- 메인 스토리 ↔ 에디터 추천 충돌 방지
 
 ---
 
-## Content And Date Rules
+## Content & Date Rules
 
-- 게시글 데이터는 `created_at`과 `publish_at`을 분리해 다룹니다.
-- 공개 정렬은 기본적으로 `publish_at` 우선, 없으면 `created_at` fallback입니다.
-- Korea, APR, WOSM, Scout People, `1개월 소식` 모두 같은 정렬 원칙을 따릅니다.
-- 공개 페이지의 날짜 표시는 `YYYY년 M월 D일` 형식으로 맞춥니다.
-- 관리자에서는 Created / Published / Modified를 모두 `YYYY년 MM월 DD일 HH시 MM분 SS초` 형식으로 노출합니다.
-- RSS 날짜는 `publish_at`이 아니라 `created_at` 기준을 유지합니다.
-- RSS에는 작성자 실명을 노출하지 않습니다.
+| 기준 | 규칙 |
+|---|---|
+| 공개 정렬 | `publish_at` 우선, 없으면 `created_at` |
+| 공개 날짜 형식 | `YYYY년 M월 D일` |
+| 관리자 날짜 형식 | `YYYY년 MM월 DD일 HH시 MM분 SS초` |
+| RSS 날짜 | `created_at` 기준, 작성자 실명 비노출 |
 
 ---
 
 ## Home Rules
 
-- 홈 `최신 소식`은 첫 진입 시 항상 새 데이터를 다시 불러옵니다.
-- 브라우저 탭 복귀, 페이지 복귀, 포커스 복귀 시에도 최신 소식을 재조회합니다.
-- 강력 새로고침 없이도 최근 게시글 반영이 보여야 합니다.
-- 최소한 latest rail은 `no-store` 기준으로 갱신합니다.
-- 홈은 skip-link, 메인 랜드마크, 실제 heading 구조, 히어로 일시정지, 티커 정지 수단을 유지합니다.
-- 모바일 햄버거 메뉴와 검색 모달은 포커스 진입/복귀가 깨지지 않게 유지합니다.
-- 섹션 헤더 높이와 `더보기` 규칙은 홈 전체에서 일관되게 유지합니다.
-- 메인 스토리 설정 저장/해제 직후에는 홈과 관련 공개 API 캐시를 즉시 퍼지해 반영 지연을 줄입니다.
+- 최신 소식: 첫 진입 + 탭 복귀 + 포커스 복귀 시 항상 재조회
+- latest rail은 `no-store` 기준
+- 접근성: skip-link, 랜드마크, heading 구조, 히어로 일시정지, 티커 정지
+- 메인 스토리 저장/해제 후 캐시 즉시 퍼지
 
 ---
 
 ## Design Rules
 
-- 공개 페이지 기본 서체는 `AliceDigitalLearning`을 기준으로 유지합니다.
-- 관리자 V3는 현재 구현 기준으로 시스템 서체를 사용합니다.
-- 상단 메뉴 크기와 카드 제목 크기를 공통 타이포 기준으로 삼습니다.
-- 공개 상단 메뉴는 페이지 HTML의 기본 링크를 fallback으로 유지하고, 런타임에서는 공통 메뉴 정의로 이를 덮어써서 drift를 줄입니다.
-- 공개 상단 메뉴는 `data-managed-nav`를 초기에는 숨기고 공통 렌더 완료 후에만 노출해, 예전 메뉴명이 잠깐 보이는 플래시를 줄입니다.
-- 공개 설정 fetch가 실패해 최신 데이터를 못 불러오면, fallback이 없는 경우 한 번만 사용자 경고를 노출합니다.
-- 버튼은 같은 기능 계층이면 높이, 패딩, 폰트, 자간, 테두리 굵기를 통일합니다.
-- `더보기` 링크는 모든 섹션에서 같은 스타일을 사용합니다.
-- 한글 본문과 제목은 기본적으로 `word-break: keep-all`을 우선합니다.
-- 모바일에서는 가로 스크롤을 허용하지 않습니다.
+- 기본 서체: `AliceDigitalLearning` (공개), 시스템 서체 (관리자)
+- 공개 메뉴: `data-managed-nav` — 초기 숨김 → 렌더 완료 후 노출 (flash 방지)
+- 버튼: 같은 계층이면 높이/패딩/폰트 통일
+- 한글: `word-break: keep-all`
+- 모바일: 가로 스크롤 금지
+
+> [!tip] Design Guide
+> KMS 디자인 탭 = 홈페이지 모듈 시스템의 시각적 레퍼런스.
+> 새 디자인 추가 시 KMS + `docs/homepage-module-inventory.md` + 이 문서를 함께 갱신.
 
 ---
 
-## Design Guide
+## Article & Share Rules
 
-- 디자인은 장식보다 `역할`, `상태`, `재사용 위치`가 먼저 정의돼야 합니다.
-- 하나의 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 합니다.
-- 코드와 미리보기는 분리된 설명이 아니라 같은 모듈의 두 표현입니다.
-- KMS에 정의된 공통 액션 모듈은 구현 파일에도 반영돼야 하며, 공개는 `css/style.css`, 관리자는 `css/admin-v3.css`를 함께 봅니다.
-- KMS 디자인 탭에서는 각 항목별로 `코드 보기`와 `미리보기`를 바로 전환할 수 있어야 합니다.
-- KMS에서 `미리보기`를 눌렀을 때는 해당 코드 구조가 즉시 렌더링된 결과를 보여줘야 합니다.
-- KMS에서 `코드 보기`를 누르면 다시 코드 스니펫을 읽을 수 있어야 합니다.
-- KMS 디자인 탭은 단순 샘플 모음이 아니라 홈페이지 모듈 시스템의 시각적 레퍼런스입니다.
-- 공개/관리 양쪽에 존재하는 모듈은 KMS 카드 안에 구현 대상 파일(`css/style.css`, `css/admin-v3.css`, 필요 시 `css/admin.css`)을 함께 적습니다.
-- 새 디자인 추가 시에는 KMS 디자인 탭, `docs/homepage-module-inventory.md`, `CHATGPT.md`를 함께 갱신합니다.
+- 기사 수정: 같은 페이지 모달 (관리자 비밀번호 재검증 필수)
+- 공유 `share_ref`: 매 클릭 새로 생성 (캐시 오류 방지)
+- 예약 공개: overdue 보정 + Cloudflare scheduled worker 5분 주기
 
 ---
 
-## Article And Share Rules
+## Tag & Image Rules
 
-- 공개 기사 상세 수정은 관리자 페이지로 보내지 않고 같은 페이지 안의 모달에서 처리합니다.
-- 수정 진입 전에는 full 관리자 비밀번호 검증을 다시 요구합니다.
-- 잘못된 비밀번호나 권한 부족 시 수정 모달을 열지 않습니다.
-- 홈 카드의 `공유하기`는 날짜 아래에 둡니다.
-- 기사 상세의 `공유하기`와 `수정하기`는 태그 줄 바로 아래 같은 줄에 둡니다.
-- 기사 상세 액션 버튼은 태그 칩과 같은 높이와 밀도를 유지합니다.
-- 외부 공유 팝업은 현재 창으로 fallback 이동하지 않고, 팝업에서만 열리게 유지합니다.
-- 공유 링크의 `share_ref`는 매 클릭마다 새로 생성해 예전 오류 프리뷰 캐시를 재사용하지 않도록 합니다.
-- 예약 공개 글은 공개 읽기 경로의 overdue 보정 외에 Cloudflare scheduled worker 5분 주기 작업으로도 자동 공개를 당깁니다.
+- 사용 중인 태그 삭제 불가 → 어떤 글에서 사용 중인지 안내
+- 히어로: PC/모바일별 이미지 프레이밍 값 개별 저장
+- 이미지 확대/축소: 60%~150%, 100% 미만 시 블러 배경 보정
 
 ---
 
-## Tag, Hero, And Image Rules
+## Data Safety
 
-- 메인 슬라이드의 카테고리 칩, 글머리 태그, `NEW` 태그는 같은 높이와 리듬을 유지합니다.
-- 글머리 태그는 설정 화면뿐 아니라 글 작성/수정 화면에서도 현재 카테고리 기준으로 바로 추가할 수 있어야 합니다.
-- 사용 중인 태그는 삭제할 수 없고, 어떤 글에서 사용 중인지 먼저 안내한 뒤 해당 글에서 제외하도록 유도합니다.
-- 공개 페이지의 글쓰기/수정 모달도 관리자와 같은 수준으로 태그를 다뤄야 합니다.
-- 게시판 글쓰기 모달과 기사 상세 수정 모달에서는 현재 카테고리에 새 태그를 추가하고 바로 선택할 수 있어야 합니다.
-- 권한 없는 계정의 태그 추가 시도는 막고 토스트로 안내합니다.
-- 메인 스토리 직접 지정과 히어로 슬라이드는 PC/모바일별 이미지 프레이밍 값을 따로 저장할 수 있어야 합니다.
-- 공개 화면은 기기 폭에 맞는 프레이밍 값을 자동 선택해야 합니다.
-- 이미지 확대/축소 범위는 60%~150%를 유지합니다.
-- `contain` 또는 100% 미만 축소로 여백이 생기면 같은 이미지를 블러 배경으로 보정합니다.
+> [!important] 데이터 안전 규칙
+> - 설정 수정 시 `settings_history` 스냅샷 필수
+> - 게시글 삭제 시 연관 이미지/기록/조회·공감/URL 로그 함께 정리
+> - 공유 메타: `functions/[[path]].js` 기준 주입
+> - `canonical` + `robots.txt` + `sitemap.xml`은 한 세트로 관리
+> - sitemap에는 공개 canonical 경로만 포함
 
 ---
 
 ## Glossary Rules
 
-- 용어집 검색은 기본적으로 `용어 + 설명`을 함께 검색합니다.
-- 검색 범위 체크박스를 모두 해제한 상태에서는 검색을 막고 안내합니다.
-- 외부 도구나 AI용 용어집 export가 필요하면 기계용 경로를 별도로 둘 수 있습니다.
-- 검색 노출이 목적이면 공개 export와 공개 HTML 원문 색인을 우선합니다.
-
----
-
-## Data And Safety Rules
-
-- 설정 값 수정 시 `settings_history`에 스냅샷을 남깁니다.
-- 충돌 가능성이 있으면 최신 데이터를 다시 불러오도록 처리합니다.
-- 게시글 삭제 시 글 row만 지우지 말고 연관 이미지, 기록, 조회/공감 데이터, 상세 URL 로그까지 함께 정리합니다.
-- `site_visits` 기반 운영 분석은 국가명 고정 매핑을 우선 사용하고, 없는 국가코드만 환경 fallback으로 처리합니다.
-- `접속 국가/도시` 기능은 초기 배포 직후 빈 상태가 정상일 수 있으며, 새 방문부터 누적된다는 안내를 유지합니다.
-- 공유 메타는 `functions/[[path]].js` 기준으로 주입합니다.
-- 대표 이미지는 `site_meta.image_url` 또는 기본 이미지를 사용합니다.
-- 정적 HTML의 `<!-- SHARE_META -->` placeholder만 보고 GEO/SEO 상태를 판단하지 말고, 항상 production 최종 HTML 원문으로 확인합니다.
-- 기본 공유 이미지는 가능하면 `1200x630` 비율의 전용 OG 이미지로 유지하고, 로고 정사각 이미지를 기본값으로 쓰지 않습니다.
-- `canonical`, `robots.txt`, `sitemap.xml`은 한 세트로 관리합니다.
-- sitemap에는 공개 canonical 경로만 넣고, `.html` 직접 경로가 canonical이 아니면 sitemap에도 넣지 않습니다.
-- sitemap의 `lastmod`는 가능하면 해당 공개 표면의 실제 데이터 수정 시각을 기준으로 채웁니다.
-- 공개 경로를 추가하거나 canonical 경로를 바꾸면 `functions/sitemap.xml/index.js`, `functions/robots.txt.js`, `functions/[[path]].js`를 함께 점검합니다.
+- 검색: 용어 + 설명 함께 검색
+- 검색 범위 체크박스 전체 해제 시 → 검색 차단 + 안내
 
 ---
 
 ## Footer Rules
 
-- 푸터 좌측 문구는 raw HTML 직접 수정보다 구조화된 필드 편집기를 우선합니다.
-- 푸터는 제목, 소개 문구, 도메인, 기사제보 메일, 문의 메일을 각각 수정할 수 있어야 합니다.
-- 공개 푸터에서는 링크 줄바꿈과 줄간격이 과하게 벌어지지 않도록 촘촘한 타이포를 유지합니다.
+- 구조화된 필드 편집기 우선 (raw HTML 직접 수정 지양)
+- 제목, 소개, 도메인, 기사제보 메일, 문의 메일 각각 수정 가능
 
 ---
 
 ## Admin Rules
 
-- 일부 관리자 계정은 히어로 설정만 접근 가능하고 게시글 작성/삭제 권한은 제한됩니다.
-- 관리자 화면은 모바일 단일 폭 · 1단 흐름을 기본 구조로 유지합니다.
-- 데스크톱에서도 과도한 2단 구조보다 같은 리듬의 단일 흐름을 우선합니다.
-- 관리자 상단 액션은 흩어놓지 말고 한 카드 안에서 정리합니다.
-- 공통 카드, 툴바, 입력, 메타 칩, spacing 토큰 중심으로 정돈합니다.
-- 관리자 탐색의 단일 기준은 좌측 사이드바입니다.
-- 메인 영역 안쪽에 같은 역할의 보조 메뉴를 중복으로 노출하지 않습니다.
-- 운영 섹션에는 `분석`, `접속 국가/도시`, `마케팅`, `버전기록`, `홈 오류/이슈 기록` 패널이 포함됩니다.
-- `홈 오류/이슈 기록`은 수동 메모판이 아니라, 홈 API 섹션 실패와 홈 프런트 초기 로딩 실패/백그라운드 새로고침 실패/런타임 오류를 자동 누적하는 읽기 전용 운영 추적 패널로 유지합니다.
-- 같은 홈 오류는 새 레코드를 계속 늘리기보다 반복 횟수와 마지막 감지 시각을 올리는 방향으로 집계합니다.
+- 일부 계정은 히어로 설정만 접근 가능 (게시글 권한 제한)
+- 모바일: 단일 폭 1단 흐름 기본
+- 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
+- 운영 섹션: 분석, 접속 국가/도시, 마케팅, 버전기록, 오류/이슈 기록
 
 ---
 
-## Deployment Rules
+## Deployment
 
-- 버전 형식은 `Va.bbb.cc`를 따릅니다.
-- `bbb`가 올라가면 `cc`는 `00`으로 초기화합니다.
-- 정적 자산 캐시 무효화 쿼리는 자동 생성되는 `ASSET_VERSION`을 사용합니다.
-- Site 버전 원본은 `VERSION`, Admin 버전 원본은 `ADMIN_VERSION`입니다.
-- 자산 캐시 버스팅 원본은 `ASSET_VERSION`입니다.
-- 릴리즈 전에는 `./scripts/sync_versions.sh`로 버전 문자열과 자동 자산 토큰을 먼저 동기화합니다.
-- `접속 국가/도시` 관련 변경이 포함되면 배포 전 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote`를 먼저 실행해 원격 D1 지리 컬럼과 인덱스를 선반영합니다.
-- 관리자 버전은 `GW.ADMIN_VERSION`과 관리자 자산 버전 문자열을 함께 올립니다.
-- production 배포는 `./scripts/deploy_production.sh`로 진행합니다.
-- 배포 후 점검에는 `./scripts/post_deploy_check.sh <url>`를 사용합니다.
-- 게시글 생성/수정/삭제 뒤에는 관련 공개 경로 캐시를 자동 퍼지하고, 핵심 공개 API는 stale 응답이 남지 않도록 즉시 반영 기준으로 유지합니다.
-- 공개 UI 변경은 오너 확인 후 production 배포를 진행합니다.
-- 예외적으로 관리자 UI만 수정되었거나 관리자/API 계열만 수정된 경우는 바로 production 반영이 가능합니다.
-- 공개 규칙 문서 변경 시에는 KMS 원본, `docs/feature-definition.md`, `CHATGPT.md`, changelog를 함께 맞춥니다.
+```bash
+./scripts/sync_versions.sh          # 버전 동기화
+./scripts/deploy_production.sh      # 배포
+./scripts/post_deploy_check.sh <url> # 배포 후 점검
+```
+
+- 버전: `Va.bbb.cc` (Site: `VERSION`, Admin: `ADMIN_VERSION`, Asset: `ASSET_VERSION`)
+- 공개 UI 변경: 오너 확인 후 production 배포
+- 관리자/API만 수정: 바로 production 반영 가능
 
 ---
 
-## Verification Routine
+## Verification Checklist
 
-- 중요한 변경이나 배포 전후에는 최소한 홈, 대표 기사 상세, 카테고리 보드, 검색, 용어집, 관리자 진입 화면, 모바일 레이아웃을 확인합니다.
-- 스모크 체크는 단순 HTML 응답만 보지 말고 홈, 관리자, 대표 기사, 카테고리 페이지, RSS 응답까지 함께 확인합니다.
-- `robots.txt`와 `sitemap.xml`이 실제 production에서 열리는지, sitemap의 주요 공개 canonical 경로가 빠지지 않았는지 확인합니다.
-- sitemap의 경로가 canonical과 어긋나지 않는지, `lastmod`가 비어 있는 핵심 공개 표면이 없는지 함께 확인합니다.
-- GEO 검수는 production HTML 기준으로 `<html lang="ko">`, `description`, `og:title`, `og:description`, `og:image`, `twitter:card`, `canonical`, JSON-LD 존재를 같이 봅니다.
-- 공개 posts API의 `publish_at`, 관리자 세션 401 처리, D1의 `created_at`, `publish_at`, `updated_at` 컬럼 존재까지 함께 점검합니다.
-- 홈 최신 갱신, 공유 버튼 위치, 수정 모달 같은 상호작용 변경은 hard refresh 없이도 직접 검수합니다.
-- 구현 중간에도 실제 UI와 기능 정의서가 어긋나지 않는지 다시 확인합니다.
-- production 반영 전 마지막으로 한 번 더 KMS 기준과 대조합니다.
+배포 전후 최소 확인 항목:
+
+- [ ] 홈, 대표 기사 상세, 카테고리 보드
+- [ ] 검색, 용어집, 관리자 진입
+- [ ] 모바일 레이아웃
+- [ ] RSS 응답
+- [ ] `robots.txt`, `sitemap.xml` 접근
+- [ ] OG meta (`og:title`, `og:image`, `canonical`)
+- [ ] 홈 최신 갱신, 공유 버튼, 수정 모달
 
 ---
 
 ## Hard Boundaries
 
-- 홈페이지 개발 논의에서는 `DreamPath`를 기준 문서로 삼지 않습니다.
-- `DreamPath` 전용 파일 구조, Tiptap 규칙, IIFE 규칙을 메인 사이트에 적용하지 않습니다.
-- 메인 사이트 API는 반드시 `/functions/api/` 기준으로 작업합니다.
-- 스타일 변경은 가능한 한 기존 공개 사이트 리듬과 일관성을 유지하는 방향으로 진행합니다.
+> [!danger] 절대 경계
+> - DreamPath 규칙을 메인 사이트에 적용하지 않음
+> - DreamPath 전용 파일 구조/Tiptap/IIFE를 메인에 적용하지 않음
+> - 메인 API는 `/functions/api/` 기준
+> - 스타일 변경은 기존 리듬과 일관성 유지
+
+---
+
+## Related Docs
+
+- [[CLAUDE]] — AI 프로젝트 전체 규칙 (Dreampath 포함)
+- [[docs/features/README|Homepage Features Hub]] — 기능 중심 진입점
+- [[docs/modules/README|Homepage Modules Hub]] — 모듈 라이브러리
+- [[docs/feature-definition|Feature Definition (KMS Snapshot)]]
+- [[docs/release-playbook|Release Playbook]]
+- [[docs/stability-implementation-plan|Stability Plan]]
+- [[docs/homepage-module-inventory|Module Inventory]]
+
+---
+
+## Obsidian Navigation
+
+```
+CHATGPT.md (이 문서)
+├── docs/features/README.md  → Feature Hub
+│   ├── Feature Map
+│   ├── Public Site Chrome Feature
+│   ├── Homepage Feed Feature
+│   └── ... (11개 기능 문서)
+├── docs/modules/README.md   → Module Hub
+│   ├── Homepage Runtime Map
+│   ├── Templates Library
+│   ├── API Library
+│   └── ... (16개 모듈 문서)
+└── docs/
+    ├── feature-definition.md
+    ├── release-playbook.md
+    ├── stability-implementation-plan.md
+    ├── hardcoding-inventory.md
+    └── homepage-module-inventory.md
+```

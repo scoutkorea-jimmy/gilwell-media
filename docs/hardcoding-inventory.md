@@ -1,3 +1,8 @@
+---
+tags: [ops, stability, inventory]
+aliases: [Hardcoding Inventory, 하드코딩 인벤토리]
+---
+
 # Hardcoding Inventory
 
 ## 목적

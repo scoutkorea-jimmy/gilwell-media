@@ -1,3 +1,8 @@
+---
+tags: [ops, deployment, playbook]
+aliases: [Release Playbook, 배포 절차]
+---
+
 # Release Playbook
 
 ## 목적

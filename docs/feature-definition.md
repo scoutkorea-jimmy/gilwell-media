@@ -1,4 +1,13 @@
+---
+tags: [kms, snapshot, reference]
+aliases: [Feature Definition, KMS Snapshot, 기능정의서]
+---
+
 # BP미디어 기능정의서 / KMS
+
+> [!warning] 이 문서는 KMS의 보조 스냅샷입니다
+> 정식 원본은 관리자 `/admin.html` → KMS 메뉴에서 확인하십시오.
+> AI 작업 기준은 [[CHATGPT]]를 우선합니다.
 
 이 문서는 BP미디어의 공개 홈페이지, 관리자, 운영 데이터 규칙, 배포 규칙을 통합해서 관리하는 기준 문서다.
 앞으로 새 기능을 개발하거나 기존 기능을 수정할 때는 이 문서를 먼저 확인하고, 구현이 끝나면 반드시 이 문서도 함께 갱신한다.

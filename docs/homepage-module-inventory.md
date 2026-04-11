@@ -1,6 +1,12 @@
+---
+tags: [modules, inventory, architecture]
+aliases: [Module Inventory, 모듈 인벤토리]
+---
+
 # Homepage Module Inventory
 
-> Obsidian에서 읽을 때는 먼저 `docs/modules/README.md`와 `docs/modules/Homepage Runtime Map.md`를 함께 여는 것을 권장합니다.
+> [!tip] Obsidian 탐색
+> [[Homepage Modules Hub]]와 [[Homepage Runtime Map]]을 함께 여는 것을 권장합니다.
 
 ## 목적
 

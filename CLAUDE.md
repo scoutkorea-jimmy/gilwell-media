@@ -1,229 +1,234 @@
-# CLAUDE.md — Gilwell Media / Dreampath
+---
+tags: [ai-guide, dreampath, entry-point]
+aliases: [Claude Rules, AI Dev Rules]
+---
 
-> **⚠️ AI 개발자 필독 (AI Developer: Read This First)**
+# CLAUDE.md — Gilwell Media
+
+> [!warning] AI 개발자 필독
+> 이 파일은 Claude Code 및 모든 AI 도구가 **자동 로드**하는 프로젝트 규칙입니다.
+> 코드를 수정하기 전에 반드시 작업 대상을 확인하십시오.
 >
-> 이 파일은 Claude Code 및 모든 AI 개발 도구가 자동으로 로드하는 프로젝트 규칙 파일입니다.
-> **코드를 단 한 줄도 수정하기 전에** 반드시 아래 내용을 읽고,
-> 작업 대상에 따라 아래 우선 문서를 먼저 확인하십시오.
-> - **메인 홈페이지 작업:** `CHATGPT.md`
-> - **Dreampath 작업:** Dreampath 앱 내의 **Dev Rules 페이지** (`/dreampath` → 사이드바 "Dev Rules")
+> | 작업 대상 | 우선 문서 |
+> |---|---|
+> | **메인 홈페이지** | [[CHATGPT]] — 홈페이지 전용 규칙 |
+> | **Dreampath** | `/dreampath` → 사이드바 "Dev Rules" (정식 출처) |
 >
-> _This file is auto-loaded by Claude Code and AI tools. You MUST read it fully before any code change._
+> 홈페이지 작업에 Dreampath 규칙을 적용하지 마십시오.
 
 ---
 
-## MANDATORY FIRST STEP
+## Architecture
 
-**메인 홈페이지 개발 작업 시:** 저장소 루트의 `CHATGPT.md`를 먼저 확인하십시오. 메인 사이트 규칙의 우선 기준 문서입니다.
-
-**홈페이지 관련 작업에서는 `DreamPath` 규칙을 기본값으로 적용하지 마십시오.**
-
-**메인 홈페이지 관련 파일, 디자인, 배포, 관리자, 게시글, 문서 기준은 모두 `CHATGPT.md`를 따르십시오.**
-
-**Dreampath 개발 작업 시:** `/dreampath` 사이트에 로그인 → 사이드바 "Dev Rules" 섹션에서 전체 핸드북을 확인하십시오. 그 곳이 모든 규칙의 정식 출처입니다.
-
----
-
-## Architecture Overview
-
-| Layer | Technology |
+| Layer | Stack |
 |---|---|
-| Hosting | Cloudflare Pages (static files, no build step) |
-| API | Cloudflare Workers (Functions in `/functions/api/`) |
+| Hosting | Cloudflare Pages (static, no build step) |
+| API | Cloudflare Workers (`/functions/api/`) |
 | Database | Cloudflare D1 (SQLite, binding: `env.DB`) |
 | Auth | HMAC-SHA256 signed tokens (`functions/_shared/auth.js`) |
+| Storage | Cloudflare R2 (`POST_IMAGES` bucket) |
 
-**Deploy:** `./deploy.sh feature "설명"` or `./deploy.sh fix "설명"`
-- Auto-increments version and registers in D1 `dp_versions` table
-- Do NOT deploy without running `./deploy.sh`
-- Wrangler 위치: `/opt/homebrew/bin/wrangler` (PATH에 없을 경우 `export PATH="/opt/homebrew/bin:$PATH"`)
+### Deploy
+
+```bash
+./deploy.sh feature "설명"   # 신기능
+./deploy.sh fix "설명"       # 버그픽스
+```
+
+- 자동 버전 증가 + D1 `dp_versions` 등록
+- Wrangler: `/opt/homebrew/bin/wrangler` (필요 시 `export PATH="/opt/homebrew/bin:$PATH"`)
+- `deploy.sh`는 HTML cache-bust 후 `git checkout`으로 원복하므로 **HTML 변경은 반드시 커밋 후 deploy**
+
+> [!important] 버전 형식
+> `aa.bbb.cc` — Major(수동) . Feature(자동) . Fix(자동, Feature 시 00 초기화)
 
 ---
 
 ## Key Files
 
 ```
-# ── Dreampath ─────────────────────────────────────────────────────
-dreampath.html                        — Dreampath 전용 인라인 CSS 전체
-js/dreampath.js                       — Dreampath 프론트엔드 로직 전체 (IIFE)
-functions/api/dreampath/posts.js      — 게시글 CRUD (게시판 접근 제어 포함)
-functions/api/dreampath/approvals.js  — 회의록 다중 승인 투표
+# ── Dreampath ─────────────────────────────────────────
+dreampath.html                        — 전용 인라인 CSS
+js/dreampath.js                       — 프론트엔드 IIFE (window.DP)
+functions/api/dreampath/posts.js      — 게시글 CRUD + 접근 제어
+functions/api/dreampath/boards.js     — 게시판 CRUD (동적 관리)
+functions/api/dreampath/events.js     — 캘린더 이벤트 + 반복 일정
+functions/api/dreampath/approvals.js  — 회의록 다중 승인
 functions/api/dreampath/upload.js     — 파일 업로드 + 확장자 차단
-functions/api/dreampath/             — Dreampath API 엔드포인트 전체
-functions/_shared/auth.js             — 인증 코어 (수정 금지 without sign-off)
-deploy.sh                             — 배포 + 버전 자동 등록 스크립트
+functions/api/dreampath/home.js       — 홈 데이터 (접근 가능 게시판 필터)
+functions/api/dreampath/notes.js      — Notes & Issues CRUD
+functions/api/dreampath/_middleware.js — 인증 미들웨어
+functions/_shared/auth.js             — 인증 코어 (수정 금지)
+deploy.sh                             — 배포 + 버전 등록
 
+# ── 메인 홈페이지 ────────────────────────────────────
+index.html, korea.html, apr.html ...  — 공개 페이지
+js/main.js                            — window.GW 네임스페이스
+css/style.css                         — 공개 사이트 스타일
+functions/api/*                       — 메인 사이트 API
 ```
 
 ---
-
-## ══════════════════════════════════════════
-##  DREAMPATH
-## ══════════════════════════════════════════
 
 ## Dreampath Frontend Rules
 
-### 구조 (Structure)
+### 구조
+
 - **IIFE 패턴**: `const DP = (() => { ... })()` → `window.DP`
-- 이 구조를 **절대 분리하거나 모듈화하지 말 것**
-- 모든 public 메서드는 반드시 `return {}` 블록에 포함해야 함
-- 인라인 이벤트: `onclick="DP.method()"` — 반드시 `DP.` 프리픽스 사용
-- 툴바 버튼: `onmousedown="event.preventDefault(); DP._teCmd('x')"` — focus 유지를 위해 `onmousedown` 사용
+- IIFE를 **절대 분리하거나 모듈화하지 말 것**
+- 모든 public 메서드는 `return {}` 블록에 포함
+- 인라인 이벤트: `onclick="DP.method()"` — 반드시 `DP.` 프리픽스
+- 툴바 버튼: `onmousedown` 사용 (focus 유지)
 
 ### CSS
-- 모든 Dreampath CSS는 `dreampath.html` 내 `<style>` 태그에만 위치
-- 색상은 반드시 `:root` CSS 변수 사용: `var(--accent)`, `var(--text)`, etc.
-- CUFS 브랜드 색상: Green `#146E7A` · Navy `#002D56` · Gold `#8D714E`
 
-### Rich Text Editor (게시글 + 노트)
-- **에디터**: Tiptap (esm.sh CDN) — 아래 extensions 모두 로드됨
-  ```
-  @tiptap/core@2
-  @tiptap/starter-kit@2
-  @tiptap/extension-table@2
-  @tiptap/extension-table-row@2
-  @tiptap/extension-table-header@2
-  @tiptap/extension-table-cell@2
-  ```
-- **에디터 탑재 위치**: `createPost`, `editPost`, `createNote`, `editNote` (4곳)
-- **뷰어**: DOMPurify (cdnjs CDN) — 모든 HTML 출력에 적용 필수
-- **비동기 초기화**: Tiptap은 비동기 로드 → 반드시 `_waitForTiptap(cb)` 헬퍼를 통해 초기화
-- 기존 plain-text 게시글 → `_legacyToHtml()` 자동 변환 (하위 호환)
-- `_destroyTiptap()`은 `closeModal()`에서 자동 호출됨
-- 새 extension 추가 시: `dreampath.html` import + `_initTiptap()` extensions 배열 + `_execTiptapCmd()` + 툴바 HTML (4곳 모두) 동시에 수정
+- Dreampath CSS는 `dreampath.html` 내 `<style>` 태그에만 위치
+- 색상은 `:root` CSS 변수: `var(--accent)`, `var(--text)` 등
+- CUFS 브랜드: Green `#146E7A` · Navy `#002D56` · Gold `#8D714E`
+
+### Rich Text Editor
+
+- **에디터**: Tiptap (esm.sh CDN, `@tiptap/core@2` + starter-kit + table extensions)
+- **뷰어**: DOMPurify (cdnjs CDN) — 모든 HTML 출력에 필수
+- **비동기 초기화**: `_waitForTiptap(cb)` 헬퍼 사용
+- 에디터 탑재: `createPost`, `editPost`, `createNote`, `editNote` (4곳)
+- 새 extension 추가 시: import + `_initTiptap()` + `_execTiptapCmd()` + 툴바 HTML (4곳 모두)
 
 ---
 
-## Team Boards
+## Board System
 
-게시판 목록: `announcements`, `documents`, `minutes`, `team_korea`, `team_nepal`, `team_indonesia`
+> [!note] 동적 게시판 시스템
+> 게시판은 `dp_boards` 테이블에서 DB 기반으로 관리됩니다.
+> Settings 페이지에서 관리자가 Board / Team Board를 생성·삭제할 수 있습니다.
 
-```javascript
-const VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia'];
-const TEAM_BOARDS  = ['team_korea', 'team_nepal', 'team_indonesia'];
-```
+### DB 스키마: `dp_boards`
 
-### 접근 제어 규칙
-| 역할 | 읽기 | 쓰기 |
+| Column | Type | 설명 |
 |---|---|---|
-| admin | 모든 게시판 | 모든 게시판 |
-| 일반 유저 | 자기 팀 보드만 | 자기 팀 보드만 |
+| `slug` | TEXT UNIQUE | 게시판 식별자 (e.g. `team_korea`) |
+| `title` | TEXT | 표시 이름 |
+| `board_type` | TEXT | `board` 또는 `team` |
 
-### 중요: department는 JWT에 없음
-`data.dpUser` 미들웨어 주입 필드: `{ uid, username, role, name }` — **`department` 없음**
+### 접근 제어
 
-팀 보드 접근 판별이 필요한 경우 항상 DB에서 별도 조회해야 함:
+| 역할 | General Board | Team Board |
+|---|---|---|
+| admin | 전체 읽기/쓰기 | 전체 읽기/쓰기 |
+| 일반 유저 | 읽기만 | 자기 팀만 읽기/쓰기 |
+
+### Team Board 매칭
+
 ```javascript
-const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+// team_xxx → department에 'xxx' 포함 여부로 자동 매칭
+function _deptMatchesBoard(department, board) {
+  if (!board.startsWith('team_')) return false;
+  const country = board.slice(5);
+  return department.toLowerCase().includes(country);
+}
 ```
 
-### department 매칭 패턴 (`_deptMatchesBoard`)
-```javascript
-const d = (department || '').toLowerCase();
-board === 'team_korea'     && d.includes('korea')
-board === 'team_nepal'     && d.includes('nepal')
-board === 'team_indonesia' && d.includes('indonesia')
-```
-
-프론트엔드에서도 동일 로직 사용: `_teamBoard(department)` in `js/dreampath.js`
+> [!warning] department는 JWT에 없음
+> `data.dpUser`: `{ uid, username, role, name }` — department 미포함.
+> 팀 보드 접근 판별 시 항상 DB 조회: `SELECT department FROM dp_users WHERE id = ?`
 
 ---
 
-## API Access Control Patterns
+## API Access Control
 
-### 게시글 작성 (POST /api/dreampath/posts)
-- **admin**: 모든 게시판 작성 가능
-- **일반 유저**: `TEAM_BOARDS`에 속한 자기 팀 보드에만 작성 가능. 그 외 게시판 → 403
+### 게시글
 
-### 게시글 수정 (PUT /api/dreampath/posts?id=N)
-- **admin**: 모든 게시글 수정 가능
-- **일반 유저**: `author_id = data.dpUser.uid`인 본인 게시글만 수정 가능 → 403
+| Method | Admin | 일반 유저 |
+|---|---|---|
+| GET (목록) | 전체 | Team 보드는 자기 팀만 |
+| GET (단건) | 전체 | Team 보드는 자기 팀만 |
+| POST | 모든 게시판 | Team 보드 자기 팀만, 나머지 403 |
+| PUT | 모든 게시글 | `author_id = uid`인 본인 글만 |
+| DELETE | 전체 | 불가 |
 
-### 회의록 잠금 (Minutes Content Lock)
-- `approval_status = 'approved'`인 회의록은 content 수정 불가
-- `title`, `content`, `pinned` 변경 시도 → **HTTP 423** 반환
-  ```json
-  { "error": "LOCKED", "message": "This meeting minutes has been approved..." }
-  ```
-- 프론트엔드에서 423 수신 시 잠금 안내 메시지 표시
+### 회의록 잠금
 
-### 파일 업로드 차단 확장자
-`upload.js`의 `BLOCKED_EXTENSIONS` — 실행 가능한 파일 유형 전체 차단:
-```
-exe, sh, bat, cmd, com, ps1, vbs, jar, app, deb, rpm, dmg, pkg, msi, dll, sys, reg, lnk 등
-```
-최대 100MB / 파일당, 최대 5개 / 게시글당
+- `approval_status = 'approved'` → content 수정 불가 → **HTTP 423 LOCKED**
+- 프론트엔드에서 423 수신 시 잠금 안내 표시
+
+### 파일 업로드
+
+- 차단 확장자: `exe, sh, bat, cmd, ps1, vbs, jar, app, dmg, pkg, msi, dll` 등
+- 최대 100MB / 파일, 최대 5개 / 게시글
 
 ---
 
-## Meeting Minutes Approval System
+## Meeting Minutes Approval
 
-### 테이블: `dp_post_approvals`
-| 컬럼 | 설명 |
+### `dp_post_approvals` 테이블
+
+| Column | 설명 |
 |---|---|
-| `post_id` | 연결된 게시글 ID |
-| `approver_id` | 승인자 `dp_users.id` |
-| `approver_name` | 승인자 display_name |
+| `post_id` | 연결된 게시글 |
+| `approver_id` | 승인자 (NOT NULL) |
 | `status` | `pending` / `approved` / `rejected` |
 | `voted_at` | 투표 시각 (UTC) |
-| `override_by` | 어드민 강제 변경자 이름 |
-| `override_note` | 강제 변경 사유 |
+| `override_by` | 어드민 강제 변경자 |
 
-### 승인 로직
-- 총 승인자 중 **과반수 초과** `approved` → `dp_board_posts.approval_status = 'approved'` + 게시글 잠금
+### 로직
+
+- **과반수 초과** approved → 게시글 잠금
 - 승인자 추가/제거 후 자동 재계산
-- 투표/재계산 시 `dp_post_history`에 자동 로그 기록
+- 어드민 Override: **2026-04-01 이전** 생성 게시글만 허용
 
-### 어드민 강제 투표 변경 (Override)
-- **2026-04-01 이전** 생성된 회의록에 한해서만 허용 (`CUTOFF = '2026-04-01'`)
-- 이후 생성 게시글의 타인 투표 변경 → 403
+---
+
+## Calendar Events
+
+- 반복 일정 지원: `recurrence_type` (daily / weekly / biweekly / monthly / yearly)
+- `recurrence_end`로 반복 종료일 지정
+- 월별 조회 시 서버에서 반복 인스턴스 자동 확장 (최대 60회)
 
 ---
 
 ## Database Rules
 
-- D1 binding: `env.DB` (모든 Function 파일)
-- Dreampath 테이블 접두사: `dp_`
-- **기존 컬럼 삭제/변경 금지** — `ALTER TABLE ADD COLUMN`으로 추가만 허용
-- 스키마 변경 시 마이그레이션 계획 필요
+> [!important] DB 변경 규칙
+> - D1 binding: `env.DB`
+> - Dreampath 테이블 접두사: `dp_`
+> - **기존 컬럼 삭제/변경 금지** — `ALTER TABLE ADD COLUMN`만 허용
+> - 스키마 변경 시 마이그레이션 계획 필요
 
 ---
 
-## Version Convention (MANDATORY)
+## Critical Prohibitions
 
-형식: `aa.bbb.cc`
+> [!danger] 절대 금지 사항
+> 1. `functions/_shared/auth.js` — 승인 없이 수정 금지
+> 2. 사용자 입력 HTML → DOMPurify 없이 `innerHTML` 금지
+> 3. 인증 토큰을 `localStorage`에 저장 금지 (httpOnly 쿠키 사용)
+> 4. 기존 DB 컬럼 삭제/타입 변경 금지
+> 5. `./deploy.sh` 버전 등록 생략 금지
+> 6. `js/dreampath.js` IIFE 구조 분리/모듈화 금지
+> 7. CDN URL 변경 시 버전 고정 확인 필수
+> 8. `.env` 또는 시크릿 값 커밋 금지
+> 9. `dp_post_approvals` INSERT 시 `approver_id` (NOT NULL) 필수
 
-| 세그먼트 | 설명 |
+---
+
+## Authentication
+
+| 항목 | 내용 |
 |---|---|
-| `aa` | Major — 프로젝트 오너가 수동으로 올림 |
-| `bbb` | Feature — 신기능 추가 시 증가, `./deploy.sh feature "설명"` |
-| `cc` | Fix — 버그픽스 시 증가, `./deploy.sh fix "설명"`, Feature 시 00 초기화 |
-
-의미 있는 모든 변경 후 반드시 `./deploy.sh`를 실행하여 버전을 등록할 것.
-
----
-
-## CRITICAL PROHIBITIONS (절대 금지)
-
-1. `functions/_shared/auth.js` — 책임자 승인 없이 수정 금지
-2. 사용자 입력 HTML → DOMPurify 없이 `innerHTML` 사용 금지
-3. 인증 토큰을 `localStorage`에 저장 금지 (sessionStorage 또는 httpOnly 쿠키 사용)
-4. 기존 DB 컬럼 삭제 또는 타입 변경 금지
-5. 의미 있는 변경 후 `./deploy.sh` 버전 등록 생략 금지
-6. `js/dreampath.js` IIFE 구조를 분리하거나 ES 모듈로 변환 금지
-7. CDN URL 변경 시 반드시 버전 고정 여부 확인 필수
-8. `.env` 또는 시크릿 값을 절대 커밋 금지
-9. `dp_post_approvals`에 직접 `INSERT` 시 `approver_id` (NOT NULL) 반드시 포함
+| Session | cookie `dp_session=1` (httpOnly, 1h) |
+| Profile | `localStorage`에 user profile |
+| Timer | 1h, 5분 전 경고 → 서버 확인 후 연장 |
+| Middleware | `functions/api/dreampath/_middleware.js` |
 
 ---
 
-## Authentication Details
+## Related Docs
 
-- **Dreampath**: cookie `dp_session=1` (httpOnly, 1h) + `localStorage` user profile
-- 세션 타이머: 1h, 5분 전 경고 팝업 → 연장 가능 (서버 세션 유효성 확인 후 연장)
-- `functions/api/dreampath/_middleware.js` — 모든 Dreampath API 인증 미들웨어
+- [[CHATGPT]] — 메인 홈페이지 개발 가이드
+- [[docs/features/README|Homepage Features Hub]] — 기능 중심 문서 진입점
+- [[docs/modules/README|Homepage Modules Hub]] — 모듈 참고 라이브러리
+- [[docs/release-playbook|Release Playbook]] — 배포 절차
+- [[docs/stability-implementation-plan|Stability Plan]] — 안정성 개선 로드맵
 
----
-
-_Dev Rules 풀 버전은 Dreampath 앱 (`/dreampath` → Dev Rules)에서 항상 최신본을 확인하십시오._
-_Full Dev Rules: always check the Dreampath app (`/dreampath` → Dev Rules sidebar) for the canonical up-to-date version._
+> [!tip] Dev Rules 정식 출처
+> Dreampath 앱 (`/dreampath` → Dev Rules)에서 항상 최신본을 확인하십시오.
