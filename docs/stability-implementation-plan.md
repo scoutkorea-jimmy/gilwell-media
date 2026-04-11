@@ -1,3 +1,8 @@
+---
+tags: [ops, stability, roadmap]
+aliases: [Stability Plan, 안정성 계획]
+---
+
 # Homepage Stability Implementation Plan
 
 ## 목적
