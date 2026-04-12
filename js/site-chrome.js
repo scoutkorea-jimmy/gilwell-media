@@ -611,11 +611,15 @@
   GW.renderTickerItems = function (innerId, items) {
     var inner = document.getElementById(innerId || 'ticker-inner');
     if (!inner) return;
-    var list = (items && items.length) ? items : [
+    var fallbackItems = String(inner.getAttribute('data-fallback-items') || '')
+      .split('||')
+      .map(function (item) { return String(item || '').trim(); })
+      .filter(Boolean);
+    var list = (items && items.length) ? items : (fallbackItems.length ? fallbackItems : [
       '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
       '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
       'The BP Post · bpmedia.net',
-    ];
+    ]);
     var sep = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
     var run = list.map(function (text) { return GW.escapeHtml(text); }).join(sep);
     inner.innerHTML = run + sep + run + sep;

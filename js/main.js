@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.113.01';
+  GW.APP_VERSION = '00.113.02';
   GW.ADMIN_VERSION = '03.057.04';
-  GW.ASSET_VERSION = '20260412054351';
+  GW.ASSET_VERSION = '20260412055346';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -167,6 +167,10 @@
 
   GW.isPostNew = function (post) {
     return GW.isTodayKst(GW.getPostPublicDate(post));
+  };
+
+  GW.hasRealPostImage = function (post) {
+    return !!(post && (post.image_has_real_asset || (!post.image_is_placeholder && post.image_url)));
   };
 
   GW.buildEditorOptions = function (editors) {

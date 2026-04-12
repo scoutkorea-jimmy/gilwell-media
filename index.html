@@ -11,8 +11,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260412054351">
-  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
+  <link rel="stylesheet" href="/css/style.css?v=20260412055346">
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a,[data-managed-home-label]{font-size:0!important}.nav[data-managed-nav] a::before,[data-managed-home-label]::before{content:attr(data-fallback-label);font-size:12px}[data-managed-home-label]::before{font-family:AliceDigitalLearning,sans-serif;letter-spacing:.14em;text-transform:uppercase}</style></noscript>
 </head>
 <body data-home-bootstrap="1">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -62,20 +62,7 @@
   <!-- ── TICKER ── -->
   <main id="main-content">
   <div class="ticker">
-    <div class="ticker-inner" id="ticker-inner">
-      길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      The BP Post · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      The BP Post · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-    </div>
+    <div class="ticker-inner" id="ticker-inner" data-fallback-items="길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다||한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다||The BP Post · bpmedia.net"></div>
     <button type="button" class="ticker-toggle-btn" id="ticker-toggle-btn" aria-pressed="false" aria-label="상단 소식 흐름 일시정지">일시정지</button>
   </div>
 
@@ -184,7 +171,7 @@
       <!-- Korea -->
       <div>
         <div class="home-col-header home-col-header-korea">
-          <h3 data-i18n="nav.korea">Korea</h3>
+          <h3 data-i18n="nav.korea" data-managed-home-label data-fallback-label="Korea" aria-label="Korea"></h3>
           <a href="/korea" class="home-section-more" data-i18n="home.more">더보기 →</a>
         </div>
         <div class="mini-list" id="col-korea">
@@ -195,7 +182,7 @@
       <!-- APR -->
       <div>
         <div class="home-col-header home-col-header-apr">
-          <h3 data-i18n="nav.apr">APR</h3>
+          <h3 data-i18n="nav.apr" data-managed-home-label data-fallback-label="APR" aria-label="APR"></h3>
           <a href="/apr" class="home-section-more" data-i18n="home.more">더보기 →</a>
         </div>
         <div class="mini-list" id="col-apr">
@@ -206,7 +193,7 @@
       <!-- WOSM -->
       <div>
         <div class="home-col-header home-col-header-wosm">
-          <h3 data-i18n="nav.wosm">WOSM</h3>
+          <h3 data-i18n="nav.wosm" data-managed-home-label data-fallback-label="WOSM" aria-label="WOSM"></h3>
           <a href="/wosm" class="home-section-more" data-i18n="home.more">더보기 →</a>
         </div>
         <div class="mini-list" id="col-wosm">
@@ -217,7 +204,7 @@
       <!-- Scout People -->
       <div>
         <div class="home-col-header home-col-header-people">
-          <h3 data-i18n="nav.people">스카우트 인물</h3>
+          <h3 data-i18n="nav.people" data-managed-home-label data-fallback-label="스카우트 인물" aria-label="스카우트 인물"></h3>
           <a href="/people" class="home-section-more" data-i18n="home.more">더보기 →</a>
         </div>
         <div class="mini-list" id="col-people">
@@ -260,8 +247,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/js/main.js?v=20260412054351" onerror="document.body.classList.add('gw-script-error')"></script>
-  <script src="/js/site-chrome.js?v=20260412054351" onerror="console.error('site-chrome.js load failed')"></script>
-  <script src="/js/home.js?v=20260412054351" onerror="console.error('home.js load failed')"></script>
+  <script src="/js/main.js?v=20260412055346" onerror="document.body.classList.add('gw-script-error')"></script>
+  <script src="/js/site-chrome.js?v=20260412055346" onerror="console.error('site-chrome.js load failed')"></script>
+  <script src="/js/home.js?v=20260412055346" onerror="console.error('home.js load failed')"></script>
 </body>
 </html>
