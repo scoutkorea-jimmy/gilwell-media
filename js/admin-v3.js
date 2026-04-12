@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.03
+ * Version: 03.056.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1133,6 +1133,7 @@
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
       var publishedChecked = publish ? !!document.getElementById('w-published').checked : false;
+      var desiredFeatured = publishedChecked && !!document.getElementById('w-featured').checked;
       var body = {
         title:            title,
         subtitle:         document.getElementById('w-subtitle').value.trim(),
@@ -1146,7 +1147,7 @@
         location_address: document.getElementById('w-location-addr').value.trim(),
         special_feature:  document.getElementById('w-special').value.trim(),
         published:        publishedChecked,
-        featured:         publishedChecked && document.getElementById('w-featured').checked,
+        featured:         desiredFeatured,
         ai_assisted:      document.getElementById('w-ai').checked,
         meta_tags:        _metaTags.join(','),
         publish_at:       dateVal ? new Date(dateVal).toISOString() : undefined,
@@ -1164,13 +1165,29 @@
       var method = _editingId ? 'PUT' : 'POST';
       var url    = _editingId ? '/api/posts/' + _editingId : '/api/posts';
 
-      return _apiFetch(url, { method: method, body: JSON.stringify(body) });
+      return _apiFetch(url, { method: method, body: JSON.stringify(body) }).then(function (data) {
+        var savedPost = data.post || data;
+        if (!savedPost || !savedPost.id) return savedPost;
+        var savedPublished = Number(savedPost.published || 0) === 1;
+        var savedFeatured = Number(savedPost.featured || 0) === 1;
+        if (savedPublished === publishedChecked && savedFeatured === desiredFeatured) return savedPost;
+        return _apiFetch('/api/posts/' + savedPost.id, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            published: publishedChecked,
+            featured: desiredFeatured
+          })
+        }).then(function (patched) {
+          return patched.post || patched;
+        });
+      });
     }).then(function (data) {
       var saved = data.post || data;
       if (!_editingId && saved.id) _editingId = saved.id;
-      GW.showToast('저장했습니다', 'success');
+      GW.showToast(Number(saved && saved.published || 0) === 1 ? '공개 상태로 저장했습니다' : '비공개 상태로 저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
       document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
+      document.getElementById('w-featured').checked = Number(saved && saved.featured || 0) === 1;
       _syncWriteFeaturedState();
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
