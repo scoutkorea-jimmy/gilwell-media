@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.01
+ * Version: 03.056.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -967,7 +967,7 @@
 
   V3.togglePublish = function (id, pub) {
     _apiFetch('/api/posts/' + id, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ published: pub }),
     }).then(function () {
       GW.showToast(pub ? '공개로 전환했습니다' : '비공개로 전환했습니다', 'success');
@@ -1131,7 +1131,7 @@
 
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
-      var publishedChecked = publish ? true : document.getElementById('w-published').checked;
+      var publishedChecked = publish ? true : false;
       var body = {
         title:            title,
         subtitle:         document.getElementById('w-subtitle').value.trim(),
@@ -1169,7 +1169,7 @@
       if (!_editingId && saved.id) _editingId = saved.id;
       GW.showToast('저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
-      document.getElementById('w-published').checked = publish || document.getElementById('w-published').checked;
+      document.getElementById('w-published').checked = !!publish;
       _syncWriteFeaturedState();
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
