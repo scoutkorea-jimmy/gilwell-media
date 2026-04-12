@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.061.00
+ * Version: 03.061.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -91,6 +91,7 @@
   var _geoAudienceMapLayer = null;
   var _geoAudienceMapLayers = null;
   var _analyticsTagGraphState = null;
+  var _analyticsSelectedTagId = '';
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
