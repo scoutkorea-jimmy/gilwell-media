@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412051605">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412052338">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.056.06</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.057.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,7 +41,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.056.06</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.057.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -284,9 +284,16 @@
               <option value="draft">비공개만</option>
             </select>
             <select class="v3-filter-select" id="list-sort">
-              <option value="latest">최신순</option>
-              <option value="oldest">오래된순</option>
-              <option value="views">조회수순</option>
+              <option value="date_desc">게재 시각 최신순</option>
+              <option value="date_asc">게재 시각 오래된순</option>
+              <option value="views_desc">조회수 높은순</option>
+              <option value="views_asc">조회수 낮은순</option>
+              <option value="title_asc">제목순</option>
+              <option value="title_desc">제목 역순</option>
+              <option value="category_asc">카테고리순</option>
+              <option value="category_desc">카테고리 역순</option>
+              <option value="status_desc">상태순</option>
+              <option value="status_asc">상태 역순</option>
             </select>
           </div>
           <div class="v3-toolbar-right">
@@ -297,12 +304,12 @@
           <table class="v3-table">
             <thead>
               <tr>
-                <th>제목</th>
-                <th>카테고리</th>
+                <th><button type="button" class="v3-th-sort" data-list-sort-key="title">제목</button></th>
+                <th><button type="button" class="v3-th-sort" data-list-sort-key="category">카테고리</button></th>
                 <th>태그</th>
-                <th>상태</th>
-                <th>날짜</th>
-                <th>조회</th>
+                <th><button type="button" class="v3-th-sort" data-list-sort-key="status">상태</button></th>
+                <th><button type="button" class="v3-th-sort" data-list-sort-key="date">게재 시각</button></th>
+                <th><button type="button" class="v3-th-sort" data-list-sort-key="views">조회</button></th>
                 <th></th>
               </tr>
             </thead>
@@ -1415,8 +1422,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260412051605"></script>
-<script src="/js/shared-country-name-ko.js?v=20260412051605"></script>
-<script src="/js/admin-v3.js?v=20260412051605"></script>
+<script src="/js/main.js?v=20260412052338"></script>
+<script src="/js/shared-country-name-ko.js?v=20260412052338"></script>
+<script src="/js/admin-v3.js?v=20260412052338"></script>
 </body>
 </html>

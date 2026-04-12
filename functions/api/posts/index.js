@@ -41,6 +41,8 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
   const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
+  const requestedOrderBy = String(url.searchParams.get('order_by') || '').trim().toLowerCase();
+  const requestedOrderDir = String(url.searchParams.get('order_dir') || '').trim().toLowerCase();
   const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
   // Limit query length to prevent abuse
   const safeQ = q ? q.slice(0, 200) : null;
@@ -72,10 +74,11 @@ export async function onRequestGet({ request, env }) {
       )`
     : '0';
   const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
-  const useManualOrder = (allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tagFilter);
+  const adminOrder = isAdmin ? buildAdminOrder(requestedOrderBy, requestedOrderDir, PUBLIC_DATE_EXPR) : '';
+  const useManualOrder = !adminOrder && ((allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tagFilter));
   const ORDER = useManualOrder
     ? ORDER_MANUAL
-    : (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)));
+    : (adminOrder || (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST))));
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
     youtube_url,
     ${searchScoreExpr} AS search_score,
@@ -387,6 +390,18 @@ function normalizePublishedFilter(value) {
   if (value === '1' || value === 1 || value === true || value === 'true' || value === 'published') return 1;
   if (value === '0' || value === 0 || value === false || value === 'false' || value === 'draft') return 0;
   return null;
+}
+
+function buildAdminOrder(orderBy, orderDir, publicDateExpr) {
+  const key = String(orderBy || '').trim().toLowerCase();
+  if (!key) return '';
+  const dir = String(orderDir || '').trim().toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  if (key === 'date') return `ORDER BY ${publicDateExpr} ${dir}, id ${dir}`;
+  if (key === 'views') return `ORDER BY views ${dir}, ${publicDateExpr} DESC, id DESC`;
+  if (key === 'title') return `ORDER BY LOWER(COALESCE(title, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
+  if (key === 'category') return `ORDER BY LOWER(COALESCE(category, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
+  if (key === 'status') return `ORDER BY published ${dir}, ${publicDateExpr} DESC, id DESC`;
+  return '';
 }
 
 function normalizeManualRelatedPosts(raw) {
