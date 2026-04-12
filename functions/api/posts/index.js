@@ -401,7 +401,6 @@ function buildAdminOrder(orderBy, orderDir, publicDateExpr) {
   if (key === 'views') return `ORDER BY views ${dir}, ${publicDateExpr} DESC, id DESC`;
   if (key === 'title') return `ORDER BY LOWER(COALESCE(title, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
   if (key === 'category') return `ORDER BY LOWER(COALESCE(category, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
-  if (key === 'status') return `ORDER BY published ${dir}, ${publicDateExpr} DESC, id DESC`;
   return '';
 }
 
