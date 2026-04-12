@@ -71,6 +71,26 @@
     } catch (_) {}
   }
 
+  function getPostIdsSignature(posts) {
+    return (Array.isArray(posts) ? posts : []).map(function (post) {
+      return String(post && post.id || 0);
+    }).join(',');
+  }
+
+  function getHeroSignature(hero) {
+    var posts = hero && Array.isArray(hero.posts) ? hero.posts : [];
+    return JSON.stringify({
+      interval_ms: hero && hero.interval_ms || 0,
+      posts: posts.map(function (post) {
+        return {
+          id: post && post.id || 0,
+          image_url: post && post.image_url || '',
+          media: post && post.media || null
+        };
+      })
+    });
+  }
+
   function getSortedPostTags(post) {
     return String((post && post.tag) || '')
       .split(',')
@@ -617,7 +637,8 @@
       });
     }
 
-    function applyData(data) {
+    function applyData(data, options) {
+      var opts = options || {};
       var issues = getHomeIssueMap(data);
       if (data.site_meta) {
         GW._siteMetaData = data.site_meta;
@@ -630,7 +651,11 @@
       if (GW._statsData) GW._renderStats();
       GW.renderTickerItems('ticker-inner', data.ticker && data.ticker.items);
       renderHomeFooterStats(data.analytics || {});
-      renderHero(data.hero || {});
+      var nextHeroSignature = getHeroSignature(data.hero || {});
+      if (!opts.background || nextHeroSignature !== applyData._lastHeroSignature) {
+        renderHero(data.hero || {});
+        applyData._lastHeroSignature = nextHeroSignature;
+      }
 
       var viewModel = buildHomeSections(data);
       var leadPost = (data.lead && data.lead.post) || (viewModel.picksPosts.length ? viewModel.picksPosts[0] : viewModel.latestPosts[0]) || null;
@@ -646,23 +671,6 @@
       latestRefreshAt = Date.now();
     }
 
-    function applyLatestRail(data) {
-      var issues = getHomeIssueMap(data);
-      if (issues.latest) {
-        try { console.warn('[GW home-latest-refresh-issue]', issues); } catch (_) {}
-        reportHomepageIssue('home_latest_refresh_failed', {
-          section: 'latest',
-          code: 'section_issue',
-          message: 'latest section returned fallback issue state',
-          path: '/ /api/home'
-        });
-        return;
-      }
-      var latestPosts = sortPostsLatest(data.latest && data.latest.posts ? data.latest.posts : []);
-      renderMiniList(document.getElementById('latest-list'), latestPosts.slice(0, 3), '아직 게시글이 없습니다');
-      latestRefreshAt = Date.now();
-    }
-
     function refreshLatestRail(options) {
       var opts = options || {};
       var now = Date.now();
@@ -670,13 +678,15 @@
       if (!opts.force && now - latestRefreshAt < 30000) return Promise.resolve();
       latestRefreshBusy = true;
       return fetchHomeData({ fresh: true })
-        .then(function (data) { applyLatestRail(data); })
+        .then(function (data) {
+          applyData(data, { background: true });
+        })
         .catch(function (err) {
           try { console.warn('[GW home-latest-refresh-failed]', err); } catch (_) {}
           reportHomepageIssue('home_latest_refresh_failed', {
-            section: 'latest',
-            message: (err && err.message) || 'latest refresh failed',
-            path: '/ /api/home'
+            section: 'homepage',
+            message: (err && err.message) || 'background home refresh failed',
+            path: '/api/home'
           });
         })
         .finally(function () { latestRefreshBusy = false; });
@@ -707,9 +717,10 @@
     }
 
     function renderLoadFailure() {
-      GW.loadTicker('ticker-inner');
-      GW.loadStats();
-      GW.loadTranslations();
+      GW.renderTickerItems('ticker-inner');
+      GW._statsData = { korea: 0, apr: 0, wosm: 0, people: 0, today: 0 };
+      if (GW._renderStats) GW._renderStats();
+      renderHomeFooterStats({});
       renderHomeBlockError(document.getElementById('home-lead-story'), 'lead');
       renderHomeBlockError(document.getElementById('latest-list'), 'latest');
       renderHomeBlockError(document.getElementById('popular-list'), 'popular');
@@ -813,7 +824,7 @@
           renderLoadFailure();
           reportHomepageIssue('home_initial_fetch_failed', {
             message: (err && err.message) || 'initial home fetch failed',
-            path: '/ /api/home'
+            path: '/api/home'
           });
         });
 

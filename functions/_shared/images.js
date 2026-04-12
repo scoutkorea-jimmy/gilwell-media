@@ -10,11 +10,17 @@ export function resolvePostImageUrl(origin, postId, imageUrl) {
 export function serializePostImage(post, origin) {
   if (!post || !post.id) return post;
   const resolved = resolvePostImageUrl(origin, post.id, post.image_url);
+  const hasRealAsset = !!resolved;
   if (!resolved) {
     return Object.assign({}, post, {
       image_url: `${origin}${DEFAULT_POST_PLACEHOLDER_PATH}`,
       image_is_placeholder: true,
+      image_has_real_asset: false,
     });
   }
-  return Object.assign({}, post, { image_url: resolved, image_is_placeholder: false });
+  return Object.assign({}, post, {
+    image_url: resolved,
+    image_is_placeholder: false,
+    image_has_real_asset: hasRealAsset,
+  });
 }

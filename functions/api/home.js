@@ -39,7 +39,9 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
-const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
+const PUBLISH_AT_KST_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE NULL END";
+const CREATED_AT_KST_EXPR = "CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE NULL END";
+const PUBLIC_DATE_EXPR = `COALESCE(${PUBLISH_AT_KST_EXPR}, ${CREATED_AT_KST_EXPR})`;
 const HOME_SECTION_ISSUE_DEFS = {
   site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
   nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },
@@ -187,12 +189,12 @@ async function recordHomeSectionIssue(env, key, err) {
 }
 
 async function loadTranslations(env) {
-  try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    return sanitizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
-  } catch {
-    return {};
+  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
+  const parsed = row ? JSON.parse(row.value || '{}') : {};
+  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    return sanitizeTranslationStrings(parsed);
   }
+  throw new Error('Translations settings must be an object');
 }
 
 function sanitizeTranslationStrings(strings) {
@@ -206,12 +208,11 @@ function sanitizeTranslationStrings(strings) {
 }
 
 async function loadTicker(env) {
-  try {
-    const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
-    return row ? JSON.parse(row.value || '[]') : DEFAULT_TICKER_ITEMS;
-  } catch {
-    return DEFAULT_TICKER_ITEMS;
-  }
+  const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
+  if (!row) return DEFAULT_TICKER_ITEMS;
+  const parsed = JSON.parse(row.value || '[]');
+  if (Array.isArray(parsed)) return parsed;
+  throw new Error('Ticker settings must be an array');
 }
 
 async function loadStats(env) {
@@ -224,8 +225,7 @@ async function loadStats(env) {
       SELECT COUNT(*) AS n
         FROM posts
        WHERE published = 1
-         AND datetime(${PUBLIC_DATE_EXPR}, '+9 hours') >= datetime(date('now', '+9 hours'))
-         AND datetime(${PUBLIC_DATE_EXPR}, '+9 hours') < datetime(date('now', '+9 hours', '+1 day'))
+         AND date(${PUBLIC_DATE_EXPR}) = date('now', '+9 hours')
     `).first(),
   ]);
   return {
