@@ -51,6 +51,7 @@ async function getInternalMetrics(env, range) {
     topArticlePosts,
     referrers,
     popularPostDwellRow,
+    tagRows,
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
@@ -213,6 +214,14 @@ async function getInternalMetrics(env, range) {
           AND datetime(pe.updated_at, '+9 hours') < datetime(?)
          LEFT JOIN posts p ON p.id = tp.post_id`
     ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).first(),
+    env.DB.prepare(
+      `SELECT id, category, tag, published, created_at, publish_at
+         FROM posts
+        WHERE tag IS NOT NULL
+          AND trim(tag) <> ''
+          AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') >= datetime(?)
+          AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') < datetime(?)`
+    ).bind(chosen.start, chosen.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -320,6 +329,7 @@ async function getInternalMetrics(env, range) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
+    tags: aggregateTags(tagRows.results || [], range),
     tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
@@ -382,6 +392,46 @@ function aggregateReferrers(rows) {
   return Array.from(bySource.values())
     .sort((a, b) => b.visits - a.visits || b.pageviews - a.pageviews || a.source_label.localeCompare(b.source_label, 'ko'))
     .slice(0, 12);
+}
+
+function aggregateTags(rows, range) {
+  const map = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const raw = String(row && row.tag || '').split(',');
+    raw.map((item) => item.trim()).filter(Boolean).forEach((tag) => {
+      const key = tag.toLowerCase();
+      const current = map.get(key) || {
+        tag,
+        count: 0,
+        published_count: 0,
+        draft_count: 0,
+        categories: new Set(),
+      };
+      current.count += 1;
+      if (Number(row && row.published || 0) === 1) current.published_count += 1;
+      else current.draft_count += 1;
+      if (row && row.category) current.categories.add(row.category);
+      map.set(key, current);
+    });
+  });
+
+  const allItems = Array.from(map.values())
+    .map((item) => ({
+      tag: item.tag,
+      count: item.count,
+      published_count: item.published_count,
+      draft_count: item.draft_count,
+      categories: Array.from(item.categories).sort((a, b) => a.localeCompare(b, 'en')),
+    }))
+    .sort((a, b) => b.count - a.count || b.published_count - a.published_count || a.tag.localeCompare(b.tag, 'ko'));
+  const items = allItems.slice(0, 80);
+
+  return {
+    range_label: range && range.label ? range.label : '',
+    total_unique_tags: allItems.length,
+    total_tag_assignments: allItems.reduce((sum, item) => sum + Number(item.count || 0), 0),
+    items,
+  };
 }
 
 function classifyReferrer(referrerHost, referrerUrl, utmSource, utmMedium, utmCampaign) {
