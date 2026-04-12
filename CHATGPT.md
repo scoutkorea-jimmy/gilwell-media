@@ -125,6 +125,7 @@ scope: homepage
 - 공개 UX를 바꾸지 않는 하드코딩 정리는 `운영값 / 구조상수 / fallback`으로 먼저 분류
 - nav fallback, ticker 기본 문구, 공통 경로 제목은 `functions/_shared/site-structure.mjs`, `functions/_shared/site-copy.mjs`를 우선 참조
 - 공개 HTML fallback 동기화는 `scripts/sync_public_fallbacks.mjs`를 통해 release 전에 자동 반영
+- 홈 런타임은 `home-helpers → home-render → home-hero → home-runtime → home.js` 순으로 분리 유지
 
 ---
 

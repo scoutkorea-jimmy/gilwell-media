@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "00.113.05",
+      "date": "2026-04-12",
+      "released_at": "2026-04-12 16:15:43 KST",
+      "summary": "홈 런타임을 책임별 파일로 분리해 안정성 검토와 후속 수정 시 읽어야 하는 컨텍스트를 줄였습니다.",
+      "type": "Refactor",
+      "scope": "site",
+      "items": [
+        "`js/home.js`를 `home-helpers`, `home-render`, `home-hero`, `home-runtime`, `home.js`로 분리해 오류 보고, 렌더, 히어로, 초기화 책임을 나눴습니다.",
+        "홈 오류 자동보고 fingerprint는 stable key 순서 기준으로 바꿔 같은 문제의 중복 누적 가능성을 줄였습니다.",
+        "릴리즈 스크립트와 메타 검증도 새 홈 파일 구조를 인식하도록 보강했습니다.",
+        "사이트 버전 00.113.04 → 00.113.05."
+      ]
+    },
+    {
       "version": "00.113.04",
       "date": "2026-04-12",
       "released_at": "2026-04-12 15:58:46 KST",
