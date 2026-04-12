@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.06
+ * Version: 03.057.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -36,7 +36,7 @@
   var _listSearchTimer = null;
   var _listCat       = 'all';
   var _listPub       = 'all';
-  var _listSort      = 'latest';
+  var _listSort      = 'date_desc';
 
   // Write / edit
   var _editingId     = null;
@@ -87,6 +87,7 @@
   var _geoAudienceData = null;
   var _geoAudienceMap = null;
   var _geoAudienceMapLayer = null;
+  var _geoAudienceMapLayers = null;
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -257,6 +258,11 @@
     });
     _bindEl('list-sort', 'change', function () {
       _listSort = this.value; _listPage = 1; _loadList();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-list-sort-key]'), function (btn) {
+      btn.addEventListener('click', function () {
+        V3.listSortBy(this.getAttribute('data-list-sort-key'));
+      });
     });
 
     // Write form
@@ -903,6 +909,7 @@
   function _loadList() {
     var tbody = document.getElementById('list-tbody');
     tbody.innerHTML = '<tr><td colspan="7"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></td></tr>';
+    _renderListSortState();
 
     var params = new URLSearchParams({
       page:    _listPage,
@@ -912,7 +919,7 @@
     if (_listCat !== 'all') params.set('category', _listCat);
     if (_listPub === 'published') params.set('published', '1');
     else if (_listPub === 'draft') params.set('published', '0');
-    if (_listSort !== 'latest') params.set('sort', _listSort);
+    _applyListSortParams(params);
 
     _apiFetch('/api/posts?' + params.toString())
       .then(function (data) {
@@ -932,7 +939,7 @@
               '<td><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></td>' +
               '<td>' + (p.tag ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(p.tag) + '</span>' : '<span class="v3-text-m">—</span>') + '</td>' +
               '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
-              '<td class="v3-text-m">' + GW.escapeHtml(GW.formatDate ? GW.formatDate(p.created_at) : (p.created_at || '').slice(0, 10)) + '</td>' +
+              '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.publish_at || p.created_at)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
               '<td class="v3-nowrap">' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + p.id + ')">수정</button>' +
@@ -947,6 +954,51 @@
       .catch(function (e) {
         tbody.innerHTML = '<tr><td colspan="7"><div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div></td></tr>';
       });
+  }
+
+  function _applyListSortParams(params) {
+    var normalized = String(_listSort || 'date_desc').trim().toLowerCase();
+    if (normalized === 'date_desc') return;
+    if (normalized === 'date_asc') {
+      params.set('sort', 'oldest');
+      return;
+    }
+    if (normalized === 'views_desc') {
+      params.set('sort', 'views');
+      return;
+    }
+    if (normalized === 'views_asc') {
+      params.set('order_by', 'views');
+      params.set('order_dir', 'asc');
+      return;
+    }
+    var parts = normalized.split('_');
+    if (parts.length === 2) {
+      params.set('order_by', parts[0]);
+      params.set('order_dir', parts[1]);
+    }
+  }
+
+  function _renderListSortState() {
+    var select = _el('list-sort');
+    if (select) select.value = _listSort;
+    Array.prototype.forEach.call(document.querySelectorAll('[data-list-sort-key]'), function (btn) {
+      var key = btn.getAttribute('data-list-sort-key');
+      var state = _parseListSortState(_listSort);
+      var active = state.key === key;
+      btn.classList.toggle('is-active', active);
+      if (active) btn.setAttribute('data-sort-dir', state.dir);
+      else btn.removeAttribute('data-sort-dir');
+    });
+  }
+
+  function _parseListSortState(value) {
+    var normalized = String(value || 'date_desc').trim().toLowerCase();
+    var parts = normalized.split('_');
+    return {
+      key: parts[0] || 'date',
+      dir: parts[1] === 'asc' ? 'asc' : 'desc'
+    };
   }
 
   function _renderPagination() {
@@ -965,6 +1017,18 @@
   }
 
   V3.listPage = function (page) { _listPage = page; _loadList(); };
+  V3.listSortBy = function (key) {
+    var current = _parseListSortState(_listSort);
+    var nextDir = current.key === key && current.dir === 'desc' ? 'asc' : 'desc';
+    if (key === 'status' && current.key !== key) nextDir = 'desc';
+    if (key === 'category' && current.key !== key) nextDir = 'asc';
+    if (key === 'title' && current.key !== key) nextDir = 'asc';
+    if (key === 'views' && current.key !== key) nextDir = 'desc';
+    if (key === 'date' && current.key !== key) nextDir = 'desc';
+    _listSort = key + '_' + nextDir;
+    _listPage = 1;
+    _loadList();
+  };
 
   V3.togglePublish = function (id, pub) {
     _apiFetch('/api/posts/' + id, {
@@ -2138,13 +2202,14 @@
       }
       countryEl.innerHTML = _renderGeoCountryTable(countries);
       cityEl.innerHTML = _renderGeoCityTable(cities);
-      _renderGeoAudienceMap(countries);
+      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">지도를 축소하면 국가 분포, 확대하면 도시 분포가 표시됩니다.</div>';
+      _renderGeoAudienceMap(countries, cities);
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
       noteEl.textContent = '지리 집계를 불러오지 못했습니다.';
       countryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">국가 데이터를 불러오지 못했습니다.</div></div>';
       cityEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">도시 데이터를 불러오지 못했습니다.</div></div>';
-      _renderGeoAudienceMap([]);
+      _renderGeoAudienceMap([], []);
     });
   }
 
@@ -2186,7 +2251,7 @@
       '</tbody></table></div>';
   }
 
-  function _renderGeoAudienceMap(items) {
+  function _renderGeoAudienceMap(countryItems, cityItems) {
     var mapEl = document.getElementById('geo-audience-map');
     if (!mapEl) return;
     if (!window.L) {
@@ -2197,43 +2262,87 @@
       _geoAudienceMap = L.map(mapEl, {
         worldCopyJump: true,
         minZoom: 1,
-        maxZoom: 6,
-      }).setView([24, 15], 1.4);
+        maxZoom: 12,
+      }).setView([24, 15], 1.6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 6,
+        maxZoom: 12,
         minZoom: 1,
         attribution: '&copy; OpenStreetMap'
       }).addTo(_geoAudienceMap);
+      _geoAudienceMap.on('zoomend', _syncGeoAudienceMapZoom);
     }
     if (_geoAudienceMapLayer) {
       _geoAudienceMap.removeLayer(_geoAudienceMapLayer);
     }
-    _geoAudienceMapLayer = L.layerGroup().addTo(_geoAudienceMap);
+    _geoAudienceMapLayer = L.layerGroup();
+    _geoAudienceMapLayers = {
+      country: L.layerGroup(),
+      city: L.layerGroup(),
+    };
 
-    var valid = (Array.isArray(items) ? items : []).filter(function (item) {
+    var validCountries = (Array.isArray(countryItems) ? countryItems : []).filter(function (item) {
       return Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
     });
-    if (!valid.length) {
+    var validCities = (Array.isArray(cityItems) ? cityItems : []).filter(function (item) {
+      return item.city_name && item.city_name !== '도시 미확인' &&
+        Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude));
+    });
+    if (!validCountries.length && !validCities.length) {
       window.setTimeout(function () { _geoAudienceMap.invalidateSize(); }, 30);
       return;
     }
-    var maxVisits = Math.max.apply(null, valid.map(function (item) { return Number(item.visits || 0); }));
-    valid.forEach(function (item) {
+    var maxCountryVisits = validCountries.length ? Math.max.apply(null, validCountries.map(function (item) { return Number(item.visits || 0); })) : 1;
+    validCountries.forEach(function (item) {
       var visits = Number(item.visits || 0);
-      var radius = Math.max(6, Math.min(28, 6 + Math.round((visits / Math.max(1, maxVisits)) * 22)));
+      var radius = Math.max(7, Math.min(30, 7 + Math.round((visits / Math.max(1, maxCountryVisits)) * 23)));
       L.circleMarker([Number(item.latitude), Number(item.longitude)], {
         radius: radius,
         weight: 1.5,
         color: '#6d28d9',
         fillColor: '#8b5cf6',
         fillOpacity: 0.45,
+      }).on('click', function () {
+        _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], 4, { duration: 0.45 });
       }).bindPopup(
         '<strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><br>' +
         '방문 ' + _fmt(visits) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0) + '<br>' +
         '도시 ' + _fmt(item.city_count || 0)
-      ).addTo(_geoAudienceMapLayer);
+      ).addTo(_geoAudienceMapLayers.country);
     });
+    var maxCityVisits = validCities.length ? Math.max.apply(null, validCities.map(function (item) { return Number(item.visits || 0); })) : 1;
+    validCities.forEach(function (item) {
+      var visits = Number(item.visits || 0);
+      var radius = Math.max(4, Math.min(16, 4 + Math.round((visits / Math.max(1, maxCityVisits)) * 12)));
+      L.circleMarker([Number(item.latitude), Number(item.longitude)], {
+        radius: radius,
+        weight: 1.25,
+        color: '#0f766e',
+        fillColor: '#14b8a6',
+        fillOpacity: 0.4,
+      }).bindPopup(
+        '<strong>' + GW.escapeHtml(item.city_name || '도시 미확인') + '</strong><br>' +
+        GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '<br>' +
+        '방문 ' + _fmt(visits) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0)
+      ).addTo(_geoAudienceMapLayers.city);
+    });
+    _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.country);
+    _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.city);
+    _geoAudienceMap.addLayer(_geoAudienceMapLayer);
+    _syncGeoAudienceMapZoom();
     window.setTimeout(function () { _geoAudienceMap.invalidateSize(); }, 30);
+  }
+
+  function _syncGeoAudienceMapZoom() {
+    if (!_geoAudienceMap || !_geoAudienceMapLayer || !_geoAudienceMapLayers) return;
+    var zoom = Number(_geoAudienceMap.getZoom() || 1);
+    var showCities = zoom >= 4;
+    if (showCities) {
+      if (_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.country)) _geoAudienceMapLayer.removeLayer(_geoAudienceMapLayers.country);
+      if (!_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.city)) _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.city);
+      return;
+    }
+    if (_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.city)) _geoAudienceMapLayer.removeLayer(_geoAudienceMapLayers.city);
+    if (!_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.country)) _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.country);
   }
 
   function _formatDateTimeCompact(value) {
