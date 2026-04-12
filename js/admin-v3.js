@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.00
+ * Version: 03.060.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2197,9 +2197,9 @@
 
   function _renderAnalyticsTagCloud(tagCloud, period) {
     var items = Array.isArray(tagCloud && tagCloud.items) ? tagCloud.items : [];
-    var graph = tagCloud && tagCloud.graph ? tagCloud.graph : { nodes: [], links: [] };
+    var graph = tagCloud && tagCloud.graph ? tagCloud.graph : { nodes: [], links: [], articles: [] };
     if (!items.length) {
-      return '<div class="v3-card v3-mt-16"><div class="v3-card-head"><div><h2 class="v3-card-title">태그 워드 클라우드</h2><p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 글머리 태그입니다.</p></div></div><div class="v3-empty"><div class="v3-empty-text">선택한 기간에 사용된 태그가 없습니다.</div></div></div>';
+      return '<div class="v3-card v3-mt-16"><div class="v3-card-head"><div><h2 class="v3-card-title">태그 워드 클라우드</h2><p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 태그와 메타 태그입니다.</p></div></div><div class="v3-empty"><div class="v3-empty-text">선택한 기간에 사용된 태그가 없습니다.</div></div></div>';
     }
     var maxCount = Math.max.apply(null, items.map(function (item) { return Number(item.count || 0); }));
     var chips = items.slice(0, 40).map(function (item) {
@@ -2209,7 +2209,7 @@
       var opacity = (0.62 + ratio * 0.38).toFixed(2);
       var categories = Array.isArray(item.categories) ? item.categories.join(', ') : '';
       var title = item.tag + ' · ' + count + '회' + (categories ? ' · ' + categories : '');
-      return '<button class="v3-tag-cloud-chip" type="button" style="font-size:' + size + 'px;opacity:' + opacity + ';" title="' + GW.escapeHtml(title) + '">' +
+      return '<button class="v3-tag-cloud-chip" type="button" data-tag-select="' + GW.escapeHtml('tag:' + item.tag) + '" style="font-size:' + size + 'px;opacity:' + opacity + ';" title="' + GW.escapeHtml(title) + '">' +
         '<span class="v3-tag-cloud-label">' + GW.escapeHtml(item.tag) + '</span>' +
         '<span class="v3-tag-cloud-count">' + _fmt(count) + '</span>' +
       '</button>';
@@ -2228,13 +2228,14 @@
     return '<div class="v3-card v3-mt-16">' +
       '<div class="v3-card-head"><div>' +
         '<h2 class="v3-card-title">태그 워드 클라우드</h2>' +
-        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 글머리 태그입니다. 많이 쓰인 태그일수록 크게 보입니다.</p>' +
+        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 태그와 메타 태그입니다. 많이 쓰인 키워드일수록 크게 보입니다.</p>' +
       '</div></div>' +
-      '<div class="v3-inline-meta">고유 태그 ' + _fmt(tagCloud.total_unique_tags || items.length) + '개 · 태그 부여 ' + _fmt(tagCloud.total_tag_assignments || 0) + '회</div>' +
+      '<div class="v3-inline-meta">고유 키워드 ' + _fmt(tagCloud.total_unique_tags || items.length) + '개 · 키워드 부여 ' + _fmt(tagCloud.total_tag_assignments || 0) + '회</div>' +
       '<div class="v3-tag-cloud">' + chips + '</div>' +
       _renderAnalyticsTagGraph(graph, period) +
+      _renderAnalyticsTagArticlePanel() +
       '<div class="v3-geo-table-wrap v3-mt-16"><table class="v3-geo-table"><thead><tr>' +
-        '<th>태그</th><th>사용</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
+        '<th>키워드</th><th>사용</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
     '</div>';
   }
@@ -2245,17 +2246,27 @@
     return '<div class="v3-tag-graph-wrap v3-mt-16">' +
       '<div class="v3-card-head" style="padding:0 0 10px 0;"><div>' +
         '<h3 class="v3-card-title">태그 관계도</h3>' +
-        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 게시글-태그, 태그-태그, 게시글-게시글 연결을 함께 보여줍니다.</p>' +
+        '<p class="v3-card-desc">기본 상태에서는 키워드만 보이고, hover 시에만 키워드 간 연결 관계가 드러납니다. 키워드를 클릭하면 아래에 연관 기사 제목과 기사 간 연결성이 나타납니다.</p>' +
       '</div><div class="v3-tag-graph-controls">' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-out">축소</button>' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-reset">100%</button>' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-in">확대</button>' +
       '</div></div>' +
-      '<div class="v3-inline-meta">원형은 태그, 사각형은 게시글입니다. 마우스를 올리면 연결 정보가 보이고, 노드는 드래그로 이동할 수 있습니다.</div>' +
+      '<div class="v3-inline-meta">키워드는 드래그로 이동할 수 있고, 휠로 확대/축소할 수 있습니다.</div>' +
       '<div class="v3-tag-graph-stage">' +
         '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
       '</div>' +
-      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">노드나 연결선을 올려 세부 관계를 확인하세요.</div>' +
+      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.</div>' +
+    '</div>';
+  }
+
+  function _renderAnalyticsTagArticlePanel() {
+    return '<div class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><div>' +
+        '<h3 class="v3-card-title">연관 기사</h3>' +
+        '<p class="v3-card-desc">선택한 키워드를 포함한 기사와 기사 간 연결성을 보여줍니다.</p>' +
+      '</div></div>' +
+      '<div id="analytics-tag-articles" class="v3-tag-articles-panel">키워드를 클릭하면 연관 기사 목록이 나타납니다.</div>' +
     '</div>';
   }
 
@@ -2265,6 +2276,7 @@
     if (!svg || !graph || !Array.isArray(graph.nodes) || !graph.nodes.length) {
       _analyticsTagGraphState = null;
       if (meta) meta.textContent = '표시할 태그 관계 데이터가 없습니다.';
+      _renderAnalyticsTagArticles();
       return;
     }
     var width = 960;
@@ -2279,37 +2291,35 @@
       dragPointerId: null,
       nodes: [],
       links: [],
+      articles: Array.isArray(graph.articles) ? graph.articles.slice() : []
     };
     var previous = _analyticsTagGraphState && Array.isArray(_analyticsTagGraphState.nodes) ? _analyticsTagGraphState : null;
     var previousById = {};
     if (previous) previous.nodes.forEach(function (node) { previousById[node.id] = node; });
     var maxCount = Math.max.apply(null, graph.nodes.map(function (node) { return Number(node.count || 0); }));
     var tagNodes = graph.nodes.filter(function (node) { return node.node_type === 'tag'; });
-    var postNodes = graph.nodes.filter(function (node) { return node.node_type === 'post'; });
     nextState.nodes = graph.nodes.map(function (node, index) {
       var existing = previousById[node.id];
       if (existing) {
         return Object.assign({}, node, { x: existing.x, y: existing.y, size: existing.size });
       }
       var ratio = maxCount > 0 ? Number(node.count || 0) / maxCount : 0;
-      var list = node.node_type === 'tag' ? tagNodes : postNodes;
-      var idx = list.findIndex(function (item) { return item.id === node.id; });
-      var angle = (Math.PI * 2 * idx) / Math.max(list.length, 1);
-      var ring = node.node_type === 'tag' ? 150 : 245;
-      var x = (width / 2) + Math.cos(angle) * ring;
-      var y = (height / 2) + Math.sin(angle) * (node.node_type === 'tag' ? ring * 0.78 : ring * 0.62);
+      var idx = tagNodes.findIndex(function (item) { return item.id === node.id; });
+      var angle = (Math.PI * 2 * idx) / Math.max(tagNodes.length, 1);
+      var ring = 170 + (index % 3) * 26;
       return Object.assign({}, node, {
-        x: Math.round(x * 10) / 10,
-        y: Math.round(y * 10) / 10,
-        size: node.node_type === 'tag'
-          ? Math.max(18, Math.min(34, 18 + Math.round(ratio * 16)))
-          : Math.max(72, Math.min(138, 72 + Math.round(ratio * 54))),
+        x: Math.round(((width / 2) + Math.cos(angle) * ring) * 10) / 10,
+        y: Math.round(((height / 2) + Math.sin(angle) * (ring * 0.68)) * 10) / 10,
+        size: Math.max(18, Math.min(34, 18 + Math.round(ratio * 16)))
       });
     });
     nextState.links = (graph.links || []).map(function (link) { return Object.assign({}, link); });
+    if (_analyticsSelectedTagId && !nextState.nodes.some(function (node) { return node.id === _analyticsSelectedTagId; })) _analyticsSelectedTagId = '';
     _analyticsTagGraphState = nextState;
     _renderAnalyticsTagGraphSvg();
     _bindAnalyticsTagGraphControls();
+    _bindAnalyticsTagSelectionButtons();
+    _renderAnalyticsTagArticles();
   }
 
   function _renderAnalyticsTagGraphSvg() {
@@ -2327,26 +2337,17 @@
       var target = byId[link.target];
       if (!source || !target) return '';
       var weight = maxLink > 0 ? Number(link.count || 0) / maxLink : 0;
-      var active = !state.hoveredNodeId && !state.hoveredLinkId
-        ? ''
+      var stateClass = (!state.hoveredNodeId && !state.hoveredLinkId)
+        ? ' is-hidden'
         : ((state.hoveredLinkId === link.id || state.hoveredNodeId === link.source || state.hoveredNodeId === link.target) ? ' is-active' : ' is-dimmed');
-      var cls = 'v3-tag-graph-link v3-tag-graph-link--' + GW.escapeHtml(link.type || 'default') + active;
-      return '<line class="' + cls + '" data-link-id="' + GW.escapeHtml(link.id) + '" x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke-width="' + (1 + weight * 3.4).toFixed(2) + '"></line>';
+      return '<line class="v3-tag-graph-link v3-tag-graph-link--tag_tag' + stateClass + '" data-link-id="' + GW.escapeHtml(link.id) + '" x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke-width="' + (1 + weight * 3.4).toFixed(2) + '"></line>';
     }).join('');
     var nodesHtml = state.nodes.map(function (node) {
       var active = !state.hoveredNodeId && !state.hoveredLinkId
         ? ''
         : ((state.hoveredNodeId === node.id || _nodeRelatedToHoveredLink(node.id)) ? ' is-active' : ' is-dimmed');
-      var cls = 'v3-tag-graph-node v3-tag-graph-node--' + node.node_type + active;
-      if (node.node_type === 'post') {
-        var width = Number(node.size || 90);
-        var height = 34;
-        return '<g class="' + cls + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + (node.x - width / 2) + ' ' + (node.y - height / 2) + ')">' +
-          '<rect rx="12" ry="12" width="' + width + '" height="' + height + '"></rect>' +
-          '<text x="' + (width / 2) + '" y="' + (height / 2 + 1) + '" text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-post-text">' + GW.escapeHtml(node.short_label || node.label || node.id) + '</text>' +
-        '</g>';
-      }
-      return '<g class="' + cls + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + node.x + ' ' + node.y + ')">' +
+      var selected = _analyticsSelectedTagId === node.id ? ' is-selected' : '';
+      return '<g class="v3-tag-graph-node v3-tag-graph-node--tag' + active + selected + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + node.x + ' ' + node.y + ')">' +
         '<circle r="' + node.size + '"></circle>' +
         '<text text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-text">' + GW.escapeHtml(node.label || node.id) + '</text>' +
       '</g>';
@@ -2374,9 +2375,21 @@
     }
   }
 
+  function _bindAnalyticsTagSelectionButtons() {
+    document.querySelectorAll('[data-tag-select]').forEach(function (button) {
+      button.onclick = function () {
+        var nodeId = button.getAttribute('data-tag-select') || '';
+        if (!nodeId) return;
+        _analyticsSelectedTagId = nodeId;
+        _renderAnalyticsTagArticles();
+        _renderAnalyticsTagGraphSvg();
+      };
+    });
+  }
+
   function _bindAnalyticsTagGraphEvents() {
     var svg = _el('analytics-tag-graph');
-    if (!svg || !svg.parentNode) return;
+    if (!svg) return;
     svg.querySelectorAll('[data-node-id]').forEach(function (el) {
       el.onmouseenter = function () {
         if (!_analyticsTagGraphState) return;
@@ -2389,11 +2402,16 @@
         _analyticsTagGraphState.hoveredNodeId = '';
         _renderAnalyticsTagGraphSvg();
       };
+      el.onclick = function () {
+        var nodeId = el.getAttribute('data-node-id') || '';
+        _analyticsSelectedTagId = nodeId;
+        _renderAnalyticsTagArticles();
+        _renderAnalyticsTagGraphSvg();
+      };
       el.onpointerdown = function (event) {
         if (!_analyticsTagGraphState) return;
         event.preventDefault();
-        var nodeId = el.getAttribute('data-node-id') || '';
-        _analyticsTagGraphState.dragNodeId = nodeId;
+        _analyticsTagGraphState.dragNodeId = el.getAttribute('data-node-id') || '';
         _analyticsTagGraphState.dragPointerId = event.pointerId;
         if (svg.setPointerCapture) {
           try { svg.setPointerCapture(event.pointerId); } catch (_) {}
@@ -2458,23 +2476,18 @@
   }
 
   function _describeAnalyticsGraphHover() {
-    if (!_analyticsTagGraphState) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+    if (!_analyticsTagGraphState) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
     if (_analyticsTagGraphState.hoveredNodeId) {
       var node = _findAnalyticsGraphNode(_analyticsTagGraphState.hoveredNodeId);
-      if (!node) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
-      if (node.node_type === 'post') {
-        return (node.label || node.id) + ' · 태그 ' + _fmt((node.tags || []).length) + '개 · ' + ((node.tags || []).join(', ') || '태그 없음');
-      }
+      if (!node) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
       return (node.label || node.id) + ' · 사용 ' + _fmt(node.count || 0) + '회 · 카테고리 ' + (((node.categories || []).join(', ')) || '—');
     }
     if (_analyticsTagGraphState.hoveredLinkId) {
       var link = _findAnalyticsGraphLink(_analyticsTagGraphState.hoveredLinkId);
-      if (!link) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
-      if (link.type === 'post_tag') return '게시글과 태그 연결 · ' + String(link.source || '').replace(/^post:/, '') + ' ↔ ' + String(link.target || '').replace(/^tag:/, '');
-      if (link.type === 'tag_tag') return '태그 동시 사용 · ' + link.source + ' ↔ ' + link.target + ' · ' + _fmt(link.count || 0) + '회';
-      if (link.type === 'post_post') return '게시글 연결 · 공통 태그 ' + _fmt(link.count || 0) + '개 · ' + ((link.shared_tags || []).join(', ') || '—');
+      if (!link) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
+      return '키워드 연계 · ' + link.source + ' ↔ ' + link.target + ' · ' + _fmt(link.count || 0) + '회';
     }
-    return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+    return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
   }
 
   function _eventToAnalyticsGraphPoint(event, svg) {
@@ -2489,6 +2502,71 @@
       x: (x - tx) / _analyticsTagGraphState.scale,
       y: (y - ty) / _analyticsTagGraphState.scale,
     };
+  }
+
+  function _renderAnalyticsTagArticles() {
+    var el = _el('analytics-tag-articles');
+    if (!el) return;
+    if (!_analyticsTagGraphState || !_analyticsSelectedTagId) {
+      el.innerHTML = '키워드를 클릭하면 연관 기사 목록이 나타납니다.';
+      return;
+    }
+    var tagLabel = String(_analyticsSelectedTagId || '').replace(/^tag:/, '');
+    var articles = (_analyticsTagGraphState.articles || []).filter(function (article) {
+      return Array.isArray(article.keywords) && article.keywords.some(function (item) {
+        return String(item || '').toLowerCase() === tagLabel.toLowerCase();
+      });
+    });
+    if (!articles.length) {
+      el.innerHTML = '<div class="v3-empty-inline">선택한 키워드와 연결된 기사가 없습니다.</div>';
+      return;
+    }
+    var relatedKeywordCounts = {};
+    articles.forEach(function (article) {
+      (article.keywords || []).forEach(function (item) {
+        var key = String(item || '');
+        if (!key || key.toLowerCase() === tagLabel.toLowerCase()) return;
+        relatedKeywordCounts[key] = (relatedKeywordCounts[key] || 0) + 1;
+      });
+    });
+    var relatedKeywords = Object.keys(relatedKeywordCounts).sort(function (a, b) {
+      return relatedKeywordCounts[b] - relatedKeywordCounts[a] || a.localeCompare(b, 'ko');
+    }).slice(0, 8);
+    var articleLinks = [];
+    for (var i = 0; i < articles.length; i += 1) {
+      for (var j = i + 1; j < articles.length; j += 1) {
+        var left = articles[i];
+        var right = articles[j];
+        var shared = (left.keywords || []).filter(function (item) {
+          return item.toLowerCase() !== tagLabel.toLowerCase() && (right.keywords || []).indexOf(item) >= 0;
+        });
+        if (!shared.length) continue;
+        articleLinks.push({ left: left, right: right, shared: shared });
+      }
+    }
+    el.innerHTML =
+      '<div class="v3-inline-meta"><strong>' + GW.escapeHtml(tagLabel) + '</strong> · 연관 기사 ' + _fmt(articles.length) + '개</div>' +
+      (relatedKeywords.length ? '<div class="v3-tag-article-keywords">' + relatedKeywords.map(function (item) {
+        return '<button class="v3-geo-pill v3-tag-related-pill" type="button" data-tag-select="' + GW.escapeHtml('tag:' + item) + '">' + GW.escapeHtml(item) + ' · ' + _fmt(relatedKeywordCounts[item]) + '</button>';
+      }).join('') + '</div>' : '') +
+      '<div class="v3-tag-article-list">' + articles.map(function (article) {
+        return '<div class="v3-tag-article-item">' +
+          '<strong>' + GW.escapeHtml(article.title || ('게시글 ' + article.id)) + '</strong>' +
+          '<span class="v3-tag-article-meta">' + GW.escapeHtml(article.category || 'uncategorized') + ' · ' + (article.published ? '공개' : '비공개') + '</span>' +
+          '<span class="v3-tag-article-meta">키워드: ' + GW.escapeHtml((article.keywords || []).join(', ')) + '</span>' +
+        '</div>';
+      }).join('') + '</div>' +
+      '<div class="v3-tag-article-links">' +
+        '<h4 class="v3-card-title" style="font-size:13px;">기사간 연결성</h4>' +
+        (articleLinks.length ? articleLinks.slice(0, 12).map(function (entry) {
+          return '<div class="v3-tag-article-link-row">' +
+            '<span>' + GW.escapeHtml(entry.left.title || ('게시글 ' + entry.left.id)) + '</span>' +
+            '<span class="v3-tag-article-link-shared">공통 키워드: ' + GW.escapeHtml(entry.shared.join(', ')) + '</span>' +
+            '<span>' + GW.escapeHtml(entry.right.title || ('게시글 ' + entry.right.id)) + '</span>' +
+          '</div>';
+        }).join('') : '<div class="v3-empty-inline">선택한 키워드 안에서는 기사 간 추가 공통 키워드 연결이 없습니다.</div>') +
+      '</div>';
+    _bindAnalyticsTagSelectionButtons();
   }
 
   function _loadGeoAudience() {

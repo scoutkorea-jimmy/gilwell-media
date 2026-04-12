@@ -294,6 +294,7 @@
           method: 'GET', path: '/api/admin/analytics', auth: true,
           summary: '관리자 종합 분석 대시보드 및 태그 인사이트',
           response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [], "graph": { "nodes": [], "links": [], "counts": {} } }, "total_visits": number, "avg_duration": number }',
+          notes: '태그 인사이트 기간은 방문 분석과 별도로 조절합니다. 태그 관계도는 글머리 태그와 메타 태그를 함께 사용한 키워드 그래프이며, hover 시 연계 관계를, click 시 연관 기사 제목과 기사 간 연결성을 아래 패널로 보여줍니다.',
         },
         {
           method: 'GET', path: '/api/admin/geo-audience', auth: true,
