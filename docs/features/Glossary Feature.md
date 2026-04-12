@@ -20,6 +20,10 @@ scope: homepage
 
 - [[Glossary Template]]
 
+## 연결 surface
+
+- [[Glossary Surface]]
+
 ## 연결 API
 
 - [[Settings API]]

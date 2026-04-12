@@ -21,6 +21,10 @@ scope: homepage
 
 - [[WOSM Members Template]]
 
+## 연결 surface
+
+- [[WOSM Members Surface]]
+
 ## 연결 API
 
 - [[Settings API]]

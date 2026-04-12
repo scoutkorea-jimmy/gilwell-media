@@ -35,6 +35,14 @@ scope: homepage
 - [[docs/feature-definition|Feature Definition]]은 KMS의 보조 스냅샷으로만 참고
 - DreamPath 규칙을 메인 사이트에 혼용하지 않음
 
+## Documentation Axis
+
+- Obsidian 최적화 기준의 최상위 축은 **페이지가 아니라 기능과 모듈**이다.
+- 페이지 문서는 독립 설계 단위가 아니라, 여러 기능이 조합된 **surface**로 취급한다.
+- 새 문서나 리팩터링 메모를 만들 때는 먼저 `[[docs/features/README|Homepage Features Hub]]`에 연결하고, 그 다음 `[[docs/modules/README|Homepage Modules Hub]]`와 연결한다.
+- 페이지별 동작을 설명해야 할 때도 페이지 자체를 중심으로 풀지 않고, `어떤 feature가 어떤 module/API/template를 묶어 surface를 만든다`는 순서로 적는다.
+- 동일 기능이 다른 페이지에서 반복되면 페이지별 설명을 복사하지 말고 기능 허브와 모듈 노트에 위키링크를 모은다.
+
 ---
 
 ## Key Files

@@ -13,8 +13,10 @@ aliases: [Homepage Modules Hub, 모듈 허브]
 
 1. [[Homepage Features Hub]] — 기능 진입점
 2. [[Feature Map]] — 전체 기능 맵
+3. [[Feature Module Graph]] — 기능 ↔ 모듈 ↔ API ↔ Surface 연결도
 3. [[Homepage Runtime Map]] — 런타임 의존성 맵
 4. [[Templates Library]] — 템플릿 문서
+5. [[Surface Library]] — 페이지/템플릿 조합 노드
 5. [[API Library]] — API 문서
 6. [[GW Foundation]] — 전역 기반
 7. [[Public Site Chrome]] — 공개 셸
@@ -42,7 +44,9 @@ Admin Runtime → js/admin-v3.js, js/kms.js
 
 - [[Homepage Features Hub]]
 - [[Feature Map]]
+- [[Feature Module Graph]]
 - [[Homepage Runtime Map]]
+- [[Surface Library]]
 - [[Templates Library]]
 - [[API Library]]
 - [[CHATGPT]] — 홈페이지 개발 가이드

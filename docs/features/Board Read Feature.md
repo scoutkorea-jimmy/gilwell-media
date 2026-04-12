@@ -23,6 +23,14 @@ scope: homepage
 
 - [[Board Template]]
 
+## 연결 surface
+
+- [[Latest Board Surface]]
+- [[Korea Board Surface]]
+- [[APR Board Surface]]
+- [[WOSM Board Surface]]
+- [[People Board Surface]]
+
 ## 연결 API
 
 - [[Posts API]]

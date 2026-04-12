@@ -20,6 +20,10 @@ scope: homepage
 
 - [[Search Template]]
 
+## 연결 surface
+
+- [[Search Surface]]
+
 ## 연결 API
 
 - [[Posts API]]

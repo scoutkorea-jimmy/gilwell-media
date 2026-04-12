@@ -24,6 +24,10 @@ scope: homepage
 
 - [[Homepage Template]]
 
+## 연결 surface
+
+- [[Home Surface]]
+
 ## 연결 API
 
 - [[Home and Stats API]]

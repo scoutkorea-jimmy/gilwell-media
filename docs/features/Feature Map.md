@@ -31,6 +31,8 @@ aliases: [Feature Map, 기능 맵]
 ## 같이 보는 허브
 
 - [[Homepage Features Hub]] — 기능 진입점
+- [[Page Composition Map]] — 기능이 어떤 surface로 조합되는지
 - [[Homepage Modules Hub]] — 모듈 라이브러리
+- [[Surface Library]] — surface 노드 허브
 - [[API Library]] — API 문서
 - [[Templates Library]] — 템플릿 문서

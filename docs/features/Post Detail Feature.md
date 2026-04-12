@@ -24,6 +24,10 @@ scope: homepage
 
 - [[Post Detail Template]]
 
+## 연결 surface
+
+- [[Post Detail Surface]]
+
 ## 연결 API
 
 - [[Posts API]]

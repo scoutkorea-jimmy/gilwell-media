@@ -31,6 +31,21 @@ scope: homepage
 - [[Contributors Template]]
 - [[Post Detail Template]]
 
+## 연결 surface
+
+- [[Home Surface]]
+- [[Latest Board Surface]]
+- [[Korea Board Surface]]
+- [[APR Board Surface]]
+- [[WOSM Board Surface]]
+- [[People Board Surface]]
+- [[Search Surface]]
+- [[Glossary Surface]]
+- [[Calendar Surface]]
+- [[WOSM Members Surface]]
+- [[Contributors Surface]]
+- [[Post Detail Surface]]
+
 ## 연결 API
 
 - [[Settings API]]

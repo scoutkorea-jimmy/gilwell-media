@@ -29,6 +29,19 @@ scope: admin
 - [[Glossary Template]]
 - [[Calendar Template]]
 
+## 연결 surface
+
+- [[Admin Console Surface]]
+- [[KMS Surface]]
+- [[Latest Board Surface]]
+- [[Korea Board Surface]]
+- [[APR Board Surface]]
+- [[WOSM Board Surface]]
+- [[People Board Surface]]
+- [[Post Detail Surface]]
+- [[Glossary Surface]]
+- [[Calendar Surface]]
+
 ## 연결 API
 
 - [[Admin Session API]]

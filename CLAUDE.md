@@ -37,6 +37,13 @@ CLAUDE.md (이 문서) ← 프로젝트 공통 + Dreampath 규칙
 > 홈페이지 작업에 Dreampath 규칙을 적용하지 마십시오.
 > Dreampath 작업에 홈페이지 모듈/디자인 규칙을 적용하지 마십시오.
 
+## Documentation Axis
+
+- 저장소의 Obsidian 문서 구조는 **feature / module-first**를 기본 원칙으로 사용한다.
+- 페이지는 최상위 탐색 축이 아니라, 기능 조합 결과를 보여주는 **surface node**로 취급한다.
+- 홈페이지 문서를 갱신할 때는 `[[CHATGPT]]`, `[[docs/features/README|Homepage Features Hub]]`, `[[docs/modules/README|Homepage Modules Hub]]`를 먼저 갱신 대상으로 본다.
+- 같은 기능을 여러 페이지 설명으로 반복 복제하지 않고, 기능 허브와 모듈 라이브러리로 링크를 모아 토큰 낭비와 기준 드리프트를 줄인다.
+
 ---
 
 ## Architecture
