@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.059.00
+ * Version: 03.060.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -88,6 +88,7 @@
   var _geoAudienceMap = null;
   var _geoAudienceMapLayer = null;
   var _geoAudienceMapLayers = null;
+  var _analyticsTagGraphState = null;
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -2180,9 +2181,11 @@
       html += _renderAnalyticsTagCloud(tagCloud, tagPeriod);
 
       bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
+      _mountAnalyticsTagGraph(tagCloud && tagCloud.graph ? tagCloud.graph : null);
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
       bodyEl.innerHTML  = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다</div></div></div>';
+      _analyticsTagGraphState = null;
     });
   }
 
@@ -2238,58 +2241,254 @@
 
   function _renderAnalyticsTagGraph(graph, period) {
     var nodes = Array.isArray(graph && graph.nodes) ? graph.nodes : [];
-    var links = Array.isArray(graph && graph.links) ? graph.links : [];
     if (!nodes.length) return '';
-    var width = 900;
-    var height = 420;
-    var cx = width / 2;
-    var cy = height / 2;
-    var maxCount = Math.max.apply(null, nodes.map(function (node) { return Number(node.count || 0); }));
-    var positioned = nodes.map(function (node, index) {
-      var ratio = maxCount > 0 ? Number(node.count || 0) / maxCount : 0;
-      var angle = (Math.PI * 2 * index) / Math.max(nodes.length, 1);
-      var ring = index % 2 === 0 ? 0.42 : 0.28;
-      var radius = Math.min(width, height) * ring + ratio * 26;
-      var x = cx + Math.cos(angle) * radius;
-      var y = cy + Math.sin(angle) * (radius * 0.72);
-      return {
-        id: node.id,
-        count: Number(node.count || 0),
-        categories: node.categories || [],
-        x: Math.round(x * 10) / 10,
-        y: Math.round(y * 10) / 10,
-        r: Math.max(14, Math.min(32, 14 + Math.round(ratio * 18))),
-      };
-    });
-    var byId = {};
-    positioned.forEach(function (node) { byId[String(node.id || '')] = node; });
-    var maxLink = links.length ? Math.max.apply(null, links.map(function (link) { return Number(link.count || 0); })) : 1;
-    var lines = links.map(function (link) {
-      var source = byId[String(link.source || '')];
-      var target = byId[String(link.target || '')];
-      if (!source || !target) return '';
-      var weight = maxLink > 0 ? Number(link.count || 0) / maxLink : 0;
-      return '<line x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke="rgba(109,40,217,' + (0.15 + weight * 0.4).toFixed(2) + ')" stroke-width="' + (1 + weight * 3).toFixed(2) + '" />';
-    }).join('');
-    var circles = positioned.map(function (node) {
-      var title = node.id + ' · ' + _fmt(node.count) + '회' + (node.categories.length ? ' · ' + node.categories.join(', ') : '');
-      return '<g>' +
-        '<circle cx="' + node.x + '" cy="' + node.y + '" r="' + node.r + '" fill="rgba(124,58,237,0.12)" stroke="rgba(109,40,217,0.42)" stroke-width="1.5"></circle>' +
-        '<text x="' + node.x + '" y="' + (node.y + 1) + '" text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-text">' + GW.escapeHtml(node.id) + '</text>' +
-        '<title>' + GW.escapeHtml(title) + '</title>' +
-      '</g>';
-    }).join('');
     return '<div class="v3-tag-graph-wrap v3-mt-16">' +
       '<div class="v3-card-head" style="padding:0 0 10px 0;"><div>' +
         '<h3 class="v3-card-title">태그 관계도</h3>' +
-        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 같은 게시글에 함께 붙은 태그를 연결했습니다.</p>' +
+        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 게시글-태그, 태그-태그, 게시글-게시글 연결을 함께 보여줍니다.</p>' +
+      '</div><div class="v3-tag-graph-controls">' +
+        '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-out">축소</button>' +
+        '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-reset">100%</button>' +
+        '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-in">확대</button>' +
       '</div></div>' +
+      '<div class="v3-inline-meta">원형은 태그, 사각형은 게시글입니다. 마우스를 올리면 연결 정보가 보이고, 노드는 드래그로 이동할 수 있습니다.</div>' +
       '<div class="v3-tag-graph-stage">' +
-        '<svg class="v3-tag-graph" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="태그 관계도">' +
-          lines + circles +
-        '</svg>' +
+        '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
       '</div>' +
+      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">노드나 연결선을 올려 세부 관계를 확인하세요.</div>' +
     '</div>';
+  }
+
+  function _mountAnalyticsTagGraph(graph) {
+    var svg = _el('analytics-tag-graph');
+    var meta = _el('analytics-tag-graph-meta');
+    if (!svg || !graph || !Array.isArray(graph.nodes) || !graph.nodes.length) {
+      _analyticsTagGraphState = null;
+      if (meta) meta.textContent = '표시할 태그 관계 데이터가 없습니다.';
+      return;
+    }
+    var width = 960;
+    var height = 520;
+    var nextState = {
+      width: width,
+      height: height,
+      scale: 1,
+      hoveredNodeId: '',
+      hoveredLinkId: '',
+      dragNodeId: '',
+      dragPointerId: null,
+      nodes: [],
+      links: [],
+    };
+    var previous = _analyticsTagGraphState && Array.isArray(_analyticsTagGraphState.nodes) ? _analyticsTagGraphState : null;
+    var previousById = {};
+    if (previous) previous.nodes.forEach(function (node) { previousById[node.id] = node; });
+    var maxCount = Math.max.apply(null, graph.nodes.map(function (node) { return Number(node.count || 0); }));
+    var tagNodes = graph.nodes.filter(function (node) { return node.node_type === 'tag'; });
+    var postNodes = graph.nodes.filter(function (node) { return node.node_type === 'post'; });
+    nextState.nodes = graph.nodes.map(function (node, index) {
+      var existing = previousById[node.id];
+      if (existing) {
+        return Object.assign({}, node, { x: existing.x, y: existing.y, size: existing.size });
+      }
+      var ratio = maxCount > 0 ? Number(node.count || 0) / maxCount : 0;
+      var list = node.node_type === 'tag' ? tagNodes : postNodes;
+      var idx = list.findIndex(function (item) { return item.id === node.id; });
+      var angle = (Math.PI * 2 * idx) / Math.max(list.length, 1);
+      var ring = node.node_type === 'tag' ? 150 : 245;
+      var x = (width / 2) + Math.cos(angle) * ring;
+      var y = (height / 2) + Math.sin(angle) * (node.node_type === 'tag' ? ring * 0.78 : ring * 0.62);
+      return Object.assign({}, node, {
+        x: Math.round(x * 10) / 10,
+        y: Math.round(y * 10) / 10,
+        size: node.node_type === 'tag'
+          ? Math.max(18, Math.min(34, 18 + Math.round(ratio * 16)))
+          : Math.max(72, Math.min(138, 72 + Math.round(ratio * 54))),
+      });
+    });
+    nextState.links = (graph.links || []).map(function (link) { return Object.assign({}, link); });
+    _analyticsTagGraphState = nextState;
+    _renderAnalyticsTagGraphSvg();
+    _bindAnalyticsTagGraphControls();
+  }
+
+  function _renderAnalyticsTagGraphSvg() {
+    var state = _analyticsTagGraphState;
+    var svg = _el('analytics-tag-graph');
+    var meta = _el('analytics-tag-graph-meta');
+    if (!state || !svg) return;
+    var byId = {};
+    state.nodes.forEach(function (node) { byId[node.id] = node; });
+    var maxLink = state.links.length ? Math.max.apply(null, state.links.map(function (link) { return Number(link.count || 0); })) : 1;
+    var tx = (state.width / 2) * (1 - state.scale);
+    var ty = (state.height / 2) * (1 - state.scale);
+    var linksHtml = state.links.map(function (link) {
+      var source = byId[link.source];
+      var target = byId[link.target];
+      if (!source || !target) return '';
+      var weight = maxLink > 0 ? Number(link.count || 0) / maxLink : 0;
+      var active = !state.hoveredNodeId && !state.hoveredLinkId
+        ? ''
+        : ((state.hoveredLinkId === link.id || state.hoveredNodeId === link.source || state.hoveredNodeId === link.target) ? ' is-active' : ' is-dimmed');
+      var cls = 'v3-tag-graph-link v3-tag-graph-link--' + GW.escapeHtml(link.type || 'default') + active;
+      return '<line class="' + cls + '" data-link-id="' + GW.escapeHtml(link.id) + '" x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke-width="' + (1 + weight * 3.4).toFixed(2) + '"></line>';
+    }).join('');
+    var nodesHtml = state.nodes.map(function (node) {
+      var active = !state.hoveredNodeId && !state.hoveredLinkId
+        ? ''
+        : ((state.hoveredNodeId === node.id || _nodeRelatedToHoveredLink(node.id)) ? ' is-active' : ' is-dimmed');
+      var cls = 'v3-tag-graph-node v3-tag-graph-node--' + node.node_type + active;
+      if (node.node_type === 'post') {
+        var width = Number(node.size || 90);
+        var height = 34;
+        return '<g class="' + cls + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + (node.x - width / 2) + ' ' + (node.y - height / 2) + ')">' +
+          '<rect rx="12" ry="12" width="' + width + '" height="' + height + '"></rect>' +
+          '<text x="' + (width / 2) + '" y="' + (height / 2 + 1) + '" text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-post-text">' + GW.escapeHtml(node.short_label || node.label || node.id) + '</text>' +
+        '</g>';
+      }
+      return '<g class="' + cls + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + node.x + ' ' + node.y + ')">' +
+        '<circle r="' + node.size + '"></circle>' +
+        '<text text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-text">' + GW.escapeHtml(node.label || node.id) + '</text>' +
+      '</g>';
+    }).join('');
+    svg.innerHTML = '<g transform="translate(' + tx.toFixed(2) + ' ' + ty.toFixed(2) + ') scale(' + state.scale.toFixed(3) + ')">' + linksHtml + nodesHtml + '</g>';
+    _bindAnalyticsTagGraphEvents();
+    if (meta) meta.textContent = _describeAnalyticsGraphHover();
+  }
+
+  function _bindAnalyticsTagGraphControls() {
+    _bindEl('analytics-tag-zoom-in', 'click', function () { _adjustAnalyticsTagGraphZoom(0.12); });
+    _bindEl('analytics-tag-zoom-out', 'click', function () { _adjustAnalyticsTagGraphZoom(-0.12); });
+    _bindEl('analytics-tag-zoom-reset', 'click', function () {
+      if (!_analyticsTagGraphState) return;
+      _analyticsTagGraphState.scale = 1;
+      _renderAnalyticsTagGraphSvg();
+    });
+    var svg = _el('analytics-tag-graph');
+    if (svg && !svg.dataset.graphWheelBound) {
+      svg.dataset.graphWheelBound = '1';
+      svg.addEventListener('wheel', function (event) {
+        event.preventDefault();
+        _adjustAnalyticsTagGraphZoom(event.deltaY < 0 ? 0.08 : -0.08);
+      }, { passive: false });
+    }
+  }
+
+  function _bindAnalyticsTagGraphEvents() {
+    var svg = _el('analytics-tag-graph');
+    if (!svg || !svg.parentNode) return;
+    svg.querySelectorAll('[data-node-id]').forEach(function (el) {
+      el.onmouseenter = function () {
+        if (!_analyticsTagGraphState) return;
+        _analyticsTagGraphState.hoveredNodeId = el.getAttribute('data-node-id') || '';
+        _analyticsTagGraphState.hoveredLinkId = '';
+        _renderAnalyticsTagGraphSvg();
+      };
+      el.onmouseleave = function () {
+        if (!_analyticsTagGraphState || _analyticsTagGraphState.dragNodeId) return;
+        _analyticsTagGraphState.hoveredNodeId = '';
+        _renderAnalyticsTagGraphSvg();
+      };
+      el.onpointerdown = function (event) {
+        if (!_analyticsTagGraphState) return;
+        event.preventDefault();
+        var nodeId = el.getAttribute('data-node-id') || '';
+        _analyticsTagGraphState.dragNodeId = nodeId;
+        _analyticsTagGraphState.dragPointerId = event.pointerId;
+        if (svg.setPointerCapture) {
+          try { svg.setPointerCapture(event.pointerId); } catch (_) {}
+        }
+      };
+    });
+    svg.querySelectorAll('[data-link-id]').forEach(function (el) {
+      el.onmouseenter = function () {
+        if (!_analyticsTagGraphState) return;
+        _analyticsTagGraphState.hoveredLinkId = el.getAttribute('data-link-id') || '';
+        _analyticsTagGraphState.hoveredNodeId = '';
+        _renderAnalyticsTagGraphSvg();
+      };
+      el.onmouseleave = function () {
+        if (!_analyticsTagGraphState || _analyticsTagGraphState.dragNodeId) return;
+        _analyticsTagGraphState.hoveredLinkId = '';
+        _renderAnalyticsTagGraphSvg();
+      };
+    });
+    svg.onpointermove = function (event) {
+      if (!_analyticsTagGraphState || !_analyticsTagGraphState.dragNodeId) return;
+      var point = _eventToAnalyticsGraphPoint(event, svg);
+      var node = _findAnalyticsGraphNode(_analyticsTagGraphState.dragNodeId);
+      if (!node || !point) return;
+      node.x = Math.max(44, Math.min(_analyticsTagGraphState.width - 44, point.x));
+      node.y = Math.max(34, Math.min(_analyticsTagGraphState.height - 34, point.y));
+      _renderAnalyticsTagGraphSvg();
+    };
+    svg.onpointerup = svg.onpointercancel = function () {
+      if (!_analyticsTagGraphState) return;
+      _analyticsTagGraphState.dragNodeId = '';
+      _analyticsTagGraphState.dragPointerId = null;
+    };
+  }
+
+  function _adjustAnalyticsTagGraphZoom(delta) {
+    if (!_analyticsTagGraphState) return;
+    _analyticsTagGraphState.scale = Math.max(0.55, Math.min(2.4, Number((_analyticsTagGraphState.scale + delta).toFixed(3))));
+    _renderAnalyticsTagGraphSvg();
+  }
+
+  function _findAnalyticsGraphNode(id) {
+    if (!_analyticsTagGraphState || !Array.isArray(_analyticsTagGraphState.nodes)) return null;
+    for (var i = 0; i < _analyticsTagGraphState.nodes.length; i += 1) {
+      if (_analyticsTagGraphState.nodes[i].id === id) return _analyticsTagGraphState.nodes[i];
+    }
+    return null;
+  }
+
+  function _findAnalyticsGraphLink(id) {
+    if (!_analyticsTagGraphState || !Array.isArray(_analyticsTagGraphState.links)) return null;
+    for (var i = 0; i < _analyticsTagGraphState.links.length; i += 1) {
+      if (_analyticsTagGraphState.links[i].id === id) return _analyticsTagGraphState.links[i];
+    }
+    return null;
+  }
+
+  function _nodeRelatedToHoveredLink(nodeId) {
+    if (!_analyticsTagGraphState || !_analyticsTagGraphState.hoveredLinkId) return false;
+    var link = _findAnalyticsGraphLink(_analyticsTagGraphState.hoveredLinkId);
+    return !!(link && (link.source === nodeId || link.target === nodeId));
+  }
+
+  function _describeAnalyticsGraphHover() {
+    if (!_analyticsTagGraphState) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+    if (_analyticsTagGraphState.hoveredNodeId) {
+      var node = _findAnalyticsGraphNode(_analyticsTagGraphState.hoveredNodeId);
+      if (!node) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+      if (node.node_type === 'post') {
+        return (node.label || node.id) + ' · 태그 ' + _fmt((node.tags || []).length) + '개 · ' + ((node.tags || []).join(', ') || '태그 없음');
+      }
+      return (node.label || node.id) + ' · 사용 ' + _fmt(node.count || 0) + '회 · 카테고리 ' + (((node.categories || []).join(', ')) || '—');
+    }
+    if (_analyticsTagGraphState.hoveredLinkId) {
+      var link = _findAnalyticsGraphLink(_analyticsTagGraphState.hoveredLinkId);
+      if (!link) return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+      if (link.type === 'post_tag') return '게시글과 태그 연결 · ' + String(link.source || '').replace(/^post:/, '') + ' ↔ ' + String(link.target || '').replace(/^tag:/, '');
+      if (link.type === 'tag_tag') return '태그 동시 사용 · ' + link.source + ' ↔ ' + link.target + ' · ' + _fmt(link.count || 0) + '회';
+      if (link.type === 'post_post') return '게시글 연결 · 공통 태그 ' + _fmt(link.count || 0) + '개 · ' + ((link.shared_tags || []).join(', ') || '—');
+    }
+    return '노드나 연결선을 올려 세부 관계를 확인하세요.';
+  }
+
+  function _eventToAnalyticsGraphPoint(event, svg) {
+    if (!_analyticsTagGraphState || !svg) return null;
+    var rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    var x = ((event.clientX - rect.left) / rect.width) * _analyticsTagGraphState.width;
+    var y = ((event.clientY - rect.top) / rect.height) * _analyticsTagGraphState.height;
+    var tx = (_analyticsTagGraphState.width / 2) * (1 - _analyticsTagGraphState.scale);
+    var ty = (_analyticsTagGraphState.height / 2) * (1 - _analyticsTagGraphState.scale);
+    return {
+      x: (x - tx) / _analyticsTagGraphState.scale,
+      y: (y - ty) / _analyticsTagGraphState.scale,
+    };
   }
 
   function _loadGeoAudience() {

@@ -217,7 +217,7 @@ async function getInternalMetrics(env, range, tagRange) {
          LEFT JOIN posts p ON p.id = tp.post_id`
     ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).first(),
     env.DB.prepare(
-      `SELECT id, category, tag, published, created_at, publish_at
+      `SELECT id, title, category, tag, published, created_at, publish_at
          FROM posts
         WHERE tag IS NOT NULL
           AND trim(tag) <> ''
@@ -399,8 +399,16 @@ function aggregateReferrers(rows) {
 function aggregateTags(rows, range) {
   const map = new Map();
   const pairMap = new Map();
+  const posts = [];
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const tags = String(row && row.tag || '').split(',').map((item) => item.trim()).filter(Boolean);
+    posts.push({
+      id: Number(row && row.id || 0),
+      title: String(row && row.title || ''),
+      category: String(row && row.category || ''),
+      published: Number(row && row.published || 0) === 1,
+      tags,
+    });
     tags.forEach((tag) => {
       const key = tag.toLowerCase();
       const current = map.get(key) || {
@@ -445,35 +453,103 @@ function aggregateTags(rows, range) {
     total_unique_tags: allItems.length,
     total_tag_assignments: allItems.reduce((sum, item) => sum + Number(item.count || 0), 0),
     items,
-    graph: buildTagGraph(allItems, pairMap),
+    graph: buildTagGraph(allItems, pairMap, posts),
   };
 }
 
-function buildTagGraph(items, pairMap) {
-  const topNodes = (Array.isArray(items) ? items : []).slice(0, 18);
-  const allowed = new Set(topNodes.map((item) => String(item.tag || '').toLowerCase()));
-  const links = Array.from(pairMap.values())
+function buildTagGraph(items, pairMap, posts) {
+  const topTags = (Array.isArray(items) ? items : []).slice(0, 18);
+  const allowedTags = new Set(topTags.map((item) => String(item.tag || '').toLowerCase()));
+  const tagTagLinks = Array.from(pairMap.values())
     .filter((item) => {
       const left = String(item.source || '').toLowerCase();
       const right = String(item.target || '').toLowerCase();
-      return allowed.has(left) && allowed.has(right) && Number(item.count || 0) >= 2;
+      return allowedTags.has(left) && allowedTags.has(right) && Number(item.count || 0) >= 2;
     })
     .sort((a, b) => b.count - a.count || String(a.source || '').localeCompare(String(b.source || ''), 'ko'))
     .slice(0, 32)
     .map((item) => ({
+      id: 'tt:' + String(item.source || '') + '::' + String(item.target || ''),
+      type: 'tag_tag',
       source: item.source,
       target: item.target,
       count: Number(item.count || 0),
     }));
-
+  const selectedPosts = (Array.isArray(posts) ? posts : [])
+    .map((post) => {
+      const matchedTags = (post.tags || []).filter((tag) => allowedTags.has(String(tag || '').toLowerCase()));
+      return Object.assign({}, post, { matchedTags });
+    })
+    .filter((post) => post.matchedTags.length)
+    .sort((a, b) => b.matchedTags.length - a.matchedTags.length || Number(b.published) - Number(a.published) || b.id - a.id)
+    .slice(0, 14);
+  const allowedPosts = new Set(selectedPosts.map((post) => Number(post.id || 0)));
+  const postTagLinks = [];
+  selectedPosts.forEach((post) => {
+    post.matchedTags.forEach((tag) => {
+      postTagLinks.push({
+        id: 'pt:' + post.id + ':' + tag,
+        type: 'post_tag',
+        source: 'post:' + post.id,
+        target: 'tag:' + tag,
+        count: 1,
+      });
+    });
+  });
+  const postPostLinks = [];
+  for (let i = 0; i < selectedPosts.length; i += 1) {
+    for (let j = i + 1; j < selectedPosts.length; j += 1) {
+      const left = selectedPosts[i];
+      const right = selectedPosts[j];
+      const shared = left.matchedTags.filter((tag) => right.matchedTags.indexOf(tag) >= 0);
+      if (!shared.length) continue;
+      postPostLinks.push({
+        id: 'pp:' + left.id + ':' + right.id,
+        type: 'post_post',
+        source: 'post:' + left.id,
+        target: 'post:' + right.id,
+        count: shared.length,
+        shared_tags: shared,
+      });
+    }
+  }
   return {
-    nodes: topNodes.map((item) => ({
-      id: item.tag,
+    nodes: topTags.map((item) => ({
+      id: 'tag:' + item.tag,
+      label: item.tag,
+      node_type: 'tag',
       count: Number(item.count || 0),
       categories: item.categories || [],
-    })),
-    links,
+    })).concat(selectedPosts.map((post) => ({
+      id: 'post:' + post.id,
+      label: post.title || ('게시글 ' + post.id),
+      short_label: trimGraphLabel(post.title || ('게시글 ' + post.id), 22),
+      node_type: 'post',
+      post_id: post.id,
+      count: post.matchedTags.length,
+      categories: post.category ? [post.category] : [],
+      published: !!post.published,
+      tags: post.matchedTags,
+    }))),
+    links: tagTagLinks.concat(postTagLinks).concat(postPostLinks),
+    counts: {
+      tags: topTags.length,
+      posts: selectedPosts.length,
+      post_tag_links: postTagLinks.length,
+      tag_tag_links: tagTagLinks.length,
+      post_post_links: postPostLinks.length,
+    },
+    filters: {
+      node_types: ['tag', 'post'],
+      link_types: ['post_tag', 'tag_tag', 'post_post'],
+    },
   };
+}
+
+function trimGraphLabel(value, limit) {
+  const text = String(value || '').trim();
+  if (text.length <= limit) return text;
+  return text.slice(0, Math.max(1, limit - 1)) + '…';
 }
 
 function classifyReferrer(referrerHost, referrerUrl, utmSource, utmMedium, utmCampaign) {

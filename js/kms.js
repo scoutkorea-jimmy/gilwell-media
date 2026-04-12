@@ -293,7 +293,7 @@
         {
           method: 'GET', path: '/api/admin/analytics', auth: true,
           summary: '관리자 종합 분석 대시보드 및 태그 인사이트',
-          response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [], "graph": { "nodes": [], "links": [] } }, "total_visits": number, "avg_duration": number }',
+          response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [], "graph": { "nodes": [], "links": [], "counts": {} } }, "total_visits": number, "avg_duration": number }',
         },
         {
           method: 'GET', path: '/api/admin/geo-audience', auth: true,
