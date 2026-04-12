@@ -44,6 +44,7 @@ export async function onRequestGet({ request, env }) {
   const requestedOrderBy = String(url.searchParams.get('order_by') || '').trim().toLowerCase();
   const requestedOrderDir = String(url.searchParams.get('order_dir') || '').trim().toLowerCase();
   const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
+  const adminScopeRequested = String(url.searchParams.get('scope') || '').trim().toLowerCase() === 'admin';
   // Limit query length to prevent abuse
   const safeQ = q ? q.slice(0, 200) : null;
   const compactQuery = safeQ ? safeQ.replace(/\s+/g, '') : '';
@@ -55,7 +56,9 @@ export async function onRequestGet({ request, env }) {
 
   // Admin token check — if valid token, include unpublished posts
   const token   = extractToken(request);
-  const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
+  const isAdmin = adminScopeRequested && token
+    ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false)
+    : false;
 
   const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
   const ORDER_LATEST = `ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`;
