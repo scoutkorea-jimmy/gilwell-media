@@ -1,3 +1,5 @@
+const DEFAULT_POST_PLACEHOLDER_PATH = '/img/post-placeholder.svg';
+
 export function resolvePostImageUrl(origin, postId, imageUrl) {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) return imageUrl;
@@ -8,6 +10,11 @@ export function resolvePostImageUrl(origin, postId, imageUrl) {
 export function serializePostImage(post, origin) {
   if (!post || !post.id) return post;
   const resolved = resolvePostImageUrl(origin, post.id, post.image_url);
-  if (!resolved) return post;
-  return Object.assign({}, post, { image_url: resolved });
+  if (!resolved) {
+    return Object.assign({}, post, {
+      image_url: `${origin}${DEFAULT_POST_PLACEHOLDER_PATH}`,
+      image_is_placeholder: true,
+    });
+  }
+  return Object.assign({}, post, { image_url: resolved, image_is_placeholder: false });
 }

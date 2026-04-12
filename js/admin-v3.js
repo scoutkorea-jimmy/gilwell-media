@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.00
+ * Version: 03.057.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -36,7 +36,7 @@
   var _listSearchTimer = null;
   var _listCat       = 'all';
   var _listPub       = 'all';
-  var _listSort      = 'date_desc';
+  var _listSort      = 'upload_desc';
 
   // Write / edit
   var _editingId     = null;
@@ -939,7 +939,7 @@
               '<td><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></td>' +
               '<td>' + (p.tag ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(p.tag) + '</span>' : '<span class="v3-text-m">—</span>') + '</td>' +
               '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
-              '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.publish_at || p.created_at)) + '</td>' +
+              '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
               '<td class="v3-nowrap">' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + p.id + ')">수정</button>' +
@@ -957,10 +957,25 @@
   }
 
   function _applyListSortParams(params) {
-    var normalized = String(_listSort || 'date_desc').trim().toLowerCase();
-    if (normalized === 'date_desc') return;
+    var normalized = String(_listSort || 'upload_desc').trim().toLowerCase();
+    if (normalized === 'upload_desc') {
+      params.set('order_by', 'upload');
+      params.set('order_dir', 'desc');
+      return;
+    }
+    if (normalized === 'upload_asc') {
+      params.set('order_by', 'upload');
+      params.set('order_dir', 'asc');
+      return;
+    }
+    if (normalized === 'date_desc') {
+      params.set('order_by', 'date');
+      params.set('order_dir', 'desc');
+      return;
+    }
     if (normalized === 'date_asc') {
-      params.set('sort', 'oldest');
+      params.set('order_by', 'date');
+      params.set('order_dir', 'asc');
       return;
     }
     if (normalized === 'views_desc') {
@@ -993,10 +1008,10 @@
   }
 
   function _parseListSortState(value) {
-    var normalized = String(value || 'date_desc').trim().toLowerCase();
+    var normalized = String(value || 'upload_desc').trim().toLowerCase();
     var parts = normalized.split('_');
     return {
-      key: parts[0] || 'date',
+      key: parts[0] || 'upload',
       dir: parts[1] === 'asc' ? 'asc' : 'desc'
     };
   }
@@ -1025,6 +1040,7 @@
     if (key === 'title' && current.key !== key) nextDir = 'asc';
     if (key === 'views' && current.key !== key) nextDir = 'desc';
     if (key === 'date' && current.key !== key) nextDir = 'desc';
+    if (key === 'upload' && current.key !== key) nextDir = 'desc';
     _listSort = key + '_' + nextDir;
     _listPage = 1;
     _loadList();

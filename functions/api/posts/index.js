@@ -396,6 +396,7 @@ function buildAdminOrder(orderBy, orderDir, publicDateExpr) {
   const key = String(orderBy || '').trim().toLowerCase();
   if (!key) return '';
   const dir = String(orderDir || '').trim().toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+  if (key === 'upload') return `ORDER BY datetime(replace(created_at, 'T', ' ')) ${dir}, id ${dir}`;
   if (key === 'date') return `ORDER BY ${publicDateExpr} ${dir}, id ${dir}`;
   if (key === 'views') return `ORDER BY views ${dir}, ${publicDateExpr} DESC, id DESC`;
   if (key === 'title') return `ORDER BY LOWER(COALESCE(title, '')) ${dir}, ${publicDateExpr} DESC, id DESC`;
