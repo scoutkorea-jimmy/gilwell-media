@@ -1666,6 +1666,14 @@ body[data-home-bootstrap] .masthead {
   -webkit-backface-visibility: hidden;
 }
 
+.site-hero-media-img.is-placeholder {
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+  padding: 36px;
+  background: #fbf8f3;
+}
+
 .site-hero.has-bg::after {
   content:    '';
   position:   absolute;
@@ -1856,6 +1864,10 @@ body[data-home-bootstrap] .masthead {
   background-color: var(--bg);
 }
 
+.home-lead-thumb-link.is-placeholder {
+  background: #fbf8f3;
+}
+
 .home-lead-thumb {
   display: block;
   width: 100%;
@@ -1872,6 +1884,14 @@ body[data-home-bootstrap] .masthead {
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+.home-lead-thumb.is-placeholder {
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+  padding: 24px;
+  background: #fbf8f3;
 }
 
 .home-lead-body {
@@ -2313,6 +2333,12 @@ body[data-home-bootstrap] .masthead {
   border:      1px solid var(--border);
 }
 
+.mini-thumb.is-placeholder {
+  object-fit: contain;
+  background: #fbf8f3;
+  padding: 6px;
+}
+
 .mini-empty {
   padding:     24px 0;
   color:       var(--muted);
@@ -2528,6 +2554,12 @@ body[data-home-bootstrap] .masthead {
   object-fit:     cover;
   display:        block;
   border-bottom:  1px solid var(--border);
+}
+
+.post-card-thumb.is-placeholder {
+  object-fit: contain;
+  background: #fbf8f3;
+  padding: 18px;
 }
 
 .post-card-body {

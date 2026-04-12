@@ -1,4 +1,4 @@
-const DEFAULT_POST_PLACEHOLDER_PATH = '/img/post-placeholder.svg';
+const DEFAULT_POST_PLACEHOLDER_PATH = '/img/logo.png';
 
 export function resolvePostImageUrl(origin, postId, imageUrl) {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
