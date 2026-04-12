@@ -992,7 +992,7 @@
       });
   }
 
-  function renderChangelog(items, scope) {
+	  function renderChangelog(items, scope) {
     var container = document.getElementById('kms-changelog');
     if (!container) return;
     if (!items || !items.length) {
@@ -1018,10 +1018,11 @@
     var typeColors = { Update: '#0069d9', Bugfix: '#cb2431', Feature: '#22863a', Refactor: '#6f42c1' };
     var scopeLabels = { site: 'Site', admin: 'Admin', both: 'Site + Admin' };
 
-    container.innerHTML = filtered.map(function (item) {
-      var typeColor = typeColors[item.type] || '#555';
-      var scopeLabel = scopeLabels[item.scope] || String(item.scope || 'Site');
-      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
+	    container.innerHTML = filtered.map(function (item) {
+	      var typeColor = typeColors[item.type] || '#555';
+	      var scopeLabel = scopeLabels[item.scope] || String(item.scope || 'Site');
+	      var releaseDateText = String(item.released_at || item.date || '');
+	      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
       var changesHtml = changesList.length
         ? '<ul class="kms-cl-changes">' + changesList.map(function (c) {
             return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
@@ -1035,8 +1036,8 @@
             '<span class="kms-cl-type" style="background:' + typeColor + '">' + GW.escapeHtml(String(item.type || '')) + '</span>' +
             '<span class="kms-cl-scope">' + GW.escapeHtml(scopeLabel) + '</span>' +
           '</div>' +
-          '<span class="kms-cl-date">' + GW.escapeHtml(String(item.date || '')) + '</span>' +
-        '</div>' +
+	          '<span class="kms-cl-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
+	        '</div>' +
         '<p class="kms-cl-summary">' + GW.escapeHtml(String(item.summary || '')) + '</p>' +
         changesHtml +
         '</article>';
