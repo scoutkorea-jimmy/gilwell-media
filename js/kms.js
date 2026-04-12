@@ -317,7 +317,7 @@
           method: 'POST', path: '/api/homepage-issues/report', auth: false,
           summary: '홈 공개 화면 자동 오류 보고',
           response: '{ "ok": true, "item": HomepageIssue }',
-          notes: '홈 초기 로드 실패, 백그라운드 최신 소식 새로고침 실패, 런타임 오류를 같은 이슈 기준으로 자동 누적하며, 관리자 패널에서는 전역 API 오류 로그와 함께 봅니다.',
+          notes: '홈 초기 로드 실패, 백그라운드 최신 소식 새로고침 실패, 런타임 오류와 관리자 클라이언트 API 실패를 같은 이슈 기준으로 자동 누적하며, 관리자 패널에서는 전역 API 오류 로그와 함께 봅니다.',
         },
       ],
     },

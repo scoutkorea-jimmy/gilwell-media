@@ -637,7 +637,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET /api/admin/marketing` — 마케팅 퍼널 데이터
 - `GET /api/admin/operations` — 운영 대시보드/릴리스 이력
 - `GET /api/admin/homepage-issues` — 사이트 오류/이슈 기록 조회
-- `POST /api/homepage-issues/report` — 홈 공개 화면 자동 오류 보고. 이 기록과 전역 API 오류 로그가 함께 `사이트 오류/이슈 기록` 패널에 누적된다.
+- `POST /api/homepage-issues/report` — 공개 홈 자동 오류 보고와 관리자 클라이언트 API 실패 보고. 이 기록과 전역 API 오류 로그가 함께 `사이트 오류/이슈 기록` 패널에 누적된다.
 - `POST /api/analytics/visit` — 방문 기록 (공개)
 - `POST /api/analytics/post-engagement` — 체류시간 기록 (공개)
 - `GET /api/analytics/today` — 오늘 방문자/조회수
