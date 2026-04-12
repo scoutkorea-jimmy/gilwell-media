@@ -62,6 +62,16 @@ const ISSUE_TEMPLATES = {
     impact: '관리자 비동기 데이터 로딩 또는 저장 후속 처리 일부가 조용히 실패할 수 있습니다.',
     action_items: 'Unhandled rejection 메시지와 관련 API 호출 경로를 확인합니다.',
   },
+  admin_client_api_error: {
+    title: '관리자 API 요청 실패',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'medium',
+    area: 'api',
+    source_path: '/api/admin',
+    impact: '관리자 저장, 목록, 분석, 설정 로딩 중 일부 기능이 실패하거나 오래된 상태로 보일 수 있습니다.',
+    action_items: '실패한 API 경로, HTTP 상태 코드, 관리자 패널 구간, 최근 배포 이력을 함께 확인합니다.',
+  },
 };
 
 export async function onRequestPost({ request, env }) {
@@ -139,6 +149,8 @@ function sanitizeDetail(input) {
     section: trim(detail.section, 80),
     code: trim(detail.code, 80),
     source: trim(detail.source, 260),
+    method: trim(detail.method, 20),
+    status: trim(detail.status, 20),
   };
 }
 
@@ -150,6 +162,8 @@ function normalizeSourcePath(basePath, detail) {
 function buildSummary(title, detail) {
   const parts = [];
   if (detail && detail.section) parts.push('section=' + detail.section);
+  if (detail && detail.method) parts.push('method=' + detail.method);
+  if (detail && detail.status) parts.push('status=' + detail.status);
   if (detail && detail.code) parts.push('code=' + detail.code);
   if (detail && detail.message) parts.push(detail.message);
   return trim(parts.join(' | ') || title, 2000);
@@ -159,6 +173,8 @@ function buildCause(detail) {
   const parts = [];
   if (detail && detail.source) parts.push('source=' + detail.source);
   if (detail && detail.path) parts.push('path=' + detail.path);
+  if (detail && detail.method) parts.push('method=' + detail.method);
+  if (detail && detail.status) parts.push('status=' + detail.status);
   if (detail && detail.message) parts.push('message=' + detail.message);
   return trim(parts.join(' | '), 2000);
 }

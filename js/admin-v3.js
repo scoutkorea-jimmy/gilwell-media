@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.03
+ * Version: 03.062.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -129,6 +129,15 @@
         }
         if (!response.ok) {
           var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
+          _reportSiteIssue('admin_client_api_error', {
+            message: message,
+            path: _issuePathFromUrl(url),
+            section: _panel || 'admin',
+            code: 'HTTP_' + String(response.status || 0),
+            source: '/js/admin-v3.js',
+            method: String(opts.method || 'GET').toUpperCase(),
+            status: String(response.status || ''),
+          });
           var err = new Error(message);
           err.status = response.status;
           err.data = data;
@@ -142,12 +151,24 @@
         }
         return data;
       });
+    }).catch(function (error) {
+      if (error && typeof error.status === 'number') throw error;
+      _reportSiteIssue('admin_client_api_error', {
+        message: error && error.message ? String(error.message) : '관리자 API 요청 실패',
+        path: _issuePathFromUrl(url),
+        section: _panel || 'admin',
+        code: 'FETCH_FAILED',
+        source: '/js/admin-v3.js',
+        method: String(opts.method || 'GET').toUpperCase(),
+        status: '',
+      });
+      throw error;
     });
   }
 
   function _reportSiteIssue(code, detail) {
     var payload = detail && typeof detail === 'object' ? detail : {};
-    var fingerprint = [code, payload.path || '', payload.section || '', payload.message || ''].join('|');
+    var fingerprint = [code, payload.path || '', payload.section || '', payload.method || '', payload.status || '', payload.message || ''].join('|');
     if (_reportedIssueFingerprints[fingerprint]) return;
     _reportedIssueFingerprints[fingerprint] = true;
     fetch('/api/homepage-issues/report', {
@@ -156,6 +177,15 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: code, detail: payload }),
     }).catch(function () {});
+  }
+
+  function _issuePathFromUrl(url) {
+    try {
+      if (String(url || '').indexOf('http') === 0) return new URL(url).pathname || String(url || '');
+      return String(url || '').split('?')[0] || '';
+    } catch (_) {
+      return String(url || '').split('?')[0] || '';
+    }
   }
 
   function _pulseButton(btn) {
