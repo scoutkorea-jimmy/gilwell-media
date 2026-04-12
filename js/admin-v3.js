@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.02
+ * Version: 03.057.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1094,7 +1094,7 @@
     var _locPrev = document.getElementById('w-location-map-preview');
     if (_locPrev) { _locPrev.style.display = 'none'; document.getElementById('w-location-map-frame').src = ''; }
     document.getElementById('w-special').value   = '';
-    document.getElementById('w-published').checked = false;
+    document.getElementById('w-published').checked = true;
     document.getElementById('w-featured').checked  = false;
     document.getElementById('w-ai').checked        = false;
     document.getElementById('w-related-search').value = '';
