@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.061.01
+ * Version: 03.061.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1141,13 +1141,26 @@
     _apiFetch('/api/posts/' + id)
       .then(function (data) {
         var post = data && data.post ? data.post : null;
+        var rendered = null;
         var contentHtml = '';
+        var galleryHtml = '';
         if (!post) throw new Error('게시글을 찾을 수 없습니다.');
         titleEl.textContent = post.title || ('게시글 ' + id);
         if (GW && typeof GW.renderTextWithMedia === 'function') {
-          contentHtml = GW.renderTextWithMedia(post.content || '');
+          rendered = GW.renderTextWithMedia(post.content || '');
+          if (rendered && typeof rendered === 'object') {
+            contentHtml = rendered.html || '';
+            if (GW && typeof GW.renderContentGallery === 'function' && Array.isArray(rendered.gallery) && rendered.gallery.length > 1) {
+              galleryHtml = GW.renderContentGallery(rendered.gallery, { className: 'content-gallery--inline' }) || '';
+            }
+          } else {
+            contentHtml = String(rendered || '');
+          }
         } else {
           contentHtml = '<p>' + GW.escapeHtml(post.content || '') + '</p>';
+        }
+        if (!contentHtml) {
+          contentHtml = '<p class="v3-text-m">본문 내용이 없습니다.</p>';
         }
         bodyEl.innerHTML =
           '<div class="v3-simple-rows">' +
@@ -1159,7 +1172,9 @@
             (post.subtitle ? '<div class="v3-selected-post-subtitle" style="margin-top:8px;">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
             (post.image_url ? '<img src="' + GW.escapeHtml(post.image_url) + '" alt="" style="width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;">' : '') +
             '<div style="margin-top:16px;line-height:1.8;color:var(--v3-text);">' + contentHtml + '</div>' +
+            galleryHtml +
           '</div>';
+        if (GW && typeof GW.initContentGalleries === 'function') GW.initContentGalleries(bodyEl);
       })
       .catch(function (e) {
         bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '게시글을 불러오지 못했습니다.') + '</div></div>';
