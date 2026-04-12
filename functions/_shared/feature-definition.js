@@ -623,7 +623,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET/PUT /api/settings/feature-definition\` — KMS 문서
 
 **분석**
-- \`GET /api/admin/analytics\` — 관리자 통계 대시보드
+- \`GET /api/admin/analytics\` — 관리자 통계 대시보드. 방문/조회/유입 경로와 함께 최근 기간 기준 \`글머리 태그 워드 클라우드\`를 포함한다.
 - \`GET /api/admin/geo-audience\` — 관리자 접속 국가/도시 지도 및 테이블 집계
 - \`GET /api/admin/marketing\` — 마케팅 퍼널 데이터
 - \`GET /api/admin/operations\` — 운영 대시보드/릴리스 이력

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.07
+ * Version: 03.058.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2133,6 +2133,7 @@
       var views    = data.views    || {};
       var topPosts = data.article_top_posts || data.top_posts || data.top_paths || (views.top_paths || []);
       var sources  = data.sources  || data.referrers || [];
+      var tagCloud = data.tags || {};
 
       // Stats
       statsEl.innerHTML =
@@ -2174,6 +2175,8 @@
         html += '</div></div>';
       }
 
+      html += _renderAnalyticsTagCloud(tagCloud, period);
+
       bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
@@ -2185,6 +2188,48 @@
     return '<div class="v3-stat"><div class="v3-stat-label">' + GW.escapeHtml(label) + '</div>' +
       '<div class="v3-stat-value">' + GW.escapeHtml(String(value)) + '</div>' +
       '<div class="v3-stat-sub">' + GW.escapeHtml(sub) + '</div></div>';
+  }
+
+  function _renderAnalyticsTagCloud(tagCloud, period) {
+    var items = Array.isArray(tagCloud && tagCloud.items) ? tagCloud.items : [];
+    if (!items.length) {
+      return '<div class="v3-card v3-mt-16"><div class="v3-card-head"><div><h2 class="v3-card-title">태그 워드 클라우드</h2><p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 글머리 태그입니다.</p></div></div><div class="v3-empty"><div class="v3-empty-text">선택한 기간에 사용된 태그가 없습니다.</div></div></div>';
+    }
+    var maxCount = Math.max.apply(null, items.map(function (item) { return Number(item.count || 0); }));
+    var chips = items.slice(0, 40).map(function (item) {
+      var count = Number(item.count || 0);
+      var ratio = maxCount > 0 ? (count / maxCount) : 0;
+      var size = Math.round(14 + ratio * 20);
+      var opacity = (0.62 + ratio * 0.38).toFixed(2);
+      var categories = Array.isArray(item.categories) ? item.categories.join(', ') : '';
+      var title = item.tag + ' · ' + count + '회' + (categories ? ' · ' + categories : '');
+      return '<button class="v3-tag-cloud-chip" type="button" style="font-size:' + size + 'px;opacity:' + opacity + ';" title="' + GW.escapeHtml(title) + '">' +
+        '<span class="v3-tag-cloud-label">' + GW.escapeHtml(item.tag) + '</span>' +
+        '<span class="v3-tag-cloud-count">' + _fmt(count) + '</span>' +
+      '</button>';
+    }).join('');
+
+    var rows = items.slice(0, 15).map(function (item) {
+      return '<tr>' +
+        '<td><strong>' + GW.escapeHtml(item.tag) + '</strong></td>' +
+        '<td>' + _fmt(item.count || 0) + '</td>' +
+        '<td>' + _fmt(item.published_count || 0) + '</td>' +
+        '<td>' + _fmt(item.draft_count || 0) + '</td>' +
+        '<td>' + GW.escapeHtml((item.categories || []).join(', ') || '—') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><div>' +
+        '<h2 class="v3-card-title">태그 워드 클라우드</h2>' +
+        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 글머리 태그입니다. 많이 쓰인 태그일수록 크게 보입니다.</p>' +
+      '</div></div>' +
+      '<div class="v3-inline-meta">고유 태그 ' + _fmt(tagCloud.total_unique_tags || items.length) + '개 · 태그 부여 ' + _fmt(tagCloud.total_tag_assignments || 0) + '회</div>' +
+      '<div class="v3-tag-cloud">' + chips + '</div>' +
+      '<div class="v3-geo-table-wrap v3-mt-16"><table class="v3-geo-table"><thead><tr>' +
+        '<th>태그</th><th>사용</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '</div>';
   }
 
   function _loadGeoAudience() {

@@ -292,8 +292,8 @@
         },
         {
           method: 'GET', path: '/api/admin/analytics', auth: true,
-          summary: '관리자 종합 분석 대시보드',
-          response: '{ "daily": [], "top_posts": [], "total_visits": number, "avg_duration": number }',
+          summary: '관리자 종합 분석 대시보드 및 태그 워드 클라우드',
+          response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [] }, "total_visits": number, "avg_duration": number }',
         },
         {
           method: 'GET', path: '/api/admin/geo-audience', auth: true,
