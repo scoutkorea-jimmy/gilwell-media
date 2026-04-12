@@ -1,3 +1,5 @@
+import { recordHomepageIssue } from './homepage-issues.js';
+
 export async function ensureOperationalEventsTable(env) {
   if (!env || !env.DB) return;
   await env.DB.prepare(
@@ -52,20 +54,36 @@ export async function logOperationalEvent(env, input) {
 export async function logApiError(env, request, error, meta) {
   const input = meta && typeof meta === 'object' ? meta : {};
   const path = derivePath(request, input.path);
-  return logOperationalEvent(env, {
+  const message = truncate((error && error.message) || input.message || 'API error', 500);
+  const result = await logOperationalEvent(env, {
     channel: input.channel || 'site',
     type: input.type || 'api_error',
     level: 'error',
     actor: input.actor || '',
     ip: deriveIp(request),
     path,
-    message: truncate((error && error.message) || input.message || 'API error', 500),
+    message,
     details: {
       stack: error && error.stack ? String(error.stack).slice(0, 2000) : '',
       method: request && request.method ? request.method : '',
       meta: input.details || null,
     },
   });
+  await recordHomepageIssue(env, {
+    title: buildGlobalIssueTitle(input.channel || 'site', path),
+    issue_type: 'error',
+    status: 'open',
+    severity: pickSeverity(path, input),
+    area: deriveArea(path, input),
+    source_path: path,
+    summary: message,
+    impact: buildImpact(path, input),
+    cause: buildCause(message, input),
+    action_items: '재현 경로, 최근 배포, 관련 API/DB 상태를 확인하고 원인 수정 후 정상 응답 여부를 다시 검증합니다.',
+    reporter: 'system:auto-api',
+    occurred_at: nowUtcText(),
+  }).catch(function () {});
+  return result;
 }
 
 export function deriveIp(request) {
@@ -90,6 +108,47 @@ function serializeDetails(value) {
   } catch (_) {
     return truncate(String(value || ''), 4000) || null;
   }
+}
+
+function buildGlobalIssueTitle(channel, path) {
+  var scope = String(channel || 'site').trim() === 'admin' ? '관리자' : '사이트';
+  return scope + ' API 오류 · ' + (path || 'unknown');
+}
+
+function deriveArea(path, input) {
+  var safePath = String(path || '').trim();
+  if (safePath.indexOf('/api/admin/') === 0) return 'api';
+  if (safePath.indexOf('/api/home') === 0) return 'homepage';
+  if (safePath.indexOf('/api/analytics') === 0) return 'analytics';
+  if (safePath.indexOf('/api/settings/') === 0) return 'data';
+  if (input && input.channel === 'admin') return 'api';
+  return 'api';
+}
+
+function pickSeverity(path, input) {
+  var safePath = String(path || '').trim();
+  if (safePath.indexOf('/api/home') === 0) return 'high';
+  if (safePath.indexOf('/api/posts') === 0) return 'high';
+  if (input && input.channel === 'admin') return 'medium';
+  return 'medium';
+}
+
+function buildImpact(path, input) {
+  if (String(path || '').indexOf('/api/admin/') === 0 || (input && input.channel === 'admin')) {
+    return '관리자 화면 일부 집계, 저장, 목록 기능이 실패하거나 오래된 상태로 보일 수 있습니다.';
+  }
+  return '공개 사이트 일부 화면이나 데이터 로딩이 실패할 수 있습니다.';
+}
+
+function buildCause(message, input) {
+  var parts = [];
+  if (message) parts.push('message=' + message);
+  if (input && input.type) parts.push('type=' + input.type);
+  return truncate(parts.join(' | '), 2000);
+}
+
+function nowUtcText() {
+  return new Date().toISOString().slice(0, 19).replace('T', ' ');
 }
 
 function truncate(value, max) {

@@ -69,7 +69,7 @@ export async function onRequestPost({ request, env }) {
     message: 'Manual homepage issue creation blocked',
     details: { method: 'POST' },
   });
-  return json({ error: '홈 오류/이슈 기록은 자동 감지로만 누적됩니다.' }, 403);
+  return json({ error: '사이트 오류/이슈 기록은 자동 감지로만 누적됩니다.' }, 403);
 }
 
 function json(data, status = 200) {
