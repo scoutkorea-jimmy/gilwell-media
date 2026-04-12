@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.07
+ * Version: 03.062.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -92,6 +92,9 @@
   var _geoAudienceMapLayers = null;
   var _analyticsTagGraphState = null;
   var _analyticsSelectedTagId = '';
+  var _dashboardHeatmapMode = '7d';
+  var _dashboardHeatmapStart = '';
+  var _dashboardHeatmapEnd = '';
   var _boardBanner   = {};
   var _ticker        = '';
   var _calendarTags  = [];
@@ -287,6 +290,20 @@
     // Dashboard refresh
     _bindEl('dash-refresh-btn', 'click', function () {
       _loadDashboard(_el('dash-refresh-btn'));
+    });
+    document.querySelectorAll('[data-v3-heatmap-mode]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _dashboardHeatmapMode = btn.getAttribute('data-v3-heatmap-mode') || '7d';
+        _syncDashboardHeatmapControls();
+        if (_dashboardHeatmapMode !== 'custom') _loadDashboard();
+      });
+    });
+    _bindEl('dash-heatmap-apply', 'click', _applyDashboardHeatmapCustomRange);
+    _bindEl('dash-heatmap-start', 'change', function () {
+      _dashboardHeatmapStart = this.value || '';
+    });
+    _bindEl('dash-heatmap-end', 'change', function () {
+      _dashboardHeatmapEnd = this.value || '';
     });
     _bindEl('homepage-issues-refresh-btn', 'click', function () {
       _loadHomepageIssues(_el('homepage-issues-refresh-btn'));
@@ -493,6 +510,8 @@
     });
     _bindEl('geo-audience-period', 'change', _loadGeoAudience);
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
+
+    _initDashboardHeatmapControls();
 
     // Marketing period presets + date range
     (function () {
@@ -796,8 +815,9 @@
     if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>히트맵을 불러오는 중…</div>';
     if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">히트맵 인사이트를 정리하는 중…</div>';
 
+    var analyticsUrl = '/api/admin/analytics' + _dashboardHeatmapQuery();
     Promise.allSettled([
-      _apiFetch('/api/admin/analytics'),
+      _apiFetch(analyticsUrl),
       _apiFetch('/api/admin/operations'),
       _apiFetch('/api/posts?limit=8&published=all&scope=admin'),
       _apiFetch('/api/posts/popular?limit=5'),
@@ -940,6 +960,65 @@
       '<span class="v3-heatmap-publish-legend"><span class="v3-heatmap-publish-dot"></span>게시글 발행</span>' +
     '</div>';
     el.innerHTML = html;
+  }
+
+  function _initDashboardHeatmapControls() {
+    var today = _kstToday();
+    var start = _shiftDate(today, -6);
+    _dashboardHeatmapStart = start;
+    _dashboardHeatmapEnd = today;
+    var startEl = _el('dash-heatmap-start');
+    var endEl = _el('dash-heatmap-end');
+    if (startEl) {
+      startEl.value = start;
+      startEl.max = today;
+    }
+    if (endEl) {
+      endEl.value = today;
+      endEl.max = today;
+    }
+    _syncDashboardHeatmapControls();
+  }
+
+  function _syncDashboardHeatmapControls() {
+    document.querySelectorAll('[data-v3-heatmap-mode]').forEach(function (btn) {
+      var mode = btn.getAttribute('data-v3-heatmap-mode') || '';
+      btn.classList.toggle('is-active', mode === _dashboardHeatmapMode);
+    });
+    var wrap = _el('dash-heatmap-custom-range');
+    if (wrap) wrap.hidden = _dashboardHeatmapMode !== 'custom';
+  }
+
+  function _applyDashboardHeatmapCustomRange() {
+    var startEl = _el('dash-heatmap-start');
+    var endEl = _el('dash-heatmap-end');
+    _dashboardHeatmapStart = startEl ? (startEl.value || '') : '';
+    _dashboardHeatmapEnd = endEl ? (endEl.value || '') : '';
+    if (!_dashboardHeatmapStart || !_dashboardHeatmapEnd) {
+      GW.showToast('히트맵 시작일과 종료일을 모두 선택해주세요.', 'error');
+      return;
+    }
+    if (_dashboardHeatmapStart > _dashboardHeatmapEnd) {
+      GW.showToast('히트맵 종료일은 시작일보다 빠를 수 없습니다.', 'error');
+      return;
+    }
+    _loadDashboard();
+  }
+
+  function _dashboardHeatmapQuery() {
+    var params = new URLSearchParams();
+    if (_dashboardHeatmapMode === '7d') {
+      params.set('heatmap_days', '7');
+    } else if (_dashboardHeatmapMode === '30d') {
+      params.set('heatmap_days', '30');
+    } else if (_dashboardHeatmapMode === 'all') {
+      params.set('heatmap_all', '1');
+    } else if (_dashboardHeatmapMode === 'custom') {
+      if (_dashboardHeatmapStart) params.set('heatmap_start', _dashboardHeatmapStart);
+      if (_dashboardHeatmapEnd) params.set('heatmap_end', _dashboardHeatmapEnd);
+    }
+    var query = params.toString();
+    return query ? ('?' + query) : '';
   }
 
   function _renderDashboardVisitInsight(el, heatmap) {
