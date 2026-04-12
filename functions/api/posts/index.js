@@ -416,3 +416,37 @@ function sanitizeShortText(value, maxLength) {
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, maxLength) : null;
 }
+
+function resolveStoredPublishAt(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const published = !!opts.published;
+  const requested = String(opts.requestedPublishAt || '').trim();
+  const existing = String(opts.existingPublishAt || '').trim();
+  if (published) return requested || existing || nowKstText();
+  if (requested) return isFuturePublishAt(requested) ? requested : null;
+  if (existing) return isFuturePublishAt(existing) ? existing : null;
+  return null;
+}
+
+function isFuturePublishAt(value) {
+  const normalized = normalizeSqlDateTime(value);
+  if (!normalized) return false;
+  return normalized > nowKstText();
+}
+
+function nowKstText() {
+  const now = new Date(Date.now() + (9 * 60 * 60 * 1000));
+  return now.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function normalizeSqlDateTime(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return text;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return text.replace('T', ' ') + ':00';
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)) return text.replace('T', ' ');
+  const parsed = Date.parse(text);
+  if (!Number.isFinite(parsed)) return '';
+  const shifted = new Date(parsed + (9 * 60 * 60 * 1000));
+  return shifted.toISOString().slice(0, 19).replace('T', ' ');
+}
