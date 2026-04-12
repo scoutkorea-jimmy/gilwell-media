@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.02
+ * Version: 03.062.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1144,8 +1144,12 @@
         var rendered = null;
         var contentHtml = '';
         var galleryHtml = '';
+        var previewImageUrl = '';
+        var previewImageIsPlaceholder = false;
         if (!post) throw new Error('게시글을 찾을 수 없습니다.');
         titleEl.textContent = post.title || ('게시글 ' + id);
+        previewImageUrl = _resolvePreviewImageUrl(post);
+        previewImageIsPlaceholder = !post.image_url;
         if (GW && typeof GW.renderTextWithMedia === 'function') {
           rendered = GW.renderTextWithMedia(post.content || '');
           if (rendered && typeof rendered === 'object') {
@@ -1170,7 +1174,7 @@
               GW.escapeHtml(_formatDateTimeCompact(post.publish_at || post.created_at || '')) +
             '</div>' +
             (post.subtitle ? '<div class="v3-selected-post-subtitle" style="margin-top:8px;">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
-            (post.image_url ? '<img src="' + GW.escapeHtml(post.image_url) + '" alt="" style="width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;">' : '') +
+            (previewImageUrl ? '<img src="' + GW.escapeHtml(previewImageUrl) + '" alt="" style="width:100%;max-height:320px;object-fit:' + (previewImageIsPlaceholder ? 'contain' : 'cover') + ';background:#fff;border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;padding:' + (previewImageIsPlaceholder ? '18px' : '0') + ';">' : '') +
             '<div style="margin-top:16px;line-height:1.8;color:var(--v3-text);">' + contentHtml + '</div>' +
             galleryHtml +
           '</div>';
@@ -1446,15 +1450,24 @@
 
   function _renderCoverPreview() {
     var el = document.getElementById('w-cover-preview');
-    if (!_coverDataUrl) { el.innerHTML = ''; return; }
+    var previewUrl = _coverDataUrl || _resolvePreviewImageUrl();
+    var isPlaceholder = !_coverDataUrl;
+    if (!el || !previewUrl) return;
     el.innerHTML = '<div class="v3-img-preview-wrap">' +
-      '<img src="' + GW.escapeHtml(_coverDataUrl) + '" alt="미리보기" />' +
+      '<img src="' + GW.escapeHtml(previewUrl) + '" alt="미리보기" class="' + (isPlaceholder ? 'is-placeholder' : '') + '" />' +
       '<div style="margin-top:6px;">' +
-        '<button class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3._removeCover()">대표 이미지 삭제</button>' +
+        (isPlaceholder
+          ? '<span class="v3-input-hint">대표 이미지가 없어서 기본 BP미디어 로고를 미리보기로 표시합니다.</span>'
+          : '<button class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3._removeCover()">대표 이미지 삭제</button>') +
       '</div>' +
     '</div>';
   }
   V3._removeCover = function () { _coverDataUrl = null; _renderCoverPreview(); };
+
+  function _resolvePreviewImageUrl(post) {
+    if (post && post.image_url) return post.image_url;
+    return '/img/logo.png';
+  }
 
   /* ── Gallery ── */
   function _pickGallery() {
