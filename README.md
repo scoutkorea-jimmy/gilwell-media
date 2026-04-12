@@ -6,8 +6,8 @@ Independent Scout Media — bpmedia.net
 
 ## Versioning
 
-- Current site version: `V00.112.25`
-- Current admin version: `V03.056.01`
+- Current site version: `V00.113.05`
+- Current admin version: `V03.057.07`
 - Format: `Va.bbb.cc`
 - `a`: product stage decided by the owner; in the history UI this maps to `Super Nova`
 - `bbb`: major functional change or structural update; in the history UI this maps to `Update`
@@ -23,6 +23,9 @@ Operational references:
 - 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
 - `docs/homepage-module-inventory.md`  # 홈페이지 UI / 코드 모듈 분해 기준
+- `docs/features/README.md`            # 기능 중심 허브
+- `docs/modules/README.md`             # 모듈 중심 라이브러리
+- `docs/surfaces/README.md`            # 페이지/템플릿 surface 노드
 
 Optional production secrets:
 - `CF_ANALYTICS_API_TOKEN`: enables Cloudflare-based footer metrics and admin analytics
@@ -91,6 +94,7 @@ Homepage AI/documentation rules:
 - KMS in the admin page is the operational source of truth
 - `docs/feature-definition.md` is the repository snapshot of that KMS content
 - When policy/rule documents change, update KMS, `docs/feature-definition.md`, `CHATGPT.md`, and changelog together
+- Obsidian documentation must stay feature/module-first; pages are secondary surface nodes only
 - `wosm-members` data is imported from WOSM-provided `xlsx` files, fills missing Korean country names from English on first import, and is then maintained in the admin settings UI
 - `site_visits` may store anonymous country/city/lat/lng analytics derived from Cloudflare request metadata, but raw IP must not be stored
 

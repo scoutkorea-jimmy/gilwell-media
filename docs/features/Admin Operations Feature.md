@@ -21,6 +21,11 @@ scope: admin
 
 - [[Admin Template]]
 
+## 연결 surface
+
+- [[Admin Console Surface]]
+- [[KMS Surface]]
+
 ## 연결 API
 
 - [[Posts API]]

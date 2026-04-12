@@ -12,6 +12,7 @@ aliases: [Homepage Features Hub, 기능 허브]
 ## 기능 문서 읽기 순서
 
 1. [[Feature Map]] — 전체 기능 맵 (한눈에 보기)
+2. [[Page Composition Map]] — 페이지는 어떤 기능 조합으로 보이는가
 2. [[Public Site Chrome Feature]] — 상단 메뉴, 번역, 푸터, 티커
 3. [[Homepage Feed Feature]] — 홈 데이터, 히어로, 레일
 4. [[Board Read Feature]] — 게시글 목록, 태그, 검색
@@ -29,10 +30,12 @@ aliases: [Homepage Features Hub, 기능 허브]
 - 실제 작업은 파일이 아니라 **기능 단위**로 들어옴
 - 하나의 기능 아래에 모듈 / 템플릿 / API / 설정이 함께 보여야 변경 영향 범위를 판단 가능
 - AI나 외부 도구도 기능 허브만 따라가면 필요한 문맥을 좁게 읽을 수 있음
+- 페이지는 최상위 문서가 아니라 **surface node**로만 둬야 동일 기능이 페이지별로 중복 서술되는 것을 막을 수 있음
 
 ## 참고 라이브러리
 
 - [[Homepage Modules Hub]] — 모듈 참고 허브
+- [[Surface Library]] — 페이지/템플릿 조합 노드
 - [[Templates Library]] — 템플릿 문서 모음
 - [[API Library]] — API 문서 모음
 

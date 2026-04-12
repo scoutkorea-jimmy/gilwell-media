@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "version": "03.057.07",
+      "date": "2026-04-12",
+      "released_at": "2026-04-12 16:15:43 KST",
+      "summary": "Obsidian 문서 구조를 기능/모듈 중심으로 다시 정리하고 page surface 노드를 추가해 그래프 탐색과 컨텍스트 재사용을 강화했습니다.",
+      "type": "Refactor",
+      "scope": "admin",
+      "items": [
+        "`CHATGPT.md`, `CLAUDE.md`, `README.md`, `docs/feature-definition.md`에 feature/module-first 문서 원칙을 명시했습니다.",
+        "`docs/features/Page Composition Map.md`, `docs/modules/Feature Module Graph.md`, `docs/surfaces/*`를 추가해 Feature ↔ Module ↔ API ↔ Template ↔ Surface 연결을 그래프에서 바로 볼 수 있게 했습니다.",
+        "개별 feature 문서도 연결 surface를 직접 링크하도록 보강해 페이지 설명이 기능 설명을 덮어쓰지 않게 정리했습니다.",
+        "관리자 버전 03.057.06 → 03.057.07."
+      ]
+    },
+    {
       "version": "00.113.05",
       "date": "2026-04-12",
       "released_at": "2026-04-12 16:15:43 KST",
