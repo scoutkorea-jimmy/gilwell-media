@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.02
+ * Version: 03.056.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -924,18 +924,19 @@
           tbody.innerHTML = '<tr><td colspan="7"><div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div></td></tr>';
         } else {
           tbody.innerHTML = posts.map(function (p) {
+            var isPublished = Number(p && p.published || 0) === 1;
             return '<tr>' +
               '<td><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
                 (p.subtitle ? '<div class="v3-text-m v3-text-s">' + GW.escapeHtml(p.subtitle) + '</div>' : '') +
               '</td>' +
               '<td><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></td>' +
               '<td>' + (p.tag ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(p.tag) + '</span>' : '<span class="v3-text-m">—</span>') + '</td>' +
-              '<td>' + (p.published ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
+              '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
               '<td class="v3-text-m">' + GW.escapeHtml(GW.formatDate ? GW.formatDate(p.created_at) : (p.created_at || '').slice(0, 10)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
               '<td class="v3-nowrap">' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + p.id + ')">수정</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.togglePublish(' + p.id + ',' + !p.published + ')">' + (p.published ? '비공개' : '공개') + '</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="V3.deletePost(' + p.id + ')">삭제</button>' +
               '</td>' +
             '</tr>';
@@ -1131,7 +1132,7 @@
 
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
-      var publishedChecked = publish ? true : false;
+      var publishedChecked = publish ? !!document.getElementById('w-published').checked : false;
       var body = {
         title:            title,
         subtitle:         document.getElementById('w-subtitle').value.trim(),
@@ -1169,7 +1170,7 @@
       if (!_editingId && saved.id) _editingId = saved.id;
       GW.showToast('저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
-      document.getElementById('w-published').checked = !!publish;
+      document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
       _syncWriteFeaturedState();
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
@@ -1181,9 +1182,13 @@
   function _syncWriteFeaturedState() {
     var published = document.getElementById('w-published');
     var featured = document.getElementById('w-featured');
+    var publishBtn = document.getElementById('write-publish-btn');
+    var draftBtn = document.getElementById('write-draft-btn');
     if (!published || !featured) return;
     if (!published.checked) featured.checked = false;
     featured.disabled = !published.checked;
+    if (publishBtn) publishBtn.textContent = published.checked ? '상태대로 저장' : '저장';
+    if (draftBtn) draftBtn.textContent = '비공개 저장';
   }
 
   function _loadPostHistory(id) {
