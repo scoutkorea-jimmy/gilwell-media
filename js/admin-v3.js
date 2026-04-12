@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.056.04
+ * Version: 03.056.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1150,7 +1150,7 @@
         featured:         desiredFeatured,
         ai_assisted:      document.getElementById('w-ai').checked,
         meta_tags:        _metaTags.join(','),
-        publish_at:       dateVal ? new Date(dateVal).toISOString() : undefined,
+        publish_at:       dateVal || undefined,
         related_posts_json: JSON.stringify(_relatedPosts),
       };
       if (_coverDataUrl && _coverDataUrl.startsWith('data:')) {

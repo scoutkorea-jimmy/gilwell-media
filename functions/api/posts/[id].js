@@ -169,13 +169,6 @@ export async function onRequestPut({ params, request, env }) {
     values.push(normalizeManualRelatedPosts(manual_related_posts !== undefined ? manual_related_posts : body.related_posts_json));
   }
   const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
-  if (publish_at !== undefined || publish_date !== undefined) {
-    if (normalizedPublishAt) {
-      fields.push('publish_at = ?'); values.push(normalizedPublishAt);
-    } else if (publish_at === null || publish_date === null || publish_at === '' || publish_date === '') {
-      fields.push('publish_at = ?'); values.push(null);
-    }
-  }
 
   if (fields.length === 0) {
     return json({ error: '변경할 내용을 입력해주세요' }, 400);
@@ -188,6 +181,15 @@ export async function onRequestPut({ params, request, env }) {
     var nextPublished = safePublishedInput.provided ? safePublishedInput.value : !!(currentPost && currentPost.published);
     var nextFeatured = safeFeaturedInput.provided ? safeFeaturedInput.value : !!(currentPost && currentPost.featured);
     if (!nextPublished) nextFeatured = false;
+    if (publish_at !== undefined || publish_date !== undefined || safePublishedInput.provided) {
+      const effectivePublishAt = resolveStoredPublishAt({
+        published: nextPublished,
+        requestedPublishAt: normalizedPublishAt,
+        existingPublishAt: currentPost && currentPost.publish_at,
+      });
+      fields.push('publish_at = ?');
+      values.push(effectivePublishAt);
+    }
     if (safePublishedInput.provided) {
       fields.push('published = ?');
       values.push(nextPublished ? 1 : 0);
@@ -270,8 +272,14 @@ export async function onRequestPatch({ params, request, env }) {
     const nextPublished = publishedInput.provided ? publishedInput.value : Number(beforePost.published || 0) === 1;
     const requestedFeatured = featuredInput.provided ? featuredInput.value : Number(beforePost.featured || 0) === 1;
     const nextFeatured = nextPublished ? requestedFeatured : false;
+    const effectivePublishAt = resolveStoredPublishAt({
+      published: nextPublished,
+      requestedPublishAt: '',
+      existingPublishAt: beforePost.publish_at,
+    });
 
     if (publishedInput.provided) { fields.push('published = ?'); values.push(nextPublished ? 1 : 0); }
+    if (publishedInput.provided) { fields.push('publish_at = ?'); values.push(effectivePublishAt); }
     if (featuredInput.provided || (publishedInput.provided && !nextFeatured && Number(beforePost.featured || 0) === 1)) {
       fields.push('featured = ?'); values.push(nextFeatured ? 1 : 0);
     }
@@ -543,4 +551,38 @@ async function runPostUpdate(env, id, fields, values) {
   ).bind(...bound).run();
   if (!result || !result.meta || !result.meta.changes) return null;
   return await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+}
+
+function resolveStoredPublishAt(options) {
+  const opts = options && typeof options === 'object' ? options : {};
+  const published = !!opts.published;
+  const requested = String(opts.requestedPublishAt || '').trim();
+  const existing = String(opts.existingPublishAt || '').trim();
+  if (published) return requested || existing || nowKstText();
+  if (requested) return isFuturePublishAt(requested) ? requested : null;
+  if (existing) return isFuturePublishAt(existing) ? existing : null;
+  return null;
+}
+
+function isFuturePublishAt(value) {
+  const normalized = normalizeSqlDateTime(value);
+  if (!normalized) return false;
+  return normalized > nowKstText();
+}
+
+function nowKstText() {
+  const now = new Date(Date.now() + (9 * 60 * 60 * 1000));
+  return now.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function normalizeSqlDateTime(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return text;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text)) return text.replace('T', ' ') + ':00';
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)) return text.replace('T', ' ');
+  const parsed = Date.parse(text);
+  if (!Number.isFinite(parsed)) return '';
+  const shifted = new Date(parsed + (9 * 60 * 60 * 1000));
+  return shifted.toISOString().slice(0, 19).replace('T', ' ');
 }

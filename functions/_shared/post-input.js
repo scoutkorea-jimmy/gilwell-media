@@ -51,6 +51,11 @@ export function normalizePublishAtInput(publishAt, publishDate) {
     if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(precise)) return `${precise.replace('T', ' ')}:00`;
     if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(precise)) return `${precise}:00`;
     if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/.test(precise)) return precise.replace('T', ' ');
+    const parsed = Date.parse(precise);
+    if (Number.isFinite(parsed)) {
+      const shifted = new Date(parsed + (9 * 60 * 60 * 1000));
+      return shifted.toISOString().slice(0, 19).replace('T', ' ');
+    }
   }
   const fallback = typeof publishDate === 'string' ? publishDate.trim() : '';
   if (/^\d{4}-\d{2}-\d{2}$/.test(fallback)) return `${fallback} 12:00:00`;

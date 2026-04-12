@@ -223,6 +223,11 @@ export async function onRequestPost({ request, env }) {
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
   const safePublished = safePublishedInput.provided ? safePublishedInput.value : false;
   const safeFeatured = safePublished && safeFeaturedInput.provided ? safeFeaturedInput.value : false;
+  const effectivePublishAt = resolveStoredPublishAt({
+    published: safePublished,
+    requestedPublishAt: publishAtValue,
+    existingPublishAt: '',
+  });
 
   // Get default author from settings if not provided in body
   const bodyAuthor = safeAuthorInput.value;
@@ -245,8 +250,8 @@ export async function onRequestPost({ request, env }) {
       }
     }
     const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, published, featured, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), COALESCE(?, datetime('now')), datetime('now'))`;
-    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, publishAtValue];
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
+    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
     const result = await env.DB.prepare(sql).bind(...bindings).run();
     const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
     const insertedPost = insertedId
