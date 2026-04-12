@@ -54,6 +54,7 @@ async function getInternalMetrics(env, range, tagRange) {
     referrers,
     popularPostDwellRow,
     tagRows,
+    heatmapRows,
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
@@ -241,6 +242,18 @@ async function getInternalMetrics(env, range, tagRange) {
           AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
           AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)`
     ).bind(chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT CAST(strftime('%w', datetime(visited_at, '+9 hours')) AS INTEGER) AS weekday,
+              strftime('%H', datetime(visited_at, '+9 hours')) AS visit_hour,
+              COUNT(DISTINCT viewer_key) AS visits,
+              COUNT(*) AS pageviews
+         FROM site_visits
+        WHERE ${VISIT_SCOPE_SQL}
+          AND datetime(visited_at, '+9 hours') >= datetime(?)
+          AND datetime(visited_at, '+9 hours') < datetime(?)
+        GROUP BY weekday, visit_hour
+        ORDER BY weekday ASC, visit_hour ASC`
+    ).bind(chosen.start, chosen.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -348,6 +361,7 @@ async function getInternalMetrics(env, range, tagRange) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
+    heatmap: buildVisitHeatmap(heatmapRows.results || [], range),
     tags: aggregateTags(tagRows.results || [], tagRange || range),
     tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
@@ -388,6 +402,54 @@ function fillHourSeries(range, rows, hourKey, valueBuilder) {
     out.push(Object.assign({}, row ? valueBuilder(row, key) : valueBuilder({}, key)));
   }
   return out;
+}
+
+function buildVisitHeatmap(rows, range) {
+  const weekdays = [
+    { key: 1, label: '월' },
+    { key: 2, label: '화' },
+    { key: 3, label: '수' },
+    { key: 4, label: '목' },
+    { key: 5, label: '금' },
+    { key: 6, label: '토' },
+    { key: 0, label: '일' },
+  ];
+  const byKey = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const weekday = Number(row.weekday);
+    const hour = String(row.visit_hour || '').padStart(2, '0');
+    byKey.set(weekday + '-' + hour, {
+      visits: Number(row.visits || 0),
+      pageviews: Number(row.pageviews || 0),
+    });
+  });
+  const cells = [];
+  let maxVisits = 0;
+  weekdays.forEach((day) => {
+    for (let hour = 0; hour < 24; hour += 1) {
+      const hourKey = String(hour).padStart(2, '0');
+      const found = byKey.get(day.key + '-' + hourKey) || { visits: 0, pageviews: 0 };
+      maxVisits = Math.max(maxVisits, Number(found.visits || 0));
+      cells.push({
+        weekday: day.key,
+        weekday_label: day.label,
+        hour: hourKey,
+        visits: Number(found.visits || 0),
+        pageviews: Number(found.pageviews || 0),
+      });
+    }
+  });
+  cells.forEach((cell) => {
+    const ratio = maxVisits > 0 ? cell.visits / maxVisits : 0;
+    cell.intensity = Number(ratio.toFixed(4));
+  });
+  return {
+    range_label: range && range.label ? range.label : '',
+    max_visits: maxVisits,
+    weekdays: weekdays,
+    hours: Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')),
+    cells,
+  };
 }
 
 function aggregateReferrers(rows) {

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412145157">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412145906">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.062.04</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.062.05</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,7 +41,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.04</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.05</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -215,6 +215,15 @@
           <div class="v3-stat"><div class="v3-stat-label">공개 게시글</div><div class="v3-stat-value" id="dash-stat-pub">—</div><div class="v3-stat-sub">현재 노출 중</div></div>
         </div>
         <div class="v3-inline-meta" id="dash-status-note">집계 상태를 확인하는 중…</div>
+        <div class="v3-card" style="margin-top:16px;">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">접속 시간 히트맵</h2>
+              <p class="v3-card-desc">최근 집계 기간 기준으로 요일과 시간대별 방문 집중도를 봅니다. 진할수록 방문이 많습니다.</p>
+            </div>
+          </div>
+          <div id="dash-traffic-heatmap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
         <div class="v3-dash-cols">
           <div class="v3-card" id="dash-recent-card">
             <div class="v3-card-head">
@@ -1467,8 +1476,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260412145157"></script>
-<script src="/js/shared-country-name-ko.js?v=20260412145157"></script>
-<script src="/js/admin-v3.js?v=20260412145157"></script>
+<script src="/js/main.js?v=20260412145906"></script>
+<script src="/js/shared-country-name-ko.js?v=20260412145906"></script>
+<script src="/js/admin-v3.js?v=20260412145906"></script>
 </body>
 </html>

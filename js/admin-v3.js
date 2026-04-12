@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.04
+ * Version: 03.062.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -778,6 +778,7 @@
   function _loadDashboard(actionBtn) {
     var recentEl = document.getElementById('dash-recent-list');
     var topEl = document.getElementById('dash-top-list');
+    var heatmapEl = document.getElementById('dash-traffic-heatmap');
     var editorialEl = document.getElementById('dash-ops-editorial');
     var alertsEl = document.getElementById('dash-ops-alerts');
     var settingsEl = document.getElementById('dash-ops-settings');
@@ -791,6 +792,7 @@
     _setText('dash-stat-views-sub', '불러오는 중');
     _setText('dash-stat-posts-sub', '불러오는 중');
     _setText('dash-status-note', '운영 데이터와 최신 게시글을 함께 확인하는 중…');
+    if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>히트맵을 불러오는 중…</div>';
 
     Promise.allSettled([
       _apiFetch('/api/admin/analytics'),
@@ -817,6 +819,7 @@
       _setText('dash-stat-views',  analyticsOk ? _fmt(today.views || summary.today_pageviews || summary.today_views || 0) : '—');
       _setText('dash-stat-posts', _fmt(recentRes.total || counts.total || recent.length || 0));
       _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
+      if (heatmapEl) _renderDashboardVisitHeatmap(heatmapEl, analytics.heatmap || null);
 
       // Recent posts
       if (!recent.length) {
@@ -852,6 +855,7 @@
         _setText('dash-stat-visits-sub', '분석 API 확인 필요');
         _setText('dash-stat-views-sub', '분석 API 확인 필요');
         _setText('dash-status-note', '분석 API 응답이 실패했습니다. 운영 경고를 먼저 확인해주세요.');
+        if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">방문 히트맵을 불러오지 못했습니다.</div></div>';
       } else {
         _setText('dash-stat-visits-sub', '오늘 고유 방문');
         _setText('dash-stat-views-sub', '오늘 페이지뷰');
@@ -872,6 +876,7 @@
     }).catch(function (e) {
       recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">히트맵을 불러오지 못했습니다.</div></div>';
       _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
       _setText('dash-stat-views-sub', '대시보드 로딩 실패');
       _setText('dash-stat-posts-sub', '대시보드 로딩 실패');
@@ -879,6 +884,55 @@
     }).finally(function () {
       if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
+  }
+
+  function _renderDashboardVisitHeatmap(el, heatmap) {
+    if (!el) return;
+    var cells = heatmap && Array.isArray(heatmap.cells) ? heatmap.cells : [];
+    var weekdays = heatmap && Array.isArray(heatmap.weekdays) ? heatmap.weekdays : [];
+    var hours = heatmap && Array.isArray(heatmap.hours) ? heatmap.hours : [];
+    var maxVisits = Number(heatmap && heatmap.max_visits || 0);
+    if (!cells.length || !weekdays.length || !hours.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">표시할 방문 시간 데이터가 없습니다.</div></div>';
+      return;
+    }
+    var cellMap = {};
+    cells.forEach(function (cell) {
+      cellMap[String(cell.weekday) + '-' + String(cell.hour)] = cell;
+    });
+    var html = '<div class="v3-heatmap-wrap"><div class="v3-heatmap" role="grid" aria-label="요일별 시간대 방문 히트맵">';
+    html += '<div class="v3-heatmap-corner">요일/시간</div>';
+    hours.forEach(function (hour) {
+      html += '<div class="v3-heatmap-hour" role="columnheader">' + GW.escapeHtml(hour) + '</div>';
+    });
+    weekdays.forEach(function (day) {
+      html += '<div class="v3-heatmap-day" role="rowheader">' + GW.escapeHtml(day.label) + '</div>';
+      hours.forEach(function (hour) {
+        var cell = cellMap[String(day.key) + '-' + String(hour)] || { visits: 0, pageviews: 0, intensity: 0 };
+        var intensity = Math.max(0, Math.min(1, Number(cell.intensity || 0)));
+        var level = intensity <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil(intensity * 4)));
+        var background = level === 0
+          ? 'rgba(109, 40, 217, 0.04)'
+          : 'rgba(109, 40, 217, ' + (0.14 + intensity * 0.56).toFixed(3) + ')';
+        var title = day.label + '요일 ' + hour + '시 · 방문 ' + _fmt(cell.visits || 0) + ' · 조회 ' + _fmt(cell.pageviews || 0);
+        html += '<div class="v3-heatmap-cell" role="gridcell" data-level="' + level + '" data-count="' + GW.escapeHtml(String(cell.visits || 0)) + '" title="' + GW.escapeHtml(title) + '" aria-label="' + GW.escapeHtml(title) + '" style="background:' + background + ';"></div>';
+      });
+    });
+    html += '</div></div>';
+    html += '<div class="v3-heatmap-legend">' +
+      '<span>' + GW.escapeHtml(String(heatmap.range_label || '최근 기간')) + '</span>' +
+      '<span>적음</span>' +
+      '<span class="v3-heatmap-legend-scale">' +
+        '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.06)"></span>' +
+        '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.18)"></span>' +
+        '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.32)"></span>' +
+        '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.48)"></span>' +
+        '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.68)"></span>' +
+      '</span>' +
+      '<span>많음</span>' +
+      '<span>최대 방문 ' + _fmt(maxVisits) + '</span>' +
+    '</div>';
+    el.innerHTML = html;
   }
 
   function _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations) {
