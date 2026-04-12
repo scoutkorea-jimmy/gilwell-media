@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.01
+ * Version: 03.060.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -268,8 +268,7 @@
 
     // Write form
     _bindEl('write-cancel-btn', 'click', function () { V3.showPanel('list'); });
-    _bindEl('write-draft-btn', 'click', function () { _savePost(false); });
-    _bindEl('write-publish-btn', 'click', function () { _savePost(true); });
+    _bindEl('write-publish-btn', 'click', function () { _savePost(); });
     _bindEl('w-published', 'change', _syncWriteFeaturedState);
     _bindEl('w-cover-btn', 'click', _pickCover);
     _bindEl('w-gallery-btn', 'click', _pickGallery);
@@ -1205,16 +1204,16 @@
       });
   };
 
-  function _savePost(publish) {
+  function _savePost() {
     var title = document.getElementById('w-title').value.trim();
     if (!title) { GW.showToast('제목을 입력하세요', 'error'); return; }
 
-    var btn = publish ? document.getElementById('write-publish-btn') : document.getElementById('write-draft-btn');
-    _setButtonBusy(btn, publish ? '공개 저장 중…' : '임시저장 중…');
+    var btn = document.getElementById('write-publish-btn');
+    var publishedChecked = !!document.getElementById('w-published').checked;
+    _setButtonBusy(btn, publishedChecked ? '공개 저장 중…' : '비공개 저장 중…');
 
     _editorGetData().then(function (content) {
       var dateVal = document.getElementById('w-date').value;
-      var publishedChecked = publish ? !!document.getElementById('w-published').checked : false;
       var desiredFeatured = publishedChecked && !!document.getElementById('w-featured').checked;
       var body = {
         title:            title,
@@ -1282,12 +1281,10 @@
     var published = document.getElementById('w-published');
     var featured = document.getElementById('w-featured');
     var publishBtn = document.getElementById('write-publish-btn');
-    var draftBtn = document.getElementById('write-draft-btn');
     if (!published || !featured) return;
     if (!published.checked) featured.checked = false;
     featured.disabled = !published.checked;
-    if (publishBtn) publishBtn.textContent = published.checked ? '상태대로 저장' : '저장';
-    if (draftBtn) draftBtn.textContent = '비공개 저장';
+    if (publishBtn) publishBtn.textContent = published.checked ? '공개로 저장' : '비공개로 저장';
   }
 
   function _loadPostHistory(id) {
