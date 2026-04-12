@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.05
+ * Version: 03.062.06
  *
  * Versioning:
  *   V3.aaa.bb
@@ -779,6 +779,7 @@
     var recentEl = document.getElementById('dash-recent-list');
     var topEl = document.getElementById('dash-top-list');
     var heatmapEl = document.getElementById('dash-traffic-heatmap');
+    var heatmapInsightEl = document.getElementById('dash-traffic-insight');
     var editorialEl = document.getElementById('dash-ops-editorial');
     var alertsEl = document.getElementById('dash-ops-alerts');
     var settingsEl = document.getElementById('dash-ops-settings');
@@ -793,6 +794,7 @@
     _setText('dash-stat-posts-sub', '불러오는 중');
     _setText('dash-status-note', '운영 데이터와 최신 게시글을 함께 확인하는 중…');
     if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>히트맵을 불러오는 중…</div>';
+    if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">히트맵 인사이트를 정리하는 중…</div>';
 
     Promise.allSettled([
       _apiFetch('/api/admin/analytics'),
@@ -820,6 +822,7 @@
       _setText('dash-stat-posts', _fmt(recentRes.total || counts.total || recent.length || 0));
       _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
       if (heatmapEl) _renderDashboardVisitHeatmap(heatmapEl, analytics.heatmap || null);
+      if (heatmapInsightEl) _renderDashboardVisitInsight(heatmapInsightEl, analytics.heatmap || null);
 
       // Recent posts
       if (!recent.length) {
@@ -856,6 +859,7 @@
         _setText('dash-stat-views-sub', '분석 API 확인 필요');
         _setText('dash-status-note', '분석 API 응답이 실패했습니다. 운영 경고를 먼저 확인해주세요.');
         if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">방문 히트맵을 불러오지 못했습니다.</div></div>';
+        if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">분석 API 응답이 실패해 인사이트를 계산하지 못했습니다.</div>';
       } else {
         _setText('dash-stat-visits-sub', '오늘 고유 방문');
         _setText('dash-stat-views-sub', '오늘 페이지뷰');
@@ -877,6 +881,7 @@
       recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">히트맵을 불러오지 못했습니다.</div></div>';
+      if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">대시보드 API 응답을 불러오지 못해 인사이트를 정리할 수 없습니다.</div>';
       _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
       _setText('dash-stat-views-sub', '대시보드 로딩 실패');
       _setText('dash-stat-posts-sub', '대시보드 로딩 실패');
@@ -933,6 +938,72 @@
       '<span>최대 방문 ' + _fmt(maxVisits) + '</span>' +
     '</div>';
     el.innerHTML = html;
+  }
+
+  function _renderDashboardVisitInsight(el, heatmap) {
+    if (!el) return;
+    var text = _buildDashboardVisitInsight(heatmap);
+    el.innerHTML =
+      '<h3 class="v3-dash-insight-title">운영 인사이트</h3>' +
+      '<p class="v3-dash-insight-text">' + GW.escapeHtml(text) + '</p>';
+  }
+
+  function _buildDashboardVisitInsight(heatmap) {
+    var cells = heatmap && Array.isArray(heatmap.cells) ? heatmap.cells : [];
+    if (!cells.length) {
+      return '선택한 기간에는 요일·시간대별 방문 패턴을 읽을 만큼의 데이터가 아직 충분하지 않습니다. 방문이 더 누적되면 집중 요일과 발행 적기를 함께 파악할 수 있습니다.';
+    }
+    var totalVisits = 0;
+    var topCell = null;
+    var dayTotals = new Map();
+    var segments = [
+      { key: '새벽', start: 0, end: 5, visits: 0 },
+      { key: '오전', start: 6, end: 11, visits: 0 },
+      { key: '오후', start: 12, end: 17, visits: 0 },
+      { key: '저녁', start: 18, end: 23, visits: 0 },
+    ];
+    var weekdayVisits = 0;
+    var weekendVisits = 0;
+
+    cells.forEach(function (cell) {
+      var visits = Number(cell && cell.visits || 0);
+      var hour = Number(cell && cell.hour || 0);
+      var dayLabel = String(cell && cell.weekday_label || '');
+      totalVisits += visits;
+      if (!topCell || visits > Number(topCell.visits || 0)) topCell = cell;
+      dayTotals.set(dayLabel, Number(dayTotals.get(dayLabel) || 0) + visits);
+      if (dayLabel === '토' || dayLabel === '일') weekendVisits += visits;
+      else weekdayVisits += visits;
+      segments.forEach(function (segment) {
+        if (hour >= segment.start && hour <= segment.end) segment.visits += visits;
+      });
+    });
+
+    if (totalVisits <= 0) {
+      return '선택한 기간에는 방문이 거의 없어 요일·시간대 패턴을 안정적으로 읽기 어렵습니다. 방문 데이터가 더 쌓이면 집중 요일과 발행 적기를 함께 판단할 수 있습니다.';
+    }
+
+    var topDay = '';
+    var topDayVisits = -1;
+    dayTotals.forEach(function (visits, dayLabel) {
+      if (visits > topDayVisits) {
+        topDay = dayLabel;
+        topDayVisits = visits;
+      }
+    });
+
+    var sortedSegments = segments.slice().sort(function (a, b) { return b.visits - a.visits; });
+    var strongestSegment = sortedSegments[0] || segments[0];
+    var quietestSegment = sortedSegments[sortedSegments.length - 1] || segments[0];
+    var weekdayShare = totalVisits > 0 ? Math.round((weekdayVisits / totalVisits) * 100) : 0;
+    var weekendShare = totalVisits > 0 ? Math.round((weekendVisits / totalVisits) * 100) : 0;
+    var topHour = topCell ? String(topCell.hour).padStart(2, '0') : '00';
+    var topDayHour = topCell ? String(topCell.weekday_label || '') + '요일 ' + topHour + '시' : '집중 시간대';
+    var publishHint = strongestSegment.key === '저녁' || strongestSegment.key === '오후'
+      ? '주요 발행과 푸시를 오후~저녁에 맞추는 편이 유리해 보입니다.'
+      : '초기 노출과 공지성 업데이트를 이 시간대 흐름에 맞춰 테스트해볼 만합니다.';
+
+    return '최근 집계 기준 방문은 총 ' + _fmt(totalVisits) + '회이며, 가장 붐빈 시점은 ' + topDayHour + '입니다. 요일별로는 ' + topDay + '요일 비중이 가장 높고, 시간대는 ' + strongestSegment.key + '에 방문이 가장 많이 몰립니다. 주중/주말 비중은 ' + weekdayShare + '% / ' + weekendShare + '%이며, 상대적으로 한산한 시간대는 ' + quietestSegment.key + '입니다. ' + publishHint;
   }
 
   function _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations) {
