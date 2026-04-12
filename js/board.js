@@ -251,7 +251,7 @@
 
     var thumb = '';
     if (post.image_url) {
-      thumb = '<img class="post-card-thumb" src="' + GW.escapeHtml(post.image_url)
+      thumb = '<img class="post-card-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url)
             + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
     }
 

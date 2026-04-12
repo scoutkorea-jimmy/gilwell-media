@@ -178,7 +178,7 @@
 
   function buildMiniItem(post, options) {
     var thumb = post.image_url
-      ? '<img class="mini-thumb" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
+      ? '<img class="mini-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
       : '';
     return (
       '<article class="mini-item">' +
@@ -213,9 +213,9 @@
     if (excerpt === subtitle) excerpt = '';
 
     var thumb = post.image_url
-      ? '<a class="home-lead-thumb-link' + (isTransparentPng(post.image_url) ? ' is-png' : '') + '" style="' + getResponsiveMediaStyle(leadMedia) + '" href="/post/' + post.id + '">' +
+      ? '<a class="home-lead-thumb-link' + (isTransparentPng(post.image_url) ? ' is-png' : '') + (post.image_is_placeholder ? ' is-placeholder' : '') + '" style="' + getResponsiveMediaStyle(leadMedia) + '" href="/post/' + post.id + '">' +
           '<span class="home-lead-thumb-backdrop" aria-hidden="true" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></span>' +
-          '<img class="home-lead-thumb" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="eager" fetchpriority="high" decoding="async">' +
+          '<img class="home-lead-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" alt="' + GW.escapeHtml(post.title) + '" loading="eager" fetchpriority="high" decoding="async">' +
         '</a>'
       : '';
 
@@ -330,9 +330,9 @@
       if (post.image_url) {
         div.classList.add('has-bg');
         mediaMarkup =
-          '<div class="site-hero-media' + (isTransparentPng(post.image_url) ? ' is-png' : '') + '" aria-hidden="true" style="' + getResponsiveMediaStyle(post.media) + '">' +
+          '<div class="site-hero-media' + (isTransparentPng(post.image_url) ? ' is-png' : '') + (post.image_is_placeholder ? ' is-placeholder' : '') + '" aria-hidden="true" style="' + getResponsiveMediaStyle(post.media) + '">' +
             '<div class="site-hero-media-backdrop" style="background-image:url(' + GW.escapeHtml(post.image_url) + ')"></div>' +
-            '<img class="site-hero-media-img" src="' + GW.escapeHtml(post.image_url) + '" alt="" loading="' + (index === 0 ? 'eager' : 'lazy') + '" fetchpriority="' + (index === 0 ? 'high' : 'auto') + '" decoding="async">' +
+            '<img class="site-hero-media-img' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" alt="" loading="' + (index === 0 ? 'eager' : 'lazy') + '" fetchpriority="' + (index === 0 ? 'high' : 'auto') + '" decoding="async">' +
           '</div>';
       }
 
