@@ -213,6 +213,11 @@ export async function onRequestPut({ params, request, env }) {
     }
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (Number(updatedPost.published || 0) !== 1) {
+      await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
+        console.error('PUT /api/posts/:id homepage cleanup error:', err);
+      });
+    }
     if (oldImageToDelete) {
       await deleteStoredImageByUrl(env, oldImageToDelete, origin).catch(() => {});
     }
@@ -303,6 +308,11 @@ export async function onRequestPatch({ params, request, env }) {
     fields.push("updated_at = datetime('now')");
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    if (publishedInput.provided && !nextPublished) {
+      await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
+        console.error('PATCH /api/posts/:id homepage cleanup error:', err);
+      });
+    }
     if (updatedPost) {
       var summary = [];
       if (body.featured !== undefined) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
@@ -344,6 +354,9 @@ export async function onRequestDelete({ params, request, env }) {
     ).bind(id).run();
 
     if (meta.changes === 0) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+    await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
+      console.error('DELETE /api/posts/:id homepage cleanup error:', err);
+    });
     await Promise.all([
       env.DB.prepare(`DELETE FROM post_views WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM post_likes WHERE post_id = ?`).bind(id).run().catch(() => {}),
@@ -585,4 +598,61 @@ function normalizeSqlDateTime(value) {
   if (!Number.isFinite(parsed)) return '';
   const shifted = new Date(parsed + (9 * 60 * 60 * 1000));
   return shifted.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+async function removePostFromHomepageSettings(env, postId) {
+  const safePostId = Number(postId || 0);
+  if (!safePostId) return;
+
+  const [leadRow, heroRow, heroMediaRow] = await Promise.all([
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first().catch(() => null),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero'`).first().catch(() => null),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first().catch(() => null),
+  ]);
+
+  if (leadRow && Number(leadRow.value || 0) === safePostId) {
+    await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run().catch(() => {});
+    await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run().catch(() => {});
+  }
+
+  const heroIds = parseIdArray(heroRow && heroRow.value);
+  if (!heroIds.length || heroIds.indexOf(safePostId) === -1) return;
+
+  const nextHeroIds = heroIds.filter(function (value) { return value !== safePostId; });
+  await env.DB.prepare(
+    `INSERT INTO settings (key, value) VALUES ('hero', ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).bind(JSON.stringify(nextHeroIds)).run().catch(() => {});
+
+  const mediaMap = parseJsonObject(heroMediaRow && heroMediaRow.value);
+  if (mediaMap && Object.prototype.hasOwnProperty.call(mediaMap, String(safePostId))) {
+    delete mediaMap[String(safePostId)];
+    await env.DB.prepare(
+      `INSERT INTO settings (key, value) VALUES ('hero_media', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).bind(JSON.stringify(mediaMap)).run().catch(() => {});
+  }
+}
+
+function parseIdArray(raw) {
+  if (!raw) return [];
+  try {
+    var parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map(function (value) { return parseInt(value, 10); }).filter(function (value) { return Number.isFinite(value) && value > 0; })
+      : [];
+  } catch (_) {
+    var single = parseInt(raw, 10);
+    return Number.isFinite(single) && single > 0 ? [single] : [];
+  }
+}
+
+function parseJsonObject(raw) {
+  if (!raw) return {};
+  try {
+    var parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (_) {
+    return {};
+  }
 }

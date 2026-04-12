@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.01
+ * Version: 03.057.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1035,7 +1035,6 @@
   V3.listSortBy = function (key) {
     var current = _parseListSortState(_listSort);
     var nextDir = current.key === key && current.dir === 'desc' ? 'asc' : 'desc';
-    if (key === 'status' && current.key !== key) nextDir = 'desc';
     if (key === 'category' && current.key !== key) nextDir = 'asc';
     if (key === 'title' && current.key !== key) nextDir = 'asc';
     if (key === 'views' && current.key !== key) nextDir = 'desc';
