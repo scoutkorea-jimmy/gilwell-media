@@ -903,6 +903,18 @@
 .v3-heatmap-wrap {
   overflow-x: auto;
   padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(109, 40, 217, 0.24) rgba(148, 163, 184, 0.12);
+}
+.v3-heatmap-wrap::-webkit-scrollbar { height: 10px; }
+.v3-heatmap-wrap::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.14);
+  border-radius: 999px;
+}
+.v3-heatmap-wrap::-webkit-scrollbar-thumb {
+  background: rgba(109, 40, 217, 0.28);
+  border-radius: 999px;
 }
 .v3-heatmap {
   display: grid;
@@ -952,6 +964,26 @@
 .v3-heatmap-cell[data-level="0"]::after {
   color: rgba(100, 116, 139, 0.72);
 }
+.v3-heatmap-cell.has-publish::before {
+  content: attr(data-publish);
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1px solid rgba(79, 70, 229, 0.24);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  color: #4338ca;
+}
 .v3-heatmap-legend {
   display: flex;
   align-items: center;
@@ -971,9 +1003,26 @@
   border-radius: 999px;
   border: 1px solid rgba(109, 40, 217, 0.08);
 }
+.v3-heatmap-publish-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.v3-heatmap-publish-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid #4338ca;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
 @media (max-width: 900px) {
   .v3-heatmap {
     grid-template-columns: 78px repeat(24, 28px);
+  }
+  .v3-heatmap-cell.has-publish::before {
+    top: -4px;
+    right: -2px;
   }
 }
 .v3-tag-cloud {

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.06
+ * Version: 03.062.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -919,8 +919,9 @@
         var background = level === 0
           ? 'rgba(109, 40, 217, 0.04)'
           : 'rgba(109, 40, 217, ' + (0.14 + intensity * 0.56).toFixed(3) + ')';
-        var title = day.label + '요일 ' + hour + '시 · 방문 ' + _fmt(cell.visits || 0) + ' · 조회 ' + _fmt(cell.pageviews || 0);
-        html += '<div class="v3-heatmap-cell" role="gridcell" data-level="' + level + '" data-count="' + GW.escapeHtml(String(cell.visits || 0)) + '" title="' + GW.escapeHtml(title) + '" aria-label="' + GW.escapeHtml(title) + '" style="background:' + background + ';"></div>';
+        var publishCount = Number(cell.publish_count || 0);
+        var title = day.label + '요일 ' + hour + '시 · 방문 ' + _fmt(cell.visits || 0) + ' · 조회 ' + _fmt(cell.pageviews || 0) + ' · 발행 ' + _fmt(publishCount);
+        html += '<div class="v3-heatmap-cell' + (publishCount > 0 ? ' has-publish' : '') + '" role="gridcell" data-level="' + level + '" data-count="' + GW.escapeHtml(String(cell.visits || 0)) + '" data-publish="' + GW.escapeHtml(String(publishCount)) + '" title="' + GW.escapeHtml(title) + '" aria-label="' + GW.escapeHtml(title) + '" style="background:' + background + ';"></div>';
       });
     });
     html += '</div></div>';
@@ -936,6 +937,7 @@
       '</span>' +
       '<span>많음</span>' +
       '<span>최대 방문 ' + _fmt(maxVisits) + '</span>' +
+      '<span class="v3-heatmap-publish-legend"><span class="v3-heatmap-publish-dot"></span>게시글 발행</span>' +
     '</div>';
     el.innerHTML = html;
   }
@@ -955,6 +957,7 @@
     }
     var totalVisits = 0;
     var topCell = null;
+    var publishCells = [];
     var dayTotals = new Map();
     var segments = [
       { key: '새벽', start: 0, end: 5, visits: 0 },
@@ -971,6 +974,7 @@
       var dayLabel = String(cell && cell.weekday_label || '');
       totalVisits += visits;
       if (!topCell || visits > Number(topCell.visits || 0)) topCell = cell;
+      if (Number(cell && cell.publish_count || 0) > 0) publishCells.push(cell);
       dayTotals.set(dayLabel, Number(dayTotals.get(dayLabel) || 0) + visits);
       if (dayLabel === '토' || dayLabel === '일') weekendVisits += visits;
       else weekdayVisits += visits;
@@ -999,11 +1003,28 @@
     var weekendShare = totalVisits > 0 ? Math.round((weekendVisits / totalVisits) * 100) : 0;
     var topHour = topCell ? String(topCell.hour).padStart(2, '0') : '00';
     var topDayHour = topCell ? String(topCell.weekday_label || '') + '요일 ' + topHour + '시' : '집중 시간대';
+    var publishOverlapCell = publishCells.slice().sort(function (a, b) {
+      var aScore = Number(a.visits || 0) + Number(a.publish_count || 0) * 10;
+      var bScore = Number(b.visits || 0) + Number(b.publish_count || 0) * 10;
+      return bScore - aScore;
+    })[0] || null;
+    var topPublishCell = publishCells.slice().sort(function (a, b) {
+      return Number(b.publish_count || 0) - Number(a.publish_count || 0) || Number(b.visits || 0) - Number(a.visits || 0);
+    })[0] || null;
+    var publishSummary = '';
+    if (topPublishCell) {
+      publishSummary = String(topPublishCell.weekday_label || '') + '요일 ' + String(topPublishCell.hour || '').padStart(2, '0') + '시에 발행이 가장 많고';
+    } else {
+      publishSummary = '선택한 기간에는 공개 발행 시점 데이터가 많지 않고';
+    }
+    var overlapSummary = publishOverlapCell
+      ? String(publishOverlapCell.weekday_label || '') + '요일 ' + String(publishOverlapCell.hour || '').padStart(2, '0') + '시는 발행과 방문이 함께 겹치는 대표 구간입니다.'
+      : '발행과 방문이 동시에 두드러지는 구간은 아직 뚜렷하지 않습니다.';
     var publishHint = strongestSegment.key === '저녁' || strongestSegment.key === '오후'
       ? '주요 발행과 푸시를 오후~저녁에 맞추는 편이 유리해 보입니다.'
       : '초기 노출과 공지성 업데이트를 이 시간대 흐름에 맞춰 테스트해볼 만합니다.';
 
-    return '최근 집계 기준 방문은 총 ' + _fmt(totalVisits) + '회이며, 가장 붐빈 시점은 ' + topDayHour + '입니다. 요일별로는 ' + topDay + '요일 비중이 가장 높고, 시간대는 ' + strongestSegment.key + '에 방문이 가장 많이 몰립니다. 주중/주말 비중은 ' + weekdayShare + '% / ' + weekendShare + '%이며, 상대적으로 한산한 시간대는 ' + quietestSegment.key + '입니다. ' + publishHint;
+    return '최근 집계 기준 방문은 총 ' + _fmt(totalVisits) + '회이며, 가장 붐빈 시점은 ' + topDayHour + '입니다. 요일별로는 ' + topDay + '요일 비중이 가장 높고, 시간대는 ' + strongestSegment.key + '에 방문이 많이 몰립니다. ' + publishSummary + ' ' + overlapSummary + ' 주중/주말 비중은 ' + weekdayShare + '% / ' + weekendShare + '%이고, 상대적으로 한산한 시간대는 ' + quietestSegment.key + '입니다. ' + publishHint;
   }
 
   function _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations) {
