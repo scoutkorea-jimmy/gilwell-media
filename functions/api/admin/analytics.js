@@ -55,6 +55,7 @@ async function getInternalMetrics(env, range, tagRange) {
     popularPostDwellRow,
     tagRows,
     heatmapRows,
+    publishHeatmapRows,
   ] = await Promise.all([
     scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
     scalar(env, `SELECT COUNT(*) AS count FROM site_visits WHERE ${VISIT_SCOPE_SQL} AND datetime(visited_at, '+9 hours') >= datetime(?) AND datetime(visited_at, '+9 hours') < datetime(?)`, [today.start, today.endExclusive]),
@@ -254,6 +255,17 @@ async function getInternalMetrics(env, range, tagRange) {
         GROUP BY weekday, visit_hour
         ORDER BY weekday ASC, visit_hour ASC`
     ).bind(chosen.start, chosen.endExclusive).all(),
+    env.DB.prepare(
+      `SELECT CAST(strftime('%w', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS INTEGER) AS weekday,
+              strftime('%H', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS publish_hour,
+              COUNT(*) AS publish_count
+         FROM posts p
+        WHERE p.published = 1
+          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
+          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)
+        GROUP BY weekday, publish_hour
+        ORDER BY weekday ASC, publish_hour ASC`
+    ).bind(chosen.start, chosen.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -361,7 +373,7 @@ async function getInternalMetrics(env, range, tagRange) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
-    heatmap: buildVisitHeatmap(heatmapRows.results || [], range),
+    heatmap: buildVisitHeatmap(heatmapRows.results || [], publishHeatmapRows.results || [], range),
     tags: aggregateTags(tagRows.results || [], tagRange || range),
     tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
@@ -404,7 +416,7 @@ function fillHourSeries(range, rows, hourKey, valueBuilder) {
   return out;
 }
 
-function buildVisitHeatmap(rows, range) {
+function buildVisitHeatmap(rows, publishRows, range) {
   const weekdays = [
     { key: 1, label: '월' },
     { key: 2, label: '화' },
@@ -415,6 +427,7 @@ function buildVisitHeatmap(rows, range) {
     { key: 0, label: '일' },
   ];
   const byKey = new Map();
+  const publishByKey = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
     const weekday = Number(row.weekday);
     const hour = String(row.visit_hour || '').padStart(2, '0');
@@ -423,29 +436,41 @@ function buildVisitHeatmap(rows, range) {
       pageviews: Number(row.pageviews || 0),
     });
   });
+  (Array.isArray(publishRows) ? publishRows : []).forEach((row) => {
+    const weekday = Number(row.weekday);
+    const hour = String(row.publish_hour || '').padStart(2, '0');
+    publishByKey.set(weekday + '-' + hour, Number(row.publish_count || 0));
+  });
   const cells = [];
   let maxVisits = 0;
+  let maxPublishCount = 0;
   weekdays.forEach((day) => {
     for (let hour = 0; hour < 24; hour += 1) {
       const hourKey = String(hour).padStart(2, '0');
       const found = byKey.get(day.key + '-' + hourKey) || { visits: 0, pageviews: 0 };
+      const publishCount = Number(publishByKey.get(day.key + '-' + hourKey) || 0);
       maxVisits = Math.max(maxVisits, Number(found.visits || 0));
+      maxPublishCount = Math.max(maxPublishCount, publishCount);
       cells.push({
         weekday: day.key,
         weekday_label: day.label,
         hour: hourKey,
         visits: Number(found.visits || 0),
         pageviews: Number(found.pageviews || 0),
+        publish_count: publishCount,
       });
     }
   });
   cells.forEach((cell) => {
     const ratio = maxVisits > 0 ? cell.visits / maxVisits : 0;
     cell.intensity = Number(ratio.toFixed(4));
+    const publishRatio = maxPublishCount > 0 ? cell.publish_count / maxPublishCount : 0;
+    cell.publish_intensity = Number(publishRatio.toFixed(4));
   });
   return {
     range_label: range && range.label ? range.label : '',
     max_visits: maxVisits,
+    max_publish_count: maxPublishCount,
     weekdays: weekdays,
     hours: Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0')),
     cells,
