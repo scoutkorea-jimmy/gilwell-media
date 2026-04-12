@@ -217,13 +217,30 @@ async function getInternalMetrics(env, range, tagRange) {
          LEFT JOIN posts p ON p.id = tp.post_id`
     ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).first(),
     env.DB.prepare(
-      `SELECT id, title, category, tag, meta_tags, published, created_at, publish_at
-         FROM posts
-        WHERE (tag IS NOT NULL OR meta_tags IS NOT NULL)
-          AND (trim(COALESCE(tag, '')) <> '' OR trim(COALESCE(meta_tags, '')) <> '')
-          AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') >= datetime(?)
-          AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') < datetime(?)`
-    ).bind(chosenTags.start, chosenTags.endExclusive).all(),
+      `SELECT p.id,
+              p.title,
+              p.category,
+              p.tag,
+              p.meta_tags,
+              p.published,
+              p.created_at,
+              p.publish_at,
+              COALESCE(v.pageviews, 0) AS pageviews
+         FROM posts p
+         LEFT JOIN (
+           SELECT CAST(substr(path, 7) AS INTEGER) AS post_id,
+                  COUNT(*) AS pageviews
+             FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND datetime(visited_at, '+9 hours') >= datetime(?)
+              AND datetime(visited_at, '+9 hours') < datetime(?)
+            GROUP BY post_id
+         ) v ON v.post_id = p.id
+        WHERE (p.tag IS NOT NULL OR p.meta_tags IS NOT NULL)
+          AND (trim(COALESCE(p.tag, '')) <> '' OR trim(COALESCE(p.meta_tags, '')) <> '')
+          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
+          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)`
+    ).bind(chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -408,6 +425,7 @@ function aggregateTags(rows, range) {
       title: String(row && row.title || ''),
       category: String(row && row.category || ''),
       published: Number(row && row.published || 0) === 1,
+      pageviews: Number(row && row.pageviews || 0),
       keywords,
     });
     keywords.forEach((tag) => {
@@ -417,11 +435,13 @@ function aggregateTags(rows, range) {
         count: 0,
         published_count: 0,
         draft_count: 0,
+        pageviews: 0,
         categories: new Set(),
       };
       current.count += 1;
       if (Number(row && row.published || 0) === 1) current.published_count += 1;
       else current.draft_count += 1;
+      current.pageviews += Number(row && row.pageviews || 0);
       if (row && row.category) current.categories.add(row.category);
       map.set(key, current);
     });
@@ -438,15 +458,26 @@ function aggregateTags(rows, range) {
     }
   });
 
-  const allItems = Array.from(map.values())
+  const baseItems = Array.from(map.values())
     .map((item) => ({
       tag: item.tag,
       count: item.count,
       published_count: item.published_count,
       draft_count: item.draft_count,
+      pageviews: item.pageviews,
       categories: Array.from(item.categories).sort((a, b) => a.localeCompare(b, 'en')),
-    }))
-    .sort((a, b) => b.count - a.count || b.published_count - a.published_count || a.tag.localeCompare(b.tag, 'ko'));
+    }));
+  const maxCount = Math.max(1, ...baseItems.map((item) => Number(item.count || 0)));
+  const maxViews = Math.max(1, ...baseItems.map((item) => Number(item.pageviews || 0)));
+  const allItems = baseItems
+    .map((item) => {
+      const countRatio = Number(item.count || 0) / maxCount;
+      const viewRatio = Number(item.pageviews || 0) / maxViews;
+      return Object.assign({}, item, {
+        weighted_score: Number(((countRatio * 0.38) + (viewRatio * 0.62)).toFixed(4)),
+      });
+    })
+    .sort((a, b) => b.weighted_score - a.weighted_score || b.count - a.count || b.pageviews - a.pageviews || a.tag.localeCompare(b.tag, 'ko'));
   const items = allItems.slice(0, 80);
 
   return {
@@ -459,21 +490,21 @@ function aggregateTags(rows, range) {
 }
 
 function buildTagGraph(items, pairMap, posts) {
-  const topTags = (Array.isArray(items) ? items : []).slice(0, 18);
+  const topTags = (Array.isArray(items) ? items : []).slice(0, 22);
   const allowedTags = new Set(topTags.map((item) => String(item.tag || '').toLowerCase()));
   const tagTagLinks = Array.from(pairMap.values())
     .filter((item) => {
       const left = String(item.source || '').toLowerCase();
       const right = String(item.target || '').toLowerCase();
-      return allowedTags.has(left) && allowedTags.has(right) && Number(item.count || 0) >= 2;
+      return allowedTags.has(left) && allowedTags.has(right) && Number(item.count || 0) >= 1;
     })
     .sort((a, b) => b.count - a.count || String(a.source || '').localeCompare(String(b.source || ''), 'ko'))
-    .slice(0, 32)
+    .slice(0, 56)
     .map((item) => ({
       id: 'tt:' + String(item.source || '') + '::' + String(item.target || ''),
       type: 'tag_tag',
-      source: item.source,
-      target: item.target,
+      source: 'tag:' + item.source,
+      target: 'tag:' + item.target,
       count: Number(item.count || 0),
     }));
   const relatedArticles = (Array.isArray(posts) ? posts : [])
@@ -490,6 +521,8 @@ function buildTagGraph(items, pairMap, posts) {
       label: item.tag,
       node_type: 'tag',
       count: Number(item.count || 0),
+      pageviews: Number(item.pageviews || 0),
+      weighted_score: Number(item.weighted_score || 0),
       categories: item.categories || [],
     })),
     links: tagTagLinks,
