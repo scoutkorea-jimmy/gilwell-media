@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.061.02
+ * Version: 03.062.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2369,17 +2369,22 @@
     return '<div class="v3-tag-graph-wrap v3-mt-16">' +
       '<div class="v3-card-head" style="padding:0 0 10px 0;"><div>' +
         '<h3 class="v3-card-title">태그 관계도</h3>' +
-        '<p class="v3-card-desc">기본 상태에서는 키워드만 보이고, hover 시에만 태그와 메타 태그를 포함한 키워드 간 연결 관계가 드러납니다. 키워드를 클릭하면 연관 기사 목록을 모달로 봅니다.</p>' +
+        '<p class="v3-card-desc">태그와 메타 태그를 함께 그래프로 보여줍니다. 연결선은 기본적으로 보이고, hover/선택 시 관련 관계가 더 선명해집니다.</p>' +
       '</div><div class="v3-tag-graph-controls">' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-out">축소</button>' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-reset">100%</button>' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-in">확대</button>' +
       '</div></div>' +
-      '<div class="v3-inline-meta">키워드는 드래그로 이동할 수 있고, 휠로 확대/축소할 수 있습니다.</div>' +
-      '<div class="v3-tag-graph-stage">' +
-        '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+      '<div class="v3-inline-meta">키워드는 드래그로 이동할 수 있고, 휠로 확대/축소할 수 있습니다. 키워드를 선택하면 연결 키워드와 관련 기사 정보를 오른쪽에서 함께 봅니다.</div>' +
+      '<div class="v3-tag-graph-layout">' +
+        '<div class="v3-tag-graph-stage">' +
+          '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+        '</div>' +
+        '<aside class="v3-tag-graph-sidebar" id="analytics-tag-graph-sidebar">' +
+          '<div class="v3-empty"><div class="v3-empty-text">키워드를 선택하면 연결 키워드, 기사 수, 조회수, 관련 기사 목록을 함께 볼 수 있습니다.</div></div>' +
+        '</aside>' +
       '</div>' +
-      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.</div>' +
+      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">연결선은 항상 보이며, hover 시 관련 관계가 강조됩니다. 키워드를 클릭하면 오른쪽 패널이 갱신됩니다.</div>' +
     '</div>';
   }
 
@@ -2430,6 +2435,7 @@
     if (_analyticsSelectedTagId && !nextState.nodes.some(function (node) { return node.id === _analyticsSelectedTagId; })) _analyticsSelectedTagId = '';
     _analyticsTagGraphState = nextState;
     _renderAnalyticsTagGraphSvg();
+    _renderAnalyticsTagGraphInspector();
     _bindAnalyticsTagGraphControls();
     _bindAnalyticsTagSelectionButtons();
   }
@@ -2444,20 +2450,28 @@
     var maxLink = state.links.length ? Math.max.apply(null, state.links.map(function (link) { return Number(link.count || 0); })) : 1;
     var tx = (state.width / 2) * (1 - state.scale);
     var ty = (state.height / 2) * (1 - state.scale);
+    var focusedNodeId = state.hoveredNodeId || _analyticsSelectedTagId || '';
+    var focusedLinkId = state.hoveredLinkId || '';
     var linksHtml = state.links.map(function (link) {
       var source = byId[link.source];
       var target = byId[link.target];
       if (!source || !target) return '';
       var weight = maxLink > 0 ? Number(link.count || 0) / maxLink : 0;
-      var stateClass = (!state.hoveredNodeId && !state.hoveredLinkId)
-        ? ' is-hidden'
-        : ((state.hoveredLinkId === link.id || state.hoveredNodeId === link.source || state.hoveredNodeId === link.target) ? ' is-active' : ' is-dimmed');
+      var stateClass = '';
+      if (focusedLinkId) {
+        stateClass = focusedLinkId === link.id ? ' is-active' : ' is-dimmed';
+      } else if (focusedNodeId) {
+        stateClass = _linkTouchesNode(link, focusedNodeId) ? ' is-active' : ' is-dimmed';
+      }
       return '<line class="v3-tag-graph-link v3-tag-graph-link--tag_tag' + stateClass + '" data-link-id="' + GW.escapeHtml(link.id) + '" x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke-width="' + (1 + weight * 3.4).toFixed(2) + '"></line>';
     }).join('');
     var nodesHtml = state.nodes.map(function (node) {
-      var active = !state.hoveredNodeId && !state.hoveredLinkId
-        ? ''
-        : ((state.hoveredNodeId === node.id || _nodeRelatedToHoveredLink(node.id)) ? ' is-active' : ' is-dimmed');
+      var active = '';
+      if (focusedLinkId) {
+        active = _nodeRelatedToHoveredLink(node.id) ? ' is-active' : ' is-dimmed';
+      } else if (focusedNodeId) {
+        active = (focusedNodeId === node.id || _nodeConnectedToFocusedNode(node.id, focusedNodeId)) ? ' is-active' : ' is-dimmed';
+      }
       var selected = _analyticsSelectedTagId === node.id ? ' is-selected' : '';
       return '<g class="v3-tag-graph-node v3-tag-graph-node--tag' + active + selected + '" data-node-id="' + GW.escapeHtml(node.id) + '" transform="translate(' + node.x + ' ' + node.y + ')">' +
         '<circle r="' + node.size + '"></circle>' +
@@ -2492,8 +2506,18 @@
       button.onclick = function () {
         var nodeId = button.getAttribute('data-tag-select') || '';
         if (!nodeId) return;
-        _openAnalyticsTagModal(nodeId);
+        _selectAnalyticsTagNode(nodeId);
       };
+    });
+    document.querySelectorAll('[data-graph-node-select]').forEach(function (button) {
+      button.onclick = function () {
+        var nodeId = button.getAttribute('data-graph-node-select') || '';
+        if (!nodeId) return;
+        _selectAnalyticsTagNode(nodeId);
+      };
+    });
+    _bindEl('analytics-tag-open-modal', 'click', function () {
+      if (_analyticsSelectedTagId) _openAnalyticsTagModal(_analyticsSelectedTagId);
     });
   }
 
@@ -2514,7 +2538,7 @@
       };
       el.onclick = function () {
         var nodeId = el.getAttribute('data-node-id') || '';
-        _openAnalyticsTagModal(nodeId);
+        _selectAnalyticsTagNode(nodeId);
       };
       el.onpointerdown = function (event) {
         if (!_analyticsTagGraphState) return;
@@ -2553,6 +2577,13 @@
       _analyticsTagGraphState.dragNodeId = '';
       _analyticsTagGraphState.dragPointerId = null;
     };
+    svg.onclick = function (event) {
+      if (event.target === svg) {
+        _analyticsSelectedTagId = '';
+        _renderAnalyticsTagGraphSvg();
+        _renderAnalyticsTagGraphInspector();
+      }
+    };
   }
 
   function _adjustAnalyticsTagGraphZoom(delta) {
@@ -2581,6 +2612,97 @@
     if (!_analyticsTagGraphState || !_analyticsTagGraphState.hoveredLinkId) return false;
     var link = _findAnalyticsGraphLink(_analyticsTagGraphState.hoveredLinkId);
     return !!(link && (link.source === nodeId || link.target === nodeId));
+  }
+
+  function _linkTouchesNode(link, nodeId) {
+    return !!(link && nodeId && (link.source === nodeId || link.target === nodeId));
+  }
+
+  function _nodeConnectedToFocusedNode(nodeId, focusedNodeId) {
+    if (!focusedNodeId || nodeId === focusedNodeId || !_analyticsTagGraphState) return nodeId === focusedNodeId;
+    return (_analyticsTagGraphState.links || []).some(function (link) {
+      return _linkTouchesNode(link, focusedNodeId) && _linkTouchesNode(link, nodeId);
+    });
+  }
+
+  function _selectAnalyticsTagNode(nodeId) {
+    if (!nodeId) return;
+    _analyticsSelectedTagId = nodeId;
+    _renderAnalyticsTagGraphSvg();
+    _renderAnalyticsTagGraphInspector();
+    document.querySelectorAll('.v3-tag-cloud-chip[data-tag-select]').forEach(function (button) {
+      button.classList.toggle('is-selected', button.getAttribute('data-tag-select') === nodeId);
+    });
+  }
+
+  function _renderAnalyticsTagGraphInspector() {
+    var el = _el('analytics-tag-graph-sidebar');
+    if (!el) return;
+    if (!_analyticsTagGraphState || !_analyticsSelectedTagId) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">키워드를 선택하면 연결 키워드, 기사 수, 조회수, 관련 기사 목록을 함께 볼 수 있습니다.</div></div>';
+      return;
+    }
+    var node = _findAnalyticsGraphNode(_analyticsSelectedTagId);
+    if (!node) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택한 키워드를 찾을 수 없습니다.</div></div>';
+      return;
+    }
+    var relatedLinks = (_analyticsTagGraphState.links || []).filter(function (link) {
+      return _linkTouchesNode(link, node.id);
+    }).sort(function (a, b) {
+      return Number(b.count || 0) - Number(a.count || 0);
+    });
+    var connectedNodes = relatedLinks.map(function (link) {
+      var targetId = link.source === node.id ? link.target : link.source;
+      var targetNode = _findAnalyticsGraphNode(targetId);
+      return targetNode ? { node: targetNode, count: Number(link.count || 0) } : null;
+    }).filter(Boolean).slice(0, 10);
+    var relatedArticles = (_analyticsTagGraphState.articles || []).filter(function (article) {
+      return Array.isArray(article.keywords) && article.keywords.some(function (item) {
+        return String(item || '').toLowerCase() === String(node.label || '').toLowerCase();
+      });
+    });
+    el.innerHTML =
+      '<div class="v3-tag-inspector-head">' +
+        '<div>' +
+          '<div class="v3-text-s" style="color:var(--v3-text-m);">선택 키워드</div>' +
+          '<h4 class="v3-card-title" style="margin-top:4px;">' + GW.escapeHtml(node.label || node.id) + '</h4>' +
+        '</div>' +
+        '<button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="analytics-tag-open-modal">기사 목록</button>' +
+      '</div>' +
+      '<div class="v3-inline-meta">' +
+        '기사 ' + _fmt(node.count || 0) + '개 · 조회 ' + _fmt(node.pageviews || 0) + ' · 연결 ' + _fmt(relatedLinks.length) + '개' +
+      '</div>' +
+      '<div class="v3-tag-inspector-section">' +
+        '<div class="v3-text-s" style="color:var(--v3-text-m);">카테고리</div>' +
+        '<div class="v3-tag-inspector-tags">' +
+          (((node.categories || []).length ? node.categories : ['—']).map(function (category) {
+            return '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(category) + '</span>';
+          }).join('')) +
+        '</div>' +
+      '</div>' +
+      '<div class="v3-tag-inspector-section">' +
+        '<div class="v3-text-s" style="color:var(--v3-text-m);">연결 키워드</div>' +
+        '<div class="v3-tag-inspector-tags">' +
+          (connectedNodes.length ? connectedNodes.map(function (item) {
+            return '<button class="v3-tag-related-chip" type="button" data-graph-node-select="' + GW.escapeHtml(item.node.id) + '">' +
+              GW.escapeHtml(item.node.label || item.node.id) + ' · ' + _fmt(item.count) +
+            '</button>';
+          }).join('') : '<span class="v3-text-m">연결 키워드가 없습니다.</span>') +
+        '</div>' +
+      '</div>' +
+      '<div class="v3-tag-inspector-section">' +
+        '<div class="v3-text-s" style="color:var(--v3-text-m);">관련 기사 미리보기</div>' +
+        '<div class="v3-simple-rows">' +
+          (relatedArticles.length ? relatedArticles.slice(0, 6).map(function (article) {
+            return '<div class="v3-simple-row">' +
+              '<div><strong>' + GW.escapeHtml(article.title || '(제목 없음)') + '</strong></div>' +
+              '<div class="v3-simple-meta">' + GW.escapeHtml(article.category || 'site') + ' · 조회 ' + _fmt(article.views || 0) + '</div>' +
+            '</div>';
+          }).join('') : '<div class="v3-empty-inline">관련 기사가 없습니다.</div>') +
+        '</div>' +
+      '</div>';
+    _bindAnalyticsTagSelectionButtons();
   }
 
   function _describeAnalyticsGraphHover() {
@@ -2614,11 +2736,7 @@
 
   function _openAnalyticsTagModal(nodeId) {
     if (!nodeId) return;
-    _analyticsSelectedTagId = nodeId;
-    document.querySelectorAll('.v3-tag-cloud-chip[data-tag-select]').forEach(function (button) {
-      button.classList.toggle('is-selected', button.getAttribute('data-tag-select') === nodeId);
-    });
-    _renderAnalyticsTagGraphSvg();
+    _selectAnalyticsTagNode(nodeId);
     _renderAnalyticsTagArticlesModal();
     var modal = _el('analytics-tag-modal');
     if (modal) modal.style.display = 'flex';

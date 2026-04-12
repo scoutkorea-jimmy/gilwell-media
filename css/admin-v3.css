@@ -916,6 +916,12 @@
   align-items: center;
   flex-wrap: wrap;
 }
+.v3-tag-graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
 .v3-tag-graph-stage {
   border: 1px solid rgba(109, 40, 217, 0.10);
   border-radius: 18px;
@@ -925,6 +931,15 @@
     linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,245,255,0.94));
   overflow: hidden;
   touch-action: none;
+}
+.v3-tag-graph-sidebar {
+  border: 1px solid rgba(109, 40, 217, 0.10);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,245,255,0.98));
+  padding: 16px;
+  min-height: 520px;
+  display: grid;
+  gap: 14px;
 }
 .v3-tag-graph {
   display: block;
@@ -961,6 +976,7 @@
 .v3-tag-graph-link {
   transition: opacity .12s ease, stroke-width .12s ease;
   stroke-linecap: round;
+  opacity: 0.42;
 }
 .v3-tag-graph-link--post_tag {
   stroke: rgba(14, 116, 144, 0.36);
@@ -970,10 +986,6 @@
 }
 .v3-tag-graph-link.is-active {
   opacity: 0.95;
-}
-.v3-tag-graph-link.is-hidden {
-  opacity: 0;
-  pointer-events: none;
 }
 .v3-tag-graph-node.is-selected circle {
   fill: rgba(109, 40, 217, 0.20);
@@ -986,6 +998,35 @@
   font-size: 12px;
   color: var(--v3-text-s);
   min-height: 18px;
+}
+.v3-tag-inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.v3-tag-inspector-section {
+  display: grid;
+  gap: 8px;
+}
+.v3-tag-inspector-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.v3-tag-related-chip {
+  appearance: none;
+  border: 1px solid rgba(109, 40, 217, 0.14);
+  background: rgba(109, 40, 217, 0.06);
+  color: #5b21b6;
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.v3-tag-related-chip:hover {
+  background: rgba(109, 40, 217, 0.11);
 }
 .v3-tag-modal-meta {
   margin-bottom: 12px;
@@ -1052,6 +1093,8 @@
   .v3-tag-cloud-chip { padding: 8px 11px; }
   .v3-inline-filter { width: 100%; }
   .v3-inline-filter .v3-filter-select { min-width: 0; width: 100%; }
+  .v3-tag-graph-layout { grid-template-columns: 1fr; }
+  .v3-tag-graph-sidebar { min-height: auto; }
   .v3-tag-graph-text { font-size: 11px; }
   .v3-tag-article-link-row { grid-template-columns: 1fr; }
 }
