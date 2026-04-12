@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.04
+ * Version: 03.057.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2406,17 +2406,18 @@
     var typeClass = { Bugfix: 'v3-badge-gray', Hotfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
     el.innerHTML = filtered.map(function (item) {
       var badge = typeClass[item.type] || 'v3-badge-gray';
-      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
-      var s = item.scope || 'both';
-      var scopeLabel = s === 'site' ? ' <span class="v3-badge v3-badge-site" style="font-size:9px;">Site</span>' :
-                       s === 'admin' ? ' <span class="v3-badge v3-badge-admin" style="font-size:9px;">Admin</span>' : '';
-      return '<div class="v3-card v3-release-card">' +
+	      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
+	      var s = item.scope || 'both';
+	      var releaseDateText = item.released_at || item.date || '';
+	      var scopeLabel = s === 'site' ? ' <span class="v3-badge v3-badge-site" style="font-size:9px;">Site</span>' :
+	                       s === 'admin' ? ' <span class="v3-badge v3-badge-admin" style="font-size:9px;">Admin</span>' : '';
+	      return '<div class="v3-card v3-release-card">' +
         '<div class="v3-release-head">' +
           '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
           '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(item.type || '') + '</span>' +
           scopeLabel +
-          '<span class="v3-release-date">' + GW.escapeHtml(item.date || '') + '</span>' +
-        '</div>' +
+	          '<span class="v3-release-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
+	        '</div>' +
         '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
         (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
           return '<li>' + GW.escapeHtml(c) + '</li>';
