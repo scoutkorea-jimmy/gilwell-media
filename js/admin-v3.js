@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.02
+ * Version: 03.060.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1270,6 +1270,12 @@
       document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
       document.getElementById('w-featured').checked = Number(saved && saved.featured || 0) === 1;
       _syncWriteFeaturedState();
+      if (_homeLeadPost && Number(_homeLeadPost.id || 0) === Number(saved && saved.id || 0)) {
+        _loadHomeLeadUI();
+      }
+      if (Array.isArray(_heroPostIds) && _heroPostIds.indexOf(Number(saved && saved.id || 0)) >= 0) {
+        _loadHero();
+      }
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
       GW.showToast(e.message || '저장 실패', 'error');

@@ -34,7 +34,7 @@ export async function onRequestGet({ env, request }) {
     ]);
     const revision = revRow ? parseInt(revRow.value, 10) : 0;
 
-    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200, publicCacheHeaders(180, 900));
+    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200);
 
     // Backward-compat: stored value may be plain integer (old format) or JSON array
     let postIds = [];
@@ -46,7 +46,7 @@ export async function onRequestGet({ env, request }) {
       if (single > 0) postIds = [single];
     }
 
-    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200, publicCacheHeaders(180, 900));
+    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200);
 
     const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), postIds);
 
@@ -63,7 +63,7 @@ export async function onRequestGet({ env, request }) {
       }
     }
 
-    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: mediaMap }, 200, publicCacheHeaders(180, 900));
+    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: mediaMap }, 200);
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -213,10 +213,4 @@ function json(data, status = 200, extraHeaders = {}) {
     status,
     headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders),
   });
-}
-
-function publicCacheHeaders(maxAge, swr) {
-  return {
-    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
-  };
 }
