@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.058.02
+ * Version: 03.059.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -411,6 +411,7 @@
 
     // Analytics period
     _bindEl('analytics-period', 'change', _loadAnalytics);
+    _bindEl('analytics-tag-period', 'change', _loadAnalytics);
     _bindEl('geo-audience-period', 'change', _loadGeoAudience);
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
 
@@ -2121,12 +2122,13 @@
   ══════════════════════════════════════════════════════════ */
   function _loadAnalytics() {
     var period = document.getElementById('analytics-period').value;
+    var tagPeriod = (document.getElementById('analytics-tag-period') || {}).value || period;
     var statsEl = document.getElementById('analytics-stats');
     var bodyEl  = document.getElementById('analytics-body');
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
     bodyEl.innerHTML  = '';
 
-    _apiFetch('/api/admin/analytics?days=' + period).then(function (data) {
+    _apiFetch('/api/admin/analytics?days=' + encodeURIComponent(period) + '&tag_days=' + encodeURIComponent(tagPeriod)).then(function (data) {
       var today    = data.today    || {};
       var summary  = data.summary  || {};
       var visitors = data.visitors || {};
@@ -2175,7 +2177,7 @@
         html += '</div></div>';
       }
 
-      html += _renderAnalyticsTagCloud(tagCloud, period);
+      html += _renderAnalyticsTagCloud(tagCloud, tagPeriod);
 
       bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
     }).catch(function (e) {
@@ -2192,6 +2194,7 @@
 
   function _renderAnalyticsTagCloud(tagCloud, period) {
     var items = Array.isArray(tagCloud && tagCloud.items) ? tagCloud.items : [];
+    var graph = tagCloud && tagCloud.graph ? tagCloud.graph : { nodes: [], links: [] };
     if (!items.length) {
       return '<div class="v3-card v3-mt-16"><div class="v3-card-head"><div><h2 class="v3-card-title">태그 워드 클라우드</h2><p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 글머리 태그입니다.</p></div></div><div class="v3-empty"><div class="v3-empty-text">선택한 기간에 사용된 태그가 없습니다.</div></div></div>';
     }
@@ -2226,9 +2229,66 @@
       '</div></div>' +
       '<div class="v3-inline-meta">고유 태그 ' + _fmt(tagCloud.total_unique_tags || items.length) + '개 · 태그 부여 ' + _fmt(tagCloud.total_tag_assignments || 0) + '회</div>' +
       '<div class="v3-tag-cloud">' + chips + '</div>' +
+      _renderAnalyticsTagGraph(graph, period) +
       '<div class="v3-geo-table-wrap v3-mt-16"><table class="v3-geo-table"><thead><tr>' +
         '<th>태그</th><th>사용</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+    '</div>';
+  }
+
+  function _renderAnalyticsTagGraph(graph, period) {
+    var nodes = Array.isArray(graph && graph.nodes) ? graph.nodes : [];
+    var links = Array.isArray(graph && graph.links) ? graph.links : [];
+    if (!nodes.length) return '';
+    var width = 900;
+    var height = 420;
+    var cx = width / 2;
+    var cy = height / 2;
+    var maxCount = Math.max.apply(null, nodes.map(function (node) { return Number(node.count || 0); }));
+    var positioned = nodes.map(function (node, index) {
+      var ratio = maxCount > 0 ? Number(node.count || 0) / maxCount : 0;
+      var angle = (Math.PI * 2 * index) / Math.max(nodes.length, 1);
+      var ring = index % 2 === 0 ? 0.42 : 0.28;
+      var radius = Math.min(width, height) * ring + ratio * 26;
+      var x = cx + Math.cos(angle) * radius;
+      var y = cy + Math.sin(angle) * (radius * 0.72);
+      return {
+        id: node.id,
+        count: Number(node.count || 0),
+        categories: node.categories || [],
+        x: Math.round(x * 10) / 10,
+        y: Math.round(y * 10) / 10,
+        r: Math.max(14, Math.min(32, 14 + Math.round(ratio * 18))),
+      };
+    });
+    var byId = {};
+    positioned.forEach(function (node) { byId[String(node.id || '')] = node; });
+    var maxLink = links.length ? Math.max.apply(null, links.map(function (link) { return Number(link.count || 0); })) : 1;
+    var lines = links.map(function (link) {
+      var source = byId[String(link.source || '')];
+      var target = byId[String(link.target || '')];
+      if (!source || !target) return '';
+      var weight = maxLink > 0 ? Number(link.count || 0) / maxLink : 0;
+      return '<line x1="' + source.x + '" y1="' + source.y + '" x2="' + target.x + '" y2="' + target.y + '" stroke="rgba(109,40,217,' + (0.15 + weight * 0.4).toFixed(2) + ')" stroke-width="' + (1 + weight * 3).toFixed(2) + '" />';
+    }).join('');
+    var circles = positioned.map(function (node) {
+      var title = node.id + ' · ' + _fmt(node.count) + '회' + (node.categories.length ? ' · ' + node.categories.join(', ') : '');
+      return '<g>' +
+        '<circle cx="' + node.x + '" cy="' + node.y + '" r="' + node.r + '" fill="rgba(124,58,237,0.12)" stroke="rgba(109,40,217,0.42)" stroke-width="1.5"></circle>' +
+        '<text x="' + node.x + '" y="' + (node.y + 1) + '" text-anchor="middle" dominant-baseline="middle" class="v3-tag-graph-text">' + GW.escapeHtml(node.id) + '</text>' +
+        '<title>' + GW.escapeHtml(title) + '</title>' +
+      '</g>';
+    }).join('');
+    return '<div class="v3-tag-graph-wrap v3-mt-16">' +
+      '<div class="v3-card-head" style="padding:0 0 10px 0;"><div>' +
+        '<h3 class="v3-card-title">태그 관계도</h3>' +
+        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 같은 게시글에 함께 붙은 태그를 연결했습니다.</p>' +
+      '</div></div>' +
+      '<div class="v3-tag-graph-stage">' +
+        '<svg class="v3-tag-graph" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="태그 관계도">' +
+          lines + circles +
+        '</svg>' +
+      '</div>' +
     '</div>';
   }
 

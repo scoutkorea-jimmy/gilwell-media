@@ -890,9 +890,45 @@
   color: #7c3aed;
   opacity: 0.9;
 }
+.v3-inline-filter {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--v3-text-m);
+}
+.v3-inline-filter .v3-filter-select {
+  min-width: 120px;
+}
+.v3-tag-graph-wrap {
+  margin-top: 18px;
+  padding-top: 4px;
+}
+.v3-tag-graph-stage {
+  border: 1px solid rgba(109, 40, 217, 0.10);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(167, 139, 250, 0.12), transparent 32%),
+    radial-gradient(circle at 80% 30%, rgba(59, 130, 246, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,245,255,0.94));
+  overflow: hidden;
+}
+.v3-tag-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.v3-tag-graph-text {
+  fill: #4c1d95;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
 @media (max-width: 900px) {
   .v3-tag-cloud { gap: 8px 9px; }
   .v3-tag-cloud-chip { padding: 8px 11px; }
+  .v3-inline-filter { width: 100%; }
+  .v3-inline-filter .v3-filter-select { min-width: 0; width: 100%; }
+  .v3-tag-graph-text { font-size: 11px; }
 }
 
 /* ── Settings ────────────────────────────────────────────── */

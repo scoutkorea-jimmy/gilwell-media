@@ -12,9 +12,10 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
   const range = resolveRequestedRange(url.searchParams);
+  const tagRange = resolveRequestedRange(url.searchParams, 'tag_');
 
   try {
-    const internalData = await getInternalMetrics(env, range);
+    const internalData = await getInternalMetrics(env, range, tagRange);
     return json(internalData);
   } catch (err) {
     console.error('GET /api/admin/analytics error:', err);
@@ -23,19 +24,20 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-function resolveRequestedRange(searchParams) {
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
+function resolveRequestedRange(searchParams, prefix = '') {
+  const start = searchParams.get(prefix + 'start');
+  const end = searchParams.get(prefix + 'end');
   if (start || end) return resolveAnalyticsRange(start, end);
-  const days = Math.max(1, Math.min(90, Number(searchParams.get('days') || 30) || 30));
+  const days = Math.max(1, Math.min(90, Number(searchParams.get(prefix + 'days') || 30) || 30));
   const today = getKstDateString(new Date());
   return resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
 }
 
-async function getInternalMetrics(env, range) {
+async function getInternalMetrics(env, range, tagRange) {
   const useHourlySeries = range.days === 1;
   const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
   const chosen = rangeStartEnd(range);
+  const chosenTags = rangeStartEnd(tagRange || range);
 
   const [
     todayVisits,
@@ -221,7 +223,7 @@ async function getInternalMetrics(env, range) {
           AND trim(tag) <> ''
           AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') >= datetime(?)
           AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') < datetime(?)`
-    ).bind(chosen.start, chosen.endExclusive).all(),
+    ).bind(chosenTags.start, chosenTags.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -329,7 +331,7 @@ async function getInternalMetrics(env, range) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
-    tags: aggregateTags(tagRows.results || [], range),
+    tags: aggregateTags(tagRows.results || [], tagRange || range),
     tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
 }
@@ -396,9 +398,10 @@ function aggregateReferrers(rows) {
 
 function aggregateTags(rows, range) {
   const map = new Map();
+  const pairMap = new Map();
   (Array.isArray(rows) ? rows : []).forEach((row) => {
-    const raw = String(row && row.tag || '').split(',');
-    raw.map((item) => item.trim()).filter(Boolean).forEach((tag) => {
+    const tags = String(row && row.tag || '').split(',').map((item) => item.trim()).filter(Boolean);
+    tags.forEach((tag) => {
       const key = tag.toLowerCase();
       const current = map.get(key) || {
         tag,
@@ -413,6 +416,17 @@ function aggregateTags(rows, range) {
       if (row && row.category) current.categories.add(row.category);
       map.set(key, current);
     });
+    const uniqueTags = Array.from(new Set(tags.map((item) => item.trim()).filter(Boolean)));
+    for (let i = 0; i < uniqueTags.length; i += 1) {
+      for (let j = i + 1; j < uniqueTags.length; j += 1) {
+        const left = uniqueTags[i];
+        const right = uniqueTags[j];
+        const pairKey = [left.toLowerCase(), right.toLowerCase()].sort().join('::');
+        const pair = pairMap.get(pairKey) || { source: left, target: right, count: 0 };
+        pair.count += 1;
+        pairMap.set(pairKey, pair);
+      }
+    }
   });
 
   const allItems = Array.from(map.values())
@@ -431,6 +445,34 @@ function aggregateTags(rows, range) {
     total_unique_tags: allItems.length,
     total_tag_assignments: allItems.reduce((sum, item) => sum + Number(item.count || 0), 0),
     items,
+    graph: buildTagGraph(allItems, pairMap),
+  };
+}
+
+function buildTagGraph(items, pairMap) {
+  const topNodes = (Array.isArray(items) ? items : []).slice(0, 18);
+  const allowed = new Set(topNodes.map((item) => String(item.tag || '').toLowerCase()));
+  const links = Array.from(pairMap.values())
+    .filter((item) => {
+      const left = String(item.source || '').toLowerCase();
+      const right = String(item.target || '').toLowerCase();
+      return allowed.has(left) && allowed.has(right) && Number(item.count || 0) >= 2;
+    })
+    .sort((a, b) => b.count - a.count || String(a.source || '').localeCompare(String(b.source || ''), 'ko'))
+    .slice(0, 32)
+    .map((item) => ({
+      source: item.source,
+      target: item.target,
+      count: Number(item.count || 0),
+    }));
+
+  return {
+    nodes: topNodes.map((item) => ({
+      id: item.tag,
+      count: Number(item.count || 0),
+      categories: item.categories || [],
+    })),
+    links,
   };
 }
 
