@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.03
+ * Version: 03.060.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -412,6 +412,11 @@
     // Analytics period
     _bindEl('analytics-period', 'change', _loadAnalytics);
     _bindEl('analytics-tag-period', 'change', _loadAnalytics);
+    _bindEl('analytics-tag-modal-close', 'click', _closeAnalyticsTagModal);
+    _bindEl('analytics-tag-modal-done', 'click', _closeAnalyticsTagModal);
+    _bindEl('analytics-tag-modal', 'click', function (event) {
+      if (event.target === this) _closeAnalyticsTagModal();
+    });
     _bindEl('geo-audience-period', 'change', _loadGeoAudience);
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
 
@@ -2204,17 +2209,19 @@
     if (!items.length) {
       return '<div class="v3-card v3-mt-16"><div class="v3-card-head"><div><h2 class="v3-card-title">태그 워드 클라우드</h2><p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 태그와 메타 태그입니다.</p></div></div><div class="v3-empty"><div class="v3-empty-text">선택한 기간에 사용된 태그가 없습니다.</div></div></div>';
     }
-    var maxCount = Math.max.apply(null, items.map(function (item) { return Number(item.count || 0); }));
+    var maxScore = Math.max.apply(null, items.map(function (item) { return Number(item.weighted_score || 0); }));
     var chips = items.slice(0, 40).map(function (item) {
       var count = Number(item.count || 0);
-      var ratio = maxCount > 0 ? (count / maxCount) : 0;
-      var size = Math.round(14 + ratio * 20);
+      var pageviews = Number(item.pageviews || 0);
+      var ratio = maxScore > 0 ? (Number(item.weighted_score || 0) / maxScore) : 0;
+      var size = Math.round(14 + ratio * 22);
       var opacity = (0.62 + ratio * 0.38).toFixed(2);
       var categories = Array.isArray(item.categories) ? item.categories.join(', ') : '';
-      var title = item.tag + ' · ' + count + '회' + (categories ? ' · ' + categories : '');
-      return '<button class="v3-tag-cloud-chip" type="button" data-tag-select="' + GW.escapeHtml('tag:' + item.tag) + '" style="font-size:' + size + 'px;opacity:' + opacity + ';" title="' + GW.escapeHtml(title) + '">' +
+      var title = item.tag + ' · 기사 ' + count + '개 · 조회 ' + _fmt(pageviews) + (categories ? ' · ' + categories : '');
+      var selected = _analyticsSelectedTagId === ('tag:' + item.tag) ? ' is-selected' : '';
+      return '<button class="v3-tag-cloud-chip' + selected + '" type="button" data-tag-select="' + GW.escapeHtml('tag:' + item.tag) + '" style="font-size:' + size + 'px;opacity:' + opacity + ';" title="' + GW.escapeHtml(title) + '">' +
         '<span class="v3-tag-cloud-label">' + GW.escapeHtml(item.tag) + '</span>' +
-        '<span class="v3-tag-cloud-count">' + _fmt(count) + '</span>' +
+        '<span class="v3-tag-cloud-count">기사 ' + _fmt(count) + ' · 조회 ' + _fmt(pageviews) + '</span>' +
       '</button>';
     }).join('');
 
@@ -2222,6 +2229,7 @@
       return '<tr>' +
         '<td><strong>' + GW.escapeHtml(item.tag) + '</strong></td>' +
         '<td>' + _fmt(item.count || 0) + '</td>' +
+        '<td>' + _fmt(item.pageviews || 0) + '</td>' +
         '<td>' + _fmt(item.published_count || 0) + '</td>' +
         '<td>' + _fmt(item.draft_count || 0) + '</td>' +
         '<td>' + GW.escapeHtml((item.categories || []).join(', ') || '—') + '</td>' +
@@ -2231,14 +2239,13 @@
     return '<div class="v3-card v3-mt-16">' +
       '<div class="v3-card-head"><div>' +
         '<h2 class="v3-card-title">태그 워드 클라우드</h2>' +
-        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 태그와 메타 태그입니다. 많이 쓰인 키워드일수록 크게 보입니다.</p>' +
+        '<p class="v3-card-desc">최근 ' + GW.escapeHtml(String(period || 30)) + '일 기준으로 사용된 태그와 메타 태그입니다. 크기는 기사 수와 관련 기사 조회수를 함께 반영합니다.</p>' +
       '</div></div>' +
       '<div class="v3-inline-meta">고유 키워드 ' + _fmt(tagCloud.total_unique_tags || items.length) + '개 · 키워드 부여 ' + _fmt(tagCloud.total_tag_assignments || 0) + '회</div>' +
       '<div class="v3-tag-cloud">' + chips + '</div>' +
       _renderAnalyticsTagGraph(graph, period) +
-      _renderAnalyticsTagArticlePanel() +
       '<div class="v3-geo-table-wrap v3-mt-16"><table class="v3-geo-table"><thead><tr>' +
-        '<th>키워드</th><th>사용</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
+        '<th>키워드</th><th>기사 수</th><th>조회</th><th>공개</th><th>비공개</th><th>카테고리</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
     '</div>';
   }
@@ -2249,7 +2256,7 @@
     return '<div class="v3-tag-graph-wrap v3-mt-16">' +
       '<div class="v3-card-head" style="padding:0 0 10px 0;"><div>' +
         '<h3 class="v3-card-title">태그 관계도</h3>' +
-        '<p class="v3-card-desc">기본 상태에서는 키워드만 보이고, hover 시에만 키워드 간 연결 관계가 드러납니다. 키워드를 클릭하면 아래에 연관 기사 제목과 기사 간 연결성이 나타납니다.</p>' +
+        '<p class="v3-card-desc">기본 상태에서는 키워드만 보이고, hover 시에만 태그와 메타 태그를 포함한 키워드 간 연결 관계가 드러납니다. 키워드를 클릭하면 연관 기사 목록을 모달로 봅니다.</p>' +
       '</div><div class="v3-tag-graph-controls">' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-out">축소</button>' +
         '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="analytics-tag-zoom-reset">100%</button>' +
@@ -2259,17 +2266,7 @@
       '<div class="v3-tag-graph-stage">' +
         '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
       '</div>' +
-      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.</div>' +
-    '</div>';
-  }
-
-  function _renderAnalyticsTagArticlePanel() {
-    return '<div class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><div>' +
-        '<h3 class="v3-card-title">연관 기사</h3>' +
-        '<p class="v3-card-desc">선택한 키워드를 포함한 기사와 기사 간 연결성을 보여줍니다.</p>' +
-      '</div></div>' +
-      '<div id="analytics-tag-articles" class="v3-tag-articles-panel">키워드를 클릭하면 연관 기사 목록이 나타납니다.</div>' +
+      '<div class="v3-tag-graph-meta" id="analytics-tag-graph-meta">키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.</div>' +
     '</div>';
   }
 
@@ -2279,7 +2276,7 @@
     if (!svg || !graph || !Array.isArray(graph.nodes) || !graph.nodes.length) {
       _analyticsTagGraphState = null;
       if (meta) meta.textContent = '표시할 태그 관계 데이터가 없습니다.';
-      _renderAnalyticsTagArticles();
+      _closeAnalyticsTagModal();
       return;
     }
     var width = 960;
@@ -2299,14 +2296,14 @@
     var previous = _analyticsTagGraphState && Array.isArray(_analyticsTagGraphState.nodes) ? _analyticsTagGraphState : null;
     var previousById = {};
     if (previous) previous.nodes.forEach(function (node) { previousById[node.id] = node; });
-    var maxCount = Math.max.apply(null, graph.nodes.map(function (node) { return Number(node.count || 0); }));
+    var maxScore = Math.max.apply(null, graph.nodes.map(function (node) { return Number(node.weighted_score || 0); }));
     var tagNodes = graph.nodes.filter(function (node) { return node.node_type === 'tag'; });
     nextState.nodes = graph.nodes.map(function (node, index) {
       var existing = previousById[node.id];
       if (existing) {
         return Object.assign({}, node, { x: existing.x, y: existing.y, size: existing.size });
       }
-      var ratio = maxCount > 0 ? Number(node.count || 0) / maxCount : 0;
+      var ratio = maxScore > 0 ? Number(node.weighted_score || 0) / maxScore : 0;
       var idx = tagNodes.findIndex(function (item) { return item.id === node.id; });
       var angle = (Math.PI * 2 * idx) / Math.max(tagNodes.length, 1);
       var ring = 170 + (index % 3) * 26;
@@ -2322,7 +2319,6 @@
     _renderAnalyticsTagGraphSvg();
     _bindAnalyticsTagGraphControls();
     _bindAnalyticsTagSelectionButtons();
-    _renderAnalyticsTagArticles();
   }
 
   function _renderAnalyticsTagGraphSvg() {
@@ -2383,9 +2379,7 @@
       button.onclick = function () {
         var nodeId = button.getAttribute('data-tag-select') || '';
         if (!nodeId) return;
-        _analyticsSelectedTagId = nodeId;
-        _renderAnalyticsTagArticles();
-        _renderAnalyticsTagGraphSvg();
+        _openAnalyticsTagModal(nodeId);
       };
     });
   }
@@ -2407,9 +2401,7 @@
       };
       el.onclick = function () {
         var nodeId = el.getAttribute('data-node-id') || '';
-        _analyticsSelectedTagId = nodeId;
-        _renderAnalyticsTagArticles();
-        _renderAnalyticsTagGraphSvg();
+        _openAnalyticsTagModal(nodeId);
       };
       el.onpointerdown = function (event) {
         if (!_analyticsTagGraphState) return;
@@ -2479,18 +2471,18 @@
   }
 
   function _describeAnalyticsGraphHover() {
-    if (!_analyticsTagGraphState) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
+    if (!_analyticsTagGraphState) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.';
     if (_analyticsTagGraphState.hoveredNodeId) {
       var node = _findAnalyticsGraphNode(_analyticsTagGraphState.hoveredNodeId);
-      if (!node) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
-      return (node.label || node.id) + ' · 사용 ' + _fmt(node.count || 0) + '회 · 카테고리 ' + (((node.categories || []).join(', ')) || '—');
+      if (!node) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.';
+      return (node.label || node.id) + ' · 기사 ' + _fmt(node.count || 0) + '개 · 조회 ' + _fmt(node.pageviews || 0) + ' · 카테고리 ' + (((node.categories || []).join(', ')) || '—');
     }
     if (_analyticsTagGraphState.hoveredLinkId) {
       var link = _findAnalyticsGraphLink(_analyticsTagGraphState.hoveredLinkId);
-      if (!link) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
-      return '키워드 연계 · ' + link.source + ' ↔ ' + link.target + ' · ' + _fmt(link.count || 0) + '회';
+      if (!link) return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.';
+      return '키워드 연계 · ' + String(link.source || '').replace(/^tag:/, '') + ' ↔ ' + String(link.target || '').replace(/^tag:/, '') + ' · ' + _fmt(link.count || 0) + '회';
     }
-    return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록이 열립니다.';
+    return '키워드를 hover하면 연계 관계가 보입니다. 클릭하면 연관 기사 목록 모달이 열립니다.';
   }
 
   function _eventToAnalyticsGraphPoint(event, svg) {
@@ -2507,11 +2499,30 @@
     };
   }
 
-  function _renderAnalyticsTagArticles() {
-    var el = _el('analytics-tag-articles');
-    if (!el) return;
+  function _openAnalyticsTagModal(nodeId) {
+    if (!nodeId) return;
+    _analyticsSelectedTagId = nodeId;
+    document.querySelectorAll('.v3-tag-cloud-chip[data-tag-select]').forEach(function (button) {
+      button.classList.toggle('is-selected', button.getAttribute('data-tag-select') === nodeId);
+    });
+    _renderAnalyticsTagGraphSvg();
+    _renderAnalyticsTagArticlesModal();
+    var modal = _el('analytics-tag-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function _closeAnalyticsTagModal() {
+    var modal = _el('analytics-tag-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function _renderAnalyticsTagArticlesModal() {
+    var el = _el('analytics-tag-modal-body');
+    var titleEl = _el('analytics-tag-modal-title');
+    if (!el || !titleEl) return;
     if (!_analyticsTagGraphState || !_analyticsSelectedTagId) {
-      el.innerHTML = '키워드를 클릭하면 연관 기사 목록이 나타납니다.';
+      titleEl.textContent = '연관 기사';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">키워드를 선택하면 연관 기사 목록이 나타납니다.</div></div>';
       return;
     }
     var tagLabel = String(_analyticsSelectedTagId || '').replace(/^tag:/, '');
@@ -2521,7 +2532,8 @@
       });
     });
     if (!articles.length) {
-      el.innerHTML = '<div class="v3-empty-inline">선택한 키워드와 연결된 기사가 없습니다.</div>';
+      titleEl.textContent = tagLabel + ' · 연관 기사';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택한 키워드와 연결된 기사가 없습니다.</div></div>';
       return;
     }
     var relatedKeywordCounts = {};
@@ -2547,15 +2559,16 @@
         articleLinks.push({ left: left, right: right, shared: shared });
       }
     }
+    titleEl.textContent = tagLabel + ' · 연관 기사 ' + _fmt(articles.length) + '개';
     el.innerHTML =
-      '<div class="v3-inline-meta"><strong>' + GW.escapeHtml(tagLabel) + '</strong> · 연관 기사 ' + _fmt(articles.length) + '개</div>' +
+      '<div class="v3-inline-meta v3-tag-modal-meta"><strong>' + GW.escapeHtml(tagLabel) + '</strong> · 연관 기사 ' + _fmt(articles.length) + '개 · 관련 조회 ' + _fmt(articles.reduce(function (sum, article) { return sum + Number(article.pageviews || 0); }, 0)) + '</div>' +
       (relatedKeywords.length ? '<div class="v3-tag-article-keywords">' + relatedKeywords.map(function (item) {
         return '<button class="v3-geo-pill v3-tag-related-pill" type="button" data-tag-select="' + GW.escapeHtml('tag:' + item) + '">' + GW.escapeHtml(item) + ' · ' + _fmt(relatedKeywordCounts[item]) + '</button>';
       }).join('') + '</div>' : '') +
       '<div class="v3-tag-article-list">' + articles.map(function (article) {
         return '<div class="v3-tag-article-item">' +
           '<strong>' + GW.escapeHtml(article.title || ('게시글 ' + article.id)) + '</strong>' +
-          '<span class="v3-tag-article-meta">' + GW.escapeHtml(article.category || 'uncategorized') + ' · ' + (article.published ? '공개' : '비공개') + '</span>' +
+          '<span class="v3-tag-article-meta">' + GW.escapeHtml(article.category || 'uncategorized') + ' · ' + (article.published ? '공개' : '비공개') + ' · 조회 ' + _fmt(article.pageviews || 0) + '</span>' +
           '<span class="v3-tag-article-meta">키워드: ' + GW.escapeHtml((article.keywords || []).join(', ')) + '</span>' +
         '</div>';
       }).join('') + '</div>' +
