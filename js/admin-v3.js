@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.00
+ * Version: 03.062.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2407,6 +2407,9 @@
       hoveredLinkId: '',
       dragNodeId: '',
       dragPointerId: null,
+      dragMoved: false,
+      dragStartClientX: 0,
+      dragStartClientY: 0,
       nodes: [],
       links: [],
       articles: Array.isArray(graph.articles) ? graph.articles.slice() : []
@@ -2536,15 +2539,14 @@
         _analyticsTagGraphState.hoveredNodeId = '';
         _renderAnalyticsTagGraphSvg();
       };
-      el.onclick = function () {
-        var nodeId = el.getAttribute('data-node-id') || '';
-        _selectAnalyticsTagNode(nodeId);
-      };
       el.onpointerdown = function (event) {
         if (!_analyticsTagGraphState) return;
         event.preventDefault();
         _analyticsTagGraphState.dragNodeId = el.getAttribute('data-node-id') || '';
         _analyticsTagGraphState.dragPointerId = event.pointerId;
+        _analyticsTagGraphState.dragMoved = false;
+        _analyticsTagGraphState.dragStartClientX = event.clientX || 0;
+        _analyticsTagGraphState.dragStartClientY = event.clientY || 0;
         if (svg.setPointerCapture) {
           try { svg.setPointerCapture(event.pointerId); } catch (_) {}
         }
@@ -2565,6 +2567,9 @@
     });
     svg.onpointermove = function (event) {
       if (!_analyticsTagGraphState || !_analyticsTagGraphState.dragNodeId) return;
+      if (Math.abs((event.clientX || 0) - (_analyticsTagGraphState.dragStartClientX || 0)) > 4 || Math.abs((event.clientY || 0) - (_analyticsTagGraphState.dragStartClientY || 0)) > 4) {
+        _analyticsTagGraphState.dragMoved = true;
+      }
       var point = _eventToAnalyticsGraphPoint(event, svg);
       var node = _findAnalyticsGraphNode(_analyticsTagGraphState.dragNodeId);
       if (!node || !point) return;
@@ -2572,10 +2577,20 @@
       node.y = Math.max(34, Math.min(_analyticsTagGraphState.height - 34, point.y));
       _renderAnalyticsTagGraphSvg();
     };
-    svg.onpointerup = svg.onpointercancel = function () {
+    svg.onpointerup = function () {
+      if (!_analyticsTagGraphState) return;
+      var nodeId = _analyticsTagGraphState.dragNodeId;
+      var moved = _analyticsTagGraphState.dragMoved;
+      _analyticsTagGraphState.dragNodeId = '';
+      _analyticsTagGraphState.dragPointerId = null;
+      _analyticsTagGraphState.dragMoved = false;
+      if (!moved && nodeId) _selectAnalyticsTagNode(nodeId);
+    };
+    svg.onpointercancel = function () {
       if (!_analyticsTagGraphState) return;
       _analyticsTagGraphState.dragNodeId = '';
       _analyticsTagGraphState.dragPointerId = null;
+      _analyticsTagGraphState.dragMoved = false;
     };
     svg.onclick = function (event) {
       if (event.target === svg) {
