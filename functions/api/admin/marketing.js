@@ -1,6 +1,7 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 import { logApiError } from '../../_shared/ops-log.js';
+import { SITE_PATH_TITLE_FALLBACKS } from '../../_shared/site-structure.mjs';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
@@ -368,33 +369,7 @@ function resolvePathTitle(path, postTitleMap) {
   const value = normalizePath(path);
   if (!value) return '알 수 없는 페이지';
   if (postTitleMap && postTitleMap.has(value)) return postTitleMap.get(value);
-  const pageTitles = {
-    '/': '홈',
-    '/index.html': '홈',
-    '/latest': '최신 소식',
-    '/latest.html': '최신 소식',
-    '/korea': 'Korea',
-    '/korea.html': 'Korea',
-    '/apr': 'APR',
-    '/apr.html': 'APR',
-    '/wosm': 'WOSM',
-    '/wosm.html': 'WOSM',
-    '/wosm-members': '세계연맹 회원국 현황',
-    '/wosm-members.html': '세계연맹 회원국 현황',
-    '/people': 'Scout People',
-    '/people.html': 'Scout People',
-    '/calendar': '캘린더',
-    '/calendar.html': '캘린더',
-    '/glossary': '용어집',
-    '/glossary.html': '용어집',
-    '/contributors': '도움을 주신 분들',
-    '/contributors.html': '도움을 주신 분들',
-    '/dreampath': 'Dreampath',
-    '/dreampath.html': 'Dreampath',
-    '/search': '검색',
-    '/search.html': '검색',
-  };
-  return pageTitles[value] || value;
+  return SITE_PATH_TITLE_FALLBACKS[value] || value;
 }
 
 function buildMarketingNotes(stageSummary, sources, destinations, transitions, scatter) {

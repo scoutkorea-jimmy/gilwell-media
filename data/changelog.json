@@ -1,6 +1,34 @@
 {
   "items": [
     {
+      "version": "00.113.04",
+      "date": "2026-04-12",
+      "released_at": "2026-04-12 15:58:46 KST",
+      "summary": "공개 사이트 fallback 문구와 카테고리 구조의 중복 하드코딩을 공통 소스로 묶어 운영 드리프트 가능성을 줄였습니다.",
+      "type": "Refactor",
+      "scope": "site",
+      "items": [
+        "공개 사이트의 메뉴 fallback, ticker 기본 문구, 카테고리 키 검증 기준을 `functions/_shared/site-structure.mjs`, `functions/_shared/site-copy.mjs`로 공통화했습니다.",
+        "`/api/home`, `/api/settings/ticker`, 게시글 API들이 같은 공통 상수를 참조하도록 바꿔 같은 의미의 기본값이 서로 다르게 남지 않게 정리했습니다.",
+        "`scripts/sync_public_fallbacks.mjs`를 추가하고 배포 동기화 스크립트에 연결해 공개 HTML의 nav fallback 라벨과 홈 ticker fallback 속성이 공통 기준과 자동으로 맞춰지게 했습니다.",
+        "사이트 버전 00.113.03 → 00.113.04."
+      ]
+    },
+    {
+      "version": "03.057.06",
+      "date": "2026-04-12",
+      "released_at": "2026-04-12 15:58:46 KST",
+      "summary": "관리자 마케팅/게시글 관련 구조 상수도 공통 기준을 참조하도록 정리해 페이지·카테고리 드리프트를 줄였습니다.",
+      "type": "Refactor",
+      "scope": "admin",
+      "items": [
+        "관리자 마케팅 집계의 경로 제목 fallback은 공통 `site-structure` 기준을 참조하도록 정리했습니다.",
+        "관리자에서 함께 쓰는 게시글 카테고리 검증도 공통 구조 상수를 사용하도록 맞춰 공개/API/관리자 기준이 분리되지 않게 했습니다.",
+        "릴리즈 동기화 시 공개 fallback까지 함께 맞추도록 스크립트를 보강해 이후 관리자 변경이 공개 기본값과 어긋날 가능성을 줄였습니다.",
+        "관리자 버전 03.057.05 → 03.057.06."
+      ]
+    },
+    {
       "version": "00.113.03",
       "date": "2026-04-12",
       "released_at": "2026-04-12 15:03:40 KST",

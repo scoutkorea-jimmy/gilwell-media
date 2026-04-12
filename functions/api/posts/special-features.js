@@ -3,6 +3,7 @@
  * Returns distinct active special_feature values for a category.
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -10,8 +11,6 @@ function json(data, status = 200) {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }
-
-const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -23,7 +22,7 @@ export async function onRequestGet({ request, env }) {
   try {
     let query;
     let args;
-    if (category && VALID_CATEGORIES.includes(category)) {
+    if (category && VALID_POST_CATEGORIES.includes(category)) {
       query = `SELECT DISTINCT special_feature FROM posts WHERE special_feature IS NOT NULL AND special_feature != '' AND category = ? ${isAdmin ? '' : 'AND published = 1'} ORDER BY special_feature ASC`;
       args = [category];
     } else {

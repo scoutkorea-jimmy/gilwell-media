@@ -60,3 +60,26 @@ aliases: [Hardcoding Inventory, 하드코딩 인벤토리]
 2. site meta/푸터 운영값의 settings 중심 정리
 3. 카테고리와 route key 공통 상수화
 4. 남은 문서 내 레거시 인증/preview 표현 제거
+
+## 1차 반영 현황
+
+- `functions/_shared/site-structure.mjs`
+  - nav item 순서
+  - nav 기본 라벨
+  - 게시글 카테고리 키
+  - 경로 제목 fallback
+- `functions/_shared/site-copy.mjs`
+  - 브랜드명
+  - 도메인 라벨
+  - 기본 연락처
+  - ticker fallback 문구
+- `scripts/sync_public_fallbacks.mjs`
+  - 공개 HTML의 `data-fallback-label`
+  - 홈 ticker `data-fallback-items`
+  - 릴리즈 동기화 전에 공통 기준과 자동 정렬
+
+## 다음 정리 대상
+
+1. `js/site-chrome.js` 안의 nav/ticker 기본값을 공통 생성물 기준으로 줄이기
+2. 공개 HTML 반복 masthead subtext와 footer fallback의 공통화
+3. `js/main.js`의 카테고리 메타를 구조 상수 기준과 더 가깝게 묶기

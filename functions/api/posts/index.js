@@ -14,8 +14,8 @@ import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, re
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
+import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 
-const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 const PAGE_SIZE = 16;
 
 // ── GET /api/posts ────────────────────────────────────────────
@@ -50,7 +50,7 @@ export async function onRequestGet({ request, env }) {
   const compactQuery = safeQ ? safeQ.replace(/\s+/g, '') : '';
   const fuzzyQuery = safeQ ? '%' + safeQ.trim().split(/\s*/).filter(Boolean).join('%') + '%' : '';
 
-  if (category && !VALID_CATEGORIES.includes(category)) {
+  if (category && !VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: 'Invalid category. Must be korea, apr, wosm, or people.' }, 400);
   }
 
@@ -189,7 +189,7 @@ export async function onRequestPost({ request, env }) {
     }
   }
 
-  if (!VALID_CATEGORIES.includes(category)) {
+  if (!VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
   const safeTitleInput = requireNonEmptyString(title, '제목', 200);
