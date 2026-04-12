@@ -294,7 +294,7 @@
           method: 'GET', path: '/api/admin/analytics', auth: true,
           summary: '관리자 종합 분석 대시보드 및 태그 인사이트',
           response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [], "graph": { "nodes": [], "links": [], "counts": {} } }, "total_visits": number, "avg_duration": number }',
-          notes: '태그 인사이트 기간은 방문 분석과 별도로 조절합니다. 태그 관계도는 글머리 태그와 메타 태그를 함께 사용한 키워드 그래프이며, hover 시 연계 관계를 보여주고, click 시 해당 키워드가 사용된 기사 목록과 기사 간 추가 공통 키워드를 모달로 보여줍니다. 워드 클라우드 크기는 기사 수와 관련 기사 조회수를 함께 반영합니다.',
+          notes: '태그 인사이트 기간은 방문 분석과 별도로 조절합니다. 태그 관계도는 글머리 태그와 메타 태그를 함께 사용한 키워드 그래프이며, hover 시 연계 관계를 보여주고, click 시 선택 상태를 유지한 채 해당 키워드가 사용된 기사 목록과 기사 간 추가 공통 키워드를 모달로 보여줍니다. 다른 영역을 누르면 선택이 해제됩니다. 워드 클라우드 크기는 기사 수와 관련 기사 조회수를 함께 반영합니다.',
         },
         {
           method: 'GET', path: '/api/admin/geo-audience', auth: true,
