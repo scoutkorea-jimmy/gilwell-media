@@ -1,6 +1,19 @@
 {
   "items": [
     {
+      "version": "03.061.01",
+      "date": "2026-04-12",
+      "released_at": "2026-04-12 23:16:58 KST",
+      "summary": "분석 패널 태그 관계도에서 선택 키 상태 변수가 빠져 불러오기가 실패하던 런타임 오류를 바로잡았습니다.",
+      "type": "Hotfix",
+      "scope": "admin",
+      "items": [
+        "태그 관계도와 키워드 모달이 참조하는 `_analyticsSelectedTagId` 상태 변수를 관리자 런타임 선언부에 복구했습니다.",
+        "BP미디어 분석 페이지에서 `불러오기 실패: _analyticsSelectedTagId is not defined` 오류가 나던 경로를 제거했습니다.",
+        "관리자 버전 03.061.00 → 03.061.01."
+      ]
+    },
+    {
       "version": "00.113.07",
       "date": "2026-04-12",
       "released_at": "2026-04-12 23:13:08 KST",
