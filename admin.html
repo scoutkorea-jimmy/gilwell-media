@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412151913">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412152846">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.062.08</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.062.09</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,8 +41,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.08</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span style="opacity:0.55;font-size:9px;">Site <span class="v3-ver-site">—</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.09</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
       <a class="v3-nav-item v3-nav-link is-kms" href="/kms" target="_blank" rel="noopener">
@@ -378,8 +378,8 @@
                     <div id="w-tag-pills" class="v3-tag-pill-group">
                       <button type="button" class="v3-tag-pill active" data-tag="">없음</button>
                     </div>
-                    <div class="v3-tag-add-row" style="margin-top:6px;display:flex;gap:6px;">
-                      <input class="v3-input v3-input-sm" type="text" id="w-tag-new-input" placeholder="새 태그 추가" maxlength="30" style="flex:1;" />
+                    <div class="v3-tag-add-row v3-tag-add-row-compact">
+                      <input class="v3-input v3-input-sm v3-flex-1" type="text" id="w-tag-new-input" placeholder="새 태그 추가" maxlength="30" />
                       <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-tag-new-btn">추가</button>
                     </div>
                   </div>
@@ -405,9 +405,9 @@
 
             <!-- Meta tags -->
             <div class="v3-card">
-              <div class="v3-card-head"><h2 class="v3-card-title">메타 태그 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">검색·분류용 키워드</span></h2></div>
+              <div class="v3-card-head"><h2 class="v3-card-title">메타 태그 <span class="v3-label-opt v3-label-opt-inline">검색·분류용 키워드</span></h2></div>
               <div class="v3-metatags-input-row">
-                <input class="v3-input" type="text" id="w-metatag-input" placeholder="태그 입력 후 Enter" style="flex:1;" />
+                <input class="v3-input v3-flex-1" type="text" id="w-metatag-input" placeholder="태그 입력 후 Enter" />
                 <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-metatag-add-btn">추가</button>
               </div>
               <div class="v3-metatag-chips" id="w-metatag-chips"></div>
@@ -433,7 +433,7 @@
             <!-- Gallery -->
             <div class="v3-card">
               <div class="v3-card-head">
-                <h2 class="v3-card-title">갤러리 슬라이드 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">최대 10장</span></h2>
+                <h2 class="v3-card-title">갤러리 슬라이드 <span class="v3-label-opt v3-label-opt-inline">최대 10장</span></h2>
                 <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-gallery-btn">이미지 추가</button>
               </div>
               <div class="v3-gallery-grid" id="w-gallery-grid"></div>
@@ -441,7 +441,7 @@
 
             <!-- Location & Special Feature -->
             <div class="v3-card">
-              <div class="v3-card-head"><h2 class="v3-card-title">위치 / 특집 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">선택</span></h2></div>
+              <div class="v3-card-head"><h2 class="v3-card-title">위치 / 특집 <span class="v3-label-opt v3-label-opt-inline">선택</span></h2></div>
               <div class="v3-form-grid v3-form-2col">
                 <div class="v3-form-group">
                   <label class="v3-label" for="w-location-name">장소명</label>
@@ -449,15 +449,15 @@
                 </div>
                 <div class="v3-form-group">
                   <label class="v3-label" for="w-location-addr">주소 <span class="v3-label-opt">OpenStreetMap 기준</span></label>
-                  <div style="display:flex;gap:6px;">
-                    <input class="v3-input" type="text" id="w-location-addr" placeholder="서울특별시 송파구…" style="flex:1;" />
+                  <div class="v3-inline-row-compact">
+                    <input class="v3-input v3-flex-1" type="text" id="w-location-addr" placeholder="서울특별시 송파구…" />
                     <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="w-location-check-btn">지도 확인</button>
                   </div>
                 </div>
               </div>
-              <div id="w-location-map-preview" style="display:none;margin-top:8px;border:1px solid var(--v3-border);overflow:hidden;">
-                <iframe id="w-location-map-frame" style="width:100%;height:220px;border:0;display:block;" loading="lazy"></iframe>
-                <div id="w-location-map-status" style="font-size:11px;padding:4px 8px;color:var(--v3-text-l);"></div>
+              <div id="w-location-map-preview" class="v3-map-preview">
+                <iframe id="w-location-map-frame" class="v3-map-preview-frame" loading="lazy"></iframe>
+                <div id="w-location-map-status" class="v3-map-preview-status"></div>
               </div>
               <div class="v3-form-group v3-mt-12">
                 <label class="v3-label" for="w-special">특집 그룹 <span class="v3-label-opt">선택</span></label>
@@ -467,10 +467,10 @@
 
             <!-- Related posts -->
             <div class="v3-card">
-              <div class="v3-card-head"><h2 class="v3-card-title">관련 기사 <span class="v3-label-opt" style="font-weight:400;font-size:12px;">선택</span></h2></div>
-              <div class="v3-search-wrap" style="width:100%;margin-bottom:8px;">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                <input class="v3-search-input" type="text" id="w-related-search" placeholder="기사 제목 검색…" style="width:100%;" />
+              <div class="v3-card-head"><h2 class="v3-card-title">관련 기사 <span class="v3-label-opt v3-label-opt-inline">선택</span></h2></div>
+              <div class="v3-search-wrap v3-search-wrap-full v3-search-wrap-mb-8">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                <input class="v3-search-input" type="text" id="w-related-search" placeholder="기사 제목 검색…" />
               </div>
               <div class="v3-search-results-drop" id="w-related-results" style="display:none;"></div>
               <div class="v3-related-list" id="w-related-list"></div>
@@ -480,8 +480,8 @@
           <!-- Side column -->
           <div class="v3-write-side">
             <div class="v3-card">
-              <div class="v3-card-title" style="margin-bottom:12px;">게시 설정</div>
-              <div class="v3-form-grid" style="gap:10px;">
+              <div class="v3-card-title v3-card-title-tight-md">게시 설정</div>
+              <div class="v3-form-grid v3-form-grid-compact">
                 <label class="v3-check-row"><input type="checkbox" id="w-published" /><span>공개</span></label>
                 <label class="v3-check-row"><input type="checkbox" id="w-featured" /><span>특집 (홈 노출)</span></label>
                 <label class="v3-check-row"><input type="checkbox" id="w-ai" /><span>AI 도움 사용</span></label>
@@ -499,13 +499,13 @@
 
             <!-- Draft status -->
             <div class="v3-card" id="write-status-card" style="display:none;">
-              <div class="v3-card-title" style="margin-bottom:8px;">저장 상태</div>
+              <div class="v3-card-title v3-card-title-tight-sm">저장 상태</div>
               <div id="write-status-msg" class="v3-text-m v3-text-s"></div>
             </div>
 
             <!-- History shortcut -->
             <div class="v3-card" id="write-history-card" style="display:none;">
-              <div class="v3-card-title" style="margin-bottom:8px;">수정 기록</div>
+              <div class="v3-card-title v3-card-title-tight-sm">수정 기록</div>
               <div id="write-history-list" class="v3-text-m v3-text-s"></div>
             </div>
           </div>
@@ -524,8 +524,8 @@
             새 일정
           </button>
         </div>
-        <div class="v3-toolbar" style="flex-wrap:wrap;gap:8px;">
-          <div class="v3-toolbar-left" style="flex-wrap:wrap;gap:8px;">
+        <div class="v3-toolbar v3-toolbar-compact">
+          <div class="v3-toolbar-left">
             <!-- 연도 -->
             <select class="v3-filter-select" id="cal-filter-year">
               <option value="all">전체 연도</option>
@@ -549,9 +549,9 @@
               <option value="finished">행사종료</option>
             </select>
             <!-- 시작일 범위 -->
-            <input class="v3-input" type="date" id="cal-filter-from" title="시작일 이후" style="width:140px;" />
-            <span style="font-size:12px;color:var(--v3-text-m);align-self:center;">~</span>
-            <input class="v3-input" type="date" id="cal-filter-to" title="시작일 이전" style="width:140px;" />
+            <input class="v3-input v3-width-140" type="date" id="cal-filter-from" title="시작일 이후" />
+            <span class="v3-inline-sep">~</span>
+            <input class="v3-input v3-width-140" type="date" id="cal-filter-to" title="시작일 이전" />
             <button class="v3-btn v3-btn-ghost v3-btn-sm" id="cal-filter-reset">초기화</button>
           </div>
           <div class="v3-toolbar-right">
@@ -560,7 +560,7 @@
               <option value="asc">행사일 임박순 ↑</option>
               <option value="desc">행사일 먼 순 ↓</option>
             </select>
-            <span id="cal-count" style="font-size:12px;color:var(--v3-text-m);"></span>
+            <span id="cal-count" class="v3-inline-count"></span>
           </div>
         </div>
         <div class="v3-cal-list" id="cal-list">
@@ -620,7 +620,7 @@
           </div>
         </div>
         <div class="v3-analytics-stats" id="analytics-stats">
-          <div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>
+          <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
         <div id="analytics-body"></div>
       </div>
@@ -641,7 +641,7 @@
           </div>
         </div>
         <div class="v3-analytics-stats" id="geo-audience-stats">
-          <div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>
+          <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
         <div class="v3-card">
           <div class="v3-card-head">
@@ -745,15 +745,15 @@
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="hero-save-btn">저장</button>
                 </div>
                 <p class="v3-card-desc v3-mb-16">홈페이지 상단 슬라이더에 표시할 기사를 최대 5개 선택합니다.</p>
-                <div class="v3-search-wrap" style="width:100%;margin-bottom:12px;">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                  <input class="v3-search-input" type="text" id="hero-search" placeholder="기사 제목 검색…" style="width:100%;" />
+                <div class="v3-search-wrap v3-search-wrap-full v3-search-wrap-mb-12">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="text" id="hero-search" placeholder="기사 제목 검색…" />
                 </div>
                 <div class="v3-search-results-drop" id="hero-search-results" style="display:none;"></div>
                 <div class="v3-hero-list" id="hero-slots"></div>
                 <div class="v3-form-group v3-mt-16">
                   <label class="v3-label" for="hero-interval">슬라이드 전환 간격 (ms)</label>
-                  <input class="v3-input" type="number" id="hero-interval" value="3000" min="1000" max="10000" step="500" style="width:180px;" />
+                  <input class="v3-input v3-width-180" type="number" id="hero-interval" value="3000" min="1000" max="10000" step="500" />
                 </div>
               </div>
             </div>
@@ -771,9 +771,9 @@
                     <button class="v3-btn v3-btn-primary v3-btn-sm" id="home-lead-save-btn">저장</button>
                   </div>
                 </div>
-                <div class="v3-search-wrap v3-mb-16" style="width:100%;">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                  <input class="v3-search-input" type="text" id="home-lead-search" placeholder="공개 게시글 제목 검색…" style="width:100%;" />
+                <div class="v3-search-wrap v3-search-wrap-full v3-mb-16">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="text" id="home-lead-search" placeholder="공개 게시글 제목 검색…" />
                 </div>
                 <div class="v3-search-results-drop" id="home-lead-search-results" style="display:none;"></div>
                 <div id="home-lead-selected">
@@ -849,9 +849,9 @@
                   </div>
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="picks-refresh-btn">새로고침</button>
                 </div>
-                <div class="v3-search-wrap v3-mb-16" style="width:100%;">
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                  <input class="v3-search-input" type="text" id="picks-search" placeholder="공개 게시글 제목 검색…" style="width:100%;" />
+                <div class="v3-search-wrap v3-search-wrap-full v3-mb-16">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="text" id="picks-search" placeholder="공개 게시글 제목 검색…" />
                 </div>
                 <div class="v3-search-results-drop" id="picks-search-results" style="display:none;"></div>
                 <div class="v3-inline-meta" id="picks-meta">불러오는 중…</div>
@@ -1140,16 +1140,19 @@
 
       <!-- ── 버전기록 ──────────────────────────────── -->
       <div class="v3-panel" id="panel-releases">
-        <div class="v3-panel-head"><h1 class="v3-panel-title">버전기록</h1></div>
-        <div class="v3-panel-body">
-          <div class="v3-releases-tabs" style="display:flex;gap:8px;margin-bottom:16px;">
-            <button class="v3-btn v3-btn-sm v3-releases-tab active" data-scope="all">전체</button>
-            <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="site">Site</button>
-            <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="admin">Admin</button>
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">버전기록</h1>
+            <p class="v3-page-desc">Site와 Admin 배포 이력을 시각 기준으로 빠르게 확인합니다.</p>
           </div>
-          <div id="releases-list">
-            <div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>
-          </div>
+        </div>
+        <div class="v3-releases-tabs">
+          <button class="v3-btn v3-btn-sm v3-releases-tab active" data-scope="all">전체</button>
+          <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="site">Site</button>
+          <button class="v3-btn v3-btn-sm v3-releases-tab" data-scope="admin">Admin</button>
+        </div>
+        <div id="releases-list">
+          <div class="v3-loading"><div class="v3-spinner"></div>불러오는 중…</div>
         </div>
       </div><!-- /panel-releases -->
 
@@ -1163,7 +1166,7 @@
             <button class="v3-btn v3-btn-outline" id="homepage-issues-refresh-btn">새로고침</button>
           </div>
         </div>
-        <div class="v3-dash-cols" style="grid-template-columns:minmax(0,1fr);">
+        <div class="v3-dash-cols v3-dash-cols-single">
           <div class="v3-card">
             <div class="v3-card-head">
               <div>
@@ -1491,8 +1494,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260412151913"></script>
-<script src="/js/shared-country-name-ko.js?v=20260412151913"></script>
-<script src="/js/admin-v3.js?v=20260412151913"></script>
+<script src="/js/main.js?v=20260412152846"></script>
+<script src="/js/shared-country-name-ko.js?v=20260412152846"></script>
+<script src="/js/admin-v3.js?v=20260412152846"></script>
 </body>
 </html>

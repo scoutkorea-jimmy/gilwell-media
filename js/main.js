@@ -7,8 +7,8 @@
 
   const GW = window.GW = {};
   GW.APP_VERSION = '00.113.07';
-  GW.ADMIN_VERSION = '03.062.08';
-  GW.ASSET_VERSION = '20260412151913';
+  GW.ADMIN_VERSION = '03.062.09';
+  GW.ASSET_VERSION = '20260412152846';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
