@@ -227,7 +227,7 @@ export async function onRequestPost({ request, env }) {
   const safeManualRelatedPosts = normalizeManualRelatedPosts(manual_related_posts || body.related_posts_json);
 
   const publishAtValue = normalizePublishAtInput(publish_at, publish_date);
-  const safePublished = safePublishedInput.provided ? safePublishedInput.value : false;
+  const safePublished = safePublishedInput.provided ? safePublishedInput.value : true;
   const safeFeatured = safePublished && safeFeaturedInput.provided ? safeFeaturedInput.value : false;
   const effectivePublishAt = resolveStoredPublishAt({
     published: safePublished,
