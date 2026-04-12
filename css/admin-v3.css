@@ -568,6 +568,8 @@
 .v3-recent-info { flex: 1; min-width: 0; }
 .v3-recent-title { font-size: 13px; font-weight: 600; color: var(--v3-text); margin: 0 0 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v3-recent-meta  { font-size: 11.5px; color: var(--v3-text-m); }
+.v3-row-clickable { cursor: pointer; }
+.v3-row-clickable:hover td { background: rgba(99, 102, 241, 0.04); }
 
 /* ── Write Layout ────────────────────────────────────────── */
 .v3-write-layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }

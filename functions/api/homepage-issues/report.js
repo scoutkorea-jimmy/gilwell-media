@@ -42,6 +42,26 @@ const ISSUE_TEMPLATES = {
     impact: '홈의 일부 비동기 기능이 조용히 실패할 수 있습니다.',
     action_items: 'Unhandled rejection 메시지와 관련 API 호출 경로를 확인합니다.',
   },
+  admin_client_runtime_error: {
+    title: '관리자 런타임 스크립트 오류',
+    issue_type: 'error',
+    status: 'open',
+    severity: 'high',
+    area: 'ui',
+    source_path: '/js/admin-v3.js',
+    impact: '관리자 일부 저장, 목록, 분석 UI가 중단되거나 응답하지 않을 수 있습니다.',
+    action_items: '브라우저 런타임 에러 메시지, 최근 관리자 배포 자산 버전, 재현 경로를 확인합니다.',
+  },
+  admin_client_promise_rejection: {
+    title: '관리자 비동기 처리 오류',
+    issue_type: 'error',
+    status: 'monitoring',
+    severity: 'medium',
+    area: 'ui',
+    source_path: '/js/admin-v3.js',
+    impact: '관리자 비동기 데이터 로딩 또는 저장 후속 처리 일부가 조용히 실패할 수 있습니다.',
+    action_items: 'Unhandled rejection 메시지와 관련 API 호출 경로를 확인합니다.',
+  },
 };
 
 export async function onRequestPost({ request, env }) {

@@ -309,15 +309,15 @@
         },
         {
           method: 'GET', path: '/api/admin/homepage-issues', auth: true,
-          summary: '홈 오류/이슈 기록 조회',
+          summary: '사이트 오류/이슈 기록 조회',
           response: '{ "items": HomepageIssue[] }',
-          notes: 'HomepageIssue: { id, title, issue_type, status, severity, area, summary, impact, cause, action_items, source_path, reporter, occurred_at, last_seen_at, occurrence_count } · 관리자에서는 읽기 전용으로 확인만 합니다.',
+          notes: 'HomepageIssue: { id, title, issue_type, status, severity, area, summary, impact, cause, action_items, source_path, reporter, occurred_at, last_seen_at, occurrence_count } · 공개 홈 자동 오류 보고와 사이트/관리자 전역 API 오류 로그를 함께 읽기 전용으로 확인합니다.',
         },
         {
           method: 'POST', path: '/api/homepage-issues/report', auth: false,
           summary: '홈 공개 화면 자동 오류 보고',
           response: '{ "ok": true, "item": HomepageIssue }',
-          notes: '홈 초기 로드 실패, 백그라운드 최신 소식 새로고침 실패, 런타임 오류를 같은 이슈 기준으로 자동 누적합니다.',
+          notes: '홈 초기 로드 실패, 백그라운드 최신 소식 새로고침 실패, 런타임 오류를 같은 이슈 기준으로 자동 누적하며, 관리자 패널에서는 전역 API 오류 로그와 함께 봅니다.',
         },
       ],
     },

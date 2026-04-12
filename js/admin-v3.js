@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.05
+ * Version: 03.061.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -84,6 +84,8 @@
   var _homepageIssuesFilterStatus = 'all';
   var _homepageIssuesFilterSeverity = 'all';
   var _homepageIssueEditingId = null;
+  var _previewPostId = null;
+  var _reportedIssueFingerprints = {};
   var _geoAudienceData = null;
   var _geoAudienceMap = null;
   var _geoAudienceMapLayer = null;
@@ -142,6 +144,19 @@
     });
   }
 
+  function _reportSiteIssue(code, detail) {
+    var payload = detail && typeof detail === 'object' ? detail : {};
+    var fingerprint = [code, payload.path || '', payload.section || '', payload.message || ''].join('|');
+    if (_reportedIssueFingerprints[fingerprint]) return;
+    _reportedIssueFingerprints[fingerprint] = true;
+    fetch('/api/homepage-issues/report', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, detail: payload }),
+    }).catch(function () {});
+  }
+
   function _pulseButton(btn) {
     if (!btn || btn.disabled) return;
     btn.classList.remove('is-pressed');
@@ -181,6 +196,23 @@
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
+    window.addEventListener('error', function (event) {
+      _reportSiteIssue('admin_client_runtime_error', {
+        message: event && event.message ? String(event.message) : '관리자 런타임 오류',
+        path: '/admin',
+        source: event && event.filename ? String(event.filename) : '/js/admin-v3.js',
+        code: event && event.error && event.error.name ? String(event.error.name) : 'error',
+      });
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      var reason = event && event.reason;
+      _reportSiteIssue('admin_client_promise_rejection', {
+        message: reason && reason.message ? String(reason.message) : String(reason || 'Unhandled promise rejection'),
+        path: '/admin',
+        source: '/js/admin-v3.js',
+        code: reason && reason.name ? String(reason.name) : 'promise',
+      });
+    });
     document.addEventListener('click', function (event) {
       var btn = event.target && event.target.closest ? event.target.closest('.v3-btn, .mkt-apply-btn, .v3-login-btn') : null;
       if (btn) _pulseButton(btn);
@@ -239,6 +271,17 @@
     _bindEl('homepage-issues-filter-severity', 'change', function () {
       _homepageIssuesFilterSeverity = this.value || 'all';
       _renderHomepageIssues();
+    });
+    _bindEl('post-preview-close', 'click', _closePostPreviewModal);
+    _bindEl('post-preview-done', 'click', _closePostPreviewModal);
+    _bindEl('post-preview-edit-btn', 'click', function () {
+      if (_previewPostId) {
+        _closePostPreviewModal();
+        V3.editPost(_previewPostId);
+      }
+    });
+    _bindEl('post-preview-modal', 'click', function (event) {
+      if (event.target === this) _closePostPreviewModal();
     });
 
     // Post list filters
@@ -554,7 +597,7 @@
   ══════════════════════════════════════════════════════════ */
   var PANEL_LABELS = {
     dashboard: '대시보드',
-    'homepage-issues': '홈 오류/이슈 기록',
+    'homepage-issues': '사이트 오류/이슈 기록',
     list:      '게시글 목록',
     write:     '새 글 작성',
     calendar:  '캘린더',
@@ -714,7 +757,9 @@
     _setText('dash-stat-posts', '—');
     _setText('dash-stat-pub', '—');
     _setText('dash-stat-visits-sub', '불러오는 중');
+    _setText('dash-stat-views-sub', '불러오는 중');
     _setText('dash-stat-posts-sub', '불러오는 중');
+    _setText('dash-status-note', '운영 데이터와 최신 게시글을 함께 확인하는 중…');
 
     Promise.allSettled([
       _apiFetch('/api/admin/analytics'),
@@ -747,7 +792,7 @@
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div>';
       } else {
         recentEl.innerHTML = recent.map(function (p) {
-          return '<div class="v3-recent-row" onclick="V3.editPost(' + p.id + ')">' +
+          return '<div class="v3-recent-row" onclick="V3.openPostPreview(' + p.id + ')">' +
             '<div class="v3-recent-cat"><span class="v3-badge ' + _catBadge(p.category) + '">' + GW.escapeHtml(p.category || '') + '</span></div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
@@ -763,7 +808,7 @@
         topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">데이터 없음</div></div>';
       } else {
         topEl.innerHTML = popular.map(function (p, i) {
-          return '<div class="v3-recent-row" onclick="V3.editPost(' + p.id + ')">' +
+          return '<div class="v3-recent-row" onclick="V3.openPostPreview(' + p.id + ')">' +
             '<div style="font-size:11px;font-weight:700;color:#94a3b8;width:18px;flex-shrink:0;">' + (i + 1) + '</div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '') + '</div>' +
@@ -774,8 +819,12 @@
       }
       if (!analyticsOk) {
         _setText('dash-stat-visits-sub', '분석 API 확인 필요');
+        _setText('dash-stat-views-sub', '분석 API 확인 필요');
+        _setText('dash-status-note', '분석 API 응답이 실패했습니다. 운영 경고를 먼저 확인해주세요.');
       } else {
-        _setText('dash-stat-visits-sub', '오늘');
+        _setText('dash-stat-visits-sub', '오늘 고유 방문');
+        _setText('dash-stat-views-sub', '오늘 페이지뷰');
+        _setText('dash-status-note', (analytics.provider_label || '공개 페이지 방문 집계') + ' · 오늘 방문과 조회는 공개 페이지 기준입니다.');
       }
       _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations);
       if (results[2].status !== 'fulfilled') {
@@ -793,7 +842,9 @@
       recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
+      _setText('dash-stat-views-sub', '대시보드 로딩 실패');
       _setText('dash-stat-posts-sub', '대시보드 로딩 실패');
+      _setText('dash-status-note', '대시보드 API 응답을 불러오지 못했습니다.');
     }).finally(function () {
       if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
@@ -809,7 +860,7 @@
           return {
             title: item.title || '(제목 없음)',
             meta: (item.category || 'site') + ' · ' + _shortDate(item.publish_at),
-            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
+            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.openPostPreview(' + item.id + ')">열기</button>' : '',
           };
         }, '발행 예정 글이 없습니다', '발행 예정 글') +
         '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 초안</div>' +
@@ -817,7 +868,7 @@
           return {
             title: item.title || '(제목 없음)',
             meta: (item.category || 'site') + ' · ' + _shortDate(item.updated_at),
-            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + item.id + ')">열기</button>' : '',
+            action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.openPostPreview(' + item.id + ')">열기</button>' : '',
           };
         }, '최근 초안이 없습니다', '최근 초안');
     }
@@ -940,7 +991,7 @@
         } else {
           tbody.innerHTML = posts.map(function (p) {
             var isPublished = Number(p && p.published || 0) === 1;
-            return '<tr>' +
+            return '<tr class="v3-row-clickable" onclick="V3.openPostPreview(' + p.id + ')">' +
               '<td><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
                 (p.subtitle ? '<div class="v3-text-m v3-text-s">' + GW.escapeHtml(p.subtitle) + '</div>' : '') +
               '</td>' +
@@ -950,9 +1001,9 @@
               '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
               '<td class="v3-nowrap">' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.editPost(' + p.id + ')">수정</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="V3.deletePost(' + p.id + ')">삭제</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.editPost(' + p.id + ')">수정</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="event.stopPropagation(); V3.deletePost(' + p.id + ')">삭제</button>' +
               '</td>' +
             '</tr>';
           }).join('');
@@ -1076,6 +1127,51 @@
         .catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
     });
   };
+
+  V3.openPostPreview = function (id) {
+    var modal = _el('post-preview-modal');
+    var titleEl = _el('post-preview-title');
+    var bodyEl = _el('post-preview-body');
+    if (!modal || !titleEl || !bodyEl || !id) return;
+    _previewPostId = id;
+    titleEl.textContent = '게시글 미리보기';
+    bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>게시글을 불러오는 중…</div>';
+    modal.style.display = 'flex';
+    _apiFetch('/api/posts/' + id)
+      .then(function (data) {
+        var post = data && data.post ? data.post : null;
+        var contentHtml = '';
+        if (!post) throw new Error('게시글을 찾을 수 없습니다.');
+        titleEl.textContent = post.title || ('게시글 ' + id);
+        if (GW && typeof GW.renderTextWithMedia === 'function') {
+          contentHtml = GW.renderTextWithMedia(post.content || '');
+        } else {
+          contentHtml = '<p>' + GW.escapeHtml(post.content || '') + '</p>';
+        }
+        bodyEl.innerHTML =
+          '<div class="v3-simple-rows">' +
+            '<div class="v3-inline-meta">' +
+              GW.escapeHtml(post.category || 'uncategorized') + ' · ' +
+              (Number(post.published || 0) === 1 ? '공개' : '비공개') + ' · ' +
+              GW.escapeHtml(_formatDateTimeCompact(post.publish_at || post.created_at || '')) +
+            '</div>' +
+            (post.subtitle ? '<div class="v3-selected-post-subtitle" style="margin-top:8px;">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
+            (post.image_url ? '<img src="' + GW.escapeHtml(post.image_url) + '" alt="" style="width:100%;max-height:320px;object-fit:cover;border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;">' : '') +
+            '<div style="margin-top:16px;line-height:1.8;color:var(--v3-text);">' + contentHtml + '</div>' +
+          '</div>';
+      })
+      .catch(function (e) {
+        bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '게시글을 불러오지 못했습니다.') + '</div></div>';
+      });
+  };
+
+  function _closePostPreviewModal() {
+    var modal = _el('post-preview-modal');
+    var bodyEl = _el('post-preview-body');
+    if (modal) modal.style.display = 'none';
+    if (bodyEl) bodyEl.innerHTML = '';
+    _previewPostId = null;
+  }
 
   /* ══════════════════════════════════════════════════════════
      POST WRITE / EDIT
@@ -2889,7 +2985,7 @@
       metaEl.textContent = items.length + '건 표시 · 전체 ' + (_homepageIssues || []).length + '건';
     }
     if (!items.length) {
-      listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 홈 오류/이슈 기록이 없습니다.</div></div>';
+      listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 사이트 오류/이슈 기록이 없습니다.</div></div>';
       return;
     }
     listEl.innerHTML =
