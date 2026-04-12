@@ -217,10 +217,10 @@ async function getInternalMetrics(env, range, tagRange) {
          LEFT JOIN posts p ON p.id = tp.post_id`
     ).bind(chosen.start, chosen.endExclusive, chosen.start, chosen.endExclusive).first(),
     env.DB.prepare(
-      `SELECT id, title, category, tag, published, created_at, publish_at
+      `SELECT id, title, category, tag, meta_tags, published, created_at, publish_at
          FROM posts
-        WHERE tag IS NOT NULL
-          AND trim(tag) <> ''
+        WHERE (tag IS NOT NULL OR meta_tags IS NOT NULL)
+          AND (trim(COALESCE(tag, '')) <> '' OR trim(COALESCE(meta_tags, '')) <> '')
           AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') >= datetime(?)
           AND datetime(COALESCE(NULLIF(publish_at, ''), created_at), '+9 hours') < datetime(?)`
     ).bind(chosenTags.start, chosenTags.endExclusive).all(),
@@ -401,15 +401,16 @@ function aggregateTags(rows, range) {
   const pairMap = new Map();
   const posts = [];
   (Array.isArray(rows) ? rows : []).forEach((row) => {
-    const tags = String(row && row.tag || '').split(',').map((item) => item.trim()).filter(Boolean);
+    const keywords = collectKeywordTerms(row);
+    if (!keywords.length) return;
     posts.push({
       id: Number(row && row.id || 0),
       title: String(row && row.title || ''),
       category: String(row && row.category || ''),
       published: Number(row && row.published || 0) === 1,
-      tags,
+      keywords,
     });
-    tags.forEach((tag) => {
+    keywords.forEach((tag) => {
       const key = tag.toLowerCase();
       const current = map.get(key) || {
         tag,
@@ -424,7 +425,7 @@ function aggregateTags(rows, range) {
       if (row && row.category) current.categories.add(row.category);
       map.set(key, current);
     });
-    const uniqueTags = Array.from(new Set(tags.map((item) => item.trim()).filter(Boolean)));
+    const uniqueTags = Array.from(new Set(keywords.map((item) => item.trim()).filter(Boolean)));
     for (let i = 0; i < uniqueTags.length; i += 1) {
       for (let j = i + 1; j < uniqueTags.length; j += 1) {
         const left = uniqueTags[i];
@@ -475,44 +476,14 @@ function buildTagGraph(items, pairMap, posts) {
       target: item.target,
       count: Number(item.count || 0),
     }));
-  const selectedPosts = (Array.isArray(posts) ? posts : [])
+  const relatedArticles = (Array.isArray(posts) ? posts : [])
     .map((post) => {
-      const matchedTags = (post.tags || []).filter((tag) => allowedTags.has(String(tag || '').toLowerCase()));
+      const matchedTags = (post.keywords || []).filter((tag) => allowedTags.has(String(tag || '').toLowerCase()));
       return Object.assign({}, post, { matchedTags });
     })
     .filter((post) => post.matchedTags.length)
     .sort((a, b) => b.matchedTags.length - a.matchedTags.length || Number(b.published) - Number(a.published) || b.id - a.id)
-    .slice(0, 14);
-  const allowedPosts = new Set(selectedPosts.map((post) => Number(post.id || 0)));
-  const postTagLinks = [];
-  selectedPosts.forEach((post) => {
-    post.matchedTags.forEach((tag) => {
-      postTagLinks.push({
-        id: 'pt:' + post.id + ':' + tag,
-        type: 'post_tag',
-        source: 'post:' + post.id,
-        target: 'tag:' + tag,
-        count: 1,
-      });
-    });
-  });
-  const postPostLinks = [];
-  for (let i = 0; i < selectedPosts.length; i += 1) {
-    for (let j = i + 1; j < selectedPosts.length; j += 1) {
-      const left = selectedPosts[i];
-      const right = selectedPosts[j];
-      const shared = left.matchedTags.filter((tag) => right.matchedTags.indexOf(tag) >= 0);
-      if (!shared.length) continue;
-      postPostLinks.push({
-        id: 'pp:' + left.id + ':' + right.id,
-        type: 'post_post',
-        source: 'post:' + left.id,
-        target: 'post:' + right.id,
-        count: shared.length,
-        shared_tags: shared,
-      });
-    }
-  }
+    .slice(0, 32);
   return {
     nodes: topTags.map((item) => ({
       id: 'tag:' + item.tag,
@@ -520,36 +491,41 @@ function buildTagGraph(items, pairMap, posts) {
       node_type: 'tag',
       count: Number(item.count || 0),
       categories: item.categories || [],
-    })).concat(selectedPosts.map((post) => ({
-      id: 'post:' + post.id,
-      label: post.title || ('게시글 ' + post.id),
-      short_label: trimGraphLabel(post.title || ('게시글 ' + post.id), 22),
-      node_type: 'post',
-      post_id: post.id,
-      count: post.matchedTags.length,
-      categories: post.category ? [post.category] : [],
+    })),
+    links: tagTagLinks,
+    articles: relatedArticles.map((post) => ({
+      id: post.id,
+      title: post.title,
+      category: post.category,
       published: !!post.published,
-      tags: post.matchedTags,
-    }))),
-    links: tagTagLinks.concat(postTagLinks).concat(postPostLinks),
+      keywords: post.matchedTags.slice(),
+    })),
     counts: {
       tags: topTags.length,
-      posts: selectedPosts.length,
-      post_tag_links: postTagLinks.length,
+      posts: relatedArticles.length,
       tag_tag_links: tagTagLinks.length,
-      post_post_links: postPostLinks.length,
     },
     filters: {
-      node_types: ['tag', 'post'],
-      link_types: ['post_tag', 'tag_tag', 'post_post'],
+      node_types: ['tag'],
+      link_types: ['tag_tag'],
     },
   };
 }
 
-function trimGraphLabel(value, limit) {
-  const text = String(value || '').trim();
-  if (text.length <= limit) return text;
-  return text.slice(0, Math.max(1, limit - 1)) + '…';
+function collectKeywordTerms(row) {
+  const raw = []
+    .concat(String(row && row.tag || '').split(','))
+    .concat(String(row && row.meta_tags || '').split(','));
+  const seen = new Set();
+  const items = [];
+  raw.forEach((item) => {
+    const value = String(item || '').trim();
+    const key = value.toLowerCase();
+    if (!value || seen.has(key)) return;
+    seen.add(key);
+    items.push(value);
+  });
+  return items;
 }
 
 function classifyReferrer(referrerHost, referrerUrl, utmSource, utmMedium, utmCampaign) {

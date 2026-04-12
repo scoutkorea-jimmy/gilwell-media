@@ -632,7 +632,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET/PUT /api/settings/feature-definition` — KMS 문서
 
 **분석**
-- `GET /api/admin/analytics` — 관리자 통계 대시보드. 방문/조회/유입 경로와 함께 최근 기간 기준 `글머리 태그 워드 클라우드`와 `태그 관계도`를 포함한다. 태그 인사이트 기간은 방문 분석 기간과 별도로 조절할 수 있고, 관계도는 `게시글-태그`, `태그-태그`, `게시글-게시글` 연결을 함께 보여주며 hover/drag/zoom 상호작용을 지원한다.
+- `GET /api/admin/analytics` — 관리자 통계 대시보드. 방문/조회/유입 경로와 함께 최근 기간 기준 `글머리 태그 워드 클라우드`와 `태그 관계도`를 포함한다. 태그 인사이트 기간은 방문 분석 기간과 별도로 조절할 수 있고, 관계도는 `글머리 태그 + 메타 태그`를 합친 키워드 중심 그래프로 동작한다. 기본 상태에서는 키워드만 보이고 hover 시 키워드 간 연결이 드러나며, 키워드 클릭 시 연관 기사 제목과 기사 간 연결성이 아래 패널에 나타난다. drag/zoom 상호작용도 지원한다.
 - `GET /api/admin/geo-audience` — 관리자 접속 국가/도시 지도 및 테이블 집계
 - `GET /api/admin/marketing` — 마케팅 퍼널 데이터
 - `GET /api/admin/operations` — 운영 대시보드/릴리스 이력
