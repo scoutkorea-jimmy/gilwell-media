@@ -26,14 +26,14 @@ export async function onRequestGet({ env, request }) {
     const postId = postRow ? parseInt(postRow.value, 10) : 0;
     const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
     if (!postId) {
-      return json({ post: null, media }, 200, publicCacheHeaders(180, 900));
+      return json({ post: null, media }, 200);
     }
     const post = await env.DB.prepare(
       `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, tag, views, author, youtube_url
          FROM posts
         WHERE id = ? AND published = 1`
     ).bind(postId).first();
-    return json({ post: post ? serializePostImage(post, origin) : null, media }, 200, publicCacheHeaders(180, 900));
+    return json({ post: post ? serializePostImage(post, origin) : null, media }, 200);
   } catch (err) {
     console.error('GET /api/settings/home-lead error:', err);
     return json({ post: null, media: DEFAULT_HOME_LEAD_MEDIA }, 500);
@@ -123,12 +123,6 @@ function json(data, status = 200, extraHeaders = {}) {
     status,
     headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, extraHeaders),
   });
-}
-
-function publicCacheHeaders(maxAge, swr) {
-  return {
-    'Cache-Control': `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=${swr}`,
-  };
 }
 
 function parseJsonValue(raw) {

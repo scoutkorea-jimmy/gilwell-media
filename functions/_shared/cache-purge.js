@@ -11,6 +11,8 @@ const DEFAULT_CONTENT_URLS = [
   '/sitemap.xml',
   '/api/home',
   '/api/stats',
+  '/api/settings/hero',
+  '/api/settings/home-lead',
   '/api/posts?page=1',
   '/api/posts?page=1&limit=16',
   '/api/posts/popular',
