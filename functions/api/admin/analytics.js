@@ -240,7 +240,7 @@ async function getInternalMetrics(env, range, tagRange) {
           AND (trim(COALESCE(p.tag, '')) <> '' OR trim(COALESCE(p.meta_tags, '')) <> '')
           AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
           AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)`
-    ).bind(chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive).all(),
+    ).bind(chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries

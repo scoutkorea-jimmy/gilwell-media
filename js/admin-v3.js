@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.060.04
+ * Version: 03.060.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -736,8 +736,9 @@
       var visitors = analytics.visitors || {};
       var summary = analytics.summary || {};
       var counts = analytics.counts || {};
-      _setText('dash-stat-visits', _fmt(today.visits || visitors.today_visits || summary.today_visits || 0));
-      _setText('dash-stat-views',  _fmt(today.views || summary.today_pageviews || summary.today_views || 0));
+      var analyticsOk = results[0].status === 'fulfilled';
+      _setText('dash-stat-visits', analyticsOk ? _fmt(today.visits || visitors.today_visits || summary.today_visits || 0) : '—');
+      _setText('dash-stat-views',  analyticsOk ? _fmt(today.views || summary.today_pageviews || summary.today_views || 0) : '—');
       _setText('dash-stat-posts', _fmt(recentRes.total || counts.total || recent.length || 0));
       _setText('dash-stat-pub',   _fmt(published.total || counts.published || 0));
 
@@ -771,7 +772,7 @@
           '</div>';
         }).join('');
       }
-      if (results[0].status !== 'fulfilled') {
+      if (!analyticsOk) {
         _setText('dash-stat-visits-sub', '분석 API 확인 필요');
       } else {
         _setText('dash-stat-visits-sub', '오늘');
