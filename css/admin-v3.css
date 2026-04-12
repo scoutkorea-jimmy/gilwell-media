@@ -569,6 +569,31 @@
 .v3-dash-section-gap { margin-top: 18px; }
 .v3-dash-stack { display: flex; flex-direction: column; gap: 18px; }
 .v3-dash-feature-card { margin-top: 18px; }
+.v3-dash-cols { margin-top: 24px; }
+.v3-dash-heatmap-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: min(100%, 420px);
+}
+.v3-dash-heatmap-presets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.v3-dash-heatmap-custom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.v3-dash-heatmap-custom[hidden] { display: none; }
+.v3-dash-heatmap-custom .v3-input { width: 138px; }
+.v3-dash-heatmap-sep { font-size: 12px; color: var(--v3-text-m); }
 .v3-dash-insight {
   margin-top: 16px;
   padding: 14px 16px;
@@ -604,6 +629,17 @@
 .v3-recent-meta  { font-size: 12px; color: var(--v3-text-m); line-height: 1.55; }
 .v3-row-clickable { cursor: pointer; }
 .v3-row-clickable:hover td { background: rgba(99, 102, 241, 0.04); }
+@media (max-width: 1100px) {
+  .v3-dash-heatmap-controls {
+    align-items: stretch;
+    min-width: 0;
+    width: 100%;
+  }
+  .v3-dash-heatmap-presets,
+  .v3-dash-heatmap-custom {
+    justify-content: flex-start;
+  }
+}
 
 /* ── Write Layout ────────────────────────────────────────── */
 .v3-write-layout { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }

@@ -13,9 +13,10 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const range = resolveRequestedRange(url.searchParams);
   const tagRange = resolveRequestedRange(url.searchParams, 'tag_');
+  const heatmapRange = resolveRequestedRange(url.searchParams, 'heatmap_');
 
   try {
-    const internalData = await getInternalMetrics(env, range, tagRange);
+    const internalData = await getInternalMetrics(env, range, tagRange, heatmapRange);
     return json(internalData);
   } catch (err) {
     console.error('GET /api/admin/analytics error:', err);
@@ -25,19 +26,60 @@ export async function onRequestGet({ request, env }) {
 }
 
 function resolveRequestedRange(searchParams, prefix = '') {
+  if (searchParams.get(prefix + 'all') === '1') {
+    const today = getKstDateString(new Date());
+    return prefix === 'heatmap_'
+      ? buildExplicitRange('2020-01-01', today)
+      : resolveAnalyticsRange('2020-01-01', today);
+  }
   const start = searchParams.get(prefix + 'start');
   const end = searchParams.get(prefix + 'end');
-  if (start || end) return resolveAnalyticsRange(start, end);
+  if (start || end) {
+    return prefix === 'heatmap_'
+      ? buildExplicitRange(start, end)
+      : resolveAnalyticsRange(start, end);
+  }
   const days = Math.max(1, Math.min(90, Number(searchParams.get(prefix + 'days') || 30) || 30));
   const today = getKstDateString(new Date());
   return resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
 }
 
-async function getInternalMetrics(env, range, tagRange) {
+function buildExplicitRange(startDate, endDate) {
+  const today = getKstDateString(new Date());
+  let start = normalizeDateInput(startDate) || today;
+  let end = normalizeDateInput(endDate) || today;
+  if (start > end) {
+    const temp = start;
+    start = end;
+    end = temp;
+  }
+  return {
+    startDate: start,
+    endDate: end,
+    days: diffDaysInclusiveLocal(start, end),
+    label: start === end ? start : `${start} ~ ${end}`,
+  };
+}
+
+function normalizeDateInput(value) {
+  if (!value) return '';
+  const text = String(value).trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
+
+function diffDaysInclusiveLocal(startDate, endDate) {
+  const start = new Date(`${startDate}T00:00:00+09:00`);
+  const end = new Date(`${endDate}T00:00:00+09:00`);
+  const diff = Math.round((end.getTime() - start.getTime()) / 86400000);
+  return diff + 1;
+}
+
+async function getInternalMetrics(env, range, tagRange, heatmapRange) {
   const useHourlySeries = range.days === 1;
   const today = rangeStartEnd(resolveAnalyticsRange(getKstDateString(new Date()), getKstDateString(new Date())));
   const chosen = rangeStartEnd(range);
   const chosenTags = rangeStartEnd(tagRange || range);
+  const chosenHeatmap = rangeStartEnd(heatmapRange || range);
 
   const [
     todayVisits,
@@ -254,7 +296,7 @@ async function getInternalMetrics(env, range, tagRange) {
           AND datetime(visited_at, '+9 hours') < datetime(?)
         GROUP BY weekday, visit_hour
         ORDER BY weekday ASC, visit_hour ASC`
-    ).bind(chosen.start, chosen.endExclusive).all(),
+    ).bind(chosenHeatmap.start, chosenHeatmap.endExclusive).all(),
     env.DB.prepare(
       `SELECT CAST(strftime('%w', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS INTEGER) AS weekday,
               strftime('%H', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS publish_hour,
@@ -265,7 +307,7 @@ async function getInternalMetrics(env, range, tagRange) {
           AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)
         GROUP BY weekday, publish_hour
         ORDER BY weekday ASC, publish_hour ASC`
-    ).bind(chosen.start, chosen.endExclusive).all(),
+    ).bind(chosenHeatmap.start, chosenHeatmap.endExclusive).all(),
   ]);
 
   const visitSeries = useHourlySeries
@@ -373,7 +415,7 @@ async function getInternalMetrics(env, range, tagRange) {
       source_key: item.source_key || '',
       source_label: item.source_label || '',
     })),
-    heatmap: buildVisitHeatmap(heatmapRows.results || [], publishHeatmapRows.results || [], range),
+    heatmap: buildVisitHeatmap(heatmapRows.results || [], publishHeatmapRows.results || [], heatmapRange || range),
     tags: aggregateTags(tagRows.results || [], tagRange || range),
     tracking_note: `${range.label} 기준 공개 페이지 전체 방문 집계입니다. 방문 수는 고유 사용자 수, 조회수는 전체 페이지뷰 수 기준입니다. 평균 체류시간은 현재 기사 상세 페이지(post)에서만 활성 시간 기준으로 계산됩니다. 유입 경로는 공유 링크 UTM과 site_visits의 referrer URL을 함께 사용해 카카오, 페이스북, 검색, 내부 이동 등을 최대한 세분화해 보여주지만, 메신저 앱이나 인앱 브라우저가 정보를 넘기지 않으면 직접 방문으로 기록될 수 있습니다.`,
   };
