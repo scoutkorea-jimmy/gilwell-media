@@ -1,6 +1,8 @@
+import { SITE_BRAND_ALIASES, SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS, SITE_ORIGIN } from './site-copy.mjs';
+import { SITE_PAGE_KEY_BY_PATH } from './site-structure.mjs';
+
 export const ADSENSE_ACCOUNT = 'ca-pub-9517793409283448';
 export const NAVER_SITE_VERIFICATION = '67d80b07cdf98761a3adbe635c48cd8691a4b598';
-const SITE_ORIGIN = 'https://bpmedia.net';
 const DEFAULT_SHARE_IMAGE_PATH = '/img/og-default.png';
 const DEFAULT_SHARE_IMAGE_WIDTH = 1200;
 const DEFAULT_SHARE_IMAGE_HEIGHT = 630;
@@ -16,8 +18,8 @@ const LEGACY_HOME_TITLES = [
 const PUBLISHER = {
   '@type': 'Organization',
   '@id': `${SITE_ORIGIN}/#organization`,
-  name: 'BP미디어',
-  alternateName: ['비피미디어', 'BPmedia', 'The BP Post'],
+  name: SITE_BRAND_NAME,
+  alternateName: SITE_BRAND_ALIASES,
   url: SITE_ORIGIN,
   description: HOME_SEARCH_DESCRIPTION,
   logo: {
@@ -71,11 +73,11 @@ const DEFAULT_SITE_META = {
   },
   footer: {
     raw_text: '',
-    title: 'BP미디어',
+    title: SITE_BRAND_NAME,
     description: 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.',
-    domain_label: 'bpmedia.net',
-    tip_email: 'story@bpmedia.net',
-    contact_email: 'info@bpmedia.net',
+    domain_label: SITE_DOMAIN_LABEL,
+    tip_email: DEFAULT_CONTACT_EMAILS.tip,
+    contact_email: DEFAULT_CONTACT_EMAILS.contact,
   },
   image_url: null,
   google_verification: '',
@@ -131,19 +133,7 @@ export function normalizeSiteMeta(raw) {
 
 export function getSitePageKey(pathname) {
   const normalized = normalizePagePath(pathname);
-  const mapping = {
-    '/index.html': 'home',
-    '/latest': 'latest',
-    '/korea': 'korea',
-    '/apr': 'apr',
-    '/wosm': 'wosm',
-    '/wosm-members': 'wosm_members',
-    '/people': 'people',
-    '/glossary': 'glossary',
-    '/contributors': 'contributors',
-    '/search': 'search',
-  };
-  return mapping[normalized] || null;
+  return SITE_PAGE_KEY_BY_PATH[normalized] || null;
 }
 
 export function normalizePagePath(pathname) {

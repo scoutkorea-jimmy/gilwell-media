@@ -5,23 +5,18 @@
  * PUT /api/settings/ticker  ← admin only, update ticker items
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-
-const DEFAULT_ITEMS = [
-  '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
-  '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
-  'The BP Post · bpmedia.net',
-];
+import { DEFAULT_TICKER_ITEMS } from '../../_shared/site-copy.mjs';
 
 export async function onRequestGet({ env }) {
   try {
     const row = await env.DB.prepare(
       `SELECT value FROM settings WHERE key = 'ticker'`
     ).first();
-    const items = row ? JSON.parse(row.value) : DEFAULT_ITEMS;
+    const items = row ? JSON.parse(row.value) : DEFAULT_TICKER_ITEMS;
     return json({ items }, 200, publicCacheHeaders(300, 1800));
   } catch (err) {
     console.error('GET /api/settings/ticker error:', err);
-    return json({ items: DEFAULT_ITEMS }, 200, publicCacheHeaders(300, 1800));
+    return json({ items: DEFAULT_TICKER_ITEMS }, 200, publicCacheHeaders(300, 1800));
   }
 }
 

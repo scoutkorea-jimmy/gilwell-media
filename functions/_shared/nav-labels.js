@@ -1,15 +1,6 @@
-export const DEFAULT_NAV_LABELS = {
-  'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
-  'nav.home': { ko: '홈', en: 'Home' },
-  'nav.latest': { ko: '1개월 소식', en: 'Last 30 Days' },
-  'nav.korea': { ko: 'Korea', en: 'Korea' },
-  'nav.apr': { ko: 'APR', en: 'APR' },
-  'nav.wosm': { ko: 'WOSM', en: 'WOSM' },
-  'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
-  'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
-  'nav.calendar': { ko: '캘린더', en: 'Calendar' },
-  'nav.glossary': { ko: '용어집', en: 'Glossary' },
-};
+import { DEFAULT_NAV_LABELS } from './site-structure.mjs';
+
+export { DEFAULT_NAV_LABELS };
 
 export async function loadNavLabels(env) {
   try {

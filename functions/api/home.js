@@ -4,12 +4,7 @@ import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { loadNavLabels } from '../_shared/nav-labels.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
-
-const DEFAULT_TICKER_ITEMS = [
-  '길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다',
-  '한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다',
-  'The BP Post · bpmedia.net',
-];
+import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',

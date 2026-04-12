@@ -16,8 +16,7 @@ import { normalizePublishAtInput, optionalBooleanFlag, optionalIntegerOrNull, op
 import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
-
-const VALID_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
+import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
@@ -98,7 +97,7 @@ export async function onRequestPut({ params, request, env }) {
   const category = normalizeCategory(body.category);
 
   // Validate only fields that are actually provided
-  if (category !== undefined && !VALID_CATEGORIES.includes(category)) {
+  if (category !== undefined && !VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
   const safeTitleInput = title === undefined ? { ok: true, provided: false, value: undefined } : requireNonEmptyString(title, '제목', 200);
