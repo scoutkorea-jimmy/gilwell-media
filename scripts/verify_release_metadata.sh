@@ -206,6 +206,22 @@ grep -F "/js/home.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
   echo "Missing home.js asset version in index.html"
   exit 1
 }
+grep -F "/js/home-helpers.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
+  echo "Missing home-helpers.js asset version in index.html"
+  exit 1
+}
+grep -F "/js/home-render.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
+  echo "Missing home-render.js asset version in index.html"
+  exit 1
+}
+grep -F "/js/home-hero.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
+  echo "Missing home-hero.js asset version in index.html"
+  exit 1
+}
+grep -F "/js/home-runtime.js?v=${ASSET_VERSION_FILE}" index.html >/dev/null || {
+  echo "Missing home-runtime.js asset version in index.html"
+  exit 1
+}
 
 grep -F "/css/admin-v3.css?v=${ASSET_VERSION_FILE}" admin.html >/dev/null || {
   echo "Missing admin stylesheet asset version in admin.html"

@@ -119,6 +119,19 @@ KMS 디자인 탭은 이 인벤토리를 시각적으로 보여주는 시작 장
 3. Glossary 공개/관리 분리
 4. KMS data source와 view layer 분리
 
+## 4. 최근 반영 구조
+
+- 홈 런타임은 다음 5개 파일로 분리
+  - `js/home-helpers.js`
+  - `js/home-render.js`
+  - `js/home-hero.js`
+  - `js/home-runtime.js`
+  - `js/home.js`
+- 목적
+  - 오류 보고와 fallback 로직 분리
+  - 홈 카드/리드 렌더와 히어로 렌더 분리
+  - 새로고침/초기화 라이프사이클을 별도 진입점으로 축소
+
 ## 4. KMS가 맡아야 하는 역할
 
 KMS는 단순 문서가 아니라 아래 6가지를 한 화면에서 보여주는 기준 장치가 되어야 한다.
