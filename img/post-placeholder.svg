@@ -1,10 +1,8 @@
 <svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="1200" height="675" rx="36" fill="#F5F1EA"/>
   <rect x="40" y="40" width="1120" height="595" rx="28" fill="#FBF8F3" stroke="#E7DED2" stroke-width="2"/>
-  <circle cx="600" cy="280" r="92" fill="#6D28D9" fill-opacity="0.1"/>
-  <circle cx="600" cy="280" r="64" fill="#6D28D9"/>
-  <path d="M566 279.5C566 261.55 580.55 247 598.5 247H614.5C632.45 247 647 261.55 647 279.5C647 297.45 632.45 312 614.5 312H596V345H566V279.5Z" fill="white"/>
-  <path d="M639 345V247H686.5C704.45 247 719 261.55 719 279.5C719 294.34 709.05 306.86 695.5 310.77L721 345H685L663 314.5H669.5V345H639Z" fill="white"/>
-  <text x="600" y="436" text-anchor="middle" fill="#241B31" font-family="Arial, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="42" font-weight="700">BP미디어</text>
-  <text x="600" y="482" text-anchor="middle" fill="#6B7280" font-family="Arial, Apple SD Gothic Neo, Malgun Gothic, sans-serif" font-size="24" font-weight="500">이미지가 없는 게시글은 기본 플레이스홀더를 표시합니다</text>
+  <circle cx="600" cy="338" r="112" fill="#6D28D9" fill-opacity="0.10"/>
+  <circle cx="600" cy="338" r="78" fill="#6D28D9"/>
+  <path d="M559 337.5C559 315.685 576.685 298 598.5 298H618C639.815 298 657.5 315.685 657.5 337.5C657.5 359.315 639.815 377 618 377H595V418H559V337.5Z" fill="white"/>
+  <path d="M648 418V298H705C726.815 298 744.5 315.685 744.5 337.5C744.5 355.529 732.395 370.739 715.9 375.492L747 418H703.2L676.4 381H684.3V418H648Z" fill="white"/>
 </svg>

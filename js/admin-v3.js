@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.057.03
+ * Version: 03.057.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -713,7 +713,7 @@
     Promise.allSettled([
       _apiFetch('/api/admin/analytics'),
       _apiFetch('/api/admin/operations'),
-      _apiFetch('/api/posts?limit=8&published=all'),
+      _apiFetch('/api/posts?limit=8&published=all&scope=admin'),
       _apiFetch('/api/posts/popular?limit=5'),
       _apiFetch('/api/posts?limit=1&published=1'),
     ]).then(function (results) {
@@ -921,6 +921,7 @@
     else if (_listPub === 'draft') params.set('published', '0');
     _applyListSortParams(params);
 
+    params.set('scope', 'admin');
     _apiFetch('/api/posts?' + params.toString())
       .then(function (data) {
         var posts = (data && data.posts) || [];
@@ -1419,7 +1420,7 @@
   /* ── Related posts ── */
   function _searchRelated(q) {
     var results = document.getElementById('w-related-results');
-    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8').then(function (data) {
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&scope=admin').then(function (data) {
       var posts = (data && data.posts) || [];
       if (!posts.length) { results.style.display = 'none'; return; }
       results.innerHTML = posts.map(function (p) {
@@ -1754,7 +1755,7 @@
 
   function _searchCalRelated(q) {
     var results = document.getElementById('cal-related-results');
-    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8').then(function (data) {
+    _apiFetch('/api/posts?q=' + encodeURIComponent(q) + '&limit=8&scope=admin').then(function (data) {
       var posts = (data && data.posts) || [];
       if (!posts.length) {
         results.innerHTML = '<div class="v3-input-hint">검색 결과가 없습니다.</div>';
@@ -3370,7 +3371,7 @@
     var meta = document.getElementById('picks-meta');
     if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
-    _apiFetch('/api/posts?featured=1&limit=20&published=all').then(function (data) {
+    _apiFetch('/api/posts?featured=1&limit=20&published=all&scope=admin').then(function (data) {
       _picksPosts = (data && data.posts) || [];
       _renderPicksSelected();
     }).catch(function () {
