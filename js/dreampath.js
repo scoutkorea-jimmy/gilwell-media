@@ -225,7 +225,7 @@ const DP = (() => {
   }
 
   function _sanitizeHtml(html) {
-    if (window.DOMPurify) return DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    if (window.DOMPurify) return DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, ADD_ATTR: ['data-align'] });
     // Fallback: remove dangerous elements and event handler attributes
     const div = document.createElement('div');
     div.innerHTML = html;
@@ -263,6 +263,74 @@ const DP = (() => {
       onTransaction: () => _updateTiptapToolbar(),
     });
     setTimeout(() => { if (_tiptapEditor) _tiptapEditor.commands.focus('end'); }, 80);
+
+    // ── Image click → floating toolbar ──
+    el.addEventListener('click', e => {
+      const img = e.target.closest('.ProseMirror img');
+      _removeImgToolbar();
+      if (!img || !_tiptapEditor) return;
+
+      const wrapper = el.closest('.dp-te-wrapper') || el.parentElement;
+      wrapper.style.position = 'relative';
+
+      const tb = document.createElement('div');
+      tb.className = 'dp-img-toolbar';
+      tb.id = 'dp-img-toolbar';
+
+      const curAlign = img.getAttribute('data-align') || 'left';
+      const curWidth = parseInt(img.getAttribute('width')) || img.naturalWidth || 400;
+      const pct = Math.round((curWidth / (el.clientWidth || 600)) * 100);
+
+      tb.innerHTML = `
+        <button data-align="left" class="${curAlign==='left'?'is-active':''}" title="Left">&#9664;</button>
+        <button data-align="center" class="${curAlign==='center'?'is-active':''}" title="Center">&#9644;</button>
+        <button data-align="right" class="${curAlign==='right'?'is-active':''}" title="Right">&#9654;</button>
+        <span style="width:1px;height:18px;background:var(--border);margin:0 4px"></span>
+        <input type="range" min="10" max="100" value="${Math.min(pct,100)}" title="Size" />
+        <span class="dp-img-size-label">${Math.min(pct,100)}%</span>
+      `;
+
+      // Alignment buttons
+      tb.querySelectorAll('button[data-align]').forEach(btn => {
+        btn.onmousedown = ev => {
+          ev.preventDefault();
+          const align = btn.dataset.align;
+          _tiptapEditor.chain().focus().updateAttributes('image', { 'data-align': align }).run();
+          tb.querySelectorAll('button[data-align]').forEach(b => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+        };
+      });
+
+      // Size slider
+      const slider = tb.querySelector('input[type="range"]');
+      const sizeLabel = tb.querySelector('.dp-img-size-label');
+      slider.oninput = () => {
+        const w = Math.round((el.clientWidth || 600) * slider.value / 100);
+        sizeLabel.textContent = slider.value + '%';
+        _tiptapEditor.chain().focus().updateAttributes('image', { width: w + 'px' }).run();
+      };
+
+      // Position toolbar above image
+      const imgRect = img.getBoundingClientRect();
+      const wrapRect = wrapper.getBoundingClientRect();
+      tb.style.top = (imgRect.top - wrapRect.top - 42) + 'px';
+      tb.style.left = Math.max(0, (imgRect.left - wrapRect.left)) + 'px';
+      wrapper.appendChild(tb);
+    });
+
+    // Remove toolbar on click outside
+    const _docClick = e => {
+      if (e.target.closest('#dp-img-toolbar') || e.target.closest('.ProseMirror img')) return;
+      _removeImgToolbar();
+    };
+    document.addEventListener('click', _docClick);
+    // Store cleanup ref
+    el._dpImgCleanup = () => document.removeEventListener('click', _docClick);
+  }
+
+  function _removeImgToolbar() {
+    const old = document.getElementById('dp-img-toolbar');
+    if (old) old.remove();
   }
 
   function _updateTiptapToolbar() {
@@ -333,7 +401,10 @@ const DP = (() => {
   }
 
   function _destroyTiptap() {
+    _removeImgToolbar();
     if (_tiptapEditor) {
+      const el = _tiptapEditor.options.element;
+      if (el?._dpImgCleanup) { el._dpImgCleanup(); delete el._dpImgCleanup; }
       try { _tiptapEditor.destroy(); } catch (_) {}
       _tiptapEditor = null;
     }
@@ -1248,7 +1319,7 @@ const DP = (() => {
       const isAuthor  = post.author_name === (currentUser.display_name || currentUser.username);
       const canEdit   = isAdmin || isAuthor;
       const canRevise = boardName === 'minutes' && post.approval_status === 'rejected' && (isAdmin || isAuthor);
-      const canReply  = isTeamBoard && !isReply;
+      const canReply  = isTeamBoard && depth < 10;
       const verBadge  = (post.version_number || 1) > 1
         ? `<span class="dp-version-chip">V${post.version_number}</span>` : '';
       adminBtns = `
@@ -1262,7 +1333,7 @@ const DP = (() => {
       `;
     }
     return `
-      <div class="dp-post-card ${statusCls} ${depthCls}" style="${depth > 0 ? `margin-left:${Math.min(depth, 3) * 28}px` : ''}" onclick="DP.viewPost(${post.id})">
+      <div class="dp-post-card ${statusCls} ${depthCls}" style="${depth > 0 ? `margin-left:${Math.min(depth, 10) * 28}px` : ''}" onclick="DP.viewPost(${post.id})">
         <div class="dp-post-card-inner">
           <div class="dp-post-card-meta">
             ${isReply ? '<span class="dp-reply-badge">&#8617; Reply</span>' : ''}
@@ -4008,7 +4079,7 @@ const DP = (() => {
       const isHigh = n.priority === 'high' && n.status === 'open';
       const isReply = !!n.reply_to_id;
       const plainContent = n.content ? n.content.replace(/<[^>]+>/g, '') : '';
-      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}${isReply?' dp-note-row--reply':''}" style="cursor:pointer;${depth > 0 ? `margin-left:${Math.min(depth, 3) * 28}px` : ''}" onclick="DP.viewNote(${n.id})">
+      return `<div class="dp-note-row${isHigh?' dp-note-row--high':''}${n.status==='resolved'?' dp-note-row--resolved':''}${isReply?' dp-note-row--reply':''}" style="cursor:pointer;${depth > 0 ? `margin-left:${Math.min(depth, 10) * 28}px` : ''}" onclick="DP.viewNote(${n.id})">
         <div class="dp-note-row-left">
           ${isReply ? '<span class="dp-reply-badge" style="margin-right:4px">&#8617; Reply</span>' : ''}
           <span class="dp-badge" style="background:${typeColor[n.type]||'#146E7A'}20;color:${typeColor[n.type]||'#146E7A'};border:1px solid ${typeColor[n.type]||'#146E7A'}40">${typeLabel[n.type]||n.type}</span>
@@ -4334,6 +4405,8 @@ const DP = (() => {
   function viewNote(id) {
     const note = _allNotes.find(n => n.id === id);
     if (!note) return;
+    let _noteDepth = 0, _cur = note;
+    while (_cur.reply_to_id && _noteDepth < 10) { _cur = _allNotes.find(n => n.id === _cur.reply_to_id) || {}; _noteDepth++; }
     const typeLabel = { note: '📝 Note', issue: '⚠️ Issue', warning: '🚨 Warning', suggestion: '💡 Suggestion' };
     const typeColor = { note: '#146E7A', issue: '#D97706', warning: '#DC2626', suggestion: '#7C3AED' };
     const priorityLabel = { high: '🔴 High', normal: '🟡 Normal', low: '⚪ Low' };
@@ -4354,7 +4427,7 @@ const DP = (() => {
           ${esc(note.added_by)} · ${fmtFull(note.created_at)}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px">
-          ${!note.reply_to_id ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.replyToNote(${note.id}),80)">&#8617; Reply</button>` : ''}
+          ${_noteDepth < 10 ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.replyToNote(${note.id}),80)">&#8617; Reply</button>` : ''}
           ${note.status === 'open' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP._resolveNote(${note.id}),80)">✓ Resolve</button>` : ''}
           <button class="dp-btn dp-btn--ghost dp-btn--sm" onclick="DP.closeModal();setTimeout(()=>DP.editNote(${note.id}),80)">✏ Edit</button>
           ${currentUser?.role === 'admin' ? `<button class="dp-btn dp-btn--ghost dp-btn--sm" style="color:var(--red)" onclick="DP.closeModal();setTimeout(()=>DP.deleteNote(${note.id}),80)">Delete</button>` : ''}
