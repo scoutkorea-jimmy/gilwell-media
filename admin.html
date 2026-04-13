@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260412160845">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260413125530">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.062.10</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.062.11</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,7 +41,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.10</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.11</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -600,23 +600,33 @@
             <h1 class="v3-page-title">분석</h1>
             <p class="v3-page-desc">방문 통계, 조회수, 인기 콘텐츠와 태그·메타 태그 연결 흐름을 함께 봅니다.</p>
           </div>
-          <div class="v3-flex" role="group" aria-label="분석 기간 선택">
-            <label class="v3-inline-filter">
-              <span>방문 분석</span>
-              <select class="v3-filter-select" id="analytics-period" aria-label="방문 분석 기간">
-                <option value="7">최근 7일</option>
-                <option value="30" selected>최근 30일</option>
-                <option value="90">최근 90일</option>
-              </select>
-            </label>
-            <label class="v3-inline-filter">
-              <span>태그 인사이트</span>
-              <select class="v3-filter-select" id="analytics-tag-period" aria-label="태그 인사이트 기간">
-                <option value="7">최근 7일</option>
-                <option value="30" selected>최근 30일</option>
-                <option value="90">최근 90일</option>
-              </select>
-            </label>
+          <div class="v3-analytics-head-tools">
+            <div class="v3-flex" role="group" aria-label="분석 기간 선택">
+              <label class="v3-inline-filter">
+                <span>방문 분석</span>
+                <select class="v3-filter-select" id="analytics-period" aria-label="방문 분석 기간">
+                  <option value="7">최근 7일</option>
+                  <option value="30" selected>최근 30일</option>
+                  <option value="90">최근 90일</option>
+                </select>
+              </label>
+              <label class="v3-inline-filter">
+                <span>태그 인사이트</span>
+                <select class="v3-filter-select" id="analytics-tag-period" aria-label="태그 인사이트 기간">
+                  <option value="7">최근 7일</option>
+                  <option value="30" selected>최근 30일</option>
+                  <option value="90">최근 90일</option>
+                </select>
+              </label>
+            </div>
+            <div class="v3-analytics-live-controls">
+              <label class="v3-check-row v3-check-row-compact">
+                <input type="checkbox" id="analytics-auto-refresh" checked />
+                <span>30초 자동 새로고침</span>
+              </label>
+              <button class="v3-btn v3-btn-outline" id="analytics-refresh-btn" type="button">지금 새로고침</button>
+            </div>
+            <div class="v3-inline-meta v3-analytics-live-meta" id="analytics-live-meta">마지막 갱신 시각을 확인하는 중…</div>
           </div>
         </div>
         <div class="v3-analytics-stats" id="analytics-stats">
@@ -1494,8 +1504,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260412160845"></script>
-<script src="/js/shared-country-name-ko.js?v=20260412160845"></script>
-<script src="/js/admin-v3.js?v=20260412160845"></script>
+<script src="/js/main.js?v=20260413125530"></script>
+<script src="/js/shared-country-name-ko.js?v=20260413125530"></script>
+<script src="/js/admin-v3.js?v=20260413125530"></script>
 </body>
 </html>

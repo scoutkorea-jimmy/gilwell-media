@@ -442,6 +442,10 @@
   cursor: pointer; font-size: 13px; color: var(--v3-text-s);
   user-select: none;
 }
+.v3-check-row-compact {
+  gap: 6px;
+  font-size: 12.5px;
+}
 .v3-check-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--v3-primary); }
 .v3-form-sep { border: none; border-top: 1px solid var(--v3-border); margin: 20px 0; }
 .v3-form-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -899,6 +903,36 @@
   gap: 12px;
   margin-bottom: 18px;
 }
+.v3-analytics-head-tools {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+.v3-analytics-live-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.v3-analytics-live-meta {
+  margin: 0;
+  max-width: 70ch;
+  text-align: right;
+}
+.v3-analytics-note {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.14);
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(248, 250, 252, 0.98));
+  color: var(--v3-text-s);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+.v3-analytics-note strong {
+  color: var(--v3-text);
+}
 .v3-grid-loading-full { grid-column: 1 / -1; }
 .v3-geo-map {
   width: 100%;
@@ -969,6 +1003,15 @@
   font-weight: 600;
 }
 @media (max-width: 900px) {
+  .v3-analytics-head-tools {
+    justify-items: stretch;
+  }
+  .v3-analytics-live-controls {
+    justify-content: flex-start;
+  }
+  .v3-analytics-live-meta {
+    text-align: left;
+  }
   #geo-audience-map {
     height: 320px;
   }

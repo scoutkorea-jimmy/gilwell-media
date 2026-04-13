@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.10
+ * Version: 03.062.11
  *
  * Versioning:
  *   V3.aaa.bb
@@ -92,6 +92,10 @@
   var _geoAudienceMapLayers = null;
   var _analyticsTagGraphState = null;
   var _analyticsSelectedTagId = '';
+  var _analyticsAutoRefresh = true;
+  var _analyticsAutoRefreshTimer = null;
+  var _analyticsLastUpdatedAt = 0;
+  var _analyticsLoading = false;
   var _dashboardHeatmapMode = '7d';
   var _dashboardHeatmapStart = '';
   var _dashboardHeatmapEnd = '';
@@ -503,6 +507,12 @@
     // Analytics period
     _bindEl('analytics-period', 'change', _loadAnalytics);
     _bindEl('analytics-tag-period', 'change', _loadAnalytics);
+    _bindEl('analytics-refresh-btn', 'click', _loadAnalytics);
+    _bindEl('analytics-auto-refresh', 'change', function () {
+      _analyticsAutoRefresh = !!this.checked;
+      _updateAnalyticsRefreshMeta();
+      if (_panel === 'analytics') _syncAnalyticsAutoRefresh();
+    });
     _bindEl('analytics-tag-modal-close', 'click', _closeAnalyticsTagModal);
     _bindEl('analytics-tag-modal-done', 'click', _closeAnalyticsTagModal);
     _bindEl('analytics-tag-modal', 'click', function (event) {
@@ -564,6 +574,9 @@
       var detail = event && event.detail ? event.detail : {};
       GW.showToast((detail.message || '관리자 세션이 만료되었습니다. 다시 로그인해주세요.'), 'error');
       _showLogin();
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (_panel === 'analytics') _syncAnalyticsAutoRefresh();
     });
   });
 
@@ -685,6 +698,8 @@
     }
 
     // Load panel data
+    _syncAnalyticsAutoRefresh(panel === 'analytics');
+
     if (panel === 'dashboard') _loadDashboard();
     else if (panel === 'homepage-issues') _loadHomepageIssues();
     else if (panel === 'list')     _loadList();
@@ -2511,10 +2526,14 @@
      ANALYTICS
   ══════════════════════════════════════════════════════════ */
   function _loadAnalytics() {
+    if (_analyticsLoading) return;
     var period = document.getElementById('analytics-period').value;
     var tagPeriod = (document.getElementById('analytics-tag-period') || {}).value || period;
     var statsEl = document.getElementById('analytics-stats');
     var bodyEl  = document.getElementById('analytics-body');
+    var noteHtml = '';
+    _analyticsLoading = true;
+    _updateAnalyticsRefreshMeta(true);
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
     bodyEl.innerHTML  = '';
 
@@ -2526,6 +2545,7 @@
       var topPosts = data.article_top_posts || data.top_posts || data.top_paths || (views.top_paths || []);
       var sources  = data.sources  || data.referrers || [];
       var tagCloud = data.tags || {};
+      var trackingNote = String(data.tracking_note || '').trim();
 
       // Stats
       statsEl.innerHTML =
@@ -2567,15 +2587,80 @@
         html += '</div></div>';
       }
 
+      if (trackingNote) {
+        noteHtml =
+          '<div class="v3-analytics-note">' +
+            '<strong>유입 해석 안내</strong><br>' +
+            GW.escapeHtml(trackingNote) +
+          '</div>';
+      }
+
       html += _renderAnalyticsTagCloud(tagCloud, tagPeriod);
 
-      bodyEl.innerHTML = html || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
+      bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
       _mountAnalyticsTagGraph(tagCloud && tagCloud.graph ? tagCloud.graph : null);
+      _analyticsLastUpdatedAt = Date.now();
+      _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
       bodyEl.innerHTML  = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다</div></div></div>';
       _analyticsTagGraphState = null;
+      _updateAnalyticsRefreshMeta(false, e && e.message ? String(e.message) : '분석 API 응답을 불러오지 못했습니다');
+    }).finally(function () {
+      _analyticsLoading = false;
     });
+  }
+
+  function _syncAnalyticsAutoRefresh(forceActive) {
+    var shouldRun = (typeof forceActive === 'boolean' ? forceActive : _panel === 'analytics') && _analyticsAutoRefresh && !document.hidden;
+    if (_analyticsAutoRefreshTimer) {
+      clearInterval(_analyticsAutoRefreshTimer);
+      _analyticsAutoRefreshTimer = null;
+    }
+    if (shouldRun) {
+      _analyticsAutoRefreshTimer = window.setInterval(function () {
+        if (_panel !== 'analytics' || document.hidden) return;
+        _loadAnalytics();
+      }, 30000);
+    }
+    _updateAnalyticsRefreshMeta();
+  }
+
+  function _updateAnalyticsRefreshMeta(isLoading, errorMessage) {
+    var el = _el('analytics-live-meta');
+    if (!el) return;
+    if (isLoading) {
+      el.textContent = '분석 데이터를 새로 불러오는 중입니다…';
+      return;
+    }
+    if (errorMessage) {
+      el.textContent = '마지막 갱신 실패 · ' + errorMessage;
+      return;
+    }
+    var parts = [];
+    if (_analyticsLastUpdatedAt) {
+      parts.push('마지막 갱신 ' + _formatAdminTimestamp(_analyticsLastUpdatedAt));
+    } else {
+      parts.push('아직 갱신 이력이 없습니다');
+    }
+    parts.push(_analyticsAutoRefresh ? '30초 자동 새로고침 켜짐' : '자동 새로고침 꺼짐');
+    parts.push('카카오·페이스북은 UTM/리퍼러 기준으로 최대한 분리되지만, 앱이 정보를 넘기지 않으면 직접 방문으로 잡힐 수 있습니다.');
+    el.textContent = parts.join(' · ');
+  }
+
+  function _formatAdminTimestamp(value) {
+    var date = value instanceof Date ? value : new Date(value);
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
+    return date.toLocaleString('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).replace(/\.\s/g, '-').replace('.', '').trim();
   }
 
   function _statCard(label, value, sub) {
