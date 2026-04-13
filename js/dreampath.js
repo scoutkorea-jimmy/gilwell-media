@@ -257,6 +257,7 @@ const DP = (() => {
         tiptap.TableRow,
         tiptap.TableHeader,
         tiptap.TableCell,
+        tiptap.Image.configure({ inline: false, allowBase64: false }),
       ],
       content: initialHtml || '',
       onTransaction: () => _updateTiptapToolbar(),
@@ -303,6 +304,26 @@ const DP = (() => {
     else if (cmd === 'addColAfter') c.addColumnAfter().run();
     else if (cmd === 'deleteCol')   c.deleteColumn().run();
     else if (cmd === 'deleteTable') c.deleteTable().run();
+    else if (cmd === 'insertImage') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 100 * 1024 * 1024) { showToast('Max file size is 100 MB.', 'error'); return; }
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const r = await fetch('/api/dreampath/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+          const res = await r.json();
+          if (!r.ok) { showToast(res.error || 'Image upload failed.', 'error'); return; }
+          if (_tiptapEditor) _tiptapEditor.chain().focus().setImage({ src: res.url }).run();
+        } catch { showToast('Image upload failed.', 'error'); }
+      };
+      input.click();
+      return;
+    }
   }
 
   function _getTiptapHTML() {
@@ -1475,6 +1496,8 @@ const DP = (() => {
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
               <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
+              <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
@@ -1569,6 +1592,8 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
@@ -1705,6 +1730,8 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
@@ -4082,6 +4109,8 @@ const DP = (() => {
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
               <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
+              <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="deleteRow" onmousedown="event.preventDefault();DP._teCmd('deleteRow')" title="Delete Row" style="display:none">&minus;Row</button>
@@ -4156,6 +4185,8 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
@@ -4240,6 +4271,8 @@ const DP = (() => {
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="blockquote" onmousedown="event.preventDefault();DP._teCmd('blockquote')" title="Quote">&#8220;</button>
               <button type="button" class="dp-te-btn" data-cmd="code" onmousedown="event.preventDefault();DP._teCmd('code')" title="Code">&lt;/&gt;</button>
+              <span class="dp-te-sep"></span>
+              <button type="button" class="dp-te-btn" data-cmd="insertImage" onmousedown="event.preventDefault();DP._teCmd('insertImage')" title="Insert Image">&#128247; Image</button>
               <span class="dp-te-sep"></span>
               <button type="button" class="dp-te-btn" data-cmd="insertTable" onmousedown="event.preventDefault();DP._teCmd('insertTable')" title="Insert 3&#xD7;3 Table">&#8862; Table</button>
               <button type="button" class="dp-te-btn dp-te-table-only" data-cmd="addRowAfter" onmousedown="event.preventDefault();DP._teCmd('addRowAfter')" title="Add Row Below" style="display:none">+Row</button>
