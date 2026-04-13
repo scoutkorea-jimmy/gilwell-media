@@ -1951,8 +1951,24 @@
     .dp-te-editor .ProseMirror th { border: 1px solid var(--border); padding: 6px 10px; min-width: 60px; vertical-align: top; word-break: break-word; }
     .dp-te-editor .ProseMirror th { background: var(--surface2); font-weight: 700; }
     .dp-te-editor .ProseMirror .selectedCell { background: color-mix(in srgb, var(--accent) 12%, transparent); outline: 2px solid var(--accent); }
-    .dp-te-editor .ProseMirror img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5em 0; cursor: default; }
+    .dp-te-editor .ProseMirror img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5em 0; cursor: pointer; }
     .dp-te-editor .ProseMirror img.ProseMirror-selectednode { outline: 2px solid var(--accent); border-radius: 6px; }
+    .dp-te-editor .ProseMirror img[data-align="center"] { display: block; margin-left: auto; margin-right: auto; }
+    .dp-te-editor .ProseMirror img[data-align="right"] { display: block; margin-left: auto; margin-right: 0; }
+    .dp-te-editor .ProseMirror img[data-align="left"] { display: block; margin-left: 0; margin-right: auto; }
+    .dp-img-toolbar {
+      position: absolute; z-index: 100; display: flex; gap: 4px; padding: 6px 8px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15); align-items: center;
+    }
+    .dp-img-toolbar button {
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 8px; cursor: pointer; font-size: 12px; color: var(--text);
+    }
+    .dp-img-toolbar button:hover { background: var(--surface2); }
+    .dp-img-toolbar button.is-active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .dp-img-toolbar input[type="range"] { width: 80px; accent-color: var(--accent); }
+    .dp-img-toolbar .dp-img-size-label { font-size: 11px; color: var(--text-2); min-width: 36px; text-align: center; }
 
     /* ── Post content viewer (rich HTML) ─────────────────────── */
     .dp-post-detail-content h2 { font-size: 1.2em; font-weight: 700; margin-bottom: 0.4em; }
@@ -1983,6 +1999,9 @@
     .dp-post-detail-content th { border: 1px solid var(--border); padding: 6px 10px; min-width: 60px; vertical-align: top; word-break: break-word; }
     .dp-post-detail-content th { background: var(--surface2); font-weight: 700; }
     .dp-post-detail-content img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5em 0; }
+    .dp-post-detail-content img[data-align="center"] { display: block; margin-left: auto; margin-right: auto; }
+    .dp-post-detail-content img[data-align="right"] { display: block; margin-left: auto; margin-right: 0; }
+    .dp-post-detail-content img[data-align="left"] { display: block; margin-left: 0; margin-right: auto; }
 
     /* ── Version pagination ─────────────────────────────────────── */
     .dp-pagination {
@@ -2474,7 +2493,17 @@
       import('https://esm.sh/@tiptap/extension-table-cell@2'),
       import('https://esm.sh/@tiptap/extension-image@2'),
     ]);
-    window.__DP_Tiptap = { Editor, StarterKit, Table, TableRow, TableHeader, TableCell, Image };
+    // Extend Image with width + alignment attributes
+    const CustomImage = Image.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          width: { default: null, parseHTML: el => el.getAttribute('width') || el.style.width || null, renderHTML: attrs => attrs.width ? { width: attrs.width, style: `width:${attrs.width}` } : {} },
+          'data-align': { default: 'left', parseHTML: el => el.getAttribute('data-align') || 'left', renderHTML: attrs => ({ 'data-align': attrs['data-align'] || 'left' }) },
+        };
+      },
+    });
+    window.__DP_Tiptap = { Editor, StarterKit, Table, TableRow, TableHeader, TableCell, Image: CustomImage };
     window.dispatchEvent(new CustomEvent('tiptap-ready'));
   } catch (e) {
     console.warn('[Dreampath] Tiptap failed to load:', e);
