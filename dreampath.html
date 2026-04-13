@@ -1951,6 +1951,8 @@
     .dp-te-editor .ProseMirror th { border: 1px solid var(--border); padding: 6px 10px; min-width: 60px; vertical-align: top; word-break: break-word; }
     .dp-te-editor .ProseMirror th { background: var(--surface2); font-weight: 700; }
     .dp-te-editor .ProseMirror .selectedCell { background: color-mix(in srgb, var(--accent) 12%, transparent); outline: 2px solid var(--accent); }
+    .dp-te-editor .ProseMirror img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5em 0; cursor: default; }
+    .dp-te-editor .ProseMirror img.ProseMirror-selectednode { outline: 2px solid var(--accent); border-radius: 6px; }
 
     /* ── Post content viewer (rich HTML) ─────────────────────── */
     .dp-post-detail-content h2 { font-size: 1.2em; font-weight: 700; margin-bottom: 0.4em; }
@@ -1980,6 +1982,7 @@
     .dp-post-detail-content td,
     .dp-post-detail-content th { border: 1px solid var(--border); padding: 6px 10px; min-width: 60px; vertical-align: top; word-break: break-word; }
     .dp-post-detail-content th { background: var(--surface2); font-weight: 700; }
+    .dp-post-detail-content img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5em 0; }
 
     /* ── Version pagination ─────────────────────────────────────── */
     .dp-pagination {
@@ -2461,6 +2464,7 @@
       { default: TableRow },
       { default: TableHeader },
       { default: TableCell },
+      { default: Image },
     ] = await Promise.all([
       import('https://esm.sh/@tiptap/core@2'),
       import('https://esm.sh/@tiptap/starter-kit@2'),
@@ -2468,8 +2472,9 @@
       import('https://esm.sh/@tiptap/extension-table-row@2'),
       import('https://esm.sh/@tiptap/extension-table-header@2'),
       import('https://esm.sh/@tiptap/extension-table-cell@2'),
+      import('https://esm.sh/@tiptap/extension-image@2'),
     ]);
-    window.__DP_Tiptap = { Editor, StarterKit, Table, TableRow, TableHeader, TableCell };
+    window.__DP_Tiptap = { Editor, StarterKit, Table, TableRow, TableHeader, TableCell, Image };
     window.dispatchEvent(new CustomEvent('tiptap-ready'));
   } catch (e) {
     console.warn('[Dreampath] Tiptap failed to load:', e);
