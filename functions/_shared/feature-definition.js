@@ -715,9 +715,23 @@ function isLegacyFeatureDefinition(value) {
 
 export async function loadFeatureDefinition(env) {
   const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'feature_definition'`).first();
-  const stored = row && row.value ? String(row.value) : '';
+  const stored = normalizeFeatureDefinitionContent(row && row.value ? String(row.value) : '');
   if (!stored || isLegacyFeatureDefinition(stored)) {
     return DEFAULT_FEATURE_DEFINITION;
   }
   return stored;
+}
+
+export function normalizeFeatureDefinitionContent(value) {
+  let text = String(value || '');
+  if (!text) return '';
+  text = text.replace(/\r\n/g, '\n');
+  if (text.indexOf('\n') === -1 && /\\n/.test(text)) {
+    text = text
+      .replace(/\\r\\n/g, '\n')
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\"/g, '"');
+  }
+  return text;
 }

@@ -636,7 +636,7 @@
     if (body) body.innerHTML = '<div class="kms-list-empty">불러오는 중…</div>';
     GW.apiFetch('/api/settings/feature-definition')
       .then(function (data) {
-        var content = data && typeof data.content === 'string' ? data.content : '';
+        var content = normalizeFeatureDefinitionContent(data && typeof data.content === 'string' ? data.content : '');
         _state.docContent = content;
         var editorInput = document.getElementById('kms-editor-input');
         if (editorInput) editorInput.value = content;
@@ -653,7 +653,7 @@
   function saveDefinition() {
     if (_state.saveBusy) return;
     var editorInput = document.getElementById('kms-editor-input');
-    var content = String(editorInput && editorInput.value || '').trim();
+    var content = normalizeFeatureDefinitionContent(editorInput && editorInput.value || '').trim();
     if (!content) { GW.showToast('기능 정의서 내용이 비어 있습니다.', 'error'); return; }
     var btn = document.getElementById('kms-save-btn');
     _state.saveBusy = true;
@@ -686,6 +686,19 @@
     document.querySelectorAll('[data-kms-mode]').forEach(function (btn) {
       btn.classList.toggle('is-active', btn.getAttribute('data-kms-mode') === _state.mode);
     });
+  }
+
+  function normalizeFeatureDefinitionContent(value) {
+    var text = String(value || '').replace(/\r\n/g, '\n');
+    if (!text) return '';
+    if (text.indexOf('\n') === -1 && /\\n/.test(text)) {
+      text = text
+        .replace(/\\r\\n/g, '\n')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\"/g, '"');
+    }
+    return text;
   }
 
   // ── 문서 렌더링 ───────────────────────────────────────────────
