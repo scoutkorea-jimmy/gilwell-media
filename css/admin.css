@@ -622,6 +622,10 @@ mark.kms-highlight {
 .kms-document-body {
   line-height: 1.8;
   color: var(--kms-ink);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,247,255,0.96) 100%);
+  border: 1px solid rgba(92, 42, 157, 0.12);
+  border-radius: 16px;
+  padding: 24px 26px 28px;
 }
 
 .kms-h2 {
@@ -670,6 +674,31 @@ mark.kms-highlight {
   margin: 0 0 6px;
   font-size: 14px;
   line-height: 1.75;
+}
+.kms-list-ordered {
+  list-style: decimal;
+}
+.kms-link {
+  color: var(--kms-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.kms-link:hover {
+  color: var(--kms-accent-strong);
+}
+.kms-quote {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-left: 3px solid rgba(92, 42, 157, 0.28);
+  background: rgba(92, 42, 157, 0.05);
+  color: var(--kms-ink);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.kms-divider {
+  border: 0;
+  border-top: 1px solid rgba(92, 42, 157, 0.12);
+  margin: 22px 0;
 }
 
 .kms-inline-code {
