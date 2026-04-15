@@ -1,3 +1,5 @@
+import { getNavLabel, loadNavLabels } from './_shared/nav-labels.js';
+
 export async function onRequestGet({ request, env }) {
   const origin = new URL(request.url).origin;
   const feedUrl = `${origin}/rss.xml`;
@@ -8,20 +10,31 @@ export async function onRequestGet({ request, env }) {
     await ensureDuePostsPublished(env, origin).catch((err) => {
       console.error('GET /rss.xml auto publish error:', err);
     });
-    const { results } = await env.DB.prepare(
-      `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, tag, published
-         FROM posts
-        WHERE published = 1
-        ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
-        LIMIT 20`
-    ).all();
+    const [postRows, navLabels] = await Promise.all([
+      env.DB.prepare(
+        `SELECT id, category, title, subtitle, content, created_at, publish_at, updated_at, tag, published
+           FROM posts
+          WHERE published = 1
+          ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
+          LIMIT 20`
+      ).all(),
+      loadNavLabels(env),
+    ]);
+    const { results } = postRows;
+    const categoryLabels = {
+      korea: getNavLabel(navLabels, 'nav.korea', 'ko'),
+      apr: getNavLabel(navLabels, 'nav.apr', 'ko'),
+      wosm: getNavLabel(navLabels, 'nav.wosm', 'ko'),
+      people: getNavLabel(navLabels, 'nav.people', 'ko'),
+      glossary: getNavLabel(navLabels, 'nav.glossary', 'ko'),
+    };
 
     const items = (results || []).map((post) => {
       const title = escapeXml(post.title || `post-${post.id}`);
       const link = `${origin}/post/${post.id}`;
       const description = escapeXml(buildDescription(post));
       const pubDate = toRfc822(post.created_at || post.updated_at || post.publish_at);
-      const category = escapeXml(resolveCategoryLabel(post.category));
+      const category = escapeXml(resolveCategoryLabel(post.category, categoryLabels));
       const tags = parseTags(post.tag);
       const guid = escapeXml(link);
       const categoryTags = tags.map((tag) => `    <category domain="tag">${escapeXml(tag)}</category>`).join('\n');
@@ -106,15 +119,8 @@ function truncatePlain(str, maxLen) {
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '...';
 }
 
-function resolveCategoryLabel(category) {
-  const labels = {
-    korea: 'Korea / KSA',
-    apr: 'APR',
-    wosm: 'WOSM',
-    people: 'Scout People',
-    glossary: 'Glossary',
-  };
-  return labels[category] || 'BP미디어';
+function resolveCategoryLabel(category, labels) {
+  return (labels && labels[category]) || 'BP미디어';
 }
 
 function toRfc822(value) {

@@ -47,7 +47,7 @@
     'board.latest.banner': { ko: '30 Days', en: '30 Days' },
     'board.latest.title': { ko: '최근 1개월 소식', en: 'Last 30 Days' },
     'board.latest.desc': { ko: '최근 30일 동안 한국을 포함한 세계의 스카우트 소식을 한 번에 모아봅니다.', en: 'Scout news from Korea and around the world from the last 30 days.' },
-    'board.korea.banner': { ko: 'Korea / KSA', en: 'Korea / KSA' },
+    'board.korea.banner': { ko: 'Korea', en: 'Korea' },
     'board.korea.title': { ko: '한국스카우트연맹', en: 'Korea Scout Association' },
     'board.korea.desc': { ko: '국내 스카우트 운동의 소식과 기록을 전합니다.', en: 'News and records from domestic Scout activities.' },
     'board.apr.banner': { ko: 'APR', en: 'APR' },
