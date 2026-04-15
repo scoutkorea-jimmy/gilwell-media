@@ -20,6 +20,9 @@
     var homeRefreshBusy = false;
     var homeRefreshTimer = null;
     var runtimeReportBound = false;
+    var latestIssueKeys = [];
+    var latestFatalState = false;
+    var latestRefreshFailed = false;
 
     function fetchHomeData(options) {
       var opts = options || {};
@@ -32,6 +35,9 @@
     function applyData(data, options) {
       var opts = options || {};
       var issues = helpers.getHomeIssueMap(data);
+      latestIssueKeys = helpers.getActiveHomeIssueKeys(issues);
+      latestFatalState = false;
+      latestRefreshFailed = false;
       if (data.site_meta) {
         GW._siteMetaData = data.site_meta;
         GW.applyManagedFooterData(data.site_meta);
@@ -62,6 +68,23 @@
       );
       render.applyMiniSections(viewModel, issues);
       lastHomeRefreshAt = Date.now();
+      syncHomeStatusBanner();
+    }
+
+    function syncHomeStatusBanner() {
+      if (latestFatalState) {
+        helpers.renderHomeStatusBanner({ type: 'fatal' });
+        return;
+      }
+      if (latestIssueKeys.length) {
+        helpers.renderHomeStatusBanner({ type: 'partial', issueKeys: latestIssueKeys });
+        return;
+      }
+      if (latestRefreshFailed) {
+        helpers.renderHomeStatusBanner({ type: 'refresh' });
+        return;
+      }
+      helpers.renderHomeStatusBanner();
     }
 
     function refreshHomeData(options) {
@@ -76,6 +99,8 @@
         })
         .catch(function (err) {
           try { console.warn('[GW home-refresh-failed]', err); } catch (_) {}
+          latestRefreshFailed = true;
+          syncHomeStatusBanner();
           helpers.reportHomepageIssue('home_latest_refresh_failed', {
             section: 'homepage',
             message: (err && err.message) || 'background home refresh failed',
@@ -112,6 +137,8 @@
     }
 
     function renderLoadFailure() {
+      latestFatalState = true;
+      latestIssueKeys = [];
       GW.renderTickerItems('ticker-inner');
       GW._statsData = { korea: 0, apr: 0, wosm: 0, people: 0, today: 0 };
       if (GW._renderStats) GW._renderStats();
@@ -126,6 +153,20 @@
       helpers.renderHomeBlockError(document.getElementById('col-apr'), 'apr');
       helpers.renderHomeBlockError(document.getElementById('col-wosm'), 'wosm');
       helpers.renderHomeBlockError(document.getElementById('col-people'), 'people');
+      syncHomeStatusBanner();
+    }
+
+    function bindHomeStatusActions() {
+      var banner = document.getElementById('home-runtime-alert');
+      if (!banner || banner.dataset.bound === '1') return;
+      banner.addEventListener('click', function (event) {
+        var retryBtn = event.target && event.target.closest ? event.target.closest('[data-home-retry]') : null;
+        if (!retryBtn) return;
+        latestFatalState = false;
+        latestRefreshFailed = false;
+        refreshHomeData({ force: true });
+      });
+      banner.dataset.bound = '1';
     }
 
     function initRefreshLifecycle() {
@@ -216,6 +257,7 @@
         loadTranslations: false
       });
       bindRuntimeIssueReporting();
+      bindHomeStatusActions();
 
       fetchHomeData({ fresh: true })
         .then(function (data) {

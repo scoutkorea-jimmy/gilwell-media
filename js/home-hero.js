@@ -18,6 +18,28 @@
     var slider = document.getElementById('site-hero-slider');
     var controls = document.getElementById('hero-controls');
 
+    function restoreStaticHero(reason) {
+      clearInterval(timer);
+      ensureStaticSlide();
+      if (controls) controls.style.display = 'none';
+      var staticSlide = document.getElementById('site-hero-static');
+      if (staticSlide) {
+        staticSlide.classList.add('active');
+        staticSlide.style.visibility = 'visible';
+        staticSlide.style.pointerEvents = 'auto';
+        staticSlide.style.transform = 'translateX(0)';
+      }
+      if (reason) {
+        try {
+          helpers.reportHomepageIssue('home_hero_render_failed', {
+            message: String(reason),
+            path: '/api/home',
+            section: 'hero'
+          });
+        } catch (_) {}
+      }
+    }
+
     function ensureStaticSlide() {
       if (!slider || slider.querySelector('#site-hero-static')) return;
       if (!slider.dataset.staticMarkup) return;
@@ -232,48 +254,56 @@
       }, 560);
     }
 
-    var posts = data && data.posts ? data.posts : [];
-    if (!posts.length) {
-      ensureStaticSlide();
-      return;
-    }
-
-    var staticSlide = document.getElementById('site-hero-static');
-    if (staticSlide) staticSlide.remove();
-
-    posts.forEach(function (post, index) {
-      var slide = buildSlide(post, index);
-      if (index === 0) {
-        slide.classList.add('active');
-        slide.style.visibility = 'visible';
-        slide.style.pointerEvents = 'auto';
-        slide.style.transform = 'translateX(0)';
-      } else {
-        slide.style.visibility = 'hidden';
-        slide.style.pointerEvents = 'none';
-        slide.style.transform = 'translateX(100%)';
+    try {
+      var posts = (data && Array.isArray(data.posts) ? data.posts : []).filter(function (post) {
+        return post && post.id && post.title;
+      });
+      if (!posts.length) {
+        restoreStaticHero('');
+        return;
       }
-      slider.appendChild(slide);
-      slides.push(slide);
-    });
 
-    renderDots(posts.length, 0);
-    bindTouchNavigation();
-    bindPauseButton();
-    setAutoTimer();
-    GW._homeHeroState = Object.assign(GW._homeHeroState || {}, {
-      destroy: function () {
-        clearInterval(timer);
-        if (GW._homeHeroState && GW._homeHeroState.touch && slider) {
-          slider.removeEventListener('touchstart', GW._homeHeroState.touch.start);
-          slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);
-          slider.removeEventListener('touchend', GW._homeHeroState.touch.end);
+      var staticSlide = document.getElementById('site-hero-static');
+      if (staticSlide) staticSlide.remove();
+
+      posts.forEach(function (post, index) {
+        var slide = buildSlide(post, index);
+        if (index === 0) {
+          slide.classList.add('active');
+          slide.style.visibility = 'visible';
+          slide.style.pointerEvents = 'auto';
+          slide.style.transform = 'translateX(0)';
+        } else {
+          slide.style.visibility = 'hidden';
+          slide.style.pointerEvents = 'none';
+          slide.style.transform = 'translateX(100%)';
         }
-        slider.querySelectorAll('.site-hero-slide[data-post-id]').forEach(function (node) {
-          node.remove();
-        });
-      }
-    });
+        slider.appendChild(slide);
+        slides.push(slide);
+      });
+
+      renderDots(posts.length, 0);
+      if (controls) controls.style.display = posts.length > 1 ? '' : 'none';
+      bindTouchNavigation();
+      bindPauseButton();
+      setAutoTimer();
+      GW._homeHeroState = Object.assign(GW._homeHeroState || {}, {
+        destroy: function () {
+          clearInterval(timer);
+          if (GW._homeHeroState && GW._homeHeroState.touch && slider) {
+            slider.removeEventListener('touchstart', GW._homeHeroState.touch.start);
+            slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);
+            slider.removeEventListener('touchend', GW._homeHeroState.touch.end);
+          }
+          slider.querySelectorAll('.site-hero-slide[data-post-id]').forEach(function (node) {
+            node.remove();
+          });
+        }
+      });
+    } catch (err) {
+      try { console.warn('[GW home-hero-render-failed]', err); } catch (_) {}
+      restoreStaticHero(err && err.message ? err.message : 'hero render failed');
+    }
   }
 
   GW.HomeHero = {
