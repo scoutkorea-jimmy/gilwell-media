@@ -9,6 +9,15 @@ const CATEGORY_META = {
   people: { label: 'Scout People', color: '#8A5A2B' },
 };
 
+function getCategoryDisplayMap(labels) {
+  return {
+    korea: getNavLabel(labels, 'nav.korea', 'ko'),
+    apr: getNavLabel(labels, 'nav.apr', 'ko'),
+    wosm: getNavLabel(labels, 'nav.wosm', 'ko'),
+    people: getNavLabel(labels, 'nav.people', 'ko'),
+  };
+}
+
 export async function onRequestGet(context) {
   return renderFeaturePage(context);
 }
@@ -28,7 +37,12 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const origin = new URL(request.url).origin;
   const siteMeta = await loadSiteMeta(env);
   const navLabels = await loadNavLabels(env);
-  const categoryMeta = CATEGORY_META[category] || CATEGORY_META.korea;
+  const categoryDisplay = getCategoryDisplayMap(navLabels);
+  const categoryBase = CATEGORY_META[category] || CATEGORY_META.korea;
+  const categoryMeta = {
+    ...categoryBase,
+    label: categoryDisplay[category] || categoryBase.label,
+  };
   const leadItem = collection.items[0];
   const restItems = collection.items.slice(1);
   const title = `${collection.special_feature} · 특집 기사 컬렉션 · BP미디어`;

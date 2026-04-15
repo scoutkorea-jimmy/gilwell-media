@@ -21,12 +21,22 @@ import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
  */
 
 const CATEGORIES = {
-  korea: { label: 'Korea / KSA', color: '#0094B4' },
+  korea: { label: 'Korea', color: '#0094B4' },
   apr:   { label: 'APR',         color: '#FF5655' },
   wosm:  { label: 'WOSM', color: '#248737' },
   people:{ label: 'Scout People', color: '#8A5A2B' },
   glossary:{ label: 'Glossary', color: '#5D6F2B' },
 };
+
+function getCategoryDisplayMap(labels) {
+  return {
+    korea: getNavLabel(labels, 'nav.korea', 'ko'),
+    apr: getNavLabel(labels, 'nav.apr', 'ko'),
+    wosm: getNavLabel(labels, 'nav.wosm', 'ko'),
+    people: getNavLabel(labels, 'nav.people', 'ko'),
+    glossary: getNavLabel(labels, 'nav.glossary', 'ko'),
+  };
+}
 
 export async function onRequestGet({ params, env, request }) {
   const id = parseInt(params.id, 10);
@@ -63,6 +73,7 @@ export async function onRequestGet({ params, env, request }) {
   const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
   const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
   const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
+  const categoryDisplay = getCategoryDisplayMap(navLabels);
 
   if (!post) return notFound();
   let isAdmin = false;
@@ -85,7 +96,11 @@ export async function onRequestGet({ params, env, request }) {
 
   const requestUrlObj = new URL(request.url);
   const siteUrl  = requestUrlObj.origin;
-  const cat      = CATEGORIES[post.category] || CATEGORIES.korea;
+  const catBase  = CATEGORIES[post.category] || CATEGORIES.korea;
+  const cat      = {
+    ...catBase,
+    label: categoryDisplay[post.category] || catBase.label,
+  };
   const titleText = post.title || '';
   const subtitleText = post.subtitle || '';
   const title    = escapeHtml(titleText);
@@ -197,11 +212,11 @@ export async function onRequestGet({ params, env, request }) {
       </div>
     </div>
     <nav class="post-mobile-quicknav" aria-label="빠른 이동">
-      <a href="/latest">최신</a>
-      <a href="/korea">Korea</a>
-      <a href="/apr">APR</a>
-      <a href="/wosm">WOSM</a>
-      <a href="/people">인물</a>
+      <a href="/latest">${escapeHtml(navLatest)}</a>
+      <a href="/korea">${escapeHtml(navKorea)}</a>
+      <a href="/apr">${escapeHtml(navApr)}</a>
+      <a href="/wosm">${escapeHtml(navWosm)}</a>
+      <a href="/people">${escapeHtml(navPeople)}</a>
     </nav>
   </div>
 
