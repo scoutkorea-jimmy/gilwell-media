@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.03
+ * Version: 03.063.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3535,7 +3535,7 @@
                       '<span class="v3-badge ' + _siteHistoryGroupBadge(item.group) + '">' + GW.escapeHtml(_siteHistoryGroupLabel(item.group)) + '</span>' +
                       '<span class="v3-badge ' + _siteHistoryLevelBadge(item.level) + '">' + GW.escapeHtml(_siteHistoryLevelLabel(item.level)) + '</span>' +
                       (item.source ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.source) + '</span>' : '') +
-                      (item.status ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.status) + '</span>' : '') +
+                      (item.status ? '<span class="v3-badge ' + _siteHistoryStatusBadge(item.status) + '">' + GW.escapeHtml(_siteHistoryStatusLabel(item.status)) + '</span>' : '') +
                     '</div>' +
                     (item.problem ? '<div class="v3-issues-note">' + GW.escapeHtml(item.problem) + '</div>' : '') +
                     (item.detail ? '<div class="v3-search-result-meta">' + GW.escapeHtml(item.detail) + '</div>' : '') +
@@ -3625,6 +3625,24 @@
       medium: 'v3-badge-yellow',
       low: 'v3-badge-blue',
       info: 'v3-badge-gray'
+    }[value] || 'v3-badge-gray';
+  }
+
+  function _siteHistoryStatusLabel(value) {
+    return {
+      open: '열림',
+      monitoring: '모니터링',
+      resolved: '해결됨',
+      archived: '보관'
+    }[value] || String(value || '');
+  }
+
+  function _siteHistoryStatusBadge(value) {
+    return {
+      open: 'v3-badge-open',
+      monitoring: 'v3-badge-monitoring',
+      resolved: 'v3-badge-resolved',
+      archived: 'v3-badge-archived'
     }[value] || 'v3-badge-gray';
   }
 
