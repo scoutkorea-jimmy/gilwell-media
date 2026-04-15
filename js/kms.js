@@ -721,52 +721,81 @@
   function renderKmsText(text, idBuilder) {
     var lines = String(text || '').split('\n');
     var html = [];
-    var inList = false;
+    var listMode = '';
+    function closeList() {
+      if (!listMode) return;
+      html.push(listMode === 'ol' ? '</ol>' : '</ul>');
+      listMode = '';
+    }
     lines.forEach(function (line) {
       var raw = line.trim();
       if (!raw) {
-        if (inList) { html.push('</ul>'); inList = false; }
+        closeList();
         return;
       }
       // Frontmatter skip (Obsidian 호환)
       if (raw === '---') return;
+      if (/^>\s+/.test(raw)) {
+        closeList();
+        html.push('<blockquote class="kms-quote">' + formatInline(raw.replace(/^>\s+/, '')) + '</blockquote>');
+        return;
+      }
+      if (/^(-{3,}|\*{3,})$/.test(raw)) {
+        closeList();
+        html.push('<hr class="kms-divider">');
+        return;
+      }
       if (/^####\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
+        closeList();
         var t = raw.replace(/^####\s+/, '');
         html.push('<h5 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h5">' + formatInline(t) + '</h5>');
         return;
       }
       if (/^###\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
+        closeList();
         var t = raw.replace(/^###\s+/, '');
         html.push('<h4 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h4">' + formatInline(t) + '</h4>');
         return;
       }
       if (/^##\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
+        closeList();
         var t = raw.replace(/^##\s+/, '');
         html.push('<h3 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h3">' + formatInline(t) + '</h3>');
         return;
       }
       if (/^#\s+/.test(raw)) {
-        if (inList) { html.push('</ul>'); inList = false; }
+        closeList();
         html.push('<h2 class="kms-h2">' + formatInline(raw.replace(/^#\s+/, '')) + '</h2>');
         return;
       }
       if (/^-\s+/.test(raw)) {
-        if (!inList) { html.push('<ul class="kms-list">'); inList = true; }
+        if (listMode !== 'ul') {
+          closeList();
+          html.push('<ul class="kms-list">');
+          listMode = 'ul';
+        }
         html.push('<li>' + formatInline(raw.replace(/^-\s+/, '')) + '</li>');
         return;
       }
-      if (inList) { html.push('</ul>'); inList = false; }
+      if (/^\d+\.\s+/.test(raw)) {
+        if (listMode !== 'ol') {
+          closeList();
+          html.push('<ol class="kms-list kms-list-ordered">');
+          listMode = 'ol';
+        }
+        html.push('<li>' + formatInline(raw.replace(/^\d+\.\s+/, '')) + '</li>');
+        return;
+      }
+      closeList();
       html.push('<p class="kms-p">' + formatInline(raw) + '</p>');
     });
-    if (inList) html.push('</ul>');
+    closeList();
     return html.join('');
   }
 
   function formatInline(text) {
     var escaped = GW.escapeHtml(String(text || ''));
+    escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="kms-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     // 위키링크 [[항목명]] → 볼드 처리 (Obsidian 호환)
     escaped = escaped.replace(/\[\[([^\]]+)\]\]/g, '<span class="kms-wikilink">$1</span>');
     // 인라인 코드 `…`

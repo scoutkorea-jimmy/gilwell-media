@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.02
+ * Version: 03.063.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -991,7 +991,7 @@
     });
     html += '</div></div>';
     html += '<div class="v3-heatmap-legend">' +
-      '<span>' + GW.escapeHtml(String(heatmap.range_label || '최근 기간')) + '</span>' +
+      '<span>' + GW.escapeHtml(String(heatmap.range_label || '최근 기간')) + ' · 색상 기준: 고유 방문</span>' +
       '<span>적음</span>' +
       '<span class="v3-heatmap-legend-scale">' +
         '<span class="v3-heatmap-legend-chip" style="background:rgba(109,40,217,0.06)"></span>' +
