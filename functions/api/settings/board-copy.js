@@ -1,6 +1,6 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { DEFAULT_BOARD_COPY, normalizeBoardCopy } from '../../_shared/board-copy.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -45,7 +45,6 @@ export async function onRequestPut({ request, env }) {
     const nextRev = currentRev + 1;
     const payload = JSON.stringify(normalized);
     await Promise.all([
-      prevRow ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('board_copy', prevRow.value).run() : null,
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('board_copy', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -55,14 +54,12 @@ export async function onRequestPut({ request, env }) {
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(String(nextRev)).run(),
     ]);
-    await logOperationalEvent(env, {
-      channel: 'admin',
-      type: 'settings_change',
-      level: 'info',
-      actor: 'admin',
+    await recordSettingChange(env, {
+      key: 'board_copy',
+      previousValue: prevRow && prevRow.value,
       path: '/api/settings/board-copy',
       message: '게시판 설명 설정 변경',
-      details: { key: 'board_copy', revision: nextRev },
+      details: { revision: nextRev },
     });
     normalized.revision = nextRev;
     return json(normalized);

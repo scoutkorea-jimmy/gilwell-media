@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.00
+ * Version: 03.063.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3594,6 +3594,7 @@
       homepage: '홈페이지',
       api: 'API',
       data: '데이터',
+      settings: '설정',
       ui: 'UI',
       mobile: '모바일',
       accessibility: '접근성',

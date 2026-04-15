@@ -47,11 +47,11 @@ export async function onRequestGet({ request, env }) {
       ).bind(Math.min(limit, 150)).all().catch(function () { return { results: [] }; }),
     ]);
 
-    const items = []
+    const items = dedupeHistoryItems([]
       .concat((operationalRows.results || []).map(normalizeOperationalHistoryItem))
       .concat((issueRows.results || []).map(function (row) { return normalizeIssueHistoryItem(normalizeHomepageIssue(row)); }))
       .concat((settingsRows.results || []).map(normalizeSettingsHistoryItem))
-      .concat((postHistoryRows.results || []).map(normalizePostHistoryItem))
+      .concat((postHistoryRows.results || []).map(normalizePostHistoryItem)))
       .sort(compareHistoryItems)
       .slice(0, limit);
 
@@ -76,7 +76,9 @@ function normalizeOperationalHistoryItem(item) {
   const details = parseJson(item && item.details);
   const type = String(item && item.type || '').trim();
   const group = operationalGroup(type, item && item.level, item && item.channel);
-  const source = String(item && item.channel || 'site').trim() || 'site';
+  const source = operationalSource(type, item && item.path, item && item.channel, details);
+  const entityId = extractEntityId(type, details);
+  const entityAction = extractEntityAction(type);
   return {
     id: 'ops-' + String(item && item.id || ''),
     kind: 'operational',
@@ -91,6 +93,9 @@ function normalizeOperationalHistoryItem(item) {
     detail: operationalDetail(item, details),
     path: String(item && item.path || ''),
     actor: String(item && item.actor || ''),
+    event_type: type,
+    entity_id: entityId,
+    entity_action: entityAction,
     search_text: [
       type,
       item && item.message,
@@ -103,11 +108,12 @@ function normalizeOperationalHistoryItem(item) {
 }
 
 function normalizeIssueHistoryItem(item) {
+  const source = normalizeHistorySource(item.area || 'other');
   return {
     id: 'issue-' + String(item.id || ''),
     kind: 'homepage_issue',
     group: item.issue_type === 'error' ? 'error' : 'issue',
-    source: item.area || 'other',
+    source,
     level: item.severity || 'medium',
     status: item.status || 'open',
     occurred_at: item.updated_at || item.last_seen_at || item.occurred_at || item.created_at || '',
@@ -137,7 +143,7 @@ function normalizeSettingsHistoryItem(item) {
     id: 'settings-' + String(item && item.id || ''),
     kind: 'settings_history',
     group: 'settings',
-    source: 'admin',
+    source: 'settings',
     level: 'info',
     status: '',
     occurred_at: String(item && item.saved_at || ''),
@@ -147,6 +153,8 @@ function normalizeSettingsHistoryItem(item) {
     detail: key ? ('key=' + key) : '',
     path: '/api/settings/' + key,
     actor: 'admin',
+    entity_id: key,
+    entity_action: 'settings_change',
     search_text: [key, settingsKeyLabel(key), item && item.value].join(' ').toLowerCase(),
   };
 }
@@ -172,6 +180,9 @@ function normalizePostHistoryItem(item) {
     detail: [current && current.category ? ('category=' + String(current.category)) : '', postId ? ('/post/' + postId) : ''].filter(Boolean).join(' · '),
     path: postId ? ('/post/' + postId) : '',
     actor: '',
+    event_type: action,
+    entity_id: postId || 0,
+    entity_action: action,
     search_text: [
       action,
       title,
@@ -200,6 +211,18 @@ function operationalGroup(type, level, channel) {
   return 'issue';
 }
 
+function operationalSource(type, path, channel, details) {
+  if (extractEntityAction(type)) return 'post';
+  if (String(type || '') === 'settings_change') return 'settings';
+  if (String(path || '').indexOf('/api/admin/') === 0) return 'admin';
+  if (String(path || '').indexOf('/api/settings/') === 0) return 'settings';
+  if (String(path || '').indexOf('/api/posts') === 0) return 'post';
+  if (String(path || '').indexOf('/api/analytics') === 0) return 'analytics';
+  if (String(type || '') === 'api_error') return 'api';
+  if (String(channel || '').toLowerCase() === 'admin') return 'admin';
+  return normalizeHistorySource(details && details.area ? details.area : 'site');
+}
+
 function operationalTitle(type, fallback) {
   const labels = {
     admin_login_failed: '관리자 로그인 실패',
@@ -218,10 +241,11 @@ function operationalTitle(type, fallback) {
 }
 
 function buildOperationalCause(type, details, item) {
-  if (details && details.meta && typeof details.meta === 'object') {
-    if (details.meta.cause) return String(details.meta.cause);
-    if (details.meta.key) return '설정 키 `' + String(details.meta.key) + '` 저장 과정에서 남은 운영 이력입니다.';
-    if (details.meta.summary) return String(details.meta.summary);
+  const meta = extractDetailMeta(details);
+  if (meta) {
+    if (meta.cause) return String(meta.cause);
+    if (meta.key) return '설정 키 `' + String(meta.key) + '` 저장 과정에서 남은 운영 이력입니다.';
+    if (meta.summary) return String(meta.summary);
   }
   if (type === 'api_error' && item && item.path) {
     return 'API `' + String(item.path) + '` 처리 중 예외가 발생한 것으로 보입니다.';
@@ -234,10 +258,11 @@ function buildOperationalCause(type, details, item) {
 }
 
 function operationalDetail(item, details) {
+  const meta = extractDetailMeta(details);
   const parts = [];
   if (item && item.path) parts.push(String(item.path));
   if (item && item.actor) parts.push('actor=' + String(item.actor));
-  if (details && details.meta && details.meta.revision) parts.push('revision=' + String(details.meta.revision));
+  if (meta && meta.revision) parts.push('revision=' + String(meta.revision));
   return parts.join(' · ');
 }
 
@@ -248,6 +273,19 @@ function settingsKeyLabel(key) {
     hero: '히어로 기사',
     hero_interval: '히어로 전환 주기',
     hero_media: '히어로 미디어',
+    nav_labels: '메뉴명',
+    translations: '번역 문구',
+    ticker: '헤드라인 티커',
+    author_name: '기본 작성자',
+    ai_disclaimer: 'AI 안내 문구',
+    board_banner_events: '게시판 배너',
+    board_card_gap: '게시판 간격',
+    calendar_copy: '캘린더 안내문',
+    calendar_tags: '캘린더 태그',
+    editors: '에디터 실명',
+    feature_definition: '기능 정의서',
+    tags: '글머리 태그',
+    home_lead: '메인 스토리',
     wosm_members: '세계연맹 회원국',
     contributors: '기고자',
   }[key] || key || '설정';
@@ -260,6 +298,67 @@ function postHistoryLabel(action) {
     status: '게시글 상태 변경',
     delete: '게시글 삭제',
   }[action] || '게시글 변경';
+}
+
+function extractDetailMeta(details) {
+  if (!details || typeof details !== 'object') return null;
+  if (details.meta && typeof details.meta === 'object') return details.meta;
+  return details;
+}
+
+function extractEntityId(type, details) {
+  const meta = extractDetailMeta(details);
+  if (String(type || '').indexOf('post_') === 0) {
+    return Number(meta && meta.post_id || 0) || 0;
+  }
+  if (String(type || '') === 'settings_change') {
+    return String(meta && meta.key || '').trim();
+  }
+  return 0;
+}
+
+function extractEntityAction(type) {
+  if (String(type || '') === 'post_created') return 'create';
+  if (String(type || '') === 'post_updated') return 'update';
+  if (String(type || '') === 'post_status_changed') return 'status';
+  if (String(type || '') === 'post_deleted') return 'delete';
+  return '';
+}
+
+function dedupeHistoryItems(items) {
+  const seenOperationalPosts = new Set();
+  const seenOperationalSettings = new Set();
+  (Array.isArray(items) ? items : []).forEach(function (item) {
+    if (!item || item.kind !== 'operational') return;
+    if (!item.entity_id || !item.entity_action) return;
+    if (String(item.entity_action) === 'settings_change') {
+      seenOperationalSettings.add(String(item.entity_id));
+      return;
+    }
+    seenOperationalPosts.add(String(item.entity_id) + ':' + String(item.entity_action));
+  });
+  return (Array.isArray(items) ? items : []).filter(function (item) {
+    if (!item) return true;
+    if (item.kind === 'post_history') {
+      if (!item.entity_id || !item.entity_action) return true;
+      return !seenOperationalPosts.has(String(item.entity_id) + ':' + String(item.entity_action));
+    }
+    if (item.kind === 'settings_history') {
+      if (!item.entity_id) return true;
+      return !seenOperationalSettings.has(String(item.entity_id));
+    }
+    return true;
+  });
+}
+
+function normalizeHistorySource(source) {
+  const value = String(source || '').trim().toLowerCase();
+  if (!value) return 'other';
+  if ([
+    'site', 'admin', 'homepage', 'api', 'data', 'ui',
+    'mobile', 'accessibility', 'analytics', 'post', 'settings',
+  ].indexOf(value) >= 0) return value;
+  return 'other';
 }
 
 function compareHistoryItems(a, b) {

@@ -6,7 +6,7 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
-import { logOperationalEvent } from '../../_shared/ops-log.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_HERO_MEDIA = {
   fit: 'cover',
@@ -111,9 +111,6 @@ export async function onRequestPut({ request, env }) {
     const nextMediaMap = hasMediaMap ? requestedMediaMap : currentMediaMap;
 
     await Promise.all([
-      prevHero ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('hero', prevHero.value).run() : null,
-      prevInterval ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('hero_interval', prevInterval.value).run() : null,
-      prevHeroMedia ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('hero_media', prevHeroMedia.value).run() : null,
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('hero', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -131,16 +128,29 @@ export async function onRequestPut({ request, env }) {
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(String(nextRev)).run(),
     ]);
-
-    await logOperationalEvent(env, {
-      channel: 'admin',
-      type: 'settings_change',
-      level: 'info',
-      actor: 'admin',
-      path: '/api/settings/hero',
-      message: 'hero 설정 변경',
-      details: { key: 'hero', revision: nextRev, post_ids: safeIds },
-    });
+    await Promise.all([
+      recordSettingChange(env, {
+        key: 'hero',
+        previousValue: prevHero && prevHero.value,
+        path: '/api/settings/hero',
+        message: 'hero 설정 변경',
+        details: { revision: nextRev, post_ids: safeIds },
+      }),
+      recordSettingChange(env, {
+        key: 'hero_interval',
+        previousValue: prevInterval && prevInterval.value,
+        path: '/api/settings/hero',
+        message: 'hero 전환 주기 설정 변경',
+        details: { revision: nextRev, interval_ms: safeInterval },
+      }),
+      recordSettingChange(env, {
+        key: 'hero_media',
+        previousValue: prevHeroMedia && prevHeroMedia.value,
+        path: '/api/settings/hero',
+        message: 'hero 미디어 설정 변경',
+        details: { revision: nextRev, post_ids: safeIds },
+      }),
+    ]);
     return json({ success: true, post_ids: safeIds, interval_ms: safeInterval, revision: nextRev, media_map: nextMediaMap });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);

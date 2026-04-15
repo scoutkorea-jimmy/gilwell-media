@@ -5,6 +5,7 @@
  * PUT /api/settings/tags  ← admin only, update tags
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_TAGS = {
   common: ['소식', '공지', '행사', '보고', '특집', '단독', '속보'],
@@ -92,6 +93,13 @@ export async function onRequestPut({ request, env }) {
       `INSERT INTO settings (key, value) VALUES ('tags', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(safe)).run();
+    await recordSettingChange(env, {
+      key: 'tags',
+      previousValue: current ? JSON.stringify(current) : null,
+      path: '/api/settings/tags',
+      message: '글머리 태그 설정 변경',
+      details: { common_count: safe.common.length },
+    });
     return json({
       items: getTagsForCategory(safe, null),
       common: safe.common,

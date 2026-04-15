@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_CALENDAR_TAGS = [
   '회의',
@@ -34,10 +35,18 @@ export async function onRequestPut({ request, env }) {
   }
   const items = normalizeCalendarTags(body && body.items);
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'calendar_tags'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('calendar_tags', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(items)).run();
+    await recordSettingChange(env, {
+      key: 'calendar_tags',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/calendar-tags',
+      message: '캘린더 태그 설정 변경',
+      details: { count: items.length },
+    });
     return json({ items });
   } catch (err) {
     console.error('PUT /api/settings/calendar-tags error:', err);

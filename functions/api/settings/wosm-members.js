@@ -1,6 +1,6 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { normalizeWosmImportMapping, normalizeWosmMembersColumns, normalizeWosmMembersResponse, normalizeWosmPublicCopy, normalizeWosmRegisteredCount, parseWosmImportMapping, parseWosmMembersColumns, parseWosmMembersPayload, parseWosmPublicCopy, sanitizeWosmMembersItems } from '../../_shared/wosm-members.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -55,7 +55,6 @@ export async function onRequestPut({ request, env }) {
     const nextRev = currentRev + 1;
     const payload = JSON.stringify(items);
     await Promise.all([
-      prevRow ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('wosm_members', prevRow.value).run() : null,
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('wosm_members', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -81,14 +80,12 @@ export async function onRequestPut({ request, env }) {
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(JSON.stringify(publicCopy)).run(),
     ]);
-    await logOperationalEvent(env, {
-      channel: 'admin',
-      type: 'settings_change',
-      level: 'info',
-      actor: 'admin',
+    await recordSettingChange(env, {
+      key: 'wosm_members',
+      previousValue: prevRow && prevRow.value,
       path: '/api/settings/wosm-members',
       message: '세계연맹 회원국 현황 설정 변경',
-      details: { key: 'wosm_members', revision: nextRev, count: items.length, registered_count: registeredCount, columns: columns, import_mapping: importMapping, public_copy: publicCopy },
+      details: { revision: nextRev, count: items.length, registered_count: registeredCount, columns: columns, import_mapping: importMapping, public_copy: publicCopy },
     });
     return json(normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, nextRev, publicCopy));
   } catch (err) {

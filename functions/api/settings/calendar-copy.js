@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { DEFAULT_CALENDAR_COPY, loadCalendarCopy, sanitizeCalendarCopy } from '../../_shared/calendar-copy.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -24,10 +25,17 @@ export async function onRequestPut({ request, env }) {
   }
   const copy = sanitizeCalendarCopy(body && body.copy);
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'calendar_copy'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('calendar_copy', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(copy)).run();
+    await recordSettingChange(env, {
+      key: 'calendar_copy',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/calendar-copy',
+      message: '캘린더 안내문 설정 변경',
+    });
     return json({ ok: true, copy }, 200);
   } catch (err) {
     console.error('PUT /api/settings/calendar-copy error:', err);

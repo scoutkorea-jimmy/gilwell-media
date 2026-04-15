@@ -6,6 +6,7 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { DEFAULT_TICKER_ITEMS } from '../../_shared/site-copy.mjs';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -42,10 +43,18 @@ export async function onRequestPut({ request, env }) {
     .slice(0, 20);
 
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'ticker'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('ticker', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(safe)).run();
+    await recordSettingChange(env, {
+      key: 'ticker',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/ticker',
+      message: '헤드라인 티커 설정 변경',
+      details: { count: safe.length },
+    });
     return json({ items: safe });
   } catch (err) {
     console.error('PUT /api/settings/ticker error:', err);
