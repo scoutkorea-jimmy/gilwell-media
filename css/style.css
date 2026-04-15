@@ -851,6 +851,7 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
 }
 
 img {
@@ -864,6 +865,7 @@ body {
   font-weight: 300;
   line-height: 1.7;
   min-height:  100vh;
+  overscroll-behavior-y: contain;
 }
 
 :focus-visible {

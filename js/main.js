@@ -1196,6 +1196,8 @@
   GW.clearToken = function () {
     sessionStorage.removeItem('admin_session');
     sessionStorage.removeItem('admin_role');
+    GW._adminSessionVerifiedAt = 0;
+    GW._adminSessionCheckPromise = null;
     document.cookie = 'admin_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
     document.cookie = 'admin_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
     fetch('/api/admin/session', {
@@ -1204,9 +1206,45 @@
       keepalive: true,
     }).catch(function (e) { console.warn('[GW] logout cleanup failed:', e); });
   };
-  GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || 'full'; };
+  GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || ''; };
   GW.setAdminRole = function (role) {
     sessionStorage.setItem('admin_role', role === 'editor' ? 'editor' : 'full');
+  };
+  GW._adminSessionVerifiedAt = 0;
+  GW._adminSessionCheckPromise = null;
+  GW.verifyAdminSession = function (options) {
+    var opts = options && typeof options === 'object' ? options : {};
+    if (!(GW.getToken && GW.getToken())) return Promise.resolve(false);
+    var now = Date.now();
+    if (!opts.force && GW._adminSessionVerifiedAt && now - GW._adminSessionVerifiedAt < 60000) {
+      return Promise.resolve(true);
+    }
+    if (GW._adminSessionCheckPromise) return GW._adminSessionCheckPromise;
+    GW._adminSessionCheckPromise = fetch('/api/admin/session', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok || !data || data.authenticated !== true) {
+            throw new Error((data && data.error) || '관리자 세션이 만료되었습니다.');
+          }
+          GW._adminSessionVerifiedAt = Date.now();
+          if (data.role && GW.setAdminRole) GW.setAdminRole(data.role);
+          if (GW.setToken) GW.setToken();
+          return true;
+        });
+      })
+      .catch(function () {
+        if (GW.clearToken) GW.clearToken();
+        return false;
+      })
+      .finally(function () {
+        GW._adminSessionCheckPromise = null;
+      });
+    return GW._adminSessionCheckPromise;
   };
   GW._publicLoadWarnings = {};
   GW.handlePublicLoadFailure = function (scope, err, hasFallback) {
@@ -1240,16 +1278,18 @@
           if (!(key in err)) err[key] = data[key];
         });
       }
-      if (res.status === 401 && typeof document !== 'undefined' && document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) {
+      if (res.status === 401 && GW.getToken && GW.getToken()) {
         try {
           GW.clearToken();
         } catch (_) {}
-        document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
-          detail: {
-            message: err.message || '관리자 로그인이 필요합니다.',
-            source: url,
-          },
-        }));
+        if (typeof document !== 'undefined' && document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) {
+          document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
+            detail: {
+              message: err.message || '관리자 로그인이 필요합니다.',
+              source: url,
+            },
+          }));
+        }
       }
       throw err;
     }

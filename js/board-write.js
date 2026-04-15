@@ -457,6 +457,7 @@
     })
       .then(function (data) {
         GW.setToken(data.token);
+        if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
         self._closePasswordModal();
         self._showWriteForm();
       })

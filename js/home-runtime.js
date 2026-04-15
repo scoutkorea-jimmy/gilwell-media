@@ -144,6 +144,10 @@
     }
 
     function initPullToRefresh() {
+      if (GW.setupPullToRefresh) {
+        GW.setupPullToRefresh();
+        return;
+      }
       var indicator = document.getElementById('pull-refresh-indicator');
       if (!indicator || !window.matchMedia('(pointer: coarse)').matches) return;
 

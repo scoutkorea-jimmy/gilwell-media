@@ -574,8 +574,15 @@ window._sharePostLink = function() {
 };
 
 window._postEdit = function() {
-  if (GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full') {
-    _openPostEdit();
+  if (GW.getToken && GW.getToken() && GW.verifyAdminSession) {
+    GW.verifyAdminSession({ force: true }).then(function (ok) {
+      if (ok && GW.getAdminRole && GW.getAdminRole() === 'full') {
+        _openPostEdit();
+        return;
+      }
+      GW.showToast('수정 권한이 있는 관리자 비밀번호를 다시 입력해주세요', 'error');
+      _openPostLogin();
+    });
     return;
   }
   if (GW.getToken && GW.getToken()) {
@@ -672,7 +679,15 @@ window._postSaveEdit = function() {
   submitBtn.disabled = true;
   submitBtn.textContent = '저장 중…';
 
-  _postEditState.editor.save()
+  Promise.resolve()
+    .then(function () {
+      if (!GW.verifyAdminSession) return true;
+      return GW.verifyAdminSession({ force: true });
+    })
+    .then(function (ok) {
+      if (!ok) throw Object.assign(new Error('인증이 필요합니다. 다시 로그인해주세요.'), { status: 401 });
+      return _postEditState.editor.save();
+    })
     .then(function (outputData) {
       var validation = GW.validatePostEditorOutput(outputData);
       if (!validation.ok) {
