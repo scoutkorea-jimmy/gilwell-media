@@ -172,7 +172,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260415205851">
+  <link rel="stylesheet" href="/css/style.css?v=20260415210054">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -286,7 +286,7 @@ export async function onRequestGet({ params, env, request }) {
 
         ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
-        ${renderRelatedPostsSection(relatedPosts, false)}
+        ${renderRelatedPostsSection(relatedPosts, false, navLabels)}
 
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
 
@@ -301,7 +301,7 @@ export async function onRequestGet({ params, env, request }) {
 
       </div>
 
-      ${renderRelatedPostsSection(relatedPosts, true)}
+      ${renderRelatedPostsSection(relatedPosts, true, navLabels)}
 
       <!-- ── Sidebar ── -->
       <aside class="post-page-sidebar">
@@ -498,9 +498,9 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260415205851"></script>
-  <script src="/js/site-chrome.js?v=20260415205851"></script>
-  <script src="/js/post-page.js?v=20260415205851"></script>
+  <script src="/js/main.js?v=20260415210054"></script>
+  <script src="/js/site-chrome.js?v=20260415210054"></script>
+  <script src="/js/post-page.js?v=20260415210054"></script>
 </body>
 </html>`;
 
@@ -836,7 +836,7 @@ function renderSpecialFeatureSection(post, items) {
   </section>`;
 }
 
-function renderRelatedPostsSection(items, mobileOnly) {
+function renderRelatedPostsSection(items, mobileOnly, navLabels) {
   if (!Array.isArray(items) || !items.length) return '';
   return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
     <h3 class="post-related-heading">유관기사 읽어보기</h3>
