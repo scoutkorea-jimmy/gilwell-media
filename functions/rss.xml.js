@@ -1,4 +1,5 @@
-import { getNavLabel, loadNavLabels } from './_shared/nav-labels.js';
+import { loadNavLabels } from './_shared/nav-labels.js';
+import { getCategoryMeta } from './_shared/category-meta.mjs';
 
 export async function onRequestGet({ request, env }) {
   const origin = new URL(request.url).origin;
@@ -21,20 +22,12 @@ export async function onRequestGet({ request, env }) {
       loadNavLabels(env),
     ]);
     const { results } = postRows;
-    const categoryLabels = {
-      korea: getNavLabel(navLabels, 'nav.korea', 'ko'),
-      apr: getNavLabel(navLabels, 'nav.apr', 'ko'),
-      wosm: getNavLabel(navLabels, 'nav.wosm', 'ko'),
-      people: getNavLabel(navLabels, 'nav.people', 'ko'),
-      glossary: getNavLabel(navLabels, 'nav.glossary', 'ko'),
-    };
-
     const items = (results || []).map((post) => {
       const title = escapeXml(post.title || `post-${post.id}`);
       const link = `${origin}/post/${post.id}`;
       const description = escapeXml(buildDescription(post));
       const pubDate = toRfc822(post.created_at || post.updated_at || post.publish_at);
-      const category = escapeXml(resolveCategoryLabel(post.category, categoryLabels));
+      const category = escapeXml(resolveCategoryLabel(navLabels, post.category));
       const tags = parseTags(post.tag);
       const guid = escapeXml(link);
       const categoryTags = tags.map((tag) => `    <category domain="tag">${escapeXml(tag)}</category>`).join('\n');
@@ -119,8 +112,8 @@ function truncatePlain(str, maxLen) {
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '...';
 }
 
-function resolveCategoryLabel(category, labels) {
-  return (labels && labels[category]) || 'BP미디어';
+function resolveCategoryLabel(navLabels, category) {
+  return getCategoryMeta(navLabels, category, 'ko').label || 'BP미디어';
 }
 
 function toRfc822(value) {

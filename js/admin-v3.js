@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.11
+ * Version: 03.062.12
  *
  * Versioning:
  *   V3.aaa.bb
@@ -234,6 +234,10 @@
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
+    if (window.GW && typeof GW.populateCategorySelect === 'function') {
+      GW.populateCategorySelect(document.getElementById('list-cat'), { includeAll: true, allLabel: '전체 카테고리' });
+      GW.populateCategorySelect(document.getElementById('w-cat'));
+    }
     window.addEventListener('error', function (event) {
       _reportSiteIssue('admin_client_runtime_error', {
         message: event && event.message ? String(event.message) : '관리자 런타임 오류',
@@ -4424,12 +4428,12 @@
 
   function _renderTagsEditor() {
     var el = document.getElementById('tags-editor');
-    var sections = [
+    var sections = (GW.getTagEditorSections && GW.getTagEditorSections()) || [
       { key: 'common', label: '공통 태그', desc: '모든 카테고리에서 공통으로 선택 가능한 태그입니다.' },
-      { key: 'korea', label: 'KOREA 태그', desc: 'Korea / KSA 기사에서 사용하는 글머리 태그입니다.' },
+      { key: 'korea', label: 'KOREA 태그', desc: 'Korea 기사에서 사용하는 글머리 태그입니다.' },
       { key: 'apr', label: 'APR 태그', desc: 'APR 기사에서 사용하는 글머리 태그입니다.' },
       { key: 'wosm', label: 'WOSM 태그', desc: 'WOSM 기사에서 사용하는 글머리 태그입니다.' },
-      { key: 'people', label: 'PEOPLE 태그', desc: 'People 기사에서 사용하는 글머리 태그입니다.' }
+      { key: 'people', label: 'PEOPLE 태그', desc: '스카우트 인물 기사에서 사용하는 글머리 태그입니다.' }
     ];
     el.innerHTML = sections.map(function (section) {
       var tags = _getTagScopeItems(_tagSettings, section.key);
@@ -4628,8 +4632,7 @@
   /* ══════════════════════════════════════════════════════════
      SETTINGS – META
   ══════════════════════════════════════════════════════════ */
-  var META_PAGES = ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
-  var META_LABELS = { home:'홈', latest:'최신 뉴스', korea:'Korea/KSA', apr:'APR', wosm:'WOSM', wosm_members:'세계연맹 회원국', people:'People', glossary:'용어집', contributors:'기고자', search:'검색', ai_guide:'AI 가이드' };
+  var META_PAGES = (GW.SITE_META_PAGE_KEYS && GW.SITE_META_PAGE_KEYS.slice()) || ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
 
   function _loadMetaUI() {
     var el = document.getElementById('meta-editor');
@@ -4647,7 +4650,7 @@
     var html = META_PAGES.map(function (key) {
       var p = pages[key] || {};
       return '<div class="v3-form-group v3-mt-16">' +
-        '<div class="v3-label v3-mb-16">' + GW.escapeHtml(META_LABELS[key] || key) + '</div>' +
+        '<div class="v3-label v3-mb-16">' + GW.escapeHtml((GW.getMetaPageLabel && GW.getMetaPageLabel(key)) || key) + '</div>' +
         '<input class="v3-input" type="text" id="meta-title-' + key + '" value="' + GW.escapeHtml(p.title || '') + '" placeholder="페이지 제목 (title 태그)" />' +
         '<input class="v3-input v3-mt-8" type="text" id="meta-desc-' + key + '" value="' + GW.escapeHtml(p.description || '') + '" placeholder="설명 (description 태그)" />' +
       '</div>';
@@ -4708,9 +4711,9 @@
   /* ══════════════════════════════════════════════════════════
      SETTINGS – BOARD COPY
   ══════════════════════════════════════════════════════════ */
-  var BOARD_COPY_PAGES = [
+  var BOARD_COPY_PAGES = (GW.getBoardCopyPageDefs && GW.getBoardCopyPageDefs()) || [
     { key: 'latest', label: '최근 1개월 소식', note: '/latest' },
-    { key: 'korea', label: 'Korea / KSA', note: '/korea' },
+    { key: 'korea', label: 'Korea', note: '/korea' },
     { key: 'apr', label: 'APR', note: '/apr' },
     { key: 'wosm', label: 'WOSM', note: '/wosm' },
     { key: 'people', label: '스카우트 인물', note: '/people' },
@@ -5025,7 +5028,7 @@
 
   function _renderNavLabels() {
     var el = document.getElementById('nav-labels-editor');
-    var rows = [
+    var rows = (GW.getNavLabelRows && GW.getNavLabelRows()) || [
       { key: 'nav.contributors', label: '도움을 주신 분들' },
       { key: 'nav.home', label: '홈' },
       { key: 'nav.latest', label: '1개월 소식' },
@@ -5050,18 +5053,21 @@
   }
 
   function _saveNavLabels() {
-    var rows = [
-      'nav.contributors',
-      'nav.home',
-      'nav.latest',
-      'nav.korea',
-      'nav.apr',
-      'nav.wosm',
-      'nav.wosm_members',
-      'nav.people',
-      'nav.calendar',
-      'nav.glossary'
-    ];
+    var rows = ((GW.getNavLabelRows && GW.getNavLabelRows()) || []).map(function (row) { return row.key; });
+    if (!rows.length) {
+      rows = [
+        'nav.contributors',
+        'nav.home',
+        'nav.latest',
+        'nav.korea',
+        'nav.apr',
+        'nav.wosm',
+        'nav.wosm_members',
+        'nav.people',
+        'nav.calendar',
+        'nav.glossary'
+      ];
+    }
     var result = {};
     rows.forEach(function (key) {
       var koInput = document.getElementById('nav-label-' + _escId(key) + '-ko');

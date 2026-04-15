@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.113.08';
-  GW.ADMIN_VERSION = '03.062.11';
-  GW.ASSET_VERSION = '20260415204143';
+  GW.APP_VERSION = '00.113.09';
+  GW.ADMIN_VERSION = '03.062.12';
+  GW.ASSET_VERSION = '20260415205307';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -20,6 +20,88 @@
     wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: '#248737' },
     people:{ label: 'Scout People', tagClass: 'tag-people', color: '#8A5A2B' },
     glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: '#5D6F2B' },
+  };
+  GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
+  GW.SITE_META_PAGE_LABELS = {
+    home: '홈',
+    latest: '최신 뉴스',
+    korea: 'Korea',
+    apr: 'APR',
+    wosm: 'WOSM',
+    wosm_members: '세계연맹 회원국',
+    people: '스카우트 인물',
+    glossary: '용어집',
+    contributors: '기고자',
+    search: '검색',
+    ai_guide: 'AI 가이드',
+  };
+  GW.NAV_LABEL_ROWS = [
+    { key: 'nav.contributors', label: '도움을 주신 분들' },
+    { key: 'nav.home', label: '홈' },
+    { key: 'nav.latest', label: '1개월 소식' },
+    { key: 'nav.korea', label: 'Korea' },
+    { key: 'nav.apr', label: 'APR' },
+    { key: 'nav.wosm', label: 'WOSM' },
+    { key: 'nav.wosm_members', label: '세계연맹 회원국 현황' },
+    { key: 'nav.people', label: '스카우트 인물' },
+    { key: 'nav.calendar', label: '캘린더' },
+    { key: 'nav.glossary', label: '용어집' }
+  ];
+  GW.BOARD_COPY_PAGES = [
+    { key: 'latest', label: '최근 1개월 소식', note: '/latest' },
+    { key: 'korea', label: 'Korea', note: '/korea' },
+    { key: 'apr', label: 'APR', note: '/apr' },
+    { key: 'wosm', label: 'WOSM', note: '/wosm' },
+    { key: 'people', label: '스카우트 인물', note: '/people' },
+    { key: 'glossary', label: '용어집', note: '/glossary' },
+    { key: 'calendar', label: '캘린더', note: '/calendar' },
+    { key: 'contributors', label: '도움을 주신 분들', note: '/contributors' },
+    { key: 'wosm_members', label: '세계연맹 회원국 현황', note: '/wosm-members' },
+  ];
+  GW.TAG_EDITOR_SECTIONS = [
+    { key: 'common', label: '공통 태그', desc: '모든 카테고리에서 공통으로 선택 가능한 태그입니다.' },
+    { key: 'korea', label: 'KOREA 태그', desc: 'Korea 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'apr', label: 'APR 태그', desc: 'APR 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'wosm', label: 'WOSM 태그', desc: 'WOSM 기사에서 사용하는 글머리 태그입니다.' },
+    { key: 'people', label: 'PEOPLE 태그', desc: '스카우트 인물 기사에서 사용하는 글머리 태그입니다.' }
+  ];
+  GW.PUBLIC_SEARCH_CATEGORY_KEYS = ['korea', 'apr', 'wosm', 'people'];
+
+  GW.getCategoryLabel = function (category) {
+    var info = GW.CATEGORIES[category] || GW.CATEGORIES.korea;
+    return info && info.label ? info.label : String(category || '');
+  };
+
+  GW.getMetaPageLabel = function (key) {
+    return GW.SITE_META_PAGE_LABELS[key] || String(key || '');
+  };
+
+  GW.getNavLabelRows = function () {
+    return GW.NAV_LABEL_ROWS.slice();
+  };
+
+  GW.getBoardCopyPageDefs = function () {
+    return GW.BOARD_COPY_PAGES.slice();
+  };
+
+  GW.getTagEditorSections = function () {
+    return GW.TAG_EDITOR_SECTIONS.slice();
+  };
+
+  GW.populateCategorySelect = function (selectEl, options) {
+    if (!selectEl) return;
+    var opts = options || {};
+    var keys = (opts.keys && opts.keys.slice()) || GW.PUBLIC_SEARCH_CATEGORY_KEYS.slice();
+    var selected = selectEl.value || '';
+    var html = '';
+    if (opts.includeAll) {
+      html += '<option value="">' + GW.escapeHtml(opts.allLabel || '전체 카테고리') + '</option>';
+    }
+    html += keys.map(function (key) {
+      return '<option value="' + GW.escapeHtml(key) + '">' + GW.escapeHtml(GW.getCategoryLabel(key)) + '</option>';
+    }).join('');
+    selectEl.innerHTML = html;
+    selectEl.value = selected;
   };
 
   // ── Date formatting ───────────────────────────────────────

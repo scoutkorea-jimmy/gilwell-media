@@ -36,7 +36,7 @@
     },
     'footer.disclaimer': {
       ko: 'BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.',
-      en: 'BPmedia is not an official channel of KSA or WOSM. Operated by volunteer contributors.',
+      en: 'BPmedia is not an official channel of the Korea Scout Association or WOSM. Operated by volunteer contributors.',
     },
     'link.latest': { ko: '1개월 소식 — 최근 30일간의 세계 스카우트 소식', en: 'Last 30 Days — Scout news from the last month' },
     'link.korea': { ko: 'Korea — 한국스카우트연맹', en: 'Korea — Korea Scout Association' },

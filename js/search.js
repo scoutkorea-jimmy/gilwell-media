@@ -56,6 +56,15 @@
       '</div>';
   }
 
+  function populateCategoryFilter(categoryEl) {
+    if (!categoryEl || typeof GW === 'undefined') return;
+    if (typeof GW.populateCategorySelect === 'function') {
+      GW.populateCategorySelect(categoryEl, { includeAll: true, allLabel: '전체 카테고리' });
+      return;
+    }
+    categoryEl.innerHTML = '<option value="">전체 카테고리</option>';
+  }
+
   function initSearchPage() {
     if (typeof GW === 'undefined') return;
     GW.bootstrapStandardPage();
@@ -74,6 +83,8 @@
     if (!searchInput || !searchBtn || !searchCount || !searchRes) {
       return;
     }
+
+    populateCategoryFilter(categoryEl);
 
     function doSearch(query) {
       query = (query || '').trim();

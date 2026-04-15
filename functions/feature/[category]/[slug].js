@@ -1,22 +1,7 @@
 import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../../_shared/site-meta.js';
 import { getSpecialFeatureCollection } from '../../_shared/special-features.js';
 import { getNavLabel, loadNavLabels } from '../../_shared/nav-labels.js';
-
-const CATEGORY_META = {
-  korea: { label: 'Korea', color: '#0094B4' },
-  apr: { label: 'APR', color: '#FF5655' },
-  wosm: { label: 'WOSM', color: '#248737' },
-  people: { label: 'Scout People', color: '#8A5A2B' },
-};
-
-function getCategoryDisplayMap(labels) {
-  return {
-    korea: getNavLabel(labels, 'nav.korea', 'ko'),
-    apr: getNavLabel(labels, 'nav.apr', 'ko'),
-    wosm: getNavLabel(labels, 'nav.wosm', 'ko'),
-    people: getNavLabel(labels, 'nav.people', 'ko'),
-  };
-}
+import { getCategoryMeta } from '../../_shared/category-meta.mjs';
 
 export async function onRequestGet(context) {
   return renderFeaturePage(context);
@@ -37,12 +22,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   const origin = new URL(request.url).origin;
   const siteMeta = await loadSiteMeta(env);
   const navLabels = await loadNavLabels(env);
-  const categoryDisplay = getCategoryDisplayMap(navLabels);
-  const categoryBase = CATEGORY_META[category] || CATEGORY_META.korea;
-  const categoryMeta = {
-    ...categoryBase,
-    label: categoryDisplay[category] || categoryBase.label,
-  };
+  const categoryMeta = getCategoryMeta(navLabels, category, 'ko');
   const leadItem = collection.items[0];
   const restItems = collection.items.slice(1);
   const title = `${collection.special_feature} · 특집 기사 컬렉션 · BP미디어`;
@@ -87,7 +67,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260415204143">
+  <link rel="stylesheet" href="/css/style.css?v=20260415205307">
   <style>
     .feature-page {
       background:
@@ -492,7 +472,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V00.110.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">—</span> · Admin <span class="admin-build-version">—</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 BP미디어 · bpmedia.net</p>
@@ -500,8 +480,8 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=20260415204143"></script>
-  <script src="/js/site-chrome.js?v=20260415204143"></script>
+  <script src="/js/main.js?v=20260415205307"></script>
+  <script src="/js/site-chrome.js?v=20260415205307"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;
