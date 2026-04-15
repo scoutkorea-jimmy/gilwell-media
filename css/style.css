@@ -7140,6 +7140,28 @@ footer a:hover { color: #ffffff; }
   border-radius: 16px;
 }
 
+@media (min-width: 769px) {
+  .post-like-wrap {
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+  }
+  .post-like-btn {
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    box-shadow: none;
+  }
+  .post-like-help {
+    flex: 0 1 auto;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
+
 .post-like-btn {
   display: inline-flex;
   align-items: center;

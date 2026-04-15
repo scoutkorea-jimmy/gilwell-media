@@ -1,5 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
-import { loadFeatureDefinition, DEFAULT_FEATURE_DEFINITION } from '../../_shared/feature-definition.js';
+import { loadFeatureDefinition, DEFAULT_FEATURE_DEFINITION, normalizeFeatureDefinitionContent } from '../../_shared/feature-definition.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
@@ -19,7 +19,7 @@ export async function onRequestPut({ request, env }) {
   }
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
-  const content = String(body && body.content || '').trim();
+  const content = normalizeFeatureDefinitionContent(body && body.content || '').trim();
   if (!content) return json({ error: '기능 정의서 내용이 비어 있습니다.' }, 400);
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'feature_definition'`).first();
