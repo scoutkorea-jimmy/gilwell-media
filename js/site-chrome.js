@@ -154,6 +154,7 @@
     GW.ensureFavicon();
     GW.initMobileTypeControls();
     GW.applyMobileTypeScale();
+    GW.setupPullToRefresh();
     if (!GW._responsiveChromeBound) {
       GW._responsiveChromeBound = true;
       window.addEventListener('resize', function () {
@@ -163,6 +164,86 @@
     }
     if (document.body && document.body.hasAttribute('data-home-bootstrap')) return;
     GW.applyManagedFooter();
+  };
+
+  GW.ensurePullRefreshIndicator = function () {
+    if (typeof document === 'undefined' || !document.body) return null;
+    var existing = document.getElementById('pull-refresh-indicator');
+    if (existing) return existing;
+    var indicator = document.createElement('div');
+    indicator.className = 'pull-refresh-indicator';
+    indicator.id = 'pull-refresh-indicator';
+    indicator.setAttribute('aria-hidden', 'true');
+    indicator.innerHTML = '<span class="pull-refresh-label">당겨서 새로고침</span>';
+    document.body.appendChild(indicator);
+    return indicator;
+  };
+
+  GW.setupPullToRefresh = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (GW._pullToRefreshBound) return;
+    if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) return;
+    if (!document.body || document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3')) return;
+
+    var indicator = GW.ensurePullRefreshIndicator();
+    if (!indicator) return;
+    var labelEl = indicator.querySelector('.pull-refresh-label');
+    var startY = 0;
+    var pulling = false;
+    var current = 0;
+    var threshold = 86;
+
+    function scrollTop() {
+      var root = document.scrollingElement || document.documentElement || document.body;
+      return root ? (root.scrollTop || 0) : (window.scrollY || 0);
+    }
+
+    function resetIndicator() {
+      indicator.classList.remove('visible', 'ready');
+      indicator.style.setProperty('--pull-distance', '0px');
+      if (labelEl) labelEl.textContent = '당겨서 새로고침';
+      current = 0;
+    }
+
+    window.addEventListener('touchstart', function (event) {
+      if (scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      startY = event.touches[0].clientY;
+      pulling = true;
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function (event) {
+      if (!pulling || scrollTop() > 0 || !event.touches || event.touches.length !== 1) return;
+      var delta = event.touches[0].clientY - startY;
+      if (delta <= 0) {
+        resetIndicator();
+        return;
+      }
+      current = Math.min(delta * 0.55, 104);
+      indicator.classList.add('visible');
+      indicator.style.setProperty('--pull-distance', current + 'px');
+      indicator.classList.toggle('ready', current >= threshold);
+      if (current >= threshold && labelEl) labelEl.textContent = '놓으면 새로고침';
+      if (delta > 6) event.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', function () {
+      if (!pulling) return;
+      pulling = false;
+      if (current >= threshold) {
+        indicator.classList.add('ready');
+        if (labelEl) labelEl.textContent = '새로고침 중...';
+        window.location.reload();
+        return;
+      }
+      resetIndicator();
+    });
+
+    window.addEventListener('touchcancel', function () {
+      pulling = false;
+      resetIndicator();
+    });
+
+    GW._pullToRefreshBound = true;
   };
 
   GW.applyManagedFooterData = function (data) {
@@ -667,6 +748,7 @@
     if (opts.loadStats !== false) GW.loadStats();
     if (shouldLoadTranslations) GW.loadTranslations();
     GW.setupMobileCompactHeader();
+    GW.setupPullToRefresh();
   };
 
   GW.setupMastheadSearch = function () {
