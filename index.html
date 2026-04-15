@@ -11,7 +11,32 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260415214914">
+  <link rel="stylesheet" href="/css/style.css?v=20260415215854">
+  <script>
+    (function () {
+      function markHomeScriptFailure(name) {
+        var root = document.documentElement;
+        if (!root) return;
+        root.classList.add('gw-home-script-error');
+        if (name) root.setAttribute('data-home-script-error', name);
+        var el = document.getElementById('home-runtime-alert');
+        if (!el) return;
+        el.hidden = false;
+        el.className = 'home-runtime-alert is-error';
+        el.innerHTML =
+          '<div class="home-runtime-alert-copy">' +
+            '<strong>홈 화면 일부 기능이 제한되었습니다.</strong>' +
+            '<span>필수 스크립트를 불러오지 못해 일부 섹션이나 상호작용이 정상 동작하지 않을 수 있습니다.</span>' +
+          '</div>';
+      }
+      window.__GW_HOME_SCRIPT_FAILURE__ = markHomeScriptFailure;
+      document.addEventListener('DOMContentLoaded', function () {
+        if (document.documentElement && document.documentElement.classList.contains('gw-home-script-error')) {
+          markHomeScriptFailure(document.documentElement.getAttribute('data-home-script-error') || '');
+        }
+      });
+    })();
+  </script>
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a,[data-managed-home-label]{font-size:0!important}.nav[data-managed-nav] a::before,[data-managed-home-label]::before{content:attr(data-fallback-label);font-size:12px}[data-managed-home-label]::before{font-family:AliceDigitalLearning,sans-serif;letter-spacing:.14em;text-transform:uppercase}</style></noscript>
 </head>
 <body data-home-bootstrap="1">
@@ -65,6 +90,7 @@
     <div class="ticker-inner" id="ticker-inner" data-fallback-items="길웰 미디어는 스카우트 운동의 소식을 기록하는 미디어입니다||한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다||The BP Post · bpmedia.net"></div>
     <button type="button" class="ticker-toggle-btn" id="ticker-toggle-btn" aria-pressed="false" aria-label="상단 소식 흐름 일시정지">일시정지</button>
   </div>
+  <div class="home-runtime-alert" id="home-runtime-alert" hidden aria-live="polite"></div>
 
   <!-- ── SITE HERO (slider) ── -->
   <div class="site-hero-slider" id="site-hero-slider">
@@ -247,12 +273,12 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/js/main.js?v=20260415214914" onerror="document.body.classList.add('gw-script-error')"></script>
-  <script src="/js/site-chrome.js?v=20260415214914" onerror="console.error('site-chrome.js load failed')"></script>
-  <script src="/js/home-helpers.js?v=20260415214914" onerror="console.error('home-helpers.js load failed')"></script>
-  <script src="/js/home-render.js?v=20260415214914" onerror="console.error('home-render.js load failed')"></script>
-  <script src="/js/home-hero.js?v=20260415214914" onerror="console.error('home-hero.js load failed')"></script>
-  <script src="/js/home-runtime.js?v=20260415214914" onerror="console.error('home-runtime.js load failed')"></script>
-  <script src="/js/home.js?v=20260415214914" onerror="console.error('home.js load failed')"></script>
+  <script src="/js/main.js?v=20260415215854" onerror="document.body.classList.add('gw-script-error');window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('main.js')"></script>
+  <script src="/js/site-chrome.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('site-chrome.js')"></script>
+  <script src="/js/home-helpers.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-helpers.js')"></script>
+  <script src="/js/home-render.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-render.js')"></script>
+  <script src="/js/home-hero.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-hero.js')"></script>
+  <script src="/js/home-runtime.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-runtime.js')"></script>
+  <script src="/js/home.js?v=20260415215854" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home.js')"></script>
 </body>
 </html>

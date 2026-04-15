@@ -46,7 +46,7 @@ async function renderGlossaryRawPage({ request, env }, headOnly = false) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${metaBlock}
-  <link rel="stylesheet" href="/css/style.css?v=20260415214914">
+  <link rel="stylesheet" href="/css/style.css?v=20260415215854">
   <style>
     body.glossary-raw-page {
       margin: 0;

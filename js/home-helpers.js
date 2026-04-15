@@ -15,6 +15,23 @@
     wosm: 'WOSM 소식을 잠시 불러오지 못했습니다',
     people: '스카우트 인물 소식을 잠시 불러오지 못했습니다'
   };
+  var HOME_FAILURE_LABELS = {
+    site_meta: '사이트 메타',
+    nav_labels: '메뉴명',
+    translations: '번역',
+    ticker: '상단 티커',
+    stats: '상단 통계',
+    analytics: '푸터 통계',
+    hero: '히어로',
+    lead: '메인 스토리',
+    latest: '최신 소식',
+    popular: '인기 소식',
+    picks: '에디터 추천',
+    korea: 'Korea',
+    apr: 'APR',
+    wosm: 'WOSM',
+    people: '스카우트 인물'
+  };
 
   function getHomeIssueMap(data) {
     return data && data.issues && typeof data.issues === 'object' ? data.issues : {};
@@ -27,6 +44,58 @@
   function renderHomeBlockError(el, key) {
     if (!el) return;
     el.innerHTML = '<div class="mini-empty">' + GW.escapeHtml(getHomeBlockErrorMessage(key)) + '</div>';
+  }
+
+  function getActiveHomeIssueKeys(issues) {
+    var issueMap = getHomeIssueMap({ issues: issues });
+    return Object.keys(issueMap).filter(function (key) {
+      return !!issueMap[key];
+    });
+  }
+
+  function getHomeIssueLabels(keys) {
+    return (Array.isArray(keys) ? keys : []).map(function (key) {
+      return HOME_FAILURE_LABELS[key] || key;
+    });
+  }
+
+  function renderHomeStatusBanner(options) {
+    var el = document.getElementById('home-runtime-alert');
+    if (!el) return;
+    var opts = options || {};
+    if (!opts.type) {
+      el.hidden = true;
+      el.className = 'home-runtime-alert';
+      el.innerHTML = '';
+      return;
+    }
+
+    var title = '';
+    var message = '';
+    var detail = '';
+    var retry = opts.retry !== false;
+    if (opts.type === 'partial') {
+      var labels = getHomeIssueLabels(opts.issueKeys);
+      title = '홈 일부 섹션이 임시 기본값으로 표시되고 있습니다.';
+      message = '데이터를 불러오지 못한 영역은 비어 보이거나 기본 상태로 대체될 수 있습니다.';
+      detail = labels.length ? labels.slice(0, 4).join(' · ') : '';
+    } else if (opts.type === 'refresh') {
+      title = '최신 홈 데이터를 다시 불러오지 못했습니다.';
+      message = '지금 보이는 내용은 이전 상태일 수 있습니다.';
+    } else if (opts.type === 'fatal') {
+      title = '홈 데이터를 불러오지 못했습니다.';
+      message = '일시적인 연결 문제이거나 서버 응답이 지연되고 있습니다.';
+    }
+
+    el.hidden = false;
+    el.className = 'home-runtime-alert is-' + opts.type;
+    el.innerHTML =
+      '<div class="home-runtime-alert-copy">' +
+        '<strong>' + GW.escapeHtml(title) + '</strong>' +
+        '<span>' + GW.escapeHtml(message) + '</span>' +
+        (detail ? '<small>' + GW.escapeHtml(detail) + '</small>' : '') +
+      '</div>' +
+      (retry ? '<button type="button" class="home-runtime-alert-btn" data-home-retry="1">다시 시도</button>' : '');
   }
 
   function getStableIssueFingerprint(code, detail) {
@@ -226,6 +295,9 @@
     getHomeIssueMap: getHomeIssueMap,
     getHomeBlockErrorMessage: getHomeBlockErrorMessage,
     renderHomeBlockError: renderHomeBlockError,
+    getActiveHomeIssueKeys: getActiveHomeIssueKeys,
+    getHomeIssueLabels: getHomeIssueLabels,
+    renderHomeStatusBanner: renderHomeStatusBanner,
     reportHomepageIssue: reportHomepageIssue,
     getPostIdsSignature: getPostIdsSignature,
     getHeroSignature: getHeroSignature,
