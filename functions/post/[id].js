@@ -6,6 +6,7 @@ import { findManualRelatedPosts, findRelatedPosts } from '../_shared/related-pos
 import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
+import { getCategoryMeta, listEditablePostCategories } from '../_shared/category-meta.mjs';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -19,24 +20,6 @@ import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
  *  - Open Graph tags (og:title, og:description, og:image)
  *  - Full post content rendered from Editor.js JSON
  */
-
-const CATEGORIES = {
-  korea: { label: 'Korea', color: '#0094B4' },
-  apr:   { label: 'APR',         color: '#FF5655' },
-  wosm:  { label: 'WOSM', color: '#248737' },
-  people:{ label: 'Scout People', color: '#8A5A2B' },
-  glossary:{ label: 'Glossary', color: '#5D6F2B' },
-};
-
-function getCategoryDisplayMap(labels) {
-  return {
-    korea: getNavLabel(labels, 'nav.korea', 'ko'),
-    apr: getNavLabel(labels, 'nav.apr', 'ko'),
-    wosm: getNavLabel(labels, 'nav.wosm', 'ko'),
-    people: getNavLabel(labels, 'nav.people', 'ko'),
-    glossary: getNavLabel(labels, 'nav.glossary', 'ko'),
-  };
-}
 
 export async function onRequestGet({ params, env, request }) {
   const id = parseInt(params.id, 10);
@@ -73,8 +56,6 @@ export async function onRequestGet({ params, env, request }) {
   const navPeople = getNavLabel(navLabels, 'nav.people', 'ko');
   const navCalendar = getNavLabel(navLabels, 'nav.calendar', 'ko');
   const navGlossary = getNavLabel(navLabels, 'nav.glossary', 'ko');
-  const categoryDisplay = getCategoryDisplayMap(navLabels);
-
   if (!post) return notFound();
   let isAdmin = false;
   if (post.published === 0) {
@@ -96,11 +77,8 @@ export async function onRequestGet({ params, env, request }) {
 
   const requestUrlObj = new URL(request.url);
   const siteUrl  = requestUrlObj.origin;
-  const catBase  = CATEGORIES[post.category] || CATEGORIES.korea;
-  const cat      = {
-    ...catBase,
-    label: categoryDisplay[post.category] || catBase.label,
-  };
+  const cat = getCategoryMeta(navLabels, post.category, 'ko');
+  const editableCategories = listEditablePostCategories(navLabels, 'ko');
   const titleText = post.title || '';
   const subtitleText = post.subtitle || '';
   const title    = escapeHtml(titleText);
@@ -194,7 +172,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260415204143">
+  <link rel="stylesheet" href="/css/style.css?v=20260415205307">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -368,7 +346,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Build <span class="site-build-version">V00.110.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">—</span> · Admin <span class="admin-build-version">—</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -402,10 +380,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="form-group">
           <label for="post-edit-category">카테고리</label>
           <select id="post-edit-category">
-            <option value="korea">Korea</option>
-            <option value="apr">APR</option>
-            <option value="wosm">WOSM</option>
-            <option value="people">Scout People</option>
+            ${editableCategories.map((item) => `<option value="${item.key}">${escapeHtml(item.label)}</option>`).join('')}
           </select>
         </div>
         <div class="form-group">
@@ -523,9 +498,9 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260415204143"></script>
-  <script src="/js/site-chrome.js?v=20260415204143"></script>
-  <script src="/js/post-page.js?v=20260415204143"></script>
+  <script src="/js/main.js?v=20260415205307"></script>
+  <script src="/js/site-chrome.js?v=20260415205307"></script>
+  <script src="/js/post-page.js?v=20260415205307"></script>
 </body>
 </html>`;
 

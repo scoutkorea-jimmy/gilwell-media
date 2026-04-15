@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260415204143">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260415205307">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.062.11</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.062.12</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,7 +41,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.11</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.12</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -298,10 +298,10 @@
             </div>
             <select class="v3-filter-select" id="list-cat">
               <option value="all">전체 카테고리</option>
-              <option value="korea">Korea / KSA</option>
+              <option value="korea">Korea</option>
               <option value="apr">APR</option>
               <option value="wosm">WOSM</option>
-              <option value="people">People</option>
+              <option value="people">스카우트 인물</option>
             </select>
             <select class="v3-filter-select" id="list-pub">
               <option value="all">공개 + 비공개</option>
@@ -367,10 +367,10 @@
                   <div class="v3-form-group">
                     <label class="v3-label" for="w-cat">카테고리</label>
                     <select class="v3-select" id="w-cat">
-                      <option value="korea">Korea / KSA</option>
+                      <option value="korea">Korea</option>
                       <option value="apr">APR</option>
                       <option value="wosm">WOSM</option>
-                      <option value="people">People</option>
+                      <option value="people">스카우트 인물</option>
                     </select>
                   </div>
                   <div class="v3-form-group">
@@ -941,7 +941,7 @@
                 <p class="v3-card-desc v3-mb-16">각 게시판 상단에 표시할 이벤트 배너 텍스트를 설정합니다. 비워두면 표시되지 않습니다.</p>
                 <div class="v3-form-grid">
                   <div class="v3-form-group">
-                    <label class="v3-label">Korea / KSA</label>
+                    <label class="v3-label">Korea</label>
                     <input class="v3-input" type="text" id="banner-korea-name" placeholder="이벤트명" />
                     <input class="v3-input v3-mt-8" type="date" id="banner-korea-date" />
                   </div>
@@ -956,7 +956,7 @@
                     <input class="v3-input v3-mt-8" type="date" id="banner-wosm-date" />
                   </div>
                   <div class="v3-form-group">
-                    <label class="v3-label">People</label>
+                    <label class="v3-label">스카우트 인물</label>
                     <input class="v3-input" type="text" id="banner-people-name" placeholder="이벤트명" />
                     <input class="v3-input v3-mt-8" type="date" id="banner-people-date" />
                   </div>
@@ -1504,8 +1504,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260415204143"></script>
-<script src="/js/shared-country-name-ko.js?v=20260415204143"></script>
-<script src="/js/admin-v3.js?v=20260415204143"></script>
+<script src="/js/main.js?v=20260415205307"></script>
+<script src="/js/shared-country-name-ko.js?v=20260415205307"></script>
+<script src="/js/admin-v3.js?v=20260415205307"></script>
 </body>
 </html>
