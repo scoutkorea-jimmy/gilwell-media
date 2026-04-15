@@ -1,5 +1,6 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { loadNavLabels, normalizeNavLabels } from '../../_shared/nav-labels.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -25,10 +26,18 @@ export async function onRequestPut({ request, env }) {
   const labels = normalizeNavLabels(body && body.labels);
 
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'nav_labels'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('nav_labels', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(labels)).run();
+    await recordSettingChange(env, {
+      key: 'nav_labels',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/nav-labels',
+      message: '메뉴명 설정 변경',
+      details: { labels: labels },
+    });
     return json({ labels });
   } catch (err) {
     console.error('PUT /api/settings/nav-labels error:', err);

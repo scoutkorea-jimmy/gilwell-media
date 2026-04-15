@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_GAP = 6;
 
@@ -25,10 +26,18 @@ export async function onRequestPut({ request, env }) {
 
   const gap = sanitizeGap(body && body.gap_px);
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_card_gap'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('board_card_gap', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(String(gap)).run();
+    await recordSettingChange(env, {
+      key: 'board_card_gap',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/board-layout',
+      message: '게시판 간격 설정 변경',
+      details: { gap_px: gap },
+    });
     return json({ gap_px: gap });
   } catch (err) {
     console.error('PUT /api/settings/board-layout error:', err);

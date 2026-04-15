@@ -1,6 +1,7 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
@@ -61,12 +62,27 @@ export async function onRequestPut({ env, request }) {
   const media = hasMedia ? normalizeHomeLeadMedia(body.media) : null;
 
   try {
-    const currentRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
+    const [currentRow, currentMediaRow] = await Promise.all([
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first(),
+      env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first(),
+    ]);
     const currentPostId = currentRow ? parseInt(currentRow.value, 10) : 0;
+    const previousMedia = normalizeHomeLeadMedia(parseJsonValue(currentMediaRow && currentMediaRow.value));
+    const previousSnapshot = JSON.stringify({
+      post_id: currentPostId || null,
+      media: previousMedia,
+    });
 
     if (hasPostId && !postId) {
       await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_post'`).run();
       await env.DB.prepare(`DELETE FROM settings WHERE key = 'home_lead_media'`).run();
+      await recordSettingChange(env, {
+        key: 'home_lead',
+        previousValue: previousSnapshot,
+        path: '/api/settings/home-lead',
+        message: '메인 스토리 설정 초기화',
+        details: { post_id: null },
+      });
       await purgeContentCache(env, origin).catch((err) => {
         console.error('PUT /api/settings/home-lead cache purge error:', err);
       });
@@ -107,11 +123,19 @@ export async function onRequestPut({ env, request }) {
       console.error('PUT /api/settings/home-lead cache purge error:', err);
     });
 
-    return json({
+    const nextPayload = {
       success: true,
       post_id: hasPostId ? postId : currentPostId,
       media: media || (currentPostId !== postId && hasPostId ? DEFAULT_HOME_LEAD_MEDIA : normalizeHomeLeadMedia(parseJsonValue((await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_media'`).first())?.value))),
+    };
+    await recordSettingChange(env, {
+      key: 'home_lead',
+      previousValue: previousSnapshot,
+      path: '/api/settings/home-lead',
+      message: '메인 스토리 설정 변경',
+      details: { post_id: nextPayload.post_id },
     });
+    return json(nextPayload);
   } catch (err) {
     console.error('PUT /api/settings/home-lead error:', err);
     return json({ error: 'Database error' }, 500);

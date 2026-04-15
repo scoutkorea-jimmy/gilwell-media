@@ -9,6 +9,7 @@
  * Posts store author as "Editor A", "Editor B", etc.
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const LETTERS = ['A', 'B', 'C'];
 
@@ -61,10 +62,17 @@ export async function onRequestPut({ request, env }) {
   });
 
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('editors', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(safe)).run();
+    await recordSettingChange(env, {
+      key: 'editors',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/editors',
+      message: '에디터 실명 설정 변경',
+    });
     return json({ editors: safe });
   } catch (err) {
     console.error('PUT /api/settings/editors error:', err);

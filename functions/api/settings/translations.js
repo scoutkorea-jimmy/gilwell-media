@@ -6,6 +6,7 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { loadNavLabels } from '../../_shared/nav-labels.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const LOCKED_TRANSLATION_KEYS = {
   'nav.contributors': true,
@@ -50,10 +51,18 @@ export async function onRequestPut({ request, env }) {
   const strings = sanitizeTranslationStrings(body.strings || {});
 
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('translations', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(strings)).run();
+    await recordSettingChange(env, {
+      key: 'translations',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/translations',
+      message: '번역 문구 설정 변경',
+      details: { count: Object.keys(strings).length },
+    });
 
     return json({ success: true });
   } catch (err) {

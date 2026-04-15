@@ -5,6 +5,7 @@
  * PUT /api/settings/contributors  ← admin only, update list
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -58,7 +59,6 @@ export async function onRequestPut({ request, env }) {
     const nextRev = currentRev + 1;
 
     await Promise.all([
-      prev ? env.DB.prepare(`INSERT INTO settings_history (key, value) VALUES (?, ?)`).bind('contributors', prev.value).run() : null,
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('contributors', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -68,6 +68,13 @@ export async function onRequestPut({ request, env }) {
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
       ).bind(String(nextRev)).run(),
     ]);
+    await recordSettingChange(env, {
+      key: 'contributors',
+      previousValue: prev && prev.value,
+      path: '/api/settings/contributors',
+      message: '기고자 설정 변경',
+      details: { revision: nextRev, count: safe.length },
+    });
     return json({ items: safe, revision: nextRev });
   } catch (err) {
     console.error('PUT /api/settings/contributors error:', err);

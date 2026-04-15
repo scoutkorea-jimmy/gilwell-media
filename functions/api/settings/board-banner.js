@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_BOARD_BANNER = Object.freeze({
   items: {
@@ -34,10 +35,17 @@ export async function onRequestPut({ request, env }) {
 
   const normalized = normalizeBoardBannerSettings(body);
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'board_banner_events'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('board_banner_events', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(JSON.stringify(normalized)).run();
+    await recordSettingChange(env, {
+      key: 'board_banner_events',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/board-banner',
+      message: '게시판 배너 설정 변경',
+    });
     return json(normalized);
   } catch (err) {
     console.error('PUT /api/settings/board-banner error:', err);

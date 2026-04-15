@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { loadFeatureDefinition, DEFAULT_FEATURE_DEFINITION } from '../../_shared/feature-definition.js';
+import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
@@ -21,10 +22,17 @@ export async function onRequestPut({ request, env }) {
   const content = String(body && body.content || '').trim();
   if (!content) return json({ error: '기능 정의서 내용이 비어 있습니다.' }, 400);
   try {
+    const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'feature_definition'`).first();
     await env.DB.prepare(
       `INSERT INTO settings (key, value) VALUES ('feature_definition', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(content).run();
+    await recordSettingChange(env, {
+      key: 'feature_definition',
+      previousValue: prevRow && prevRow.value,
+      path: '/api/settings/feature-definition',
+      message: '기능 정의서 설정 변경',
+    });
     return json({ ok: true, content }, 200);
   } catch (err) {
     console.error('PUT /api/settings/feature-definition error:', err);
