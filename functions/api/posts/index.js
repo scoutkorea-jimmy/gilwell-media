@@ -15,6 +15,7 @@ import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 
 const PAGE_SIZE = 16;
 
@@ -266,6 +267,19 @@ export async function onRequestPost({ request, env }) {
 
     if (insertedPost) {
       await recordPostHistory(env, insertedPost.id, 'create', null, insertedPost, '게시글 생성');
+      await logOperationalEvent(env, {
+        channel: 'admin',
+        type: 'post_created',
+        level: 'info',
+        actor: safeAuthor || 'admin',
+        path: '/api/posts',
+        message: '게시글 생성 · ' + String(insertedPost.title || ''),
+        details: {
+          post_id: insertedPost.id,
+          category: insertedPost.category || category,
+          published: Number(insertedPost.published || 0) === 1,
+        },
+      });
       await purgeContentCache(env, origin, { postId: insertedPost.id, categories: [insertedPost.category] }).catch(function (err) {
         console.error('POST /api/posts cache purge error:', err);
       });

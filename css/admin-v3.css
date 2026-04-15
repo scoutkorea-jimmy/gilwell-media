@@ -1484,6 +1484,24 @@
   display: grid;
   gap: 10px;
 }
+.v3-history-group + .v3-history-group {
+  margin-top: 18px;
+}
+.v3-history-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.v3-history-table .v3-table-title {
+  max-width: 360px;
+  white-space: normal;
+  line-height: 1.5;
+}
+.v3-history-table .v3-issues-note {
+  max-width: 440px;
+}
 .v3-search-result-title {
   font-weight: 600;
   color: var(--v3-text);
