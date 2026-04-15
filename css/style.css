@@ -1680,12 +1680,16 @@ body[data-home-bootstrap] .masthead {
   content:    '';
   position:   absolute;
   inset:      0;
-  background: rgba(0, 0, 0, 0.58);
+  background:
+    linear-gradient(180deg, rgba(8, 16, 28, 0.36) 0%, rgba(8, 16, 28, 0.26) 30%, rgba(8, 16, 28, 0.68) 100%),
+    linear-gradient(120deg, rgba(0, 148, 180, 0.10) 0%, rgba(17, 17, 17, 0.10) 100%);
   z-index:    1;
 }
 
 .site-hero.site-hero-png::after {
-  background: rgba(247, 243, 239, 0.14);
+  background:
+    linear-gradient(180deg, rgba(247, 243, 239, 0.10) 0%, rgba(247, 243, 239, 0.18) 100%),
+    linear-gradient(120deg, rgba(0, 148, 180, 0.10) 0%, rgba(17, 17, 17, 0.10) 100%);
 }
 
 /* Large watermark subtitle in background */
@@ -6195,6 +6199,7 @@ footer a:hover { color: #ffffff; }
   }
   .masthead-stats     { display: none; }
   .lang-btn { padding: 4px 8px; font-size: 9px; min-height: 44px; min-width: 44px; }
+  .lang-toggle { display: none; }
   .mh-search-input { width: 0; min-width: 0; }
   /* Search expands to full width when active */
   .masthead-search:focus-within .mh-search-input,
@@ -6881,6 +6886,13 @@ footer a:hover { color: #ffffff; }
   gap:         8px;
   align-items: center;
 }
+.post-page-tags-label {
+  font-family: AliceDigitalLearning, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
 .post-page-tag {
   font-family: AliceDigitalLearning, sans-serif;
   font-size:      10px;
@@ -6890,6 +6902,16 @@ footer a:hover { color: #ffffff; }
   padding:        3px 9px;
   border:         1px solid var(--border);
 }
+.post-page-tag-btn {
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+.post-page-tag-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fff;
+  transform: translateY(-1px);
+}
 
 .post-related-posts,
 .modal-related-posts,
@@ -6897,6 +6919,12 @@ footer a:hover { color: #ffffff; }
   margin-top: 28px;
   padding-top: 20px;
   border-top: 1px solid var(--border);
+}
+.post-related-surface {
+  background: rgba(17, 17, 17, 0.035);
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  border-radius: 18px;
+  padding: 18px 18px 16px;
 }
 
 .post-related-posts-mobile {
@@ -6914,6 +6942,9 @@ footer a:hover { color: #ffffff; }
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 14px;
+}
+.post-related-surface .post-related-heading {
+  margin-top: 0;
 }
 
 .post-special-feature-heading-row {
@@ -7097,9 +7128,14 @@ footer a:hover { color: #ffffff; }
 
 .post-like-wrap {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   flex-wrap: wrap;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(217, 74, 58, 0.14);
+  background: rgba(217, 74, 58, 0.04);
+  border-radius: 16px;
 }
 
 .post-like-btn {
@@ -7115,6 +7151,7 @@ footer a:hover { color: #ffffff; }
   letter-spacing: 0.08em;
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
+  flex: 0 0 auto;
 }
 
 .post-like-btn:hover:not(:disabled) {
@@ -7129,11 +7166,21 @@ footer a:hover { color: #ffffff; }
   color: #fff;
   box-shadow: none;
 }
+.post-like-btn.is-busy {
+  opacity: 0.82;
+  pointer-events: none;
+}
 
 .post-like-help {
   font-family: AliceDigitalLearning, sans-serif;
   font-size: 10px;
   color: var(--muted);
+  line-height: 1.55;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.post-tag-modal {
+  max-width: 760px;
 }
 
 .post-mobile-header {
@@ -7357,7 +7404,17 @@ footer a:hover { color: #ffffff; }
     color: rgba(17,17,17,0.45);
   }
   .post-like-wrap {
-    align-items: flex-start;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px 12px;
+    padding: 14px;
+  }
+  .post-like-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .post-like-help {
+    flex-basis: 100%;
   }
 }
 

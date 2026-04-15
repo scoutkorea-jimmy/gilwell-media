@@ -4,10 +4,10 @@
   var boot = window.GW_POST_BOOT || {};
   GW.bootstrapStandardPage();
 
-  var _editPostId = Number(boot.editPostId || 0);
-  var _sharePostUrl = String(boot.sharePostUrl || window.location.href);
-  var _sharePostTitle = String(boot.sharePostTitle || document.title || '');
-  var _postEditSeed = boot.editSeed || {};
+var _editPostId = Number(boot.editPostId || 0);
+var _sharePostUrl = String(boot.sharePostUrl || window.location.href);
+var _sharePostTitle = String(boot.sharePostTitle || document.title || '');
+var _postEditSeed = boot.editSeed || {};
 var _postTurnstileWidgetId = null;
 var _postEditState = {
   editor: null,
@@ -22,6 +22,13 @@ var _postRelatedSearchTimer = null;
 
 function _setBodyModalLock(locked) {
   document.body.style.overflow = locked ? 'hidden' : '';
+}
+
+function _setOverlayState(id, open) {
+  var overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.toggle('open', !!open);
+  overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
 }
 
 function _parsePostTags(value) {
@@ -545,8 +552,7 @@ function _openPostLogin() {
 window._closePostEdit = function () {
   var overlay = document.getElementById('post-edit-overlay');
   if (!overlay) return;
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden', 'true');
+  _setOverlayState('post-edit-overlay', false);
   _setBodyModalLock(false);
 };
 
@@ -572,6 +578,60 @@ window._sharePostLink = function() {
     GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
   });
 };
+
+window._closePostTagModal = function () {
+  _setOverlayState('post-tag-modal', false);
+  _setBodyModalLock(false);
+};
+
+function _renderTagRelatedPosts(tag, posts) {
+  var list = document.getElementById('post-tag-modal-list');
+  if (!list) return;
+  list.innerHTML = '<section class="modal-related-posts post-related-surface">' +
+    '<h3 class="post-related-heading">#' + GW.escapeHtml(tag) + '</h3>' +
+    '<ul class="post-related-list">' +
+      posts.map(function (item) {
+        var category = (GW.CATEGORIES && GW.CATEGORIES[item.category]) || GW.CATEGORIES.korea;
+        var publicDate = item.publish_at || item.created_at || '';
+        return '<li><a href="/post/' + Number(item.id) + '">' +
+          '<span class="post-related-title">[' + GW.escapeHtml(category.label) + '] ' + GW.escapeHtml(item.title || '') + '</span>' +
+          '<span class="post-related-date">' + GW.escapeHtml(GW.formatDate(publicDate)) + '</span>' +
+        '</a></li>';
+      }).join('') +
+    '</ul>' +
+  '</section>';
+}
+
+function _openPostTagModal(tag) {
+  var safeTag = String(tag || '').trim();
+  if (!safeTag) return;
+  var titleEl = document.getElementById('post-tag-modal-title');
+  var descEl = document.getElementById('post-tag-modal-desc');
+  var chipEl = document.getElementById('post-tag-modal-chip');
+  var listEl = document.getElementById('post-tag-modal-list');
+  if (titleEl) titleEl.textContent = '#' + safeTag + ' 관련 기사';
+  if (descEl) descEl.textContent = '선택한 태그와 연결된 공개 기사 목록입니다.';
+  if (chipEl) chipEl.textContent = safeTag;
+  if (listEl) listEl.innerHTML = '<div class="post-edit-note">관련 기사를 불러오는 중…</div>';
+  GW.apiFetch('/api/posts?page=1&limit=8&tag=' + encodeURIComponent(safeTag))
+    .then(function (data) {
+      var posts = Array.isArray(data && data.posts) ? data.posts : [];
+      posts = posts.filter(function (item) {
+        return Number(item.id) !== Number(_editPostId);
+      });
+      if (!posts.length) {
+        window._closePostTagModal();
+        GW.showToast('유관기사가 없습니다', 'error');
+        return;
+      }
+      _renderTagRelatedPosts(safeTag, posts);
+      _setOverlayState('post-tag-modal', true);
+      _setBodyModalLock(true);
+    })
+    .catch(function (err) {
+      GW.showToast((err && err.message) || '태그 관련 기사를 불러오지 못했습니다', 'error');
+    });
+}
 
 window._postEdit = function() {
   if (GW.getToken && GW.getToken() && GW.verifyAdminSession) {
@@ -779,6 +839,14 @@ if (_postEditBtn) {
   });
 }
 
+document.querySelectorAll('.post-page-tag-btn').forEach(function (button) {
+  button.addEventListener('click', function (event) {
+    event.preventDefault();
+    var tag = button.getAttribute('data-tag') || '';
+    _openPostTagModal(tag);
+  });
+});
+
 var _specialFeatureToggle = document.getElementById('post-special-feature-toggle');
 if (_specialFeatureToggle) {
   _specialFeatureToggle.addEventListener('click', function () {
@@ -797,6 +865,9 @@ document.getElementById('post-login-modal').addEventListener('click', function (
 });
 document.getElementById('post-edit-overlay').addEventListener('click', function (event) {
   if (event.target === event.currentTarget) window._closePostEdit();
+});
+document.getElementById('post-tag-modal').addEventListener('click', function (event) {
+  if (event.target === event.currentTarget) window._closePostTagModal();
 });
 document.getElementById('post-edit-category').addEventListener('change', function (event) {
   _postEditState.activeCategory = event.target.value || 'korea';
@@ -825,6 +896,11 @@ document.addEventListener('keydown', function (event) {
   var editOverlay = document.getElementById('post-edit-overlay');
   if (editOverlay && editOverlay.classList.contains('open')) {
     window._closePostEdit();
+    return;
+  }
+  var tagModal = document.getElementById('post-tag-modal');
+  if (tagModal && tagModal.classList.contains('open')) {
+    window._closePostTagModal();
     return;
   }
   if (loginModal && loginModal.classList.contains('open')) {
@@ -865,16 +941,19 @@ var _postLikeBtn = document.getElementById('post-like-btn');
 if (_postLikeBtn) {
   _postLikeBtn.addEventListener('click', function() {
     if (_postLikeBtn.disabled) return;
+    _postLikeBtn.classList.add('is-busy');
     GW.apiFetch('/api/posts/' + _editPostId + '/like', { method: 'POST' })
       .then(function(data) {
         var countEl = document.getElementById('post-like-count');
         if (countEl) countEl.textContent = data.likes || 0;
         _postLikeBtn.disabled = true;
         _postLikeBtn.classList.add('liked');
+        _postLikeBtn.classList.remove('is-busy');
         var help = document.querySelector('.post-like-help');
         if (help) help.textContent = '이미 공감한 기사입니다';
       })
       .catch(function(err) {
+        _postLikeBtn.classList.remove('is-busy');
         GW.showToast(err.message || '공감 처리에 실패했습니다', 'error');
       });
   });

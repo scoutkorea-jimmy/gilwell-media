@@ -100,6 +100,7 @@ export async function onRequestGet({ params, env, request }) {
   const bodyGalleryHtml = renderContentGallery(parseGalleryImages(post.gallery_images));
   const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
+  const visibleTags = collectVisiblePostTags(post);
   const postUrl  = `${siteUrl}/post/${id}`;
   const isShareMetaRequest = requestUrlObj.searchParams.has('share_ref') || requestUrlObj.searchParams.has('fb_share_ref');
   const shareMetaUrl = isShareMetaRequest
@@ -172,7 +173,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260415212423">
+  <link rel="stylesheet" href="/css/style.css?v=20260415213450">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -266,7 +267,6 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
-          ${post.tag ? post.tag.split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="post-kicker tag-${post.category}-kicker">${escapeHtml(t)}</span>`).join('') : ''}
           <span>${dateStr}</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
         </div>
@@ -284,7 +284,7 @@ export async function onRequestGet({ params, env, request }) {
         ${locationSectionHtml}
         ${bodyGalleryHtml}
 
-        ${keywords ? `<div class="post-page-tags"><span style="font-family: AliceDigitalLearning, sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;">Tags:</span> ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}</div>` : ''}
+        ${visibleTags.length ? `<div class="post-page-tags"><span class="post-page-tags-label">Tags:</span> ${visibleTags.map((tag) => `<button type="button" class="post-page-tag post-page-tag-btn" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div>` : ''}
         ${renderSpecialFeatureSection(post, specialFeaturePosts)}
         ${renderRelatedPostsSection(relatedPosts, false, navLabels)}
 
@@ -318,15 +318,6 @@ export async function onRequestGet({ params, env, request }) {
           <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
           ${post.ai_assisted ? `<div class="pps-row"><span class="pps-key">AI</span><span class="pps-val" style="color:#622599;">AI 지원 작성</span></div>` : ''}
         </div>
-
-        ${post.meta_tags ? `
-        <div class="pps-section">
-          <p class="pps-label">태그</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            ${post.meta_tags.split(',').map(t => `<span class="post-page-tag">${escapeHtml(t.trim())}</span>`).join('')}
-          </div>
-        </div>` : ''}
-
       </aside>
 
     </div>
@@ -495,12 +486,26 @@ export async function onRequestGet({ params, env, request }) {
     </div>
   </div>
 
+  <div id="post-tag-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal post-tag-modal" role="dialog" aria-modal="true" aria-labelledby="post-tag-modal-title">
+      <button class="modal-close" type="button" aria-label="태그 관련 기사 모달 닫기" onclick="window._closePostTagModal()">×</button>
+      <div class="modal-header">
+        <div class="category-tag tag-korea" id="post-tag-modal-chip">TAG</div>
+        <h2 id="post-tag-modal-title">태그 관련 기사</h2>
+        <div class="modal-date" id="post-tag-modal-desc">선택한 태그와 연결된 기사를 보여줍니다.</div>
+      </div>
+      <div class="modal-body">
+        <div id="post-tag-modal-list" class="modal-related-posts"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
-  <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed) })};</script>
-  <script src="/js/main.js?v=20260415212423"></script>
-  <script src="/js/site-chrome.js?v=20260415212423"></script>
-  <script src="/js/post-page.js?v=20260415212423"></script>
+  <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
+  <script src="/js/main.js?v=20260415213450"></script>
+  <script src="/js/site-chrome.js?v=20260415213450"></script>
+  <script src="/js/post-page.js?v=20260415213450"></script>
 </body>
 </html>`;
 
@@ -838,7 +843,7 @@ function renderSpecialFeatureSection(post, items) {
 
 function renderRelatedPostsSection(items, mobileOnly, navLabels) {
   if (!Array.isArray(items) || !items.length) return '';
-  return `<section class="post-related-posts${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
+  return `<section class="post-related-posts post-related-surface${mobileOnly ? ' post-related-posts-mobile' : ' post-related-posts-desktop'}">
     <h3 class="post-related-heading">유관기사 읽어보기</h3>
     <ul class="post-related-list">
       ${items.map((item) => {
@@ -852,6 +857,20 @@ function renderRelatedPostsSection(items, mobileOnly, navLabels) {
       }).join('')}
     </ul>
   </section>`;
+}
+
+function collectVisiblePostTags(post) {
+  const seen = new Set();
+  return [post && post.tag, post && post.meta_tags]
+    .join(',')
+    .split(',')
+    .map((value) => String(value || '').trim())
+    .filter((value) => {
+      if (!value || seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    })
+    .slice(0, 16);
 }
 
 function resolveCategoryLabel(category, navLabels) {
