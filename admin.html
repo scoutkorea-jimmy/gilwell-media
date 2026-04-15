@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260415210054">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260415210903">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -26,7 +26,7 @@
     <button class="v3-login-btn" id="v3-login-btn">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.062.12</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -41,7 +41,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.062.12</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -78,6 +78,10 @@
         <button class="v3-nav-item" data-panel="homepage-issues">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><line x1="8" y1="5" x2="8" y2="9"/><circle cx="8" cy="11.4" r="0.8" fill="currentColor" stroke="none"/></svg>
           사이트 오류/이슈 기록
+        </button>
+        <button class="v3-nav-item" data-panel="site-history">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2.2v5.3l3.4 2"/><circle cx="8" cy="8" r="6.2"/><path d="M2.3 8h2.1"/><path d="M11.6 8h2.1"/></svg>
+          사이트 히스토리
         </button>
       </div>
 
@@ -1213,6 +1217,68 @@
         </div>
       </div><!-- /panel-homepage-issues -->
 
+      <div class="v3-panel" id="panel-site-history">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">사이트 히스토리</h1>
+            <p class="v3-page-desc">오류 로그, 게시글 변경, 설정 저장, 로그인 같은 주요 운영 이벤트를 한 화면에서 시간순으로 확인합니다.</p>
+          </div>
+          <div class="v3-flex">
+            <button class="v3-btn v3-btn-outline" id="site-history-refresh-btn">새로고침</button>
+          </div>
+        </div>
+        <div class="v3-dash-cols v3-dash-cols-single">
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">주요 이벤트 로그</h2>
+                <p class="v3-card-desc">발생 일시, 문제, 원인 추정을 중심으로 보고, 검색·필터·그룹 보기로 운영 흐름을 빠르게 좁혀볼 수 있습니다.</p>
+              </div>
+            </div>
+            <div class="v3-toolbar">
+              <div class="v3-toolbar-left">
+                <div class="v3-search-wrap">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+                  <input class="v3-search-input" type="search" id="site-history-search" placeholder="문제, 원인, 경로, 제목 검색">
+                </div>
+                <select class="v3-filter-select" id="site-history-filter-group">
+                  <option value="all">전체 그룹</option>
+                  <option value="error">오류</option>
+                  <option value="issue">이슈</option>
+                  <option value="auth">인증</option>
+                  <option value="settings">설정</option>
+                  <option value="content">콘텐츠</option>
+                </select>
+                <select class="v3-filter-select" id="site-history-filter-source">
+                  <option value="all">전체 출처</option>
+                  <option value="site">site</option>
+                  <option value="admin">admin</option>
+                  <option value="homepage">homepage</option>
+                  <option value="api">api</option>
+                  <option value="data">data</option>
+                  <option value="ui">ui</option>
+                  <option value="mobile">mobile</option>
+                  <option value="accessibility">accessibility</option>
+                  <option value="analytics">analytics</option>
+                  <option value="post">post</option>
+                  <option value="other">other</option>
+                </select>
+                <select class="v3-filter-select" id="site-history-group-by">
+                  <option value="day">일자별 그룹</option>
+                  <option value="group">그룹별 그룹</option>
+                  <option value="source">출처별 그룹</option>
+                  <option value="none">그룹 없음</option>
+                </select>
+              </div>
+            </div>
+            <div class="v3-inline-meta" id="site-history-meta">불러오는 중…</div>
+            <div id="site-history-list">
+              <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-site-history -->
+
     </div><!-- /v3-content -->
   </div><!-- /v3-main -->
 </div><!-- /v3-app -->
@@ -1504,8 +1570,8 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260415210054"></script>
-<script src="/js/shared-country-name-ko.js?v=20260415210054"></script>
-<script src="/js/admin-v3.js?v=20260415210054"></script>
+<script src="/js/main.js?v=20260415210903"></script>
+<script src="/js/shared-country-name-ko.js?v=20260415210903"></script>
+<script src="/js/admin-v3.js?v=20260415210903"></script>
 </body>
 </html>

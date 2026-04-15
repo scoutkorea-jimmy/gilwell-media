@@ -17,6 +17,7 @@ import { findSpecialFeaturePosts, sanitizeSpecialFeature } from '../../_shared/s
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
 import { VALID_POST_CATEGORIES } from '../../_shared/site-structure.mjs';
+import { logOperationalEvent } from '../../_shared/ops-log.js';
 
 // ── GET /api/posts/:id ────────────────────────────────────────
 // Returns the full post including content body.
@@ -227,6 +228,19 @@ export async function onRequestPut({ params, request, env }) {
     }
     if (updatedPost) {
       await recordPostHistory(env, id, 'update', currentPost, updatedPost, '게시글 수정');
+      await logOperationalEvent(env, {
+        channel: 'admin',
+        type: 'post_updated',
+        level: 'info',
+        actor: String(updatedPost.author || 'admin'),
+        path: '/api/posts/' + id,
+        message: '게시글 수정 · ' + String(updatedPost.title || ''),
+        details: {
+          post_id: updatedPost.id,
+          category: updatedPost.category || '',
+          published: Number(updatedPost.published || 0) === 1,
+        },
+      });
       await purgeContentCache(env, origin, {
         postId: updatedPost.id,
         categories: [currentPost && currentPost.category, updatedPost.category].filter(Boolean),
@@ -318,6 +332,20 @@ export async function onRequestPatch({ params, request, env }) {
       if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
       if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
       await recordPostHistory(env, id, 'status', beforePost, updatedPost, summary.join(' · ') || '상태 변경');
+      await logOperationalEvent(env, {
+        channel: 'admin',
+        type: 'post_status_changed',
+        level: 'info',
+        actor: String(updatedPost.author || 'admin'),
+        path: '/api/posts/' + id,
+        message: (summary.join(' · ') || '게시글 상태 변경') + ' · ' + String(updatedPost.title || ''),
+        details: {
+          post_id: updatedPost.id,
+          category: updatedPost.category || '',
+          published: Number(updatedPost.published || 0) === 1,
+          featured: Number(updatedPost.featured || 0) === 1,
+        },
+      });
       await purgeContentCache(env, origin, {
         postId: updatedPost.id,
         categories: [beforePost && beforePost.category, updatedPost.category].filter(Boolean),
@@ -369,6 +397,18 @@ export async function onRequestDelete({ params, request, env }) {
     }));
     await purgeContentCache(env, origin, { postId: id, categories: [existing && existing.category].filter(Boolean) }).catch(function (err) {
       console.error('DELETE /api/posts/:id cache purge error:', err);
+    });
+    await logOperationalEvent(env, {
+      channel: 'admin',
+      type: 'post_deleted',
+      level: 'warn',
+      actor: 'admin',
+      path: '/api/posts/' + id,
+      message: '게시글 삭제 · ' + String(existing && existing.category || '') + ' · #' + String(id),
+      details: {
+        post_id: id,
+        category: existing && existing.category || '',
+      },
     });
     return json({ success: true });
   } catch (err) {

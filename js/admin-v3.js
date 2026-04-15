@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.062.12
+ * Version: 03.063.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -84,6 +84,11 @@
   var _homepageIssuesFilterStatus = 'all';
   var _homepageIssuesFilterSeverity = 'all';
   var _homepageIssueEditingId = null;
+  var _siteHistoryItems = [];
+  var _siteHistorySearch = '';
+  var _siteHistoryFilterGroup = 'all';
+  var _siteHistoryFilterSource = 'all';
+  var _siteHistoryGroupBy = 'day';
   var _previewPostId = null;
   var _reportedIssueFingerprints = {};
   var _geoAudienceData = null;
@@ -327,6 +332,25 @@
     _bindEl('homepage-issues-filter-severity', 'change', function () {
       _homepageIssuesFilterSeverity = this.value || 'all';
       _renderHomepageIssues();
+    });
+    _bindEl('site-history-refresh-btn', 'click', function () {
+      _loadSiteHistory(_el('site-history-refresh-btn'));
+    });
+    _bindEl('site-history-search', 'input', function () {
+      _siteHistorySearch = String(this.value || '').trim().toLowerCase();
+      _renderSiteHistory();
+    });
+    _bindEl('site-history-filter-group', 'change', function () {
+      _siteHistoryFilterGroup = this.value || 'all';
+      _renderSiteHistory();
+    });
+    _bindEl('site-history-filter-source', 'change', function () {
+      _siteHistoryFilterSource = this.value || 'all';
+      _renderSiteHistory();
+    });
+    _bindEl('site-history-group-by', 'change', function () {
+      _siteHistoryGroupBy = this.value || 'day';
+      _renderSiteHistory();
     });
     _bindEl('post-preview-close', 'click', _closePostPreviewModal);
     _bindEl('post-preview-done', 'click', _closePostPreviewModal);
@@ -665,6 +689,7 @@
   var PANEL_LABELS = {
     dashboard: '대시보드',
     'homepage-issues': '사이트 오류/이슈 기록',
+    'site-history': '사이트 히스토리',
     list:      '게시글 목록',
     write:     '새 글 작성',
     calendar:  '캘린더',
@@ -706,6 +731,7 @@
 
     if (panel === 'dashboard') _loadDashboard();
     else if (panel === 'homepage-issues') _loadHomepageIssues();
+    else if (panel === 'site-history') _loadSiteHistory();
     else if (panel === 'list')     _loadList();
     else if (panel === 'write' && !_editingId) _resetWrite();
     else if (panel === 'calendar') _loadCalendar();
@@ -3451,6 +3477,166 @@
       '</div>';
   }
 
+  function _loadSiteHistory(actionBtn) {
+    var listEl = document.getElementById('site-history-list');
+    var metaEl = document.getElementById('site-history-meta');
+    if (!listEl) return;
+    if (actionBtn) _setButtonBusy(actionBtn, '불러오는 중…');
+    listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (metaEl) metaEl.textContent = '불러오는 중…';
+    _apiFetch('/api/admin/site-history?limit=350')
+      .then(function (data) {
+        _siteHistoryItems = Array.isArray(data && data.items) ? data.items : [];
+        _renderSiteHistory();
+      })
+      .catch(function (e) {
+        listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '불러오기 실패') + '</div></div>';
+        if (metaEl) metaEl.textContent = '히스토리 로그를 불러오지 못했습니다.';
+      })
+      .finally(function () {
+        if (actionBtn && actionBtn.classList.contains('is-busy')) _clearButtonBusy(actionBtn);
+      });
+  }
+
+  function _renderSiteHistory() {
+    var listEl = document.getElementById('site-history-list');
+    var metaEl = document.getElementById('site-history-meta');
+    if (!listEl) return;
+    var items = (_siteHistoryItems || []).filter(function (item) {
+      if (_siteHistoryFilterGroup !== 'all' && item.group !== _siteHistoryFilterGroup) return false;
+      if (_siteHistoryFilterSource !== 'all' && item.source !== _siteHistoryFilterSource) return false;
+      if (!_siteHistorySearch) return true;
+      return String(item.search_text || '').indexOf(_siteHistorySearch) >= 0;
+    });
+    if (metaEl) {
+      metaEl.textContent = items.length + '건 표시 · 전체 ' + (_siteHistoryItems || []).length + '건';
+    }
+    if (!items.length) {
+      listEl.innerHTML = '<div class="v3-empty v3-issues-empty"><div class="v3-empty-text">조건에 맞는 사이트 히스토리 로그가 없습니다.</div></div>';
+      return;
+    }
+    var grouped = _groupSiteHistoryItems(items, _siteHistoryGroupBy);
+    listEl.innerHTML = grouped.map(function (section) {
+      return '<section class="v3-history-group">' +
+        '<div class="v3-history-group-head">' +
+          '<h3 class="v3-card-title v3-card-title-tight-sm">' + GW.escapeHtml(section.label) + '</h3>' +
+          '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(String(section.items.length)) + '건</span>' +
+        '</div>' +
+        '<div class="v3-table-wrap v3-history-table">' +
+          '<table class="v3-table">' +
+            '<thead><tr><th>발생일시</th><th>문제</th><th>원인 추정</th><th>분류</th></tr></thead>' +
+            '<tbody>' +
+              section.items.map(function (item) {
+                return '<tr>' +
+                  '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.occurred_at)) + '</td>' +
+                  '<td>' +
+                    '<div class="v3-table-title">' + GW.escapeHtml(item.title || item.problem || '(제목 없음)') + '</div>' +
+                    '<div class="v3-issues-meta-line">' +
+                      '<span class="v3-badge ' + _siteHistoryGroupBadge(item.group) + '">' + GW.escapeHtml(_siteHistoryGroupLabel(item.group)) + '</span>' +
+                      '<span class="v3-badge ' + _siteHistoryLevelBadge(item.level) + '">' + GW.escapeHtml(_siteHistoryLevelLabel(item.level)) + '</span>' +
+                      (item.source ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.source) + '</span>' : '') +
+                      (item.status ? '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(item.status) + '</span>' : '') +
+                    '</div>' +
+                    (item.problem ? '<div class="v3-issues-note">' + GW.escapeHtml(item.problem) + '</div>' : '') +
+                    (item.detail ? '<div class="v3-search-result-meta">' + GW.escapeHtml(item.detail) + '</div>' : '') +
+                  '</td>' +
+                  '<td><div class="v3-issues-note">' + GW.escapeHtml(item.suspected_cause || '원인 추정 정보가 없습니다.') + '</div></td>' +
+                  '<td class="v3-text-m">' + GW.escapeHtml(_siteHistorySourceLabel(item.source)) + '</td>' +
+                '</tr>';
+              }).join('') +
+            '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</section>';
+    }).join('');
+  }
+
+  function _groupSiteHistoryItems(items, mode) {
+    if (mode === 'none') {
+      return [{ label: '전체 로그', items: items.slice() }];
+    }
+    var groups = [];
+    var map = {};
+    items.forEach(function (item) {
+      var key = '전체';
+      if (mode === 'group') key = _siteHistoryGroupLabel(item.group);
+      else if (mode === 'source') key = _siteHistorySourceLabel(item.source);
+      else key = _siteHistoryDayLabel(item.occurred_at);
+      if (!map[key]) {
+        map[key] = [];
+        groups.push({ label: key, items: map[key] });
+      }
+      map[key].push(item);
+    });
+    return groups;
+  }
+
+  function _siteHistoryDayLabel(value) {
+    var parts = _dateParts(value);
+    if (!parts) return '일시 미확인';
+    return parts.year + '-' + parts.month + '-' + parts.day;
+  }
+
+  function _siteHistoryGroupLabel(value) {
+    return {
+      error: '오류',
+      issue: '이슈',
+      auth: '인증',
+      settings: '설정',
+      content: '콘텐츠'
+    }[value] || '기타';
+  }
+
+  function _siteHistorySourceLabel(value) {
+    return {
+      site: '공개 사이트',
+      admin: '관리자',
+      homepage: '홈페이지',
+      api: 'API',
+      data: '데이터',
+      ui: 'UI',
+      mobile: '모바일',
+      accessibility: '접근성',
+      analytics: '분석',
+      post: '게시글',
+      other: '기타'
+    }[value] || String(value || '기타');
+  }
+
+  function _siteHistoryLevelLabel(value) {
+    return {
+      error: 'error',
+      warn: 'warn',
+      warning: 'warn',
+      high: 'high',
+      medium: 'medium',
+      low: 'low',
+      info: 'info'
+    }[value] || String(value || 'info');
+  }
+
+  function _siteHistoryLevelBadge(value) {
+    return {
+      error: 'v3-badge-red',
+      warn: 'v3-badge-yellow',
+      warning: 'v3-badge-yellow',
+      high: 'v3-badge-red',
+      medium: 'v3-badge-yellow',
+      low: 'v3-badge-blue',
+      info: 'v3-badge-gray'
+    }[value] || 'v3-badge-gray';
+  }
+
+  function _siteHistoryGroupBadge(value) {
+    return {
+      error: 'v3-badge-red',
+      issue: 'v3-badge-issue',
+      auth: 'v3-badge-blue',
+      settings: 'v3-badge-improvement',
+      content: 'v3-badge-site'
+    }[value] || 'v3-badge-gray';
+  }
+
   function _homepageIssueTypeLabel(value) {
     return {
       error: '오류',
@@ -5923,6 +6109,25 @@
     if (!value) return '';
     if (GW.formatDateTimeCompactKst) return GW.formatDateTimeCompactKst(value);
     return String(value).replace('T', ' ').slice(0, 16) + ' KST';
+  }
+
+  function _dateParts(value) {
+    if (!value) return null;
+    var normalized = String(value).trim().replace(' ', 'T');
+    var withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+09:00';
+    var date = new Date(withZone);
+    if (isNaN(date.getTime())) return null;
+    var parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    var out = {};
+    parts.forEach(function (part) {
+      if (part.type !== 'literal') out[part.type] = part.value;
+    });
+    return out.year ? out : null;
   }
 
   function _catBadge(cat) {
