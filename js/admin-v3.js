@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.07
+ * Version: 03.063.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -141,15 +141,17 @@
         }
         if (!response.ok) {
           var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
-          _reportSiteIssue('admin_client_api_error', {
-            message: message,
-            path: _issuePathFromUrl(url),
-            section: _panel || 'admin',
-            code: 'HTTP_' + String(response.status || 0),
-            source: '/js/admin-v3.js',
-            method: String(opts.method || 'GET').toUpperCase(),
-            status: String(response.status || ''),
-          });
+          if (response.status !== 401) {
+            _reportSiteIssue('admin_client_api_error', {
+              message: message,
+              path: _issuePathFromUrl(url),
+              section: _panel || 'admin',
+              code: 'HTTP_' + String(response.status || 0),
+              source: '/js/admin-v3.js',
+              method: String(opts.method || 'GET').toUpperCase(),
+              status: String(response.status || ''),
+            });
+          }
           var err = new Error(message);
           err.status = response.status;
           err.data = data;
