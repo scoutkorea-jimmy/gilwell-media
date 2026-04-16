@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.06
+ * Version: 03.063.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3452,7 +3452,7 @@
     listEl.innerHTML =
       '<div class="v3-table-wrap v3-issues-table">' +
         '<table class="v3-table">' +
-          '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th></tr></thead>' +
+          '<thead><tr><th>이슈</th><th>상태</th><th>심각도</th><th>영역</th><th>업데이트</th><th>관리</th></tr></thead>' +
           '<tbody>' +
             items.map(function (item) {
               return '<tr>' +
@@ -3470,12 +3470,55 @@
                 '<td><span class="v3-badge ' + _homepageIssueSeverityBadge(item.severity) + '">' + GW.escapeHtml(_homepageIssueSeverityLabel(item.severity)) + '</span></td>' +
                 '<td>' + GW.escapeHtml(_homepageIssueAreaLabel(item.area)) + '</td>' +
                 '<td class="v3-text-m">' + GW.escapeHtml(_shortDate(item.updated_at || item.created_at)) + '</td>' +
+                '<td>' + _homepageIssueStatusAction(item) + '</td>' +
               '</tr>';
             }).join('') +
           '</tbody>' +
         '</table>' +
       '</div>';
   }
+
+  function _homepageIssueStatusAction(item) {
+    var current = String(item && item.status || 'open');
+    return '<div class="v3-inline-actions v3-inline-actions-tight">' +
+      '<select class="v3-filter-select v3-filter-select-sm" id="homepage-issue-status-' + Number(item.id || 0) + '">' +
+        ['open', 'monitoring', 'resolved', 'archived'].map(function (status) {
+          return '<option value="' + status + '"' + (status === current ? ' selected' : '') + '>' + GW.escapeHtml(_homepageIssueStatusLabel(status)) + '</option>';
+        }).join('') +
+      '</select>' +
+      '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3.updateHomepageIssueStatus(' + Number(item.id || 0) + ')">적용</button>' +
+    '</div>';
+  }
+
+  V3.updateHomepageIssueStatus = function (id) {
+    var issueId = parseInt(id, 10);
+    if (!Number.isFinite(issueId) || issueId <= 0) return;
+    var select = document.getElementById('homepage-issue-status-' + issueId);
+    if (!select) return;
+    var nextStatus = String(select.value || '').trim();
+    _apiFetch('/api/admin/homepage-issues/' + issueId, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: nextStatus })
+    })
+      .then(function (data) {
+        var item = data && data.item ? data.item : null;
+        if (!item) {
+          _loadHomepageIssues();
+          _loadSiteHistory();
+          return;
+        }
+        _homepageIssues = (_homepageIssues || []).map(function (row) {
+          return Number(row && row.id || 0) === issueId ? item : row;
+        });
+        _renderHomepageIssues();
+        _loadSiteHistory();
+        GW.showToast('이슈 상태를 ' + _homepageIssueStatusLabel(item.status) + '로 변경했습니다.', 'success');
+      })
+      .catch(function (err) {
+        GW.showToast((err && err.message) || '상태 변경에 실패했습니다.', 'error');
+        _loadHomepageIssues();
+      });
+  };
 
   function _loadSiteHistory(actionBtn) {
     var listEl = document.getElementById('site-history-list');
