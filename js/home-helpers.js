@@ -177,9 +177,10 @@
   function buildMiniLabels(post, options) {
     var opts = options || {};
     var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+    var categoryLabel = GW.getCategoryLabel(post.category);
     var labels = [];
     if (!opts.hideCategoryChip) {
-      labels.push('<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>');
+      labels.push('<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(categoryLabel) + '</span>');
     }
     getSortedPostTags(post).forEach(function (tag) {
       labels.push('<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>');

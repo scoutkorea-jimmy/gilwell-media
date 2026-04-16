@@ -187,7 +187,11 @@ async function loadTranslations(env) {
   const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
   const parsed = row ? JSON.parse(row.value || '{}') : {};
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-    return sanitizeTranslationStrings(parsed);
+    return sanitizeTranslationStrings(
+      parsed.strings && typeof parsed.strings === 'object' && !Array.isArray(parsed.strings)
+        ? parsed.strings
+        : parsed
+    );
   }
   throw new Error('Translations settings must be an object');
 }

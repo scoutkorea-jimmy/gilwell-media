@@ -45,6 +45,7 @@
       return;
     }
     var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
+    var categoryLabel = GW.getCategoryLabel(post.category);
     var subtitle = (post.subtitle || '').trim();
     var excerpt = GW.truncate(post.content || '', 420);
     var tags = helpers.getSortedPostTags(post);
@@ -63,7 +64,7 @@
         '<div class="home-lead-body">' +
           '<div class="home-lead-copy">' +
             '<div class="home-lead-labels">' +
-              '<span class="category-tag ' + cat.tagClass + '">' + cat.label + '</span>' +
+              '<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(categoryLabel) + '</span>' +
               tags.map(function (tag) {
                 return '<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>';
               }).join('') +

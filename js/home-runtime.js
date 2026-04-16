@@ -17,8 +17,10 @@
 
   GW.HomePage = (function () {
     var lastHomeRefreshAt = 0;
+    var lastHomeRequestAt = 0;
     var homeRefreshBusy = false;
     var homeRefreshTimer = null;
+    var homeRefreshPromise = null;
     var runtimeReportBound = false;
     var latestIssueKeys = [];
     var latestFatalState = false;
@@ -90,10 +92,13 @@
     function refreshHomeData(options) {
       var opts = options || {};
       var now = Date.now();
+      var minInterval = opts.force ? 10000 : 30000;
+      if (homeRefreshPromise) return homeRefreshPromise;
       if (homeRefreshBusy) return Promise.resolve();
-      if (!opts.force && now - lastHomeRefreshAt < 30000) return Promise.resolve();
+      if (now - lastHomeRequestAt < minInterval) return Promise.resolve();
       homeRefreshBusy = true;
-      return fetchHomeData({ fresh: true })
+      lastHomeRequestAt = now;
+      homeRefreshPromise = fetchHomeData({ fresh: true })
         .then(function (data) {
           applyData(data, { background: true });
         })
@@ -109,7 +114,9 @@
         })
         .finally(function () {
           homeRefreshBusy = false;
+          homeRefreshPromise = null;
         });
+      return homeRefreshPromise;
     }
 
     function bindRuntimeIssueReporting() {
@@ -259,7 +266,8 @@
       bindRuntimeIssueReporting();
       bindHomeStatusActions();
 
-      fetchHomeData({ fresh: true })
+      lastHomeRequestAt = Date.now();
+      homeRefreshPromise = fetchHomeData({ fresh: true })
         .then(function (data) {
           applyData(data);
         })
@@ -269,6 +277,9 @@
             message: (err && err.message) || 'initial home fetch failed',
             path: '/api/home'
           });
+        })
+        .finally(function () {
+          homeRefreshPromise = null;
         });
 
       initRefreshLifecycle();

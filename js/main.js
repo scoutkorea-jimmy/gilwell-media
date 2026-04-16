@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.113.19';
+  GW.APP_VERSION = '00.113.20';
   GW.ADMIN_VERSION = '03.063.08';
-  GW.ASSET_VERSION = '20260416221020';
+  GW.ASSET_VERSION = '20260416223542';
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
@@ -68,8 +68,22 @@
   GW.PUBLIC_SEARCH_CATEGORY_KEYS = ['korea', 'apr', 'wosm', 'people'];
 
   GW.getCategoryLabel = function (category) {
-    var info = GW.CATEGORIES[category] || GW.CATEGORIES.korea;
-    return info && info.label ? info.label : String(category || '');
+    var safe = String(category || 'korea').trim();
+    var navKeyMap = {
+      korea: 'nav.korea',
+      apr: 'nav.apr',
+      wosm: 'nav.wosm',
+      people: 'nav.people'
+    };
+    var label = navKeyMap[safe] ? String(GW.t(navKeyMap[safe]) || '').trim() : '';
+    if (!label) {
+      var info = GW.CATEGORIES[safe] || GW.CATEGORIES.korea;
+      label = info && info.label ? String(info.label) : String(category || '');
+    }
+    if (safe === 'apr') return label.toUpperCase();
+    if (safe === 'wosm') return label.toUpperCase();
+    if (safe === 'korea' && label) return label.charAt(0).toUpperCase() + label.slice(1);
+    return label;
   };
 
   GW.getMetaPageLabel = function (key) {

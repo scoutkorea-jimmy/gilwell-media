@@ -94,8 +94,7 @@ async function loadPageItemList(env, origin, pageKey) {
 async function loadTranslationStrings(env) {
   try {
     const row = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'translations'`).first();
-    const parsed = row ? JSON.parse(row.value || '{}') : {};
-    return parsed && typeof parsed === 'object' ? (parsed.strings || {}) : {};
+    return normalizeTranslationStrings(row ? JSON.parse(row.value || '{}') : {});
   } catch {
     return {};
   }
@@ -153,18 +152,30 @@ function serializeForInlineScript(value) {
     .replace(/\u2029/g, '\\u2029');
 }
 
+function normalizeTranslationStrings(parsed) {
+  const source = parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed.strings && typeof parsed.strings === 'object' && !Array.isArray(parsed.strings) ? parsed.strings : parsed)
+    : {};
+  const sanitized = {};
+  Object.keys(source).forEach((key) => {
+    if (key.indexOf('nav.') === 0) return;
+    sanitized[key] = source[key];
+  });
+  return sanitized;
+}
+
 async function loadHomeSsrContent(env, origin) {
   try {
     const [navLabels, leadData, latestPosts, popularPosts, picksPosts, koreaPosts, aprPosts, wosmPosts, peoplePosts] = await Promise.all([
-      loadNavLabels(env),
-      loadHomeLead(env, origin),
-      loadLatestPosts(env, origin, 4),
-      loadPopularPosts(env, origin, 4),
-      loadPostList(env, origin, { featured: true, limit: 4 }),
-      loadPostList(env, origin, { category: 'korea', limit: 4 }),
-      loadPostList(env, origin, { category: 'apr', limit: 4 }),
-      loadPostList(env, origin, { category: 'wosm', limit: 4 }),
-      loadPostList(env, origin, { category: 'people', limit: 4 }),
+      loadNavLabels(env).catch(() => ({})),
+      loadHomeLead(env, origin).catch(() => ({ post: null })),
+      loadLatestPosts(env, origin, 4).catch(() => []),
+      loadPopularPosts(env, origin, 4).catch(() => []),
+      loadPostList(env, origin, { featured: true, limit: 4 }).catch(() => []),
+      loadPostList(env, origin, { category: 'korea', limit: 4 }).catch(() => []),
+      loadPostList(env, origin, { category: 'apr', limit: 4 }).catch(() => []),
+      loadPostList(env, origin, { category: 'wosm', limit: 4 }).catch(() => []),
+      loadPostList(env, origin, { category: 'people', limit: 4 }).catch(() => []),
     ]);
 
     const latestRail = latestPosts.slice(0, 3);
@@ -172,7 +183,7 @@ async function loadHomeSsrContent(env, origin) {
     const picksRail = picksPosts.slice(0, 4);
     const leadPost = leadData.post || picksPosts[0] || latestPosts[0] || null;
 
-    return {
+    const payload = {
       lead: renderHomeLeadStory(leadPost, navLabels),
       latest: renderMiniList(latestRail, navLabels, {}),
       popular: renderMiniList(popularRail, navLabels, {}),
@@ -182,9 +193,12 @@ async function loadHomeSsrContent(env, origin) {
       wosm: renderMiniList(wosmPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
       people: renderMiniList(peoplePosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
     };
+    if (hasMeaningfulHomeSsrPayload(payload)) return payload;
+    const emergencyPosts = latestPosts.length ? latestPosts : await loadLatestPosts(env, origin, 4).catch(() => []);
+    return buildEmergencyHomeSsrPayload(emergencyPosts, navLabels);
   } catch (err) {
     console.error('[home-ssr] failed to build fallback:', err);
-    return null;
+    return buildEmergencyHomeSsrPayload([], {});
   }
 }
 
@@ -327,6 +341,28 @@ function renderMiniList(posts, navLabels, options) {
     return '<div class="mini-empty">게시글이 없습니다</div>';
   }
   return posts.map((post) => renderMiniItem(post, navLabels, opts)).join('');
+}
+
+function hasMeaningfulHomeSsrPayload(payload) {
+  if (!payload || typeof payload !== 'object') return false;
+  return ['lead', 'latest', 'popular', 'picks', 'korea', 'apr', 'wosm', 'people'].some((key) => {
+    return String(payload[key] || '').indexOf('/post/') >= 0;
+  });
+}
+
+function buildEmergencyHomeSsrPayload(posts, navLabels) {
+  const safePosts = Array.isArray(posts) ? posts.slice(0, 4) : [];
+  const listHtml = renderMiniList(safePosts, navLabels, {});
+  return {
+    lead: renderHomeLeadStory(safePosts[0] || null, navLabels),
+    latest: listHtml,
+    popular: listHtml,
+    picks: listHtml,
+    korea: listHtml,
+    apr: listHtml,
+    wosm: listHtml,
+    people: listHtml,
+  };
 }
 
 function renderMiniItem(post, navLabels, options) {
