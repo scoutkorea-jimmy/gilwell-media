@@ -476,6 +476,11 @@
   background: var(--v3-surface); outline: none; cursor: pointer;
 }
 .v3-filter-select:focus { border-color: var(--v3-primary); }
+.v3-filter-select-sm {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
 
 /* ── Pagination ──────────────────────────────────────────── */
 .v3-pagination { display: flex; align-items: center; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
@@ -821,6 +826,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.v3-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.v3-inline-actions-tight {
+  gap: 6px;
 }
 .v3-inline-row-compact {
   display: flex;
