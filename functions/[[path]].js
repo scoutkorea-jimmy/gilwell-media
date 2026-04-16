@@ -368,7 +368,19 @@ function getCategoryLabel(category, navLabels) {
     people: 'people',
   };
   const key = keyMap[String(category || '').trim()] || 'korea';
-  return getNavLabel(navLabels, key, 'ko');
+  const label = String(getNavLabel(navLabels, key, 'ko') || '').trim();
+  if (label) {
+    if (key === 'apr') return label.toUpperCase();
+    if (key === 'wosm') return label.toUpperCase();
+    if (key === 'korea') return label.charAt(0).toUpperCase() + label.slice(1);
+    return label;
+  }
+  return {
+    korea: 'Korea',
+    apr: 'APR',
+    wosm: 'WOSM',
+    people: '스카우트 인물',
+  }[key] || 'Korea';
 }
 
 function getCategoryTagClass(category) {
@@ -399,7 +411,10 @@ function getPostExcerpt(post, limit) {
 }
 
 function stripHtml(value) {
-  return String(value || '')
+  const raw = String(value || '');
+  const editorText = extractEditorJsText(raw);
+  const source = editorText || raw;
+  return source
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<[^>]+>/g, ' ')
@@ -409,6 +424,24 @@ function stripHtml(value) {
     .replace(/&gt;/gi, '>')
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'");
+}
+
+function extractEditorJsText(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw.charAt(0) !== '{' || raw.indexOf('"blocks"') === -1) return '';
+  try {
+    const parsed = JSON.parse(raw);
+    const blocks = Array.isArray(parsed && parsed.blocks) ? parsed.blocks : [];
+    return blocks.map((block) => {
+      if (!block || typeof block !== 'object') return '';
+      const data = block.data && typeof block.data === 'object' ? block.data : {};
+      if (typeof data.text === 'string') return data.text;
+      if (Array.isArray(data.items)) return data.items.join(' ');
+      return '';
+    }).filter(Boolean).join(' ');
+  } catch {
+    return '';
+  }
 }
 
 function formatPostDate(post) {
