@@ -75,12 +75,49 @@
   display: block; font-size: 12px; font-weight: 600;
   color: var(--v3-text-s); margin-bottom: 6px;
 }
+.v3-login-field {
+  position: relative;
+}
 .v3-login-input {
-  width: 100%; padding: 10px 14px;
+  width: 100%; padding: 10px 48px 10px 14px;
   border: 1.5px solid var(--v3-border); border-radius: var(--v3-radius);
   font-size: 15px; outline: none; transition: border-color .15s;
 }
 .v3-login-input:focus { border-color: var(--v3-primary); }
+.v3-login-reveal {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--v3-text-m);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, transform .08s ease;
+}
+.v3-login-reveal:hover,
+.v3-login-reveal.is-active {
+  background: rgba(99,102,241,.10);
+  color: var(--v3-primary-h);
+}
+.v3-login-reveal:active {
+  transform: translateY(-50%) scale(0.97);
+}
+.v3-login-reveal svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 #v3-login-turnstile { margin-top: 14px; }
 .v3-login-btn {
   width: 100%; min-height: 42px; margin-top: 16px; padding: 0 16px;
@@ -552,7 +589,8 @@
 .marketing-fullscreen-close:focus-visible,
 .mkt-preset-btn:focus-visible,
 .mkt-apply-btn:focus-visible,
-.v3-login-btn:focus-visible {
+.v3-login-btn:focus-visible,
+.v3-login-reveal:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(99,102,241,.18);
 }

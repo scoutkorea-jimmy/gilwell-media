@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.10
+ * Version: 03.063.11
  *
  * Versioning:
  *   V3.aaa.bb
@@ -23,6 +23,14 @@
   function _bindEl(id, evt, fn) {
     var el = document.getElementById(id);
     if (el) el.addEventListener(evt, fn);
+  }
+  function _togglePasswordReveal(visible) {
+    var input = _el('v3-pw');
+    var btn = _el('v3-pw-reveal');
+    if (!input || !btn) return;
+    input.type = visible ? 'text' : 'password';
+    btn.classList.toggle('is-active', !!visible);
+    btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
   }
 
   var _panel         = 'dashboard';
@@ -295,6 +303,14 @@
     _bindEl('v3-pw', 'keydown', function (e) {
       if (e.key === 'Enter') _doLogin();
     });
+    _bindEl('v3-pw-reveal', 'pointerdown', function (event) {
+      event.preventDefault();
+      _togglePasswordReveal(true);
+    });
+    _bindEl('v3-pw-reveal', 'pointerup', function () { _togglePasswordReveal(false); });
+    _bindEl('v3-pw-reveal', 'pointerleave', function () { _togglePasswordReveal(false); });
+    _bindEl('v3-pw-reveal', 'pointercancel', function () { _togglePasswordReveal(false); });
+    _bindEl('v3-pw-reveal', 'blur', function () { _togglePasswordReveal(false); });
 
     // Logout
     _bindEl('v3-logout-btn', 'click', _doLogout);
