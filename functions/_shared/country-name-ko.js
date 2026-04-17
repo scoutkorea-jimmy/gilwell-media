@@ -177,6 +177,34 @@ const COUNTRY_NAME_KO_MAP = {
   'zimbabwe': '짐바브웨',
 };
 
+const COUNTRY_NAME_ALIAS_MAP = {
+  republicofkorea: ['한국', '대한민국', 'south korea', 'korea', 'kr'],
+  scoutsofchina: ['대만', '타이완', '중화민국', 'taiwan', 'republic of china', 'tw'],
+  unitedstatesofamerica: ['미국', 'usa', 'us', 'united states'],
+  russianfederation: ['러시아', 'russia', 'ru'],
+  turkiye: ['터키', 'turkey', 'tr'],
+  unitedkingdom: ['영국', 'uk', 'great britain', 'gb', 'britain'],
+  unitedarabemirates: ['아랍에미리트', 'uae', 'ae'],
+  czechia: ['체코', 'czech republic'],
+  bolivarianrepublicofvenezuela: ['베네수엘라', 'venezuela'],
+  plurinationalstateofbolivia: ['볼리비아', 'bolivia'],
+  stateofpalestine: ['팔레스타인', 'palestine'],
+  syrianarabrepublic: ['시리아', 'syria'],
+  republicofmoldova: ['몰도바', 'moldova'],
+  northmacedonia: ['북마케도니아', 'macedonia'],
+  bruneidarussalam: ['브루나이', 'brunei'],
+  caboverde: ['카보베르데', 'cape verde'],
+  cotedivoire: ['코트디부아르', 'ivory coast'],
+  democraticrepublicofthecongo: ['콩고민주공화국', '콩고 민주 공화국', 'dr congo', 'drc'],
+  congo: ['콩고공화국', 'republic of the congo'],
+  unitedrepublicoftanzania: ['탄자니아', 'tanzania'],
+  timorleste: ['동티모르', 'east timor'],
+  saintvincentandthegrenadines: ['세인트빈센트 그레나딘', 'saint vincent'],
+  saintlucia: ['세인트루시아', 'saint lucia'],
+  trinidadandtobago: ['트리니다드 토바고', 'trinidad and tobago'],
+  eswatini: ['에스와티니', 'swaziland'],
+};
+
 export function normalizeCountryNameKey(value) {
   return String(value || '')
     .normalize('NFKD')
@@ -188,6 +216,20 @@ export function normalizeCountryNameKey(value) {
 export function translateCountryNameToKorean(value) {
   const key = normalizeCountryNameKey(value);
   return key ? (COUNTRY_NAME_KO_MAP[key] || '') : '';
+}
+
+export function getCountryNameAliases(value) {
+  const key = normalizeCountryNameKey(value);
+  if (!key) return [];
+  const aliases = new Set();
+  const translatedKo = COUNTRY_NAME_KO_MAP[key];
+  if (translatedKo) aliases.add(translatedKo);
+  aliases.add(String(value || '').trim());
+  (COUNTRY_NAME_ALIAS_MAP[key] || []).forEach((alias) => {
+    const text = String(alias || '').trim();
+    if (text) aliases.add(text);
+  });
+  return Array.from(aliases);
 }
 
 export function isCountryNameFallbackValue(koreanName, englishName) {
