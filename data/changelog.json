@@ -1,6 +1,17 @@
 {
   "items": [
   {
+      "version": "03.063.18",
+      "date": "2026-04-17",
+      "released_at": "2026-04-17 17:27:42 KST",
+      "summary": "관리자 주요 버튼군에 공통 fallback 실행 경로를 추가했습니다.",
+      "changes": [
+        "사이드바 패널 버튼, 설정 섹션 버튼, 마케팅 프리셋 버튼, 주요 새로고침 버튼, 대시보드 히트맵 버튼을 capture 단계 fallback으로 다시 실행할 수 있게 보강했습니다.",
+        "관리자 내부에서 공개적으로 호출 가능한 `V3.refresh*`, `V3.applyMarketingPreset`, `V3.applyDashboardHeatmapMode` 계열 메서드를 추가했습니다.",
+        "관리자 버전 03.063.17 → 03.063.18."
+      ]
+    },
+  {
       "version": "03.063.17",
       "date": "2026-04-17",
       "released_at": "2026-04-17 17:20:12 KST",
