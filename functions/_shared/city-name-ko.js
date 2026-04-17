@@ -101,7 +101,6 @@ const GLOBAL_CITY_NAME_KO_MAP = {
   toronto: '토론토',
   tunis: '튀니스',
   ulaanbaatar: '울란바토르',
-  ulaanbaatar: '울란바토르',
   vancouver: '밴쿠버',
   vienna: '빈',
   warsaw: '바르샤바',
