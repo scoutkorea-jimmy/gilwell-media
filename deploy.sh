@@ -41,20 +41,47 @@ fi
 # ── 최신 버전 조회 ────────────────────────────────────────────────────────────
 echo ""
 echo "📦 Fetching latest version from D1..."
-LATEST=$(wrangler d1 execute "$DB" --remote \
+D1_RAW=$(wrangler d1 execute "$DB" --remote \
   --command "SELECT aa, bbb, cc FROM dp_versions ORDER BY aa DESC, bbb DESC, cc DESC, id DESC LIMIT 1" \
-  --json 2>/dev/null | \
-  python3 -c "
+  --json 2>&1) || {
+  echo "❌ Failed to fetch latest version from D1. wrangler output:"
+  echo "$D1_RAW"
+  echo ""
+  echo "Aborting to avoid resetting the version counter. Fix wrangler auth/connection and retry."
+  exit 1
+}
+
+LATEST=$(echo "$D1_RAW" | python3 -c "
 import sys, json
-rows = json.load(sys.stdin)
-r = rows[0]['results']
+try:
+    rows = json.load(sys.stdin)
+    r = rows[0]['results']
+except Exception as exc:
+    sys.stderr.write('JSON parse failed: ' + str(exc) + '\n')
+    sys.exit(2)
 if r:
     print(r[0]['aa'], r[0]['bbb'], r[0]['cc'])
 else:
-    print('1 0 0')
-" 2>/dev/null || echo "1 0 0")
+    # Empty dp_versions table — this is the ONLY legitimate reset scenario
+    print('EMPTY')
+") || {
+  echo "❌ Failed to parse D1 version response. Raw output:"
+  echo "$D1_RAW"
+  echo ""
+  echo "Aborting to avoid resetting the version counter."
+  exit 1
+}
 
-read -r CUR_AA CUR_BBB CUR_CC <<< "$LATEST"
+if [[ "$LATEST" == "EMPTY" ]]; then
+  echo "⚠️  dp_versions table is empty — initializing at 01.000.00"
+  CUR_AA=1
+  CUR_BBB=0
+  CUR_CC=0
+else
+  read -r CUR_AA CUR_BBB CUR_CC <<< "$LATEST"
+fi
+
+echo "   Latest: $(printf '%02d.%03d.%02d' "$CUR_AA" "$CUR_BBB" "$CUR_CC")"
 
 # ── 다음 버전 계산 ────────────────────────────────────────────────────────────
 if [[ "$SKIP_VERSION" == true ]]; then
