@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.08
+ * Version: 03.063.09
  *
  * Versioning:
  *   V3.aaa.bb
@@ -623,12 +623,18 @@
     var pw  = document.getElementById('v3-pw').value.trim();
     var err = document.getElementById('v3-login-err');
     var btn = document.getElementById('v3-login-btn');
-    if (!pw) return;
+    if (!pw) {
+      if (GW.showToast) GW.showToast('비밀번호를 입력해주세요', 'error');
+      return;
+    }
 
     var cfInput = document.querySelector('#v3-login-turnstile input[name="cf-turnstile-response"]');
     var cfToken = cfInput ? cfInput.value : '';
     if (GW.TURNSTILE_SITE_KEY && !cfToken) {
-      err.textContent = 'CAPTCHA를 완료해주세요'; err.style.display = 'block'; return;
+      err.textContent = 'CAPTCHA를 완료해주세요';
+      err.style.display = 'block';
+      if (GW.showToast) GW.showToast('CAPTCHA를 완료해주세요', 'error');
+      return;
     }
 
     _setButtonBusy(btn, '로그인 중…'); err.style.display = 'none';
@@ -640,8 +646,10 @@
       if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
       _showApp();
     }).catch(function (e) {
-      err.textContent = e.message || '비밀번호가 올바르지 않습니다';
+      var message = e && e.message ? e.message : '비밀번호가 올바르지 않습니다';
+      err.textContent = message;
       err.style.display = 'block';
+      if (GW.showToast) GW.showToast(message, 'error');
       document.getElementById('v3-pw').value = '';
       document.getElementById('v3-pw').focus();
       if (window.turnstile) window.turnstile.reset();
