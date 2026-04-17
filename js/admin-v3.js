@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.18
+ * Version: 03.063.19
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1570,6 +1570,8 @@
     if (bodyEl) bodyEl.innerHTML = '';
     _previewPostId = null;
   }
+  V3.closePostPreview = _closePostPreviewModal;
+  V3.getPreviewPostId = function () { return _previewPostId; };
 
   /* ══════════════════════════════════════════════════════════
      POST WRITE / EDIT
@@ -1615,6 +1617,7 @@
     _resetWrite();
     V3.showPanel('write');
   };
+  V3.cancelWrite = function () { V3.showPanel('list'); };
 
   V3.editPost = function (id) {
     // First show panel (resets form), then load
@@ -1782,6 +1785,7 @@
       _clearButtonBusy(btn);
     });
   }
+  V3.savePost = _savePost;
 
   function _syncWriteFeaturedState() {
     var published = document.getElementById('w-published');
@@ -2426,6 +2430,7 @@
   function _closeCalModal() {
     document.getElementById('cal-modal').style.display = 'none';
   }
+  V3.closeCalendarModal = _closeCalModal;
 
   function _saveCal() {
     var id = document.getElementById('cal-id').value;
@@ -2473,6 +2478,7 @@
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
+  V3.saveCalendar = _saveCal;
 
   function _deleteCal(id) {
     _confirm('일정 삭제', '이 일정을 삭제하시겠습니까?').then(function (ok) {
@@ -2588,6 +2594,7 @@
     document.getElementById('glos-modal').style.display = 'flex';
   }
   function _closeGlosModal() { document.getElementById('glos-modal').style.display = 'none'; }
+  V3.closeGlossaryModal = _closeGlosModal;
 
   function _saveGlos() {
     var id = document.getElementById('glos-id').value;
@@ -2617,6 +2624,7 @@
       }).catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
   }
+  V3.saveGlossary = _saveGlos;
 
   function _deleteGlos(id) {
     _confirm('용어 삭제', '이 용어를 삭제하시겠습니까?').then(function (ok) {
@@ -3151,6 +3159,7 @@
     var modal = _el('analytics-tag-modal');
     if (modal) modal.style.display = 'none';
   }
+  V3.closeAnalyticsTagModal = _closeAnalyticsTagModal;
 
   function _renderAnalyticsTagArticlesModal() {
     var el = _el('analytics-tag-modal-body');
@@ -5970,6 +5979,7 @@
     var modal = document.getElementById('wosm-import-modal');
     if (modal) modal.style.display = 'none';
   }
+  V3.closeWosmImportModal = _closeWosmImportModal;
 
   function _renderWosmImportModal() {
     var sheetSelect = document.getElementById('wosm-import-sheet');
@@ -6065,6 +6075,7 @@
     _renderWosmMembersEditor();
     GW.showToast('XLSX를 가져왔습니다. 필요한 값은 계속 수정해서 저장하세요.', 'success');
   }
+  V3.applyWosmImportMapping = _applyWosmImportMapping;
 
   function _getDefaultWosmColumns() {
     return [
@@ -6230,6 +6241,7 @@
     document.getElementById('confirm-cancel-btn').textContent = '취소';
     if (_confirmResolve) { _confirmResolve(ok); _confirmResolve = null; }
   }
+  V3.closeConfirmModal = _closeConfirm;
 
   /* ══════════════════════════════════════════════════════════
      HELPERS
