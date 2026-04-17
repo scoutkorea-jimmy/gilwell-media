@@ -225,7 +225,84 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 <button class="v3-btn v3-btn-danger">삭제</button>
 ```
 
-### 3.4 관리자 컬러 토큰 (V3)
+### 3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙
+
+#### 기능 세부 설명
+
+**브랜드 컬러 팔레트 (10색)**
+
+공개 사이트와 관리자 콘솔이 공통으로 사용하는 기본 색상이다. 같은 색이라도 용도(텍스트 / 배경 / 강조 / 장식)에 따라 사용 가능 여부가 달라진다. 새 색상 추가·변경은 이 표를 먼저 갱신하고 `css/style.css` `:root` CSS 변수 토큰을 함께 바꾼다.
+
+| 이름 | HEX | RGB | CMYK | PMS-C |
+|---|---|---|---|---|
+| Scouting Purple | `#622599` | 98, 37, 153 | 79, 94, 0, 0 | 527 |
+| Canvas White | `#FFFFFF` | 255, 255, 255 | 0, 0, 0, 0 | — |
+| Midnight Purple | `#4D006E` | 77, 0, 110 | 80, 100, 0, 45 | 2607 |
+| Blossom Pink | `#FF8DFF` | 255, 141, 255 | 5, 45, 0, 0 | 236 |
+| Fire Red | `#FF5655` | 255, 86, 85 | 0, 80, 60, 0 | 178 |
+| Ember Orange | `#FFAE80` | 255, 174, 128 | 0, 30, 40, 0 | 162 |
+| Ocean Blue | `#0094B4` | 0, 148, 180 | 100, 0, 30, 0 | 632 |
+| River Blue | `#82E6DE` | 130, 230, 222 | 45, 0, 15, 0 | 318 |
+| Forest Green | `#248737` | 36, 135, 55 | 95, 0, 90, 20 | 348 |
+| Leaf Green | `#9FED8F` | 159, 237, 143 | 40, 0, 50, 0 | 2267 |
+
+**WCAG 2.1 명암비 기준**
+
+| 대상 | AA (최소 충족) | AAA (권장 목표) |
+|---|---|---|
+| 본문 텍스트 (일반 크기) | 4.5:1 | 7:1 |
+| 대형 텍스트 (18pt 이상 또는 14pt 이상 bold) | 3:1 | 4.5:1 |
+| 비텍스트 UI 요소 (버튼 테두리, 아이콘, 폼 경계) | 3:1 | — |
+| 키보드 포커스 인디케이터 | 3:1 | — |
+
+**색상별 접근성 분류 (Canvas White 배경 기준 실측 명암비)**
+
+| 색상 | White 대비 | 사용 가능 범위 |
+|---|---|---|
+| Midnight Purple `#4D006E` | 13.63:1 | ✅ 본문 텍스트 허용 (AAA) |
+| Scouting Purple `#622599` | 9.36:1 | ✅ 본문 텍스트 허용 (AAA) |
+| Forest Green `#248737` | 4.57:1 | ✅ 본문 텍스트 허용 (AA) |
+| Ocean Blue `#0094B4` | 3.56:1 | ⚠ 대형 텍스트·UI 요소만 (AA Large) |
+| Fire Red `#FF5655` | 3.13:1 | ⚠ 대형 텍스트·UI 요소만 (AA Large) |
+| Blossom Pink `#FF8DFF` | 2.00:1 | ❌ 텍스트 금지. 배경·장식 전용 |
+| Ember Orange `#FFAE80` | 1.81:1 | ❌ 텍스트 금지. 배경·장식 전용 |
+| River Blue `#82E6DE` | 1.47:1 | ❌ 텍스트 금지. 배경·장식 전용 |
+| Leaf Green `#9FED8F` | 1.40:1 | ❌ 텍스트 금지. 배경·장식 전용 |
+
+**권장 배경-텍스트 조합**
+
+| 배경 | 안전한 텍스트 색 |
+|---|---|
+| Canvas White | Midnight Purple / Scouting Purple / Forest Green / Black |
+| Midnight Purple | Canvas White (13.63:1) / Ember Orange (7.54:1) / Leaf Green (9.73:1) / River Blue (9.30:1) / Blossom Pink (6.82:1) |
+| Scouting Purple | Canvas White (9.36:1) |
+| Forest Green | Canvas White (4.57:1) |
+| Fire Red / Ocean Blue | 배경 사용 시 Canvas White 텍스트만 (각 6.71:1, 5.90:1) |
+| Pastel 4색(Blossom Pink / Ember Orange / River Blue / Leaf Green) | Midnight Purple 또는 Black만 허용 |
+
+**색상 선택 원칙**
+
+1. **색상만으로 정보를 전달하지 않는다.** 에러·성공·경고·링크 등 상태·의미는 색 + 아이콘 + 텍스트의 3중 신호로 표기한다. 색각이상자(남성 8%, 여성 0.5%)와 흑백 인쇄·그레이스케일 모드에서도 구분 가능해야 한다.
+2. **파스텔 4색은 텍스트 색으로 쓰지 않는다.** Blossom Pink, Ember Orange, River Blue, Leaf Green은 카테고리 태그 배경·일러스트·장식 도형 전용이다. 그 위에 텍스트를 올려야 하면 텍스트 색은 Midnight Purple 또는 Black.
+3. **Fire Red·Ocean Blue는 본문 텍스트 금지.** 18px(14pt) 이상 bold 헤딩, 버튼 라벨, 아이콘, 테두리에만 사용한다.
+4. **리터럴 HEX 금지.** 모든 색은 CSS 변수로만 참조한다 (`var(--color-scouting-purple)` 등). 새 색 추가 시 `:root` 토큰, 이 문서, KMS, `docs/homepage-module-inventory.md`를 동시에 갱신한다.
+5. **키보드 포커스 인디케이터는 필수.** 키보드 탐색 중 현재 포커스된 요소는 항상 배경과 3:1 이상 대비로 표시한다 (`outline` 또는 `box-shadow`). 기본 브라우저 outline을 제거했다면 반드시 대체 표시를 제공한다.
+6. **다크 모드·고대비 모드 대응.** 색 토큰은 `prefers-color-scheme: dark`와 `prefers-contrast: more` 미디어 쿼리에서 명암비가 유지되도록 설계한다.
+
+**검증 체크리스트 (새 UI·색 적용 시)**
+
+- [ ] WebAIM Contrast Checker(`https://webaim.org/resources/contrastchecker/`)로 모든 텍스트-배경 조합 검증
+- [ ] Chrome DevTools → Rendering → Emulate vision deficiencies(Protanopia / Deuteranopia / Tritanopia / Achromatopsia) 통과
+- [ ] 그레이스케일 모드에서 상태·링크·에러가 구분되는지 확인
+- [ ] 키보드 포커스 인디케이터가 배경과 3:1 이상 대비인지 확인
+- [ ] 모바일 화면에서도 동일 명암비가 유지되는지 확인 (배경 반투명 처리 시 대비 저하 주의)
+
+#### 각주
+- WCAG 2.1 AA는 한국 KWCAG 2.2, EU EN 301 549, US ADA 등 주요 접근성 법적 기준의 최소치다. 이 프로젝트는 본문 텍스트에 AA를 기본 충족시키고, 마스트헤드·히어로·주요 CTA 등 핵심 표면은 AAA를 목표로 한다.
+- 파스텔 4색이 White 배경에서 명암비 부족으로 표시되는 것은 색 자체의 문제가 아니라 용도가 배경·장식으로 설계되었기 때문이다. 원본 색을 어둡게 조정하지 말고 용도 경계를 지킨다.
+- 색상 추가·변경은 브랜드 정합성과 접근성을 동시에 만족해야 한다. 둘 중 하나라도 깨지면 추가하지 않는다.
+
+### 3.5 관리자 컬러 토큰 (V3)
 
 #### 기능 세부 설명
 - `--v3-primary` : `#4f46e5` (인디고) — 핵심 행동, 활성 상태
@@ -234,7 +311,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - `--v3-sidebar-bg` : `#161c2d` (다크 네이비) — 사이드바 배경
 - `--v3-content-bg` : `#f1f5f9` (라이트 슬레이트) — 콘텐츠 영역 배경
 
-### 3.5 모듈 레이어 기준
+### 3.6 모듈 레이어 기준
 
 #### 기능 세부 설명
 - 홈페이지는 `Foundation / Component / Pattern / Template / Code Module` 레이어로 나눠서 설계한다.
@@ -245,7 +322,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - `Code Module`은 constants, utils, renderers, feature init, API helper처럼 책임 단위가 분리된 코드 구조다.
 - 모듈 분해와 우선순위 판단은 `docs/homepage-module-inventory.md`를 함께 기준으로 본다.
 
-### 3.6 디자인 모듈 계약
+### 3.7 디자인 모듈 계약
 
 #### 기능 세부 설명
 - 하나의 디자인 모듈은 최소한 `종류`, `설명`, `토큰/클래스`, `코드`, `미리보기`, `모바일 규칙`을 가져야 한다.
@@ -256,7 +333,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 상태는 최소한 `default / active / disabled / danger` 언어를 공유한다.
 - 공통 액션 모듈은 공개 구현(`css/style.css`)과 관리자 구현(`css/admin-v3.css`)을 함께 갱신한다.
 
-### 3.7 KMS 디자인 탭 동작 규칙
+### 3.8 KMS 디자인 탭 동작 규칙
 
 #### 기능 세부 설명
 - KMS 디자인 탭은 단순 정적 문서가 아니라 홈페이지 모듈 시스템의 시각적 레퍼런스다.
