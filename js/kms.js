@@ -1127,16 +1127,16 @@
     if (!bodyEl) return;
     var overview = {
       kinds: [
-        { title: 'Foundation', desc: '색상, 타이포, 간격처럼 모든 화면이 공유하는 기본 토큰입니다.' },
+        { title: 'Foundation', desc: '색상, 타이포, 간격, 명암비처럼 모든 화면이 공유하는 기본 토큰입니다.' },
         { title: 'Component', desc: '버튼, 칩, 카드, 폼처럼 재사용 가능한 UI 블록입니다.' },
         { title: 'Pattern', desc: '헤더, 히어로, 섹션 레일처럼 여러 모듈을 묶어 쓰는 조합입니다.' },
         { title: 'Responsive', desc: '데스크톱과 모바일에서 같은 구조를 무리 없이 보여주는 기준입니다.' }
       ],
       rules: [
-        { title: '모듈 단위로 본다', desc: '각 카드에 종류, 토큰/클래스, 코드, 미리보기를 함께 둡니다.' },
-        { title: '코드를 바로 읽는다', desc: 'HTML 구조와 핵심 클래스가 보이도록 코드 블록을 항상 노출합니다.' },
-        { title: '같은 정보를 두 번 검증한다', desc: '코드로 확인하고, 오른쪽 미리보기로 즉시 시각 검증합니다.' },
-        { title: '접근성을 먼저 본다', desc: '특히 어두운 배경 위 텍스트는 충분한 대비를 유지하고, 작은 보조 문구도 흐려지지 않게 확인합니다.' }
+        { title: '접근성을 먼저 본다', desc: 'WCAG 2.1 AA 이상의 명암비(본문 4.5:1, 대형·UI 3:1)를 기준으로 색과 조합을 선택합니다. 새 UI는 이 원칙부터 통과해야 합니다.' },
+        { title: '색상만으로 정보 전달 금지', desc: '에러·성공·링크는 색 + 아이콘 + 텍스트의 3중 신호로 표시합니다. 색각이상자와 그레이스케일에서도 구분되어야 합니다.' },
+        { title: '모듈 단위로 본다', desc: '각 카드에 종류, 토큰/클래스, 코드, 미리보기를 함께 둡니다. 코드와 미리보기는 1:1로 대응합니다.' },
+        { title: '리터럴 HEX 금지', desc: '모든 색은 CSS 변수로만 참조합니다 (var(--color-*)). 새 색 추가 시 KMS + 토큰 + 문서를 동시에 갱신합니다.' }
       ],
       breakpoints: ['Desktop 1180+', 'Tablet 900+', 'Mobile 768-', 'Compact 480-']
     };
@@ -1152,29 +1152,44 @@
             modules: [
               {
                 kind: 'Foundation',
-                title: '브랜드 팔레트 & 태그 토큰',
-                summary: '색상은 독립적인 장식이 아니라 태그, 섹션 헤더, CTA 강조에 재사용되는 토큰 집합으로 관리합니다.',
+                title: '브랜드 팔레트 (10색) & 태그 토큰',
+                summary: '공개 사이트와 관리자 콘솔이 공유하는 10색 기본 팔레트입니다. 각 색 옆의 명암비는 Canvas White 배경 기준 WCAG 실측값이며, 본문·대형·장식 용도로 분류됩니다. 상세 규칙은 아래 02 · 웹 접근성 & 컬러 규칙 섹션 참조.',
                 meta: [
-                  { label: '토큰', values: ['--scouting-purple', '--midnight-purple', '--ink', '--border'] },
+                  { label: '본문 텍스트 OK (AA~AAA)', values: ['Midnight Purple 13.63:1', 'Scouting Purple 9.36:1', 'Forest Green 4.57:1'] },
+                  { label: '대형 텍스트·UI만', values: ['Ocean Blue 3.56:1', 'Fire Red 3.13:1'] },
+                  { label: '장식·배경 전용 (텍스트 금지)', values: ['Blossom Pink 2.00:1', 'Ember Orange 1.81:1', 'River Blue 1.47:1', 'Leaf Green 1.40:1'] },
                   { label: '연결 클래스', values: ['.category-tag', '.post-kicker', '.home-section-title'] }
                 ],
                 code: [
-                  '<span class="category-tag tag-korea">Korea</span>',
-                  '<span class="post-kicker tag-wosm-kicker">WOSM</span>',
-                  '<div class="home-section-title home-section-title-latest">',
-                  '  <span>최신 소식</span>',
-                  '  <div class="rule"></div>',
-                  '</div>'
+                  '/* css/style.css :root 토큰 */',
+                  ':root {',
+                  '  --color-scouting-purple: #622599;',
+                  '  --color-midnight-purple: #4D006E;',
+                  '  --color-canvas-white:    #FFFFFF;',
+                  '  --color-forest-green:    #248737;',
+                  '  --color-fire-red:        #FF5655;',
+                  '  --color-ocean-blue:      #0094B4;',
+                  '  --color-blossom-pink:    #FF8DFF;',
+                  '  --color-ember-orange:    #FFAE80;',
+                  '  --color-river-blue:      #82E6DE;',
+                  '  --color-leaf-green:      #9FED8F;',
+                  '}'
                 ].join('\n'),
                 preview: [
                   '<div class="kms-ds-preview-stack">',
                   '  <div class="kms-ds-token-grid">',
-                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#622599"></span><strong>Brand Purple</strong><code>#622599</code></div>',
-                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#4d006e"></span><strong>Midnight</strong><code>#4d006e</code></div>',
-                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#1f1f1f"></span><strong>Ink</strong><code>#1f1f1f</code></div>',
-                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip kms-ds-token-chip-light" style="background:#ffffff"></span><strong>Surface</strong><code>#ffffff</code></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#4D006E"></span><strong>Midnight Purple</strong><code>#4D006E</code><small style="color:#146E7A;font-weight:600">13.63:1 · 본문 AAA</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#622599"></span><strong>Scouting Purple</strong><code>#622599</code><small style="color:#146E7A;font-weight:600">9.36:1 · 본문 AAA</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#248737"></span><strong>Forest Green</strong><code>#248737</code><small style="color:#146E7A;font-weight:600">4.57:1 · 본문 AA</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#0094B4"></span><strong>Ocean Blue</strong><code>#0094B4</code><small style="color:#B8651F;font-weight:600">3.56:1 · 대형만</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#FF5655"></span><strong>Fire Red</strong><code>#FF5655</code><small style="color:#B8651F;font-weight:600">3.13:1 · 대형만</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip kms-ds-token-chip-light" style="background:#FFFFFF"></span><strong>Canvas White</strong><code>#FFFFFF</code><small style="color:#5a5048">배경</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#FF8DFF"></span><strong>Blossom Pink</strong><code>#FF8DFF</code><small style="color:#B02A2A;font-weight:600">2.00:1 · 장식만</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#FFAE80"></span><strong>Ember Orange</strong><code>#FFAE80</code><small style="color:#B02A2A;font-weight:600">1.81:1 · 장식만</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#82E6DE"></span><strong>River Blue</strong><code>#82E6DE</code><small style="color:#B02A2A;font-weight:600">1.47:1 · 장식만</small></div>',
+                  '    <div class="kms-ds-token-card"><span class="kms-ds-token-chip" style="background:#9FED8F"></span><strong>Leaf Green</strong><code>#9FED8F</code><small style="color:#B02A2A;font-weight:600">1.40:1 · 장식만</small></div>',
                   '  </div>',
-                  '  <div class="kms-ds-row">',
+                  '  <div class="kms-ds-row" style="margin-top:4px">',
                   '    <span class="category-tag tag-korea">Korea</span>',
                   '    <span class="post-kicker tag-apr-kicker">APR</span>',
                   '    <span class="post-kicker tag-wosm-kicker">WOSM</span>',
@@ -1210,7 +1225,236 @@
             ]
           },
           {
-            title: '02 · 모듈 계약서',
+            title: '02 · 웹 접근성 & 컬러 규칙',
+            note: '색 선택의 출발점은 브랜드가 아니라 접근성입니다. WCAG 2.1 AA 이상(본문 4.5:1, 대형·UI 3:1)을 기준으로 10색 팔레트의 사용 범위가 결정됩니다. 새 UI·색 조합을 만들 때는 이 섹션부터 통과시킵니다.',
+            modules: [
+              {
+                kind: 'Foundation',
+                title: 'WCAG 2.1 명암비 기준표',
+                summary: '본문 텍스트는 4.5:1 이상(AAA는 7:1), 대형 텍스트와 비텍스트 UI는 3:1 이상. 키보드 포커스 인디케이터도 배경과 3:1 이상.',
+                meta: [
+                  { label: '본문', values: ['AA 4.5:1', 'AAA 7:1'] },
+                  { label: '대형 텍스트 (18pt+ / 14pt bold+)', values: ['AA 3:1', 'AAA 4.5:1'] },
+                  { label: '비텍스트 UI · 포커스', values: ['AA 3:1'] },
+                  { label: '검증 도구', values: ['WebAIM Contrast Checker', 'DevTools Emulate vision deficiencies'] }
+                ],
+                code: [
+                  '/* 이 프로젝트 기본 목표 */',
+                  '/* - 본문 텍스트: AA (4.5:1) 기본 충족, 핵심 표면은 AAA (7:1) */',
+                  '/* - 대형 텍스트·UI·포커스: 3:1 이상 */',
+                  '/* WCAG 공식: (L1 + 0.05) / (L2 + 0.05), L1 밝은 쪽 */',
+                  '',
+                  '/* 실무 체크리스트 */',
+                  '/* 1. WebAIM Contrast Checker로 텍스트-배경 조합 확인 */',
+                  '/* 2. Chrome DevTools → Rendering → Emulate vision deficiencies */',
+                  '/* 3. 그레이스케일 모드에서 상태·링크가 구분되는지 확인 */',
+                  '/* 4. 키보드 Tab 이동 시 포커스가 항상 보이는지 확인 */'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:0;border:1px solid rgba(31,31,31,0.12);border-radius:10px;overflow:hidden;font-size:13px">',
+                  '    <div style="padding:10px 12px;background:#f5f3ef;font-weight:700;border-bottom:1px solid rgba(31,31,31,0.1)">대상</div>',
+                  '    <div style="padding:10px 12px;background:#f5f3ef;font-weight:700;border-bottom:1px solid rgba(31,31,31,0.1);text-align:center">AA (최소)</div>',
+                  '    <div style="padding:10px 12px;background:#f5f3ef;font-weight:700;border-bottom:1px solid rgba(31,31,31,0.1);text-align:center">AAA (권장)</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06)">본문 텍스트 (일반 크기)</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;font-weight:600;color:#146E7A">4.5:1</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;font-weight:600;color:#146E7A">7:1</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06)">대형 텍스트 (18pt+ / 14pt bold+)</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;font-weight:600;color:#146E7A">3:1</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;font-weight:600;color:#146E7A">4.5:1</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06)">비텍스트 UI (테두리·아이콘)</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;font-weight:600;color:#146E7A">3:1</div>',
+                  '    <div style="padding:10px 12px;border-bottom:1px solid rgba(31,31,31,0.06);text-align:center;color:#5a5048">—</div>',
+                  '    <div style="padding:10px 12px">키보드 포커스 인디케이터</div>',
+                  '    <div style="padding:10px 12px;text-align:center;font-weight:600;color:#146E7A">3:1</div>',
+                  '    <div style="padding:10px 12px;text-align:center;color:#5a5048">—</div>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Foundation',
+                title: '안전한 조합 vs 위반 조합',
+                summary: '같은 10색이라도 배경-텍스트 조합에 따라 읽기 가능 여부가 달라집니다. 왼쪽은 본문으로 써도 되는 조합(✅), 오른쪽은 절대 텍스트로 쓰면 안 되는 조합(❌)입니다.',
+                meta: [
+                  { label: '✅ 본문 가능', values: ['White 배경 + Midnight Purple', 'White + Scouting Purple', 'White + Forest Green', 'Midnight Purple + White'] },
+                  { label: '❌ 텍스트 금지', values: ['White + Blossom Pink 2.00:1', 'White + Ember Orange 1.81:1', 'White + River Blue 1.47:1', 'White + Leaf Green 1.40:1'] },
+                  { label: '파스텔 위에 텍스트를 얹어야 할 때', values: ['반드시 Midnight Purple 또는 Black 사용'] }
+                ],
+                code: [
+                  '<!-- ✅ 안전: 본문으로 써도 OK -->',
+                  '<p style="background:#fff;color:#4D006E">Midnight Purple on White — 13.63:1</p>',
+                  '<p style="background:#fff;color:#622599">Scouting Purple on White — 9.36:1</p>',
+                  '<p style="background:#fff;color:#248737">Forest Green on White — 4.57:1</p>',
+                  '',
+                  '<!-- ❌ 위반: 읽히지 않는다 -->',
+                  '<p style="background:#fff;color:#FF8DFF">Blossom Pink on White — 2.00:1</p>',
+                  '<p style="background:#fff;color:#FFAE80">Ember Orange on White — 1.81:1</p>',
+                  '',
+                  '<!-- ✅ 파스텔은 Midnight 배경과 조합 -->',
+                  '<p style="background:#4D006E;color:#FF8DFF">Blossom Pink on Midnight — 6.82:1</p>',
+                  '<p style="background:#4D006E;color:#9FED8F">Leaf Green on Midnight — 9.73:1</p>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">',
+                  '    <div style="border:2px solid #248737;border-radius:10px;padding:14px;background:#fff">',
+                  '      <div style="font-size:11px;font-weight:700;color:#248737;margin-bottom:8px;letter-spacing:0.08em">✅ 본문 가능</div>',
+                  '      <div style="background:#fff;color:#4D006E;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">Midnight on White · 13.63:1</div>',
+                  '      <div style="background:#fff;color:#622599;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">Scouting on White · 9.36:1</div>',
+                  '      <div style="background:#fff;color:#248737;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">Forest on White · 4.57:1</div>',
+                  '      <div style="background:#4D006E;color:#FFAE80;padding:6px 10px;border-radius:6px;font-weight:500">Ember on Midnight · 7.54:1</div>',
+                  '    </div>',
+                  '    <div style="border:2px solid #B02A2A;border-radius:10px;padding:14px;background:#fff">',
+                  '      <div style="font-size:11px;font-weight:700;color:#B02A2A;margin-bottom:8px;letter-spacing:0.08em">❌ 텍스트 금지</div>',
+                  '      <div style="background:#fff;color:#FF8DFF;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">Blossom on White · 2.00:1</div>',
+                  '      <div style="background:#fff;color:#FFAE80;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">Ember on White · 1.81:1</div>',
+                  '      <div style="background:#fff;color:#82E6DE;padding:6px 10px;border-radius:6px;margin-bottom:6px;font-weight:500">River on White · 1.47:1</div>',
+                  '      <div style="background:#fff;color:#9FED8F;padding:6px 10px;border-radius:6px;font-weight:500">Leaf on White · 1.40:1</div>',
+                  '    </div>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Pattern',
+                title: '색상만으로 정보 전달 금지',
+                summary: '에러·성공·경고·링크 같은 상태는 색 + 아이콘 + 텍스트의 3중 신호로 표기합니다. 색각이상자(남성 8%) 또는 그레이스케일 인쇄 환경에서도 구분되어야 합니다.',
+                meta: [
+                  { label: '원칙', values: ['색 + 아이콘 + 텍스트 3중 표기', '그레이스케일에서도 구분'] },
+                  { label: '대상', values: ['에러', '성공', '경고', '링크'] },
+                  { label: 'ARIA', values: ['role="status"', 'aria-live="polite"', 'aria-invalid="true"'] }
+                ],
+                code: [
+                  '<!-- ❌ 위반: 빨간색만으로 에러 표시 -->',
+                  '<span style="color:#FF5655">저장에 실패했습니다.</span>',
+                  '',
+                  '<!-- ✅ 준수: 색 + 아이콘 + 텍스트 라벨 -->',
+                  '<span role="status" aria-live="polite">',
+                  '  <svg aria-hidden="true">⚠</svg>',
+                  '  <strong>오류</strong>',
+                  '  저장에 실패했습니다. 네트워크를 확인하세요.',
+                  '</span>'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">',
+                  '    <div style="border:2px solid #B02A2A;border-radius:10px;padding:14px;background:#fff">',
+                  '      <div style="font-size:11px;font-weight:700;color:#B02A2A;margin-bottom:10px;letter-spacing:0.08em">❌ 색만 사용 (위반)</div>',
+                  '      <div style="color:#FF5655;font-size:14px;padding:6px 0">저장에 실패했습니다.</div>',
+                  '      <div style="color:#248737;font-size:14px;padding:6px 0">저장되었습니다.</div>',
+                  '      <div style="color:#5a5048;font-size:11px;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(31,31,31,0.15)">그레이스케일에서 둘 다 회색 — 구분 불가</div>',
+                  '    </div>',
+                  '    <div style="border:2px solid #248737;border-radius:10px;padding:14px;background:#fff">',
+                  '      <div style="font-size:11px;font-weight:700;color:#248737;margin-bottom:10px;letter-spacing:0.08em">✅ 색 + 아이콘 + 라벨 (준수)</div>',
+                  '      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff5f5;border-left:3px solid #FF5655;border-radius:4px;margin-bottom:6px">',
+                  '        <span aria-hidden="true" style="font-weight:700;color:#B02A2A">⚠</span>',
+                  '        <strong style="color:#4D006E;font-size:13px">오류</strong>',
+                  '        <span style="color:#4D006E;font-size:13px">저장에 실패했습니다.</span>',
+                  '      </div>',
+                  '      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f3faf5;border-left:3px solid #248737;border-radius:4px">',
+                  '        <span aria-hidden="true" style="font-weight:700;color:#248737">✓</span>',
+                  '        <strong style="color:#4D006E;font-size:13px">성공</strong>',
+                  '        <span style="color:#4D006E;font-size:13px">저장되었습니다.</span>',
+                  '      </div>',
+                  '    </div>',
+                  '  </div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Component',
+                title: '키보드 포커스 인디케이터',
+                summary: '키보드 Tab 탐색 중 현재 포커스된 요소는 항상 배경과 3:1 이상 대비로 표시합니다. outline: none을 쓸 때는 box-shadow 또는 outline-offset으로 대체 표시를 반드시 제공합니다.',
+                meta: [
+                  { label: '필수', values: ['outline 3:1 이상', 'focus-visible 우선 사용', '마우스 클릭 시엔 굳이 안 보여도 됨'] },
+                  { label: '금지', values: ['outline: none (대체 없이)', '투명도만 낮춘 outline'] },
+                  { label: '권장 구현', values: [':focus-visible { outline: 2px solid; outline-offset: 2px; }'] }
+                ],
+                code: [
+                  '/* ✅ 권장: focus-visible + outline-offset */',
+                  '.btn:focus-visible {',
+                  '  outline: 2px solid var(--color-scouting-purple);',
+                  '  outline-offset: 2px;',
+                  '}',
+                  '',
+                  '/* ✅ 어두운 배경에선 밝은 색으로 */',
+                  '.btn-dark:focus-visible {',
+                  '  outline: 2px solid #FFFFFF;',
+                  '  outline-offset: 2px;',
+                  '}',
+                  '',
+                  '/* ❌ 금지: outline 제거 (대체 없이) */',
+                  '.btn-bad:focus { outline: none; }'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">',
+                  '    <button type="button" style="padding:10px 16px;background:#622599;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;outline:2px solid #622599;outline-offset:3px;cursor:pointer">✅ 포커스 보임 (3:1↑)</button>',
+                  '    <button type="button" style="padding:10px 16px;background:#4D006E;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;outline:2px solid #FFFFFF;outline-offset:3px;cursor:pointer">✅ 다크 배경 → 흰 outline</button>',
+                  '    <button type="button" style="padding:10px 16px;background:#fff;color:#4D006E;border:1px solid #4D006E;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;opacity:0.6">❌ 포커스 없음</button>',
+                  '  </div>',
+                  '  <div style="font-size:11px;color:#5a5048;margin-top:8px">Tab 키로 버튼을 순회할 때 각 버튼에 실제로 표시될 포커스 링을 상시 노출한 상태입니다.</div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Foundation',
+                title: '색상 선택 6가지 원칙',
+                summary: 'KMS가 기준으로 삼는 색 선택 규칙입니다. 새 색 추가·조합 검토 시 이 원칙부터 통과시킵니다. 하나라도 깨지면 색을 바꾸거나 용도를 재분류합니다.',
+                meta: [
+                  { label: '문서', values: ['KMS §3.4', 'CLAUDE.md §2 Site Color Palette'] },
+                  { label: '검증', values: ['WebAIM Contrast Checker', 'DevTools Emulate vision deficiencies'] }
+                ],
+                code: [
+                  '/* 1. 색상만으로 정보 전달 금지 → 색 + 아이콘 + 텍스트 */',
+                  '/* 2. 파스텔 4색 텍스트 금지 → Blossom/Ember/River/Leaf는 장식 전용 */',
+                  '/* 3. Fire Red·Ocean Blue 본문 금지 → 18px bold+ 헤딩·버튼·아이콘·테두리만 */',
+                  '/* 4. 리터럴 HEX 금지 → var(--color-*) 로만 참조 */',
+                  '/* 5. 포커스 인디케이터 필수 → 3:1 이상, focus-visible */',
+                  '/* 6. 다크·고대비 모드 대응 → prefers-color-scheme, prefers-contrast */'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <ol style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;padding:0;margin:0;list-style:none;counter-reset:principle">',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">1</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">색상만으로 정보 전달 금지</strong>',
+                  '      <span style="color:#5a5048;font-size:12px">색 + 아이콘 + 텍스트 3중 신호. 색각이상·그레이스케일에서도 구분.</span>',
+                  '    </li>',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">2</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">파스텔 4색은 텍스트 금지</strong>',
+                  '      <span style="color:#5a5048;font-size:12px">Blossom Pink, Ember Orange, River Blue, Leaf Green은 장식·배경 전용.</span>',
+                  '    </li>',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">3</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">Fire Red·Ocean Blue 본문 금지</strong>',
+                  '      <span style="color:#5a5048;font-size:12px">18px bold+ 헤딩·버튼 라벨·아이콘·테두리에만 사용.</span>',
+                  '    </li>',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">4</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">리터럴 HEX 금지</strong>',
+                  '      <span style="color:#5a5048;font-size:12px">모든 색은 <code style="font-size:11px">var(--color-*)</code> CSS 변수로만 참조.</span>',
+                  '    </li>',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">5</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">포커스 인디케이터 필수</strong>',
+                  '      <span style="color:#5a5048;font-size:12px">키보드 포커스는 배경 대비 3:1 이상. <code style="font-size:11px">:focus-visible</code> 우선.</span>',
+                  '    </li>',
+                  '    <li style="counter-increment:principle;border:1px solid rgba(31,31,31,0.12);border-radius:10px;padding:12px 14px;background:#fff;position:relative;padding-left:44px">',
+                  '      <span style="position:absolute;left:12px;top:12px;width:24px;height:24px;border-radius:50%;background:#4D006E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">6</span>',
+                  '      <strong style="display:block;color:#4D006E;font-size:13px;margin-bottom:4px">다크·고대비 모드 대응</strong>',
+                  '      <span style="color:#5a5048;font-size:12px"><code style="font-size:11px">prefers-color-scheme</code>, <code style="font-size:11px">prefers-contrast</code>에서 명암비 유지.</span>',
+                  '    </li>',
+                  '  </ol>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          },
+          {
+            title: '03 · 모듈 계약서',
             note: '이제 모든 디자인은 섹션 설명이 아니라 모듈 계약으로 봅니다. 어떤 종류인지, 무엇을 쓰는지, 코드가 어떤지, 상태가 어떻게 변하는지가 한 카드 안에 있어야 합니다.',
             modules: [
               {
@@ -1278,7 +1522,7 @@
         sub: '실제 운영에서 자주 손대는 버튼, 칩, 카드, 폼 모듈입니다.',
         sections: [
           {
-            title: '03 · 액션 컴포넌트',
+            title: '04 · 액션 컴포넌트',
             note: '행동을 만드는 UI는 크기와 우선순위가 바로 보여야 합니다. Primary / Secondary / Chip 계층이 섞이지 않도록 정리합니다.',
             modules: [
               {
@@ -1333,7 +1577,7 @@
             ]
           },
           {
-            title: '04 · 콘텐츠 표면',
+            title: '05 · 콘텐츠 표면',
             note: '정보량이 많은 카드와 폼은 시각적 밀도 조절이 중요합니다. 코드 블록은 가볍고, 미리보기는 실제 사용 맥락을 보여주도록 구성합니다.',
             modules: [
               {
@@ -1402,7 +1646,7 @@
         sub: '여러 컴포넌트를 묶어서 실제 페이지 경험을 만드는 패턴입니다.',
         sections: [
           {
-            title: '05 · 페이지 패턴',
+            title: '06 · 페이지 패턴',
             note: '헤더와 히어로, 섹션 레일은 한 개 컴포넌트보다 더 큰 구조입니다. 배치 규칙과 정보 우선순위를 같이 읽어야 합니다.',
             modules: [
               {
@@ -1468,7 +1712,7 @@
             ]
           },
           {
-            title: '06 · 피드백 패턴',
+            title: '07 · 피드백 패턴',
             note: '로딩, 빈 상태, 토스트는 작아 보이지만 운영 품질에 직접 연결됩니다. 별도 패턴으로 분리해 보여주는 편이 안전합니다.',
             modules: [
               {
@@ -1501,7 +1745,7 @@
         sub: '같은 디자인을 PC와 모바일 모두에서 편하게 보이게 하는 최종 규칙입니다.',
         sections: [
           {
-            title: '07 · 반응형 블루프린트',
+            title: '08 · 반응형 블루프린트',
             note: '새 모듈을 추가할 때는 데스크톱 완성 후 모바일을 붙이는 방식이 아니라, 처음부터 두 환경에서 어떻게 접히는지 같이 설계합니다.',
             modules: [
               {
