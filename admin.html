@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417080754">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417081427">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.063.18</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.19</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.18</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.19</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -1630,9 +1630,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260417080754"></script>
-<script src="/js/shared-country-name-ko.js?v=20260417080754"></script>
-<script src="/js/admin-v3.js?v=20260417080754"></script>
+<script src="/js/main.js?v=20260417081427"></script>
+<script src="/js/shared-country-name-ko.js?v=20260417081427"></script>
+<script src="/js/admin-v3.js?v=20260417081427"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
@@ -1787,6 +1787,57 @@
           handled = true;
         } else if (target.id === 'dash-heatmap-apply' && typeof window.V3.applyDashboardHeatmapRange === 'function') {
           window.V3.applyDashboardHeatmapRange();
+          handled = true;
+        }
+        if (!handled) return;
+        event.preventDefault();
+      }, true);
+      document.addEventListener('click', function (event) {
+        var target = event.target && event.target.closest ? event.target.closest('#write-cancel-btn, #write-publish-btn, #post-preview-close, #post-preview-done, #post-preview-edit-btn, #cal-modal-close, #cal-modal-cancel, #cal-save-btn, #glos-modal-close, #glos-modal-cancel, #glos-save-btn, #analytics-tag-modal-close, #analytics-tag-modal-done, #wosm-import-close, #wosm-import-cancel, #wosm-import-apply, #confirm-cancel-btn, #confirm-ok-btn') : null;
+        if (!target || !window.V3) return;
+        var handled = false;
+        if ((target.id === 'write-cancel-btn') && typeof window.V3.cancelWrite === 'function') {
+          window.V3.cancelWrite();
+          handled = true;
+        } else if ((target.id === 'write-publish-btn') && typeof window.V3.savePost === 'function') {
+          window.V3.savePost();
+          handled = true;
+        } else if ((target.id === 'post-preview-close' || target.id === 'post-preview-done') && typeof window.V3.closePostPreview === 'function') {
+          window.V3.closePostPreview();
+          handled = true;
+        } else if ((target.id === 'post-preview-edit-btn') && typeof window.V3.editPost === 'function') {
+          var previewId = window.V3 && typeof window.V3.getPreviewPostId === 'function' ? window.V3.getPreviewPostId() : null;
+          if (previewId) {
+            window.V3.closePostPreview && window.V3.closePostPreview();
+            window.V3.editPost(previewId);
+            handled = true;
+          }
+        } else if ((target.id === 'cal-modal-close' || target.id === 'cal-modal-cancel') && typeof window.V3.closeCalendarModal === 'function') {
+          window.V3.closeCalendarModal();
+          handled = true;
+        } else if ((target.id === 'cal-save-btn') && typeof window.V3.saveCalendar === 'function') {
+          window.V3.saveCalendar();
+          handled = true;
+        } else if ((target.id === 'glos-modal-close' || target.id === 'glos-modal-cancel') && typeof window.V3.closeGlossaryModal === 'function') {
+          window.V3.closeGlossaryModal();
+          handled = true;
+        } else if ((target.id === 'glos-save-btn') && typeof window.V3.saveGlossary === 'function') {
+          window.V3.saveGlossary();
+          handled = true;
+        } else if ((target.id === 'analytics-tag-modal-close' || target.id === 'analytics-tag-modal-done') && typeof window.V3.closeAnalyticsTagModal === 'function') {
+          window.V3.closeAnalyticsTagModal();
+          handled = true;
+        } else if ((target.id === 'wosm-import-close' || target.id === 'wosm-import-cancel') && typeof window.V3.closeWosmImportModal === 'function') {
+          window.V3.closeWosmImportModal();
+          handled = true;
+        } else if ((target.id === 'wosm-import-apply') && typeof window.V3.applyWosmImportMapping === 'function') {
+          window.V3.applyWosmImportMapping();
+          handled = true;
+        } else if ((target.id === 'confirm-cancel-btn') && typeof window.V3.closeConfirmModal === 'function') {
+          window.V3.closeConfirmModal(false);
+          handled = true;
+        } else if ((target.id === 'confirm-ok-btn') && typeof window.V3.closeConfirmModal === 'function') {
+          window.V3.closeConfirmModal(true);
           handled = true;
         }
         if (!handled) return;
