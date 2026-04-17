@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.15
+ * Version: 03.063.16
  *
  * Versioning:
  *   V3.aaa.bb
@@ -649,11 +649,11 @@
   }
 
   function _doLogin() {
-    var pw  = document.getElementById('v3-pw').value.trim();
+    var pw  = document.getElementById('v3-pw').value;
     var err = document.getElementById('v3-login-err');
     var btn = document.getElementById('v3-login-btn');
     if (_loginInFlight) return;
-    if (!pw) {
+    if (!String(pw || '').trim()) {
       if (GW.showToast) GW.showToast('비밀번호를 입력해주세요', 'error');
       return;
     }

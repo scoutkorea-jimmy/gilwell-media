@@ -15,11 +15,12 @@ aliases: [Release Playbook, 배포 절차]
 2. `cat VERSION`으로 현재 Site 버전 확인
 3. `cat ADMIN_VERSION`으로 현재 Admin 버전 확인
 4. `./scripts/sync_versions.sh`로 버전 문자열 동기화
-5. 필요한 경우 기능 변경 커밋 반영
-6. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
-7. `접속 국가/도시` 관련 변경이면 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote` 선실행
-8. `main` 기준 production 배포
-9. 라이브 검증
+5. `./scripts/release_preflight.sh`로 `main` 브랜치 / 깨끗한 워크트리 / 버전 정합성 확인
+6. 필요한 경우 기능 변경 커밋 반영
+7. 필요하면 `./scripts/post_deploy_check.sh <url>` 기준 점검 항목을 먼저 준비
+8. `접속 국가/도시` 관련 변경이면 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote` 선실행
+9. `main` 기준 production 배포
+10. 라이브 검증
 
 관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
 관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
@@ -32,13 +33,15 @@ aliases: [Release Playbook, 배포 절차]
 
 1. `git switch main`
 2. `git status --short`가 비어 있는지 확인
-3. `./scripts/deploy_production.sh` 실행
-4. 배포 직후 `./scripts/post_deploy_check.sh https://bpmedia.net` 실행
-5. 홈, 대표 기사, 카테고리, 검색, 용어집, 관리자 핵심 화면을 직접 확인
+3. `./scripts/release_preflight.sh` 실행
+4. `./scripts/deploy_production.sh` 실행
+5. 배포 직후 `./scripts/post_deploy_check.sh https://bpmedia.net` 실행
+6. 홈, 대표 기사, 카테고리, 검색, 용어집, 관리자 핵심 화면을 직접 확인
 
 직접 실행이 필요하면:
 
 ```bash
+./scripts/release_preflight.sh
 wrangler pages deploy . --project-name gilwell-media --branch main
 ```
 
@@ -96,5 +99,6 @@ wrangler pages deployment list --project-name gilwell-media
 - `cc`는 버그 수정, 배너 위치 조정 같은 사소한 수정에만 증가한다.
 - `bbb`가 올라가면 `cc`는 반드시 `00`으로 초기화한다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
+- `wrangler pages deploy ...`를 직접 사용할 때도 반드시 `./scripts/release_preflight.sh`를 먼저 통과해야 한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, production `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
 - 관리자(KMS 포함) 변경은 공개 사이트 production QA를 필수 게이트로 두지 않는다.

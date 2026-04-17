@@ -6,18 +6,8 @@ cd "$ROOT_DIR"
 
 chmod +x "$ROOT_DIR/scripts/verify_release_metadata.sh"
 "$ROOT_DIR/scripts/verify_release_metadata.sh"
-
-CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || true)"
-if [[ "${CURRENT_BRANCH}" != "main" ]]; then
-  echo "Production deploys must run from the main branch."
-  echo "Current branch: ${CURRENT_BRANCH:-detached}"
-  exit 1
-fi
-
-if [[ -n "$(git status --short)" ]]; then
-  echo "Worktree is dirty. Commit or stash changes before production deploy."
-  exit 1
-fi
+chmod +x "$ROOT_DIR/scripts/release_preflight.sh"
+"$ROOT_DIR/scripts/release_preflight.sh"
 
 VERSION="$(cat VERSION)"
 ASSET_VERSION="$(cat ASSET_VERSION)"

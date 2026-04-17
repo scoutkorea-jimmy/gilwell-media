@@ -88,9 +88,14 @@
 }
 .v3-login-field {
   position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
 }
 .v3-login-input {
-  width: 100%; padding: 10px 48px 10px 14px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 52px 10px 14px;
   border: 1.5px solid var(--v3-border); border-radius: var(--v3-radius);
   font-size: 15px; outline: none; transition: border-color .15s;
 }
@@ -98,14 +103,15 @@
 .v3-login-reveal {
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 6px;
   z-index: 2;
   transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--v3-text-m);
