@@ -53,6 +53,14 @@
   height: 100vh; overflow: hidden;
 }
 .admin-v3 input, .admin-v3 button, .admin-v3 select, .admin-v3 textarea { font: inherit; }
+.admin-v3 button,
+.admin-v3 a,
+.admin-v3 input,
+.admin-v3 select,
+.admin-v3 textarea,
+.admin-v3 label {
+  pointer-events: auto;
+}
 
 /* ── Login Screen ────────────────────────────────────────── */
 #v3-login {
@@ -60,6 +68,9 @@
   background: linear-gradient(145deg, #1a1f3a 0%, #0f172a 100%);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999;
+}
+#v3-login[style*="display: none"] {
+  pointer-events: none !important;
 }
 #v3-login-box {
   background: #fff; border-radius: 16px;
@@ -535,8 +546,15 @@
 /* ── Modal ───────────────────────────────────────────────── */
 .v3-overlay {
   position: fixed; inset: 0; background: rgba(15,23,42,.55);
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   z-index: 8000; padding: 20px;
+  pointer-events: none;
+}
+.v3-overlay.open,
+.v3-overlay[style*="display:flex"],
+.v3-overlay[style*="display: flex"] {
+  display: flex;
+  pointer-events: auto;
 }
 .v3-modal {
   background: var(--v3-surface); border-radius: var(--v3-radius-l);
