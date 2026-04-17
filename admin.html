@@ -7,8 +7,38 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417074154">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417074556">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    #v3-login[style*="display: none"] { pointer-events: none !important; }
+    .v3-overlay { display: none; pointer-events: none; }
+    .v3-overlay.open,
+    .v3-overlay[style*="display:flex"],
+    .v3-overlay[style*="display: flex"] {
+      display: flex;
+      pointer-events: auto;
+    }
+    #v3-app,
+    #v3-sidebar,
+    #v3-main,
+    #v3-topbar,
+    #v3-content,
+    #v3-nav,
+    .v3-nav-item,
+    .v3-sidebar-link,
+    .v3-topbar-btn,
+    .v3-btn,
+    .v3-login-btn,
+    .v3-login-reveal {
+      position: relative;
+      pointer-events: auto;
+    }
+    #v3-sidebar,
+    #v3-main,
+    #v3-content {
+      z-index: 1;
+    }
+  </style>
   <meta name="robots" content="noindex,nofollow">
 </head>
 <body class="admin-v3">
@@ -34,7 +64,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.063.13</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.14</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -49,7 +79,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.13</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.14</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -1579,9 +1609,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260417074154"></script>
-<script src="/js/shared-country-name-ko.js?v=20260417074154"></script>
-<script src="/js/admin-v3.js?v=20260417074154"></script>
+<script src="/js/main.js?v=20260417074556"></script>
+<script src="/js/shared-country-name-ko.js?v=20260417074556"></script>
+<script src="/js/admin-v3.js?v=20260417074556"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
@@ -1666,6 +1696,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       var input = document.getElementById('v3-pw');
+      document.addEventListener('click', function (event) {
+        var navBtn = event.target && event.target.closest ? event.target.closest('#v3-nav .v3-nav-item[data-panel]') : null;
+        if (!navBtn || !window.V3 || typeof window.V3.showPanel !== 'function') return;
+        event.preventDefault();
+        window.V3.showPanel(navBtn.dataset.panel, navBtn.dataset.settingsSection);
+      }, true);
       if (input) {
         input.addEventListener('keydown', function (event) {
           if (event.key !== 'Enter') return;
