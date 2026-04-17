@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.24
+ * Version: 03.063.25
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3372,12 +3372,19 @@
     countryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     cityEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
 
-    _apiFetch('/api/admin/geo-audience?days=' + period).then(function (data) {
+    Promise.allSettled([
+      _apiFetch('/api/admin/geo-audience?days=' + period),
+      _apiFetch('/api/settings/wosm-members')
+    ]).then(function (results) {
+      if (results[0].status !== 'fulfilled') throw (results[0].reason || new Error('지리 집계를 불러오지 못했습니다.'));
+      var data = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
+      var wosm = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
       _geoAudienceData = data || {};
       var summary = _geoAudienceData.summary || {};
       var range = _geoAudienceData.range || {};
-      var countries = Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [];
-      var cities = Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [];
+      var regionMap = _buildGeoAudienceRegionMap(Array.isArray(wosm.items) ? wosm.items : []);
+      var countries = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [], regionMap);
+      var cities = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [], regionMap);
       var warmupNote = String(_geoAudienceData.warmup_note || '').trim();
 
       statsEl.innerHTML =
@@ -3392,7 +3399,7 @@
       }
       countryEl.innerHTML = _renderGeoCountryTable(countries);
       cityEl.innerHTML = _renderGeoCityTable(cities);
-      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">지도를 축소하면 국가 분포, 확대하면 도시 분포가 표시됩니다.</div>';
+      noteEl.innerHTML = GW.escapeHtml(noteEl.textContent) + '<div class="v3-geo-map-hint">지도를 축소하면 국가 분포, 확대하면 도시 분포가 표시됩니다. 지역연맹 색상은 세계연맹 회원국 현황 기준이며, 매칭되지 않는 국가는 별도 색으로 표시됩니다.</div>' + _renderGeoRegionLegend();
       _renderGeoAudienceMap(countries, cities);
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
@@ -3412,7 +3419,7 @@
       '</tr></thead><tbody>' +
       items.slice(0, 120).map(function (item) {
         return '<tr>' +
-          '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><span class="v3-geo-sub">' + GW.escapeHtml(item.country_code || 'N/A') + '</span></div></td>' +
+          '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><span class="v3-geo-sub">' + GW.escapeHtml(item.country_code || 'N/A') + '</span>' + _renderGeoRegionMeta(item) + '</div></td>' +
           '<td>' + _fmt(item.visits || 0) + '</td>' +
           '<td>' + _fmt(item.pageviews || 0) + '</td>' +
           '<td>' + _fmt(item.city_count || 0) + '</td>' +
@@ -3430,9 +3437,12 @@
       '<th>도시</th><th>국가</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +
       '</tr></thead><tbody>' +
       items.slice(0, 120).map(function (item) {
+        var cityName = item.city_name || item.city_name_original || '도시 미확인';
+        var cityOriginal = String(item.city_name_original || '').trim();
+        var showOriginal = cityOriginal && cityOriginal !== cityName && cityOriginal !== '도시 미확인';
         return '<tr>' +
-          '<td><strong>' + GW.escapeHtml(item.city_name || '도시 미확인') + '</strong></td>' +
-          '<td><span class="v3-geo-pill">' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</span></td>' +
+          '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(cityName) + '</strong>' + (showOriginal ? '<span class="v3-geo-sub">' + GW.escapeHtml(cityOriginal) + '</span>' : '') + '</div></td>' +
+          '<td><div class="v3-geo-country-cell"><span class="v3-geo-pill ' + GW.escapeHtml(item.region_tone_class || 'is-unassigned') + '">' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</span>' + _renderGeoRegionMeta(item) + '</div></td>' +
           '<td>' + _fmt(item.visits || 0) + '</td>' +
           '<td>' + _fmt(item.pageviews || 0) + '</td>' +
           '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
@@ -3485,16 +3495,18 @@
     validCountries.forEach(function (item) {
       var visits = Number(item.visits || 0);
       var radius = Math.max(7, Math.min(30, 7 + Math.round((visits / Math.max(1, maxCountryVisits)) * 23)));
+      var tone = _getGeoRegionTone(item.region_tone_class);
       L.circleMarker([Number(item.latitude), Number(item.longitude)], {
         radius: radius,
         weight: 1.5,
-        color: '#6d28d9',
-        fillColor: '#8b5cf6',
-        fillOpacity: 0.45,
+        color: tone.stroke,
+        fillColor: tone.fill,
+        fillOpacity: tone.opacity,
       }).on('click', function () {
         _geoAudienceMap.flyTo([Number(item.latitude), Number(item.longitude)], 4, { duration: 0.45 });
       }).bindPopup(
         '<strong>' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</strong><br>' +
+        GW.escapeHtml(item.region_label || '지역연맹 미분류') + '<br>' +
         '방문 ' + _fmt(visits) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0) + '<br>' +
         '도시 ' + _fmt(item.city_count || 0)
       ).addTo(_geoAudienceMapLayers.country);
@@ -3503,15 +3515,17 @@
     validCities.forEach(function (item) {
       var visits = Number(item.visits || 0);
       var radius = Math.max(4, Math.min(16, 4 + Math.round((visits / Math.max(1, maxCityVisits)) * 12)));
+      var tone = _getGeoRegionTone(item.region_tone_class);
       L.circleMarker([Number(item.latitude), Number(item.longitude)], {
         radius: radius,
         weight: 1.25,
-        color: '#0f766e',
-        fillColor: '#14b8a6',
-        fillOpacity: 0.4,
+        color: tone.cityStroke,
+        fillColor: tone.cityFill,
+        fillOpacity: tone.cityOpacity,
       }).bindPopup(
-        '<strong>' + GW.escapeHtml(item.city_name || '도시 미확인') + '</strong><br>' +
+        '<strong>' + GW.escapeHtml(item.city_name || item.city_name_original || '도시 미확인') + '</strong><br>' +
         GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '<br>' +
+        GW.escapeHtml(item.region_label || '지역연맹 미분류') + '<br>' +
         '방문 ' + _fmt(visits) + ' · 페이지뷰 ' + _fmt(item.pageviews || 0)
       ).addTo(_geoAudienceMapLayers.city);
     });
@@ -3533,6 +3547,112 @@
     }
     if (_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.city)) _geoAudienceMapLayer.removeLayer(_geoAudienceMapLayers.city);
     if (!_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.country)) _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.country);
+  }
+
+  function _buildGeoAudienceRegionMap(items) {
+    var map = {};
+    (Array.isArray(items) ? items : []).forEach(function (item) {
+      var region = _getWosmRegionValue(item);
+      var toneClass = _getGeoRegionToneClass(region);
+      var regionLabel = _getGeoRegionLabel(region);
+      [
+        _normalizeGeoLookupKey(item && item.country_ko),
+        _normalizeGeoLookupKey(item && item.country_en)
+      ].forEach(function (key) {
+        if (!key) return;
+        map[key] = {
+          region_label: regionLabel,
+          region_tone_class: toneClass
+        };
+      });
+    });
+    return map;
+  }
+
+  function _enrichGeoAudienceItems(items, regionMap) {
+    return (Array.isArray(items) ? items : []).map(function (item) {
+      var match = _resolveGeoAudienceRegion(item, regionMap || {});
+      return Object.assign({}, item, match);
+    });
+  }
+
+  function _resolveGeoAudienceRegion(item, regionMap) {
+    var candidates = [
+      _normalizeGeoLookupKey(item && item.country_name),
+      _normalizeGeoLookupKey(item && item.country_name_original),
+      _normalizeGeoLookupKey(item && item.country_code)
+    ];
+    for (var i = 0; i < candidates.length; i += 1) {
+      if (candidates[i] && regionMap[candidates[i]]) return regionMap[candidates[i]];
+    }
+    return {
+      region_label: '지역연맹 미분류',
+      region_tone_class: 'is-unassigned'
+    };
+  }
+
+  function _normalizeGeoLookupKey(value) {
+    return String(value || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\u3131-\u318e\uac00-\ud7a3]+/g, '');
+  }
+
+  function _getWosmRegionValue(item) {
+    if (!item) return '';
+    var extra = item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+    if (extra.column_1) return String(extra.column_1 || '').trim();
+    var regionKey = Object.keys(extra).find(function (key) {
+      return /region/i.test(key);
+    });
+    return regionKey ? String(extra[regionKey] || '').trim() : '';
+  }
+
+  function _getGeoRegionToneClass(region) {
+    var normalized = String(region || '').trim().toLowerCase();
+    if (normalized === 'africa') return 'is-africa';
+    if (normalized === 'arab') return 'is-arab';
+    if (normalized === 'asia-pacific') return 'is-asia-pacific';
+    if (normalized === 'european') return 'is-european';
+    if (normalized === 'interamerican') return 'is-interamerican';
+    return 'is-unassigned';
+  }
+
+  function _getGeoRegionLabel(region) {
+    var normalized = String(region || '').trim();
+    return normalized || '지역연맹 미분류';
+  }
+
+  function _getGeoRegionTone(toneClass) {
+    var key = String(toneClass || 'is-unassigned').trim();
+    var tones = {
+      'is-africa': { stroke: '#8f4a25', fill: '#ab5027', opacity: 0.5, cityStroke: '#8f4a25', cityFill: '#c26a3e', cityOpacity: 0.44 },
+      'is-arab': { stroke: '#916011', fill: '#b07a1e', opacity: 0.5, cityStroke: '#916011', cityFill: '#c89436', cityOpacity: 0.44 },
+      'is-asia-pacific': { stroke: '#e04b4b', fill: '#ff5655', opacity: 0.5, cityStroke: '#d64545', cityFill: '#ff7a79', cityOpacity: 0.44 },
+      'is-european': { stroke: '#007f98', fill: '#0094b4', opacity: 0.5, cityStroke: '#00738c', cityFill: '#35abc6', cityOpacity: 0.44 },
+      'is-interamerican': { stroke: '#1f7c36', fill: '#248737', opacity: 0.5, cityStroke: '#1f7131', cityFill: '#3ca553', cityOpacity: 0.44 },
+      'is-unassigned': { stroke: '#64748b', fill: '#94a3b8', opacity: 0.42, cityStroke: '#64748b', cityFill: '#cbd5e1', cityOpacity: 0.38 }
+    };
+    return tones[key] || tones['is-unassigned'];
+  }
+
+  function _renderGeoRegionMeta(item) {
+    return '<span class="v3-geo-region-badge ' + GW.escapeHtml(item.region_tone_class || 'is-unassigned') + '">' + GW.escapeHtml(item.region_label || '지역연맹 미분류') + '</span>';
+  }
+
+  function _renderGeoRegionLegend() {
+    var items = [
+      { label: 'Africa', tone: 'is-africa' },
+      { label: 'Arab', tone: 'is-arab' },
+      { label: 'Asia-Pacific', tone: 'is-asia-pacific' },
+      { label: 'European', tone: 'is-european' },
+      { label: 'Interamerican', tone: 'is-interamerican' },
+      { label: '미분류', tone: 'is-unassigned' }
+    ];
+    return '<div class="v3-geo-legend">' + items.map(function (item) {
+      return '<span class="v3-geo-legend-item"><span class="v3-geo-legend-dot ' + item.tone + '"></span>' + GW.escapeHtml(item.label) + '</span>';
+    }).join('') + '</div>';
   }
 
   function _formatDateTimeCompact(value) {

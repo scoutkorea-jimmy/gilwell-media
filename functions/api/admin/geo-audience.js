@@ -2,6 +2,7 @@ import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
 import { resolveCountryLabelKo } from '../../_shared/country-code-labels.js';
+import { resolveCityLabelKo } from '../../_shared/city-name-ko.js';
 import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
@@ -100,10 +101,15 @@ export async function onRequestGet({ request, env }) {
 
 function normalizeRows(rows) {
   return (Array.isArray(rows) ? rows : []).map(function (row) {
+    const countryCode = row.country_code || '';
+    const countryNameOriginal = row.country_name || row.country_code || 'Unknown';
+    const cityNameOriginal = row.city_name || '';
     return {
-      country_code: row.country_code || '',
-      country_name: resolveCountryLabelKo(row.country_code || '', row.country_name || row.country_code || 'Unknown'),
-      city_name: row.city_name || '',
+      country_code: countryCode,
+      country_name: resolveCountryLabelKo(countryCode, countryNameOriginal),
+      country_name_original: countryNameOriginal,
+      city_name: resolveCityLabelKo(countryCode, cityNameOriginal),
+      city_name_original: cityNameOriginal,
       visits: Number(row.visits || 0),
       pageviews: Number(row.pageviews || 0),
       city_count: Number(row.city_count || 0),
