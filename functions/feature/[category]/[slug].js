@@ -2,6 +2,7 @@ import { buildShareMetaBlock, getResolvedShareImage, loadSiteMeta } from '../../
 import { getSpecialFeatureCollection } from '../../_shared/special-features.js';
 import { getNavLabel, loadNavLabels } from '../../_shared/nav-labels.js';
 import { getCategoryMeta } from '../../_shared/category-meta.mjs';
+import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../../_shared/site-copy.mjs';
 
 export async function onRequestGet(context) {
   return renderFeaturePage(context);
@@ -39,11 +40,11 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     naverVerification: siteMeta.naver_verification,
   });
   const latestDate = formatDate(leadItem && (leadItem.publish_at || leadItem.created_at || ''));
-  const footerTitle = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.title) || 'BP미디어');
-  const footerDescription = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.description) || 'BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.');
-  const footerDomain = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.domain_label) || 'bpmedia.net');
-  const footerTipEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.tip_email) || 'story@bpmedia.net');
-  const footerContactEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.contact_email) || 'info@bpmedia.net');
+  const footerTitle = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.title) || SITE_BRAND_NAME);
+  const footerDescription = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.description) || `${SITE_BRAND_NAME}는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.`);
+  const footerDomain = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.domain_label) || SITE_DOMAIN_LABEL);
+  const footerTipEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.tip_email) || DEFAULT_CONTACT_EMAILS.tip);
+  const footerContactEmail = escapeHtml((siteMeta && siteMeta.footer && siteMeta.footer.contact_email) || DEFAULT_CONTACT_EMAILS.contact);
   const navContributors = getNavLabel(navLabels, 'nav.contributors', 'ko');
   const navHome = getNavLabel(navLabels, 'nav.home', 'ko');
   const navLatest = getNavLabel(navLabels, 'nav.latest', 'ko');
@@ -366,7 +367,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
             <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
             <h1>BP미디어</h1>
           </div>
-          <div class="sub">The BP Post · bpmedia.net</div>
+          <div class="sub">The BP Post · ${footerDomain}</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -401,7 +402,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
       한국스카우트연맹 및 세계스카우트연맹 소식을 전합니다
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      The BP Post · bpmedia.net
+      The BP Post · ${footerDomain}
     </div>
   </div>
 
@@ -475,7 +476,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <p class="footer-build">Site <span class="site-build-version">—</span> · Admin <span class="admin-build-version">—</span></p>
       </div>
       <div class="footer-bottom">
-        <p>© 2026 BP미디어 · bpmedia.net</p>
+        <p>© 2026 ${footerTitle} · ${footerDomain}</p>
         <p>BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다.</p>
       </div>
     </div>

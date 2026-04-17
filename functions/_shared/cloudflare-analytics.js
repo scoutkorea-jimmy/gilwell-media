@@ -1,5 +1,5 @@
 const DEFAULT_ZONE_TAG = 'd75b127c5c4d4e72a97322776aac7f5e';
-const DEFAULT_HOST = 'bpmedia.net';
+const DEFAULT_HOSTS = ['bpmedia.net', 'www.bpmedia.net'];
 const DEFAULT_START_DATE = '2026-03-12';
 const MAX_RANGE_DAYS = 180;
 
@@ -117,8 +117,13 @@ export async function getCloudflarePageMetrics(env, range, opts = {}) {
   };
 }
 
-function getConfiguredHost(env) {
-  return env.CF_ANALYTICS_HOST || DEFAULT_HOST;
+function getConfiguredHosts(env) {
+  const raw = (env && env.CF_ANALYTICS_HOST) || '';
+  const parsed = String(raw)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return parsed.length ? parsed : DEFAULT_HOSTS;
 }
 
 function getConfiguredZoneTag(env) {
@@ -149,8 +154,11 @@ async function runGroupsQueryChunked(env, startUtcIso, endUtcIso, limit, orderBy
 
 async function runGroupsQuery(env, startUtcIso, endUtcIso, limit, orderBy, dimensionsSelection) {
   const zoneTag = getConfiguredZoneTag(env);
-  const host = getConfiguredHost(env);
-  const filter = `{ datetime_geq: ${jsonValue(startUtcIso)}, datetime_lt: ${jsonValue(endUtcIso)}, clientRequestHTTPHost: ${jsonValue(host)}, requestSource: "eyeball" }`;
+  const hosts = getConfiguredHosts(env);
+  const hostFilter = hosts.length === 1
+    ? `clientRequestHTTPHost: ${jsonValue(hosts[0])}`
+    : `clientRequestHTTPHost_in: ${JSON.stringify(hosts)}`;
+  const filter = `{ datetime_geq: ${jsonValue(startUtcIso)}, datetime_lt: ${jsonValue(endUtcIso)}, ${hostFilter}, requestSource: "eyeball" }`;
   const query = `
     query {
       viewer {

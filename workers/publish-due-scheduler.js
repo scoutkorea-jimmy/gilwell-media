@@ -16,7 +16,11 @@ export default {
 };
 
 async function runPublishDue(env) {
-  const baseUrl = String((env && env.SITE_ORIGIN) || 'https://bpmedia.net').replace(/\/+$/, '');
+  const origin = env && env.SITE_ORIGIN;
+  if (!origin) {
+    throw new Error('publish-due scheduler: SITE_ORIGIN env var is required (set it in wrangler.publish-due.toml [vars])');
+  }
+  const baseUrl = String(origin).replace(/\/+$/, '');
   const response = await fetch(`${baseUrl}/api/jobs/publish-due`, {
     headers: { 'User-Agent': 'bpmedia-publish-due-scheduler/1.0' },
   });
