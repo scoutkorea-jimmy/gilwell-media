@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.26
+ * Version: 03.063.27
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3555,10 +3555,11 @@
       var region = _getWosmRegionValue(item);
       var toneClass = _getGeoRegionToneClass(region);
       var regionLabel = _getGeoRegionLabel(region);
-      [
-        _normalizeGeoLookupKey(item && item.country_ko),
-        _normalizeGeoLookupKey(item && item.country_en)
-      ].forEach(function (key) {
+      var aliases = []
+        .concat(Array.isArray(item && item.country_aliases) ? item.country_aliases : [])
+        .concat([item && item.country_ko, item && item.country_en]);
+      aliases.forEach(function (value) {
+        var key = _normalizeGeoLookupKey(value);
         if (!key) return;
         map[key] = {
           region_label: regionLabel,

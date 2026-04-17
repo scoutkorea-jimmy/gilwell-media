@@ -150,14 +150,44 @@ export function normalizeWosmRegisteredCount(value) {
 }
 
 export function normalizeWosmMembersResponse(items, columns, importMapping, registeredCount, revision, publicCopy) {
+  const normalizedItems = sanitizeWosmMembersItems(items).map((item) => ({
+    ...item,
+    country_aliases: buildWosmCountryAliases(item),
+  }));
   return {
-    items: sanitizeWosmMembersItems(items),
+    items: normalizedItems,
     columns: normalizeWosmMembersColumns(columns),
     import_mapping: normalizeWosmImportMapping(importMapping),
     registered_count: normalizeWosmRegisteredCount(registeredCount),
     public_copy: normalizeWosmPublicCopy(publicCopy),
     revision: Number.isFinite(Number(revision)) ? Number(revision) : 0,
   };
+}
+
+function buildWosmCountryAliases(item) {
+  const aliases = new Set();
+  const addAlias = (value) => {
+    const text = String(value || '').trim();
+    if (!text) return;
+    aliases.add(text);
+  };
+  addAlias(item && item.country_ko);
+  addAlias(item && item.country_en);
+  addAlias(item && item.country_fr);
+  const translatedKo = translateCountryNameToKorean(item && item.country_en);
+  addAlias(translatedKo);
+
+  const countryEnKey = normalizeCountryNameKey(item && item.country_en);
+  if (countryEnKey === 'republicofkorea') addAlias('한국');
+  if (countryEnKey === 'scoutsofchina') {
+    addAlias('대만');
+    addAlias('중화민국');
+  }
+  if (countryEnKey === 'unitedstatesofamerica') addAlias('미국');
+  if (countryEnKey === 'russianfederation') addAlias('러시아');
+  if (countryEnKey === 'turkiye') addAlias('터키');
+
+  return Array.from(aliases);
 }
 
 export function normalizeWosmPublicCopy(raw) {
