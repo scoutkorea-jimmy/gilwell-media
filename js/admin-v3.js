@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.21
+ * Version: 03.063.22
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3442,6 +3442,30 @@
   var _releasesData  = null;
   var _releasesScope = 'all';
 
+  function _inferReleaseScope(item) {
+    var raw = String(item && item.scope || '').trim().toLowerCase();
+    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
+    var version = String(item && item.version || '').trim();
+    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
+    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
+    return 'both';
+  }
+
+  function _inferReleaseType(item) {
+    var raw = String(item && item.type || '').trim();
+    if (raw) return raw;
+    var scope = _inferReleaseScope(item);
+    var version = String(item && item.version || '').trim();
+    if ((scope === 'admin' && /\.([0-9]{2})$/.test(version)) || (scope === 'site' && /\.([0-9]{2})$/.test(version))) {
+      return 'Hotfix';
+    }
+    return 'Update';
+  }
+
+  function _getReleaseScopeLabel(scope) {
+    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
+  }
+
   function _loadReleases() {
     var el = document.getElementById('releases-list');
     if (_releasesData) {
@@ -3462,7 +3486,7 @@
 
   function _renderReleases(el, items, scope) {
     var filtered = scope === 'all' ? items : items.filter(function (item) {
-      var s = item.scope || 'both';
+      var s = _inferReleaseScope(item);
       return s === scope || s === 'both';
     });
     if (!filtered.length) {
@@ -3471,20 +3495,32 @@
     }
     var typeClass = { Bugfix: 'v3-badge-gray', Hotfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
     el.innerHTML = filtered.map(function (item) {
-      var badge = typeClass[item.type] || 'v3-badge-gray';
-	      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
-	      var s = item.scope || 'both';
-	      var releaseDateText = item.released_at || item.date || '';
-	      var scopeLabel = s === 'site' ? ' <span class="v3-badge v3-badge-site" style="font-size:9px;">Site</span>' :
-	                       s === 'admin' ? ' <span class="v3-badge v3-badge-admin" style="font-size:9px;">Admin</span>' : '';
-	      return '<div class="v3-card v3-release-card">' +
+      var type = _inferReleaseType(item);
+      var badge = typeClass[type] || 'v3-badge-gray';
+      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
+      var issueItems = Array.isArray(item.issues) ? item.issues : [];
+      var s = _inferReleaseScope(item);
+      var releaseDateText = item.released_at || item.date || '';
+      var scopeLabel = _getReleaseScopeLabel(s);
+      var issueHtml = issueItems.length
+        ? '<div class="v3-release-issues-wrap">' +
+            '<div class="v3-release-issues-title">정상이어야 했지만 실제로 작동하지 않았던 항목</div>' +
+            '<ul class="v3-release-issues">' + issueItems.map(function (c) {
+              return '<li>' + GW.escapeHtml(c) + '</li>';
+            }).join('') + '</ul>' +
+          '</div>'
+        : '';
+      return '<div class="v3-card v3-release-card">' +
         '<div class="v3-release-head">' +
-          '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
-          '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(item.type || '') + '</span>' +
-          scopeLabel +
-	          '<span class="v3-release-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
-	        '</div>' +
+          '<div class="v3-release-head-main">' +
+            '<span class="v3-release-scope v3-release-scope-' + GW.escapeHtml(s) + '">' + GW.escapeHtml(scopeLabel) + '</span>' +
+            '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
+            '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(type) + '</span>' +
+          '</div>' +
+          '<span class="v3-release-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
+        '</div>' +
         '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
+        issueHtml +
         (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
           return '<li>' + GW.escapeHtml(c) + '</li>';
         }).join('') + '</ul>' : '') +

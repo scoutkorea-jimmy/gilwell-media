@@ -1035,7 +1035,26 @@
       });
   }
 
-	  function renderChangelog(items, scope) {
+  function inferChangelogScope(item) {
+    var raw = String(item && item.scope || '').trim().toLowerCase();
+    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
+    var version = String(item && item.version || '').trim();
+    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
+    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
+    return 'both';
+  }
+
+  function inferChangelogType(item) {
+    var raw = String(item && item.type || '').trim();
+    if (raw) return raw;
+    return 'Update';
+  }
+
+  function changelogScopeLabel(scope) {
+    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
+  }
+
+  function renderChangelog(items, scope) {
     var container = document.getElementById('kms-changelog');
     if (!container) return;
     if (!items || !items.length) {
@@ -1046,7 +1065,7 @@
     var filtered = scope === 'all'
       ? items
       : items.filter(function (item) {
-          var s = String(item.scope || 'site');
+          var s = inferChangelogScope(item);
           if (scope === 'both') return s === 'both';
           if (scope === 'site') return s === 'site' || s === 'both';
           if (scope === 'admin') return s === 'admin' || s === 'both';
@@ -1058,30 +1077,41 @@
       return;
     }
 
-    var typeColors = { Update: '#0069d9', Bugfix: '#cb2431', Feature: '#22863a', Refactor: '#6f42c1' };
-    var scopeLabels = { site: 'Site', admin: 'Admin', both: 'Site + Admin' };
+    var typeColors = { Update: '#0069d9', Bugfix: '#cb2431', Hotfix: '#cb2431', Feature: '#22863a', Refactor: '#6f42c1' };
 
-	    container.innerHTML = filtered.map(function (item) {
-	      var typeColor = typeColors[item.type] || '#555';
-	      var scopeLabel = scopeLabels[item.scope] || String(item.scope || 'Site');
-	      var releaseDateText = String(item.released_at || item.date || '');
-	      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
+    container.innerHTML = filtered.map(function (item) {
+      var type = inferChangelogType(item);
+      var typeColor = typeColors[type] || '#555';
+      var releaseScope = inferChangelogScope(item);
+      var scopeLabel = changelogScopeLabel(releaseScope);
+      var releaseDateText = String(item.released_at || item.date || '');
+      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
+      var issueList = Array.isArray(item.issues) ? item.issues : [];
       var changesHtml = changesList.length
         ? '<ul class="kms-cl-changes">' + changesList.map(function (c) {
             return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
           }).join('') + '</ul>'
         : '';
+      var issueHtml = issueList.length
+        ? '<div class="kms-cl-issues-wrap">' +
+            '<div class="kms-cl-issues-title">정상이어야 했지만 실제로 작동하지 않았던 항목</div>' +
+            '<ul class="kms-cl-issues">' + issueList.map(function (c) {
+              return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+            }).join('') + '</ul>' +
+          '</div>'
+        : '';
 
       return '<article class="kms-cl-item">' +
         '<div class="kms-cl-item-head">' +
           '<div class="kms-cl-item-version">' +
+            '<span class="kms-cl-scope kms-cl-scope-' + GW.escapeHtml(releaseScope) + '">' + GW.escapeHtml(scopeLabel) + '</span>' +
             '<span class="kms-cl-ver">v' + GW.escapeHtml(String(item.version || '')) + '</span>' +
-            '<span class="kms-cl-type" style="background:' + typeColor + '">' + GW.escapeHtml(String(item.type || '')) + '</span>' +
-            '<span class="kms-cl-scope">' + GW.escapeHtml(scopeLabel) + '</span>' +
+            '<span class="kms-cl-type" style="background:' + typeColor + '">' + GW.escapeHtml(String(type || '')) + '</span>' +
           '</div>' +
-	          '<span class="kms-cl-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
-	        '</div>' +
+          '<span class="kms-cl-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
+        '</div>' +
         '<p class="kms-cl-summary">' + GW.escapeHtml(String(item.summary || '')) + '</p>' +
+        issueHtml +
         changesHtml +
         '</article>';
     }).join('');
