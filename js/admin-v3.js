@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.19
+ * Version: 03.063.20
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2431,6 +2431,8 @@
     document.getElementById('cal-modal').style.display = 'none';
   }
   V3.closeCalendarModal = _closeCalModal;
+  V3.addCalendarTag = _addCalTag;
+  V3.searchCalendarGeo = _searchCalGeo;
 
   function _saveCal() {
     var id = document.getElementById('cal-id').value;
@@ -2491,6 +2493,11 @@
         }).catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
     });
   }
+  V3.deleteCalendar = function () {
+    var idEl = _el('cal-id');
+    var id = idEl ? parseInt(idEl.value, 10) : 0;
+    if (id) _deleteCal(id);
+  };
 
   /* ══════════════════════════════════════════════════════════
      GLOSSARY
@@ -2637,6 +2644,11 @@
         }).catch(function (e) { GW.showToast(e.message || '삭제 실패', 'error'); });
     });
   }
+  V3.deleteGlossary = function () {
+    var idEl = _el('glos-id');
+    var id = idEl ? parseInt(idEl.value, 10) : 0;
+    if (id) _deleteGlos(id);
+  };
 
   /* ══════════════════════════════════════════════════════════
      ANALYTICS
