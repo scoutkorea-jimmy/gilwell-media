@@ -14,10 +14,14 @@ if [[ "${CURRENT_BRANCH}" != "main" ]]; then
   exit 1
 fi
 
-if [[ -n "$(git status --short)" ]]; then
-  echo "Production preflight failed: worktree is dirty."
-  echo "Commit or stash changes before production deploy."
+if [[ -n "$(git status --short --untracked-files=no)" ]]; then
+  echo "Production preflight failed: tracked worktree is dirty."
+  echo "Commit or stash tracked changes before production deploy."
   exit 1
 fi
 
-echo "Release preflight passed for main with a clean worktree."
+if [[ -n "$(git status --short --untracked-files=normal)" ]]; then
+  echo "Release preflight note: untracked files exist locally and will be ignored."
+fi
+
+echo "Release preflight passed for main with a clean tracked worktree."

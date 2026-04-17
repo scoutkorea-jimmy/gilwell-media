@@ -98,7 +98,8 @@ wrangler pages deployment list --project-name gilwell-media
 - `bbb`는 기능 추가가 있을 때만 증가한다.
 - `cc`는 버그 수정, 배너 위치 조정 같은 사소한 수정에만 증가한다.
 - `bbb`가 올라가면 `cc`는 반드시 `00`으로 초기화한다.
-- production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
+- production 배포는 `main`의 깨끗한 tracked 워크트리에서만 진행한다.
+- 로컬 참고용 untracked 파일은 배포 차단 대상이 아니지만, staging/commit 대상에 섞이지 않아야 한다.
 - `wrangler pages deploy ...`를 직접 사용할 때도 반드시 `./scripts/release_preflight.sh`를 먼저 통과해야 한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, production `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
 - 관리자(KMS 포함) 변경은 공개 사이트 production QA를 필수 게이트로 두지 않는다.
