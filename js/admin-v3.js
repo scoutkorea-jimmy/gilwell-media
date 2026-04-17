@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.27
+ * Version: 03.063.28
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3578,11 +3578,7 @@
   }
 
   function _resolveGeoAudienceRegion(item, regionMap) {
-    var candidates = [
-      _normalizeGeoLookupKey(item && item.country_name),
-      _normalizeGeoLookupKey(item && item.country_name_original),
-      _normalizeGeoLookupKey(item && item.country_code)
-    ];
+    var candidates = _buildGeoAudienceMatchCandidates(item);
     for (var i = 0; i < candidates.length; i += 1) {
       if (candidates[i] && regionMap[candidates[i]]) return regionMap[candidates[i]];
     }
@@ -3598,6 +3594,59 @@
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .replace(/[^a-z0-9\u3131-\u318e\uac00-\ud7a3]+/g, '');
+  }
+
+  function _buildGeoAudienceMatchCandidates(item) {
+    var rawValues = [
+      item && item.country_name,
+      item && item.country_name_original,
+      item && item.country_code,
+      _getGeoCountryLabelFromCode(item && item.country_code),
+      _getGeoCountryEnglishFromCode(item && item.country_code)
+    ];
+    var normalized = [];
+    rawValues.forEach(function (value) {
+      var key = _normalizeGeoLookupKey(value);
+      if (!key || normalized.indexOf(key) >= 0) return;
+      normalized.push(key);
+    });
+    return normalized;
+  }
+
+  function _getGeoCountryLabelFromCode(code) {
+    var raw = String(code || '').trim().toUpperCase();
+    if (!raw) return '';
+    var map = {
+      KR: '한국',
+      TW: '대만',
+      US: '미국',
+      RU: '러시아',
+      TR: '터키',
+      GB: '영국',
+      AE: '아랍에미리트',
+      CZ: '체코',
+      VE: '베네수엘라',
+      ZA: '남아프리카공화국'
+    };
+    return map[raw] || '';
+  }
+
+  function _getGeoCountryEnglishFromCode(code) {
+    var raw = String(code || '').trim().toUpperCase();
+    if (!raw) return '';
+    var map = {
+      KR: 'South Korea',
+      TW: 'Taiwan',
+      US: 'United States',
+      RU: 'Russia',
+      TR: 'Turkey',
+      GB: 'United Kingdom',
+      AE: 'United Arab Emirates',
+      CZ: 'Czech Republic',
+      VE: 'Venezuela',
+      ZA: 'South Africa'
+    };
+    return map[raw] || '';
   }
 
   function _getWosmRegionValue(item) {

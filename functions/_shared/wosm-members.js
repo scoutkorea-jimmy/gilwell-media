@@ -1,4 +1,4 @@
-import { isCountryNameFallbackValue, translateCountryNameToKorean } from './country-name-ko.js';
+import { getCountryNameAliases, isCountryNameFallbackValue, translateCountryNameToKorean } from './country-name-ko.js';
 
 const BASE_ITEM_KEYS = new Set([
   'country_ko',
@@ -176,16 +176,8 @@ function buildWosmCountryAliases(item) {
   addAlias(item && item.country_fr);
   const translatedKo = translateCountryNameToKorean(item && item.country_en);
   addAlias(translatedKo);
-
-  const countryEnKey = normalizeCountryNameKey(item && item.country_en);
-  if (countryEnKey === 'republicofkorea') addAlias('한국');
-  if (countryEnKey === 'scoutsofchina') {
-    addAlias('대만');
-    addAlias('중화민국');
-  }
-  if (countryEnKey === 'unitedstatesofamerica') addAlias('미국');
-  if (countryEnKey === 'russianfederation') addAlias('러시아');
-  if (countryEnKey === 'turkiye') addAlias('터키');
+  getCountryNameAliases(item && item.country_en).forEach(addAlias);
+  getCountryNameAliases(item && item.country_ko).forEach(addAlias);
 
   return Array.from(aliases);
 }
