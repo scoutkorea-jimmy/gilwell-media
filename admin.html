@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417073347">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417073644">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <meta name="robots" content="noindex,nofollow">
 </head>
@@ -23,7 +23,7 @@
     <label class="v3-login-label" for="v3-pw">비밀번호</label>
     <div class="v3-login-field">
       <input class="v3-login-input" type="password" id="v3-pw" placeholder="••••••••" autocomplete="current-password" />
-      <button class="v3-login-reveal" id="v3-pw-reveal" type="button" aria-label="누르는 동안 비밀번호 보기" title="누르는 동안 비밀번호 보기">
+      <button class="v3-login-reveal" id="v3-pw-reveal" type="button" aria-label="누르는 동안 비밀번호 보기" title="누르는 동안 비밀번호 보기" onpointerdown="window.__gwAdminReveal && window.__gwAdminReveal(true)" onpointerup="window.__gwAdminReveal && window.__gwAdminReveal(false)" onpointerleave="window.__gwAdminReveal && window.__gwAdminReveal(false)" onpointercancel="window.__gwAdminReveal && window.__gwAdminReveal(false)" onmousedown="window.__gwAdminReveal && window.__gwAdminReveal(true)" onmouseup="window.__gwAdminReveal && window.__gwAdminReveal(false)" ontouchstart="window.__gwAdminReveal && window.__gwAdminReveal(true)" ontouchend="window.__gwAdminReveal && window.__gwAdminReveal(false)">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M2.2 12s3.3-6 9.8-6 9.8 6 9.8 6-3.3 6-9.8 6-9.8-6-9.8-6Z"></path>
           <circle cx="12" cy="12" r="3.2"></circle>
@@ -31,10 +31,10 @@
       </button>
     </div>
     <div id="v3-login-turnstile"></div>
-    <button class="v3-login-btn" id="v3-login-btn" type="button">관리자 입장</button>
+    <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.063.11</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.12</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -49,7 +49,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.11</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.12</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -1579,8 +1579,104 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260417073347"></script>
-<script src="/js/shared-country-name-ko.js?v=20260417073347"></script>
-<script src="/js/admin-v3.js?v=20260417073347"></script>
+<script src="/js/main.js?v=20260417073644"></script>
+<script src="/js/shared-country-name-ko.js?v=20260417073644"></script>
+<script src="/js/admin-v3.js?v=20260417073644"></script>
+<script>
+  (function () {
+    function toggleReveal(visible) {
+      var input = document.getElementById('v3-pw');
+      var btn = document.getElementById('v3-pw-reveal');
+      if (!input || !btn) return;
+      input.type = visible ? 'text' : 'password';
+      btn.classList.toggle('is-active', !!visible);
+      btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    }
+
+    function setError(message) {
+      var err = document.getElementById('v3-login-err');
+      if (err) {
+        err.textContent = message || '';
+        err.style.display = message ? 'block' : 'none';
+      }
+      if (window.GW && typeof GW.showToast === 'function' && message) {
+        GW.showToast(message, 'error');
+      }
+    }
+
+    async function fallbackLogin(event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      if (window.V3 && typeof window.V3.triggerLogin === 'function') {
+        window.V3.triggerLogin();
+        return false;
+      }
+      var btn = document.getElementById('v3-login-btn');
+      var input = document.getElementById('v3-pw');
+      var turnstileInput = document.querySelector('#v3-login-turnstile input[name="cf-turnstile-response"]');
+      var password = input ? String(input.value || '').trim() : '';
+      var token = turnstileInput ? String(turnstileInput.value || '') : '';
+      if (!password) {
+        setError('비밀번호를 입력해주세요');
+        if (input) input.focus();
+        return false;
+      }
+      if (window.__gwAdminFallbackBusy) return false;
+      window.__gwAdminFallbackBusy = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.dataset.defaultLabel = btn.dataset.defaultLabel || btn.textContent;
+        btn.textContent = '로그인 중…';
+      }
+      setError('');
+      try {
+        var response = await fetch('/api/admin/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ password: password, cf_turnstile_response: token })
+        });
+        var data = {};
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) {
+          throw new Error((data && (data.error || data.message)) || '로그인에 실패했습니다.');
+        }
+        try {
+          sessionStorage.setItem('admin_session', '1');
+          sessionStorage.setItem('admin_role', (data && data.role) || 'full');
+        } catch (_) {}
+        window.location.reload();
+      } catch (error) {
+        setError(error && error.message ? error.message : '로그인에 실패했습니다.');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      } finally {
+        window.__gwAdminFallbackBusy = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.defaultLabel || '관리자 입장';
+        }
+      }
+      return false;
+    }
+
+    window.__gwAdminReveal = toggleReveal;
+    window.__gwAdminFallbackLogin = fallbackLogin;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var input = document.getElementById('v3-pw');
+      if (input) {
+        input.addEventListener('keydown', function (event) {
+          if (event.key !== 'Enter') return;
+          fallbackLogin(event);
+        });
+      }
+      window.addEventListener('mouseup', function () { toggleReveal(false); });
+      window.addEventListener('touchend', function () { toggleReveal(false); }, { passive: true });
+      window.addEventListener('touchcancel', function () { toggleReveal(false); }, { passive: true });
+    });
+  }());
+</script>
 </body>
 </html>

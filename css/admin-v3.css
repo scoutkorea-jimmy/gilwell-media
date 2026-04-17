@@ -88,6 +88,7 @@
   position: absolute;
   top: 50%;
   right: 8px;
+  z-index: 2;
   transform: translateY(-50%);
   width: 34px;
   height: 34px;
