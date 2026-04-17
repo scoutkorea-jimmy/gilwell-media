@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.09
+ * Version: 03.063.10
  *
  * Versioning:
  *   V3.aaa.bb
@@ -101,6 +101,7 @@
   var _analyticsAutoRefreshTimer = null;
   var _analyticsLastUpdatedAt = 0;
   var _analyticsLoading = false;
+  var _loginInFlight = false;
   var _dashboardHeatmapMode = '7d';
   var _dashboardHeatmapStart = '';
   var _dashboardHeatmapEnd = '';
@@ -265,6 +266,18 @@
     document.addEventListener('click', function (event) {
       var btn = event.target && event.target.closest ? event.target.closest('.v3-btn, .mkt-apply-btn, .v3-login-btn') : null;
       if (btn) _pulseButton(btn);
+    });
+    document.addEventListener('click', function (event) {
+      var loginBtn = event.target && event.target.closest ? event.target.closest('#v3-login-btn') : null;
+      if (!loginBtn) return;
+      event.preventDefault();
+      _doLogin();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (!event || event.key !== 'Enter') return;
+      if (!event.target || event.target.id !== 'v3-pw') return;
+      event.preventDefault();
+      _doLogin();
     });
 
     var token = GW.getToken && GW.getToken();
@@ -623,6 +636,7 @@
     var pw  = document.getElementById('v3-pw').value.trim();
     var err = document.getElementById('v3-login-err');
     var btn = document.getElementById('v3-login-btn');
+    if (_loginInFlight) return;
     if (!pw) {
       if (GW.showToast) GW.showToast('비밀번호를 입력해주세요', 'error');
       return;
@@ -637,6 +651,7 @@
       return;
     }
 
+    _loginInFlight = true;
     _setButtonBusy(btn, '로그인 중…'); err.style.display = 'none';
     _apiFetch('/api/admin/login', {
       method: 'POST',
@@ -654,9 +669,12 @@
       document.getElementById('v3-pw').focus();
       if (window.turnstile) window.turnstile.reset();
     }).finally(function () {
+      _loginInFlight = false;
       _clearButtonBusy(btn);
     });
   }
+
+  V3.triggerLogin = _doLogin;
 
   function _doLogout() {
     GW.clearToken();
