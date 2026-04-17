@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417074556">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417074910">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -64,7 +64,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.063.14</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.15</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -79,7 +79,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.14</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.15</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -213,11 +213,11 @@
     </nav>
 
     <div id="v3-sidebar-footer">
-      <a class="v3-sidebar-link" href="/" target="_blank">
+      <a class="v3-sidebar-link" href="/" target="_blank" rel="noopener" onclick="return window.__gwAdminOpenHome ? window.__gwAdminOpenHome(event) : true;">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1 L1 8 L3 8 L3 15 L6 15 L6 11 L10 11 L10 15 L13 15 L13 8 L15 8 Z"/></svg>
         홈페이지 보기
       </a>
-      <button class="v3-sidebar-link danger" id="v3-logout-btn">
+      <button class="v3-sidebar-link danger" id="v3-logout-btn" type="button" onclick="return window.__gwAdminLogoutFallback ? window.__gwAdminLogoutFallback(event) : true;">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"/><polyline points="11,5 15,8 11,11"/><line x1="15" y1="8" x2="6" y2="8"/></svg>
         로그아웃
       </button>
@@ -1609,9 +1609,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260417074556"></script>
-<script src="/js/shared-country-name-ko.js?v=20260417074556"></script>
-<script src="/js/admin-v3.js?v=20260417074556"></script>
+<script src="/js/main.js?v=20260417074910"></script>
+<script src="/js/shared-country-name-ko.js?v=20260417074910"></script>
+<script src="/js/admin-v3.js?v=20260417074910"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
@@ -1691,8 +1691,33 @@
       return false;
     }
 
+    function fallbackLogout(event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      try {
+        sessionStorage.removeItem('admin_session');
+        sessionStorage.removeItem('admin_role');
+      } catch (_) {}
+      document.cookie = 'admin_session=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+      document.cookie = 'admin_role=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+      fetch('/api/admin/session', {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        keepalive: true
+      }).catch(function () {});
+      window.location.reload();
+      return false;
+    }
+
+    function fallbackOpenHome(event) {
+      if (event && typeof event.preventDefault === 'function') event.preventDefault();
+      window.open('/', '_blank', 'noopener');
+      return false;
+    }
+
     window.__gwAdminReveal = toggleReveal;
     window.__gwAdminFallbackLogin = fallbackLogin;
+    window.__gwAdminLogoutFallback = fallbackLogout;
+    window.__gwAdminOpenHome = fallbackOpenHome;
 
     document.addEventListener('DOMContentLoaded', function () {
       var input = document.getElementById('v3-pw');
