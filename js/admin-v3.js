@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.17
+ * Version: 03.063.18
  *
  * Versioning:
  *   V3.aaa.bb
@@ -691,6 +691,7 @@
   }
 
   V3.triggerLogin = _doLogin;
+  V3.logout = _doLogout;
 
   function _doLogout() {
     GW.clearToken();
@@ -726,6 +727,39 @@
     // Show dashboard
     V3.showPanel('dashboard');
   }
+
+  V3.refreshDashboard = function () { _loadDashboard(_el('dash-refresh-btn')); };
+  V3.refreshHomepageIssues = function () { _loadHomepageIssues(_el('homepage-issues-refresh-btn')); };
+  V3.refreshSiteHistory = function () { _loadSiteHistory(_el('site-history-refresh-btn')); };
+  V3.refreshAnalytics = function () { _loadAnalytics(_el('analytics-refresh-btn')); };
+  V3.refreshGeoAudience = function () { _loadGeoAudience(_el('geo-audience-refresh-btn')); };
+  V3.openSettingsSection = function (section) {
+    V3.showPanel('settings', section || 'hero');
+  };
+  V3.applyDashboardHeatmapMode = function (mode) {
+    _dashboardHeatmapMode = mode || '7d';
+    _syncDashboardHeatmapControls();
+    if (_dashboardHeatmapMode !== 'custom') _loadDashboard();
+  };
+  V3.applyDashboardHeatmapRange = function () {
+    _applyDashboardHeatmapCustomRange();
+  };
+  V3.applyMarketingPreset = function (days) {
+    var parsedDays = Math.max(1, parseInt(days, 10) || 7);
+    var end = _kstToday();
+    var start = _shiftDate(end, -(parsedDays - 1));
+    var fromEl = _el('mkt-date-from');
+    var toEl = _el('mkt-date-to');
+    if (toEl) toEl.value = end;
+    if (fromEl) fromEl.value = start;
+    document.querySelectorAll('.mkt-preset-btn').forEach(function (btn) {
+      btn.classList.toggle('is-active', String(btn.dataset.days || '') === String(parsedDays));
+    });
+    _loadMarketing();
+  };
+  V3.applyMarketingRange = function () {
+    _loadMarketing(_el('mkt-apply-btn'));
+  };
 
   /* ══════════════════════════════════════════════════════════
      PANEL NAVIGATION

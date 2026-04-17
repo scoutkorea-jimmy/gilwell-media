@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417080150">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260417080754">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin">03.063.17</span>
+      Admin <span class="v3-ver-str v3-ver-admin">03.063.18</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site">—</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.17</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin">03.063.18</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site">—</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -1630,9 +1630,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260417080150"></script>
-<script src="/js/shared-country-name-ko.js?v=20260417080150"></script>
-<script src="/js/admin-v3.js?v=20260417080150"></script>
+<script src="/js/main.js?v=20260417080754"></script>
+<script src="/js/shared-country-name-ko.js?v=20260417080754"></script>
+<script src="/js/admin-v3.js?v=20260417080754"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
@@ -1747,6 +1747,50 @@
         if (!navBtn || !window.V3 || typeof window.V3.showPanel !== 'function') return;
         event.preventDefault();
         window.V3.showPanel(navBtn.dataset.panel, navBtn.dataset.settingsSection);
+      }, true);
+      document.addEventListener('click', function (event) {
+        var settingsBtn = event.target && event.target.closest ? event.target.closest('.v3-settings-nav-btn[data-section]') : null;
+        if (!settingsBtn || !window.V3 || typeof window.V3.openSettingsSection !== 'function') return;
+        event.preventDefault();
+        window.V3.openSettingsSection(settingsBtn.dataset.section);
+      }, true);
+      document.addEventListener('click', function (event) {
+        var marketingBtn = event.target && event.target.closest ? event.target.closest('.mkt-preset-btn[data-days]') : null;
+        if (!marketingBtn || !window.V3 || typeof window.V3.applyMarketingPreset !== 'function') return;
+        event.preventDefault();
+        window.V3.applyMarketingPreset(marketingBtn.dataset.days);
+      }, true);
+      document.addEventListener('click', function (event) {
+        var target = event.target && event.target.closest ? event.target.closest('#dash-refresh-btn, #analytics-refresh-btn, #geo-audience-refresh-btn, #homepage-issues-refresh-btn, #site-history-refresh-btn, #mkt-apply-btn, [data-v3-heatmap-mode], #dash-heatmap-apply') : null;
+        if (!target || !window.V3) return;
+        var handled = false;
+        if (target.id === 'dash-refresh-btn' && typeof window.V3.refreshDashboard === 'function') {
+          window.V3.refreshDashboard();
+          handled = true;
+        } else if (target.id === 'analytics-refresh-btn' && typeof window.V3.refreshAnalytics === 'function') {
+          window.V3.refreshAnalytics();
+          handled = true;
+        } else if (target.id === 'geo-audience-refresh-btn' && typeof window.V3.refreshGeoAudience === 'function') {
+          window.V3.refreshGeoAudience();
+          handled = true;
+        } else if (target.id === 'homepage-issues-refresh-btn' && typeof window.V3.refreshHomepageIssues === 'function') {
+          window.V3.refreshHomepageIssues();
+          handled = true;
+        } else if (target.id === 'site-history-refresh-btn' && typeof window.V3.refreshSiteHistory === 'function') {
+          window.V3.refreshSiteHistory();
+          handled = true;
+        } else if (target.id === 'mkt-apply-btn' && typeof window.V3.applyMarketingRange === 'function') {
+          window.V3.applyMarketingRange();
+          handled = true;
+        } else if (target.hasAttribute('data-v3-heatmap-mode') && typeof window.V3.applyDashboardHeatmapMode === 'function') {
+          window.V3.applyDashboardHeatmapMode(target.getAttribute('data-v3-heatmap-mode'));
+          handled = true;
+        } else if (target.id === 'dash-heatmap-apply' && typeof window.V3.applyDashboardHeatmapRange === 'function') {
+          window.V3.applyDashboardHeatmapRange();
+          handled = true;
+        }
+        if (!handled) return;
+        event.preventDefault();
       }, true);
       if (input) {
         input.addEventListener('keydown', function (event) {
