@@ -2306,8 +2306,15 @@ body.marketing-fullscreen-open { overflow: hidden; }
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  position: relative;
+  z-index: 2;
 }
-.mkt-presets { display: flex; gap: 4px; }
+.mkt-presets {
+  display: flex;
+  gap: 4px;
+  position: relative;
+  z-index: 2;
+}
 .mkt-preset-btn {
   display: inline-flex;
   align-items: center;
@@ -2335,6 +2342,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
+  z-index: 2;
 }
 .mkt-date-input {
   height: var(--chip-height);
@@ -2346,6 +2355,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   font-size: 11px;
   cursor: pointer;
   border-radius: 999px;
+  position: relative;
+  z-index: 2;
 }
 .mkt-date-input:focus {
   outline: none;
@@ -2371,6 +2382,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   cursor: pointer;
   transition: all 0.15s;
   border-radius: 999px;
+  position: relative;
+  z-index: 2;
 }
 .mkt-apply-btn:hover {
   background: #e4ddff;
