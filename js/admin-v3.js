@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.22
+ * Version: 03.063.23
  *
  * Versioning:
  *   V3.aaa.bb
@@ -35,6 +35,18 @@
     input.type = visible ? 'text' : 'password';
     btn.classList.toggle('is-active', !!visible);
     btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+  }
+  function _syncAdminVersionLabels() {
+    if (GW && typeof GW.syncBuildVersion === 'function') GW.syncBuildVersion();
+    var siteVer = (GW && GW.APP_VERSION) ? 'V' + GW.APP_VERSION : '—';
+    var adminVer = (GW && GW.ADMIN_VERSION) ? GW.ADMIN_VERSION : '';
+    document.querySelectorAll('.v3-ver-site').forEach(function (el) {
+      el.textContent = siteVer;
+    });
+    if (!adminVer) return;
+    document.querySelectorAll('.v3-ver-admin').forEach(function (el) {
+      el.textContent = adminVer;
+    });
   }
 
   var _panel         = 'dashboard';
@@ -253,6 +265,7 @@
      INIT
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
+    _syncAdminVersionLabels();
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     if (window.GW && typeof GW.populateCategorySelect === 'function') {
       GW.populateCategorySelect(document.getElementById('list-cat'), { includeAll: true, allLabel: '전체 카테고리' });
@@ -707,6 +720,7 @@
   }
 
   function _showLogin() {
+    _syncAdminVersionLabels();
     document.getElementById('v3-login').style.display = 'flex';
     document.getElementById('v3-app').hidden = true;
     if (GW.TURNSTILE_SITE_KEY && GW.loadTurnstile) {
@@ -719,11 +733,9 @@
   }
 
   function _showApp() {
+    _syncAdminVersionLabels();
     document.getElementById('v3-login').style.display = 'none';
     document.getElementById('v3-app').hidden = false;
-    // Fill site version from GW.APP_VERSION
-    var siteVer = (GW && GW.APP_VERSION) ? 'V' + GW.APP_VERSION : '—';
-    document.querySelectorAll('.v3-ver-site').forEach(function (el) { el.textContent = siteVer; });
     // Load editor.js
     _loadEditorJS(function () { _initEditor(); });
     // Load tag settings (for write form dropdown)
@@ -928,6 +940,8 @@
     var topEl = document.getElementById('dash-top-list');
     var heatmapEl = document.getElementById('dash-traffic-heatmap');
     var heatmapInsightEl = document.getElementById('dash-traffic-insight');
+    var homeOverviewEl = document.getElementById('dash-home-overview');
+    var homeSectionsEl = document.getElementById('dash-home-sections');
     var editorialEl = document.getElementById('dash-ops-editorial');
     var alertsEl = document.getElementById('dash-ops-alerts');
     var settingsEl = document.getElementById('dash-ops-settings');
@@ -941,6 +955,8 @@
     _setText('dash-stat-views-sub', '불러오는 중');
     _setText('dash-stat-posts-sub', '불러오는 중');
     _setText('dash-status-note', '운영 데이터와 최신 게시글을 함께 확인하는 중…');
+    if (homeOverviewEl) homeOverviewEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>홈페이지 상태를 불러오는 중…</div>';
+    if (homeSectionsEl) homeSectionsEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>섹션 요약을 불러오는 중…</div>';
     if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>히트맵을 불러오는 중…</div>';
     if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">히트맵 인사이트를 정리하는 중…</div>';
 
@@ -951,12 +967,14 @@
       _apiFetch('/api/posts?limit=8&published=all&scope=admin'),
       _apiFetch('/api/posts/popular?limit=5'),
       _apiFetch('/api/posts?limit=1&published=1'),
+      _apiFetch('/api/home'),
     ]).then(function (results) {
       var analytics = results[0].status === 'fulfilled' ? (results[0].value || {}) : {};
       var operations = results[1].status === 'fulfilled' ? (results[1].value || {}) : {};
       var recentRes = results[2].status === 'fulfilled' ? (results[2].value || {}) : { posts: [] };
       var popularRes = results[3].status === 'fulfilled' ? (results[3].value || {}) : { posts: [] };
       var published = results[4].status === 'fulfilled' ? (results[4].value || {}) : { total: 0 };
+      var homepage = results[5].status === 'fulfilled' ? (results[5].value || {}) : {};
       var recent    = recentRes.posts || [];
       var popular   = popularRes.posts || [];
 
@@ -1012,8 +1030,10 @@
       } else {
         _setText('dash-stat-visits-sub', '오늘 고유 방문');
         _setText('dash-stat-views-sub', '오늘 페이지뷰');
-        _setText('dash-status-note', (analytics.provider_label || '공개 페이지 방문 집계') + ' · 오늘 방문과 조회는 공개 페이지 기준입니다.');
+        _setText('dash-status-note', (analytics.provider_label || '공개 페이지 방문 집계') + ' · 오늘 방문과 조회는 공개 페이지 기준이며, 아래 카드에서 현재 홈페이지 노출 상태를 함께 확인할 수 있습니다.');
       }
+      _renderDashboardHomepageOverview(homeOverviewEl, homepage, results[5].status === 'fulfilled');
+      _renderDashboardHomepageSections(homeSectionsEl, homepage, results[5].status === 'fulfilled');
       _renderDashboardOperations(editorialEl, alertsEl, settingsEl, deploymentsEl, operations);
       if (results[2].status !== 'fulfilled') {
         recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">최근 게시글 API 오류</div></div>';
@@ -1026,9 +1046,15 @@
       } else {
         _setText('dash-stat-posts-sub', '전체 게시글');
       }
+      if (results[5].status !== 'fulfilled') {
+        if (homeOverviewEl) homeOverviewEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈페이지 스냅샷 API 오류</div></div>';
+        if (homeSectionsEl) homeSectionsEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈 섹션 요약 API 오류</div></div>';
+      }
     }).catch(function (e) {
       recentEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((e && e.message) || 'API 오류') + '</div></div>';
       topEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (homeOverviewEl) homeOverviewEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈페이지 스냅샷을 불러오지 못했습니다.</div></div>';
+      if (homeSectionsEl) homeSectionsEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈 섹션 요약을 불러오지 못했습니다.</div></div>';
       if (heatmapEl) heatmapEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">히트맵을 불러오지 못했습니다.</div></div>';
       if (heatmapInsightEl) heatmapInsightEl.innerHTML = '<div class="v3-inline-meta">대시보드 API 응답을 불러오지 못해 인사이트를 정리할 수 없습니다.</div>';
       _setText('dash-stat-visits-sub', '대시보드 로딩 실패');
@@ -1038,6 +1064,88 @@
     }).finally(function () {
       if (actionBtn) _clearButtonBusy(actionBtn, '완료');
     });
+  }
+
+  function _renderDashboardHomepageOverview(el, homepage, ok) {
+    if (!el) return;
+    if (!ok) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈페이지 상태를 불러오지 못했습니다.</div></div>';
+      return;
+    }
+    var lead = homepage && homepage.lead && homepage.lead.post ? homepage.lead.post : null;
+    var latest = homepage && homepage.latest && Array.isArray(homepage.latest.posts) ? homepage.latest.posts : [];
+    var popular = homepage && homepage.popular && Array.isArray(homepage.popular.posts) ? homepage.popular.posts : [];
+    var picks = homepage && homepage.picks && Array.isArray(homepage.picks.posts) ? homepage.picks.posts : [];
+    var heroPosts = homepage && homepage.hero && Array.isArray(homepage.hero.posts) ? homepage.hero.posts : [];
+    var tickerItems = homepage && homepage.ticker && Array.isArray(homepage.ticker.items) ? homepage.ticker.items : [];
+    var navLabels = homepage && homepage.nav_labels && typeof homepage.nav_labels === 'object' ? homepage.nav_labels : {};
+    var issues = homepage && homepage.issues && typeof homepage.issues === 'object' ? homepage.issues : {};
+    var issueKeys = Object.keys(issues).filter(function (key) { return !!issues[key]; });
+    var stats = homepage && homepage.stats && typeof homepage.stats === 'object' ? homepage.stats : {};
+    var analytics = homepage && homepage.analytics && typeof homepage.analytics === 'object' ? homepage.analytics : {};
+    var cards = [
+      { label: 'Site 버전', value: GW && GW.APP_VERSION ? ('V' + String(GW.APP_VERSION)) : '—', sub: '로그인 전에도 동일하게 노출' },
+      { label: '메인 스토리', value: lead ? '정상' : '비어 있음', sub: lead ? _truncateText(lead.title || '', 44) : '메인 스토리 설정 확인 필요' },
+      { label: '히어로 슬라이드', value: _fmt(heroPosts.length), sub: '현재 홈 상단 순환 카드 수' },
+      { label: '홈 이슈', value: issueKeys.length ? _fmt(issueKeys.length) : '0', sub: issueKeys.length ? issueKeys.join(', ') : '현재 감지된 섹션 이슈 없음' },
+      { label: '홈 티커', value: _fmt(tickerItems.length), sub: '상단 티커 노출 줄 수' },
+      { label: '메뉴 라벨', value: _fmt(Object.keys(navLabels).length), sub: '공통 메뉴 설정 항목 수' },
+      { label: '오늘 홈 게시글', value: _fmt(stats.today || 0), sub: '오늘 공개된 기사 수' },
+      { label: '누적 방문', value: _fmt(analytics.total_visits || analytics.total_unique || 0), sub: analytics.provider_label || '공개 페이지 기준 집계' },
+    ];
+    var leadHtml = lead
+      ? '<div class="v3-dash-home-lead"><div class="v3-dash-home-lead-label">현재 메인 스토리</div><div class="v3-dash-home-lead-title">' + GW.escapeHtml(lead.title || '(제목 없음)') + '</div><div class="v3-dash-home-lead-meta">카테고리 ' + GW.escapeHtml(lead.category || '미분류') + ' · 최신 ' + _fmt(latest.length) + ' · 인기 ' + _fmt(popular.length) + ' · 추천 ' + _fmt(picks.length) + '</div></div>'
+      : '<div class="v3-empty-inline">현재 메인 스토리가 비어 있습니다. 홈페이지 메인 스토리 설정을 확인해주세요.</div>';
+    el.innerHTML =
+      '<div class="v3-dash-home-grid">' +
+        cards.map(function (card) {
+          return '<div class="v3-dash-home-cell">' +
+            '<div class="v3-dash-home-label">' + GW.escapeHtml(card.label) + '</div>' +
+            '<div class="v3-dash-home-value">' + GW.escapeHtml(String(card.value)) + '</div>' +
+            '<div class="v3-dash-home-sub">' + GW.escapeHtml(card.sub) + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      leadHtml;
+  }
+
+  function _renderDashboardHomepageSections(el, homepage, ok) {
+    if (!el) return;
+    if (!ok) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">홈 섹션 상태를 불러오지 못했습니다.</div></div>';
+      return;
+    }
+    var columns = homepage && homepage.columns && typeof homepage.columns === 'object' ? homepage.columns : {};
+    var issues = homepage && homepage.issues && typeof homepage.issues === 'object' ? homepage.issues : {};
+    var rows = [
+      { label: '최신 소식', key: 'latest', count: _countPosts(homepage && homepage.latest && homepage.latest.posts), issue: !!issues.latest },
+      { label: '인기 소식', key: 'popular', count: _countPosts(homepage && homepage.popular && homepage.popular.posts), issue: !!issues.popular },
+      { label: '에디터 추천', key: 'picks', count: _countPosts(homepage && homepage.picks && homepage.picks.posts), issue: !!issues.picks },
+      { label: 'Korea', key: 'korea', count: _countPosts(columns.korea && columns.korea.posts), issue: !!issues.korea },
+      { label: 'APR', key: 'apr', count: _countPosts(columns.apr && columns.apr.posts), issue: !!issues.apr },
+      { label: 'WOSM', key: 'wosm', count: _countPosts(columns.wosm && columns.wosm.posts), issue: !!issues.wosm },
+      { label: 'People', key: 'people', count: _countPosts(columns.people && columns.people.posts), issue: !!issues.people },
+    ];
+    el.innerHTML = rows.map(function (row) {
+      return '<div class="v3-dash-section-row">' +
+        '<div class="v3-dash-section-main">' +
+          '<div class="v3-dash-section-title">' + GW.escapeHtml(row.label) + '</div>' +
+          '<div class="v3-dash-section-meta">' + (row.issue ? '<span class="v3-badge v3-badge-red">이슈 감지</span>' : '<span class="v3-badge v3-badge-green">정상</span>') + '</div>' +
+        '</div>' +
+        '<div class="v3-dash-section-count">' + _fmt(row.count) + '</div>' +
+      '</div>';
+    }).join('') + '<div class="v3-dash-section-foot">홈 API 기준 노출 수이며, 0이면 해당 섹션 카드가 비어 보일 수 있습니다.</div>';
+  }
+
+  function _countPosts(posts) {
+    return Array.isArray(posts) ? posts.length : 0;
+  }
+
+  function _truncateText(text, limit) {
+    var value = String(text || '').trim();
+    if (!value) return '';
+    if (value.length <= limit) return value;
+    return value.slice(0, Math.max(0, limit - 1)) + '…';
   }
 
   function _renderDashboardVisitHeatmap(el, heatmap) {
