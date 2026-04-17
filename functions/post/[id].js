@@ -7,6 +7,7 @@ import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/speci
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
 import { getCategoryMeta, listEditablePostCategories } from '../_shared/category-meta.mjs';
+import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_shared/site-copy.mjs';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -132,6 +133,7 @@ export async function onRequestGet({ params, env, request }) {
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
     description: descText,
+    siteUrl,
     url: postUrl,
     categoryUrl,
     image: ogImage,
@@ -158,7 +160,7 @@ export async function onRequestGet({ params, env, request }) {
   <meta property="og:description" content="${desc}"/>
   <meta property="og:url"         content="${escapeHtml(shareMetaUrl)}"/>
   ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
-  <meta property="og:site_name"   content="BP미디어 · bpmedia.net"/>
+  <meta property="og:site_name"   content="${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}"/>
   <meta property="article:published_time" content="${escapeHtml(publishedIso)}"/>
   <meta property="article:modified_time" content="${escapeHtml(modifiedIso)}"/>
   <meta property="article:section" content="${escapeHtml(cat.label)}"/>
@@ -209,7 +211,7 @@ export async function onRequestGet({ params, env, request }) {
             <img src="/img/logo.svg" alt="" class="masthead-logo-img" aria-hidden="true">
             <h1>BP미디어</h1>
           </div>
-          <div class="sub">bpmedia.net</div>
+          <div class="sub">${SITE_DOMAIN_LABEL}</div>
         </a>
       </div>
       <div class="masthead-right">
@@ -241,9 +243,9 @@ export async function onRequestGet({ params, env, request }) {
   <!-- ── TICKER ── -->
   <div class="ticker">
     <div class="ticker-inner" id="ticker-inner">
-      길웰 미디어 · The BP Post · bpmedia.net
+      길웰 미디어 · The BP Post · ${SITE_DOMAIN_LABEL}
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      길웰 미디어 · The BP Post · bpmedia.net
+      길웰 미디어 · The BP Post · ${SITE_DOMAIN_LABEL}
       &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
     </div>
   </div>
@@ -296,7 +298,7 @@ export async function onRequestGet({ params, env, request }) {
             <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>❤ 공감 <span id="post-like-count">${likeStats.likes}</span></button>
             <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
           </span>
-          <span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>
+          <span class="post-byline-report">오류제보 <a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a></span>
         </div>
 
       </div>
@@ -327,11 +329,11 @@ export async function onRequestGet({ params, env, request }) {
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
-        <h4 data-footer-role="title">BP미디어</h4>
-        <p data-footer-role="description">BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
-        <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
-        <p>기사제보: <a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a></p>
-        <p>문의: <a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a></p>
+        <h4 data-footer-role="title">${SITE_BRAND_NAME}</h4>
+        <p data-footer-role="description">${SITE_BRAND_NAME}는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
+        <p data-footer-role="domain" style="margin-top:6px;">${SITE_DOMAIN_LABEL}</p>
+        <p>기사제보: <a data-footer-role="tip-email" href="mailto:${DEFAULT_CONTACT_EMAILS.tip}">${DEFAULT_CONTACT_EMAILS.tip}</a></p>
+        <p>문의: <a data-footer-role="contact-email" href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a></p>
       </div>
       <div class="footer-admin">
         <h4>관리자</h4>
@@ -340,8 +342,8 @@ export async function onRequestGet({ params, env, request }) {
         <p class="footer-build">Site <span class="site-build-version">—</span> · Admin <span class="admin-build-version">—</span></p>
       </div>
       <div class="footer-bottom">
-        <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
-        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+        <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
+        <p data-i18n="footer.disclaimer">${SITE_BRAND_NAME}는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
       </div>
     </div>
   </footer>
@@ -883,6 +885,9 @@ function isTransparentPng(value) {
 }
 
 function buildArticleStructuredData(meta) {
+  const siteOrigin = String(meta.siteUrl || '').replace(/\/+$/, '');
+  const homeUrl = siteOrigin ? `${siteOrigin}/` : '';
+  const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.svg` : '';
   return JSON.stringify([
     {
       '@context': 'https://schema.org',
@@ -906,11 +911,11 @@ function buildArticleStructuredData(meta) {
       publisher: {
         '@type': 'Organization',
         name: 'BP미디어',
-        url: 'https://bpmedia.net',
-        logo: {
+        url: siteOrigin || undefined,
+        logo: logoUrl ? {
           '@type': 'ImageObject',
-          url: 'https://bpmedia.net/img/logo.svg',
-        },
+          url: logoUrl,
+        } : undefined,
       },
     },
     {
@@ -921,13 +926,13 @@ function buildArticleStructuredData(meta) {
           '@type': 'ListItem',
           position: 1,
           name: '홈',
-          item: 'https://bpmedia.net/',
+          item: homeUrl,
         },
         {
           '@type': 'ListItem',
           position: 2,
           name: meta.category || '기사',
-          item: meta.categoryUrl || 'https://bpmedia.net/',
+          item: meta.categoryUrl || homeUrl,
         },
         {
           '@type': 'ListItem',

@@ -4,46 +4,56 @@
  * Adds CORS headers and handles OPTIONS preflight.
  */
 export async function onRequest(context) {
-  const { request, next } = context;
+  const { request, next, env } = context;
 
-  // Handle CORS preflight immediately — no auth needed
   if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders(request) });
+    return new Response(null, { status: 204, headers: corsHeaders(request, env) });
   }
 
-  // Continue to the actual route handler
   const response = await next();
 
-  // Mutate the original response so Set-Cookie headers survive intact.
-  for (const [k, v] of Object.entries(corsHeaders(request))) {
+  for (const [k, v] of Object.entries(corsHeaders(request, env))) {
     response.headers.set(k, v);
   }
   return response;
 }
 
-function corsHeaders(request) {
+function corsHeaders(request, env) {
   const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
   };
-  const allowOrigin = getAllowedOrigin(request);
-  if (allowOrigin) headers['Access-Control-Allow-Origin'] = allowOrigin;
+  const allowOrigin = getAllowedOrigin(request, env);
+  if (allowOrigin) {
+    headers['Access-Control-Allow-Origin'] = allowOrigin;
+    headers['Vary'] = 'Origin';
+  }
   return headers;
 }
 
-function getAllowedOrigin(request) {
+const ALLOWED_PROD_HOSTS = new Set(['bpmedia.net', 'www.bpmedia.net']);
+const PREVIEW_HOST_SUFFIXES = ['.pages.dev'];
+
+function getAllowedOrigin(request, env) {
   const origin = request.headers.get('Origin');
   if (!origin) return '';
   try {
     const originUrl = new URL(origin);
     const requestUrl = new URL(request.url);
-    const allowedHosts = new Set([
-      requestUrl.hostname,
-      'bpmedia.net',
-      'www.bpmedia.net',
-    ]);
-    return allowedHosts.has(originUrl.hostname) ? origin : '';
+    const host = originUrl.hostname;
+
+    if (host === requestUrl.hostname) return origin;
+    if (ALLOWED_PROD_HOSTS.has(host)) return origin;
+    if (PREVIEW_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) return origin;
+
+    const extra = String((env && env.CORS_EXTRA_ORIGINS) || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (extra.includes(host)) return origin;
+
+    return '';
   } catch (err) {
     console.warn('[CORS] malformed origin:', origin, err?.message);
     return '';
