@@ -1062,6 +1062,21 @@ mark.kms-highlight {
   font-size: 11px;
   color: var(--kms-muted);
 }
+.kms-cl-scope-site {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+}
+.kms-cl-scope-admin {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(124, 58, 237, 0.18);
+  color: #7c3aed;
+}
+.kms-cl-scope-both {
+  background: rgba(24, 20, 17, 0.06);
+  border-color: var(--kms-border);
+  color: var(--kms-muted);
+}
 
 .kms-cl-date {
   font-size: 12px;
@@ -1084,6 +1099,29 @@ mark.kms-highlight {
   margin: 0 0 5px;
   font-size: 13px;
   color: #5b544c;
+  line-height: 1.65;
+}
+.kms-cl-issues-wrap {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(190, 24, 93, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 241, 242, 0.92);
+}
+.kms-cl-issues-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #be185d;
+  margin-bottom: 6px;
+}
+.kms-cl-issues {
+  margin: 0;
+  padding-left: 18px;
+}
+.kms-cl-issues li {
+  margin: 0 0 5px;
+  font-size: 13px;
+  color: #831843;
   line-height: 1.65;
 }
 
