@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.23
+ * Version: 03.063.24
  *
  * Versioning:
  *   V3.aaa.bb
@@ -39,7 +39,7 @@
   function _syncAdminVersionLabels() {
     if (GW && typeof GW.syncBuildVersion === 'function') GW.syncBuildVersion();
     var siteVer = (GW && GW.APP_VERSION) ? 'V' + GW.APP_VERSION : '—';
-    var adminVer = (GW && GW.ADMIN_VERSION) ? GW.ADMIN_VERSION : '';
+    var adminVer = (GW && GW.ADMIN_VERSION) ? 'V' + GW.ADMIN_VERSION : '';
     document.querySelectorAll('.v3-ver-site').forEach(function (el) {
       el.textContent = siteVer;
     });

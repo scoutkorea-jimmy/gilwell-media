@@ -10,7 +10,7 @@ ASSET_VERSION_FILE="$(cat ASSET_VERSION)"
 MAIN_SITE_VERSION="$(sed -n "s/.*GW.APP_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 ADMIN_VERSION="$(sed -n "s/.*GW.ADMIN_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
 MAIN_ASSET_VERSION="$(sed -n "s/.*GW.ASSET_VERSION = '\\([^']*\\)'.*/\\1/p" js/main.js | head -n 1)"
-ADMIN_HTML_VERSION="$(sed -n "s/.*v3-ver-admin\">\\([^<]*\\)<.*/\\1/p" admin.html | head -n 1)"
+ADMIN_HTML_VERSION="$(sed -n "s/.*v3-ver-admin[^>]*>\\([^<]*\\)<.*/\\1/p" admin.html | head -n 1 | sed 's/^V//')"
 KMS_ADMIN_VERSION="$(sed -n "s/.*Admin v\\([0-9.]*\\).*/\\1/p" kms.html | head -n 1)"
 ADMIN_JS_VERSION="$(sed -n "s/.*Version: \\([0-9.]*\\).*/\\1/p" js/admin-v3.js | head -n 1)"
 
