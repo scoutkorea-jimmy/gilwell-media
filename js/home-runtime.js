@@ -92,7 +92,7 @@
     function refreshHomeData(options) {
       var opts = options || {};
       var now = Date.now();
-      var minInterval = opts.force ? 10000 : 30000;
+      var minInterval = opts.immediate ? 0 : (opts.force ? 10000 : 30000);
       if (homeRefreshPromise) return homeRefreshPromise;
       if (homeRefreshBusy) return Promise.resolve();
       if (now - lastHomeRequestAt < minInterval) return Promise.resolve();
@@ -146,6 +146,7 @@
     function renderLoadFailure() {
       latestFatalState = true;
       latestIssueKeys = [];
+      lastHomeRequestAt = 0;
       GW.renderTickerItems('ticker-inner');
       GW._statsData = { korea: 0, apr: 0, wosm: 0, people: 0, today: 0 };
       if (GW._renderStats) GW._renderStats();
@@ -171,9 +172,23 @@
         if (!retryBtn) return;
         latestFatalState = false;
         latestRefreshFailed = false;
-        refreshHomeData({ force: true });
+        lastHomeRequestAt = 0;
+        refreshHomeData({ force: true, immediate: true });
       });
       banner.dataset.bound = '1';
+    }
+
+    function setSectionInteractiveState(el, active) {
+      if (!el) return;
+      el.hidden = !active;
+      el.setAttribute('aria-hidden', active ? 'false' : 'true');
+      if ('inert' in el) el.inert = !active;
+    }
+
+    function syncResponsiveSectionVisibility() {
+      var isMobile = window.matchMedia('(max-width: 900px)').matches;
+      setSectionInteractiveState(document.querySelector('.home-mobile-stack'), isMobile);
+      setSectionInteractiveState(document.querySelector('.home-2col'), !isMobile);
     }
 
     function initRefreshLifecycle() {
@@ -265,6 +280,7 @@
       });
       bindRuntimeIssueReporting();
       bindHomeStatusActions();
+      syncResponsiveSectionVisibility();
 
       lastHomeRequestAt = Date.now();
       homeRefreshPromise = fetchHomeData({ fresh: true })
@@ -284,6 +300,7 @@
 
       initRefreshLifecycle();
       initPullToRefresh();
+      window.addEventListener('resize', syncResponsiveSectionVisibility);
     }
 
     return {
