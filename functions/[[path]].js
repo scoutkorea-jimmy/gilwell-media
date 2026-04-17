@@ -166,7 +166,7 @@ function normalizeTranslationStrings(parsed) {
 
 async function loadHomeSsrContent(env, origin) {
   try {
-    const [navLabels, leadData, latestPosts, popularPosts, picksPosts, koreaPosts, aprPosts, wosmPosts, peoplePosts] = await Promise.all([
+    const [navLabels, leadData, latestPosts, popularPosts, picksPosts, koreaPosts, aprPosts, wosmPosts, peoplePosts, footerAnalytics] = await Promise.all([
       loadNavLabels(env).catch(() => ({})),
       loadHomeLead(env, origin).catch(() => ({ post: null })),
       loadLatestPosts(env, origin, 4).catch(() => []),
@@ -176,6 +176,11 @@ async function loadHomeSsrContent(env, origin) {
       loadPostList(env, origin, { category: 'apr', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'wosm', limit: 4 }).catch(() => []),
       loadPostList(env, origin, { category: 'people', limit: 4 }).catch(() => []),
+      loadFooterAnalytics(env).catch(() => ({
+        total_unique: 0,
+        total_pageviews: 0,
+        today_unique: 0,
+      })),
     ]);
 
     const latestRail = latestPosts.slice(0, 3);
@@ -192,6 +197,11 @@ async function loadHomeSsrContent(env, origin) {
       apr: renderMiniList(aprPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
       wosm: renderMiniList(wosmPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
       people: renderMiniList(peoplePosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
+      footer: {
+        totalVisitors: formatCount(footerAnalytics.total_unique),
+        totalViews: formatCount(footerAnalytics.total_pageviews),
+        todayVisitors: formatCount(footerAnalytics.today_unique),
+      },
     };
     if (hasMeaningfulHomeSsrPayload(payload)) return payload;
     const emergencyPosts = latestPosts.length ? latestPosts : await loadLatestPosts(env, origin, 4).catch(() => []);
@@ -216,6 +226,7 @@ function applyHomeSsrContent(response, payload) {
     '#col-wosm': payload.wosm,
     '#col-people': payload.people,
   };
+  const footerStats = payload.footer || {};
   let rewriter = new HTMLRewriter();
   Object.entries(sections).forEach(([selector, html]) => {
     rewriter = rewriter.on(selector, {
@@ -224,7 +235,46 @@ function applyHomeSsrContent(response, payload) {
       }
     });
   });
+  rewriter = rewriter
+    .on('#home-total-visitors', {
+      element(element) {
+        element.setInnerContent(String(footerStats.totalVisitors || '0'));
+      }
+    })
+    .on('#home-total-views', {
+      element(element) {
+        element.setInnerContent(String(footerStats.totalViews || '0'));
+      }
+    })
+    .on('#home-today-visitors', {
+      element(element) {
+        element.setInnerContent(String(footerStats.todayVisitors || '0'));
+      }
+    });
   return rewriter.transform(response);
+}
+
+async function loadFooterAnalytics(env) {
+  const [todayUnique, totalUnique, totalViews] = await Promise.all([
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
+                   FROM site_visits
+                  WHERE path NOT LIKE '/api/%'
+                    AND path NOT IN ('/admin', '/admin.html')
+                    AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
+    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
+                   FROM site_visits
+                  WHERE path NOT LIKE '/api/%'
+                    AND path NOT IN ('/admin', '/admin.html')`),
+    scalar(env, `SELECT COUNT(*) AS count
+                   FROM site_visits
+                  WHERE path NOT LIKE '/api/%'
+                    AND path NOT IN ('/admin', '/admin.html')`),
+  ]);
+  return {
+    today_unique: todayUnique,
+    total_unique: totalUnique,
+    total_pageviews: totalViews,
+  };
 }
 
 async function loadHomeLead(env, origin) {
@@ -352,17 +402,37 @@ function hasMeaningfulHomeSsrPayload(payload) {
 
 function buildEmergencyHomeSsrPayload(posts, navLabels) {
   const safePosts = Array.isArray(posts) ? posts.slice(0, 4) : [];
-  const listHtml = renderMiniList(safePosts, navLabels, {});
+  const latestHtml = renderMiniList(safePosts, navLabels, {});
+  const emptyHtml = '<div class="mini-empty">게시글을 준비 중입니다</div>';
   return {
     lead: renderHomeLeadStory(safePosts[0] || null, navLabels),
-    latest: listHtml,
-    popular: listHtml,
-    picks: listHtml,
-    korea: listHtml,
-    apr: listHtml,
-    wosm: listHtml,
-    people: listHtml,
+    latest: latestHtml,
+    popular: emptyHtml,
+    picks: emptyHtml,
+    korea: emptyHtml,
+    apr: emptyHtml,
+    wosm: emptyHtml,
+    people: emptyHtml,
+    footer: {
+      totalVisitors: '0',
+      totalViews: '0',
+      todayVisitors: '0',
+    },
   };
+}
+
+function formatCount(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return '0';
+  return new Intl.NumberFormat('ko-KR').format(number);
+}
+
+async function scalar(env, sql) {
+  const row = await env.DB.prepare(sql).first();
+  if (!row) return 0;
+  const value = row.count ?? row.total ?? row.n ?? Object.values(row)[0] ?? 0;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
 }
 
 function renderMiniItem(post, navLabels, options) {
