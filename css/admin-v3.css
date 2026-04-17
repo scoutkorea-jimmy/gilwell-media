@@ -271,24 +271,25 @@
   justify-content: flex-start;
 }
 .v3-kms-quick .v3-nav-item.is-kms {
-  background: rgba(79, 70, 229, .18);
-  color: #eef2ff;
-  border: 1px solid rgba(129, 140, 248, .35);
+  background: rgba(98, 37, 153, .46);
+  color: var(--gw-canvas-white);
+  border: 1px solid rgba(130, 230, 222, .42);
 }
 .v3-kms-quick .v3-nav-item.is-kms:hover {
-  background: rgba(79, 70, 229, .26);
-  color: #fff;
+  background: rgba(98, 37, 153, .62);
+  color: var(--gw-canvas-white);
 }
-.v3-logo-mark { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+.v3-logo-mark { font-size: 15px; font-weight: 800; color: var(--gw-canvas-white); letter-spacing: -0.3px; }
 .v3-logo-version {
   display: inline-block; margin-left: 7px;
-  font-size: 10px; color: #3d4b72; font-weight: 600;
-  background: rgba(255,255,255,.05); padding: 1px 6px; border-radius: 3px;
+  font-size: 10px; color: var(--gw-river-blue); font-weight: 700;
+  background: rgba(130,230,222,.14); padding: 1px 6px; border-radius: 3px;
 }
-.v3-logo-sub { font-size: 11px; color: #3d4b72; margin-top: 3px; }
+.v3-logo-sub { font-size: 11px; color: rgba(255,255,255,.88); margin-top: 3px; }
 .v3-logo-sub-site {
-  opacity: 0.55;
+  opacity: 0.92;
   font-size: 9px;
+  color: var(--gw-river-blue);
 }
 
 #v3-nav { flex: 1; padding: 10px 0; }
@@ -296,7 +297,7 @@
 .v3-nav-section-label {
   padding: 10px 18px 4px;
   font-size: 10px; font-weight: 700; letter-spacing: .09em;
-  text-transform: uppercase; color: #2e3a5c;
+  text-transform: uppercase; color: var(--gw-leaf-green);
 }
 /* Shared button/chip contract:
    KMS design guide와 겹치는 액션 계층은 admin-v3.css에서도 같은 상태 언어와 칩 반경을 유지한다.
@@ -305,16 +306,16 @@
   display: flex; align-items: center; gap: 10px;
   padding: 0 14px 0 18px; height: 38px;
   margin: 3px 8px; border-radius: var(--v3-chip-radius);
-  color: #6a7aa0; font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,.92); font-size: 13px; font-weight: 600;
   cursor: pointer; border: 1px solid transparent; background: transparent;
   width: calc(100% - 16px); text-align: left;
   transition: background .12s, color .12s, border-color .12s;
 }
-.v3-nav-item:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); color: #c2cdef; }
+.v3-nav-item:hover { background: rgba(255,255,255,.09); border-color: rgba(130,230,222,.18); color: var(--gw-canvas-white); }
 .v3-nav-item.active {
-  background: rgba(99,102,241,.18); border-color: rgba(165,180,252,.28); color: #dbe3ff; font-weight: 600;
+  background: rgba(98, 37, 153, .58); border-color: rgba(130,230,222,.34); color: var(--gw-canvas-white); font-weight: 700;
 }
-.v3-nav-item .v3-nav-icon { flex-shrink: 0; width: 16px; height: 16px; opacity: .7; }
+.v3-nav-item .v3-nav-icon { flex-shrink: 0; width: 16px; height: 16px; opacity: .92; }
 .v3-nav-item.active .v3-nav-icon { opacity: 1; }
 .v3-nav-link { text-decoration: none; }
 
@@ -326,13 +327,13 @@
 .v3-sidebar-link {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 13px; border-radius: var(--v3-chip-radius);
-  font-size: 12.5px; color: #556684; border: 1px solid transparent; background: transparent;
+  font-size: 12.5px; color: rgba(255,255,255,.88); border: 1px solid transparent; background: transparent;
   cursor: pointer; text-align: left; text-decoration: none;
   transition: background .12s, color .12s, border-color .12s;
   width: 100%;
 }
-.v3-sidebar-link:hover { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.08); color: #9fb0d9; }
-.v3-sidebar-link.danger:hover { background: rgba(239,68,68,.1); border-color: rgba(248,113,113,.24); color: #fca5a5; }
+.v3-sidebar-link:hover { background: rgba(255,255,255,.09); border-color: rgba(130,230,222,.18); color: var(--gw-canvas-white); }
+.v3-sidebar-link.danger:hover { background: rgba(255,86,85,.18); border-color: rgba(255,174,128,.32); color: var(--gw-canvas-white); }
 
 /* ── Main Area ───────────────────────────────────────────── */
 #v3-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
