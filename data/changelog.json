@@ -1,6 +1,17 @@
 {
   "items": [
   {
+      "version": "03.063.29",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 00:26:40 KST",
+      "summary": "공통 컬러 팔레트를 디자인 토큰으로 올리고, 국가명칭 변경 이슈가 있는 회원국 별칭을 더 넓게 정리했습니다.",
+      "changes": [
+        "관리자와 공개 페이지에서 앞으로 재사용할 `Scouting Purple`, `Canvas White`, `Midnight Purple`, `Blossom Pink`, `Fire Red`, `Ember Orange`, `Ocean Blue`, `River Blue`, `Forest Green`, `Leaf Green` 팔레트를 공통 변수와 JS 팔레트 객체로 정리했습니다.",
+        "세계연맹 회원국 지역연맹 매칭은 공식국명·통용국명·축약국명 차이를 더 넓게 흡수하도록 별칭 체계를 보강해 176개 회원국 전반의 표기 흔들림을 줄였습니다.",
+        "관리자 버전 03.063.28 → 03.063.29."
+      ]
+    },
+  {
       "version": "03.063.28",
       "date": "2026-04-18",
       "released_at": "2026-04-18 00:16:20 KST",

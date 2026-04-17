@@ -7,19 +7,31 @@
 
   const GW = window.GW = {};
   GW.APP_VERSION = '00.113.21';
-  GW.ADMIN_VERSION = '03.063.28';
-  GW.ASSET_VERSION = '20260417151335';
+  GW.ADMIN_VERSION = '03.063.29';
+  GW.ASSET_VERSION = '20260417151830';
+  GW.PALETTE = {
+    scoutingPurple: '#622599',
+    canvasWhite: '#FFFFFF',
+    midnightPurple: '#4D006E',
+    blossomPink: '#FFBDFF',
+    fireRed: '#FF5655',
+    emberOrange: '#FFAE80',
+    oceanBlue: '#0094B4',
+    riverBlue: '#82E6DE',
+    forestGreen: '#248737',
+    leafGreen: '#9FED8F'
+  };
   GW.EDITOR_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
   // ── Category metadata ─────────────────────────────────────
   GW.CATEGORIES = {
-    latest:{ label: 'Latest', tagClass: 'tag-latest', color: '#111111' },
-    korea: { label: 'Korea', tagClass: 'tag-korea', color: '#0094B4' },
-    apr:   { label: 'APR',   tagClass: 'tag-apr',   color: '#FF5655' },
-    wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: '#248737' },
-    people:{ label: 'Scout People', tagClass: 'tag-people', color: '#8A5A2B' },
-    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: '#5D6F2B' },
+    latest:{ label: 'Latest', tagClass: 'tag-latest', color: GW.PALETTE.midnightPurple },
+    korea: { label: 'Korea', tagClass: 'tag-korea', color: GW.PALETTE.oceanBlue },
+    apr:   { label: 'APR',   tagClass: 'tag-apr',   color: GW.PALETTE.fireRed },
+    wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: GW.PALETTE.forestGreen },
+    people:{ label: 'Scout People', tagClass: 'tag-people', color: GW.PALETTE.scoutingPurple },
+    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: GW.PALETTE.riverBlue },
   };
   GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
   GW.SITE_META_PAGE_LABELS = {

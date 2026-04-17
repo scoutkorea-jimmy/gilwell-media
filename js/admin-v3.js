@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.063.28
+ * Version: 03.063.29
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3628,7 +3628,13 @@
       VE: '베네수엘라',
       ZA: '남아프리카공화국'
     };
-    return map[raw] || '';
+    if (map[raw]) return map[raw];
+    try {
+      var display = new Intl.DisplayNames(['ko', 'en'], { type: 'region' });
+      return display.of(raw) || '';
+    } catch (_) {
+      return '';
+    }
   }
 
   function _getGeoCountryEnglishFromCode(code) {
@@ -3646,7 +3652,13 @@
       VE: 'Venezuela',
       ZA: 'South Africa'
     };
-    return map[raw] || '';
+    if (map[raw]) return map[raw];
+    try {
+      var display = new Intl.DisplayNames(['en'], { type: 'region' });
+      return display.of(raw) || '';
+    } catch (_) {
+      return '';
+    }
   }
 
   function _getWosmRegionValue(item) {
@@ -3677,12 +3689,12 @@
   function _getGeoRegionTone(toneClass) {
     var key = String(toneClass || 'is-unassigned').trim();
     var tones = {
-      'is-africa': { stroke: '#8f4a25', fill: '#ab5027', opacity: 0.5, cityStroke: '#8f4a25', cityFill: '#c26a3e', cityOpacity: 0.44 },
-      'is-arab': { stroke: '#916011', fill: '#b07a1e', opacity: 0.5, cityStroke: '#916011', cityFill: '#c89436', cityOpacity: 0.44 },
-      'is-asia-pacific': { stroke: '#e04b4b', fill: '#ff5655', opacity: 0.5, cityStroke: '#d64545', cityFill: '#ff7a79', cityOpacity: 0.44 },
-      'is-european': { stroke: '#007f98', fill: '#0094b4', opacity: 0.5, cityStroke: '#00738c', cityFill: '#35abc6', cityOpacity: 0.44 },
-      'is-interamerican': { stroke: '#1f7c36', fill: '#248737', opacity: 0.5, cityStroke: '#1f7131', cityFill: '#3ca553', cityOpacity: 0.44 },
-      'is-unassigned': { stroke: '#64748b', fill: '#94a3b8', opacity: 0.42, cityStroke: '#64748b', cityFill: '#cbd5e1', cityOpacity: 0.38 }
+      'is-africa': { stroke: '#248737', fill: '#248737', opacity: 0.46, cityStroke: '#248737', cityFill: '#9fed8f', cityOpacity: 0.42 },
+      'is-arab': { stroke: '#d97c45', fill: '#ffae80', opacity: 0.48, cityStroke: '#d97c45', cityFill: '#ffae80', cityOpacity: 0.42 },
+      'is-asia-pacific': { stroke: '#d94b4a', fill: '#ff5655', opacity: 0.48, cityStroke: '#d94b4a', cityFill: '#ff5655', cityOpacity: 0.42 },
+      'is-european': { stroke: '#007d99', fill: '#0094b4', opacity: 0.48, cityStroke: '#007d99', cityFill: '#82e6de', cityOpacity: 0.42 },
+      'is-interamerican': { stroke: '#3b7f92', fill: '#82e6de', opacity: 0.5, cityStroke: '#3b7f92', cityFill: '#82e6de', cityOpacity: 0.44 },
+      'is-unassigned': { stroke: '#622599', fill: '#ffbdff', opacity: 0.42, cityStroke: '#622599', cityFill: '#ffbdff', cityOpacity: 0.38 }
     };
     return tones[key] || tones['is-unassigned'];
   }

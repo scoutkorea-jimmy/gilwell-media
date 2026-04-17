@@ -5,23 +5,34 @@
 
 /* ── Design Tokens ────────────────────────────────────────── */
 :root {
-  --v3-sidebar-bg:    #161c2d;
+  --gw-scouting-purple: #622599;
+  --gw-canvas-white: #ffffff;
+  --gw-midnight-purple: #4d006e;
+  --gw-blossom-pink: #ffbdff;
+  --gw-fire-red: #ff5655;
+  --gw-ember-orange: #ffae80;
+  --gw-ocean-blue: #0094b4;
+  --gw-river-blue: #82e6de;
+  --gw-forest-green: #248737;
+  --gw-leaf-green: #9fed8f;
+
+  --v3-sidebar-bg:    var(--gw-midnight-purple);
   --v3-sidebar-w:     248px;
   --v3-topbar-h:      52px;
 
-  --v3-primary:       #4f46e5;
-  --v3-primary-h:     #4338ca;
-  --v3-primary-lt:    #ede9fe;
-  --v3-danger:        #ef4444;
-  --v3-danger-h:      #dc2626;
-  --v3-danger-lt:     #fee2e2;
-  --v3-success:       #22c55e;
-  --v3-success-lt:    #dcfce7;
-  --v3-warning:       #f59e0b;
-  --v3-warning-lt:    #fef3c7;
+  --v3-primary:       var(--gw-scouting-purple);
+  --v3-primary-h:     var(--gw-midnight-purple);
+  --v3-primary-lt:    rgba(255, 189, 255, 0.36);
+  --v3-danger:        var(--gw-fire-red);
+  --v3-danger-h:      #cf4747;
+  --v3-danger-lt:     rgba(255, 86, 85, 0.16);
+  --v3-success:       var(--gw-forest-green);
+  --v3-success-lt:    rgba(36, 135, 55, 0.14);
+  --v3-warning:       var(--gw-ember-orange);
+  --v3-warning-lt:    rgba(255, 174, 128, 0.22);
 
-  --v3-content-bg:    #f1f5f9;
-  --v3-surface:       #ffffff;
+  --v3-content-bg:    #f8f7fb;
+  --v3-surface:       var(--gw-canvas-white);
   --v3-border:        #e2e8f0;
   --v3-border-m:      #cbd5e1;
 
@@ -1211,38 +1222,38 @@
 .v3-geo-pill.is-africa,
 .v3-geo-region-badge.is-africa,
 .v3-geo-legend-dot.is-africa {
-  background: rgba(171, 80, 39, 0.12);
-  color: #8f4a25;
+  background: rgba(36, 135, 55, 0.14);
+  color: var(--gw-forest-green);
 }
 .v3-geo-pill.is-arab,
 .v3-geo-region-badge.is-arab,
 .v3-geo-legend-dot.is-arab {
-  background: rgba(150, 96, 17, 0.12);
-  color: #8a590f;
+  background: rgba(255, 174, 128, 0.22);
+  color: #b35a22;
 }
 .v3-geo-pill.is-asia-pacific,
 .v3-geo-region-badge.is-asia-pacific,
 .v3-geo-legend-dot.is-asia-pacific {
-  background: rgba(255, 86, 85, 0.12);
-  color: #c63f3f;
+  background: rgba(255, 86, 85, 0.16);
+  color: #cf4747;
 }
 .v3-geo-pill.is-european,
 .v3-geo-region-badge.is-european,
 .v3-geo-legend-dot.is-european {
-  background: rgba(0, 148, 180, 0.12);
-  color: #0b7790;
+  background: rgba(0, 148, 180, 0.14);
+  color: var(--gw-ocean-blue);
 }
 .v3-geo-pill.is-interamerican,
 .v3-geo-region-badge.is-interamerican,
 .v3-geo-legend-dot.is-interamerican {
-  background: rgba(36, 135, 55, 0.12);
-  color: #1e7330;
+  background: rgba(130, 230, 222, 0.28);
+  color: #178f9a;
 }
 .v3-geo-pill.is-unassigned,
 .v3-geo-region-badge.is-unassigned,
 .v3-geo-legend-dot.is-unassigned {
-  background: rgba(100, 116, 139, 0.14);
-  color: #475569;
+  background: rgba(255, 189, 255, 0.32);
+  color: var(--gw-midnight-purple);
 }
 .v3-geo-legend-dot.is-africa,
 .v3-geo-legend-dot.is-arab,

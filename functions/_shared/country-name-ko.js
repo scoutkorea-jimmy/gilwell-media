@@ -203,6 +203,18 @@ const COUNTRY_NAME_ALIAS_MAP = {
   saintlucia: ['세인트루시아', 'saint lucia'],
   trinidadandtobago: ['트리니다드 토바고', 'trinidad and tobago'],
   eswatini: ['에스와티니', 'swaziland'],
+  laopeoplesdemocraticrepublic: ['라오스', 'laos'],
+  islamicrepublicofiran: ['이란', 'iran'],
+  vietnam: ['베트남', 'viet nam'],
+  thebahamas: ['바하마', 'bahamas'],
+  thegambia: ['감비아', 'gambia'],
+  myanmar: ['미얀마', 'burma'],
+  federatedstatesofmicronesia: ['미크로네시아', 'micronesia'],
+  kyrgyzrepublic: ['키르기스스탄', 'kyrgyzstan'],
+  palestine: ['팔레스타인', 'state of palestine'],
+  southafrica: ['남아프리카공화국', '남아프리카 공화국', 'south africa'],
+  curacao: ['퀴라소', 'curacao'],
+  macao: ['마카오', 'macao', 'macau'],
 };
 
 export function normalizeCountryNameKey(value) {

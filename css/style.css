@@ -12,6 +12,16 @@
 
 /* ── Final Home / Admin Type System (V0.059.04) ───────────── */
 :root {
+  --gw-scouting-purple: #622599;
+  --gw-canvas-white: #ffffff;
+  --gw-midnight-purple: #4d006e;
+  --gw-blossom-pink: #ffbdff;
+  --gw-fire-red: #ff5655;
+  --gw-ember-orange: #ffae80;
+  --gw-ocean-blue: #0094b4;
+  --gw-river-blue: #82e6de;
+  --gw-forest-green: #248737;
+  --gw-leaf-green: #9fed8f;
   --admin-fs-display: 22px;
   --admin-fs-section: 19px;
   --admin-fs-title: 17px;
@@ -9966,23 +9976,23 @@ body.wosm-members-page #main-content {
 }
 .members-section-bar.is-africa,
 .members-card-section-head.is-africa {
-  background: linear-gradient(180deg, rgba(171, 80, 39, 0.12), rgba(171, 80, 39, 0.04));
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.14), rgba(159, 237, 143, 0.10));
 }
 .members-section-bar.is-arab,
 .members-card-section-head.is-arab {
-  background: linear-gradient(180deg, rgba(150, 96, 17, 0.12), rgba(150, 96, 17, 0.04));
+  background: linear-gradient(180deg, rgba(255, 174, 128, 0.26), rgba(255, 174, 128, 0.08));
 }
 .members-section-bar.is-asia-pacific,
 .members-card-section-head.is-asia-pacific {
-  background: linear-gradient(180deg, rgba(255, 86, 85, 0.12), rgba(255, 86, 85, 0.04));
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.18), rgba(255, 86, 85, 0.08));
 }
 .members-section-bar.is-european,
 .members-card-section-head.is-european {
-  background: linear-gradient(180deg, rgba(0, 148, 180, 0.12), rgba(0, 148, 180, 0.04));
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.18), rgba(130, 230, 222, 0.10));
 }
 .members-section-bar.is-interamerican,
 .members-card-section-head.is-interamerican {
-  background: linear-gradient(180deg, rgba(36, 135, 55, 0.12), rgba(36, 135, 55, 0.04));
+  background: linear-gradient(180deg, rgba(130, 230, 222, 0.28), rgba(130, 230, 222, 0.10));
 }
 .members-section-bar.is-language-english,
 .members-card-section-head.is-language-english {
@@ -10000,28 +10010,28 @@ body.wosm-members-page #main-content {
   box-shadow: 0 6px 14px rgba(0,0,0,0.04);
 }
 .member-country-card.is-representative {
-  border-color: rgba(36, 135, 55, 0.26);
-  background: linear-gradient(180deg, rgba(36, 135, 55, 0.06), #fff 28%);
+  border-color: rgba(98, 37, 153, 0.26);
+  background: linear-gradient(180deg, rgba(98, 37, 153, 0.08), #fff 28%);
 }
 .member-country-card.is-representative.is-africa {
-  border-color: rgba(171, 80, 39, 0.26);
-  background: linear-gradient(180deg, rgba(171, 80, 39, 0.08), #fff 28%);
+  border-color: rgba(36, 135, 55, 0.28);
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.10), #fff 28%);
 }
 .member-country-card.is-representative.is-arab {
-  border-color: rgba(150, 96, 17, 0.28);
-  background: linear-gradient(180deg, rgba(150, 96, 17, 0.08), #fff 28%);
+  border-color: rgba(255, 174, 128, 0.42);
+  background: linear-gradient(180deg, rgba(255, 174, 128, 0.16), #fff 28%);
 }
 .member-country-card.is-representative.is-asia-pacific {
-  border-color: rgba(255, 86, 85, 0.28);
-  background: linear-gradient(180deg, rgba(255, 86, 85, 0.08), #fff 28%);
+  border-color: rgba(255, 86, 85, 0.34);
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.14), #fff 28%);
 }
 .member-country-card.is-representative.is-european {
-  border-color: rgba(0, 148, 180, 0.28);
-  background: linear-gradient(180deg, rgba(0, 148, 180, 0.08), #fff 28%);
+  border-color: rgba(0, 148, 180, 0.34);
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.14), #fff 28%);
 }
 .member-country-card.is-representative.is-interamerican {
-  border-color: rgba(36, 135, 55, 0.28);
-  background: linear-gradient(180deg, rgba(36, 135, 55, 0.08), #fff 28%);
+  border-color: rgba(130, 230, 222, 0.56);
+  background: linear-gradient(180deg, rgba(130, 230, 222, 0.20), #fff 28%);
 }
 .member-country-meta-grid {
   display: grid;
