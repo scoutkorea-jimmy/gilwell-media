@@ -11,10 +11,10 @@ scope: dreampath
 > [!abstract] Purpose & Scope
 > **목적**: Dreampath 내부 협업 앱의 **기능, API, DB 구조**를 한눈에 파악하는 레퍼런스 허브
 > **범위**: Dreampath 전용 (`dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*`)
-> **제외**: 메인 홈페이지 (`index.html`, `js/main.js` 등) → [[CHATGPT]] 참조
+> **제외**: 메인 홈페이지 (`index.html`, `js/main.js` 등) → [[CLAUDE]] §2 Site 참조
 >
 > 정식 Dev Rules는 `/dreampath` → 사이드바 "Dev Rules"에서 확인하십시오.
-> 프로젝트 공통 규칙(아키텍처, DB, 배포)은 [[CLAUDE]] 참조.
+> 프로젝트 공통 규칙(아키텍처, DB, 배포)과 Dreampath 규칙은 [[CLAUDE]] §1·§5 참조.
 
 ## Architecture
 
@@ -105,7 +105,7 @@ functions/api/dreampath/ → API Workers (D1 + R2)
 - [[CLAUDE]] — 프로젝트 전체 AI 규칙 (Dreampath 섹션 포함)
 
 ### 홈페이지 (별도 도메인)
-- [[CHATGPT]] — 메인 홈페이지 가이드
+- [[CLAUDE]] §2 Site — 메인 홈페이지 규칙
 - [[docs/features/README|Homepage Features Hub]] — 홈페이지 기능 허브
 - [[docs/modules/README|Homepage Modules Hub]] — 홈페이지 모듈 라이브러리
 

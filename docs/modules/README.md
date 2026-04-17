@@ -49,4 +49,4 @@ Admin Runtime → js/admin-v3.js, js/kms.js
 - [[Surface Library]]
 - [[Templates Library]]
 - [[API Library]]
-- [[CHATGPT]] — 홈페이지 개발 가이드
+- [[CLAUDE]] §2 Site — 홈페이지 규칙 (AI 공통 가이드)

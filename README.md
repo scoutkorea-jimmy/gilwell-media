@@ -18,7 +18,7 @@ Static asset cache-busting query strings are generated automatically from `ASSET
 Scheduled posts are checked by a Cloudflare scheduled worker every 5 minutes through `/api/jobs/publish-due`, so overdue reserved posts do not wait for the first public read request.
 
 Operational references:
-- `CHATGPT.md`  # 메인 홈페이지 AI 작업 기준 원본
+- `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크)  # AI 공통 작업 기준 원본 (타겟별 구성)
 - `docs/release-playbook.md`
 - 관리자 페이지 `기능 정의서 / KMS` 페이지
 - `docs/feature-definition.md` (보조 스냅샷)
@@ -52,7 +52,8 @@ gilwell-media/
 ├── glossary-raw            Search/index-friendly glossary raw view
 ├── admin.html              Admin panel (requires login)
 ├── kms.html                Admin-only feature definition / KMS page
-├── CHATGPT.md              Homepage AI guide (canonical AI-facing guide)
+├── CLAUDE.md               AI guide (target-based; AGENTS.md is a symlink for Codex)
+├── AGENTS.md -> CLAUDE.md  Symlink for Codex / other AI agents
 ├── css/style.css           Shared stylesheet
 ├── js/
 │   ├── main.js             Shared utilities (GW namespace)
@@ -90,10 +91,10 @@ gilwell-media/
 | Frontend | Plain HTML / CSS / Vanilla JS |
 
 Homepage AI/documentation rules:
-- Homepage work should follow `CHATGPT.md`
+- All AI work must first follow the Target Confirmation Protocol in `CLAUDE.md` (Site / Admin / KMS / Dreampath)
 - KMS in the admin page is the operational source of truth
 - `docs/feature-definition.md` is the repository snapshot of that KMS content
-- When policy/rule documents change, update KMS, `docs/feature-definition.md`, `CHATGPT.md`, and changelog together
+- When policy/rule documents change, update KMS, `docs/feature-definition.md`, `CLAUDE.md`, and changelog together
 - Obsidian documentation must stay feature/module-first; pages are secondary surface nodes only
 - `wosm-members` data is imported from WOSM-provided `xlsx` files, fills missing Korean country names from English on first import, and is then maintained in the admin settings UI
 - `site_visits` may store anonymous country/city/lat/lng analytics derived from Cloudflare request metadata, but raw IP must not be stored
@@ -243,7 +244,7 @@ Notes:
 - Production deploys run from `main`
 - `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`, `GW.APP_VERSION`, and admin version metadata must stay in sync
 - Run `./scripts/sync_versions.sh` before release verification when you change version numbers or want fresh asset cache-busting
-- When homepage rules change, update `CHATGPT.md`, KMS, `docs/feature-definition.md`, and changelog together
+- When homepage rules change, update `CLAUDE.md` (§2 Site / §3 Admin), KMS, `docs/feature-definition.md`, and changelog together
 - When `접속 국가/도시` changes are included, run `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote` before production deploy
 
 ### Optional R2 binding for images

@@ -41,5 +41,4 @@ aliases: [Homepage Features Hub, 기능 허브]
 
 ## 상위 문서
 
-- [[CHATGPT]] — 홈페이지 개발 가이드
-- [[CLAUDE]] — 프로젝트 전체 AI 규칙
+- [[CLAUDE]] — AI 공통 작업 가이드 (타겟별 구성; AGENTS.md 심볼릭 링크 동일)
