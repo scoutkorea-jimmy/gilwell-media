@@ -205,6 +205,7 @@ scope: homepage
 
 ```bash
 ./scripts/sync_versions.sh          # 버전 동기화
+./scripts/release_preflight.sh      # main / clean worktree / 버전 정합성 확인
 ./scripts/deploy_production.sh      # 배포
 ./scripts/post_deploy_check.sh <url> # 배포 후 점검
 ```
@@ -212,6 +213,7 @@ scope: homepage
 - 버전: `Va.bbb.cc` (Site: `VERSION`, Admin: `ADMIN_VERSION`, Asset: `ASSET_VERSION`)
 - 공개 UI 변경: 오너 확인 후 production 배포
 - 관리자/API만 수정: 바로 production 반영 가능
+- `wrangler pages deploy ...`를 직접 쓰더라도 `./scripts/release_preflight.sh`를 먼저 통과해야 한다.
 
 ---
 

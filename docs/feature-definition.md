@@ -679,8 +679,10 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 공개 UI 변경은 production 배포 전후 실환경 기준으로 직접 검수한다.
 - 관리자/API만 변경되면 예외적으로 바로 production 가능
 - 배포 전 `VERSION`, `ADMIN_VERSION`, `ASSET_VERSION`을 확인하고 `./scripts/sync_versions.sh`로 버전 문자열과 새 자산 토큰을 동기화한다.
+- production 배포 전에는 `./scripts/release_preflight.sh`로 `main` 브랜치, 깨끗한 워크트리, 버전 정합성을 반드시 확인한다.
 - `접속 국가/도시` 기능이 포함된 배포에서는 `./scripts/ensure_site_visits_geo_columns.sh gilwell-posts --remote`로 원격 D1의 `site_visits` 지리 컬럼과 인덱스를 먼저 선반영한다.
 - production 배포는 `main`의 깨끗한 워크트리에서만 진행한다.
+- `wrangler pages deploy . --project-name gilwell-media --branch main`를 직접 사용하는 예외 상황에서도 preflight 없이 production 배포하지 않는다.
 - 선택 사항: `CF_ZONE_ID`, `CF_PURGE_API_TOKEN` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
 
 ### 13.2 스모크 체크 기준
