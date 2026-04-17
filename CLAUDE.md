@@ -1,81 +1,355 @@
 ---
-tags: [ai-guide, dreampath, entry-point, project-root]
-aliases: [Claude Rules, AI Dev Rules, 프로젝트 규칙]
+tags: [ai-guide, common, entry-point, project-root]
+aliases: [AI Rules, Dev Rules, AGENTS, 프로젝트 규칙]
 scope: project
 ---
 
-# CLAUDE.md — Gilwell Media
+# CLAUDE.md / AGENTS.md — Gilwell Media AI 작업 가이드
 
-## 이 문서의 목적
+> [!info] 단일 AI 가이드
+> 이 파일은 **모든 AI (Claude Code / Codex / ChatGPT 등)** 가 공통으로 따르는 **단일 규칙 원본**입니다.
+> Codex는 `AGENTS.md`(이 파일의 심볼릭 링크)로 접근합니다.
+> 규칙은 **AI가 아니라 개발 목적지(Target)** 단위로 구성됩니다.
 
-> [!abstract] Purpose & Scope
-> **목적**: Claude Code가 자동 로드하는 **프로젝트 전체 규칙** 파일
-> **범위**: 아키텍처, 배포, DB, 인증 등 **공통 인프라** + **Dreampath 전용 규칙**
-> **대상 독자**: AI 개발 도구 (Claude Code, ChatGPT 등)
->
-> 이 문서는 홈페이지와 Dreampath **양쪽에 공통**되는 기술 규칙을 정의합니다.
-> 각 도메인의 세부 규칙은 아래 전용 문서에서 관리합니다.
-
-### 문서 계층 구조
-
-```
-CLAUDE.md (이 문서) ← 프로젝트 공통 + Dreampath 규칙
-├── CHATGPT.md         ← 메인 홈페이지 전용 규칙
-├── Dreampath Hub      ← Dreampath 기능/API 레퍼런스
-├── Homepage Features Hub ← 홈페이지 기능 중심 문서
-└── KMS (admin page)   ← 운영 기준 원본 (코드 외부)
-```
-
-| 작업 대상 | 우선 문서 | 비고 |
-|---|---|---|
-| **프로젝트 공통** | 이 문서 (`CLAUDE.md`) | 아키텍처, DB, 배포, 인증 |
-| **메인 홈페이지** | [[CHATGPT]] | UI, 모듈, 디자인, 컨텐츠 규칙 |
-| **Dreampath** | [[docs/dreampath/README\|Dreampath Hub]] + Dev Rules | 기능/API/DB 레퍼런스 |
-| **기능 정의 원본** | 관리자 KMS (`/admin.html`) | 운영 기준 정식 출처 |
-
-> [!warning] 경계 규칙
-> 홈페이지 작업에 Dreampath 규칙을 적용하지 마십시오.
-> Dreampath 작업에 홈페이지 모듈/디자인 규칙을 적용하지 마십시오.
-
-## Documentation Axis
-
-- 저장소의 Obsidian 문서 구조는 **feature / module-first**를 기본 원칙으로 사용한다.
-- 페이지는 최상위 탐색 축이 아니라, 기능 조합 결과를 보여주는 **surface node**로 취급한다.
-- 홈페이지 문서를 갱신할 때는 `[[CHATGPT]]`, `[[docs/features/README|Homepage Features Hub]]`, `[[docs/modules/README|Homepage Modules Hub]]`를 먼저 갱신 대상으로 본다.
-- 같은 기능을 여러 페이지 설명으로 반복 복제하지 않고, 기능 허브와 모듈 라이브러리로 링크를 모아 토큰 낭비와 기준 드리프트를 줄인다.
+**문서 구조:**
+- `§0` — Target Confirmation Protocol (모든 작업의 최우선)
+- `§1` — Common Infrastructure (모든 타겟 공통)
+- `§2` — **[Site]** 공개 홈페이지
+- `§3` — **[Admin]** 관리자 페이지
+- `§4` — **[KMS]** 운영 기준 원본
+- `§5` — **[Dreampath]** CUFS 내부 앱
 
 ---
 
-## Architecture
+## §0 Target Confirmation Protocol
+
+> [!danger] 모든 작업 시작 전 필수
+> AI는 코드를 한 줄이라도 수정하기 전에 아래 절차를 수행한다.
+> 이 절차를 건너뛰면 안 된다.
+
+### Step 1 — Target 식별
+
+모든 작업은 다음 4개 타겟 중 **정확히 하나**에 속한다. (복수 타겟 걸침은 Step 2에서 선언)
+
+| Target | 범위 | 대표 파일 |
+|---|---|---|
+| **Site** | 공개 홈페이지 (방문자용) | `index.html`, `korea.html`, `apr.html`, `wosm.html`, `people.html`, `js/main.js`, `js/board.js`, `js/post-page.js`, `css/style.css`, `functions/api/*` (dreampath 제외) |
+| **Admin** | 관리자 페이지 (운영 도구) | `admin.html`, `js/admin-v3.js`, 관리자 전용 API |
+| **KMS** | 운영 기준 원본 (Knowledge Management) | `admin.html` → KMS 메뉴, `kms.html`, `docs/feature-definition.md` |
+| **Dreampath** | CUFS 내부 앱 (별도 도메인) | `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*` |
+
+### Step 2 — Target 확인 응답
+
+| 상황 | AI 행동 |
+|---|---|
+| 요청에서 타겟이 **명확히 추론됨** | 한 줄로 **선언 후 진행**: "이 작업은 **[Target]** 타겟으로 이해했습니다. ..." |
+| 타겟이 **모호함** | 작업 중단하고 **반드시 질문** (아래 템플릿) |
+| **복수 타겟** 걸침 | 모든 타겟 선언: "**Site + Admin** 양쪽에 해당합니다. ..." |
+| 사용자가 **정정**함 | 즉시 중단 → 재확인 후 새 타겟 기준으로 재시작 |
+
+**질문 템플릿:**
+```
+이 작업의 개발 목적지(target)를 확인해주세요:
+  1. Site      — 공개 홈페이지
+  2. Admin     — 관리자 페이지
+  3. KMS       — 운영 기준 원본
+  4. Dreampath — CUFS 내부 앱
+```
+
+### Step 3 — Target별 규칙 로드
+
+타겟 확정 후 이 문서의 해당 `§` 섹션만 적용한다. **타겟 간 규칙 혼용 금지.**
+
+| Target | 이 문서 | 보조 원본 |
+|---|---|---|
+| Site | `§1` + `§2` | [[docs/features/README\|Homepage Features Hub]], [[docs/modules/README\|Homepage Modules Hub]] |
+| Admin | `§1` + `§3` | [[docs/homepage-module-inventory\|Module Inventory]] |
+| KMS | `§1` + `§4` | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
+| Dreampath | `§1` + `§5` | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
+
+### Step 4 — 경계 검증
+
+> [!warning] 절대 경계
+> - Site/Admin 작업에 **Dreampath 규칙(IIFE, `DP.` 프리픽스, `dp_` 테이블, Tiptap 등)** 적용 금지
+> - Dreampath 작업에 **Site/Admin 규칙(GW 네임스페이스, Editor.js, feature/module 허브 등)** 적용 금지
+> - KMS는 **운영 기준**이지 코드가 아님 — 코드 변경으로 KMS 기준을 역으로 바꾸려 하지 말 것 (관리자 KMS가 1순위 원본)
+
+**경로로 타겟 판별:**
+- `functions/api/dreampath/**`, `dreampath.html`, `js/dreampath.js` → **Dreampath**
+- `admin.html`, `js/admin-v3.js` → **Admin**
+- `kms.html`, KMS 관련 → **KMS**
+- 그 외 `*.html`, `js/main.js`, `css/style.css`, `functions/api/*` → **Site**
+
+### Interaction Checklist
+
+- [ ] 타겟을 식별했는가?
+- [ ] 모호하면 질문, 명확하면 선언했는가?
+- [ ] 해당 `§` 섹션만 참조했는가?
+- [ ] 타 타겟 규칙을 섞지 않았는가?
+- [ ] `§1` 공통 인프라 규칙을 준수했는가?
+
+### 예시
+
+**Case 1 — 명확:**
+> "`dreampath.html`의 툴바에 이탤릭 버튼 추가"
+> → "**Dreampath** 타겟으로 이해했습니다. `§5`의 Tiptap 4곳 수정 규칙을 따르겠습니다."
+
+**Case 2 — 모호:**
+> "게시판 UI 고쳐줘"
+> → "Site(공개 게시판)와 Dreampath(사내 게시판) 양쪽에 있습니다. 어느 쪽인가요?"
+
+**Case 3 — 정정:**
+> 사용자 "index.html 수정" → AI "Site 진행" → 사용자 "KMS 기준 변경에 따른 반영이야"
+> → "이해했습니다. **KMS가 원본**이므로 KMS 기준을 먼저 확인한 뒤 Site에 반영합니다."
+
+---
+
+## §1 Common Infrastructure
+
+### Architecture
 
 | Layer | Stack |
 |---|---|
 | Hosting | Cloudflare Pages (static, no build step) |
 | API | Cloudflare Workers (`/functions/api/`) |
 | Database | Cloudflare D1 (SQLite, binding: `env.DB`) |
-| Auth | HMAC-SHA256 signed tokens (`functions/_shared/auth.js`) |
-| Storage | Cloudflare R2 (`POST_IMAGES` bucket) |
+| Storage | Cloudflare R2 (`POST_IMAGES` 버킷) |
+| Auth | HMAC-SHA256 signed cookie (`functions/_shared/auth.js`) |
 
-### Deploy
-
-```bash
-./deploy.sh feature "설명"   # 신기능
-./deploy.sh fix "설명"       # 버그픽스
-```
-
-- 자동 버전 증가 + D1 `dp_versions` 등록
 - Wrangler: `/opt/homebrew/bin/wrangler` (필요 시 `export PATH="/opt/homebrew/bin:$PATH"`)
-- `deploy.sh`는 HTML cache-bust 후 `git checkout`으로 원복하므로 **HTML 변경은 반드시 커밋 후 deploy**
 
-> [!important] 버전 형식
-> `aa.bbb.cc` — Major(수동) . Feature(자동) . Fix(자동, Feature 시 00 초기화)
+### Database Rules
+
+> [!important] DB 변경 규칙
+> - D1 binding: `env.DB`
+> - 테이블 접두사: Dreampath = `dp_`, Site/Admin = 접두사 없음
+> - **기존 컬럼 삭제/변경 금지** — `ALTER TABLE ADD COLUMN`만 허용
+> - 스키마 변경 시 마이그레이션 계획 필요
+
+### Authentication
+
+| 타겟 | 방식 |
+|---|---|
+| Site/Admin | HMAC-SHA256 signed admin cookie (24h) |
+| Dreampath | `dp_session=1` httpOnly cookie (1h) + localStorage profile, 5분 전 갱신 경고 |
+
+- Dreampath 미들웨어: `functions/api/dreampath/_middleware.js`
+- 인증 코어: `functions/_shared/auth.js`
+
+### Critical Prohibitions (모든 타겟)
+
+> [!danger] 절대 금지 사항
+> 1. `functions/_shared/auth.js` — 승인 없이 수정 금지
+> 2. 사용자 입력 HTML → **DOMPurify 없이 `innerHTML` 금지**
+> 3. 인증 토큰을 `localStorage`에 저장 금지 (httpOnly 쿠키 사용)
+> 4. 기존 DB 컬럼 삭제/타입 변경 금지
+> 5. 배포 스크립트 우회 및 버전 등록 생략 금지
+> 6. `js/dreampath.js` IIFE 구조 분리/모듈화 금지
+> 7. CDN URL 변경 시 버전 고정 확인 필수
+> 8. `.env` 또는 시크릿 값 커밋 금지
+> 9. `dp_post_approvals` INSERT 시 `approver_id` (NOT NULL) 필수
+
+### Documentation Axis (공통)
+
+- Obsidian 문서 구조는 **feature / module-first** 원칙.
+- 페이지는 최상위 축이 아니라 기능 조합의 **surface node**.
+- 동일 기능을 여러 페이지 설명으로 복제하지 말고 Feature Hub + Module 라이브러리로 링크 집약.
 
 ---
 
-## Key Files
+## §2 [Site] 공개 홈페이지
+
+> [!abstract] Scope
+> 공개 페이지 (방문자 대상) — 홈, 카테고리 보드, 기사 상세, 검색, 용어집, 회원국 현황 등
+
+### Core Principle
+
+- **안정성 우선** — 새 기능보다 기존 기능의 안정적 동작이 중요
+- 네임스페이스: `window.GW` (Dreampath의 `window.DP`와 무관)
+- 에디터: **Editor.js** (Dreampath의 Tiptap과 무관)
+- 스타일: `css/style.css` 기준 유지
+
+### Key Files
+
+| 파일 | 역할 |
+|---|---|
+| `index.html` | 홈 |
+| `korea.html`, `apr.html`, `wosm.html`, `people.html` | 공개 카테고리 보드 |
+| `wosm-members.html` | 세계연맹 회원국 현황 |
+| `glossary.html` | 용어집 |
+| `search.html` | 검색 |
+| `css/style.css` | 공유 스타일 |
+| `js/main.js` | `window.GW` + 공용 유틸 |
+| `js/board.js` | 게시판 렌더링 |
+| `js/post-page.js` | 기사 상세 |
+| `functions/api/*` (dreampath 제외) | 사이트 API |
+| `functions/[[path]].js` | 공유 메타 주입 |
+| `functions/post/[id].js` | 기사 상세 SSR |
+
+### Module Layers
+
+> Foundation → Component → Pattern → Template → Code Module
+
+| Layer | 예시 |
+|---|---|
+| Foundation | 색상, 타이포, 간격, 상태 언어 |
+| Component | 버튼, 태그, 카드, 입력 |
+| Pattern | 마스트헤드, 히어로, 섹션 레일 |
+| Template | 홈, 게시판, 기사 상세 |
+| Code Module | constants, utils, renderers, API helpers |
+
+- P0 공통화: `section rail`, `post card shell`, `button/chip family`
+- 모듈 분해 기준: [[docs/homepage-module-inventory|Module Inventory]]
+
+### Site Structure
+
+- 공개 표면: 홈, Korea, APR, WOSM, Scout People, 검색, 용어집, 회원국 현황, 기사 상세, 도움
+- 홈 구성: 마스트헤드 → 티커 → 히어로 → 메인 스토리 → 최신 → 인기 → 에디터 추천 → 카테고리 → 푸터 통계
+- 에디터 추천: 최대 4개, 서버에서도 강제
+- 메인 스토리 ↔ 에디터 추천 충돌 방지
+
+### Content & Date Rules
+
+| 기준 | 규칙 |
+|---|---|
+| 공개 정렬 | `publish_at` 우선, 없으면 `created_at` |
+| 공개 날짜 | `YYYY년 M월 D일` |
+| RSS 날짜 | `created_at` 기준, 작성자 실명 비노출 |
+
+### Home Rules
+
+- 최신 소식: 첫 진입 + 탭 복귀 + 포커스 복귀 시 항상 재조회
+- latest rail: `no-store`
+- 접근성: skip-link, 랜드마크, heading 구조, 히어로 일시정지, 티커 정지
+- 메인 스토리 저장/해제 후 캐시 즉시 퍼지
+- 하드코딩 정리는 `운영값 / 구조상수 / fallback`으로 먼저 분류
+- nav fallback, ticker 기본 문구, 공통 경로 제목 → `functions/_shared/site-structure.mjs`, `functions/_shared/site-copy.mjs`
+- 공개 HTML fallback 동기화: `scripts/sync_public_fallbacks.mjs` (release 전 자동 반영)
+- 홈 런타임 분리 유지: `home-helpers → home-render → home-hero → home-runtime → home.js`
+
+### Design Rules
+
+- 기본 서체: `AliceDigitalLearning`
+- 공개 메뉴: `data-managed-nav` — 초기 숨김 → 렌더 완료 후 노출 (flash 방지)
+- 버튼: 같은 계층이면 높이/패딩/폰트 통일
+- 한글: `word-break: keep-all`
+- 모바일: 가로 스크롤 금지
+
+> [!tip] Design Guide
+> KMS 디자인 탭 = 시각적 레퍼런스. 새 디자인 추가 시 KMS + Module Inventory + 이 문서 함께 갱신.
+
+### Article & Share Rules
+
+- 기사 수정: 같은 페이지 모달 (관리자 비밀번호 재검증 필수)
+- 공유 `share_ref`: 매 클릭 새로 생성 (캐시 오류 방지)
+- 예약 공개: overdue 보정 + Cloudflare scheduled worker 5분 주기
+
+### Tag & Image Rules
+
+- 사용 중인 태그 삭제 불가 → 어떤 글에서 사용 중인지 안내
+- 히어로: PC/모바일별 이미지 프레이밍 값 개별 저장
+- 이미지 확대/축소: 60%~150%, 100% 미만 시 블러 배경 보정
+
+### Glossary Rules
+
+- 검색: 용어 + 설명 함께 검색
+- 검색 범위 체크박스 전체 해제 시 → 검색 차단 + 안내
+
+### Footer Rules
+
+- 구조화된 필드 편집기 우선 (raw HTML 직접 수정 지양)
+- 제목, 소개, 도메인, 기사제보 메일, 문의 메일 각각 수정 가능
+
+### Data Safety
+
+> [!important]
+> - 게시글 삭제 시 연관 이미지/기록/조회·공감/URL 로그 함께 정리
+> - 공유 메타: `functions/[[path]].js` 기준 주입
+> - `canonical` + `robots.txt` + `sitemap.xml` 한 세트로 관리
+> - sitemap에는 공개 canonical 경로만 포함
+
+### Deployment
+
+```bash
+./scripts/sync_versions.sh          # 버전 동기화
+./scripts/release_preflight.sh      # main / clean worktree / 버전 정합성
+./scripts/deploy_production.sh      # 배포
+./scripts/post_deploy_check.sh <url> # 배포 후 점검
+```
+
+- 버전: `Va.bbb.cc` (Site: `VERSION`, Admin: `ADMIN_VERSION`, Asset: `ASSET_VERSION`)
+- 공개 UI 변경: 오너 확인 후 production 배포
+- `wrangler pages deploy ...`를 쓰더라도 `release_preflight.sh`를 먼저 통과해야 한다.
+
+### Verification Checklist (배포 전후)
+
+- [ ] 홈, 대표 기사 상세, 카테고리 보드
+- [ ] 검색, 용어집
+- [ ] 모바일 레이아웃
+- [ ] RSS 응답
+- [ ] `robots.txt`, `sitemap.xml` 접근
+- [ ] OG meta (`og:title`, `og:image`, `canonical`)
+- [ ] 홈 최신 갱신, 공유 버튼, 수정 모달
+
+---
+
+## §3 [Admin] 관리자 페이지
+
+> [!abstract] Scope
+> `admin.html` + `js/admin-v3.js` — 운영자 대상 관리 도구
+
+### Admin Rules
+
+- 일부 계정은 히어로 설정만 접근 가능 (게시글 권한 제한)
+- 모바일: 단일 폭 1단 흐름 기본
+- 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
+- 운영 섹션: 분석, 접속 국가/도시, 마케팅, 버전기록, 오류/이슈 기록
+- 관리자 날짜 형식: `YYYY년 MM월 DD일 HH시 MM분 SS초`
+- 관리자 기본 서체: 시스템 서체
+
+### Admin Data Safety
+
+> [!important]
+> - 설정 수정 시 `settings_history` 스냅샷 필수
+> - 기사 수정 모달: 관리자 비밀번호 재검증
+> - 태그 삭제 시 사용 중인 글 안내 필수
+
+### Admin 관련 문서
+
+- [[docs/homepage-module-inventory|Module Inventory]] — 관리자 포함 모듈 인벤토리
+- Admin V3 런타임 — `js/admin-v3.js`
+
+---
+
+## §4 [KMS] 운영 기준 원본
+
+> [!abstract] Scope
+> KMS = 운영 기준의 **정식 원본**. 코드가 아니라 운영 문서 영역.
+
+### 원본 우선순위
+
+| 위치 | 역할 | 우선순위 |
+|---|---|---|
+| 관리자 페이지 KMS (`/admin.html` → KMS 메뉴) | **정식 원본** | 1순위 |
+| [[docs/feature-definition\|Feature Definition]] | KMS 보조 스냅샷 | 2순위 |
+| [[docs/features/README\|Homepage Features Hub]] | 기능 중심 탐색 | 참고 |
+
+### KMS 작업 규칙
+
+- 코드 변경으로 KMS 기준을 역산하지 말 것 — KMS가 1순위 원본
+- KMS 변경 → Feature Definition 스냅샷 갱신 → Site/Admin 코드 반영 순서
+- `kms.html`은 공개 뷰어 (편집은 관리자 KMS에서)
+
+---
+
+## §5 [Dreampath] CUFS 내부 앱
+
+> [!abstract] Scope
+> 별도 도메인의 CUFS 내부 앱. 공개 사이트와 **완전히 분리된 규칙 체계**.
+
+### Key Files
 
 ```
-# ── Dreampath ─────────────────────────────────────────
 dreampath.html                        — 전용 인라인 CSS
 js/dreampath.js                       — 프론트엔드 IIFE (window.DP)
 functions/api/dreampath/posts.js      — 게시글 CRUD + 접근 제어
@@ -86,21 +360,9 @@ functions/api/dreampath/upload.js     — 파일 업로드 + 확장자 차단
 functions/api/dreampath/home.js       — 홈 데이터 (접근 가능 게시판 필터)
 functions/api/dreampath/notes.js      — Notes & Issues CRUD
 functions/api/dreampath/_middleware.js — 인증 미들웨어
-functions/_shared/auth.js             — 인증 코어 (수정 금지)
-deploy.sh                             — 배포 + 버전 등록
-
-# ── 메인 홈페이지 ────────────────────────────────────
-index.html, korea.html, apr.html ...  — 공개 페이지
-js/main.js                            — window.GW 네임스페이스
-css/style.css                         — 공개 사이트 스타일
-functions/api/*                       — 메인 사이트 API
 ```
 
----
-
-## Dreampath Frontend Rules
-
-### 구조
+### Frontend 구조
 
 - **IIFE 패턴**: `const DP = (() => { ... })()` → `window.DP`
 - IIFE를 **절대 분리하거나 모듈화하지 말 것**
@@ -111,7 +373,7 @@ functions/api/*                       — 메인 사이트 API
 ### CSS
 
 - Dreampath CSS는 `dreampath.html` 내 `<style>` 태그에만 위치
-- 색상은 `:root` CSS 변수: `var(--accent)`, `var(--text)` 등
+- 색상: `:root` CSS 변수 (`var(--accent)`, `var(--text)` 등)
 - CUFS 브랜드: Green `#146E7A` · Navy `#002D56` · Gold `#8D714E`
 
 ### Rich Text Editor
@@ -119,18 +381,15 @@ functions/api/*                       — 메인 사이트 API
 - **에디터**: Tiptap (esm.sh CDN, `@tiptap/core@2` + starter-kit + table extensions)
 - **뷰어**: DOMPurify (cdnjs CDN) — 모든 HTML 출력에 필수
 - **비동기 초기화**: `_waitForTiptap(cb)` 헬퍼 사용
-- 에디터 탑재: `createPost`, `editPost`, `createNote`, `editNote` (4곳)
-- 새 extension 추가 시: import + `_initTiptap()` + `_execTiptapCmd()` + 툴바 HTML (4곳 모두)
+- 에디터 탑재: `createPost`, `editPost`, `createNote`, `editNote` (**4곳**)
+- 새 extension 추가 시: import + `_initTiptap()` + `_execTiptapCmd()` + 툴바 HTML (**4곳 모두**)
 
----
+### Board System
 
-## Board System
+> [!note] 동적 게시판
+> 게시판은 `dp_boards` 테이블에서 DB 기반으로 관리. Settings 페이지에서 관리자가 생성·삭제.
 
-> [!note] 동적 게시판 시스템
-> 게시판은 `dp_boards` 테이블에서 DB 기반으로 관리됩니다.
-> Settings 페이지에서 관리자가 Board / Team Board를 생성·삭제할 수 있습니다.
-
-### DB 스키마: `dp_boards`
+**`dp_boards` 스키마:**
 
 | Column | Type | 설명 |
 |---|---|---|
@@ -138,14 +397,14 @@ functions/api/*                       — 메인 사이트 API
 | `title` | TEXT | 표시 이름 |
 | `board_type` | TEXT | `board` 또는 `team` |
 
-### 접근 제어
+**접근 제어:**
 
 | 역할 | General Board | Team Board |
 |---|---|---|
 | admin | 전체 읽기/쓰기 | 전체 읽기/쓰기 |
 | 일반 유저 | 읽기만 | 자기 팀만 읽기/쓰기 |
 
-### Team Board 매칭
+**Team Board 매칭:**
 
 ```javascript
 // team_xxx → department에 'xxx' 포함 여부로 자동 매칭
@@ -160,11 +419,7 @@ function _deptMatchesBoard(department, board) {
 > `data.dpUser`: `{ uid, username, role, name }` — department 미포함.
 > 팀 보드 접근 판별 시 항상 DB 조회: `SELECT department FROM dp_users WHERE id = ?`
 
----
-
-## API Access Control
-
-### 게시글
+### API Access Control (게시글)
 
 | Method | Admin | 일반 유저 |
 |---|---|---|
@@ -179,16 +434,9 @@ function _deptMatchesBoard(department, board) {
 - `approval_status = 'approved'` → content 수정 불가 → **HTTP 423 LOCKED**
 - 프론트엔드에서 423 수신 시 잠금 안내 표시
 
-### 파일 업로드
+### Meeting Minutes Approval
 
-- 차단 확장자: `exe, sh, bat, cmd, ps1, vbs, jar, app, dmg, pkg, msi, dll` 등
-- 최대 100MB / 파일, 최대 5개 / 게시글
-
----
-
-## Meeting Minutes Approval
-
-### `dp_post_approvals` 테이블
+**`dp_post_approvals` 테이블:**
 
 | Column | 설명 |
 |---|---|
@@ -198,78 +446,76 @@ function _deptMatchesBoard(department, board) {
 | `voted_at` | 투표 시각 (UTC) |
 | `override_by` | 어드민 강제 변경자 |
 
-### 로직
-
+**로직:**
 - **과반수 초과** approved → 게시글 잠금
 - 승인자 추가/제거 후 자동 재계산
 - 어드민 Override: **2026-04-01 이전** 생성 게시글만 허용
 
----
+### Calendar Events
 
-## Calendar Events
-
-- 반복 일정 지원: `recurrence_type` (daily / weekly / biweekly / monthly / yearly)
+- 반복 일정: `recurrence_type` (daily / weekly / biweekly / monthly / yearly)
 - `recurrence_end`로 반복 종료일 지정
 - 월별 조회 시 서버에서 반복 인스턴스 자동 확장 (최대 60회)
 
----
+### 파일 업로드
 
-## Database Rules
+- 차단 확장자: `exe, sh, bat, cmd, ps1, vbs, jar, app, dmg, pkg, msi, dll` 등
+- 최대 100MB / 파일, 최대 5개 / 게시글
 
-> [!important] DB 변경 규칙
-> - D1 binding: `env.DB`
-> - Dreampath 테이블 접두사: `dp_`
-> - **기존 컬럼 삭제/변경 금지** — `ALTER TABLE ADD COLUMN`만 허용
-> - 스키마 변경 시 마이그레이션 계획 필요
+### Deployment
 
----
+```bash
+./deploy.sh feature "설명"   # 신기능
+./deploy.sh fix "설명"       # 버그픽스
+```
 
-## Critical Prohibitions
+- 자동 버전 증가 + D1 `dp_versions` 등록
+- 버전 형식: `aa.bbb.cc` — Major(수동) . Feature(자동) . Fix(자동, Feature 시 00 초기화)
+- `deploy.sh`는 HTML cache-bust 후 `git checkout`으로 원복하므로 **HTML 변경은 반드시 커밋 후 deploy**
 
-> [!danger] 절대 금지 사항
-> 1. `functions/_shared/auth.js` — 승인 없이 수정 금지
-> 2. 사용자 입력 HTML → DOMPurify 없이 `innerHTML` 금지
-> 3. 인증 토큰을 `localStorage`에 저장 금지 (httpOnly 쿠키 사용)
-> 4. 기존 DB 컬럼 삭제/타입 변경 금지
-> 5. `./deploy.sh` 버전 등록 생략 금지
-> 6. `js/dreampath.js` IIFE 구조 분리/모듈화 금지
-> 7. CDN URL 변경 시 버전 고정 확인 필수
-> 8. `.env` 또는 시크릿 값 커밋 금지
-> 9. `dp_post_approvals` INSERT 시 `approver_id` (NOT NULL) 필수
+### Dreampath Dev Rules 정식 출처
 
----
-
-## Authentication
-
-| 항목 | 내용 |
-|---|---|
-| Session | cookie `dp_session=1` (httpOnly, 1h) |
-| Profile | `localStorage`에 user profile |
-| Timer | 1h, 5분 전 경고 → 서버 확인 후 연장 |
-| Middleware | `functions/api/dreampath/_middleware.js` |
+- `/dreampath` 사이드바 "Dev Rules" 메뉴
+- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
 
 ---
 
 ## Related Docs
 
-### 홈페이지 (scope: homepage)
-- [[CHATGPT]] — 메인 홈페이지 개발 가이드
-- [[docs/features/README|Homepage Features Hub]] — 기능 중심 문서 진입점
-- [[docs/modules/README|Homepage Modules Hub]] — 모듈 참고 라이브러리
+### Site / Admin
+- [[docs/features/README|Homepage Features Hub]] — 기능 중심 진입점
 - [[docs/features/Feature Map|Feature Map]] — 전체 기능 맵
+- [[docs/modules/README|Homepage Modules Hub]] — 모듈 라이브러리
+- [[docs/modules/Homepage Runtime Map|Runtime Map]] — 런타임 의존성
 
-### Dreampath (scope: dreampath)
-- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
-
-### 운영 (scope: ops)
-- [[docs/release-playbook|Release Playbook]] — 배포 절차
-- [[docs/stability-implementation-plan|Stability Plan]] — 안정성 개선 로드맵
-- [[docs/hardcoding-inventory|Hardcoding Inventory]] — 하드코딩 감사
-
-### KMS (scope: kms)
+### KMS
 - [[docs/feature-definition|Feature Definition]] — KMS 보조 스냅샷
 - [[docs/homepage-module-inventory|Module Inventory]] — 모듈 인벤토리
 
-> [!tip] Dev Rules 정식 출처
-> Dreampath → `/dreampath` 사이드바 "Dev Rules"
-> 홈페이지 → 관리자 KMS (`/admin.html` → KMS 메뉴)
+### Dreampath
+- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
+
+### 운영 (공통)
+- [[docs/release-playbook|Release Playbook]] — 배포 절차
+- [[docs/stability-implementation-plan|Stability Plan]] — 안정성 로드맵
+- [[docs/hardcoding-inventory|Hardcoding Inventory]] — 하드코딩 감사
+
+---
+
+## Obsidian Graph Map
+
+```
+[common]    CLAUDE.md (= AGENTS.md) ← 이 문서
+                │
+[site]      Features Hub ── 11개 Feature 문서
+                │
+                └─ Modules Hub ── 16개 Module 문서 (Runtime/Template/API)
+                │
+[admin]     Admin V3 Runtime ── Admin Operations
+                │
+[kms]       KMS Template ── Feature Definition (snapshot)
+                │
+[dreampath] Dreampath Hub ── 기능/API/DB 레퍼런스
+                │
+[ops]       Release Playbook ── Stability Plan ── Hardcoding Inventory
+```

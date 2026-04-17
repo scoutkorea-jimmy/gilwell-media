@@ -45,7 +45,7 @@ aliases: [Hardcoding Inventory, 하드코딩 인벤토리]
 | `functions/_shared/site-meta.js` | 기본 title/description/footer/email fallback | 높음 | 운영값은 `settings.site_meta`, fallback만 코드 유지 |
 | `db/schema.sql` seed | ticker, tags, author, ai_disclaimer, site_meta | 중간 | 초기 fallback만 유지 |
 | `functions/api/settings/*` | 기본 문구 fallback | 중간 | 운영값은 settings, 기본값만 코드 유지 |
-| `CHATGPT.md`, `README.md`, `docs/feature-definition.md` | 운영 규칙 문구 | 중간 | 문서 원본은 KMS와 `CHATGPT.md`로 유지 |
+| `CLAUDE.md`, `README.md`, `docs/feature-definition.md` | 운영 규칙 문구 | 중간 | 문서 원본은 KMS와 `CLAUDE.md`로 유지 |
 
 ## Legacy And Delete Targets
 

@@ -19,7 +19,7 @@ KMS 디자인 탭은 이 인벤토리를 시각적으로 보여주는 시작 장
 - 코드를 공통 책임 단위로 분리
 - 새 기능 추가 시 기존 모듈 우선 재사용
 - AI와 인간 개발자가 같은 단위로 구조를 판단
-- KMS, `CHATGPT.md`, 실제 코드 구조를 같은 방향으로 수렴
+- KMS, `CLAUDE.md`, 실제 코드 구조를 같은 방향으로 수렴
 - 페이지는 독립 축이 아니라 feature와 module이 조합된 surface로만 본다
 
 ## 분류 정책
@@ -221,7 +221,7 @@ css/
 
 ## 8. 문서 연계
 
-- AI 작업 기준: `CHATGPT.md`
+- AI 작업 기준: `CLAUDE.md` (= `AGENTS.md`) §2 Site / §3 Admin
 - 운영 원본: 관리자 KMS
 - 저장소 스냅샷: `docs/feature-definition.md`
 - 하드코딩 정리 기준: `docs/hardcoding-inventory.md`

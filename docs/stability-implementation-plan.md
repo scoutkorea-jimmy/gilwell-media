@@ -40,7 +40,7 @@ aliases: [Stability Plan, 안정성 계획]
 
 대상 파일:
 - `README.md`
-- `CHATGPT.md`
+- `CLAUDE.md`
 - `functions/_shared/site-meta.js`
 - `functions/_shared/feature-definition.js`
 - `functions/api/settings/*.js`
@@ -212,7 +212,7 @@ aliases: [Stability Plan, 안정성 계획]
 - 관리자 인증 흐름 설명을 실제 구현과 일치시킨다.
 
 대상 파일:
-- `CHATGPT.md`
+- `CLAUDE.md`
 - `README.md`
 - `docs/feature-definition.md`
 
