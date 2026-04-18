@@ -461,14 +461,25 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 우측 사이드: 메타 뱃지 스택. 탭 전용 액션은 그 아래 \`kms-action-row\`로 분리.
 - padding 및 gap은 모두 Spacing 토큰(\`--gap-*\`) 사용, 리터럴 금지.
 
+**본문 영역 (\`.kms-main\`)은 모든 탭에서 "카드 스택" 패턴으로 통일한다.**
+- 탭 본문은 \`.kms-tab-panel\`(좌우 거터 \`--gap-section-out\`) 안쪽에 카드 스택을 배치한다. 본문 컨테이너에 \`max-width\` + \`margin: 0 auto\`로 **추가 중앙정렬을 넣지 않는다.** 사이드바↔본문 사이 여백은 \`.kms-tab-panel\`의 좌측 패딩(\`--gap-section-out\`, 32px)이 유일한 구분이다.
+- 카드 공통 톤: \`Canvas White\` 배경 + \`1px solid var(--kms-border)\` + \`border-radius: 12px\` + 내부 패딩 \`var(--gap-section-out)\` 기준.
+  - 기능정의서: 대목차(\`##\`) 단위로 \`js/kms.js → wrapDocSectionsIntoCards\`가 최종 HTML을 분할해 \`<section class="kms-doc-card">\`로 자동 래핑. \`#\` 문서 제목 + 첫 대목차 이전 서문은 \`.kms-doc-card--intro\` 인트로 카드로 분리.
+  - API 가이드: API 그룹 단위로 \`.kms-api-group\`.
+  - 버전기록: 엔트리 단위로 \`.kms-cl-item\`.
+  - 디자인: 레이어 단위로 \`.kms-ds-section\`.
+- 본문 컨테이너(\`.kms-document-body\`, \`.kms-api-guide\`, \`.kms-changelog\`, \`.kms-ds-body\`)는 모두 \`display: flex; flex-direction: column; gap: var(--gap-section)\`(24px) 구조로 카드 간격을 통일한다.
+- 모바일(≤900px)에서는 카드 내부 패딩을 \`--gap-section / --gap-card\` 로 축소하고 border-radius를 10px로 조정해 좁은 화면 밀도를 보정한다.
+
 **리터럴 금지 확인 사항**
-- \`.kms-tab-panel\`, \`.kms-panel-header\`, 사이드바 블록 모두에서 \`padding\` / \`margin\` / \`gap\`은 \`--gap-*\` 토큰만 사용.
+- \`.kms-tab-panel\`, \`.kms-panel-header\`, 사이드바 블록, 본문 카드(\`.kms-doc-card\` / \`.kms-api-group\` / \`.kms-cl-item\` / \`.kms-ds-section\`) 모두에서 \`padding\` / \`margin\` / \`gap\`은 \`--gap-*\` 토큰만 사용.
 - \`font-size\`는 \`--fs-*\` 토큰만 사용.
 - 색상은 \`--kms-*\` (site 토큰 참조) 또는 site 토큰 직접 사용. 리터럴 hex 금지.
 
 #### 각주
 - 탭 간 시각 일관성은 가독성 자체이자 KMS가 "운영 기준 원본"으로 기능하기 위한 전제다. 편집/저장 같은 탭 전용 컨트롤을 공통 헤더에 노출하면 탭 전환마다 헤더 레이아웃이 바뀌어 사용자 초점이 흔들린다.
 - 사이드바 항목 앞에 \`[소목차]\` 같은 카테고리 라벨이 붙어있으면 정보가 두 번 반복(라벨 + 번호 매겨진 섹션 제목)되어 스캔 효율이 떨어진다. 시각 위계는 들여쓰기로만 표현한다.
+- 기능정의서가 이전에는 \`max-width: 760px\` + \`margin: 0 auto\`로 tab-panel(900px) 안에서 한 번 더 중앙정렬되어 사이드바와 본문 사이에 약 70px의 여분 공간이 생겼다. 다른 탭(API·버전기록·디자인)은 그런 2차 중앙정렬이 없어 기능정의서만 좌측 앵커가 어긋나 보이는 시각 어긋남이 있었다. 본문 카드 스택 + 추가 중앙정렬 금지 원칙으로 네 탭이 같은 좌측 기준선을 공유하게 됐다.
 
 ## 4. 마케팅 대시보드
 

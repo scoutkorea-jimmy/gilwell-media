@@ -1,6 +1,21 @@
 {
   "items": [
   {
+      "version": "03.069.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 08:25:44 KST",
+      "summary": "KMS §3.9 '탭 간 시각 일관성 규칙'에 '본문 영역 카드 스택' 조항을 추가해 오늘 신설한 기능정의서 카드화 패턴을 운영 기준에 반영했습니다. snapshot·fallback·라이브 D1 세 곳 동시 갱신.",
+      "changes": [
+        "§3.9에 네 번째 볼드 블록 '본문 영역(.kms-main)은 모든 탭에서 카드 스택 패턴으로 통일한다'를 신설. 본문 컨테이너에 추가 max-width + margin:0 auto 중앙정렬 금지, 사이드바↔본문 여백은 .kms-tab-panel 좌측 패딩(--gap-section-out, 32px)이 유일한 구분임을 명시.",
+        "각 탭별 카드 클래스를 명시적으로 나열: 기능정의서 .kms-doc-card (+ .kms-doc-card--intro 인트로 카드) · API .kms-api-group · 버전기록 .kms-cl-item · 디자인 .kms-ds-section. 카드 공통 톤(Canvas White + 1px --kms-border + radius 12px + --gap-section-out 패딩)을 단일 규약으로 고정.",
+        "본문 컨테이너 .kms-document-body / .kms-api-guide / .kms-changelog / .kms-ds-body 네 곳 모두 display:flex + flex-direction:column + gap:var(--gap-section)(24px) 구조를 사용한다고 명문화. 모바일(≤900px) 카드 패딩 축소(--gap-section/--gap-card + radius 10px) 규칙 포함.",
+        "리터럴 금지 확인 사항에 본문 카드 4종(.kms-doc-card/.kms-api-group/.kms-cl-item/.kms-ds-section)을 추가해 토큰 준수 범위 확장.",
+        "각주에 카드 스택 원칙의 배경(760px 2차 중앙정렬로 인한 좌측 앵커 어긋남)을 기록해 과거 결정 이유를 복원 가능하도록 보존.",
+        "동기 범위: docs/feature-definition.md(스냅샷) + functions/_shared/feature-definition.js(DEFAULT_FEATURE_DEFINITION fallback) + 라이브 D1 settings.feature_definition 세 곳. D1은 wrangler d1 execute로 직접 갱신(31,723자 → 32,438자, +715자).",
+        "관리자 버전 03.069.00 → 03.069.01."
+      ]
+    },
+  {
       "version": "03.069.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 08:10:20 KST",
