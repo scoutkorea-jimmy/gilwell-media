@@ -899,6 +899,17 @@
             '<span class="kms-section-title">' + GW.escapeHtml(titleEl.textContent) + '</span>' +
           '</button>'
         );
+        // 섹션 내부 모듈을 들여쓰기된 하위 항목으로 추가
+        el.querySelectorAll('.kms-ds-module').forEach(function (mod) {
+          if (!mod.id) return;
+          var modTitle = mod.querySelector('.kms-ds-module-title');
+          if (!modTitle) return;
+          html.push(
+            '<button type="button" class="kms-section-link kms-tree-sub" data-kms-target="' + GW.escapeHtml(mod.id) + '">' +
+              '<span class="kms-section-title">· ' + GW.escapeHtml(modTitle.textContent) + '</span>' +
+            '</button>'
+          );
+        });
       }
     });
     list.innerHTML = html.join('');
@@ -1147,8 +1158,8 @@
         sub: '디자인의 종류와 기본 토큰부터 먼저 파악합니다.',
         sections: [
           {
-            title: '01 · 디자인 종류 맵',
-            note: '이 탭에서 다루는 디자인 범위 자체를 먼저 분류합니다. 새 컴포넌트를 만들 때는 이 4개 분류 중 어디에 속하는지부터 정리합니다.',
+            title: '01 · 기본 토큰 (컬러·타이포·여백)',
+            note: '모든 화면이 공유하는 Foundation 레이어의 3대 토큰을 먼저 잡습니다. 색·타이포·간격은 어느 UI에서도 일관된 언어로 쓰여야 하므로 이 섹션이 다른 모든 섹션의 전제입니다.',
             modules: [
               {
                 kind: 'Foundation',
@@ -1920,7 +1931,8 @@
 
   function renderDesignModule(module) {
     var runtimeSource = getDesignRuntimeSource(module);
-    return '<article class="kms-ds-module" data-kms-ds-view="preview">' +
+    var moduleId = 'kms-ds-m-' + slugify(module.title);
+    return '<article class="kms-ds-module" id="' + GW.escapeHtml(moduleId) + '" data-kms-ds-view="preview">' +
       '<div class="kms-ds-module-head">' +
         '<div class="kms-ds-module-title-block">' +
           '<span class="kms-ds-module-kicker">' + GW.escapeHtml(module.kind) + '</span>' +
