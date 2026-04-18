@@ -1,4 +1,4 @@
----
+ㅣㄹ ---
 tags: [ai-guide, common, entry-point, project-root]
 aliases: [AI Rules, Dev Rules, AGENTS, 프로젝트 규칙]
 scope: project
@@ -449,15 +449,15 @@ Site 전용 추가 규칙:
 - 모바일: 단일 폭 1단 흐름 기본
 - 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
 - 운영 섹션: 분석, 접속 국가/도시, 마케팅, 버전기록, 오류/이슈 기록
-- 관리자 날짜 형식: `YYYY년 MM월 DD일 HH시 MM분 SS초`
-- 관리자 기본 서체: 시스템 서체
+- 관리자 날짜 형식: **ISO 기반 KST** — 감사 `YYYY-MM-DD HH:MM:SS KST` / 테이블 `YYYY-MM-DD HH:MM` / 필요 시 한글 변형. 상세는 KMS §2.1.
+- 관리자 기본 서체: 시스템 서체 (`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`) — `NixgonFont` 사용 금지
 
 ### Admin Data Safety
 
 > [!important]
-> - 설정 수정 시 `settings_history` 스냅샷 필수
-> - 기사 수정 모달: 관리자 비밀번호 재검증
-> - 태그 삭제 시 사용 중인 글 안내 필수
+> - 설정 수정 시 `settings_history` 스냅샷 필수 — 구현: `functions/_shared/settings-audit.js` → `recordSettingChange`, 21개 `functions/api/settings/*.js` 엔드포인트에서 호출.
+> - 태그 삭제 시 사용 중인 글 안내 필수 — 구현: `functions/api/settings/tags.js` (사용 중인 태그는 403 + 사용 글 수 반환).
+> - 인증은 HMAC-SHA256 signed httpOnly 쿠키 세션(24h)으로 단일화. 기사 수정은 세션 토큰만 검증하고 별도 비밀번호 재입력은 요구하지 않는다 — 세션 만료 시 재로그인만 거친다.
 
 ### Admin 관련 문서
 

@@ -148,11 +148,15 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 - `updated_at` : 마지막 수정 시각
 - 공개 정렬은 기본적으로 `publish_at DESC`, 없으면 `created_at DESC`
 - 공개 화면 날짜 표시는 `YYYY년 M월 D일`
-- 관리자 화면 날짜 표시는 `YYYY년 MM월 DD일 HH시 MM분 SS초`
+- 관리자 화면 날짜 표시는 **ISO 기반 KST 표기**를 표준으로 한다.
+  - 감사 컨텍스트(설정 이력·버전 `released_at`·"마지막 갱신" 상태줄): `YYYY-MM-DD HH:MM:SS KST` — 초 단위 포함, 프로젝트 전반(`changelog.json` `released_at`, 서버 audit log, 배포 스크립트)과 동일 포맷.
+  - 테이블 고밀도 셀(게시글 목록·방문 로그·분석 그리드): `YYYY-MM-DD HH:MM` — 초 생략, 행 높이 보정. 구현 헬퍼: `GW.formatDateTimeCompactKst` / `_formatDateTimeCompact` / `_formatAdminTimestamp`.
+  - 장문 서술 맥락(기사 미리보기 등)에서 한글 포맷이 필요하면 `YYYY년 M월 D일 HH시 MM분` 변형을 허용. 공개 사이트와 동일한 표기.
 
 #### 각주
 - 방문자에게는 읽기 쉬운 일 단위 표기만 노출한다.
 - 관리자에게는 감사(audit) 가능한 시각 단위 정보를 유지한다.
+- ISO 기반 KST 표기를 표준으로 정한 이유: `changelog.json` `released_at`, 배포 스크립트(`sync_versions.sh` / `deploy_production.sh`), 서버 audit 로그, SQL `DATETIME` 등 시스템 전반이 이미 ISO 형식을 쓰고 있어 프론트엔드 표기만 한글 변환하면 grep·diff·로그 대조가 깨진다. 27자 한글 포맷은 관리자 테이블 행 높이도 과하게 잡는다. 필요한 경우 상세 뷰에서만 한글 변환.
 
 ### 2.2 방문/조회 정의
 
