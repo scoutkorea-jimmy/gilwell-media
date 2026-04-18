@@ -1,6 +1,23 @@
 {
   "items": [
   {
+      "version": "03.067.03",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:25:27 KST",
+      "summary": "KMS 기능정의서의 섹션 경계·리스트 밀도·강조색을 재조정해 줄글 가독성을 크게 높였습니다.",
+      "changes": [
+        "`### 3.X` 세부 섹션 제목(`.kms-h4`)을 chip 뱃지에서 **좌측 4px accent 바 + 18px 볼드 Midnight Purple**로 재작업. 섹션 시작점이 눈에 즉각 들어오게 함.",
+        "`#### 기능 세부 설명 / 각주 / 코드 예시`(`.kms-h5`) 라벨을 Scouting Purple accent-bg 칩 형태로 정리. 렌더러가 '각주'는 `.kms-h5-footnote`로 자동 분류해 gray-100 바탕 + Gray 500 텍스트로 디엠퍼시스, '코드 예시'는 `.kms-h5-code` mono 라벨.",
+        "각주 블록 뒤에 오는 리스트/문단은 좌측 dashed border + Gray 500 색 + 13px로 자동 다운시프트되어 본문과 시각적으로 구분됩니다.",
+        "본문 컬럼 max-width 920px → **760px**로 좁혀 한 줄에 60~75자 오는 이상적 line-length 확보. padding도 section-out(32px) 상하좌우로 숨 확보.",
+        "본문 문단 `.kms-p` 15px / line-height 1.85, `.kms-h4` 직후 첫 문단은 16px medium lead 스타일로 섹션 intro 강조.",
+        "리스트 항목 간격 micro(4px) → tight(8px), 마커 색 Scouting Purple 볼드. 첫 단어가 <strong>인 li는 Midnight Purple 볼드로 스캔 포인트 강조.",
+        "본문 내 모든 `<strong>`을 Midnight Purple로 지정해 읽기 중 핵심 용어 스캔이 빠르게.",
+        "`.kms-table` 셀 padding 8/12 → 12/16, font-size 13.5px, line-height 1.6로 행 높이 확보.",
+        "관리자 버전 03.067.02 → 03.067.03."
+      ]
+    },
+  {
       "version": "03.067.02",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:15:32 KST",
