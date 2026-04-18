@@ -712,7 +712,7 @@
     }
     var sectionIndex = 0;
     var parts = text.split(/```/);
-    preview.innerHTML = parts.map(function (part, index) {
+    var rawHtml = parts.map(function (part, index) {
       if (index % 2 === 1) {
         var lines = part.replace(/^\n+|\n+$/g, '').split('\n');
         var language = '';
@@ -729,6 +729,37 @@
         return 'kms-s-' + sectionIndex + '-' + slugify(title);
       });
     }).join('');
+    preview.innerHTML = wrapDocSectionsIntoCards(rawHtml);
+  }
+
+  // 대목차(##=kms-h3) 단위로 HTML을 카드(.kms-doc-card)로 래핑한다.
+  // Why: 다른 탭(API/버전기록/디자인)처럼 목차 단위로 가시적 경계를 주기 위함.
+  function wrapDocSectionsIntoCards(html) {
+    if (!html) return html;
+    var pattern = /<h3\b[^>]*class="kms-h3"[^>]*>[\s\S]*?<\/h3>/g;
+    var marks = [];
+    var m;
+    while ((m = pattern.exec(html)) !== null) {
+      marks.push({ start: m.index, end: pattern.lastIndex });
+    }
+    if (!marks.length) {
+      return html.replace(/^\s+|\s+$/g, '')
+        ? '<section class="kms-doc-card kms-doc-card--intro">' + html + '</section>'
+        : html;
+    }
+    var out = [];
+    var intro = html.slice(0, marks[0].start);
+    if (intro.replace(/^\s+|\s+$/g, '')) {
+      out.push('<section class="kms-doc-card kms-doc-card--intro">' + intro + '</section>');
+    }
+    for (var i = 0; i < marks.length; i++) {
+      var endOfSection = i + 1 < marks.length ? marks[i + 1].start : html.length;
+      var section = html.slice(marks[i].start, endOfSection);
+      var idMatch = section.match(/<h3\b[^>]*\bid="([^"]+)"/);
+      var aria = idMatch ? ' aria-labelledby="' + idMatch[1] + '"' : '';
+      out.push('<section class="kms-doc-card"' + aria + '>' + section + '</section>');
+    }
+    return out.join('');
   }
 
   function renderKmsText(text, idBuilder) {

@@ -672,15 +672,33 @@ mark.kms-highlight {
 .kms-search-section-body { font-size: 13px; }
 
 /* ── 기능정의서 문서 스타일 (디자인 가이드 준용 · APCA Lc · Spacing 토큰) ─ */
+/* 다른 탭(API/버전기록/디자인)과 동일하게 tab-panel 폭을 그대로 사용하고,
+   대목차(##) 단위로 카드를 쌓아 가시성을 높인다. */
 .kms-document-body {
   line-height: 1.8;
   color: var(--kms-ink);                 /* --ink Lc 105.1 본문 OK */
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-section);               /* 대목차 카드 사이 간격 (24px) */
+}
+
+/* 대목차(##) 단위 카드 — API 가이드/버전기록 카드와 동일 톤 */
+.kms-doc-card {
   background: var(--kms-surface);        /* Canvas White */
   border: 1px solid var(--kms-border);
-  border-radius: 16px;
+  border-radius: 12px;
   padding: var(--gap-section-out) var(--gap-section-out) calc(var(--gap-section-out) + var(--gap-tight));
-  max-width: 760px;                      /* 읽기 최적 line-length 60~75자 */
-  margin: 0 auto;
+}
+
+.kms-doc-card--intro {
+  /* # 문서 제목 + 서문 블록을 감싸는 인트로 카드 */
+}
+
+/* 카드 내부 첫 제목의 상단 여백 제거 (카드 패딩이 충분한 상단 공간 제공) */
+.kms-doc-card > .kms-h2:first-child,
+.kms-doc-card > .kms-h3:first-child,
+.kms-doc-card > .kms-h4:first-child {
+  margin-top: 0;
 }
 
 /* 본문 내 <strong> 강조: Midnight Purple (스캔 포인트 가시화) */
@@ -1351,6 +1369,7 @@ mark.kms-highlight {
   .kms-panel-header-meta { flex-direction: row; flex-wrap: wrap; }
   .kms-panel-header-side--chips .kms-cl-filter { justify-content: flex-start; }
   .kms-tab-panel { padding: 16px 14px 40px; }
+  .kms-doc-card { padding: var(--gap-section) var(--gap-card) calc(var(--gap-section) + var(--gap-tight)); border-radius: 10px; }
 }
 
 @media (max-width: 600px) {
