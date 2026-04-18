@@ -8,8 +8,8 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260418073810">
-  <link rel="stylesheet" href="/css/admin.css?v=20260418073810">
+  <link rel="stylesheet" href="/css/style.css?v=20260418075202">
+  <link rel="stylesheet" href="/css/admin.css?v=20260418075202">
 </head>
 <body class="kms-page">
 
@@ -50,11 +50,6 @@
       </nav>
 
       <div class="kms-header-right">
-        <div class="kms-mode-switch" id="kms-mode-switch" aria-label="편집 모드">
-          <button type="button" class="kms-mode-btn is-active" data-kms-mode="read">보기</button>
-          <button type="button" class="kms-mode-btn" data-kms-mode="edit">편집</button>
-        </div>
-        <button type="button" class="kms-save-btn" id="kms-save-btn">저장</button>
         <a class="kms-back-link" href="/admin.html">관리자 →</a>
       </div>
     </header>
@@ -62,7 +57,7 @@
     <div class="kms-release-note" id="kms-release-note" role="status" aria-live="polite">
       <strong>KMS 업데이트 확인용 노트</strong>
       <span>최신 정책과 관리자 여백·레이아웃 기준까지 함께 반영된 상태여야 정상입니다.</span>
-      <code id="kms-release-note-version">Admin v03.067.04</code>
+      <code id="kms-release-note-version">Admin v03.068.00</code>
     </div>
 
     <!-- 레이아웃 -->
@@ -107,10 +102,19 @@
               <h2 id="kms-document-title">기능 정의서</h2>
               <p id="kms-document-summary">대목차와 세목차를 중심으로 운영 기준, 기능 의도, 세부 규칙, 각주를 문서화합니다.</p>
             </div>
-            <div class="kms-panel-header-side kms-panel-header-meta">
-              <span>Site&nbsp;<strong id="kms-build-version">—</strong></span>
-              <span>대목차&nbsp;<strong id="kms-section-count-doc">0</strong></span>
-              <span>세부항목&nbsp;<strong id="kms-detail-count">0</strong></span>
+            <div class="kms-panel-header-side kms-panel-header-actions">
+              <div class="kms-meta-row">
+                <span>Site&nbsp;<strong id="kms-build-version">—</strong></span>
+                <span>대목차&nbsp;<strong id="kms-section-count-doc">0</strong></span>
+                <span>세부항목&nbsp;<strong id="kms-detail-count">0</strong></span>
+              </div>
+              <div class="kms-action-row">
+                <div class="kms-mode-switch" id="kms-mode-switch" aria-label="편집 모드">
+                  <button type="button" class="kms-mode-btn is-active" data-kms-mode="read">보기</button>
+                  <button type="button" class="kms-mode-btn" data-kms-mode="edit">편집</button>
+                </div>
+                <button type="button" class="kms-save-btn" id="kms-save-btn">저장</button>
+              </div>
             </div>
           </div>
 
@@ -201,7 +205,7 @@
     </div><!-- /.kms-layout -->
   </div><!-- /#kms-screen -->
 
-  <script src="/js/main.js?v=20260418073810"></script>
-  <script src="/js/kms.js?v=20260418073810"></script>
+  <script src="/js/main.js?v=20260418075202"></script>
+  <script src="/js/kms.js?v=20260418075202"></script>
 </body>
 </html>
