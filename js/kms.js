@@ -879,15 +879,21 @@
       list.innerHTML = '<div class="kms-list-empty">일치하는 목차가 없습니다.</div>';
       return;
     }
-    list.innerHTML = filtered.map(function (s) {
-      var indent = s.level === 2 ? '' : s.level === 3 ? 'kms-tree-sub' : 'kms-tree-sub2';
-      var label = s.level === 2 ? '대목차' : s.level === 3 ? '소목차' : '세부';
+    // 디자인 탭과 동일한 스타일: 대목차(h2)는 group label, 소목차(h3)는 section link
+    var html = [];
+    filtered.forEach(function (s) {
       var titleHtml = highlightQ ? highlightText(GW.escapeHtml(s.title), highlightQ) : GW.escapeHtml(s.title);
-      return '<button type="button" class="kms-section-link ' + indent + '" data-kms-target="' + GW.escapeHtml(s.id) + '">' +
-        '<span class="kms-section-label">' + label + '</span>' +
-        '<span class="kms-section-title">' + titleHtml + '</span>' +
-        '</button>';
-    }).join('');
+      if (s.level === 2) {
+        html.push('<div class="kms-section-group-label">' + titleHtml + '</div>');
+      } else {
+        html.push(
+          '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(s.id) + '">' +
+            '<span class="kms-section-title">' + titleHtml + '</span>' +
+          '</button>'
+        );
+      }
+    });
+    list.innerHTML = html.join('');
     list.querySelectorAll('[data-kms-target]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var targetId = btn.getAttribute('data-kms-target');
@@ -903,9 +909,8 @@
   function renderApiSectionList() {
     var list = document.getElementById('kms-section-list');
     if (!list) return;
-    list.innerHTML = API_GROUPS.map(function (group) {
+    list.innerHTML = '<div class="kms-section-group-label">API 그룹</div>' + API_GROUPS.map(function (group) {
       return '<button type="button" class="kms-section-link" data-kms-target="kms-api-' + group.id + '">' +
-        '<span class="kms-section-label">그룹</span>' +
         '<span class="kms-section-title">' + GW.escapeHtml(group.label) + '</span>' +
         '</button>';
     }).join('');

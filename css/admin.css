@@ -485,46 +485,49 @@
 }
 
 .kms-tab-panel {
-  padding: 24px 28px 48px;
+  padding: var(--gap-section) var(--gap-section-out) calc(var(--gap-section-out) + var(--gap-card));
   max-width: 900px;
 }
 
-/* ── 패널 헤더 ──────────────────────────────────────────── */
+/* ── 패널 헤더 (모든 탭 공통) ────────────────────────────── */
 .kms-panel-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 20px;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
+  gap: var(--gap-section);
+  margin-bottom: calc(var(--gap-section) + var(--gap-micro));
+  padding-bottom: var(--gap-section);
   border-bottom: 1px solid var(--kms-border);
 }
 
 .kms-panel-header-text {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--gap-micro);
   min-width: 0;
   max-width: 680px;
 }
 
 .kms-kicker {
-  font-size: 11px;
+  font-size: var(--fs-meta);
   color: var(--kms-muted);
   letter-spacing: .14em;
   text-transform: uppercase;
+  font-weight: 700;
 }
 
 .kms-panel-header h2 {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--fs-document);
   line-height: 1.2;
-  color: var(--kms-ink);
+  color: var(--kms-accent-strong);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .kms-panel-header p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--kms-muted);
   line-height: 1.65;
 }
@@ -534,7 +537,7 @@
   border: 1px solid var(--kms-border);
   border-radius: 4px;
   padding: 1px 5px;
-  font-size: 12px;
+  font-size: var(--fs-caption);
 }
 
 .kms-panel-header-side {
@@ -570,6 +573,53 @@
 
 .kms-panel-header-side--chips .kms-cl-filter {
   justify-content: flex-end;
+}
+
+/* ── docs 탭: 편집 컨트롤이 panel-header 안쪽에 위치 ────── */
+.kms-panel-header-actions {
+  gap: var(--gap-element);
+  min-width: 220px;
+}
+.kms-panel-header-actions .kms-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+}
+.kms-panel-header-actions .kms-meta-row span {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap-element);
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--kms-surface2);
+  border: 1px solid var(--kms-border);
+  font-size: var(--fs-meta);
+  color: var(--kms-muted);
+}
+.kms-panel-header-actions .kms-meta-row strong {
+  color: var(--kms-ink);
+  font-size: var(--fs-caption);
+}
+.kms-panel-header-actions .kms-action-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  padding-top: var(--gap-tight);
+  border-top: 1px dashed var(--kms-border);
+  justify-content: flex-end;
+}
+/* 편집 컨트롤 사이즈 축소 (헤더 대비 콤팩트) */
+.kms-panel-header-actions .kms-mode-switch {
+  padding: 2px;
+  border-radius: 6px;
+}
+.kms-panel-header-actions .kms-mode-btn {
+  padding: 4px 10px;
+  font-size: var(--fs-caption);
+}
+.kms-panel-header-actions .kms-save-btn {
+  padding: 5px var(--gap-element);
+  font-size: var(--fs-caption);
 }
 
 /* ── 검색 결과 배너 ─────────────────────────────────────── */

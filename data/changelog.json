@@ -1,6 +1,22 @@
 {
   "items": [
   {
+      "version": "03.068.00",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:51:07 KST",
+      "summary": "KMS 전 탭의 상단 헤더와 사이드바 TOC 시각 패턴을 디자인 탭 기준으로 통일하고, 가이드에 §3.9 '탭 간 시각 일관성 규칙'을 신설했습니다.",
+      "changes": [
+        "kms.html 상단 헤더의 `보기 / 편집 / 저장` 컨트롤을 헤더 우측에서 제거하고 기능정의서 탭 전용 .kms-panel-header-side 안쪽으로 이동. 이제 상단 헤더는 모든 탭에서 동일하게 '사이드바 토글 + KMS 뱃지 + 탭 네비 + 관리자 →' 구성만 보입니다.",
+        "기능정의서 탭의 편집 컨트롤은 메타 뱃지(Site 버전/대목차/세부) 아래 dashed 구분선과 함께 콤팩트 사이즈(fs-caption, gap-tight)로 재배치되어 design 탭의 깔끔한 헤더와 시각적으로 동등해졌습니다.",
+        "기능정의서 사이드바 TOC 렌더러(renderSectionList)를 재작성: 각 항목의 [소목차]/[대목차]/[세부] 중복 prefix를 제거하고, h2 대목차는 kms-section-group-label 구분자로, h3 소목차는 깨끗한 kms-section-link로 렌더. 디자인 탭의 'FOUNDATION → 01 · 기본 토큰' 패턴과 동일.",
+        "API 탭 사이드바 TOC(renderApiSectionList)도 같은 패턴으로 정리. 'API 그룹' 구분자 아래 그룹 링크만.",
+        ".kms-tab-panel / .kms-panel-header / .kms-kicker / h2 / p / code 의 padding·margin·gap·font-size를 모두 Spacing(--gap-*) 및 Typography(--fs-*) 토큰으로 교체. 리터럴 금지 원칙 전면 적용.",
+        "h2 패널 제목에 Midnight Purple 색과 --fs-document(24px) 토큰을 명시적으로 적용해 디자인 가이드(§3.4 브랜드 컬러·§3.2 타이포 스케일) 준수.",
+        "KMS 가이드 §3.9 '탭 간 시각 일관성 규칙'을 신설(snapshot + fallback + 라이브 D1 3곳 동기). 상단 헤더·사이드바·패널 헤더 각각의 구조 계약과 '중복 레이블 prefix 금지' 원칙, 리터럴 금지 확인 사항을 명시.",
+        "관리자 버전 03.067.04 → 03.068.00."
+      ]
+    },
+  {
       "version": "00.115.02",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:37:26 KST",

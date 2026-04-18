@@ -446,6 +446,39 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 코드와 미리보기는 같은 모듈의 두 표현이며, 어느 한쪽만 문서화된 상태를 허용하지 않는다.
 - 공개/관리 양쪽에 존재하는 모듈은 KMS 카드 안에 구현 대상 파일(`css/style.css`, `css/admin-v3.css`, 필요 시 `css/admin.css`)을 같이 명시한다.
 
+### 3.9 KMS 탭 간 시각 일관성 규칙
+
+#### 기능 세부 설명
+
+**상단 헤더 (`.kms-header`)는 모든 탭에서 동일해야 한다.**
+- 좌측: 사이드바 토글 + `KMS` 뱃지 + 문서 타이틀
+- 중앙: 탭 네비게이션 (`.kms-tab-nav`)
+- 우측: `관리자 →` 링크 **1개만** (탭별로 다른 컨트롤을 여기에 올리지 않는다)
+- 탭 전용 액션(편집/저장 등)은 해당 탭의 `.kms-panel-header-side`에 콤팩트 스타일로 배치한다.
+
+**사이드바 (`.kms-sidebar`) 구조는 모든 탭에서 동일하다.**
+- 상단 고정: 검색 입력 → 메타 뱃지(Site 버전 / 대목차 수) → 원칙 카드 3개
+- 본문: `kms-section-group-label` (대분류 구분자) + `kms-section-link` (섹션 링크, 들여쓰기 허용)
+- 각 탭의 TOC 렌더러는 같은 클래스 / 같은 시각 패턴을 따른다.
+  - `renderSectionList` (기능정의서): h2 → group-label, h3 → link
+  - `renderApiSectionList` (API): 'API 그룹' label + 그룹 링크
+  - `renderDesignSectionList` (디자인): layer header → section link → module sub-link
+- 섹션 링크에 `[소목차]` / `[그룹]` 같은 중복 레이블 prefix를 붙이지 않는다. 시각적 위계는 들여쓰기(`kms-tree-sub`)로 표현한다.
+
+**패널 헤더 (`.kms-panel-header`)는 모든 탭에서 동일한 구조다.**
+- 좌측 텍스트 블록: `.kms-kicker` (Meta 11px 대문자 라벨) + `<h2>` (Document 24px Midnight Purple) + `<p>` (Body 14px muted)
+- 우측 사이드: 메타 뱃지 스택. 탭 전용 액션은 그 아래 `kms-action-row`로 분리.
+- padding 및 gap은 모두 Spacing 토큰(`--gap-*`) 사용, 리터럴 금지.
+
+**리터럴 금지 확인 사항**
+- `.kms-tab-panel`, `.kms-panel-header`, 사이드바 블록 모두에서 `padding` / `margin` / `gap`은 `--gap-*` 토큰만 사용.
+- `font-size`는 `--fs-*` 토큰만 사용.
+- 색상은 `--kms-*` (site 토큰 참조) 또는 site 토큰 직접 사용. 리터럴 hex 금지.
+
+#### 각주
+- 탭 간 시각 일관성은 가독성 자체이자 KMS가 "운영 기준 원본"으로 기능하기 위한 전제다. 편집/저장 같은 탭 전용 컨트롤을 공통 헤더에 노출하면 탭 전환마다 헤더 레이아웃이 바뀌어 사용자 초점이 흔들린다.
+- 사이드바 항목 앞에 `[소목차]` 같은 카테고리 라벨이 붙어있으면 정보가 두 번 반복(라벨 + 번호 매겨진 섹션 제목)되어 스캔 효율이 떨어진다. 시각 위계는 들여쓰기로만 표현한다.
+
 ## 4. 마케팅 대시보드
 
 ### 4.1 의도
