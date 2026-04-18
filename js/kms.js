@@ -746,7 +746,12 @@
     }
     function parseTableRow(s) {
       var trimmed = s.replace(/^\|/, '').replace(/\|$/, '');
-      return trimmed.split('|').map(function (cell) { return cell.trim(); });
+      // GFM: `\|` 는 리터럴 파이프이므로 분할 대상에서 제외
+      var PH = '\u0001'; // 임시 placeholder (본문에 등장하지 않는 제어문자)
+      var withPh = trimmed.replace(/\\\|/g, PH);
+      return withPh.split('|').map(function (cell) {
+        return cell.replace(new RegExp(PH, 'g'), '|').trim();
+      });
     }
     for (var i = 0; i < lines.length; i++) {
       var raw = lines[i].trim();

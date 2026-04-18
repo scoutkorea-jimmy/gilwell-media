@@ -322,7 +322,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 
 이 프로젝트는 WCAG 3.0(Silver draft)의 APCA(Accessible Perceptual Contrast Algorithm)를 공식 명암비 기준으로 사용한다. 기존 WCAG 2.1의 4.5:1·3:1 비율 체계는 더 이상 사용하지 않으며, 지각 기반 Lc 값(-108 ~ +108)으로 용도를 결정한다. 양수 Lc는 어두운 텍스트/밝은 배경, 음수 Lc는 밝은 텍스트/어두운 배경이며, 판단은 절대값 \`|Lc|\`로 한다.
 
-| 용도 | \`|Lc|\` 최소 | 비고 |
+| 용도 | \`\|Lc\|\` 최소 | 비고 |
 |---|---|---|
 | 본문 텍스트 (15px 이상 / 400 weight) | **75** | 핵심 표면은 90+ 권장 |
 | 콘텐츠 텍스트 (14px 이상 / medium 이상) | **60** | 메타, 보조 설명 |
@@ -333,24 +333,24 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 
 | 색상 | White 대비 Lc | 사용 가능 범위 |
 |---|---|---|
-| Midnight Purple \`#4D006E\` | 100.2 | ✅ 본문 (|Lc| 75+) · 모든 텍스트 가능 |
-| Scouting Purple \`#622599\` | 92.4 | ✅ 본문 (|Lc| 75+) · 모든 텍스트 가능 |
-| Forest Green \`#248737\` | 73.0 | ✅ 콘텐츠 텍스트 (|Lc| 60+, 14px+ medium) |
-| Ocean Blue \`#0094B4\` | 64.3 | ✅ 콘텐츠 텍스트 · UI (|Lc| 60+) |
-| Fire Red \`#FF5655\` | 58.9 | ⚠ 대형·헤더 텍스트 / UI만 (|Lc| 45+) |
-| Blossom Pink \`#FF8DFF\` | 40.0 | ⚠ UI 요소·spot 전용 (|Lc| 30+, 본문 금지) |
-| Ember Orange \`#FFAE80\` | 35.1 | ⚠ UI 요소·spot 전용 (|Lc| 30+) |
-| River Blue \`#82E6DE\` | 23.6 | ❌ spot 전용, 본문·UI 모두 부족 (|Lc| < 30) |
-| Leaf Green \`#9FED8F\` | 21.0 | ❌ spot 전용, 본문·UI 모두 부족 (|Lc| < 30) |
+| Midnight Purple \`#4D006E\` | 100.2 | ✅ 본문 (\|Lc\| 75+) · 모든 텍스트 가능 |
+| Scouting Purple \`#622599\` | 92.4 | ✅ 본문 (\|Lc\| 75+) · 모든 텍스트 가능 |
+| Forest Green \`#248737\` | 73.0 | ✅ 콘텐츠 텍스트 (\|Lc\| 60+, 14px+ medium) |
+| Ocean Blue \`#0094B4\` | 64.3 | ✅ 콘텐츠 텍스트 · UI (\|Lc\| 60+) |
+| Fire Red \`#FF5655\` | 58.9 | ⚠ 대형·헤더 텍스트 / UI만 (\|Lc\| 45+) |
+| Blossom Pink \`#FF8DFF\` | 40.0 | ⚠ UI 요소·spot 전용 (\|Lc\| 30+, 본문 금지) |
+| Ember Orange \`#FFAE80\` | 35.1 | ⚠ UI 요소·spot 전용 (\|Lc\| 30+) |
+| River Blue \`#82E6DE\` | 23.6 | ❌ spot 전용, 본문·UI 모두 부족 (\|Lc\| < 30) |
+| Leaf Green \`#9FED8F\` | 21.0 | ❌ spot 전용, 본문·UI 모두 부족 (\|Lc\| < 30) |
 
 **권장 배경-텍스트 조합** (음수 \`Lc\`는 밝은 텍스트/어두운 배경 조합, 절대값으로 판단)
 
 | 배경 | 안전한 텍스트 색 |
 |---|---|
 | Canvas White | Ink (Lc 105.1) / Black (Lc 107.7) / Midnight Purple (Lc 100.2) / Scouting Purple (Lc 92.4) / Forest Green (Lc 73.0) |
-| Midnight Purple | Canvas White (|Lc| 103.6) / Leaf Green (|Lc| 79.8) / Blossom Pink (|Lc| 60.2) / Ember Orange (|Lc| 64.9) |
-| Scouting Purple | Canvas White (|Lc| 96.8) |
-| Forest Green | Canvas White (|Lc| 75.6) |
+| Midnight Purple | Canvas White (\|Lc\| 103.6) / Leaf Green (\|Lc\| 79.8) / Blossom Pink (\|Lc\| 60.2) / Ember Orange (\|Lc\| 64.9) |
+| Scouting Purple | Canvas White (\|Lc\| 96.8) |
+| Forest Green | Canvas White (\|Lc\| 75.6) |
 | Fire Red / Ocean Blue | 배경 사용 시 Canvas White 텍스트만 |
 | Pastel 4색(Blossom Pink / Ember Orange / River Blue / Leaf Green) | Midnight Purple 또는 Black만 허용 |
 
