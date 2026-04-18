@@ -819,9 +819,17 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --river-blue: #82e6de;
   --forest-green: #248737;
   --leaf-green: #9fed8f;
-  --black:      #1f1f1f;
+  --black:      #030303;   /* 진검정 — 최대 대비 emphasis, pure black accents */
   --white:      #ffffff;
-  --ink:        #1f1f1f;
+  --ink:        #1f1f1f;   /* 본문 텍스트용 soft black (eye-friendly near-black) */
+
+  /* Grayscale (5단계, #030303 기반) — Canvas White 배경 APCA Lc (WCAG 3.0) */
+  --gray-900:   #030303;   /* = --black, APCA Lc 107.7 · 모든 텍스트 OK */
+  --gray-700:   #3f3f3f;   /* Lc 96.2 · 본문·보조 텍스트 OK */
+  --gray-500:   #8f8f8f;   /* Lc 61.3 · 콘텐츠 텍스트(14px+ medium) / UI */
+  --gray-300:   #c4c4c4;   /* Lc 33.5 · UI 요소·테두리 전용 (텍스트 금지) */
+  --gray-100:   #ebebeb;   /* Lc 11.1 · 섹션 배경·tint 전용 (본문 금지) */
+
   --muted:      rgba(31, 31, 31, 0.58);
   --accent:     var(--scouting-purple);
   --border:     rgba(31, 31, 31, 0.12);
