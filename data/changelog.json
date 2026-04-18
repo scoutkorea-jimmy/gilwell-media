@@ -1,6 +1,24 @@
 {
   "items": [
   {
+      "version": "03.070.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 08:51:55 KST",
+      "summary": "관리자 V3 전면 토큰 정합화 감사 + 운영 스펙(KMS §2.1 관리자 날짜, CLAUDE.md §3 데이터 안전) 현실 반영. 리터럴 0건, 서체 통일, 날짜/인증 규칙 명문화.",
+      "changes": [
+        "css/admin-v3.css 시맨틱 토큰 대확장: :root에 state ink/bg(success/danger/warning/info), emphasis indigo·violet(7종), 라벤더 hover/tint(6종), 중립 slate(4종), 다크 navy(2종), 마케팅 funnel(3종) 등 35개 컬러 토큰 + admin 전용 font-size 4종(--v3-fs-xs/chip/dense/stat) + spacing 4종(--v3-gap-sm/md/lg/xl) 신설.",
+        "hex 리터럴 73개 건(47 unique) 전량 var(--v3-*) 참조로 치환. 토큰 외부 hex 사용 0건 확정.",
+        "padding/margin/gap 리터럴 대거 치환: 4/8/12/16/24/32 → --gap-* (site 토큰), 10/14/18/20 → --v3-gap-* (admin 밀도 보정). font-size 10/11/12/14/15/16/18/20/22/24 → --fs-*, 11.5/12.5/13/28 → --v3-fs-*. 남은 px는 2/3/5/6/7/9/11/13/15 엣지 허용 범위만.",
+        "NixgonFont 선언 8건 전량 제거 (.marketing-scatter-label, .global-scroll-top-btn span/em, .v3-filter-chip 등). admin body .admin-v3 시스템 서체가 상속되어 CLAUDE.md §3 '관리자 기본 서체' 규칙 충족.",
+        "KMS §2.1 '날짜 필드 정의' 갱신: '관리자 화면 = YYYY년 MM월 DD일 HH시 MM분 SS초' 스펙을 실제 구현(ISO 기반 KST)에 맞춰 재정의. 감사 컨텍스트 YYYY-MM-DD HH:MM:SS KST / 테이블 셀 YYYY-MM-DD HH:MM / 장문은 한글 변형 허용. changelog.json released_at·audit log·배포 스크립트 전반과 포맷 통일.",
+        "CLAUDE.md §3 Admin Data Safety 명문화: settings_history(21개 API 엔드포인트 recordSettingChange) + 태그 삭제 사용 글 안내(tags.js 403 응답) 구현 위치를 구체 파일 포인터로 기록. '기사 수정 비밀번호 재검증' 조항은 KMS에 없고 구현도 없는 aspirational 항목이어서 HMAC 쿠키 세션 단일 인증으로 재작성.",
+        "CLAUDE.md §3 관리자 날짜·서체 항목도 신규 규칙에 맞춰 갱신(시스템 서체 font-stack 명시 + NixgonFont 금지).",
+        "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 32,438 → 33,109자(+671자).",
+        "innerHTML 182건 감사: admin-v3.js 기준 XSS 위험 0건 (전건 GW.escapeHtml 또는 정적 HTML). GW.renderTextWithMedia의 Quill 레거시 경로가 sanitize 없이 원본 HTML을 반환하는 공용 헬퍼 이슈는 follow-up(main.js 범위).",
+        "관리자 버전 03.069.01 → 03.070.00."
+      ]
+    },
+  {
       "version": "03.069.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 08:25:44 KST",
