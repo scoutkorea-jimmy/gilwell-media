@@ -803,7 +803,10 @@
       if (/^####\s+/.test(raw)) {
         closeList();
         var t4 = raw.replace(/^####\s+/, '');
-        html.push('<h5 id="' + GW.escapeHtml(idBuilder(t4)) + '" class="kms-h5">' + formatInline(t4) + '</h5>');
+        var h5cls = 'kms-h5';
+        if (/^\s*각주\s*$/.test(t4)) h5cls += ' kms-h5-footnote';
+        else if (/^\s*(코드\s*예시|Code\s*Example)\s*$/.test(t4)) h5cls += ' kms-h5-code';
+        html.push('<h5 id="' + GW.escapeHtml(idBuilder(t4)) + '" class="' + h5cls + '">' + formatInline(t4) + '</h5>');
         continue;
       }
       if (/^###\s+/.test(raw)) {
