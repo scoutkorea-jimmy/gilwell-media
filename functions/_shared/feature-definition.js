@@ -240,6 +240,25 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 | \`--pad-page-tablet\` | \`32px\` | 태블릿 |
 | \`--pad-page-mobile\` | \`16px\` | 모바일 |
 
+**타이포그래피 크기 토큰** (\`font-size\`, \`css/style.css\` \`:root\`)
+
+간격과 마찬가지로 \`font-size\`도 토큰으로 관리한다. 리터럴 px 값을 \`font-size\`에 직접 쓰지 않는다.
+
+| 토큰 | 값 | 용도 |
+|---|---|---|
+| \`--fs-micro\` | \`10px\` | 아주 작은 부기 (캡션 미만) |
+| \`--fs-meta\` | \`11px\` | 메타 라벨, h5 칩, 날짜 배지 |
+| \`--fs-caption\` | \`12px\` | 작은 보조 라벨, 인라인 코드 |
+| \`--fs-small\` | \`13.5px\` | 테이블 셀, 고밀도 영역 |
+| \`--fs-body\` | \`14px\` | 기본 본문 (사이트 공통) |
+| \`--fs-reading\` | \`15px\` | 긴 문서 본문 (KMS 기능정의서) |
+| \`--fs-lead\` | \`16px\` | 섹션 리드 문단 (h4 직후 첫 문단) |
+| \`--fs-title\` | \`18px\` | 세부 섹션 제목 (h4 = ###) |
+| \`--fs-section\` | \`20px\` | 중간 섹션 제목 |
+| \`--fs-chapter\` | \`22px\` | 대장 섹션 제목 (h3 = ##) |
+| \`--fs-document\` | \`24px\` | 문서 제목 (h2 = #) |
+| \`--fs-display\` | \`32px\` | 디스플레이/히어로 제목 |
+
 **사용 원칙**
 - 새 CSS 작성 시 \`padding\`·\`margin\`·\`gap\`에 **반드시 토큰 사용**. 리터럴 값 직접 입력 금지.
 - 토큰에 없는 값(예: \`20px\`, \`28px\`)이 필요하면 먼저 **기존 토큰으로 대체 가능한지 재검토**. 불가능하면 용도를 KMS에 추가하고 토큰으로 승격.

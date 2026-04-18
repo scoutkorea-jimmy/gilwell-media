@@ -870,12 +870,18 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   /* Feedback colours */
   --success:    var(--forest-green);
   --danger:     var(--fire-red);
-  --fs-micro:   10px;
-  --fs-meta:    11px;
-  --fs-body:    14px;
-  --fs-title:   18px;
-  --fs-section: 20px;
-  --fs-display: 32px;
+  --fs-micro:    10px;   /* 아주 작은 부기(캡션 미만) */
+  --fs-meta:     11px;   /* 메타 라벨, h5 칩, 날짜 */
+  --fs-caption:  12px;   /* 작은 보조 라벨 */
+  --fs-small:    13.5px; /* 테이블 셀, 고밀도 영역 */
+  --fs-body:     14px;   /* 기본 본문 */
+  --fs-reading:  15px;   /* 긴 문서 본문 (기능정의서) */
+  --fs-lead:     16px;   /* 섹션 리드 문단 */
+  --fs-title:    18px;   /* 세부 섹션 제목 (h4 = ###) */
+  --fs-section:  20px;
+  --fs-chapter:  22px;   /* 대장 섹션 제목 (h3 = ##) */
+  --fs-document: 24px;   /* 문서 제목 (h2 = #) */
+  --fs-display:  32px;
   --lh-tight:   1.35;
   --lh-copy:    1.65;
   --mobile-user-scale: 1;

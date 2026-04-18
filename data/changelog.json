@@ -1,6 +1,31 @@
 {
   "items": [
   {
+      "version": "00.115.02",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:37:26 KST",
+      "summary": "사이트 CSS :root에 font-size 토큰 7종을 신설해 디자인 가이드의 '리터럴 금지' 원칙을 타이포에도 확대 적용했습니다.",
+      "changes": [
+        "css/style.css :root에 --fs-caption(12px) / --fs-small(13.5px) / --fs-reading(15px) / --fs-lead(16px) / --fs-chapter(22px) / --fs-document(24px) 6종을 신규 추가했고 기존 --fs-micro(10) / --fs-meta(11) / --fs-body(14) / --fs-title(18) / --fs-section(20) / --fs-display(32)과 함께 12단계 타이포 스케일을 구성합니다.",
+        "디자인 가이드의 '리터럴 HEX 금지' 원칙과 대칭으로 'font-size는 토큰으로만 참조'를 사이트 전체 원칙으로 확립했습니다.",
+        "사이트 버전 00.115.01 → 00.115.02."
+      ]
+    },
+  {
+      "version": "03.067.04",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:37:26 KST",
+      "summary": "KMS 기능정의서 스타일의 font-size·spacing 리터럴을 전부 토큰으로 교체하고 §3.2에 font-size 토큰 표를 등록했습니다.",
+      "changes": [
+        "이전 가독성 개선 커밋(03.067.03)에서 섹션 헤더·본문·리스트에 font-size 리터럴(13.5/15/16/18/22/24px)이 26건 남아있던 문제를 자체 감사로 확인. 신규 --fs-* 토큰 7종을 참조하도록 전부 교체해 리터럴 0건으로 정리했습니다.",
+        "spacing 리터럴(40px padding / 8px calc / 4px margin-left)도 해당 --gap-* 토큰(--gap-section-out + --gap-tight / --gap-tight / --gap-micro)으로 교체. 남은 리터럴 3건은 모두 2px hairline(marker-text 간격 · inline-code 수직 padding)으로 §3.2 '엣지 케이스 리터럴 허용' 범주에 해당.",
+        ".kms-code-label / .kms-code 의 #c4c4c4 / #ebebeb hex도 var(--gray-300) / var(--gray-100) 토큰으로 교체했습니다.",
+        "KMS 문서 §3.2 '공통 여백 규칙'에 '타이포그래피 크기 토큰' 표를 추가해 12단계 스케일과 각 용도를 명시. snapshot / fallback / 라이브 D1 세 곳에 동시 반영(+705자).",
+        "자체 감사 결과: 색상 리터럴 0건, spacing 리터럴 3건(hairline 허용), font-size 리터럴 0건. 디자인 가이드 완전 준수.",
+        "관리자 버전 03.067.03 → 03.067.04."
+      ]
+    },
+  {
       "version": "03.067.03",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:25:27 KST",

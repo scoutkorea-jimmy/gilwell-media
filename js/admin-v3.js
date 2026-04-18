@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.067.03
+ * Version: 03.067.04
  *
  * Versioning:
  *   V3.aaa.bb
