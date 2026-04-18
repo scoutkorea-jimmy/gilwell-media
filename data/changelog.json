@@ -1,6 +1,34 @@
 {
   "items": [
   {
+      "version": "00.114.01",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 15:43:20 KST",
+      "summary": "검정을 #030303로 재정의하고, 이를 기반으로 한 5단계 그레이스케일 칩셋을 사이트 CSS 토큰에 추가했습니다.",
+      "changes": [
+        "css/style.css :root의 --black을 기존 #1F1F1F에서 #030303(진검정)으로 재정의하고, 본문용 --ink는 #1F1F1F(soft black)로 분리 유지했습니다.",
+        "그레이스케일 5단계 토큰을 신규 정의했습니다: --gray-900 #030303(= --black) / --gray-700 #3F3F3F / --gray-500 #8F8F8F / --gray-300 #C4C4C4 / --gray-100 #EBEBEB. Canvas White 배경 기준 APCA Lc 107.7 / 96.2 / 61.3 / 33.5 / 11.1로 본문·콘텐츠·UI·장식 용도를 명확히 분리합니다.",
+        "--black을 사용하던 기존 요소(약 10곳)는 색이 미세하게 진해집니다(Lc 105.1 → 107.7). 본문 텍스트는 --ink를 쓰므로 영향 없음.",
+        "사이트 버전 00.114.00 → 00.114.01."
+      ]
+    },
+  {
+      "version": "03.066.00",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 15:43:20 KST",
+      "summary": "명암비 기준을 WCAG 2.1 비율(4.5:1, 3:1)에서 WCAG 3.0 APCA Lc 체계로 전면 교체하고, KMS 디자인 탭과 문서에 그레이스케일 5단계를 추가했습니다.",
+      "changes": [
+        "KMS 디자인 탭 02 · 웹 접근성 & 컬러 규칙 섹션의 명암비 기준표·안전조합·포커스 인디케이터·6원칙 모듈을 APCA(Accessible Perceptual Contrast Algorithm) 기준으로 전면 재작성했습니다. 본문 |Lc| 75+ / 콘텐츠 60+ / 대형 45+ / UI·포커스 30+ 4단계 기준이 새 표준입니다.",
+        "KMS 디자인 탭 FOUNDATION 01 브랜드 팔레트 모듈에 그레이스케일 5단계 칩셋을 시각적으로 추가했습니다. 10색 브랜드 팔레트 아래에 점선 구분선과 함께 Gray 900·700·500·300·100의 칩, Lc 값, 용도 설명이 표시됩니다.",
+        "팔레트 칩의 라벨을 2.1 비율(예: 13.63:1 · 본문 AAA)에서 APCA Lc(예: Lc 100.2 · 본문 OK)로 통일했습니다.",
+        "KMS 문서 §3.4의 명암비 기준표, 색상별 접근성 분류, 권장 배경-텍스트 조합, 색상 선택 원칙, 검증 체크리스트, 각주를 모두 APCA Lc 기반으로 다시 썼습니다. 검증 도구도 WebAIM Contrast Checker → apcacontrast.com으로 교체.",
+        "docs/feature-definition.md(스냅샷) / functions/_shared/feature-definition.js(기본 fallback) / 라이브 D1 KMS 세 곳을 동시 동기화했습니다.",
+        "CLAUDE.md §2 Site의 Color Palette & Accessibility 섹션도 WCAG 3.0 APCA 기준으로 업데이트하고 그레이스케일 5단계 표를 추가했습니다.",
+        "css/style.css :root의 그레이스케일 주석을 APCA Lc 값으로 교체했습니다.",
+        "관리자 버전 03.065.01 → 03.066.00."
+      ]
+    },
+  {
       "version": "03.065.01",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:24:33 KST",

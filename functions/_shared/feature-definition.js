@@ -276,61 +276,78 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 | Forest Green | \`#248737\` | 36, 135, 55 | 95, 0, 90, 20 | 348 |
 | Leaf Green | \`#9FED8F\` | 159, 237, 143 | 40, 0, 50, 0 | 2267 |
 
-**WCAG 2.1 명암비 기준**
+**그레이스케일 5단계 (Black = \`#030303\` 기반)**
 
-| 대상 | AA (최소 충족) | AAA (권장 목표) |
+브랜드 팔레트와 별개로, 화면 전반의 위계·UI 요소·상태 표현에 사용하는 중립 회색 5단계를 정의한다. \`:root\`의 \`--black\`은 \`#030303\`(진검정)으로, \`--ink\`는 \`#1F1F1F\`(본문 텍스트용 soft black)로 분리되어 있다. 명암비는 APCA(WCAG 3.0) Lc 기준.
+
+| 토큰 | HEX | White 배경 Lc | 용도 |
+|---|---|---|---|
+| \`--gray-900\` (= \`--black\`) | \`#030303\` | 107.7 | ✅ 최대 대비 emphasis, pure black 액센트 (본문 OK) |
+| \`--gray-700\` | \`#3F3F3F\` | 96.2 | ✅ 보조 텍스트, 아이콘, 진한 테두리 (본문 OK) |
+| \`--gray-500\` | \`#8F8F8F\` | 61.3 | ✅ 콘텐츠 텍스트(14px+ medium) / UI 테두리 |
+| \`--gray-300\` | \`#C4C4C4\` | 33.5 | ⚠ UI 요소·테두리·아이콘 전용 (텍스트 금지) |
+| \`--gray-100\` | \`#EBEBEB\` | 11.1 | ❌ 섹션 배경·tint 전용 (본문 절대 금지) |
+
+본문 텍스트는 \`--ink\`(#1F1F1F, soft black, White 배경 Lc 105.1)를 기본으로 사용한다. \`--gray-900\`은 강조 요소(헤드라인, 브랜드 록커 등)에 제한적으로 쓴다.
+
+**WCAG 3.0 APCA Lc 기준**
+
+이 프로젝트는 WCAG 3.0(Silver draft)의 APCA(Accessible Perceptual Contrast Algorithm)를 공식 명암비 기준으로 사용한다. 기존 WCAG 2.1의 4.5:1·3:1 비율 체계는 더 이상 사용하지 않으며, 지각 기반 Lc 값(-108 ~ +108)으로 용도를 결정한다. 양수 Lc는 어두운 텍스트/밝은 배경, 음수 Lc는 밝은 텍스트/어두운 배경이며, 판단은 절대값 \`|Lc|\`로 한다.
+
+| 용도 | \`|Lc|\` 최소 | 비고 |
 |---|---|---|
-| 본문 텍스트 (일반 크기) | 4.5:1 | 7:1 |
-| 대형 텍스트 (18pt 이상 또는 14pt 이상 bold) | 3:1 | 4.5:1 |
-| 비텍스트 UI 요소 (버튼 테두리, 아이콘, 폼 경계) | 3:1 | — |
-| 키보드 포커스 인디케이터 | 3:1 | — |
+| 본문 텍스트 (15px 이상 / 400 weight) | **75** | 핵심 표면은 90+ 권장 |
+| 콘텐츠 텍스트 (14px 이상 / medium 이상) | **60** | 메타, 보조 설명 |
+| 대형·헤더 텍스트 (18px bold / 24px+ 일반) | **45** | 본문 크기에선 부족 |
+| 비텍스트 UI · 테두리 · 아이콘 · 포커스 인디케이터 | **30** | spot 전용, 본문 금지 |
 
-**색상별 접근성 분류 (Canvas White 배경 기준 실측 명암비)**
+**색상별 접근성 분류 (Canvas White 배경 기준 APCA Lc)**
 
-| 색상 | White 대비 | 사용 가능 범위 |
+| 색상 | White 대비 Lc | 사용 가능 범위 |
 |---|---|---|
-| Midnight Purple \`#4D006E\` | 13.63:1 | ✅ 본문 텍스트 허용 (AAA) |
-| Scouting Purple \`#622599\` | 9.36:1 | ✅ 본문 텍스트 허용 (AAA) |
-| Forest Green \`#248737\` | 4.57:1 | ✅ 본문 텍스트 허용 (AA) |
-| Ocean Blue \`#0094B4\` | 3.56:1 | ⚠ 대형 텍스트·UI 요소만 (AA Large) |
-| Fire Red \`#FF5655\` | 3.13:1 | ⚠ 대형 텍스트·UI 요소만 (AA Large) |
-| Blossom Pink \`#FF8DFF\` | 2.00:1 | ❌ 텍스트 금지. 배경·장식 전용 |
-| Ember Orange \`#FFAE80\` | 1.81:1 | ❌ 텍스트 금지. 배경·장식 전용 |
-| River Blue \`#82E6DE\` | 1.47:1 | ❌ 텍스트 금지. 배경·장식 전용 |
-| Leaf Green \`#9FED8F\` | 1.40:1 | ❌ 텍스트 금지. 배경·장식 전용 |
+| Midnight Purple \`#4D006E\` | 100.2 | ✅ 본문 (|Lc| 75+) · 모든 텍스트 가능 |
+| Scouting Purple \`#622599\` | 92.4 | ✅ 본문 (|Lc| 75+) · 모든 텍스트 가능 |
+| Forest Green \`#248737\` | 73.0 | ✅ 콘텐츠 텍스트 (|Lc| 60+, 14px+ medium) |
+| Ocean Blue \`#0094B4\` | 64.3 | ✅ 콘텐츠 텍스트 · UI (|Lc| 60+) |
+| Fire Red \`#FF5655\` | 58.9 | ⚠ 대형·헤더 텍스트 / UI만 (|Lc| 45+) |
+| Blossom Pink \`#FF8DFF\` | 40.0 | ⚠ UI 요소·spot 전용 (|Lc| 30+, 본문 금지) |
+| Ember Orange \`#FFAE80\` | 35.1 | ⚠ UI 요소·spot 전용 (|Lc| 30+) |
+| River Blue \`#82E6DE\` | 23.6 | ❌ spot 전용, 본문·UI 모두 부족 (|Lc| < 30) |
+| Leaf Green \`#9FED8F\` | 21.0 | ❌ spot 전용, 본문·UI 모두 부족 (|Lc| < 30) |
 
-**권장 배경-텍스트 조합**
+**권장 배경-텍스트 조합** (음수 \`Lc\`는 밝은 텍스트/어두운 배경 조합, 절대값으로 판단)
 
 | 배경 | 안전한 텍스트 색 |
 |---|---|
-| Canvas White | Midnight Purple / Scouting Purple / Forest Green / Black |
-| Midnight Purple | Canvas White (13.63:1) / Ember Orange (7.54:1) / Leaf Green (9.73:1) / River Blue (9.30:1) / Blossom Pink (6.82:1) |
-| Scouting Purple | Canvas White (9.36:1) |
-| Forest Green | Canvas White (4.57:1) |
-| Fire Red / Ocean Blue | 배경 사용 시 Canvas White 텍스트만 (각 6.71:1, 5.90:1) |
+| Canvas White | Ink (Lc 105.1) / Black (Lc 107.7) / Midnight Purple (Lc 100.2) / Scouting Purple (Lc 92.4) / Forest Green (Lc 73.0) |
+| Midnight Purple | Canvas White (|Lc| 103.6) / Leaf Green (|Lc| 79.8) / Blossom Pink (|Lc| 60.2) / Ember Orange (|Lc| 64.9) |
+| Scouting Purple | Canvas White (|Lc| 96.8) |
+| Forest Green | Canvas White (|Lc| 75.6) |
+| Fire Red / Ocean Blue | 배경 사용 시 Canvas White 텍스트만 |
 | Pastel 4색(Blossom Pink / Ember Orange / River Blue / Leaf Green) | Midnight Purple 또는 Black만 허용 |
 
 **색상 선택 원칙**
 
 1. **색상만으로 정보를 전달하지 않는다.** 에러·성공·경고·링크 등 상태·의미는 색 + 아이콘 + 텍스트의 3중 신호로 표기한다. 색각이상자(남성 8%, 여성 0.5%)와 흑백 인쇄·그레이스케일 모드에서도 구분 가능해야 한다.
-2. **파스텔 4색은 텍스트 색으로 쓰지 않는다.** Blossom Pink, Ember Orange, River Blue, Leaf Green은 카테고리 태그 배경·일러스트·장식 도형 전용이다. 그 위에 텍스트를 올려야 하면 텍스트 색은 Midnight Purple 또는 Black.
-3. **Fire Red·Ocean Blue는 본문 텍스트 금지.** 18px(14pt) 이상 bold 헤딩, 버튼 라벨, 아이콘, 테두리에만 사용한다.
+2. **파스텔 4색은 본문 텍스트 색으로 쓰지 않는다.** Blossom Pink, Ember Orange, River Blue, Leaf Green은 카테고리 태그 배경·일러스트·장식 도형 전용이다. 그 위에 텍스트를 올려야 하면 텍스트 색은 Midnight Purple 또는 Black.
+3. **Fire Red·Ocean Blue는 본문 텍스트 금지.** 18px(14pt) 이상 bold 헤딩, 버튼 라벨, 아이콘, 테두리에만 사용한다 (|Lc| 45+/60+).
 4. **리터럴 HEX 금지.** 모든 색은 CSS 변수로만 참조한다 (\`var(--color-scouting-purple)\` 등). 새 색 추가 시 \`:root\` 토큰, 이 문서, KMS, \`docs/homepage-module-inventory.md\`를 동시에 갱신한다.
-5. **키보드 포커스 인디케이터는 필수.** 키보드 탐색 중 현재 포커스된 요소는 항상 배경과 3:1 이상 대비로 표시한다 (\`outline\` 또는 \`box-shadow\`). 기본 브라우저 outline을 제거했다면 반드시 대체 표시를 제공한다.
+5. **키보드 포커스 인디케이터는 필수.** 키보드 탐색 중 현재 포커스된 요소는 항상 배경과 \`|Lc| 30\` 이상 대비로 표시한다 (\`outline\` 또는 \`box-shadow\`). 기본 브라우저 outline을 제거했다면 반드시 대체 표시를 제공한다.
 6. **다크 모드·고대비 모드 대응.** 색 토큰은 \`prefers-color-scheme: dark\`와 \`prefers-contrast: more\` 미디어 쿼리에서 명암비가 유지되도록 설계한다.
 
 **검증 체크리스트 (새 UI·색 적용 시)**
 
-- [ ] WebAIM Contrast Checker(\`https://webaim.org/resources/contrastchecker/\`)로 모든 텍스트-배경 조합 검증
+- [ ] APCA Contrast Calculator(\`https://apcacontrast.com/\`)로 모든 텍스트-배경 조합 Lc 검증
 - [ ] Chrome DevTools → Rendering → Emulate vision deficiencies(Protanopia / Deuteranopia / Tritanopia / Achromatopsia) 통과
 - [ ] 그레이스케일 모드에서 상태·링크·에러가 구분되는지 확인
-- [ ] 키보드 포커스 인디케이터가 배경과 3:1 이상 대비인지 확인
+- [ ] 키보드 포커스 인디케이터가 배경과 \`|Lc| 30\` 이상인지 확인
 - [ ] 모바일 화면에서도 동일 명암비가 유지되는지 확인 (배경 반투명 처리 시 대비 저하 주의)
 
 #### 각주
-- WCAG 2.1 AA는 한국 KWCAG 2.2, EU EN 301 549, US ADA 등 주요 접근성 법적 기준의 최소치다. 이 프로젝트는 본문 텍스트에 AA를 기본 충족시키고, 마스트헤드·히어로·주요 CTA 등 핵심 표면은 AAA를 목표로 한다.
-- 파스텔 4색이 White 배경에서 명암비 부족으로 표시되는 것은 색 자체의 문제가 아니라 용도가 배경·장식으로 설계되었기 때문이다. 원본 색을 어둡게 조정하지 말고 용도 경계를 지킨다.
-- 색상 추가·변경은 브랜드 정합성과 접근성을 동시에 만족해야 한다. 둘 중 하나라도 깨지면 추가하지 않는다.
+- APCA(Accessible Perceptual Contrast Algorithm)는 WCAG 3.0(Silver draft)의 공식 명암비 알고리즘이다. WCAG 2.1의 단순 광도 비율(4.5:1, 7:1)은 인간의 실제 가독성을 충분히 반영하지 못해 폐기 수순이며, APCA는 sRGB 선형화 후 배경/텍스트 광도를 다른 지수(^0.56, ^0.57 또는 ^0.65, ^0.62)로 가중해 **지각 기반** Lc를 산출한다.
+- 이 프로젝트는 WCAG 2.1 AA/AAA 체계를 사용하지 않는다. 한국 KWCAG 2.2, EU EN 301 549, US ADA 등 법적 최소치는 WCAG 2.1 AA이지만, APCA Lc 60+는 대략 WCAG 2.1 AA 4.5:1을 초과하므로 법적 요구치를 동시에 충족한다.
+- 파스텔 4색이 White 배경에서 Lc가 낮은 것은 색 자체의 문제가 아니라 용도가 배경·장식으로 설계되었기 때문이다. 원본 색을 어둡게 조정하지 말고 용도 경계를 지킨다.
+- 색상 추가·변경은 브랜드 정합성과 APCA Lc 기준을 동시에 만족해야 한다. 둘 중 하나라도 깨지면 추가하지 않는다.
 
 ### 3.5 관리자 컬러 토큰 (V3)
 
