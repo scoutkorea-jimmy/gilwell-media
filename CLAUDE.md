@@ -155,6 +155,102 @@ scope: project
 - 페이지는 최상위 축이 아니라 기능 조합의 **surface node**.
 - 동일 기능을 여러 페이지 설명으로 복제하지 말고 Feature Hub + Module 라이브러리로 링크 집약.
 
+### Version & Changelog Discipline (Site / Admin / KMS)
+
+> [!important] 모든 Site/Admin/KMS 배포에는 버전 bump + changelog 엔트리가 필수
+> `verify_release_metadata.sh`가 배포 preflight에서 둘 다 검증한다. 하나라도 빠지면 배포가 차단된다.
+
+**버전 파일 3개:**
+
+| 파일 | 포맷 | 의미 |
+|---|---|---|
+| `VERSION` | `aa.bbb.cc` (e.g. `00.113.22`) | 공개 사이트 버전 |
+| `ADMIN_VERSION` | `dd.eee.ff` (e.g. `03.064.00`) | 관리자 / KMS 버전 |
+| `ASSET_VERSION` | UTC timestamp `YYYYMMDDHHMMSS` | 캐시 버스트 토큰 (자동 생성) |
+
+**Bump 규칙:**
+- `aa`/`dd` (Major) — 오너 수동 결정, 제품 단계 전환 시
+- `bbb`/`eee` (Feature/Update) — 새 기능, 구조적 리팩터, 모듈 신설. **bump 시 `cc`/`ff` = `00`으로 리셋**
+- `cc`/`ff` (Fix/Hotfix) — 버그 수정, 소규모 조정
+
+**언제 무엇을 bump하는가:**
+- 공개 사이트(index, korea, apr, ...)의 UI·동작 변경 → `VERSION`
+- 관리자 콘솔(`admin.html`, `js/admin-v3.js`, `css/admin.css`) 변경 → `ADMIN_VERSION`
+- KMS 탭(`kms.html`, `js/kms.js`, `docs/feature-definition.md`) 변경 → `ADMIN_VERSION`
+- 공통 인프라(배포 스크립트, 라이브러리) 변경 → 영향받는 쪽(들) bump
+- 복합 변경은 둘 다 bump, changelog 엔트리도 각각 추가
+
+### Changelog (data/changelog.json)
+
+**엔트리 포맷** (`data/changelog.json` → `items[]` 맨 앞에 prepend):
+
+```json
+{
+  "version": "00.113.22",
+  "date": "2026-04-18",
+  "released_at": "2026-04-18 14:55:51 KST",
+  "summary": "한 줄 요약 (왜 바꿨는지 중심).",
+  "changes": [
+    "구체적 변경 1 (어떤 파일·모듈이 어떻게 바뀌었는지, 가능하면 수치 포함).",
+    "구체적 변경 2.",
+    "사이트 버전 00.113.21 → 00.113.22."
+  ]
+}
+```
+
+**필수 필드:**
+- `version` — `VERSION` 또는 `ADMIN_VERSION` 문자열과 **정확히 일치** (v prefix 없이)
+- `date` — `YYYY-MM-DD` (KST 기준)
+- `released_at` — `YYYY-MM-DD HH:MM:SS KST`
+- `summary` — 한국어 1문장. 사용자·운영자 관점에서 무엇이 달라졌는지
+- `changes[]` — 상세 변경 목록. 마지막 항목에 버전 번호 전이를 명시
+
+**작성 원칙:**
+1. **사용자 관점으로 기술** — 내부 리팩터도 "어떤 문제를 해결하는가"로 표현
+2. **수치·이름 포함** — 명암비, 변경된 파일 수, 비교 값 등 검증 가능한 지표를 포함
+3. **버전 bump 둘 다면 엔트리도 둘** — 사이트·관리자 각각 독립된 엔트리 (같은 `released_at` 공유 OK)
+4. **최신이 맨 위** — `items[]`에 prepend. 기존 순서 보존
+
+### Release & Deploy Flow (Site / Admin / KMS)
+
+> [!important] 표준 배포 순서 (생략 금지)
+> 이 순서를 지키지 않으면 preflight가 실패하거나 브라우저 캐시 문제로 변경이 반영되지 않는다.
+
+```
+1. 코드 변경 (CSS/JS/HTML)
+2. VERSION / ADMIN_VERSION 적절히 bump
+3. data/changelog.json 맨 앞에 엔트리 prepend (bump된 모든 버전에 대해)
+4. ./scripts/sync_versions.sh         # ASSET_VERSION 갱신 + HTML·JS 버전 문자열 전파
+5. git add . && git commit            # 코드 + 버전 + changelog + 동기화된 HTML 한 번에
+6. git push origin main               # preflight가 main 브랜치 요구
+7. ./scripts/deploy_production.sh     # preflight + wrangler pages deploy + post-deploy checks
+```
+
+**각 스크립트 역할:**
+
+| 스크립트 | 역할 |
+|---|---|
+| `sync_versions.sh` | `ASSET_VERSION` UTC 타임스탬프 갱신, 모든 HTML의 `?v=` 토큰과 `GW.APP_VERSION` / `GW.ADMIN_VERSION` / `GW.ASSET_VERSION` 값 일괄 치환 |
+| `verify_release_metadata.sh` | VERSION/ADMIN_VERSION/ASSET_VERSION ↔ `js/main.js`·HTML·changelog 정합성 검증. 실패 시 배포 차단 |
+| `release_preflight.sh` | `main` 브랜치 + clean tracked worktree + 메타데이터 검증. 실패 시 배포 차단 |
+| `deploy_production.sh` | preflight → `wrangler pages deploy` → `post_deploy_check` → `audit_public_posts` → release snapshot |
+| `post_deploy_check.sh` | 라이브 사이트의 VERSION 일치 확인 |
+
+**환경:** wrangler 호출 전 `export PATH="/opt/homebrew/bin:$PATH"`
+
+### AI Deployment Protocol (Target별)
+
+| Target | 작업 완료 시 |
+|---|---|
+| **Site** (공개 홈페이지) | ⚠ 사용자에게 **배포·커밋 여부 질문 후 진행** |
+| **Admin** | ✅ 자동 (질문 없이 commit + push + deploy) |
+| **KMS** | ✅ 자동 (코드 + D1 변경 포함) |
+| **Dreampath** | ✅ 자동 (`./deploy.sh feature/fix "..."`) |
+
+**복합 타겟 작업 (Site 포함):** Site 규칙 우선 — 질문 후 진행.
+
+**Dreampath는 별도 배포** — `./deploy.sh`가 자체 버전 bump(`dp_versions` 테이블)와 cache-bust를 처리하며, `sync_versions.sh` / `changelog.json` 경로를 사용하지 않는다. 상세는 `§5 Dreampath → Deployment` 참조.
+
 ---
 
 ## §2 [Site] 공개 홈페이지
@@ -311,16 +407,12 @@ RGB / CMYK / PMS-C 값과 배경-텍스트 조합 풀표는 KMS `§3.4 브랜드
 
 ### Deployment
 
-```bash
-./scripts/sync_versions.sh          # 버전 동기화
-./scripts/release_preflight.sh      # main / clean worktree / 버전 정합성
-./scripts/deploy_production.sh      # 배포
-./scripts/post_deploy_check.sh <url> # 배포 후 점검
-```
+배포 순서·버전 bump·changelog 규칙은 **§1 Common → Version & Changelog Discipline / Release & Deploy Flow** 참조.
 
-- 버전: `Va.bbb.cc` (Site: `VERSION`, Admin: `ADMIN_VERSION`, Asset: `ASSET_VERSION`)
-- 공개 UI 변경: 오너 확인 후 production 배포
-- `wrangler pages deploy ...`를 쓰더라도 `release_preflight.sh`를 먼저 통과해야 한다.
+Site 전용 추가 규칙:
+- 공개 UI 변경은 오너 확인 후 production 배포 (AI Deployment Protocol: Site = 질문 후 진행)
+- `wrangler pages deploy ...`를 직접 쓰더라도 `release_preflight.sh`를 먼저 통과해야 한다
+- `VERSION` bump 시 `data/changelog.json`에 사이트 버전 엔트리 prepend 필수
 
 ### Verification Checklist (배포 전후)
 
