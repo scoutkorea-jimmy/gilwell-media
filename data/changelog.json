@@ -1,6 +1,32 @@
 {
   "items": [
   {
+      "version": "00.113.22",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 14:55:51 KST",
+      "summary": "공개 사이트 CSS 팔레트를 디자인 토큰으로 통일하고, Korea·APR 기사 kicker의 WCAG AA 위반을 수정했습니다.",
+      "changes": [
+        "사이트 CSS(style.css)의 하드코딩된 브랜드·지역 색상 리터럴을 모두 CSS 변수로 치환했습니다(리터럴 HEX 184건 → 의미 있는 one-off와 그라데이션 stop 수준만 남음).",
+        "--region-kor / --region-apr / --region-eur / --region-afr / --region-arb / --region-iar / --region-wosm 7개 지역 색 토큰, --kicker-default/people/glossary 3개 태그 kicker 토큰, --bg-cream 토큰을 신규 정의해 달력과 지역 태그의 하드코딩 49건을 변수화했습니다.",
+        "Blossom Pink 정의의 두 :root 블록 간 불일치(#ffbdff vs #ff8dff)를 KMS 기준 #ff8dff로 통일했습니다.",
+        "Korea / APR 카테고리의 outline 기사 kicker(.tag-korea-kicker, .tag-apr-kicker)가 10px 본문 크기에서 WCAG AA(4.5:1) 미달(각각 3.56:1, 3.13:1)이던 문제를 수정했습니다. 텍스트 색은 Midnight Purple(13.63:1 AAA)로 일원화하고 지역 식별은 브랜드 색 border로 유지합니다(border는 UI 3:1 충족).",
+        "사이트 버전 00.113.21 → 00.113.22."
+      ]
+    },
+  {
+      "version": "03.064.00",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 14:55:51 KST",
+      "summary": "KMS 디자인 탭을 접근성 중심으로 전면 개편하고, AI 공통 Target Confirmation Protocol을 세팅했습니다.",
+      "changes": [
+        "KMS 디자인 탭에 10색 브랜드 팔레트 전체(각 색 HEX와 Canvas White 대비 명암비, 본문·대형·장식 용도 라벨)를 표시합니다.",
+        "KMS 디자인 탭에 '02 · 웹 접근성 & 컬러 규칙' 섹션을 신설해 WCAG 2.1 명암비 기준표, 안전 조합 vs 위반 조합 비교, 색상만으로 정보 전달 금지 패턴, 키보드 포커스 인디케이터 예시, 색상 선택 6가지 원칙을 실제 미리보기와 함께 제공합니다.",
+        "기존 02~07 섹션은 03~08로 시프트했고, Overview의 모듈 규칙을 접근성 우선 원칙으로 재작성했습니다.",
+        "Claude Code / Codex / ChatGPT 등 모든 AI가 공통으로 따르는 Target Confirmation Protocol(Site / Admin / KMS / Dreampath)을 CLAUDE.md와 KMS에 세팅해, AI 작업 시작 전 타겟 식별을 의무화했습니다. CHATGPT.md는 삭제하고 AGENTS.md 심볼릭 링크를 추가해 Codex 호환성도 확보했습니다.",
+        "관리자 버전 03.063.30 → 03.064.00."
+      ]
+    },
+  {
       "version": "03.063.30",
       "date": "2026-04-18",
       "released_at": "2026-04-18 00:33:30 KST",
