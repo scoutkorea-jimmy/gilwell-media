@@ -1,6 +1,32 @@
 {
   "items": [
   {
+      "version": "00.115.00",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 15:59:42 KST",
+      "summary": "공개 사이트 기본 서체를 AliceDigitalLearning에서 NixgonFont(3중량 300/500/700)로 교체했습니다.",
+      "changes": [
+        "css/style.css 최상단의 @font-face를 NixgonFont 3개(NIXGONL-Vb.woff 300 Light / NIXGONM-Vb.woff 500 Medium / NIXGONB-Vb.woff 700 Bold)로 교체했습니다. CDN은 cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2 기준.",
+        "CSS·HTML·JS 전체에서 font-family: AliceDigitalLearning 참조 400건을 NixgonFont로 일괄 치환했습니다(css/style.css 257, css/admin.css 91, css/admin-v3.css 8, search.html 9, 404.html 8, js/board-write.js 15, functions/feature 7, 기타 5).",
+        "기존 단일 중량 서체 대비 3중량 지원으로 KMS 디자인 가이드의 display(700) / title(700) / body(500) / meta(300) 4단계 타이포 위계를 서체 자체로 구현 가능해졌습니다.",
+        "font-display: swap 유지로 FOIT(Flash of Invisible Text) 방지.",
+        "사이트 버전 00.114.01 → 00.115.00."
+      ]
+    },
+  {
+      "version": "03.067.00",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 15:59:42 KST",
+      "summary": "관리자 콘솔·KMS의 서체 참조를 NixgonFont로 교체하고 KMS §3.1 타이포 규칙을 3중량 체계로 다시 썼습니다.",
+      "changes": [
+        "css/admin.css(91건)·css/admin-v3.css(8건) 등 관리자 CSS의 font-family: AliceDigitalLearning 참조를 NixgonFont로 일괄 치환했습니다. KMS 기능정의서, 디자인 탭, API 가이드, 버전기록, 관리자 V3 전 구간이 동일한 서체 체계를 쓰게 됩니다.",
+        "KMS §3.1 '기본 서체와 타이포'를 재작성했습니다. 3중량 @font-face 선언, 중량 선택 기준(300 Light = 메타·장식 / 500 Medium = 본문·라벨 / 700 Bold = 제목·강조), 전환 배경(단일 중량 → 3중량) 각주를 추가.",
+        "docs/feature-definition.md(스냅샷) / functions/_shared/feature-definition.js(기본 fallback) / 라이브 D1 KMS(settings 테이블) 세 곳을 동시 동기화했습니다(28,298 → 29,496자).",
+        "CLAUDE.md §2 Site Design Rules의 기본 서체 항목도 NixgonFont 3중량 + 중량 선택 기준으로 업데이트.",
+        "관리자 버전 03.066.01 → 03.067.00."
+      ]
+    },
+  {
       "version": "03.066.01",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:52:43 KST",

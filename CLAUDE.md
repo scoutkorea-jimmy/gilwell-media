@@ -325,7 +325,7 @@ scope: project
 
 ### Design Rules
 
-- 기본 서체: `AliceDigitalLearning`
+- 기본 서체: `NixgonFont` (3중량 300 Light / 500 Medium / 700 Bold, `@font-face`는 `css/style.css` 최상단). 본문 기본 `font-weight: 500`, 제목·강조는 `700`, 메타·장식은 `300`
 - 공개 메뉴: `data-managed-nav` — 초기 숨김 → 렌더 완료 후 노출 (flash 방지)
 - 버튼: 같은 계층이면 높이/패딩/폰트 통일
 - 한글: `word-break: keep-all`

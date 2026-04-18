@@ -74,7 +74,7 @@
           '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
         '</div>' +
         '<div class="form-group">' +
-          '<label for="board-write-special-feature">특집 기사 묶음명 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">클릭하여 기존 목록 선택 또는 새 이름 직접 입력</span></label>' +
+          '<label for="board-write-special-feature">특집 기사 묶음명 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">클릭하여 기존 목록 선택 또는 새 이름 직접 입력</span></label>' +
           '<div class="sf-autocomplete-wrap" style="position:relative;">' +
             '<input type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" autocomplete="off" />' +
             '<div id="board-sf-dropdown" class="sf-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg);border:1px solid var(--border);max-height:180px;overflow-y:auto;"></div>' +
@@ -83,7 +83,7 @@
         '<div style="display:flex;gap:12px;">' +
           '<div class="form-group" style="flex:1;">' +
             '<label for="board-write-author">작성자</label>' +
-            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family: AliceDigitalLearning, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
+            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family: NixgonFont, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
           '</div>' +
           '<div class="form-group" style="min-width:140px;">' +
             '<label for="board-write-date">퍼블리싱 시각</label>' +
@@ -105,15 +105,15 @@
             '<div id="board-cover-preview"></div>' +
           '</div>' +
           '<input type="text" id="board-write-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
           '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
           '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
         '</div>' +
         '<div class="form-group">' +
-          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>' +
+          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>' +
           '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
         '</div>' +
         '<div class="form-group">' +
@@ -122,37 +122,37 @@
             '<button type="button" id="board-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>' +
             '<div id="board-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>' +
           '</div>' +
-          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
         '</div>' +
         '<details class="location-form-toggle" id="board-location-toggle">' +
           '<summary>위치 정보 추가 (OpenStreetMap)</summary>' +
           '<div class="location-form-fields">' +
             '<div class="form-group">' +
-              '<label for="board-write-location-name">위치 이름 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">내가 지정하는 이름</span></label>' +
+              '<label for="board-write-location-name">위치 이름 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">내가 지정하는 이름</span></label>' +
               '<input type="text" id="board-write-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />' +
             '</div>' +
             '<div class="form-group">' +
-              '<label for="board-write-location-address">주소 <span style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;">OpenStreetMap 기준 실주소</span></label>' +
+              '<label for="board-write-location-address">주소 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">OpenStreetMap 기준 실주소</span></label>' +
               '<div style="display:flex;gap:8px;align-items:flex-start;">' +
                 '<input type="text" id="board-write-location-address" placeholder="예: 강원도 고성군 토성면 ..." maxlength="300" style="flex:1;" />' +
-                '<button type="button" id="board-location-check-btn" style="white-space:nowrap;padding:9px 12px;border:1px solid var(--border);background:var(--bg);font-family:AliceDigitalLearning,sans-serif;font-size:11px;cursor:pointer;">지도 확인</button>' +
+                '<button type="button" id="board-location-check-btn" style="white-space:nowrap;padding:9px 12px;border:1px solid var(--border);background:var(--bg);font-family:NixgonFont,sans-serif;font-size:11px;cursor:pointer;">지도 확인</button>' +
               '</div>' +
-              '<p style="font-size:10px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 게재 전 반드시 지도 확인을 눌러 위치를 검증하세요.</p>' +
+              '<p style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 게재 전 반드시 지도 확인을 눌러 위치를 검증하세요.</p>' +
             '</div>' +
             '<div id="board-location-map-preview" style="display:none;margin-top:8px;border:1px solid var(--border);overflow:hidden;">' +
               '<iframe id="board-location-map-frame" style="width:100%;height:200px;border:0;display:block;" loading="lazy"></iframe>' +
-              '<div id="board-location-map-status" style="font-size:10px;padding:4px 8px;color:var(--muted);font-family:AliceDigitalLearning,sans-serif;"></div>' +
+              '<div id="board-location-map-status" style="font-size:10px;padding:4px 8px;color:var(--muted);font-family:NixgonFont,sans-serif;"></div>' +
             '</div>' +
           '</div>' +
         '</details>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
-          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
+          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
           '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: AliceDigitalLearning, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
         '</div>' +
         '<div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">' +
           '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
-          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family: AliceDigitalLearning, sans-serif;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
+          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family: NixgonFont, sans-serif;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
         '</div>' +
         '<div id="board-write-turnstile" style="margin:20px 0 0;"></div>' +
         '<button id="board-write-submit" class="submit-btn" style="margin-top:12px;">게재하기</button>' +
@@ -192,7 +192,7 @@
         return;
       }
       sfDropdown.innerHTML = filtered.map(function (s) {
-        return '<div class="sf-dropdown-item" style="padding:8px 12px;cursor:pointer;font-family:AliceDigitalLearning,sans-serif;font-size:12px;border-bottom:1px solid var(--border);">' + GW.escapeHtml(s) + '</div>';
+        return '<div class="sf-dropdown-item" style="padding:8px 12px;cursor:pointer;font-family:NixgonFont,sans-serif;font-size:12px;border-bottom:1px solid var(--border);">' + GW.escapeHtml(s) + '</div>';
       }).join('');
       sfDropdown.querySelectorAll('.sf-dropdown-item').forEach(function (item) {
         item.addEventListener('click', function () {
