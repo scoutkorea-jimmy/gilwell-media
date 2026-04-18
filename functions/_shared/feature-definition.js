@@ -171,21 +171,49 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 ### 3.1 기본 서체와 타이포
 
 #### 기능 세부 설명
-- 공개 사이트 기본 서체는 \`AliceDigitalLearning\` 단일 사용을 원칙으로 한다.
-- 관리자 콘솔(V3)은 시스템 서체(\`-apple-system, BlinkMacSystemFont, system-ui, sans-serif\`)를 사용한다.
+- 공개 사이트 기본 서체는 **\`NixgonFont\`** 단일 사용을 원칙으로 한다. 세 중량(300 Light / 500 Medium / 700 Bold)을 사용하며 \`@font-face\`는 \`css/style.css\` 최상단에 일괄 선언되어 있다.
+- 관리자 콘솔(V3)은 시스템 서체(\`-apple-system, BlinkMacSystemFont, system-ui, sans-serif\`)를 사용한다. 관리자 V1/KMS는 \`NixgonFont\`를 사이트와 동일하게 사용.
 - 한글 줄바꿈은 \`word-break: keep-all\` 우선으로 처리한다.
-- 제목은 과하게 압축하지 않고, 본문은 읽기 위주의 line-height를 유지한다.
+- 제목은 과하게 압축하지 않고, 본문은 읽기 위주의 line-height(1.7 ~ 1.85)를 유지한다.
+- 중량 선택 기준: **300 Light** = 부가 정보·메타·장식 텍스트, **500 Medium** = 본문·라벨·일반 UI 텍스트, **700 Bold** = 제목·강조·버튼 라벨.
 
 #### 코드 예시
 \`\`\`css
-/* 공개 사이트 */
-font-family: AliceDigitalLearning, sans-serif;
-word-break: keep-all;
-line-height: 1.7;
+/* 공개 사이트 @font-face (css/style.css 최상단) */
+@font-face {
+  font-family: 'NixgonFont';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONL-Vb.woff') format('woff');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NixgonFont';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONM-Vb.woff') format('woff');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'NixgonFont';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONB-Vb.woff') format('woff');
+  font-weight: 700;
+  font-display: swap;
+}
 
-/* 관리자 콘솔 */
+/* 공개 사이트 본문 */
+body {
+  font-family: NixgonFont, sans-serif;
+  font-weight: 500;
+  word-break: keep-all;
+  line-height: 1.75;
+}
+
+/* 관리자 콘솔 V3 */
 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 \`\`\`
+
+#### 각주
+- 이전 서체(\`AliceDigitalLearning\`, noonfonts_elice)는 단일 중량만 지원해 타이포 위계가 약했다. \`NixgonFont\`는 3중량을 제공해 KMS 디자인 가이드의 display / title / body / meta 4단계 위계를 서체 자체로 구현할 수 있다.
+- CDN은 동일 \`cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2\` 기준. \`font-display: swap\`으로 FOIT(Flash of Invisible Text) 방지.
 
 ### 3.2 공통 여백 규칙 (Spacing 토큰 시스템)
 
