@@ -740,46 +740,83 @@
       html.push(listMode === 'ol' ? '</ol>' : '</ul>');
       listMode = '';
     }
-    lines.forEach(function (line) {
-      var raw = line.trim();
+    function isTableSeparator(s) {
+      // | --- | :---: | ---: | 형식
+      return /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(s);
+    }
+    function parseTableRow(s) {
+      var trimmed = s.replace(/^\|/, '').replace(/\|$/, '');
+      return trimmed.split('|').map(function (cell) { return cell.trim(); });
+    }
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i].trim();
       if (!raw) {
         closeList();
-        return;
+        continue;
       }
       // Frontmatter skip (Obsidian 호환)
-      if (raw === '---') return;
+      if (raw === '---') continue;
+      // 테이블: 헤더 줄 + 구분선 줄 패턴
+      if (/^\|.*\|$/.test(raw) && i + 1 < lines.length && isTableSeparator(lines[i + 1].trim())) {
+        closeList();
+        var headerCells = parseTableRow(raw);
+        i += 2; // skip header + separator
+        var rows = [];
+        while (i < lines.length) {
+          var rowLine = lines[i].trim();
+          if (!/^\|.*\|$/.test(rowLine)) break;
+          rows.push(parseTableRow(rowLine));
+          i++;
+        }
+        i--; // step back so outer loop re-evaluates the non-table line
+        var tableHtml = '<div class="kms-table-wrap"><table class="kms-table"><thead><tr>';
+        headerCells.forEach(function (h) {
+          tableHtml += '<th>' + formatInline(h) + '</th>';
+        });
+        tableHtml += '</tr></thead><tbody>';
+        rows.forEach(function (row) {
+          tableHtml += '<tr>';
+          row.forEach(function (cell) {
+            tableHtml += '<td>' + formatInline(cell) + '</td>';
+          });
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table></div>';
+        html.push(tableHtml);
+        continue;
+      }
       if (/^>\s+/.test(raw)) {
         closeList();
         html.push('<blockquote class="kms-quote">' + formatInline(raw.replace(/^>\s+/, '')) + '</blockquote>');
-        return;
+        continue;
       }
       if (/^(-{3,}|\*{3,})$/.test(raw)) {
         closeList();
         html.push('<hr class="kms-divider">');
-        return;
+        continue;
       }
       if (/^####\s+/.test(raw)) {
         closeList();
-        var t = raw.replace(/^####\s+/, '');
-        html.push('<h5 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h5">' + formatInline(t) + '</h5>');
-        return;
+        var t4 = raw.replace(/^####\s+/, '');
+        html.push('<h5 id="' + GW.escapeHtml(idBuilder(t4)) + '" class="kms-h5">' + formatInline(t4) + '</h5>');
+        continue;
       }
       if (/^###\s+/.test(raw)) {
         closeList();
-        var t = raw.replace(/^###\s+/, '');
-        html.push('<h4 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h4">' + formatInline(t) + '</h4>');
-        return;
+        var t3 = raw.replace(/^###\s+/, '');
+        html.push('<h4 id="' + GW.escapeHtml(idBuilder(t3)) + '" class="kms-h4">' + formatInline(t3) + '</h4>');
+        continue;
       }
       if (/^##\s+/.test(raw)) {
         closeList();
-        var t = raw.replace(/^##\s+/, '');
-        html.push('<h3 id="' + GW.escapeHtml(idBuilder(t)) + '" class="kms-h3">' + formatInline(t) + '</h3>');
-        return;
+        var t2 = raw.replace(/^##\s+/, '');
+        html.push('<h3 id="' + GW.escapeHtml(idBuilder(t2)) + '" class="kms-h3">' + formatInline(t2) + '</h3>');
+        continue;
       }
       if (/^#\s+/.test(raw)) {
         closeList();
         html.push('<h2 class="kms-h2">' + formatInline(raw.replace(/^#\s+/, '')) + '</h2>');
-        return;
+        continue;
       }
       if (/^-\s+/.test(raw)) {
         if (listMode !== 'ul') {
@@ -788,7 +825,7 @@
           listMode = 'ul';
         }
         html.push('<li>' + formatInline(raw.replace(/^-\s+/, '')) + '</li>');
-        return;
+        continue;
       }
       if (/^\d+\.\s+/.test(raw)) {
         if (listMode !== 'ol') {
@@ -797,11 +834,11 @@
           listMode = 'ol';
         }
         html.push('<li>' + formatInline(raw.replace(/^\d+\.\s+/, '')) + '</li>');
-        return;
+        continue;
       }
       closeList();
       html.push('<p class="kms-p">' + formatInline(raw) + '</p>');
-    });
+    }
     closeList();
     return html.join('');
   }

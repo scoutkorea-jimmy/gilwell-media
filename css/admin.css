@@ -4,16 +4,19 @@
    KMS — CSS 변수
    ════════════════════════════════════════════════════════════ */
 .kms-page {
-  --kms-bg:        #f2ede8;
-  --kms-surface:   #ffffff;
-  --kms-surface2:  #faf7f3;
-  --kms-border:    rgba(22, 17, 12, 0.10);
-  --kms-ink:       #161310;
-  --kms-muted:     #7a7168;
-  --kms-accent:    #5c2a9d;
-  --kms-accent-bg: rgba(92, 42, 157, 0.07);
-  --kms-header-h:  56px;
-  --kms-sidebar-w: 268px;
+  /* KMS 로컬 변수는 site 디자인 토큰(§2 Site / §3.4 KMS)을 참조 */
+  --kms-bg:           var(--bg-cream);        /* #fbf8f3 warm cream */
+  --kms-surface:      var(--white);           /* #ffffff */
+  --kms-surface2:     var(--gray-100);        /* #ebebeb light tint */
+  --kms-border:       rgba(3, 3, 3, 0.10);    /* neutral gray border, APCA-aware */
+  --kms-border-soft:  var(--gray-300);        /* #c4c4c4 Lc 33.5 UI 요소 대비 */
+  --kms-ink:          var(--ink);             /* #1f1f1f soft black, Lc 105.1 본문 */
+  --kms-muted:        var(--gray-500);        /* #8f8f8f Lc 61.3 콘텐츠·보조 */
+  --kms-accent:       var(--scouting-purple); /* #622599 Lc 92.4 본문 OK */
+  --kms-accent-strong: var(--midnight-purple);/* #4d006e Lc 100.2 emphasis */
+  --kms-accent-bg:    rgba(98, 37, 153, 0.08);/* scouting-purple tint */
+  --kms-header-h:     56px;
+  --kms-sidebar-w:    268px;
   margin: 0;
   padding: 0;
   height: 100vh;
@@ -618,62 +621,82 @@ mark.kms-highlight {
 .kms-search-section-title { margin: 0 0 10px; font-size: 15px; }
 .kms-search-section-body { font-size: 13px; }
 
-/* ── 기능정의서 문서 스타일 ─────────────────────────────── */
+/* ── 기능정의서 문서 스타일 (디자인 가이드 준용 · APCA Lc · Spacing 토큰) ─ */
 .kms-document-body {
-  line-height: 1.8;
-  color: var(--kms-ink);
-  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,247,255,0.96) 100%);
-  border: 1px solid rgba(92, 42, 157, 0.12);
+  line-height: 1.75;
+  color: var(--kms-ink);                 /* --ink Lc 105.1 본문 OK */
+  background: var(--kms-surface);        /* Canvas White */
+  border: 1px solid var(--kms-border);
   border-radius: 16px;
-  padding: 24px 26px 28px;
+  padding: var(--gap-section) var(--gap-section) var(--gap-section-out);
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .kms-h2 {
-  margin: 36px 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--kms-border);
+  margin: var(--gap-section-out) 0 var(--gap-element);
+  padding-bottom: var(--gap-tight);
+  border-bottom: 2px solid var(--kms-border-soft);
   font-size: 22px;
+  font-weight: 700;
   line-height: 1.25;
-  color: var(--kms-ink);
+  color: var(--kms-accent-strong);       /* --midnight-purple Lc 100.2 */
+  letter-spacing: -0.01em;
 }
 
+.kms-h2:first-child { margin-top: 0; }
+
 .kms-h3 {
-  margin: 24px 0 8px;
+  margin: var(--gap-section) 0 var(--gap-tight);
   font-size: 17px;
+  font-weight: 600;
   color: var(--kms-ink);
 }
 
 .kms-h4 {
-  margin: 16px 0 6px;
-  font-size: 13px;
-  color: var(--kms-accent);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.kms-h5 {
-  margin: 10px 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  margin: var(--gap-card) 0 var(--gap-micro);
+  padding: 3px var(--gap-tight);
+  background: var(--kms-accent-bg);
+  border-radius: 4px;
   font-size: 12px;
-  color: var(--kms-muted);
+  font-weight: 700;
+  color: var(--kms-accent);              /* --scouting-purple Lc 92.4 */
   letter-spacing: .08em;
   text-transform: uppercase;
 }
 
+.kms-h5 {
+  margin: var(--gap-element) 0 var(--gap-micro);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--kms-muted);               /* --gray-500 Lc 61.3 */
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
 .kms-p {
-  margin: 0 0 10px;
+  margin: 0 0 var(--gap-element);
   font-size: 14px;
-  line-height: 1.85;
+  line-height: 1.75;
+  color: var(--kms-ink);
 }
 
 .kms-list {
-  margin: 0 0 12px;
+  margin: 0 0 var(--gap-element);
   padding-left: 20px;
 }
 
 .kms-list li {
-  margin: 0 0 6px;
+  margin: 0 0 var(--gap-micro);
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.7;
+  color: var(--kms-ink);
+}
+.kms-list li::marker {
+  color: var(--kms-accent);
 }
 .kms-list-ordered {
   list-style: decimal;
@@ -681,55 +704,75 @@ mark.kms-highlight {
 .kms-link {
   color: var(--kms-accent);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  font-weight: 500;
 }
 .kms-link:hover {
   color: var(--kms-accent-strong);
+  text-decoration-thickness: 2px;
+}
+.kms-link:focus-visible {
+  outline: 2px solid var(--kms-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 .kms-quote {
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-left: 3px solid rgba(92, 42, 157, 0.28);
-  background: rgba(92, 42, 157, 0.05);
+  margin: 0 0 var(--gap-card);
+  padding: var(--gap-element) var(--gap-card);
+  border-left: 3px solid var(--kms-accent);
+  background: var(--kms-accent-bg);
   color: var(--kms-ink);
   font-size: 13px;
-  line-height: 1.8;
+  line-height: 1.75;
+  border-radius: 0 8px 8px 0;
+}
+.kms-quote > strong:first-child {
+  color: var(--kms-accent-strong);
 }
 .kms-divider {
   border: 0;
-  border-top: 1px solid rgba(92, 42, 157, 0.12);
-  margin: 22px 0;
+  border-top: 1px solid var(--kms-border);
+  margin: var(--gap-section) 0;
 }
 
 .kms-inline-code {
-  padding: 1px 5px;
+  padding: 2px var(--gap-micro);
   border-radius: 4px;
-  background: var(--kms-surface2);
+  background: var(--kms-surface2);       /* gray-100 tint */
   border: 1px solid var(--kms-border);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 12px;
-  color: var(--kms-accent);
+  color: var(--kms-accent-strong);       /* midnight-purple for code emphasis */
+  font-weight: 500;
 }
 
 .kms-wikilink {
   color: var(--kms-accent);
   text-decoration: underline;
   text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  font-weight: 500;
   cursor: help;
+}
+.kms-wikilink:hover {
+  color: var(--kms-accent-strong);
 }
 
 .kms-code-wrap {
-  margin: 12px 0 16px;
+  margin: var(--gap-element) 0 var(--gap-card);
   border: 1px solid var(--kms-border);
   border-radius: 10px;
   overflow: hidden;
-  background: #1e1e2e;
+  background: #030303;                   /* --black */
 }
 
 .kms-code-label {
-  padding: 6px 14px;
-  background: rgba(255,255,255,.06);
+  padding: var(--gap-tight) var(--gap-card);
+  background: rgba(255,255,255,.05);
   border-bottom: 1px solid rgba(255,255,255,.08);
-  color: rgba(255,255,255,.78);
+  color: #c4c4c4;                        /* --gray-300, |Lc| 74 on black */
+  font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -737,14 +780,54 @@ mark.kms-highlight {
 
 .kms-code {
   margin: 0;
-  padding: 16px;
+  padding: var(--gap-card);
   overflow-x: auto;
   font-size: 13px;
   line-height: 1.65;
-  color: #cdd6f4;
+  color: #ebebeb;                        /* --gray-100 on black, |Lc| ~95 */
 }
 
 .kms-code code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+/* 테이블 (마크다운 `| col | col |` 자동 렌더링) */
+.kms-table-wrap {
+  margin: var(--gap-element) 0 var(--gap-card);
+  overflow-x: auto;
+  border: 1px solid var(--kms-border);
+  border-radius: 10px;
+}
+.kms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.kms-table th,
+.kms-table td {
+  padding: var(--gap-tight) var(--gap-element);
+  border-bottom: 1px solid var(--kms-border);
+  text-align: left;
+  vertical-align: top;
+  color: var(--kms-ink);
+}
+.kms-table tr:last-child td {
+  border-bottom: none;
+}
+.kms-table th {
+  background: var(--kms-surface2);
+  font-weight: 700;
+  color: var(--kms-accent-strong);
+  letter-spacing: 0.01em;
+  border-bottom: 2px solid var(--kms-border-soft);
+}
+.kms-table tbody tr:hover {
+  background: var(--kms-accent-bg);
+}
+.kms-table td code,
+.kms-table th code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
 
 /* ── 편집기 ─────────────────────────────────────────────── */
 .kms-editor-panel {
