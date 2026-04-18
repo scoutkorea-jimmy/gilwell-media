@@ -1,6 +1,30 @@
 {
   "items": [
   {
+      "version": "00.115.01",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:08:44 KST",
+      "summary": "본문 font-weight를 NixgonFont Light(300)에서 Medium(500)으로 수정해 기사·본문 가독성과 APCA 지각 대비를 정상화했습니다.",
+      "changes": [
+        "이전 서체(AliceDigitalLearning) 시절부터 body 기본 font-weight가 300으로 설정되어 있었습니다. NixgonFont는 300이 실제 Light 중량이라 본문이 과하게 얇게 렌더링되어 기사 상세(/post/*) 본문 읽기에 어려움이 있었고, 색 대비는 충족(Lc 105)하더라도 stroke가 가늘어 APCA 지각 대비가 떨어지는 문제가 있었습니다.",
+        "css/style.css body { font-weight: 500 } 로 기본값 수정. KMS §3.1 '본문은 Medium(500)' 규칙과 실제 코드를 일치시켰습니다.",
+        ".post-page-body p / li / blockquote 에 명시적 font-weight: 500 추가, line-height를 1.92 → 1.85로 소폭 조정해 읽기 리듬 개선.",
+        ".hero-main .deck, .modal-body, .form-group textarea 등 본문 맥락의 font-weight 300을 모두 500으로 승격했습니다(css/style.css 3건).",
+        "@font-face 3중량 선언(300/500/700)은 그대로 유지 — 필요한 곳(메타·장식)에서는 여전히 300을 명시적으로 사용 가능.",
+        "사이트 버전 00.115.00 → 00.115.01."
+      ]
+    },
+  {
+      "version": "03.067.01",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 16:08:44 KST",
+      "summary": "관리자 KMS 디자인 시스템 테이블 셀의 얇은 Light 중량을 Medium으로 올려 가독성을 정상화했습니다.",
+      "changes": [
+        ".kms-ds-table td font-weight 300 → 500 변경(css/admin.css). 13px 작은 글자에서 Light 중량이 지각 대비를 떨어뜨리던 문제 해결.",
+        "관리자 버전 03.067.00 → 03.067.01."
+      ]
+    },
+  {
       "version": "00.115.00",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:59:42 KST",
