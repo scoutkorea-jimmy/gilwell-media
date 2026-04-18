@@ -196,18 +196,57 @@ line-height: 1.7;
 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 ```
 
-### 3.2 공통 여백 규칙
+### 3.2 공통 여백 규칙 (Spacing 토큰 시스템)
 
 #### 기능 세부 설명
-- 미세 간격: `8px`
-- 기본 요소 간격: `12px`
-- 카드 내부 기본 간격: `16px`
-- 섹션 내부 기본 여백: `24px`
-- 섹션과 섹션 사이: `24px ~ 32px`
-- 관리자 콘솔은 인라인 `margin/gap/width`를 늘리기보다 공통 spacing 유틸과 카드 규칙을 우선 사용한다.
+
+**간격은 4px 그리드 기반의 9개 의미 토큰으로 관리한다.** `padding`, `margin`, `gap` 속성에는 아래 토큰 중 하나를 사용하며, 리터럴(`8px`/`16px`/`24px` 등) 직접 사용은 점진적으로 제거한다. 엣지 케이스(`3px`, `6px` 등)만 리터럴 허용.
+
+**수직·일반 간격 토큰** (`css/style.css` `:root`)
+
+| 토큰 | 값 | 용도 |
+|---|---|---|
+| `--gap-micro` | `4px` | 아이콘-글자 간격, 얇은 구분선 |
+| `--gap-tight` | `8px` | 칩 안 padding, 인라인 요소 간격 |
+| `--gap-element` | `12px` | 컴포넌트 내부 요소 간격 |
+| `--gap-card` | `16px` | 카드 내부 padding, 리스트 항목 |
+| `--gap-section` | `24px` | 섹션 내부 블록 간격 |
+| `--gap-section-out` | `32px` | 섹션과 섹션 사이 |
+
+**페이지 좌우 거터 토큰** (반응형, `padding-inline`)
+
+| 토큰 | 값 | 적용 뷰포트 |
+|---|---|---|
+| `--pad-page-desktop` | `48px` | 데스크톱 본문 |
+| `--pad-page-tablet` | `32px` | 태블릿 |
+| `--pad-page-mobile` | `16px` | 모바일 |
+
+**사용 원칙**
+- 새 CSS 작성 시 `padding`·`margin`·`gap`에 **반드시 토큰 사용**. 리터럴 값 직접 입력 금지.
+- 토큰에 없는 값(예: `20px`, `28px`)이 필요하면 먼저 **기존 토큰으로 대체 가능한지 재검토**. 불가능하면 용도를 KMS에 추가하고 토큰으로 승격.
+- 관리자 콘솔은 인라인 `margin/gap/width`를 늘리기보다 공통 토큰과 카드 규칙을 우선 사용한다.
 - 같은 역할의 검색창, 필터행, 카드 헤더, 보조 설명, 사이드 카드 제목은 같은 간격 체계를 공유해야 한다.
 - 관리자 패널 간격 수정은 한 화면만 맞추는 것이 아니라 `대시보드 / 작성 / 설정 / 분석 / 버전기록 / 오류기록` 전체에서 같은 언어로 보이는지 함께 확인한다.
-- 사이트 설정 내부의 보조 메뉴를 메인 영역에 다시 복제하지 않는 것처럼, 여백도 탐색 기준이 중복되지 않도록 단순한 흐름을 유지한다.
+- 페이지 좌우 거터는 **컨테이너 단위로만 적용**하고, 내부 요소는 별도 `padding-inline`을 겹쳐 쓰지 않는다.
+
+**코드 예시**
+
+```css
+/* ✅ 토큰 사용 */
+.article-card        { padding: var(--gap-card); gap: var(--gap-element); }
+.home-section        { padding: var(--gap-section); margin-bottom: var(--gap-section-out); }
+.page-container     { padding-inline: var(--pad-page-desktop); }
+@media (max-width: 768px) {
+  .page-container   { padding-inline: var(--pad-page-mobile); }
+}
+
+/* ❌ 리터럴 직접 사용 (점진적 제거 대상) */
+.article-card-bad    { padding: 16px; gap: 12px; }
+```
+
+#### 각주
+- 토큰 도입 배경: 같은 값이 `8px`·`16px`·`24px` 리터럴로 수백 군데 흩어져 있어 디자인 리듬 조정이 불가능했다. 토큰으로 승격해 한 곳에서 값을 바꾸면 전체가 함께 움직인다.
+- 리터럴 전면 치환은 2026-04-18 세션에서 `padding`/`margin`/`gap` 속성 한정으로 551건 처리 완료. `border-radius`, `width`, `height`, `line-height` 등 비-간격 속성은 대상 외.
 
 ### 3.3 버튼 위계 규칙
 
