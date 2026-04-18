@@ -1,6 +1,20 @@
 {
   "items": [
   {
+      "version": "03.066.01",
+      "date": "2026-04-18",
+      "released_at": "2026-04-18 15:52:43 KST",
+      "summary": "KMS 기능정의서 페이지를 디자인 가이드(APCA Lc · Spacing 토큰 · 10색 팔레트)에 맞춰 전면 리디자인하고, 마크다운 테이블 렌더링을 추가했습니다.",
+      "changes": [
+        "KMS 로컬 CSS 변수(--kms-ink, --kms-accent, --kms-muted 등)를 site 디자인 토큰(--ink, --scouting-purple, --gray-500 등)을 참조하도록 재정의했습니다. KMS 전용으로 분리되어 있던 팔레트가 이제 브랜드 팔레트와 동기화됩니다.",
+        "기능정의서 본문(.kms-document-body)의 배경을 purple-tinted gradient에서 Canvas White 단색으로 정리하고 max-width 920px · 중앙 정렬로 읽기 너비를 확보했습니다.",
+        "본문 타이포 계층을 디자인 가이드 기준으로 재설계했습니다: H2는 Midnight Purple(Lc 100.2) + 하단 구분선, H3는 Ink(Lc 105.1) 중간 크기, H4는 Scouting Purple accent-bg 칩 형태, H5는 Gray 500 메타 라벨. 모든 margin/padding은 Spacing 토큰(--gap-*) 적용.",
+        "인용문·인라인코드·코드블록·링크·위키링크를 APCA 기준 색상으로 정리했습니다. 인용문은 scouting-purple accent-bg + left border, 인라인코드는 midnight-purple 텍스트, 코드블록은 #030303(--black) 배경 + gray-100(--gray-100) 텍스트로 |Lc| 95 확보. 링크는 focus-visible outline 2px scouting-purple 추가.",
+        "마크다운 테이블(`| col | col |` 형식) 렌더링을 js/kms.js의 renderKmsText에 추가했습니다. 그동안 브랜드 팔레트 표·WCAG 3.0 Lc 기준표·그레이스케일 표가 raw 텍스트로 노출되던 문제 해결. .kms-table + .kms-table-wrap 스타일도 신설(overflow-x:auto, 헤더 스티키 background, row hover accent-bg).",
+        "관리자 버전 03.066.00 → 03.066.01."
+      ]
+    },
+  {
       "version": "00.114.01",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:43:20 KST",
