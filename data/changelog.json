@@ -1,6 +1,21 @@
 {
   "items": [
   {
+      "version": "03.069.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 08:10:20 KST",
+      "summary": "KMS 기능정의서 본문을 대목차 단위 카드 스택으로 재구성하고, 사이드바-본문 사이의 불필요한 여백을 다른 탭과 동일하게 맞췄습니다.",
+      "changes": [
+        ".kms-document-body의 max-width:760px + margin:0 auto 중앙정렬 박스를 제거했습니다. 기존에는 tab-panel(900px) 안에서 본문이 760px로 한 번 더 중앙정렬되어 사이드바와 본문 사이에 약 70px의 여분 공간이 생겼는데, 이제 API 가이드 / 버전기록 / 디자인 탭과 동일하게 tab-panel 폭(900px)을 그대로 사용합니다.",
+        "기능정의서 본문을 대목차(##) 단위로 자동 카드(.kms-doc-card)화했습니다. js/kms.js의 renderDocument가 최종 HTML을 h3.kms-h3 기준으로 분할하고, 각 구간을 <section class=\"kms-doc-card\" aria-labelledby=\"...\"> 으로 감싸 API 그룹·버전기록 아이템과 동일한 카드 톤(border + border-radius 12px + Canvas White)을 적용합니다.",
+        "# 문서 제목과 서문(#\uc774하 첫 대목차 이전 내용)은 .kms-doc-card--intro 인트로 카드로 별도 구분해 문서 시작점의 시각 앵커가 됩니다.",
+        ".kms-document-body 자체는 display:flex, flex-direction:column, gap:var(--gap-section)(24px)로 재정의되어 카드 간격이 일관됩니다. 카드 내부 패딩은 기존 본문 패딩(32/32/40)을 유지해 가독성 저하 없음.",
+        "모바일(≤900px)에서는 카드 패딩을 --gap-section / --gap-card / --gap-section+--gap-tight 로 축소하고 radius 10px로 조정해 좁은 화면 밀도를 보정했습니다.",
+        "검색 결과 뷰(.kms-search-section)는 카드 래핑 대상에서 제외되어 기존 검색 UX는 그대로 유지됩니다.",
+        "관리자 버전 03.068.00 → 03.069.00."
+      ]
+    },
+  {
       "version": "03.068.00",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:51:07 KST",
