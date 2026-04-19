@@ -605,7 +605,7 @@
     if (tab === 'api') renderApiSectionList();
     else if (tab === 'changelog') clearSectionList();
     else if (tab === 'design') { renderDesignSystem(); renderDesignSectionList(); }
-    else if (tab === 'editorial') clearSectionList();
+    else if (tab === 'editorial') renderEditorialSectionList();
     else renderSectionList(_state.docContent);
   }
 
@@ -990,6 +990,31 @@
         var target = document.getElementById(targetId);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         closeSidebar();
+      });
+    });
+  }
+
+  function renderEditorialSectionList() {
+    var list = document.getElementById('kms-section-list');
+    if (!list) return;
+    var container = document.getElementById('kms-tab-editorial');
+    if (!container) return;
+    var html = ['<div class="kms-section-group-label">BP미디어 v2.1</div>'];
+    container.querySelectorAll('.kms-ed-section[id]').forEach(function (section) {
+      var heading = section.querySelector('.kms-ed-heading');
+      if (!heading) return;
+      var text = heading.textContent.replace(/\s+/g, ' ').trim();
+      html.push(
+        '<button type="button" class="kms-section-link" data-kms-target="' + GW.escapeHtml(section.id) + '">' +
+          '<span class="kms-section-title">' + GW.escapeHtml(text) + '</span>' +
+        '</button>'
+      );
+    });
+    list.innerHTML = html.join('');
+    list.querySelectorAll('[data-kms-target]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = document.getElementById(btn.getAttribute('data-kms-target'));
+        if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); closeSidebar(); }
       });
     });
   }
