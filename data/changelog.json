@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.122.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 21:45:00 KST",
+    "summary": "유관 키워드(#태그) 관련 기사 모달 중앙에 큰 빈 여백이 생기던 문제 수정. 컨테이너와 자식 섹션 모두에 `.modal-related-posts` 클래스가 중복 적용돼 margin-top/padding-top/border-top이 두 번 쌓여 발생했습니다.",
+    "changes": [
+      "functions/post/[id].js #post-tag-modal-list에서 class=\"modal-related-posts\" 제거. 이 div는 단순 컨테이너이므로 related-posts 스타일 불필요.",
+      "js/post-page.js _renderTagRelatedPosts(): 자식 <section>의 클래스를 'modal-related-posts post-related-surface' → 'post-related-surface' 단일로 정리. 중복 margin-top:28px + padding-top:20px + border-top:1px 제거.",
+      "결과: 모달 상단 제목·설명·구분선 아래 약 124px의 비어 보이던 공간이 modal-body 기본 패딩(28px) + post-related-surface 패딩(18px)만 남아 자연스러운 46px 간격으로 축소. 가로 구분선 중복도 1줄로 통일.",
+      "사이트 버전 00.122.00 → 00.122.01."
+    ]
+  },
+  {
     "version": "03.087.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 21:30:00 KST",
