@@ -11,8 +11,11 @@
 /* 한글(NixgonFont)과 영문(Google Sans Flex)의 굵기·숫자 정렬을 한 문맥에서
    시각적으로 맞추기 위한 글로벌 캘리브레이션.
    - font-optical-sizing: auto       → opsz 축 자동화(글자 크기에 맞춰 최적 형상)
-   - font-feature-settings: "tnum"   → 모든 숫자를 등폭으로 정렬(통계 카드, 버전 번호 등)
-   - font-synthesis-weight: none     → 브라우저 가짜 볼드 금지(폰트에 있는 weight만 사용) */
+   - font-feature-settings: tnum     → 모든 숫자를 등폭으로 정렬(통계 카드, 버전 번호 등)
+   - font-synthesis-weight: none     → 브라우저 가짜 볼드 금지(폰트에 있는 weight만 사용)
+   - font-variation-settings wght    → Flex의 가변 weight 축을 +60 오프셋으로 쳐서
+                                        NixgonFont Medium(500)의 시각 굵기와 맞춤.
+                                        NixgonFont는 non-variable이라 이 설정을 자동 무시 */
 html, body {
   font-optical-sizing: auto;
   font-feature-settings: 'tnum' 1, 'lnum' 1;
@@ -20,7 +23,21 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-variation-settings: 'wght' 560, 'opsz' auto;
 }
+
+/* 헤딩·볼드 — font-weight 700 의도 → Flex도 같은 수준(+20) 오프셋으로 정합 */
+h1, h2, h3, h4, h5, h6,
+strong, b,
+.post-page-title, .post-page-subtitle,
+.hero-main h2, .hero-side-item h3,
+.board-banner h2, .home-section-title,
+.bw-title, .v3-card-title {
+  font-variation-settings: 'wght' 720, 'opsz' auto;
+}
+
+/* 경량 메타·캡션 — Flex 400은 보통 가는데, Nixgon에 300(Light)이 있으므로
+   그대로 자연 폴백. 굳이 variation wght를 낮추지 않음 (불일치 거의 없음) */
 
 @font-face {
   font-family: 'NixgonFont';

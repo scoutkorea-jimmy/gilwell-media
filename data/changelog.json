@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "03.088.02",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:50:00 KST",
+    "summary": "관리자 콘솔에도 Google Sans Flex variable wght 축 오프셋 적용(본문 560, 헤딩/강조 720)으로 시스템 한글 서체와 시각 굵기 균형.",
+    "changes": [
+      "css/admin-v3.css .admin-v3 본문 font-variation-settings: wght 560·opsz auto. .v3-card-title / .v3-page-title / .v3-stat-value / h1~h5 / strong은 wght 720.",
+      "관리자 버전 03.088.01 → 03.088.02."
+    ]
+  },
+  {
+    "version": "00.124.02",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:50:00 KST",
+    "summary": "한 문단 안에서 한글(NixgonFont Medium)이 영문·숫자(Google Sans Flex 500)보다 두껍게 보이던 현상을 해결했습니다. Flex의 variable wght 축을 본문 +60(= 560), 헤딩 +20(= 720) 오프셋으로 보정해 Nixgon과 시각 굵기를 맞춥니다. NixgonFont는 non-variable이라 이 설정을 자동 무시하므로 한글 렌더는 변화 없음.",
+    "changes": [
+      "css/style.css html·body에 font-variation-settings: 'wght' 560, 'opsz' auto 추가. Flex Latin 본문이 Nixgon Medium과 같은 시각 무게로 렌더링.",
+      "헤딩·강조 그룹(h1~h6 + strong/b + .post-page-title/.post-page-subtitle/.hero-main h2/.hero-side-item h3/.board-banner h2/.home-section-title/.bw-title/.v3-card-title)은 wght 720으로 설정해 Nixgon Bold(700)와 시각 정합.",
+      "font-weight와 font-variation-settings 상호작용 주의: variable font는 variation-settings가 우선. 헤딩을 위해 명시적으로 wght 720 재지정(inherit 차단).",
+      "사이트 버전 00.124.01 → 00.124.02."
+    ]
+  },
+  {
     "version": "03.088.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 22:35:00 KST",
