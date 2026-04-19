@@ -1,6 +1,19 @@
 {
   "items": [
   {
+      "version": "03.070.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 09:00:29 KST",
+      "summary": "[HOTFIX] 03.070.00에서 치환한 --gap-* / --fs-* 토큰이 admin에서 undefined로 해석되어 관리자 전체 여백·폰트가 무너진 문제 긴급 복구.",
+      "changes": [
+        "원인: admin.html은 css/style.css를 로드하지 않고 css/admin-v3.css만 로드한다. 03.070.00 배치에서 padding/margin/gap/font-size 리터럴을 style.css :root에 정의된 --gap-* / --fs-* 토큰으로 치환했으나 admin에서는 해당 변수가 정의되지 않아 var() 해석 실패 → 기본값(0 또는 브라우저 기본)으로 폴백되어 대시보드 카드 여백, 행간, 폰트 크기가 전부 붕괴된 상태로 배포됐다.",
+        "수정: css/admin-v3.css :root 상단에 --gap-micro/tight/element/card/section/section-out, --pad-page-desktop/tablet/mobile, --fs-micro/meta/caption/small/body/reading/lead/title/section/chapter/document/display 를 style.css와 동일한 값으로 직접 복사. admin 스타일시트가 자립적으로 동작하도록 함.",
+        "예방: :root 블록 상단에 'admin.html은 style.css를 로드하지 않으므로 여기서 직접 정의. 값은 css/style.css :root와 동일. 변경 시 동시 갱신' 주석 추가.",
+        "검증: 03.070.00에서 추가된 --v3-gap-sm/md/lg/xl, --v3-fs-xs/chip/dense/stat 은 admin-v3.css 자체에 정의되어 있으므로 영향 없음 — 이번 이슈는 site 공용 토큰 참조 한정.",
+        "관리자 버전 03.070.00 → 03.070.01."
+      ]
+    },
+  {
       "version": "03.070.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 08:51:55 KST",

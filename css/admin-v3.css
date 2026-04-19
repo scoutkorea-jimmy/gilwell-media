@@ -5,6 +5,32 @@
 
 /* ── Design Tokens ────────────────────────────────────────── */
 :root {
+  /* Site spacing/typography tokens (admin.html은 style.css를 로드하지 않아
+     --gap-* / --fs-* 토큰을 여기서 직접 정의. 값은 css/style.css :root와 동일.
+     KMS §3.2 준수. 변경 시 style.css와 동시 갱신) */
+  --gap-micro:         4px;
+  --gap-tight:         8px;
+  --gap-element:      12px;
+  --gap-card:         16px;
+  --gap-section:      24px;
+  --gap-section-out:  32px;
+  --pad-page-desktop: 48px;
+  --pad-page-tablet:  32px;
+  --pad-page-mobile:  16px;
+
+  --fs-micro:         10px;
+  --fs-meta:          11px;
+  --fs-caption:       12px;
+  --fs-small:         13.5px;
+  --fs-body:          14px;
+  --fs-reading:       15px;
+  --fs-lead:          16px;
+  --fs-title:         18px;
+  --fs-section:       20px;
+  --fs-chapter:       22px;
+  --fs-document:      24px;
+  --fs-display:       32px;
+
   --gw-scouting-purple: #622599;
   --gw-canvas-white: #ffffff;
   --gw-midnight-purple: #4d006e;
