@@ -1,6 +1,23 @@
 {
   "items": [
   {
+      "version": "03.078.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:26:22 KST",
+      "summary": "태그 관계도 연결성 시각 차별화 + 모바일 최적화 — 선 tier 3단계(strong/medium/weak 점선), 핀치 zoom, 노드·라벨 축소 버전.",
+      "changes": [
+        "링크 tier 분류: count 기준 상위 30%=strong(굵고 진한 --v3-text-m) / 중간=medium(--v3-text-l) / 하위 15%=weak(--v3-border-m 점선 stroke-dasharray 4 3).",
+        "굵기 곡선 재계산: 선형(1+r*3) → 비선형(0.6 + r^0.55 * 5). 약한 연결은 더 얇게, 강한 연결은 훨씬 굵게 차별화.",
+        "Hover focus 시 점선인 weak 링크도 solid로 복구 + indigo 강조 → 관계 체인이 확실히 보임.",
+        "모바일 최적화 — window.innerWidth < 700 감지: 노드 수 80→50, primary 라벨 수 25→15. 화면 밀도 낮춰 스크롤·터치 간섭 최소화.",
+        "핀치 줌 추가 — Pointer Events 2개 추적(Map<pointerId, pos>). 두 손가락 간 거리 변화로 zoom.k 계산, 중간점 고정. 핀치 시작 시 기존 pan/drag 자동 중지.",
+        "touch-action: none 명시해 모바일 사파리·크롬에서 페이지 팬·줌 대신 SVG pointer 이벤트가 그래프 상호작용으로 넘어오도록.",
+        "모바일 전용 CSS: max-height 68vh, 라벨 font-size 키움(--fs-caption/primary --fs-body), hint flex-direction column.",
+        "힌트 텍스트 업데이트: '마우스 휠 · 핀치: 확대/축소 | 빈 공간 드래그: 화면 이동 | 노드 드래그: 재배치 | 굵은 선 = 강한 연결 · 점선 = 약한 연결'.",
+        "관리자 버전 03.077.01 → 03.078.00 (feature bump)."
+      ]
+    },
+  {
       "version": "03.077.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:21:06 KST",

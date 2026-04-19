@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.077.01
+ * Version: 03.078.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3074,9 +3074,10 @@
       '<div class="v3-ti-graph-stage">' +
         '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
         '<div class="v3-ti-graph-hint">' +
-          '<span>마우스 휠: 확대/축소</span>' +
+          '<span>마우스 휠 · 핀치: 확대/축소</span>' +
           '<span>빈 공간 드래그: 화면 이동</span>' +
           '<span>노드 드래그: 재배치</span>' +
+          '<span>굵은 선 = 강한 연결 · 점선 = 약한 연결</span>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-graph-reset">원위치</button>' +
         '</div>' +
       '</div>' +
@@ -3177,13 +3178,15 @@
     // 기존 핸들러 해제
     if (_tiGraphState && _tiGraphState.destroy) _tiGraphState.destroy();
 
-    var topNodes = data.graph.nodes.slice(0, 80);
+    // 모바일 감지: 데스크톱 상위 80·label 25, 모바일 상위 50·label 15로 축소해 가독성 확보.
+    var isMobile = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth < 700);
+    var NODE_LIMIT = isMobile ? 50 : 80;
+    var LABEL_ALWAYS = isMobile ? 15 : 25;
+    var topNodes = data.graph.nodes.slice(0, NODE_LIMIT);
     var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
     var maxCount = Math.max.apply(null, topNodes.map(function (n) { return n.count || 1; }));
 
-    // 더 넓은 캔버스 + 강한 반발로 라벨 겹침 완화. 상위 N 라벨만 기본 표시, 나머지는 hover 시 노출.
     var W = 1280, H = 720;
-    var LABEL_ALWAYS = 25;  // 상위 25개만 항상 라벨 표시
     var rand = _createSeedRng(topNodes.length + (data.graph.links || []).length);
     var nodes = topNodes.map(function (n, idx) {
       var ratio = (n.count || 1) / maxCount;
@@ -3285,19 +3288,40 @@
     nodesG.setAttribute('class', 'v3-ti-graph-nodes');
     world.appendChild(nodesG);
 
-    // 링크 DOM
+    // 링크 tier — count 기준 3단계 + 약한 연결(가장 낮은 tier)은 점선 표시.
+    //   strong: 최상위 30% → 굵고 선명
+    //   medium: 중간 ~ 최하위 15% 위까지 → 기본 선 굵기
+    //   weak:   최하위 15% (또는 count=1) → 얇은 점선
+    var sortedCounts = links.map(function (l) { return l.count; }).sort(function (a, b) { return a - b; });
+    function percentile(arr, p) { if (!arr.length) return 0; var idx = Math.floor(arr.length * p); return arr[Math.min(arr.length - 1, idx)]; }
+    var weakCutoff = Math.max(1, percentile(sortedCounts, 0.15));
+    var strongCutoff = Math.max(2, percentile(sortedCounts, 0.70));
+    function classifyLink(count) {
+      if (count <= weakCutoff) return 'weak';
+      if (count >= strongCutoff) return 'strong';
+      return 'medium';
+    }
+    // 굵기 곡선: 약한 건 더 얇게, 강한 건 훨씬 굵게 (비선형 강조).
+    function linkWidth(count) {
+      var r = count / maxLinkCount;
+      return (0.6 + Math.pow(r, 0.55) * 5).toFixed(2); // 0.6 ~ 5.6
+    }
+
     var linkEls = links.map(function (l) {
+      var tier = classifyLink(l.count);
       var line = document.createElementNS(NS, 'line');
       line.setAttribute('x1', l.source.x.toFixed(1));
       line.setAttribute('y1', l.source.y.toFixed(1));
       line.setAttribute('x2', l.target.x.toFixed(1));
       line.setAttribute('y2', l.target.y.toFixed(1));
-      line.setAttribute('stroke', '#cbd5e1');
-      line.setAttribute('stroke-opacity', '0.5');
-      line.setAttribute('stroke-width', (1 + (l.count / maxLinkCount) * 3).toFixed(2));
-      line.setAttribute('class', 'v3-ti-graph-link');
+      line.setAttribute('stroke-width', linkWidth(l.count));
+      line.setAttribute('class', 'v3-ti-graph-link is-tier-' + tier);
+      if (tier === 'weak') {
+        // 점선 — 패턴은 굵기 대비 보이도록 4 3 .
+        line.setAttribute('stroke-dasharray', '4 3');
+      }
       linksG.appendChild(line);
-      return { line: line, source: l.source, target: l.target };
+      return { line: line, source: l.source, target: l.target, tier: tier };
     });
 
     // 노드 DOM — 라벨은 halo(흰 stroke)로 가독성 확보. primary/secondary 티어 분리.
@@ -3400,10 +3424,41 @@
     }
     svg.addEventListener('wheel', onWheel, { passive: false });
 
-    // --- Pan / Node drag (Pointer Events) ---
+    // --- Pan / Node drag / Pinch zoom (Pointer Events, 모바일 터치 지원) ---
     var pan = null;
     var drag = null;
+    var pointers = new Map();       // pointerId → {clientX, clientY}
+    var pinch = null;               // {d0, k0, cx0, cy0}
+    function pointerDist() {
+      var arr = [];
+      pointers.forEach(function (p) { arr.push(p); });
+      if (arr.length < 2) return 0;
+      var dx = arr[0].clientX - arr[1].clientX;
+      var dy = arr[0].clientY - arr[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function pointerMidpoint() {
+      var arr = [];
+      pointers.forEach(function (p) { arr.push(p); });
+      if (arr.length < 2) return { x: 0, y: 0 };
+      return { x: (arr[0].clientX + arr[1].clientX) / 2, y: (arr[0].clientY + arr[1].clientY) / 2 };
+    }
     function onPointerDown(ev) {
+      pointers.set(ev.pointerId, { clientX: ev.clientX, clientY: ev.clientY });
+      if (pointers.size >= 2) {
+        // pinch 시작 — 기존 pan/drag 중지.
+        if (drag) { drag.entry.g.classList.remove('is-dragging'); drag = null; }
+        if (pan) { svg.classList.remove('is-panning'); pan = null; }
+        var mid = pointerMidpoint();
+        var local = svgPoint(mid.x, mid.y);
+        pinch = {
+          d0: pointerDist(),
+          k0: zoom.k,
+          localAtStart: local,
+          worldAtStart: { x: (local.x - zoom.x) / zoom.k, y: (local.y - zoom.y) / zoom.k },
+        };
+        return;
+      }
       var nodeG = ev.target.closest ? ev.target.closest('[data-node-id]') : null;
       if (nodeG) {
         var entry = nodeElById[nodeG.getAttribute('data-node-id')];
@@ -3420,7 +3475,6 @@
           return;
         }
       }
-      // empty 공간 드래그 = pan
       pan = {
         start: { x: ev.clientX, y: ev.clientY },
         origin: { x: zoom.x, y: zoom.y },
@@ -3430,9 +3484,25 @@
       svg.setPointerCapture && svg.setPointerCapture(ev.pointerId);
     }
     function onPointerMove(ev) {
+      if (pointers.has(ev.pointerId)) {
+        pointers.set(ev.pointerId, { clientX: ev.clientX, clientY: ev.clientY });
+      }
+      if (pinch && pointers.size >= 2) {
+        // 두 손가락 간 거리 변화로 zoom scale 계산. 중간점 고정.
+        var curDist = pointerDist();
+        if (curDist > 0 && pinch.d0 > 0) {
+          var newK = Math.max(0.25, Math.min(4, pinch.k0 * (curDist / pinch.d0)));
+          var mid = pointerMidpoint();
+          var localMid = svgPoint(mid.x, mid.y);
+          zoom.k = newK;
+          zoom.x = localMid.x - pinch.worldAtStart.x * newK;
+          zoom.y = localMid.y - pinch.worldAtStart.y * newK;
+          applyTransform();
+        }
+        return;
+      }
       if (drag) {
         var cur = svgPoint(ev.clientX, ev.clientY);
-        // world 좌표 변환
         var wx = (cur.x - zoom.x) / zoom.k;
         var wy = (cur.y - zoom.y) / zoom.k;
         var sx = (drag.start.x - zoom.x) / zoom.k;
@@ -3440,7 +3510,6 @@
         drag.entry.node.x = drag.orig.x + (wx - sx);
         drag.entry.node.y = drag.orig.y + (wy - sy);
         drag.entry.g.setAttribute('transform', 'translate(' + drag.entry.node.x.toFixed(1) + ',' + drag.entry.node.y.toFixed(1) + ')');
-        // 관련 링크만 업데이트
         linkEls.forEach(function (le) {
           if (le.source === drag.entry.node) {
             le.line.setAttribute('x1', drag.entry.node.x.toFixed(1));
@@ -3460,11 +3529,13 @@
       }
     }
     function onPointerUp(ev) {
-      if (drag) {
+      pointers.delete(ev.pointerId);
+      if (pointers.size < 2 && pinch) { pinch = null; }
+      if (drag && (!ev || ev.pointerId === drag.pointerId)) {
         drag.entry.g.classList.remove('is-dragging');
         drag = null;
       }
-      if (pan) {
+      if (pan && (!ev || ev.pointerId === pan.pointerId)) {
         svg.classList.remove('is-panning');
         pan = null;
       }
