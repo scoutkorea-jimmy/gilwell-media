@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.075.00
+ * Version: 03.076.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2984,21 +2984,274 @@
     });
   }
 
+  var _tagInsightsCache = null;
+
   function _loadAnalyticsTags() {
     var bodyEl = document.getElementById('analytics-tags-body');
     if (!bodyEl) return;
-    bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    var tagPeriod = _analyticsTagPeriodState.days || 30;
-    // 태그 인사이트만 필요. 서버는 tag_* 프리픽스로 별도 기간 수용하며 다른 섹션 비용은 무시 가능.
-    var qs = _periodQuery(_analyticsTagPeriodState, 'tag_');
-    _apiFetch('/api/admin/analytics?' + qs).then(function (data) {
-      var tagCloud = data.tags || {};
-      bodyEl.innerHTML = _renderAnalyticsTagCloud(tagCloud, tagPeriod);
-      _mountAnalyticsTagGraph(tagCloud && tagCloud.graph ? tagCloud.graph : null);
+    bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>태그 인사이트 분석 중…</div>';
+    // /api/admin/tag-insights — functions/_shared/tag-insights.js 모듈 사용.
+    // 전면 개편: §1 통계 / §2 관계도 / §3 건강성 / §4 커버리지 / §5 제안 다섯 섹션 렌더.
+    var allFlag = _analyticsTagPeriodState.days ? '0' : '1';
+    var qs = _periodQuery(_analyticsTagPeriodState);
+    _apiFetch('/api/admin/tag-insights?' + qs + '&all=' + allFlag).then(function (data) {
+      _tagInsightsCache = data;
+      bodyEl.innerHTML = _renderTagInsightsSections(data);
+      _mountTagInsightsGraph(data);
     }).catch(function (e) {
       bodyEl.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">태그 인사이트를 불러오지 못했습니다: ' + GW.escapeHtml(e.message || '') + '</div></div></div>';
       _analyticsTagGraphState = null;
     });
+  }
+
+  function _renderTagInsightsSections(data) {
+    if (!data) return '';
+    return [
+      _renderTiStatistics(data),
+      _renderTiGraph(data),
+      _renderTiHealth(data),
+      _renderTiCoverage(data),
+      _renderTiSuggestions(data),
+    ].join('');
+  }
+
+  function _renderTiStatistics(data) {
+    var s = data.statistics || {};
+    var catRows = (s.category_avg || []).map(function (r) {
+      return '<tr><td><span class="v3-badge v3-badge-gray">' + GW.escapeHtml(r.category) + '</span></td><td>' +
+        r.posts + '</td><td>' + r.with_meta + '</td><td>' + (r.avg_meta || 0).toFixed(2) + '</td></tr>';
+    }).join('');
+    var top20 = (data.meta_ranking || []).slice(0, 20);
+    var bottom10 = (data.meta_ranking || []).slice(-10).reverse();
+    var metaTopRows = top20.map(function (m, i) {
+      return '<tr><td>' + (i + 1) + '</td><td><code class="v3-inline-code">' + GW.escapeHtml(m.tag) + '</code></td><td>' + m.count + '</td></tr>';
+    }).join('');
+    var metaBottomRows = bottom10.map(function (m) {
+      return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(m.tag) + '</code></td><td>' + m.count + '</td></tr>';
+    }).join('');
+    var headerTop = (data.header_ranking || []).slice(0, 10).map(function (h) {
+      var pct = ((h.pct || 0) * 100).toFixed(1);
+      return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(h.tag) + '</code></td><td>' + h.count + '</td><td>' + pct + '%</td></tr>';
+    }).join('');
+    return '<section class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">§1 기초 통계</h2></div>' +
+      '<div class="v3-stats-grid">' +
+        '<div class="v3-stat"><div class="v3-stat-label">전체 기사</div><div class="v3-stat-value">' + _fmt(s.total_posts || 0) + '</div><div class="v3-stat-sub">published=1</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">고유 글머리 태그</div><div class="v3-stat-value">' + _fmt(s.unique_header_tags || 0) + '</div><div class="v3-stat-sub">tag 필드</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">고유 메타 태그</div><div class="v3-stat-value">' + _fmt(s.unique_meta_tags || 0) + '</div><div class="v3-stat-sub">meta_tags 필드</div></div>' +
+        '<div class="v3-stat"><div class="v3-stat-label">평균 메타 태그/기사</div><div class="v3-stat-value">' + (s.avg_meta_per_post || 0).toFixed(2) + '</div><div class="v3-stat-sub">메타 있는 기사 기준</div></div>' +
+      '</div>' +
+      '<div class="v3-ti-grid v3-mt-16">' +
+        '<div><h3 class="v3-ti-subtitle">글머리 태그 상위 10</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>%</th></tr></thead><tbody>' + headerTop + '</tbody></table>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'header\')">전체 ' + (data.header_ranking || []).length + '개 보기</button>' +
+        '</div>' +
+        '<div><h3 class="v3-ti-subtitle">category별 평균 메타 태그</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>category</th><th>기사</th><th>메타 있음</th><th>평균</th></tr></thead><tbody>' + catRows + '</tbody></table>' +
+        '</div>' +
+      '</div>' +
+      '<div class="v3-ti-grid v3-mt-16">' +
+        '<div><h3 class="v3-ti-subtitle">메타 태그 상위 20</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>#</th><th>태그</th><th>기사</th></tr></thead><tbody>' + metaTopRows + '</tbody></table>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'meta\')">전체 ' + (data.meta_ranking || []).length + '개 보기</button>' +
+        '</div>' +
+        '<div><h3 class="v3-ti-subtitle">메타 태그 하위 10 (고립 맛보기)</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th></tr></thead><tbody>' + metaBottomRows + '</tbody></table>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'isolated\')">1회 등장 전체 ' + (data.health ? data.health.isolated_tags_count : 0) + '개</button>' +
+        '</div>' +
+      '</div>' +
+    '</section>';
+  }
+
+  function _renderTiGraph(data) {
+    var g = data.graph || { nodes: [], links: [] };
+    var topN = Math.min(80, (g.nodes || []).length);
+    var linkCount = Math.min(200, (g.links || []).length);
+    return '<section class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">§2 태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그. 휠/드래그로 탐색.</p></div>' +
+      '<div class="v3-inline-meta">상위 노드 ' + topN + '개 · 링크 ' + linkCount + '개</div>' +
+      '<div class="v3-tag-graph-stage">' +
+        '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+      '</div>' +
+    '</section>';
+  }
+
+  function _renderTiHealth(data) {
+    var h = data.health || {};
+    var isolatedPreview = (h.isolated_tags || []).slice(0, 20).map(function (t) {
+      return '<code class="v3-inline-code" style="margin:2px;display:inline-block;">' + GW.escapeHtml(t) + '</code>';
+    }).join(' ');
+    var oc = (h.overly_common || []).map(function (r) {
+      return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(r.tag) + '</code></td><td>' + r.count + '</td><td>' + ((r.pct || 0) * 100).toFixed(1) + '%</td><td><span class="v3-badge v3-badge-yellow">세분화 검토</span></td></tr>';
+    }).join('');
+    var dup = (h.duplicate_suspects || []).slice(0, 15).map(function (d) {
+      return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(d.left) + '</code></td><td><code class="v3-inline-code">' + GW.escapeHtml(d.right) + '</code></td><td>' + d.left_count + ' / ' + d.right_count + '</td><td>' + GW.escapeHtml(d.reasons.join(', ')) + '</td><td><span class="v3-badge v3-badge-gray">사람 판단</span></td></tr>';
+    }).join('');
+    var clusters = (h.isolated_clusters || []).slice(0, 10).map(function (c) {
+      var members = c.members.map(function (t) { return '<code class="v3-inline-code">' + GW.escapeHtml(t) + '</code>'; }).join(' · ');
+      return '<tr><td>' + c.size + '</td><td>' + members + '</td><td>' + c.total_articles + '</td></tr>';
+    }).join('');
+    return '<section class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">§3 태그 체계 건강성 진단</h2><p class="v3-card-desc">자동 통합/삭제 금지. 모든 항목 <strong>사람 검토 필요</strong>.</p></div>' +
+      '<div class="v3-ti-subsection"><h3 class="v3-ti-subtitle">1. 1회만 등장한 고립 태그 <span class="v3-text-m">(' + (h.isolated_tags_count || 0) + '개)</span></h3>' +
+        '<div style="line-height:1.8;">' + (isolatedPreview || '<span class="v3-text-m">없음</span>') +
+        (h.isolated_tags && h.isolated_tags.length > 20 ? ' <button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" onclick="V3._tiMore(\'isolated\')">전체 ' + h.isolated_tags.length + '개 보기</button>' : '') +
+        '</div></div>' +
+      (oc ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">2. 과다 등장 태그 <span class="v3-text-m">(기준 ≥' + (h.overly_common_threshold || 0) + '건)</span></h3>' +
+        '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>비율</th><th>권고</th></tr></thead><tbody>' + oc + '</tbody></table></div>' : '') +
+      (dup ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">3. 중복 의심 태그 쌍 <span class="v3-text-m">(상위 15)</span></h3>' +
+        '<table class="v3-geo-table"><thead><tr><th>A</th><th>B</th><th>A/B건수</th><th>근거</th><th>판단</th></tr></thead><tbody>' + dup + '</tbody></table>' +
+        (h.duplicate_suspects && h.duplicate_suspects.length > 15 ? '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'dup\')">전체 ' + h.duplicate_suspects.length + '쌍 보기</button>' : '') +
+        '</div>' : '') +
+      (clusters ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">4. 고립 군집 <span class="v3-text-m">(2~5개 소규모)</span></h3>' +
+        '<table class="v3-geo-table"><thead><tr><th>크기</th><th>구성</th><th>기사</th></tr></thead><tbody>' + clusters + '</tbody></table></div>' : '') +
+    '</section>';
+  }
+
+  function _renderTiCoverage(data) {
+    var c = data.coverage || {};
+    var byHeader = (c.by_header || []).slice(0, 15).map(function (h) {
+      var cats = (h.categories || []).map(function (x) { return x.category + ':' + x.n; }).join(' · ');
+      return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(h.tag) + '</code></td><td>' + h.posts + '</td><td class="v3-text-m">' + GW.escapeHtml(cats) + '</td></tr>';
+    }).join('');
+    var monthly = (c.monthly || []).slice(-12).map(function (m) {
+      return '<tr><td>' + GW.escapeHtml(m.month) + '</td><td>' + m.count + '</td></tr>';
+    }).join('');
+    var gaps = (c.gaps || []).map(function (t) {
+      return '<code class="v3-inline-code" style="margin:2px;display:inline-block;">' + GW.escapeHtml(t) + '</code>';
+    }).join(' ');
+    return '<section class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">§4 콘텐츠 축적 현황</h2></div>' +
+      '<div class="v3-ti-grid">' +
+        '<div><h3 class="v3-ti-subtitle">글머리 태그별 누적 (상위 15)</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>category 분포</th></tr></thead><tbody>' + byHeader + '</tbody></table>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'coverage\')">전체 보기</button>' +
+        '</div>' +
+        '<div><h3 class="v3-ti-subtitle">월별 발행 추세 (최근 12개월)</h3>' +
+          '<table class="v3-geo-table"><thead><tr><th>월</th><th>기사 수</th></tr></thead><tbody>' + monthly + '</tbody></table>' +
+        '</div>' +
+      '</div>' +
+      (gaps ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">전략적 보강 필요 (기사 ≤5건인 글머리 태그)</h3><div style="line-height:1.8;">' + gaps + '</div></div>' : '') +
+    '</section>';
+  }
+
+  function _renderTiSuggestions(data) {
+    var s = data.suggestions || {};
+    var hubs = (s.hub_clusters || []).map(function (hub) {
+      var spokes = (hub.spokes || []).slice(0, 8).map(function (sp) {
+        return '<span class="v3-badge v3-badge-gray" style="margin:2px;">' + GW.escapeHtml(sp.tag) + ' · ' + sp.count + '</span>';
+      }).join('');
+      return '<div class="v3-ti-hub-card">' +
+        '<div class="v3-ti-hub-head"><strong>' + GW.escapeHtml(hub.hub) + '</strong> <span class="v3-text-m">(' + hub.hub_count + '건)</span></div>' +
+        '<div>' + spokes + '</div>' +
+      '</div>';
+    }).join('');
+    var suggestions = (s.suggestions || []).map(function (sug, i) {
+      var metas = sug.meta_hint.map(function (m) { return '<code class="v3-inline-code">' + GW.escapeHtml(m) + '</code>'; }).join(' ');
+      var pri = sug.priority === '상' ? 'v3-badge-red' : (sug.priority === '중' ? 'v3-badge-yellow' : 'v3-badge-gray');
+      return '<tr><td>' + (i + 1) + '</td><td>' + GW.escapeHtml(sug.title_hint) + '</td><td><code class="v3-inline-code">' + GW.escapeHtml(sug.header_hint) + '</code></td><td>' + metas + '</td><td class="v3-text-m">' + GW.escapeHtml(sug.rationale) + '</td><td><span class="v3-badge ' + pri + '">' + sug.priority + '</span></td></tr>';
+    }).join('');
+    return '<section class="v3-card v3-mt-16">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">§5 SEO/AEO 클러스터 + 신규 콘텐츠 제안</h2><p class="v3-card-desc">휴리스틱 기반. 모든 제안 <strong>사람 검토 필요</strong>.</p></div>' +
+      '<h3 class="v3-ti-subtitle">허브-스포크 클러스터 후보</h3>' +
+      '<div class="v3-ti-hub-grid">' + hubs + '</div>' +
+      '<h3 class="v3-ti-subtitle v3-mt-16">신규 콘텐츠 제안 (상위 10)</h3>' +
+      '<table class="v3-geo-table"><thead><tr><th>#</th><th>제목 힌트</th><th>글머리</th><th>메타 태그</th><th>근거</th><th>우선</th></tr></thead><tbody>' + suggestions + '</tbody></table>' +
+    '</section>';
+  }
+
+  function _mountTagInsightsGraph(data) {
+    if (!data || !data.graph) return;
+    var topNodes = data.graph.nodes.slice(0, 80);
+    var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
+    _mountAnalyticsTagGraph({
+      nodes: topNodes.map(function (n) {
+        return { id: 'tag:' + n.id, label: n.id, group: n.top_header || '', weight: n.count, kind: 'tag' };
+      }),
+      links: data.graph.links.filter(function (l) { return nodeIds.has(l.source) && nodeIds.has(l.target); })
+        .slice(0, 200)
+        .map(function (l) { return { source: 'tag:' + l.source, target: 'tag:' + l.target, weight: l.count }; }),
+      articles: [],
+    });
+  }
+
+  // 더보기 모달 (페이지네이션) — 다양한 목록 공유
+  V3._tiMore = function (which) {
+    if (!_tagInsightsCache) return;
+    var d = _tagInsightsCache;
+    var title = '', rows = [], headerRow = '';
+    if (which === 'header') {
+      title = '글머리 태그 전체 (' + (d.header_ranking || []).length + '개)';
+      headerRow = '<tr><th>순위</th><th>태그</th><th>기사</th><th>비율</th></tr>';
+      rows = (d.header_ranking || []).map(function (h, i) { return [i + 1, h.tag, h.count, ((h.pct || 0) * 100).toFixed(1) + '%']; });
+    } else if (which === 'meta') {
+      title = '메타 태그 전체 (' + (d.meta_ranking || []).length + '개)';
+      headerRow = '<tr><th>순위</th><th>태그</th><th>기사</th><th>주요 글머리</th></tr>';
+      rows = (d.meta_ranking || []).map(function (m, i) { return [i + 1, m.tag, m.count, m.top_header || '—']; });
+    } else if (which === 'isolated') {
+      title = '1회만 등장한 고립 태그 (' + (d.health ? d.health.isolated_tags_count : 0) + '개)';
+      headerRow = '<tr><th>#</th><th>태그</th></tr>';
+      rows = (d.health && d.health.isolated_tags ? d.health.isolated_tags : []).map(function (t, i) { return [i + 1, t]; });
+    } else if (which === 'dup') {
+      title = '중복 의심 태그 쌍 (' + (d.health && d.health.duplicate_suspects ? d.health.duplicate_suspects.length : 0) + '쌍)';
+      headerRow = '<tr><th>#</th><th>A</th><th>B</th><th>A/B건수</th><th>근거</th></tr>';
+      rows = (d.health && d.health.duplicate_suspects ? d.health.duplicate_suspects : []).map(function (p, i) {
+        return [i + 1, p.left, p.right, p.left_count + ' / ' + p.right_count, p.reasons.join(', ')];
+      });
+    } else if (which === 'coverage') {
+      title = '글머리 태그별 축적 현황 (' + (d.coverage && d.coverage.by_header ? d.coverage.by_header.length : 0) + '개)';
+      headerRow = '<tr><th>#</th><th>태그</th><th>기사</th><th>category 분포</th></tr>';
+      rows = (d.coverage && d.coverage.by_header ? d.coverage.by_header : []).map(function (h, i) {
+        var cats = (h.categories || []).map(function (x) { return x.category + ':' + x.n; }).join(' · ');
+        return [i + 1, h.tag, h.posts, cats];
+      });
+    } else return;
+    _tiOpenModal(title, headerRow, rows);
+  };
+
+  function _tiOpenModal(title, headerRow, rows) {
+    var page = 0;
+    var PAGE_SIZE = 30;
+    var overlay = document.createElement('div');
+    overlay.className = 'v3-modal v3-modal-open';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:10010;display:flex;align-items:center;justify-content:center;padding:24px;';
+    overlay.innerHTML =
+      '<div class="v3-modal-panel" style="background:var(--v3-surface);border-radius:14px;max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;">' +
+        '<div class="v3-modal-head" style="padding:var(--v3-gap-lg) var(--gap-section);border-bottom:1px solid var(--v3-border);display:flex;justify-content:space-between;align-items:center;">' +
+          '<h2 class="v3-modal-title" style="margin:0;font-size:var(--fs-title);">' + GW.escapeHtml(title) + '</h2>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-modal-close">닫기</button>' +
+        '</div>' +
+        '<div class="v3-modal-body" style="padding:var(--gap-section);overflow-y:auto;flex:1;">' +
+          '<table class="v3-geo-table"><thead>' + headerRow + '</thead><tbody id="v3-ti-modal-tbody"></tbody></table>' +
+        '</div>' +
+        '<div class="v3-modal-foot" style="padding:var(--gap-card) var(--gap-section);border-top:1px solid var(--v3-border);display:flex;justify-content:center;gap:var(--gap-element);align-items:center;">' +
+          '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="v3-ti-prev">이전</button>' +
+          '<span class="v3-text-m" id="v3-ti-page">1 / 1</span>' +
+          '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="v3-ti-next">다음</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    function render() {
+      var totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+      var start = page * PAGE_SIZE;
+      var chunk = rows.slice(start, start + PAGE_SIZE);
+      overlay.querySelector('#v3-ti-modal-tbody').innerHTML = chunk.map(function (r) {
+        return '<tr>' + r.map(function (cell) {
+          return '<td>' + GW.escapeHtml(String(cell == null ? '' : cell)) + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+      overlay.querySelector('#v3-ti-page').textContent = (page + 1) + ' / ' + totalPages;
+      overlay.querySelector('#v3-ti-prev').disabled = page === 0;
+      overlay.querySelector('#v3-ti-next').disabled = page >= totalPages - 1;
+    }
+    overlay.querySelector('#v3-ti-modal-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('#v3-ti-prev').addEventListener('click', function () { if (page > 0) { page--; render(); } });
+    overlay.querySelector('#v3-ti-next').addEventListener('click', function () {
+      var totalPages = Math.ceil(rows.length / PAGE_SIZE);
+      if (page < totalPages - 1) { page++; render(); }
+    });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    render();
   }
 
   function _syncAnalyticsAutoRefresh(forceActive) {

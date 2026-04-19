@@ -1,6 +1,23 @@
 {
   "items": [
   {
+      "version": "03.076.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 11:56:51 KST",
+      "summary": "[태그 인사이트 전면 개편] 기존 워드클라우드+관계도 단일 섹션을 §1 통계 / §2 관계도 / §3 건강성 진단 / §4 콘텐츠 축적 / §5 SEO 클러스터 제안 5섹션으로 재구성. 공유 분석 모듈 + 신규 API + 모달 페이지네이션 포함.",
+      "changes": [
+        "functions/_shared/tag-insights.js 공유 모듈 신설 — buildTagInsights() 함수가 posts 배열을 받아 statistics, header_ranking, meta_ranking, graph, health(isolated/overlyCommon/duplicateSuspects/isolatedClusters), coverage(byHeader/monthly/gaps), suggestions(hubClusters/thinHeaders/suggestions) 7개 섹션을 계산. 태그 원문 보존, 자동 통합/삭제 금지, 모든 판단 항목에 human_review=true 플래그.",
+        "functions/api/admin/tag-insights.js 신규 엔드포인트 — published=1 posts를 D1에서 조회 후 buildTagInsights 결과를 JSON 반환. days/start/end/all 파라미터 지원(§3.11 v3-period-bar 규약).",
+        "js/admin-v3.js _loadAnalyticsTags 전면 재작성 — /api/admin/analytics 호출 대신 /api/admin/tag-insights 호출. _renderTagInsightsSections로 5개 카드 렌더. _renderTiStatistics / _renderTiGraph / _renderTiHealth / _renderTiCoverage / _renderTiSuggestions 분리된 렌더러. 기존 관계도 렌더러(_mountAnalyticsTagGraph)는 재사용.",
+        "V3._tiMore(scope) + _tiOpenModal() — 더보기 버튼 클릭 시 페이지네이션 모달 오픈. 지원 scope: 'header'(글머리 전체) / 'meta'(메타 전체) / 'isolated'(1회 등장 고립 태그 전체) / 'dup'(중복 의심 쌍 전체) / 'coverage'(글머리 누적 전체). PAGE_SIZE=30.",
+        "css/admin-v3.css 태그 인사이트 섹션 스타일 추가 — .v3-ti-grid(2열 그리드, 모바일 1열), .v3-ti-subtitle, .v3-ti-subsection, .v3-ti-hub-grid(허브 카드 그리드), .v3-ti-hub-card(허브 개별 카드). 기존 토큰(--v3-*, --gap-*, --fs-*) 재사용, 리터럴 0건.",
+        "scripts/tag-analysis/ 신설 — 01_export.mjs (D1→JSON), 02_tokenize.mjs (쉼표 split), 03_statistics.mjs (§1 스탠드얼론), 04_run_all.mjs (공유 모듈 사용해 5개 .md + D3.js 인터랙티브 HTML 생성). 재실행 가능.",
+        "output/tag-analysis/ 산출물 5종 생성 — 01_statistics.md(776행) / 02_graph.json(80 노드) / 02_graph.html(D3.js v7 줌·드래그·필터) / 03_health_check.md(고립 468개, 중복 의심 쌍, 과다 등장 태그, 고립 군집) / 04_coverage_map.md(글머리별 누적, 월별 추세, 전략 보강 필요) / 05_next_actions.md(허브-스포크 5 + 신규 콘텐츠 10 제안). intermediate/ 폴더에 tag_insights.json 전수 저장.",
+        "전체 151 published 기사 기준 분석: 고유 글머리 태그 39개 / 고유 메타 태그 611개 / 평균 메타 7.78개/기사. 주요 허브: 스카우트(46) · 세계스카우트연맹(39) · 한국스카우트연맹(28) · 스카우트운동(23).",
+        "관리자 버전 03.075.00 → 03.076.00 (feature bump)."
+      ]
+    },
+  {
       "version": "03.075.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:30:35 KST",
