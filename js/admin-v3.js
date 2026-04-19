@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.086.01
+ * Version: 03.086.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5676,14 +5676,14 @@
       _apiFetch('/api/posts?limit=300&published=all&scope=admin')
         .then(function (data) {
           _scorerPosts = (data && data.posts) ? data.posts : [];
-          _setButtonBusy(loadBtn, null);
+          _clearButtonBusy(loadBtn);
           loadBtn.textContent = _scorerPosts.length + '개 기사 로드됨';
           setTimeout(function () {
             loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기';
           }, 2500);
           searchIn.focus();
         })
-        .catch(function () { _setButtonBusy(loadBtn, null); });
+        .catch(function () { _clearButtonBusy(loadBtn); });
     });
 
     // 패널 첫 진입 시 자동 로드
@@ -5746,17 +5746,21 @@
     if (state === 'empty') {
       empty.classList.remove('is-hidden');
       empty.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg><p>기사를 입력하고<br>채점하기를 누르세요</p>';
+      inner.hidden = true;
       inner.style.display = 'none';
     } else if (state === 'loading') {
       empty.classList.remove('is-hidden');
       empty.innerHTML = '<div class="v3-spinner" style="width:28px;height:28px;border-width:3px;margin-bottom:4px;"></div><p>AI가 기사를 분석하고 있습니다…<br><small>약 10~20초 소요됩니다</small></p>';
+      inner.hidden = true;
       inner.style.display = 'none';
     } else if (state === 'result') {
       empty.classList.add('is-hidden');
+      inner.hidden = false;
       inner.style.display = '';
     } else if (state === 'error') {
       empty.classList.remove('is-hidden');
       empty.innerHTML = '<p style="color:#FF5655;max-width:260px;">' + GW.escapeHtml(msg || '오류가 발생했습니다.') + '</p>';
+      inner.hidden = true;
       inner.style.display = 'none';
     }
   }
@@ -5849,7 +5853,7 @@
     _apiFetch('/api/admin/score-article', fetchOpts)
       .then(function (data) {
         clearTimeout(timeoutId);
-        _setButtonBusy(runBtn, null);
+        _clearButtonBusy(runBtn);
         if (data && data.ok && data.result) {
           _scorerRenderResult(data.result);
         } else {
@@ -5858,7 +5862,7 @@
       })
       .catch(function (err) {
         clearTimeout(timeoutId);
-        _setButtonBusy(runBtn, null);
+        _clearButtonBusy(runBtn);
         if (timedOut || (err && err.name === 'AbortError')) {
           _scorerSetState('error', '45초 내에 응답이 오지 않았습니다. Workers AI 지연 또는 큐 적체 가능성 — 잠시 후 다시 시도하세요.');
         } else {

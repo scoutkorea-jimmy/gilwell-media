@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.086.02",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:40:00 KST",
+    "summary": "AI 채점 결과가 오른쪽 패널에 뜨지 않고 '채점 중...' 버튼이 계속 도는 표시 버그 2건 수정. 서버 응답·로깅·비용 집계는 모두 정상 동작 중이었고, 프론트 렌더 로직의 레거시 2건이 원인이었습니다.",
+    "changes": [
+      "js/admin-v3.js _scorerSetState(): scorer-result-inner 엘리먼트가 HTML `hidden` 속성을 가진 채로 남아 [hidden] UA 스타일이 display:none으로 계속 덮던 버그. inline display 토글과 함께 `inner.hidden = true/false` 명시 토글 추가. loading/error/empty 상태에서도 일관되게 hidden 설정.",
+      "js/admin-v3.js _runScorer(): .then/.catch에서 `_setButtonBusy(runBtn, null)` 호출이 실제로는 busy 상태를 유지(재지정)하던 원인. _clearButtonBusy(runBtn)로 교체해 버튼 라벨·disabled·is-busy 클래스 제대로 해제. 채점 결과가 실제 뜨는데도 버튼이 `AI 채점 중…` 그대로 머물던 증상 제거.",
+      "기사 목록 불러오기 버튼 `_setButtonBusy(loadBtn, null)` 동일 패턴도 함께 정정.",
+      "관리자 버전 03.086.01 → 03.086.02."
+    ]
+  },
+  {
     "version": "03.086.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 20:25:00 KST",
