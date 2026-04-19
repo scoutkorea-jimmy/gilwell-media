@@ -373,7 +373,7 @@
           summary: '사이트 오류/이슈 기록 상태 변경',
           request: '{ status?: "open"|"monitoring"|"resolved", severity?: "low"|"medium"|"high"|"critical", action_items?: string }',
           response: '수정된 HomepageIssue 객체',
-          notes: 'KMS §0.2.2 P0 규칙에 따라 open + high/critical 이슈는 신규 작업보다 우선 해결. 해결 시 action_items에 근인/해결 경로 기록 권장.',
+          notes: 'KMS 0.2.2 P0 규칙에 따라 open + high/critical 이슈는 신규 작업보다 우선 해결. 해결 시 action_items에 근인/해결 경로 기록 권장.',
         },
       ],
     },
@@ -1669,7 +1669,7 @@
                 title: '색상 선택 6가지 원칙',
                 summary: 'KMS가 기준으로 삼는 색 선택 규칙입니다. 새 색 추가·조합 검토 시 이 원칙부터 통과시킵니다. 하나라도 깨지면 색을 바꾸거나 용도를 재분류합니다.',
                 meta: [
-                  { label: '문서', values: ['KMS §3.4', 'CLAUDE.md §2 Site Color Palette'] },
+                  { label: '문서', values: ['KMS 3.4', 'CLAUDE.md 2 Site Color Palette'] },
                   { label: '검증', values: ['WebAIM Contrast Checker', 'DevTools Emulate vision deficiencies'] }
                 ],
                 code: [
@@ -2073,7 +2073,7 @@
                 title: '노드 색 = KMS 브랜드 10색 hex (SVG 예외)',
                 summary: '태그 관계도·마케팅 scatter·Leaflet 지도 polygon은 SVG presentation attribute 또는 JS data 구조에 색을 직접 주입합니다. CSS var()를 해석하지 못하므로 브랜드 토큰의 값(#622599 등)을 hex 리터럴로 복사해 사용하고, 주석으로 어느 토큰과 같은 값인지 명시합니다.',
                 meta: [
-                  { label: 'KMS 규칙', values: ['§3.4 리터럴 HEX 금지', '§3.10 gradient 중간 stop 예외', '§3.12 태그 관계도 예외'] },
+                  { label: 'KMS 규칙', values: ['3.4 리터럴 HEX 금지', '3.10 gradient 중간 stop 예외', '3.12 태그 관계도 예외'] },
                   { label: '적용 파일', values: ['js/admin-v3.js _mountTagInsightsGraph PALETTE', '_getGeoRegionTone (Leaflet)', '_marketingStageColor (scatter)'] }
                 ],
                 code: [

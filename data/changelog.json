@@ -1,14 +1,36 @@
 {
   "items": [
   {
+    "version": "03.088.06",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:50:00 KST",
+    "summary": "사용자 화면에 노출되던 섹션 기호 108개를 전수 제거했습니다. 버전기록·KMS 기능정의서·기본값 폴백 본문에서 모두 숫자만 남기고 기호를 뺀 상태로 정리.",
+    "changes": [
+      "data/changelog.json 78개 제거 — 버전기록 패널에 노출되던 '3.1', '7.1.1' 등 숫자만 유지.",
+      "docs/feature-definition.md + D1 settings.feature_definition 14개 제거.",
+      "js/kms.js 하드코딩 notes 6개 제거.",
+      "functions/_shared/feature-definition.js 폴백 10개 제거.",
+      "관리자 버전 03.088.05 → 03.088.06."
+    ]
+  },
+  {
+    "version": "00.124.05",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:50:00 KST",
+    "summary": "섹션 기호 제거에 따른 사이트 버전 동반 bump (버전기록 공개 API 노출).",
+    "changes": [
+      "사이트 버전 00.124.04 → 00.124.05."
+    ]
+  },
+  {
     "version": "03.088.05",
     "date": "2026-04-19",
     "released_at": "2026-04-19 23:35:00 KST",
     "summary": "KMS 기능정의서(settings.feature_definition + docs 스냅샷)를 현재 홈페이지 구현 상태와 4곳에서 어긋나던 부분을 맞춰 동기화했습니다. 충돌 부분은 없었고 모두 기준 업데이트가 필요한 최신화 건이었습니다.",
     "changes": [
-      "§3.1 기본 서체와 타이포 — 'NixgonFont 단일 사용' → Google Sans Flex(Latin) + NixgonFont/시스템(CJK) 이원화 원칙 명문화. font-size-adjust:0.50, font-variation-settings('wght' 540/700, 'opsz' auto), font-feature-settings('tnum','lnum'), font-synthesis-weight:none 3중 캘리브레이션 규격 추가.",
-      "§3.3.1 칩·배지 패밀리 공통 규격 신설 — category-tag / post-kicker / post-page-tag / v3-badge / tag-pill 전 영역 공통 벡터(min-height 20px, padding 3px 8px, font 10~11px 600 0.14em uppercase, line-height 1). 변형별 색·형태 매트릭스.",
-      "§7.1.1 상단 헤더·사이드바 정보 배치 신설 — 헤더 meta 라인은 카테고리·NEW·날짜만, 읽기 시간·작성자·조회수·AI 고지는 우측 사이드바 정보 섹션으로 이동(2026-04-19 재정비 반영).",
+      "3.1 기본 서체와 타이포 — 'NixgonFont 단일 사용' → Google Sans Flex(Latin) + NixgonFont/시스템(CJK) 이원화 원칙 명문화. font-size-adjust:0.50, font-variation-settings('wght' 540/700, 'opsz' auto), font-feature-settings('tnum','lnum'), font-synthesis-weight:none 3중 캘리브레이션 규격 추가.",
+      "3.3.1 칩·배지 패밀리 공통 규격 신설 — category-tag / post-kicker / post-page-tag / v3-badge / tag-pill 전 영역 공통 벡터(min-height 20px, padding 3px 8px, font 10~11px 600 0.14em uppercase, line-height 1). 변형별 색·형태 매트릭스.",
+      "7.1.1 상단 헤더·사이드바 정보 배치 신설 — 헤더 meta 라인은 카테고리·NEW·날짜만, 읽기 시간·작성자·조회수·AI 고지는 우측 사이드바 정보 섹션으로 이동(2026-04-19 재정비 반영).",
       "D1 settings.feature_definition UPDATE 완료(50,503자, Google Sans Flex 9회 언급). docs/feature-definition.md 스냅샷 동시 갱신.",
       "검토 결과: KMS 기준과 현재 코드의 구조적 충돌 0건. 4건 모두 KMS가 이전 상태로 남아있어 최신 구현에 맞춰 업데이트.",
       "관리자 버전 03.088.04 → 03.088.05."
@@ -130,12 +152,12 @@
     "version": "00.123.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 22:00:00 KST",
-    "summary": "KMS §3.2 여백 토큰 시스템과 칩·배지 패밀리 기준을 공개 사이트 전반에 일관 적용했습니다. 기사 페이지·게시판·필터 바·배너의 좌우 거터를 --pad-page-* 토큰으로 재배선하고, 카테고리 태그·글머리 Kicker·태그 필터·기사 태그의 규격을 공통 패밀리로 정렬했습니다.",
+    "summary": "KMS 3.2 여백 토큰 시스템과 칩·배지 패밀리 기준을 공개 사이트 전반에 일관 적용했습니다. 기사 페이지·게시판·필터 바·배너의 좌우 거터를 --pad-page-* 토큰으로 재배선하고, 카테고리 태그·글머리 Kicker·태그 필터·기사 태그의 규격을 공통 패밀리로 정렬했습니다.",
     "changes": [
       "css/style.css 칩·배지 패밀리 통합: .category-tag + .post-kicker 공통 규격(inline-flex 정렬, min-height 20px, padding 3px 8px, font 10px 600 0.14em uppercase, line-height 1). .post-page-tag도 동일 패턴으로 정렬(9px → var(--gap-tight)).",
-      "페이지 좌우 거터 토큰화 (KMS §3.2): .post-page-wrap/.board-container/.filter-bar/.board-banner 데스크톱 48px 리터럴 → var(--pad-page-desktop). 태블릿(≤900) 분기 → var(--pad-page-tablet), 모바일(≤480) 분기 → var(--pad-page-mobile).",
+      "페이지 좌우 거터 토큰화 (KMS 3.2): .post-page-wrap/.board-container/.filter-bar/.board-banner 데스크톱 48px 리터럴 → var(--pad-page-desktop). 태블릿(≤900) 분기 → var(--pad-page-tablet), 모바일(≤480) 분기 → var(--pad-page-mobile).",
       ".post-related-posts/.modal-related-posts/.post-special-feature-posts 상단 여백 28px/20px 리터럴 → var(--gap-section-out)/var(--gap-card).",
-      "재발 방지 — 여백 리터럴은 KMS §3.2 \"엣지 케이스(3px/6px/10px/14px)만 허용\" 원칙을 유지하고 페이지·섹션·카드 단위 주요 거터는 반드시 토큰 사용.",
+      "재발 방지 — 여백 리터럴은 KMS 3.2 \"엣지 케이스(3px/6px/10px/14px)만 허용\" 원칙을 유지하고 페이지·섹션·카드 단위 주요 거터는 반드시 토큰 사용.",
       "칩·배지 패밀리 기준을 admin V3의 .v3-badge와 동일 벡터(pill/tight padding/meta font)로 정렬해 KMS/관리자/공개 간 시각 언어 통일.",
       "사이트 버전 00.122.01 → 00.123.00."
     ]
@@ -169,7 +191,7 @@
     "version": "03.087.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 21:15:00 KST",
-    "summary": "AI 채점 평가 기준(rubric)을 관리자 UI에서 직접 편집할 수 있게 하고, AI 사용량 카드 높이 정합·KMS 표 렌더 회복·KMS 기능정의서에 §15 AI 채점 메커니즘을 추가했습니다. 표에 `|Lc|` 같은 미이스케이프 파이프가 있어도 깨지지 않도록 파서를 보강했습니다.",
+    "summary": "AI 채점 평가 기준(rubric)을 관리자 UI에서 직접 편집할 수 있게 하고, AI 사용량 카드 높이 정합·KMS 표 렌더 회복·KMS 기능정의서에 15 AI 채점 메커니즘을 추가했습니다. 표에 `|Lc|` 같은 미이스케이프 파이프가 있어도 깨지지 않도록 파서를 보강했습니다.",
     "changes": [
       "functions/_shared/score-rubric.js 신설: DEFAULT_SCORE_RUBRIC(BP미디어 v2.1) · loadScoreRubric(env) · normalizeScoreRubric · RUBRIC_MAX_CHARS 20,000. 값이 없으면 기본값 폴백.",
       "GET/PUT/DELETE /api/settings/score-rubric 신설: GET은 공개(기준 텍스트), PUT/DELETE는 Full 관리자. 변경 시 settings_history 자동 append(recordSettingChange).",
@@ -179,7 +201,7 @@
       "AI 사용량 그리드 높이 정합: grid-auto-rows:1fr + align-items:stretch + 카드 내 flex-column + 비용 라인 margin-top:auto로 모든 카드 바닥 정렬. 반응형 2-col 시에도 동일.",
       "js/kms.js parseTableRow 보강: 헤더 컬럼수 초과 시 마지막 컬럼으로 원본 구분자 보존하며 병합, 부족 시 빈 셀 패딩. `| Midnight Purple | Canvas White (|Lc| 103.6) ... |` 같이 절대값 표기로 미이스케이프된 `|`가 셀 내부에 있어도 표가 깨지지 않음. 자세한 검증 4회.",
       "css/style.css: .kms-table word-break:keep-all + overflow-wrap:anywhere, .kms-table-wrap overflow-x:auto로 장문 셀 레이아웃 안정화.",
-      "KMS 기능정의서(settings.score_rubric ❌ settings.feature_definition)에 §15 AI 채점 메커니즘 신설 — 평가 기준 운영(15.2), 호출 경로·로깅(15.3), 사용량 배너(15.4). docs/feature-definition.md 스냅샷 동기화.",
+      "KMS 기능정의서(settings.score_rubric ❌ settings.feature_definition)에 15 AI 채점 메커니즘 신설 — 평가 기준 운영(15.2), 호출 경로·로깅(15.3), 사용량 배너(15.4). docs/feature-definition.md 스냅샷 동기화.",
       "관리자 버전 03.086.03 → 03.087.00."
     ]
   },
@@ -427,7 +449,7 @@
     "summary": "KMS 기사작성표준 좌측 사이드바 목차 표시 추가.",
     "changes": [
       "kms.html의 15개 kms-ed-section에 ID 추가 (kms-ed-s01~s15).",
-      "kms.js에 renderEditorialSectionList() 추가 — 기사작성표준 탭 진입 시 §1~§15 목차 자동 생성 및 클릭 스크롤.",
+      "kms.js에 renderEditorialSectionList() 추가 — 기사작성표준 탭 진입 시 1~15 목차 자동 생성 및 클릭 스크롤.",
       "관리자 버전 03.084.01 → 03.084.02."
     ]
   },
@@ -629,13 +651,13 @@
       "version": "03.079.02",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:51:09 KST",
-      "summary": "KMS API 가이드 + 디자인 가이드 탭 최신화 — tag-insights/site-history/homepage-issues PATCH 신규 등록 + 디자인 §09 '데이터 시각화(관계도·차트)' 섹션 신설.",
+      "summary": "KMS API 가이드 + 디자인 가이드 탭 최신화 — tag-insights/site-history/homepage-issues PATCH 신규 등록 + 디자인 09 '데이터 시각화(관계도·차트)' 섹션 신설.",
       "changes": [
         "KMS API 가이드 분석 그룹: /api/admin/analytics 서술을 '방문 분석 전용 (panel-analytics-visits)'으로 재정의하고 params에 days/start/end/heatmap_* 명시. /api/admin/tag-insights 신규 등록 — params + 상세 response 스키마(statistics/header_ranking/meta_ranking/graph/health/coverage/suggestions 7섹션) + functions/_shared/tag-insights.js 공용 모듈 + scripts/tag-analysis 오프라인 동등성 언급.",
         "KMS API 가이드 geo-audience: start/end 커스텀 범위 파라미터 추가(2026-04-19).",
-        "KMS API 가이드 admin 그룹: /api/admin/site-history(관리자 사이트 히스토리 통합 집계) + PATCH /api/admin/homepage-issues/:id(§0.2.2 P0 규칙 연결) 신규 등록.",
+        "KMS API 가이드 admin 그룹: /api/admin/site-history(관리자 사이트 히스토리 통합 집계) + PATCH /api/admin/homepage-issues/:id(0.2.2 P0 규칙 연결) 신규 등록.",
         "KMS API 가이드 posts: tag 파라미터 설명에 '태그 인사이트 노드 클릭 모달이 이 파라미터를 사용' 명시.",
-        "KMS 디자인 가이드 §09 '데이터 시각화 (관계도·차트)' 섹션 신설 — 4개 모듈: (1) 노드 색 = KMS 브랜드 10색 hex (SVG var() 예외 근거 + 적용 파일), (2) 연결선 = count 기반 흑백 연속 그라데이션(rgb 공식·굵기 공식·점선 기준), (3) 라벨 halo(paint-order stroke fill + 흰 stroke 3px), (4) 라벨 티어링(primary 25 항상 / secondary hover).",
+        "KMS 디자인 가이드 09 '데이터 시각화 (관계도·차트)' 섹션 신설 — 4개 모듈: (1) 노드 색 = KMS 브랜드 10색 hex (SVG var() 예외 근거 + 적용 파일), (2) 연결선 = count 기반 흑백 연속 그라데이션(rgb 공식·굵기 공식·점선 기준), (3) 라벨 halo(paint-order stroke fill + 흰 stroke 3px), (4) 라벨 티어링(primary 25 항상 / secondary hover).",
         "관리자 버전 03.079.01 → 03.079.02."
       ]
     },
@@ -643,10 +665,10 @@
       "version": "03.079.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:44:55 KST",
-      "summary": "KMS 현행화 — 태그 인사이트 전면 개편(§3.12 신설) + §8 API 레퍼런스의 /api/admin/tag-insights 신규 서술.",
+      "summary": "KMS 현행화 — 태그 인사이트 전면 개편(3.12 신설) + 8 API 레퍼런스의 /api/admin/tag-insights 신규 서술.",
       "changes": [
-        "KMS §3.12 '태그 인사이트 패널(panel-analytics-tags)' 신설 — 5개 섹션 순서(관계도/기초 통계/건강성/커버리지/제안), 관계도 시각 규약(노드 색=KMS 브랜드 10색, 노드 크기=빈도, 링크 굵기=비선형 power 곡선, 링크 색=count 기반 흑백 연속 그라데이션 rgb(196-(196-31)*r^0.55), 약한 연결=stroke-dasharray 점선, 라벨 티어링 상위 25 primary + halo), 상호작용(마우스 휠·핀치·빈 공간 pan·노드 드래그/클릭·hover·태그 검색 스팟라이트·원위치), 반응형(모바일 50노드/15라벨), 힘 시뮬레이션 파라미터(viewBox 1280x720, 500 iter, repulsion 2800/4200, link spring 130px), 오프라인 동등성(scripts/tag-analysis). 각주에 브랜드 컬러 사용 이유 + SVG var() 예외 근거 + 2026-04-19 분석 기준 주요 수치 기록.",
-        "KMS §8 API 레퍼런스: /api/admin/analytics 서술을 '방문 분석 전용'으로 축소 명시. /api/admin/tag-insights 신규 항목 추가 — functions/_shared/tag-insights.js buildTagInsights() 공용 모듈로 statistics·header_ranking·meta_ranking·graph·health·coverage·suggestions 7개 섹션 반환. 서버 API와 Node 스크립트가 동일 모듈 import하는 단일 진실 원본 구조.",
+        "KMS 3.12 '태그 인사이트 패널(panel-analytics-tags)' 신설 — 5개 섹션 순서(관계도/기초 통계/건강성/커버리지/제안), 관계도 시각 규약(노드 색=KMS 브랜드 10색, 노드 크기=빈도, 링크 굵기=비선형 power 곡선, 링크 색=count 기반 흑백 연속 그라데이션 rgb(196-(196-31)*r^0.55), 약한 연결=stroke-dasharray 점선, 라벨 티어링 상위 25 primary + halo), 상호작용(마우스 휠·핀치·빈 공간 pan·노드 드래그/클릭·hover·태그 검색 스팟라이트·원위치), 반응형(모바일 50노드/15라벨), 힘 시뮬레이션 파라미터(viewBox 1280x720, 500 iter, repulsion 2800/4200, link spring 130px), 오프라인 동등성(scripts/tag-analysis). 각주에 브랜드 컬러 사용 이유 + SVG var() 예외 근거 + 2026-04-19 분석 기준 주요 수치 기록.",
+        "KMS 8 API 레퍼런스: /api/admin/analytics 서술을 '방문 분석 전용'으로 축소 명시. /api/admin/tag-insights 신규 항목 추가 — functions/_shared/tag-insights.js buildTagInsights() 공용 모듈로 statistics·header_ranking·meta_ranking·graph·health·coverage·suggestions 7개 섹션 반환. 서버 API와 Node 스크립트가 동일 모듈 import하는 단일 진실 원본 구조.",
         "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 39,662 → 43,839자(+4,177자).",
         "관리자 버전 03.079.00 → 03.079.01."
       ]
@@ -663,7 +685,7 @@
         "노드 click → _tiOpenArticlesModal(tag): /api/posts?tag=X&page=N&limit=20&scope=admin 호출해 서버 페이지네이션. 클릭 vs 드래그는 3px 이동 임계값(dxScreen^2+dyScreen^2>9)으로 구분 — 드래그로 간주된 포인터는 click 발화 안 함.",
         "모달 구성: 태그명 + 총 건수 + 현재 페이지 / 기사 목록(제목·subtitle·category 뱃지·공개여부·발행시각·조회수·글머리 태그·관리자 미리보기 버튼) / 이전·다음 페이지 / ESC로 닫기 / 백드롭 클릭으로 닫기.",
         "외부 공개 링크(https://bpmedia.net/post/ID)와 관리자 미리보기(V3.openPostPreview) 둘 다 한 행에서 제공.",
-        "CSS 클래스화: .v3-ti-graph-search (bar) / .v3-ti-articles-modal/panel/head/body/foot/list/item (모달) 신설. 인라인 px 리터럴 없이 전부 토큰(--gap-*, --v3-radius, --v3-fs-dense, --v3-shadow-m 등). KMS §3.2 준수.",
+        "CSS 클래스화: .v3-ti-graph-search (bar) / .v3-ti-articles-modal/panel/head/body/foot/list/item (모달) 신설. 인라인 px 리터럴 없이 전부 토큰(--gap-*, --v3-radius, --v3-fs-dense, --v3-shadow-m 등). KMS 3.2 준수.",
         "모바일 반응형: 검색 meta 텍스트 줄바꿈, 기사 row가 세로 flex로 변환되어 좁은 화면에서 뱃지가 아래로 내려감.",
         "Hint 텍스트 업데이트: '노드 드래그: 재배치 · 클릭: 기사 목록'.",
         "관리자 버전 03.078.01 → 03.079.00 (feature bump)."
@@ -675,8 +697,8 @@
       "released_at": "2026-04-19 12:31:00 KST",
       "summary": "태그 관계도 팔레트를 KMS 브랜드 10색으로 교체 + 선 색을 연결 강도 기반 흑백 연속 그라데이션으로 재설계.",
       "changes": [
-        "노드 팔레트: Tableau 10(#4e79a7/#f28e2b/#e15759 등) → KMS 브랜드 10색 (#622599 scouting-purple · #4d006e midnight-purple · #248737 forest-green · #0094b4 ocean-blue · #ff5655 fire-red · #ff8dff blossom-pink · #ffae80 ember-orange · #82e6de river-blue · #9fed8f leaf-green · #3f3f3f gray-700 fallback). KMS §3.4 브랜드 팔레트 준수.",
-        "SVG fill attribute는 CSS var() 해석 불가 → hex 리터럴 유지. §3.10 Leaflet 팔레트와 동일 예외 패턴(주석 명시).",
+        "노드 팔레트: Tableau 10(#4e79a7/#f28e2b/#e15759 등) → KMS 브랜드 10색 (#622599 scouting-purple · #4d006e midnight-purple · #248737 forest-green · #0094b4 ocean-blue · #ff5655 fire-red · #ff8dff blossom-pink · #ffae80 ember-orange · #82e6de river-blue · #9fed8f leaf-green · #3f3f3f gray-700 fallback). KMS 3.4 브랜드 팔레트 준수.",
+        "SVG fill attribute는 CSS var() 해석 불가 → hex 리터럴 유지. 3.10 Leaflet 팔레트와 동일 예외 패턴(주석 명시).",
         "선 색상: 3-tier 회색 계열(--v3-text-m/-l/border-m) → count 기반 **흑백 연속 그라데이션**. linkStroke(count) = rgb(v,v,v) where v = 196 - (196-31) * pow(r, 0.55). 약한 연결 밝은 회색(#c4c4c4) → 강한 연결 --ink(#1f1f1f). 비선형(power 0.55)으로 중간 강도 대비 강조.",
         "stroke-opacity도 power 곡선: 0.35 ~ 0.80. 약한 연결은 더 투명하게.",
         "가장 약한 연결(하위 15% 또는 count=1)은 계속 점선(stroke-dasharray='4 3') 유지.",
@@ -723,12 +745,12 @@
       "version": "03.077.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:15:18 KST",
-      "summary": "태그 인사이트 4개 UX 이슈 일괄 수정 — § 심볼 제거, 관계도 최상단 재배치, 인라인 리터럴 토큰화, 그래프 zoom/pan/node-drag 상호작용 추가.",
+      "summary": "태그 인사이트 4개 UX 이슈 일괄 수정 —  심볼 제거, 관계도 최상단 재배치, 인라인 리터럴 토큰화, 그래프 zoom/pan/node-drag 상호작용 추가.",
       "changes": [
-        "§ 심볼 전면 제거 — 섹션 제목 '기초 통계 / 태그 관계도 / 태그 체계 건강성 진단 / 콘텐츠 축적 현황 / SEO/AEO 클러스터 + 신규 콘텐츠 제안'. 독자가 낯선 기호 없이 바로 읽도록.",
+        " 심볼 전면 제거 — 섹션 제목 '기초 통계 / 태그 관계도 / 태그 체계 건강성 진단 / 콘텐츠 축적 현황 / SEO/AEO 클러스터 + 신규 콘텐츠 제안'. 독자가 낯선 기호 없이 바로 읽도록.",
         "섹션 순서 재배치: 관계도를 최상단으로 이동. 운영자가 페널 진입 즉시 관계도를 본다. 이후 통계 → 건강성 → 커버리지 → 제안 순.",
-        "인라인 스타일 px 리터럴 토큰화 (KMS §3.2 준수) — style='margin:2px;display:inline-block' 제거 → .v3-ti-chip-list / .v3-ti-hub-card-spokes 컨테이너 gap 토큰. style='line-height:1.8' → .v3-ti-chip-list 클래스. style='padding-top:var(--gap-tight)...' → .v3-ti-graph-legend 클래스. style='font-weight:700;...' → .v3-ti-legend-title 클래스. 인라인 width:10px/height:10px 10px 원형 legend dot → .v3-ti-legend-dot(엣지 허용 hairline 유지).",
-        "섹션 간 간격 v3-mt-16(16px) → v3-ti-section-gap(24px = var(--gap-section)) — KMS §3.9 카드 스택 간격과 일치.",
+        "인라인 스타일 px 리터럴 토큰화 (KMS 3.2 준수) — style='margin:2px;display:inline-block' 제거 → .v3-ti-chip-list / .v3-ti-hub-card-spokes 컨테이너 gap 토큰. style='line-height:1.8' → .v3-ti-chip-list 클래스. style='padding-top:var(--gap-tight)...' → .v3-ti-graph-legend 클래스. style='font-weight:700;...' → .v3-ti-legend-title 클래스. 인라인 width:10px/height:10px 10px 원형 legend dot → .v3-ti-legend-dot(엣지 허용 hairline 유지).",
+        "섹션 간 간격 v3-mt-16(16px) → v3-ti-section-gap(24px = var(--gap-section)) — KMS 3.9 카드 스택 간격과 일치.",
         "태그 관계도 상호작용 전면 추가 — 마우스 휠 확대/축소(0.25x~4x, 커서 위치 기준 확대), 빈 공간 드래그 pan, 노드 드래그 재배치. Pointer Events + setPointerCapture 사용해 터치/펜 호환. 드래그 중 해당 노드와 연결된 링크만 업데이트(전체 re-render 없음). '원위치' 버튼으로 zoom/pan 리셋. 기존 리스너는 재마운트 시 destroy().",
         ".v3-ti-graph-stage / .v3-ti-graph-svg / .v3-ti-graph-node / .v3-ti-graph-hint CSS 클래스 신설(cursor grab/grabbing 상태, overflow hidden, height 560px). 그래프 상단 힌트: '마우스 휠: 확대/축소 · 빈 공간 드래그: 화면 이동 · 노드 드래그: 재배치'.",
         "관리자 버전 03.076.01 → 03.077.00 (feature bump)."
@@ -752,14 +774,14 @@
       "version": "03.076.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:56:51 KST",
-      "summary": "[태그 인사이트 전면 개편] 기존 워드클라우드+관계도 단일 섹션을 §1 통계 / §2 관계도 / §3 건강성 진단 / §4 콘텐츠 축적 / §5 SEO 클러스터 제안 5섹션으로 재구성. 공유 분석 모듈 + 신규 API + 모달 페이지네이션 포함.",
+      "summary": "[태그 인사이트 전면 개편] 기존 워드클라우드+관계도 단일 섹션을 1 통계 / 2 관계도 / 3 건강성 진단 / 4 콘텐츠 축적 / 5 SEO 클러스터 제안 5섹션으로 재구성. 공유 분석 모듈 + 신규 API + 모달 페이지네이션 포함.",
       "changes": [
         "functions/_shared/tag-insights.js 공유 모듈 신설 — buildTagInsights() 함수가 posts 배열을 받아 statistics, header_ranking, meta_ranking, graph, health(isolated/overlyCommon/duplicateSuspects/isolatedClusters), coverage(byHeader/monthly/gaps), suggestions(hubClusters/thinHeaders/suggestions) 7개 섹션을 계산. 태그 원문 보존, 자동 통합/삭제 금지, 모든 판단 항목에 human_review=true 플래그.",
-        "functions/api/admin/tag-insights.js 신규 엔드포인트 — published=1 posts를 D1에서 조회 후 buildTagInsights 결과를 JSON 반환. days/start/end/all 파라미터 지원(§3.11 v3-period-bar 규약).",
+        "functions/api/admin/tag-insights.js 신규 엔드포인트 — published=1 posts를 D1에서 조회 후 buildTagInsights 결과를 JSON 반환. days/start/end/all 파라미터 지원(3.11 v3-period-bar 규약).",
         "js/admin-v3.js _loadAnalyticsTags 전면 재작성 — /api/admin/analytics 호출 대신 /api/admin/tag-insights 호출. _renderTagInsightsSections로 5개 카드 렌더. _renderTiStatistics / _renderTiGraph / _renderTiHealth / _renderTiCoverage / _renderTiSuggestions 분리된 렌더러. 기존 관계도 렌더러(_mountAnalyticsTagGraph)는 재사용.",
         "V3._tiMore(scope) + _tiOpenModal() — 더보기 버튼 클릭 시 페이지네이션 모달 오픈. 지원 scope: 'header'(글머리 전체) / 'meta'(메타 전체) / 'isolated'(1회 등장 고립 태그 전체) / 'dup'(중복 의심 쌍 전체) / 'coverage'(글머리 누적 전체). PAGE_SIZE=30.",
         "css/admin-v3.css 태그 인사이트 섹션 스타일 추가 — .v3-ti-grid(2열 그리드, 모바일 1열), .v3-ti-subtitle, .v3-ti-subsection, .v3-ti-hub-grid(허브 카드 그리드), .v3-ti-hub-card(허브 개별 카드). 기존 토큰(--v3-*, --gap-*, --fs-*) 재사용, 리터럴 0건.",
-        "scripts/tag-analysis/ 신설 — 01_export.mjs (D1→JSON), 02_tokenize.mjs (쉼표 split), 03_statistics.mjs (§1 스탠드얼론), 04_run_all.mjs (공유 모듈 사용해 5개 .md + D3.js 인터랙티브 HTML 생성). 재실행 가능.",
+        "scripts/tag-analysis/ 신설 — 01_export.mjs (D1→JSON), 02_tokenize.mjs (쉼표 split), 03_statistics.mjs (1 스탠드얼론), 04_run_all.mjs (공유 모듈 사용해 5개 .md + D3.js 인터랙티브 HTML 생성). 재실행 가능.",
         "output/tag-analysis/ 산출물 5종 생성 — 01_statistics.md(776행) / 02_graph.json(80 노드) / 02_graph.html(D3.js v7 줌·드래그·필터) / 03_health_check.md(고립 468개, 중복 의심 쌍, 과다 등장 태그, 고립 군집) / 04_coverage_map.md(글머리별 누적, 월별 추세, 전략 보강 필요) / 05_next_actions.md(허브-스포크 5 + 신규 콘텐츠 10 제안). intermediate/ 폴더에 tag_insights.json 전수 저장.",
         "전체 151 published 기사 기준 분석: 고유 글머리 태그 39개 / 고유 메타 태그 611개 / 평균 메타 7.78개/기사. 주요 허브: 스카우트(46) · 세계스카우트연맹(39) · 한국스카우트연맹(28) · 스카우트운동(23).",
         "관리자 버전 03.075.00 → 03.076.00 (feature bump)."
@@ -778,7 +800,7 @@
         "V3.showPanel 라우팅: panel === 'analytics-visits' || 'analytics' → _loadAnalyticsVisits, panel === 'analytics-tags' → _loadAnalyticsTags. 기존 'analytics' 패널 ID 호환 유지(구 URL/북마크 대비).",
         "PANEL_LABELS 업데이트: 'analytics-visits' → '방문 분석', 'analytics-tags' → '태그 인사이트'. breadcrumb이 패널에 따라 올바른 라벨 표시.",
         "V3.refreshAnalytics → _loadAnalyticsVisits(), V3.refreshAnalyticsTags → _loadAnalyticsTags() 신규 공개 API.",
-        "KMS §2.2 + §8 API 레퍼런스 업데이트: 두 패널 분리 및 API 파라미터 프리픽스 규약 명시. snapshot/fallback/D1 세 곳 동기.",
+        "KMS 2.2 + 8 API 레퍼런스 업데이트: 두 패널 분리 및 API 파라미터 프리픽스 규약 명시. snapshot/fallback/D1 세 곳 동기.",
         "관리자 버전 03.074.00 → 03.075.00 (feature bump)."
       ]
     },
@@ -795,7 +817,7 @@
         "js/admin-v3.js: _bindPeriodBar(scope, onChange) 공용 헬퍼 추가 — preset/apply 클릭을 통일 API로 dispatch. 내부 이벤트 위임 safety net과도 호환. _loadAnalytics / _loadGeoAudience 내부의 document.getElementById('...-period').value 조회 로직을 제거하고 _analyticsPeriodState / _analyticsTagPeriodState / _geoAudiencePeriodState 상태 변수 기반 _periodQuery()/_periodLabel() 헬퍼로 재구성.",
         "functions/api/admin/geo-audience.js: start/end 쿼리 파라미터 지원 신규 추가. days 프리셋 방식 유지(하위 호환). resolveAnalyticsRange(start, end) 경로 활성.",
         "마케팅 페이지는 markup 변경 없음 — CSS 선택자만 comma로 v3-* 추가해 기존 .mkt-* 그대로 작동. 무중단 전환.",
-        "KMS §3.11 '통일 기간 선택 UI (v3-period-bar)' 신설 — DOM 표준, JS 바인딩 헬퍼, 서버 API 규약, 적용 범위 표, 규칙, 각주 완비. snapshot/fallback/D1 세 곳 동기(+2875자).",
+        "KMS 3.11 '통일 기간 선택 UI (v3-period-bar)' 신설 — DOM 표준, JS 바인딩 헬퍼, 서버 API 규약, 적용 범위 표, 규칙, 각주 완비. snapshot/fallback/D1 세 곳 동기(+2875자).",
         "사이트 버전 00.116.00 → 00.116.01, 관리자 버전 03.073.01 → 03.074.00."
       ]
     },
@@ -807,7 +829,7 @@
       "changes": [
         "사이트 v00.116.01과 함께 배포. admin-v3.js와 admin.html 변경이 관리자 UX 통일의 주된 내용이며 main.js/공용 스타일 변경은 공유 CSS 선택자 확장 한정.",
         "사용자 피드백 반영: '코호트 검색기능은 마케팅 페이지에 맞춰줘. 접속국가/도시, 분석, 대시보드가 모두 다르니까 불편하네'.",
-        "통일 패턴 규칙: KMS §3.11 참조. 신규 기간 필터 추가 시 .v3-period-bar 사용 강제.",
+        "통일 패턴 규칙: KMS 3.11 참조. 신규 기간 필터 추가 시 .v3-period-bar 사용 강제.",
         "관리자 버전 03.073.01 → 03.074.00."
       ]
     },
@@ -815,12 +837,12 @@
       "version": "03.073.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:01:47 KST",
-      "summary": "[§0.2.2 P0 규칙 실천] homepage_issues 테이블의 open/monitoring 이슈 3건 전수 해결 — 모두 resolved. 현재 P0 open 0건 · 전체 open/monitoring 0건 clean 상태.",
+      "summary": "[0.2.2 P0 규칙 실천] homepage_issues 테이블의 open/monitoring 이슈 3건 전수 해결 — 모두 resolved. 현재 P0 open 0건 · 전체 open/monitoring 0건 clean 상태.",
       "changes": [
         "#6 (high/open) '홈 초기 데이터 로드 실패' — /api/home 현 응답 HTTP 200 / 620ms / 149KB 정상 확인. 2026-04-18 이후 동일 source_path 재발 0건. 'Failed to fetch'는 클라이언트측 일시 네트워크 단절(DNS/WiFi 순간 실패) 판단. status → resolved.",
         "#7 (medium/monitoring) '홈 백그라운드 새로고침 실패' — #6과 동일 원인으로 묶어 처리. 엔드포인트 정상. status → resolved.",
         "#9 (medium/open) '관리자 API 요청 실패 HTTP 409' — 오늘 배포된 Site v00.116.00 / Admin v03.073.00의 메인 스토리↔에디터 추천 배타 제약 해제로 원인 근절. functions/api/settings/home-lead.js:96 의 409 분기가 제거돼 동일 에러 재발 불가. status → resolved.",
-        "§0.2.2 P0 규칙의 첫 번째 실천 사례 기록 — 신규 작업(검색 UX 통일 등) 착수 전 homepage_issues 전수 확인하고 open 이슈 선처리하는 절차가 실제로 작동함을 검증.",
+        "0.2.2 P0 규칙의 첫 번째 실천 사례 기록 — 신규 작업(검색 UX 통일 등) 착수 전 homepage_issues 전수 확인하고 open 이슈 선처리하는 절차가 실제로 작동함을 검증.",
         "관리자 버전 03.073.00 → 03.073.01."
       ]
     },
@@ -842,10 +864,10 @@
       "version": "03.073.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 10:54:35 KST",
-      "summary": "[운영 규칙 갱신] KMS §5.5 및 CLAUDE.md §2에서 '메인 스토리 ↔ 에디터 추천 배타' 규칙을 '동시 지정 허용'으로 재정의. 관리자 UI도 배타 체크 제거.",
+      "summary": "[운영 규칙 갱신] KMS 5.5 및 CLAUDE.md 2에서 '메인 스토리 ↔ 에디터 추천 배타' 규칙을 '동시 지정 허용'으로 재정의. 관리자 UI도 배타 체크 제거.",
       "changes": [
-        "KMS §5.5 '최신 소식 / 인기 소식 / 에디터 추천' 조항: '메인 스토리와 에디터 추천은 동시에 같은 게시글을 가리킬 수 없다' → '같은 게시글을 동시에 지정할 수 있다. 운영 유연성 확보를 위해 2026-04-19 배타 제약 해제.'",
-        "CLAUDE.md §2 Site Structure 조항: '메인 스토리 ↔ 에디터 추천 충돌 방지' → '동시 지정 허용 (2026-04-19 배타 제약 해제). 상세는 KMS §5.5.'",
+        "KMS 5.5 '최신 소식 / 인기 소식 / 에디터 추천' 조항: '메인 스토리와 에디터 추천은 동시에 같은 게시글을 가리킬 수 없다' → '같은 게시글을 동시에 지정할 수 있다. 운영 유연성 확보를 위해 2026-04-19 배타 제약 해제.'",
+        "CLAUDE.md 2 Site Structure 조항: '메인 스토리 ↔ 에디터 추천 충돌 방지' → '동시 지정 허용 (2026-04-19 배타 제약 해제). 상세는 KMS 5.5.'",
         "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 36,627 → 36,787자(+160자).",
         "관리자 UI(admin-v3.js) 배타 체크 제거 — 검색 드롭다운이 더 이상 is-disabled로 막지 않고 안내 문구만 덧붙인다. V3._addPick/V3._selectHomeLead의 _alert 제약 제거.",
         "관리자 버전 03.072.03 → 03.073.00 (feature bump)."
@@ -870,7 +892,7 @@
       "changes": [
         "main.js GW.getCategoryLabel 가드 추가로 admin DOMContentLoaded가 예외 없이 완료 → 모든 _bindEl 정상 등록 → 검색·필터 전면 복구.",
         "03.072.02에서 선제 도입한 document-level 이벤트 위임 safety net은 유지. 향후 유사 상황(listener 등록 단계 실패)에서도 검색·필터가 계속 동작하도록 이중 방어.",
-        "homepage_issues '관리자 검색·필터 전면 불가' 이슈의 cause/action_items 필드를 근인 확정 내용으로 업데이트. §0.2.2 P0 규칙의 첫 실천 케이스로 기록 보존.",
+        "homepage_issues '관리자 검색·필터 전면 불가' 이슈의 cause/action_items 필드를 근인 확정 내용으로 업데이트. 0.2.2 P0 규칙의 첫 실천 케이스로 기록 보존.",
         "관리자 버전 03.072.02 → 03.072.03."
       ]
     },
@@ -878,14 +900,14 @@
       "version": "03.072.02",
       "date": "2026-04-19",
       "released_at": "2026-04-19 10:24:26 KST",
-      "summary": "[P0 해결] 관리자 전 패널의 검색·필터 입력 전면 무응답 이슈 해결. KMS §0.2.2 '사이트 오류·이슈 P0 우선순위' 규칙 신설 + CLAUDE.md §0 Step 0 체크리스트 명문화. Sankey chart SVG fill 잔존 버그 동시 수정.",
+      "summary": "[P0 해결] 관리자 전 패널의 검색·필터 입력 전면 무응답 이슈 해결. KMS 0.2.2 '사이트 오류·이슈 P0 우선순위' 규칙 신설 + CLAUDE.md 0 Step 0 체크리스트 명문화. Sankey chart SVG fill 잔존 버그 동시 수정.",
       "changes": [
         "[P0 FIX] admin-v3.js 검색·필터 safety net 도입 — DOMContentLoaded 시점 _bindEl 바인딩이 특정 환경에서 누락되거나 이후 DOM 조작으로 listener가 손실되는 경우를 방지. document-level capture 단계에서 input/change/click/keydown 위임 처리. _bindEl은 직접 바인딩 + _delegatedHandlers 저장소 등록을 동시에 수행. event.__gwDirect 플래그로 중복 실행 방지.",
         "영향 범위: 메인 스토리(home-lead-search), 히어로 기사(hero-search), 에디터 추천(picks-search), 게시글 목록(list-search + 카테고리/공개상태/정렬 필터), 사이트 오류·이슈 기록(homepage-issues-search + status/severity 필터), 사이트 히스토리(site-history-search + group/source 필터), 용어집(glos-search), 세계연맹 회원국(wosm-members-search), 관련 글 검색(w-related-search), 캘린더 관련글(cal-related-query) 등 모든 관리자 검색/필터 입력.",
-        "homepage_issues에 공식 이슈 등록: '관리자 검색·필터 전면 불가'(severity=high, status=resolved). 새 §0.2.2 P0 규칙의 첫 실천 사례.",
-        "[P0 RULE] KMS §0.2.2 '사이트 오류·이슈 기록의 절대 우선순위' 신설 — homepage_issues에 status=open + severity=high/critical 항목이 있으면 어떤 신규 작업보다 먼저 해결. 신규 작업 시작 전 체크리스트(GET /api/homepage-issues?status=open 필수 확인) 명문화. snapshot/fallback/D1 세 곳 동기(+3,518자).",
-        "CLAUDE.md §0 Target Confirmation Protocol에 'Step 0 — P0 사이트 오류·이슈 점검' 추가. wrangler d1 execute 명령 예시 포함. 신규 작업 수락 전 필수 점검.",
-        "[BUG FIX] Sankey chart SVG fill 버그 수정 — marketing 퍼널 시각화의 rect/path fill이 'var(--v3-chart-default)'로 설정되어 SVG가 해석 못 해 기본 색(검정 or 투명)으로 렌더되던 문제. hex #7c4dff로 복귀 + Leaflet 팔레트와 동일 예외 주석. §3.10 규칙 적용.",
+        "homepage_issues에 공식 이슈 등록: '관리자 검색·필터 전면 불가'(severity=high, status=resolved). 새 0.2.2 P0 규칙의 첫 실천 사례.",
+        "[P0 RULE] KMS 0.2.2 '사이트 오류·이슈 기록의 절대 우선순위' 신설 — homepage_issues에 status=open + severity=high/critical 항목이 있으면 어떤 신규 작업보다 먼저 해결. 신규 작업 시작 전 체크리스트(GET /api/homepage-issues?status=open 필수 확인) 명문화. snapshot/fallback/D1 세 곳 동기(+3,518자).",
+        "CLAUDE.md 0 Target Confirmation Protocol에 'Step 0 — P0 사이트 오류·이슈 점검' 추가. wrangler d1 execute 명령 예시 포함. 신규 작업 수락 전 필수 점검.",
+        "[BUG FIX] Sankey chart SVG fill 버그 수정 — marketing 퍼널 시각화의 rect/path fill이 'var(--v3-chart-default)'로 설정되어 SVG가 해석 못 해 기본 색(검정 or 투명)으로 렌더되던 문제. hex #7c4dff로 복귀 + Leaflet 팔레트와 동일 예외 주석. 3.10 규칙 적용.",
         "관리자 버전 03.072.01 → 03.072.02."
       ]
     },
@@ -896,7 +918,7 @@
       "summary": "[HOTFIX] 03.071.00에서 마케팅 scatter chart의 stage 컬러 함수를 var() 참조로 치환했는데 SVG fill 속성이 CSS 변수를 해석하지 못해 차트 점 색상이 깨진 문제를 원상복귀.",
       "changes": [
         "_marketingStageColor 함수: 'var(--v3-mkt-awareness)' 등을 반환하던 것을 원래 hex 리터럴(#ff8c42/#2f9e44/#e64980)로 복귀. 이 함수 반환값은 admin-v3.js:4534의 <circle fill=\"...\"> SVG 속성에 직접 삽입되는데 SVG presentation attribute는 CSS var()를 해석하지 못해 점이 무색으로 렌더됐다.",
-        "주석으로 예외 사유 기록: §3.10의 Leaflet 지도 팔레트 동일 패턴 (JS 데이터가 SVG/Canvas API에 직접 전달되는 경우 CSS var() 해석 불가).",
+        "주석으로 예외 사유 기록: 3.10의 Leaflet 지도 팔레트 동일 패턴 (JS 데이터가 SVG/Canvas API에 직접 전달되는 경우 CSS var() 해석 불가).",
         "관리자 검색 기능(기사 제목 검색 등) 전수 감사 결과: 서버 API는 정상(공개 curl 테스트로 52건 반환 확인), 프론트엔드 _bindEl 바인딩 정상, CSS 입력 박스 정상(padding 32px 좌측 SVG 아이콘 공간 유지). 사용자 보고한 검색 실패는 SVG 차트 이슈와 별개로 재현이 필요하며, 구체 패널/입력어/관찰 현상 확인 후 추가 디버그 예정.",
         "관리자 버전 03.072.00 → 03.072.01."
       ]
@@ -905,9 +927,9 @@
       "version": "03.072.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:29:09 KST",
-      "summary": "KMS §3.10 '그라데이션 및 투명도 레이어 사용 규칙' 신설 — 그라데이션 토큰화 기준, stop 값 규약, rgba 인라인 허용 범위, site/admin 분리, 정기 감사 원칙 명문화.",
+      "summary": "KMS 3.10 '그라데이션 및 투명도 레이어 사용 규칙' 신설 — 그라데이션 토큰화 기준, stop 값 규약, rgba 인라인 허용 범위, site/admin 분리, 정기 감사 원칙 명문화.",
       "changes": [
-        "§3.10 신설 — 재사용 기준 토큰화(2곳 이상이면 토큰 승격, 1회성은 인라인 허용), stop 값 규약(시작/끝은 브랜드 토큰 참조, 중간 stop shade는 gradient 토큰 내부 hex만 허용, rgba는 투명도 레이어 인라인 허용), 목적별 가이드(히어로/hover/tint/Leaflet polygon), site(--gradient-*)와 admin(--v3-gradient-*) 분리, dead 토큰 즉시 삭제 원칙.",
+        "3.10 신설 — 재사용 기준 토큰화(2곳 이상이면 토큰 승격, 1회성은 인라인 허용), stop 값 규약(시작/끝은 브랜드 토큰 참조, 중간 stop shade는 gradient 토큰 내부 hex만 허용, rgba는 투명도 레이어 인라인 허용), 목적별 가이드(히어로/hover/tint/Leaflet polygon), site(--gradient-*)와 admin(--v3-gradient-*) 분리, dead 토큰 즉시 삭제 원칙.",
         "감사 현황 기록: css/style.css의 --gradient-ink / --gradient-purple / --gradient-footer-panel 3건은 사용 0건 dead token(제거 대상). --gradient-purple-deep만 1곳 사용. css/admin-v3.css 14개 gradient 선언 중 var() 3건, rgba 인라인 11건, hex 인라인 0건(이미 정리 완료).",
         "중간 stop에 대한 리터럴 금지 엄격 적용을 포기한 이유를 각주로 기록 — shade 토큰 폭증 + dead token 누적 방지.",
         "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 33,109 → 35,342자(+2,233자).",
@@ -919,7 +941,7 @@
       "version": "03.071.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:20:25 KST",
-      "summary": "관리자 컬러 전수 감사 완료 + admin-v3.js 인라인 스타일 hex 리터럴도 토큰화해 JS 레벨까지 KMS §3.4 '리터럴 HEX 금지' 원칙 확장.",
+      "summary": "관리자 컬러 전수 감사 완료 + admin-v3.js 인라인 스타일 hex 리터럴도 토큰화해 JS 레벨까지 KMS 3.4 '리터럴 HEX 금지' 원칙 확장.",
       "changes": [
         "컬러 감사 결과 — admin-v3.css 기준 var() 참조 787건 vs :root 정의 109건, 미정의 0건. 컬러 값은 원본 hex와 100% 일치 (토큰 해결값 기반 diff 검증). 시각적 변동 없음. 03.070.00 배포 당시 보고된 대시보드 여백 붕괴는 --gap-*/--fs-* 미정의 이슈로 03.070.01에서 이미 복구됨.",
         "admin-v3.js 인라인 style hex 10건 토큰화: color:#16a34a → var(--v3-ink-published) (\"공개\" 라벨) · color:#94a3b8 → var(--v3-text-l) · color:#64748b(4곳) → var(--v3-text-m) · color:#ef4444(3곳) → var(--v3-ink-destructive) · background:#fff → var(--v3-surface).",
@@ -939,7 +961,7 @@
         "admin-v3.css에 pre-existing 미정의 토큰 2건 수정 — var(--v3-bg) → var(--v3-content-bg) (.v3-cal-map-frame, line 2909) / var(--v3-card) → var(--v3-surface) (.calendar-tag-option, line 2856). 캘린더 기능 커밋 ca5cf69부터 존재한 버그로, 해당 요소 background가 transparent로 나오던 문제를 드러냈다.",
         "admin.css의 미정의 var(--text) 1건 수정 → var(--ink) (.analytics-provider-card, line 2061). 현재 사용처 없는 dead CSS지만 정합성 복구.",
         "정밀 감사 결과 전체 확인: admin-v3.css의 var() 참조 105개 vs :root 정의 109개 대조에서 미정의 0건. nested var() 0건, 미닫힌 var() 0건, gradient/rgba에 남은 hex 리터럴 0건. padding 4-value shorthand 치환 syntactically 정상.",
-        "admin-v3.js의 inline style hex 리터럴 20건(color:#64748b 등 template string 내)은 KMS §3.4 strict 해석으로 위반 소지가 있으나 현재 visible bug 아니며 JS 레벨 CSS 토큰 참조는 별도 refactor 스코프. follow-up 항목으로 기록.",
+        "admin-v3.js의 inline style hex 리터럴 20건(color:#64748b 등 template string 내)은 KMS 3.4 strict 해석으로 위반 소지가 있으나 현재 visible bug 아니며 JS 레벨 CSS 토큰 참조는 별도 refactor 스코프. follow-up 항목으로 기록.",
         "관리자 버전 03.070.01 → 03.070.02."
       ]
     },
@@ -960,15 +982,15 @@
       "version": "03.070.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 08:51:55 KST",
-      "summary": "관리자 V3 전면 토큰 정합화 감사 + 운영 스펙(KMS §2.1 관리자 날짜, CLAUDE.md §3 데이터 안전) 현실 반영. 리터럴 0건, 서체 통일, 날짜/인증 규칙 명문화.",
+      "summary": "관리자 V3 전면 토큰 정합화 감사 + 운영 스펙(KMS 2.1 관리자 날짜, CLAUDE.md 3 데이터 안전) 현실 반영. 리터럴 0건, 서체 통일, 날짜/인증 규칙 명문화.",
       "changes": [
         "css/admin-v3.css 시맨틱 토큰 대확장: :root에 state ink/bg(success/danger/warning/info), emphasis indigo·violet(7종), 라벤더 hover/tint(6종), 중립 slate(4종), 다크 navy(2종), 마케팅 funnel(3종) 등 35개 컬러 토큰 + admin 전용 font-size 4종(--v3-fs-xs/chip/dense/stat) + spacing 4종(--v3-gap-sm/md/lg/xl) 신설.",
         "hex 리터럴 73개 건(47 unique) 전량 var(--v3-*) 참조로 치환. 토큰 외부 hex 사용 0건 확정.",
         "padding/margin/gap 리터럴 대거 치환: 4/8/12/16/24/32 → --gap-* (site 토큰), 10/14/18/20 → --v3-gap-* (admin 밀도 보정). font-size 10/11/12/14/15/16/18/20/22/24 → --fs-*, 11.5/12.5/13/28 → --v3-fs-*. 남은 px는 2/3/5/6/7/9/11/13/15 엣지 허용 범위만.",
-        "NixgonFont 선언 8건 전량 제거 (.marketing-scatter-label, .global-scroll-top-btn span/em, .v3-filter-chip 등). admin body .admin-v3 시스템 서체가 상속되어 CLAUDE.md §3 '관리자 기본 서체' 규칙 충족.",
-        "KMS §2.1 '날짜 필드 정의' 갱신: '관리자 화면 = YYYY년 MM월 DD일 HH시 MM분 SS초' 스펙을 실제 구현(ISO 기반 KST)에 맞춰 재정의. 감사 컨텍스트 YYYY-MM-DD HH:MM:SS KST / 테이블 셀 YYYY-MM-DD HH:MM / 장문은 한글 변형 허용. changelog.json released_at·audit log·배포 스크립트 전반과 포맷 통일.",
-        "CLAUDE.md §3 Admin Data Safety 명문화: settings_history(21개 API 엔드포인트 recordSettingChange) + 태그 삭제 사용 글 안내(tags.js 403 응답) 구현 위치를 구체 파일 포인터로 기록. '기사 수정 비밀번호 재검증' 조항은 KMS에 없고 구현도 없는 aspirational 항목이어서 HMAC 쿠키 세션 단일 인증으로 재작성.",
-        "CLAUDE.md §3 관리자 날짜·서체 항목도 신규 규칙에 맞춰 갱신(시스템 서체 font-stack 명시 + NixgonFont 금지).",
+        "NixgonFont 선언 8건 전량 제거 (.marketing-scatter-label, .global-scroll-top-btn span/em, .v3-filter-chip 등). admin body .admin-v3 시스템 서체가 상속되어 CLAUDE.md 3 '관리자 기본 서체' 규칙 충족.",
+        "KMS 2.1 '날짜 필드 정의' 갱신: '관리자 화면 = YYYY년 MM월 DD일 HH시 MM분 SS초' 스펙을 실제 구현(ISO 기반 KST)에 맞춰 재정의. 감사 컨텍스트 YYYY-MM-DD HH:MM:SS KST / 테이블 셀 YYYY-MM-DD HH:MM / 장문은 한글 변형 허용. changelog.json released_at·audit log·배포 스크립트 전반과 포맷 통일.",
+        "CLAUDE.md 3 Admin Data Safety 명문화: settings_history(21개 API 엔드포인트 recordSettingChange) + 태그 삭제 사용 글 안내(tags.js 403 응답) 구현 위치를 구체 파일 포인터로 기록. '기사 수정 비밀번호 재검증' 조항은 KMS에 없고 구현도 없는 aspirational 항목이어서 HMAC 쿠키 세션 단일 인증으로 재작성.",
+        "CLAUDE.md 3 관리자 날짜·서체 항목도 신규 규칙에 맞춰 갱신(시스템 서체 font-stack 명시 + NixgonFont 금지).",
         "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 32,438 → 33,109자(+671자).",
         "innerHTML 182건 감사: admin-v3.js 기준 XSS 위험 0건 (전건 GW.escapeHtml 또는 정적 HTML). GW.renderTextWithMedia의 Quill 레거시 경로가 sanitize 없이 원본 HTML을 반환하는 공용 헬퍼 이슈는 follow-up(main.js 범위).",
         "관리자 버전 03.069.01 → 03.070.00."
@@ -978,9 +1000,9 @@
       "version": "03.069.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 08:25:44 KST",
-      "summary": "KMS §3.9 '탭 간 시각 일관성 규칙'에 '본문 영역 카드 스택' 조항을 추가해 오늘 신설한 기능정의서 카드화 패턴을 운영 기준에 반영했습니다. snapshot·fallback·라이브 D1 세 곳 동시 갱신.",
+      "summary": "KMS 3.9 '탭 간 시각 일관성 규칙'에 '본문 영역 카드 스택' 조항을 추가해 오늘 신설한 기능정의서 카드화 패턴을 운영 기준에 반영했습니다. snapshot·fallback·라이브 D1 세 곳 동시 갱신.",
       "changes": [
-        "§3.9에 네 번째 볼드 블록 '본문 영역(.kms-main)은 모든 탭에서 카드 스택 패턴으로 통일한다'를 신설. 본문 컨테이너에 추가 max-width + margin:0 auto 중앙정렬 금지, 사이드바↔본문 여백은 .kms-tab-panel 좌측 패딩(--gap-section-out, 32px)이 유일한 구분임을 명시.",
+        "3.9에 네 번째 볼드 블록 '본문 영역(.kms-main)은 모든 탭에서 카드 스택 패턴으로 통일한다'를 신설. 본문 컨테이너에 추가 max-width + margin:0 auto 중앙정렬 금지, 사이드바↔본문 여백은 .kms-tab-panel 좌측 패딩(--gap-section-out, 32px)이 유일한 구분임을 명시.",
         "각 탭별 카드 클래스를 명시적으로 나열: 기능정의서 .kms-doc-card (+ .kms-doc-card--intro 인트로 카드) · API .kms-api-group · 버전기록 .kms-cl-item · 디자인 .kms-ds-section. 카드 공통 톤(Canvas White + 1px --kms-border + radius 12px + --gap-section-out 패딩)을 단일 규약으로 고정.",
         "본문 컨테이너 .kms-document-body / .kms-api-guide / .kms-changelog / .kms-ds-body 네 곳 모두 display:flex + flex-direction:column + gap:var(--gap-section)(24px) 구조를 사용한다고 명문화. 모바일(≤900px) 카드 패딩 축소(--gap-section/--gap-card + radius 10px) 규칙 포함.",
         "리터럴 금지 확인 사항에 본문 카드 4종(.kms-doc-card/.kms-api-group/.kms-cl-item/.kms-ds-section)을 추가해 토큰 준수 범위 확장.",
@@ -1008,15 +1030,15 @@
       "version": "03.068.00",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:51:07 KST",
-      "summary": "KMS 전 탭의 상단 헤더와 사이드바 TOC 시각 패턴을 디자인 탭 기준으로 통일하고, 가이드에 §3.9 '탭 간 시각 일관성 규칙'을 신설했습니다.",
+      "summary": "KMS 전 탭의 상단 헤더와 사이드바 TOC 시각 패턴을 디자인 탭 기준으로 통일하고, 가이드에 3.9 '탭 간 시각 일관성 규칙'을 신설했습니다.",
       "changes": [
         "kms.html 상단 헤더의 `보기 / 편집 / 저장` 컨트롤을 헤더 우측에서 제거하고 기능정의서 탭 전용 .kms-panel-header-side 안쪽으로 이동. 이제 상단 헤더는 모든 탭에서 동일하게 '사이드바 토글 + KMS 뱃지 + 탭 네비 + 관리자 →' 구성만 보입니다.",
         "기능정의서 탭의 편집 컨트롤은 메타 뱃지(Site 버전/대목차/세부) 아래 dashed 구분선과 함께 콤팩트 사이즈(fs-caption, gap-tight)로 재배치되어 design 탭의 깔끔한 헤더와 시각적으로 동등해졌습니다.",
         "기능정의서 사이드바 TOC 렌더러(renderSectionList)를 재작성: 각 항목의 [소목차]/[대목차]/[세부] 중복 prefix를 제거하고, h2 대목차는 kms-section-group-label 구분자로, h3 소목차는 깨끗한 kms-section-link로 렌더. 디자인 탭의 'FOUNDATION → 01 · 기본 토큰' 패턴과 동일.",
         "API 탭 사이드바 TOC(renderApiSectionList)도 같은 패턴으로 정리. 'API 그룹' 구분자 아래 그룹 링크만.",
         ".kms-tab-panel / .kms-panel-header / .kms-kicker / h2 / p / code 의 padding·margin·gap·font-size를 모두 Spacing(--gap-*) 및 Typography(--fs-*) 토큰으로 교체. 리터럴 금지 원칙 전면 적용.",
-        "h2 패널 제목에 Midnight Purple 색과 --fs-document(24px) 토큰을 명시적으로 적용해 디자인 가이드(§3.4 브랜드 컬러·§3.2 타이포 스케일) 준수.",
-        "KMS 가이드 §3.9 '탭 간 시각 일관성 규칙'을 신설(snapshot + fallback + 라이브 D1 3곳 동기). 상단 헤더·사이드바·패널 헤더 각각의 구조 계약과 '중복 레이블 prefix 금지' 원칙, 리터럴 금지 확인 사항을 명시.",
+        "h2 패널 제목에 Midnight Purple 색과 --fs-document(24px) 토큰을 명시적으로 적용해 디자인 가이드(3.4 브랜드 컬러·3.2 타이포 스케일) 준수.",
+        "KMS 가이드 3.9 '탭 간 시각 일관성 규칙'을 신설(snapshot + fallback + 라이브 D1 3곳 동기). 상단 헤더·사이드바·패널 헤더 각각의 구조 계약과 '중복 레이블 prefix 금지' 원칙, 리터럴 금지 확인 사항을 명시.",
         "관리자 버전 03.067.04 → 03.068.00."
       ]
     },
@@ -1035,12 +1057,12 @@
       "version": "03.067.04",
       "date": "2026-04-18",
       "released_at": "2026-04-18 16:37:26 KST",
-      "summary": "KMS 기능정의서 스타일의 font-size·spacing 리터럴을 전부 토큰으로 교체하고 §3.2에 font-size 토큰 표를 등록했습니다.",
+      "summary": "KMS 기능정의서 스타일의 font-size·spacing 리터럴을 전부 토큰으로 교체하고 3.2에 font-size 토큰 표를 등록했습니다.",
       "changes": [
         "이전 가독성 개선 커밋(03.067.03)에서 섹션 헤더·본문·리스트에 font-size 리터럴(13.5/15/16/18/22/24px)이 26건 남아있던 문제를 자체 감사로 확인. 신규 --fs-* 토큰 7종을 참조하도록 전부 교체해 리터럴 0건으로 정리했습니다.",
-        "spacing 리터럴(40px padding / 8px calc / 4px margin-left)도 해당 --gap-* 토큰(--gap-section-out + --gap-tight / --gap-tight / --gap-micro)으로 교체. 남은 리터럴 3건은 모두 2px hairline(marker-text 간격 · inline-code 수직 padding)으로 §3.2 '엣지 케이스 리터럴 허용' 범주에 해당.",
+        "spacing 리터럴(40px padding / 8px calc / 4px margin-left)도 해당 --gap-* 토큰(--gap-section-out + --gap-tight / --gap-tight / --gap-micro)으로 교체. 남은 리터럴 3건은 모두 2px hairline(marker-text 간격 · inline-code 수직 padding)으로 3.2 '엣지 케이스 리터럴 허용' 범주에 해당.",
         ".kms-code-label / .kms-code 의 #c4c4c4 / #ebebeb hex도 var(--gray-300) / var(--gray-100) 토큰으로 교체했습니다.",
-        "KMS 문서 §3.2 '공통 여백 규칙'에 '타이포그래피 크기 토큰' 표를 추가해 12단계 스케일과 각 용도를 명시. snapshot / fallback / 라이브 D1 세 곳에 동시 반영(+705자).",
+        "KMS 문서 3.2 '공통 여백 규칙'에 '타이포그래피 크기 토큰' 표를 추가해 12단계 스케일과 각 용도를 명시. snapshot / fallback / 라이브 D1 세 곳에 동시 반영(+705자).",
         "자체 감사 결과: 색상 리터럴 0건, spacing 리터럴 3건(hairline 허용), font-size 리터럴 0건. 디자인 가이드 완전 준수.",
         "관리자 버전 03.067.03 → 03.067.04."
       ]
@@ -1069,7 +1091,7 @@
       "summary": "KMS 기능정의서에서 |Lc|(절대값) 표기가 셀 구분자로 오인되어 깨지던 7개 표 중 3개 표를 바로잡았습니다.",
       "changes": [
         "마크다운 테이블 파서(js/kms.js renderKmsText)가 GFM 표준인 이스케이프 파이프(\\|)를 인식하도록 개선했습니다. 셀 내부의 리터럴 파이프는 분할 대상에서 제외되고 렌더링 시 \\|는 |로 복원됩니다.",
-        "KMS 문서 §3.4 '브랜드 컬러 팔레트 및 웹 접근성 원칙'의 3개 표(WCAG 3.0 APCA Lc 기준표, 색상별 접근성 분류, 권장 배경-텍스트 조합)에서 |Lc| 표기를 \\|Lc\\|로 이스케이프했습니다. 이전에는 셀 내부 파이프가 컬럼 구분자로 잘못 해석되어 테이블이 최대 10개 컬럼으로 쪼개져 표시되던 문제.",
+        "KMS 문서 3.4 '브랜드 컬러 팔레트 및 웹 접근성 원칙'의 3개 표(WCAG 3.0 APCA Lc 기준표, 색상별 접근성 분류, 권장 배경-텍스트 조합)에서 |Lc| 표기를 \\|Lc\\|로 이스케이프했습니다. 이전에는 셀 내부 파이프가 컬럼 구분자로 잘못 해석되어 테이블이 최대 10개 컬럼으로 쪼개져 표시되던 문제.",
         "snapshot(docs/feature-definition.md), fallback(functions/_shared/feature-definition.js), 라이브 D1 KMS 세 곳에 동일하게 16건 이스케이프 적용. settings_history에 이전 값 스냅샷 보존.",
         "관리자 버전 03.067.01 → 03.067.02."
       ]
@@ -1081,7 +1103,7 @@
       "summary": "본문 font-weight를 NixgonFont Light(300)에서 Medium(500)으로 수정해 기사·본문 가독성과 APCA 지각 대비를 정상화했습니다.",
       "changes": [
         "이전 서체(AliceDigitalLearning) 시절부터 body 기본 font-weight가 300으로 설정되어 있었습니다. NixgonFont는 300이 실제 Light 중량이라 본문이 과하게 얇게 렌더링되어 기사 상세(/post/*) 본문 읽기에 어려움이 있었고, 색 대비는 충족(Lc 105)하더라도 stroke가 가늘어 APCA 지각 대비가 떨어지는 문제가 있었습니다.",
-        "css/style.css body { font-weight: 500 } 로 기본값 수정. KMS §3.1 '본문은 Medium(500)' 규칙과 실제 코드를 일치시켰습니다.",
+        "css/style.css body { font-weight: 500 } 로 기본값 수정. KMS 3.1 '본문은 Medium(500)' 규칙과 실제 코드를 일치시켰습니다.",
         ".post-page-body p / li / blockquote 에 명시적 font-weight: 500 추가, line-height를 1.92 → 1.85로 소폭 조정해 읽기 리듬 개선.",
         ".hero-main .deck, .modal-body, .form-group textarea 등 본문 맥락의 font-weight 300을 모두 500으로 승격했습니다(css/style.css 3건).",
         "@font-face 3중량 선언(300/500/700)은 그대로 유지 — 필요한 곳(메타·장식)에서는 여전히 300을 명시적으로 사용 가능.",
@@ -1115,12 +1137,12 @@
       "version": "03.067.00",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:59:42 KST",
-      "summary": "관리자 콘솔·KMS의 서체 참조를 NixgonFont로 교체하고 KMS §3.1 타이포 규칙을 3중량 체계로 다시 썼습니다.",
+      "summary": "관리자 콘솔·KMS의 서체 참조를 NixgonFont로 교체하고 KMS 3.1 타이포 규칙을 3중량 체계로 다시 썼습니다.",
       "changes": [
         "css/admin.css(91건)·css/admin-v3.css(8건) 등 관리자 CSS의 font-family: AliceDigitalLearning 참조를 NixgonFont로 일괄 치환했습니다. KMS 기능정의서, 디자인 탭, API 가이드, 버전기록, 관리자 V3 전 구간이 동일한 서체 체계를 쓰게 됩니다.",
-        "KMS §3.1 '기본 서체와 타이포'를 재작성했습니다. 3중량 @font-face 선언, 중량 선택 기준(300 Light = 메타·장식 / 500 Medium = 본문·라벨 / 700 Bold = 제목·강조), 전환 배경(단일 중량 → 3중량) 각주를 추가.",
+        "KMS 3.1 '기본 서체와 타이포'를 재작성했습니다. 3중량 @font-face 선언, 중량 선택 기준(300 Light = 메타·장식 / 500 Medium = 본문·라벨 / 700 Bold = 제목·강조), 전환 배경(단일 중량 → 3중량) 각주를 추가.",
         "docs/feature-definition.md(스냅샷) / functions/_shared/feature-definition.js(기본 fallback) / 라이브 D1 KMS(settings 테이블) 세 곳을 동시 동기화했습니다(28,298 → 29,496자).",
-        "CLAUDE.md §2 Site Design Rules의 기본 서체 항목도 NixgonFont 3중량 + 중량 선택 기준으로 업데이트.",
+        "CLAUDE.md 2 Site Design Rules의 기본 서체 항목도 NixgonFont 3중량 + 중량 선택 기준으로 업데이트.",
         "관리자 버전 03.066.01 → 03.067.00."
       ]
     },
@@ -1159,9 +1181,9 @@
         "KMS 디자인 탭 02 · 웹 접근성 & 컬러 규칙 섹션의 명암비 기준표·안전조합·포커스 인디케이터·6원칙 모듈을 APCA(Accessible Perceptual Contrast Algorithm) 기준으로 전면 재작성했습니다. 본문 |Lc| 75+ / 콘텐츠 60+ / 대형 45+ / UI·포커스 30+ 4단계 기준이 새 표준입니다.",
         "KMS 디자인 탭 FOUNDATION 01 브랜드 팔레트 모듈에 그레이스케일 5단계 칩셋을 시각적으로 추가했습니다. 10색 브랜드 팔레트 아래에 점선 구분선과 함께 Gray 900·700·500·300·100의 칩, Lc 값, 용도 설명이 표시됩니다.",
         "팔레트 칩의 라벨을 2.1 비율(예: 13.63:1 · 본문 AAA)에서 APCA Lc(예: Lc 100.2 · 본문 OK)로 통일했습니다.",
-        "KMS 문서 §3.4의 명암비 기준표, 색상별 접근성 분류, 권장 배경-텍스트 조합, 색상 선택 원칙, 검증 체크리스트, 각주를 모두 APCA Lc 기반으로 다시 썼습니다. 검증 도구도 WebAIM Contrast Checker → apcacontrast.com으로 교체.",
+        "KMS 문서 3.4의 명암비 기준표, 색상별 접근성 분류, 권장 배경-텍스트 조합, 색상 선택 원칙, 검증 체크리스트, 각주를 모두 APCA Lc 기반으로 다시 썼습니다. 검증 도구도 WebAIM Contrast Checker → apcacontrast.com으로 교체.",
         "docs/feature-definition.md(스냅샷) / functions/_shared/feature-definition.js(기본 fallback) / 라이브 D1 KMS 세 곳을 동시 동기화했습니다.",
-        "CLAUDE.md §2 Site의 Color Palette & Accessibility 섹션도 WCAG 3.0 APCA 기준으로 업데이트하고 그레이스케일 5단계 표를 추가했습니다.",
+        "CLAUDE.md 2 Site의 Color Palette & Accessibility 섹션도 WCAG 3.0 APCA 기준으로 업데이트하고 그레이스케일 5단계 표를 추가했습니다.",
         "css/style.css :root의 그레이스케일 주석을 APCA Lc 값으로 교체했습니다.",
         "관리자 버전 03.065.01 → 03.066.00."
       ]
@@ -1195,10 +1217,10 @@
       "version": "03.065.00",
       "date": "2026-04-18",
       "released_at": "2026-04-18 15:12:43 KST",
-      "summary": "KMS 디자인 탭과 문서의 §3.2 공통 여백 규칙을 토큰 시스템 기준으로 전면 개편했습니다.",
+      "summary": "KMS 디자인 탭과 문서의 3.2 공통 여백 규칙을 토큰 시스템 기준으로 전면 개편했습니다.",
       "changes": [
         "KMS 디자인 탭 FOUNDATION 01 섹션에 '간격(Spacing) 시스템 — 상하·좌우·페이지 거터' 모듈을 신설했습니다. 9개 토큰의 이름·값·용도 표와 함께 수직 스케일 ruler, 페이지 좌우 거터 반응형 미리보기(Desktop 48px / Tablet 32px / Mobile 16px), ✅ 토큰 사용 vs ❌ 리터럴 사용 코드 예시를 한 카드 안에서 제공합니다.",
-        "KMS 문서 §3.2 '공통 여백 규칙'을 '공통 여백 규칙 (Spacing 토큰 시스템)'으로 개편했습니다. 9개 토큰 테이블(수직 6 + 거터 3), 사용 원칙 6항, 코드 예시, 토큰 도입 배경을 추가했습니다.",
+        "KMS 문서 3.2 '공통 여백 규칙'을 '공통 여백 규칙 (Spacing 토큰 시스템)'으로 개편했습니다. 9개 토큰 테이블(수직 6 + 거터 3), 사용 원칙 6항, 코드 예시, 토큰 도입 배경을 추가했습니다.",
         "docs/feature-definition.md(스냅샷) / functions/_shared/feature-definition.js(기본 fallback) / 라이브 D1 KMS(settings 테이블) 세 곳을 동시 동기화했습니다.",
         "관리자 버전 03.064.00 → 03.065.00."
       ]
