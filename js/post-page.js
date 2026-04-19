@@ -840,41 +840,6 @@ if (_postShareBtn) {
   });
 }
 
-// 북마크 버튼 — GW.bookmarks 토글. 상태 반영.
-var _postBookmarkBtn = document.getElementById('post-bookmark-btn');
-function _syncBookmarkBtn() {
-  if (!_postBookmarkBtn || !GW.bookmarks) return;
-  var id = _postBookmarkBtn.getAttribute('data-post-id');
-  var saved = GW.bookmarks.has(id);
-  _postBookmarkBtn.setAttribute('aria-pressed', saved ? 'true' : 'false');
-  _postBookmarkBtn.classList.toggle('is-saved', saved);
-  var label = _postBookmarkBtn.querySelector('.post-bookmark-label');
-  if (label) label.textContent = saved ? '저장됨' : '저장';
-}
-if (_postBookmarkBtn && GW.bookmarks) {
-  _syncBookmarkBtn();
-  _postBookmarkBtn.addEventListener('click', function (event) {
-    event.preventDefault();
-    var saved = GW.bookmarks.toggle({
-      id:        _postBookmarkBtn.getAttribute('data-post-id'),
-      title:     _postBookmarkBtn.getAttribute('data-post-title'),
-      category:  _postBookmarkBtn.getAttribute('data-post-category'),
-      image_url: _postBookmarkBtn.getAttribute('data-post-image'),
-    });
-    _syncBookmarkBtn();
-    if (GW.showToast) GW.showToast(saved ? '저장함에 추가했습니다' : '저장에서 뺐습니다', 'success');
-  });
-}
-
-// 최근 본 기사 기록 — 페이지 진입 시 1회 push
-if (GW.recent && _postBookmarkBtn) {
-  GW.recent.push({
-    id:        _postBookmarkBtn.getAttribute('data-post-id'),
-    title:     _postBookmarkBtn.getAttribute('data-post-title'),
-    category:  _postBookmarkBtn.getAttribute('data-post-category'),
-    image_url: _postBookmarkBtn.getAttribute('data-post-image'),
-  });
-}
 
 var _postEditBtn = document.getElementById('post-edit-btn');
 if (_postEditBtn) {

@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.127.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 00:55:00 KST",
+    "summary": "사용자 피드백으로 북마크·최근 본 기사 기능 전체 롤백. 홈 하단 레일·기사 상세 저장 버튼 제거하고 localStorage 잔여 키(gw_bookmarks / gw_recent) 자동 청소.",
+    "changes": [
+      "index.html home-userdata-section 제거 (홈 하단 '저장한 기사'/'최근 본 기사' 2-card 레일).",
+      "functions/post/[id].js #post-bookmark-btn 제거 (기사 상세 공유 옆 🔖 저장 버튼).",
+      "js/post-page.js _syncBookmarkBtn/클릭 이벤트/GW.recent.push 호출부 제거.",
+      "js/main.js GW.bookmarks·GW.recent 헬퍼 삭제. 기존 localStorage(gw_bookmarks, gw_recent) 1회 자동 cleanup.",
+      "js/site-chrome.js renderUserDataRails/bindUserDataEvents 제거, DOMContentLoaded에서 호출 빼냄.",
+      "css/style.css .post-bookmark-*, .home-userdata-*, .ud-* 블록 제거.",
+      "사이트 버전 00.127.00 → 00.127.01."
+    ]
+  },
+  {
     "version": "00.127.00",
     "date": "2026-04-19",
     "released_at": "2026-04-20 00:40:00 KST",
