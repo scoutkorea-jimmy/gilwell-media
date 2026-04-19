@@ -3763,7 +3763,7 @@ footer a:hover { color: var(--white); }
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid var(--border);
-  background: var(--page-bg);
+  background: var(--bg);
 }
 
 .gallery-upload-remove {
@@ -3918,9 +3918,9 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-view-btn.is-active {
-  border-color: var(--purple);
+  border-color: var(--scouting-purple);
   background: rgba(92, 42, 157, 0.1);
-  color: var(--purple);
+  color: var(--scouting-purple);
 }
 
 .calendar-page-head h2 {
@@ -4188,7 +4188,7 @@ footer a:hover { color: var(--white); }
   font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .08em;
-  color: var(--purple);
+  color: var(--scouting-purple);
 }
 
 .calendar-map-result-place::before {
@@ -4309,8 +4309,8 @@ footer a:hover { color: var(--white); }
 
 .calendar-filter-chip.is-active,
 .calendar-tag-preset.is-active {
-  border-color: var(--purple);
-  color: var(--purple);
+  border-color: var(--scouting-purple);
+  color: var(--scouting-purple);
   background: rgba(92, 42, 157, 0.08);
 }
 
@@ -4523,12 +4523,12 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-day.is-active {
-  border-color: var(--purple);
+  border-color: var(--scouting-purple);
   background: rgba(92, 42, 157, 0.06);
 }
 
 .calendar-day.is-today .calendar-day-num {
-  color: var(--purple);
+  color: var(--scouting-purple);
 }
 
 .calendar-day-num {
@@ -4550,7 +4550,7 @@ footer a:hover { color: var(--white); }
   margin: 0 var(--gap-micro);
   border: 0;
   background: rgba(92, 42, 157, 0.12);
-  color: var(--purple);
+  color: var(--scouting-purple);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
@@ -4602,7 +4602,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-year-month {
   border: 1px solid var(--border);
-  background: var(--page-bg);
+  background: var(--bg);
 }
 
 .calendar-year-month-head {
@@ -4744,7 +4744,7 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-status-head.is-upcoming {
-  color: var(--purple);
+  color: var(--scouting-purple);
   border-color: rgba(92, 42, 157, 0.35);
   background: rgba(92, 42, 157, 0.08);
 }
@@ -4834,7 +4834,7 @@ footer a:hover { color: var(--white); }
 .calendar-category-badge.is-muted { color: #9f9f9f; }
 
 .calendar-status-badge.is-upcoming {
-  color: var(--purple);
+  color: var(--scouting-purple);
 }
 
 .calendar-status-badge.is-ongoing {
@@ -4876,7 +4876,7 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-event-title-btn:hover {
-  color: var(--purple);
+  color: var(--scouting-purple);
 }
 
 .calendar-event-original,
@@ -4928,7 +4928,7 @@ footer a:hover { color: var(--white); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--purple);
+  color: var(--scouting-purple);
   text-decoration: none;
   font-size: 13px;
   border: 1px solid var(--border);
@@ -5059,7 +5059,7 @@ footer a:hover { color: var(--white); }
   height: 260px;
   border: 1px solid var(--border);
   overflow: hidden;
-  background: var(--page-bg);
+  background: var(--bg);
 }
 
 .calendar-tag-manager-list {
