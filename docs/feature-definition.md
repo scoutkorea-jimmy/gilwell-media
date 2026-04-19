@@ -7,7 +7,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 
 > [!warning] 이 문서는 KMS의 보조 스냅샷입니다
 > 정식 원본은 관리자 `/admin.html` → KMS 메뉴에서 확인하십시오.
-> AI 작업 기준은 [[CLAUDE]] (= `AGENTS.md`)를 우선합니다. 타겟은 §2 Site / §3 Admin / §4 KMS 섹션 참조.
+> AI 작업 기준은 [[CLAUDE]] (= `AGENTS.md`)를 우선합니다. 타겟은 2 Site / 3 Admin / 4 KMS 섹션 참조.
 
 이 문서는 BP미디어의 공개 홈페이지, 관리자, 운영 데이터 규칙, 배포 규칙을 통합해서 관리하는 기준 문서다.
 앞으로 새 기능을 개발하거나 기존 기능을 수정할 때는 이 문서를 먼저 확인하고, 구현이 끝나면 반드시 이 문서도 함께 갱신한다.
@@ -35,7 +35,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
   - `KMS` : 운영 기준 원본 (이 문서)
   - `Dreampath` : CUFS 내부 앱 (별도 도메인)
 - 타겟이 모호하면 AI는 코드를 수정하기 전에 반드시 사용자에게 질문한다.
-- 타겟 확정 후에는 `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크)의 해당 `§` 섹션만 참조하고, 다른 타겟 규칙을 섞지 않는다.
+- 타겟 확정 후에는 `CLAUDE.md` (= `AGENTS.md` 심볼릭 링크)의 해당 `` 섹션만 참조하고, 다른 타겟 규칙을 섞지 않는다.
 - KMS 변경은 Site/Admin의 코드 변경에 우선한다. 코드 변경으로 KMS 기준을 역산하지 않는다.
 
 #### 각주
@@ -384,7 +384,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 **원칙**
 - 칩·배지 신설 시 반드시 위 기본 규격을 상속받고, 색만 달리한다. 크기·여백·타이포를 임의로 변경 금지.
-- 색은 §3.4 브랜드 팔레트 10 + 그레이스케일 5 + V3 토큰 내에서만 선택.
+- 색은 3.4 브랜드 팔레트 10 + 그레이스케일 5 + V3 토큰 내에서만 선택.
 - 행 내 여러 칩은 `gap: var(--gap-tight)`(8px) 간격 유지.
 
 #### 각주
@@ -594,17 +594,17 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 **Site vs Admin gradient 분리.**
 - 공개 사이트 gradient 토큰: `--gradient-*` — `css/style.css` `:root`.
-- Admin V3 gradient 토큰: `--v3-gradient-*` — `css/admin-v3.css` `:root`. admin은 공개 사이트 토큰을 참조하지 않는다 (admin.html이 `style.css`를 로드하지 않기 때문 — §3.2 동일 이유).
+- Admin V3 gradient 토큰: `--v3-gradient-*` — `css/admin-v3.css` `:root`. admin은 공개 사이트 토큰을 참조하지 않는다 (admin.html이 `style.css`를 로드하지 않기 때문 — 3.2 동일 이유).
 
 **정기 감사.**
 - **사용 0건인 gradient 토큰은 제거한다.** gradient 토큰은 "재사용될 명확한 계획이 있을 때만" 만든다. 신설 후 다음 감사까지 사용처가 0건이면 즉시 삭제.
-- 감사 주기는 관리자 CSS 리터럴 전수 감사(§3.2 / §3.4 준수 점검)와 함께 수행.
+- 감사 주기는 관리자 CSS 리터럴 전수 감사(3.2 / 3.4 준수 점검)와 함께 수행.
 
 #### 각주
 
 - 2026-04-19 감사 기준: `css/style.css`의 `--gradient-ink` / `--gradient-purple` / `--gradient-footer-panel`은 사용 **0건** (dead token, 제거 대상). `--gradient-purple-deep`만 1곳 사용. `css/admin-v3.css`는 14개 gradient 선언 중 var() 토큰 사용 3건 / rgba 인라인 11건 / hex 인라인 0건.
 - gradient 내부 중간 stop에 대한 "리터럴 금지" 엄격 적용을 포기한 이유: 브랜드 팔레트는 APCA Lc 차이가 크지 않은 shade(~5~10% darker variant)를 중간값으로 자주 필요로 하고, 이를 매번 독립 토큰으로 승격하면 5~10개 shade가 gradient 하나당 생겨 전체 토큰 수가 폭증하고 "한 번도 직접 참조되지 않는" 죽은 토큰이 쌓인다. gradient 자체를 재사용 단위로 묶는 편이 관리 비용이 낮다.
-- Admin에서 site gradient 토큰을 못 쓰는 이유는 §3.2 말미의 `--gap-*`/`--fs-*` 이슈와 동일: `admin.html`은 `css/style.css`를 로드하지 않아 `var(--gradient-*)` 참조가 런타임에 undefined로 해석된다.
+- Admin에서 site gradient 토큰을 못 쓰는 이유는 3.2 말미의 `--gap-*`/`--fs-*` 이슈와 동일: `admin.html`은 `css/style.css`를 로드하지 않아 `var(--gradient-*)` 참조가 런타임에 undefined로 해석된다.
 
 ### 3.11 통일 기간 선택 UI (v3-period-bar)
 
@@ -669,18 +669,18 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 **5개 섹션 순서 (위→아래):**
 
-1. **태그 관계도** — 상호작용 중심 카드. 상세는 아래 §관계도.
+1. **태그 관계도** — 상호작용 중심 카드. 상세는 아래 관계도.
 2. **기초 통계** — 전체 기사 수 / 고유 글머리 태그 / 고유 메타 태그 / 평균 메타 태그·기사. 글머리 태그 상위 10 + `category`별 평균 메타 태그(SEO 편차 점검) + 메타 태그 상위 20 + 하위 10. 각 표에 **더보기 모달**(페이지네이션 30/페이지) 버튼으로 전체 순위 열람.
 3. **태그 체계 건강성 진단** — 1회 등장 고립 태그 / 과다 등장 태그(전체의 30% 이상) / 중복 의심 태그 쌍(편집거리 + 부분 포함 heuristic) / 고립 군집(2~5개 소규모 연결 컴포넌트). 모든 항목 **사람 검토 필요**. 자동 통합/삭제 금지.
 4. **콘텐츠 축적 현황** — 글머리 태그별 누적(category 분포 포함) 15 + 더보기 모달, 최근 12개월 월별 발행 추세, 전략적 보강 필요(기사 ≤5건인 글머리).
 5. **SEO/AEO 클러스터 + 신규 콘텐츠 제안** — 허브-스포크 클러스터 상위 5(각 허브의 상위 8 공출현 스포크) + 기사 수 부족 글머리 태그 목록 + 신규 콘텐츠 제안 10건(공출현 기반 휴리스틱, 우선순위 상/중/하). 모든 제안 `human_review_required`.
 
-**태그 관계도 (§2) 상호작용:**
+**태그 관계도 (2) 상호작용:**
 
 | 축 | 표현 |
 |---|---|
 | 노드 크기 | 등장 빈도(count) 비례, r = 10~32px |
-| 노드 색 | 우세 글머리 태그 기준 **KMS 브랜드 10색**(scouting-purple · midnight-purple · forest-green · ocean-blue · fire-red · blossom-pink · ember-orange · river-blue · leaf-green · gray-700 fallback). SVG fill은 CSS var() 해석 불가라 hex 유지(§3.10 Leaflet 예외와 동일). |
+| 노드 색 | 우세 글머리 태그 기준 **KMS 브랜드 10색**(scouting-purple · midnight-purple · forest-green · ocean-blue · fire-red · blossom-pink · ember-orange · river-blue · leaf-green · gray-700 fallback). SVG fill은 CSS var() 해석 불가라 hex 유지(3.10 Leaflet 예외와 동일). |
 | 링크 굵기 | count/maxLinkCount 비선형(`0.6 + r^0.55 × 5`) 0.6~5.6px. 약한 연결은 얇고 강한 연결은 훨씬 굵게. |
 | 링크 색 | **count 기반 흑백 연속 그라데이션** — `rgb(v,v,v) where v = 196 - (196-31) * r^0.55`. 밝은 회색(`--gray-300`) → `--ink` 검정. 추가로 opacity 0.35~0.80 power 곡선. |
 | 가장 약한 연결 | 하위 15%(또는 count=1)는 **점선**(`stroke-dasharray="4 3"`). |
@@ -712,14 +712,14 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 **오프라인 동등성:**
 
-- `scripts/tag-analysis/01_export.mjs` (D1 → JSON) → `02_tokenize.mjs` → `03_statistics.mjs` (§1만) / `04_run_all.mjs` (5 산출물 전체).
+- `scripts/tag-analysis/01_export.mjs` (D1 → JSON) → `02_tokenize.mjs` → `03_statistics.mjs` (1만) / `04_run_all.mjs` (5 산출물 전체).
 - 산출물: `output/tag-analysis/01_statistics.md` · `02_graph.json` · `02_graph.html`(D3.js v7 인터랙티브) · `03_health_check.md` · `04_coverage_map.md` · `05_next_actions.md`.
 - 공용 `buildTagInsights()`를 서버(API)와 Node 스크립트 양쪽에서 import — 로직 단일 진실 원본.
 
 #### 각주
 
 - 태그 이름은 원문 보존. 한 기사 내 중복만 제거, 전체 집계는 원문 그대로. `청소년활` vs `청소년활동` 같은 오타/유사어도 자동 병합하지 않고 중복 의심 쌍으로만 플래그.
-- SVG `fill`/`stroke` 속성은 CSS var() 해석 불가라 palette는 hex 문자열로 유지(§3.10 Leaflet 팔레트 예외와 동일 패턴).
+- SVG `fill`/`stroke` 속성은 CSS var() 해석 불가라 palette는 hex 문자열로 유지(3.10 Leaflet 팔레트 예외와 동일 패턴).
 - 2026-04-19 분석 기준(전체 151건): 고유 글머리 39개, 고유 메타 611개, 1회 등장 고립 태그 468개(76.6%). 주요 허브: 스카우트(46) · 세계스카우트연맹(39) · 한국스카우트연맹(28) · 스카우트운동(23).
 
 ## 4. 마케팅 대시보드
