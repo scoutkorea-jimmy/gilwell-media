@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419112240">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419112623">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.086.02</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.086.03</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.121.01</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.086.02</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.086.03</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.121.01</span></span></div>
     </div>
 
@@ -776,21 +776,21 @@
           </div>
           <div class="v3-ai-usage-grid">
             <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">오늘 (24h)</span>
+              <span class="v3-ai-usage-label">오늘 (24h) · 토큰</span>
               <span class="v3-ai-usage-value" id="ai-usage-today-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-today-tokens">토큰 —</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-today-tokens">호출 없음</span>
               <span class="v3-ai-usage-cost" id="ai-usage-today-cost">예상 비용 —</span>
             </div>
             <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">최근 7일</span>
+              <span class="v3-ai-usage-label">최근 7일 · 토큰</span>
               <span class="v3-ai-usage-value" id="ai-usage-week-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-week-tokens">토큰 —</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-week-tokens">호출 없음</span>
               <span class="v3-ai-usage-cost" id="ai-usage-week-cost">예상 비용 —</span>
             </div>
             <div class="v3-ai-usage-stat">
-              <span class="v3-ai-usage-label">최근 30일</span>
+              <span class="v3-ai-usage-label">최근 30일 · 토큰</span>
               <span class="v3-ai-usage-value" id="ai-usage-month-calls">—</span>
-              <span class="v3-ai-usage-sub" id="ai-usage-month-tokens">토큰 —</span>
+              <span class="v3-ai-usage-sub" id="ai-usage-month-tokens">호출 없음</span>
               <span class="v3-ai-usage-cost" id="ai-usage-month-cost">예상 비용 —</span>
             </div>
             <div class="v3-ai-usage-stat">
@@ -1883,9 +1883,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419112240"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419112240"></script>
-<script src="/js/admin-v3.js?v=20260419112240"></script>
+<script src="/js/main.js?v=20260419112623"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419112623"></script>
+<script src="/js/admin-v3.js?v=20260419112623"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

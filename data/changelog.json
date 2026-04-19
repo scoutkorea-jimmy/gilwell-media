@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.086.03",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:50:00 KST",
+    "summary": "AI 토큰 사용량 배너의 메인 지표를 호출 횟수 → 토큰 누계로 교체했습니다. 보조 라인은 ‘1회당 평균 · 총 N회’ 형태로 재배치해 비용·남용 가시성을 한층 직관화했습니다.",
+    "changes": [
+      "admin.html 라벨 변경: ‘오늘 (24h)/최근 7일/최근 30일’ → ‘… · 토큰’ 병기. 초기 sub 텍스트 ‘토큰 —’ → ‘호출 없음’로 의미 명확화.",
+      "js/admin-v3.js _renderAiUsage(): ai-usage-*-calls 엘리먼트에 토큰 누계(예: ‘3,728’)를, ai-usage-*-tokens 엘리먼트에 _avgPerCallLabel()로 ‘1회당 1,864 · 총 2회’ 표시. usage 메타 없으면 ‘ 추정’ 접미사.",
+      "_avgPerCallLabel(tokens, calls) 신규: c>0이면 round(t/c)로 평균, c=0이면 ‘호출 없음’ 반환.",
+      "관리자 버전 03.086.02 → 03.086.03."
+    ]
+  },
+  {
     "version": "03.086.02",
     "date": "2026-04-19",
     "released_at": "2026-04-19 20:40:00 KST",

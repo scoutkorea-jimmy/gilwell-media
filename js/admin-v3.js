@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.086.02
+ * Version: 03.086.03
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5484,6 +5484,14 @@
     return '≈ ' + usdStr + ' · ' + krwStr;
   }
 
+  function _avgPerCallLabel(tokens, calls) {
+    var t = Number(tokens || 0);
+    var c = Number(calls  || 0);
+    if (c <= 0 || t <= 0) return (c > 0 ? '평균 — / ' + c + '회' : '호출 없음');
+    var avg = Math.round(t / c);
+    return '1회당 ' + _fmtIntKo(avg) + ' · 총 ' + _fmtIntKo(c) + '회';
+  }
+
   function _renderAiUsage(data) {
     if (!data) return;
     var today = data.today || {};
@@ -5491,20 +5499,24 @@
     var month = data.month || {};
 
     var todayCalls = Number(today.calls || 0);
+    var weekCalls  = Number(week.calls  || 0);
     var monthCalls = Number(month.calls || 0);
-
-    _setText('ai-usage-today-calls', _fmtIntKo(todayCalls) + '회');
-    _setText('ai-usage-week-calls',  _fmtIntKo(week.calls  || 0) + '회');
-    _setText('ai-usage-month-calls', _fmtIntKo(monthCalls) + '회');
 
     // 토큰: est_tokens(서버에서 Llama 추정치 포함)를 1순위, 실측 total_tokens를 보조
     var todayTok = Number(today.est_tokens || today.total_tokens || 0);
     var weekTok  = Number(week.est_tokens  || week.total_tokens  || 0);
     var monthTok = Number(month.est_tokens || month.total_tokens || 0);
-    var suffix = (today.total_tokens || week.total_tokens || month.total_tokens) ? '' : ' (추정)';
-    _setText('ai-usage-today-tokens', '토큰 ' + _fmtIntKo(todayTok) + suffix);
-    _setText('ai-usage-week-tokens',  '토큰 ' + _fmtIntKo(weekTok)  + suffix);
-    _setText('ai-usage-month-tokens', '토큰 ' + _fmtIntKo(monthTok) + suffix);
+    var suffix = (today.total_tokens || week.total_tokens || month.total_tokens) ? '' : ' 추정';
+
+    // 메인 값 → 토큰 누계 (큰 숫자)
+    _setText('ai-usage-today-calls', _fmtIntKo(todayTok) + suffix);
+    _setText('ai-usage-week-calls',  _fmtIntKo(weekTok)  + suffix);
+    _setText('ai-usage-month-calls', _fmtIntKo(monthTok) + suffix);
+
+    // 보조 라인 → 1회당 평균 토큰 + 총 호출수
+    _setText('ai-usage-today-tokens', _avgPerCallLabel(todayTok, todayCalls));
+    _setText('ai-usage-week-tokens',  _avgPerCallLabel(weekTok,  weekCalls));
+    _setText('ai-usage-month-tokens', _avgPerCallLabel(monthTok, monthCalls));
 
     _setText('ai-usage-today-cost', _fmtUsdKrw(today.est_usd, today.est_krw));
     _setText('ai-usage-week-cost',  _fmtUsdKrw(week.est_usd,  week.est_krw));
