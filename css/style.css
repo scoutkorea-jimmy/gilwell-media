@@ -1363,38 +1363,44 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 /* ════════════════════════════════════════════════════════════
-   CATEGORY TAGS
+   CHIP & BADGE FAMILY (공통 기준, KMS §3 디자인 가이드 준용)
+   ────────────────────────────────────────────────────────────
+   - 높이 --chip-height (26px) 또는 inline-flex auto (padding으로 결정)
+   - 수평 padding --gap-tight (8px)
+   - 수직 padding 3px (엣지 케이스 허용 리터럴)
+   - font-size --fs-meta (11px) 기본, 10px 미니 칩 허용
+   - letter-spacing 0.1em~0.15em, uppercase는 영문·메타 라벨에 한정
    ════════════════════════════════════════════════════════════ */
-.category-tag {
-  display:        inline-block;
-  font-family: NixgonFont, sans-serif;
+.category-tag,
+.post-kicker {
+  display:        inline-flex;
+  align-items:    center;
+  justify-content: center;
+  font-family:    NixgonFont, sans-serif;
   font-size:      10px;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   padding:        3px var(--gap-tight);
-  color:          var(--white);
-  font-weight:    500;
+  min-height:     20px;
+  font-weight:    600;
+  line-height:    1;
+  white-space:    nowrap;
 }
 
+/* 카테고리 태그 — 채움 */
+.category-tag { color: var(--white); }
 .tag-korea { background: var(--tag-korea); }
 .tag-apr   { background: var(--tag-apr);   }
 .tag-wosm  { background: var(--tag-wosm);  }
 .tag-people{ background: var(--tag-people);}
 
-/* ── Post kicker (글머리 태그 — outlined style) ── */
+/* 글머리 태그 (Kicker) — 아웃라인 */
 .post-kicker {
-  display:        inline-block;
-  font-family:    NixgonFont, sans-serif;
-  font-size:      10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding:        3px var(--gap-tight);
   border:         1px solid var(--kicker-default);
   color:          var(--kicker-default);
-  font-weight:    500;
+  background:     transparent;
   border-radius:  0;
 }
-
 .post-kicker-new {
   background:  var(--black);
   color:       var(--white);
@@ -1522,7 +1528,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .filter-bar {
   display:       flex;
   gap:           var(--gap-tight);
-  padding:       20px 48px;
+  padding:       var(--gap-card) var(--pad-page-desktop);
   border-bottom: 1px solid var(--border);
   flex-wrap:     wrap;
   background:    var(--bg);
@@ -2604,7 +2610,7 @@ body[data-home-bootstrap] .lang-btn:hover {
    ════════════════════════════════════════════════════════════ */
 .board-banner {
   border-bottom: 2px solid var(--black);
-  padding:       40px 48px;
+  padding:       var(--gap-section-out) var(--pad-page-desktop);
   max-width:     1366px;
   margin:        0 auto;
   display:       flex;
@@ -2696,7 +2702,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .board-container {
   max-width: 1366px;
   margin:    0 auto;
-  padding:   0 48px 60px;
+  padding:   0 var(--pad-page-desktop) 60px;
 }
 
 .board-grid {
@@ -6186,7 +6192,7 @@ footer a:hover { color: var(--white); }
   .board-banner-total-value {
     font-size: 40px;
   }
-  .board-container    { padding: 0 var(--gap-section) 40px; }
+  .board-container    { padding: 0 var(--pad-page-tablet) 40px; }
   .board-grid         { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .modal-overlay      { padding: 0; align-items: flex-start; }
@@ -6276,11 +6282,11 @@ footer a:hover { color: var(--white); }
   .glossary-admin-form-grid { grid-template-columns: 1fr; }
   .glossary-admin-row { grid-template-columns: 1fr; }
 
-  .home-wrapper       { padding: var(--home-section-gap, 18px) var(--gap-section) 40px; }
+  .home-wrapper       { padding: var(--home-section-gap, 18px) var(--pad-page-tablet) var(--gap-section-out); }
   .home-2col          { grid-template-columns: 1fr; gap: var(--home-section-gap, 18px); }
   .home-3col          { grid-template-columns: 1fr; gap: var(--home-section-gap, 18px); }
 
-  .post-page-wrap     { padding: var(--gap-section-out) var(--gap-section) 60px; }
+  .post-page-wrap     { padding: var(--gap-section-out) var(--pad-page-tablet) 60px; }
   .post-page-layout   { grid-template-columns: 1fr; gap: var(--gap-section-out); }
   .post-page-sidebar  { position: static; }
 }
@@ -6570,7 +6576,7 @@ footer a:hover { color: var(--white); }
     padding-top: 18px;
   }
 
-  .board-container    { padding: 0 var(--gap-card) var(--gap-section-out); }
+  .board-container    { padding: 0 var(--pad-page-mobile) var(--gap-section-out); }
   .board-grid         { grid-template-columns: 1fr; gap: 10px; }
   .post-card {
     display: grid;
@@ -6667,7 +6673,7 @@ footer a:hover { color: var(--white); }
     flex-wrap: nowrap;
     margin-bottom: var(--gap-card);
   }
-  .post-page-wrap     { padding: var(--gap-section) var(--gap-card) 48px; }
+  .post-page-wrap     { padding: var(--gap-section) var(--pad-page-mobile) 48px; }
   .share-meta-inline-grid { grid-template-columns: 1fr; }
 
   .board-pw-box       { padding: 28px var(--gap-section); }
@@ -6938,7 +6944,7 @@ footer a:hover { color: var(--white); }
 .post-page-wrap {
   max-width: 1366px;
   margin:    0 auto;
-  padding:   40px 48px 80px;
+  padding:   var(--gap-section-out) var(--pad-page-desktop) 80px;
 }
 
 .post-page-layout {
@@ -7168,13 +7174,17 @@ footer a:hover { color: var(--white); }
   letter-spacing: 0.1em;
 }
 .post-page-tag {
-  font-family: NixgonFont, sans-serif;
+  display:        inline-flex;
+  align-items:    center;
+  font-family:    NixgonFont, sans-serif;
   font-size:      10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   background:     var(--bg);
   color:          var(--ink);
-  padding:        3px 9px;
+  padding:        3px var(--gap-tight);
   border:         1px solid var(--border);
+  line-height:    1;
+  min-height:     20px;
 }
 .post-page-tag-btn {
   cursor: pointer;
@@ -7190,9 +7200,9 @@ footer a:hover { color: var(--white); }
 .post-related-posts,
 .modal-related-posts,
 .post-special-feature-posts {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin-top:  var(--gap-section-out);
+  padding-top: var(--gap-card);
+  border-top:  1px solid var(--border);
 }
 .post-related-surface {
   background: rgba(17, 17, 17, 0.035);
