@@ -2058,7 +2058,7 @@ mark.kms-highlight {
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1.45;
-  color: var(--text);
+  color: var(--ink);
   text-transform: uppercase;
 }
 
