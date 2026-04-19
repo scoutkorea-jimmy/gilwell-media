@@ -18,12 +18,15 @@
     var thumb = post.image_url
       ? '<img class="mini-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
       : '';
+    // 카드 전체 영역 클릭 → 기사 이동. tabindex=-1 + aria-hidden으로 키보드/SR에는 기존 title anchor만 노출(중복 링크 회피).
+    var overlayHref = '/post/' + post.id;
     return (
-      '<article class="mini-item">' +
+      '<article class="mini-item has-overlay-link">' +
+        '<a class="mini-item-overlay" href="' + overlayHref + '" tabindex="-1" aria-hidden="true"></a>' +
         '<div class="mini-item-row">' +
           '<div class="mini-item-text">' +
             '<div class="mini-item-labels">' + helpers.buildMiniLabels(post, options) + '</div>' +
-            '<h4><a class="mini-item-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h4>' +
+            '<h4><a class="mini-item-link" href="' + overlayHref + '">' + GW.escapeHtml(post.title) + '</a></h4>' +
             '<div class="mini-meta">' + GW.formatPostDate(post) + '</div>' +
             '<div class="mini-item-actions">' + helpers.buildMiniShareButton(post) + '</div>' +
           '</div>' +
