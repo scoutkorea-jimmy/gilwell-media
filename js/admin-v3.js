@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.085.00
+ * Version: 03.086.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5460,11 +5460,148 @@
   ══════════════════════════════════════════════════════════ */
   var _scorerPosts = [];
 
+  /* ══════════════════════════════════════════════════════════
+     AI USAGE BANNER (기사 채점 패널 상단)
+     ══════════════════════════════════════════════════════════ */
+  var _AI_USAGE_WARN_DAY = 50;   // 일 호출 50회 이상 주의
+  var _AI_USAGE_ALERT_DAY = 100; // 100회 이상 경고
+  var _AI_USAGE_WARN_MONTH = 1000;
+  var _AI_USAGE_ALERT_MONTH = 3000;
+
+  function _fmtIntKo(n) {
+    var v = Number(n || 0);
+    if (!Number.isFinite(v)) return '—';
+    return v.toLocaleString('ko-KR');
+  }
+
+  function _renderAiUsage(data) {
+    if (!data) return;
+    var today = data.today || {};
+    var week  = data.week  || {};
+    var month = data.month || {};
+
+    var todayCalls = Number(today.calls || 0);
+    var monthCalls = Number(month.calls || 0);
+
+    _setText('ai-usage-today-calls', _fmtIntKo(todayCalls) + '회');
+    _setText('ai-usage-week-calls',  _fmtIntKo(week.calls  || 0) + '회');
+    _setText('ai-usage-month-calls', _fmtIntKo(monthCalls) + '회');
+
+    // 토큰: usage 메타데이터 누계. 없으면 글자수 표시로 대체
+    var todayTok = Number(today.total_tokens || 0);
+    var weekTok  = Number(week.total_tokens  || 0);
+    var monthTok = Number(month.total_tokens || 0);
+    if (todayTok + weekTok + monthTok === 0) {
+      // Workers AI 응답에 usage가 없는 모델 — 글자수로 대체
+      _setText('ai-usage-today-tokens', '입출력 ' + _fmtIntKo((today.input_chars || 0) + (today.output_chars || 0)) + '자');
+      _setText('ai-usage-week-tokens',  '입출력 ' + _fmtIntKo((week.input_chars  || 0) + (week.output_chars  || 0)) + '자');
+      _setText('ai-usage-month-tokens', '입출력 ' + _fmtIntKo((month.input_chars || 0) + (month.output_chars || 0)) + '자');
+    } else {
+      _setText('ai-usage-today-tokens', '토큰 ' + _fmtIntKo(todayTok));
+      _setText('ai-usage-week-tokens',  '토큰 ' + _fmtIntKo(weekTok));
+      _setText('ai-usage-month-tokens', '토큰 ' + _fmtIntKo(monthTok));
+    }
+
+    var avgMs = Math.round(Number((month.avg_latency_ms) || 0));
+    _setText('ai-usage-latency', avgMs > 0 ? (avgMs + ' ms') : '—');
+    var errors = Number(month.errors || 0);
+    _setText('ai-usage-errors', '오류 ' + _fmtIntKo(errors) + '회 / 30일');
+
+    // 경고 색상
+    var todayStat = document.getElementById('ai-usage-today-calls');
+    if (todayStat && todayStat.parentElement) {
+      todayStat.parentElement.classList.remove('is-warn', 'is-alert');
+      if (todayCalls >= _AI_USAGE_ALERT_DAY) todayStat.parentElement.classList.add('is-alert');
+      else if (todayCalls >= _AI_USAGE_WARN_DAY) todayStat.parentElement.classList.add('is-warn');
+    }
+    var monthStat = document.getElementById('ai-usage-month-calls');
+    if (monthStat && monthStat.parentElement) {
+      monthStat.parentElement.classList.remove('is-warn', 'is-alert');
+      if (monthCalls >= _AI_USAGE_ALERT_MONTH) monthStat.parentElement.classList.add('is-alert');
+      else if (monthCalls >= _AI_USAGE_WARN_MONTH) monthStat.parentElement.classList.add('is-warn');
+    }
+
+    // 14일 스파크라인
+    var spark = document.getElementById('ai-usage-spark');
+    if (spark) {
+      var days = Array.isArray(data.byDay) ? data.byDay : [];
+      // 오늘 기준 14일 전까지 date 키로 정규화
+      var map = {};
+      days.forEach(function (d) { map[d.date] = Number(d.calls || 0); });
+      var bars = [];
+      var now = new Date();
+      for (var i = 13; i >= 0; i -= 1) {
+        var d = new Date(now.getTime() - i * 86400 * 1000);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        bars.push({ date: key, calls: map[key] || 0 });
+      }
+      var max = bars.reduce(function (m, b) { return b.calls > m ? b.calls : m; }, 0);
+      spark.innerHTML = bars.map(function (b) {
+        var pct = max > 0 ? Math.max(4, Math.round((b.calls / max) * 100)) : 0;
+        var empty = b.calls === 0 ? ' data-empty="1"' : '';
+        return '<div class="v3-ai-usage-spark-bar"' + empty + ' style="height:' + pct + '%;" title="' + b.date + ' · ' + b.calls + '회"></div>';
+      }).join('');
+    }
+
+    // Footline
+    var foot = document.getElementById('ai-usage-footline');
+    if (foot) {
+      var model = data.pricing && data.pricing.model || '@cf/meta/llama-3.1-8b-instruct';
+      foot.textContent = 'Cloudflare Workers AI(' + model + ') · neuron 단위 청구. 정확한 비용은 대시보드에서 확인하세요.';
+    }
+    var link = document.getElementById('ai-usage-dashboard-link');
+    if (link && data.pricing && data.pricing.dashboardUrl) {
+      // Cloudflare dash URL에 account placeholder 있으면 그대로 유지 (로그인 후 자동 치환됨)
+      link.href = data.pricing.dashboardUrl;
+    }
+  }
+
+  function _renderAiUsageError(msg) {
+    _setText('ai-usage-today-calls', '—');
+    _setText('ai-usage-week-calls', '—');
+    _setText('ai-usage-month-calls', '—');
+    _setText('ai-usage-latency', '—');
+    _setText('ai-usage-today-tokens', '로딩 실패');
+    _setText('ai-usage-week-tokens', '로딩 실패');
+    _setText('ai-usage-month-tokens', '로딩 실패');
+    _setText('ai-usage-errors', GW.escapeHtml(msg || '사용량 조회 실패'));
+    var foot = document.getElementById('ai-usage-footline');
+    if (foot) {
+      foot.classList.add('is-stale');
+      foot.textContent = '사용량 데이터를 불러오지 못했습니다: ' + (msg || '알 수 없는 오류');
+    }
+  }
+
+  function _loadAiUsage(actionBtn) {
+    if (actionBtn) _setButtonBusy(actionBtn, '…');
+    var foot = document.getElementById('ai-usage-footline');
+    if (foot) foot.classList.remove('is-stale');
+    _apiFetch('/api/admin/ai-usage')
+      .then(function (data) {
+        _renderAiUsage(data);
+      })
+      .catch(function (err) {
+        _renderAiUsageError((err && err.message) || '사용량 조회 실패');
+      })
+      .finally(function () {
+        if (actionBtn) _clearButtonBusy(actionBtn);
+      });
+  }
+
   function _initArticleScorer() {
     var runBtn   = document.getElementById('scorer-run-btn');
     var clearBtn = document.getElementById('scorer-clear-btn');
     var loadBtn  = document.getElementById('scorer-load-btn');
     var searchIn = document.getElementById('scorer-search-input');
+
+    // AI 사용량 배너는 패널 진입할 때마다 갱신
+    _loadAiUsage();
+    var refreshBtn = document.getElementById('ai-usage-refresh-btn');
+    if (refreshBtn && !refreshBtn._aiUsageBound) {
+      refreshBtn._aiUsageBound = true;
+      refreshBtn.addEventListener('click', function () { _loadAiUsage(refreshBtn); });
+    }
+
     if (!runBtn || runBtn._scorerBound) return;
     runBtn._scorerBound = true;
 
@@ -5691,6 +5828,10 @@
       .catch(function (err) {
         _setButtonBusy(runBtn, null);
         _scorerSetState('error', '채점 요청 실패: ' + ((err && err.message) || String(err)));
+      })
+      .finally(function () {
+        // 호출 후 사용량 배너 즉시 반영 (DB 쓰기가 완료됐으므로)
+        setTimeout(_loadAiUsage, 400);
       });
   }
 

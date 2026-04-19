@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.086.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:05:00 KST",
+    "summary": "기사 채점(Workers AI) 토큰 사용량을 관리자 패널에 가시화해 빌링 체크와 남용 방지를 강화했습니다. 모든 AI 호출이 ai_usage_log D1 테이블에 기록되고, 기사 채점 페이지 상단에 일/주/월 누계 + 14일 스파크라인 + Cloudflare 대시보드 링크가 나옵니다.",
+    "changes": [
+      "D1 테이블 ai_usage_log 신설: id/created_at(Unix s)/endpoint/model/ip/actor/input_chars/output_chars/prompt_tokens/completion_tokens/total_tokens/latency_ms/status/error_code. idx_ai_usage_created DESC + idx_ai_usage_endpoint_time 인덱스.",
+      "functions/_shared/ai-usage.js logAiUsage(env, entry) 헬퍼 — 실패는 non-fatal(본 API 응답을 막지 않음).",
+      "functions/api/admin/score-article.js 로깅 통합: 입력 검증 실패(invalid/empty_input), AI 호출 실패(error/ai_call_failed), JSON 파싱 실패(parse_no_json/parse_invalid_json), 성공(success) 모든 경로에서 ai_usage_log append. 응답의 aiResp.usage가 있으면 prompt/completion/total tokens 그대로, 없으면 글자수만 기록.",
+      "GET /api/admin/ai-usage 신설: today(24h) / week(7d) / month(30d) 집계, byEndpoint(30d 엔드포인트별), byDay(14일 일별), recent(최근 20건), pricing(모델+대시보드 URL). KST 기준 date 그룹핑.",
+      "admin.html #panel-article-scorer 상단에 v3-ai-usage-card 배너 추가: 4개 통계 카드(오늘/7일/30일 호출수 + 토큰 또는 글자수, 평균 지연/오류) + 14일 스파크라인 + 새로고침 버튼 + Cloudflare 대시보드 외부 링크.",
+      "일 50회 초과 → 주의(is-warn, 주황), 100회 초과 → 경고(is-alert, 빨강). 월 1000/3000도 동일 임계. 시각적 브레이크로 남용 억제.",
+      "css/admin-v3.css AI USAGE BANNER 섹션 추가: 그라데이션 카드, 4-grid 통계(반응형 2col), 스파크라인 flex bar, 경고 상태 색상, 각주.",
+      "js/admin-v3.js _loadAiUsage() + _renderAiUsage() + _renderAiUsageError() 추가. _initArticleScorer 진입 시 자동 로드, 새로고침 버튼 바인딩, _runScorer finally에서 400ms 후 자동 재조회.",
+      "관리자 버전 03.085.00 → 03.086.00."
+    ]
+  },
+  {
     "version": "00.121.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 19:55:00 KST",

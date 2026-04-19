@@ -1,4 +1,7 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { logAiUsage } from '../../_shared/ai-usage.js';
+
+const MODEL_ID = '@cf/meta/llama-3.1-8b-instruct';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -40,6 +43,7 @@ BP미디어 기사 작성 표준 v2.1 평가 기준:
 `;
 
 export async function onRequestPost({ request, env }) {
+  const ip = request.headers.get('CF-Connecting-IP') || '';
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
     return json({ error: '인증이 필요합니다.' }, 401);
@@ -54,7 +58,14 @@ export async function onRequestPost({ request, env }) {
   catch (_) { return json({ error: '요청 형식 오류' }, 400); }
 
   const { title = '', subtitle = '', content = '', tags = '' } = body;
-  if (!title && !content) return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
+  const inputChars = (String(title) + String(subtitle) + String(content) + String(tags)).length;
+  if (!title && !content) {
+    await logAiUsage(env, {
+      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      inputChars, status: 'invalid', errorCode: 'empty_input',
+    });
+    return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
+  }
 
   const prompt = `당신은 BP미디어 기사 편집장입니다. 아래 기사를 BP미디어 작성 표준 v2.1에 따라 평가해주세요.
 
@@ -117,8 +128,10 @@ Tags: ${tags || '(없음)'}
   "improvement": "<가장 중요한 개선 방향 2~3줄>"
 }`;
 
+  const startTs = Date.now();
+  let aiResp;
   try {
-    const aiResp = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    aiResp = await env.AI.run(MODEL_ID, {
       messages: [
         {
           role: 'system',
@@ -128,24 +141,52 @@ Tags: ${tags || '(없음)'}
       ],
       max_tokens: 1200,
     });
-
-    const raw = (aiResp.response || '').trim();
-
-    // JSON 블록 추출 (```json ... ``` 또는 그냥 { ... })
-    const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/) ||
-                      raw.match(/```\s*([\s\S]*?)```/) ||
-                      raw.match(/(\{[\s\S]*\})/);
-
-    if (!jsonMatch) {
-      return json({ error: 'AI 응답 파싱 실패', raw }, 502);
-    }
-
-    let result;
-    try { result = JSON.parse(jsonMatch[1]); }
-    catch (_) { return json({ error: 'AI 응답 JSON 파싱 실패', raw }, 502); }
-
-    return json({ ok: true, result });
   } catch (err) {
+    await logAiUsage(env, {
+      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      inputChars, latencyMs: Date.now() - startTs,
+      status: 'error', errorCode: 'ai_call_failed',
+    });
     return json({ error: 'AI 호출 실패: ' + (err.message || String(err)) }, 502);
   }
+
+  const latencyMs = Date.now() - startTs;
+  const raw = (aiResp.response || '').trim();
+  const outputChars = raw.length;
+  // Workers AI가 usage 메타데이터를 돌려주면 그대로 기록 (없으면 null)
+  const usage = (aiResp && aiResp.usage) || null;
+  const promptTokens     = usage ? Number(usage.prompt_tokens     || usage.input_tokens  || 0) || null : null;
+  const completionTokens = usage ? Number(usage.completion_tokens || usage.output_tokens || 0) || null : null;
+  const totalTokens      = usage ? Number(usage.total_tokens || ((promptTokens || 0) + (completionTokens || 0))) || null : null;
+
+  const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/) ||
+                    raw.match(/```\s*([\s\S]*?)```/) ||
+                    raw.match(/(\{[\s\S]*\})/);
+
+  if (!jsonMatch) {
+    await logAiUsage(env, {
+      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      inputChars, outputChars, promptTokens, completionTokens, totalTokens,
+      latencyMs, status: 'error', errorCode: 'parse_no_json',
+    });
+    return json({ error: 'AI 응답 파싱 실패', raw }, 502);
+  }
+
+  let result;
+  try { result = JSON.parse(jsonMatch[1]); }
+  catch (_) {
+    await logAiUsage(env, {
+      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      inputChars, outputChars, promptTokens, completionTokens, totalTokens,
+      latencyMs, status: 'error', errorCode: 'parse_invalid_json',
+    });
+    return json({ error: 'AI 응답 JSON 파싱 실패', raw }, 502);
+  }
+
+  await logAiUsage(env, {
+    endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+    inputChars, outputChars, promptTokens, completionTokens, totalTokens,
+    latencyMs, status: 'success',
+  });
+  return json({ ok: true, result });
 }
