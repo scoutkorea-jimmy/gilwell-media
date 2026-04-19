@@ -385,11 +385,13 @@ h1, h2, h3, h4, h5, h6, strong, b {
 **원칙**
 - 칩·배지 신설 시 반드시 위 기본 규격을 상속받고, 색만 달리한다. 크기·여백·타이포를 임의로 변경 금지.
 - 색은 3.4 브랜드 팔레트 10 + 그레이스케일 5 + V3 토큰 내에서만 선택.
+- **아웃라인형 kicker의 border-color와 color는 항상 같은 색 사용** — 시각 일관성 우선. 1~2자 장식 라벨은 본문 읽기 텍스트가 아닌 UI 라벨이므로 APCA 기준은 `3.4`의 '본문 Lc 75+' 대신 **'UI 라벨 Lc 45+'** 기준을 적용한다.
 - 행 내 여러 칩은 `gap: var(--gap-tight)`(8px) 간격 유지.
 
 #### 각주
 - 통합 배경: 이전에는 페이지별로 `.category-tag`와 `.post-kicker`의 크기·letter-spacing이 미묘하게 달라 같은 범주인데도 밀도가 달라 보였다. 공통 규격 기준 하나로 전 영역을 맞추면 시각 언어가 안정된다.
 - 관리자 V3의 `.v3-badge`는 공개 `.category-tag`와 **같은 벡터**(pill 정도, 작은 폰트, tight padding)를 따른다. 관리자→공개 이동 시 체감 격차 최소화.
+- kicker UI 라벨 접근성 기준 정정(2026-04-19): 이전에는 Fire Red(Lc 58.9)·Ocean Blue(Lc 64)가 10px 본문 기준 Lc 75+에 미달해 `.tag-apr-kicker`·`.tag-korea-kicker`의 text만 Midnight Purple로 강등했으나, 두 색 모두 UI 라벨 기준 Lc 45+는 충족하므로 border와 text를 같은 브랜드 색으로 통일. 시각 일관성 우선.
 
 ### 3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙
 
