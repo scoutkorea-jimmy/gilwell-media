@@ -208,49 +208,69 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 ### 3.1 기본 서체와 타이포
 
 #### 기능 세부 설명
-- 공개 사이트 기본 서체는 **`NixgonFont`** 단일 사용을 원칙으로 한다. 세 중량(300 Light / 500 Medium / 700 Bold)을 사용하며 `@font-face`는 `css/style.css` 최상단에 일괄 선언되어 있다.
-- 관리자 콘솔(V3)은 시스템 서체(`-apple-system, BlinkMacSystemFont, system-ui, sans-serif`)를 사용한다. 관리자 V1/KMS는 `NixgonFont`를 사이트와 동일하게 사용.
+- **언어별 서체 이원화 원칙** (2026-04-19 확정):
+  - **Latin(영문·숫자·기호)**: [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex) variable font (opsz 6..144 · wght 1..1000). Google Fonts `@import`로 로드.
+  - **한글(CJK)**: 공개 사이트 `NixgonFont` (300/500/700), 관리자 콘솔 V3 시스템 서체(`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`).
+  - 브라우저 글립 폴백 메커니즘으로 자동 분리: Google Sans Flex가 Latin만 지원 → 한글 글립은 두 번째 폰트로 자연 폴백.
+- `font-family` 체인은 **항상 Google Sans Flex를 첫 번째**에 둔다. KMS/공개/관리자 전 영역 공통.
+  - 공개: `'Google Sans Flex', NixgonFont, sans-serif`
+  - 관리자 V3: `'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
+- **한·영 시각 균형 3중 캘리브레이션** (`html, body` / `.admin-v3`):
+  - `font-size-adjust: 0.50` — Flex의 x-height 비율을 Nixgon 쪽에 맞춰 자동 축소(Chrome 116+/Safari 17+/Firefox 3+).
+  - `font-variation-settings: 'wght' 540, 'opsz' auto` — Flex만 variable wght 축을 +40 오프셋(본문). 헤딩 그룹은 `'wght' 700`. NixgonFont는 non-variable이라 이 설정 자동 무시.
+  - `font-feature-settings: 'tnum' 1, 'lnum' 1` — 모든 숫자를 등폭·라이닝으로 정렬. 통계 카드·버전 라벨·일자 표시 일관성.
+  - 부가: `font-synthesis-weight: none` (가짜 볼드 금지), `font-optical-sizing: auto` (opsz 자동), `-webkit-font-smoothing: antialiased`, `text-rendering: optimizeLegibility`.
 - 한글 줄바꿈은 `word-break: keep-all` 우선으로 처리한다.
 - 제목은 과하게 압축하지 않고, 본문은 읽기 위주의 line-height(1.7 ~ 1.85)를 유지한다.
-- 중량 선택 기준: **300 Light** = 부가 정보·메타·장식 텍스트, **500 Medium** = 본문·라벨·일반 UI 텍스트, **700 Bold** = 제목·강조·버튼 라벨.
+- **중량 선택 기준 (Nixgon 쪽 기준, Flex는 variation-settings로 자동 매칭)**:
+  - **300 Light** = 부가 정보·메타·장식 텍스트
+  - **500 Medium** = 본문·라벨·일반 UI 텍스트 (Flex는 variation wght 540)
+  - **700 Bold** = 제목·강조·버튼 라벨 (Flex는 variation wght 700)
 
 #### 코드 예시
 ```css
-/* 공개 사이트 @font-face (css/style.css 최상단) */
-@font-face {
-  font-family: 'NixgonFont';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONL-Vb.woff') format('woff');
-  font-weight: 300;
-  font-display: swap;
-}
+/* 영문 전용 서체 (style.css / admin-v3.css / admin.css 상단) */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
+/* 한글 @font-face (공개 사이트) */
 @font-face {
   font-family: 'NixgonFont';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONM-Vb.woff') format('woff');
   font-weight: 500;
   font-display: swap;
 }
-@font-face {
-  font-family: 'NixgonFont';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONB-Vb.woff') format('woff');
-  font-weight: 700;
-  font-display: swap;
-}
+/* (300 Light / 700 Bold도 같은 구조로 3중량 선언) */
 
-/* 공개 사이트 본문 */
-body {
-  font-family: NixgonFont, sans-serif;
+/* 전역 한·영 균형 캘리브레이션 */
+html, body {
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-weight: 500;
   word-break: keep-all;
   line-height: 1.75;
+  font-optical-sizing: auto;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  font-variation-settings: 'wght' 540, 'opsz' auto;
+  font-size-adjust: 0.50;
+}
+h1, h2, h3, h4, h5, h6, strong, b {
+  font-variation-settings: 'wght' 700, 'opsz' auto;
 }
 
 /* 관리자 콘솔 V3 */
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+.admin-v3 {
+  font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-variation-settings: 'wght' 540, 'opsz' auto;
+  font-size-adjust: 0.50;
+}
 ```
 
 #### 각주
-- 이전 서체(`AliceDigitalLearning`, noonfonts_elice)는 단일 중량만 지원해 타이포 위계가 약했다. `NixgonFont`는 3중량을 제공해 KMS 디자인 가이드의 display / title / body / meta 4단계 위계를 서체 자체로 구현할 수 있다.
-- CDN은 동일 `cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2` 기준. `font-display: swap`으로 FOIT(Flash of Invisible Text) 방지.
+- 이전 서체 구조(`NixgonFont` 단일) → Latin의 읽기 피로·수치 정렬 어색함이 있어 Google Sans Flex를 영문 전용으로 추가 도입(2026-04-19).
+- Google Sans Flex는 단일 variable 파일이라 300~700 전 중량이 연속 표현 가능. `wght` 축 + `opsz` 축을 CSS로 직접 제어.
+- `font-size-adjust: 0.50`은 Flex의 x-height가 Nixgon보다 크게 보이는 현상을 자동 보정. Chrome 116+ 미만에서는 무시되고 기존 렌더 유지 (graceful degradation).
+- NixgonFont CDN: `cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2`. `font-display: swap`으로 FOIT 방지.
 
 ### 3.2 공통 여백 규칙 (Spacing 토큰 시스템)
 
@@ -338,6 +358,38 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 <button class="v3-btn v3-btn-ghost">더보기</button>
 <button class="v3-btn v3-btn-danger">삭제</button>
 ```
+
+### 3.3.1 칩·배지 패밀리 공통 규격
+
+#### 기능 세부 설명
+공개 사이트와 관리자 V3는 칩/배지 표기 스타일을 **공통 벡터**로 통일한다(2026-04-19). 용도별 클래스는 다르지만 크기·여백·타이포·라운딩은 동일 기준을 공유해 시각 언어가 갈라지지 않도록 한다.
+
+**기본 규격 (inline-flex 정렬)**
+- `min-height: 20px` (칩 높이 변수 `--chip-height: 26px`는 큰 칩 기준)
+- `padding: 3px var(--gap-tight)` (= 3px 8px)
+- `font-size: 10px` (메타 배지) ~ `11px` (`--fs-meta`, 본문 칩)
+- `font-weight: 600`
+- `letter-spacing: 0.14em`, `text-transform: uppercase` (영문 메타 한정)
+- `line-height: 1`, `white-space: nowrap`
+
+**변형별 스타일** (색만 다름)
+| 용도 | 클래스 | 형태 | 색 사용 |
+|---|---|---|---|
+| 카테고리 채움 배지 | `.category-tag` + `.tag-korea/apr/wosm/people` | 채움 | 브랜드 팔레트 카테고리 색 + 흰 텍스트 |
+| 글머리 태그(아웃라인) | `.post-kicker` + `.tag-*-kicker` | 아웃라인 | border+text 색만 다름, 배경 투명 |
+| NEW 강조 | `.post-kicker-new` | 채움 | 검정 배경 + 흰 텍스트 |
+| 기사 하단 태그 버튼 | `.post-page-tag` / `.post-page-tag-btn` | 아웃라인 | 기본 border, hover 시 accent 강조 |
+| 관리자 상태 배지 | `.v3-badge` + 변형(green/red/yellow/gray/blue/site/admin) | 채움 (tint) | V3 톤 팔레트 |
+| 관리자 태그 필 | `.v3-tag-pill` / 공개 `.tag-pill` | 라운드 선택형 | active 시 primary 채움 |
+
+**원칙**
+- 칩·배지 신설 시 반드시 위 기본 규격을 상속받고, 색만 달리한다. 크기·여백·타이포를 임의로 변경 금지.
+- 색은 §3.4 브랜드 팔레트 10 + 그레이스케일 5 + V3 토큰 내에서만 선택.
+- 행 내 여러 칩은 `gap: var(--gap-tight)`(8px) 간격 유지.
+
+#### 각주
+- 통합 배경: 이전에는 페이지별로 `.category-tag`와 `.post-kicker`의 크기·letter-spacing이 미묘하게 달라 같은 범주인데도 밀도가 달라 보였다. 공통 규격 기준 하나로 전 영역을 맞추면 시각 언어가 안정된다.
+- 관리자 V3의 `.v3-badge`는 공개 `.category-tag`와 **같은 벡터**(pill 정도, 작은 폰트, tight padding)를 따른다. 관리자→공개 이동 시 체감 격차 최소화.
 
 ### 3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙
 
@@ -782,6 +834,22 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 읽기 중심 화면
 - 태그와 공유를 상단에서 바로 노출
 - 본문 아래 연관 정보(지도, 슬라이드, 해시태그, 특집, 유관기사)를 순차 배치
+
+### 7.1.1 상단 헤더·사이드바 정보 배치 (2026-04-19 재정비)
+
+#### 기능 세부 설명
+- **헤더 meta 라인**(제목/부제목 바로 아래)은 **카테고리 태그 · NEW 배지 · 게시 날짜**만 노출해 가독성 우선. 기존에 같이 있던 `읽기 N분` · `by 작성자`는 제거.
+- **우측 사이드바(`.post-page-sidebar`) `정보` 섹션**에 구조화된 메타를 배치:
+  - 작성자 (Editor.A 등)
+  - 게시일 (YYYY년 M월 D일)
+  - **읽기 시간 (약 N분)** — 한글 500자/분 기준 자동 계산
+  - 조회수 (post.views)
+  - AI 지원 작성 표시(해당 시)
+- `<time>` 엘리먼트에 `datetime` 속성으로 ISO 타임스탬프 주입(SEO·접근성).
+- 모바일 ≤900px에서 사이드바는 본문 아래로 자연 스택.
+
+#### 각주
+- 헤더에 정보가 5개 이상 몰리면 ‘작성 책임·읽기 비용·신선도’ 세 축이 한 줄에 들어와 스캔 비용이 크다. 책임(작성자)과 비용(읽기시간)은 선택적 정보이므로 사이드바의 구조화된 정보 블록으로 옮겨 본문 집중도를 확보한다.
 
 ### 7.2 본문 아래 구성 순서
 

@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.088.05",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:35:00 KST",
+    "summary": "KMS 기능정의서(settings.feature_definition + docs 스냅샷)를 현재 홈페이지 구현 상태와 4곳에서 어긋나던 부분을 맞춰 동기화했습니다. 충돌 부분은 없었고 모두 기준 업데이트가 필요한 최신화 건이었습니다.",
+    "changes": [
+      "§3.1 기본 서체와 타이포 — 'NixgonFont 단일 사용' → Google Sans Flex(Latin) + NixgonFont/시스템(CJK) 이원화 원칙 명문화. font-size-adjust:0.50, font-variation-settings('wght' 540/700, 'opsz' auto), font-feature-settings('tnum','lnum'), font-synthesis-weight:none 3중 캘리브레이션 규격 추가.",
+      "§3.3.1 칩·배지 패밀리 공통 규격 신설 — category-tag / post-kicker / post-page-tag / v3-badge / tag-pill 전 영역 공통 벡터(min-height 20px, padding 3px 8px, font 10~11px 600 0.14em uppercase, line-height 1). 변형별 색·형태 매트릭스.",
+      "§7.1.1 상단 헤더·사이드바 정보 배치 신설 — 헤더 meta 라인은 카테고리·NEW·날짜만, 읽기 시간·작성자·조회수·AI 고지는 우측 사이드바 정보 섹션으로 이동(2026-04-19 재정비 반영).",
+      "D1 settings.feature_definition UPDATE 완료(50,503자, Google Sans Flex 9회 언급). docs/feature-definition.md 스냅샷 동시 갱신.",
+      "검토 결과: KMS 기준과 현재 코드의 구조적 충돌 0건. 4건 모두 KMS가 이전 상태로 남아있어 최신 구현에 맞춰 업데이트.",
+      "관리자 버전 03.088.04 → 03.088.05."
+    ]
+  },
+  {
     "version": "03.088.04",
     "date": "2026-04-19",
     "released_at": "2026-04-19 23:20:00 KST",
