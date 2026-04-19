@@ -545,6 +545,61 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - gradient 내부 중간 stop에 대한 "리터럴 금지" 엄격 적용을 포기한 이유: 브랜드 팔레트는 APCA Lc 차이가 크지 않은 shade(~5~10% darker variant)를 중간값으로 자주 필요로 하고, 이를 매번 독립 토큰으로 승격하면 5~10개 shade가 gradient 하나당 생겨 전체 토큰 수가 폭증하고 "한 번도 직접 참조되지 않는" 죽은 토큰이 쌓인다. gradient 자체를 재사용 단위로 묶는 편이 관리 비용이 낮다.
 - Admin에서 site gradient 토큰을 못 쓰는 이유는 §3.2 말미의 \`--gap-*\`/\`--fs-*\` 이슈와 동일: \`admin.html\`은 \`css/style.css\`를 로드하지 않아 \`var(--gradient-*)\` 참조가 런타임에 undefined로 해석된다.
 
+### 3.11 통일 기간 선택 UI (v3-period-bar)
+
+#### 기능 세부 설명
+
+**기간 필터가 필요한 모든 관리자 패널은 \`.v3-period-bar\` 단일 패턴을 사용한다.**
+
+마케팅이 먼저 채택한 \`.mkt-period-bar\` 구조를 일반화해 \`.v3-period-bar\`로 공유한다. 목적은 운영자가 어느 패널에 들어가든 동일한 방식으로 기간을 지정할 수 있도록 하는 것이다. 패널마다 select/chip/date picker가 다르게 섞여 있으면 스캔 비용이 크고 실수가 늘어난다.
+
+**표준 DOM 구조:**
+\`\`\`html
+<div class="v3-period-bar" data-v3-period-scope="SCOPE" aria-label="...">
+  <span class="v3-period-bar-label">라벨</span>              <!-- 선택 -->
+  <div class="v3-presets">
+    <button class="v3-preset-btn [is-active]" data-days="7">7일</button>
+    <button class="v3-preset-btn" data-days="30">30일</button>
+    <button class="v3-preset-btn" data-days="90">90일</button>
+  </div>
+  <div class="v3-date-range">
+    <input type="date" class="v3-date-input-period" data-v3-role="start">
+    <span class="v3-date-sep">~</span>
+    <input type="date" class="v3-date-input-period" data-v3-role="end">
+    <button class="v3-apply-btn" type="button">조회</button>
+  </div>
+</div>
+\`\`\`
+
+**JS 바인딩:** \`_bindPeriodBar(scope, onChange)\` 헬퍼 단일 사용. \`onChange({days})\` 또는 \`onChange({start, end})\`로 호출. preset 클릭 시 date input은 비워지고 onChange({days})가 실행되며, apply 클릭 시 preset 활성이 해제되고 onChange({start, end})가 실행된다.
+
+**서버 API 규약:** 모든 기간 지원 API는 동일한 쿼리 파라미터를 받는다.
+- 프리셋 모드: \`?days=N\` (1~180, 기본 30)
+- 커스텀 모드: \`?start=YYYY-MM-DD&end=YYYY-MM-DD\`
+- 접두사 지원: \`tag_days\`, \`tag_start\`, \`tag_end\` 등 여러 독립 기간 필드를 한 요청에 함께 보낼 수 있다(예: 분석 패널의 방문 분석 + 태그 인사이트).
+
+**적용 범위 (2026-04-19 통일):**
+
+| 패널 | 이전 UI | 통일 후 |
+|---|---|---|
+| 마케팅 | \`.mkt-period-bar\`(패턴 원조) | 그대로 유지 (CSS 공유) |
+| 분석 | \`<select>\` 2개(방문 분석, 태그 인사이트) | \`.v3-period-bar\` 2개 (같은 preset·custom) |
+| 접속 국가/도시 | \`<select>\` 1개 | \`.v3-period-bar\` 1개 (geo-audience API가 start/end 수용하도록 확장) |
+| 대시보드 히트맵 | 자체 preset(1주/1개월/직접 지정/전체) + hidden custom | \`.v3-period-bar\` 변형 (7일/30일/전체 preset + 항상 노출되는 date range apply) |
+
+**규칙:**
+
+- 신규 기간 필터가 필요한 패널은 반드시 이 패턴을 사용한다. select·chip 등 다른 UI 재사용 금지.
+- preset 값은 패널 맥락에 맞게 조정 가능(7/30/90 또는 1/7/30일 등). 단, 버튼 라벨 형식은 \`N일\` 단위로 통일(마케팅의 \`1일/3일/7일/14일/30일\`과 호환).
+- "전체"(all) 같은 특수 프리셋이 필요한 패널은 \`data-days\` 대신 패널 전용 속성(예: 대시보드의 \`data-v3-heatmap-mode="all"\`)을 쓸 수 있다. 이때 \`_bindPeriodBar\` 대신 기존 커스텀 바인딩을 유지해도 된다.
+- CSS 클래스: \`.v3-period-bar\` / \`.v3-presets\` / \`.v3-preset-btn\` / \`.v3-date-range\` / \`.v3-date-input-period\` / \`.v3-date-sep\` / \`.v3-apply-btn\`. 마케팅의 \`.mkt-*\`와 같은 스타일 규칙을 공유한다(css/admin-v3.css에서 comma-separated selectors).
+
+#### 각주
+
+- 이 패턴 도입 전에는 마케팅(preset), 분석(select 2개), 접속 국가/도시(select 1개), 대시보드(preset + 숨겨진 custom)가 각각 다른 UI 구조였다. 같은 "기간을 고른다"는 작업인데 스캔 비용이 패널마다 달라 운영자 피로도가 높았다.
+- \`.mkt-period-bar\` → \`.v3-period-bar\` 일반화 과정에서 마케팅 측 markup을 바꾸지는 않았다. CSS 선택자에 comma로 \`.v3-period-bar\`를 추가해 양쪽이 같은 스타일을 공유하도록 했다. 향후 마케팅도 \`.v3-*\`로 옮기거나 그대로 두거나 선택 가능.
+- 대시보드 히트맵의 "전체(all)" 프리셋은 \`days\` 파라미터로 표현할 수 없어 \`heatmap_all=1\` 전용 쿼리를 쓴다. 이 예외는 \`_bindPeriodBar\`를 쓰지 않고 기존 \`_dashboardHeatmapMode\` 상태 머신을 유지했다.
+
 ## 4. 마케팅 대시보드
 
 ### 4.1 의도

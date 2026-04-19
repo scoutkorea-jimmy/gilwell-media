@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419020218">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419021835">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,9 +85,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.073.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.074.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.116.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.116.01</span>
     </div>
   </div>
 </div>
@@ -100,8 +100,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.073.01</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.116.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.074.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.116.01</span></span></div>
     </div>
     <div class="v3-kms-quick">
       <a class="v3-nav-item v3-nav-link is-kms" href="/kms" target="_blank" rel="noopener">
@@ -304,18 +304,19 @@
               <h2 class="v3-card-title">접속 시간 히트맵</h2>
               <p class="v3-card-desc">최근 집계 기간 기준으로 요일과 시간대별 방문 집중도를 봅니다. 진할수록 방문이 많습니다.</p>
             </div>
-            <div class="v3-dash-heatmap-controls" aria-label="히트맵 기간 설정">
-              <div class="v3-dash-heatmap-presets" role="group" aria-label="히트맵 기간 프리셋">
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm is-active" data-v3-heatmap-mode="7d">1주</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" data-v3-heatmap-mode="30d">1개월</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" data-v3-heatmap-mode="custom">직접 지정</button>
-                <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" data-v3-heatmap-mode="all">전체</button>
+            <!-- 통일 기간 선택: 마케팅/분석/지오와 동일 .v3-period-bar 패턴.
+                 히트맵 전용 '전체' 프리셋은 data-v3-heatmap-mode="all"로 유지되어 기존 로직(_applyDashboardHeatmap*) 그대로 작동. -->
+            <div class="v3-period-bar" data-v3-period-scope="dash-heatmap" aria-label="히트맵 기간 설정">
+              <div class="v3-presets" role="group" aria-label="히트맵 기간 프리셋">
+                <button type="button" class="v3-preset-btn is-active" data-v3-heatmap-mode="7d" data-days="7">7일</button>
+                <button type="button" class="v3-preset-btn" data-v3-heatmap-mode="30d" data-days="30">30일</button>
+                <button type="button" class="v3-preset-btn" data-v3-heatmap-mode="all">전체</button>
               </div>
-              <div class="v3-dash-heatmap-custom" id="dash-heatmap-custom-range" hidden>
-                <input class="v3-input v3-input-sm" type="date" id="dash-heatmap-start" aria-label="히트맵 시작일" />
-                <span class="v3-dash-heatmap-sep">~</span>
-                <input class="v3-input v3-input-sm" type="date" id="dash-heatmap-end" aria-label="히트맵 종료일" />
-                <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="dash-heatmap-apply">적용</button>
+              <div class="v3-date-range" id="dash-heatmap-custom-range">
+                <input type="date" class="v3-date-input-period" id="dash-heatmap-start" data-v3-role="start" aria-label="히트맵 시작일" />
+                <span class="v3-date-sep">~</span>
+                <input type="date" class="v3-date-input-period" id="dash-heatmap-end" data-v3-role="end" aria-label="히트맵 종료일" />
+                <button type="button" class="v3-apply-btn" id="dash-heatmap-apply">조회</button>
               </div>
             </div>
           </div>
@@ -684,23 +685,34 @@
             <p class="v3-page-desc">방문 통계, 조회수, 인기 콘텐츠와 태그·메타 태그 연결 흐름을 함께 봅니다.</p>
           </div>
           <div class="v3-analytics-head-tools">
-            <div class="v3-flex" role="group" aria-label="분석 기간 선택">
-              <label class="v3-inline-filter">
-                <span>방문 분석</span>
-                <select class="v3-filter-select" id="analytics-period" aria-label="방문 분석 기간">
-                  <option value="7">최근 7일</option>
-                  <option value="30" selected>최근 30일</option>
-                  <option value="90">최근 90일</option>
-                </select>
-              </label>
-              <label class="v3-inline-filter">
-                <span>태그 인사이트</span>
-                <select class="v3-filter-select" id="analytics-tag-period" aria-label="태그 인사이트 기간">
-                  <option value="7">최근 7일</option>
-                  <option value="30" selected>최근 30일</option>
-                  <option value="90">최근 90일</option>
-                </select>
-              </label>
+            <!-- 통일 기간 선택: 마케팅과 동일 .v3-period-bar 패턴 -->
+            <div class="v3-period-bar" data-v3-period-scope="analytics" aria-label="방문 분석 기간">
+              <span class="v3-period-bar-label">방문 분석</span>
+              <div class="v3-presets">
+                <button type="button" class="v3-preset-btn" data-days="7">7일</button>
+                <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
+                <button type="button" class="v3-preset-btn" data-days="90">90일</button>
+              </div>
+              <div class="v3-date-range">
+                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="방문 분석 시작일" />
+                <span class="v3-date-sep">~</span>
+                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="방문 분석 종료일" />
+                <button type="button" class="v3-apply-btn">조회</button>
+              </div>
+            </div>
+            <div class="v3-period-bar" data-v3-period-scope="analytics-tag" aria-label="태그 인사이트 기간">
+              <span class="v3-period-bar-label">태그 인사이트</span>
+              <div class="v3-presets">
+                <button type="button" class="v3-preset-btn" data-days="7">7일</button>
+                <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
+                <button type="button" class="v3-preset-btn" data-days="90">90일</button>
+              </div>
+              <div class="v3-date-range">
+                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="태그 인사이트 시작일" />
+                <span class="v3-date-sep">~</span>
+                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="태그 인사이트 종료일" />
+                <button type="button" class="v3-apply-btn">조회</button>
+              </div>
             </div>
             <div class="v3-analytics-live-controls">
               <label class="v3-check-row v3-check-row-compact">
@@ -725,11 +737,20 @@
             <p class="v3-page-desc">접속 IP 기준의 국가·도시 분포를 지도와 테이블로 확인합니다. IP 원문은 저장하지 않습니다.</p>
           </div>
           <div class="v3-flex">
-            <select class="v3-filter-select" id="geo-audience-period">
-              <option value="7">최근 7일</option>
-              <option value="30" selected>최근 30일</option>
-              <option value="90">최근 90일</option>
-            </select>
+            <!-- 통일 기간 선택: 마케팅과 동일 .v3-period-bar 패턴 -->
+            <div class="v3-period-bar" data-v3-period-scope="geo-audience" aria-label="접속 국가/도시 기간">
+              <div class="v3-presets">
+                <button type="button" class="v3-preset-btn" data-days="7">7일</button>
+                <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
+                <button type="button" class="v3-preset-btn" data-days="90">90일</button>
+              </div>
+              <div class="v3-date-range">
+                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="접속 국가/도시 시작일" />
+                <span class="v3-date-sep">~</span>
+                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="접속 국가/도시 종료일" />
+                <button type="button" class="v3-apply-btn">조회</button>
+              </div>
+            </div>
             <button class="v3-btn v3-btn-outline" id="geo-audience-refresh-btn">새로고침</button>
           </div>
         </div>
@@ -1650,9 +1671,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419020218"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419020218"></script>
-<script src="/js/admin-v3.js?v=20260419020218"></script>
+<script src="/js/main.js?v=20260419021835"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419021835"></script>
+<script src="/js/admin-v3.js?v=20260419021835"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
