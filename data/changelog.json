@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "03.088.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:35:00 KST",
+    "summary": "관리자 콘솔에도 한·영 혼용 시 굵기·숫자 정렬 시각 균형 강화. font-optical-sizing:auto + tnum/lnum + synthesis-weight:none + optimizeLegibility 추가.",
+    "changes": [
+      "css/admin-v3.css .admin-v3에 font-optical-sizing(opsz 자동), font-feature-settings(tnum+lnum: 모든 숫자 등폭·라이닝 숫자), font-synthesis-weight:none(가짜 볼드 금지), text-rendering:optimizeLegibility 추가.",
+      "관리자 버전 03.088.00 → 03.088.01."
+    ]
+  },
+  {
+    "version": "00.124.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:35:00 KST",
+    "summary": "Google Sans Flex 체인이 누락됐던 css/admin.css 91곳·search.html·functions/post/[id].js·functions/feature/[slug].js·functions/_shared/feature-definition.js·404.html·index.html·calendar.html·board-write.js 인라인 스타일까지 모두 Flex-선순위로 정리. 한글·영문 혼용 본문에서 굵기와 숫자 정렬이 시각적으로 어긋나지 않도록 font-optical-sizing / font-feature-settings / font-synthesis-weight를 html·body에 전역 적용.",
+    "changes": [
+      "css/admin.css 91곳 font-family NixgonFont-only → 'Google Sans Flex' 선순위 추가. 상단에 @import Google Sans Flex 추가.",
+      "index.html <noscript> 인라인 스타일, calendar.html 인라인 label style, search.html <style> 내 17곳, 404.html 4곳, js/board-write.js 1곳, functions/post/[id].js 1곳, functions/_shared/feature-definition.js 1곳, functions/feature/[category]/[slug].js 7곳 모두 Flex 선순위 체인으로 치환. 한국어 제외 모든 글자는 Google Sans Flex가 담당.",
+      "css/style.css html·body 전역 캘리브레이션 추가: font-optical-sizing:auto (opsz 축 자동), font-feature-settings:'tnum','lnum' (숫자 등폭+라이닝), font-synthesis-weight:none (브라우저 가짜 볼드 금지 — 폰트 고유 weight만 사용), -webkit/-moz font-smoothing + text-rendering:optimizeLegibility로 한·영 혼용 시 굵기·베이스라인 시각 균형.",
+      "사이트 버전 00.124.00 → 00.124.01."
+    ]
+  },
+  {
     "version": "03.088.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 22:20:00 KST",

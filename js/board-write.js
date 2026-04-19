@@ -318,7 +318,7 @@
         return;
       }
       sfDropdown.innerHTML = filtered.map(function (s) {
-        return '<div class="sf-dropdown-item" style="padding:8px 12px;cursor:pointer;font-family:NixgonFont,sans-serif;font-size:12px;border-bottom:1px solid var(--border);">' + GW.escapeHtml(s) + '</div>';
+        return '<div class="sf-dropdown-item" style="padding:8px 12px;cursor:pointer;font-family:&#39;Google Sans Flex&#39;,NixgonFont,sans-serif;font-size:12px;border-bottom:1px solid var(--border);">' + GW.escapeHtml(s) + '</div>';
       }).join('');
       sfDropdown.querySelectorAll('.sf-dropdown-item').forEach(function (item) {
         item.addEventListener('click', function () {

@@ -229,7 +229,7 @@ export const DEFAULT_FEATURE_DEFINITION = `# BP미디어 기능정의서 / KMS
 
 /* 공개 사이트 본문 */
 body {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-weight: 500;
   word-break: keep-all;
   line-height: 1.75;
