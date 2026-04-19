@@ -1,6 +1,20 @@
 {
   "items": [
   {
+      "version": "03.072.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 09:29:09 KST",
+      "summary": "KMS §3.10 '그라데이션 및 투명도 레이어 사용 규칙' 신설 — 그라데이션 토큰화 기준, stop 값 규약, rgba 인라인 허용 범위, site/admin 분리, 정기 감사 원칙 명문화.",
+      "changes": [
+        "§3.10 신설 — 재사용 기준 토큰화(2곳 이상이면 토큰 승격, 1회성은 인라인 허용), stop 값 규약(시작/끝은 브랜드 토큰 참조, 중간 stop shade는 gradient 토큰 내부 hex만 허용, rgba는 투명도 레이어 인라인 허용), 목적별 가이드(히어로/hover/tint/Leaflet polygon), site(--gradient-*)와 admin(--v3-gradient-*) 분리, dead 토큰 즉시 삭제 원칙.",
+        "감사 현황 기록: css/style.css의 --gradient-ink / --gradient-purple / --gradient-footer-panel 3건은 사용 0건 dead token(제거 대상). --gradient-purple-deep만 1곳 사용. css/admin-v3.css 14개 gradient 선언 중 var() 3건, rgba 인라인 11건, hex 인라인 0건(이미 정리 완료).",
+        "중간 stop에 대한 리터럴 금지 엄격 적용을 포기한 이유를 각주로 기록 — shade 토큰 폭증 + dead token 누적 방지.",
+        "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 33,109 → 35,342자(+2,233자).",
+        "Follow-up(별도 질문 대기): style.css dead gradient 토큰 3건 제거는 Site 타겟 작업이라 사용자 확인 후 진행 예정.",
+        "관리자 버전 03.071.00 → 03.072.00."
+      ]
+    },
+  {
       "version": "03.071.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:20:25 KST",
