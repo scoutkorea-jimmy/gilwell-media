@@ -8,6 +8,20 @@
    두 번째 NixgonFont로 자연 폴백된다. KMS §3.1 다국어 서체 원칙 준용. */
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
 
+/* 한글(NixgonFont)과 영문(Google Sans Flex)의 굵기·숫자 정렬을 한 문맥에서
+   시각적으로 맞추기 위한 글로벌 캘리브레이션.
+   - font-optical-sizing: auto       → opsz 축 자동화(글자 크기에 맞춰 최적 형상)
+   - font-feature-settings: "tnum"   → 모든 숫자를 등폭으로 정렬(통계 카드, 버전 번호 등)
+   - font-synthesis-weight: none     → 브라우저 가짜 볼드 금지(폰트에 있는 weight만 사용) */
+html, body {
+  font-optical-sizing: auto;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 @font-face {
   font-family: 'NixgonFont';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONL-Vb.woff') format('woff');

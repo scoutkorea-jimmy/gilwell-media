@@ -68,7 +68,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260419121158">
+  <link rel="stylesheet" href="/css/style.css?v=20260419121818">
   <style>
     .feature-page {
       background:
@@ -117,7 +117,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       gap: 8px;
       align-items: center;
       margin-bottom: 16px;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 11px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -158,7 +158,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     .feature-page-summary-head strong,
     .feature-page-rail-head strong {
       display: block;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 11px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -183,7 +183,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     }
     .feature-page-stat span {
       display: block;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 10px;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -212,7 +212,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       background: #fff;
       color: var(--black);
       text-decoration: none;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 11px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -263,7 +263,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       gap: 10px;
       align-items: center;
       margin-bottom: 14px;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 11px;
       letter-spacing: 0.08em;
       color: var(--muted);
@@ -285,7 +285,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       justify-content: flex-start;
       padding: 20px;
       color: rgba(31,31,31,0.72);
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 12px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -322,7 +322,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     }
     .feature-page-rail-item span {
       display: block;
-      font-family: NixgonFont, sans-serif;
+      font-family: 'Google Sans Flex', NixgonFont, sans-serif;
       font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -473,7 +473,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.124.00</span> · Admin <span class="admin-build-version">V03.088.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.124.01</span> · Admin <span class="admin-build-version">V03.088.01</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -481,8 +481,8 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=20260419121158"></script>
-  <script src="/js/site-chrome.js?v=20260419121158"></script>
+  <script src="/js/main.js?v=20260419121818"></script>
+  <script src="/js/site-chrome.js?v=20260419121818"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;
