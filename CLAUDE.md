@@ -27,6 +27,19 @@ scope: project
 > AI는 코드를 한 줄이라도 수정하기 전에 아래 절차를 수행한다.
 > 이 절차를 건너뛰면 안 된다.
 
+### Step 0 — P0 사이트 오류·이슈 점검 (신규 작업 전 필수)
+
+> [!danger] P0 이슈 처리가 신규 작업보다 우선
+> `homepage_issues` 테이블에 `status IN ('open','monitoring')` + `severity IN ('high','critical')`인 항목이 있으면 **신규 작업을 멈추고 이것부터 해결**한다. KMS §0.2.2에 명문화됨.
+
+- 점검 방법:
+  - `wrangler d1 execute gilwell-posts --remote --command "SELECT id, title, severity, status, created_at FROM homepage_issues WHERE status IN ('open','monitoring') AND severity IN ('high','critical') ORDER BY created_at DESC"`
+  - 또는 `/api/homepage-issues?status=open` GET
+  - 또는 관리자 `사이트 오류/이슈 기록` 패널
+- P0 이슈 있으면: 사용자에게 **"P0 이슈 N건 있음. 신규 요청을 뒤로 미루고 먼저 해결하겠다"고 선언** → 해결 → changelog에 해결 내용 기록 → 신규 요청 착수
+- P0 이슈 없으면: 신규 요청 바로 진행
+- 사용자가 "P0 무시하고 신규만 진행해"라고 명시한 경우에만 예외. 묵시적 우선순위 변경 금지.
+
 ### Step 1 — Target 식별
 
 모든 작업은 다음 4개 타겟 중 **정확히 하나**에 속한다. (복수 타겟 걸침은 Step 2에서 선언)

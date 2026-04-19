@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.072.01
+ * Version: 03.072.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -20,12 +20,46 @@
 
   // Null-safe element binding helper
   function _el(id) { return document.getElementById(id); }
+
+  // 이벤트 위임 저장소: DOMContentLoaded 시점에 bind 해도 DOM 재생성 / 중복 초기화 /
+  // 순차 실행 중 에러로 특정 input만 listener가 사라지는 경우가 있어서
+  // document-level delegation을 safety net으로 함께 운영한다.
+  // 2026-04-19: 관리자 검색·필터 전면 불가 이슈(03.072.01 이전) 대응.
+  var _delegatedHandlers = Object.create(null);
+
   function _bindEl(id, evt, fn) {
+    if (typeof fn !== 'function') return;
+    // 1) 위임 저장소에 등록 (항상 작동하는 safety net)
+    if (!_delegatedHandlers[id]) _delegatedHandlers[id] = Object.create(null);
+    _delegatedHandlers[id][evt] = fn;
+    // 2) 원래처럼 요소에 직접 바인딩 — element.__gwBound[evt]로 중복 방지
     var el = document.getElementById(id);
-    if (!el || typeof fn !== 'function') return;
+    if (!el) return;
+    var marker = '__gwBound_' + evt;
+    if (el[marker]) return; // 이미 바인딩됨 (중복 호출 안전)
+    el[marker] = true;
     el.addEventListener(evt, function (event) {
       if (event && event.defaultPrevented) return;
+      // 직접 바인딩 경로 표시 — delegation에서 중복 실행 방지
+      if (event) event.__gwDirect = true;
       return fn.call(this, event);
+    });
+  }
+
+  // document-level 이벤트 위임 — 직접 바인딩이 실패했거나 DOM이 재생성된 경우 safety net.
+  // capture 단계에서 실행하되, 직접 바인딩이 이미 처리한 이벤트(event.__gwDirect)는 무시.
+  function _installDelegation() {
+    ['input', 'change', 'click', 'keydown'].forEach(function (evt) {
+      document.addEventListener(evt, function (event) {
+        var target = event.target;
+        if (!target || !target.id) return;
+        var handlers = _delegatedHandlers[target.id];
+        if (!handlers || !handlers[evt]) return;
+        if (event.__gwDirect) return; // 직접 바인딩이 이미 처리
+        if (event.defaultPrevented) return;
+        event.__gwDelegated = true;
+        return handlers[evt].call(target, event);
+      }, false);
     });
   }
   function _togglePasswordReveal(visible) {
@@ -265,6 +299,7 @@
      INIT
   ══════════════════════════════════════════════════════════ */
   document.addEventListener('DOMContentLoaded', function () {
+    _installDelegation();
     _syncAdminVersionLabels();
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     if (window.GW && typeof GW.populateCategorySelect === 'function') {
@@ -4416,7 +4451,9 @@
           h: h,
           value: column.totals[itemIndex],
           label: item.label || item.key || '',
-          color: item.color || 'var(--v3-chart-default)',
+          // Sankey SVG <rect fill=""> / <path stroke=""> 속성에 직접 삽입되어
+          // CSS var() 해석 불가 — hex 리터럴 유지. §3.10 Leaflet 팔레트 동일 예외.
+          color: item.color || '#7c4dff',
           incomingOffset: 0,
           outgoingOffset: 0
         };
