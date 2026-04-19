@@ -1,6 +1,24 @@
 {
   "items": [
   {
+      "version": "03.079.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:39:03 KST",
+      "summary": "태그 관계도: 상단 태그 검색 + 노드 클릭 → 해당 태그 기사 페이지네이션 모달(20건/페이지).",
+      "changes": [
+        "검색 바 추가: 그래프 카드 상단 <input type=\"search\">. 180ms 디바운스. 부분 일치(case-insensitive)로 노드 id 필터링.",
+        "스팟라이트 하이라이트: 매칭 노드 + 그 이웃만 밝고 나머지 dim(기존 hover focus 시각 재사용). 매칭 수가 상태 텍스트로 표시('3개 태그 강조됨'). '지우기' 버튼으로 초기화.",
+        "hover는 spotlight를 일시 덮어씀 — 커서 떠나면 spotlight 복귀. spotlightIds 상태 + applyFocus() 단일 진입점으로 단순화.",
+        "노드 click → _tiOpenArticlesModal(tag): /api/posts?tag=X&page=N&limit=20&scope=admin 호출해 서버 페이지네이션. 클릭 vs 드래그는 3px 이동 임계값(dxScreen^2+dyScreen^2>9)으로 구분 — 드래그로 간주된 포인터는 click 발화 안 함.",
+        "모달 구성: 태그명 + 총 건수 + 현재 페이지 / 기사 목록(제목·subtitle·category 뱃지·공개여부·발행시각·조회수·글머리 태그·관리자 미리보기 버튼) / 이전·다음 페이지 / ESC로 닫기 / 백드롭 클릭으로 닫기.",
+        "외부 공개 링크(https://bpmedia.net/post/ID)와 관리자 미리보기(V3.openPostPreview) 둘 다 한 행에서 제공.",
+        "CSS 클래스화: .v3-ti-graph-search (bar) / .v3-ti-articles-modal/panel/head/body/foot/list/item (모달) 신설. 인라인 px 리터럴 없이 전부 토큰(--gap-*, --v3-radius, --v3-fs-dense, --v3-shadow-m 등). KMS §3.2 준수.",
+        "모바일 반응형: 검색 meta 텍스트 줄바꿈, 기사 row가 세로 flex로 변환되어 좁은 화면에서 뱃지가 아래로 내려감.",
+        "Hint 텍스트 업데이트: '노드 드래그: 재배치 · 클릭: 기사 목록'.",
+        "관리자 버전 03.078.01 → 03.079.00 (feature bump)."
+      ]
+    },
+  {
       "version": "03.078.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:31:00 KST",

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.078.01
+ * Version: 03.079.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3069,14 +3069,20 @@
     var topN = Math.min(80, (g.nodes || []).length);
     var linkCount = Math.min(200, (g.links || []).length);
     return '<section class="v3-card">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그.</p></div>' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그. 태그를 검색하거나 노드를 클릭하면 관련 기사 목록이 열립니다.</p></div>' +
+      '<div class="v3-ti-graph-search">' +
+        '<svg class="v3-ti-graph-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>' +
+        '<input class="v3-ti-graph-search-input" type="search" id="v3-ti-graph-search" placeholder="태그 검색 (예: 스카우트, 잼버리, SDGs)" autocomplete="off" />' +
+        '<button class="v3-ti-graph-search-clear" type="button" id="v3-ti-graph-search-clear" hidden>지우기</button>' +
+        '<span class="v3-ti-graph-search-meta" id="v3-ti-graph-search-meta"></span>' +
+      '</div>' +
       '<div class="v3-inline-meta">상위 노드 ' + topN + '개 · 링크 ' + linkCount + '개</div>' +
       '<div class="v3-ti-graph-stage">' +
-        '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+        '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 1280 720" role="img" aria-label="태그 관계도"></svg>' +
         '<div class="v3-ti-graph-hint">' +
           '<span>마우스 휠 · 핀치: 확대/축소</span>' +
           '<span>빈 공간 드래그: 화면 이동</span>' +
-          '<span>노드 드래그: 재배치</span>' +
+          '<span>노드 드래그: 재배치 · 클릭: 기사 목록</span>' +
           '<span>굵은 선 = 강한 연결 · 점선 = 약한 연결</span>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-graph-reset">원위치</button>' +
         '</div>' +
@@ -3381,37 +3387,84 @@
     var nodeElById = {};
     nodeEls.forEach(function (entry) { nodeElById[entry.node.id] = entry; });
 
-    // hover 강조: 해당 노드 + 직접 이웃을 강조, 나머지 dim.
-    function setHoverFocus(focusId) {
-      if (!focusId) {
+    // ── Focus 관리: hover는 일시적, search spotlight는 지속적. hover가 search를 일시 덮어씀. ──
+    var spotlightIds = null;  // Set<string> | null
+
+    function applyFocus(focusSet) {
+      // focusSet === null → 모든 강조 해제
+      if (!focusSet || !focusSet.size) {
         nodesG.classList.remove('is-focusing');
         nodeEls.forEach(function (e) { e.g.classList.remove('is-focused', 'is-neighbor', 'is-dimmed'); });
         linkEls.forEach(function (le) { le.line.classList.remove('is-focused', 'is-dimmed'); });
         return;
       }
       nodesG.classList.add('is-focusing');
-      var neighbors = neighborsById[focusId] || new Set();
+      // 포커스 = matched nodes + 그 이웃
+      var neighborsSet = new Set();
+      focusSet.forEach(function (id) {
+        var nbrs = neighborsById[id];
+        if (nbrs) nbrs.forEach(function (x) { neighborsSet.add(x); });
+      });
       nodeEls.forEach(function (e) {
         e.g.classList.remove('is-focused', 'is-neighbor', 'is-dimmed');
-        if (e.node.id === focusId) e.g.classList.add('is-focused');
-        else if (neighbors.has(e.node.id)) e.g.classList.add('is-neighbor');
+        if (focusSet.has(e.node.id)) e.g.classList.add('is-focused');
+        else if (neighborsSet.has(e.node.id)) e.g.classList.add('is-neighbor');
         else e.g.classList.add('is-dimmed');
       });
       linkEls.forEach(function (le) {
         le.line.classList.remove('is-focused', 'is-dimmed');
-        if (le.source.id === focusId || le.target.id === focusId) le.line.classList.add('is-focused');
+        if (focusSet.has(le.source.id) || focusSet.has(le.target.id)) le.line.classList.add('is-focused');
         else le.line.classList.add('is-dimmed');
       });
     }
 
-    // 노드 hover/leave 이벤트
+    function setHoverFocus(focusId) {
+      if (!focusId) {
+        // hover 떠나면 spotlight 상태로 복귀 (있으면).
+        applyFocus(spotlightIds);
+      } else {
+        var s = new Set(); s.add(focusId);
+        applyFocus(s);
+      }
+    }
+
+    function setSearchSpotlight(query) {
+      var q = String(query || '').trim().toLowerCase();
+      var metaEl = _el('v3-ti-graph-search-meta');
+      var clearBtn = _el('v3-ti-graph-search-clear');
+      if (!q) {
+        spotlightIds = null;
+        applyFocus(null);
+        if (metaEl) metaEl.textContent = '';
+        if (clearBtn) clearBtn.hidden = true;
+        return;
+      }
+      // 부분 일치 (case-insensitive)
+      var matched = new Set();
+      nodes.forEach(function (n) {
+        if (String(n.id).toLowerCase().indexOf(q) >= 0) matched.add(n.id);
+      });
+      if (!matched.size) {
+        spotlightIds = null;
+        applyFocus(null);
+        if (metaEl) metaEl.textContent = '"' + query + '" 일치 노드 없음';
+        if (clearBtn) clearBtn.hidden = false;
+        return;
+      }
+      spotlightIds = matched;
+      applyFocus(matched);
+      if (metaEl) metaEl.textContent = matched.size + '개 태그 강조됨';
+      if (clearBtn) clearBtn.hidden = false;
+    }
+
+    // 노드 hover/leave
     nodeEls.forEach(function (entry) {
       entry.g.addEventListener('pointerenter', function () {
-        if (drag) return;
+        if (drag && drag.moved) return;
         setHoverFocus(entry.node.id);
       });
       entry.g.addEventListener('pointerleave', function () {
-        if (drag) return;
+        if (drag && drag.moved) return;
         setHoverFocus(null);
       });
     });
@@ -3493,10 +3546,11 @@
           drag = {
             entry: entry,
             start: svgPoint(ev.clientX, ev.clientY),
+            startClient: { x: ev.clientX, y: ev.clientY },
             orig: { x: entry.node.x, y: entry.node.y },
             pointerId: ev.pointerId,
+            moved: false,
           };
-          nodeG.classList.add('is-dragging');
           nodeG.setPointerCapture && nodeG.setPointerCapture(ev.pointerId);
           ev.stopPropagation();
           return;
@@ -3529,6 +3583,14 @@
         return;
       }
       if (drag) {
+        // 클릭 vs 드래그 구분: 3px 이상 움직였으면 드래그로 확정.
+        var dxScreen = ev.clientX - drag.startClient.x;
+        var dyScreen = ev.clientY - drag.startClient.y;
+        if (!drag.moved && (dxScreen * dxScreen + dyScreen * dyScreen) > 9) {
+          drag.moved = true;
+          drag.entry.g.classList.add('is-dragging');
+        }
+        if (!drag.moved) return;
         var cur = svgPoint(ev.clientX, ev.clientY);
         var wx = (cur.x - zoom.x) / zoom.k;
         var wy = (cur.y - zoom.y) / zoom.k;
@@ -3559,7 +3621,13 @@
       pointers.delete(ev.pointerId);
       if (pointers.size < 2 && pinch) { pinch = null; }
       if (drag && (!ev || ev.pointerId === drag.pointerId)) {
-        drag.entry.g.classList.remove('is-dragging');
+        // 움직이지 않았으면 click으로 간주 → 기사 목록 모달 오픈.
+        if (!drag.moved) {
+          var tag = drag.entry.node.id;
+          setTimeout(function () { _tiOpenArticlesModal(tag); }, 0);
+        } else {
+          drag.entry.g.classList.remove('is-dragging');
+        }
         drag = null;
       }
       if (pan && (!ev || ev.pointerId === pan.pointerId)) {
@@ -3580,6 +3648,22 @@
       applyTransform();
     }
     if (resetBtn) resetBtn.addEventListener('click', onReset);
+
+    // --- 검색 input (debounced) + clear ---
+    var searchInput = _el('v3-ti-graph-search');
+    var searchClear = _el('v3-ti-graph-search-clear');
+    var searchTimer = null;
+    function onSearchInput() {
+      clearTimeout(searchTimer);
+      var q = searchInput ? searchInput.value : '';
+      searchTimer = setTimeout(function () { setSearchSpotlight(q); }, 180);
+    }
+    function onSearchClear() {
+      if (searchInput) searchInput.value = '';
+      setSearchSpotlight('');
+    }
+    if (searchInput) searchInput.addEventListener('input', onSearchInput);
+    if (searchClear) searchClear.addEventListener('click', onSearchClear);
 
     // ── 범례 ──
     var stage = svg.parentElement;
@@ -3611,6 +3695,9 @@
         svg.removeEventListener('pointercancel', onPointerUp);
         svg.removeEventListener('pointerleave', onPointerUp);
         if (resetBtn) resetBtn.removeEventListener('click', onReset);
+        if (searchInput) searchInput.removeEventListener('input', onSearchInput);
+        if (searchClear) searchClear.removeEventListener('click', onSearchClear);
+        clearTimeout(searchTimer);
       },
     };
   }
@@ -3701,6 +3788,103 @@
     });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
     render();
+  }
+
+  // 노드 클릭 시 호출 — 해당 태그가 포함된 기사 목록을 서버 페이지네이션으로 보여줌.
+  // /api/posts?tag=TAG&page=N&limit=20&scope=admin — 기존 posts API 재사용.
+  function _tiOpenArticlesModal(tag) {
+    var page = 1;
+    var PAGE_SIZE = 20;
+    var overlay = document.createElement('div');
+    overlay.className = 'v3-modal v3-modal-open v3-ti-articles-modal';
+    overlay.innerHTML =
+      '<div class="v3-modal-panel v3-ti-articles-panel">' +
+        '<div class="v3-modal-head v3-ti-articles-head">' +
+          '<div>' +
+            '<h2 class="v3-modal-title">태그 · <code class="v3-inline-code">' + GW.escapeHtml(tag) + '</code></h2>' +
+            '<p class="v3-text-m" id="v3-ti-articles-meta">불러오는 중…</p>' +
+          '</div>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-articles-close">닫기</button>' +
+        '</div>' +
+        '<div class="v3-modal-body v3-ti-articles-body" id="v3-ti-articles-body">' +
+          '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>' +
+        '</div>' +
+        '<div class="v3-modal-foot v3-ti-articles-foot">' +
+          '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="v3-ti-articles-prev">이전</button>' +
+          '<span class="v3-text-m" id="v3-ti-articles-page">1 / 1</span>' +
+          '<button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="v3-ti-articles-next">다음</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', onKey);
+
+    function loadPage(p) {
+      page = p;
+      var bodyEl = overlay.querySelector('#v3-ti-articles-body');
+      var metaEl = overlay.querySelector('#v3-ti-articles-meta');
+      var pageEl = overlay.querySelector('#v3-ti-articles-page');
+      var prevBtn = overlay.querySelector('#v3-ti-articles-prev');
+      var nextBtn = overlay.querySelector('#v3-ti-articles-next');
+      bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+
+      var params = new URLSearchParams({
+        tag: tag,
+        page: String(p),
+        limit: String(PAGE_SIZE),
+        scope: 'admin',
+      });
+      _apiFetch('/api/posts?' + params.toString()).then(function (data) {
+        var posts = (data && data.posts) || [];
+        var total = (data && data.total) || 0;
+        var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (metaEl) metaEl.textContent = '총 ' + total + '건 · ' + PAGE_SIZE + '개씩 · 페이지 ' + p + ' / ' + totalPages;
+        if (pageEl) pageEl.textContent = p + ' / ' + totalPages;
+        prevBtn.disabled = p <= 1;
+        nextBtn.disabled = p >= totalPages;
+        if (!posts.length) {
+          bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">해당 태그 기사가 없습니다.</div></div>';
+          return;
+        }
+        bodyEl.innerHTML = '<ul class="v3-ti-articles-list">' + posts.map(function (post) {
+          var publishLabel = _formatDateTimeCompact(post.publish_at || post.created_at || '');
+          var isPublished = Number(post.published || 0) === 1;
+          return '<li class="v3-ti-article-item">' +
+            '<div class="v3-ti-article-row">' +
+              '<div class="v3-ti-article-main">' +
+                '<a class="v3-ti-article-title" href="https://bpmedia.net/post/' + post.id + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(post.title || '(제목 없음)') + '</a>' +
+                (post.subtitle ? '<div class="v3-text-m v3-ti-article-sub">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
+              '</div>' +
+              '<div class="v3-ti-article-side">' +
+                '<span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span>' +
+                (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') +
+              '</div>' +
+            '</div>' +
+            '<div class="v3-ti-article-meta">' +
+              '<span>발행 ' + GW.escapeHtml(publishLabel) + '</span>' +
+              '<span>조회 ' + _fmt(post.views || 0) + '</span>' +
+              (post.tag ? '<span>글머리 <code class="v3-inline-code">' + GW.escapeHtml(post.tag) + '</code></span>' : '') +
+              '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" onclick="V3.openPostPreview(' + post.id + ')">관리자 미리보기</button>' +
+            '</div>' +
+          '</li>';
+        }).join('') + '</ul>';
+      }).catch(function (e) {
+        bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오지 못했습니다: ' + GW.escapeHtml(e.message || '') + '</div></div>';
+      });
+    }
+
+    overlay.querySelector('#v3-ti-articles-close').addEventListener('click', close);
+    overlay.querySelector('#v3-ti-articles-prev').addEventListener('click', function () {
+      if (page > 1) loadPage(page - 1);
+    });
+    overlay.querySelector('#v3-ti-articles-next').addEventListener('click', function () { loadPage(page + 1); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+    loadPage(1);
   }
 
   function _syncAnalyticsAutoRefresh(forceActive) {
