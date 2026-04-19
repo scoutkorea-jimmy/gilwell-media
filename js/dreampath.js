@@ -226,15 +226,14 @@ const DP = (() => {
 
   function _sanitizeHtml(html) {
     if (window.DOMPurify) return DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, ADD_ATTR: ['data-align'] });
-    // Fallback: remove dangerous elements and event handler attributes
     const div = document.createElement('div');
     div.innerHTML = html;
-    div.querySelectorAll('script,iframe,object,embed,form,meta,link,style').forEach(el => el.remove());
+    div.querySelectorAll('script,iframe,object,embed,form,meta,link,style,base,noscript').forEach(el => el.remove());
     div.querySelectorAll('*').forEach(el => {
       Array.from(el.attributes).forEach(attr => {
         if (/^on/i.test(attr.name)) {
           el.removeAttribute(attr.name);
-        } else if (['href','src','action','formaction','data'].includes(attr.name) && /^\s*javascript:/i.test(attr.value)) {
+        } else if (['href','src','action','formaction','data'].includes(attr.name) && /^\s*(javascript:|data:)/i.test(attr.value)) {
           el.removeAttribute(attr.name);
         }
       });

@@ -138,8 +138,8 @@ async function importKey(secret, usages) {
   );
 }
 
-function normalizeRole() {
-  return 'full';
+function normalizeRole(role) {
+  return role === 'editor' ? 'editor' : 'full';
 }
 
 export function readCookie(request, name) {
