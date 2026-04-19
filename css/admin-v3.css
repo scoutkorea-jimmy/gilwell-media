@@ -4149,3 +4149,14 @@ body.marketing-fullscreen-open { overflow: hidden; }
   line-height: 1.5;
 }
 .v3-ai-usage-footline.is-stale { color: #b35a22; }
+
+/* AI 사용량 카드 — 예상 비용 표시 (03.087) */
+.v3-ai-usage-cost {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v3-ink-emphasis-deep);
+  font-variant-numeric: tabular-nums;
+}
+.v3-ai-usage-stat.is-warn  .v3-ai-usage-cost { color: #b35a22; }
+.v3-ai-usage-stat.is-alert .v3-ai-usage-cost { color: #b0393a; }

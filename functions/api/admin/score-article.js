@@ -42,7 +42,7 @@ BP미디어 기사 작성 표준 v2.1 평가 기준:
 - 7~10개 권장: 브랜드(스카우트 등) + 사건(국제교류 등) + 대상(연맹명/국가명)
 `;
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   const ip = request.headers.get('CF-Connecting-IP') || '';
   const token = extractToken(request);
   if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
@@ -53,6 +53,13 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Workers AI 바인딩이 설정되지 않았습니다. Cloudflare Pages 대시보드에서 AI 바인딩을 추가해주세요.' }, 503);
   }
 
+  // 로깅은 fire-and-forget. waitUntil이 없으면 promise만 발사하고 catch만 처리.
+  const logAsync = (entry) => {
+    const p = logAiUsage(env, entry);
+    if (typeof waitUntil === 'function') waitUntil(p.catch(() => {}));
+    else p.catch(() => {});
+  };
+
   let body;
   try { body = await request.json(); }
   catch (_) { return json({ error: '요청 형식 오류' }, 400); }
@@ -60,7 +67,7 @@ export async function onRequestPost({ request, env }) {
   const { title = '', subtitle = '', content = '', tags = '' } = body;
   const inputChars = (String(title) + String(subtitle) + String(content) + String(tags)).length;
   if (!title && !content) {
-    await logAiUsage(env, {
+    logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
       inputChars, status: 'invalid', errorCode: 'empty_input',
     });
@@ -142,7 +149,7 @@ Tags: ${tags || '(없음)'}
       max_tokens: 1200,
     });
   } catch (err) {
-    await logAiUsage(env, {
+    logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
       inputChars, latencyMs: Date.now() - startTs,
       status: 'error', errorCode: 'ai_call_failed',
@@ -164,7 +171,7 @@ Tags: ${tags || '(없음)'}
                     raw.match(/(\{[\s\S]*\})/);
 
   if (!jsonMatch) {
-    await logAiUsage(env, {
+    logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
       inputChars, outputChars, promptTokens, completionTokens, totalTokens,
       latencyMs, status: 'error', errorCode: 'parse_no_json',
@@ -175,7 +182,7 @@ Tags: ${tags || '(없음)'}
   let result;
   try { result = JSON.parse(jsonMatch[1]); }
   catch (_) {
-    await logAiUsage(env, {
+    logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
       inputChars, outputChars, promptTokens, completionTokens, totalTokens,
       latencyMs, status: 'error', errorCode: 'parse_invalid_json',
@@ -183,7 +190,7 @@ Tags: ${tags || '(없음)'}
     return json({ error: 'AI 응답 JSON 파싱 실패', raw }, 502);
   }
 
-  await logAiUsage(env, {
+  logAsync({
     endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
     inputChars, outputChars, promptTokens, completionTokens, totalTokens,
     latencyMs, status: 'success',
