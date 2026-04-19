@@ -1107,8 +1107,9 @@ body[data-home-bootstrap] .masthead {
   color:  var(--border);
 }
 
+/* lang-toggle: hidden until multilingual support is re-enabled (2026 H2) */
 .lang-toggle {
-  display:   flex;
+  display:   none;
   gap:       0;
   border:    1px solid var(--border);
   overflow:  hidden;
