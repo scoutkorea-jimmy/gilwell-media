@@ -2112,7 +2112,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .home-lead-body h3 {
   font-family: NixgonFont, sans-serif;
-  font-size: clamp(28px, 3.2vw, 44px);
+  font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.22;
   color: var(--black);
   margin-bottom: 10px;
@@ -2224,9 +2224,10 @@ body[data-home-bootstrap] .lang-btn:hover {
   display: flex;
   align-items: stretch;
   min-height: 0;
-  overflow: hidden;
   padding: 14px 0 var(--gap-card);
 }
+
+#latest-list .post-kicker-new { display: none; }
 
 #latest-list .mini-item-row {
   width: 100%;
@@ -2425,7 +2426,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .mini-item-labels {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 6px;
@@ -6364,7 +6365,7 @@ footer a:hover { color: var(--white); }
     max-height: none;
   }
   .home-lead-body h3 {
-    font-size: calc(28px * var(--mobile-user-scale));
+    font-size: calc(22px * var(--mobile-user-scale));
   }
   .home-lead-summary {
     font-size: var(--mobile-fs-body);
