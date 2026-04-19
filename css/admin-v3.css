@@ -2783,6 +2783,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
   cursor: grab;
   user-select: none;
   background: var(--v3-surface);
+  touch-action: none;       /* 페이지 팬·zoom 방지, pointer 이벤트만 받음 */
+  -webkit-user-select: none;
 }
 .v3-ti-graph-svg.is-panning { cursor: grabbing; }
 .v3-ti-graph-node { cursor: grab; transition: opacity .15s; }
@@ -2829,13 +2831,43 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-ti-graph-nodes.is-focusing .v3-ti-graph-node.is-dimmed {
   opacity: 0.2;
 }
-.v3-ti-graph-link.is-focused {
-  stroke: var(--v3-ink-emphasis);
+/* 링크 tier — count 기준 3단계. 약한 연결은 점선(inline stroke-dasharray). */
+.v3-ti-graph-link {
+  stroke: var(--v3-text-l);
+  stroke-opacity: 0.55;
+  transition: stroke-opacity .12s, stroke .12s;
+}
+.v3-ti-graph-link.is-tier-strong {
+  stroke: var(--v3-text-m);
   stroke-opacity: 0.7;
-  stroke-width: 2.4;
+}
+.v3-ti-graph-link.is-tier-medium {
+  stroke: var(--v3-text-l);
+  stroke-opacity: 0.55;
+}
+.v3-ti-graph-link.is-tier-weak {
+  stroke: var(--v3-border-m);
+  stroke-opacity: 0.6;
+}
+/* hover focus */
+.v3-ti-graph-link.is-focused {
+  stroke: var(--v3-ink-emphasis) !important;
+  stroke-opacity: 0.8 !important;
+  stroke-dasharray: none !important;  /* 점선인 weak 링크도 focus 시엔 solid */
 }
 .v3-ti-graph-link.is-dimmed {
-  stroke-opacity: 0.08;
+  stroke-opacity: 0.08 !important;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 700px) {
+  .v3-ti-graph-svg { max-height: 68vh; }
+  .v3-ti-graph-label { font-size: var(--fs-caption); }
+  .v3-ti-graph-node.is-primary .v3-ti-graph-label { font-size: var(--fs-body); }
+  .v3-ti-graph-hint {
+    flex-direction: column;
+    gap: var(--gap-micro);
+  }
 }
 .v3-ti-graph-hint {
   padding: var(--gap-tight) var(--gap-card);
