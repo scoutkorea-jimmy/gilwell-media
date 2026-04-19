@@ -1,6 +1,19 @@
 {
   "items": [
   {
+      "version": "03.073.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 11:01:47 KST",
+      "summary": "[§0.2.2 P0 규칙 실천] homepage_issues 테이블의 open/monitoring 이슈 3건 전수 해결 — 모두 resolved. 현재 P0 open 0건 · 전체 open/monitoring 0건 clean 상태.",
+      "changes": [
+        "#6 (high/open) '홈 초기 데이터 로드 실패' — /api/home 현 응답 HTTP 200 / 620ms / 149KB 정상 확인. 2026-04-18 이후 동일 source_path 재발 0건. 'Failed to fetch'는 클라이언트측 일시 네트워크 단절(DNS/WiFi 순간 실패) 판단. status → resolved.",
+        "#7 (medium/monitoring) '홈 백그라운드 새로고침 실패' — #6과 동일 원인으로 묶어 처리. 엔드포인트 정상. status → resolved.",
+        "#9 (medium/open) '관리자 API 요청 실패 HTTP 409' — 오늘 배포된 Site v00.116.00 / Admin v03.073.00의 메인 스토리↔에디터 추천 배타 제약 해제로 원인 근절. functions/api/settings/home-lead.js:96 의 409 분기가 제거돼 동일 에러 재발 불가. status → resolved.",
+        "§0.2.2 P0 규칙의 첫 번째 실천 사례 기록 — 신규 작업(검색 UX 통일 등) 착수 전 homepage_issues 전수 확인하고 open 이슈 선처리하는 절차가 실제로 작동함을 검증.",
+        "관리자 버전 03.073.00 → 03.073.01."
+      ]
+    },
+  {
       "version": "00.116.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 10:54:35 KST",
