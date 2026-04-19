@@ -21,6 +21,9 @@ database_id = "619e542b-e3b1-4500-b474-7e9fd87e1169"
 binding = "POST_IMAGES"
 bucket_name = "gilwell-media-images"
 
+[ai]
+binding = "AI"
+
 # ── Local secrets for development ────────────────────────────
 # Copy .dev.vars.example to .dev.vars and fill in values.
 # Never commit .dev.vars to git.

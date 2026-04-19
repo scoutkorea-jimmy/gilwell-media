@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.082.01
+ * Version: 03.083.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -4882,10 +4882,10 @@
   var _scorerPosts = [];
 
   function _initArticleScorer() {
-    var runBtn    = document.getElementById('scorer-run-btn');
-    var clearBtn  = document.getElementById('scorer-clear-btn');
-    var loadBtn   = document.getElementById('scorer-load-btn');
-    var searchIn  = document.getElementById('scorer-search-input');
+    var runBtn   = document.getElementById('scorer-run-btn');
+    var clearBtn = document.getElementById('scorer-clear-btn');
+    var loadBtn  = document.getElementById('scorer-load-btn');
+    var searchIn = document.getElementById('scorer-search-input');
     if (!runBtn || runBtn._scorerBound) return;
     runBtn._scorerBound = true;
 
@@ -4895,182 +4895,123 @@
       ['scorer-title','scorer-subtitle','scorer-body','scorer-tags'].forEach(function (id) {
         var el = document.getElementById(id); if (el) el.value = '';
       });
-      var inner = document.getElementById('scorer-result-inner');
-      var empty = document.getElementById('scorer-empty-state');
-      if (inner) inner.hidden = true;
-      if (empty) empty.hidden = false;
+      _scorerShowEmpty();
     });
 
-    // 기존 기사 검색 자동완성
+    // 검색 자동완성
     searchIn.addEventListener('input', function () {
       var q = searchIn.value.trim().toLowerCase();
       var list = document.getElementById('scorer-post-list');
       if (!q) { list.hidden = true; return; }
       var matches = _scorerPosts.filter(function (p) {
         return (p.title || '').toLowerCase().indexOf(q) !== -1;
-      }).slice(0, 8);
+      }).slice(0, 10);
       if (!matches.length) { list.hidden = true; return; }
       list.innerHTML = matches.map(function (p) {
-        return '<div class="v3-scorer-post-item" data-post-id="' + p.id + '">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>';
+        return '<div class="v3-scorer-post-item" data-post-id="' + p.id + '">' +
+          GW.escapeHtml(p.title || '(제목 없음)') +
+          '<span class="v3-scorer-post-meta">' + GW.escapeHtml(p.category || '') + '</span>' +
+          '</div>';
       }).join('');
       list.hidden = false;
     });
 
-    list_click_delegate(document.getElementById('scorer-post-list'), '.v3-scorer-post-item', function (el) {
-      var id = el.getAttribute('data-post-id');
-      var post = _scorerPosts.find(function (p) { return String(p.id) === id; });
-      if (post) _scorerFillPost(post);
-      document.getElementById('scorer-post-list').hidden = true;
-      searchIn.value = '';
+    // 검색창 외부 클릭 시 닫기
+    document.addEventListener('click', function (e) {
+      var list = document.getElementById('scorer-post-list');
+      if (list && !list.contains(e.target) && e.target !== searchIn) list.hidden = true;
     });
 
+    // 기사 선택 → 단건 API 호출로 본문 로딩
+    var list = document.getElementById('scorer-post-list');
+    if (list) {
+      list.addEventListener('click', function (e) {
+        var item = e.target && e.target.closest ? e.target.closest('.v3-scorer-post-item') : null;
+        if (!item) return;
+        var id = item.getAttribute('data-post-id');
+        list.hidden = true;
+        searchIn.value = '';
+        _scorerLoadPost(id);
+      });
+    }
+
+    // 불러오기 버튼 — 목록 갱신
     loadBtn.addEventListener('click', function () {
       _setButtonBusy(loadBtn, '불러오는 중…');
-      _apiFetch('/api/posts?limit=200&published=all&scope=admin')
+      _apiFetch('/api/posts?limit=300&published=all&scope=admin')
         .then(function (data) {
           _scorerPosts = (data && data.posts) ? data.posts : [];
           _setButtonBusy(loadBtn, null);
-          loadBtn.textContent = '불러오기 완료 (' + _scorerPosts.length + ')';
-          setTimeout(function () { loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기'; }, 2000);
+          loadBtn.textContent = _scorerPosts.length + '개 기사 로드됨';
+          setTimeout(function () {
+            loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기';
+          }, 2500);
+          searchIn.focus();
         })
         .catch(function () { _setButtonBusy(loadBtn, null); });
     });
 
-    // 첫 진입 시 자동 로드
+    // 패널 첫 진입 시 자동 로드
     if (!_scorerPosts.length) {
-      _apiFetch('/api/posts?limit=200&published=all&scope=admin').then(function (data) {
-        _scorerPosts = (data && data.posts) ? data.posts : [];
-      }).catch(function () {});
+      _apiFetch('/api/posts?limit=300&published=all&scope=admin')
+        .then(function (data) {
+          _scorerPosts = (data && data.posts) ? data.posts : [];
+          if (loadBtn) loadBtn.textContent = _scorerPosts.length + '개 기사 로드됨';
+          setTimeout(function () {
+            if (loadBtn) loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기';
+          }, 2500);
+        })
+        .catch(function () {});
     }
   }
 
-  function list_click_delegate(container, selector, cb) {
-    if (!container) return;
-    container.addEventListener('click', function (e) {
-      var el = e.target && e.target.closest ? e.target.closest(selector) : null;
-      if (el && container.contains(el)) cb(el);
-    });
-  }
+  function _scorerLoadPost(id) {
+    var bodyField = document.getElementById('scorer-body');
+    if (bodyField) bodyField.placeholder = '본문 불러오는 중…';
+    _apiFetch('/api/posts/' + id)
+      .then(function (data) {
+        var post = data && (data.post || data);
+        if (!post) return;
+        var titleEl    = document.getElementById('scorer-title');
+        var subtitleEl = document.getElementById('scorer-subtitle');
+        var tagsEl     = document.getElementById('scorer-tags');
+        if (titleEl)    titleEl.value    = post.title    || '';
+        if (subtitleEl) subtitleEl.value = post.subtitle || '';
+        if (tagsEl)     tagsEl.value     = post.meta_tags || '';
 
-  function _scorerFillPost(post) {
-    var titleEl    = document.getElementById('scorer-title');
-    var subtitleEl = document.getElementById('scorer-subtitle');
-    var bodyEl     = document.getElementById('scorer-body');
-    var tagsEl     = document.getElementById('scorer-tags');
-    if (titleEl)    titleEl.value    = post.title    || '';
-    if (subtitleEl) subtitleEl.value = post.subtitle || '';
-    if (tagsEl)     tagsEl.value     = post.meta_tags || '';
-    // content는 Editor.js JSON 또는 plain text일 수 있음 — plain text만 추출
-    var raw = post.content || '';
-    var plain = raw;
-    try {
-      var parsed = JSON.parse(raw);
-      if (parsed && parsed.blocks) {
-        plain = parsed.blocks
-          .filter(function (b) { return b.type === 'paragraph'; })
-          .map(function (b) { return (b.data && b.data.text || '').replace(/<[^>]*>/g, ''); })
-          .filter(Boolean)
-          .join('\n\n');
-      }
-    } catch (_) {}
-    if (bodyEl) bodyEl.value = plain;
-  }
+        // Editor.js JSON → 순수 텍스트 추출
+        var raw = post.content || '';
+        var plain = raw;
+        try {
+          var parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.blocks)) {
+            plain = parsed.blocks
+              .filter(function (b) { return b.type === 'paragraph' || b.type === 'header'; })
+              .map(function (b) { return (b.data && b.data.text || b.data && b.data.text || '').replace(/<[^>]*>/g, ''); })
+              .filter(Boolean)
+              .join('\n\n');
+          }
+        } catch (_) {}
 
-  function _runScorer() {
-    var title    = (document.getElementById('scorer-title').value || '').trim();
-    var subtitle = (document.getElementById('scorer-subtitle').value || '').trim();
-    var body     = (document.getElementById('scorer-body').value || '').trim();
-    var tagsRaw  = (document.getElementById('scorer-tags').value || '').trim();
-
-    var paragraphs = body.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
-    var tags = tagsRaw ? tagsRaw.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean) : [];
-
-    var FORBIDDEN = ['의미 있는', '의미있는', '뜻깊은', '중요한 계기', '성공적으로'];
-    var EVAL_WORDS = ['훌륭', '대단', '놀라운', '감동', '감격', '역사적', '최초', '최고', '유일'];
-
-    var checks = [];
-
-    // ── Title 검사 (30점) ──────────────────────────────────────
-    (function () {
-      var score = 0, issues = [];
-      if (!title) { checks.push({ label: 'Title', score: 0, max: 30, issues: ['제목이 없습니다.'] }); return; }
-      if (title.length >= 10) score += 10; else issues.push('제목이 너무 짧습니다 (10자 이상 권장).');
-      var hasForbidden = FORBIDDEN.some(function (w) { return title.indexOf(w) !== -1; });
-      if (!hasForbidden) score += 10; else issues.push('금지 표현 포함: ' + FORBIDDEN.filter(function (w) { return title.indexOf(w) !== -1; }).join(', '));
-      var hasEval = EVAL_WORDS.some(function (w) { return title.indexOf(w) !== -1; });
-      if (!hasEval) score += 5; else issues.push('평가/감정 표현이 포함되어 있습니다.');
-      var hasAction = /(?:방문|체결|개최|시작|참가|완료|발표|선출|진행|수료|협력|개설|출범|수상)/.test(title);
-      if (hasAction) score += 5; else issues.push('Title에 구체적 행동 동사(방문, 체결, 개최 등)가 없습니다.');
-      checks.push({ label: 'Title', score: score, max: 30, issues: issues });
-    }());
-
-    // ── Subtitle 검사 (15점) ───────────────────────────────────
-    (function () {
-      var score = 0, issues = [];
-      if (!subtitle) { checks.push({ label: 'Subtitle', score: 0, max: 15, issues: ['부제목이 없습니다.'] }); return; }
-      if (subtitle.length >= 10) score += 5; else issues.push('부제목이 너무 짧습니다.');
-      var hasForbidden = FORBIDDEN.some(function (w) { return subtitle.indexOf(w) !== -1; });
-      if (!hasForbidden) score += 5; else issues.push('금지 표현 포함: ' + FORBIDDEN.filter(function (w) { return subtitle.indexOf(w) !== -1; }).join(', '));
-      var hasEmotion = /(?:감동|감격|놀라운|훌륭한|대단한)/.test(subtitle);
-      if (!hasEmotion) score += 5; else issues.push('감정 표현이 포함되어 있습니다.');
-      checks.push({ label: 'Subtitle', score: score, max: 15, issues: issues });
-    }());
-
-    // ── Body 구조 검사 (35점) ──────────────────────────────────
-    (function () {
-      var score = 0, issues = [];
-      if (!body) { checks.push({ label: 'Body 구조', score: 0, max: 35, issues: ['본문이 없습니다.'] }); return; }
-
-      if (paragraphs.length === 4) score += 15;
-      else if (paragraphs.length === 3 || paragraphs.length === 5) { score += 7; issues.push('문단 수: ' + paragraphs.length + '개 (표준: 4문단 고정).'); }
-      else { issues.push('문단 수: ' + paragraphs.length + '개 (표준: 4문단 고정).'); }
-
-      var paraIssues = [];
-      paragraphs.forEach(function (p, i) {
-        var sentences = p.split(/[.!?。]\s+|[.!?。]$/).filter(function (s) { return s.trim().length > 3; });
-        if (sentences.length >= 3 && sentences.length <= 5) score += 4;
-        else if (sentences.length === 2 || sentences.length === 6) score += 2;
-        else paraIssues.push((i + 1) + '문단 문장 수: 약 ' + sentences.length + '개 (권장 3~5개).');
+        if (bodyField) {
+          bodyField.value = plain;
+          bodyField.placeholder = '본문을 붙여넣으세요\n\n문단 사이는 빈 줄로 구분합니다.';
+        }
+        _scorerShowEmpty();
+      })
+      .catch(function () {
+        if (bodyField) bodyField.placeholder = '불러오기 실패. 직접 붙여넣으세요.';
       });
-      if (paraIssues.length) issues = issues.concat(paraIssues);
-      if (paragraphs.length === 4 && !paraIssues.length) score = Math.min(score + 3, 35);
+  }
 
-      var bodyForbidden = FORBIDDEN.filter(function (w) { return body.indexOf(w) !== -1; });
-      if (!bodyForbidden.length) score += 4; else issues.push('금지 표현 포함: ' + bodyForbidden.join(', '));
+  function _scorerShowEmpty() {
+    var inner = document.getElementById('scorer-result-inner');
+    var empty = document.getElementById('scorer-empty-state');
+    if (inner) inner.hidden = true;
+    if (empty) empty.hidden = false;
+  }
 
-      checks.push({ label: 'Body 구조', score: Math.min(score, 35), max: 35, issues: issues });
-    }());
-
-    // ── Tags 검사 (10점) ───────────────────────────────────────
-    (function () {
-      var score = 0, issues = [];
-      if (!tags.length) { checks.push({ label: 'Tags', score: 0, max: 10, issues: ['태그가 없습니다.'] }); return; }
-      if (tags.length >= 7 && tags.length <= 10) score += 10;
-      else if (tags.length >= 5) { score += 6; issues.push('태그 수: ' + tags.length + '개 (권장 7~10개).'); }
-      else if (tags.length > 10) { score += 7; issues.push('태그 수: ' + tags.length + '개 (최대 10개).'); }
-      else { score += 3; issues.push('태그 수: ' + tags.length + '개 (권장 7~10개).'); }
-      checks.push({ label: 'Tags', score: score, max: 10, issues: issues });
-    }());
-
-    // ── 표기 규칙 (10점) ──────────────────────────────────────
-    (function () {
-      var score = 0, issues = [];
-      var allText = [title, subtitle, body].join(' ');
-      var hasNotation = /[가-힣]+\([A-Za-z]/.test(allText);
-      if (hasNotation) score += 5; else issues.push('연맹/인명의 국문(영문) 병기 표기가 없습니다.');
-      var evalFound = EVAL_WORDS.filter(function (w) { return allText.indexOf(w) !== -1; });
-      if (!evalFound.length) score += 5; else issues.push('평가/과장 표현 발견: ' + evalFound.join(', '));
-      checks.push({ label: '표기 · 겸손도', score: score, max: 10, issues: issues });
-    }());
-
-    // ── 총점 계산 ──────────────────────────────────────────────
-    var total    = checks.reduce(function (s, c) { return s + c.score; }, 0);
-    var maxTotal = checks.reduce(function (s, c) { return s + c.max; }, 0);
-    var pct      = Math.round((total / maxTotal) * 100);
-    var grade    = pct >= 90 ? 'S' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'D';
-    var gradeColor = pct >= 80 ? '#248737' : pct >= 60 ? '#0094B4' : '#FF5655';
-
-    // ── 렌더링 ─────────────────────────────────────────────────
+  function _scorerRenderResult(result) {
     var inner   = document.getElementById('scorer-result-inner');
     var empty   = document.getElementById('scorer-empty-state');
     var totalEl = document.getElementById('scorer-total-score');
@@ -5078,31 +5019,100 @@
     var barFill = document.getElementById('scorer-bar-fill');
     var bodyEl  = document.getElementById('scorer-results-body');
 
-    totalEl.textContent = total + ' / ' + maxTotal;
-    gradeEl.textContent = grade;
-    gradeEl.style.color = gradeColor;
-    barFill.style.width = pct + '%';
-    barFill.style.background = gradeColor;
+    var overall = result.overall || {};
+    var pct     = overall.score || 0;
+    var grade   = overall.grade || '—';
+    var color   = pct >= 80 ? '#248737' : pct >= 60 ? '#0094B4' : '#FF5655';
 
-    bodyEl.innerHTML = checks.map(function (c) {
-      var cPct   = Math.round((c.score / c.max) * 100);
+    totalEl.textContent = pct + ' / 100';
+    gradeEl.textContent = grade;
+    gradeEl.style.color = color;
+    barFill.style.width = pct + '%';
+    barFill.style.background = color;
+
+    var cats = result.categories || [];
+    bodyEl.innerHTML = cats.map(function (c) {
+      var cPct   = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
       var cColor = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
-      var issueHtml = c.issues.length
-        ? '<ul class="v3-scorer-issues">' + c.issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>'
-        : '<p class="v3-scorer-pass">이상 없음</p>';
+      var issues    = (c.issues    || []).filter(Boolean);
+      var strengths = (c.strengths || []).filter(Boolean);
+      var issueHtml = issues.length
+        ? '<ul class="v3-scorer-issues">' + issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>'
+        : '';
+      var strengthHtml = strengths.length
+        ? '<ul class="v3-scorer-strengths">' + strengths.map(function (s) { return '<li>' + GW.escapeHtml(s) + '</li>'; }).join('') + '</ul>'
+        : '';
+      if (!issues.length && !strengths.length) issueHtml = '<p class="v3-scorer-pass">이상 없음</p>';
       return '<div class="v3-scorer-check-row">' +
         '<div class="v3-scorer-check-head">' +
-          '<span class="v3-scorer-check-label">' + GW.escapeHtml(c.label) + '</span>' +
+          '<span class="v3-scorer-check-label">' + GW.escapeHtml(c.label || '') + '</span>' +
           '<span class="v3-scorer-check-score" style="color:' + cColor + '">' + c.score + '/' + c.max + '</span>' +
         '</div>' +
         '<div class="v3-scorer-check-bar"><div class="v3-scorer-check-fill" style="width:' + cPct + '%;background:' + cColor + '"></div></div>' +
-        issueHtml +
+        strengthHtml + issueHtml +
         '</div>';
     }).join('');
+
+    if (overall.summary) {
+      bodyEl.innerHTML += '<div class="v3-scorer-summary">' + GW.escapeHtml(overall.summary) + '</div>';
+    }
+    if (result.improvement) {
+      bodyEl.innerHTML += '<div class="v3-scorer-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
+    }
 
     if (empty) empty.hidden = true;
     if (inner) inner.hidden = false;
     inner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function _runScorer() {
+    var title    = (document.getElementById('scorer-title').value || '').trim();
+    var subtitle = (document.getElementById('scorer-subtitle').value || '').trim();
+    var body     = (document.getElementById('scorer-body').value || '').trim();
+    var tags     = (document.getElementById('scorer-tags').value || '').trim();
+
+    if (!title && !body) {
+      alert('제목 또는 본문을 입력해주세요.');
+      return;
+    }
+
+    var runBtn = document.getElementById('scorer-run-btn');
+    _setButtonBusy(runBtn, 'AI 채점 중…');
+
+    var inner = document.getElementById('scorer-result-inner');
+    var empty = document.getElementById('scorer-empty-state');
+    if (inner) inner.hidden = true;
+    if (empty) {
+      empty.hidden = false;
+      empty.innerHTML = '<div class="v3-spinner" style="width:28px;height:28px;border-width:3px;"></div><p>AI가 기사를 분석하고 있습니다…<br><small>약 10~20초 소요됩니다</small></p>';
+    }
+
+    _apiFetch('/api/admin/score-article', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title, subtitle: subtitle, content: body, tags: tags }),
+    })
+      .then(function (data) {
+        _setButtonBusy(runBtn, null);
+        if (data && data.ok && data.result) {
+          _scorerRenderResult(data.result);
+        } else {
+          var errMsg = (data && data.error) || 'AI 채점 실패';
+          if (empty) {
+            empty.hidden = false;
+            empty.innerHTML = '<p style="color:#FF5655">' + GW.escapeHtml(errMsg) + '</p>';
+          }
+          if (inner) inner.hidden = true;
+        }
+      })
+      .catch(function (err) {
+        _setButtonBusy(runBtn, null);
+        if (empty) {
+          empty.hidden = false;
+          empty.innerHTML = '<p style="color:#FF5655">채점 요청 실패: ' + GW.escapeHtml((err && err.message) || String(err)) + '</p>';
+        }
+        if (inner) inner.hidden = true;
+      });
   }
 
   /* ══════════════════════════════════════════════════════════

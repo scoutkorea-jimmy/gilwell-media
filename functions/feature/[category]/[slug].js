@@ -68,7 +68,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260419062000">
+  <link rel="stylesheet" href="/css/style.css?v=20260419063207">
   <style>
     .feature-page {
       background:
@@ -473,7 +473,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.116.06</span> · Admin <span class="admin-build-version">V03.082.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.116.06</span> · Admin <span class="admin-build-version">V03.083.00</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -481,8 +481,8 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
       </div>
     </div>
   </footer>
-  <script src="/js/main.js?v=20260419062000"></script>
-  <script src="/js/site-chrome.js?v=20260419062000"></script>
+  <script src="/js/main.js?v=20260419063207"></script>
+  <script src="/js/site-chrome.js?v=20260419063207"></script>
   <script>GW.bootstrapStandardPage();</script>
 </body>
 </html>`;

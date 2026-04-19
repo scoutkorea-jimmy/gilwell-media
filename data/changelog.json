@@ -1,6 +1,20 @@
 {
   "items": [
   {
+      "version": "03.083.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 00:00:00 KST",
+      "summary": "기사 채점 AI 분석 도입 — Cloudflare Workers AI(Llama 3.1)로 실제 내용 평가.",
+      "changes": [
+        "Cloudflare Workers AI 바인딩 추가 (wrangler.toml [ai] 설정).",
+        "/api/admin/score-article Worker 함수 신설 — BP미디어 작성 표준 v2.1 기준으로 Llama 3.1-8b에 기사 전달, 항목별 점수·잘된 점·문제점·개선 방향 JSON 반환.",
+        "프론트엔드 채점 로직을 클라이언트 패턴 매칭에서 AI API 호출로 전환.",
+        "기존 기사 선택 시 /api/posts/{id} 단건 호출로 본문 실제 로딩 (목록 API에 content 없는 문제 해결).",
+        "채점 결과에 잘된 점(초록)·문제점(빨강)·전체 요약·개선 방향 구분 표시.",
+        "관리자 버전 03.082.01 → 03.083.00."
+      ]
+  },
+  {
       "version": "03.082.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 00:00:00 KST",
