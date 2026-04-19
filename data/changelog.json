@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "03.088.04",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:20:00 KST",
+    "summary": "관리자 CSS에서 미정의였던 --admin-border, --fs-sm 토큰을 정의된 --v3-border, --fs-small로 교체해 일부 테두리·글자 크기가 브라우저 기본값으로 떨어지던 잠재적 버그를 해소.",
+    "changes": [
+      "css/admin-v3.css: var(--admin-border) 2곳 → var(--v3-border), var(--fs-sm) 1곳 → var(--fs-small).",
+      "관리자 버전 03.088.03 → 03.088.04."
+    ]
+  },
+  {
+    "version": "00.124.04",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:20:00 KST",
+    "summary": "홈페이지 전반 정적 감사 결과, 미정의 CSS 변수 2종(--page-bg 3곳, --purple 5곳)을 정의된 토큰으로 교체해 갤러리 업로드 thumb 배경과 캘린더 활성 버튼 보더/텍스트가 브라우저 기본값으로 떨어지던 잠재 버그 해소. 이외 JS 구문, DOM ID 중복, 엔드포인트·자산 로드 모두 클린 확인.",
+    "changes": [
+      "css/style.css: var(--page-bg) 3곳 → var(--bg) (갤러리 업로드 thumb 등 배경 색상). var(--purple) 5곳 → var(--scouting-purple) (캘린더 활성 뷰 버튼 보더/텍스트).",
+      "검토 결과: P0 이슈 0 · 열린 이슈 0. 공개 15개 엔드포인트 모두 HTTP 200. API 8개 헬스 정상(/api/settings/editors만 401 by design). CSS/JS 자산 전부 200. Google Sans Flex import 200. JS 14개 파일 구문 오류 0. HTML 15개 파일 중복 ID 0. 인코딩 문제 없음.",
+      "사이트 버전 00.124.03 → 00.124.04."
+    ]
+  },
+  {
     "version": "03.088.03",
     "date": "2026-04-19",
     "released_at": "2026-04-19 23:05:00 KST",
