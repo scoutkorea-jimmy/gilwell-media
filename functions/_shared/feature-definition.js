@@ -600,6 +600,67 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - \`.mkt-period-bar\` → \`.v3-period-bar\` 일반화 과정에서 마케팅 측 markup을 바꾸지는 않았다. CSS 선택자에 comma로 \`.v3-period-bar\`를 추가해 양쪽이 같은 스타일을 공유하도록 했다. 향후 마케팅도 \`.v3-*\`로 옮기거나 그대로 두거나 선택 가능.
 - 대시보드 히트맵의 "전체(all)" 프리셋은 \`days\` 파라미터로 표현할 수 없어 \`heatmap_all=1\` 전용 쿼리를 쓴다. 이 예외는 \`_bindPeriodBar\`를 쓰지 않고 기존 \`_dashboardHeatmapMode\` 상태 머신을 유지했다.
 
+### 3.12 태그 인사이트 패널 (panel-analytics-tags)
+
+#### 기능 세부 설명
+
+관리자 사이드바 \`태그 인사이트\` 메뉴(2026-04-19 분리). 전용 API \`GET /api/admin/tag-insights\` + 공용 분석 모듈 \`functions/_shared/tag-insights.js\` + 오프라인 스크립트 \`scripts/tag-analysis/*.mjs\`가 동일 로직을 공유한다.
+
+**5개 섹션 순서 (위→아래):**
+
+1. **태그 관계도** — 상호작용 중심 카드. 상세는 아래 §관계도.
+2. **기초 통계** — 전체 기사 수 / 고유 글머리 태그 / 고유 메타 태그 / 평균 메타 태그·기사. 글머리 태그 상위 10 + \`category\`별 평균 메타 태그(SEO 편차 점검) + 메타 태그 상위 20 + 하위 10. 각 표에 **더보기 모달**(페이지네이션 30/페이지) 버튼으로 전체 순위 열람.
+3. **태그 체계 건강성 진단** — 1회 등장 고립 태그 / 과다 등장 태그(전체의 30% 이상) / 중복 의심 태그 쌍(편집거리 + 부분 포함 heuristic) / 고립 군집(2~5개 소규모 연결 컴포넌트). 모든 항목 **사람 검토 필요**. 자동 통합/삭제 금지.
+4. **콘텐츠 축적 현황** — 글머리 태그별 누적(category 분포 포함) 15 + 더보기 모달, 최근 12개월 월별 발행 추세, 전략적 보강 필요(기사 ≤5건인 글머리).
+5. **SEO/AEO 클러스터 + 신규 콘텐츠 제안** — 허브-스포크 클러스터 상위 5(각 허브의 상위 8 공출현 스포크) + 기사 수 부족 글머리 태그 목록 + 신규 콘텐츠 제안 10건(공출현 기반 휴리스틱, 우선순위 상/중/하). 모든 제안 \`human_review_required\`.
+
+**태그 관계도 (§2) 상호작용:**
+
+| 축 | 표현 |
+|---|---|
+| 노드 크기 | 등장 빈도(count) 비례, r = 10~32px |
+| 노드 색 | 우세 글머리 태그 기준 **KMS 브랜드 10색**(scouting-purple · midnight-purple · forest-green · ocean-blue · fire-red · blossom-pink · ember-orange · river-blue · leaf-green · gray-700 fallback). SVG fill은 CSS var() 해석 불가라 hex 유지(§3.10 Leaflet 예외와 동일). |
+| 링크 굵기 | count/maxLinkCount 비선형(\`0.6 + r^0.55 × 5\`) 0.6~5.6px. 약한 연결은 얇고 강한 연결은 훨씬 굵게. |
+| 링크 색 | **count 기반 흑백 연속 그라데이션** — \`rgb(v,v,v) where v = 196 - (196-31) * r^0.55\`. 밝은 회색(\`--gray-300\`) → \`--ink\` 검정. 추가로 opacity 0.35~0.80 power 곡선. |
+| 가장 약한 연결 | 하위 15%(또는 count=1)는 **점선**(\`stroke-dasharray="4 3"\`). |
+| 라벨 | 상위 25개(\`isPrimary\`)만 항상 표시, 나머지 55개는 hover/spotlight 시 노출. halo 렌더(\`paint-order: stroke fill\` + 흰 stroke 3px)로 배경 무관 가독성. |
+
+**상호작용:**
+
+- **마우스 휠 / 핀치 줌** — 커서 위치를 고정점으로 0.25x~4x 확대/축소. 2손가락 핀치 Pointer Events 2개 추적.
+- **빈 공간 드래그** — 화면 pan.
+- **노드 드래그** — 재배치. 3px 이동 임계값으로 드래그 확정, 미만이면 click으로 간주.
+- **노드 클릭** — 해당 태그가 포함된 기사 목록 모달(\`/api/posts?tag=X&page=N&limit=20&scope=admin\`, 20건/페이지 서버 페이지네이션). 제목/subtitle/category 뱃지/공개 여부/발행/조회/글머리/공개 링크(\`/post/<id>\` 새 탭)/관리자 미리보기(\`V3.openPostPreview\`) 포함.
+- **hover** — 해당 노드 + 직접 이웃 라벨 노출 + 링크 Scouting Purple 강조 + 비이웃 dim.
+- **상단 태그 검색 input** — 부분 일치(case-insensitive)로 노드 스팟라이트(매칭+이웃만 밝게, 나머지 dim). 180ms debounce. hover가 spotlight를 일시 덮어씀(커서 떠나면 spotlight 복귀).
+- **원위치 버튼** — zoom/pan 리셋.
+
+**반응형:**
+
+- 데스크톱(>700px): 노드 80개 + 상위 25개 라벨 항상.
+- 모바일(≤700px): 노드 50개 + 상위 15개 라벨. 라벨 폰트 키움(\`--fs-caption\`/primary \`--fs-body\`). hint 세로 flex. SVG max-height 78vh→68vh.
+
+**힘 시뮬레이션 (초기 배치):**
+
+- viewBox 1280×720, 시드 RNG 랜덤 초기 위치.
+- 500 iteration, alpha 감쇠.
+- repulsion \`2800/d²\` (primary끼리는 \`4200/d²\`로 라벨 공간 확보).
+- link spring desired 130px, weight boost \`1 + r×1.8\`.
+- center gravity 0.001, damping 0.75.
+- 경계 clamp(좌우 60px·상하 24px 여백).
+
+**오프라인 동등성:**
+
+- \`scripts/tag-analysis/01_export.mjs\` (D1 → JSON) → \`02_tokenize.mjs\` → \`03_statistics.mjs\` (§1만) / \`04_run_all.mjs\` (5 산출물 전체).
+- 산출물: \`output/tag-analysis/01_statistics.md\` · \`02_graph.json\` · \`02_graph.html\`(D3.js v7 인터랙티브) · \`03_health_check.md\` · \`04_coverage_map.md\` · \`05_next_actions.md\`.
+- 공용 \`buildTagInsights()\`를 서버(API)와 Node 스크립트 양쪽에서 import — 로직 단일 진실 원본.
+
+#### 각주
+
+- 태그 이름은 원문 보존. 한 기사 내 중복만 제거, 전체 집계는 원문 그대로. \`청소년활\` vs \`청소년활동\` 같은 오타/유사어도 자동 병합하지 않고 중복 의심 쌍으로만 플래그.
+- SVG \`fill\`/\`stroke\` 속성은 CSS var() 해석 불가라 palette는 hex 문자열로 유지(§3.10 Leaflet 팔레트 예외와 동일 패턴).
+- 2026-04-19 분석 기준(전체 151건): 고유 글머리 39개, 고유 메타 611개, 1회 등장 고립 태그 468개(76.6%). 주요 허브: 스카우트(46) · 세계스카우트연맹(39) · 한국스카우트연맹(28) · 스카우트운동(23).
+
 ## 4. 마케팅 대시보드
 
 ### 4.1 의도
@@ -996,7 +1057,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - \`GET/PUT /api/settings/feature-definition\` — KMS 문서
 
 **분석 (방문 분석 + 태그 인사이트 · 2026-04-19 사이드바 2메뉴 분리)**
-- \`GET /api/admin/analytics\` — 관리자 통계 엔드포인트. 사이드바는 \`방문 분석\`(\`panel-analytics-visits\`, 자동 새로고침 30초)과 \`태그 인사이트\`(\`panel-analytics-tags\`, 수동 새로고침) 두 패널이 공유한다. 방문 분석은 \`days\`/\`start\`/\`end\`(프리셋+커스텀 범위)로 기간을 지정하고 오늘 방문·조회, 기간 합계, 인기 기사, 유입 경로, 평균 체류, 유입 해석 노트를 받는다. 태그 인사이트는 \`tag_days\`/\`tag_start\`/\`tag_end\` 프리픽스로 독립 기간을 지정하고 태그 워드 클라우드와 관계도(\`data.tags\`/\`data.tags.graph\`)만 받는다. 방문/조회 집계는 원래 쿼리에 포함되지만 태그 패널은 해당 섹션을 렌더하지 않는다. 방문 히트맵은 월요일부터 일요일까지 시간대별 방문 집중도를 진한색/옅은색으로 보여주고, 셀 우상단에는 같은 시간대의 공개 게시글 발행 수를 함께 표시한다. 히트맵 기간은 \`1주\`, \`1개월\`, \`직접 지정\`, \`전체\`로 독립 조절되며, 모바일에서는 가로 스크롤로 전체 시간대를 탐색할 수 있다. 태그 인사이트 기간은 방문 분석 기간과 별도로 조절할 수 있고, 관계도는 \`글머리 태그 + 메타 태그\`를 합친 키워드 중심 그래프로 동작한다. 연결선은 기본적으로 보이고 hover 시 관련 관계가 더 선명해지며, 키워드를 클릭하면 선택 상태가 유지된 채 관련 기사 모달이 열린다. 다른 영역을 클릭하면 선택이 해제된다. 워드 클라우드 크기는 기사 수와 관련 기사 조회수를 함께 반영하며, 그래프는 drag/zoom 상호작용을 지원한다. 분석 패널은 \`마지막 갱신 시각\`을 표시하고 \`30초 자동 새로고침\`을 지원하며, 카카오/페이스북 유입은 UTM과 리퍼러를 기준으로 최대한 분리하되 앱 브라우저가 정보를 넘기지 않으면 \`직접 방문\`으로 잡힐 수 있다는 안내를 함께 노출한다.
+- \`GET /api/admin/analytics\` — 방문 분석 전용 엔드포인트(\`panel-analytics-visits\`). \`days\`/\`start\`/\`end\` (프리셋+커스텀 범위) + \`tag_*\` 프리픽스 동시 허용. 오늘 방문·조회, 기간 합계, 인기 기사, 유입 경로, 평균 체류, 방문 히트맵(월~일 × 시간대, 셀 우상단에 같은 시간대 공개 게시글 발행 수), 유입 해석 노트(UTM + 리퍼러 기반으로 카카오톡/페이스북/검색/직접 세분화). 히트맵 기간은 \`1주\` · \`1개월\` · \`직접 지정\` · \`전체\` 독립 조절. \`panel-analytics-visits\`는 \`마지막 갱신 시각\`을 표시하고 \`30초 자동 새로고침\`을 지원한다.
+- \`GET /api/admin/tag-insights\` — **태그 인사이트 전용 엔드포인트**(\`panel-analytics-tags\`, 2026-04-19 신설). \`days\`/\`start\`/\`end\`/\`all=1\` 파라미터. \`functions/_shared/tag-insights.js\` \`buildTagInsights()\` 공용 모듈이 \`published=1\` posts에서 \`tag\`(글머리) + \`meta_tags\`(메타) 필드를 쉼표로 토큰화해 계산. 반환: \`statistics\`(전체/누락/고유/평균/카테고리별 평균) · \`header_ranking\` · \`meta_ranking\`(태그별 등장 수 + 우세 글머리/카테고리) · \`graph{ nodes, links }\`(메타 태그 공출현) · \`health{ isolated_tags, overly_common, duplicate_suspects, isolated_clusters }\`(모두 \`human_review_required\` 플래그) · \`coverage{ by_header, monthly, gaps }\` · \`suggestions{ hub_clusters, thin_headers, suggestions }\`(휴리스틱 콘텐츠 제안). 같은 모듈이 \`scripts/tag-analysis/*.mjs\`에서 오프라인 분석 산출물(\`output/tag-analysis/01~05_*.md\` + \`02_graph.html\` D3.js)을 생성한다.
 - \`GET /api/admin/geo-audience\` — 관리자 접속 국가/도시 지도 및 테이블 집계
 - \`GET /api/admin/marketing\` — 마케팅 퍼널 데이터
 - \`GET /api/admin/operations\` — 운영 대시보드/릴리스 이력

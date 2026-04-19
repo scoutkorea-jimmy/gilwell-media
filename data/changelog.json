@@ -1,6 +1,18 @@
 {
   "items": [
   {
+      "version": "03.079.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:44:55 KST",
+      "summary": "KMS 현행화 — 태그 인사이트 전면 개편(§3.12 신설) + §8 API 레퍼런스의 /api/admin/tag-insights 신규 서술.",
+      "changes": [
+        "KMS §3.12 '태그 인사이트 패널(panel-analytics-tags)' 신설 — 5개 섹션 순서(관계도/기초 통계/건강성/커버리지/제안), 관계도 시각 규약(노드 색=KMS 브랜드 10색, 노드 크기=빈도, 링크 굵기=비선형 power 곡선, 링크 색=count 기반 흑백 연속 그라데이션 rgb(196-(196-31)*r^0.55), 약한 연결=stroke-dasharray 점선, 라벨 티어링 상위 25 primary + halo), 상호작용(마우스 휠·핀치·빈 공간 pan·노드 드래그/클릭·hover·태그 검색 스팟라이트·원위치), 반응형(모바일 50노드/15라벨), 힘 시뮬레이션 파라미터(viewBox 1280x720, 500 iter, repulsion 2800/4200, link spring 130px), 오프라인 동등성(scripts/tag-analysis). 각주에 브랜드 컬러 사용 이유 + SVG var() 예외 근거 + 2026-04-19 분석 기준 주요 수치 기록.",
+        "KMS §8 API 레퍼런스: /api/admin/analytics 서술을 '방문 분석 전용'으로 축소 명시. /api/admin/tag-insights 신규 항목 추가 — functions/_shared/tag-insights.js buildTagInsights() 공용 모듈로 statistics·header_ranking·meta_ranking·graph·health·coverage·suggestions 7개 섹션 반환. 서버 API와 Node 스크립트가 동일 모듈 import하는 단일 진실 원본 구조.",
+        "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 39,662 → 43,839자(+4,177자).",
+        "관리자 버전 03.079.00 → 03.079.01."
+      ]
+    },
+  {
       "version": "03.079.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:39:03 KST",
