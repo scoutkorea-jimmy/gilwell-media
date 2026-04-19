@@ -8216,15 +8216,14 @@ footer a:hover { color: var(--white); }
 /* ── Masthead search ── */
 .masthead-search { display: flex; align-items: center; gap: 0; margin-top: 6px; }
 .mh-search-input {
-  width: 0; padding: 5px 0;
-  border: none; border-bottom: 1px solid transparent;
+  width: 140px; padding: 5px var(--gap-tight);
+  border: none; border-bottom: 1px solid var(--gray-300);
   background: transparent;
   font-family: NixgonFont, sans-serif; font-size: 11px;
-  color: var(--ink); outline: none; overflow: hidden;
-  transition: width 0.25s ease, border-color 0.25s, padding 0.25s;
+  color: var(--ink); outline: none;
+  transition: border-color 0.2s;
 }
-.masthead-search:focus-within .mh-search-input,
-.mh-search-input:focus { width: 160px; padding: 5px var(--gap-tight); border-bottom-color: var(--ink); }
+.mh-search-input:focus { border-bottom-color: var(--ink); }
 .mh-search-btn {
   padding: 5px 6px; border: none;
   background: none; cursor: pointer;
