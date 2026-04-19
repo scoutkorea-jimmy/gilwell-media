@@ -27,7 +27,50 @@ scope: project
 > AI는 코드를 한 줄이라도 수정하기 전에 아래 절차를 수행한다.
 > 이 절차를 건너뛰면 안 된다.
 
-### Step 0 — P0 사이트 오류·이슈 점검 (신규 작업 전 필수)
+### Step 0 — 로컬/원격 Git 동기화 점검
+
+> [!danger] 잘못된 코드 베이스 위에서 작업하는 것을 방지
+> 로컬과 `origin/main`이 diverged 상태이면 이미 배포된 코드와 다른 기반 위에서 작업하게 된다. **반드시 먼저 확인하고, 차이가 있으면 사용자에게 어떻게 할지 물어본다.**
+
+**점검 명령:**
+```bash
+git fetch origin
+git status
+git log --oneline origin/main..HEAD   # 로컬에만 있는 커밋 (ahead)
+git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
+```
+
+**결과별 행동:**
+
+| 상태 | 조건 | AI 행동 |
+|---|---|---|
+| 동기화됨 | `Your branch is up to date with 'origin/main'` | 바로 다음 Step 진행 |
+| 로컬만 ahead | 로컬 커밋이 원격에 없음 | 사용자에게 보고 + 선택 요청 |
+| 원격만 ahead | 원격 커밋이 로컬에 없음 | 사용자에게 보고 + 선택 요청 |
+| Diverged | 양쪽 모두 독자 커밋 존재 | 사용자에게 보고 + 선택 요청 |
+
+**차이 발견 시 보고 템플릿:**
+```
+📋 Git 동기화 상태: [diverged / 로컬 ahead N커밋 / 원격 ahead N커밋]
+
+• 로컬에만 있는 커밋: [목록 또는 없음]
+• 원격에만 있는 커밋: [목록 또는 없음]
+
+어떻게 진행할까요?
+  1. 원격 우선 — 로컬 변경 버리고 origin/main 완전 동기화
+     (git fetch origin && git reset --hard origin/main)
+     ⚠ 로컬 커밋이 있을 경우 영구 삭제됩니다.
+  2. 로컬 우선 — 로컬 상태 그대로 원격에 push
+     (git push origin main)
+  3. 병합 시도 — git pull로 두 브랜치 병합
+     ⚠ 충돌 발생 가능성이 있습니다.
+  4. 무시하고 진행 — 현재 로컬 상태 그대로 작업
+```
+
+- 사용자가 **명시적으로 선택**한 옵션만 실행. 묵시적 처리 금지.
+- 사용자가 "무시하고 진행해"라고 명시한 경우에만 Step 0 건너뜀 가능.
+
+### Step 1 — P0 사이트 오류·이슈 점검 (신규 작업 전 필수)
 
 > [!danger] P0 이슈 처리가 신규 작업보다 우선
 > `homepage_issues` 테이블에 `status IN ('open','monitoring')` + `severity IN ('high','critical')`인 항목이 있으면 **신규 작업을 멈추고 이것부터 해결**한다. KMS §0.2.2에 명문화됨.
@@ -40,9 +83,9 @@ scope: project
 - P0 이슈 없으면: 신규 요청 바로 진행
 - 사용자가 "P0 무시하고 신규만 진행해"라고 명시한 경우에만 예외. 묵시적 우선순위 변경 금지.
 
-### Step 1 — Target 식별
+### Step 2 — Target 식별
 
-모든 작업은 다음 4개 타겟 중 **정확히 하나**에 속한다. (복수 타겟 걸침은 Step 2에서 선언)
+모든 작업은 다음 4개 타겟 중 **정확히 하나**에 속한다. (복수 타겟 걸침은 Step 3에서 선언)
 
 | Target | 범위 | 대표 파일 |
 |---|---|---|
@@ -51,7 +94,7 @@ scope: project
 | **KMS** | 운영 기준 원본 (Knowledge Management) | `admin.html` → KMS 메뉴, `kms.html`, `docs/feature-definition.md` |
 | **Dreampath** | CUFS 내부 앱 (별도 도메인) | `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/*` |
 
-### Step 2 — Target 확인 응답
+### Step 3 — Target 확인 응답
 
 | 상황 | AI 행동 |
 |---|---|
@@ -69,7 +112,7 @@ scope: project
   4. Dreampath — CUFS 내부 앱
 ```
 
-### Step 3 — Target별 규칙 로드
+### Step 4 — Target별 규칙 로드
 
 타겟 확정 후 이 문서의 해당 `§` 섹션만 적용한다. **타겟 간 규칙 혼용 금지.**
 
@@ -80,7 +123,7 @@ scope: project
 | KMS | `§1` + `§4` | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
 | Dreampath | `§1` + `§5` | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
 
-### Step 4 — 경계 검증
+### Step 5 — 경계 검증
 
 > [!warning] 절대 경계
 > - Site/Admin 작업에 **Dreampath 규칙(IIFE, `DP.` 프리픽스, `dp_` 테이블, Tiptap 등)** 적용 금지
@@ -95,6 +138,7 @@ scope: project
 
 ### Interaction Checklist
 
+- [ ] Git 동기화 상태를 확인했는가? 차이가 있으면 사용자에게 물었는가?
 - [ ] 타겟을 식별했는가?
 - [ ] 모호하면 질문, 명확하면 선언했는가?
 - [ ] 해당 `§` 섹션만 참조했는가?
