@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.126.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 00:15:00 KST",
+    "summary": "BulletPoint 근본 수정 + 기사 수정 모달을 공개 작성 모달(V3 카드 레이아웃)과 동일하게 통일 + 북마크·최근 본 기사·다크 모드·BreadcrumbList JSON-LD 동시 추가.",
+    "changes": [
+      "BulletPoint 근본 수정: renderEditorListItems()가 item.content 앞뒤 공백·개행을 trim하도록 변경. 원인: Editor.js가 저장하는 list 항목 끝에 \\n이 들어가면 sanitizer가 <br>로 변환하면서 bullet 옆 첫 줄이 비워져 텍스트가 새 줄에 표시되던 현상. server(functions/post/[id].js) + client(js/main.js) 양쪽 동일 수정.",
+      "기사 수정 모달을 공개 작성 모달과 동일한 V3 카드 레이아웃으로 재작성: .bw-box 클래스 추가, .bw-header(카테고리 배지+부제+제목+close), .bw-layout > .bw-main, 7개 .bw-card 섹션(기본 정보 / 게시 시각·링크 / 글머리 태그 / 대표 이미지·SEO / 본문 / 슬라이드 / 위치 collapsible / 유관기사·옵션), .bw-footer sticky. 기존 .post-edit-box의 760px/padding 36px 오버라이드 제거해 V3 기본 1200px 2-col 통일.",
+      "북마크 기능: GW.bookmarks.toggle/list/has/remove/clear (localStorage gw_bookmarks, 최대 50). 기사 상세 공유 옆 🔖 저장 버튼(aria-pressed 상태 sync). 홈 하단 '저장한 기사' 레일.",
+      "최근 본 기사: GW.recent.push/list/clear (localStorage gw_recent, 최대 10 LRU). 기사 페이지 진입 시 자동 기록. 홈 하단 '최근 본 기사' 레일. 저장·최근이 모두 비면 section data-empty=1으로 자동 숨김.",
+      "다크 모드: :root[data-theme=dark] 토큰 오버라이드(bg/ink/border 반전 + 브랜드 팔레트 10색 다크 배경용 밝기 보정). 마스트헤드 우측 🌙/☀️ 토글 버튼 자동 주입. prefers-color-scheme:dark 기본값 존중, localStorage gw_theme 저장.",
+      "BreadcrumbList JSON-LD: /post/:id 페이지에 schema.org BreadcrumbList 구조화 데이터(홈→카테고리→기사) 추가. 기존 Article JSON-LD와 별도 <script type=\"application/ld+json\"> 블록으로 주입 → Google 검색 결과 breadcrumb 풍부화.",
+      "사이트 버전 00.125.00 → 00.126.00."
+    ]
+  },
+  {
     "version": "00.125.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 24:05:00 KST",
