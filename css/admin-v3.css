@@ -167,21 +167,21 @@
   background: var(--v3-content-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* 굵기·숫자 정렬 일관화 — 한글(system KR)과 영문(Flex) 혼용 시에도 시각 균형 확보.
-     Flex wght +60 오프셋 적용 (한글 대비 가벼워 보이는 현상 보정) */
+  /* 한·영 혼용 시각 균형 3중 캘리브레이션 — x-height 축소 + wght 오프셋 + 숫자 등폭 */
   font-optical-sizing: auto;
   font-feature-settings: 'tnum' 1, 'lnum' 1;
   font-synthesis-weight: none;
   text-rendering: optimizeLegibility;
-  font-variation-settings: 'wght' 560, 'opsz' auto;
+  font-variation-settings: 'wght' 540, 'opsz' auto;
+  font-size-adjust: 0.50;
   height: 100vh; overflow: hidden;
 }
-/* 관리자 헤딩·강조도 Flex wght +20 오프셋 */
+/* 관리자 헤딩·강조 — Flex가 축소돼도 Bold 수준 유지 */
 .admin-v3 h1, .admin-v3 h2, .admin-v3 h3, .admin-v3 h4, .admin-v3 h5,
 .admin-v3 strong, .admin-v3 b,
 .admin-v3 .v3-card-title, .admin-v3 .v3-page-title,
 .admin-v3 .v3-stat-value {
-  font-variation-settings: 'wght' 720, 'opsz' auto;
+  font-variation-settings: 'wght' 700, 'opsz' auto;
 }
 .admin-v3 input, .admin-v3 button, .admin-v3 select, .admin-v3 textarea { font: inherit; }
 .admin-v3 button,
