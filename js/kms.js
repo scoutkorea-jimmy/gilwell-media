@@ -568,17 +568,17 @@
   }
 
   // ── 탭 ↔ URL 매핑 ─────────────────────────────────────────────
-  var TAB_PATHS = { docs: '/kms/function', api: '/kms/api', changelog: '/kms/version', design: '/kms/design' };
+  var TAB_PATHS = { docs: '/kms/function', api: '/kms/api', changelog: '/kms/version', design: '/kms/design', editorial: '/kms/editorial' };
 
   function _tabFromPath(pathname) {
-    var map = { '/kms/function': 'docs', '/kms/api': 'api', '/kms/version': 'changelog', '/kms/design': 'design' };
+    var map = { '/kms/function': 'docs', '/kms/api': 'api', '/kms/version': 'changelog', '/kms/design': 'design', '/kms/editorial': 'editorial' };
     return map[pathname] || 'docs';
   }
 
   // ── 탭 시스템 ─────────────────────────────────────────────────
   function setTab(tab, skipPush) {
     _state.tab = tab;
-    var panels = ['docs', 'api', 'changelog', 'design'];
+    var panels = ['docs', 'api', 'changelog', 'design', 'editorial'];
     panels.forEach(function (id) {
       var panel = document.getElementById('kms-tab-' + id);
       if (panel) panel.hidden = id !== tab;
@@ -605,6 +605,7 @@
     if (tab === 'api') renderApiSectionList();
     else if (tab === 'changelog') clearSectionList();
     else if (tab === 'design') { renderDesignSystem(); renderDesignSectionList(); }
+    else if (tab === 'editorial') clearSectionList();
     else renderSectionList(_state.docContent);
   }
 
