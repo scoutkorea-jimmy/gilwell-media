@@ -208,12 +208,13 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 ### 3.1 기본 서체와 타이포
 
 #### 기능 세부 설명
-- **언어별 서체 이원화 원칙** (2026-04-19 확정):
+- **언어별 서체 삼중화 원칙** (2026-04-19 확정 · 2026-04-20 Cyrillic 폴백 추가):
   - **Latin(영문·숫자·기호)**: [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex) variable font (opsz 6..144 · wght 1..1000). Google Fonts `@import`로 로드.
+  - **Cyrillic(러시아/우크라이나/불가리아/세르비아 등)**: [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) (300/500/700). Google Sans Flex가 Cyrillic subset을 제공하지 않아 해외 연맹 기사(예: 우크라이나 스카우트 플라스트)에서 시스템 폰트로 폴백되어 리듬이 깨지던 문제를 해결. Google CSS API2가 unicode-range별 @font-face를 분리 제공하므로 **Cyrillic 글자가 실제로 포함된 페이지에서만** 해당 subset이 다운로드된다.
   - **한글(CJK)**: 공개 사이트 `NixgonFont` (300/500/700), 관리자 콘솔 V3 시스템 서체(`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`).
-  - 브라우저 글립 폴백 메커니즘으로 자동 분리: Google Sans Flex가 Latin만 지원 → 한글 글립은 두 번째 폰트로 자연 폴백.
+  - 브라우저 글립 폴백 메커니즘으로 자동 분리: Latin → Google Sans Flex, Cyrillic → Noto Sans, 한글/CJK → NixgonFont(또는 시스템).
 - `font-family` 체인은 **항상 Google Sans Flex를 첫 번째**에 둔다. KMS/공개/관리자 전 영역 공통.
-  - 공개: `'Google Sans Flex', NixgonFont, sans-serif`
+  - 공개: `'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif`
   - 관리자 V3: `'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
 - **한·영 시각 균형 3중 캘리브레이션** (`html, body` / `.admin-v3`):
   - `font-size-adjust: 0.50` — Flex의 x-height 비율을 Nixgon 쪽에 맞춰 자동 축소(Chrome 116+/Safari 17+/Firefox 3+).
@@ -231,6 +232,8 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 ```css
 /* 영문 전용 서체 (style.css / admin-v3.css / admin.css 상단) */
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+/* 키릴문자 폴백 — Noto Sans (unicode-range 분리, Cyrillic 포함 페이지만 다운로드) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;500;700&display=swap');
 
 /* 한글 @font-face (공개 사이트) */
 @font-face {
@@ -243,7 +246,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 
 /* 전역 한·영 균형 캘리브레이션 */
 html, body {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-weight: 500;
   word-break: keep-all;
   line-height: 1.75;

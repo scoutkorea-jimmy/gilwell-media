@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.127.02",
+    "date": "2026-04-20",
+    "released_at": "2026-04-20 02:10:00 KST",
+    "summary": "키릴문자(러시아·우크라이나·불가리아·세르비아 등) 폰트 폴백 추가. Google Sans Flex가 Cyrillic subset을 제공하지 않아 우크라이나 스카우트 기사(플라스트 선서 пластун, бути вірним Богові і Україні 등)에서 시스템 폰트로 폴백되며 본문 리듬이 깨지던 문제 해결.",
+    "changes": [
+      "css/style.css에 Noto Sans @import 추가. Google Sans Flex와 같은 Google 휴머니스트 기하학적 sans-serif로 계보 유사, 풀 Cyrillic 커버리지 보유. Google CSS API2가 unicode-range별 @font-face를 분리 제공하므로 Cyrillic 글자가 실제 포함된 페이지에서만 해당 subset(~10KB)이 다운로드됨.",
+      "공개 사이트 font-family 체인 263곳 갱신: 'Google Sans Flex', NixgonFont → 'Google Sans Flex', 'Noto Sans', NixgonFont. Latin은 Google Sans Flex, Cyrillic은 Noto Sans, 한글/CJK는 NixgonFont 순으로 브라우저 glyph fallback.",
+      "공개 HTML 인라인 스타일 반영: index.html, calendar.html, search.html, 404.html.",
+      "SSR 템플릿 반영: functions/post/[id].js, functions/feature/[category]/[slug].js, functions/_shared/feature-definition.js.",
+      "사이트 버전 00.127.01 → 00.127.02."
+    ]
+  },
+  {
+    "version": "03.089.02",
+    "date": "2026-04-20",
+    "released_at": "2026-04-20 02:10:00 KST",
+    "summary": "관리자 콘솔에도 키릴문자 폰트 폴백(Noto Sans) 적용. KMS §3.1 '언어별 서체 이원화'를 '삼중화(Latin / Cyrillic / CJK)'로 확장.",
+    "changes": [
+      "css/admin.css + css/admin-v3.css에 Noto Sans @import 추가. 관리자에서 해외 연맹 기사 제목·본문 미리보기 편집 시에도 키릴문자가 시스템 폰트로 폴백되지 않고 일관된 리듬 유지.",
+      "docs/feature-definition.md §3.1 확장: 언어별 서체 이원화 → 삼중화. Latin=Google Sans Flex / Cyrillic=Noto Sans (300/500/700) / 한글=NixgonFont. 코드 예시에 Noto Sans @import 병기.",
+      "D1 settings.feature_definition 갱신 — 관리자 KMS 탭이 즉시 반영.",
+      "관리자 버전 03.089.01 → 03.089.02."
+    ]
+  },
+  {
     "version": "03.089.01",
     "date": "2026-04-19",
     "released_at": "2026-04-20 01:40:00 KST",
