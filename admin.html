@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419021835">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419023108">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.074.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.075.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.116.01</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.074.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.075.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.116.01</span></span></div>
     </div>
     <div class="v3-kms-quick">
@@ -118,9 +118,13 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
           대시보드
         </button>
-        <button class="v3-nav-item" data-panel="analytics">
+        <button class="v3-nav-item" data-panel="analytics-visits">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
-          분석
+          방문 분석
+        </button>
+        <button class="v3-nav-item" data-panel="analytics-tags">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
+          태그 인사이트
         </button>
         <button class="v3-nav-item" data-panel="geo-audience">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
@@ -677,17 +681,15 @@
         </div>
       </div>
 
-      <!-- ════════════════════ ANALYTICS ════════════════════ -->
-      <div class="v3-panel" id="panel-analytics">
+      <!-- ════════════════════ ANALYTICS — VISITS ════════════════════ -->
+      <div class="v3-panel" id="panel-analytics-visits">
         <div class="v3-page-head">
           <div class="v3-page-head-left">
-            <h1 class="v3-page-title">분석</h1>
-            <p class="v3-page-desc">방문 통계, 조회수, 인기 콘텐츠와 태그·메타 태그 연결 흐름을 함께 봅니다.</p>
+            <h1 class="v3-page-title">방문 분석</h1>
+            <p class="v3-page-desc">방문·조회 통계, 인기 기사, 유입 경로를 기간별로 봅니다.</p>
           </div>
           <div class="v3-analytics-head-tools">
-            <!-- 통일 기간 선택: 마케팅과 동일 .v3-period-bar 패턴 -->
             <div class="v3-period-bar" data-v3-period-scope="analytics" aria-label="방문 분석 기간">
-              <span class="v3-period-bar-label">방문 분석</span>
               <div class="v3-presets">
                 <button type="button" class="v3-preset-btn" data-days="7">7일</button>
                 <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
@@ -697,20 +699,6 @@
                 <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="방문 분석 시작일" />
                 <span class="v3-date-sep">~</span>
                 <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="방문 분석 종료일" />
-                <button type="button" class="v3-apply-btn">조회</button>
-              </div>
-            </div>
-            <div class="v3-period-bar" data-v3-period-scope="analytics-tag" aria-label="태그 인사이트 기간">
-              <span class="v3-period-bar-label">태그 인사이트</span>
-              <div class="v3-presets">
-                <button type="button" class="v3-preset-btn" data-days="7">7일</button>
-                <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
-                <button type="button" class="v3-preset-btn" data-days="90">90일</button>
-              </div>
-              <div class="v3-date-range">
-                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="태그 인사이트 시작일" />
-                <span class="v3-date-sep">~</span>
-                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="태그 인사이트 종료일" />
                 <button type="button" class="v3-apply-btn">조회</button>
               </div>
             </div>
@@ -728,6 +716,35 @@
           <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
         <div id="analytics-body"></div>
+      </div>
+
+      <!-- ════════════════════ ANALYTICS — TAGS ════════════════════ -->
+      <div class="v3-panel" id="panel-analytics-tags">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">태그 인사이트</h1>
+            <p class="v3-page-desc">태그·메타 태그 사용 빈도, 워드 클라우드, 관계도를 기간별로 봅니다.</p>
+          </div>
+          <div class="v3-analytics-head-tools">
+            <div class="v3-period-bar" data-v3-period-scope="analytics-tag" aria-label="태그 인사이트 기간">
+              <div class="v3-presets">
+                <button type="button" class="v3-preset-btn" data-days="7">7일</button>
+                <button type="button" class="v3-preset-btn is-active" data-days="30">30일</button>
+                <button type="button" class="v3-preset-btn" data-days="90">90일</button>
+              </div>
+              <div class="v3-date-range">
+                <input type="date" class="v3-date-input-period" data-v3-role="start" aria-label="태그 인사이트 시작일" />
+                <span class="v3-date-sep">~</span>
+                <input type="date" class="v3-date-input-period" data-v3-role="end" aria-label="태그 인사이트 종료일" />
+                <button type="button" class="v3-apply-btn">조회</button>
+              </div>
+            </div>
+            <button class="v3-btn v3-btn-outline" id="analytics-tags-refresh-btn" type="button">새로고침</button>
+          </div>
+        </div>
+        <div id="analytics-tags-body">
+          <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+        </div>
       </div>
 
       <div class="v3-panel" id="panel-geo-audience">
@@ -1671,9 +1688,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419021835"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419021835"></script>
-<script src="/js/admin-v3.js?v=20260419021835"></script>
+<script src="/js/main.js?v=20260419023108"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419023108"></script>
+<script src="/js/admin-v3.js?v=20260419023108"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

@@ -1,6 +1,23 @@
 {
   "items": [
   {
+      "version": "03.075.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 11:30:35 KST",
+      "summary": "[사이드바 구조 변경] 관리자 '분석' 메뉴를 '방문 분석'과 '태그 인사이트' 두 개의 독립 사이드바 메뉴로 분리. 각 패널은 /api/admin/analytics 엔드포인트를 공유하되 필요한 데이터만 요청한다.",
+      "changes": [
+        "admin.html 사이드바: 기존 '분석' 1개 항목을 '방문 분석'(data-panel=analytics-visits)과 '태그 인사이트'(data-panel=analytics-tags) 2개로 분리. 태그 인사이트 전용 아이콘(연결된 노드 모양) 사용.",
+        "admin.html 패널: #panel-analytics를 #panel-analytics-visits(통계 + 인기 기사 + 유입 경로)와 #panel-analytics-tags(워드 클라우드 + 관계도)로 분리. 각 패널은 자체 .v3-period-bar를 가지며 서로 독립 기간 선택.",
+        "js/admin-v3.js: _loadAnalytics() → _loadAnalyticsVisits() + _loadAnalyticsTags() 분리. 방문 분석은 days/start/end만 요청, 태그 인사이트는 tag_days/tag_start/tag_end 프리픽스로 분리 요청. 자동 새로고침(30초)은 방문 분석 패널에 한정, 태그 인사이트는 수동 새로고침 버튼으로 충분.",
+        "_bindPeriodBar('analytics', ...) → _loadAnalyticsVisits / _bindPeriodBar('analytics-tag', ...) → _loadAnalyticsTags 로 각각 연결. 한쪽 기간 변경이 다른 쪽에 영향 없음.",
+        "V3.showPanel 라우팅: panel === 'analytics-visits' || 'analytics' → _loadAnalyticsVisits, panel === 'analytics-tags' → _loadAnalyticsTags. 기존 'analytics' 패널 ID 호환 유지(구 URL/북마크 대비).",
+        "PANEL_LABELS 업데이트: 'analytics-visits' → '방문 분석', 'analytics-tags' → '태그 인사이트'. breadcrumb이 패널에 따라 올바른 라벨 표시.",
+        "V3.refreshAnalytics → _loadAnalyticsVisits(), V3.refreshAnalyticsTags → _loadAnalyticsTags() 신규 공개 API.",
+        "KMS §2.2 + §8 API 레퍼런스 업데이트: 두 패널 분리 및 API 파라미터 프리픽스 규약 명시. snapshot/fallback/D1 세 곳 동기.",
+        "관리자 버전 03.074.00 → 03.075.00 (feature bump)."
+      ]
+    },
+  {
       "version": "00.116.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:17:44 KST",
