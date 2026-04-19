@@ -2690,6 +2690,43 @@ body.marketing-fullscreen-open { overflow: hidden; }
   opacity: 1;
 }
 
+/* ── 태그 인사이트 (panel-analytics-tags 전면 개편) ───────── */
+.v3-ti-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-section);
+}
+@media (max-width: 900px) {
+  .v3-ti-grid { grid-template-columns: 1fr; }
+}
+.v3-ti-subtitle {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--v3-text);
+  margin: 0 0 var(--gap-tight);
+}
+.v3-ti-subsection { margin-top: var(--gap-section); }
+.v3-ti-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--gap-element);
+}
+.v3-ti-hub-card {
+  padding: var(--gap-card);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  background: var(--v3-neutral-50);
+}
+.v3-ti-hub-head {
+  font-size: var(--v3-fs-dense);
+  margin-bottom: var(--gap-tight);
+  color: var(--v3-text);
+}
+.v3-ti-hub-card .v3-badge {
+  display: inline-flex;
+  margin-right: 2px;
+}
+
 /* v3-period-bar label prefix (e.g. "방문 분석", "태그 인사이트") */
 .v3-period-bar-label {
   font-size: var(--fs-meta);
