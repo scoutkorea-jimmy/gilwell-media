@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.121.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 19:55:00 KST",
+    "summary": "Full Access 관리자가 홈페이지 작성 모달에서 '이 계정은 태그 추가 권한이 없습니다' 오류로 차단되던 문제 수정. admin_role 캐시가 비어 있을 때 서버 세션을 재확인해 권한을 복원합니다.",
+    "changes": [
+      "js/main.js GW.addManagedTagToCategory(): 클라이언트 단순 캐시 체크(GW.getAdminRole() === 'full') → 2단계 검증으로 교체. 1) getToken() 미존재 시 '관리자 로그인이 필요합니다' 반환. 2) 캐시 role이 'full'이 아니면 GW.verifyAdminSession({ force: true })로 서버 /api/admin/session 재조회 후 setAdminRole으로 동기화. 3) 동기화 후에도 full이 아니면 기존 에러 유지.",
+      "sessionStorage가 비어 있거나 admin_role 쿠키가 브라우저 정책으로 읽히지 않는 상태에서도, 서버 토큰이 유효하면 Full Access 권한이 정상 인식되도록 보정. 서버 측 auth.js verifyTokenRole(token, secret, 'full')가 단일 원본(source of truth)으로 남음.",
+      "js/post-page.js _postEdit()와 동일 패턴(verifyAdminSession({force:true}) → getAdminRole)으로 통일해 코드 베이스 일관성 확보.",
+      "사이트 버전 00.121.00 → 00.121.01."
+    ]
+  },
+  {
     "version": "00.121.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 19:45:00 KST",

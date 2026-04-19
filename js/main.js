@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.121.00';
+  GW.APP_VERSION = '00.121.01';
   GW.ADMIN_VERSION = '03.085.00';
-  GW.ASSET_VERSION = '20260419103617';
+  GW.ASSET_VERSION = '20260419104817';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -408,11 +408,25 @@
     if (!value) {
       return Promise.reject(new Error('태그명을 입력해주세요'));
     }
-    if (!(GW.getToken && GW.getToken() && GW.getAdminRole && GW.getAdminRole() === 'full')) {
-      return Promise.reject(new Error('이 계정은 태그 추가 권한이 없습니다'));
+    if (!(GW.getToken && GW.getToken())) {
+      return Promise.reject(new Error('관리자 로그인이 필요합니다'));
     }
 
-    return fetch('/api/settings/tags', { cache: 'no-store' })
+    // 세션을 서버에서 재확인하여 admin_role 캐시가 비어있거나 오래됐을 때에도
+    // Full Access 관리자는 차단되지 않도록 보정. (post-page.js _postEdit와 동일 패턴)
+    var sessionCheck = (GW.verifyAdminSession && GW.getAdminRole && GW.getAdminRole() !== 'full')
+      ? GW.verifyAdminSession({ force: true })
+      : Promise.resolve(true);
+
+    return sessionCheck.then(function (ok) {
+      if (ok === false) {
+        throw new Error('관리자 세션이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      if (GW.getAdminRole && GW.getAdminRole() !== 'full') {
+        throw new Error('이 계정은 태그 추가 권한이 없습니다');
+      }
+      return fetch('/api/settings/tags', { cache: 'no-store' });
+    })
       .then(function (response) {
         if (!response.ok) throw new Error('태그 설정을 불러오지 못했습니다');
         return response.json();
