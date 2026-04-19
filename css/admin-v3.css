@@ -134,6 +134,11 @@
   /* Badge specific bg (ink-violet와 동일 톤이지만 의미 구분용) */
   --v3-badge-site-bg:       #0d7a5f;  /* green-700 bg */
 
+  /* 동적 인라인 스타일 전용 (admin-v3.js에서 참조) */
+  --v3-ink-published:       #16a34a;  /* green-600 — "공개" 라벨 */
+  --v3-ink-destructive:     #ef4444;  /* red-500 — 삭제 버튼(브랜드 --v3-danger와 구분) */
+  --v3-chart-default:       #7c4dff;  /* violet — 차트 기본 fallback */
+
   /* Admin V3 전용 font-size (site --fs-* 토큰 사이 밀도 보정) */
   --v3-fs-xs:               11.5px;  /* xs 버튼·힌트 */
   --v3-fs-chip:             12.5px;  /* 칩·breadcrumb·탭 */

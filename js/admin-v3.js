@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.070.02
+ * Version: 03.071.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1001,7 +1001,7 @@
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
               '<div class="v3-recent-meta">' + GW.escapeHtml(GW.formatDate ? GW.formatDate(p.created_at) : (p.created_at || '')) +
-                ' · ' + (p.published ? '<span style="color:#16a34a;">공개</span>' : '비공개') + '</div>' +
+                ' · ' + (p.published ? '<span style="color:var(--v3-ink-published);">공개</span>' : '비공개') + '</div>' +
             '</div>' +
           '</div>';
         }).join('');
@@ -1013,7 +1013,7 @@
       } else {
         topEl.innerHTML = popular.map(function (p, i) {
           return '<div class="v3-recent-row" onclick="V3.openPostPreview(' + p.id + ')">' +
-            '<div style="font-size:11px;font-weight:700;color:#94a3b8;width:18px;flex-shrink:0;">' + (i + 1) + '</div>' +
+            '<div style="font-size:11px;font-weight:700;color:var(--v3-text-l);width:18px;flex-shrink:0;">' + (i + 1) + '</div>' +
             '<div class="v3-recent-info">' +
               '<div class="v3-recent-title">' + GW.escapeHtml(p.title || '') + '</div>' +
               '<div class="v3-recent-meta">조회 ' + _fmt(p.views || p.pageviews || 0) + '</div>' +
@@ -1348,7 +1348,7 @@
       var scheduled = operations.scheduled_posts || [];
       var drafts = operations.draft_posts || [];
       editorialEl.innerHTML =
-        '<div class="v3-text-s" style="margin-bottom:8px;color:#64748b;">발행 예정</div>' +
+        '<div class="v3-text-s" style="margin-bottom:8px;color:var(--v3-text-m);">발행 예정</div>' +
         _renderSimpleRows(scheduled, function (item) {
           return {
             title: item.title || '(제목 없음)',
@@ -1356,7 +1356,7 @@
             action: item.id ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.openPostPreview(' + item.id + ')">열기</button>' : '',
           };
         }, '발행 예정 글이 없습니다', '발행 예정 글') +
-        '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 초안</div>' +
+        '<div class="v3-text-s" style="margin:14px 0 8px;color:var(--v3-text-m);">최근 초안</div>' +
         _renderSimpleRows(drafts, function (item) {
           return {
             title: item.title || '(제목 없음)',
@@ -1369,7 +1369,7 @@
       var errors = operations.recent_errors || [];
       var logins = operations.recent_logins || [];
       alertsEl.innerHTML =
-        '<div class="v3-text-s" style="margin-bottom:8px;color:#64748b;">최근 API 오류</div>' +
+        '<div class="v3-text-s" style="margin-bottom:8px;color:var(--v3-text-m);">최근 API 오류</div>' +
         _renderSimpleRows(errors, function (item) {
           return {
             title: (item.message || item.type || '오류').slice(0, 80),
@@ -1377,7 +1377,7 @@
             action: '',
           };
         }, '최근 오류 로그가 없습니다', '최근 API 오류') +
-        '<div class="v3-text-s" style="margin:14px 0 8px;color:#64748b;">최근 로그인 시도</div>' +
+        '<div class="v3-text-s" style="margin:14px 0 8px;color:var(--v3-text-m);">최근 로그인 시도</div>' +
         _renderSimpleRows(logins, function (item) {
           return {
             title: item.message || item.type || '로그인 이벤트',
@@ -1496,7 +1496,7 @@
               '<td class="v3-nowrap">' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.editPost(' + p.id + ')">수정</button>' +
                 '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="event.stopPropagation(); V3.deletePost(' + p.id + ')">삭제</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="event.stopPropagation(); V3.deletePost(' + p.id + ')">삭제</button>' +
               '</td>' +
             '</tr>';
           }).join('');
@@ -1666,7 +1666,7 @@
               GW.escapeHtml(_formatDateTimeCompact(post.publish_at || post.created_at || '')) +
             '</div>' +
             (post.subtitle ? '<div class="v3-selected-post-subtitle" style="margin-top:8px;">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
-            (previewImageUrl ? '<img src="' + GW.escapeHtml(previewImageUrl) + '" alt="" style="width:100%;max-height:320px;object-fit:' + (previewImageIsPlaceholder ? 'contain' : 'cover') + ';background:#fff;border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;padding:' + (previewImageIsPlaceholder ? '18px' : '0') + ';">' : '') +
+            (previewImageUrl ? '<img src="' + GW.escapeHtml(previewImageUrl) + '" alt="" style="width:100%;max-height:320px;object-fit:' + (previewImageIsPlaceholder ? 'contain' : 'cover') + ';background:var(--v3-surface);border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;padding:' + (previewImageIsPlaceholder ? '18px' : '0') + ';">' : '') +
             '<div style="margin-top:16px;line-height:1.8;color:var(--v3-text);">' + contentHtml + '</div>' +
             galleryHtml +
           '</div>';
@@ -3687,6 +3687,11 @@
   }
 
   function _getGeoRegionTone(toneClass) {
+    // WOSM 지역연맹 팔레트. hex 값은 --gw-* 브랜드 토큰과 동일:
+    //   forest-green #248737 · leaf-green #9fed8f · ember-orange #ffae80 · fire-red #ff5655
+    //   ocean-blue #0094b4 · river-blue #82e6de · scouting-purple #622599 · blossom-pink #ffbdff
+    // stroke용 어두운 변형(#d97c45/#d94b4a/#007d99/#3b7f92)은 지도 경계선 가독성 보정값.
+    // Leaflet setStyle이 CSS var()를 직접 해석하지 못해 hex 문자열로 유지. 런타임 getComputedStyle 래핑은 별도 스코프.
     var key = String(toneClass || 'is-unassigned').trim();
     var tones = {
       'is-africa': { stroke: '#248737', fill: '#248737', opacity: 0.46, cityStroke: '#248737', cityFill: '#9fed8f', cityOpacity: 0.42 },
@@ -4411,7 +4416,7 @@
           h: h,
           value: column.totals[itemIndex],
           label: item.label || item.key || '',
-          color: item.color || '#7c4dff',
+          color: item.color || 'var(--v3-chart-default)',
           incomingOffset: 0,
           outgoingOffset: 0
         };
@@ -4641,9 +4646,9 @@
   }
 
   function _marketingStageColor(stage) {
-    if (stage === 'awareness') return '#ff8c42';
-    if (stage === 'interest') return '#2f9e44';
-    return '#e64980';
+    if (stage === 'awareness') return 'var(--v3-mkt-awareness)';
+    if (stage === 'interest') return 'var(--v3-mkt-interest)';
+    return 'var(--v3-mkt-consideration)';
   }
 
   function _trimMarketingTitle(value, limit) {
@@ -4739,7 +4744,7 @@
           '</div>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="V3._moveHero(' + i + ',1)" ' + (i === _heroPostIds.length - 1 ? 'disabled' : '') + '>↓</button>' +
-          '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="V3._removeHero(' + i + ')">×</button>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="V3._removeHero(' + i + ')">×</button>' +
         '</div>';
       }).join('');
     });
@@ -5576,7 +5581,7 @@
       return '<div class="v3-person-row">' +
         '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" style="flex:1;" />' +
         '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할" data-contrib-i="' + i + '" data-field="role" style="flex:1;" />' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:#ef4444;" onclick="V3._removeContrib(' + i + ')">×</button>' +
+        '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="V3._removeContrib(' + i + ')">×</button>' +
       '</div>';
     }).join('');
     // bind inputs
