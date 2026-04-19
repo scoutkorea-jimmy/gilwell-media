@@ -14,9 +14,17 @@ export async function onRequestGet({ request, env }) {
   }
 
   const url = new URL(request.url);
-  const days = Math.max(1, Math.min(180, Number(url.searchParams.get('days') || 30) || 30));
+  // 기간 선택 통일: days 프리셋 또는 custom start/end 둘 다 허용. 마케팅/분석/대시보드와 동일 규약.
+  const startParam = url.searchParams.get('start');
+  const endParam = url.searchParams.get('end');
   const today = getKstDateString(new Date());
-  const range = resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
+  let range;
+  if (startParam || endParam) {
+    range = resolveAnalyticsRange(startParam || today, endParam || today);
+  } else {
+    const days = Math.max(1, Math.min(180, Number(url.searchParams.get('days') || 30) || 30));
+    range = resolveAnalyticsRange(shiftKstDate(today, -(days - 1)), today);
+  }
 
   try {
     await ensureSiteVisitColumns(env);

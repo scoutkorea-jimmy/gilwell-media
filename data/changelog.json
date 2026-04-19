@@ -1,6 +1,35 @@
 {
   "items": [
   {
+      "version": "00.116.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 11:17:44 KST",
+      "summary": "[기간 선택 UX 통일] 관리자 분석·접속 국가/도시·대시보드의 기간 필터를 마케팅과 동일한 v3-period-bar(presets + custom date range + 조회) 패턴으로 전면 교체. geo-audience API에 start/end 커스텀 범위 파라미터 신규 지원.",
+      "changes": [
+        "css/admin-v3.css: .v3-period-bar / .v3-presets / .v3-preset-btn / .v3-date-range / .v3-date-input-period / .v3-date-sep / .v3-apply-btn 선택자를 마케팅의 .mkt-* 선택자에 comma로 합쳐 같은 스타일 규칙을 공유. hover/active/focus/busy/done/pressed 상태까지 전부 동일 톤.",
+        "admin.html 분석 패널: '방문 분석' / '태그 인사이트'의 select 드롭다운(최근 7일/30일/90일) 2개를 각각 .v3-period-bar 2개로 교체. 프리셋(7·30·90일) + 커스텀 날짜 범위 + 조회 버튼 구조.",
+        "admin.html 접속 국가/도시: select 드롭다운을 .v3-period-bar 1개로 교체.",
+        "admin.html 대시보드 히트맵: 기존 v3-dash-heatmap-controls를 .v3-period-bar 동일 markup으로 정리. preset은 7일/30일/전체(all) 유지하고 직접 지정 버튼 대신 항상 노출되는 date range + 조회 버튼. _dashboardHeatmapMode='custom' 전환은 apply 클릭 시 자동.",
+        "js/admin-v3.js: _bindPeriodBar(scope, onChange) 공용 헬퍼 추가 — preset/apply 클릭을 통일 API로 dispatch. 내부 이벤트 위임 safety net과도 호환. _loadAnalytics / _loadGeoAudience 내부의 document.getElementById('...-period').value 조회 로직을 제거하고 _analyticsPeriodState / _analyticsTagPeriodState / _geoAudiencePeriodState 상태 변수 기반 _periodQuery()/_periodLabel() 헬퍼로 재구성.",
+        "functions/api/admin/geo-audience.js: start/end 쿼리 파라미터 지원 신규 추가. days 프리셋 방식 유지(하위 호환). resolveAnalyticsRange(start, end) 경로 활성.",
+        "마케팅 페이지는 markup 변경 없음 — CSS 선택자만 comma로 v3-* 추가해 기존 .mkt-* 그대로 작동. 무중단 전환.",
+        "KMS §3.11 '통일 기간 선택 UI (v3-period-bar)' 신설 — DOM 표준, JS 바인딩 헬퍼, 서버 API 규약, 적용 범위 표, 규칙, 각주 완비. snapshot/fallback/D1 세 곳 동기(+2875자).",
+        "사이트 버전 00.116.00 → 00.116.01, 관리자 버전 03.073.01 → 03.074.00."
+      ]
+    },
+  {
+      "version": "03.074.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 11:17:44 KST",
+      "summary": "[UI 통일 함께 배포] 관리자 기간 선택 UX 통일 — 분석·접속 국가/도시·대시보드·마케팅 네 패널이 동일 패턴 공유.",
+      "changes": [
+        "사이트 v00.116.01과 함께 배포. admin-v3.js와 admin.html 변경이 관리자 UX 통일의 주된 내용이며 main.js/공용 스타일 변경은 공유 CSS 선택자 확장 한정.",
+        "사용자 피드백 반영: '코호트 검색기능은 마케팅 페이지에 맞춰줘. 접속국가/도시, 분석, 대시보드가 모두 다르니까 불편하네'.",
+        "통일 패턴 규칙: KMS §3.11 참조. 신규 기간 필터 추가 시 .v3-period-bar 사용 강제.",
+        "관리자 버전 03.073.01 → 03.074.00."
+      ]
+    },
+  {
       "version": "03.073.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:01:47 KST",

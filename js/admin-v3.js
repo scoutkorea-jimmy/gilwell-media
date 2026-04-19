@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.073.01
+ * Version: 03.074.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -62,6 +62,55 @@
       }, false);
     });
   }
+
+  // KMS §5.x 통일 기간 선택 UI. 마케팅 .mkt-period-bar와 동일 패턴을 .v3-period-bar로
+  // 일반화해 분석·접속 국가/도시·대시보드에서 공유. DOM 구조:
+  //   <div class="v3-period-bar" data-v3-period-scope="SCOPE">
+  //     <div class="v3-presets">
+  //       <button class="v3-preset-btn [is-active]" data-days="7">7일</button> ...
+  //     </div>
+  //     <div class="v3-date-range">
+  //       <input type="date" class="v3-date-input-period" data-v3-role="start">
+  //       <span class="v3-date-sep">~</span>
+  //       <input type="date" class="v3-date-input-period" data-v3-role="end">
+  //       <button class="v3-apply-btn" type="button">조회</button>
+  //     </div>
+  //   </div>
+  // _bindPeriodBar(scope, onChange) — onChange({days, start, end})
+  function _bindPeriodBar(scope, onChange) {
+    var bar = document.querySelector('[data-v3-period-scope="' + scope + '"]');
+    if (!bar) return;
+    var presetBtns = bar.querySelectorAll('.v3-preset-btn');
+    var startInput = bar.querySelector('[data-v3-role="start"]');
+    var endInput   = bar.querySelector('[data-v3-role="end"]');
+    var applyBtn   = bar.querySelector('.v3-apply-btn');
+    function clearPresets() {
+      presetBtns.forEach(function (b) { b.classList.remove('is-active'); });
+    }
+    function clearRange() {
+      if (startInput) startInput.value = '';
+      if (endInput)   endInput.value = '';
+    }
+    presetBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        clearPresets();
+        btn.classList.add('is-active');
+        clearRange();
+        var days = parseInt(btn.getAttribute('data-days'), 10) || 30;
+        if (typeof onChange === 'function') onChange({ days: days });
+      });
+    });
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        var s = startInput ? startInput.value : '';
+        var e = endInput ? endInput.value : '';
+        if (!s && !e) return;
+        clearPresets();
+        if (typeof onChange === 'function') onChange({ start: s, end: e });
+      });
+    }
+  }
+
   function _togglePasswordReveal(visible) {
     var input = _el('v3-pw');
     var btn = _el('v3-pw-reveal');
@@ -159,6 +208,10 @@
   var _analyticsAutoRefreshTimer = null;
   var _analyticsLastUpdatedAt = 0;
   var _analyticsLoading = false;
+  // 통일 기간 선택 상태. {days: N} 또는 {start, end}.
+  var _analyticsPeriodState = { days: 30 };
+  var _analyticsTagPeriodState = { days: 30 };
+  var _geoAudiencePeriodState = { days: 30 };
   var _loginInFlight = false;
   var _dashboardHeatmapMode = '7d';
   var _dashboardHeatmapStart = '';
@@ -391,7 +444,7 @@
       btn.addEventListener('click', function () {
         _dashboardHeatmapMode = btn.getAttribute('data-v3-heatmap-mode') || '7d';
         _syncDashboardHeatmapControls();
-        if (_dashboardHeatmapMode !== 'custom') _loadDashboard();
+        _loadDashboard();
       });
     });
     _bindEl('dash-heatmap-apply', 'click', _applyDashboardHeatmapCustomRange);
@@ -616,9 +669,15 @@
       _picksSearchTimer = setTimeout(function () { _searchPicks(q); }, 220);
     });
 
-    // Analytics period
-    _bindEl('analytics-period', 'change', _loadAnalytics);
-    _bindEl('analytics-tag-period', 'change', _loadAnalytics);
+    // Analytics period bar (통일 패턴)
+    _bindPeriodBar('analytics', function (sel) {
+      _analyticsPeriodState = sel;
+      _loadAnalytics();
+    });
+    _bindPeriodBar('analytics-tag', function (sel) {
+      _analyticsTagPeriodState = sel;
+      _loadAnalytics();
+    });
     _bindEl('analytics-refresh-btn', 'click', _loadAnalytics);
     _bindEl('analytics-auto-refresh', 'change', function () {
       _analyticsAutoRefresh = !!this.checked;
@@ -630,7 +689,12 @@
     _bindEl('analytics-tag-modal', 'click', function (event) {
       if (event.target === this) _closeAnalyticsTagModal();
     });
-    _bindEl('geo-audience-period', 'change', _loadGeoAudience);
+
+    // Geo-audience period bar (통일 패턴)
+    _bindPeriodBar('geo-audience', function (sel) {
+      _geoAudiencePeriodState = sel;
+      _loadGeoAudience();
+    });
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
 
     _initDashboardHeatmapControls();
@@ -1253,12 +1317,12 @@
   }
 
   function _syncDashboardHeatmapControls() {
+    // 통일 기간 선택 패턴: presets + date range가 항상 함께 표시됨.
+    // preset 선택 시 range 비활성, range apply 시 preset 비활성.
     document.querySelectorAll('[data-v3-heatmap-mode]').forEach(function (btn) {
       var mode = btn.getAttribute('data-v3-heatmap-mode') || '';
       btn.classList.toggle('is-active', mode === _dashboardHeatmapMode);
     });
-    var wrap = _el('dash-heatmap-custom-range');
-    if (wrap) wrap.hidden = _dashboardHeatmapMode !== 'custom';
   }
 
   function _applyDashboardHeatmapCustomRange() {
@@ -1274,6 +1338,9 @@
       GW.showToast('히트맵 종료일은 시작일보다 빠를 수 없습니다.', 'error');
       return;
     }
+    // 통일 패턴: apply 클릭 = custom 모드로 전환 + preset 활성 해제.
+    _dashboardHeatmapMode = 'custom';
+    _syncDashboardHeatmapControls();
     _loadDashboard();
   }
 
@@ -2807,19 +2874,42 @@
   /* ══════════════════════════════════════════════════════════
      ANALYTICS
   ══════════════════════════════════════════════════════════ */
+  // 기간 state({days} | {start,end}) → URL 쿼리 파라미터 단편
+  function _periodQuery(state, prefix) {
+    var p = prefix || '';
+    var out = [];
+    if (state && state.days) {
+      out.push(p + 'days=' + encodeURIComponent(state.days));
+    } else if (state && state.start && state.end) {
+      out.push(p + 'start=' + encodeURIComponent(state.start));
+      out.push(p + 'end=' + encodeURIComponent(state.end));
+    } else {
+      out.push(p + 'days=30');
+    }
+    return out.join('&');
+  }
+  // 기간 state → 표시 라벨 ("7일" or "2026-04-01 ~ 2026-04-30")
+  function _periodLabel(state) {
+    if (state && state.days) return state.days + '일';
+    if (state && state.start && state.end) return state.start + ' ~ ' + state.end;
+    return '30일';
+  }
+
   function _loadAnalytics() {
     if (_analyticsLoading) return;
-    var period = document.getElementById('analytics-period').value;
-    var tagPeriod = (document.getElementById('analytics-tag-period') || {}).value || period;
     var statsEl = document.getElementById('analytics-stats');
     var bodyEl  = document.getElementById('analytics-body');
+    if (!statsEl || !bodyEl) return;
     var noteHtml = '';
     _analyticsLoading = true;
     _updateAnalyticsRefreshMeta(true);
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
     bodyEl.innerHTML  = '';
 
-    _apiFetch('/api/admin/analytics?days=' + encodeURIComponent(period) + '&tag_days=' + encodeURIComponent(tagPeriod)).then(function (data) {
+    var period    = _analyticsPeriodState.days || 30;
+    var tagPeriod = _analyticsTagPeriodState.days || period;
+    var qs = _periodQuery(_analyticsPeriodState) + '&' + _periodQuery(_analyticsTagPeriodState, 'tag_');
+    _apiFetch('/api/admin/analytics?' + qs).then(function (data) {
       var today    = data.today    || {};
       var summary  = data.summary  || {};
       var visitors = data.visitors || {};
@@ -3397,18 +3487,20 @@
   }
 
   function _loadGeoAudience() {
-    var period = document.getElementById('geo-audience-period').value;
     var statsEl = document.getElementById('geo-audience-stats');
     var noteEl = document.getElementById('geo-audience-note');
     var countryEl = document.getElementById('geo-audience-country-list');
     var cityEl = document.getElementById('geo-audience-city-list');
+    if (!statsEl || !countryEl || !cityEl) return;
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
-    noteEl.textContent = '불러오는 중…';
+    if (noteEl) noteEl.textContent = '불러오는 중…';
     countryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     cityEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
 
+    var period = _geoAudiencePeriodState.days || 30;
+    var qs = _periodQuery(_geoAudiencePeriodState);
     Promise.allSettled([
-      _apiFetch('/api/admin/geo-audience?days=' + period),
+      _apiFetch('/api/admin/geo-audience?' + qs),
       _apiFetch('/api/settings/wosm-members')
     ]).then(function (results) {
       if (results[0].status !== 'fulfilled') throw (results[0].reason || new Error('지리 집계를 불러오지 못했습니다.'));

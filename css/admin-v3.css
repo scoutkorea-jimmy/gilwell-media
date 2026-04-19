@@ -259,20 +259,24 @@
 .v3-login-btn:disabled { opacity: .6; cursor: not-allowed; }
 .v3-btn,
 .mkt-apply-btn,
+.v3-apply-btn,
 .v3-login-btn {
   position: relative;
   transition: transform .08s ease, box-shadow .16s ease, opacity .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
 }
 .v3-btn:active,
 .mkt-apply-btn:active,
+.v3-apply-btn:active,
 .v3-login-btn:active,
 .v3-btn.is-pressed,
 .mkt-apply-btn.is-pressed,
+.v3-apply-btn.is-pressed,
 .v3-login-btn.is-pressed {
   transform: translateY(1px) scale(0.99);
 }
 .v3-btn.is-busy,
 .mkt-apply-btn.is-busy,
+.v3-apply-btn.is-busy,
 .v3-login-btn.is-busy {
   cursor: progress;
   pointer-events: none;
@@ -281,12 +285,14 @@
 }
 .v3-btn.is-done,
 .mkt-apply-btn.is-done,
+.v3-apply-btn.is-done,
 .v3-login-btn.is-done {
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.18);
   border-color: rgba(34, 197, 94, 0.4);
 }
 .v3-btn.is-busy::after,
 .mkt-apply-btn.is-busy::after,
+.v3-apply-btn.is-busy::after,
 .v3-login-btn.is-busy::after {
   content: '';
   display: inline-block;
@@ -726,6 +732,8 @@
 .marketing-fullscreen-close:focus-visible,
 .mkt-preset-btn:focus-visible,
 .mkt-apply-btn:focus-visible,
+.v3-preset-btn:focus-visible,
+.v3-apply-btn:focus-visible,
 .v3-login-btn:focus-visible,
 .v3-login-reveal:focus-visible {
   outline: none;
@@ -2582,7 +2590,8 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 /* ── 마케팅 기간 컨트롤 (mkt-period-bar) ─────────── */
-.mkt-period-bar {
+.mkt-period-bar,
+.v3-period-bar {
   display: flex;
   align-items: center;
   gap: var(--gap-tight);
@@ -2591,13 +2600,15 @@ body.marketing-fullscreen-open { overflow: hidden; }
   position: relative;
   z-index: 2;
 }
-.mkt-presets {
+.mkt-presets,
+.v3-presets {
   display: flex;
   gap: var(--gap-micro);
   position: relative;
   z-index: 2;
 }
-.mkt-preset-btn {
+.mkt-preset-btn,
+.v3-preset-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2614,19 +2625,23 @@ body.marketing-fullscreen-open { overflow: hidden; }
   border-radius: 999px;
 }
 .mkt-preset-btn:hover,
-.mkt-preset-btn.is-active {
+.mkt-preset-btn.is-active,
+.v3-preset-btn:hover,
+.v3-preset-btn.is-active {
   background: var(--v3-primary-lt);
   border-color: rgba(99,102,241,.24);
   color: var(--v3-primary-h);
 }
-.mkt-date-range {
+.mkt-date-range,
+.v3-date-range {
   display: flex;
   align-items: center;
   gap: 6px;
   position: relative;
   z-index: 2;
 }
-.mkt-date-input {
+.mkt-date-input,
+.v3-date-input-period {
   height: var(--chip-height);
   padding: 0 var(--v3-gap-sm);
   border: 1px solid var(--v3-border);
@@ -2638,15 +2653,18 @@ body.marketing-fullscreen-open { overflow: hidden; }
   position: relative;
   z-index: 2;
 }
-.mkt-date-input:focus {
+.mkt-date-input:focus,
+.v3-date-input-period:focus {
   outline: none;
   border-color: var(--v3-text);
 }
-.mkt-date-sep {
+.mkt-date-sep,
+.v3-date-sep {
   font-size: var(--fs-meta);
   color: var(--v3-text-m);
 }
-.mkt-apply-btn {
+.mkt-apply-btn,
+.v3-apply-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2664,11 +2682,20 @@ body.marketing-fullscreen-open { overflow: hidden; }
   position: relative;
   z-index: 2;
 }
-.mkt-apply-btn:hover {
+.mkt-apply-btn:hover,
+.v3-apply-btn:hover {
   background: var(--v3-lav-hover);
   border-color: rgba(99,102,241,.32);
   color: var(--v3-ink-emphasis-max);
   opacity: 1;
+}
+
+/* v3-period-bar label prefix (e.g. "방문 분석", "태그 인사이트") */
+.v3-period-bar-label {
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+  margin-right: var(--gap-micro);
+  letter-spacing: 0.04em;
 }
 
 /* ── 고객 여정 흐름 줌 버튼 ─────────────────────── */
