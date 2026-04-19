@@ -2464,9 +2464,31 @@ body[data-home-bootstrap] .lang-btn:hover {
   display:         block;
   text-decoration: none;
   color:           inherit;
+  position:        relative;  /* overlay link anchor */
 }
 .mini-item:hover { background: rgba(0,0,0,0.02); }
 .mini-item:last-child { border-bottom: none; }
+
+/* 카드 전체 클릭 영역 — 기사 이동 overlay 링크 (aria-hidden, tabindex=-1) */
+.mini-item-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  text-decoration: none;
+  border-radius: inherit;
+}
+/* 카드 내부 콘텐츠는 overlay 위에, 상호작용 요소(공유 버튼 등)는 더 위로 */
+.mini-item-row, .mini-item-text, .mini-item-labels, .mini-thumb {
+  position: relative;
+  z-index: 2;
+  pointer-events: none; /* 텍스트/이미지 자체는 overlay가 처리 */
+}
+.mini-item h4, .mini-item h4 a, .mini-item-link,
+.mini-item-actions, .mini-item-actions * {
+  pointer-events: auto; /* 제목 anchor와 공유 버튼은 직접 클릭 가능 */
+}
+.mini-item-actions { position: relative; z-index: 3; }
 
 .mini-item .category-tag { margin-bottom: 0; }
 
@@ -3177,12 +3199,12 @@ body[data-home-bootstrap] .lang-btn:hover {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  border: 1px solid rgba(17,17,17,0.14);
-  background: rgba(255,255,255,0.88);
-  color: var(--ink);
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(17,17,17,0.72);
+  color: var(--white);
   font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 24px;
   line-height: 1;
@@ -3190,21 +3212,27 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
-  backdrop-filter: blur(8px);
+  z-index: 5;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
 
-.content-gallery-prev {
-  left: 16px;
-}
-
-.content-gallery-next {
-  right: 16px;
-}
+.content-gallery-prev { left: 16px; }
+.content-gallery-next { right: 16px; }
 
 .content-gallery-nav:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: rgba(98,37,153,0.85);  /* Scouting Purple tint */
+  border-color: rgba(255,255,255,0.45);
+  transform: translateY(-50%) scale(1.06);
+}
+.content-gallery-nav:active {
+  transform: translateY(-50%) scale(0.96);
+}
+.content-gallery-nav:focus-visible {
+  outline: 3px solid rgba(98,37,153,0.6);
+  outline-offset: 3px;
 }
 
 @media (max-width: 720px) {

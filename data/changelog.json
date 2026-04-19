@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "00.125.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 24:05:00 KST",
+    "summary": "홈 화면 미니 카드(최신·인기·에디터 추천)의 전체 영역이 클릭 가능하도록 overlay 링크 패턴 적용. 기사 상세 이미지 슬라이드의 좌우 화살표를 다크 pill 스타일로 교체해 모든 이미지 배경에서도 또렷하게 보이도록 개선.",
+    "changes": [
+      "js/home-render.js buildMiniItem(): .mini-item 구조에 .mini-item-overlay(aria-hidden, tabindex=-1) 절대위치 앵커 추가. 제목 anchor·공유 버튼 외 카드 전 영역을 눌러도 /post/{id}로 이동.",
+      "css/style.css: .mini-item position:relative · .mini-item-overlay inset:0 z-index:1. 내부 콘텐츠는 z-index:2로 올려 overlay 위에 자연 배치. 공유 버튼(.mini-item-actions)은 z-index:3 + pointer-events:auto로 overlay보다 우선 처리. 제목·공유 이외 영역은 pointer-events:none → overlay 앵커가 클릭을 받음.",
+      "접근성: overlay는 aria-hidden + tabindex=-1이라 스크린리더·키보드 탐색은 기존 제목 anchor만 노출(중복 링크 회피).",
+      "css/style.css .content-gallery-nav 재설계: rgba(17,17,17,0.72) 다크 pill · 흰 화살표 · 박스 섀도우 · backdrop-blur. hover 시 Scouting Purple(0.85) + 1.06배 확대. focus-visible outline. 42→44px. z-index 2→5로 컨트롤 영역보다 위에서 항상 가시.",
+      "사이트 버전 00.124.05 → 00.125.00."
+    ]
+  },
+  {
     "version": "03.088.06",
     "date": "2026-04-19",
     "released_at": "2026-04-19 23:50:00 KST",
