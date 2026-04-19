@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.084.03
+ * Version: 03.084.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3139,6 +3139,10 @@
       '<div class="v3-inline-meta">상위 노드 ' + topN + '개 · 링크 ' + linkCount + '개</div>' +
       '<div class="v3-ti-graph-stage">' +
         '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 1280 720" role="img" aria-label="태그 관계도"></svg>' +
+        '<div class="v3-ti-graph-zoom-ctrl">' +
+          '<button class="v3-ti-graph-zoom-btn" type="button" id="v3-ti-graph-zoom-in" title="확대">＋</button>' +
+          '<button class="v3-ti-graph-zoom-btn" type="button" id="v3-ti-graph-zoom-out" title="축소">－</button>' +
+        '</div>' +
         '<div class="v3-ti-graph-hint">' +
           '<span>마우스 휠 · 핀치: 확대/축소</span>' +
           '<span>빈 공간 드래그: 화면 이동</span>' +
@@ -3546,21 +3550,27 @@
       return { x: loc.x, y: loc.y };
     }
 
-    // --- Wheel zoom (마우스 위치 기준) ---
+    // --- Wheel zoom (RAF 스로틀 — Windows 3이벤트/틱 대응) ---
+    var _wRaf = 0, _wDir = 0, _wPt = null;
     function onWheel(ev) {
       ev.preventDefault();
-      var rect = svg.getBoundingClientRect();
-      var localPoint = svgPoint(ev.clientX, ev.clientY);
-      var factor = ev.deltaY < 0 ? 1.15 : (1 / 1.15);
-      var newK = Math.max(0.25, Math.min(4, zoom.k * factor));
-      // 마우스 위치를 고정점으로: world_after = newK * worldPoint + offset_after
-      // localPoint_world = (localPoint_svg - zoom.x) / zoom.k → 고정점의 world 좌표
-      var wx = (localPoint.x - zoom.x) / zoom.k;
-      var wy = (localPoint.y - zoom.y) / zoom.k;
-      zoom.x = localPoint.x - wx * newK;
-      zoom.y = localPoint.y - wy * newK;
-      zoom.k = newK;
-      applyTransform();
+      _wDir += ev.deltaY > 0 ? 1 : -1;
+      _wPt = svgPoint(ev.clientX, ev.clientY);
+      if (_wRaf) return;
+      _wRaf = requestAnimationFrame(function () {
+        _wRaf = 0;
+        var d = _wDir; _wDir = 0;
+        var pt = _wPt; _wPt = null;
+        if (!d || !pt) return;
+        var factor = d < 0 ? 1.15 : (1 / 1.15);
+        var newK = Math.max(0.25, Math.min(4, zoom.k * factor));
+        var wx = (pt.x - zoom.x) / zoom.k;
+        var wy = (pt.y - zoom.y) / zoom.k;
+        zoom.x = pt.x - wx * newK;
+        zoom.y = pt.y - wy * newK;
+        zoom.k = newK;
+        applyTransform();
+      });
     }
     svg.addEventListener('wheel', onWheel, { passive: false });
 
@@ -3701,13 +3711,28 @@
     svg.addEventListener('pointercancel', onPointerUp);
     svg.addEventListener('pointerleave', onPointerUp);
 
-    // --- 원위치 버튼 ---
+    // --- 원위치 / 확대·축소 버튼 ---
     var resetBtn = document.getElementById('v3-ti-graph-reset');
     function onReset() {
       zoom = { k: 1, x: 0, y: 0 };
       applyTransform();
     }
     if (resetBtn) resetBtn.addEventListener('click', onReset);
+
+    function zoomAtCenter(factor) {
+      var cx = 640, cy = 360;
+      var newK = Math.max(0.25, Math.min(4, zoom.k * factor));
+      var wx = (cx - zoom.x) / zoom.k;
+      var wy = (cy - zoom.y) / zoom.k;
+      zoom.x = cx - wx * newK;
+      zoom.y = cy - wy * newK;
+      zoom.k = newK;
+      applyTransform();
+    }
+    var zoomInBtn = document.getElementById('v3-ti-graph-zoom-in');
+    var zoomOutBtn = document.getElementById('v3-ti-graph-zoom-out');
+    if (zoomInBtn)  zoomInBtn.addEventListener('click',  function () { zoomAtCenter(1.25); });
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', function () { zoomAtCenter(1 / 1.25); });
 
     // --- 검색 input (debounced) + clear ---
     var searchInput = _el('v3-ti-graph-search');
@@ -3809,7 +3834,7 @@
     var page = 0;
     var PAGE_SIZE = 30;
     var overlay = document.createElement('div');
-    overlay.className = 'v3-modal v3-modal-open';
+    overlay.className = 'v3-ti-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:10010;display:flex;align-items:center;justify-content:center;padding:24px;';
     overlay.innerHTML =
       '<div class="v3-modal-panel" style="background:var(--v3-surface);border-radius:14px;max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;">' +
@@ -4555,6 +4580,8 @@
         worldCopyJump: true,
         minZoom: 1,
         maxZoom: 12,
+        scrollWheelZoom: false,
+        zoomControl: false,
       }).setView([24, 15], 1.6);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 12,
@@ -4562,6 +4589,31 @@
         attribution: '&copy; OpenStreetMap'
       }).addTo(_geoAudienceMap);
       _geoAudienceMap.on('zoomend', _syncGeoAudienceMapZoom);
+
+      // 커스텀 휠 줌 (RAF 스로틀 — Windows 3이벤트/틱 대응)
+      var _gWheelRaf = 0, _gWheelDir = 0;
+      mapEl.addEventListener('wheel', function (ev) {
+        ev.preventDefault();
+        _gWheelDir += ev.deltaY > 0 ? 1 : -1;
+        if (_gWheelRaf) return;
+        _gWheelRaf = requestAnimationFrame(function () {
+          _gWheelRaf = 0;
+          var d = _gWheelDir; _gWheelDir = 0;
+          if (!d) return;
+          if (d < 0) _geoAudienceMap.zoomIn(1);
+          else       _geoAudienceMap.zoomOut(1);
+        });
+      }, { passive: false });
+
+      // 물리 확대·축소 버튼 (오른쪽 상단)
+      var zc = document.createElement('div');
+      zc.className = 'v3-geo-zoom-ctrl';
+      zc.innerHTML =
+        '<button class="v3-geo-zoom-btn" id="geo-map-zoom-in"  title="확대">＋</button>' +
+        '<button class="v3-geo-zoom-btn" id="geo-map-zoom-out" title="축소">－</button>';
+      mapEl.appendChild(zc);
+      document.getElementById('geo-map-zoom-in').addEventListener('click',  function () { _geoAudienceMap.zoomIn(1); });
+      document.getElementById('geo-map-zoom-out').addEventListener('click', function () { _geoAudienceMap.zoomOut(1); });
     }
     if (_geoAudienceMapLayer) {
       _geoAudienceMap.removeLayer(_geoAudienceMapLayer);

@@ -1309,7 +1309,34 @@
   border-radius: var(--v3-radius);
   overflow: hidden;
   background: linear-gradient(180deg, var(--v3-lav-tint-blue) 0%, var(--v3-lav-tint-blue-pale) 100%);
+  position: relative;
 }
+.v3-geo-zoom-ctrl {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v3-geo-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--v3-text);
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s;
+}
+.v3-geo-zoom-btn:hover { background: var(--v3-neutral-50); }
 .v3-geo-map-hint {
   margin-top: var(--gap-tight);
   font-size: var(--v3-fs-xs);
@@ -2272,6 +2299,18 @@
   .v3-members-row {
     grid-template-columns: 1fr;
   }
+  /* 모달 — 모바일: 하단 시트 패턴 */
+  .v3-overlay { padding: 0; align-items: flex-end; }
+  .v3-modal, .v3-modal-lg, .v3-cal-modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--v3-radius-l) var(--v3-radius-l) 0 0;
+  }
+}
+@media (min-width: 761px) and (max-width: 1024px) {
+  /* 태블릿: 모달 너비 확장 */
+  .v3-modal    { max-width: 680px; }
+  .v3-modal-lg { max-width: 860px; }
 }
 
 /* ── Hero Manager ────────────────────────────────────────── */
@@ -2839,6 +2878,33 @@ body.marketing-fullscreen-open { overflow: hidden; }
   overflow: hidden;
   touch-action: none;
 }
+.v3-ti-graph-zoom-ctrl {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v3-ti-graph-zoom-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.88);
+  border: 1px solid var(--v3-border);
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--v3-text);
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s;
+  backdrop-filter: blur(4px);
+}
+.v3-ti-graph-zoom-btn:hover { background: rgba(255,255,255,1); }
 .v3-ti-graph-svg {
   display: block;
   width: 100%;
