@@ -3413,3 +3413,229 @@ body.marketing-fullscreen-open { overflow: hidden; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ── 기사 채점 패널 ──────────────────────────────────────── */
+.v3-scorer-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.v3-scorer-input-card,
+.v3-scorer-result-card {
+  padding: 20px 22px;
+}
+
+.v3-scorer-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.v3-scorer-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.v3-scorer-clear-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  color: var(--muted);
+}
+
+.v3-scorer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.v3-scorer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.v3-scorer-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.03em;
+}
+
+.v3-scorer-label-hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.v3-scorer-text-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.v3-scorer-text-input:focus {
+  border-color: var(--accent);
+}
+
+.v3-scorer-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--white);
+  outline: none;
+  resize: vertical;
+  min-height: 160px;
+  font-family: inherit;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+}
+
+.v3-scorer-textarea:focus {
+  border-color: var(--accent);
+}
+
+.v3-scorer-run-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 결과 카드 */
+.v3-scorer-score-header {
+  margin-bottom: 20px;
+}
+
+.v3-scorer-total-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.v3-scorer-total-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.v3-scorer-total-score {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.v3-scorer-total-grade {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.v3-scorer-bar-track {
+  height: 6px;
+  background: var(--gray-100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.v3-scorer-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* 개별 항목 */
+.v3-scorer-results-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.v3-scorer-check-row {
+  background: var(--gray-100);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.v3-scorer-check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.v3-scorer-check-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.v3-scorer-check-score {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.v3-scorer-check-bar {
+  height: 4px;
+  background: #d8d8d8;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.v3-scorer-check-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.v3-scorer-issues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.v3-scorer-issues li {
+  font-size: 11px;
+  color: #c0392b;
+  padding-left: 12px;
+  position: relative;
+}
+
+.v3-scorer-issues li::before {
+  content: '!';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.v3-scorer-pass {
+  font-size: 11px;
+  color: #248737;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .v3-scorer-layout {
+    grid-template-columns: 1fr;
+  }
+}

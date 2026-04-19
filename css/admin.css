@@ -7002,3 +7002,325 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── KMS 기사작성표준 탭 ──────────────────────────────────── */
+.kms-editorial-body {
+  padding: 0 0 48px;
+  max-width: 820px;
+}
+
+.kms-ed-section {
+  border: 1px solid var(--kms-border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  background: var(--kms-surface);
+}
+
+.kms-ed-section--definition {
+  background: var(--kms-surface2);
+  border-color: var(--color-scouting-purple, #622599);
+  border-left-width: 3px;
+}
+
+.kms-ed-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--kms-text);
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.02em;
+}
+
+.kms-ed-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-ocean-blue, #0094B4);
+  color: #fff;
+  letter-spacing: 0;
+}
+
+.kms-ed-badge--warn {
+  background: var(--color-fire-red, #FF5655);
+}
+
+.kms-ed-note {
+  font-size: 11px;
+  color: var(--kms-muted);
+  margin: -8px 0 12px;
+}
+
+/* 핵심 원칙 그리드 */
+.kms-ed-principles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.kms-ed-principle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--kms-surface2);
+  border-radius: 7px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-scouting-purple, #622599);
+  min-width: 20px;
+}
+
+/* 프로세스 리스트 */
+.kms-ed-process {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-process li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-process em {
+  color: var(--kms-muted);
+  font-style: normal;
+}
+
+.kms-ed-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 규칙 2열 그리드 */
+.kms-ed-rule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.kms-ed-rule-col {
+  background: var(--kms-surface2);
+  border-radius: 7px;
+  padding: 14px 16px;
+}
+
+.kms-ed-rule-col--deny {
+  background: rgba(255, 86, 85, 0.06);
+  border: 1px solid rgba(255, 86, 85, 0.2);
+}
+
+.kms-ed-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--kms-text);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kms-ed-sub--deny {
+  color: var(--color-fire-red, #FF5655);
+}
+
+.kms-ed-ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.kms-ed-ul li {
+  font-size: 12px;
+  color: var(--kms-text);
+  padding-left: 12px;
+  position: relative;
+}
+
+.kms-ed-ul li::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+  color: var(--kms-muted);
+}
+
+.kms-ed-ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.kms-ed-ol li {
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 3px 0;
+}
+
+/* 판단 기준 박스 */
+.kms-ed-criterion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(98, 37, 153, 0.06);
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 500;
+}
+
+/* Body 4문단 그리드 */
+.kms-ed-body-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kms-ed-body-para {
+  display: flex;
+  gap: 12px;
+  background: var(--kms-surface2);
+  border-radius: 7px;
+  padding: 12px 14px;
+}
+
+.kms-ed-para-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.kms-ed-body-para strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kms-text);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.kms-ed-body-para p {
+  font-size: 11px;
+  color: var(--kms-muted);
+  margin: 0;
+}
+
+.kms-ed-rule-box {
+  background: var(--kms-surface2);
+  border-radius: 7px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--kms-text);
+}
+
+.kms-ed-rule-box--warn {
+  background: rgba(255, 86, 85, 0.06);
+  border: 1px solid rgba(255, 86, 85, 0.2);
+  color: var(--color-fire-red, #FF5655);
+  font-weight: 500;
+}
+
+/* 표기 규칙 */
+.kms-ed-notation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-notation-item {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 8px 14px;
+  background: var(--kms-surface2);
+  border-radius: 7px;
+}
+
+.kms-ed-notation-label {
+  font-weight: 700;
+  min-width: 36px;
+  color: var(--color-scouting-purple, #622599);
+}
+
+/* Audit 체크리스트 */
+.kms-ed-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kms-ed-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--kms-text);
+  padding: 8px 14px;
+  background: var(--kms-surface2);
+  border-radius: 7px;
+}
+
+.kms-ed-check {
+  color: var(--color-forest-green, #248737);
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* 최종 정의 블록쿼트 */
+.kms-ed-definition {
+  margin: 0;
+  padding: 20px 24px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 500;
+  border-left: 3px solid var(--color-scouting-purple, #622599);
+  background: rgba(98, 37, 153, 0.04);
+  border-radius: 0 8px 8px 0;
+}
+
+@media (max-width: 700px) {
+  .kms-ed-principles { grid-template-columns: 1fr; }
+  .kms-ed-rule-grid  { grid-template-columns: 1fr; }
+  .kms-ed-body-grid  { grid-template-columns: 1fr; }
+}

@@ -8,8 +8,8 @@
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260419060126">
-  <link rel="stylesheet" href="/css/admin.css?v=20260419060126">
+  <link rel="stylesheet" href="/css/style.css?v=20260419061250">
+  <link rel="stylesheet" href="/css/admin.css?v=20260419061250">
 </head>
 <body class="kms-page">
 
@@ -47,6 +47,7 @@
         <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="api">API 가이드</button>
         <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="changelog">버전기록</button>
         <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="design">디자인</button>
+        <button type="button" class="kms-tab-btn" role="tab" aria-selected="false" data-kms-tab="editorial">기사작성표준</button>
       </nav>
 
       <div class="kms-header-right">
@@ -57,7 +58,7 @@
     <div class="kms-release-note" id="kms-release-note" role="status" aria-live="polite">
       <strong>KMS 업데이트 확인용 노트</strong>
       <span>최신 정책과 관리자 여백·레이아웃 기준까지 함께 반영된 상태여야 정상입니다.</span>
-      <code id="kms-release-note-version">Admin v03.081.00</code>
+      <code id="kms-release-note-version">Admin v03.082.00</code>
     </div>
 
     <!-- 레이아웃 -->
@@ -201,11 +202,296 @@
           <div class="kms-ds-body"></div>
         </div>
 
+        <!-- ── 탭: 기사작성표준 ────────────────────────────────── -->
+        <div id="kms-tab-editorial" class="kms-tab-panel" hidden role="tabpanel">
+          <div class="kms-panel-header">
+            <div class="kms-panel-header-text">
+              <span class="kms-kicker">편집 기준 원본</span>
+              <h2>BP미디어 기사 작성 표준 v2.1</h2>
+              <p>스카우트 관련 원문을 기반으로 BP미디어 기준의 기사를 일관되게 생성하기 위한 단일 기준. 모든 기존 BP미디어 작성 지침은 본 문서로 대체된다.</p>
+            </div>
+            <div class="kms-panel-header-side kms-panel-header-meta">
+              <span>버전&nbsp;<strong>v2.1 Final</strong></span>
+              <span>상태&nbsp;<strong>운영 중</strong></span>
+            </div>
+          </div>
+
+          <div class="kms-editorial-body">
+
+            <!-- §1 핵심 원칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">핵심 원칙</h3>
+              <div class="kms-ed-principles">
+                <div class="kms-ed-principle"><span class="kms-ed-num">01</span><span>사실은 고정한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">02</span><span>구조는 정리한다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">03</span><span>해석은 승인받는다</span></div>
+                <div class="kms-ed-principle"><span class="kms-ed-num">04</span><span>표현은 겸손하고 다정하게 유지한다</span></div>
+              </div>
+            </section>
+
+            <!-- §2 출력 형식 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">출력 형식 <span class="kms-ed-badge">고정</span></h3>
+              <p class="kms-ed-note">아래 순서를 반드시 유지한다.</p>
+              <ol class="kms-ed-ol">
+                <li><strong>Title</strong></li>
+                <li><strong>Subtitle</strong></li>
+                <li><strong>Body</strong></li>
+                <li><strong>자료출처:</strong></li>
+                <li><strong>Recommended Tags:</strong></li>
+              </ol>
+            </section>
+
+            <!-- §3 작성 프로세스 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">작성 프로세스 <span class="kms-ed-badge">강제 흐름</span></h3>
+              <ol class="kms-ed-process">
+                <li><span class="kms-ed-step">1</span>원문 확인</li>
+                <li><span class="kms-ed-step">2</span>사실 요소 분리 <em>(주체, 행위, 시점, 장소, 결과)</em></li>
+                <li><span class="kms-ed-step">3</span>번역 <em>(스카우트 용어 기준 적용)</em></li>
+                <li><span class="kms-ed-step">4</span>해석 필요 여부 판단</li>
+                <li><span class="kms-ed-step">5</span>필요 시 해석 방향 사용자 확인</li>
+                <li><span class="kms-ed-step">6</span>기사 작성</li>
+                <li><span class="kms-ed-step">7</span>Audit 수행</li>
+                <li><span class="kms-ed-step">8</span>최종 출력</li>
+              </ol>
+            </section>
+
+            <!-- §4 Title 규칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">Title 규칙</h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">구성</h4>
+                  <p>주체 + 행위 + 핵심 사건</p>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">필수 요소</h4>
+                  <ul class="kms-ed-ul">
+                    <li>연맹명 또는 국가명</li>
+                    <li>실제 행동 (방문, 체결, 개최, 시작 등)</li>
+                    <li>행사 또는 프로그램명</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지</h4>
+                  <ul class="kms-ed-ul">
+                    <li>해석</li>
+                    <li>감정</li>
+                    <li>평가</li>
+                    <li>미래 예측</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="kms-ed-criterion">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                제목만 보고 사건이 복원 가능해야 한다
+              </div>
+            </section>
+
+            <!-- §5 Subtitle 규칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">Subtitle 규칙</h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">역할</h4>
+                  <p>기사의 해석 방향 또는 구조 흐름 제시</p>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">허용</h4>
+                  <ul class="kms-ed-ul">
+                    <li>사건 간 연결</li>
+                    <li>구조 설명</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지</h4>
+                  <ul class="kms-ed-ul">
+                    <li>감정 표현</li>
+                    <li>단정적 해석</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- §6 Body 구조 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">Body 구조 <span class="kms-ed-badge">4문단 고정</span></h3>
+              <div class="kms-ed-body-grid">
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">1</span><div><strong>사건 설명</strong><p>무슨 일이 있었는가</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">2</span><div><strong>배경</strong><p>왜 이 사건이 발생했는가</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">3</span><div><strong>전개</strong><p>인물, 행동 — 무엇이 어떻게 진행되었는가</p></div></div>
+                <div class="kms-ed-body-para"><span class="kms-ed-para-num">4</span><div><strong>확장</strong><p>가능성만 서술, 단정 금지</p></div></div>
+              </div>
+              <div class="kms-ed-rule-box">
+                <h4 class="kms-ed-sub">세부 규칙</h4>
+                <ul class="kms-ed-ul">
+                  <li>문단당 하나의 메시지</li>
+                  <li>문단당 3~5문장</li>
+                  <li>시간 흐름 유지</li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- §7 번역 원칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">번역 원칙</h3>
+              <ul class="kms-ed-ul">
+                <li>원문 의미를 유지한다</li>
+                <li>주어, 행위, 결과를 유지한다</li>
+                <li>스카우트 용어 기준을 적용한다</li>
+                <li>임의 번역 생성 금지</li>
+              </ul>
+            </section>
+
+            <!-- §8 표기 규칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">표기 규칙</h3>
+              <div class="kms-ed-notation-grid">
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">연맹</span>
+                  <span>국문(영문) 최초 1회 → 이후 국문</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">인명</span>
+                  <span>국문 + (영문) 최초 1회 → 이후 국문</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">직함</span>
+                  <span>국문 직함(영문 원문) 최초 1회</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- §9 해석 규칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">해석 규칙 <span class="kms-ed-badge kms-ed-badge--warn">엄격 통제</span></h3>
+              <div class="kms-ed-rule-box kms-ed-rule-box--warn">
+                <strong>기본 원칙:</strong> 해석은 자동 생성하지 않는다
+              </div>
+              <h4 class="kms-ed-sub" style="margin-top:16px;">해석 트리거 조건 <em>(하나라도 충족 시만 검토)</em></h4>
+              <ul class="kms-ed-ul">
+                <li>협력, 강화, 확대 등 관계 변화가 존재</li>
+                <li>프로그램 목적 또는 영향이 명시됨</li>
+                <li>정책, 전략, 교육 요소가 포함됨</li>
+              </ul>
+              <h4 class="kms-ed-sub" style="margin-top:12px;">처리 방식</h4>
+              <ul class="kms-ed-ul">
+                <li>해석 방향 2~3개 제시</li>
+                <li>사용자 승인 후 반영</li>
+              </ul>
+              <h4 class="kms-ed-sub" style="margin-top:12px;">적용 위치</h4>
+              <ul class="kms-ed-ul">
+                <li>Subtitle</li>
+                <li>Body 4문단</li>
+              </ul>
+            </section>
+
+            <!-- §10 문체 규칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">문체 규칙</h3>
+              <div class="kms-ed-rule-grid">
+                <div class="kms-ed-rule-col">
+                  <h4 class="kms-ed-sub">기본 톤</h4>
+                  <ul class="kms-ed-ul">
+                    <li>겸손</li>
+                    <li>다정</li>
+                    <li>절제</li>
+                  </ul>
+                  <h4 class="kms-ed-sub" style="margin-top:12px;">지향</h4>
+                  <ul class="kms-ed-ul">
+                    <li>행위 중심</li>
+                    <li>관계 중심</li>
+                    <li>흐름 중심</li>
+                  </ul>
+                </div>
+                <div class="kms-ed-rule-col kms-ed-rule-col--deny">
+                  <h4 class="kms-ed-sub kms-ed-sub--deny">금지 표현</h4>
+                  <ul class="kms-ed-ul">
+                    <li>의미 있는</li>
+                    <li>뜻깊은</li>
+                    <li>중요한 계기</li>
+                    <li>성공적으로</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- §11 홍보 원칙 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">홍보 원칙</h3>
+              <div class="kms-ed-rule-box">
+                직접 평가하지 않는다. 대신 아래로 의미를 드러낸다:
+              </div>
+              <ul class="kms-ed-ul" style="margin-top:10px;">
+                <li>협력 구조</li>
+                <li>청소년 참여</li>
+                <li>프로그램 흐름</li>
+              </ul>
+            </section>
+
+            <!-- §12 Recommended Tags -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">Recommended Tags 규칙</h3>
+              <p class="kms-ed-note">구성: 7~10개</p>
+              <div class="kms-ed-notation-grid">
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">브랜드</span>
+                  <span>스카우트, 스카우트방법론 등</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">사건</span>
+                  <span>국제교류, 교육프로그램 등</span>
+                </div>
+                <div class="kms-ed-notation-item">
+                  <span class="kms-ed-notation-label">대상</span>
+                  <span>연맹명, 국가명</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- §13 Audit 기준 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">Audit 기준 <span class="kms-ed-badge">필수 수행</span></h3>
+              <p class="kms-ed-note">작성 후 반드시 확인</p>
+              <ul class="kms-ed-checklist">
+                <li><span class="kms-ed-check">✓</span>모든 문장이 출처로 검증 가능한가</li>
+                <li><span class="kms-ed-check">✓</span>사실과 해석이 분리되어 있는가</li>
+                <li><span class="kms-ed-check">✓</span>제목에 해석이 없는가</li>
+                <li><span class="kms-ed-check">✓</span>용어가 일관적인가</li>
+                <li><span class="kms-ed-check">✓</span>과장 표현이 없는가</li>
+              </ul>
+            </section>
+
+            <!-- §14 최종 출력 조건 -->
+            <section class="kms-ed-section">
+              <h3 class="kms-ed-heading">최종 출력 조건</h3>
+              <p class="kms-ed-note">아래 조건 모두 충족 시만 출력</p>
+              <ul class="kms-ed-checklist">
+                <li><span class="kms-ed-check">✓</span>사실 검증 가능</li>
+                <li><span class="kms-ed-check">✓</span>구조 유지</li>
+                <li><span class="kms-ed-check">✓</span>해석 통제</li>
+                <li><span class="kms-ed-check">✓</span>용어 일관성 유지</li>
+                <li><span class="kms-ed-check">✓</span>겸손한 표현 유지</li>
+              </ul>
+            </section>
+
+            <!-- §15 최종 정의 -->
+            <section class="kms-ed-section kms-ed-section--definition">
+              <h3 class="kms-ed-heading">최종 정의</h3>
+              <blockquote class="kms-ed-definition">
+                BP미디어 기사는<br>
+                사실을 정확히 전달하고,<br>
+                흐름을 구조화하며,<br>
+                스카우트의 가치를 겸손하게 드러내는<br>
+                <strong>번역·재구성형 기사</strong>다.
+              </blockquote>
+            </section>
+
+          </div><!-- /.kms-editorial-body -->
+        </div><!-- /#kms-tab-editorial -->
+
       </main>
     </div><!-- /.kms-layout -->
   </div><!-- /#kms-screen -->
 
-  <script src="/js/main.js?v=20260419060126"></script>
-  <script src="/js/kms.js?v=20260419060126"></script>
+  <script src="/js/main.js?v=20260419061250"></script>
+  <script src="/js/kms.js?v=20260419061250"></script>
 </body>
 </html>
