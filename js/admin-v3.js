@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.072.00
+ * Version: 03.072.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -4646,9 +4646,11 @@
   }
 
   function _marketingStageColor(stage) {
-    if (stage === 'awareness') return 'var(--v3-mkt-awareness)';
-    if (stage === 'interest') return 'var(--v3-mkt-interest)';
-    return 'var(--v3-mkt-consideration)';
+    // SVG fill/stroke 속성은 CSS var()를 해석하지 못해 hex 문자열로 반환.
+    // 값은 --v3-mkt-* 토큰(#ff8c42/#2f9e44/#e64980)과 동일. §3.10 Leaflet 지도 팔레트와 동일 예외.
+    if (stage === 'awareness') return '#ff8c42';
+    if (stage === 'interest') return '#2f9e44';
+    return '#e64980';
   }
 
   function _trimMarketingTitle(value, limit) {
