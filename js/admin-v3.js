@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.076.00
+ * Version: 03.076.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3162,17 +3162,138 @@
 
   function _mountTagInsightsGraph(data) {
     if (!data || !data.graph) return;
+    var svg = _el('analytics-tag-graph');
+    if (!svg) return;
     var topNodes = data.graph.nodes.slice(0, 80);
     var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
-    _mountAnalyticsTagGraph({
-      nodes: topNodes.map(function (n) {
-        return { id: 'tag:' + n.id, label: n.id, group: n.top_header || '', weight: n.count, kind: 'tag' };
-      }),
-      links: data.graph.links.filter(function (l) { return nodeIds.has(l.source) && nodeIds.has(l.target); })
-        .slice(0, 200)
-        .map(function (l) { return { source: 'tag:' + l.source, target: 'tag:' + l.target, weight: l.count }; }),
-      articles: [],
+    var maxCount = Math.max.apply(null, topNodes.map(function (n) { return n.count || 1; }));
+
+    // 랜덤 초기 위치로 노드를 viewBox 전체(960×520)에 흩뿌린다. 이후 D3 없이 자체 힘 시뮬레이션
+    // (repulsion + link spring + center gravity) 60 tick 돌려 자연스러운 배치로 수렴시킨다.
+    var W = 960, H = 520;
+    var rand = _createSeedRng(topNodes.length + (data.graph.links || []).length);
+    var nodes = topNodes.map(function (n) {
+      var ratio = (n.count || 1) / maxCount;
+      return {
+        id: n.id,
+        label: n.id,
+        count: n.count,
+        top_header: n.top_header || '',
+        r: Math.max(10, Math.min(28, 10 + Math.round(ratio * 18))),
+        x: 60 + rand() * (W - 120),
+        y: 60 + rand() * (H - 120),
+        vx: 0, vy: 0,
+      };
     });
+    var byId = {};
+    nodes.forEach(function (n) { byId[n.id] = n; });
+    var links = (data.graph.links || [])
+      .filter(function (l) { return nodeIds.has(l.source) && nodeIds.has(l.target); })
+      .slice(0, 200)
+      .map(function (l) { return { source: byId[l.source], target: byId[l.target], count: l.count }; });
+    var maxLinkCount = links.length ? Math.max.apply(null, links.map(function (l) { return l.count; })) : 1;
+
+    // Force simulation — tick 300회 정도면 수렴
+    for (var iter = 0; iter < 300; iter++) {
+      var alpha = 1 - (iter / 300);
+      // repulsion (모든 쌍)
+      for (var i = 0; i < nodes.length; i++) {
+        for (var j = i + 1; j < nodes.length; j++) {
+          var a = nodes[i], b = nodes[j];
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var d2 = dx * dx + dy * dy;
+          if (d2 < 1) d2 = 1;
+          var d = Math.sqrt(d2);
+          var force = 1800 / d2; // 반발력
+          var fx = (dx / d) * force * alpha;
+          var fy = (dy / d) * force * alpha;
+          a.vx -= fx; a.vy -= fy;
+          b.vx += fx; b.vy += fy;
+        }
+      }
+      // attraction (link spring)
+      for (var k = 0; k < links.length; k++) {
+        var lnk = links[k];
+        var s = lnk.source, t = lnk.target;
+        var dx2 = t.x - s.x, dy2 = t.y - s.y;
+        var d = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
+        var desired = 80; // 이상적인 링크 길이
+        var weightBoost = 1 + (lnk.count / maxLinkCount) * 1.5; // 공출현 많을수록 더 붙임
+        var spring = (d - desired) * 0.015 * weightBoost * alpha;
+        var fx = (dx2 / d) * spring;
+        var fy = (dy2 / d) * spring;
+        s.vx += fx; s.vy += fy;
+        t.vx -= fx; t.vy -= fy;
+      }
+      // center gravity
+      for (var n = 0; n < nodes.length; n++) {
+        var nd = nodes[n];
+        nd.vx += (W / 2 - nd.x) * 0.0015 * alpha;
+        nd.vy += (H / 2 - nd.y) * 0.0015 * alpha;
+        // integrate with damping
+        nd.vx *= 0.72;
+        nd.vy *= 0.72;
+        nd.x += nd.vx;
+        nd.y += nd.vy;
+        // clamp
+        nd.x = Math.max(nd.r + 4, Math.min(W - nd.r - 4, nd.x));
+        nd.y = Math.max(nd.r + 4, Math.min(H - nd.r - 4, nd.y));
+      }
+    }
+
+    // 글머리 태그별 색상 매핑 (Tableau 10 스타일)
+    var PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+    var headerList = Array.from(new Set(nodes.map(function (n) { return n.top_header || '(없음)'; })));
+    var colorMap = {};
+    headerList.forEach(function (h, i) { colorMap[h] = PALETTE[i % PALETTE.length]; });
+
+    // SVG 렌더
+    var nsHtml = [];
+    nsHtml.push('<g class="ti-graph-links">');
+    links.forEach(function (l) {
+      var w = 1 + (l.count / maxLinkCount) * 3.5;
+      nsHtml.push('<line x1="' + l.source.x.toFixed(1) + '" y1="' + l.source.y.toFixed(1) + '" x2="' + l.target.x.toFixed(1) + '" y2="' + l.target.y.toFixed(1) + '" stroke="#94a3b8" stroke-opacity="0.35" stroke-width="' + w.toFixed(2) + '"></line>');
+    });
+    nsHtml.push('</g>');
+    nsHtml.push('<g class="ti-graph-nodes">');
+    nodes.forEach(function (n) {
+      var color = colorMap[n.top_header || '(없음)'];
+      nsHtml.push('<g transform="translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')">' +
+        '<circle r="' + n.r + '" fill="' + color + '" fill-opacity="0.85" stroke="#fff" stroke-width="1.5"><title>' + GW.escapeHtml(n.label) + ' · ' + n.count + '건 · 우세 글머리: ' + GW.escapeHtml(n.top_header || '(없음)') + '</title></circle>' +
+        '<text text-anchor="middle" dy="' + (n.r + 12) + '" font-size="11" fill="#1f2937">' + GW.escapeHtml(n.label) + '</text>' +
+      '</g>');
+    });
+    nsHtml.push('</g>');
+
+    // 범례
+    var legendItems = headerList.map(function (h) {
+      return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:var(--gap-element);font-size:var(--fs-meta);color:var(--v3-text-m);">' +
+        '<span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:' + colorMap[h] + ';"></span>' + GW.escapeHtml(h) + '</span>';
+    }).join('');
+
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.innerHTML = nsHtml.join('');
+
+    // 범례 컨테이너 (그래프 밑)
+    var stage = svg.parentElement;
+    if (stage) {
+      var existing = stage.querySelector('.v3-ti-graph-legend');
+      if (existing) existing.remove();
+      var legend = document.createElement('div');
+      legend.className = 'v3-ti-graph-legend';
+      legend.style.cssText = 'padding-top:var(--gap-tight);display:flex;flex-wrap:wrap;line-height:1.8;';
+      legend.innerHTML = '<span class="v3-text-m" style="font-weight:700;margin-right:var(--gap-tight);">우세 글머리:</span>' + legendItems;
+      stage.appendChild(legend);
+    }
+  }
+
+  // 시드 랜덤 — 노드 수/링크 수에 따라 다른 초기 배치 (같은 데이터면 같은 결과, 재현 가능)
+  function _createSeedRng(seed) {
+    var s = (seed || 1) * 2654435761 >>> 0;
+    return function () {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 0x100000000;
+    };
   }
 
   // 더보기 모달 (페이지네이션) — 다양한 목록 공유

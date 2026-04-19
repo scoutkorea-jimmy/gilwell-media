@@ -1,6 +1,20 @@
 {
   "items": [
   {
+      "version": "03.076.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:00:37 KST",
+      "summary": "[HOTFIX] 태그 인사이트 관계도의 모든 노드가 한 지점에 뭉쳐서 읽을 수 없던 버그 수정 — 자체 force-directed 시뮬레이션으로 랜덤 초기 배치 후 60→300 tick 수렴.",
+      "changes": [
+        "원인: 03.076.00에서 _mountAnalyticsTagGraph 기존 렌더러에 데이터를 넘길 때 node.node_type 필드 누락 → 내부 tagNodes 필터가 빈 배열 → 모든 노드의 각도 계산이 0 → 80개 노드가 같은 좌표에 겹침.",
+        "수정: admin-v3.js _mountTagInsightsGraph를 기존 렌더러 의존 제거하고 자체 force-directed 시뮬레이션으로 재작성. 랜덤 시드 초기 위치(960×520 viewBox 전역 분산) → repulsion 1800/d² + link spring(desired 80px, weight boost) + center gravity 300 tick 수렴.",
+        "노드 색: 우세 글머리 태그(top_header) 기준 Tableau 10 팔레트 색. 범례는 그래프 하단 자동 렌더.",
+        "노드 크기: count/maxCount 기반 r=10~28px. 링크 굵기: count/maxLinkCount 기반 1~4.5px.",
+        "재현 가능: seed RNG(노드 수 + 링크 수 기반) — 같은 데이터면 같은 배치.",
+        "관리자 버전 03.076.00 → 03.076.01."
+      ]
+    },
+  {
       "version": "03.076.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 11:56:51 KST",
