@@ -1,6 +1,29 @@
 {
   "items": [
   {
+      "version": "00.115.03",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 10:32:44 KST",
+      "summary": "[P0 근인 해결] js/main.js의 GW.getCategoryLabel에서 GW.t 미정의 시 TypeError가 터지던 것을 가드로 방어 — admin 페이지의 검색·필터 전면 불가 실제 근인.",
+      "changes": [
+        "근인: GW.t는 js/site-chrome.js에만 정의되는 i18n 헬퍼. admin.html은 site-chrome.js를 로드하지 않아 admin 컨텍스트에서 GW.t는 undefined. GW.getCategoryLabel line 90이 가드 없이 GW.t(...)를 호출 → TypeError throw → admin-v3.js DOMContentLoaded 내부의 populateCategorySelect 호출 경로에서 예외가 터져 이후 모든 _bindEl 실행 중단 → 검색·필터 전체 listener 등록 실패.",
+        "수정: GW.getCategoryLabel을 typeof GW.t === 'function' 가드로 감싸고 GW.CATEGORIES[safe].label(Korea/APR/WOSM/Scout People 등 정적 영문 라벨) 폴백 경로를 활성화. GW.t가 있으면 기존 i18n 동작, 없으면 정적 라벨. site와 admin 양쪽에서 안전 동작.",
+        "사이트 버전 00.115.02 → 00.115.03. admin-v3.js 변경 없음이지만 main.js 변경이 admin 전체 동작을 복구시키므로 함께 배포."
+      ]
+    },
+  {
+      "version": "03.072.03",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 10:32:44 KST",
+      "summary": "[P0 근인 해결 함께 배포] 관리자 검색·필터 전면 불가의 실제 근인을 main.js에서 확정·차단. admin-v3.js는 03.072.02의 safety net 그대로 유지.",
+      "changes": [
+        "main.js GW.getCategoryLabel 가드 추가로 admin DOMContentLoaded가 예외 없이 완료 → 모든 _bindEl 정상 등록 → 검색·필터 전면 복구.",
+        "03.072.02에서 선제 도입한 document-level 이벤트 위임 safety net은 유지. 향후 유사 상황(listener 등록 단계 실패)에서도 검색·필터가 계속 동작하도록 이중 방어.",
+        "homepage_issues '관리자 검색·필터 전면 불가' 이슈의 cause/action_items 필드를 근인 확정 내용으로 업데이트. §0.2.2 P0 규칙의 첫 실천 케이스로 기록 보존.",
+        "관리자 버전 03.072.02 → 03.072.03."
+      ]
+    },
+  {
       "version": "03.072.02",
       "date": "2026-04-19",
       "released_at": "2026-04-19 10:24:26 KST",

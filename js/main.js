@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.115.02';
-  GW.ADMIN_VERSION = '03.072.02';
-  GW.ASSET_VERSION = '20260419012501';
+  GW.APP_VERSION = '00.115.03';
+  GW.ADMIN_VERSION = '03.072.03';
+  GW.ASSET_VERSION = '20260419013313';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -87,7 +87,14 @@
       wosm: 'nav.wosm',
       people: 'nav.people'
     };
-    var label = navKeyMap[safe] ? String(GW.t(navKeyMap[safe]) || '').trim() : '';
+    // GW.t는 js/site-chrome.js에서만 정의되고, admin.html은 site-chrome.js를 로드하지 않아
+    // admin 컨텍스트에서는 GW.t가 undefined다. 이전에는 가드 없이 GW.t()를 호출해 TypeError가
+    // init 단계에서 throw되어 admin의 모든 _bindEl이 실행되지 않고 검색·필터 전면 불가 상태가
+    // 됐다 (homepage_issues '관리자 검색·필터 전면 불가'). 2026-04-19 수정.
+    var label = '';
+    if (navKeyMap[safe] && typeof GW.t === 'function') {
+      label = String(GW.t(navKeyMap[safe]) || '').trim();
+    }
     if (!label) {
       var info = GW.CATEGORIES[safe] || GW.CATEGORIES.korea;
       label = info && info.label ? String(info.label) : String(category || '');
