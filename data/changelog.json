@@ -1,6 +1,16 @@
 {
   "items": [
   {
+      "version": "00.116.05",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 KST",
+      "summary": "상단 KOR/ENG 언어 선택 버튼 숨김 — 다국어 지원 재개 시 CSS 한 줄로 복원 가능.",
+      "changes": [
+        "css/style.css: .lang-toggle { display: none } 추가. HTML 구조·JS 기능 코드는 전부 보존.",
+        "사이트 버전 00.116.04 → 00.116.05."
+      ]
+    },
+  {
       "version": "00.116.04",
       "date": "2026-04-19",
       "released_at": "2026-04-19 KST",
