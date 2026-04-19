@@ -872,48 +872,36 @@
   };
 
   /* ── Dark Mode 토글 ─────────────────────────────────────────
-     prefers-color-scheme:dark이 기본값. 사용자가 토글하면 localStorage에 저장. */
+     기본값 light. localStorage.gw_theme만 저장 시 반영. 푸터 링크로 토글. */
   GW.initDarkMode = function () {
     var THEME_KEY = 'gw_theme';
-    function systemPrefersDark() {
-      try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (_) { return false; }
-    }
     function currentTheme() {
       try {
         var saved = localStorage.getItem(THEME_KEY);
         if (saved === 'dark' || saved === 'light') return saved;
       } catch (_) {}
-      return systemPrefersDark() ? 'dark' : 'light';
+      return 'light'; // 기본값 강제 light (prefers-color-scheme 무시)
     }
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      document.querySelectorAll('.gw-theme-toggle').forEach(function (b) {
-        b.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
-        b.textContent = theme === 'dark' ? '☀️' : '🌙';
-        b.setAttribute('title', theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환');
+      document.querySelectorAll('[data-theme-toggle]').forEach(function (a) {
+        a.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        a.textContent = theme === 'dark' ? '라이트모드로 변경 →' : '다크모드로 전환 →';
       });
     }
-    function toggleTheme() {
+    function toggleTheme(e) {
+      if (e) e.preventDefault();
       var next = currentTheme() === 'dark' ? 'light' : 'dark';
       try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
       applyTheme(next);
     }
     applyTheme(currentTheme());
-    // 마스트헤드에 토글 버튼 주입 (있으면 skip)
-    if (!document.querySelector('.gw-theme-toggle')) {
-      var host = document.querySelector('.masthead-right') ||
-                 document.querySelector('.masthead-top') ||
-                 document.querySelector('.masthead');
-      if (host) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'gw-theme-toggle';
-        btn.setAttribute('aria-label', '다크 모드 토글');
-        btn.addEventListener('click', toggleTheme);
-        host.appendChild(btn);
-        applyTheme(currentTheme());
-      }
-    }
+    // 푸터의 다크모드 토글 링크에 클릭 이벤트 바인딩
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (a) {
+      if (a._themeBound) return;
+      a._themeBound = true;
+      a.addEventListener('click', toggleTheme);
+    });
   };
 
   /* ── 저장·최근 본 기사 홈 레일 렌더 ───────────────────────── */
