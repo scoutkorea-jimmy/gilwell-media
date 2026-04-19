@@ -258,7 +258,12 @@
       btn.addEventListener('click', function () {
         var path = btn.getAttribute('data-share-url') || '';
         var title = btn.getAttribute('data-share-title') || '';
-        var url = new URL(path, window.location.origin).toString();
+        var url;
+        try {
+          url = new URL(path, window.location.origin).toString();
+        } catch (_) {
+          url = path ? window.location.origin + path : window.location.href;
+        }
         GW.sharePostLink({ url: url, title: title, text: title })
           .catch(function (err) {
             GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
