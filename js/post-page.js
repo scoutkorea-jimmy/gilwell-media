@@ -594,7 +594,10 @@ window._closePostTagModal = function () {
 function _renderTagRelatedPosts(tag, posts) {
   var list = document.getElementById('post-tag-modal-list');
   if (!list) return;
-  list.innerHTML = '<section class="modal-related-posts post-related-surface">' +
+  // 주의: list 자체(#post-tag-modal-list)는 이미 .modal-related-posts 클래스를 갖고 있어
+  // margin-top·padding-top·border-top이 적용되므로, 자식 section은 .post-related-surface만
+  // 사용해 중복 상단 여백·구분선을 피한다.
+  list.innerHTML = '<section class="post-related-surface">' +
     '<h3 class="post-related-heading">#' + GW.escapeHtml(tag) + '</h3>' +
     '<ul class="post-related-list">' +
       posts.map(function (item) {
