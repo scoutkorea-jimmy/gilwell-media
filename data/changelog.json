@@ -1,6 +1,18 @@
 {
   "items": [
   {
+      "version": "03.072.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 09:45:37 KST",
+      "summary": "[HOTFIX] 03.071.00에서 마케팅 scatter chart의 stage 컬러 함수를 var() 참조로 치환했는데 SVG fill 속성이 CSS 변수를 해석하지 못해 차트 점 색상이 깨진 문제를 원상복귀.",
+      "changes": [
+        "_marketingStageColor 함수: 'var(--v3-mkt-awareness)' 등을 반환하던 것을 원래 hex 리터럴(#ff8c42/#2f9e44/#e64980)로 복귀. 이 함수 반환값은 admin-v3.js:4534의 <circle fill=\"...\"> SVG 속성에 직접 삽입되는데 SVG presentation attribute는 CSS var()를 해석하지 못해 점이 무색으로 렌더됐다.",
+        "주석으로 예외 사유 기록: §3.10의 Leaflet 지도 팔레트 동일 패턴 (JS 데이터가 SVG/Canvas API에 직접 전달되는 경우 CSS var() 해석 불가).",
+        "관리자 검색 기능(기사 제목 검색 등) 전수 감사 결과: 서버 API는 정상(공개 curl 테스트로 52건 반환 확인), 프론트엔드 _bindEl 바인딩 정상, CSS 입력 박스 정상(padding 32px 좌측 SVG 아이콘 공간 유지). 사용자 보고한 검색 실패는 SVG 차트 이슈와 별개로 재현이 필요하며, 구체 패널/입력어/관찰 현상 확인 후 추가 디버그 예정.",
+        "관리자 버전 03.072.00 → 03.072.01."
+      ]
+    },
+  {
       "version": "03.072.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:29:09 KST",
