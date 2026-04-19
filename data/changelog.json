@@ -1,6 +1,30 @@
 {
   "items": [
   {
+    "version": "03.084.02",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 14:00:00 KST",
+    "summary": "KMS 기사작성표준 좌측 사이드바 목차 표시 추가.",
+    "changes": [
+      "kms.html의 15개 kms-ed-section에 ID 추가 (kms-ed-s01~s15).",
+      "kms.js에 renderEditorialSectionList() 추가 — 기사작성표준 탭 진입 시 §1~§15 목차 자동 생성 및 클릭 스크롤.",
+      "관리자 버전 03.084.01 → 03.084.02."
+    ]
+  },
+  {
+    "version": "00.117.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 14:00:00 KST",
+    "summary": "메인 스토리 카드 이중 테두리 제거, 이미지 edge-to-edge 처리, 섹션 헤더 브랜딩 강화.",
+    "changes": [
+      "home-lead-card padding·border 제거 → box-shadow 전환(입체감 추가), overflow:hidden.",
+      "home-lead-thumb border 제거 — 카드 외곽 border와 이미지 border 이중 발생 문제 해결.",
+      "home-lead-body에 padding:24px 28px 추가 — 이미지는 edge-to-edge, 텍스트는 내부 여백 유지.",
+      "home-section-title-main을 Midnight Purple 그라디언트로 변경 — 메인 스토리 섹션 시각적 차별화.",
+      "사이트 버전 00.117.00 → 00.117.01."
+    ]
+  },
+  {
     "version": "03.084.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 13:00:00 KST",
