@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.118.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 14:30:00 KST",
+    "summary": "robots.txt 신설, /calendar SEO 메타 주입, Google Search Console 색인 문제 대응.",
+    "changes": [
+      "robots.txt 파일 신설 — 크롤러 접근 제어 및 Sitemap 경로 선언 (기존 완전 누락 상태 해소).",
+      "Admin·Dreampath·KMS·Search·API 경로 Disallow 처리로 크롤 예산 낭비 방지.",
+      "/calendar 페이지에 <!-- SHARE_META --> 플레이스홀더 추가 및 SITE_PAGE_KEY_BY_PATH 등록.",
+      "site-meta.js / site-structure.mjs에 calendar 페이지 메타(title·description·canonical·breadcrumb·구조화 데이터) 추가.",
+      "[[path]].js에 calendar canonical 경로 명시 등록.",
+      "사이트 버전 00.117.01 → 00.118.00."
+    ]
+  },
+  {
     "version": "03.084.02",
     "date": "2026-04-19",
     "released_at": "2026-04-19 14:00:00 KST",

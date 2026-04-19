@@ -66,6 +66,10 @@ const DEFAULT_SITE_META = {
       title: '도움을 주신 분들 · BP미디어',
       description: 'BP미디어 운영에 도움을 주신 분들을 소개합니다.',
     },
+    calendar: {
+      title: '스카우트 캘린더 · BP미디어',
+      description: '한국스카우트연맹 및 세계 스카우트의 행사와 일정을 한눈에 확인하는 캘린더입니다.',
+    },
     search: {
       title: '검색 · BP미디어',
       description: 'BP미디어 기사와 페이지를 검색합니다.',
@@ -387,6 +391,7 @@ function getBreadcrumbLabel(pageKey) {
     people: '스카우트 인물',
     glossary: '스카우트 용어집',
     contributors: '도움을 주신 분들',
+    calendar: '스카우트 캘린더',
     search: '검색',
   };
   return labels[pageKey] || '';
@@ -403,6 +408,7 @@ function getPageTopic(pageKey) {
     people: '스카우트 인물',
     glossary: '스카우트 용어집',
     contributors: '후원 및 기여자 소개',
+    calendar: '스카우트 행사 및 일정',
     search: '사이트 검색 결과',
   };
   return topics[pageKey] || '스카우트 뉴스';
@@ -419,6 +425,7 @@ function getPageKeywords(pageKey) {
     people: '스카우트 인물, BP미디어',
     glossary: '스카우트 용어집, BP미디어',
     contributors: 'BP미디어, 도움을 주신 분들',
+    calendar: '스카우트 캘린더, 스카우트 행사 일정, BP미디어',
     search: 'BP미디어 검색',
   };
   return keywords[pageKey] || 'BP미디어';
