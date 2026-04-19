@@ -3,6 +3,9 @@
  * Version: V3.004.01
  */
 
+/* 영문 전용 서체 — Google Sans Flex (Latin 글자 우선), 한글은 시스템 폴백 */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
 /* ── Design Tokens ────────────────────────────────────────── */
 :root {
   /* Site spacing/typography tokens (admin.html은 style.css를 로드하지 않아
@@ -157,7 +160,9 @@
   box-sizing: border-box;
 }
 .admin-v3 {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  /* 영문은 Google Sans Flex, 한글은 시스템 서체(Apple SD Gothic Neo / Malgun)가
+     자연 폴백. Admin에서는 NixgonFont 사용하지 않음 (CLAUDE.md §3). */
+  font-family: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: var(--fs-body); color: var(--v3-text);
   background: var(--v3-content-bg);
   -webkit-font-smoothing: antialiased;

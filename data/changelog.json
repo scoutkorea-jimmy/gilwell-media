@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "03.088.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:20:00 KST",
+    "summary": "관리자 콘솔 영문 서체를 Google Sans Flex(variable)로 전환했습니다. 한글은 시스템 폴백 유지(Apple SD Gothic Neo / Malgun). Latin 글자는 Flex, CJK는 시스템 서체로 자연 분리.",
+    "changes": [
+      "css/admin-v3.css 상단 @import url(Google+Sans+Flex:opsz,wght@6..144,1..1000) 추가. variable font의 optical size + weight 전 범위 로드.",
+      ".admin-v3 font-family 체인을 'Google Sans Flex' → -apple-system → BlinkMacSystemFont → 'Segoe UI' → system-ui → sans-serif로 교체. 기존 시스템 폴백 유지(한글 대응).",
+      "관리자 버전 03.087.01 → 03.088.00."
+    ]
+  },
+  {
+    "version": "00.124.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:20:00 KST",
+    "summary": "공개 사이트 영문 서체를 Google Sans Flex(variable)로 전환했습니다. 한글은 NixgonFont 유지. font-family 체인 268곳을 Flex 선순위로 일괄 교체해 영문/숫자/기호는 Flex가, 한글은 NixgonFont가 담당하도록 자연 분리.",
+    "changes": [
+      "css/style.css 상단 @import url(Google+Sans+Flex:opsz,wght@6..144,1..1000) 추가. variable font로 opsz/wght 전 범위 로드 · font-display:swap.",
+      "전체 font-family 선언 268곳을 일괄 교체: 'NixgonFont', sans-serif / NixgonFont, sans-serif → 'Google Sans Flex', NixgonFont, sans-serif. --bw-font 토큰도 동일 규칙.",
+      "font-family 체인 원칙: Latin 글자는 1순위 Google Sans Flex가 담당, CJK는 첫 폰트에 없어 2순위 NixgonFont로 자연 폴백. WCAG 3.0 APCA 준수(본문 Lc 105.1 이상 유지).",
+      "팔레트 준수 점검: body.admin-page .article-item h4 color #161616 → var(--ink), .item-meta-chip span #222 → var(--ink)로 정정. 허용: 브랜드 10색 + 그레이스케일 5종(+ --ink 1F1F1F) 외 HEX는 그라데이션 mid-point와 WOSM region palette 등 기능적 목적에만 한정.",
+      "타이포 토큰 유지: --fs-* 12단계(10~32px), --lh-tight(1.35) / --lh-copy(1.65). 새 텍스트 추가 시 반드시 토큰 사용.",
+      "사이트 버전 00.123.00 → 00.124.00."
+    ]
+  },
+  {
     "version": "00.123.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 22:00:00 KST",
