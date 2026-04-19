@@ -1,6 +1,30 @@
 {
   "items": [
   {
+      "version": "03.081.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 KST",
+      "summary": "관리자 세션 타이머 새로고침 지속 — 페이지 새로고침 후에도 잔여 시간이 유지되며 탭 닫을 때만 초기화.",
+      "changes": [
+        "admin-v3.js: _sessionStart()에서 sessionStorage(_gw_admin_sd)에 저장된 deadline을 복원. 남은 시간이 유효하면 기존 카운트다운 이어서 진행.",
+        "_sessionReset()에서 deadline 갱신 시 sessionStorage 동기화. _sessionStop()에서 로그아웃/만료 시 sessionStorage 항목 삭제.",
+        "새로고침·재인증 시 세션이 리셋되지 않아 의도치 않은 타이머 초기화 방지.",
+        "관리자 버전 03.080.00 → 03.081.00."
+      ]
+    },
+  {
+      "version": "00.116.03",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 KST",
+      "summary": "기사 수정 비밀번호 입력창 가시성 수정 + 눈 버튼 추가 — type=text 전환 시 텍스트 색상 끊김 해결.",
+      "changes": [
+        "functions/post/[id].js: 비밀번호 입력창을 .board-pw-input-wrap으로 감싸고 눈 아이콘 버튼 추가.",
+        "css/style.css: .board-pw-box input 셀렉터를 type=password + type=text 공통 적용으로 확장. 눈 버튼 스타일 추가.",
+        "js/post-page.js: window._togglePostLoginPw() 추가 — 클릭 시 password↔text 전환 + 아이콘 변경.",
+        "사이트 버전 00.116.02 → 00.116.03."
+      ]
+    },
+  {
       "version": "00.116.02",
       "date": "2026-04-19",
       "released_at": "2026-04-19 KST",

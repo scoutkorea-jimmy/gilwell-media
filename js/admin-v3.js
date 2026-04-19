@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.080.00
+ * Version: 03.081.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7722,6 +7722,16 @@
   var _sessionWarnShown    = false;
   var _sessionWarnModal    = null;
 
+  var _SESSION_STORAGE_KEY = '_gw_admin_sd';
+
+  function _sessionPersist() {
+    try { sessionStorage.setItem(_SESSION_STORAGE_KEY, String(_sessionDeadline)); } catch (_) {}
+  }
+
+  function _sessionClearPersist() {
+    try { sessionStorage.removeItem(_SESSION_STORAGE_KEY); } catch (_) {}
+  }
+
   function _sessionReset() {
     if (!_sessionDeadline) return;
     _sessionWarnShown = false;
@@ -7729,6 +7739,7 @@
     clearTimeout(_sessionWarnTimeout);
     clearTimeout(_sessionExpireTimeout);
     _sessionDeadline    = Date.now() + _SESSION_MS;
+    _sessionPersist();
     _sessionWarnTimeout  = setTimeout(_sessionShowWarn,   _SESSION_MS - _SESSION_WARN_MS);
     _sessionExpireTimeout = setTimeout(_sessionExpire,    _SESSION_MS);
   }
@@ -7783,13 +7794,21 @@
   }
 
   function _sessionStart() {
-    _sessionDeadline = Date.now() + _SESSION_MS;
+    var now = Date.now();
+    var saved = 0;
+    try { saved = parseInt(sessionStorage.getItem(_SESSION_STORAGE_KEY), 10) || 0; } catch (_) {}
+    _sessionDeadline = (saved > now + 1000) ? saved : (now + _SESSION_MS);
+    _sessionPersist();
+
     _sessionWarnShown = false;
     clearTimeout(_sessionWarnTimeout);
     clearTimeout(_sessionExpireTimeout);
     clearInterval(_sessionTickInterval);
-    _sessionWarnTimeout   = setTimeout(_sessionShowWarn, _SESSION_MS - _SESSION_WARN_MS);
-    _sessionExpireTimeout = setTimeout(_sessionExpire,   _SESSION_MS);
+
+    var remaining = _sessionDeadline - Date.now();
+    if (remaining <= 0) { _sessionExpire(); return; }
+    _sessionWarnTimeout   = setTimeout(_sessionShowWarn, remaining <= _SESSION_WARN_MS ? 0 : remaining - _SESSION_WARN_MS);
+    _sessionExpireTimeout = setTimeout(_sessionExpire,   remaining);
     _sessionTickInterval  = setInterval(_sessionTick,    1000);
     _sessionTick();
     document.addEventListener('click',      _sessionReset);
@@ -7800,6 +7819,7 @@
 
   function _sessionStop() {
     _sessionDeadline = 0;
+    _sessionClearPersist();
     clearTimeout(_sessionWarnTimeout);
     clearTimeout(_sessionExpireTimeout);
     clearInterval(_sessionTickInterval);
