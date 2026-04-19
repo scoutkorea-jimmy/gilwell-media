@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.125.00';
+  GW.APP_VERSION = '00.126.00';
   GW.ADMIN_VERSION = '03.088.06';
-  GW.ASSET_VERSION = '20260419125720';
+  GW.ASSET_VERSION = '20260419132236';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -766,13 +766,15 @@
     var childTag = listTag === 'ol' ? 'ol' : 'ul';
     return (Array.isArray(items) ? items : []).map(function (item) {
       if (typeof item === 'string') {
-        return '<li>' + GW.renderEditorInlineText(item) + '</li>';
+        return '<li>' + GW.renderEditorInlineText(String(item).trim()) + '</li>';
       }
       if (!item || typeof item !== 'object') return '';
       var nested = Array.isArray(item.items) && item.items.length
         ? '<' + childTag + '>' + GW.renderEditorListItems(item.items, childTag) + '</' + childTag + '>'
         : '';
-      return '<li>' + GW.renderEditorInlineText(item.content || '') + nested + '</li>';
+      // item.content 앞뒤 공백·개행 trim — bullet 옆 빈 줄 생성 방지
+      var content = String(item.content || '').replace(/^[\s\u00A0]+|[\s\u00A0]+$/g, '');
+      return '<li>' + GW.renderEditorInlineText(content) + nested + '</li>';
     }).join('');
   };
 
@@ -1335,6 +1337,88 @@
       keepalive: true,
     }).catch(function (e) { console.warn('[GW] logout cleanup failed:', e); });
   };
+  /* ══════════════════════════════════════════════════════════
+     BOOKMARKS (localStorage) · RECENT (localStorage)
+     ══════════════════════════════════════════════════════════ */
+  var BOOKMARK_KEY = 'gw_bookmarks';
+  var RECENT_KEY   = 'gw_recent';
+  var BOOKMARK_MAX = 50;
+  var RECENT_MAX   = 10;
+
+  function _readList(key) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return []; }
+  }
+  function _writeList(key, list) {
+    try { localStorage.setItem(key, JSON.stringify(list)); } catch (_) {}
+  }
+
+  GW.bookmarks = {
+    list: function () { return _readList(BOOKMARK_KEY); },
+    has: function (id) {
+      var n = Number(id);
+      return _readList(BOOKMARK_KEY).some(function (x) { return Number(x.id) === n; });
+    },
+    toggle: function (meta) {
+      var id = Number(meta && meta.id);
+      if (!id) return false;
+      var list = _readList(BOOKMARK_KEY);
+      var idx = list.findIndex(function (x) { return Number(x.id) === id; });
+      if (idx >= 0) {
+        list.splice(idx, 1);
+        _writeList(BOOKMARK_KEY, list);
+        GW._fireStorageUpdated('bookmarks');
+        return false; // now unsaved
+      }
+      list.unshift({
+        id: id,
+        title: String(meta.title || ''),
+        category: String(meta.category || ''),
+        image_url: meta.image_url || '',
+        savedAt: Date.now(),
+      });
+      if (list.length > BOOKMARK_MAX) list = list.slice(0, BOOKMARK_MAX);
+      _writeList(BOOKMARK_KEY, list);
+      GW._fireStorageUpdated('bookmarks');
+      return true; // now saved
+    },
+    remove: function (id) {
+      var n = Number(id);
+      var list = _readList(BOOKMARK_KEY).filter(function (x) { return Number(x.id) !== n; });
+      _writeList(BOOKMARK_KEY, list);
+      GW._fireStorageUpdated('bookmarks');
+    },
+    clear: function () { _writeList(BOOKMARK_KEY, []); GW._fireStorageUpdated('bookmarks'); },
+  };
+
+  GW.recent = {
+    list: function () { return _readList(RECENT_KEY); },
+    push: function (meta) {
+      var id = Number(meta && meta.id);
+      if (!id) return;
+      var list = _readList(RECENT_KEY).filter(function (x) { return Number(x.id) !== id; });
+      list.unshift({
+        id: id,
+        title: String(meta.title || ''),
+        category: String(meta.category || ''),
+        image_url: meta.image_url || '',
+        viewedAt: Date.now(),
+      });
+      if (list.length > RECENT_MAX) list = list.slice(0, RECENT_MAX);
+      _writeList(RECENT_KEY, list);
+      GW._fireStorageUpdated('recent');
+    },
+    clear: function () { _writeList(RECENT_KEY, []); GW._fireStorageUpdated('recent'); },
+  };
+
+  GW._fireStorageUpdated = function (kind) {
+    try { document.dispatchEvent(new CustomEvent('gw:user-data-updated', { detail: { kind: kind } })); } catch (_) {}
+  };
+
   GW.getAdminRole = function () { return sessionStorage.getItem('admin_role') || GW.readCookie('admin_role') || ''; };
   GW.setAdminRole = function (role) {
     sessionStorage.setItem('admin_role', role === 'editor' ? 'editor' : 'full');
