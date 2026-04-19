@@ -59,137 +59,231 @@
 
     var writeOverlay = document.createElement('div');
     writeOverlay.id = 'board-write-overlay';
-    writeOverlay.className = 'board-write-overlay';
+    writeOverlay.className = 'board-write-overlay bw-overlay';
     writeOverlay.innerHTML =
-      '<div class="board-write-box" role="dialog" aria-modal="true" aria-labelledby="board-write-heading">' +
-        '<button class="board-write-close" id="board-write-close" aria-label="닫기">×</button>' +
-        '<div class="board-write-header" id="board-write-heading">새 게시글 작성</div>' +
-        '<span class="board-write-cat" style="background:' + cat.color + '">' + cat.label + '</span>' +
-        '<div class="form-group" style="margin-top:20px;">' +
-          '<label for="board-write-title-input">제목 *</label>' +
-          '<input type="text" id="board-write-title-input" placeholder="게시글 제목을 입력하세요" maxlength="200" />' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label for="board-write-subtitle-input">부제목</label>' +
-          '<input type="text" id="board-write-subtitle-input" placeholder="부제목을 입력하세요 (선택)" maxlength="300" />' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label for="board-write-special-feature">특집 기사 묶음명 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">클릭하여 기존 목록 선택 또는 새 이름 직접 입력</span></label>' +
-          '<div class="sf-autocomplete-wrap" style="position:relative;">' +
-            '<input type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집 (선택)" maxlength="120" autocomplete="off" />' +
-            '<div id="board-sf-dropdown" class="sf-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--bg);border:1px solid var(--border);max-height:180px;overflow-y:auto;"></div>' +
+      '<div class="board-write-box bw-box" role="dialog" aria-modal="true" aria-labelledby="board-write-heading">' +
+
+        // ── Header ──
+        '<header class="bw-header">' +
+          '<div class="bw-header-meta">' +
+            '<span class="bw-cat-badge" style="background:' + cat.color + '">' + GW.escapeHtml(cat.label) + '</span>' +
+            '<span class="bw-header-hint">BP미디어 표준 v2.1 · 공식 원고 작성 도구</span>' +
           '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:12px;">' +
-          '<div class="form-group" style="flex:1;">' +
-            '<label for="board-write-author">작성자</label>' +
-            '<select id="board-write-author" style="padding:9px 12px;border:1px solid var(--border);font-family: NixgonFont, sans-serif;font-size:12px;outline:none;background:var(--bg);color:var(--ink);width:100%;"><option>불러오는 중…</option></select>' +
-          '</div>' +
-          '<div class="form-group" style="min-width:140px;">' +
-            '<label for="board-write-date">퍼블리싱 시각</label>' +
-            '<input type="datetime-local" id="board-write-date" class="admin-control-input board-write-datetime" />' +
-          '</div>' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label>글머리 태그</label>' +
-          '<div id="board-tag-selector" class="tag-pill-group"><span style="font-size:11px;color:var(--muted);">불러오는 중…</span></div>' +
-          '<div class="public-tag-add-tools">' +
-            '<input type="text" id="board-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />' +
-            '<button type="button" id="board-tag-new-btn" class="public-inline-tag-add">태그 추가</button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label>대표 이미지</label>' +
-          '<div id="board-cover-wrap" class="cover-upload-wrap">' +
-            '<button type="button" id="board-cover-btn" class="cover-upload-btn">📷 대표 이미지 선택</button>' +
-            '<div id="board-cover-preview"></div>' +
-          '</div>' +
-          '<input type="text" id="board-write-image-caption" placeholder="사진 출처 또는 캡션 (선택)" maxlength="300" style="margin-top:10px;" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">대표 사진 아래에 출처 또는 캡션으로 표기됩니다. 본문 이미지는 각 이미지 캡션에 같은 형식으로 표기됩니다.</p>' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label for="board-write-youtube-input">유튜브 영상 링크</label>' +
-          '<input type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">선택 입력입니다. YouTube / youtu.be 링크를 넣으면 기사 페이지와 뷰어에 영상이 표시됩니다.</p>' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label>본문 * <span style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;">(본문 이미지는 기사 안에 그대로 표시됩니다)</span></label>' +
-          '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
-        '</div>' +
-        '<div class="form-group">' +
-          '<label>슬라이드 전용 이미지 <span class="admin-label-note" id="board-gallery-count">0/10</span></label>' +
-          '<div class="cover-upload-wrap">' +
-            '<button type="button" id="board-gallery-btn" class="cover-upload-btn">🖼 슬라이드 이미지 선택</button>' +
-            '<div id="board-gallery-preview" class="gallery-upload-preview"><p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에서만 별도 슬라이드로 노출됩니다.</p></div>' +
-          '</div>' +
-          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">본문 아래 별도 슬라이드로 노출되며 2장 이상일 때만 활성화됩니다.</p>' +
-        '</div>' +
-        '<details class="location-form-toggle" id="board-location-toggle">' +
-          '<summary>위치 정보 추가 (OpenStreetMap)</summary>' +
-          '<div class="location-form-fields">' +
-            '<div class="form-group">' +
-              '<label for="board-write-location-name">위치 이름 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">내가 지정하는 이름</span></label>' +
-              '<input type="text" id="board-write-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />' +
-            '</div>' +
-            '<div class="form-group">' +
-              '<label for="board-write-location-address">주소 <span style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;">OpenStreetMap 기준 실주소</span></label>' +
-              '<div style="display:flex;gap:8px;align-items:flex-start;">' +
-                '<input type="text" id="board-write-location-address" placeholder="예: 강원도 고성군 토성면 ..." maxlength="300" style="flex:1;" />' +
-                '<button type="button" id="board-location-check-btn" style="white-space:nowrap;padding:9px 12px;border:1px solid var(--border);background:var(--bg);font-family:NixgonFont,sans-serif;font-size:11px;cursor:pointer;">지도 확인</button>' +
+          '<h1 class="bw-title" id="board-write-heading">새 게시글 작성</h1>' +
+          '<button class="bw-close" id="board-write-close" aria-label="닫기" type="button">' +
+            '<svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>' +
+          '</button>' +
+        '</header>' +
+
+        '<div class="bw-layout">' +
+
+          // ══════════════════ MAIN COLUMN ══════════════════
+          '<div class="bw-main">' +
+
+            // ── 기본 정보 ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head"><h2 class="bw-card-title">기본 정보</h2></header>' +
+              '<div class="bw-form-grid">' +
+                '<div class="bw-form-group">' +
+                  '<label class="bw-label" for="board-write-title-input">제목 <span class="bw-label-req">*</span></label>' +
+                  '<input class="bw-input" type="text" id="board-write-title-input" placeholder="게시글 제목을 입력하세요" maxlength="200" />' +
+                '</div>' +
+                '<div class="bw-form-group">' +
+                  '<label class="bw-label" for="board-write-subtitle-input">부제목 <span class="bw-label-opt">선택</span></label>' +
+                  '<input class="bw-input" type="text" id="board-write-subtitle-input" placeholder="해석 방향 또는 구조 흐름" maxlength="300" />' +
+                '</div>' +
+                '<div class="bw-form-group bw-form-group-relative">' +
+                  '<label class="bw-label" for="board-write-special-feature">특집 기사 묶음 <span class="bw-label-opt">선택</span></label>' +
+                  '<input class="bw-input" type="text" id="board-write-special-feature" placeholder="예: 세계잼버리 리더십 특집" maxlength="120" autocomplete="off" />' +
+                  '<div id="board-sf-dropdown" class="bw-sf-dropdown" style="display:none;"></div>' +
+                  '<p class="bw-field-hint">클릭하면 기존 특집 목록을 검색·선택할 수 있습니다.</p>' +
+                '</div>' +
               '</div>' +
-              '<p style="font-size:10px;color:var(--muted);font-family:NixgonFont,sans-serif;margin-top:6px;">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 게재 전 반드시 지도 확인을 눌러 위치를 검증하세요.</p>' +
-            '</div>' +
-            '<div id="board-location-map-preview" style="display:none;margin-top:8px;border:1px solid var(--border);overflow:hidden;">' +
-              '<iframe id="board-location-map-frame" style="width:100%;height:200px;border:0;display:block;" loading="lazy"></iframe>' +
-              '<div id="board-location-map-status" style="font-size:10px;padding:4px 8px;color:var(--muted);font-family:NixgonFont,sans-serif;"></div>' +
-            '</div>' +
+            '</section>' +
+
+            // ── 저자 · 게시 시각 ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head"><h2 class="bw-card-title">저자 · 게시 시각</h2></header>' +
+              '<div class="bw-form-grid bw-form-2col">' +
+                '<div class="bw-form-group">' +
+                  '<label class="bw-label" for="board-write-author">저자</label>' +
+                  '<select class="bw-select" id="board-write-author"><option>불러오는 중…</option></select>' +
+                '</div>' +
+                '<div class="bw-form-group">' +
+                  '<label class="bw-label" for="board-write-date">퍼블리싱 시각</label>' +
+                  '<input class="bw-input" type="datetime-local" id="board-write-date" />' +
+                '</div>' +
+              '</div>' +
+            '</section>' +
+
+            // ── 글머리 태그 ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head"><h2 class="bw-card-title">글머리 태그 <span class="bw-label-opt">복수 선택</span></h2></header>' +
+              '<div id="board-tag-selector" class="bw-tag-pills"><span class="bw-field-hint">불러오는 중…</span></div>' +
+              '<div class="bw-inline-row bw-inline-row-compact">' +
+                '<input class="bw-input bw-input-sm" type="text" id="board-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />' +
+                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-tag-new-btn">추가</button>' +
+              '</div>' +
+            '</section>' +
+
+            // ── 대표 이미지 · 캡션 · YouTube ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head">' +
+                '<h2 class="bw-card-title">대표 이미지 · 링크</h2>' +
+                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-cover-btn">📷 대표 이미지 선택</button>' +
+              '</header>' +
+              '<div id="board-cover-wrap" class="bw-cover-wrap">' +
+                '<div id="board-cover-preview"></div>' +
+              '</div>' +
+              '<div class="bw-form-group">' +
+                '<label class="bw-label" for="board-write-image-caption">캡션 <span class="bw-label-opt">선택 · 출처 또는 설명</span></label>' +
+                '<input class="bw-input" type="text" id="board-write-image-caption" placeholder="사진 출처 또는 캡션" maxlength="300" />' +
+              '</div>' +
+              '<div class="bw-form-group">' +
+                '<label class="bw-label" for="board-write-youtube-input">YouTube 링크 <span class="bw-label-opt">선택</span></label>' +
+                '<input class="bw-input" type="url" id="board-write-youtube-input" placeholder="https://www.youtube.com/watch?v=..." maxlength="300" />' +
+                '<p class="bw-field-hint">영상 링크를 넣으면 기사 페이지 상단 히어로 영역에 임베드됩니다.</p>' +
+              '</div>' +
+            '</section>' +
+
+            // ── 본문 에디터 ──
+            '<section class="bw-card bw-card-editor">' +
+              '<header class="bw-card-head">' +
+                '<h2 class="bw-card-title">본문 <span class="bw-label-req">*</span></h2>' +
+                '<span class="bw-field-hint">본문 이미지는 기사 안에 그대로 표시됩니다</span>' +
+              '</header>' +
+              '<div id="board-editorjs" class="board-editorjs-wrap"></div>' +
+            '</section>' +
+
+            // ── 슬라이드 갤러리 ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head">' +
+                '<h2 class="bw-card-title">슬라이드 이미지 <span class="bw-label-opt" id="board-gallery-count">0/10</span></h2>' +
+                '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-gallery-btn">🖼 이미지 추가</button>' +
+              '</header>' +
+              '<div id="board-gallery-preview" class="bw-gallery-preview gallery-upload-preview">' +
+                '<p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에 별도 슬라이드로 노출됩니다.</p>' +
+              '</div>' +
+              '<p class="bw-field-hint">2장 이상일 때만 슬라이드가 활성화됩니다.</p>' +
+            '</section>' +
+
+            // ── 위치 정보 (collapsible) ──
+            '<section class="bw-card bw-card-collapsible">' +
+              '<details class="bw-details" id="board-location-toggle">' +
+                '<summary class="bw-card-head bw-card-head-summary">' +
+                  '<h2 class="bw-card-title">위치 정보 <span class="bw-label-opt">선택 · OpenStreetMap</span></h2>' +
+                  '<span class="bw-chevron" aria-hidden="true">▾</span>' +
+                '</summary>' +
+                '<div class="bw-card-body">' +
+                  '<div class="bw-form-grid bw-form-2col">' +
+                    '<div class="bw-form-group">' +
+                      '<label class="bw-label" for="board-write-location-name">위치 이름</label>' +
+                      '<input class="bw-input" type="text" id="board-write-location-name" placeholder="예: 강원특별자치도 세계잼버리수련장" maxlength="120" />' +
+                    '</div>' +
+                    '<div class="bw-form-group">' +
+                      '<label class="bw-label" for="board-write-location-address">주소 <span class="bw-label-opt">OSM 실주소</span></label>' +
+                      '<div class="bw-inline-row">' +
+                        '<input class="bw-input" type="text" id="board-write-location-address" placeholder="예: 강원도 고성군 토성면 ..." maxlength="300" />' +
+                        '<button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="board-location-check-btn">지도 확인</button>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<p class="bw-field-hint">게재 전 반드시 지도 확인을 눌러 위치를 검증하세요.</p>' +
+                  '<div id="board-location-map-preview" class="bw-map-preview" style="display:none;">' +
+                    '<iframe id="board-location-map-frame" loading="lazy"></iframe>' +
+                    '<div id="board-location-map-status" class="bw-map-status"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</details>' +
+            '</section>' +
+
+            // ── SEO · 옵션 ──
+            '<section class="bw-card">' +
+              '<header class="bw-card-head"><h2 class="bw-card-title">SEO · 옵션</h2></header>' +
+              '<div class="bw-form-group">' +
+                '<label class="bw-label" for="board-write-metatags-input">SEO 해시태그 <span class="bw-label-opt">쉼표로 구분</span></label>' +
+                '<div class="board-metatag-ac-wrap">' +
+                  '<input class="bw-input" type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" autocomplete="off" />' +
+                  '<div class="board-metatag-suggestions" id="board-metatag-suggestions" hidden></div>' +
+                '</div>' +
+                '<p class="bw-field-hint">기존에 많이 쓴 태그를 입력하면 자동완성이 제안됩니다.</p>' +
+              '</div>' +
+              '<label class="bw-check-row">' +
+                '<input type="checkbox" id="board-ai-assisted" />' +
+                '<span>AI 지원으로 작성했습니다 (기사 하단에 자동 고지)</span>' +
+              '</label>' +
+            '</section>' +
+
           '</div>' +
-        '</details>' +
-        '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
-          '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
-          '<div class="board-metatag-ac-wrap">' +
-            '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" autocomplete="off" />' +
-            '<div class="board-metatag-suggestions" id="board-metatag-suggestions" hidden></div>' +
-          '</div>' +
-          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 기존에 많이 쓴 태그를 입력하면 자동완성이 제안됩니다.</p>' +
-        '</div>' +
-        '<div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">' +
-          '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
-          '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family: NixgonFont, sans-serif;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
+
+          // ══════════════════ SIDE COLUMN ══════════════════
+          '<aside class="bw-side">' +
+
+            // ── 작성 현황 ──
+            '<section class="bw-card bw-card-tight bw-card-stats">' +
+              '<h2 class="bw-card-title bw-card-title-sm">작성 현황</h2>' +
+              '<div class="bw-stats-grid">' +
+                '<div class="bw-stat">' +
+                  '<span class="bw-stat-label">제목</span>' +
+                  '<span class="bw-stat-value" id="board-stat-title">0자</span>' +
+                '</div>' +
+                '<div class="bw-stat">' +
+                  '<span class="bw-stat-label">부제목</span>' +
+                  '<span class="bw-stat-value" id="board-stat-subtitle">0자</span>' +
+                '</div>' +
+                '<div class="bw-stat">' +
+                  '<span class="bw-stat-label">본문</span>' +
+                  '<span class="bw-stat-value" id="board-stat-body">0자</span>' +
+                '</div>' +
+                '<div class="bw-stat">' +
+                  '<span class="bw-stat-label">문단</span>' +
+                  '<span class="bw-stat-value" id="board-stat-paragraphs">0개</span>' +
+                '</div>' +
+              '</div>' +
+              '<div class="bw-stats-meta" id="board-stat-reading">예상 읽기 시간 —</div>' +
+              '<div class="board-write-draft-status bw-draft-line" id="board-draft-status">자동저장 대기…</div>' +
+            '</section>' +
+
+            // ── SEO 미리보기 ──
+            '<section class="bw-card bw-card-tight bw-card-seo">' +
+              '<h2 class="bw-card-title bw-card-title-sm">SEO · 공유 미리보기</h2>' +
+              '<div class="board-write-seo bw-seo-preview">' +
+                '<div class="board-write-seo-url bw-seo-url" id="board-seo-url">https://gilwell.media/post/—</div>' +
+                '<div class="board-write-seo-title bw-seo-title" id="board-seo-title">기사 제목이 여기에 표시됩니다</div>' +
+                '<div class="board-write-seo-desc bw-seo-desc" id="board-seo-desc">부제목이 없으면 본문 첫 문단이 사용됩니다.</div>' +
+              '</div>' +
+            '</section>' +
+
+            // ── AI 채점 ──
+            '<section class="bw-card bw-card-tight bw-card-scorer">' +
+              '<div class="bw-scorer-head">' +
+                '<h2 class="bw-card-title bw-card-title-sm">AI 채점</h2>' +
+                '<button class="bw-btn bw-btn-primary bw-btn-sm board-write-scorer-btn" type="button" id="board-scorer-btn">✨ 채점</button>' +
+              '</div>' +
+              '<p class="bw-field-hint">BP미디어 표준 v2.1 기준 Title · Subtitle · Body · Tags · 문체를 자동 분석합니다.</p>' +
+              '<div id="board-scorer-result" class="board-write-scorer-result bw-scorer-result" hidden></div>' +
+            '</section>' +
+
+            // ── Turnstile (if configured) ──
+            '<div id="board-write-turnstile" class="bw-turnstile"></div>' +
+
+            // ── 단축키 힌트 ──
+            '<div class="bw-shortcut-hint">⌘/Ctrl + S 임시저장 · Esc 닫기</div>' +
+
+          '</aside>' +
+
         '</div>' +
 
-        // ── 작성 어시스트 (글자수·SEO·AI 채점) ──
-        '<div class="board-write-assist">' +
-          '<div class="board-write-assist-row">' +
-            '<div class="board-write-stats">' +
-              '<span>제목 <b id="board-stat-title">0자</b></span>' +
-              '<span>부제목 <b id="board-stat-subtitle">0자</b></span>' +
-              '<span>본문 <b id="board-stat-body">0자</b></span>' +
-              '<span>문단 <b id="board-stat-paragraphs">0개</b></span>' +
-              '<span id="board-stat-reading">읽기 —</span>' +
-            '</div>' +
-            '<div class="board-write-draft-status" id="board-draft-status">자동저장 대기…</div>' +
+        // ══════════════════ STICKY FOOTER ══════════════════
+        '<footer class="bw-footer">' +
+          '<div class="bw-footer-left"><span class="bw-footer-hint">게재 전 반드시 미리보기를 확인하세요</span></div>' +
+          '<div class="bw-footer-actions">' +
+            '<button class="bw-btn bw-btn-ghost cancel-btn visible" type="button" id="board-write-cancel">취소</button>' +
+            '<button class="bw-btn bw-btn-outline cancel-btn visible" type="button" id="board-write-savedraft">💾 임시저장</button>' +
+            '<button class="bw-btn bw-btn-primary bw-btn-submit submit-btn" type="button" id="board-write-submit">게재하기</button>' +
           '</div>' +
-          '<div class="board-write-seo">' +
-            '<div class="board-write-seo-label">SEO · 공유 미리보기</div>' +
-            '<div class="board-write-seo-url" id="board-seo-url">https://gilwell.media/post/—</div>' +
-            '<div class="board-write-seo-title" id="board-seo-title">기사 제목이 여기에 표시됩니다</div>' +
-            '<div class="board-write-seo-desc"  id="board-seo-desc">부제목이 없으면 본문 첫 문단이 사용됩니다.</div>' +
-          '</div>' +
-          '<div class="board-write-scorer">' +
-            '<div class="board-write-scorer-head">' +
-              '<span class="board-write-scorer-title">BP미디어 표준 v2.1 AI 채점</span>' +
-              '<button type="button" class="board-write-scorer-btn" id="board-scorer-btn">✨ 현재 기사 채점</button>' +
-            '</div>' +
-            '<div class="board-write-scorer-result" id="board-scorer-result" hidden></div>' +
-          '</div>' +
-          '<div class="board-write-hint">⌘/Ctrl+S 저장(게재하기 전 임시) · Esc 닫기</div>' +
-        '</div>' +
+        '</footer>' +
 
-        '<div id="board-write-turnstile" style="margin:20px 0 0;"></div>' +
-        '<button id="board-write-submit" class="submit-btn" style="margin-top:12px;">게재하기</button>' +
-        '<button id="board-write-savedraft" class="cancel-btn visible" style="margin-left:8px;">💾 임시저장</button>' +
-        '<button id="board-write-cancel" class="cancel-btn visible">취소</button>' +
       '</div>';
     document.body.appendChild(writeOverlay);
 
