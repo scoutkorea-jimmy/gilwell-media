@@ -394,7 +394,6 @@ body.admin-page .logout-btn {
 .mini-item h4,
 .sidebar-item h4,
 .post-card-body h3,
-.home-lead-body h3,
 .article-item h4 {
   font-size: var(--fs-card-title) !important;
   line-height: var(--lh-tight) !important;
@@ -2003,7 +2002,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   --board-card-gap: 6px;
   --home-section-gap: 18px;
   --home-grid-gap: 24px;
-  --home-block-bottom: 52px;
+  --home-block-bottom: 72px;
   --home-title-gap: 14px;
   --home-priority-height: 640px;
 }
