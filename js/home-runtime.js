@@ -204,6 +204,12 @@
       homeRefreshTimer = window.setInterval(function () {
         if (document.visibilityState === 'visible') refreshHomeData();
       }, 60000);
+      window.addEventListener('pagehide', function () {
+        if (homeRefreshTimer !== null) {
+          clearInterval(homeRefreshTimer);
+          homeRefreshTimer = null;
+        }
+      });
     }
 
     function initPullToRefresh() {

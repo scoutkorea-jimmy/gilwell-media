@@ -1,6 +1,18 @@
 {
   "items": [
   {
+      "version": "00.116.02",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 KST",
+      "summary": "홈페이지 방어 코드 강화 — 공유 버튼 URL 파싱 오류 방지, 새로고침 타이머 정리, 에디터 스크립트 중복 로드 방지.",
+      "changes": [
+        "home-helpers.js: bindShareButtons()에서 new URL() 실패 시 crash 대신 fallback URL 사용하도록 try-catch 추가.",
+        "home-runtime.js: pagehide 이벤트에서 60초 자동갱신 setInterval을 명시적으로 정리해 페이지 캐시 복원 시 타이머 중복 방지.",
+        "post-page.js: _loadPostEditorAssets() setTimeout 누적 재시도 방식을 콜백 큐(_editorCallbackQueue)로 교체 — 빠른 반복 클릭 시 에디터 초기화 함수 중복 호출 방지. 이미 DOM에 있는 스크립트 태그에 error 리스너 추가.",
+        "사이트 버전 00.116.01 → 00.116.02."
+      ]
+    },
+  {
       "version": "03.080.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 KST",

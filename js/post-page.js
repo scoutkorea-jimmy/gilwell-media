@@ -9,6 +9,7 @@ var _sharePostUrl = String(boot.sharePostUrl || window.location.href);
 var _sharePostTitle = String(boot.sharePostTitle || document.title || '');
 var _postEditSeed = boot.editSeed || {};
 var _postTurnstileWidgetId = null;
+var _editorCallbackQueue = [];
 var _postEditState = {
   editor: null,
   editorLoading: false,
@@ -82,10 +83,17 @@ function _loadPostEditorAssets(callback) {
     return;
   }
   if (_postEditState.editorLoading) {
-    setTimeout(function () { _loadPostEditorAssets(callback); }, 120);
+    _editorCallbackQueue.push(callback);
     return;
   }
   _postEditState.editorLoading = true;
+  _editorCallbackQueue.push(callback);
+
+  function flushCallbacks() {
+    _postEditState.editorLoading = false;
+    var cbs = _editorCallbackQueue.splice(0);
+    cbs.forEach(function (cb) { cb(); });
+  }
 
   function loadScript(src, done) {
     var exists = document.querySelector('script[src="' + src + '"]');
@@ -95,6 +103,7 @@ function _loadPostEditorAssets(callback) {
         return;
       }
       exists.addEventListener('load', done, { once: true });
+      exists.addEventListener('error', done, { once: true });
       return;
     }
     var script = document.createElement('script');
@@ -114,10 +123,7 @@ function _loadPostEditorAssets(callback) {
     var pending = 3;
     function done() {
       pending -= 1;
-      if (pending === 0) {
-        _postEditState.editorLoading = false;
-        callback();
-      }
+      if (pending === 0) flushCallbacks();
     }
     loadScript('https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.umd.js', done);
     loadScript('https://cdn.jsdelivr.net/npm/@editorjs/list@1.10.0/dist/list.umd.js', done);
