@@ -1,6 +1,23 @@
 {
   "items": [
   {
+      "version": "03.077.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:21:06 KST",
+      "summary": "태그 관계도 가독성 전면 개선 — 캔버스 확장, 라벨 티어링(상위 25 항상 표시/나머지 hover), halo 텍스트, hover focus, 강한 반발.",
+      "changes": [
+        "캔버스 확장: viewBox 960×520 → 1280×720 (+65% 면적). aspect-ratio CSS로 자연스러운 세로 크기, max-height 78vh.",
+        "라벨 티어링: 80개 노드 중 상위 25개(isPrimary=true)만 라벨 항상 표시. 나머지는 opacity:0으로 숨김.",
+        "Hover focus: 노드에 마우스 올리면 (1) 해당 노드 확대 + 라벨 노출, (2) 직접 이웃(neighbors) 라벨 노출 + 링크 강조(indigo 색 + 굵기), (3) 비이웃 노드 opacity 0.2로 dim + 링크 opacity 0.08로 dim. pointerleave 시 복귀.",
+        "라벨 halo: paint-order: stroke fill + white stroke 3px. 배경 색과 무관하게 라벨이 또렷이 읽힘.",
+        "primary 라벨: font-size --fs-caption + weight 700. secondary: --fs-meta + weight 600.",
+        "Force simulation 강화: iteration 300→500, repulsion 1800/d²→2800(일반)/4200(primary간), desired link length 80→130px, center gravity 0.0015→0.001(더 퍼짐), damping 0.72→0.75.",
+        "가장자리 여백 확장: clamp 좌우 60px·상하 24px (라벨 잘림 방지).",
+        "링크 기본 색 #94a3b8 → #cbd5e1 + opacity 0.5 (hover 강조 대비 충분). 최대 굵기 3.5→3.0.",
+        "관리자 버전 03.077.00 → 03.077.01."
+      ]
+    },
+  {
       "version": "03.077.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:15:18 KST",

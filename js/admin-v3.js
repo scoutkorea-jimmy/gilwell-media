@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.077.00
+ * Version: 03.077.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3181,20 +3181,22 @@
     var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
     var maxCount = Math.max.apply(null, topNodes.map(function (n) { return n.count || 1; }));
 
-    // 랜덤 초기 위치로 노드를 viewBox 전체(960×520)에 흩뿌린다. 이후 D3 없이 자체 힘 시뮬레이션
-    // (repulsion + link spring + center gravity) 60 tick 돌려 자연스러운 배치로 수렴시킨다.
-    var W = 960, H = 520;
+    // 더 넓은 캔버스 + 강한 반발로 라벨 겹침 완화. 상위 N 라벨만 기본 표시, 나머지는 hover 시 노출.
+    var W = 1280, H = 720;
+    var LABEL_ALWAYS = 25;  // 상위 25개만 항상 라벨 표시
     var rand = _createSeedRng(topNodes.length + (data.graph.links || []).length);
-    var nodes = topNodes.map(function (n) {
+    var nodes = topNodes.map(function (n, idx) {
       var ratio = (n.count || 1) / maxCount;
       return {
         id: n.id,
         label: n.id,
         count: n.count,
+        rank: idx,                           // 0이 가장 큰 노드
+        isPrimary: idx < LABEL_ALWAYS,       // 상위 N 노드만 라벨 항상 표시
         top_header: n.top_header || '',
-        r: Math.max(10, Math.min(28, 10 + Math.round(ratio * 18))),
-        x: 60 + rand() * (W - 120),
-        y: 60 + rand() * (H - 120),
+        r: Math.max(10, Math.min(32, 10 + Math.round(ratio * 22))),
+        x: 80 + rand() * (W - 160),
+        y: 80 + rand() * (H - 160),
         vx: 0, vy: 0,
       };
     });
@@ -3206,9 +3208,18 @@
       .map(function (l) { return { source: byId[l.source], target: byId[l.target], count: l.count }; });
     var maxLinkCount = links.length ? Math.max.apply(null, links.map(function (l) { return l.count; })) : 1;
 
-    // Force simulation — tick 300회 정도면 수렴
-    for (var iter = 0; iter < 300; iter++) {
-      var alpha = 1 - (iter / 300);
+    // 각 노드의 이웃 id 집합 (hover 시 강조용)
+    var neighborsById = {};
+    nodes.forEach(function (n) { neighborsById[n.id] = new Set(); });
+    links.forEach(function (l) {
+      neighborsById[l.source.id].add(l.target.id);
+      neighborsById[l.target.id].add(l.source.id);
+    });
+
+    // Force simulation — 라벨 bounding box 고려한 반발 (긴 한글 라벨 가로로 겹치지 않게).
+    var ITERS = 500;
+    for (var iter = 0; iter < ITERS; iter++) {
+      var alpha = 1 - (iter / ITERS);
       // repulsion (모든 쌍)
       for (var i = 0; i < nodes.length; i++) {
         for (var j = i + 1; j < nodes.length; j++) {
@@ -3217,7 +3228,9 @@
           var d2 = dx * dx + dy * dy;
           if (d2 < 1) d2 = 1;
           var d = Math.sqrt(d2);
-          var force = 1800 / d2; // 반발력
+          // primary 노드끼리는 더 강하게 반발 (라벨 공간 확보)
+          var bothPrimary = a.isPrimary && b.isPrimary;
+          var force = (bothPrimary ? 4200 : 2800) / d2;
           var fx = (dx / d) * force * alpha;
           var fy = (dy / d) * force * alpha;
           a.vx -= fx; a.vy -= fy;
@@ -3230,9 +3243,9 @@
         var s = lnk.source, t = lnk.target;
         var dx2 = t.x - s.x, dy2 = t.y - s.y;
         var d = Math.sqrt(dx2 * dx2 + dy2 * dy2) || 1;
-        var desired = 80; // 이상적인 링크 길이
-        var weightBoost = 1 + (lnk.count / maxLinkCount) * 1.5; // 공출현 많을수록 더 붙임
-        var spring = (d - desired) * 0.015 * weightBoost * alpha;
+        var desired = 130;  // 이상적 링크 길이 확장
+        var weightBoost = 1 + (lnk.count / maxLinkCount) * 1.8;
+        var spring = (d - desired) * 0.012 * weightBoost * alpha;
         var fx = (dx2 / d) * spring;
         var fy = (dy2 / d) * spring;
         s.vx += fx; s.vy += fy;
@@ -3241,16 +3254,14 @@
       // center gravity
       for (var n = 0; n < nodes.length; n++) {
         var nd = nodes[n];
-        nd.vx += (W / 2 - nd.x) * 0.0015 * alpha;
-        nd.vy += (H / 2 - nd.y) * 0.0015 * alpha;
-        // integrate with damping
-        nd.vx *= 0.72;
-        nd.vy *= 0.72;
+        nd.vx += (W / 2 - nd.x) * 0.001 * alpha;
+        nd.vy += (H / 2 - nd.y) * 0.001 * alpha;
+        nd.vx *= 0.75;
+        nd.vy *= 0.75;
         nd.x += nd.vx;
         nd.y += nd.vy;
-        // clamp
-        nd.x = Math.max(nd.r + 4, Math.min(W - nd.r - 4, nd.x));
-        nd.y = Math.max(nd.r + 4, Math.min(H - nd.r - 4, nd.y));
+        nd.x = Math.max(nd.r + 60, Math.min(W - nd.r - 60, nd.x));
+        nd.y = Math.max(nd.r + 24, Math.min(H - nd.r - 24, nd.y));
       }
     }
 
@@ -3260,7 +3271,7 @@
     var colorMap = {};
     headerList.forEach(function (h, i) { colorMap[h] = PALETTE[i % PALETTE.length]; });
 
-    // ── SVG 마크업 (group 3개 구조: zoom/pan 적용할 outer `g` 안에 links + nodes) ──
+    // ── SVG 마크업 ──
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     var NS = 'http://www.w3.org/2000/svg';
     while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -3274,45 +3285,85 @@
     nodesG.setAttribute('class', 'v3-ti-graph-nodes');
     world.appendChild(nodesG);
 
-    // 링크 DOM 생성 (나중 업데이트 위해 node id 인덱스 저장)
+    // 링크 DOM
     var linkEls = links.map(function (l) {
       var line = document.createElementNS(NS, 'line');
       line.setAttribute('x1', l.source.x.toFixed(1));
       line.setAttribute('y1', l.source.y.toFixed(1));
       line.setAttribute('x2', l.target.x.toFixed(1));
       line.setAttribute('y2', l.target.y.toFixed(1));
-      line.setAttribute('stroke', '#94a3b8');
-      line.setAttribute('stroke-opacity', '0.35');
-      line.setAttribute('stroke-width', (1 + (l.count / maxLinkCount) * 3.5).toFixed(2));
+      line.setAttribute('stroke', '#cbd5e1');
+      line.setAttribute('stroke-opacity', '0.5');
+      line.setAttribute('stroke-width', (1 + (l.count / maxLinkCount) * 3).toFixed(2));
+      line.setAttribute('class', 'v3-ti-graph-link');
       linksG.appendChild(line);
       return { line: line, source: l.source, target: l.target };
     });
 
-    // 노드 DOM 생성
+    // 노드 DOM — 라벨은 halo(흰 stroke)로 가독성 확보. primary/secondary 티어 분리.
     var nodeEls = nodes.map(function (n) {
       var color = colorMap[n.top_header || '(없음)'];
       var g = document.createElementNS(NS, 'g');
-      g.setAttribute('class', 'v3-ti-graph-node');
+      g.setAttribute('class', 'v3-ti-graph-node' + (n.isPrimary ? ' is-primary' : ' is-secondary'));
       g.setAttribute('data-node-id', n.id);
       g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
       var circle = document.createElementNS(NS, 'circle');
       circle.setAttribute('r', String(n.r));
       circle.setAttribute('fill', color);
-      circle.setAttribute('fill-opacity', '0.85');
+      circle.setAttribute('fill-opacity', '0.88');
+      circle.setAttribute('class', 'v3-ti-graph-node-circle');
       var title = document.createElementNS(NS, 'title');
       title.textContent = n.label + ' · ' + n.count + '건 · 우세 글머리: ' + (n.top_header || '(없음)');
       circle.appendChild(title);
       g.appendChild(circle);
+      // primary 노드는 글자 더 크게 + 굵게
       var text = document.createElementNS(NS, 'text');
       text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dy', String(n.r + 12));
+      text.setAttribute('dy', String(n.r + 14));
+      text.setAttribute('class', 'v3-ti-graph-label');
+      if (n.isPrimary) text.setAttribute('data-primary', '1');
       text.textContent = n.label;
       g.appendChild(text);
       nodesG.appendChild(g);
-      return { g: g, node: n };
+      return { g: g, text: text, node: n };
     });
     var nodeElById = {};
     nodeEls.forEach(function (entry) { nodeElById[entry.node.id] = entry; });
+
+    // hover 강조: 해당 노드 + 직접 이웃을 강조, 나머지 dim.
+    function setHoverFocus(focusId) {
+      if (!focusId) {
+        nodesG.classList.remove('is-focusing');
+        nodeEls.forEach(function (e) { e.g.classList.remove('is-focused', 'is-neighbor', 'is-dimmed'); });
+        linkEls.forEach(function (le) { le.line.classList.remove('is-focused', 'is-dimmed'); });
+        return;
+      }
+      nodesG.classList.add('is-focusing');
+      var neighbors = neighborsById[focusId] || new Set();
+      nodeEls.forEach(function (e) {
+        e.g.classList.remove('is-focused', 'is-neighbor', 'is-dimmed');
+        if (e.node.id === focusId) e.g.classList.add('is-focused');
+        else if (neighbors.has(e.node.id)) e.g.classList.add('is-neighbor');
+        else e.g.classList.add('is-dimmed');
+      });
+      linkEls.forEach(function (le) {
+        le.line.classList.remove('is-focused', 'is-dimmed');
+        if (le.source.id === focusId || le.target.id === focusId) le.line.classList.add('is-focused');
+        else le.line.classList.add('is-dimmed');
+      });
+    }
+
+    // 노드 hover/leave 이벤트
+    nodeEls.forEach(function (entry) {
+      entry.g.addEventListener('pointerenter', function () {
+        if (drag) return;
+        setHoverFocus(entry.node.id);
+      });
+      entry.g.addEventListener('pointerleave', function () {
+        if (drag) return;
+        setHoverFocus(null);
+      });
+    });
 
     // ── Zoom + Pan + Node Drag ──
     var zoom = { k: 1, x: 0, y: 0 };

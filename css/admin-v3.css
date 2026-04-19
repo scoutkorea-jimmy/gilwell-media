@@ -2778,23 +2778,64 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-ti-graph-svg {
   display: block;
   width: 100%;
-  height: 560px;
+  aspect-ratio: 1280 / 720;
+  max-height: 78vh;
   cursor: grab;
   user-select: none;
+  background: var(--v3-surface);
 }
 .v3-ti-graph-svg.is-panning { cursor: grabbing; }
-.v3-ti-graph-node { cursor: grab; }
+.v3-ti-graph-node { cursor: grab; transition: opacity .15s; }
 .v3-ti-graph-node.is-dragging { cursor: grabbing; }
-.v3-ti-graph-node circle {
+.v3-ti-graph-node-circle {
   stroke: var(--v3-surface);
-  stroke-width: 1.5;
-  transition: stroke-width 0.1s;
+  stroke-width: 1.6;
+  transition: stroke-width .12s, r .12s;
 }
-.v3-ti-graph-node:hover circle { stroke-width: 2.5; }
-.v3-ti-graph-node text {
+.v3-ti-graph-node:hover .v3-ti-graph-node-circle,
+.v3-ti-graph-node.is-focused .v3-ti-graph-node-circle {
+  stroke-width: 3;
+}
+
+/* 라벨 — halo로 가독성 확보 (paint-order: stroke → fill). */
+.v3-ti-graph-label {
   font-size: var(--fs-meta);
+  font-weight: 600;
   fill: var(--v3-text);
+  stroke: var(--v3-surface);
+  stroke-width: 3;
+  paint-order: stroke fill;
   pointer-events: none;
+  user-select: none;
+}
+/* primary(상위 25)는 항상 표시 + 더 큰 글자. */
+.v3-ti-graph-node.is-primary .v3-ti-graph-label {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  opacity: 1;
+}
+/* secondary는 기본 숨김, hover 시 노출. */
+.v3-ti-graph-node.is-secondary .v3-ti-graph-label {
+  opacity: 0;
+  transition: opacity .15s;
+}
+/* hover focus: 해당 노드 + 이웃 라벨만 노출 */
+.v3-ti-graph-node.is-focused .v3-ti-graph-label,
+.v3-ti-graph-node.is-neighbor .v3-ti-graph-label {
+  opacity: 1;
+  font-weight: 700;
+}
+/* hover focus 중에는 비이웃 노드와 링크 dim. */
+.v3-ti-graph-nodes.is-focusing .v3-ti-graph-node.is-dimmed {
+  opacity: 0.2;
+}
+.v3-ti-graph-link.is-focused {
+  stroke: var(--v3-ink-emphasis);
+  stroke-opacity: 0.7;
+  stroke-width: 2.4;
+}
+.v3-ti-graph-link.is-dimmed {
+  stroke-opacity: 0.08;
 }
 .v3-ti-graph-hint {
   padding: var(--gap-tight) var(--gap-card);
