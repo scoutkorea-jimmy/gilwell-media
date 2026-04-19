@@ -3,6 +3,11 @@
    Design: newspaper-editorial, cream & black, serif typography
    ════════════════════════════════════════════════════════════ */
 
+/* 영문 전용 본문 서체 — Google Sans Flex (variable, opsz 6..144, wght 1..1000).
+   font-family 체인 첫 번째에 두면 Latin 글자는 이 폰트가, 한글 등 CJK는
+   두 번째 NixgonFont로 자연 폴백된다. KMS §3.1 다국어 서체 원칙 준용. */
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
 @font-face {
   font-family: 'NixgonFont';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/NIXGONL-Vb.woff') format('woff');
@@ -328,7 +333,7 @@ body {
 
 body,
 body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -511,7 +516,7 @@ body.admin-page .logout-btn {
 /* ── Final Admin / Glossary Overrides (V0.059.00) ─────────── */
 body.admin-page,
 body.admin-page *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
 }
 
 body.admin-page .admin-header-top {
@@ -581,7 +586,7 @@ body.admin-page .article-item h4 {
   font-size: 27px !important;
   line-height: 1.28 !important;
   margin-bottom: var(--gap-card) !important;
-  color: #161616 !important;
+  color: var(--ink) !important;
 }
 
 body.admin-page .item-meta-grid {
@@ -610,7 +615,7 @@ body.admin-page .item-meta-chip strong {
 body.admin-page .item-meta-chip span {
   font-size: 13px !important;
   line-height: 1.45 !important;
-  color: #222 !important;
+  color: var(--ink) !important;
 }
 
 @media (max-width: 1024px) {
@@ -640,7 +645,7 @@ input,
 textarea,
 select,
 option {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(rect):not(ellipse):not(g) {
@@ -688,7 +693,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 .admin-page #admin-page-info,
 .admin-page .admin-sidebar-btn-desc,
 .admin-page .dash-action-label {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
   letter-spacing: 0.02em !important;
   text-transform: none !important;
 }
@@ -919,7 +924,7 @@ img {
 body {
   background:  var(--bg);
   color:       var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-weight: 500;                /* Medium — KMS §3.1 본문 기본 중량 */
   line-height: 1.75;
   min-height:  100vh;
@@ -940,7 +945,7 @@ body {
   background: var(--black);
   color: var(--white);
   text-decoration: none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
 }
@@ -977,7 +982,7 @@ body[data-home-bootstrap] .masthead {
 }
 
 .masthead-date {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   12px;
   color:       var(--ink);
   line-height: 1.5;
@@ -1009,7 +1014,7 @@ body[data-home-bootstrap] .masthead {
 }
 
 .masthead-logo h1 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      var(--fs-display);
   font-weight:    700;
   letter-spacing: -0.02em;
@@ -1018,7 +1023,7 @@ body[data-home-bootstrap] .masthead {
 }
 
 .masthead-logo .sub {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      var(--fs-micro);
   letter-spacing: 0.2em;
   color:          var(--muted);
@@ -1034,7 +1039,7 @@ body[data-home-bootstrap] .masthead {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: var(--fs-micro);
   letter-spacing: 0.08em;
   padding: var(--gap-micro) var(--gap-tight);
@@ -1055,7 +1060,7 @@ body[data-home-bootstrap] .masthead {
 
 .masthead-time {
   display:     block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   20px;
   font-weight: 500;
   color:       var(--accent);
@@ -1067,7 +1072,7 @@ body[data-home-bootstrap] .masthead {
   font-size:   11px;
   color:       var(--muted);
   text-align:  right;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-style:  italic;
 }
 
@@ -1081,7 +1086,7 @@ body[data-home-bootstrap] .masthead {
 }
 
 .masthead-stats {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -1121,7 +1126,7 @@ body[data-home-bootstrap] .lang-toggle {
 }
 
 .lang-btn {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1200,7 +1205,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .nav a {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      var(--fs-meta);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1240,7 +1245,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   display:        inline-block;
   white-space:    nowrap;
   animation:      ticker 60s linear infinite;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.08em;
   line-height:    1;
@@ -1263,7 +1268,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius: 999px;
   background: rgba(255,255,255,0.08);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -1314,7 +1319,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .home-runtime-alert-copy strong,
 .home-runtime-alert-copy span,
 .home-runtime-alert-copy small {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 .home-runtime-alert-copy strong {
@@ -1336,7 +1341,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid rgba(17,17,17,0.12);
   background: var(--white);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -1376,7 +1381,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   display:        inline-flex;
   align-items:    center;
   justify-content: center;
-  font-family:    NixgonFont, sans-serif;
+  font-family:    'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1435,7 +1440,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .hero-main .category-tag { margin-bottom: var(--gap-card); }
 
 .hero-main h2 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      38px;
   font-weight:    700;
   line-height:    1.28;
@@ -1449,12 +1454,12 @@ body[data-home-bootstrap] .lang-btn:hover {
   color:         var(--muted);
   line-height:   var(--lh-copy);
   margin-bottom: var(--gap-section);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-weight:   500;
 }
 
 .hero-main .meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1474,7 +1479,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .hero-side-item:last-child { border-bottom: none; }
 
 .hero-side-item h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     15px;
   font-weight:   600;
   line-height:   1.4;
@@ -1483,7 +1488,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .hero-side-item .meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1512,7 +1517,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .section-header h2 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      20px;
   font-weight:    700;
   letter-spacing: -0.01em;
@@ -1539,7 +1544,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items:    center;
   justify-content: center;
   min-height:     var(--chip-height);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1582,7 +1587,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .article-card .category-tag { margin-bottom: 10px; }
 
 .article-card h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     var(--fs-title);
   font-weight:   600;
   line-height:   1.4;
@@ -1598,7 +1603,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .article-card .meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -1615,7 +1620,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .sidebar-section h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      14px;
   font-weight:    700;
   letter-spacing: 0.02em;
@@ -1632,7 +1637,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .sidebar-item:last-child { border-bottom: none; }
 
 .sidebar-item h4 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     14px;
   font-weight:   600;
   line-height:   1.4;
@@ -1645,7 +1650,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .sidebar-item .meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -1660,7 +1665,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .about-box h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   18px;
   font-style:  italic;
   margin-bottom: var(--gap-element);
@@ -1670,7 +1675,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size:   12px;
   line-height: 1.7;
   color:       rgba(245,243,238,0.75);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 .about-box .divider {
@@ -1680,7 +1685,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .about-box .domain {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--accent);
   letter-spacing: 0.1em;
@@ -1749,7 +1754,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius: 999px;
   background: rgba(0,0,0,0.26);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -1878,7 +1883,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   bottom:         -4px;
   left:           0;
   right:          0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      clamp(36px, 7vw, 90px);
   font-weight:    700;
   color:          rgba(77, 0, 110, 0.05);
@@ -1898,7 +1903,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .site-hero-eyebrow {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -1926,7 +1931,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .site-hero-title {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:          clamp(28px, 5vw, 48px);
   font-weight:        700;
   color:              var(--black);
@@ -1941,7 +1946,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .site-hero.has-bg .site-hero-title { color: var(--white); }
 
 .site-hero-sub {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   15px;
   color:       var(--muted);
   max-width:   520px;
@@ -1952,7 +1957,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 /* Subtitle text on dynamic hero */
 .site-hero-subtitle {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   16px;
   color:       rgba(255,255,255,0.78);
   max-width:   560px;
@@ -1973,7 +1978,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border:         1px solid rgba(255,255,255,0.46);
   background:     rgba(255,255,255,0.10);
   color:          var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      13px;
   letter-spacing: .03em;
   text-transform: none;
@@ -2110,14 +2115,14 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: var(--gap-micro) 10px;
   background: var(--black);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .home-lead-body h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.22;
   color: var(--black);
@@ -2171,7 +2176,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .home-lead-meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -2278,7 +2283,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 13px;
   letter-spacing: 0.03em;
   text-decoration: none;
@@ -2327,7 +2332,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid var(--black);
   background: rgba(255,255,255,0.96);
   box-shadow: 0 10px 28px rgba(0,0,0,0.12);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2335,7 +2340,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 /* ── Shared section heading ── */
 .home-section-title {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      14px;
   font-weight:    700;
   letter-spacing: 0.08em;
@@ -2374,7 +2379,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .home-section-more {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      13px;
   letter-spacing: 0.04em;
   text-transform: none;
@@ -2446,7 +2451,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .mini-item h4 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     16px;
   font-weight:   600;
   line-height:   1.4;
@@ -2471,7 +2476,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .mini-item .mini-meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -2492,7 +2497,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.4;
   letter-spacing: 0.04em;
@@ -2533,7 +2538,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .mini-empty {
   padding:     var(--gap-section) 0;
   color:       var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   13px;
 }
 
@@ -2557,7 +2562,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .home-col-header h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   13px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -2628,7 +2633,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-banner-text h2 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      40px;
   font-weight:    700;
   letter-spacing: -0.02em;
@@ -2638,7 +2643,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-banner-text p {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   14px;
   color:       var(--muted);
   line-height: 1.6;
@@ -2650,7 +2655,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: var(--gap-micro) 10px;
   border: 1px solid var(--border);
   background: #f7f5f0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -2659,7 +2664,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-banner-total {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 56px;
   font-weight: 700;
   color: var(--border);
@@ -2678,7 +2683,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .board-banner-total-label {
   max-width: 240px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -2689,7 +2694,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-banner-total-value {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 56px;
   font-weight: 700;
   color: var(--border);
@@ -2779,7 +2784,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .post-card-labels .post-kicker { margin-bottom: 0; }
 
 .post-card-body h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     var(--fs-title);
   font-weight:   600;
   line-height:   1.4;
@@ -2829,7 +2834,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .post-card-meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      var(--fs-micro);
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -2839,7 +2844,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .post-card-engagement {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   color: var(--accent);
@@ -2849,7 +2854,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 /* ── Read More link ── */
 .read-more {
   display:        inline-block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2883,7 +2888,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -2914,7 +2919,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   justify-content: center;
   min-width: 24px;
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.1em;
   user-select: none;
@@ -2929,7 +2934,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1.5px solid var(--border);
   background: var(--white);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -2986,7 +2991,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .modal-header .category-tag { margin-bottom: var(--gap-card); }
 
 .modal-header h2 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      26px;
   font-weight:    700;
   line-height:    1.4;
@@ -2995,7 +3000,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .modal-header .modal-date {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.06em;
@@ -3028,7 +3033,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .post-image-caption {
   margin: 6px 0 18px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   line-height: 1.5;
   color: #8f8f8f;
@@ -3127,7 +3132,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   color: var(--white);
   border-radius: 999px;
   padding: 6px var(--gap-element);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
@@ -3143,7 +3148,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid rgba(17,17,17,0.14);
   background: rgba(255,255,255,0.88);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 24px;
   line-height: 1;
   display: inline-flex;
@@ -3198,7 +3203,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-banner-note {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   color: #8f8f8f;
   line-height: 1.7;
@@ -3225,7 +3230,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .modal-body {
   padding:     28px 40px 40px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   15px;
   font-weight: 500;
   line-height: 1.85;
@@ -3245,7 +3250,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   line-height: 1;
   padding:     var(--gap-micro) var(--gap-tight);
   transition:  color 0.15s;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 .modal-close:hover { color: var(--black); }
@@ -3260,7 +3265,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .empty-state .empty-icon {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     48px;
   font-style:    italic;
   color:         var(--border);
@@ -3269,7 +3274,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .empty-state p {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   14px;
   line-height: 1.7;
 }
@@ -3304,7 +3309,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .error-state {
   padding:    40px 48px;
   text-align: center;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:  12px;
   color:      var(--danger);
 }
@@ -3318,7 +3323,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   right:          32px;
   background:     var(--black);
   color:          var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      12px;
   letter-spacing: 0.08em;
   padding:        14px var(--gap-section);
@@ -3371,14 +3376,14 @@ body.share-modal-open {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.9);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 18px;
   cursor: pointer;
 }
 
 .share-modal-kicker {
   margin-bottom: 10px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -3387,7 +3392,7 @@ body.share-modal-open {
 
 .share-modal-title {
   margin: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 24px;
   line-height: 1.35;
   color: var(--ink);
@@ -3396,7 +3401,7 @@ body.share-modal-open {
 
 .share-modal-help {
   margin: var(--gap-element) 0 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   line-height: 1.7;
   color: var(--muted);
@@ -3415,7 +3420,7 @@ body.share-modal-open {
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   text-align: left;
   cursor: pointer;
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
@@ -3528,7 +3533,7 @@ footer::before {
 }
 
 footer h4 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      14px;
   font-weight:    700;
   margin:         0 0 var(--gap-tight);
@@ -3560,7 +3565,7 @@ footer a {
   border: 0;
   background: transparent;
   color: rgba(255,255,255,0.76);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3573,7 +3578,7 @@ footer a {
 
 .footer-build {
   margin-top:      var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:       10px;
   letter-spacing:  0.12em;
   text-transform:  uppercase;
@@ -3588,7 +3593,7 @@ footer a {
 }
 
 .footer-live-stat {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3603,7 +3608,7 @@ footer a {
 .admin-build-label,
 .admin-login-build {
   display: block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3635,7 +3640,7 @@ footer a:hover { color: var(--white); }
 }
 
 .footer-bottom p {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          rgba(255,255,255,0.62);
   letter-spacing: 0.08em;
@@ -3645,7 +3650,7 @@ footer a:hover { color: var(--white); }
    MODAL SUBTITLE
    ════════════════════════════════════════════════════════════ */
 .modal-subtitle {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     15px;
   color:         var(--muted);
   margin:        var(--gap-micro) 0 var(--gap-element);
@@ -3664,7 +3669,7 @@ footer a:hover { color: var(--white); }
   padding:        var(--gap-tight) var(--gap-card);
   border:         1px dashed var(--border);
   background:     var(--bg);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   cursor:         pointer;
@@ -3686,7 +3691,7 @@ footer a:hover { color: var(--white); }
   padding:     var(--gap-micro) 10px;
   border:      1px solid var(--border);
   background:  none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   10px;
   color:       var(--muted);
   cursor:      pointer;
@@ -3705,7 +3710,7 @@ footer a:hover { color: var(--white); }
   padding: 14px var(--gap-card);
   border: 1px dashed var(--border);
   background: var(--bg);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.6;
   color: var(--muted);
@@ -3733,7 +3738,7 @@ footer a:hover { color: var(--white); }
   padding: 6px 10px;
   border: 1px solid var(--border);
   background: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   cursor: pointer;
@@ -3754,7 +3759,7 @@ footer a:hover { color: var(--white); }
   list-style: none;
   cursor: pointer;
   padding: var(--gap-element) 14px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -3788,7 +3793,7 @@ footer a:hover { color: var(--white); }
   padding: var(--gap-tight) var(--gap-element);
   border: 1px solid var(--border);
   background: var(--bg);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3807,13 +3812,13 @@ footer a:hover { color: var(--white); }
 }
 
 .post-location-name {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
 }
 
 .post-location-address {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   line-height: 1.7;
   color: var(--muted);
@@ -3871,7 +3876,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .08em;
   cursor: pointer;
@@ -3933,7 +3938,7 @@ footer a:hover { color: var(--white); }
   color: var(--white);
   border: 1px solid var(--black);
   border-radius: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -4002,7 +4007,7 @@ footer a:hover { color: var(--white); }
   padding: 0 var(--gap-element);
   border: 1px solid var(--border);
   border-radius: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   background: var(--bg);
   color: var(--ink);
@@ -4029,7 +4034,7 @@ footer a:hover { color: var(--white); }
   margin-bottom: 18px;
   padding: 0;
   border-bottom: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   color: var(--muted);
 }
@@ -4114,7 +4119,7 @@ footer a:hover { color: var(--white); }
   padding: 0 10px;
   border: 1px solid rgba(15, 141, 179, 0.26);
   color: var(--region-kor);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .08em;
   white-space: nowrap;
@@ -4145,7 +4150,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-map-result-date::before {
   content: "DATE";
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .08em;
   color: var(--purple);
@@ -4153,7 +4158,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-map-result-place::before {
   content: "PLACE";
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .08em;
   color: rgba(17, 17, 17, 0.42);
@@ -4168,7 +4173,7 @@ footer a:hover { color: var(--white); }
   padding: 0 var(--gap-tight);
   border: 1px solid var(--ocean-blue);
   color: var(--ocean-blue);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
 }
@@ -4214,7 +4219,7 @@ footer a:hover { color: var(--white); }
 .calendar-map-filters strong {
   display: block;
   margin-bottom: 10px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: .08em;
   color: var(--ink);
@@ -4237,7 +4242,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   border-radius: 0;
   cursor: pointer;
@@ -4301,7 +4306,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -4316,7 +4321,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--black);
   background: var(--black);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -4372,7 +4377,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -4400,7 +4405,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 20px;
   cursor: pointer;
 }
@@ -4418,7 +4423,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-weekdays span {
   text-align: center;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -4690,7 +4695,7 @@ footer a:hover { color: var(--white); }
 .calendar-status-head {
   margin-bottom: 10px;
   padding: var(--gap-tight) var(--gap-element);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -4778,7 +4783,7 @@ footer a:hover { color: var(--white); }
   min-height: var(--chip-height);
   padding: 0 10px;
   border: 1px solid currentColor;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -4896,7 +4901,7 @@ footer a:hover { color: var(--white); }
   padding: var(--gap-tight) var(--gap-element);
   min-height: 36px;
   cursor: pointer;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 .calendar-event-links {
@@ -5009,7 +5014,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   text-align: left;
 }
@@ -5187,7 +5192,7 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-map-popup {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -5228,7 +5233,7 @@ footer a:hover { color: var(--white); }
   border: 2px solid rgba(255,255,255,0.95);
   box-shadow: 0 4px 10px rgba(0,0,0,0.14);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1;
   background: var(--forest-green);
@@ -5264,7 +5269,7 @@ footer a:hover { color: var(--white); }
 }
 
 .feature-definition-pane label {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -5278,7 +5283,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 13px;
   line-height: 1.65;
 }
@@ -5403,7 +5408,7 @@ footer a:hover { color: var(--white); }
   box-shadow: 0 2px 8px rgba(98,37,153,0.12);
 }
 .dash-action-icon { font-size: 22px; }
-.dash-action-label { font-family: NixgonFont, sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.dash-action-label { font-family: 'Google Sans Flex', NixgonFont, sans-serif; font-size: 11px; letter-spacing: .08em; color: var(--muted); }
 
 /* ── Drag-and-drop ────────────────────────────────────────── */
 .drag-handle {
@@ -5446,13 +5451,13 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-header .logo {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   18px;
   font-weight: 700;
 }
 
 .admin-header .badge {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   background:     var(--accent);
@@ -5470,7 +5475,7 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-header a {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   color:          rgba(245,243,238,0.6);
@@ -5482,7 +5487,7 @@ footer a:hover { color: var(--white); }
 .admin-header a:hover { color: var(--white); }
 
 .logout-btn {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   color:          var(--accent);
@@ -5518,13 +5523,13 @@ footer a:hover { color: var(--white); }
 }
 
 .panel-header h2 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   18px;
   font-weight: 700;
 }
 
 .panel-header .count {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.08em;
@@ -5537,7 +5542,7 @@ footer a:hover { color: var(--white); }
 
 .form-group label {
   display:        block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -5552,7 +5557,7 @@ footer a:hover { color: var(--white); }
   padding:     11px 14px;
   border:      1px solid var(--border);
   background:  var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   14px;
   font-weight: 500;
   color:       var(--ink);
@@ -5603,7 +5608,7 @@ footer a:hover { color: var(--white); }
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -5645,7 +5650,7 @@ footer a:hover { color: var(--white); }
   background:     none;
   color:          var(--muted);
   border:         1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5667,7 +5672,7 @@ footer a:hover { color: var(--white); }
   background: none;
   color: var(--danger);
   border: 1px solid rgba(204, 68, 68, 0.45);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5688,7 +5693,7 @@ footer a:hover { color: var(--white); }
 /* Category preview tag */
 .cat-preview {
   display:        inline-block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -5714,7 +5719,7 @@ footer a:hover { color: var(--white); }
 .stat-item:last-child { border-right: none; }
 
 .stat-item .stat-num {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:    28px;
   font-weight:  700;
   color:        var(--black);
@@ -5722,7 +5727,7 @@ footer a:hover { color: var(--white); }
 }
 
 .stat-item .stat-label {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5747,7 +5752,7 @@ footer a:hover { color: var(--white); }
 .article-item-content { flex: 1; min-width: 0; }
 
 .article-item h4 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      14px;
   font-weight:    600;
   line-height:    1.4;
@@ -5759,7 +5764,7 @@ footer a:hover { color: var(--white); }
 }
 
 .article-item .item-meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -5781,7 +5786,7 @@ footer a:hover { color: var(--white); }
   padding: 9px 11px;
   border: 1px solid rgba(31,31,31,0.16);
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(243,239,232,0.96));
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   line-height: 1.45;
   letter-spacing: 0.01em;
@@ -5789,7 +5794,7 @@ footer a:hover { color: var(--white); }
 }
 
 .item-meta-chip strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-weight: 500;
   color: var(--black);
   letter-spacing: 0.08em;
@@ -5825,7 +5830,7 @@ footer a:hover { color: var(--white); }
 }
 
 .btn-edit, .btn-delete {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -5869,7 +5874,7 @@ footer a:hover { color: var(--white); }
   padding:     40px 28px;
   text-align:  center;
   color:       var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   13px;
   line-height: 1.7;
 }
@@ -5886,7 +5891,7 @@ footer a:hover { color: var(--white); }
   gap:            6px;
   min-height:     var(--btn-height-primary);
   margin-top:     20px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -5925,7 +5930,7 @@ footer a:hover { color: var(--white); }
 }
 
 .board-pw-header {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     22px;
   font-weight:   700;
   margin-bottom: var(--gap-tight);
@@ -5933,7 +5938,7 @@ footer a:hover { color: var(--white); }
 }
 
 .board-pw-desc {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     13px;
   color:         var(--muted);
   margin-bottom: 20px;
@@ -5977,7 +5982,7 @@ footer a:hover { color: var(--white); }
 .board-pw-eye:hover { color: #1f1f1f; }
 
 .board-pw-error {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:    11px;
   color:        var(--danger);
   margin-top:   10px;
@@ -5992,7 +5997,7 @@ footer a:hover { color: var(--white); }
 .board-pw-actions button {
   flex:           1;
   padding:        var(--gap-element);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -6045,13 +6050,13 @@ footer a:hover { color: var(--white); }
   color:       var(--muted);
   line-height: 1;
   padding:     var(--gap-micro) var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   transition:  color 0.15s;
 }
 .board-write-close:hover { color: var(--black); }
 
 .board-write-header {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     22px;
   font-weight:   700;
   margin-bottom: 10px;
@@ -6060,7 +6065,7 @@ footer a:hover { color: var(--white); }
 
 .board-write-cat {
   display:        inline-block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      9px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -6084,7 +6089,7 @@ footer a:hover { color: var(--white); }
   min-height:     var(--chip-height);
   padding:        0 var(--gap-element);
   border:         1px solid var(--border);
-  font-family:    NixgonFont, sans-serif;
+  font-family:    'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: .08em;
   color:          var(--muted);
@@ -6122,7 +6127,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
@@ -6507,7 +6512,7 @@ footer a:hover { color: var(--white); }
     color: var(--ink);
     text-decoration: none;
     background: rgba(255, 255, 255, 0.88);
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 18px;
     line-height: 1;
   }
@@ -6526,7 +6531,7 @@ footer a:hover { color: var(--white); }
     flex-shrink: 0;
   }
   body.post-page .post-mobile-brand-text {
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 22px;
     font-weight: 700;
     line-height: 1;
@@ -6540,7 +6545,7 @@ footer a:hover { color: var(--white); }
   body.post-page .post-mobile-section-chip {
     max-width: 124px;
     padding: 7px 10px 6px;
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 10px;
     line-height: 1.1;
     letter-spacing: 0.08em;
@@ -6565,7 +6570,7 @@ footer a:hover { color: var(--white); }
   body.post-page .post-mobile-quicknav a {
     flex: 0 0 auto;
     padding: var(--gap-tight) 10px;
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -6806,7 +6811,7 @@ footer a:hover { color: var(--white); }
   align-items:    center;
   justify-content: center;
   min-height:     var(--chip-height);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -6870,18 +6875,18 @@ footer a:hover { color: var(--white); }
   margin:    0 !important;
 }
 .ce-paragraph {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
   font-size:   14px !important;
   line-height: 1.8 !important;
   color:       var(--ink) !important;
 }
 .ce-header {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
   color:       var(--black) !important;
 }
 .cdx-quote__text,
 .cdx-list__item {
-  font-family: NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
   font-size:   14px !important;
 }
 .cdx-quote {
@@ -6895,7 +6900,7 @@ footer a:hover { color: var(--white); }
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   cursor:         pointer;
@@ -6906,7 +6911,7 @@ footer a:hover { color: var(--white); }
   width:       100%;
   padding:     6px 10px;
   border:      1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   margin-top:  6px;
@@ -6970,7 +6975,7 @@ footer a:hover { color: var(--white); }
 .pps-section:last-child  { border-bottom: none; }
 
 .pps-label {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -6981,7 +6986,7 @@ footer a:hover { color: var(--white); }
 .pps-category {
   display:        inline-block;
   color:          var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -6994,7 +6999,7 @@ footer a:hover { color: var(--white); }
 .pps-row {
   display:       flex;
   gap:           var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     11px;
   margin-bottom: var(--gap-tight);
   align-items:   baseline;
@@ -7010,7 +7015,7 @@ footer a:hover { color: var(--white); }
 
 .post-page-back { margin-bottom: 28px; }
 .post-page-back-link {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7021,7 +7026,7 @@ footer a:hover { color: var(--white); }
 .post-page-back-link:hover { color: var(--accent); }
 
 .post-page-title {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     clamp(22px, 3.5vw, 36px);
   font-weight:   700;
   line-height:   1.3;
@@ -7029,14 +7034,14 @@ footer a:hover { color: var(--white); }
   margin-bottom: 14px;
 }
 .post-page-subtitle {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:     clamp(14px, 2vw, 18px);
   color:         var(--muted);
   line-height:   1.6;
   margin-bottom: var(--gap-card);
 }
 .post-page-meta {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   color:          var(--muted);
   letter-spacing: 0.05em;
@@ -7083,7 +7088,7 @@ footer a:hover { color: var(--white); }
 .post-page-body p,
 .post-page-body li,
 .post-page-body blockquote {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 16px;
   font-weight: 500;                /* Medium — APCA 본문 |Lc| 75+ 요구를 실제 stroke로 보장 */
   line-height: 1.85;
@@ -7097,7 +7102,7 @@ footer a:hover { color: var(--white); }
 .post-page-body h2,
 .post-page-body h3,
 .post-page-body h4 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   color: var(--black);
   line-height: 1.42;
   margin: 34px 0 14px;
@@ -7167,7 +7172,7 @@ footer a:hover { color: var(--white); }
   align-items: center;
 }
 .post-page-tags-label {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
@@ -7176,7 +7181,7 @@ footer a:hover { color: var(--white); }
 .post-page-tag {
   display:        inline-flex;
   align-items:    center;
-  font-family:    NixgonFont, sans-serif;
+  font-family:    'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.1em;
   background:     var(--bg);
@@ -7220,7 +7225,7 @@ footer a:hover { color: var(--white); }
 }
 
 .post-related-heading {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -7241,7 +7246,7 @@ footer a:hover { color: var(--white); }
 
 .post-special-feature-name {
   margin: -8px 0 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
 }
@@ -7256,7 +7261,7 @@ footer a:hover { color: var(--white); }
   background: var(--bg);
   color: var(--muted);
   text-decoration: none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -7344,7 +7349,7 @@ footer a:hover { color: var(--white); }
 }
 
 .post-edit-note {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.6;
   color: var(--muted);
@@ -7365,7 +7370,7 @@ footer a:hover { color: var(--white); }
 .post-edit-check label {
   margin: 0;
   cursor: pointer;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.4;
   color: var(--muted);
@@ -7393,7 +7398,7 @@ footer a:hover { color: var(--white); }
   align-items:    center;
   justify-content: center;
   min-height:     0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -7454,7 +7459,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid rgba(217, 74, 58, 0.3);
   background: #fff4f1;
   color: #c24335;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -7480,7 +7485,7 @@ footer a:hover { color: var(--white); }
 }
 
 .post-like-help {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   line-height: 1.55;
@@ -7538,7 +7543,7 @@ footer a:hover { color: var(--white); }
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 18px;
     line-height: 1;
     cursor: pointer;
@@ -7569,7 +7574,7 @@ footer a:hover { color: var(--white); }
     flex-shrink: 0;
   }
   .mobile-compact-brand-text {
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 20px;
     line-height: 1;
     letter-spacing: -0.02em;
@@ -7605,7 +7610,7 @@ footer a:hover { color: var(--white); }
     border-bottom: 1px solid var(--border);
   }
   .mobile-compact-drawer-title {
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 17px;
     line-height: 1.1;
   }
@@ -7619,7 +7624,7 @@ footer a:hover { color: var(--white); }
     padding: var(--gap-element) 10px;
     color: var(--ink);
     text-decoration: none;
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 13px;
     line-height: 1.35;
     letter-spacing: 0.04em;
@@ -7786,7 +7791,7 @@ footer a:hover { color: var(--white); }
   flex:        1;
   padding:     9px 14px;
   border:      1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   14px;
   outline:     none;
   color:       var(--ink);
@@ -7798,7 +7803,7 @@ footer a:hover { color: var(--white); }
   background:     var(--accent);
   color:          var(--white);
   border:         none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7810,7 +7815,7 @@ footer a:hover { color: var(--white); }
   padding:     var(--gap-tight) 14px;
   background:  none;
   border:      1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   cursor:      pointer;
@@ -7839,7 +7844,7 @@ footer a:hover { color: var(--white); }
 .global-search-item:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .global-search-item strong { display:block; font-size:16px; line-height:1.4; margin: 6px 0 var(--gap-micro); }
 .global-search-item p { font-size:13px; color:var(--muted); margin:0 0 6px; line-height:1.6; }
-.global-search-date { font-family: NixgonFont, sans-serif; font-size:var(--fs-micro); color:var(--muted); }
+.global-search-date { font-family: 'Google Sans Flex', NixgonFont, sans-serif; font-size:var(--fs-micro); color:var(--muted); }
 .global-search-empty { text-align:center; padding:40px; font-size:14px; color:var(--muted); }
 
 /* ════════════════════════════════════════════════════════════
@@ -7858,7 +7863,7 @@ footer a:hover { color: var(--white); }
   width:       100%;
   padding:     9px 36px 9px 14px;
   border:      1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   14px;
   outline:     none;
   color:       var(--ink);
@@ -7903,7 +7908,7 @@ footer a:hover { color: var(--white); }
 
 .admin-header-copy {
   margin: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: rgba(245,243,238,0.82);
@@ -7931,7 +7936,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.04);
   color: rgba(245,243,238,0.82);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8017,7 +8022,7 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-sidebar-group-title {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -8040,14 +8045,14 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-sidebar-btn-label {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .admin-sidebar-btn-desc {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -8097,13 +8102,13 @@ footer a:hover { color: var(--white); }
 }
 
 .admin-settings-block-head strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 20px;
   color: var(--ink);
 }
 
 .admin-settings-block-head span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -8125,7 +8130,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8280,7 +8285,7 @@ footer a:hover { color: var(--white); }
 
 /* Author tag on cards */
 .post-author {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:      10px;
   color:          var(--muted);
   letter-spacing: 0.04em;
@@ -8298,7 +8303,7 @@ footer a:hover { color: var(--white); }
   width: 140px; padding: 5px var(--gap-tight);
   border: none; border-bottom: 1px solid var(--gray-300);
   background: transparent;
-  font-family: NixgonFont, sans-serif; font-size: 11px;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif; font-size: 11px;
   color: var(--ink); outline: none;
   transition: border-color 0.2s;
 }
@@ -8351,7 +8356,7 @@ footer a:hover { color: var(--white); }
 }
 
 .mobile-search-modal-head strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 22px;
   color: var(--ink);
 }
@@ -8360,7 +8365,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8382,7 +8387,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 15px;
   padding: 10px 14px;
   outline: none;
@@ -8394,7 +8399,7 @@ footer a:hover { color: var(--white); }
   border: none;
   background: var(--black);
   color: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8407,7 +8412,7 @@ footer a:hover { color: var(--white); }
   padding:     var(--gap-element) var(--gap-card);
   border-left: 3px solid var(--scouting-purple);
   background:  rgba(98, 37, 153, 0.05);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size:   11px;
   color:       var(--muted);
   letter-spacing: 0.04em;
@@ -8422,7 +8427,7 @@ footer a:hover { color: var(--white); }
   margin-top: var(--gap-section-out);
   padding-top: var(--gap-card);
   border-top: 1px solid var(--border);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -8457,7 +8462,7 @@ footer a:hover { color: var(--white); }
 }
 
 .version-history-version {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -8466,7 +8471,7 @@ footer a:hover { color: var(--white); }
 
 .version-history-date,
 .version-history-type {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8543,7 +8548,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: none;
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -8555,7 +8560,7 @@ footer a:hover { color: var(--white); }
 }
 
 .version-history-pagination span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -8603,13 +8608,13 @@ footer a:hover { color: var(--white); }
 }
 
 .post-history-head h3 {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 22px;
 }
 
 .post-history-summary {
   margin-top: 6px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.06em;
   color: rgba(255,255,255,0.78);
@@ -8620,7 +8625,7 @@ footer a:hover { color: var(--white); }
   background: rgba(255,255,255,0.08);
   color: var(--white);
   padding: var(--gap-tight) var(--gap-element);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -8649,14 +8654,14 @@ footer a:hover { color: var(--white); }
 }
 
 .post-history-entry-top strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 15px;
   color: var(--ink);
 }
 
 .post-history-entry-top span,
 .post-history-entry-meta span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.04em;
@@ -8671,7 +8676,7 @@ footer a:hover { color: var(--white); }
 .contributors-thank {
   max-width: 640px;
   margin-bottom: 40px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 16px;
   line-height: 1.8;
   color: var(--muted);
@@ -8690,20 +8695,20 @@ footer a:hover { color: var(--white); }
   background: var(--bg);
 }
 .contributor-name {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 16px;
   font-weight: 600;
   color: var(--ink);
   flex-shrink: 0;
 }
 .contributor-note {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.03em;
 }
 .contributor-date {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.05em;
@@ -8711,7 +8716,7 @@ footer a:hover { color: var(--white); }
   flex-shrink: 0;
 }
 .contributors-empty {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   color: var(--muted);
   padding: var(--gap-section-out) 0;
@@ -8735,7 +8740,7 @@ footer a:hover { color: var(--white); }
 }
 .glossary-hero-copy h2 {
   margin: 0 0 var(--gap-element);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 42px;
   line-height: 1.1;
 }
@@ -8754,7 +8759,7 @@ footer a:hover { color: var(--white); }
 .glossary-toolbar-title {
   display: block;
   margin-bottom: var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -8766,7 +8771,7 @@ footer a:hover { color: var(--white); }
   padding: var(--gap-element) 14px;
   border: 1px solid var(--border);
   background: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
   outline: none;
@@ -8796,7 +8801,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid rgba(77, 0, 110, 0.18);
   background: rgba(77, 0, 110, 0.04);
   color: var(--midnight-purple);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -8817,7 +8822,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -8829,14 +8834,14 @@ footer a:hover { color: var(--white); }
 }
 .glossary-results-meta {
   margin-bottom: var(--gap-card);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
 .glossary-section + .glossary-section { margin-top: 26px; }
 .glossary-section-title {
   margin: 0 0 10px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 24px;
 }
 .glossary-unmatched-section {
@@ -8877,7 +8882,7 @@ footer a:hover { color: var(--white); }
 }
 .glossary-table th {
   background: var(--midnight-purple);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -8918,7 +8923,7 @@ footer a:hover { color: var(--white); }
   padding: 10px var(--gap-element);
   border: 1px solid var(--border);
   background: var(--white);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 13px;
   color: var(--ink);
   resize: vertical;
@@ -8930,7 +8935,7 @@ footer a:hover { color: var(--white); }
 }
 .glossary-admin-group-title {
   margin: 0 0 var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -8984,7 +8989,7 @@ footer a:hover { color: var(--white); }
 }
 .glossary-admin-cell-label {
   display: none;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.08em;
@@ -9000,7 +9005,7 @@ footer a:hover { color: var(--white); }
   padding: 7px 10px;
   border: 1px solid var(--border);
   background: transparent;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   cursor: pointer;
 }
@@ -9027,7 +9032,7 @@ footer a:hover { color: var(--white); }
 }
 .glossary-login-card h3 {
   margin: 0 0 var(--gap-tight);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 22px;
 }
 .glossary-login-card p {
@@ -9110,7 +9115,7 @@ footer a:hover { color: var(--white); }
   gap: 6px;
 }
 .glossary-inline-field span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -9128,7 +9133,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid rgba(98, 37, 153, 0.18);
   background: var(--white);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -9161,7 +9166,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -9187,7 +9192,7 @@ footer a:hover { color: var(--white); }
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -9215,7 +9220,7 @@ footer a:hover { color: var(--white); }
   white-space: nowrap;
 }
 .glossary-description-toggle-text {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.04em;
   color: inherit;
@@ -9366,7 +9371,7 @@ footer a:hover { color: var(--white); }
     content: attr(data-label);
     display: block;
     margin-bottom: 5px;
-    font-family: NixgonFont, sans-serif;
+    font-family: 'Google Sans Flex', NixgonFont, sans-serif;
     font-size: 9px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -9496,7 +9501,7 @@ body.admin-page .admin-list-page-size {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   box-sizing: border-box;
   outline: none;
@@ -9519,7 +9524,7 @@ body.admin-page .admin-control-input-spaced {
 body.admin-page .admin-field-meta,
 body.admin-page .admin-label-note {
   color: var(--muted);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.04em;
 }
@@ -9571,7 +9576,7 @@ body.admin-page .admin-inline-btn {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.05em;
   cursor: pointer;
@@ -9589,7 +9594,7 @@ body.admin-page #reorder-save-btn:not([style*="display:none"]) {
 }
 
 body.admin-page .admin-pagination-info {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -9689,7 +9694,7 @@ body.admin-page .item-meta-chip span {
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--ink);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   box-sizing: border-box;
   outline: none;
@@ -9820,7 +9825,7 @@ body.wosm-members-page #main-content {
   min-height: 38px;
   padding: var(--gap-tight) var(--gap-element);
   border-radius: 999px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.2;
   letter-spacing: 0.06em;
@@ -9839,7 +9844,7 @@ body.wosm-members-page #main-content {
 }
 .members-summary-inline {
   margin-top: var(--gap-card);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -9908,7 +9913,7 @@ body.wosm-members-page #main-content {
 }
 .members-section-heading {
   margin: 0;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 24px;
   line-height: 1.15;
   color: var(--ink);
@@ -9930,7 +9935,7 @@ body.wosm-members-page #main-content {
 }
 .members-section-eyebrow {
   font-style: normal;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   line-height: 1.1;
   letter-spacing: 0.12em;
@@ -9938,12 +9943,12 @@ body.wosm-members-page #main-content {
   color: rgba(77, 0, 110, 0.72);
 }
 .members-section-bar strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
 }
 .members-section-bar span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -10062,7 +10067,7 @@ body.wosm-members-page #main-content {
   background: rgba(77, 0, 110, 0.04);
   color: var(--midnight-purple);
   border-radius: 999px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   line-height: 1.2;
   letter-spacing: 0.06em;
@@ -10118,12 +10123,12 @@ body.wosm-members-page #main-content {
   text-align: left;
 }
 .members-card-section-head strong {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
 }
 .members-card-section-head span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -10271,20 +10276,20 @@ body.wosm-members-page #main-content {
   color: var(--white);
 }
 .global-scroll-top-btn span {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 16px;
   line-height: 1;
 }
 .global-scroll-top-btn em {
   font-style: normal;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 9px;
   letter-spacing: 0.14em;
 }
 .member-country-label {
   display: block;
   margin-bottom: var(--gap-micro);
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -10372,7 +10377,7 @@ body.wosm-members-page #main-content {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   z-index: 210;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 .board-metatag-suggestions[hidden] { display: none !important; }
 .board-metatag-suggestion {
@@ -10402,7 +10407,7 @@ body.wosm-members-page #main-content {
   background: rgba(98,37,153,0.03);
   border: 1px solid rgba(98,37,153,0.18);
   border-radius: 10px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
 }
 .board-write-assist-row {
   display: flex;
@@ -10497,7 +10502,7 @@ body.wosm-members-page #main-content {
   border: 1px solid var(--scouting-purple, #622599);
   background: var(--scouting-purple, #622599);
   color: #fff;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   font-weight: 700;
   border-radius: 6px;
@@ -10606,7 +10611,7 @@ body.wosm-members-page #main-content {
   --bw-gap-md:     16px;
   --bw-gap-lg:     22px;
   --bw-gap-xl:     28px;
-  --bw-font:       NixgonFont, sans-serif;
+  --bw-font:       'Google Sans Flex', NixgonFont, sans-serif;
 }
 
 /* Overlay — 살짝 블러된 다크 배경 */
@@ -11223,7 +11228,7 @@ body.wosm-members-page #main-content {
   line-height: 1.5;
 }
 .post-page-date {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   color: var(--muted);
   font-size: 13px;
   letter-spacing: 0.02em;
@@ -11238,7 +11243,7 @@ body.wosm-members-page #main-content {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 12px;
   color: var(--muted);
 }
@@ -11255,7 +11260,7 @@ body.wosm-members-page #main-content {
   box-shadow: 0 10px 40px rgba(0,0,0,0.2);
 }
 .post-edit-box .board-write-header {
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 20px;
   font-weight: 700;
   color: var(--black);
@@ -11263,7 +11268,7 @@ body.wosm-members-page #main-content {
 }
 .post-edit-box .board-write-cat {
   display: inline-block;
-  font-family: NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
