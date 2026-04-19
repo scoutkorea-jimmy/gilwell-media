@@ -98,6 +98,7 @@ export async function onRequestGet({ params, env, request }) {
   const dateStr  = formatDate(publicDateValue);
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
+  const readingMins = calcReadingTime(post.content || '');
   const bodyGalleryHtml = renderContentGallery(parseGalleryImages(post.gallery_images));
   const locationSectionHtml = renderPostLocationSection(post);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
@@ -175,7 +176,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260419064156">
+  <link rel="stylesheet" href="/css/style.css?v=20260419070005">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -270,6 +271,7 @@ export async function onRequestGet({ params, env, request }) {
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
           <span>${dateStr}</span>
+          <span class="post-read-time">읽기 ${readingMins}분</span>
           ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
         </div>
         <div class="post-page-share">
@@ -339,7 +341,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.116.07</span> · Admin <span class="admin-build-version">V03.083.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.117.00</span> · Admin <span class="admin-build-version">V03.084.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -509,10 +511,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <div class="toast" id="toast"></div>
 
-  <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
-  <script src="/js/main.js?v=20260419064156"></script>
-  <script src="/js/site-chrome.js?v=20260419064156"></script>
-  <script src="/js/post-page.js?v=20260419064156"></script>
+  <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
+  <script src="/js/main.js?v=20260419070005"></script>
+  <script src="/js/site-chrome.js?v=20260419070005"></script>
+  <script src="/js/post-page.js?v=20260419070005"></script>
 </body>
 </html>`;
 
@@ -730,6 +732,28 @@ function truncatePlain(str, maxLen) {
   }
   const plain = str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
+}
+
+function calcReadingTime(str) {
+  let text = '';
+  if (str && str.trim().charAt(0) === '{') {
+    try {
+      const doc = JSON.parse(str.trim());
+      if (Array.isArray(doc.blocks)) {
+        text = doc.blocks.map(b => {
+          const d = b.data || {};
+          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          return d.text || d.content || '';
+        }).join(' ');
+      }
+    } catch (_) { text = str; }
+  } else {
+    text = str || '';
+  }
+  const plain = text.replace(/<[^>]+>/g, '').replace(/&[a-z#0-9]+;/gi, ' ');
+  const koreans = (plain.match(/[\uAC00-\uD7A3]/g) || []).length;
+  const words = (plain.match(/[a-zA-Z]+/g) || []).length;
+  return Math.max(1, Math.ceil(koreans / 500 + words / 200));
 }
 
 function isTodayKst(dateStr) {

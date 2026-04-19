@@ -2898,6 +2898,27 @@ body[data-home-bootstrap] .lang-btn:hover {
   text-transform: uppercase;
 }
 
+.board-more-btn {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  font-family: NixgonFont, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.board-more-btn:hover {
+  border-color: var(--black);
+  color: var(--black);
+}
+
 /* ════════════════════════════════════════════════════════════
    POST DETAIL MODAL
    ════════════════════════════════════════════════════════════ */
@@ -6990,6 +7011,11 @@ footer a:hover { color: var(--white); }
   gap:            var(--gap-tight);
   flex-wrap:      wrap;
 }
+.post-read-time {
+  opacity: 0.7;
+  font-size: 10px;
+}
+
 .post-page-cover {
   width:         100%;
   max-height:    none;

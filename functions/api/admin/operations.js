@@ -19,6 +19,7 @@ export async function onRequestGet({ request, env }) {
       settingsRows,
       deployments,
       snapshots,
+      schedulerHeartbeatRow,
     ] = await Promise.all([
       env.DB.prepare(
         `SELECT id, title, category, publish_at
@@ -57,6 +58,7 @@ export async function onRequestGet({ request, env }) {
       ).all().catch(function () { return { results: [] }; }),
       fetchReleaseDeployments().catch(function () { return []; }),
       fetchReleaseSnapshots().catch(function () { return []; }),
+      env.DB.prepare("SELECT value FROM settings WHERE key = 'scheduler_last_run'").first().catch(function () { return null; }),
     ]);
 
     const deploymentItems = normalizeDeployments(deployments, snapshots);
@@ -91,6 +93,7 @@ export async function onRequestGet({ request, env }) {
       }),
       deployments: deploymentItems.slice(0, 8),
       deploy_alerts: deployAlerts,
+      scheduler_last_run: (schedulerHeartbeatRow && schedulerHeartbeatRow.value) || null,
     });
   } catch (err) {
     console.error('GET /api/admin/operations error:', err);

@@ -155,11 +155,11 @@
   };
 
   // ── Load posts from API ───────────────────────────────────
-  Board.prototype._load = function () {
+  Board.prototype._load = function (append) {
     if (this.loading) return;
     var self = this;
     this.loading = true;
-    this._showLoading();
+    if (!append) this._showLoading();
     this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
@@ -176,7 +176,11 @@
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
         self.totalPages = Math.max(1, Math.ceil(self.total / self.pageSize));
-        self._renderPosts(data.posts);
+        if (append) {
+          self._appendPosts(data.posts);
+        } else {
+          self._renderPosts(data.posts);
+        }
         self._updateCount();
         self._renderPagination();
       })
@@ -187,6 +191,16 @@
       .finally(function () {
         self.loading = false;
       });
+  };
+
+  Board.prototype._appendPosts = function (posts) {
+    var self = this;
+    if (!posts || !posts.length) return;
+    var startIdx = this.gridEl.querySelectorAll('.post-card').length;
+    posts.forEach(function (post, i) {
+      var card = self._buildCard(post, startIdx + i);
+      self.gridEl.appendChild(card);
+    });
   };
 
   // ── Render cards ──────────────────────────────────────────
@@ -208,36 +222,17 @@
   Board.prototype._renderPagination = function () {
     var self = this;
     if (!this.paginationEl) return;
-    if (this.totalPages <= 1) {
+    if (this.page >= this.totalPages) {
       this.paginationEl.innerHTML = '';
       return;
     }
-
-    var currentPage = this.page;
-    var totalPages = this.totalPages;
-    var start = Math.max(1, currentPage - 2);
-    var end = Math.min(totalPages, start + 4);
-    start = Math.max(1, end - 4);
-    var html = '';
-
-    if (currentPage > 1) {
-      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage - 1) + '">이전</button>';
-    }
-    for (var page = start; page <= end; page++) {
-      html += '<button type="button" class="board-page-btn' + (page === currentPage ? ' active' : '') + '" data-page="' + page + '">[' + page + ']</button>';
-    }
-    if (currentPage < totalPages) {
-      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage + 1) + '">다음</button>';
-    }
-    this.paginationEl.innerHTML = html;
-    this.paginationEl.querySelectorAll('[data-page]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var nextPage = parseInt(btn.getAttribute('data-page') || '1', 10);
-        if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage === currentPage) return;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        self.page = nextPage;
-        self._load();
-      });
+    var remaining = Math.max(0, this.total - this.page * this.pageSize);
+    var label = remaining > 0 ? '더 보기 (' + remaining + '개 더)' : '더 보기';
+    this.paginationEl.innerHTML = '<button type="button" class="board-more-btn">' + label + '</button>';
+    this.paginationEl.querySelector('.board-more-btn').addEventListener('click', function () {
+      if (self.loading || self.page >= self.totalPages) return;
+      self.page++;
+      self._load(true);
     });
   };
 
@@ -252,7 +247,8 @@
     var thumb = '';
     if (post.image_url) {
       thumb = '<img class="post-card-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url)
-            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
+            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy"'
+            + ' onerror="var c=this.closest(\'.post-card\');if(c){c.classList.remove(\'has-thumb\');c.classList.add(\'no-thumb\');}this.remove();">';
     }
 
     var isNew = GW.isPostNew(post);

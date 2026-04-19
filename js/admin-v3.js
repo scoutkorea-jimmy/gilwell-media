@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.083.01
+ * Version: 03.084.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -904,6 +904,7 @@
   };
 
   V3.showPanel = function (panel, settingsSection) {
+    if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
 
     // Update panels
@@ -1839,9 +1840,63 @@
     _editorClear();
   }
 
+  var _DRAFT_KEY = 'gw_admin_new_draft';
+
+  function _startDraftTimer() {
+    _stopDraftTimer();
+    _draftTimer = setInterval(function () {
+      if (_editingId) return;
+      var titleEl = document.getElementById('w-title');
+      if (!titleEl || !titleEl.value.trim()) return;
+      _editorGetData().then(function (content) {
+        try {
+          localStorage.setItem(_DRAFT_KEY, JSON.stringify({
+            title: titleEl.value,
+            subtitle: (document.getElementById('w-subtitle') || {}).value || '',
+            content: content,
+            savedAt: Date.now(),
+          }));
+        } catch (_) {}
+      });
+    }, 20000);
+  }
+
+  function _stopDraftTimer() {
+    if (_draftTimer) { clearInterval(_draftTimer); _draftTimer = null; }
+  }
+
+  function _clearDraft() {
+    try { localStorage.removeItem(_DRAFT_KEY); } catch (_) {}
+  }
+
+  function _checkAndOfferDraftRestore() {
+    try {
+      var raw = localStorage.getItem(_DRAFT_KEY);
+      if (!raw) return;
+      var draft = JSON.parse(raw);
+      if (!draft || !draft.title) return;
+      var ageMs = Date.now() - (draft.savedAt || 0);
+      if (ageMs > 7 * 24 * 3600000) { _clearDraft(); return; }
+      var mins = Math.round(ageMs / 60000);
+      var timeStr = mins < 60 ? mins + '분 전' : Math.round(mins / 60) + '시간 전';
+      if (!confirm('임시 저장된 글이 있습니다 (' + timeStr + ').\n제목: ' + draft.title + '\n\n복원할까요?')) {
+        _clearDraft();
+        return;
+      }
+      var titleEl = document.getElementById('w-title');
+      var subEl = document.getElementById('w-subtitle');
+      if (titleEl) titleEl.value = draft.title;
+      if (subEl) subEl.value = draft.subtitle || '';
+      if (draft.content) _editorSetData(draft.content);
+      _clearDraft();
+    } catch (_) {}
+  }
+
   V3.openWrite = function () {
     _resetWrite();
     V3.showPanel('write');
+    _startDraftTimer();
+    setTimeout(_checkAndOfferDraftRestore, 800);
   };
   V3.cancelWrite = function () { V3.showPanel('list'); };
 
@@ -1994,6 +2049,7 @@
     }).then(function (data) {
       var saved = data.post || data;
       if (!_editingId && saved.id) _editingId = saved.id;
+      _clearDraft();
       GW.showToast(Number(saved && saved.published || 0) === 1 ? '공개 상태로 저장했습니다' : '비공개 상태로 저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
       document.getElementById('w-published').checked = Number(saved && saved.published || 0) === 1;
