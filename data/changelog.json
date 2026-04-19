@@ -1,6 +1,19 @@
 {
   "items": [
   {
+      "version": "03.070.02",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 09:08:26 KST",
+      "summary": "03.070.01 핫픽스 이후 정밀 감사에서 발견한 추가 미정의 CSS 토큰 3건 정리 (선제 감사 누락분).",
+      "changes": [
+        "admin-v3.css에 pre-existing 미정의 토큰 2건 수정 — var(--v3-bg) → var(--v3-content-bg) (.v3-cal-map-frame, line 2909) / var(--v3-card) → var(--v3-surface) (.calendar-tag-option, line 2856). 캘린더 기능 커밋 ca5cf69부터 존재한 버그로, 해당 요소 background가 transparent로 나오던 문제를 드러냈다.",
+        "admin.css의 미정의 var(--text) 1건 수정 → var(--ink) (.analytics-provider-card, line 2061). 현재 사용처 없는 dead CSS지만 정합성 복구.",
+        "정밀 감사 결과 전체 확인: admin-v3.css의 var() 참조 105개 vs :root 정의 109개 대조에서 미정의 0건. nested var() 0건, 미닫힌 var() 0건, gradient/rgba에 남은 hex 리터럴 0건. padding 4-value shorthand 치환 syntactically 정상.",
+        "admin-v3.js의 inline style hex 리터럴 20건(color:#64748b 등 template string 내)은 KMS §3.4 strict 해석으로 위반 소지가 있으나 현재 visible bug 아니며 JS 레벨 CSS 토큰 참조는 별도 refactor 스코프. follow-up 항목으로 기록.",
+        "관리자 버전 03.070.01 → 03.070.02."
+      ]
+    },
+  {
       "version": "03.070.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:00:29 KST",
