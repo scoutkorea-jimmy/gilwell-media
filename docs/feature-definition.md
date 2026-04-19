@@ -494,6 +494,42 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-seri
 - 사이드바 항목 앞에 `[소목차]` 같은 카테고리 라벨이 붙어있으면 정보가 두 번 반복(라벨 + 번호 매겨진 섹션 제목)되어 스캔 효율이 떨어진다. 시각 위계는 들여쓰기로만 표현한다.
 - 기능정의서가 이전에는 `max-width: 760px` + `margin: 0 auto`로 tab-panel(900px) 안에서 한 번 더 중앙정렬되어 사이드바와 본문 사이에 약 70px의 여분 공간이 생겼다. 다른 탭(API·버전기록·디자인)은 그런 2차 중앙정렬이 없어 기능정의서만 좌측 앵커가 어긋나 보이는 시각 어긋남이 있었다. 본문 카드 스택 + 추가 중앙정렬 금지 원칙으로 네 탭이 같은 좌측 기준선을 공유하게 됐다.
 
+### 3.10 그라데이션 및 투명도 레이어 사용 규칙
+
+#### 기능 세부 설명
+
+**재사용 기준으로 토큰화 여부를 결정한다.**
+- **2곳 이상**에서 쓰이는 gradient는 `:root`에 `--gradient-*` (site) 또는 `--v3-gradient-*` (admin) 토큰으로 승격한다.
+- 단일 사용처의 glassmorphism·hover tint·드롭다운 상단 조명 등은 인라인 `linear-gradient(...)` / `radial-gradient(...)`로 직접 쓴다. 재사용 계획 없는 1회성을 토큰으로 만들면 dead token이 누적되어 관리 비용만 늘어난다.
+
+**Gradient 내부 stop 값 규약.**
+- **시작·끝 stop**: 가능한 한 브랜드 토큰 참조 — `var(--scouting-purple)`, `var(--v3-text)`, `var(--v3-dark-navy-a)` 등.
+- **중간 stop**: gradient 깊이 연출에 필요한 shade(예: `#562085`, `#4e1d7a`)는 **해당 gradient 토큰 내부에서만** hex 리터럴로 허용한다. 다른 선언에서 그 shade를 별도로 재참조하지 않는다. 재참조가 필요해지는 순간 독립 색 토큰으로 승격.
+- **rgba() 투명도 레이어**: 인라인 허용. RGB 값은 브랜드 토큰의 원색(예: scouting-purple `98, 37, 153`, indigo-500 `99, 102, 241`)을 쓰되, 순수 glassmorphism 덮개는 `rgba(255,255,255,α)` / `rgba(0,0,0,α)`로 일관화한다. alpha만 조절한다.
+
+**목적별 방향성.**
+
+| 용도 | 권장 |
+|---|---|
+| 히어로·풀폭 CTA 배경 | 재사용 토큰 (`--gradient-purple-deep` 등) |
+| 카드 hover 조명 / 드롭다운 상단 highlight | 1회성 rgba 인라인 |
+| 섹션 얕은 tint | **단색 토큰 우선** (`--v3-lav-tint` 등). gradient는 조명 깊이가 꼭 필요할 때만 |
+| Leaflet 지도 polygon 채움 | hex 문자열 JS 데이터 (CSS var 해석 불가) — `--gw-*` 토큰 값과 동일하게 유지, 주석 필수 |
+
+**Site vs Admin gradient 분리.**
+- 공개 사이트 gradient 토큰: `--gradient-*` — `css/style.css` `:root`.
+- Admin V3 gradient 토큰: `--v3-gradient-*` — `css/admin-v3.css` `:root`. admin은 공개 사이트 토큰을 참조하지 않는다 (admin.html이 `style.css`를 로드하지 않기 때문 — §3.2 동일 이유).
+
+**정기 감사.**
+- **사용 0건인 gradient 토큰은 제거한다.** gradient 토큰은 "재사용될 명확한 계획이 있을 때만" 만든다. 신설 후 다음 감사까지 사용처가 0건이면 즉시 삭제.
+- 감사 주기는 관리자 CSS 리터럴 전수 감사(§3.2 / §3.4 준수 점검)와 함께 수행.
+
+#### 각주
+
+- 2026-04-19 감사 기준: `css/style.css`의 `--gradient-ink` / `--gradient-purple` / `--gradient-footer-panel`은 사용 **0건** (dead token, 제거 대상). `--gradient-purple-deep`만 1곳 사용. `css/admin-v3.css`는 14개 gradient 선언 중 var() 토큰 사용 3건 / rgba 인라인 11건 / hex 인라인 0건.
+- gradient 내부 중간 stop에 대한 "리터럴 금지" 엄격 적용을 포기한 이유: 브랜드 팔레트는 APCA Lc 차이가 크지 않은 shade(~5~10% darker variant)를 중간값으로 자주 필요로 하고, 이를 매번 독립 토큰으로 승격하면 5~10개 shade가 gradient 하나당 생겨 전체 토큰 수가 폭증하고 "한 번도 직접 참조되지 않는" 죽은 토큰이 쌓인다. gradient 자체를 재사용 단위로 묶는 편이 관리 비용이 낮다.
+- Admin에서 site gradient 토큰을 못 쓰는 이유는 §3.2 말미의 `--gap-*`/`--fs-*` 이슈와 동일: `admin.html`은 `css/style.css`를 로드하지 않아 `var(--gradient-*)` 참조가 런타임에 undefined로 해석된다.
+
 ## 4. 마케팅 대시보드
 
 ### 4.1 의도
