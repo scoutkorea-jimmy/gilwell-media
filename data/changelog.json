@@ -1,6 +1,21 @@
 {
   "items": [
   {
+      "version": "03.071.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 09:20:25 KST",
+      "summary": "관리자 컬러 전수 감사 완료 + admin-v3.js 인라인 스타일 hex 리터럴도 토큰화해 JS 레벨까지 KMS §3.4 '리터럴 HEX 금지' 원칙 확장.",
+      "changes": [
+        "컬러 감사 결과 — admin-v3.css 기준 var() 참조 787건 vs :root 정의 109건, 미정의 0건. 컬러 값은 원본 hex와 100% 일치 (토큰 해결값 기반 diff 검증). 시각적 변동 없음. 03.070.00 배포 당시 보고된 대시보드 여백 붕괴는 --gap-*/--fs-* 미정의 이슈로 03.070.01에서 이미 복구됨.",
+        "admin-v3.js 인라인 style hex 10건 토큰화: color:#16a34a → var(--v3-ink-published) (\"공개\" 라벨) · color:#94a3b8 → var(--v3-text-l) · color:#64748b(4곳) → var(--v3-text-m) · color:#ef4444(3곳) → var(--v3-ink-destructive) · background:#fff → var(--v3-surface).",
+        "admin-v3.css :root에 3개 신규 토큰 추가: --v3-ink-published(#16a34a, green-600) / --v3-ink-destructive(#ef4444, red-500 삭제 버튼, 브랜드 --v3-danger와 의미 구분) / --v3-chart-default(#7c4dff, 차트 fallback).",
+        "마케팅 stage 컬러 함수도 토큰 참조로: _getMarketingStageColor가 'var(--v3-mkt-awareness)' 등을 반환하도록 수정. element.style.color 할당 시 CSS가 var() 해석.",
+        "남은 hex 6건은 _getGeoRegionTone의 Leaflet 지도 지역 팔레트로, Leaflet setStyle이 CSS var()를 해석 못해 hex 문자열 유지 — 값은 --gw-* 브랜드 토큰과 동일하며 주석으로 매핑 및 stroke 보정 이유 기록. 런타임 getComputedStyle 래핑은 별도 refactor 스코프.",
+        "최종 상태: admin-v3.css 미정의 토큰 0건, admin-v3.js 인라인 style hex 0건, map palette 6건은 문서화된 의도적 잔존. 관리자 전체 컬러 시스템 정합성 완료.",
+        "관리자 버전 03.070.02 → 03.071.00."
+      ]
+    },
+  {
       "version": "03.070.02",
       "date": "2026-04-19",
       "released_at": "2026-04-19 09:08:26 KST",
