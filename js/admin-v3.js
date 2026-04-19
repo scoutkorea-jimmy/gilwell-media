@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.076.01
+ * Version: 03.077.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3006,9 +3006,10 @@
 
   function _renderTagInsightsSections(data) {
     if (!data) return '';
+    // 순서: 관계도(가장 중요한 시각) → 통계 → 건강성 → 커버리지 → 제안
     return [
-      _renderTiStatistics(data),
       _renderTiGraph(data),
+      _renderTiStatistics(data),
       _renderTiHealth(data),
       _renderTiCoverage(data),
       _renderTiSuggestions(data),
@@ -3033,8 +3034,8 @@
       var pct = ((h.pct || 0) * 100).toFixed(1);
       return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(h.tag) + '</code></td><td>' + h.count + '</td><td>' + pct + '%</td></tr>';
     }).join('');
-    return '<section class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">§1 기초 통계</h2></div>' +
+    return '<section class="v3-card v3-ti-section-gap">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">기초 통계</h2></div>' +
       '<div class="v3-stats-grid">' +
         '<div class="v3-stat"><div class="v3-stat-label">전체 기사</div><div class="v3-stat-value">' + _fmt(s.total_posts || 0) + '</div><div class="v3-stat-sub">published=1</div></div>' +
         '<div class="v3-stat"><div class="v3-stat-label">고유 글머리 태그</div><div class="v3-stat-value">' + _fmt(s.unique_header_tags || 0) + '</div><div class="v3-stat-sub">tag 필드</div></div>' +
@@ -3067,11 +3068,17 @@
     var g = data.graph || { nodes: [], links: [] };
     var topN = Math.min(80, (g.nodes || []).length);
     var linkCount = Math.min(200, (g.links || []).length);
-    return '<section class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">§2 태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그. 휠/드래그로 탐색.</p></div>' +
+    return '<section class="v3-card">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">태그 관계도</h2><p class="v3-card-desc">노드 크기 = 등장 빈도, 연결선 굵기 = 공출현, 색 = 우세 글머리 태그.</p></div>' +
       '<div class="v3-inline-meta">상위 노드 ' + topN + '개 · 링크 ' + linkCount + '개</div>' +
-      '<div class="v3-tag-graph-stage">' +
-        '<svg class="v3-tag-graph" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+      '<div class="v3-ti-graph-stage">' +
+        '<svg class="v3-ti-graph-svg" id="analytics-tag-graph" viewBox="0 0 960 520" role="img" aria-label="태그 관계도"></svg>' +
+        '<div class="v3-ti-graph-hint">' +
+          '<span>마우스 휠: 확대/축소</span>' +
+          '<span>빈 공간 드래그: 화면 이동</span>' +
+          '<span>노드 드래그: 재배치</span>' +
+          '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-graph-reset">원위치</button>' +
+        '</div>' +
       '</div>' +
     '</section>';
   }
@@ -3079,7 +3086,7 @@
   function _renderTiHealth(data) {
     var h = data.health || {};
     var isolatedPreview = (h.isolated_tags || []).slice(0, 20).map(function (t) {
-      return '<code class="v3-inline-code" style="margin:2px;display:inline-block;">' + GW.escapeHtml(t) + '</code>';
+      return '<code class="v3-inline-code">' + GW.escapeHtml(t) + '</code>';
     }).join(' ');
     var oc = (h.overly_common || []).map(function (r) {
       return '<tr><td><code class="v3-inline-code">' + GW.escapeHtml(r.tag) + '</code></td><td>' + r.count + '</td><td>' + ((r.pct || 0) * 100).toFixed(1) + '%</td><td><span class="v3-badge v3-badge-yellow">세분화 검토</span></td></tr>';
@@ -3091,12 +3098,12 @@
       var members = c.members.map(function (t) { return '<code class="v3-inline-code">' + GW.escapeHtml(t) + '</code>'; }).join(' · ');
       return '<tr><td>' + c.size + '</td><td>' + members + '</td><td>' + c.total_articles + '</td></tr>';
     }).join('');
-    return '<section class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">§3 태그 체계 건강성 진단</h2><p class="v3-card-desc">자동 통합/삭제 금지. 모든 항목 <strong>사람 검토 필요</strong>.</p></div>' +
+    return '<section class="v3-card v3-ti-section-gap">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">태그 체계 건강성 진단</h2><p class="v3-card-desc">자동 통합/삭제 금지. 모든 항목 <strong>사람 검토 필요</strong>.</p></div>' +
       '<div class="v3-ti-subsection"><h3 class="v3-ti-subtitle">1. 1회만 등장한 고립 태그 <span class="v3-text-m">(' + (h.isolated_tags_count || 0) + '개)</span></h3>' +
-        '<div style="line-height:1.8;">' + (isolatedPreview || '<span class="v3-text-m">없음</span>') +
-        (h.isolated_tags && h.isolated_tags.length > 20 ? ' <button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" onclick="V3._tiMore(\'isolated\')">전체 ' + h.isolated_tags.length + '개 보기</button>' : '') +
-        '</div></div>' +
+        '<div class="v3-ti-chip-list">' + (isolatedPreview || '<span class="v3-text-m">없음</span>') + '</div>' +
+        (h.isolated_tags && h.isolated_tags.length > 20 ? '<button class="v3-btn v3-btn-ghost v3-btn-xs v3-mt-8" type="button" onclick="V3._tiMore(\'isolated\')">전체 ' + h.isolated_tags.length + '개 보기</button>' : '') +
+        '</div>' +
       (oc ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">2. 과다 등장 태그 <span class="v3-text-m">(기준 ≥' + (h.overly_common_threshold || 0) + '건)</span></h3>' +
         '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>비율</th><th>권고</th></tr></thead><tbody>' + oc + '</tbody></table></div>' : '') +
       (dup ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">3. 중복 의심 태그 쌍 <span class="v3-text-m">(상위 15)</span></h3>' +
@@ -3118,10 +3125,10 @@
       return '<tr><td>' + GW.escapeHtml(m.month) + '</td><td>' + m.count + '</td></tr>';
     }).join('');
     var gaps = (c.gaps || []).map(function (t) {
-      return '<code class="v3-inline-code" style="margin:2px;display:inline-block;">' + GW.escapeHtml(t) + '</code>';
+      return '<code class="v3-inline-code">' + GW.escapeHtml(t) + '</code>';
     }).join(' ');
-    return '<section class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">§4 콘텐츠 축적 현황</h2></div>' +
+    return '<section class="v3-card v3-ti-section-gap">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">콘텐츠 축적 현황</h2></div>' +
       '<div class="v3-ti-grid">' +
         '<div><h3 class="v3-ti-subtitle">글머리 태그별 누적 (상위 15)</h3>' +
           '<table class="v3-geo-table"><thead><tr><th>태그</th><th>기사</th><th>category 분포</th></tr></thead><tbody>' + byHeader + '</tbody></table>' +
@@ -3131,7 +3138,7 @@
           '<table class="v3-geo-table"><thead><tr><th>월</th><th>기사 수</th></tr></thead><tbody>' + monthly + '</tbody></table>' +
         '</div>' +
       '</div>' +
-      (gaps ? '<div class="v3-ti-subsection v3-mt-16"><h3 class="v3-ti-subtitle">전략적 보강 필요 (기사 ≤5건인 글머리 태그)</h3><div style="line-height:1.8;">' + gaps + '</div></div>' : '') +
+      (gaps ? '<div class="v3-ti-subsection"><h3 class="v3-ti-subtitle">전략적 보강 필요 (기사 ≤5건인 글머리 태그)</h3><div class="v3-ti-chip-list">' + gaps + '</div></div>' : '') +
     '</section>';
   }
 
@@ -3139,11 +3146,11 @@
     var s = data.suggestions || {};
     var hubs = (s.hub_clusters || []).map(function (hub) {
       var spokes = (hub.spokes || []).slice(0, 8).map(function (sp) {
-        return '<span class="v3-badge v3-badge-gray" style="margin:2px;">' + GW.escapeHtml(sp.tag) + ' · ' + sp.count + '</span>';
+        return '<span class="v3-badge v3-badge-gray">' + GW.escapeHtml(sp.tag) + ' · ' + sp.count + '</span>';
       }).join('');
       return '<div class="v3-ti-hub-card">' +
         '<div class="v3-ti-hub-head"><strong>' + GW.escapeHtml(hub.hub) + '</strong> <span class="v3-text-m">(' + hub.hub_count + '건)</span></div>' +
-        '<div>' + spokes + '</div>' +
+        '<div class="v3-ti-hub-card-spokes">' + spokes + '</div>' +
       '</div>';
     }).join('');
     var suggestions = (s.suggestions || []).map(function (sug, i) {
@@ -3151,8 +3158,8 @@
       var pri = sug.priority === '상' ? 'v3-badge-red' : (sug.priority === '중' ? 'v3-badge-yellow' : 'v3-badge-gray');
       return '<tr><td>' + (i + 1) + '</td><td>' + GW.escapeHtml(sug.title_hint) + '</td><td><code class="v3-inline-code">' + GW.escapeHtml(sug.header_hint) + '</code></td><td>' + metas + '</td><td class="v3-text-m">' + GW.escapeHtml(sug.rationale) + '</td><td><span class="v3-badge ' + pri + '">' + sug.priority + '</span></td></tr>';
     }).join('');
-    return '<section class="v3-card v3-mt-16">' +
-      '<div class="v3-card-head"><h2 class="v3-card-title">§5 SEO/AEO 클러스터 + 신규 콘텐츠 제안</h2><p class="v3-card-desc">휴리스틱 기반. 모든 제안 <strong>사람 검토 필요</strong>.</p></div>' +
+    return '<section class="v3-card v3-ti-section-gap">' +
+      '<div class="v3-card-head"><h2 class="v3-card-title">SEO/AEO 클러스터 + 신규 콘텐츠 제안</h2><p class="v3-card-desc">휴리스틱 기반. 모든 제안 <strong>사람 검토 필요</strong>.</p></div>' +
       '<h3 class="v3-ti-subtitle">허브-스포크 클러스터 후보</h3>' +
       '<div class="v3-ti-hub-grid">' + hubs + '</div>' +
       '<h3 class="v3-ti-subtitle v3-mt-16">신규 콘텐츠 제안 (상위 10)</h3>' +
@@ -3160,10 +3167,16 @@
     '</section>';
   }
 
+  // 이전 렌더의 이벤트/상태를 전역에 저장해 재마운트 시 leak 방지
+  var _tiGraphState = null;
+
   function _mountTagInsightsGraph(data) {
     if (!data || !data.graph) return;
     var svg = _el('analytics-tag-graph');
     if (!svg) return;
+    // 기존 핸들러 해제
+    if (_tiGraphState && _tiGraphState.destroy) _tiGraphState.destroy();
+
     var topNodes = data.graph.nodes.slice(0, 80);
     var nodeIds = new Set(topNodes.map(function (n) { return n.id; }));
     var maxCount = Math.max.apply(null, topNodes.map(function (n) { return n.count || 1; }));
@@ -3247,44 +3260,210 @@
     var colorMap = {};
     headerList.forEach(function (h, i) { colorMap[h] = PALETTE[i % PALETTE.length]; });
 
-    // SVG 렌더
-    var nsHtml = [];
-    nsHtml.push('<g class="ti-graph-links">');
-    links.forEach(function (l) {
-      var w = 1 + (l.count / maxLinkCount) * 3.5;
-      nsHtml.push('<line x1="' + l.source.x.toFixed(1) + '" y1="' + l.source.y.toFixed(1) + '" x2="' + l.target.x.toFixed(1) + '" y2="' + l.target.y.toFixed(1) + '" stroke="#94a3b8" stroke-opacity="0.35" stroke-width="' + w.toFixed(2) + '"></line>');
-    });
-    nsHtml.push('</g>');
-    nsHtml.push('<g class="ti-graph-nodes">');
-    nodes.forEach(function (n) {
-      var color = colorMap[n.top_header || '(없음)'];
-      nsHtml.push('<g transform="translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')">' +
-        '<circle r="' + n.r + '" fill="' + color + '" fill-opacity="0.85" stroke="#fff" stroke-width="1.5"><title>' + GW.escapeHtml(n.label) + ' · ' + n.count + '건 · 우세 글머리: ' + GW.escapeHtml(n.top_header || '(없음)') + '</title></circle>' +
-        '<text text-anchor="middle" dy="' + (n.r + 12) + '" font-size="11" fill="#1f2937">' + GW.escapeHtml(n.label) + '</text>' +
-      '</g>');
-    });
-    nsHtml.push('</g>');
-
-    // 범례
-    var legendItems = headerList.map(function (h) {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:var(--gap-element);font-size:var(--fs-meta);color:var(--v3-text-m);">' +
-        '<span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:' + colorMap[h] + ';"></span>' + GW.escapeHtml(h) + '</span>';
-    }).join('');
-
+    // ── SVG 마크업 (group 3개 구조: zoom/pan 적용할 outer `g` 안에 links + nodes) ──
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.innerHTML = nsHtml.join('');
+    var NS = 'http://www.w3.org/2000/svg';
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var world = document.createElementNS(NS, 'g');
+    world.setAttribute('class', 'v3-ti-graph-world');
+    svg.appendChild(world);
+    var linksG = document.createElementNS(NS, 'g');
+    linksG.setAttribute('class', 'v3-ti-graph-links');
+    world.appendChild(linksG);
+    var nodesG = document.createElementNS(NS, 'g');
+    nodesG.setAttribute('class', 'v3-ti-graph-nodes');
+    world.appendChild(nodesG);
 
-    // 범례 컨테이너 (그래프 밑)
+    // 링크 DOM 생성 (나중 업데이트 위해 node id 인덱스 저장)
+    var linkEls = links.map(function (l) {
+      var line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', l.source.x.toFixed(1));
+      line.setAttribute('y1', l.source.y.toFixed(1));
+      line.setAttribute('x2', l.target.x.toFixed(1));
+      line.setAttribute('y2', l.target.y.toFixed(1));
+      line.setAttribute('stroke', '#94a3b8');
+      line.setAttribute('stroke-opacity', '0.35');
+      line.setAttribute('stroke-width', (1 + (l.count / maxLinkCount) * 3.5).toFixed(2));
+      linksG.appendChild(line);
+      return { line: line, source: l.source, target: l.target };
+    });
+
+    // 노드 DOM 생성
+    var nodeEls = nodes.map(function (n) {
+      var color = colorMap[n.top_header || '(없음)'];
+      var g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'v3-ti-graph-node');
+      g.setAttribute('data-node-id', n.id);
+      g.setAttribute('transform', 'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')');
+      var circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('r', String(n.r));
+      circle.setAttribute('fill', color);
+      circle.setAttribute('fill-opacity', '0.85');
+      var title = document.createElementNS(NS, 'title');
+      title.textContent = n.label + ' · ' + n.count + '건 · 우세 글머리: ' + (n.top_header || '(없음)');
+      circle.appendChild(title);
+      g.appendChild(circle);
+      var text = document.createElementNS(NS, 'text');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dy', String(n.r + 12));
+      text.textContent = n.label;
+      g.appendChild(text);
+      nodesG.appendChild(g);
+      return { g: g, node: n };
+    });
+    var nodeElById = {};
+    nodeEls.forEach(function (entry) { nodeElById[entry.node.id] = entry; });
+
+    // ── Zoom + Pan + Node Drag ──
+    var zoom = { k: 1, x: 0, y: 0 };
+    function applyTransform() {
+      world.setAttribute('transform', 'translate(' + zoom.x + ',' + zoom.y + ') scale(' + zoom.k + ')');
+    }
+    applyTransform();
+
+    // 스크린 좌표 → SVG 좌표 변환 (viewBox 기준)
+    function svgPoint(clientX, clientY) {
+      var pt = svg.createSVGPoint();
+      pt.x = clientX; pt.y = clientY;
+      var ctm = svg.getScreenCTM();
+      if (!ctm) return { x: clientX, y: clientY };
+      var loc = pt.matrixTransform(ctm.inverse());
+      return { x: loc.x, y: loc.y };
+    }
+
+    // --- Wheel zoom (마우스 위치 기준) ---
+    function onWheel(ev) {
+      ev.preventDefault();
+      var rect = svg.getBoundingClientRect();
+      var localPoint = svgPoint(ev.clientX, ev.clientY);
+      var factor = ev.deltaY < 0 ? 1.15 : (1 / 1.15);
+      var newK = Math.max(0.25, Math.min(4, zoom.k * factor));
+      // 마우스 위치를 고정점으로: world_after = newK * worldPoint + offset_after
+      // localPoint_world = (localPoint_svg - zoom.x) / zoom.k → 고정점의 world 좌표
+      var wx = (localPoint.x - zoom.x) / zoom.k;
+      var wy = (localPoint.y - zoom.y) / zoom.k;
+      zoom.x = localPoint.x - wx * newK;
+      zoom.y = localPoint.y - wy * newK;
+      zoom.k = newK;
+      applyTransform();
+    }
+    svg.addEventListener('wheel', onWheel, { passive: false });
+
+    // --- Pan / Node drag (Pointer Events) ---
+    var pan = null;
+    var drag = null;
+    function onPointerDown(ev) {
+      var nodeG = ev.target.closest ? ev.target.closest('[data-node-id]') : null;
+      if (nodeG) {
+        var entry = nodeElById[nodeG.getAttribute('data-node-id')];
+        if (entry) {
+          drag = {
+            entry: entry,
+            start: svgPoint(ev.clientX, ev.clientY),
+            orig: { x: entry.node.x, y: entry.node.y },
+            pointerId: ev.pointerId,
+          };
+          nodeG.classList.add('is-dragging');
+          nodeG.setPointerCapture && nodeG.setPointerCapture(ev.pointerId);
+          ev.stopPropagation();
+          return;
+        }
+      }
+      // empty 공간 드래그 = pan
+      pan = {
+        start: { x: ev.clientX, y: ev.clientY },
+        origin: { x: zoom.x, y: zoom.y },
+        pointerId: ev.pointerId,
+      };
+      svg.classList.add('is-panning');
+      svg.setPointerCapture && svg.setPointerCapture(ev.pointerId);
+    }
+    function onPointerMove(ev) {
+      if (drag) {
+        var cur = svgPoint(ev.clientX, ev.clientY);
+        // world 좌표 변환
+        var wx = (cur.x - zoom.x) / zoom.k;
+        var wy = (cur.y - zoom.y) / zoom.k;
+        var sx = (drag.start.x - zoom.x) / zoom.k;
+        var sy = (drag.start.y - zoom.y) / zoom.k;
+        drag.entry.node.x = drag.orig.x + (wx - sx);
+        drag.entry.node.y = drag.orig.y + (wy - sy);
+        drag.entry.g.setAttribute('transform', 'translate(' + drag.entry.node.x.toFixed(1) + ',' + drag.entry.node.y.toFixed(1) + ')');
+        // 관련 링크만 업데이트
+        linkEls.forEach(function (le) {
+          if (le.source === drag.entry.node) {
+            le.line.setAttribute('x1', drag.entry.node.x.toFixed(1));
+            le.line.setAttribute('y1', drag.entry.node.y.toFixed(1));
+          }
+          if (le.target === drag.entry.node) {
+            le.line.setAttribute('x2', drag.entry.node.x.toFixed(1));
+            le.line.setAttribute('y2', drag.entry.node.y.toFixed(1));
+          }
+        });
+      } else if (pan) {
+        var dx = ev.clientX - pan.start.x;
+        var dy = ev.clientY - pan.start.y;
+        zoom.x = pan.origin.x + dx;
+        zoom.y = pan.origin.y + dy;
+        applyTransform();
+      }
+    }
+    function onPointerUp(ev) {
+      if (drag) {
+        drag.entry.g.classList.remove('is-dragging');
+        drag = null;
+      }
+      if (pan) {
+        svg.classList.remove('is-panning');
+        pan = null;
+      }
+    }
+    svg.addEventListener('pointerdown', onPointerDown);
+    svg.addEventListener('pointermove', onPointerMove);
+    svg.addEventListener('pointerup', onPointerUp);
+    svg.addEventListener('pointercancel', onPointerUp);
+    svg.addEventListener('pointerleave', onPointerUp);
+
+    // --- 원위치 버튼 ---
+    var resetBtn = document.getElementById('v3-ti-graph-reset');
+    function onReset() {
+      zoom = { k: 1, x: 0, y: 0 };
+      applyTransform();
+    }
+    if (resetBtn) resetBtn.addEventListener('click', onReset);
+
+    // ── 범례 ──
     var stage = svg.parentElement;
     if (stage) {
-      var existing = stage.querySelector('.v3-ti-graph-legend');
-      if (existing) existing.remove();
+      var existingLegend = stage.parentElement ? stage.parentElement.querySelector('.v3-ti-graph-legend') : null;
+      if (existingLegend) existingLegend.remove();
       var legend = document.createElement('div');
       legend.className = 'v3-ti-graph-legend';
-      legend.style.cssText = 'padding-top:var(--gap-tight);display:flex;flex-wrap:wrap;line-height:1.8;';
-      legend.innerHTML = '<span class="v3-text-m" style="font-weight:700;margin-right:var(--gap-tight);">우세 글머리:</span>' + legendItems;
-      stage.appendChild(legend);
+      var legendHtml = ['<span class="v3-ti-legend-title">우세 글머리</span>'];
+      headerList.forEach(function (h) {
+        legendHtml.push(
+          '<span class="v3-ti-legend-item">' +
+            '<span class="v3-ti-legend-dot" style="background:' + colorMap[h] + ';"></span>' +
+            GW.escapeHtml(h) +
+          '</span>'
+        );
+      });
+      legend.innerHTML = legendHtml.join('');
+      if (stage.parentElement) stage.parentElement.appendChild(legend);
     }
+
+    // teardown 등록
+    _tiGraphState = {
+      destroy: function () {
+        svg.removeEventListener('wheel', onWheel);
+        svg.removeEventListener('pointerdown', onPointerDown);
+        svg.removeEventListener('pointermove', onPointerMove);
+        svg.removeEventListener('pointerup', onPointerUp);
+        svg.removeEventListener('pointercancel', onPointerUp);
+        svg.removeEventListener('pointerleave', onPointerUp);
+        if (resetBtn) resetBtn.removeEventListener('click', onReset);
+      },
+    };
   }
 
   // 시드 랜덤 — 노드 수/링크 수에 따라 다른 초기 배치 (같은 데이터면 같은 결과, 재현 가능)

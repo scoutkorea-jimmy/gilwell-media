@@ -1,6 +1,21 @@
 {
   "items": [
   {
+      "version": "03.077.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:15:18 KST",
+      "summary": "태그 인사이트 4개 UX 이슈 일괄 수정 — § 심볼 제거, 관계도 최상단 재배치, 인라인 리터럴 토큰화, 그래프 zoom/pan/node-drag 상호작용 추가.",
+      "changes": [
+        "§ 심볼 전면 제거 — 섹션 제목 '기초 통계 / 태그 관계도 / 태그 체계 건강성 진단 / 콘텐츠 축적 현황 / SEO/AEO 클러스터 + 신규 콘텐츠 제안'. 독자가 낯선 기호 없이 바로 읽도록.",
+        "섹션 순서 재배치: 관계도를 최상단으로 이동. 운영자가 페널 진입 즉시 관계도를 본다. 이후 통계 → 건강성 → 커버리지 → 제안 순.",
+        "인라인 스타일 px 리터럴 토큰화 (KMS §3.2 준수) — style='margin:2px;display:inline-block' 제거 → .v3-ti-chip-list / .v3-ti-hub-card-spokes 컨테이너 gap 토큰. style='line-height:1.8' → .v3-ti-chip-list 클래스. style='padding-top:var(--gap-tight)...' → .v3-ti-graph-legend 클래스. style='font-weight:700;...' → .v3-ti-legend-title 클래스. 인라인 width:10px/height:10px 10px 원형 legend dot → .v3-ti-legend-dot(엣지 허용 hairline 유지).",
+        "섹션 간 간격 v3-mt-16(16px) → v3-ti-section-gap(24px = var(--gap-section)) — KMS §3.9 카드 스택 간격과 일치.",
+        "태그 관계도 상호작용 전면 추가 — 마우스 휠 확대/축소(0.25x~4x, 커서 위치 기준 확대), 빈 공간 드래그 pan, 노드 드래그 재배치. Pointer Events + setPointerCapture 사용해 터치/펜 호환. 드래그 중 해당 노드와 연결된 링크만 업데이트(전체 re-render 없음). '원위치' 버튼으로 zoom/pan 리셋. 기존 리스너는 재마운트 시 destroy().",
+        ".v3-ti-graph-stage / .v3-ti-graph-svg / .v3-ti-graph-node / .v3-ti-graph-hint CSS 클래스 신설(cursor grab/grabbing 상태, overflow hidden, height 560px). 그래프 상단 힌트: '마우스 휠: 확대/축소 · 빈 공간 드래그: 화면 이동 · 노드 드래그: 재배치'.",
+        "관리자 버전 03.076.01 → 03.077.00 (feature bump)."
+      ]
+    },
+  {
       "version": "03.076.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:00:37 KST",

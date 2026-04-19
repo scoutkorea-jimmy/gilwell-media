@@ -2691,6 +2691,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 /* ── 태그 인사이트 (panel-analytics-tags 전면 개편) ───────── */
+/* KMS §3.2 준수: 모든 padding/margin/gap/font-size는 토큰 사용. */
 .v3-ti-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2716,15 +2717,100 @@ body.marketing-fullscreen-open { overflow: hidden; }
   border: 1px solid var(--v3-border);
   border-radius: var(--v3-radius);
   background: var(--v3-neutral-50);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
 }
 .v3-ti-hub-head {
   font-size: var(--v3-fs-dense);
-  margin-bottom: var(--gap-tight);
   color: var(--v3-text);
 }
-.v3-ti-hub-card .v3-badge {
+.v3-ti-hub-card-spokes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-micro);
+}
+/* 태그 칩 리스트 (고립 태그 프리뷰, gap 섹션의 전략 보강 목록) */
+.v3-ti-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-micro) var(--gap-tight);
+  line-height: 1.6;
+}
+.v3-ti-chip-list .v3-inline-code { margin: 0; }
+/* 태그 관계도 범례 */
+.v3-ti-graph-legend {
+  padding-top: var(--gap-tight);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-element) var(--gap-card);
+  align-items: center;
+}
+.v3-ti-legend-title {
+  font-weight: 700;
+  color: var(--v3-text-m);
+  font-size: var(--fs-meta);
+}
+.v3-ti-legend-item {
   display: inline-flex;
-  margin-right: 2px;
+  align-items: center;
+  gap: var(--gap-micro);
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+}
+.v3-ti-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+/* 섹션 간 간격 (KMS §3.9 카드 스택 패턴과 동일 톤) */
+.v3-ti-section-gap { margin-top: var(--gap-section); }
+/* 태그 관계도 상호작용 */
+.v3-ti-graph-stage {
+  position: relative;
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  background: var(--v3-surface);
+  overflow: hidden;
+  touch-action: none;
+}
+.v3-ti-graph-svg {
+  display: block;
+  width: 100%;
+  height: 560px;
+  cursor: grab;
+  user-select: none;
+}
+.v3-ti-graph-svg.is-panning { cursor: grabbing; }
+.v3-ti-graph-node { cursor: grab; }
+.v3-ti-graph-node.is-dragging { cursor: grabbing; }
+.v3-ti-graph-node circle {
+  stroke: var(--v3-surface);
+  stroke-width: 1.5;
+  transition: stroke-width 0.1s;
+}
+.v3-ti-graph-node:hover circle { stroke-width: 2.5; }
+.v3-ti-graph-node text {
+  font-size: var(--fs-meta);
+  fill: var(--v3-text);
+  pointer-events: none;
+}
+.v3-ti-graph-hint {
+  padding: var(--gap-tight) var(--gap-card);
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+  border-top: 1px solid var(--v3-border);
+  background: var(--v3-neutral-50);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-element);
+}
+.v3-ti-graph-hint code {
+  background: var(--v3-surface);
+  border: 1px solid var(--v3-border);
+  border-radius: 4px;
+  padding: 0 var(--gap-micro);
 }
 
 /* v3-period-bar label prefix (e.g. "방문 분석", "태그 인사이트") */
