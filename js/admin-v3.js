@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.079.02
+ * Version: 03.080.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -813,6 +813,7 @@
   V3.logout = _doLogout;
 
   function _doLogout() {
+    _sessionStop();
     GW.clearToken();
     document.getElementById('v3-app').hidden = true;
     document.getElementById('v3-login').style.display = 'flex';
@@ -844,6 +845,7 @@
     _setupReleaseTabs();
     // Show dashboard
     V3.showPanel('dashboard');
+    _sessionStart();
   }
 
   V3.refreshDashboard = function () { _loadDashboard(_el('dash-refresh-btn')); };
@@ -3796,7 +3798,7 @@
     var page = 1;
     var PAGE_SIZE = 20;
     var overlay = document.createElement('div');
-    overlay.className = 'v3-modal v3-modal-open v3-ti-articles-modal';
+    overlay.className = 'v3-ti-articles-modal';
     overlay.innerHTML =
       '<div class="v3-modal-panel v3-ti-articles-panel">' +
         '<div class="v3-modal-head v3-ti-articles-head">' +
@@ -7709,5 +7711,114 @@
   function _escId(str) {
     return String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
   }
+
+  // ── Session Timeout ────────────────────────────────────────────────────────
+  var _SESSION_MS      = 30 * 60 * 1000;
+  var _SESSION_WARN_MS =  5 * 60 * 1000;
+  var _sessionDeadline     = 0;
+  var _sessionWarnTimeout  = null;
+  var _sessionExpireTimeout = null;
+  var _sessionTickInterval = null;
+  var _sessionWarnShown    = false;
+  var _sessionWarnModal    = null;
+
+  function _sessionReset() {
+    if (!_sessionDeadline) return;
+    _sessionWarnShown = false;
+    if (_sessionWarnModal) { _sessionWarnModal.remove(); _sessionWarnModal = null; }
+    clearTimeout(_sessionWarnTimeout);
+    clearTimeout(_sessionExpireTimeout);
+    _sessionDeadline    = Date.now() + _SESSION_MS;
+    _sessionWarnTimeout  = setTimeout(_sessionShowWarn,   _SESSION_MS - _SESSION_WARN_MS);
+    _sessionExpireTimeout = setTimeout(_sessionExpire,    _SESSION_MS);
+  }
+
+  function _sessionTick() {
+    var remaining = Math.max(0, _sessionDeadline - Date.now());
+    var mins = Math.floor(remaining / 60000);
+    var secs = Math.floor((remaining % 60000) / 1000);
+    var text = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    var el = document.getElementById('v3-timer-text');
+    var fill = document.getElementById('v3-timer-fill');
+    var timer = document.getElementById('v3-session-timer');
+    if (el) el.textContent = text;
+    if (fill) fill.style.width = ((remaining / _SESSION_MS) * 100) + '%';
+    if (timer) {
+      timer.classList.toggle('is-warning', remaining <= _SESSION_WARN_MS && remaining > 60000);
+      timer.classList.toggle('is-danger',  remaining <= 60000);
+    }
+  }
+
+  function _sessionShowWarn() {
+    if (_sessionWarnShown) return;
+    _sessionWarnShown = true;
+    var modal = document.createElement('div');
+    modal.className = 'v3-modal v3-modal-open v3-session-warn-modal';
+    modal.innerHTML =
+      '<div class="v3-modal-box" style="max-width:360px;text-align:center">' +
+        '<p style="margin:0 0 8px;font-size:var(--fs-md);font-weight:600">세션 만료 예정</p>' +
+        '<p style="margin:0 0 20px;font-size:var(--fs-sm);color:var(--v3-text-muted)">5분 후 자동 로그아웃됩니다. 계속 사용하시겠습니까?</p>' +
+        '<div style="display:flex;gap:10px;justify-content:center">' +
+          '<button class="v3-btn v3-btn-primary" onclick="V3.sessionExtend()">연장하기</button>' +
+          '<button class="v3-btn" onclick="V3.logout()">로그아웃</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    _sessionWarnModal = modal;
+  }
+
+  function _sessionExpire() {
+    _sessionStop();
+    if (_sessionWarnModal) { _sessionWarnModal.remove(); _sessionWarnModal = null; }
+    var modal = document.createElement('div');
+    modal.className = 'v3-modal v3-modal-open';
+    modal.innerHTML =
+      '<div class="v3-modal-box" style="max-width:340px;text-align:center">' +
+        '<p style="margin:0 0 8px;font-size:var(--fs-md);font-weight:600">세션이 만료되었습니다</p>' +
+        '<p style="margin:0 0 0;font-size:var(--fs-sm);color:var(--v3-text-muted)">30분간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
+      '</div>';
+    document.body.appendChild(modal);
+    GW.clearToken();
+    setTimeout(function () { window.location.href = '/'; }, 5000);
+  }
+
+  function _sessionStart() {
+    _sessionDeadline = Date.now() + _SESSION_MS;
+    _sessionWarnShown = false;
+    clearTimeout(_sessionWarnTimeout);
+    clearTimeout(_sessionExpireTimeout);
+    clearInterval(_sessionTickInterval);
+    _sessionWarnTimeout   = setTimeout(_sessionShowWarn, _SESSION_MS - _SESSION_WARN_MS);
+    _sessionExpireTimeout = setTimeout(_sessionExpire,   _SESSION_MS);
+    _sessionTickInterval  = setInterval(_sessionTick,    1000);
+    _sessionTick();
+    document.addEventListener('click',      _sessionReset);
+    document.addEventListener('keydown',    _sessionReset);
+    document.addEventListener('touchstart', _sessionReset);
+    document.addEventListener('scroll',     _sessionReset, true);
+  }
+
+  function _sessionStop() {
+    _sessionDeadline = 0;
+    clearTimeout(_sessionWarnTimeout);
+    clearTimeout(_sessionExpireTimeout);
+    clearInterval(_sessionTickInterval);
+    _sessionWarnTimeout = _sessionExpireTimeout = _sessionTickInterval = null;
+    document.removeEventListener('click',      _sessionReset);
+    document.removeEventListener('keydown',    _sessionReset);
+    document.removeEventListener('touchstart', _sessionReset);
+    document.removeEventListener('scroll',     _sessionReset, true);
+    var el = document.getElementById('v3-timer-text');
+    var fill = document.getElementById('v3-timer-fill');
+    if (el) el.textContent = '—';
+    if (fill) fill.style.width = '0%';
+    var timer = document.getElementById('v3-session-timer');
+    if (timer) { timer.classList.remove('is-warning', 'is-danger'); }
+  }
+
+  V3.sessionExtend = function () {
+    _sessionReset();
+  };
+  // ── End Session Timeout ───────────────────────────────────────────────────
 
 })();

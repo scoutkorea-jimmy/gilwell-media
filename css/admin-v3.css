@@ -440,6 +440,70 @@
 }
 .v3-sidebar-link:hover { background: rgba(255,255,255,.09); border-color: rgba(130,230,222,.18); color: var(--gw-canvas-white); }
 .v3-sidebar-link.danger:hover { background: rgba(255,86,85,.18); border-color: rgba(255,174,128,.32); color: var(--gw-canvas-white); }
+.v3-sidebar-link-ext { width: 10px; height: 10px; opacity: .55; flex-shrink: 0; margin-left: auto; }
+
+/* No top separator for the first (dashboard) nav section */
+.v3-nav-section-top { margin-top: 0; }
+.v3-nav-section-top .v3-nav-section-label { display: none; }
+
+/* External link icon inside nav items */
+.v3-nav-ext-icon { width: 10px; height: 10px; opacity: .5; flex-shrink: 0; margin-left: auto; }
+
+/* ── Session Timer ───────────────────────────────────────── */
+.v3-session-timer {
+  margin: 6px var(--gap-tight) 4px;
+  padding: 7px 10px 6px;
+  border-radius: var(--v3-chip-radius);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.07);
+  transition: border-color .3s, background .3s;
+}
+.v3-session-timer.is-warning {
+  background: rgba(255,200,50,.08);
+  border-color: rgba(255,200,50,.28);
+}
+.v3-session-timer.is-danger {
+  background: rgba(255,80,80,.12);
+  border-color: rgba(255,80,80,.38);
+}
+.v3-session-timer-top {
+  display: flex; align-items: center; gap: 5px;
+}
+.v3-session-timer-icon { opacity: .55; flex-shrink: 0; }
+.v3-session-timer.is-warning .v3-session-timer-icon { opacity: .85; color: #ffc832; }
+.v3-session-timer.is-danger  .v3-session-timer-icon { opacity: .95; color: #ff5050; }
+.v3-session-timer-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: rgba(255,255,255,.45);
+  flex: 1;
+}
+.v3-session-timer.is-warning .v3-session-timer-label { color: rgba(255,200,50,.75); }
+.v3-session-timer.is-danger  .v3-session-timer-label { color: rgba(255,80,80,.85); }
+.v3-session-timer-time {
+  font-size: var(--fs-sm); font-weight: 700; font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,.75); letter-spacing: .02em;
+}
+.v3-session-timer.is-warning .v3-session-timer-time { color: #ffc832; }
+.v3-session-timer.is-danger  .v3-session-timer-time { color: #ff5050; }
+.v3-session-timer-track {
+  margin-top: 5px; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,.1); overflow: hidden;
+}
+.v3-session-timer-fill {
+  height: 100%; border-radius: 2px; width: 100%;
+  background: rgba(255,255,255,.35);
+  transition: width 1s linear, background .3s;
+}
+.v3-session-timer.is-warning .v3-session-timer-fill { background: #ffc832; }
+.v3-session-timer.is-danger  .v3-session-timer-fill { background: #ff5050; }
+
+/* Warning modal overlay fix */
+.v3-session-warn-modal {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+}
+/* ── End Session Timer ───────────────────────────────────── */
 
 /* ── Main Area ───────────────────────────────────────────── */
 #v3-main { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
