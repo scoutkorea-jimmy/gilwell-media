@@ -39,6 +39,7 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/people': 'people',
   '/glossary': 'glossary',
   '/contributors': 'contributors',
+  '/calendar': 'calendar',
   '/search': 'search',
 });
 

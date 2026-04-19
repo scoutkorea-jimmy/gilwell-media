@@ -66,6 +66,7 @@ function getCanonicalPath(pathname, pageKey) {
   if (pageKey === 'wosm_members') return '/wosm-members';
   if (pageKey === 'people') return '/people';
   if (pageKey === 'glossary') return '/glossary';
+  if (pageKey === 'calendar') return '/calendar';
   return pathname;
 }
 
