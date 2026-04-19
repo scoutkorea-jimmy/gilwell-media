@@ -759,7 +759,16 @@ h1, h2, h3, h4, h5, h6, strong, b {
   - 홈 마스트헤드에서는 보조 제어 수준의 밀도로만 노출하며, 검색과 통계 영역을 침범하지 않는다.
 - 검색
 - 카테고리 네비게이션
-- 티커
+- 티커 — **일시정지 버튼 없음**(2026-04-19 제거). 슬라이드 일시정지는 히어로의 `hero-pause-btn`만 유일.
+
+### 5.2.1 다크 모드 토글 (2026-04-19 재정비)
+
+#### 기능 세부 설명
+- **기본값은 항상 light.** `prefers-color-scheme: dark`는 무시하고, 사용자가 수동 전환한 경우에만 `localStorage.gw_theme`에 `light`/`dark` 저장·반영.
+- 토글 위치: **푸터** `용어집 RAW로 보기 →` 바로 아래에 같은 스타일 텍스트 링크로 배치.
+- 라벨: 라이트 상태 `다크모드로 전환 →` · 다크 상태 `라이트모드로 변경 →` (토글 시 실시간 전환).
+- 셀렉터: `[data-theme-toggle]` — `GW.initDarkMode()`가 bind. 마스트헤드 원형 아이콘 버튼은 사용자 피드백으로 제거됨.
+- 다크 팔레트: `:root[data-theme="dark"]`에서 브랜드 10색·그레이스케일 5색을 다크 배경 가독성에 맞춰 밝기 보정. 이미지·썸네일은 `filter: brightness(0.92)`로 살짝 디밍.
 
 ### 5.3 히어로 슬라이드
 
@@ -870,6 +879,32 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 남는 수는 태그 우선, 제목 보조로 자동 추천
 - 제목 오른쪽에 `YYYY-MM-DD` 표시
 - 모바일은 날짜를 더 작고 연하게 표시
+
+### 7.4 본문 렌더 · 서체 · 리스트 처리 (2026-04-19 고정)
+
+#### 기능 세부 설명
+- 본문은 Editor.js JSON을 SSR·클라이언트 양쪽에서 동일 규격으로 렌더한다: `functions/post/[id].js renderContent()` (SSR) · `js/main.js GW.renderTextWithMedia()` (CSR/모달 프리뷰). 두 구현은 반드시 동일 블록 대응을 유지해야 한다.
+- list 블록 항목(`b.data.items[].content`)은 **sanitize 전에 앞뒤 공백·개행을 trim**한다. Editor.js가 저장하는 leading/trailing `\n`이 sanitizer에서 `<br>`로 변환돼 bullet 옆 첫 줄이 비고 텍스트가 새 줄에 렌더되던 버그 방지.
+- 인라인 포맷 허용 태그: `a, strong, b, em, i, u, s, mark, code, br` + 이스케이프된 일반 텍스트. 스크립트·스타일·임의 클래스는 sanitizer에서 제거한다.
+- 이미지 블록은 `<div class="post-inline-media">` 래핑. 캡션이 있으면 `<p class="post-image-caption">`.
+- 리스트 스타일 토큰(style.css `.post-page-body ul/ol/li`): padding-inline-start 1.85em · list-style-position outside · `li::marker` Scouting Purple 700 weight. 중첩 리스트는 `circle` / `lower-alpha` / 2단 중첩 `square` / `lower-roman`.
+
+### 7.5 수정 모달 규격 (작성 모달과 동일 V3 카드)
+
+#### 기능 세부 설명
+- `#post-edit-overlay`는 공개 `board-write-overlay`와 **같은 bw-* V3 카드 레이아웃**을 공유한다(2026-04-19 통일).
+- 구조: `.bw-overlay > .bw-box.post-edit-box > .bw-header + .bw-layout > .bw-main > 7개 .bw-card(기본 정보 / 게시 시각·링크 / 글머리 태그 / 대표 이미지·SEO / 본문 / 슬라이드 / 위치 collapsible / 유관기사·옵션) + .bw-footer(sticky)`.
+- 레거시 `.post-edit-box { max-width: 760px; padding: 36px }` 스타일은 제거됨 — 공개 작성 모달과 동일 1200px 2-col.
+- 모든 DOM ID는 기존 유지(post-edit-title-input · post-edit-subtitle-input · post-edit-category · post-edit-editorjs 등)해 저장 로직(`window._postSaveEdit()`) 호환.
+
+### 7.6 SEO · 구조화 데이터
+
+#### 기능 세부 설명
+기사 상세는 `<head>`에 아래 JSON-LD 2종을 주입한다:
+- **`Article`**: 제목·설명·siteUrl·postUrl·image·publishedIso·modifiedIso·author·category. `buildArticleStructuredData()`.
+- **`BreadcrumbList`** (2026-04-19 신설): itemListElement 3단계 — `홈(siteUrl/)` → `카테고리(categoryUrl)` → `기사 제목`. Google 검색 결과 breadcrumb 풍부화.
+- `<meta>`: description(부제목 우선, 없으면 본문 140자 truncate), keywords(meta_tags), OG/Twitter 카드.
+- canonical은 `${siteUrl}/post/${id}` 고정. share_ref 쿼리는 canonical에서 제외.
 
 ## 8. 특집 기사
 
@@ -1005,6 +1040,28 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - `q` : 검색어 (제목 > 부제목 > 태그 > 메타태그 > 본문 순으로 스코어링)
 - `sort` : `latest`(기본) / `oldest` / `views` / `relevance`
 - `start_date` / `end_date` : `YYYY-MM-DD` 범위 필터
+
+### 11.4 검색 유입 키워드 분석 (2026-04-19 신설)
+
+#### 기능 세부 설명
+- 관리자 → 방문 분석 패널 하단 `v3-search-keywords-card`에 검색엔진 유입 키워드 집계를 표시한다.
+- 원천 데이터: `site_visits.referrer_url` 컬럼 (기존 방문 추적에 이미 저장 중).
+- 엔드포인트: `GET /api/admin/search-keywords?days=N` 또는 `?start=&end=` (Full admin). 반환: `{ range, total_visits, total_unique, by_engine[], keywords[] }`.
+- 상단 방문 분석 기간 필터(v3-period-bar)와 **동일 범위 공유**. 30초 자동 새로고침 루프에 합류.
+- 지원 검색엔진 12종(`functions/api/admin/search-keywords.js SEARCH_ENGINES`):
+  - Google · Naver · Daum · Bing · Yahoo · DuckDuckGo · Baidu · Yandex · Ecosia · Zum · Nate
+  - 파라미터 매핑: `q` (Google/Bing/Daum/DuckDuckGo/Ecosia) · `query` (Naver/Zum) · `p` (Yahoo) · `wd`/`word` (Baidu) · `text` (Yandex)
+- 노이즈 필터: 키워드 2자 미만, 100자 초과는 제외. 대소문자 정규화 후 병합.
+
+#### UI 구성
+1. **3-stat 요약**: 기간 · 검색 유입 방문 수 · 고유 키워드 수.
+2. **엔진별 pill 배지**: `Naver 12 · Daum 5 · Google 3` 식으로 병렬 표시.
+3. **키워드 리스트(상위 100)**: 키워드 / 엔진 / 방문수 3열. 키워드 클릭 시 `/search?q=...` 새 탭으로 사이트 내 검색 결과 확인.
+
+#### 한계 (운영자 이해 필수)
+- **Google은 대부분의 HTTPS referer에서 검색어를 마스킹**한다. 유입이 있어도 키워드 파싱이 안 될 수 있음.
+- **Naver · Daum은 기본적으로 referer에 query 파라미터 노출** → 국내 유입 키워드 파악에 특히 유효.
+- `site_visits.referrer_url`이 수집돼 있어야 하므로 `functions/[[path]].js` 미들웨어의 방문 기록 로직을 건드리지 말 것.
 
 ## 12. API 호출 방법
 

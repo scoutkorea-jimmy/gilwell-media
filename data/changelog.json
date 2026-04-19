@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.089.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 01:40:00 KST",
+    "summary": "KMS 기능정의서 업데이트 및 라이브 D1 동기화. 최근 반영된 북마크 롤백·V3 수정 모달·BulletPoint 트림·다크모드 푸터 토글·검색 유입 키워드·§ 기호 정리 내용을 KMS 원본에 명문화하고 홈페이지 25항목 감사 수행.",
+    "changes": [
+      "docs/feature-definition.md §5.2 상단 구성 주석: 히어로 상단 중복 일시정지 버튼(ticker-toggle-btn) 제거 명시.",
+      "docs/feature-definition.md §5.2.1 신설 — 다크 모드 토글: 라이트 기본 + 푸터 '다크모드로 전환' 링크([data-theme-toggle]) + localStorage gw_theme 영속.",
+      "docs/feature-definition.md §7.4 신설 — 본문 렌더·서체·리스트 처리: BulletPoint trim 규칙(서버 functions/post/[id].js + 클라이언트 js/main.js 양쪽 item.content trim 후 sanitize).",
+      "docs/feature-definition.md §7.5 신설 — 수정 모달 규격: post-edit-overlay가 글쓰기와 동일한 bw-* V3 카드 레이아웃(1200px) 사용.",
+      "docs/feature-definition.md §7.6 신설 — SEO·구조화 데이터: Article + BreadcrumbList JSON-LD 병기 규정.",
+      "docs/feature-definition.md §11.4 신설 — 검색 유입 키워드 분석: 14개 검색엔진(Google/Naver/Daum/Bing/Yahoo/DuckDuckGo/Baidu/Yandex/Ecosia/Zum/Nate + 추가) 파라미터 추출 규격.",
+      "D1 settings.feature_definition 갱신 — 관리자 KMS 탭이 최신 스냅샷을 즉시 반영(UPDATE 1 row, 88KB).",
+      "KMS 기준 홈페이지 감사 25항목 수행: 24 ✅ / 1 ⚠ (style.css .post-edit-box .form-group 잔존 CSS, 기능 영향 없음) / 0 ❌. 전반 compliant.",
+      "관리자 버전 03.089.00 → 03.089.01."
+    ]
+  },
+  {
     "version": "03.089.00",
     "date": "2026-04-19",
     "released_at": "2026-04-20 01:15:00 KST",
