@@ -2899,7 +2899,19 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 
 .board-page-btn.board-page-nav {
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.board-page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  color: var(--muted);
+  font-family: NixgonFont, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  user-select: none;
 }
 
 .board-more-btn {
@@ -7086,34 +7098,41 @@ footer a:hover { color: var(--white); }
   font-size: clamp(17px, 1.7vw, 21px);
   font-weight: 700;
 }
+/* 리스트 — 모달(Editor.js)과 라이브 페이지의 시각적 정합성 확보 (APCA-safe) */
 .post-page-body ul,
 .post-page-body ol {
   margin: 0 0 22px;
-  padding-left: 1.5em;
+  padding-inline-start: 1.85em;
+  list-style-position: outside;
 }
-.post-page-body ul {
-  list-style: disc outside;
-}
-.post-page-body ol {
-  list-style: decimal outside;
-}
+.post-page-body ul { list-style-type: disc; }
+.post-page-body ol { list-style-type: decimal; }
 .post-page-body li {
   margin: 0;
-  padding-left: 0.15em;
+  padding-inline-start: 0.35em;
+  line-height: 1.85;
 }
 .post-page-body li + li {
-  margin-top: 10px;
+  margin-top: 8px;
 }
+/* 중첩 리스트: 에디터.js 들여쓰기와 리듬 맞춤 */
 .post-page-body li > ul,
 .post-page-body li > ol {
-  margin-top: 10px;
-  margin-bottom: 0;
-  padding-left: 1.4em;
+  margin: 8px 0 0;
+  padding-inline-start: 1.55em;
 }
+.post-page-body li > ul { list-style-type: circle; }
+.post-page-body li > ol { list-style-type: lower-alpha; }
+.post-page-body li > ul li > ul { list-style-type: square; }
+.post-page-body li > ol li > ol { list-style-type: lower-roman; }
+/* 마커: Scouting Purple로 시각 강조 (APCA Lc 92.4 대비 Canvas White) */
 .post-page-body li::marker {
-  color: var(--black);
-  font-size: 0.95em;
+  color: var(--scouting-purple, #622599);
+  font-weight: 700;
 }
+/* 한 li 안에 <br>/inline 포맷이 섞여도 hanging indent 유지 */
+.post-page-body li > br { line-height: inherit; }
+.post-page-body li > p { margin: 0; }
 .post-page-body blockquote {
   margin: var(--gap-section) 0;
   padding: 14px 0 14px 18px;
@@ -7629,14 +7648,18 @@ footer a:hover { color: var(--white); }
   }
   .post-page-body ul,
   .post-page-body ol {
-    padding-left: 1.35em;
+    padding-inline-start: 1.55em;
     margin-bottom: var(--gap-section);
   }
   .post-page-body li {
-    padding-left: 0.1em;
+    padding-inline-start: 0.3em;
   }
   .post-page-body li + li {
     margin-top: var(--gap-element);
+  }
+  .post-page-body li > ul,
+  .post-page-body li > ol {
+    padding-inline-start: 1.35em;
   }
   .post-page-body blockquote {
     padding-left: var(--gap-card);
@@ -7698,7 +7721,10 @@ footer a:hover { color: var(--white); }
   }
   .post-page-body ul,
   .post-page-body ol {
-    padding-left: 1.25em;
+    padding-inline-start: 1.45em;
+  }
+  .post-page-body li {
+    padding-inline-start: 0.25em;
   }
   .post-page-meta > span:not(.category-tag):not(.post-kicker):not(.post-page-action-btns) {
     display: none;
@@ -10304,4 +10330,230 @@ body.wosm-members-page #main-content {
   .member-country-status {
     font-size: 13px;
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   BOARD WRITE ASSIST — 홈페이지 모달 편의 기능 (00.119.00+)
+   ══════════════════════════════════════════════════════════ */
+.board-metatag-ac-wrap {
+  position: relative;
+  width: 100%;
+}
+.board-metatag-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  z-index: 210;
+  font-family: NixgonFont, sans-serif;
+}
+.board-metatag-suggestions[hidden] { display: none !important; }
+.board-metatag-suggestion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.board-metatag-suggestion:last-child { border-bottom: none; }
+.board-metatag-suggestion:hover,
+.board-metatag-suggestion.is-active {
+  background: rgba(98,37,153,0.08);
+}
+.board-metatag-suggestion-count {
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 작성 어시스트 블록 */
+.board-write-assist {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(98,37,153,0.03);
+  border: 1px solid rgba(98,37,153,0.18);
+  border-radius: 10px;
+  font-family: NixgonFont, sans-serif;
+}
+.board-write-assist-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.board-write-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.board-write-stats b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 3px;
+}
+.board-write-draft-status {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.board-write-draft-status.is-saving { color: #0094B4; }
+.board-write-draft-status.is-saved  { color: #248737; }
+.board-write-draft-status.is-dirty  { color: #b0393a; }
+
+.board-write-seo {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.board-write-seo-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.board-write-seo-url {
+  font-size: 11px;
+  color: #0094B4;
+  word-break: break-all;
+  margin-bottom: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.board-write-seo-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--midnight-purple, #4d006e);
+  line-height: 1.35;
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.board-write-seo-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 채점 카드 */
+.board-write-scorer { margin-top: 14px; }
+.board-write-scorer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.board-write-scorer-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+.board-write-scorer-btn {
+  padding: 8px 14px;
+  border: 1px solid var(--scouting-purple, #622599);
+  background: var(--scouting-purple, #622599);
+  color: #fff;
+  font-family: NixgonFont, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.board-write-scorer-btn:hover:not(:disabled) { opacity: 0.9; }
+.board-write-scorer-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.board-write-scorer-result[hidden] { display: none !important; }
+.board-write-scorer-result {
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.board-scorer-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 14px; }
+.board-scorer-error   { font-size: 12px; color: #b0393a; padding: 10px; background: rgba(255,86,85,0.06); border-radius: 6px; }
+.board-scorer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.board-scorer-score { font-size: 20px; font-weight: 800; }
+.board-scorer-grade {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+.board-scorer-summary { font-size: 12px; line-height: 1.6; color: var(--ink); margin-bottom: 8px; }
+.board-scorer-bar { height: 5px; background: rgba(0,0,0,0.06); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.board-scorer-bar-fill { height: 100%; transition: width 0.3s ease; }
+.board-scorer-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.board-scorer-cat {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+.board-scorer-cat-head {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.board-scorer-list { margin: 3px 0 0; padding-left: 1.1em; color: var(--muted); font-size: 11px; }
+.board-scorer-list li { margin: 2px 0; }
+.board-scorer-list.is-strength li { color: #248737; }
+.board-scorer-list.is-issue    li { color: #b0393a; }
+.board-scorer-improvement {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(98,37,153,0.06);
+  border-left: 3px solid var(--scouting-purple, #622599);
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.board-scorer-improvement strong { display: block; margin-bottom: 4px; color: var(--midnight-purple, #4d006e); }
+
+.board-write-hint {
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  opacity: 0.75;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .board-write-assist-row { flex-direction: column; align-items: flex-start; }
+  .board-write-stats { gap: 4px 12px; }
+  .board-scorer-cats { grid-template-columns: 1fr; }
 }

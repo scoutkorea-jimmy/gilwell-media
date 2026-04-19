@@ -147,13 +147,45 @@
         '</details>' +
         '<div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">' +
           '<label for="board-write-metatags-input">SEO 해시태그 <span style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;">(쉼표로 구분 · comma-separated)</span></label>' +
-          '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" />' +
-          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 각 게시글의 메타 태그로 사용됩니다.</p>' +
+          '<div class="board-metatag-ac-wrap">' +
+            '<input type="text" id="board-write-metatags-input" placeholder="예: 스카우트, 잼버리, WOSM, 세계스카우트" maxlength="500" autocomplete="off" />' +
+            '<div class="board-metatag-suggestions" id="board-metatag-suggestions" hidden></div>' +
+          '</div>' +
+          '<p style="font-size:10px;color:var(--muted);font-family: NixgonFont, sans-serif;margin-top:6px;">검색엔진 최적화를 위한 키워드입니다. 기존에 많이 쓴 태그를 입력하면 자동완성이 제안됩니다.</p>' +
         '</div>' +
         '<div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">' +
           '<input type="checkbox" id="board-ai-assisted" style="width:auto;margin:0;" />' +
           '<label for="board-ai-assisted" style="margin:0;cursor:pointer;font-family: NixgonFont, sans-serif;font-size:11px;color:var(--muted);">AI 지원 여부</label>' +
         '</div>' +
+
+        // ── 작성 어시스트 (글자수·SEO·AI 채점) ──
+        '<div class="board-write-assist">' +
+          '<div class="board-write-assist-row">' +
+            '<div class="board-write-stats">' +
+              '<span>제목 <b id="board-stat-title">0자</b></span>' +
+              '<span>부제목 <b id="board-stat-subtitle">0자</b></span>' +
+              '<span>본문 <b id="board-stat-body">0자</b></span>' +
+              '<span>문단 <b id="board-stat-paragraphs">0개</b></span>' +
+              '<span id="board-stat-reading">읽기 —</span>' +
+            '</div>' +
+            '<div class="board-write-draft-status" id="board-draft-status">자동저장 대기…</div>' +
+          '</div>' +
+          '<div class="board-write-seo">' +
+            '<div class="board-write-seo-label">SEO · 공유 미리보기</div>' +
+            '<div class="board-write-seo-url" id="board-seo-url">https://gilwell.media/post/—</div>' +
+            '<div class="board-write-seo-title" id="board-seo-title">기사 제목이 여기에 표시됩니다</div>' +
+            '<div class="board-write-seo-desc"  id="board-seo-desc">부제목이 없으면 본문 첫 문단이 사용됩니다.</div>' +
+          '</div>' +
+          '<div class="board-write-scorer">' +
+            '<div class="board-write-scorer-head">' +
+              '<span class="board-write-scorer-title">BP미디어 표준 v2.1 AI 채점</span>' +
+              '<button type="button" class="board-write-scorer-btn" id="board-scorer-btn">✨ 현재 기사 채점</button>' +
+            '</div>' +
+            '<div class="board-write-scorer-result" id="board-scorer-result" hidden></div>' +
+          '</div>' +
+          '<div class="board-write-hint">⌘/Ctrl+S 저장(게재하기 전 임시) · Esc 닫기</div>' +
+        '</div>' +
+
         '<div id="board-write-turnstile" style="margin:20px 0 0;"></div>' +
         '<button id="board-write-submit" class="submit-btn" style="margin-top:12px;">게재하기</button>' +
         '<button id="board-write-savedraft" class="cancel-btn visible" style="margin-left:8px;">💾 임시저장</button>' +
@@ -630,6 +662,16 @@
       }
 
       setTimeout(function () { document.getElementById('board-write-title-input').focus(); }, 100);
+
+      // Write assist (stats · SEO · scoring · autocomplete · shortcuts)
+      self._bindBoardWriteAssistEventsOnce();
+      self._ensureBoardMetaTagPool();
+      self._updateBoardWriteStats();
+      self._updateBoardSeoPreview();
+      self._boardDraftDirty = false;
+      self._setBoardDraftStatus('idle');
+      var scorerOut = document.getElementById('board-scorer-result');
+      if (scorerOut) { scorerOut.hidden = true; scorerOut.innerHTML = ''; }
     });
 
     GW.loadTurnstile(function () {
@@ -763,6 +805,350 @@
         submitBtn.disabled = false;
         submitBtn.textContent = '게재하기';
       });
+  };
+
+  /* ══════════════════════════════════════════════════════════
+     WRITE ASSIST — stats · SEO · scoring · autocomplete · shortcuts
+     ══════════════════════════════════════════════════════════ */
+
+  function _plainFromBoardEditor(doc) {
+    if (!doc || !Array.isArray(doc.blocks)) return '';
+    return doc.blocks.map(function (b) {
+      if (!b || !b.data) return '';
+      if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') {
+        return String(b.data.text || '').replace(/<[^>]+>/g, '');
+      }
+      if (b.type === 'list') {
+        return (b.data.items || []).map(function (it) {
+          if (typeof it === 'string') return it.replace(/<[^>]+>/g, '');
+          return String((it && it.content) || '').replace(/<[^>]+>/g, '');
+        }).join('\n');
+      }
+      return '';
+    }).filter(Boolean).join('\n\n');
+  }
+
+  Board.prototype._setBoardDraftStatus = function (state, msg) {
+    var el = document.getElementById('board-draft-status');
+    if (!el) return;
+    el.classList.remove('is-saving', 'is-saved', 'is-dirty');
+    if (state === 'saving') { el.classList.add('is-saving'); el.textContent = msg || '자동 저장 중…'; }
+    else if (state === 'saved')  { el.classList.add('is-saved');  el.textContent = msg || '자동 저장됨'; }
+    else if (state === 'dirty')  { el.classList.add('is-dirty');  el.textContent = msg || '변경사항 있음'; }
+    else { el.textContent = msg || '자동저장 대기…'; }
+  };
+
+  Board.prototype._scheduleBoardDraftSave = function () {
+    var self = this;
+    self._boardDraftDirty = true;
+    self._setBoardDraftStatus('dirty');
+    if (self._boardDraftDebounce) clearTimeout(self._boardDraftDebounce);
+    self._boardDraftDebounce = setTimeout(function () {
+      self._setBoardDraftStatus('saving');
+      self._saveDraft(false).then(function () {
+        self._boardDraftDirty = false;
+        self._setBoardDraftStatus('saved');
+      }).catch(function () {
+        self._setBoardDraftStatus('dirty', '저장 실패 · 재시도 예정');
+      });
+    }, 1800);
+  };
+
+  Board.prototype._updateBoardWriteStats = function () {
+    var self = this;
+    var titleEl = document.getElementById('board-write-title-input');
+    var subEl   = document.getElementById('board-write-subtitle-input');
+    var titleLen = titleEl ? titleEl.value.length : 0;
+    var subLen   = subEl   ? subEl.value.length   : 0;
+    var tEl = document.getElementById('board-stat-title');
+    var sEl = document.getElementById('board-stat-subtitle');
+    if (tEl) tEl.textContent = titleLen + '자';
+    if (sEl) sEl.textContent = subLen + '자';
+
+    if (self._boardStatsTimer) clearTimeout(self._boardStatsTimer);
+    self._boardStatsTimer = setTimeout(function () {
+      if (!self._editor) return;
+      self._editor.save().then(function (doc) {
+        var plain = _plainFromBoardEditor(doc);
+        var bodyLen = plain.replace(/\s+/g, '').length;
+        var paragraphs = plain ? plain.split(/\n\s*\n/).filter(function (p) { return p.trim(); }).length : 0;
+        var minutes = bodyLen ? Math.max(1, Math.round(bodyLen / 500)) : 0;
+        var bEl = document.getElementById('board-stat-body');
+        var pEl = document.getElementById('board-stat-paragraphs');
+        var rEl = document.getElementById('board-stat-reading');
+        if (bEl) bEl.textContent = bodyLen + '자';
+        if (pEl) pEl.textContent = paragraphs + '개';
+        if (rEl) rEl.textContent = minutes ? ('읽기 약 ' + minutes + '분') : '읽기 —';
+        self._updateBoardSeoPreview(plain);
+      }).catch(function () {});
+    }, 350);
+  };
+
+  Board.prototype._updateBoardSeoPreview = function (plainBody) {
+    var titleEl = document.getElementById('board-write-title-input');
+    var subEl   = document.getElementById('board-write-subtitle-input');
+    var tEl = document.getElementById('board-seo-title');
+    var dEl = document.getElementById('board-seo-desc');
+    var uEl = document.getElementById('board-seo-url');
+    if (!tEl || !dEl) return;
+    var rawTitle = (titleEl && titleEl.value.trim()) || '기사 제목이 여기에 표시됩니다';
+    tEl.textContent = rawTitle + (rawTitle.length > 60 ? '' : ' — BP미디어');
+    if (uEl) uEl.textContent = 'https://gilwell.media/post/—';
+    var sub = (subEl && subEl.value.trim()) || '';
+    if (sub) { dEl.textContent = sub; return; }
+    var body = (plainBody != null) ? plainBody : '';
+    var firstPara = body.split(/\n\s*\n/)[0] || '';
+    dEl.textContent = firstPara.trim().slice(0, 140) || '부제목이 없으면 본문 첫 문단이 사용됩니다.';
+  };
+
+  Board.prototype._ensureBoardMetaTagPool = function () {
+    var self = this;
+    if (self._boardMetaTagPool || self._boardMetaTagPoolLoading) return;
+    self._boardMetaTagPoolLoading = true;
+    GW.apiFetch('/api/admin/meta-tag-pool?limit=300')
+      .then(function (data) { self._boardMetaTagPool = (data && Array.isArray(data.tags)) ? data.tags : []; })
+      .catch(function () { self._boardMetaTagPool = []; })
+      .finally(function () { self._boardMetaTagPoolLoading = false; });
+  };
+
+  Board.prototype._renderBoardMetaSuggestions = function () {
+    var self = this;
+    var box = document.getElementById('board-metatag-suggestions');
+    var input = document.getElementById('board-write-metatags-input');
+    if (!box || !input || !self._boardMetaTagPool) { if (box) box.hidden = true; return; }
+    var raw = input.value || '';
+    var segments = raw.split(',');
+    var current = (segments[segments.length - 1] || '').trim().toLowerCase();
+    var already = segments.slice(0, -1).map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    var excludeSet = {};
+    already.forEach(function (s) { excludeSet[s] = true; });
+    var matches = self._boardMetaTagPool
+      .filter(function (t) { return t.name && !excludeSet[t.name.toLowerCase()]; })
+      .filter(function (t) { return !current || t.name.toLowerCase().indexOf(current) >= 0; })
+      .slice(0, 12);
+    if (!matches.length) { box.hidden = true; return; }
+    self._boardMetaSuggestIdx = -1;
+    box.innerHTML = matches.map(function (t, i) {
+      return '<div class="board-metatag-suggestion" data-idx="' + i + '" data-name="' + GW.escapeHtml(t.name) + '">' +
+        '<span>' + GW.escapeHtml(t.name) + '</span>' +
+        '<span class="board-metatag-suggestion-count">' + (t.count || 0) + '회</span>' +
+      '</div>';
+    }).join('');
+    box.hidden = false;
+  };
+
+  Board.prototype._hideBoardMetaSuggestions = function () {
+    var box = document.getElementById('board-metatag-suggestions');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+    this._boardMetaSuggestIdx = -1;
+  };
+
+  Board.prototype._applyBoardMetaSuggestion = function (name) {
+    if (!name) return;
+    var input = document.getElementById('board-write-metatags-input');
+    if (!input) return;
+    var segments = (input.value || '').split(',');
+    segments[segments.length - 1] = ' ' + name;
+    input.value = segments.join(',').replace(/^\s*/, '') + ', ';
+    this._hideBoardMetaSuggestions();
+    input.focus();
+    this._scheduleBoardDraftSave();
+  };
+
+  Board.prototype._moveBoardMetaActive = function (delta) {
+    var box = document.getElementById('board-metatag-suggestions');
+    if (!box || box.hidden) return;
+    var items = box.querySelectorAll('.board-metatag-suggestion');
+    if (!items.length) return;
+    this._boardMetaSuggestIdx = ((this._boardMetaSuggestIdx || 0) + delta + items.length) % items.length;
+    var idx = this._boardMetaSuggestIdx;
+    items.forEach(function (el, i) { el.classList.toggle('is-active', i === idx); });
+    if (items[idx] && items[idx].scrollIntoView) items[idx].scrollIntoView({ block: 'nearest' });
+  };
+
+  Board.prototype._runBoardScorer = function () {
+    var self = this;
+    var btn = document.getElementById('board-scorer-btn');
+    var out = document.getElementById('board-scorer-result');
+    var titleEl = document.getElementById('board-write-title-input');
+    var subEl   = document.getElementById('board-write-subtitle-input');
+    var mtEl    = document.getElementById('board-write-metatags-input');
+    var title = (titleEl && titleEl.value.trim()) || '';
+    if (!title) { GW.showToast('제목을 먼저 입력하세요', 'error'); return; }
+    if (!self._editor) { GW.showToast('에디터가 준비되지 않았습니다', 'error'); return; }
+
+    var origLabel = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'AI 채점 중…'; }
+    if (out) {
+      out.hidden = false;
+      out.innerHTML = '<div class="board-scorer-loading">AI가 기사를 분석하고 있습니다… (약 10~20초)</div>';
+    }
+
+    self._editor.save().then(function (doc) {
+      var body = _plainFromBoardEditor(doc);
+      return GW.apiFetch('/api/admin/score-article', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title,
+          subtitle: (subEl && subEl.value.trim()) || '',
+          content: body,
+          tags: (mtEl && mtEl.value.trim()) || (self._selectedTags || []).join(', '),
+        }),
+      });
+    }).then(function (data) {
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || '✨ 현재 기사 채점'; }
+      if (data && data.ok && data.result) {
+        self._renderBoardScorerResult(data.result);
+      } else {
+        self._renderBoardScorerError((data && data.error) || 'AI 채점 실패');
+      }
+    }).catch(function (err) {
+      if (btn) { btn.disabled = false; btn.textContent = origLabel || '✨ 현재 기사 채점'; }
+      self._renderBoardScorerError('채점 요청 실패: ' + ((err && err.message) || String(err)));
+    });
+  };
+
+  Board.prototype._renderBoardScorerError = function (msg) {
+    var out = document.getElementById('board-scorer-result');
+    if (!out) return;
+    out.hidden = false;
+    out.innerHTML = '<div class="board-scorer-error">' + GW.escapeHtml(msg) + '</div>';
+  };
+
+  Board.prototype._renderBoardScorerResult = function (result) {
+    var out = document.getElementById('board-scorer-result');
+    if (!out) return;
+    var overall = result.overall || {};
+    var pct = Number(overall.score || 0);
+    var grade = overall.grade || '—';
+    var color = pct >= 80 ? '#248737' : pct >= 60 ? '#0094B4' : '#FF5655';
+    var cats = Array.isArray(result.categories) ? result.categories : [];
+
+    var html = '<div class="board-scorer-head">' +
+      '<span class="board-scorer-score" style="color:' + color + '">' + pct + ' / 100</span>' +
+      ' <span class="board-scorer-grade" style="color:' + color + ';border-color:' + color + '">' + GW.escapeHtml(grade) + '</span>' +
+    '</div>';
+    if (overall.summary) html += '<div class="board-scorer-summary">' + GW.escapeHtml(overall.summary) + '</div>';
+    html += '<div class="board-scorer-bar"><div class="board-scorer-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+    html += '<div class="board-scorer-cats">' + cats.map(function (c) {
+      var cPct = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
+      var cColor = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
+      var issues    = (c.issues || []).filter(Boolean);
+      var strengths = (c.strengths || []).filter(Boolean);
+      var lh = '';
+      if (strengths.length) lh += '<ul class="board-scorer-list is-strength">' + strengths.map(function (s) { return '<li>' + GW.escapeHtml(s) + '</li>'; }).join('') + '</ul>';
+      if (issues.length)    lh += '<ul class="board-scorer-list is-issue">' + issues.map(function (s) { return '<li>' + GW.escapeHtml(s) + '</li>'; }).join('') + '</ul>';
+      return '<div class="board-scorer-cat">' +
+        '<div class="board-scorer-cat-head"><span>' + GW.escapeHtml(c.label || '') + '</span>' +
+        '<span style="color:' + cColor + '">' + c.score + '/' + c.max + '</span></div>' + lh +
+      '</div>';
+    }).join('') + '</div>';
+    if (result.improvement) {
+      html += '<div class="board-scorer-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
+    }
+    out.innerHTML = html;
+    out.hidden = false;
+  };
+
+  Board.prototype._bindBoardWriteAssistEventsOnce = function () {
+    var self = this;
+    if (self._boardAssistInited) return;
+    self._boardAssistInited = true;
+
+    // Input 변경 → stats + SEO + draft
+    var watchIds = [
+      'board-write-title-input', 'board-write-subtitle-input',
+      'board-write-special-feature', 'board-write-author', 'board-write-date',
+      'board-write-youtube-input', 'board-write-image-caption',
+      'board-write-location-name', 'board-write-location-address',
+      'board-write-metatags-input',
+    ];
+    watchIds.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        self._updateBoardWriteStats();
+        self._updateBoardSeoPreview();
+        self._scheduleBoardDraftSave();
+      });
+      el.addEventListener('change', function () { self._scheduleBoardDraftSave(); });
+    });
+    var ai = document.getElementById('board-ai-assisted');
+    if (ai) ai.addEventListener('change', function () { self._scheduleBoardDraftSave(); });
+
+    // Editor 변경 감지 (MutationObserver)
+    var holder = document.getElementById('board-editorjs');
+    if (holder && window.MutationObserver) {
+      var obs = new MutationObserver(function () {
+        self._scheduleBoardDraftSave();
+        self._updateBoardWriteStats();
+      });
+      obs.observe(holder, { childList: true, subtree: true, characterData: true });
+    }
+
+    // 채점 버튼
+    var btn = document.getElementById('board-scorer-btn');
+    if (btn) btn.addEventListener('click', function () { self._runBoardScorer(); });
+
+    // 메타태그 자동완성
+    var metaInput = document.getElementById('board-write-metatags-input');
+    var metaBox = document.getElementById('board-metatag-suggestions');
+    if (metaInput) {
+      metaInput.addEventListener('input', function () {
+        self._ensureBoardMetaTagPool();
+        self._renderBoardMetaSuggestions();
+      });
+      metaInput.addEventListener('focus', function () {
+        self._ensureBoardMetaTagPool();
+        self._renderBoardMetaSuggestions();
+      });
+      metaInput.addEventListener('blur', function () {
+        setTimeout(function () { self._hideBoardMetaSuggestions(); }, 160);
+      });
+      metaInput.addEventListener('keydown', function (e) {
+        var box = document.getElementById('board-metatag-suggestions');
+        var open = box && !box.hidden;
+        if (e.key === 'ArrowDown' && open) { e.preventDefault(); self._moveBoardMetaActive(1); }
+        else if (e.key === 'ArrowUp' && open) { e.preventDefault(); self._moveBoardMetaActive(-1); }
+        else if (e.key === 'Enter' && open && self._boardMetaSuggestIdx >= 0) {
+          e.preventDefault();
+          var items = box.querySelectorAll('.board-metatag-suggestion');
+          var active = items[self._boardMetaSuggestIdx];
+          if (active) self._applyBoardMetaSuggestion(active.getAttribute('data-name') || '');
+        } else if (e.key === 'Escape' && open) {
+          e.preventDefault();
+          self._hideBoardMetaSuggestions();
+        }
+      });
+    }
+    if (metaBox) {
+      metaBox.addEventListener('mousedown', function (e) {
+        var t = e.target;
+        while (t && t !== metaBox && !(t.classList && t.classList.contains('board-metatag-suggestion'))) t = t.parentNode;
+        if (t && t.classList && t.classList.contains('board-metatag-suggestion')) {
+          e.preventDefault();
+          self._applyBoardMetaSuggestion(t.getAttribute('data-name') || '');
+        }
+      });
+    }
+
+    // 키보드 단축키 — write 모달 열려있을 때만
+    document.addEventListener('keydown', function (e) {
+      var overlay = document.getElementById('board-write-overlay');
+      if (!overlay || !overlay.classList.contains('open')) return;
+      var isMod = e.metaKey || e.ctrlKey;
+      if (isMod && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        self._saveDraft(true);
+      } else if (e.key === 'Escape') {
+        var sBox = document.getElementById('board-metatag-suggestions');
+        if (sBox && !sBox.hidden) return; // 드롭다운 우선
+        if (self._boardDraftDirty) {
+          if (!confirm('저장하지 않은 변경사항이 있습니다. 닫을까요?')) return;
+        }
+        self._closeWriteForm();
+      }
+    });
   };
 
   Board.prototype._saveDraft = function (showToast) {
