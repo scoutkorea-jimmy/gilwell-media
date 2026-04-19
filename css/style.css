@@ -2003,7 +2003,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   --board-card-gap: 6px;
   --home-section-gap: 18px;
   --home-grid-gap: 24px;
-  --home-block-bottom: 36px;
+  --home-block-bottom: 52px;
   --home-title-gap: 14px;
   --home-priority-height: 640px;
 }
@@ -2113,8 +2113,8 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .home-lead-body h3 {
   font-family: NixgonFont, sans-serif;
-  font-size: clamp(20px, 2vw, 28px);
-  line-height: 1.26;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.22;
   color: var(--black);
   margin-bottom: 10px;
   display: -webkit-box;
@@ -2150,7 +2150,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   color: var(--muted);
   margin-bottom: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 8;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   flex: 1 1 auto;
@@ -6365,7 +6365,7 @@ footer a:hover { color: var(--white); }
     max-height: none;
   }
   .home-lead-body h3 {
-    font-size: calc(21px * var(--mobile-user-scale));
+    font-size: calc(28px * var(--mobile-user-scale));
   }
   .home-lead-summary {
     font-size: var(--mobile-fs-body);
