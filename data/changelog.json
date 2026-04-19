@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.118.03",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 19:00:00 KST",
+    "summary": "메인스토리 제목 1.2배로 조정, 최신소식 NEW칩 숨김, 칩 2줄 허용.",
+    "changes": [
+      "메인스토리 제목 font-size clamp(28px,3.2vw,44px) → clamp(24px,2.4vw,34px) (원본 대비 1.2배).",
+      "모바일 메인스토리 제목 calc(28px*scale) → calc(22px*scale).",
+      "#latest-list NEW칩(.post-kicker-new) 숨김 처리 (최신소식 칼럼).",
+      "#latest-list .mini-item overflow:hidden 제거 — 칩 2줄 시 클리핑 방지.",
+      ".mini-item-labels align-items center→flex-start — 칩 행 정렬 개선.",
+      "사이트 버전 00.118.02 → 00.118.03."
+    ]
+  },
+  {
     "version": "03.084.03",
     "date": "2026-04-19",
     "released_at": "2026-04-19 18:30:00 KST",

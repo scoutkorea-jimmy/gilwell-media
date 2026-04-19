@@ -176,7 +176,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260419081032">
+  <link rel="stylesheet" href="/css/style.css?v=20260419081503">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -341,7 +341,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.118.02</span> · Admin <span class="admin-build-version">V03.084.03</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.118.03</span> · Admin <span class="admin-build-version">V03.084.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -512,9 +512,9 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
-  <script src="/js/main.js?v=20260419081032"></script>
-  <script src="/js/site-chrome.js?v=20260419081032"></script>
-  <script src="/js/post-page.js?v=20260419081032"></script>
+  <script src="/js/main.js?v=20260419081503"></script>
+  <script src="/js/site-chrome.js?v=20260419081503"></script>
+  <script src="/js/post-page.js?v=20260419081503"></script>
 </body>
 </html>`;
 
