@@ -1,6 +1,20 @@
 {
   "items": [
   {
+      "version": "03.079.02",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:51:09 KST",
+      "summary": "KMS API 가이드 + 디자인 가이드 탭 최신화 — tag-insights/site-history/homepage-issues PATCH 신규 등록 + 디자인 §09 '데이터 시각화(관계도·차트)' 섹션 신설.",
+      "changes": [
+        "KMS API 가이드 분석 그룹: /api/admin/analytics 서술을 '방문 분석 전용 (panel-analytics-visits)'으로 재정의하고 params에 days/start/end/heatmap_* 명시. /api/admin/tag-insights 신규 등록 — params + 상세 response 스키마(statistics/header_ranking/meta_ranking/graph/health/coverage/suggestions 7섹션) + functions/_shared/tag-insights.js 공용 모듈 + scripts/tag-analysis 오프라인 동등성 언급.",
+        "KMS API 가이드 geo-audience: start/end 커스텀 범위 파라미터 추가(2026-04-19).",
+        "KMS API 가이드 admin 그룹: /api/admin/site-history(관리자 사이트 히스토리 통합 집계) + PATCH /api/admin/homepage-issues/:id(§0.2.2 P0 규칙 연결) 신규 등록.",
+        "KMS API 가이드 posts: tag 파라미터 설명에 '태그 인사이트 노드 클릭 모달이 이 파라미터를 사용' 명시.",
+        "KMS 디자인 가이드 §09 '데이터 시각화 (관계도·차트)' 섹션 신설 — 4개 모듈: (1) 노드 색 = KMS 브랜드 10색 hex (SVG var() 예외 근거 + 적용 파일), (2) 연결선 = count 기반 흑백 연속 그라데이션(rgb 공식·굵기 공식·점선 기준), (3) 라벨 halo(paint-order stroke fill + 흰 stroke 3px), (4) 라벨 티어링(primary 25 항상 / secondary hover).",
+        "관리자 버전 03.079.01 → 03.079.02."
+      ]
+    },
+  {
       "version": "03.079.01",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:44:55 KST",

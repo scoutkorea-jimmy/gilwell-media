@@ -54,7 +54,7 @@
             { name: 'limit', desc: '한 페이지 개수 (기본 20)' },
             { name: 'sort', desc: 'latest | oldest | views | manual | relevance' },
             { name: 'q', desc: '검색어 (전문검색, sort=relevance 자동 적용)' },
-            { name: 'tag', desc: '글머리 태그 필터' },
+            { name: 'tag', desc: '태그 필터 (tag 또는 meta_tags 필드에 LIKE 매치). 태그 인사이트 패널의 노드 클릭 모달이 이 파라미터를 사용해 관련 기사를 페이지네이션으로 가져옵니다.' },
             { name: 'start_date / end_date', desc: 'YYYY-MM-DD 날짜 범위 필터' },
             { name: 'days', desc: '최근 N일 이내 필터' },
             { name: 'featured', desc: 'true — 특집 기사만 조회' },
@@ -292,14 +292,35 @@
         },
         {
           method: 'GET', path: '/api/admin/analytics', auth: true,
-          summary: '관리자 종합 분석 대시보드 및 태그 인사이트',
-          response: '{ "daily": [], "top_posts": [], "sources": [], "tags": { "items": [], "graph": { "nodes": [], "links": [], "counts": {} } }, "total_visits": number, "avg_duration": number }',
-          notes: '대시보드에는 최근 집계 기간 기준 요일×시간 방문 히트맵과 그 아래 자동 인사이트 요약이 함께 포함됩니다. 히트맵 셀 우상단에는 같은 시간대의 공개 게시글 발행 수가 함께 표시되고, 기간은 1주·1개월·직접 지정·전체로 독립 조절됩니다. 모바일에서는 가로 스크롤로 전체 시간대를 탐색합니다. 태그 인사이트 기간은 방문 분석과 별도로 조절합니다. 태그 관계도는 글머리 태그와 메타 태그를 함께 사용한 키워드 그래프이며, hover 시 연계 관계를 보여주고, click 시 선택 상태를 유지한 채 해당 키워드가 사용된 기사 목록과 기사 간 추가 공통 키워드를 모달로 보여줍니다. 다른 영역을 누르면 선택이 해제됩니다. 워드 클라우드 크기는 기사 수와 관련 기사 조회수를 함께 반영합니다.',
+          summary: '관리자 방문 분석 (panel-analytics-visits 전용)',
+          params: [
+            { name: 'days', desc: '최근 N일 (1~90, 기본 30)' },
+            { name: 'start / end', desc: 'YYYY-MM-DD 커스텀 범위 (days 대체)' },
+            { name: 'tag_days / tag_start / tag_end', desc: '(deprecated, tag-insights API 권장)' },
+            { name: 'heatmap_days / heatmap_start / heatmap_end / heatmap_all', desc: '히트맵 기간 독립 조절 (1주·1개월·직접 지정·전체)' },
+          ],
+          response: '{ today, summary, visitors, views, article_top_posts, sources, heatmap, tags, tracking_note }',
+          notes: '2026-04-19 사이드바 2메뉴 분리 이후 방문 분석 전용 엔드포인트. 오늘 방문·조회, 기간 합계, 인기 기사, 유입 경로, 평균 체류, 요일×시간 방문 히트맵(셀 우상단에 같은 시간대의 공개 게시글 발행 수), 유입 해석 노트(UTM+리퍼러 기반 카카오톡/페이스북/검색/직접 세분화)를 반환합니다. 태그 인사이트는 전용 /api/admin/tag-insights를 사용합니다.',
+        },
+        {
+          method: 'GET', path: '/api/admin/tag-insights', auth: true,
+          summary: '태그 인사이트 종합 분석 (panel-analytics-tags, 2026-04-19 신설)',
+          params: [
+            { name: 'days', desc: '최근 N일 (1~365)' },
+            { name: 'start / end', desc: 'YYYY-MM-DD 커스텀 범위' },
+            { name: 'all', desc: '1이면 전체 기간' },
+          ],
+          response: '{\n  statistics: { total_posts, tag_missing, meta_missing, unique_header_tags, unique_meta_tags, avg_meta_per_post, category_avg[], missing_posts[] },\n  header_ranking: [{ tag, count, pct }],\n  meta_ranking: [{ tag, count, top_category, top_header }],\n  graph: { nodes: [{ id, label, count, top_header, top_category }], links: [{ source, target, count }] },\n  health: { isolated_tags[], isolated_tags_count, overly_common_threshold, overly_common[], duplicate_suspects[], isolated_clusters[], total_components },\n  coverage: { by_header[], monthly[], gaps[], empty_or_thin_header_count },\n  suggestions: { hub_clusters[], thin_headers[], suggestions[], human_review_required: true }\n}',
+          notes: 'functions/_shared/tag-insights.js buildTagInsights() 공용 모듈이 published=1 posts에서 tag/meta_tags 쉼표 토큰화 후 계산. 태그 원문 보존, 자동 통합/삭제 금지(모든 health/suggestions 항목 human_review_required). 같은 모듈이 scripts/tag-analysis/*.mjs에서 오프라인 .md 산출물(01_statistics/02_graph.html D3.js/03_health_check/04_coverage_map/05_next_actions)을 생성합니다. 관계도 노드는 KMS 브랜드 10색, 링크는 count 기반 흑백 그라데이션, 약한 연결(하위 15%)은 점선.',
         },
         {
           method: 'GET', path: '/api/admin/geo-audience', auth: true,
           summary: '관리자 접속 국가/도시 지도 및 테이블 집계',
-          response: '{ "summary": { countries, cities, visits, pageviews }, "countries": [], "cities": [] }',
+          params: [
+            { name: 'days', desc: '최근 N일 (1~180, 기본 30)' },
+            { name: 'start / end', desc: 'YYYY-MM-DD 커스텀 범위 (2026-04-19 추가 — v3-period-bar 규약)' },
+          ],
+          response: '{ summary: { countries, cities, visits, pageviews }, countries: [], cities: [], warmup_note }',
           notes: 'Cloudflare 요청 메타의 국가/도시/좌표를 기반으로 집계합니다. IP 원문은 저장하지 않으며, 초기 데이터는 기능 배포 이후 새 방문부터 누적됩니다.',
         },
         {
@@ -324,7 +345,7 @@
     {
       id: 'admin',
       label: '관리자 전용 (Admin)',
-      desc: 'Changelog 조회와 운영 대시보드, 릴리스 이력 확인.',
+      desc: '버전기록, 운영 대시보드, 사이트 히스토리, 이슈 기록 관리.',
       endpoints: [
         {
           method: 'GET', path: '/api/admin/changelog', auth: true,
@@ -336,6 +357,23 @@
           method: 'GET', path: '/api/admin/operations', auth: true,
           summary: '운영 대시보드 및 릴리스 이력 조회',
           response: '{ "scheduled_posts": [], "draft_posts": [], "recent_errors": [], "recent_logins": [], "recent_settings": [], "deployments": [] }',
+        },
+        {
+          method: 'GET', path: '/api/admin/site-history', auth: true,
+          summary: '사이트 히스토리 — 설정 변경·게시글 이력·배포 로그를 통합 집계',
+          params: [
+            { name: 'days / start / end', desc: '기간 범위 (v3-period-bar 규약)' },
+            { name: 'group_by', desc: 'day | week | month' },
+          ],
+          response: '{ "items": HistoryEntry[], "groups": [{ label, count }] }',
+          notes: '관리자 site-history 패널이 단일 소스로 사용. 설정 스냅샷(settings_history), 게시글 변경, 배포 이력을 시간 순으로 합칩니다.',
+        },
+        {
+          method: 'PATCH', path: '/api/admin/homepage-issues/:id', auth: true,
+          summary: '사이트 오류/이슈 기록 상태 변경',
+          request: '{ status?: "open"|"monitoring"|"resolved", severity?: "low"|"medium"|"high"|"critical", action_items?: string }',
+          response: '수정된 HomepageIssue 객체',
+          notes: 'KMS §0.2.2 P0 규칙에 따라 open + high/critical 이슈는 신규 작업보다 우선 해결. 해결 시 action_items에 근인/해결 경로 기록 권장.',
         },
       ],
     },
@@ -1984,6 +2022,151 @@
                   '  <div class="kms-ds-row"><button class="filter-btn active">전체</button><button class="filter-btn">훈련</button><button class="filter-btn">교육</button></div>',
                   '  <div class="kms-ds-row"><a class="home-subscribe-btn" href="#">RSS 구독</a><a class="home-subscribe-btn secondary" href="#">사이트 검색</a></div>',
                   '  <div class="kms-ds-mobile-note">좁은 화면에서도 버튼이 겹치지 않고 자연스럽게 줄바꿈되어야 합니다.</div>',
+                  '</div>'
+                ].join(''),
+              }
+            ]
+          },
+          {
+            title: '09 · 데이터 시각화 (관계도·차트)',
+            note: '태그 관계도 / 마케팅 funnel / Leaflet 지도처럼 SVG·Canvas API에 hex 문자열이 직접 전달되는 시각화는 CSS var()를 해석하지 못합니다. 이 섹션은 KMS 브랜드 팔레트를 그대로 유지하면서 예외를 구조적으로 관리하는 규약입니다.',
+            modules: [
+              {
+                kind: 'Pattern',
+                title: '노드 색 = KMS 브랜드 10색 hex (SVG 예외)',
+                summary: '태그 관계도·마케팅 scatter·Leaflet 지도 polygon은 SVG presentation attribute 또는 JS data 구조에 색을 직접 주입합니다. CSS var()를 해석하지 못하므로 브랜드 토큰의 값(#622599 등)을 hex 리터럴로 복사해 사용하고, 주석으로 어느 토큰과 같은 값인지 명시합니다.',
+                meta: [
+                  { label: 'KMS 규칙', values: ['§3.4 리터럴 HEX 금지', '§3.10 gradient 중간 stop 예외', '§3.12 태그 관계도 예외'] },
+                  { label: '적용 파일', values: ['js/admin-v3.js _mountTagInsightsGraph PALETTE', '_getGeoRegionTone (Leaflet)', '_marketingStageColor (scatter)'] }
+                ],
+                code: [
+                  '// functions/_shared/tag-insights.js + admin-v3.js 공통 규약',
+                  '// SVG fill은 CSS var() 해석 불가 → hex 문자열 유지, --gw-* 토큰 값과 동일.',
+                  'var PALETTE = [',
+                  "  '#622599', // scouting-purple",
+                  "  '#4d006e', // midnight-purple",
+                  "  '#248737', // forest-green",
+                  "  '#0094b4', // ocean-blue",
+                  "  '#ff5655', // fire-red",
+                  "  '#ff8dff', // blossom-pink",
+                  "  '#ffae80', // ember-orange",
+                  "  '#82e6de', // river-blue",
+                  "  '#9fed8f', // leaf-green",
+                  "  '#3f3f3f', // gray-700 fallback",
+                  '];',
+                  '// 노드 <circle fill="..."> 속성으로 직접 삽입.'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div class="kms-ds-row" style="gap:6px">',
+                  '    <span class="kms-ds-token-chip" style="background:#622599;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#4d006e;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#248737;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#0094b4;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#ff5655;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#ff8dff;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#ffae80;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#82e6de;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#9fed8f;width:28px;height:28px"></span>',
+                  '    <span class="kms-ds-token-chip" style="background:#3f3f3f;width:28px;height:28px"></span>',
+                  '  </div>',
+                  '  <div style="font-size:12px;color:#5a5048;margin-top:8px">브랜드 10색 hex 문자열(각 ` --gw-* ` 토큰 값 동일). 그 이상 카테고리는 palette[i % 10]로 반복.</div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Pattern',
+                title: '연결선 = count 기반 흑백 연속 그라데이션',
+                summary: '관계 강도(count/maxLinkCount)를 darkness로 표현. 약한 연결 = 밝은 회색(#C4C4C4 = --gray-300), 강한 연결 = --ink(#1F1F1F) 검정. 비선형(power 0.55)으로 중간 구간 대비 강조. 가장 약한 연결(하위 15% 또는 count=1)은 점선(stroke-dasharray="4 3").',
+                meta: [
+                  { label: '색 함수', values: ['v = 196 - (196-31) × r^0.55', 'opacity = 0.35 + r^0.55 × 0.45'] },
+                  { label: '굵기 함수', values: ['0.6 + r^0.55 × 5 (0.6~5.6px)'] },
+                  { label: '점선 기준', values: ['count ≤ percentile(counts, 0.15)', 'stroke-dasharray="4 3"'] }
+                ],
+                code: [
+                  'function linkStroke(count) {',
+                  '  var r = Math.max(0, Math.min(1, count / maxLinkCount));',
+                  '  var v = Math.round(196 - (196 - 31) * Math.pow(r, 0.55));',
+                  "  return 'rgb(' + v + ',' + v + ',' + v + ')';",
+                  '}',
+                  'function linkWidth(count) {',
+                  '  var r = count / maxLinkCount;',
+                  "  return (0.6 + Math.pow(r, 0.55) * 5).toFixed(2);",
+                  '}',
+                  '// weak tier는 추가로 stroke-dasharray="4 3"'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <svg viewBox="0 0 360 80" style="width:100%;height:80px;background:#fff;border:1px solid #e2e8f0;border-radius:8px">',
+                  '    <line x1="20" y1="40" x2="100" y2="40" stroke="rgb(196,196,196)" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4 3"/>',
+                  '    <line x1="120" y1="40" x2="200" y2="40" stroke="rgb(140,140,140)" stroke-width="2" stroke-opacity="0.6"/>',
+                  '    <line x1="220" y1="40" x2="340" y2="40" stroke="rgb(40,40,40)" stroke-width="5" stroke-opacity="0.8"/>',
+                  '    <text x="60" y="20" text-anchor="middle" font-size="11" fill="#64748b">약 (점선)</text>',
+                  '    <text x="160" y="20" text-anchor="middle" font-size="11" fill="#64748b">중</text>',
+                  '    <text x="280" y="20" text-anchor="middle" font-size="11" fill="#64748b">강</text>',
+                  '  </svg>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Pattern',
+                title: '라벨 halo (배경 무관 가독성)',
+                summary: '관계도·차트의 텍스트 라벨은 배경 색이 다양(흰/회색/브랜드)해서 대비가 깨지기 쉽습니다. paint-order로 stroke를 먼저 칠하고 그 위에 fill을 덮어 흰 halo 경계를 만들면 어떤 배경에서도 가독성이 확보됩니다.',
+                meta: [
+                  { label: '핵심 속성', values: ['paint-order: stroke fill', 'stroke: --v3-surface (white)', 'stroke-width: 3'] },
+                  { label: '적용', values: ['.v3-ti-graph-label', '차트·지도 범례 전반'] }
+                ],
+                code: [
+                  '.v3-ti-graph-label {',
+                  '  font-size: var(--fs-meta);',
+                  '  font-weight: 600;',
+                  '  fill: var(--v3-text);',
+                  '  stroke: var(--v3-surface);',
+                  '  stroke-width: 3;',
+                  '  paint-order: stroke fill;',
+                  '  pointer-events: none;',
+                  '}'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack" style="background:linear-gradient(90deg,#fff,#622599);padding:16px;border-radius:8px">',
+                  '  <svg viewBox="0 0 240 60" style="width:100%;height:60px">',
+                  '    <text x="60" y="35" text-anchor="middle" fill="#1f1f1f" stroke="#fff" stroke-width="3" paint-order="stroke fill" font-size="14" font-weight="700">세계스카우트연맹</text>',
+                  '    <text x="180" y="35" text-anchor="middle" fill="#1f1f1f" stroke="#fff" stroke-width="3" paint-order="stroke fill" font-size="14" font-weight="700">청소년교육</text>',
+                  '  </svg>',
+                  '  <div style="font-size:11px;color:#fff;margin-top:6px">흰→보라 그라데이션 배경에서도 텍스트가 또렷</div>',
+                  '</div>'
+                ].join(''),
+              },
+              {
+                kind: 'Pattern',
+                title: '라벨 티어링 (primary 항상 / secondary on hover)',
+                summary: '80개 노드 전체에 라벨을 표시하면 겹쳐서 읽을 수 없습니다. 상위 25개(primary)만 항상 보이고 나머지(secondary)는 hover 또는 검색 spotlight 시에만 opacity로 등장시킵니다.',
+                meta: [
+                  { label: '데스크톱', values: ['노드 80개', 'primary 라벨 25개'] },
+                  { label: '모바일 (≤700px)', values: ['노드 50개', 'primary 라벨 15개', '라벨 폰트 키움'] }
+                ],
+                code: [
+                  '/* 상위 25개만 항상 표시 */',
+                  '.v3-ti-graph-node.is-primary .v3-ti-graph-label { opacity: 1; }',
+                  '.v3-ti-graph-node.is-secondary .v3-ti-graph-label { opacity: 0; transition: opacity .15s; }',
+                  '/* hover focus = 노드 + 이웃 라벨 노출 */',
+                  '.v3-ti-graph-node.is-focused .v3-ti-graph-label,',
+                  '.v3-ti-graph-node.is-neighbor .v3-ti-graph-label { opacity: 1; font-weight: 700; }',
+                  '/* 비이웃 dim */',
+                  '.v3-ti-graph-nodes.is-focusing .v3-ti-graph-node.is-dimmed { opacity: 0.2; }'
+                ].join('\n'),
+                preview: [
+                  '<div class="kms-ds-preview-stack">',
+                  '  <div style="display:flex;gap:16px;align-items:center">',
+                  '    <span style="display:inline-block;width:36px;height:36px;border-radius:999px;background:#622599"></span>',
+                  '    <span style="font-weight:700;font-size:13px">스카우트</span>',
+                  '    <span style="color:#94a3b8;font-size:11px">primary (항상)</span>',
+                  '  </div>',
+                  '  <div style="display:flex;gap:16px;align-items:center;margin-top:8px">',
+                  '    <span style="display:inline-block;width:22px;height:22px;border-radius:999px;background:#0094b4;opacity:0.85"></span>',
+                  '    <span style="color:#94a3b8;font-size:12px">(라벨 숨김)</span>',
+                  '    <span style="color:#94a3b8;font-size:11px">secondary (hover 시 노출)</span>',
+                  '  </div>',
                   '</div>'
                 ].join(''),
               }
