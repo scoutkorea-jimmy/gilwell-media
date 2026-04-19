@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.118.04",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:00:00 KST",
+    "summary": "공유 모달·게시판 모달 모바일 하단 시트 개선.",
+    "changes": [
+      "share-modal 모바일(≤900px): 하단 시트 패턴 적용 (align-items:flex-end, border-radius 상단만).",
+      "post modal 모바일: max-height:100svh fallback 및 width:100% 명시.",
+      "사이트 버전 00.118.03 → 00.118.04."
+    ]
+  },
+  {
+    "version": "03.084.04",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:00:00 KST",
+    "summary": "관리자 스크롤 줌 1단계 고정, 확대·축소 버튼 추가, 모달 좌상단 버그 수정.",
+    "changes": [
+      "태그 관계도 / 세계지도 휠 이벤트: RAF 스로틀로 Windows 3이벤트/틱 → 1단계 줌으로 정규화.",
+      "태그 관계도 오른쪽 상단 ＋/－ 물리 버튼 추가.",
+      "세계지도 오른쪽 상단 ＋/－ 물리 버튼 추가, scrollWheelZoom 비활성화 후 커스텀 핸들러로 대체.",
+      "_tiOpenModal 오버레이에 v3-modal 클래스 적용되어 max-width:560px이 backdrop을 560px로 제한하던 버그 수정 → v3-ti-modal-overlay로 분리.",
+      "관리자 모달 모바일(≤760px): 하단 시트 패턴, 태블릿(761-1024px): 너비 확장.",
+      "관리자 버전 03.084.03 → 03.084.04."
+    ]
+  },
+  {
     "version": "00.118.03",
     "date": "2026-04-19",
     "released_at": "2026-04-19 19:00:00 KST",

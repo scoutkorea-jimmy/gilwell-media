@@ -6177,10 +6177,12 @@ footer a:hover { color: var(--white); }
   .board-container    { padding: 0 var(--gap-section) 40px; }
   .board-grid         { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  .modal-overlay      { padding: 0; }
-  .modal              { max-height: 100vh; border-radius: 0; }
+  .modal-overlay      { padding: 0; align-items: flex-start; }
+  .modal              { max-height: 100svh; max-height: 100vh; border-radius: 0; width: 100%; }
   .modal-header       { padding: 28px var(--gap-section) 0; }
   .modal-body         { padding: var(--gap-section) var(--gap-section) var(--gap-section-out); }
+  .share-modal        { align-items: flex-end; padding: 0; }
+  .share-modal-card   { width: 100%; max-width: 100%; border-radius: 20px 20px 0 0; }
 
   .footer-inner       { padding: var(--gap-section-out) var(--gap-section) var(--gap-section); gap: var(--gap-card); }
   .footer-admin       { margin-left: 0; align-items: flex-start; text-align: left; }
