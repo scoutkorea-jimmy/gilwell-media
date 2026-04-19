@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.123.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:00:00 KST",
+    "summary": "KMS §3.2 여백 토큰 시스템과 칩·배지 패밀리 기준을 공개 사이트 전반에 일관 적용했습니다. 기사 페이지·게시판·필터 바·배너의 좌우 거터를 --pad-page-* 토큰으로 재배선하고, 카테고리 태그·글머리 Kicker·태그 필터·기사 태그의 규격을 공통 패밀리로 정렬했습니다.",
+    "changes": [
+      "css/style.css 칩·배지 패밀리 통합: .category-tag + .post-kicker 공통 규격(inline-flex 정렬, min-height 20px, padding 3px 8px, font 10px 600 0.14em uppercase, line-height 1). .post-page-tag도 동일 패턴으로 정렬(9px → var(--gap-tight)).",
+      "페이지 좌우 거터 토큰화 (KMS §3.2): .post-page-wrap/.board-container/.filter-bar/.board-banner 데스크톱 48px 리터럴 → var(--pad-page-desktop). 태블릿(≤900) 분기 → var(--pad-page-tablet), 모바일(≤480) 분기 → var(--pad-page-mobile).",
+      ".post-related-posts/.modal-related-posts/.post-special-feature-posts 상단 여백 28px/20px 리터럴 → var(--gap-section-out)/var(--gap-card).",
+      "재발 방지 — 여백 리터럴은 KMS §3.2 \"엣지 케이스(3px/6px/10px/14px)만 허용\" 원칙을 유지하고 페이지·섹션·카드 단위 주요 거터는 반드시 토큰 사용.",
+      "칩·배지 패밀리 기준을 admin V3의 .v3-badge와 동일 벡터(pill/tight padding/meta font)로 정렬해 KMS/관리자/공개 간 시각 언어 통일.",
+      "사이트 버전 00.122.01 → 00.123.00."
+    ]
+  },
+  {
     "version": "00.122.01",
     "date": "2026-04-19",
     "released_at": "2026-04-19 21:45:00 KST",
