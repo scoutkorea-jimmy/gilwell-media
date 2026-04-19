@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.074.00
+ * Version: 03.075.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -669,20 +669,21 @@
       _picksSearchTimer = setTimeout(function () { _searchPicks(q); }, 220);
     });
 
-    // Analytics period bar (통일 패턴)
+    // Analytics period bar (통일 패턴). 각 패널별 독립 로더.
     _bindPeriodBar('analytics', function (sel) {
       _analyticsPeriodState = sel;
-      _loadAnalytics();
+      _loadAnalyticsVisits();
     });
     _bindPeriodBar('analytics-tag', function (sel) {
       _analyticsTagPeriodState = sel;
-      _loadAnalytics();
+      _loadAnalyticsTags();
     });
-    _bindEl('analytics-refresh-btn', 'click', _loadAnalytics);
+    _bindEl('analytics-refresh-btn', 'click', _loadAnalyticsVisits);
+    _bindEl('analytics-tags-refresh-btn', 'click', _loadAnalyticsTags);
     _bindEl('analytics-auto-refresh', 'change', function () {
       _analyticsAutoRefresh = !!this.checked;
       _updateAnalyticsRefreshMeta();
-      if (_panel === 'analytics') _syncAnalyticsAutoRefresh();
+      if (_panel === 'analytics-visits' || _panel === 'analytics') _syncAnalyticsAutoRefresh();
     });
     _bindEl('analytics-tag-modal-close', 'click', _closeAnalyticsTagModal);
     _bindEl('analytics-tag-modal-done', 'click', _closeAnalyticsTagModal);
@@ -753,7 +754,7 @@
       _showLogin();
     });
     document.addEventListener('visibilitychange', function () {
-      if (_panel === 'analytics') _syncAnalyticsAutoRefresh();
+      if (_panel === 'analytics-visits' || _panel === 'analytics') _syncAnalyticsAutoRefresh();
     });
   });
 
@@ -848,7 +849,8 @@
   V3.refreshDashboard = function () { _loadDashboard(_el('dash-refresh-btn')); };
   V3.refreshHomepageIssues = function () { _loadHomepageIssues(_el('homepage-issues-refresh-btn')); };
   V3.refreshSiteHistory = function () { _loadSiteHistory(_el('site-history-refresh-btn')); };
-  V3.refreshAnalytics = function () { _loadAnalytics(_el('analytics-refresh-btn')); };
+  V3.refreshAnalytics = function () { _loadAnalyticsVisits(); };
+  V3.refreshAnalyticsTags = function () { _loadAnalyticsTags(); };
   V3.refreshGeoAudience = function () { _loadGeoAudience(_el('geo-audience-refresh-btn')); };
   V3.openSettingsSection = function (section) {
     V3.showPanel('settings', section || 'hero');
@@ -890,6 +892,8 @@
     calendar:  '캘린더',
     glossary:  '용어집',
     analytics: '분석',
+    'analytics-visits': '방문 분석',
+    'analytics-tags':   '태그 인사이트',
     'geo-audience': '접속 국가/도시',
     marketing: '마케팅',
     settings:  '사이트 설정',
@@ -922,7 +926,8 @@
     }
 
     // Load panel data
-    _syncAnalyticsAutoRefresh(panel === 'analytics');
+    // 자동 새로고침은 방문 분석 패널에 한정 (태그 인사이트는 빈도 낮아 수동 새로고침)
+    _syncAnalyticsAutoRefresh(panel === 'analytics-visits' || panel === 'analytics');
 
     if (panel === 'dashboard') _loadDashboard();
     else if (panel === 'homepage-issues') _loadHomepageIssues();
@@ -931,7 +936,8 @@
     else if (panel === 'write' && !_editingId) _resetWrite();
     else if (panel === 'calendar') _loadCalendar();
     else if (panel === 'glossary') _loadGlossary();
-    else if (panel === 'analytics') _loadAnalytics();
+    else if (panel === 'analytics-visits' || panel === 'analytics') _loadAnalyticsVisits();
+    else if (panel === 'analytics-tags') _loadAnalyticsTags();
     else if (panel === 'geo-audience') _loadGeoAudience();
     else if (panel === 'marketing') _loadMarketing();
     else if (panel === 'releases') _loadReleases();
@@ -2895,7 +2901,10 @@
     return '30일';
   }
 
-  function _loadAnalytics() {
+  // 하위 호환: 기존 _loadAnalytics() 호출부는 방문 분석 패널 로더로 연결
+  function _loadAnalytics() { _loadAnalyticsVisits(); }
+
+  function _loadAnalyticsVisits() {
     if (_analyticsLoading) return;
     var statsEl = document.getElementById('analytics-stats');
     var bodyEl  = document.getElementById('analytics-body');
@@ -2906,9 +2915,9 @@
     statsEl.innerHTML = '<div class="v3-loading" style="grid-column:1/-1;"><div class="v3-spinner"></div>로딩 중…</div>';
     bodyEl.innerHTML  = '';
 
-    var period    = _analyticsPeriodState.days || 30;
-    var tagPeriod = _analyticsTagPeriodState.days || period;
-    var qs = _periodQuery(_analyticsPeriodState) + '&' + _periodQuery(_analyticsTagPeriodState, 'tag_');
+    var period = _analyticsPeriodState.days || 30;
+    // 방문 분석은 visits 기간만 서버로 전송. tag_* 는 사용 안 함.
+    var qs = _periodQuery(_analyticsPeriodState);
     _apiFetch('/api/admin/analytics?' + qs).then(function (data) {
       var today    = data.today    || {};
       var summary  = data.summary  || {};
@@ -2916,10 +2925,8 @@
       var views    = data.views    || {};
       var topPosts = data.article_top_posts || data.top_posts || data.top_paths || (views.top_paths || []);
       var sources  = data.sources  || data.referrers || [];
-      var tagCloud = data.tags || {};
       var trackingNote = String(data.tracking_note || '').trim();
 
-      // Stats
       statsEl.innerHTML =
         _statCard('오늘 방문',       _fmt(today.visits  || visitors.today_visits || summary.today_visits || 0), '오늘') +
         _statCard('오늘 조회',       _fmt(today.views   || summary.today_pageviews || summary.today_views || 0), '오늘') +
@@ -2928,7 +2935,6 @@
         _statCard('인기 기사 평균 체류', _fmt(summary.popular_post_average_dwell_seconds || 0) + '초', summary.popular_post_title || '대표 기사 기준') +
         _statCard('평균 체류',       _fmt(summary.average_dwell_seconds || 0) + '초', '기간 평균');
 
-      // Top posts bar chart
       var html = '';
       if (topPosts.length) {
         var maxV = Math.max.apply(null, topPosts.map(function (p) { return p.views || 0; }));
@@ -2944,7 +2950,6 @@
         html += '</div></div>';
       }
 
-      // Traffic sources
       if (sources.length) {
         var maxS = Math.max.apply(null, sources.map(function (s) { return s.visits || 0; }));
         html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">유입 경로</h2></div><div class="v3-bar-list">';
@@ -2967,32 +2972,46 @@
           '</div>';
       }
 
-      html += _renderAnalyticsTagCloud(tagCloud, tagPeriod);
-
       bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
-      _mountAnalyticsTagGraph(tagCloud && tagCloud.graph ? tagCloud.graph : null);
       _analyticsLastUpdatedAt = Date.now();
       _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
       statsEl.innerHTML = '<div class="v3-empty" style="grid-column:1/-1;"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div>';
       bodyEl.innerHTML  = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 API 응답을 불러오지 못했습니다</div></div></div>';
-      _analyticsTagGraphState = null;
       _updateAnalyticsRefreshMeta(false, e && e.message ? String(e.message) : '분석 API 응답을 불러오지 못했습니다');
     }).finally(function () {
       _analyticsLoading = false;
     });
   }
 
+  function _loadAnalyticsTags() {
+    var bodyEl = document.getElementById('analytics-tags-body');
+    if (!bodyEl) return;
+    bodyEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    var tagPeriod = _analyticsTagPeriodState.days || 30;
+    // 태그 인사이트만 필요. 서버는 tag_* 프리픽스로 별도 기간 수용하며 다른 섹션 비용은 무시 가능.
+    var qs = _periodQuery(_analyticsTagPeriodState, 'tag_');
+    _apiFetch('/api/admin/analytics?' + qs).then(function (data) {
+      var tagCloud = data.tags || {};
+      bodyEl.innerHTML = _renderAnalyticsTagCloud(tagCloud, tagPeriod);
+      _mountAnalyticsTagGraph(tagCloud && tagCloud.graph ? tagCloud.graph : null);
+    }).catch(function (e) {
+      bodyEl.innerHTML = '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">태그 인사이트를 불러오지 못했습니다: ' + GW.escapeHtml(e.message || '') + '</div></div></div>';
+      _analyticsTagGraphState = null;
+    });
+  }
+
   function _syncAnalyticsAutoRefresh(forceActive) {
-    var shouldRun = (typeof forceActive === 'boolean' ? forceActive : _panel === 'analytics') && _analyticsAutoRefresh && !document.hidden;
+    var onVisits = (_panel === 'analytics-visits' || _panel === 'analytics');
+    var shouldRun = (typeof forceActive === 'boolean' ? forceActive : onVisits) && _analyticsAutoRefresh && !document.hidden;
     if (_analyticsAutoRefreshTimer) {
       clearInterval(_analyticsAutoRefreshTimer);
       _analyticsAutoRefreshTimer = null;
     }
     if (shouldRun) {
       _analyticsAutoRefreshTimer = window.setInterval(function () {
-        if (_panel !== 'analytics' || document.hidden) return;
-        _loadAnalytics();
+        if (!(_panel === 'analytics-visits' || _panel === 'analytics') || document.hidden) return;
+        _loadAnalyticsVisits();
       }, 30000);
     }
     _updateAnalyticsRefreshMeta();
