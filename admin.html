@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419133903">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419134500">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.088.07</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.089.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.127.01</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.088.07</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.089.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.127.01</span></span></div>
     </div>
 
@@ -934,6 +934,23 @@
           <div class="v3-loading v3-grid-loading-full"><div class="v3-spinner"></div>로딩 중…</div>
         </div>
         <div id="analytics-body"></div>
+
+        <!-- 검색 유입 키워드 -->
+        <div class="v3-card v3-search-keywords-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">검색 유입 키워드 <span class="v3-label-opt v3-label-opt-inline">Google · Naver · Daum · Bing · Yahoo 등</span></h2>
+              <p class="v3-text-m v3-text-s">방문자가 어떤 검색어로 이 사이트에 도달했는지 집계합니다. 기간은 상단 필터를 공유합니다.</p>
+            </div>
+            <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="search-keywords-refresh-btn">새로고침</button>
+          </div>
+          <div class="v3-search-keywords-summary" id="search-keywords-summary">
+            <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+          </div>
+          <div class="v3-search-keywords-engines" id="search-keywords-engines"></div>
+          <div class="v3-search-keywords-list" id="search-keywords-list"></div>
+          <p class="v3-text-m v3-text-s v3-mt-8">* HTTPS 환경에서 대부분의 검색엔진이 `referer`에 검색어 파라미터를 실어 보내지 않을 수 있어, 수집되는 건은 제한적입니다. (Google은 대부분 마스킹, Naver/Daum은 기본적으로 노출)</p>
+        </div>
       </div>
 
       <!-- ════════════════════ ANALYTICS — TAGS ════════════════════ -->
@@ -1906,9 +1923,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419133903"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419133903"></script>
-<script src="/js/admin-v3.js?v=20260419133903"></script>
+<script src="/js/main.js?v=20260419134500"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419134500"></script>
+<script src="/js/admin-v3.js?v=20260419134500"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
