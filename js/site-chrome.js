@@ -904,60 +904,6 @@
     });
   };
 
-  /* ── 저장·최근 본 기사 홈 레일 렌더 ───────────────────────── */
-  GW.renderUserDataRails = function () {
-    var section = document.getElementById('home-userdata-section');
-    if (!section || !GW.bookmarks || !GW.recent) return;
-    function catLabel(cat) { var m = GW.CATEGORIES && GW.CATEGORIES[cat]; return m ? m.label : (cat || ''); }
-    function item(i, kind) {
-      var id = Number(i.id); if (!id) return '';
-      return '<li class="home-userdata-item" data-id="' + id + '">' +
-        '<a href="/post/' + id + '">' +
-          '<span class="ud-title">' + GW.escapeHtml(i.title || '(제목 없음)') + '</span>' +
-          '<span class="ud-meta">' + GW.escapeHtml(catLabel(i.category)) + '</span>' +
-        '</a>' +
-        '<button type="button" class="ud-remove" data-kind="' + kind + '" data-id="' + id + '" aria-label="제거">×</button>' +
-      '</li>';
-    }
-    function render(listId, items, kind) {
-      var listEl = document.getElementById(listId);
-      var cardEl = listEl && listEl.closest ? listEl.closest('.home-userdata-card') : null;
-      if (!listEl) return 0;
-      if (!items || !items.length) {
-        listEl.innerHTML = '';
-        if (cardEl) cardEl.hidden = true;
-        return 0;
-      }
-      listEl.innerHTML = items.slice(0, 8).map(function (i) { return item(i, kind); }).join('');
-      if (cardEl) cardEl.hidden = false;
-      return items.length;
-    }
-    var saved  = render('home-saved-list',  GW.bookmarks.list(), 'bookmarks');
-    var recent = render('home-recent-list', GW.recent.list(),    'recent');
-    section.setAttribute('data-empty', (saved + recent) === 0 ? '1' : '0');
-  };
-
-  GW.bindUserDataEvents = function () {
-    var section = document.getElementById('home-userdata-section');
-    if (!section || section._bound) return;
-    section._bound = true;
-    section.addEventListener('click', function (e) {
-      var t = e.target;
-      if (t && t.classList && t.classList.contains('ud-remove')) {
-        e.preventDefault();
-        var kind = t.getAttribute('data-kind');
-        var id   = t.getAttribute('data-id');
-        if (kind === 'bookmarks' && GW.bookmarks) GW.bookmarks.remove(id);
-      } else if (t && t.classList && t.classList.contains('home-userdata-clear')) {
-        e.preventDefault();
-        var k = t.getAttribute('data-clear');
-        if (k === 'bookmarks' && confirm('저장한 기사를 모두 삭제할까요?')) GW.bookmarks.clear();
-        if (k === 'recent'    && confirm('최근 본 기사 목록을 지울까요?'))   GW.recent.clear();
-      }
-    });
-    document.addEventListener('gw:user-data-updated', GW.renderUserDataRails);
-  };
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', GW.applySiteChrome, { once: true });
   } else {
@@ -970,7 +916,5 @@
     GW.setupTickerControls();
     GW.initContentGalleries(document);
     GW.initDarkMode();
-    GW.renderUserDataRails();
-    GW.bindUserDataEvents();
   });
 })();
