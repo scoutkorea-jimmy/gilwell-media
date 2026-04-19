@@ -205,11 +205,7 @@ export async function onRequestPut({ params, request, env }) {
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
-      const leadRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
-      const leadPostId = leadRow ? parseInt(leadRow.value, 10) : 0;
-      if (leadPostId && Number(leadPostId) === Number(id)) {
-        return json({ error: '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다.' }, 409);
-      }
+      // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). 배타 체크 제거.
     }
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
@@ -312,11 +308,7 @@ export async function onRequestPatch({ params, request, env }) {
       if (featuredCount >= 4) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
-      const leadRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'home_lead_post'`).first();
-      const leadPostId = leadRow ? parseInt(leadRow.value, 10) : 0;
-      if (leadPostId && Number(leadPostId) === Number(id)) {
-        return json({ error: '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다.' }, 409);
-      }
+      // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). 배타 체크 제거.
     }
     fields.push("updated_at = datetime('now')");
     const updatedPost = await runPostUpdate(env, id, fields, values);

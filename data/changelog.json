@@ -1,6 +1,33 @@
 {
   "items": [
   {
+      "version": "00.116.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 10:54:35 KST",
+      "summary": "[운영 유연성] 메인 스토리 ↔ 에디터 추천 배타 제약 전면 해제 — 동일 게시글 동시 지정 허용.",
+      "changes": [
+        "이전 제약: 메인 스토리로 지정한 게시글은 에디터 추천에 추가 불가, 그 반대도 마찬가지로 차단. 서버 PUT /api/settings/home-lead, PUT /api/posts/:id, PATCH /api/posts/:id 세 엔드포인트 모두 409로 거부했고 관리자 UI도 is-disabled로 비활성 처리.",
+        "변경: 양쪽 동시 지정을 허용한다. 메인 스토리 검색 결과에 '에디터 추천에도 포함됨' 안내 suffix만 표기하고 선택은 가능. 에디터 추천 검색 결과에 '메인 스토리에도 지정됨' 안내만 표기하고 선택 가능.",
+        "서버 3곳 배타 체크 제거(functions/api/settings/home-lead.js:96-98, functions/api/posts/[id].js:208-212, 315-319). 에디터 추천 4개 상한은 유지.",
+        "관리자 프론트 3곳 제거(js/admin-v3.js _searchHomeLead/_selectHomeLead/_searchPicks/_addPick).",
+        "사유: 운영자가 동일 기사를 홈 최상단(메인 스토리)과 하단 에디터 추천 양쪽에 노출하고 싶을 때(특집 기획 등) 배타 제약이 운영 유연성을 막는 부작용이 컸음. 공개 홈은 양쪽 슬롯에 같은 기사가 표시되는 것이 자연스럽고 허용된다.",
+        "사이트 버전 00.115.03 → 00.116.00 (feature bump)."
+      ]
+    },
+  {
+      "version": "03.073.00",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 10:54:35 KST",
+      "summary": "[운영 규칙 갱신] KMS §5.5 및 CLAUDE.md §2에서 '메인 스토리 ↔ 에디터 추천 배타' 규칙을 '동시 지정 허용'으로 재정의. 관리자 UI도 배타 체크 제거.",
+      "changes": [
+        "KMS §5.5 '최신 소식 / 인기 소식 / 에디터 추천' 조항: '메인 스토리와 에디터 추천은 동시에 같은 게시글을 가리킬 수 없다' → '같은 게시글을 동시에 지정할 수 있다. 운영 유연성 확보를 위해 2026-04-19 배타 제약 해제.'",
+        "CLAUDE.md §2 Site Structure 조항: '메인 스토리 ↔ 에디터 추천 충돌 방지' → '동시 지정 허용 (2026-04-19 배타 제약 해제). 상세는 KMS §5.5.'",
+        "snapshot(docs/feature-definition.md) + fallback(functions/_shared/feature-definition.js) + 라이브 D1 세 곳 동기. D1 36,627 → 36,787자(+160자).",
+        "관리자 UI(admin-v3.js) 배타 체크 제거 — 검색 드롭다운이 더 이상 is-disabled로 막지 않고 안내 문구만 덧붙인다. V3._addPick/V3._selectHomeLead의 _alert 제약 제거.",
+        "관리자 버전 03.072.03 → 03.073.00 (feature bump)."
+      ]
+    },
+  {
       "version": "00.115.03",
       "date": "2026-04-19",
       "released_at": "2026-04-19 10:32:44 KST",
