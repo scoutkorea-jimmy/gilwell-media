@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.086.00
+ * Version: 03.086.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5474,6 +5474,16 @@
     return v.toLocaleString('ko-KR');
   }
 
+  function _fmtUsdKrw(usd, krw) {
+    var u = Number(usd || 0);
+    var k = Number(krw || 0);
+    if (u <= 0 && k <= 0) return '예상 비용 —';
+    // 매우 작은 값은 센트까지, 아니면 달러 단위
+    var usdStr = u < 0.01 ? '$' + u.toFixed(4) : '$' + u.toFixed(2);
+    var krwStr = _fmtIntKo(k) + '원';
+    return '≈ ' + usdStr + ' · ' + krwStr;
+  }
+
   function _renderAiUsage(data) {
     if (!data) return;
     var today = data.today || {};
@@ -5487,25 +5497,34 @@
     _setText('ai-usage-week-calls',  _fmtIntKo(week.calls  || 0) + '회');
     _setText('ai-usage-month-calls', _fmtIntKo(monthCalls) + '회');
 
-    // 토큰: usage 메타데이터 누계. 없으면 글자수 표시로 대체
-    var todayTok = Number(today.total_tokens || 0);
-    var weekTok  = Number(week.total_tokens  || 0);
-    var monthTok = Number(month.total_tokens || 0);
-    if (todayTok + weekTok + monthTok === 0) {
-      // Workers AI 응답에 usage가 없는 모델 — 글자수로 대체
-      _setText('ai-usage-today-tokens', '입출력 ' + _fmtIntKo((today.input_chars || 0) + (today.output_chars || 0)) + '자');
-      _setText('ai-usage-week-tokens',  '입출력 ' + _fmtIntKo((week.input_chars  || 0) + (week.output_chars  || 0)) + '자');
-      _setText('ai-usage-month-tokens', '입출력 ' + _fmtIntKo((month.input_chars || 0) + (month.output_chars || 0)) + '자');
-    } else {
-      _setText('ai-usage-today-tokens', '토큰 ' + _fmtIntKo(todayTok));
-      _setText('ai-usage-week-tokens',  '토큰 ' + _fmtIntKo(weekTok));
-      _setText('ai-usage-month-tokens', '토큰 ' + _fmtIntKo(monthTok));
-    }
+    // 토큰: est_tokens(서버에서 Llama 추정치 포함)를 1순위, 실측 total_tokens를 보조
+    var todayTok = Number(today.est_tokens || today.total_tokens || 0);
+    var weekTok  = Number(week.est_tokens  || week.total_tokens  || 0);
+    var monthTok = Number(month.est_tokens || month.total_tokens || 0);
+    var suffix = (today.total_tokens || week.total_tokens || month.total_tokens) ? '' : ' (추정)';
+    _setText('ai-usage-today-tokens', '토큰 ' + _fmtIntKo(todayTok) + suffix);
+    _setText('ai-usage-week-tokens',  '토큰 ' + _fmtIntKo(weekTok)  + suffix);
+    _setText('ai-usage-month-tokens', '토큰 ' + _fmtIntKo(monthTok) + suffix);
+
+    _setText('ai-usage-today-cost', _fmtUsdKrw(today.est_usd, today.est_krw));
+    _setText('ai-usage-week-cost',  _fmtUsdKrw(week.est_usd,  week.est_krw));
+    _setText('ai-usage-month-cost', _fmtUsdKrw(month.est_usd, month.est_krw));
 
     var avgMs = Math.round(Number((month.avg_latency_ms) || 0));
     _setText('ai-usage-latency', avgMs > 0 ? (avgMs + ' ms') : '—');
     var errors = Number(month.errors || 0);
     _setText('ai-usage-errors', '오류 ' + _fmtIntKo(errors) + '회 / 30일');
+
+    // Pricing 안내
+    if (data.pricing) {
+      var noteEl = document.getElementById('ai-usage-pricing-note');
+      if (noteEl) {
+        var rate = data.pricing.usdPer1kTokens;
+        noteEl.textContent = (data.pricing.model || 'llama-3.1-8b') +
+          ' · $' + (rate != null ? rate : 0.0115) + '/1K토큰 · ' +
+          (data.pricing.krwPerUsd ? 'USD ' + data.pricing.krwPerUsd + '원 기준' : '');
+      }
+    }
 
     // 경고 색상
     var todayStat = document.getElementById('ai-usage-today-calls');
@@ -5812,12 +5831,24 @@
     _setButtonBusy(runBtn, 'AI 채점 중…');
     _scorerSetState('loading');
 
-    _apiFetch('/api/admin/score-article', {
+    // 45초 타임아웃 — 무한 spinning 방지 (Workers AI 최대 응답 시간 여유 포함)
+    var controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timedOut = false;
+    var timeoutId = setTimeout(function () {
+      timedOut = true;
+      if (controller) try { controller.abort(); } catch (_) {}
+    }, 45000);
+
+    var fetchOpts = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: title, subtitle: subtitle, content: body, tags: tags }),
-    })
+    };
+    if (controller) fetchOpts.signal = controller.signal;
+
+    _apiFetch('/api/admin/score-article', fetchOpts)
       .then(function (data) {
+        clearTimeout(timeoutId);
         _setButtonBusy(runBtn, null);
         if (data && data.ok && data.result) {
           _scorerRenderResult(data.result);
@@ -5826,12 +5857,17 @@
         }
       })
       .catch(function (err) {
+        clearTimeout(timeoutId);
         _setButtonBusy(runBtn, null);
-        _scorerSetState('error', '채점 요청 실패: ' + ((err && err.message) || String(err)));
+        if (timedOut || (err && err.name === 'AbortError')) {
+          _scorerSetState('error', '45초 내에 응답이 오지 않았습니다. Workers AI 지연 또는 큐 적체 가능성 — 잠시 후 다시 시도하세요.');
+        } else {
+          _scorerSetState('error', '채점 요청 실패: ' + ((err && err.message) || String(err)));
+        }
       })
       .finally(function () {
-        // 호출 후 사용량 배너 즉시 반영 (DB 쓰기가 완료됐으므로)
-        setTimeout(_loadAiUsage, 400);
+        // 호출 후 사용량 배너 즉시 반영 (DB 쓰기는 waitUntil background이므로 1.5초 여유)
+        setTimeout(_loadAiUsage, 1500);
       });
   }
 

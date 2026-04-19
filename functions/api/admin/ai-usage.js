@@ -1,10 +1,36 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import {
+  estimateLlamaTokens,
+  estimateLlamaCostUsd,
+  estimateLlamaCostKrw,
+  LLAMA_PRICING,
+} from '../../_shared/ai-usage.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
+
+function annotatePeriod(row) {
+  if (!row) return { calls: 0, success: 0, errors: 0, input_chars: 0, output_chars: 0, total_tokens: 0, est_tokens: 0, est_usd: 0, est_krw: 0, avg_latency_ms: 0 };
+  const recordedTokens = Number(row.total_tokens || 0);
+  const charsTotal = Number(row.input_chars || 0) + Number(row.output_chars || 0);
+  // total_tokens 컬럼이 이미 Llama 추정치로 채워져 있지만, 0인 과거 행(03.086.00 이전 없음)을 위해 fallback 한 번 더
+  const effectiveTokens = recordedTokens > 0 ? recordedTokens : estimateLlamaTokens(charsTotal);
+  return {
+    calls: Number(row.calls || 0),
+    success: Number(row.success || 0),
+    errors: Number(row.errors || 0),
+    input_chars: Number(row.input_chars || 0),
+    output_chars: Number(row.output_chars || 0),
+    total_tokens: recordedTokens,
+    est_tokens: effectiveTokens,
+    est_usd: estimateLlamaCostUsd(effectiveTokens),
+    est_krw: estimateLlamaCostKrw(effectiveTokens),
+    avg_latency_ms: Number(row.avg_latency_ms || 0),
+  };
+}
 
 /**
  * GET /api/admin/ai-usage
@@ -79,17 +105,15 @@ export async function onRequestGet({ request, env }) {
     ]);
 
     return json({
-      today,
-      week,
-      month,
+      today: annotatePeriod(today),
+      week:  annotatePeriod(week),
+      month: annotatePeriod(month),
       byEndpoint,
       byDay,
       recent,
-      pricing: {
-        model: '@cf/meta/llama-3.1-8b-instruct',
-        note: 'Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드 참조.',
+      pricing: Object.assign({}, LLAMA_PRICING, {
         dashboardUrl: 'https://dash.cloudflare.com/?to=/:account/ai/overview',
-      },
+      }),
       generated_at: nowSec,
     });
   } catch (err) {

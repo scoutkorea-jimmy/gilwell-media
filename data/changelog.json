@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.086.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 20:25:00 KST",
+    "summary": "AI 채점이 결과 렌더 없이 로딩만 지속되던 현상 수정 + Llama 토큰·USD/KRW 예상 비용 배너 표시. 로그 기록은 waitUntil 비동기로 빠져 응답을 막지 않고, 45초 클라이언트 타임아웃도 걸어 무한 spinning을 차단합니다.",
+    "changes": [
+      "functions/_shared/ai-usage.js: estimateLlamaTokens(chars) — 한글 70% 기본 혼합비로 0.55 토큰/자 추정. estimateLlamaCostUsd/estimateLlamaCostKrw($0.0115/1K토큰 · 1 USD = 1,360 KRW). LLAMA_PRICING 상수.",
+      "logAiUsage(): total_tokens 없으면 Llama 추정치로 자동 보정 후 insert. console.log/error 관찰성 추가(log failed 시 에러 메시지 노출).",
+      "functions/api/admin/score-article.js: waitUntil 기반 fire-and-forget 로깅으로 전환(logAsync 헬퍼). 기존 await logAiUsage()가 AI.run 응답 후 DB insert 대기로 잠재적 hang을 유발할 수 있어 제거. onRequestPost 시그니처에 waitUntil 구조분해 추가.",
+      "functions/api/admin/ai-usage.js: annotatePeriod()로 today/week/month 각각 est_tokens/est_usd/est_krw 필드 추가. total_tokens 0인 과거 행도 글자수 기반 fallback 추정. pricing에 usdPer1kTokens/krwPerUsd 동봉.",
+      "admin.html: 4개 통계 카드에 .v3-ai-usage-cost span 추가 — ‘예상 비용 ≈ $0.01 · 15원’ 형태. 4번째 카드에 단가 안내 표시.",
+      "css/admin-v3.css: .v3-ai-usage-cost 스타일(indigo-800 tabular-numeric, is-warn/alert 변형 색).",
+      "js/admin-v3.js _renderAiUsage(): est_tokens 1순위, total_tokens 없으면 (추정) 라벨. _fmtUsdKrw() 헬퍼로 USD/KRW 병기. pricing-note 동적 갱신.",
+      "js/admin-v3.js _runScorer(): AbortController + 45초 timeout 추가. Timeout/AbortError 구분 에러 메시지. finally 배너 새로고침은 1500ms로 여유(waitUntil background 완료 대기).",
+      "관리자 버전 03.086.00 → 03.086.01."
+    ]
+  },
+  {
     "version": "03.086.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 20:05:00 KST",
