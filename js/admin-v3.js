@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.083.00
+ * Version: 03.083.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5004,16 +5004,33 @@
       });
   }
 
-  function _scorerShowEmpty() {
+  function _scorerSetState(state, msg) {
     var inner = document.getElementById('scorer-result-inner');
     var empty = document.getElementById('scorer-empty-state');
-    if (inner) inner.hidden = true;
-    if (empty) empty.hidden = false;
+    if (!inner || !empty) return;
+    if (state === 'empty') {
+      empty.classList.remove('is-hidden');
+      empty.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg><p>기사를 입력하고<br>채점하기를 누르세요</p>';
+      inner.style.display = 'none';
+    } else if (state === 'loading') {
+      empty.classList.remove('is-hidden');
+      empty.innerHTML = '<div class="v3-spinner" style="width:28px;height:28px;border-width:3px;margin-bottom:4px;"></div><p>AI가 기사를 분석하고 있습니다…<br><small>약 10~20초 소요됩니다</small></p>';
+      inner.style.display = 'none';
+    } else if (state === 'result') {
+      empty.classList.add('is-hidden');
+      inner.style.display = '';
+    } else if (state === 'error') {
+      empty.classList.remove('is-hidden');
+      empty.innerHTML = '<p style="color:#FF5655;max-width:260px;">' + GW.escapeHtml(msg || '오류가 발생했습니다.') + '</p>';
+      inner.style.display = 'none';
+    }
+  }
+
+  function _scorerShowEmpty() {
+    _scorerSetState('empty');
   }
 
   function _scorerRenderResult(result) {
-    var inner   = document.getElementById('scorer-result-inner');
-    var empty   = document.getElementById('scorer-empty-state');
     var totalEl = document.getElementById('scorer-total-score');
     var gradeEl = document.getElementById('scorer-total-grade');
     var barFill = document.getElementById('scorer-bar-fill');
@@ -5032,17 +5049,16 @@
 
     var cats = result.categories || [];
     bodyEl.innerHTML = cats.map(function (c) {
-      var cPct   = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
-      var cColor = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
+      var cPct      = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
+      var cColor    = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
       var issues    = (c.issues    || []).filter(Boolean);
       var strengths = (c.strengths || []).filter(Boolean);
-      var issueHtml = issues.length
-        ? '<ul class="v3-scorer-issues">' + issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>'
-        : '';
       var strengthHtml = strengths.length
         ? '<ul class="v3-scorer-strengths">' + strengths.map(function (s) { return '<li>' + GW.escapeHtml(s) + '</li>'; }).join('') + '</ul>'
         : '';
-      if (!issues.length && !strengths.length) issueHtml = '<p class="v3-scorer-pass">이상 없음</p>';
+      var issueHtml = issues.length
+        ? '<ul class="v3-scorer-issues">' + issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>'
+        : (!strengths.length ? '<p class="v3-scorer-pass">이상 없음</p>' : '');
       return '<div class="v3-scorer-check-row">' +
         '<div class="v3-scorer-check-head">' +
           '<span class="v3-scorer-check-label">' + GW.escapeHtml(c.label || '') + '</span>' +
@@ -5060,9 +5076,9 @@
       bodyEl.innerHTML += '<div class="v3-scorer-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
     }
 
-    if (empty) empty.hidden = true;
-    if (inner) inner.hidden = false;
-    inner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    _scorerSetState('result');
+    var inner = document.getElementById('scorer-result-inner');
+    if (inner) inner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function _runScorer() {
@@ -5078,14 +5094,7 @@
 
     var runBtn = document.getElementById('scorer-run-btn');
     _setButtonBusy(runBtn, 'AI 채점 중…');
-
-    var inner = document.getElementById('scorer-result-inner');
-    var empty = document.getElementById('scorer-empty-state');
-    if (inner) inner.hidden = true;
-    if (empty) {
-      empty.hidden = false;
-      empty.innerHTML = '<div class="v3-spinner" style="width:28px;height:28px;border-width:3px;"></div><p>AI가 기사를 분석하고 있습니다…<br><small>약 10~20초 소요됩니다</small></p>';
-    }
+    _scorerSetState('loading');
 
     _apiFetch('/api/admin/score-article', {
       method: 'POST',
@@ -5097,21 +5106,12 @@
         if (data && data.ok && data.result) {
           _scorerRenderResult(data.result);
         } else {
-          var errMsg = (data && data.error) || 'AI 채점 실패';
-          if (empty) {
-            empty.hidden = false;
-            empty.innerHTML = '<p style="color:#FF5655">' + GW.escapeHtml(errMsg) + '</p>';
-          }
-          if (inner) inner.hidden = true;
+          _scorerSetState('error', (data && data.error) || 'AI 채점 실패');
         }
       })
       .catch(function (err) {
         _setButtonBusy(runBtn, null);
-        if (empty) {
-          empty.hidden = false;
-          empty.innerHTML = '<p style="color:#FF5655">채점 요청 실패: ' + GW.escapeHtml((err && err.message) || String(err)) + '</p>';
-        }
-        if (inner) inner.hidden = true;
+        _scorerSetState('error', '채점 요청 실패: ' + ((err && err.message) || String(err)));
       });
   }
 
