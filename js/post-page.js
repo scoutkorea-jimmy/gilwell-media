@@ -7,6 +7,7 @@
 var _editPostId = Number(boot.editPostId || 0);
 var _sharePostUrl = String(boot.sharePostUrl || window.location.href);
 var _sharePostTitle = String(boot.sharePostTitle || document.title || '');
+var _sharePostSubtitle = String(boot.sharePostSubtitle || '');
 var _postEditSeed = boot.editSeed || {};
 var _postTurnstileWidgetId = null;
 var _editorCallbackQueue = [];
@@ -579,7 +580,7 @@ window._sharePostLink = function() {
   GW.sharePostLink({
     url: _sharePostUrl,
     title: _sharePostTitle,
-    text: _sharePostTitle
+    text: _sharePostSubtitle ? _sharePostTitle + '\n' + _sharePostSubtitle : _sharePostTitle
   }).catch(function(err) {
     GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
   });

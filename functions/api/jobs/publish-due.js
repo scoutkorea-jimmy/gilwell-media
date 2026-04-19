@@ -13,6 +13,9 @@ async function handlePublishDue(env, request) {
     const origin = new URL(request.url).origin;
     const result = await ensureDuePostsPublished(env, origin);
     const published = Array.isArray(result && result.published) ? result.published : [];
+    env.DB.prepare(
+      "INSERT INTO settings (key, value) VALUES ('scheduler_last_run', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    ).bind(new Date().toISOString()).run().catch(() => {});
     return json({
       success: true,
       published_count: published.length,
