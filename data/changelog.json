@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "03.087.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 21:15:00 KST",
+    "summary": "AI 채점 평가 기준(rubric)을 관리자 UI에서 직접 편집할 수 있게 하고, AI 사용량 카드 높이 정합·KMS 표 렌더 회복·KMS 기능정의서에 §15 AI 채점 메커니즘을 추가했습니다. 표에 `|Lc|` 같은 미이스케이프 파이프가 있어도 깨지지 않도록 파서를 보강했습니다.",
+    "changes": [
+      "functions/_shared/score-rubric.js 신설: DEFAULT_SCORE_RUBRIC(BP미디어 v2.1) · loadScoreRubric(env) · normalizeScoreRubric · RUBRIC_MAX_CHARS 20,000. 값이 없으면 기본값 폴백.",
+      "GET/PUT/DELETE /api/settings/score-rubric 신설: GET은 공개(기준 텍스트), PUT/DELETE는 Full 관리자. 변경 시 settings_history 자동 append(recordSettingChange).",
+      "functions/api/admin/score-article.js: 하드코딩 STANDARD 제거 → 매 호출마다 loadScoreRubric(env)로 최신 기준 주입. 배포 없이 기준 교체 가능.",
+      "admin.html 기사 채점 패널 상단에 AI 채점 평가 기준 카드(details) 추가. 기본값/사용자 정의 배지 · 텍스트에어리어 · 저장/되돌리기/다시 불러오기 3버튼 · 글자수·줄수 메타 · dirty 표시.",
+      "js/admin-v3.js: _loadRubric/_saveRubric/_resetRubric + _updateRubricMeta. details toggle 최초 펼침 시 1회 로드, 이후 수동. input 시 dirty 배지.",
+      "AI 사용량 그리드 높이 정합: grid-auto-rows:1fr + align-items:stretch + 카드 내 flex-column + 비용 라인 margin-top:auto로 모든 카드 바닥 정렬. 반응형 2-col 시에도 동일.",
+      "js/kms.js parseTableRow 보강: 헤더 컬럼수 초과 시 마지막 컬럼으로 원본 구분자 보존하며 병합, 부족 시 빈 셀 패딩. `| Midnight Purple | Canvas White (|Lc| 103.6) ... |` 같이 절대값 표기로 미이스케이프된 `|`가 셀 내부에 있어도 표가 깨지지 않음. 자세한 검증 4회.",
+      "css/style.css: .kms-table word-break:keep-all + overflow-wrap:anywhere, .kms-table-wrap overflow-x:auto로 장문 셀 레이아웃 안정화.",
+      "KMS 기능정의서(settings.score_rubric ❌ settings.feature_definition)에 §15 AI 채점 메커니즘 신설 — 평가 기준 운영(15.2), 호출 경로·로깅(15.3), 사용량 배너(15.4). docs/feature-definition.md 스냅샷 동기화.",
+      "관리자 버전 03.086.03 → 03.087.00."
+    ]
+  },
+  {
+    "version": "00.122.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 21:15:00 KST",
+    "summary": "기사 상세 헤더의 정보 밀도를 낮추고(읽기 시간·작성자를 우측 사이드로 이동), 공개 작성 모달 리디자인 이후 깨졌던 기사 수정 모달을 복원했습니다. 모바일 최적화도 함께 정리했습니다.",
+    "changes": [
+      "functions/post/[id].js 헤더: meta 라인에서 `읽기 N분`·`by 작성자` 제거, 카테고리 태그·NEW·날짜만 유지. time 엘리먼트 datetime 속성 부여.",
+      "우측 사이드바 pps-section ‘정보’에 읽기 시간 약 N분 행 추가. post-byline 하단에서 중복 작성자 표시 제거.",
+      ".board-write-box 원복: 신 공개 모달은 .bw-box 스코프로 분리(1200px/transparent/padding 0), 레거시 .board-write-box는 760px/var(--bg)/padding 40px/border-radius 8px로 되살려 post-edit-overlay 정상화.",
+      ".post-edit-box: 기존 모달 룩앤필 복원 + 하단 actions를 flex-wrap + 상단 구분선 + 모바일에서 세로 스택·100vw·bottom sheet.",
+      "모바일(≤760/≤480) 기사 헤더·meta·공유 버튼·post-byline 간격 재정리. 한글 word-break keep-all + 가로 스크롤 방지.",
+      "사이트 버전 00.121.01 → 00.122.00."
+    ]
+  },
+  {
     "version": "03.086.03",
     "date": "2026-04-19",
     "released_at": "2026-04-19 20:50:00 KST",

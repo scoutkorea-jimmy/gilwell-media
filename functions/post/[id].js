@@ -176,7 +176,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260419112623">
+  <link rel="stylesheet" href="/css/style.css?v=20260419114706">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -270,9 +270,7 @@ export async function onRequestGet({ params, env, request }) {
         <div class="post-page-meta">
           <span class="category-tag" style="background:${cat.color};">${cat.label}</span>
           ${isNew ? `<span class="post-kicker post-kicker-new">NEW</span>` : ''}
-          <span>${dateStr}</span>
-          <span class="post-read-time">읽기 ${readingMins}분</span>
-          ${post.author ? `<span>by ${escapeHtml(post.author)}</span>` : ''}
+          <time class="post-page-date" datetime="${escapeHtml(post.publish_at || post.created_at || '')}">${dateStr}</time>
         </div>
         <div class="post-page-share">
           <button id="post-share-btn" class="post-action-btn" type="button">공유하기</button>
@@ -295,7 +293,6 @@ export async function onRequestGet({ params, env, request }) {
         ${post.ai_assisted ? `<div class="ai-disclaimer">${escapeHtml(aiDisclaimer)}</div>` : ''}
 
         <div class="post-byline">
-          ${post.author ? `<span class="post-byline-author">작성자 · ${escapeHtml(post.author)}</span>` : ''}
           <span class="post-like-wrap">
             <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>❤ 공감 <span id="post-like-count">${likeStats.likes}</span></button>
             <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
@@ -319,6 +316,7 @@ export async function onRequestGet({ params, env, request }) {
           <p class="pps-label">정보</p>
           ${post.author ? `<div class="pps-row"><span class="pps-key">작성자</span><span class="pps-val">${escapeHtml(post.author)}</span></div>` : ''}
           <div class="pps-row"><span class="pps-key">게시일</span><span class="pps-val">${dateStr}</span></div>
+          <div class="pps-row"><span class="pps-key">읽기 시간</span><span class="pps-val">약 ${readingMins}분</span></div>
           <div class="pps-row"><span class="pps-key">조회수</span><span class="pps-val">${post.views || 0}</span></div>
           ${post.ai_assisted ? `<div class="pps-row"><span class="pps-key">AI</span><span class="pps-val" style="color:#622599;">AI 지원 작성</span></div>` : ''}
         </div>
@@ -341,7 +339,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.121.01</span> · Admin <span class="admin-build-version">V03.086.03</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.122.00</span> · Admin <span class="admin-build-version">V03.087.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -512,9 +510,9 @@ export async function onRequestGet({ params, env, request }) {
   <div class="toast" id="toast"></div>
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
-  <script src="/js/main.js?v=20260419112623"></script>
-  <script src="/js/site-chrome.js?v=20260419112623"></script>
-  <script src="/js/post-page.js?v=20260419112623"></script>
+  <script src="/js/main.js?v=20260419114706"></script>
+  <script src="/js/site-chrome.js?v=20260419114706"></script>
+  <script src="/js/post-page.js?v=20260419114706"></script>
 </body>
 </html>`;
 

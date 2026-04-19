@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { logAiUsage } from '../../_shared/ai-usage.js';
+import { loadScoreRubric } from '../../_shared/score-rubric.js';
 
 const MODEL_ID = '@cf/meta/llama-3.1-8b-instruct';
 
@@ -8,39 +9,6 @@ const json = (data, status = 200) =>
     status,
     headers: { 'Content-Type': 'application/json' },
   });
-
-const STANDARD = `
-BP미디어 기사 작성 표준 v2.1 평가 기준:
-
-[Title 규칙]
-- 주체(연맹명/국가명) + 실제 행동(방문/체결/개최/시작 등) + 사건명 구조여야 함
-- 해석, 감정, 평가, 미래 예측 표현 금지
-- 제목만 보고 사건이 복원 가능해야 함
-- 금지 표현: 의미 있는, 뜻깊은, 중요한 계기, 성공적으로, 훌륭한
-
-[Subtitle 규칙]
-- 기사의 해석 방향 또는 구조 흐름을 제시
-- 감정 표현, 단정적 해석 금지
-
-[Body 구조]
-- 문단 구분이 명확해야 함 (빈 줄로 구분)
-- 1문단: 사건 설명, 2문단: 배경, 3문단: 전개(인물·행동), 4문단: 확장(가능성만 서술)
-- 문단당 하나의 메시지, 3~5문장 권장
-- 시간 흐름 유지
-- 금지 표현: 의미 있는, 뜻깊은, 중요한 계기, 성공적으로
-
-[번역·표기 원칙]
-- 연맹명/인명은 국문(영문) 병기 최초 1회 후 국문만 사용
-- 임의 해석·창작 금지, 원문 사실 기반
-
-[문체·홍보 원칙]
-- 겸손하고 다정한 톤, 행위·관계·흐름 중심
-- 직접 평가 금지 (훌륭한, 대단한, 역사적 등)
-- 협력 구조·청소년 참여·프로그램 흐름으로 의미를 간접적으로 드러냄
-
-[Tags]
-- 7~10개 권장: 브랜드(스카우트 등) + 사건(국제교류 등) + 대상(연맹명/국가명)
-`;
 
 export async function onRequestPost({ request, env, waitUntil }) {
   const ip = request.headers.get('CF-Connecting-IP') || '';
@@ -74,9 +42,10 @@ export async function onRequestPost({ request, env, waitUntil }) {
     return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
   }
 
-  const prompt = `당신은 BP미디어 기사 편집장입니다. 아래 기사를 BP미디어 작성 표준 v2.1에 따라 평가해주세요.
+  const rubric = await loadScoreRubric(env);
+  const prompt = `당신은 BP미디어 기사 편집장입니다. 아래 기사를 운영자가 지정한 평가 기준에 따라 평가해주세요.
 
-${STANDARD}
+${rubric}
 
 ---
 [평가할 기사]

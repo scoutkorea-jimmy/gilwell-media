@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.086.03
+ * Version: 03.087.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5619,6 +5619,84 @@
       });
   }
 
+  /* ══════════════════════════════════════════════════════════
+     RUBRIC EDITOR (평가 기준 · settings.score_rubric)
+     ══════════════════════════════════════════════════════════ */
+  var _rubricLastLoaded = '';
+  function _updateRubricMeta() {
+    var ta = document.getElementById('rubric-textarea');
+    var meta = document.getElementById('rubric-meta');
+    if (!ta || !meta) return;
+    var len = (ta.value || '').length;
+    var lines = (ta.value || '').split('\n').length;
+    var dirty = ta.value !== _rubricLastLoaded;
+    meta.textContent = len.toLocaleString('ko-KR') + '자 · ' + lines + '줄' + (dirty ? ' · 저장되지 않음' : '');
+    meta.style.color = dirty ? '#b0393a' : '';
+  }
+  function _loadRubric() {
+    var ta = document.getElementById('rubric-textarea');
+    var badge = document.getElementById('rubric-state-badge');
+    if (!ta) return;
+    ta.value = '불러오는 중…';
+    ta.disabled = true;
+    GW.apiFetch('/api/settings/score-rubric')
+      .then(function (data) {
+        var content = (data && data.content) || '';
+        ta.value = content;
+        _rubricLastLoaded = content;
+        if (badge) {
+          badge.textContent = (data && data.isDefault) ? '기본값' : '사용자 정의';
+          badge.style.color = (data && data.isDefault) ? '' : 'var(--v3-primary)';
+        }
+        _updateRubricMeta();
+      })
+      .catch(function () {
+        ta.value = '';
+        GW.showToast('평가 기준을 불러오지 못했습니다', 'error');
+      })
+      .finally(function () { ta.disabled = false; });
+  }
+  function _saveRubric(btn) {
+    var ta = document.getElementById('rubric-textarea');
+    if (!ta) return;
+    var content = ta.value || '';
+    if (!content.trim()) { GW.showToast('내용이 비어 있습니다. 기본값으로 복원하려면 되돌리기 버튼을 사용하세요.', 'error'); return; }
+    _setButtonBusy(btn, '저장 중…');
+    GW.apiFetch('/api/settings/score-rubric', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content }),
+    })
+      .then(function (data) {
+        _rubricLastLoaded = (data && data.content) || content;
+        var badge = document.getElementById('rubric-state-badge');
+        if (badge) {
+          badge.textContent = (data && data.isDefault) ? '기본값' : '사용자 정의';
+          badge.style.color = (data && data.isDefault) ? '' : 'var(--v3-primary)';
+        }
+        _updateRubricMeta();
+        GW.showToast('평가 기준을 저장했습니다. 다음 채점부터 반영됩니다.', 'success');
+      })
+      .catch(function (err) { GW.showToast((err && err.message) || '저장 실패', 'error'); })
+      .finally(function () { _clearButtonBusy(btn); });
+  }
+  function _resetRubric(btn) {
+    if (!confirm('평가 기준을 기본값(BP미디어 v2.1)으로 되돌리시겠습니까?')) return;
+    _setButtonBusy(btn, '복원 중…');
+    GW.apiFetch('/api/settings/score-rubric', { method: 'DELETE' })
+      .then(function (data) {
+        var ta = document.getElementById('rubric-textarea');
+        if (ta) ta.value = (data && data.content) || '';
+        _rubricLastLoaded = (data && data.content) || '';
+        var badge = document.getElementById('rubric-state-badge');
+        if (badge) { badge.textContent = '기본값'; badge.style.color = ''; }
+        _updateRubricMeta();
+        GW.showToast('기본값으로 복원했습니다.', 'success');
+      })
+      .catch(function (err) { GW.showToast((err && err.message) || '복원 실패', 'error'); })
+      .finally(function () { _clearButtonBusy(btn); });
+  }
+
   function _initArticleScorer() {
     var runBtn   = document.getElementById('scorer-run-btn');
     var clearBtn = document.getElementById('scorer-clear-btn');
@@ -5631,6 +5709,23 @@
     if (refreshBtn && !refreshBtn._aiUsageBound) {
       refreshBtn._aiUsageBound = true;
       refreshBtn.addEventListener('click', function () { _loadAiUsage(refreshBtn); });
+    }
+
+    // 평가 기준 카드 — 펼쳤을 때 최초 1회 로드, 이후엔 리로드 버튼으로만
+    var rubricCard = document.getElementById('rubric-card');
+    if (rubricCard && !rubricCard._rubricInited) {
+      rubricCard._rubricInited = true;
+      rubricCard.addEventListener('toggle', function () {
+        if (rubricCard.open && !_rubricLastLoaded) _loadRubric();
+      });
+      var ta = document.getElementById('rubric-textarea');
+      if (ta) ta.addEventListener('input', _updateRubricMeta);
+      var saveBtn   = document.getElementById('rubric-save-btn');
+      var resetBtn  = document.getElementById('rubric-reset-btn');
+      var reloadBtn = document.getElementById('rubric-reload-btn');
+      if (saveBtn)   saveBtn.addEventListener('click',   function () { _saveRubric(saveBtn); });
+      if (resetBtn)  resetBtn.addEventListener('click',  function () { _resetRubric(resetBtn); });
+      if (reloadBtn) reloadBtn.addEventListener('click', function () { _loadRubric(); });
     }
 
     if (!runBtn || runBtn._scorerBound) return;

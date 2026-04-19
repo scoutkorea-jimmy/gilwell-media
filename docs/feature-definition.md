@@ -1145,3 +1145,63 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 #### 각주
 - 이 문서는 "설명서"가 아니라 "기준서"다.
 - 앞으로 개발할 때 AI와 인간 개발자 모두 이 문서를 먼저 보고, 이 문서를 무시한 구현은 허용하지 않는다.
+
+## 15. AI 채점 메커니즘
+
+### 15.1 개요
+
+#### 기능 세부 설명
+- Cloudflare Workers AI의 `@cf/meta/llama-3.1-8b-instruct` 모델로 BP미디어 기사 작성 표준에 따른 자동 채점 제공.
+- 진입점: 관리자 콘솔 → **기사 채점** 패널, 각 글쓰기 모달(관리자 + 공개) 하단의 인라인 `AI 채점` 카드.
+- 평가 범위: Title(30점), Subtitle(15점), Body 구조·흐름(35점), Tags(10점), 표기·문체·겸손도(10점). 총 100점, S/A/B/C/D 등급.
+- 결과: 종합 점수 + 등급 + 카테고리별 점수·이슈·강점 + 개선 방향 2~3줄.
+
+### 15.2 평가 기준(rubric) 운영
+
+#### 기능 세부 설명
+- 기준 텍스트는 D1 `settings` 테이블의 `score_rubric` 키에 저장.
+- 값이 없으면 `functions/_shared/score-rubric.js`의 `DEFAULT_SCORE_RUBRIC`(BP미디어 v2.1)로 폴백.
+- 변경 경로: 관리자 → 기사 채점 → 상단 **AI 채점 평가 기준** 카드 펼치기 → 텍스트 수정 → 저장.
+- 저장 즉시 다음 호출부터 Workers AI 프롬프트에 반영. 별도 배포 불필요.
+- 변경 기록은 `settings_history`에 자동 append(`recordSettingChange`). 관리자 → 운영 → 사이트 히스토리에서 조회.
+- 최대 20,000자. 공백·빈 줄 압축 후 저장. 공백만 있으면 400 오류.
+
+#### API
+- `GET /api/settings/score-rubric` — 인증 없이 현재 기준 조회(`{ content, isDefault, maxChars }`).
+- `PUT /api/settings/score-rubric` — Full 관리자 토큰 필요. 본문 `{ content }`.
+- `DELETE /api/settings/score-rubric` — Full 관리자 토큰 필요. 기본값으로 복원.
+
+### 15.3 호출 경로와 로깅
+
+#### 기능 세부 설명
+- 엔드포인트: `POST /api/admin/score-article` (Full 관리자 전용).
+- 입력: `{ title, subtitle, content, tags }`. 제목 또는 본문 중 하나는 필수.
+- 응답: `{ ok, result: { overall, categories[], improvement } }`.
+- 타임아웃: 클라이언트 `AbortController`로 45초. 서버는 Workers AI 기본 허용 시간 내 응답.
+
+#### 로깅 (ai_usage_log)
+- 모든 호출은 성공·실패·입력오류·파싱실패에 관계없이 `ai_usage_log` 테이블에 한 행 append.
+- 컬럼: `created_at`(Unix s), `endpoint`, `model`, `ip`, `actor`, `input_chars`, `output_chars`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `latency_ms`, `status`, `error_code`.
+- `status` 값: `success` / `error` / `invalid`. `error_code`: `empty_input` / `ai_call_failed` / `parse_no_json` / `parse_invalid_json`.
+- Workers AI 응답에 `usage` 메타가 없는 경우 `functions/_shared/ai-usage.js`의 Llama 추정치(1자당 0.55토큰)로 `total_tokens` 자동 채움.
+- 기록은 `ctx.waitUntil()` 기반 fire-and-forget. 본 API 응답을 막지 않음.
+
+### 15.4 사용량 배너
+
+#### 기능 세부 설명
+- 위치: 기사 채점 패널 최상단 카드.
+- 4개 통계: 오늘(24h) · 최근 7일 · 최근 30일 · 평균 지연/오류.
+- 주지표는 토큰 누계, 보조 라인은 `1회당 평균 · 총 N회`, 하단은 USD/KRW 예상 비용.
+- 일 50회 초과 → 주의(주황), 100회 초과 → 경고(빨강). 월 1000/3000 동일.
+- 14일 일별 스파크라인 + Cloudflare 대시보드 외부 링크.
+- 가격 기준: `$0.0115/1K 토큰 · USD 1,360원` (조정은 `functions/_shared/ai-usage.js` `LLAMA_USD_PER_1K_TOKENS`/`USD_TO_KRW` 상수).
+
+#### API
+- `GET /api/admin/ai-usage` — Full 관리자 전용. `{ today, week, month, byEndpoint, byDay, recent, pricing }`.
+
+### 15.5 각주
+
+#### 각주
+- 기준 변경은 운영 의사결정이므로 관리자 UI에서 처리한다. 코드·DB 직접 수정 금지.
+- 사용량 기록은 내부 추정이며 정확한 청구는 Cloudflare 대시보드 neuron 단위를 따른다.
+- 공개 글쓰기 모달의 인라인 채점 버튼도 동일 엔드포인트를 호출하므로 사용량·비용에 합산된다.
