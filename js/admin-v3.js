@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.078.00
+ * Version: 03.078.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3268,11 +3268,36 @@
       }
     }
 
-    // 글머리 태그별 색상 매핑 (Tableau 10 스타일)
-    var PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+    // 글머리 태그별 색상 매핑 — KMS 브랜드 10색 (css/admin-v3.css :root --gw-* 토큰과 동일 값).
+    // SVG fill은 CSS var()를 해석 못 해 hex 문자열 유지 (§3.10 Leaflet 팔레트 동일 예외).
+    var PALETTE = [
+      '#622599', // scouting-purple
+      '#4d006e', // midnight-purple
+      '#248737', // forest-green
+      '#0094b4', // ocean-blue
+      '#ff5655', // fire-red
+      '#ff8dff', // blossom-pink (site 기준)
+      '#ffae80', // ember-orange
+      '#82e6de', // river-blue
+      '#9fed8f', // leaf-green
+      '#3f3f3f', // gray-700 fallback (11번째 이상은 반복 시 회색으로)
+    ];
     var headerList = Array.from(new Set(nodes.map(function (n) { return n.top_header || '(없음)'; })));
     var colorMap = {};
     headerList.forEach(function (h, i) { colorMap[h] = PALETTE[i % PALETTE.length]; });
+
+    // 선 색상: 연결 강도(count/maxLinkCount) 기반 흑백 연속 그라데이션.
+    // 약한 연결 = 밝은 회색(--gray-300 #c4c4c4), 강한 연결 = --ink(#1f1f1f) 검정 근사.
+    // 비선형(power 0.55)으로 중간 연결이 회색에 치우치지 않게 대비 강조.
+    function linkStroke(count) {
+      var r = Math.max(0, Math.min(1, count / maxLinkCount));
+      var v = Math.round(196 - (196 - 31) * Math.pow(r, 0.55));
+      return 'rgb(' + v + ',' + v + ',' + v + ')';
+    }
+    function linkOpacity(count) {
+      var r = Math.max(0, Math.min(1, count / maxLinkCount));
+      return (0.35 + Math.pow(r, 0.55) * 0.45).toFixed(2); // 0.35 ~ 0.80
+    }
 
     // ── SVG 마크업 ──
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -3315,10 +3340,12 @@
       line.setAttribute('x2', l.target.x.toFixed(1));
       line.setAttribute('y2', l.target.y.toFixed(1));
       line.setAttribute('stroke-width', linkWidth(l.count));
-      line.setAttribute('class', 'v3-ti-graph-link is-tier-' + tier);
+      // inline style로 stroke/opacity 세팅 — CSS class(hover focus 등)가 !important로 덮어쓸 수 있도록.
+      line.style.stroke = linkStroke(l.count);
+      line.style.strokeOpacity = linkOpacity(l.count);
+      line.setAttribute('class', 'v3-ti-graph-link');
       if (tier === 'weak') {
-        // 점선 — 패턴은 굵기 대비 보이도록 4 3 .
-        line.setAttribute('stroke-dasharray', '4 3');
+        line.setAttribute('stroke-dasharray', '4 3');  // 가장 약한 연결만 점선.
       }
       linksG.appendChild(line);
       return { line: line, source: l.source, target: l.target, tier: tier };

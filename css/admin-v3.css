@@ -2831,29 +2831,16 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-ti-graph-nodes.is-focusing .v3-ti-graph-node.is-dimmed {
   opacity: 0.2;
 }
-/* 링크 tier — count 기준 3단계. 약한 연결은 점선(inline stroke-dasharray). */
+/* 링크 — stroke 색과 opacity는 JS에서 inline style로 설정(count 기반 흑백 연속 그라데이션).
+   약한 연결(하위 15%)만 inline stroke-dasharray 점선.
+   hover focus는 CSS !important로 inline 덮어씀. */
 .v3-ti-graph-link {
-  stroke: var(--v3-text-l);
-  stroke-opacity: 0.55;
   transition: stroke-opacity .12s, stroke .12s;
 }
-.v3-ti-graph-link.is-tier-strong {
-  stroke: var(--v3-text-m);
-  stroke-opacity: 0.7;
-}
-.v3-ti-graph-link.is-tier-medium {
-  stroke: var(--v3-text-l);
-  stroke-opacity: 0.55;
-}
-.v3-ti-graph-link.is-tier-weak {
-  stroke: var(--v3-border-m);
-  stroke-opacity: 0.6;
-}
-/* hover focus */
 .v3-ti-graph-link.is-focused {
-  stroke: var(--v3-ink-emphasis) !important;
-  stroke-opacity: 0.8 !important;
-  stroke-dasharray: none !important;  /* 점선인 weak 링크도 focus 시엔 solid */
+  stroke: var(--v3-primary) !important;  /* Scouting Purple 브랜드 — hover 강조 */
+  stroke-opacity: 0.9 !important;
+  stroke-dasharray: none !important;
 }
 .v3-ti-graph-link.is-dimmed {
   stroke-opacity: 0.08 !important;

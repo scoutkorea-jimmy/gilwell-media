@@ -1,6 +1,22 @@
 {
   "items": [
   {
+      "version": "03.078.01",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 12:31:00 KST",
+      "summary": "태그 관계도 팔레트를 KMS 브랜드 10색으로 교체 + 선 색을 연결 강도 기반 흑백 연속 그라데이션으로 재설계.",
+      "changes": [
+        "노드 팔레트: Tableau 10(#4e79a7/#f28e2b/#e15759 등) → KMS 브랜드 10색 (#622599 scouting-purple · #4d006e midnight-purple · #248737 forest-green · #0094b4 ocean-blue · #ff5655 fire-red · #ff8dff blossom-pink · #ffae80 ember-orange · #82e6de river-blue · #9fed8f leaf-green · #3f3f3f gray-700 fallback). KMS §3.4 브랜드 팔레트 준수.",
+        "SVG fill attribute는 CSS var() 해석 불가 → hex 리터럴 유지. §3.10 Leaflet 팔레트와 동일 예외 패턴(주석 명시).",
+        "선 색상: 3-tier 회색 계열(--v3-text-m/-l/border-m) → count 기반 **흑백 연속 그라데이션**. linkStroke(count) = rgb(v,v,v) where v = 196 - (196-31) * pow(r, 0.55). 약한 연결 밝은 회색(#c4c4c4) → 강한 연결 --ink(#1f1f1f). 비선형(power 0.55)으로 중간 강도 대비 강조.",
+        "stroke-opacity도 power 곡선: 0.35 ~ 0.80. 약한 연결은 더 투명하게.",
+        "가장 약한 연결(하위 15% 또는 count=1)은 계속 점선(stroke-dasharray='4 3') 유지.",
+        "Hover focus 색: indigo(--v3-ink-emphasis) → **Scouting Purple(--v3-primary)** 으로 변경 — 브랜드 일관성.",
+        "CSS tier 클래스(is-tier-strong/medium/weak) 제거. inline style.stroke + style.strokeOpacity로 JS에서 계산. hover focus만 CSS !important로 덮어씀.",
+        "관리자 버전 03.078.00 → 03.078.01."
+      ]
+    },
+  {
       "version": "03.078.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 12:26:22 KST",
