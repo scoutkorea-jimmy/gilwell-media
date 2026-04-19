@@ -1447,12 +1447,13 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-color:var(--black);
 }
 
-/* Fire Red / Ocean Blue는 10px 본문 텍스트로 AA(4.5:1) 미달 → 텍스트는 Midnight Purple (13.63:1 AAA), border만 브랜드 색으로 지역 식별 유지 (border는 UI 3:1 충족) */
-.tag-korea-kicker   { color: var(--midnight-purple); border-color: var(--ocean-blue); }
-.tag-apr-kicker     { color: var(--midnight-purple); border-color: var(--fire-red); }
-.tag-wosm-kicker    { color: var(--forest-green); border-color: var(--forest-green); }
-.tag-people-kicker  { color: var(--kicker-people); border-color: var(--kicker-people); }
-.tag-latest-kicker  { color: var(--black); border-color: var(--black); }
+/* 모든 카테고리 kicker: border-color = text color 통일 (KMS 기준 kicker는 UI 라벨로 Lc 45+ 적용).
+   1~2자짜리 장식 라벨은 본문 읽기 텍스트가 아니라 UI 식별자이므로 브랜드색 그대로 사용. */
+.tag-korea-kicker   { color: var(--ocean-blue);      border-color: var(--ocean-blue); }
+.tag-apr-kicker     { color: var(--fire-red);        border-color: var(--fire-red); }
+.tag-wosm-kicker    { color: var(--forest-green);    border-color: var(--forest-green); }
+.tag-people-kicker  { color: var(--kicker-people);   border-color: var(--kicker-people); }
+.tag-latest-kicker  { color: var(--black);           border-color: var(--black); }
 .tag-glossary-kicker{ color: var(--kicker-glossary); border-color: var(--kicker-glossary); }
 
 /* ════════════════════════════════════════════════════════════

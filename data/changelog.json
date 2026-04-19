@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "03.088.07",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 00:25:00 KST",
+    "summary": "KMS 기능정의서 3.3.1 칩·배지 패밀리 원칙에 아웃라인 kicker border=text 통일 규정과 UI 라벨 APCA 기준(Lc 45+) 예외를 명문화. D1 + docs 동기화.",
+    "changes": [
+      "KMS 3.3.1 원칙에 '아웃라인 kicker의 border-color와 color는 항상 같은 색' 규정 추가. UI 라벨(1~2자 장식)은 본문 Lc 75+ 대신 Lc 45+ 적용. 정정 배경 각주 포함.",
+      "관리자 버전 03.088.06 → 03.088.07."
+    ]
+  },
+  {
+    "version": "00.126.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 00:25:00 KST",
+    "summary": "아웃라인 kicker의 border-color와 text color를 항상 동일한 브랜드 색으로 통일했습니다. 이전에 Ocean Blue·Fire Red만 텍스트 색을 Midnight Purple로 강등했던 예외를 해제해 시각 일관성 확보.",
+    "changes": [
+      "css/style.css .tag-korea-kicker color: var(--midnight-purple) → var(--ocean-blue) (border와 동일). .tag-apr-kicker color → var(--fire-red).",
+      "KMS 3.3.1 '아웃라인 kicker border = text 통일' 원칙 명문화. UI 라벨 기준 Lc 45+ 예외 적용(본문 75+ 대신).",
+      "사이트 버전 00.126.00 → 00.126.01."
+    ]
+  },
+  {
     "version": "00.126.00",
     "date": "2026-04-19",
     "released_at": "2026-04-20 00:15:00 KST",
