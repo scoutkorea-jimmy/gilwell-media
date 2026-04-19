@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.089.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 01:15:00 KST",
+    "summary": "관리자 방문 분석 패널에 '검색 유입 키워드' 섹션 신설. referer URL에서 Google/Naver/Daum/Bing/Yahoo/DuckDuckGo/Baidu/Yandex/Ecosia/Zum/Nate의 검색 파라미터(q/query/p/wd/text/word)를 파싱해 집계.",
+    "changes": [
+      "GET /api/admin/search-keywords 신규 (Full admin). site_visits.referrer_url에서 검색엔진 호스트 매칭 + 쿼리 파라미터 추출 → 키워드 정규화(대소문자 병합) 후 방문수 내림차순 상위 100건 반환. days(기본 30, 최대 365) 또는 start/end 범위 지원. 반환: range, total_visits, total_unique, by_engine[], keywords[].",
+      "admin.html panel-analytics-visits 하단에 v3-search-keywords-card 추가. 3-stat 요약(기간·검색 유입 방문·고유 키워드) + 엔진별 pill 배지 + 키워드·엔진·방문수 3열 리스트.",
+      "각 키워드 클릭 시 사이트 내 검색(/search?q=...) 새 탭으로 열기. 운영자가 유입 키워드로 실제 사이트 결과를 바로 확인 가능.",
+      "상단 방문 분석 기간 필터(v3-period-bar)와 동일 범위 공유. '지금 새로고침' 클릭 또는 30초 자동 새로고침과 동시 갱신.",
+      "js/admin-v3.js _loadSearchKeywords + _renderSearchKeywords 추가. _loadAnalyticsVisits 성공 후 동반 호출. 자체 refresh 버튼(search-keywords-refresh-btn)도 바인딩.",
+      "css/admin-v3.css SEARCH KEYWORDS 섹션 추가: v3-sk-stat / v3-sk-engine-pill / v3-sk-row / v3-sk-empty. 반응형(≤900 2col).",
+      "한계 고지: HTTPS 환경에서 Google은 검색어 대부분 마스킹. Naver/Daum은 기본 노출. 카드 하단에 명시.",
+      "관리자 버전 03.088.07 → 03.089.00."
+    ]
+  },
+  {
     "version": "00.127.01",
     "date": "2026-04-19",
     "released_at": "2026-04-20 00:55:00 KST",

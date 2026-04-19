@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.088.07
+ * Version: 03.089.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -689,6 +689,7 @@
     });
     _bindEl('analytics-refresh-btn', 'click', _loadAnalyticsVisits);
     _bindEl('analytics-tags-refresh-btn', 'click', _loadAnalyticsTags);
+    _bindEl('search-keywords-refresh-btn', 'click', function () { _loadSearchKeywords(this); });
     _bindEl('analytics-auto-refresh', 'change', function () {
       _analyticsAutoRefresh = !!this.checked;
       _updateAnalyticsRefreshMeta();
@@ -3513,6 +3514,91 @@
     }).finally(function () {
       _analyticsLoading = false;
     });
+    // 검색 유입 키워드도 같은 타이밍에 새로고침
+    _loadSearchKeywords();
+  }
+
+  /* ── 검색 유입 키워드 로드/렌더 ─────────────────────────── */
+  function _loadSearchKeywords(triggerBtn) {
+    var summaryEl = document.getElementById('search-keywords-summary');
+    var enginesEl = document.getElementById('search-keywords-engines');
+    var listEl    = document.getElementById('search-keywords-list');
+    if (!summaryEl || !listEl) return;
+    if (triggerBtn) _setButtonBusy(triggerBtn, '로딩…');
+    summaryEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+
+    var qs = _periodQuery(_analyticsPeriodState) + '&limit=100';
+    _apiFetch('/api/admin/search-keywords?' + qs)
+      .then(function (data) {
+        _renderSearchKeywords(data);
+      })
+      .catch(function (err) {
+        summaryEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml((err && err.message) || '') + '</div></div>';
+        if (enginesEl) enginesEl.innerHTML = '';
+        if (listEl) listEl.innerHTML = '';
+      })
+      .finally(function () {
+        if (triggerBtn) _clearButtonBusy(triggerBtn);
+      });
+  }
+
+  function _renderSearchKeywords(data) {
+    var summaryEl = document.getElementById('search-keywords-summary');
+    var enginesEl = document.getElementById('search-keywords-engines');
+    var listEl    = document.getElementById('search-keywords-list');
+    if (!summaryEl || !enginesEl || !listEl) return;
+    var visits = Number(data && data.total_visits || 0);
+    var unique = Number(data && data.total_unique || 0);
+    var range = (data && data.range) || {};
+    var rangeLabel = range.days ? ('최근 ' + range.days + '일') :
+                     (range.start && range.end ? (range.start + ' ~ ' + range.end) : '전체');
+
+    summaryEl.innerHTML =
+      '<div class="v3-sk-stat">' +
+        '<span class="v3-sk-stat-label">기간</span>' +
+        '<span class="v3-sk-stat-value">' + GW.escapeHtml(rangeLabel) + '</span>' +
+        '<span class="v3-sk-stat-sub">상단 방문 분석 필터와 공유</span>' +
+      '</div>' +
+      '<div class="v3-sk-stat">' +
+        '<span class="v3-sk-stat-label">검색 유입 방문</span>' +
+        '<span class="v3-sk-stat-value">' + visits.toLocaleString('ko-KR') + '</span>' +
+        '<span class="v3-sk-stat-sub">referer에서 키워드 파싱 성공 건</span>' +
+      '</div>' +
+      '<div class="v3-sk-stat">' +
+        '<span class="v3-sk-stat-label">고유 키워드</span>' +
+        '<span class="v3-sk-stat-value">' + unique.toLocaleString('ko-KR') + '</span>' +
+        '<span class="v3-sk-stat-sub">중복 제거 후</span>' +
+      '</div>';
+
+    var engines = Array.isArray(data && data.by_engine) ? data.by_engine : [];
+    enginesEl.innerHTML = engines.length
+      ? engines.map(function (e) {
+          return '<span class="v3-sk-engine-pill">' +
+            GW.escapeHtml(e.engine) +
+            ' <span class="v3-sk-engine-pill-count">' + Number(e.visits || 0).toLocaleString('ko-KR') + '</span>' +
+          '</span>';
+        }).join('')
+      : '';
+
+    var keywords = Array.isArray(data && data.keywords) ? data.keywords : [];
+    if (!keywords.length) {
+      listEl.innerHTML = '<div class="v3-sk-empty">수집된 검색 유입 키워드가 없습니다. Google은 대부분 referer 키워드를 마스킹하므로 Naver / Daum 유입이 있을 때 표시됩니다.</div>';
+      return;
+    }
+    var rows = '<div class="v3-sk-row is-head">' +
+        '<span>키워드</span>' +
+        '<span>엔진</span>' +
+        '<span>방문수</span>' +
+      '</div>';
+    rows += keywords.map(function (k) {
+      var q = encodeURIComponent(k.keyword);
+      return '<div class="v3-sk-row">' +
+        '<span class="v3-sk-keyword"><a href="/search?q=' + q + '" target="_blank" rel="noopener" title="사이트 내 검색으로 열기: ' + GW.escapeHtml(k.keyword) + '">' + GW.escapeHtml(k.keyword) + '</a></span>' +
+        '<span class="v3-sk-engine">' + GW.escapeHtml(k.engine || '') + '</span>' +
+        '<span class="v3-sk-visits">' + Number(k.visits || 0).toLocaleString('ko-KR') + '</span>' +
+      '</div>';
+    }).join('');
+    listEl.innerHTML = rows;
   }
 
   var _tagInsightsCache = null;
