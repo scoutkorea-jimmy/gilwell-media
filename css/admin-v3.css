@@ -2846,15 +2846,157 @@ body.marketing-fullscreen-open { overflow: hidden; }
   stroke-opacity: 0.08 !important;
 }
 
+/* 그래프 상단 검색 바 */
+.v3-ti-graph-search {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  padding: var(--gap-tight) 0;
+  position: relative;
+}
+.v3-ti-graph-search-icon {
+  position: absolute;
+  left: var(--gap-element);
+  color: var(--v3-text-l);
+  pointer-events: none;
+}
+.v3-ti-graph-search-input {
+  flex: 1;
+  padding: var(--gap-tight) var(--gap-card) var(--gap-tight) var(--gap-section-out);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  background: var(--v3-surface);
+  color: var(--v3-text);
+  font-size: var(--v3-fs-dense);
+  outline: none;
+  min-width: 0;
+}
+.v3-ti-graph-search-input:focus { border-color: var(--v3-primary); }
+.v3-ti-graph-search-clear {
+  padding: var(--gap-tight) var(--gap-element);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  background: var(--v3-surface);
+  color: var(--v3-text-m);
+  font-size: var(--fs-meta);
+  cursor: pointer;
+}
+.v3-ti-graph-search-clear:hover { background: var(--v3-neutral-50); color: var(--v3-text); }
+.v3-ti-graph-search-meta {
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+  white-space: nowrap;
+}
+
+/* 기사 목록 모달 (v3-ti-articles-modal) — 공통 v3-modal 시스템을 재사용하지만 inline CSS 없이 클래스로. */
+.v3-ti-articles-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 10010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap-section);
+}
+.v3-ti-articles-panel {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-l);
+  max-width: 820px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--v3-shadow-m);
+}
+.v3-ti-articles-head {
+  padding: var(--v3-gap-lg) var(--gap-section);
+  border-bottom: 1px solid var(--v3-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--gap-element);
+}
+.v3-ti-articles-head .v3-modal-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+}
+.v3-ti-articles-body {
+  padding: var(--gap-section);
+  overflow-y: auto;
+  flex: 1;
+}
+.v3-ti-articles-foot {
+  padding: var(--gap-card) var(--gap-section);
+  border-top: 1px solid var(--v3-border);
+  display: flex;
+  justify-content: center;
+  gap: var(--gap-element);
+  align-items: center;
+}
+.v3-ti-articles-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-element);
+}
+.v3-ti-article-item {
+  padding: var(--gap-element) var(--gap-card);
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  background: var(--v3-neutral-50);
+}
+.v3-ti-article-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--gap-element);
+}
+.v3-ti-article-main { flex: 1; min-width: 0; }
+.v3-ti-article-title {
+  display: block;
+  color: var(--v3-text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--v3-fs-dense);
+  line-height: 1.5;
+}
+.v3-ti-article-title:hover { color: var(--v3-primary); text-decoration: underline; }
+.v3-ti-article-sub {
+  margin-top: var(--gap-micro);
+  line-height: 1.5;
+}
+.v3-ti-article-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-micro);
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.v3-ti-article-meta {
+  margin-top: var(--gap-tight);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-element);
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+  align-items: center;
+}
+
 /* 모바일 반응형 */
 @media (max-width: 700px) {
   .v3-ti-graph-svg { max-height: 68vh; }
   .v3-ti-graph-label { font-size: var(--fs-caption); }
   .v3-ti-graph-node.is-primary .v3-ti-graph-label { font-size: var(--fs-body); }
-  .v3-ti-graph-hint {
-    flex-direction: column;
-    gap: var(--gap-micro);
-  }
+  .v3-ti-graph-hint { flex-direction: column; gap: var(--gap-micro); }
+  .v3-ti-graph-search-meta { flex-basis: 100%; }
+  .v3-ti-article-row { flex-direction: column; }
+  .v3-ti-article-side { flex-direction: row; align-items: center; }
 }
 .v3-ti-graph-hint {
   padding: var(--gap-tight) var(--gap-card);
