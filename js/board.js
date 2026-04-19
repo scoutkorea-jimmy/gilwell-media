@@ -47,8 +47,15 @@
     this._galleryImages = [];
   }
 
+  // 4줄(row) 단위 페이지네이션. 뷰포트별 grid-template-columns와 맞춘다.
+  //   ≥901px : 4 cols → 16 / 페이지
+  //   481~900: 2 cols → 8  / 페이지
+  //   ≤480px : 1 col  → 4  / 페이지
   Board.prototype._getPageSize = function () {
-    return window.innerWidth <= 640 ? 20 : 16;
+    var w = window.innerWidth;
+    if (w <= 480) return 4;
+    if (w <= 900) return 8;
+    return 16;
   };
 
   // ── Initialise ────────────────────────────────────────────
@@ -155,11 +162,11 @@
   };
 
   // ── Load posts from API ───────────────────────────────────
-  Board.prototype._load = function (append) {
+  Board.prototype._load = function () {
     if (this.loading) return;
     var self = this;
     this.loading = true;
-    if (!append) this._showLoading();
+    this._showLoading();
     this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
@@ -176,11 +183,7 @@
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
         self.totalPages = Math.max(1, Math.ceil(self.total / self.pageSize));
-        if (append) {
-          self._appendPosts(data.posts);
-        } else {
-          self._renderPosts(data.posts);
-        }
+        self._renderPosts(data.posts);
         self._updateCount();
         self._renderPagination();
       })
@@ -191,16 +194,6 @@
       .finally(function () {
         self.loading = false;
       });
-  };
-
-  Board.prototype._appendPosts = function (posts) {
-    var self = this;
-    if (!posts || !posts.length) return;
-    var startIdx = this.gridEl.querySelectorAll('.post-card').length;
-    posts.forEach(function (post, i) {
-      var card = self._buildCard(post, startIdx + i);
-      self.gridEl.appendChild(card);
-    });
   };
 
   // ── Render cards ──────────────────────────────────────────
@@ -219,20 +212,49 @@
     });
   };
 
+  // 4줄 단위 번호 페이지네이션 (이전/1/2/3/…/다음)
   Board.prototype._renderPagination = function () {
     var self = this;
     if (!this.paginationEl) return;
-    if (this.page >= this.totalPages) {
+    if (this.totalPages <= 1) {
       this.paginationEl.innerHTML = '';
       return;
     }
-    var remaining = Math.max(0, this.total - this.page * this.pageSize);
-    var label = remaining > 0 ? '더 보기 (' + remaining + '개 더)' : '더 보기';
-    this.paginationEl.innerHTML = '<button type="button" class="board-more-btn">' + label + '</button>';
-    this.paginationEl.querySelector('.board-more-btn').addEventListener('click', function () {
-      if (self.loading || self.page >= self.totalPages) return;
-      self.page++;
-      self._load(true);
+
+    var currentPage = this.page;
+    var totalPages  = this.totalPages;
+    var start = Math.max(1, currentPage - 2);
+    var end   = Math.min(totalPages, start + 4);
+    start = Math.max(1, end - 4);
+    var html = '';
+
+    if (currentPage > 1) {
+      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage - 1) + '" aria-label="이전 페이지">이전</button>';
+    }
+    if (start > 1) {
+      html += '<button type="button" class="board-page-btn" data-page="1">1</button>';
+      if (start > 2) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
+    }
+    for (var page = start; page <= end; page++) {
+      html += '<button type="button" class="board-page-btn' + (page === currentPage ? ' active' : '') + '"' +
+              ' data-page="' + page + '"' + (page === currentPage ? ' aria-current="page"' : '') + '>' + page + '</button>';
+    }
+    if (end < totalPages) {
+      if (end < totalPages - 1) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
+      html += '<button type="button" class="board-page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+    }
+    if (currentPage < totalPages) {
+      html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage + 1) + '" aria-label="다음 페이지">다음</button>';
+    }
+    this.paginationEl.innerHTML = html;
+    this.paginationEl.querySelectorAll('[data-page]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var nextPage = parseInt(btn.getAttribute('data-page') || '1', 10);
+        if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage > self.totalPages || nextPage === self.page) return;
+        self.page = nextPage;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        self._load();
+      });
     });
   };
 

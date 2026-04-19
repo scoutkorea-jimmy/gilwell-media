@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.118.04';
-  GW.ADMIN_VERSION = '03.084.04';
-  GW.ASSET_VERSION = '20260419082931';
+  GW.APP_VERSION = '00.120.00';
+  GW.ADMIN_VERSION = '03.085.00';
+  GW.ASSET_VERSION = '20260419102304';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',

@@ -1,6 +1,53 @@
 {
   "items": [
   {
+    "version": "00.120.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 19:30:00 KST",
+    "summary": "홈페이지 게시판 페이지네이션을 뷰포트별 4줄(row) 단위 번호 페이지로 원복하고, 공개 글쓰기 모달(js/board-write.js)에 관리자 콘솔과 동일한 작성 어시스트(AI 채점·글자수·SEO 프리뷰·메타태그 자동완성·단축키·debounce 자동저장)를 추가했습니다.",
+    "changes": [
+      "js/board.js _getPageSize(): 뷰포트별 4 rows × grid columns로 계산 — ≥901px 16개 / 481~900px 8개 / ≤480px 4개. 이전의 모바일 20개 / 데스크탑 16개 규칙 교체.",
+      "js/board.js _renderPagination(): 2026-04-19 16:00 ‘더 보기’ 커밋(d04a7ec) 회귀 복원 — 이전/다음·숫자·… 생략으로 최대 5개 표시, 1/last anchor, aria-current 속성 포함. scrollTo({top:0}) 유지.",
+      "js/board.js _load(): append 모드 제거(_appendPosts 삭제). 페이지 전환 시 그리드 전체 교체로 일관된 4줄 레이아웃 보장.",
+      "css/style.css: .board-page-ellipsis 신규. .board-page-btn.board-page-nav letter-spacing 미세 조정(uppercase 제거).",
+      "js/board-write.js: 공개 글쓰기 모달 하단에 ‘작성 어시스트’ 블록 신설 — 제목/부제목/본문/문단 글자수, 500자/분 기준 예상 읽기 시간, SEO·공유 미리보기(canonical·OG 제목·설명), AI 채점 버튼+결과, 자동저장 상태(대기/변경/저장중/저장됨), ⌘/Ctrl+S·Esc 단축키 힌트.",
+      "board-write 메타태그 입력에 /api/admin/meta-tag-pool 기반 자동완성 드롭다운 연결. 쉼표로 누적 입력되는 구조에 맞춰 마지막 segment만 검색·보정. ↑↓/Enter/Esc 키보드 탐색.",
+      "board-write 자동저장: 기존 30초 interval → 1.8초 debounce(_scheduleBoardDraftSave)로 교체. MutationObserver로 Editor.js 편집 감지. 카테고리별 키(gw_draft_<category>) 유지.",
+      "board-write ⌘/Ctrl+S 임시저장 토스트, Esc는 dirty면 확인 후 닫기. 자동완성 드롭다운이 열려 있으면 드롭다운 Esc 우선.",
+      "css/style.css BOARD WRITE ASSIST 섹션 추가(모바일 ≤560px에서는 stats 세로 정렬 + 채점 카드 1열).",
+      "사이트 버전 00.119.00 → 00.120.00."
+    ]
+  },
+  {
+    "version": "03.085.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:00:00 KST",
+    "summary": "기사 작성 모달 하단에 인라인 AI 채점 카드를 추가하고, 작성 현황·SEO 미리보기·메타태그 자동완성·자동저장·단축키를 한 번에 묶어 작성 편의성을 높였습니다. 기존 /panel-article-scorer 독립 페이지는 그대로 유지합니다.",
+    "changes": [
+      "관련 기사 카드 아래에 `AI 채점` 카드 신설(admin.html #write-scorer-card, #write-scorer-result). 현재 모달 입력값(title/subtitle/editor 본문 플레인텍스트/meta_tags)을 그대로 /api/admin/score-article에 전송하고, 결과를 같은 카드 안에 인라인으로 렌더합니다(js/admin-v3.js _runWriteScorer / _renderWriteScorerResult).",
+      "사이드 컬럼에 `작성 현황` 카드 추가: 제목·부제목·본문 글자수, 문단 수, 500자/분 기준 예상 읽기 시간, 자동저장 상태(대기/저장 중/저장됨/변경사항 있음), ⌘/Ctrl+S·Esc 단축키 힌트. Editor.js 본문은 MutationObserver 기반 감지 → 350ms 디바운스로 재계산.",
+      "사이드 컬럼에 `SEO · 공유 미리보기` 카드 추가: canonical URL, OG 제목(60자 초과 시 브랜드 꼬리 생략), 설명(부제목 > 본문 첫 문단 140자 fallback). 제목·부제목·본문 변경 시 자동 갱신.",
+      "메타 태그 입력에 기존 태그 풀 기반 자동완성 드롭다운 연결(w-metatag-suggestions). ↑↓/Enter/Esc 키보드 탐색 지원. 신규 엔드포인트 GET /api/admin/meta-tag-pool?limit=N (기본 200, 최대 500) — 전체 posts.meta_tags를 빈도 내림차순으로 반환.",
+      "자동저장을 20초 interval → 1.8초 debounce로 교체하고, 편집 모드도 포함(gw_admin_draft_edit_<id>) + 저장 필드 확장(카테고리·글머리 태그·메타 태그·저자·공개 플래그·일정·위치·YouTube·갤러리 캡션). 새 글 키는 gw_admin_new_draft 유지. 7일 경과 시 자동 만료 + 복원 질의.",
+      "키보드 단축키: write 패널에서 ⌘/Ctrl+S → 저장, Esc → 취소(dirty면 확인 prompt, 자동완성 드롭다운 열려있으면 드롭다운만 닫기). 취소 버튼도 동일 확인 흐름.",
+      "관리자 버전 03.084.04 → 03.085.00."
+    ]
+  },
+  {
+    "version": "00.119.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 22:00:00 KST",
+    "summary": "기사 본문 리스트(불릿·번호) 렌더링을 모달(Editor.js)과 공개 페이지 사이 시각적 정합성에 맞춰 다시 잡았습니다. 중첩 리스트 들여쓰기 차이, 마커 세로 어긋남, 줄간격 깨짐 현상이 모두 잡힙니다.",
+    "changes": [
+      "css/style.css .post-page-body ul/ol: padding-left 1.5em → padding-inline-start 1.85em, list-style-position:outside 명시. li padding-inline-start 0.15em → 0.35em(마커와 텍스트 밀착 해소). line-height 1.85로 고정.",
+      "중첩 리스트 hierarchy 정리: li>ul=circle, li>ol=lower-alpha, 2단 중첩 li>ul li>ul=square, li>ol li>ol=lower-roman. 중첩 padding 1.4em → 1.55em로 에디터 모달(40px 내부 indent)과 시각 간격 일치.",
+      "li::marker 색상 var(--black) → var(--scouting-purple)·font-weight 700. APCA Lc 92.4 대비로 본문 가독성 유지하면서 마커가 배경과 뚜렷하게 구분됨.",
+      "li 내부 <br>·<p>가 hanging indent를 흐트러뜨리던 문제 제거(li>br line-height inherit, li>p margin 0).",
+      "모바일 분기(≤900 / ≤480): padding-inline-start 1.55em / 1.45em로 맞춤. 중첩 리스트도 1.35em 전용 규칙 추가.",
+      "사이트 버전 00.118.04 → 00.119.00."
+    ]
+  },
+  {
     "version": "00.118.04",
     "date": "2026-04-19",
     "released_at": "2026-04-19 20:00:00 KST",

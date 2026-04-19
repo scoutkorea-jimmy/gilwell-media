@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.084.04
+ * Version: 03.085.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -154,6 +154,15 @@
   var _relatedPosts  = [];
   var _relatedTimer  = null;
   var _draftTimer    = null;
+  // Write enhancements state
+  var _writeEnhanceInited = false;
+  var _writeDraftDebounce = null;
+  var _writeLastDraftSavedAt = 0;
+  var _writeDirty    = false;
+  var _writeStatsTimer = null;
+  var _metaTagPool   = null;
+  var _metaTagPoolLoading = false;
+  var _metaSuggestActiveIdx = -1;
 
   // Settings
   var _heroPostIds   = [];
@@ -527,7 +536,7 @@
     });
 
     // Write form
-    _bindEl('write-cancel-btn', 'click', function () { V3.showPanel('list'); });
+    _bindEl('write-cancel-btn', 'click', function () { V3.cancelWrite(); });
     _bindEl('write-publish-btn', 'click', function () { _savePost(); });
     _bindEl('w-published', 'change', _syncWriteFeaturedState);
     _bindEl('w-cover-btn', 'click', _pickCover);
@@ -1840,65 +1849,511 @@
     _editorClear();
   }
 
-  var _DRAFT_KEY = 'gw_admin_new_draft';
+  var _DRAFT_KEY_NEW = 'gw_admin_new_draft';
+  function _draftKeyForCurrent() {
+    return _editingId ? ('gw_admin_draft_edit_' + _editingId) : _DRAFT_KEY_NEW;
+  }
+
+  function _collectDraftPayload(content) {
+    return {
+      editingId: _editingId || null,
+      title:           (_el('w-title')           || {}).value || '',
+      subtitle:        (_el('w-subtitle')        || {}).value || '',
+      category:        (_el('w-cat')             || {}).value || 'korea',
+      tags:            (_selectedWriteTags || []).slice(),
+      metaTags:        (_metaTags || []).slice(),
+      author:          (_el('w-author')          || {}).value || '',
+      publishAt:       (_el('w-date')            || {}).value || '',
+      youtube:         (_el('w-youtube')         || {}).value || '',
+      coverCaption:    (_el('w-cover-caption')   || {}).value || '',
+      locationName:    (_el('w-location-name')   || {}).value || '',
+      locationAddress: (_el('w-location-addr')   || {}).value || '',
+      special:         (_el('w-special')         || {}).value || '',
+      published:       !!(_el('w-published') && _el('w-published').checked),
+      featured:        !!(_el('w-featured')  && _el('w-featured').checked),
+      content:         content || '',
+      savedAt:         Date.now(),
+    };
+  }
+
+  function _setDraftStatus(state, msg) {
+    var line = _el('w-draft-line');
+    if (!line) return;
+    line.classList.remove('is-saving', 'is-saved', 'is-dirty');
+    if (state === 'saving') {
+      line.classList.add('is-saving');
+      line.textContent = msg || '자동 저장 중…';
+    } else if (state === 'saved') {
+      line.classList.add('is-saved');
+      line.textContent = msg || '자동 저장됨 · 방금 전';
+    } else if (state === 'dirty') {
+      line.classList.add('is-dirty');
+      line.textContent = msg || '변경사항 있음 · 곧 자동 저장';
+    } else if (state === 'idle') {
+      line.textContent = msg || '자동저장 대기 중…';
+    }
+  }
+
+  function _relativeTimeKo(ms) {
+    if (!ms) return '—';
+    var diff = Math.max(0, Date.now() - ms);
+    if (diff < 5000)  return '방금 전';
+    if (diff < 60000) return Math.round(diff / 1000) + '초 전';
+    if (diff < 3600000) return Math.round(diff / 60000) + '분 전';
+    return Math.round(diff / 3600000) + '시간 전';
+  }
+
+  function _saveDraftNow() {
+    var titleEl = _el('w-title');
+    if (!titleEl) return;
+    var hasTitle = !!titleEl.value.trim();
+    // 편집 모드라도 내용이 비어 있으면 저장하지 않음 (노이즈 방지)
+    if (!hasTitle) { _setDraftStatus('idle'); return; }
+    _setDraftStatus('saving');
+    _editorGetData().then(function (content) {
+      try {
+        var payload = _collectDraftPayload(content);
+        localStorage.setItem(_draftKeyForCurrent(), JSON.stringify(payload));
+        _writeLastDraftSavedAt = payload.savedAt;
+        _writeDirty = false;
+        _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(payload.savedAt));
+      } catch (_) {
+        _setDraftStatus('dirty', '저장 실패 (용량 초과 가능성)');
+      }
+    }).catch(function () {
+      _setDraftStatus('dirty', '자동저장 대기…');
+    });
+  }
+
+  function _scheduleDraftSave() {
+    _writeDirty = true;
+    _setDraftStatus('dirty');
+    if (_writeDraftDebounce) clearTimeout(_writeDraftDebounce);
+    _writeDraftDebounce = setTimeout(_saveDraftNow, 1800);
+  }
 
   function _startDraftTimer() {
     _stopDraftTimer();
+    // 30초마다 "최근 저장 시간" 라벨을 갱신 (저장은 debounce로 처리)
     _draftTimer = setInterval(function () {
-      if (_editingId) return;
-      var titleEl = document.getElementById('w-title');
-      if (!titleEl || !titleEl.value.trim()) return;
-      _editorGetData().then(function (content) {
-        try {
-          localStorage.setItem(_DRAFT_KEY, JSON.stringify({
-            title: titleEl.value,
-            subtitle: (document.getElementById('w-subtitle') || {}).value || '',
-            content: content,
-            savedAt: Date.now(),
-          }));
-        } catch (_) {}
-      });
-    }, 20000);
+      if (!_writeLastDraftSavedAt || _writeDirty) return;
+      var line = _el('w-draft-line');
+      if (line && line.classList.contains('is-saved')) {
+        _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(_writeLastDraftSavedAt));
+      }
+    }, 30000);
   }
 
   function _stopDraftTimer() {
     if (_draftTimer) { clearInterval(_draftTimer); _draftTimer = null; }
+    if (_writeDraftDebounce) { clearTimeout(_writeDraftDebounce); _writeDraftDebounce = null; }
   }
 
   function _clearDraft() {
-    try { localStorage.removeItem(_DRAFT_KEY); } catch (_) {}
+    try { localStorage.removeItem(_draftKeyForCurrent()); } catch (_) {}
+    _writeDirty = false;
+    _writeLastDraftSavedAt = 0;
+    _setDraftStatus('idle', '저장 완료');
   }
 
   function _checkAndOfferDraftRestore() {
     try {
-      var raw = localStorage.getItem(_DRAFT_KEY);
+      var key = _draftKeyForCurrent();
+      var raw = localStorage.getItem(key);
       if (!raw) return;
       var draft = JSON.parse(raw);
       if (!draft || !draft.title) return;
       var ageMs = Date.now() - (draft.savedAt || 0);
-      if (ageMs > 7 * 24 * 3600000) { _clearDraft(); return; }
-      var mins = Math.round(ageMs / 60000);
-      var timeStr = mins < 60 ? mins + '분 전' : Math.round(mins / 60) + '시간 전';
+      if (ageMs > 7 * 24 * 3600000) { localStorage.removeItem(key); return; }
+      var timeStr = _relativeTimeKo(draft.savedAt);
       if (!confirm('임시 저장된 글이 있습니다 (' + timeStr + ').\n제목: ' + draft.title + '\n\n복원할까요?')) {
-        _clearDraft();
+        localStorage.removeItem(key);
         return;
       }
-      var titleEl = document.getElementById('w-title');
-      var subEl = document.getElementById('w-subtitle');
-      if (titleEl) titleEl.value = draft.title;
-      if (subEl) subEl.value = draft.subtitle || '';
-      if (draft.content) _editorSetData(draft.content);
-      _clearDraft();
+      _applyDraftPayload(draft);
+      localStorage.removeItem(key);
     } catch (_) {}
   }
+
+  function _applyDraftPayload(draft) {
+    try {
+      if (_el('w-title'))    _el('w-title').value    = draft.title || '';
+      if (_el('w-subtitle')) _el('w-subtitle').value = draft.subtitle || '';
+      if (_el('w-cat'))      _el('w-cat').value      = draft.category || 'korea';
+      if (Array.isArray(draft.tags)) {
+        _selectedWriteTags = draft.tags.slice();
+        _renderWriteTagPills(draft.category || 'korea');
+      }
+      if (Array.isArray(draft.metaTags)) { _metaTags = draft.metaTags.slice(); _renderMetaTags(); }
+      if (_el('w-author'))          _el('w-author').value          = draft.author || '';
+      if (_el('w-date') && draft.publishAt) _el('w-date').value    = draft.publishAt;
+      if (_el('w-youtube'))         _el('w-youtube').value         = draft.youtube || '';
+      if (_el('w-cover-caption'))   _el('w-cover-caption').value   = draft.coverCaption || '';
+      if (_el('w-location-name'))   _el('w-location-name').value   = draft.locationName || '';
+      if (_el('w-location-addr'))   _el('w-location-addr').value   = draft.locationAddress || '';
+      if (_el('w-special'))         _el('w-special').value         = draft.special || '';
+      if (_el('w-published'))       _el('w-published').checked     = draft.published !== false;
+      if (_el('w-featured'))        _el('w-featured').checked      = !!draft.featured;
+      _syncWriteFeaturedState();
+      if (draft.content) _editorSetData(draft.content);
+      _updateWriteStats();
+      _updateSeoPreview();
+      GW.showToast('임시 저장본을 복원했습니다', 'success');
+    } catch (_) {}
+  }
+
+  /* ── Write stats (글자수 · 문단수 · 읽기시간) ── */
+  function _plainTextFromEditor(jsonStr) {
+    if (!jsonStr) return '';
+    var src = String(jsonStr).trim();
+    if (src.charAt(0) !== '{') return src;
+    try {
+      var doc = JSON.parse(src);
+      if (!doc || !Array.isArray(doc.blocks)) return '';
+      return doc.blocks.map(function (b) {
+        if (!b || !b.data) return '';
+        if (b.type === 'paragraph' || b.type === 'header') return String(b.data.text || '').replace(/<[^>]+>/g, '');
+        if (b.type === 'quote') return String(b.data.text || '').replace(/<[^>]+>/g, '');
+        if (b.type === 'list') {
+          return (b.data.items || []).map(function (it) {
+            if (typeof it === 'string') return it.replace(/<[^>]+>/g, '');
+            return String((it && it.content) || '').replace(/<[^>]+>/g, '');
+          }).join('\n');
+        }
+        return '';
+      }).filter(Boolean).join('\n\n');
+    } catch (_) { return ''; }
+  }
+
+  function _updateWriteStats() {
+    var titleEl = _el('w-title');
+    var subEl   = _el('w-subtitle');
+    var titleLen = titleEl ? titleEl.value.length : 0;
+    var subLen   = subEl   ? subEl.value.length   : 0;
+    _setText('w-stat-title', titleLen + '자');
+    _setText('w-stat-subtitle', subLen + '자');
+
+    if (!_editor) {
+      _setText('w-stat-body', '0자');
+      _setText('w-stat-paragraphs', '0개');
+      _setText('w-stat-reading', '예상 읽기 시간: —');
+      return;
+    }
+    // Editor.js 내용 추출은 save()를 호출해야 하므로 너무 자주 호출하지 않도록 타이머 디바운스
+    if (_writeStatsTimer) clearTimeout(_writeStatsTimer);
+    _writeStatsTimer = setTimeout(function () {
+      _editorGetData().then(function (json) {
+        var plain = _plainTextFromEditor(json);
+        var bodyLen = plain.replace(/\s+/g, '').length;
+        var paragraphs = plain ? plain.split(/\n\s*\n/).filter(function (p) { return p.trim(); }).length : 0;
+        _setText('w-stat-body', bodyLen + '자');
+        _setText('w-stat-paragraphs', paragraphs + '개');
+        var minutes = Math.max(1, Math.round(bodyLen / 500));
+        _setText('w-stat-reading', '예상 읽기 시간: 약 ' + minutes + '분');
+        _updateSeoPreviewWithBody(plain);
+      });
+    }, 350);
+  }
+
+  /* ── SEO · 공유 미리보기 ── */
+  function _updateSeoPreview() {
+    var titleEl = _el('w-title');
+    var subEl   = _el('w-subtitle');
+    var urlEl   = _el('w-seo-url');
+    var ttEl    = _el('w-seo-title');
+    var descEl  = _el('w-seo-desc');
+    if (!ttEl || !descEl) return;
+    var rawTitle = (titleEl && titleEl.value.trim()) || '기사 제목이 여기에 표시됩니다';
+    ttEl.textContent = rawTitle + (rawTitle.length > 60 ? '' : ' — Gilwell Media');
+    if (urlEl) {
+      urlEl.textContent = 'https://gilwell.media/post/' + (_editingId || '—');
+    }
+    var sub = (subEl && subEl.value.trim()) || '';
+    if (sub) {
+      descEl.textContent = sub;
+    } else {
+      descEl.textContent = '부제목이 없으면 본문 첫 문단이 사용됩니다.';
+    }
+  }
+  function _updateSeoPreviewWithBody(plainBody) {
+    var subEl  = _el('w-subtitle');
+    var descEl = _el('w-seo-desc');
+    if (!descEl) return;
+    var sub = subEl && subEl.value.trim();
+    if (sub) return; // 부제목 있으면 우선
+    var firstPara = (plainBody || '').split(/\n\s*\n/)[0] || '';
+    firstPara = firstPara.trim().slice(0, 140);
+    descEl.textContent = firstPara || '부제목이 없으면 본문 첫 문단이 사용됩니다.';
+  }
+
+  /* ── 메타 태그 자동완성 ── */
+  function _ensureMetaTagPool() {
+    if (_metaTagPool || _metaTagPoolLoading) return;
+    _metaTagPoolLoading = true;
+    _apiFetch('/api/admin/meta-tag-pool?limit=300')
+      .then(function (data) {
+        _metaTagPool = (data && Array.isArray(data.tags)) ? data.tags : [];
+      })
+      .catch(function () { _metaTagPool = []; })
+      .finally(function () { _metaTagPoolLoading = false; });
+  }
+
+  function _renderMetaTagSuggestions(query) {
+    var box = _el('w-metatag-suggestions');
+    if (!box) return;
+    if (!_metaTagPool) { box.hidden = true; return; }
+    var q = String(query || '').trim().toLowerCase();
+    var exclude = new Set((_metaTags || []).map(function (t) { return t.toLowerCase(); }));
+    var matches = _metaTagPool
+      .filter(function (t) { return t.name && !exclude.has(t.name.toLowerCase()); })
+      .filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) >= 0; })
+      .slice(0, 12);
+    if (!matches.length) { box.hidden = true; return; }
+    _metaSuggestActiveIdx = -1;
+    box.innerHTML = matches.map(function (t, i) {
+      return '<div class="v3-metatag-suggestion" data-idx="' + i + '" data-name="' + GW.escapeHtml(t.name) + '">' +
+        '<span>' + GW.escapeHtml(t.name) + '</span>' +
+        '<span class="v3-metatag-suggestion-count">' + (t.count || 0) + '회</span>' +
+      '</div>';
+    }).join('');
+    box.hidden = false;
+  }
+
+  function _hideMetaTagSuggestions() {
+    var box = _el('w-metatag-suggestions');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+    _metaSuggestActiveIdx = -1;
+  }
+
+  function _applyMetaTagSuggestion(name) {
+    var input = _el('w-metatag-input');
+    if (input) input.value = name;
+    _addMetaTag();
+    _hideMetaTagSuggestions();
+  }
+
+  function _moveMetaSuggestActive(delta) {
+    var box = _el('w-metatag-suggestions');
+    if (!box || box.hidden) return;
+    var items = box.querySelectorAll('.v3-metatag-suggestion');
+    if (!items.length) return;
+    _metaSuggestActiveIdx = (_metaSuggestActiveIdx + delta + items.length) % items.length;
+    items.forEach(function (el, i) { el.classList.toggle('is-active', i === _metaSuggestActiveIdx); });
+    var active = items[_metaSuggestActiveIdx];
+    if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ── 인라인 AI 채점 ── */
+  function _runWriteScorer() {
+    var btn = _el('write-scorer-run-btn');
+    var out = _el('write-scorer-result');
+    var title    = (_el('w-title')    || {}).value || '';
+    var subtitle = (_el('w-subtitle') || {}).value || '';
+    var tagsArr  = (_metaTags && _metaTags.length) ? _metaTags : (_selectedWriteTags || []);
+    var tags     = (tagsArr || []).join(', ');
+    title = title.trim(); subtitle = subtitle.trim();
+    if (!title) { GW.showToast('제목을 먼저 입력하세요', 'error'); return; }
+
+    _setButtonBusy(btn, 'AI 채점 중…');
+    if (out) {
+      out.hidden = false;
+      out.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>AI가 기사를 분석하고 있습니다…</div>';
+    }
+
+    _editorGetData().then(function (json) {
+      var body = _plainTextFromEditor(json);
+      return _apiFetch('/api/admin/score-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title, subtitle: subtitle, content: body, tags: tags }),
+      });
+    }).then(function (data) {
+      _clearButtonBusy(btn);
+      if (data && data.ok && data.result) {
+        _renderWriteScorerResult(data.result);
+      } else {
+        _renderWriteScorerError((data && data.error) || 'AI 채점 실패');
+      }
+    }).catch(function (err) {
+      _clearButtonBusy(btn);
+      _renderWriteScorerError('채점 요청 실패: ' + ((err && err.message) || String(err)));
+    });
+  }
+
+  function _renderWriteScorerError(msg) {
+    var out = _el('write-scorer-result');
+    if (!out) return;
+    out.innerHTML = '<div class="v3-scorer-inline-improvement" style="border-left-color:#FF5655;background:rgba(255,86,85,0.06);">' +
+      '<strong>오류</strong><p>' + GW.escapeHtml(msg) + '</p></div>';
+  }
+
+  function _renderWriteScorerResult(result) {
+    var out = _el('write-scorer-result');
+    if (!out) return;
+    var overall = result.overall || {};
+    var pct     = Number(overall.score || 0);
+    var grade   = overall.grade || '—';
+    var color   = pct >= 80 ? '#248737' : pct >= 60 ? '#0094B4' : '#FF5655';
+    var cats    = Array.isArray(result.categories) ? result.categories : [];
+
+    var html = '<div class="v3-scorer-inline-head">' +
+      '<div><span class="v3-scorer-inline-score" style="color:' + color + '">' + pct + ' / 100</span>' +
+      ' <span class="v3-scorer-inline-grade" style="color:' + color + ';border-color:' + color + '">' + GW.escapeHtml(grade) + '</span></div>' +
+      '<button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" onclick="V3.runWriteScorer()">다시 채점</button>' +
+    '</div>';
+    if (overall.summary) html += '<div class="v3-scorer-inline-summary">' + GW.escapeHtml(overall.summary) + '</div>';
+    html += '<div class="v3-scorer-inline-bar"><div class="v3-scorer-inline-bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>';
+
+    html += '<div class="v3-scorer-inline-cats">' + cats.map(function (c) {
+      var cPct = c.max > 0 ? Math.round((c.score / c.max) * 100) : 0;
+      var cColor = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
+      var issues    = (c.issues    || []).filter(Boolean);
+      var strengths = (c.strengths || []).filter(Boolean);
+      var listHtml  = '';
+      if (strengths.length) {
+        listHtml += '<ul class="v3-scorer-inline-cat-list is-strength">' + strengths.map(function (s) { return '<li>' + GW.escapeHtml(s) + '</li>'; }).join('') + '</ul>';
+      }
+      if (issues.length) {
+        listHtml += '<ul class="v3-scorer-inline-cat-list is-issue">' + issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>';
+      }
+      return '<div class="v3-scorer-inline-cat">' +
+        '<div class="v3-scorer-inline-cat-head"><span>' + GW.escapeHtml(c.label || '') + '</span>' +
+        '<span class="v3-scorer-inline-cat-score" style="color:' + cColor + '">' + c.score + '/' + c.max + '</span></div>' +
+        listHtml +
+      '</div>';
+    }).join('') + '</div>';
+
+    if (result.improvement) {
+      html += '<div class="v3-scorer-inline-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
+    }
+    out.innerHTML = html;
+    out.hidden = false;
+  }
+
+  /* ── Write panel 초기화 (한 번만 실행) ── */
+  function _initWriteEnhancementsOnce() {
+    if (_writeEnhanceInited) return;
+    _writeEnhanceInited = true;
+
+    // 텍스트 입력 → 통계 + SEO + draft
+    ['w-title', 'w-subtitle', 'w-cat', 'w-author', 'w-date', 'w-youtube',
+     'w-cover-caption', 'w-location-name', 'w-location-addr', 'w-special'].forEach(function (id) {
+      var el = _el(id);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        _updateWriteStats();
+        _updateSeoPreview();
+        _scheduleDraftSave();
+      });
+      el.addEventListener('change', function () {
+        _updateWriteStats();
+        _updateSeoPreview();
+        _scheduleDraftSave();
+      });
+    });
+    ['w-published', 'w-featured', 'w-ai'].forEach(function (id) {
+      var el = _el(id);
+      if (el) el.addEventListener('change', _scheduleDraftSave);
+    });
+
+    // Editor.js 변경 감지 — holder에 mutation observer (콘텐츠 편집 감지)
+    var holder = _el('v3-editorjs');
+    if (holder && window.MutationObserver) {
+      var obs = new MutationObserver(function () {
+        _scheduleDraftSave();
+        _updateWriteStats();
+      });
+      obs.observe(holder, { childList: true, subtree: true, characterData: true });
+    }
+
+    // 인라인 채점 버튼
+    _bindEl('write-scorer-run-btn', 'click', _runWriteScorer);
+
+    // 메타태그 자동완성 이벤트
+    var metaInput = _el('w-metatag-input');
+    if (metaInput) {
+      metaInput.addEventListener('input', function () {
+        _ensureMetaTagPool();
+        _renderMetaTagSuggestions(this.value);
+      });
+      metaInput.addEventListener('focus', function () {
+        _ensureMetaTagPool();
+        if (this.value) _renderMetaTagSuggestions(this.value);
+      });
+      metaInput.addEventListener('blur', function () {
+        // 약간의 지연으로 클릭 이벤트가 발생할 수 있도록
+        setTimeout(_hideMetaTagSuggestions, 150);
+      });
+      metaInput.addEventListener('keydown', function (e) {
+        var box = _el('w-metatag-suggestions');
+        var open = box && !box.hidden;
+        if (e.key === 'ArrowDown' && open) { e.preventDefault(); _moveMetaSuggestActive(1); }
+        else if (e.key === 'ArrowUp' && open) { e.preventDefault(); _moveMetaSuggestActive(-1); }
+        else if (e.key === 'Enter' && open && _metaSuggestActiveIdx >= 0) {
+          e.preventDefault();
+          var items = box.querySelectorAll('.v3-metatag-suggestion');
+          var active = items[_metaSuggestActiveIdx];
+          if (active) _applyMetaTagSuggestion(active.getAttribute('data-name') || '');
+        } else if (e.key === 'Escape') {
+          _hideMetaTagSuggestions();
+        }
+      });
+    }
+    var suggestBox = _el('w-metatag-suggestions');
+    if (suggestBox) {
+      suggestBox.addEventListener('mousedown', function (e) {
+        var target = e.target;
+        while (target && target !== suggestBox && !target.classList.contains('v3-metatag-suggestion')) {
+          target = target.parentNode;
+        }
+        if (target && target.classList && target.classList.contains('v3-metatag-suggestion')) {
+          e.preventDefault();
+          _applyMetaTagSuggestion(target.getAttribute('data-name') || '');
+        }
+      });
+    }
+
+    // 키보드 단축키 (Cmd/Ctrl+S 저장, Esc 취소)
+    document.addEventListener('keydown', function (e) {
+      if (_panel !== 'write') return;
+      var isMod = e.metaKey || e.ctrlKey;
+      if (isMod && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        _savePost();
+      } else if (e.key === 'Escape') {
+        // textarea/input 에서 ESC로 포커스만 뺄 수 있도록 모달/드롭다운이 열려있지 않으면 취소
+        var box = _el('w-metatag-suggestions');
+        if (box && !box.hidden) return;
+        if (_writeDirty) {
+          if (!confirm('저장하지 않은 변경사항이 있습니다. 목록으로 나갈까요?')) return;
+        }
+        V3.showPanel('list');
+      }
+    });
+  }
+
+  V3.runWriteScorer = _runWriteScorer;
 
   V3.openWrite = function () {
     _resetWrite();
     V3.showPanel('write');
+    _initWriteEnhancementsOnce();
     _startDraftTimer();
+    _ensureMetaTagPool();
+    _updateWriteStats();
+    _updateSeoPreview();
+    _setDraftStatus('idle');
+    // 인라인 채점 결과 초기화
+    var scoreOut = _el('write-scorer-result');
+    if (scoreOut) { scoreOut.hidden = true; scoreOut.innerHTML = ''; }
     setTimeout(_checkAndOfferDraftRestore, 800);
   };
-  V3.cancelWrite = function () { V3.showPanel('list'); };
+  V3.cancelWrite = function () {
+    if (_writeDirty) {
+      if (!confirm('저장하지 않은 변경사항이 있습니다. 목록으로 나갈까요?')) return;
+    }
+    V3.showPanel('list');
+  };
 
   V3.editPost = function (id) {
     // First show panel (resets form), then load
@@ -1910,6 +2365,12 @@
     });
     document.getElementById('v3-panel-title').textContent = '글 수정';
     document.getElementById('write-panel-title').textContent = '글 수정 중…';
+
+    _initWriteEnhancementsOnce();
+    _startDraftTimer();
+    _ensureMetaTagPool();
+    var scoreOut = _el('write-scorer-result');
+    if (scoreOut) { scoreOut.hidden = true; scoreOut.innerHTML = ''; }
 
     // Reset state
     _editingId    = id;
@@ -1978,7 +2439,12 @@
         }
 
         // Editor content
-        _editorSetData(p.content || '');
+        _editorSetData(p.content || '').then(function () {
+          _updateWriteStats();
+          _updateSeoPreview();
+          _writeDirty = false;
+          _setDraftStatus('idle', '서버 데이터 기준');
+        });
 
         // History card
         _loadPostHistory(id);
@@ -2171,6 +2637,7 @@
     if (!val || _metaTags.includes(val)) { input.value = ''; return; }
     _metaTags.push(val); input.value = '';
     _renderMetaTags();
+    if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
   }
   function _renderMetaTags() {
     var el = document.getElementById('w-metatag-chips');
@@ -2179,7 +2646,11 @@
         '<button class="v3-metatag-rm" onclick="V3._removeMetaTag(' + i + ')">×</button></span>';
     }).join('');
   }
-  V3._removeMetaTag = function (i) { _metaTags.splice(i, 1); _renderMetaTags(); };
+  V3._removeMetaTag = function (i) {
+    _metaTags.splice(i, 1);
+    _renderMetaTags();
+    if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
+  };
 
   /* ── Location map (OpenStreetMap / Nominatim) ── */
   function _checkWriteLocation() {

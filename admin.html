@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419082931">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419102304">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,9 +85,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.084.04</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.085.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.118.04</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.120.00</span>
     </div>
   </div>
 </div>
@@ -100,8 +100,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.084.04</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.118.04</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.085.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.120.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -514,7 +514,10 @@
             <div class="v3-card">
               <div class="v3-card-head"><h2 class="v3-card-title">메타 태그 <span class="v3-label-opt v3-label-opt-inline">검색·분류용 키워드</span></h2></div>
               <div class="v3-metatags-input-row">
-                <input class="v3-input v3-flex-1" type="text" id="w-metatag-input" placeholder="태그 입력 후 Enter" />
+                <div class="v3-metatag-autocomplete-wrap">
+                  <input class="v3-input v3-flex-1" type="text" id="w-metatag-input" placeholder="태그 입력 후 Enter (기존 태그 자동완성)" autocomplete="off" />
+                  <div class="v3-metatag-suggestions" id="w-metatag-suggestions" hidden></div>
+                </div>
                 <button class="v3-btn v3-btn-outline v3-btn-sm" id="w-metatag-add-btn">추가</button>
               </div>
               <div class="v3-metatag-chips" id="w-metatag-chips"></div>
@@ -582,6 +585,19 @@
               <div class="v3-search-results-drop" id="w-related-results" style="display:none;"></div>
               <div class="v3-related-list" id="w-related-list"></div>
             </div>
+
+            <!-- Inline AI Scorer (기사 작성 하단) -->
+            <div class="v3-card" id="write-scorer-card">
+              <div class="v3-card-head">
+                <h2 class="v3-card-title">AI 채점 <span class="v3-label-opt v3-label-opt-inline">BP미디어 표준 v2.1 기준</span></h2>
+                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="write-scorer-run-btn">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6.5"/><path d="M5.5 8.5 L7 10 L10.5 6"/></svg>
+                  현재 기사 채점
+                </button>
+              </div>
+              <div class="v3-text-m v3-text-s v3-mt-4">제목 · 부제목 · 본문 · 메타 태그를 기준으로 자동 채점합니다. 저장·공개 여부와 무관하게 언제든 실행할 수 있습니다.</div>
+              <div id="write-scorer-result" class="v3-scorer-inline-result" hidden></div>
+            </div>
           </div>
 
           <!-- Side column -->
@@ -604,7 +620,44 @@
               </div>
             </div>
 
-            <!-- Draft status -->
+            <!-- Write stats (글자수 · 자동저장) -->
+            <div class="v3-card" id="write-stats-card">
+              <div class="v3-card-title v3-card-title-tight-sm">작성 현황</div>
+              <div class="v3-write-stats-grid">
+                <div class="v3-write-stat">
+                  <span class="v3-write-stat-label">제목</span>
+                  <span class="v3-write-stat-value" id="w-stat-title">0자</span>
+                </div>
+                <div class="v3-write-stat">
+                  <span class="v3-write-stat-label">부제목</span>
+                  <span class="v3-write-stat-value" id="w-stat-subtitle">0자</span>
+                </div>
+                <div class="v3-write-stat">
+                  <span class="v3-write-stat-label">본문</span>
+                  <span class="v3-write-stat-value" id="w-stat-body">0자</span>
+                </div>
+                <div class="v3-write-stat">
+                  <span class="v3-write-stat-label">문단</span>
+                  <span class="v3-write-stat-value" id="w-stat-paragraphs">0개</span>
+                </div>
+              </div>
+              <div class="v3-write-stats-meta" id="w-stat-reading">예상 읽기 시간: —</div>
+              <div class="v3-write-draft-line" id="w-draft-line">자동저장 대기 중…</div>
+              <div class="v3-write-shortcut-hint">⌘/Ctrl+S 저장 · Esc 취소</div>
+            </div>
+
+            <!-- SEO / OG Preview -->
+            <div class="v3-card" id="write-seo-card">
+              <div class="v3-card-title v3-card-title-tight-sm">SEO · 공유 미리보기</div>
+              <div class="v3-seo-preview">
+                <div class="v3-seo-url" id="w-seo-url">https://gilwell.media/post/—</div>
+                <div class="v3-seo-title" id="w-seo-title">기사 제목이 여기에 표시됩니다</div>
+                <div class="v3-seo-desc"  id="w-seo-desc">부제목이 없으면 본문 첫 문단이 사용됩니다.</div>
+              </div>
+              <div class="v3-text-m v3-text-s v3-mt-8">공개 후 공유·검색 결과에 보일 형태입니다. 실제 canonical은 발행 시 확정됩니다.</div>
+            </div>
+
+            <!-- Draft status (기존) -->
             <div class="v3-card" id="write-status-card" style="display:none;">
               <div class="v3-card-title v3-card-title-tight-sm">저장 상태</div>
               <div id="write-status-msg" class="v3-text-m v3-text-s"></div>
@@ -1788,9 +1841,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419082931"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419082931"></script>
-<script src="/js/admin-v3.js?v=20260419082931"></script>
+<script src="/js/main.js?v=20260419102304"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419102304"></script>
+<script src="/js/admin-v3.js?v=20260419102304"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
