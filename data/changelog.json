@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "00.127.00",
+    "date": "2026-04-19",
+    "released_at": "2026-04-20 00:40:00 KST",
+    "summary": "다크 모드 토글을 마스트헤드 원형 버튼 → 푸터 텍스트 링크(용어집 RAW 보기 아래)로 이전. 기본값 라이트 모드 강제. 히어로 상단 ticker 일시정지 버튼(중복) 제거.",
+    "changes": [
+      "js/site-chrome.js initDarkMode 재작성: prefers-color-scheme 무시, 기본값 'light' 강제. 토글 대상을 [data-theme-toggle] 셀렉터로 변경해 푸터 링크 바인딩. 상태 텍스트 '다크모드로 전환 →' ↔ '라이트모드로 변경 →'로 직관화.",
+      "모든 공개 HTML 10개(index/korea/apr/wosm/people/latest/search/calendar/glossary/contributors) + functions/post/[id].js 푸터에 '용어집 RAW로 보기' 다음 줄에 <a class='gw-theme-toggle' data-theme-toggle>다크모드로 전환 →</a> 삽입.",
+      "css/style.css .gw-theme-toggle 원형 아이콘 스타일 제거, .footer-admin .gw-theme-toggle은 다른 footer-admin 링크와 동일 스타일(hover 시 underline)로 전환.",
+      "index.html ticker-toggle-btn 제거 — 히어로 위쪽에 숨어있던 중복 일시정지 버튼. hero-pause-btn만 유지. 관련 JS setupTickerControls는 엘리먼트 없으면 early-return이라 무해.",
+      "사이트 버전 00.126.01 → 00.127.00."
+    ]
+  },
+  {
     "version": "03.088.07",
     "date": "2026-04-19",
     "released_at": "2026-04-20 00:25:00 KST",

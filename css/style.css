@@ -11537,28 +11537,8 @@ body.wosm-members-page #main-content {
   filter: brightness(0.92);
 }
 
-/* 다크 모드 토글 버튼 */
-.gw-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--ink);
+/* 다크 모드 토글 — 푸터 링크 스타일 (다른 footer-admin 링크와 시각 통일) */
+.footer-admin .gw-theme-toggle {
   cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
-.gw-theme-toggle:hover {
-  background: var(--gray-100);
-  border-color: var(--scouting-purple);
-  transform: scale(1.06);
-}
-.gw-theme-toggle:focus-visible {
-  outline: 3px solid rgba(98,37,153,0.4);
-  outline-offset: 2px;
-}
+.footer-admin .gw-theme-toggle:hover { text-decoration: underline; }
