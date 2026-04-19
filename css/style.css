@@ -6907,18 +6907,30 @@ footer a:hover { color: var(--white); }
   outline:     none;
 }
 
-/* Write modal — V3 디자인 (2-컬럼 카드 레이아웃) */
+/* Write modal 기본값 (post-edit, legacy 호환) */
 .board-write-box {
-  background:  transparent;
+  background:  var(--bg);
   width:       100%;
-  max-width:   1200px;
-  max-height:  none;
-  padding:     0;
+  max-width:   760px;
+  max-height:  95vh;
+  overflow-y:  auto;
+  padding:     40px;
   position:    relative;
   transform:   translateY(20px);
   transition:  transform 0.25s ease;
+  border-radius: 8px;
 }
 .board-write-overlay.open .board-write-box { transform: translateY(0); }
+
+/* bw-box — 신 공개 작성 모달(2-컬럼 카드 레이아웃) 오버라이드 */
+.board-write-box.bw-box {
+  background:   transparent;
+  max-width:    1200px;
+  max-height:   none;
+  overflow-y:   visible;
+  padding:      0;
+  border-radius: 20px;
+}
 
 /* ════════════════════════════════════════════════════════════
    INDIVIDUAL POST PAGE  (/post/:id)
@@ -11189,4 +11201,125 @@ body.wosm-members-page #main-content {
   .bw-close { top: 14px; right: 14px; width: 30px; height: 30px; }
   .bw-title { font-size: 16px; }
   .bw-layout { padding: var(--bw-gap-sm) 16px; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   POST PAGE — 헤더 가독성 개선 + 수정 모달 정상화 (00.122)
+   ══════════════════════════════════════════════════════════ */
+
+/* 헤더 meta — 읽기/작성자 사이드로 빼고 카테고리·NEW·날짜만 */
+.post-page-meta {
+  gap: 12px;
+  line-height: 1.5;
+}
+.post-page-date {
+  font-family: NixgonFont, sans-serif;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+/* post-byline: author 제거됐으니 공감/오류제보만 — 간격 재정리 */
+.post-byline {
+  margin-top: var(--gap-section-out);
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-family: NixgonFont, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Post Edit Modal — .board-write-box 신규 .bw-box와 분리되어
+   post-edit-box는 레거시 모달 UX(가운데 정렬 · 760px · 패딩 40px) 유지 */
+.post-edit-box {
+  max-width: 760px;
+  background: var(--bg);
+  padding: 36px;
+  max-height: 95vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+.post-edit-box .board-write-header {
+  font-family: NixgonFont, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--black);
+  margin-bottom: 8px;
+}
+.post-edit-box .board-write-cat {
+  display: inline-block;
+  font-family: NixgonFont, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  color: #fff;
+  border-radius: 999px;
+  margin-bottom: 24px;
+}
+.post-edit-box .form-group { margin-bottom: 16px; }
+.post-edit-box .form-row { margin-bottom: 16px; }
+.post-edit-box .post-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.post-edit-box .post-edit-actions .submit-btn,
+.post-edit-box .post-edit-actions .cancel-btn { min-width: 100px; }
+
+/* 모바일 */
+@media (max-width: 760px) {
+  .post-page-meta { gap: 8px; font-size: 12px; }
+  .post-page-date { font-size: 12px; }
+  .post-byline { gap: 10px; font-size: 11px; padding-top: 18px; }
+  .post-edit-box {
+    padding: 22px 18px;
+    max-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .board-write-overlay.post-edit-overlay,
+  #post-edit-overlay.board-write-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .post-edit-box .form-row { grid-template-columns: 1fr; gap: 12px; }
+  .post-edit-box .post-edit-actions { flex-direction: column-reverse; gap: 10px; }
+  .post-edit-box .post-edit-actions .submit-btn,
+  .post-edit-box .post-edit-actions .cancel-btn { width: 100%; min-width: 0; }
+}
+@media (max-width: 480px) {
+  .post-page-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .post-page-share { gap: 8px; }
+  .post-action-btn { font-size: 11px; padding: 8px 14px; }
+}
+
+/* KMS 테이블 깨짐 방지 — 과도한 컬럼 생성 시 min-width 보호 */
+.kms-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.kms-table {
+  border-collapse: collapse;
+  min-width: 320px;
+  width: 100%;
+  table-layout: auto;
+}
+.kms-table th,
+.kms-table td {
+  word-break: keep-all;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }

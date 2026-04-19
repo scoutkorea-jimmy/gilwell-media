@@ -835,12 +835,23 @@
       if (/^\|.*\|$/.test(raw) && i + 1 < lines.length && isTableSeparator(lines[i + 1].trim())) {
         closeList();
         var headerCells = parseTableRow(raw);
+        var headerCount = headerCells.length;
         i += 2; // skip header + separator
         var rows = [];
         while (i < lines.length) {
           var rowLine = lines[i].trim();
           if (!/^\|.*\|$/.test(rowLine)) break;
-          rows.push(parseTableRow(rowLine));
+          var rowCells = parseTableRow(rowLine);
+          // Robustness: 셀 내부 미이스케이프 `|` (예: |Lc| 절대값 표기)로 인해 과분할된 경우,
+          // 초과 셀은 원래 `|` 구분자를 보존해 마지막 컬럼으로 병합한다.
+          if (headerCount > 0 && rowCells.length > headerCount) {
+            var head = rowCells.slice(0, headerCount - 1);
+            var tail = rowCells.slice(headerCount - 1).join(' | ');
+            rowCells = head.concat([tail]);
+          }
+          // 부족하면 빈 셀로 패딩
+          while (headerCount > 0 && rowCells.length < headerCount) rowCells.push('');
+          rows.push(rowCells);
           i++;
         }
         i--; // step back so outer loop re-evaluates the non-table line

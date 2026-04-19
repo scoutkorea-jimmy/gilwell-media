@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419112623">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419114706">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,9 +85,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.086.03</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.087.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.121.01</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.122.00</span>
     </div>
   </div>
 </div>
@@ -100,8 +100,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.086.03</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.121.01</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.087.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.122.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -803,6 +803,29 @@
           <div class="v3-ai-usage-spark" id="ai-usage-spark" aria-hidden="true"></div>
           <div class="v3-ai-usage-footline" id="ai-usage-footline">Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드에서 확인하세요.</div>
         </div>
+
+        <!-- 평가 기준(rubric) 편집 — settings.score_rubric -->
+        <details class="v3-card v3-rubric-card" id="rubric-card">
+          <summary class="v3-rubric-summary">
+            <div class="v3-rubric-summary-text">
+              <h2 class="v3-card-title">AI 채점 평가 기준 <span class="v3-label-opt v3-label-opt-inline" id="rubric-state-badge">기본값</span></h2>
+              <p class="v3-ai-usage-desc">Workers AI 프롬프트에 그대로 주입되는 기준 텍스트입니다. 수정 저장 시 다음 채점부터 즉시 반영됩니다.</p>
+            </div>
+            <span class="v3-rubric-chevron" aria-hidden="true">▾</span>
+          </summary>
+          <div class="v3-rubric-body">
+            <textarea class="v3-rubric-textarea" id="rubric-textarea" rows="16" placeholder="평가 기준을 입력하세요"></textarea>
+            <div class="v3-rubric-actions">
+              <span class="v3-rubric-meta" id="rubric-meta">—</span>
+              <div class="v3-rubric-btn-group">
+                <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="rubric-reset-btn">기본값으로 되돌리기</button>
+                <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="rubric-reload-btn">다시 불러오기</button>
+                <button class="v3-btn v3-btn-primary v3-btn-sm" type="button" id="rubric-save-btn">저장</button>
+              </div>
+            </div>
+            <p class="v3-rubric-hint">변경 기록은 설정 히스토리(settings_history)에 남습니다 · 최대 20,000자.</p>
+          </div>
+        </details>
 
         <!-- 기존 기사 불러오기 -->
         <div class="v3-card v3-scorer-load-card">
@@ -1883,9 +1906,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419112623"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419112623"></script>
-<script src="/js/admin-v3.js?v=20260419112623"></script>
+<script src="/js/main.js?v=20260419114706"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419114706"></script>
+<script src="/js/admin-v3.js?v=20260419114706"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
