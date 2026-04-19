@@ -1,6 +1,19 @@
 {
   "items": [
   {
+      "version": "00.116.04",
+      "date": "2026-04-19",
+      "released_at": "2026-04-19 KST",
+      "summary": "비밀번호 입력창 텍스트 가시성 근본 원인 수정 — NixgonFont 강제 적용이 password 마스킹 문자 렌더링을 방해하는 문제 해결.",
+      "changes": [
+        "css/style.css: .board-pw-box input에 font-family: system-ui !important 적용해 NixgonFont 우선순위 충돌 해소.",
+        "-webkit-text-fill-color: #1f1f1f 명시해 WebKit autofill 등 외부 override 방지.",
+        "눈 버튼 top:50%+translateY(-50%)로 수직 중앙 정렬 확보, z-index:1 추가.",
+        ".board-pw-input-wrap에서 display:flex 제거(불필요), position:relative만 유지.",
+        "사이트 버전 00.116.03 → 00.116.04."
+      ]
+    },
+  {
       "version": "03.081.00",
       "date": "2026-04-19",
       "released_at": "2026-04-19 KST",
