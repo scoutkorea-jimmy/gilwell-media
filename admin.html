@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419061250">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260419062000">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.082.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.082.01</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.116.06</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.082.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.082.01</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.116.06</span></span></div>
     </div>
 
@@ -709,8 +709,24 @@
           </div>
         </div>
 
-        <div class="v3-scorer-layout">
-          <!-- 입력 -->
+        <!-- 기존 기사 불러오기 -->
+        <div class="v3-card v3-scorer-load-card">
+          <div class="v3-scorer-load-row">
+            <span class="v3-scorer-load-label">기존 기사 불러오기</span>
+            <div class="v3-scorer-load-controls">
+              <input type="text" id="scorer-search-input" class="v3-scorer-text-input v3-scorer-search-input" placeholder="제목 검색…" autocomplete="off" />
+              <div class="v3-scorer-post-list" id="scorer-post-list" hidden></div>
+            </div>
+            <button class="v3-btn v3-btn-ghost" id="scorer-load-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg>
+              불러오기
+            </button>
+          </div>
+        </div>
+
+        <!-- 입력 + 결과 2열 -->
+        <div class="v3-scorer-main-grid">
+          <!-- 왼쪽: 입력 -->
           <div class="v3-card v3-scorer-input-card">
             <div class="v3-scorer-input-header">
               <h3 class="v3-scorer-section-title">기사 입력</h3>
@@ -740,21 +756,27 @@
             </button>
           </div>
 
-          <!-- 결과 -->
-          <div class="v3-card v3-scorer-result-card" id="scorer-result-card" hidden>
-            <div class="v3-scorer-score-header">
-              <div class="v3-scorer-total-wrap">
-                <span class="v3-scorer-total-label">종합 점수</span>
-                <span class="v3-scorer-total-score" id="scorer-total-score">—</span>
-                <span class="v3-scorer-total-grade" id="scorer-total-grade"></span>
-              </div>
-              <div class="v3-scorer-bar-wrap">
-                <div class="v3-scorer-bar-track">
-                  <div class="v3-scorer-bar-fill" id="scorer-bar-fill"></div>
+          <!-- 오른쪽: 결과 -->
+          <div class="v3-card v3-scorer-result-card" id="scorer-result-card">
+            <div class="v3-scorer-empty-state" id="scorer-empty-state">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+              <p>기사를 입력하고<br>채점하기를 누르세요</p>
+            </div>
+            <div id="scorer-result-inner" hidden>
+              <div class="v3-scorer-score-header">
+                <div class="v3-scorer-total-wrap">
+                  <span class="v3-scorer-total-label">종합 점수</span>
+                  <span class="v3-scorer-total-score" id="scorer-total-score">—</span>
+                  <span class="v3-scorer-total-grade" id="scorer-total-grade"></span>
+                </div>
+                <div class="v3-scorer-bar-wrap">
+                  <div class="v3-scorer-bar-track">
+                    <div class="v3-scorer-bar-fill" id="scorer-bar-fill"></div>
+                  </div>
                 </div>
               </div>
+              <div id="scorer-results-body" class="v3-scorer-results-body"></div>
             </div>
-            <div id="scorer-results-body" class="v3-scorer-results-body"></div>
           </div>
         </div>
       </div>
@@ -1766,9 +1788,9 @@
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/main.js?v=20260419061250"></script>
-<script src="/js/shared-country-name-ko.js?v=20260419061250"></script>
-<script src="/js/admin-v3.js?v=20260419061250"></script>
+<script src="/js/main.js?v=20260419062000"></script>
+<script src="/js/shared-country-name-ko.js?v=20260419062000"></script>
+<script src="/js/admin-v3.js?v=20260419062000"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

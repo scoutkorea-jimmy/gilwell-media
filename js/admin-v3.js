@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.082.00
+ * Version: 03.082.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -4879,20 +4879,101 @@
   /* ══════════════════════════════════════════════════════════
      기사 채점 (BP미디어 작성 표준 v2.1)
   ══════════════════════════════════════════════════════════ */
+  var _scorerPosts = [];
+
   function _initArticleScorer() {
-    var runBtn   = document.getElementById('scorer-run-btn');
-    var clearBtn = document.getElementById('scorer-clear-btn');
+    var runBtn    = document.getElementById('scorer-run-btn');
+    var clearBtn  = document.getElementById('scorer-clear-btn');
+    var loadBtn   = document.getElementById('scorer-load-btn');
+    var searchIn  = document.getElementById('scorer-search-input');
     if (!runBtn || runBtn._scorerBound) return;
     runBtn._scorerBound = true;
 
     runBtn.addEventListener('click', _runScorer);
+
     clearBtn.addEventListener('click', function () {
       ['scorer-title','scorer-subtitle','scorer-body','scorer-tags'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.value = '';
+        var el = document.getElementById(id); if (el) el.value = '';
       });
-      document.getElementById('scorer-result-card').hidden = true;
+      var inner = document.getElementById('scorer-result-inner');
+      var empty = document.getElementById('scorer-empty-state');
+      if (inner) inner.hidden = true;
+      if (empty) empty.hidden = false;
     });
+
+    // 기존 기사 검색 자동완성
+    searchIn.addEventListener('input', function () {
+      var q = searchIn.value.trim().toLowerCase();
+      var list = document.getElementById('scorer-post-list');
+      if (!q) { list.hidden = true; return; }
+      var matches = _scorerPosts.filter(function (p) {
+        return (p.title || '').toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 8);
+      if (!matches.length) { list.hidden = true; return; }
+      list.innerHTML = matches.map(function (p) {
+        return '<div class="v3-scorer-post-item" data-post-id="' + p.id + '">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>';
+      }).join('');
+      list.hidden = false;
+    });
+
+    list_click_delegate(document.getElementById('scorer-post-list'), '.v3-scorer-post-item', function (el) {
+      var id = el.getAttribute('data-post-id');
+      var post = _scorerPosts.find(function (p) { return String(p.id) === id; });
+      if (post) _scorerFillPost(post);
+      document.getElementById('scorer-post-list').hidden = true;
+      searchIn.value = '';
+    });
+
+    loadBtn.addEventListener('click', function () {
+      _setButtonBusy(loadBtn, '불러오는 중…');
+      _apiFetch('/api/posts?limit=200&published=all&scope=admin')
+        .then(function (data) {
+          _scorerPosts = (data && data.posts) ? data.posts : [];
+          _setButtonBusy(loadBtn, null);
+          loadBtn.textContent = '불러오기 완료 (' + _scorerPosts.length + ')';
+          setTimeout(function () { loadBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 9v4H3V9"/><path d="M8 2v8"/><path d="M5 8l3 3 3-3"/></svg> 불러오기'; }, 2000);
+        })
+        .catch(function () { _setButtonBusy(loadBtn, null); });
+    });
+
+    // 첫 진입 시 자동 로드
+    if (!_scorerPosts.length) {
+      _apiFetch('/api/posts?limit=200&published=all&scope=admin').then(function (data) {
+        _scorerPosts = (data && data.posts) ? data.posts : [];
+      }).catch(function () {});
+    }
+  }
+
+  function list_click_delegate(container, selector, cb) {
+    if (!container) return;
+    container.addEventListener('click', function (e) {
+      var el = e.target && e.target.closest ? e.target.closest(selector) : null;
+      if (el && container.contains(el)) cb(el);
+    });
+  }
+
+  function _scorerFillPost(post) {
+    var titleEl    = document.getElementById('scorer-title');
+    var subtitleEl = document.getElementById('scorer-subtitle');
+    var bodyEl     = document.getElementById('scorer-body');
+    var tagsEl     = document.getElementById('scorer-tags');
+    if (titleEl)    titleEl.value    = post.title    || '';
+    if (subtitleEl) subtitleEl.value = post.subtitle || '';
+    if (tagsEl)     tagsEl.value     = post.meta_tags || '';
+    // content는 Editor.js JSON 또는 plain text일 수 있음 — plain text만 추출
+    var raw = post.content || '';
+    var plain = raw;
+    try {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.blocks) {
+        plain = parsed.blocks
+          .filter(function (b) { return b.type === 'paragraph'; })
+          .map(function (b) { return (b.data && b.data.text || '').replace(/<[^>]*>/g, ''); })
+          .filter(Boolean)
+          .join('\n\n');
+      }
+    } catch (_) {}
+    if (bodyEl) bodyEl.value = plain;
   }
 
   function _runScorer() {
@@ -4915,11 +4996,10 @@
       if (!title) { checks.push({ label: 'Title', score: 0, max: 30, issues: ['제목이 없습니다.'] }); return; }
       if (title.length >= 10) score += 10; else issues.push('제목이 너무 짧습니다 (10자 이상 권장).');
       var hasForbidden = FORBIDDEN.some(function (w) { return title.indexOf(w) !== -1; });
-      if (!hasForbidden) score += 10; else issues.push('금지 표현이 포함되어 있습니다: ' + FORBIDDEN.filter(function (w) { return title.indexOf(w) !== -1; }).join(', '));
+      if (!hasForbidden) score += 10; else issues.push('금지 표현 포함: ' + FORBIDDEN.filter(function (w) { return title.indexOf(w) !== -1; }).join(', '));
       var hasEval = EVAL_WORDS.some(function (w) { return title.indexOf(w) !== -1; });
       if (!hasEval) score += 5; else issues.push('평가/감정 표현이 포함되어 있습니다.');
-      // 주체+행위 패턴: 조사나 동사형 포함 여부 (간단 추정)
-      var hasAction = /(?:방문|체결|개최|시작|참가|완료|발표|선출|진행|수료|진행|협력|개설|출범|수상)/.test(title);
+      var hasAction = /(?:방문|체결|개최|시작|참가|완료|발표|선출|진행|수료|협력|개설|출범|수상)/.test(title);
       if (hasAction) score += 5; else issues.push('Title에 구체적 행동 동사(방문, 체결, 개최 등)가 없습니다.');
       checks.push({ label: 'Title', score: score, max: 30, issues: issues });
     }());
@@ -4941,23 +5021,20 @@
       var score = 0, issues = [];
       if (!body) { checks.push({ label: 'Body 구조', score: 0, max: 35, issues: ['본문이 없습니다.'] }); return; }
 
-      // 4문단 고정
       if (paragraphs.length === 4) score += 15;
       else if (paragraphs.length === 3 || paragraphs.length === 5) { score += 7; issues.push('문단 수: ' + paragraphs.length + '개 (표준: 4문단 고정).'); }
       else { issues.push('문단 수: ' + paragraphs.length + '개 (표준: 4문단 고정).'); }
 
-      // 문단당 3~5문장
       var paraIssues = [];
       paragraphs.forEach(function (p, i) {
-        var sentences = p.split(/(?<=[.!?。])\s+|(?<=[.!?。])$/).filter(function (s) { return s.trim().length > 3; });
+        var sentences = p.split(/[.!?。]\s+|[.!?。]$/).filter(function (s) { return s.trim().length > 3; });
         if (sentences.length >= 3 && sentences.length <= 5) score += 4;
         else if (sentences.length === 2 || sentences.length === 6) score += 2;
-        else paraIssues.push((i + 1) + '문단 문장 수: ' + sentences.length + '개 (권장 3~5개).');
+        else paraIssues.push((i + 1) + '문단 문장 수: 약 ' + sentences.length + '개 (권장 3~5개).');
       });
       if (paraIssues.length) issues = issues.concat(paraIssues);
       if (paragraphs.length === 4 && !paraIssues.length) score = Math.min(score + 3, 35);
 
-      // 금지 표현
       var bodyForbidden = FORBIDDEN.filter(function (w) { return body.indexOf(w) !== -1; });
       if (!bodyForbidden.length) score += 4; else issues.push('금지 표현 포함: ' + bodyForbidden.join(', '));
 
@@ -4969,7 +5046,7 @@
       var score = 0, issues = [];
       if (!tags.length) { checks.push({ label: 'Tags', score: 0, max: 10, issues: ['태그가 없습니다.'] }); return; }
       if (tags.length >= 7 && tags.length <= 10) score += 10;
-      else if (tags.length >= 5 && tags.length < 7) { score += 6; issues.push('태그 수: ' + tags.length + '개 (권장 7~10개).'); }
+      else if (tags.length >= 5) { score += 6; issues.push('태그 수: ' + tags.length + '개 (권장 7~10개).'); }
       else if (tags.length > 10) { score += 7; issues.push('태그 수: ' + tags.length + '개 (최대 10개).'); }
       else { score += 3; issues.push('태그 수: ' + tags.length + '개 (권장 7~10개).'); }
       checks.push({ label: 'Tags', score: score, max: 10, issues: issues });
@@ -4979,24 +5056,23 @@
     (function () {
       var score = 0, issues = [];
       var allText = [title, subtitle, body].join(' ');
-      // 영문 괄호 표기 예: 한국연맹(Korea Scout Association) 패턴 감지
       var hasNotation = /[가-힣]+\([A-Za-z]/.test(allText);
       if (hasNotation) score += 5; else issues.push('연맹/인명의 국문(영문) 병기 표기가 없습니다.');
-      // 과장 없음
       var evalFound = EVAL_WORDS.filter(function (w) { return allText.indexOf(w) !== -1; });
       if (!evalFound.length) score += 5; else issues.push('평가/과장 표현 발견: ' + evalFound.join(', '));
       checks.push({ label: '표기 · 겸손도', score: score, max: 10, issues: issues });
     }());
 
     // ── 총점 계산 ──────────────────────────────────────────────
-    var total = checks.reduce(function (s, c) { return s + c.score; }, 0);
+    var total    = checks.reduce(function (s, c) { return s + c.score; }, 0);
     var maxTotal = checks.reduce(function (s, c) { return s + c.max; }, 0);
-    var pct = Math.round((total / maxTotal) * 100);
-    var grade = pct >= 90 ? 'S' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'D';
+    var pct      = Math.round((total / maxTotal) * 100);
+    var grade    = pct >= 90 ? 'S' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'D';
     var gradeColor = pct >= 80 ? '#248737' : pct >= 60 ? '#0094B4' : '#FF5655';
 
     // ── 렌더링 ─────────────────────────────────────────────────
-    var card = document.getElementById('scorer-result-card');
+    var inner   = document.getElementById('scorer-result-inner');
+    var empty   = document.getElementById('scorer-empty-state');
     var totalEl = document.getElementById('scorer-total-score');
     var gradeEl = document.getElementById('scorer-total-grade');
     var barFill = document.getElementById('scorer-bar-fill');
@@ -5009,14 +5085,14 @@
     barFill.style.background = gradeColor;
 
     bodyEl.innerHTML = checks.map(function (c) {
-      var cPct = Math.round((c.score / c.max) * 100);
+      var cPct   = Math.round((c.score / c.max) * 100);
       var cColor = cPct >= 80 ? '#248737' : cPct >= 60 ? '#0094B4' : '#FF5655';
       var issueHtml = c.issues.length
-        ? '<ul class="v3-scorer-issues">' + c.issues.map(function (i) { return '<li>' + _esc(i) + '</li>'; }).join('') + '</ul>'
+        ? '<ul class="v3-scorer-issues">' + c.issues.map(function (i) { return '<li>' + GW.escapeHtml(i) + '</li>'; }).join('') + '</ul>'
         : '<p class="v3-scorer-pass">이상 없음</p>';
       return '<div class="v3-scorer-check-row">' +
         '<div class="v3-scorer-check-head">' +
-          '<span class="v3-scorer-check-label">' + _esc(c.label) + '</span>' +
+          '<span class="v3-scorer-check-label">' + GW.escapeHtml(c.label) + '</span>' +
           '<span class="v3-scorer-check-score" style="color:' + cColor + '">' + c.score + '/' + c.max + '</span>' +
         '</div>' +
         '<div class="v3-scorer-check-bar"><div class="v3-scorer-check-fill" style="width:' + cPct + '%;background:' + cColor + '"></div></div>' +
@@ -5024,8 +5100,9 @@
         '</div>';
     }).join('');
 
-    card.hidden = false;
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (empty) empty.hidden = true;
+    if (inner) inner.hidden = false;
+    inner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   /* ══════════════════════════════════════════════════════════

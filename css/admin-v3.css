@@ -3415,16 +3415,75 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 /* ── 기사 채점 패널 ──────────────────────────────────────── */
-.v3-scorer-layout {
+/* 기존 기사 불러오기 바 */
+.v3-scorer-load-card {
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.v3-scorer-load-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.v3-scorer-load-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--v3-text);
+  white-space: nowrap;
+}
+
+.v3-scorer-load-controls {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.v3-scorer-search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.v3-scorer-post-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 1px solid var(--v3-border);
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.v3-scorer-post-item {
+  padding: 9px 13px;
+  font-size: 12px;
+  color: var(--v3-text);
+  cursor: pointer;
+  border-bottom: 1px solid var(--v3-border-light, #f0f0f0);
+}
+
+.v3-scorer-post-item:last-child { border-bottom: none; }
+.v3-scorer-post-item:hover { background: var(--v3-content-bg); }
+
+/* 메인 2열 그리드 */
+.v3-scorer-main-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
   align-items: start;
 }
 
 .v3-scorer-input-card,
 .v3-scorer-result-card {
   padding: 20px 22px;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .v3-scorer-input-header {
@@ -3517,6 +3576,20 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 /* 결과 카드 */
+/* 빈 상태 */
+.v3-scorer-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .v3-scorer-score-header {
   margin-bottom: 20px;
 }
@@ -3635,7 +3708,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
 }
 
 @media (max-width: 900px) {
-  .v3-scorer-layout {
+  .v3-scorer-main-grid {
     grid-template-columns: 1fr;
   }
 }
