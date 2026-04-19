@@ -2,6 +2,8 @@
 
 /* 영문 전용 서체 — Google Sans Flex (Latin 1순위), 한글은 NixgonFont로 자연 폴백 */
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+/* 키릴문자(러시아/우크라이나/불가리아 등) 전용 폴백 — Noto Sans (unicode-range 분리로 Cyrillic 있을 때만 다운로드) */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;500;700&display=swap');
 
 /* ════════════════════════════════════════════════════════════
    KMS — CSS 변수
@@ -84,7 +86,7 @@
   border: 1px solid var(--kms-border);
   border-radius: 10px;
   background: var(--kms-surface2);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 14px;
   color: var(--kms-ink);
   box-sizing: border-box;
@@ -103,7 +105,7 @@
   border-radius: 999px;
   background: var(--kms-accent-bg);
   color: var(--kms-accent);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 14px;
   cursor: pointer;
 }
@@ -211,7 +213,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   cursor: pointer;
   transition: background .14s, color .14s;
@@ -277,7 +279,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
 }
@@ -295,7 +297,7 @@
   border-radius: 999px;
   background: var(--kms-accent-bg);
   color: var(--kms-accent);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -375,7 +377,7 @@
   border: 1px solid var(--kms-border);
   border-radius: 8px;
   background: var(--kms-surface2);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   color: var(--kms-ink);
   box-sizing: border-box;
@@ -472,7 +474,7 @@
 
 .kms-section-group-label {
   padding: 12px 10px 4px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 9px;
   letter-spacing: .15em;
   text-transform: uppercase;
@@ -647,7 +649,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--kms-accent);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
 }
@@ -1222,7 +1224,7 @@ mark.kms-highlight {
   border-radius: 999px;
   background: var(--kms-surface);
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: background .12s, color .12s;
@@ -1581,7 +1583,7 @@ mark.kms-highlight {
   text-transform: uppercase;
   color: var(--kms-muted);
   margin-bottom: 6px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 .kms-ds-preview .form-group input,
 .kms-ds-preview .form-group select,
@@ -1590,7 +1592,7 @@ mark.kms-highlight {
   padding: 10px 12px;
   border: 1px solid rgba(31,31,31,0.18);
   background: #fff;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   color: #1f1f1f;
   outline: none;
@@ -1611,7 +1613,7 @@ mark.kms-highlight {
   align-items: center;
   justify-content: center;
   min-height: 26px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1658,7 +1660,7 @@ mark.kms-highlight {
   display:       inline-block;
   padding:       4px 12px;
   border:        1px solid var(--border);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:     11px;
   letter-spacing:.08em;
   color:         var(--muted);
@@ -1696,7 +1698,7 @@ mark.kms-highlight {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.96);
   color: var(--ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -1723,7 +1725,7 @@ mark.kms-highlight {
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   outline: none;
   box-sizing: border-box;
@@ -1743,7 +1745,7 @@ mark.kms-highlight {
 .tag-admin-panel-head {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -1772,7 +1774,7 @@ mark.kms-highlight {
   padding: 6px 10px;
   border: 1px solid var(--border);
   background: var(--white);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--ink);
   cursor: grab;
@@ -1807,7 +1809,7 @@ mark.kms-highlight {
 }
 
 .tag-admin-empty {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: .08em;
@@ -1827,7 +1829,7 @@ mark.kms-highlight {
 }
 
 .share-meta-card-head {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -1837,7 +1839,7 @@ mark.kms-highlight {
 
 .share-meta-card label {
   display: block;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -1852,7 +1854,7 @@ mark.kms-highlight {
   border: 1px solid var(--border);
   background: var(--white);
   color: var(--ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   box-sizing: border-box;
   outline: none;
@@ -1907,7 +1909,7 @@ mark.kms-highlight {
 /* Post kicker label shown next to category tag — outline style, same size */
 .post-kicker {
   display:        inline-block;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -1949,14 +1951,14 @@ mark.kms-highlight {
 }
 
 .login-box .logo {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:     24px;
   font-weight:   700;
   margin-bottom: 4px;
 }
 
 .login-box .sub {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.15em;
   color:          var(--muted);
@@ -1966,7 +1968,7 @@ mark.kms-highlight {
 
 .login-box label {
   display:        block;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1979,7 +1981,7 @@ mark.kms-highlight {
   padding:       12px 14px;
   border:        1px solid var(--border);
   background:    var(--white);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:     14px;
   color:         var(--ink);
   margin-bottom: 20px;
@@ -1995,7 +1997,7 @@ mark.kms-highlight {
   background:     var(--black);
   color:          var(--white);
   border:         none;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -2007,7 +2009,7 @@ mark.kms-highlight {
 
 .login-error {
   margin-top:  12px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   11px;
   color:       var(--danger);
   text-align:  center;
@@ -2056,7 +2058,7 @@ mark.kms-highlight {
 }
 
 .analytics-provider-card .dash-stat-num {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: clamp(12px, 1vw, 15px);
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -2077,7 +2079,7 @@ mark.kms-highlight {
   text-align: center;
 }
 .dash-stat-num {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 36px;
   font-weight: 700;
   color: #622599;
@@ -2085,7 +2087,7 @@ mark.kms-highlight {
   margin-bottom: 6px;
 }
 .dash-stat-label {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -2103,7 +2105,7 @@ mark.kms-highlight {
 }
 .analytics-note {
   margin: 14px 0 0;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   line-height: 1.7;
@@ -2121,7 +2123,7 @@ mark.kms-highlight {
   gap: 10px;
 }
 .analytics-toolbar-group label {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2132,7 +2134,7 @@ mark.kms-highlight {
   background: var(--bg);
   color: var(--ink);
   padding: 8px 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
 }
 .analytics-view-toggle {
@@ -2144,7 +2146,7 @@ mark.kms-highlight {
   background: var(--bg);
   color: var(--muted);
   padding: 8px 12px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -2172,7 +2174,7 @@ mark.kms-highlight {
   background: var(--bg);
   color: var(--muted);
   padding: 6px 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -2195,7 +2197,7 @@ mark.kms-highlight {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -2246,7 +2248,7 @@ mark.kms-highlight {
 .analytics-line-tooltip em {
   display: block;
   margin-top: 3px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   font-style: normal;
@@ -2277,7 +2279,7 @@ mark.kms-highlight {
 }
 .analytics-line-x-label {
   fill: var(--muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 8px;
   letter-spacing: 0.04em;
 }
@@ -2352,7 +2354,7 @@ mark.kms-highlight {
 }
 .analytics-pie-legend-item span {
   display: block;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -2363,7 +2365,7 @@ mark.kms-highlight {
   align-items: start;
 }
 .analytics-bar-label {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.06em;
@@ -2401,7 +2403,7 @@ mark.kms-highlight {
   background: var(--tag-apr);
 }
 .analytics-bar-value {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--ink);
   text-align: right;
@@ -2421,7 +2423,7 @@ mark.kms-highlight {
   vertical-align: top;
 }
 .analytics-table th {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2436,7 +2438,7 @@ mark.kms-highlight {
   display: inline-block;
   margin-right: 8px;
   padding: 2px 6px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 9px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2458,7 +2460,7 @@ mark.kms-highlight {
 }
 .analytics-item span {
   display: block;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.05em;
@@ -2484,7 +2486,7 @@ body.admin-page #marketing-transitions.analytics-list {
   grid-column: 1 / -1;
 }
 .marketing-panel-meta {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.06em;
@@ -2501,7 +2503,7 @@ body.admin-page #marketing-transitions.analytics-list {
   background: var(--bg);
   color: var(--ink);
   padding: 8px 12px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -2528,12 +2530,12 @@ body.admin-page #marketing-transitions.analytics-list {
 .marketing-flow-label {
   fill: var(--ink);
   font-size: 11px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 .marketing-flow-value {
   fill: var(--muted);
   font-size: 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 .marketing-funnel-list {
   display: flex;
@@ -2556,7 +2558,7 @@ body.admin-page #marketing-transitions.analytics-list {
   color: var(--ink);
 }
 .marketing-funnel-head span {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -2584,7 +2586,7 @@ body.admin-page #marketing-transitions.analytics-list {
   flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 14px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   color: var(--muted);
 }
@@ -2606,13 +2608,13 @@ body.admin-page #marketing-transitions.analytics-list {
 .marketing-axis-title {
   fill: var(--muted);
   font-size: 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   letter-spacing: 0.04em;
 }
 .marketing-scatter-label {
   fill: var(--ink);
   font-size: 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 .marketing-scatter-point.is-clickable {
   cursor: pointer;
@@ -2637,7 +2639,7 @@ body.admin-page #marketing-transitions.analytics-list {
   border: 1px solid rgba(24, 20, 17, 0.12);
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 10px 24px rgba(24, 20, 17, 0.12);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--ink);
   line-height: 1.55;
@@ -2689,7 +2691,7 @@ body.admin-page #marketing-transitions.analytics-list {
 .marketing-fullscreen-head span {
   display: block;
   margin-top: 6px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
 }
@@ -2705,7 +2707,7 @@ body.admin-page #marketing-transitions.analytics-list {
   background: var(--bg);
   color: var(--ink);
   padding: 10px 12px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -2715,7 +2717,7 @@ body.admin-page #marketing-transitions.analytics-list {
   background: var(--bg);
   color: var(--ink);
   padding: 10px 14px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   cursor: pointer;
 }
@@ -2759,7 +2761,7 @@ body.marketing-fullscreen-open {
   list-style: none;
   cursor: pointer;
   padding: 12px 14px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   color: var(--admin-ink);
 }
@@ -2839,7 +2841,7 @@ body.admin-page {
 
 body.admin-page,
 body.admin-page * {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif!important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif!important;
   box-sizing: border-box;
 }
 
@@ -3190,7 +3192,7 @@ body.admin-page .v3-modal-close {
   border: 1px solid var(--admin-stroke);
   background: var(--admin-surface-soft);
   color: var(--admin-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
 }
@@ -3212,7 +3214,7 @@ body.admin-page .v3-more-btn {
   border-radius: 999px;
   background: var(--admin-surface-soft);
   color: var(--admin-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
@@ -3517,7 +3519,7 @@ body.admin-page .admin-inline-ghost {
   border-radius: 12px;
   background: #fff;
   color: var(--ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
 }
@@ -3661,7 +3663,7 @@ body.admin-page .version-history-pagination .admin-page-number {
   border-radius: 10px;
   background: #fff;
   color: var(--admin-ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   position: relative;
@@ -3906,7 +3908,7 @@ body.admin-page .admin-media-preview-frame img {
 
 .feature-page-breadcrumb,
 .feature-page-breadcrumb a {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
   text-decoration: none;
@@ -3922,7 +3924,7 @@ body.admin-page .admin-media-preview-frame img {
 
 .feature-page-hero h1 {
   margin: 0 0 10px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: clamp(24px, 4vw, 40px);
   line-height: 1.25;
 }
@@ -3951,7 +3953,7 @@ body.admin-page .admin-media-preview-frame img {
 }
 
 .feature-page-date {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   color: var(--muted);
   white-space: nowrap;
@@ -3959,7 +3961,7 @@ body.admin-page .admin-media-preview-frame img {
 
 .feature-page-item h2 {
   margin: 0 0 8px;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 22px;
   line-height: 1.35;
 }
@@ -4371,7 +4373,7 @@ body.admin-page,
 body.admin-page *,
 body.admin-page *::before,
 body.admin-page *::after {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   box-sizing: border-box;
   word-break: keep-all;
 }
@@ -4626,7 +4628,7 @@ body.admin-page .admin-write-tag-tools input {
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
   color: var(--admin-ink);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   outline: none;
 }
@@ -4638,7 +4640,7 @@ body.admin-page .admin-inline-tag-add {
   border-radius: 14px;
   background: linear-gradient(135deg, rgba(98, 37, 153, 0.10), rgba(130, 68, 193, 0.16));
   color: var(--admin-accent);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
 }
@@ -5045,7 +5047,7 @@ body.admin-page .admin-list-tab-btn {
   cursor: pointer !important;
   background: var(--bg) !important;
   color: var(--muted) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 10px !important;
   letter-spacing: .1em !important;
   text-transform: uppercase !important;
@@ -5095,7 +5097,7 @@ body.admin-page .admin-field-label {
   display: block !important;
   margin-bottom: 8px !important;
   color: var(--muted) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 10px !important;
   letter-spacing: .12em !important;
   text-transform: uppercase !important;
@@ -5115,7 +5117,7 @@ body.admin-page .admin-preview-top-gap {
 body.admin-page .admin-help-copy {
   margin-top: 8px !important;
   color: var(--muted) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 10px !important;
 }
 
@@ -5134,7 +5136,7 @@ body.admin-page .admin-textarea-standard {
   color: var(--ink) !important;
   resize: vertical !important;
   outline: none !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 12px !important;
   box-sizing: border-box !important;
 }
@@ -5143,7 +5145,7 @@ body.admin-page .admin-inline-input {
   padding: 9px 12px !important;
   border: 1px solid var(--border) !important;
   outline: none !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 13px !important;
 }
 
@@ -5161,7 +5163,7 @@ body.admin-page .admin-inline-number-input {
   background: var(--bg) !important;
   color: var(--ink) !important;
   box-sizing: border-box !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 12px !important;
 }
 
@@ -5186,7 +5188,7 @@ body.admin-page .v3-more-btn {
   border-radius: 999px;
   background: var(--admin-surface-soft);
   color: var(--admin-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
@@ -5211,7 +5213,7 @@ body.admin-page .admin-search-input {
   border: 1px solid var(--border) !important;
   outline: none !important;
   box-sizing: border-box !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 13px !important;
 }
 
@@ -5237,7 +5239,7 @@ body.admin-page .admin-contrib-form {
 body.admin-page .admin-contrib-form-label {
   margin-bottom: 12px !important;
   color: var(--muted) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 9px !important;
   letter-spacing: .1em !important;
   text-transform: uppercase !important;
@@ -5259,7 +5261,7 @@ body.admin-page .admin-contrib-input {
   padding: 9px 12px !important;
   border: 1px solid var(--border) !important;
   outline: none !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 13px !important;
 }
 
@@ -5267,7 +5269,7 @@ body.admin-page .admin-contrib-date-label {
   margin: 0 !important;
   white-space: nowrap !important;
   color: var(--muted) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 10px !important;
 }
 
@@ -5278,7 +5280,7 @@ body.admin-page .admin-contrib-date-input {
   outline: none !important;
   background: var(--bg) !important;
   color: var(--ink) !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 12px !important;
 }
 
@@ -5288,7 +5290,7 @@ body.admin-page .admin-contrib-cancel {
   background: none !important;
   color: var(--muted) !important;
   cursor: pointer !important;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif !important;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif !important;
   font-size: 11px !important;
 }
 
@@ -6047,7 +6049,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 .kms-ds-layer-header strong {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -6079,7 +6081,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 .kms-ds-rule:last-child { border-bottom: none; }
 .kms-ds-rule-k {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -6137,7 +6139,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-bottom: 1px solid var(--kms-border);
   background: var(--kms-surface2);
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   font-weight: 400;
   letter-spacing: .08em;
@@ -6148,7 +6150,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   padding: 18px 16px;
   border-bottom: 1px solid rgba(31,31,31,0.08);
   vertical-align: top;
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -6517,7 +6519,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 
 .kms-ds-display-label {
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -6541,7 +6543,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-radius: 999px;
   background: var(--kms-surface);
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
@@ -6623,7 +6625,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   border-radius: 999px;
   background: var(--kms-surface);
   color: var(--kms-muted);
-  font-family: 'Google Sans Flex', NixgonFont, sans-serif;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: background .12s, color .12s, border-color .12s;
