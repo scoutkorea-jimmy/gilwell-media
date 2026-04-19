@@ -3451,12 +3451,12 @@ body.marketing-fullscreen-open { overflow: hidden; }
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: var(--white);
+  background: #ffffff;
   border: 1px solid var(--v3-border);
   border-radius: 7px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-  z-index: 50;
-  max-height: 220px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  z-index: 200;
+  max-height: 260px;
   overflow-y: auto;
 }
 
@@ -3589,6 +3589,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
   font-size: 12px;
   line-height: 1.6;
 }
+.v3-scorer-empty-state.is-hidden { display: none !important; }
 
 .v3-scorer-score-header {
   margin-bottom: 20px;
