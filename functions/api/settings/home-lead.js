@@ -91,11 +91,9 @@ export async function onRequestPut({ env, request }) {
 
     var leadCategory = '';
     if (hasPostId) {
+      // 메인 스토리 ↔ 에디터 추천 동시 지정 허용(2026-04-19). featured=1 배타 체크 제거.
       const post = await env.DB.prepare(`SELECT id, featured FROM posts WHERE id = ? AND published = 1`).bind(postId).first();
       if (!post) return json({ error: '공개된 게시글만 메인 스토리로 지정할 수 있습니다.' }, 400);
-      if (Number(post.featured || 0) === 1) {
-        return json({ error: '에디터 추천 글은 메인 스토리로 동시에 지정할 수 없습니다. 추천에서 제외한 뒤 다시 시도해주세요.' }, 409);
-      }
       leadCategory = String(post.category || '').trim();
       await env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('home_lead_post', ?)

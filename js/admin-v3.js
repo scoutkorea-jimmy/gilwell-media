@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.072.03
+ * Version: 03.073.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -4946,9 +4946,11 @@
         return;
       }
       el.innerHTML = posts.map(function (p) {
-        var blocked = _picksPosts.some(function (item) { return item.id === p.id; });
-        var suffix = blocked ? ' · 에디터 추천에서 제외 후 선택 가능' : '';
-        return '<div class="v3-search-result-item' + (blocked ? ' is-disabled' : '') + '"' + (blocked ? '' : ' onclick="V3._selectHomeLead(' + p.id + ')"') + '>' +
+        // 메인 스토리와 에디터 추천 동시 지정 허용 — 기존 배타 제약 제거(2026-04-19).
+        // 에디터 추천에 이미 있으면 안내 문구만 덧붙이되 선택은 가능.
+        var alsoPicked = _picksPosts.some(function (item) { return item.id === p.id; });
+        var suffix = alsoPicked ? ' · 에디터 추천에도 포함됨' : '';
+        return '<div class="v3-search-result-item" onclick="V3._selectHomeLead(' + p.id + ')">' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
           '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
         '</div>';
@@ -4966,10 +4968,7 @@
         GW.showToast('공개된 게시글만 선택할 수 있습니다', 'error');
         return;
       }
-      if (_picksPosts.some(function (item) { return item.id === post.id; })) {
-        _alert('메인 스토리 선택 제한', '에디터 추천 글은 메인 스토리로 동시에 지정할 수 없습니다. 추천에서 제외한 뒤 다시 시도해주세요.');
-        return;
-      }
+      // 메인 스토리 ↔ 에디터 추천 동시 지정 허용 (2026-04-19). 이전 배타 제약 제거.
       _homeLeadPost = post;
       if (!_homeLeadMedia) _homeLeadMedia = _defaultHomeLeadMedia();
       _renderHomeLeadSelected();
@@ -5074,12 +5073,13 @@
         return;
       }
       el.innerHTML = posts.map(function (p) {
+        // 메인 스토리와 동시 지정 허용(2026-04-19). 이미 picks에 있거나 4개 제한만 비활성 처리.
         var already = _picksPosts.some(function (item) { return item.id === p.id; });
         var isLead = _homeLeadPost && Number(_homeLeadPost.id) === Number(p.id);
-        var disabled = already || isLead || (isFull && !already);
+        var disabled = already || (isFull && !already);
         var suffix = already
           ? ' · 이미 선택됨'
-          : (isLead ? ' · 메인 스토리에서 제외 후 선택 가능' : (isFull ? ' · 최대 4개 선택됨' : ''));
+          : (isLead ? ' · 메인 스토리에도 지정됨' : (isFull ? ' · 최대 4개 선택됨' : ''));
         return '<div class="v3-search-result-item' + (disabled ? ' is-disabled' : '') + '"' + (disabled ? '' : ' onclick="V3._addPick(' + p.id + ')"') + '>' +
           '<div class="v3-search-result-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
           '<div class="v3-search-result-meta">' + GW.escapeHtml((p.category || '') + suffix) + '</div>' +
@@ -5096,10 +5096,7 @@
       _alert('에디터 추천 제한', '에디터 추천은 최대 4개까지 선택할 수 있습니다. 기존 추천을 하나 제외한 뒤 다시 시도해주세요.');
       return;
     }
-    if (_homeLeadPost && Number(_homeLeadPost.id) === Number(id)) {
-      _alert('에디터 추천 제한', '메인 스토리 글은 에디터 추천으로 동시에 지정할 수 없습니다. 메인 스토리에서 제외한 뒤 다시 시도해주세요.');
-      return;
-    }
+    // 메인 스토리 ↔ 에디터 추천 동시 지정 허용 (2026-04-19). 이전 배타 제약 제거.
     _togglePick(id, true);
   };
 
