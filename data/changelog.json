@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "03.088.03",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:05:00 KST",
+    "summary": "관리자도 font-size-adjust 0.50 추가로 Latin 글자 x-height를 시스템 KR 서체와 맞춤. wght는 540으로 재조정.",
+    "changes": [
+      "css/admin-v3.css .admin-v3 font-size-adjust:0.50 + font-variation-settings wght 540. 헤딩은 wght 700.",
+      "관리자 버전 03.088.02 → 03.088.03."
+    ]
+  },
+  {
+    "version": "00.124.03",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 23:05:00 KST",
+    "summary": "한글·영문 혼용 본문에서 Latin 글자(Google Sans Flex)가 한글(NixgonFont)보다 커 보이던 현상을 font-size-adjust 0.50으로 보정했습니다. x-height 비율을 한글 서체에 맞춰 Flex만 자동 축소되도록 설정하고, 축소 후 가벼워 보이는 효과는 wght 540(- 20)으로 상쇄.",
+    "changes": [
+      "css/style.css html·body에 font-size-adjust: 0.50 추가. Chrome 116+/Safari 17+/Firefox 3+에서 Flex의 x-height를 target 비율로 자동 스케일 → Latin 글자가 한글 x-height에 수렴.",
+      "font-variation-settings 'wght' 560 → 540으로 조정. 축소 후 wght도 살짝 낮춰 시각 무게 균형 재설정.",
+      "헤딩·강조 그룹도 font-size-adjust 0.50 적용, wght는 700(Nixgon Bold와 일치)로 간소화.",
+      "사이트 버전 00.124.02 → 00.124.03."
+    ]
+  },
+  {
     "version": "03.088.02",
     "date": "2026-04-19",
     "released_at": "2026-04-19 22:50:00 KST",
