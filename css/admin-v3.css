@@ -4268,3 +4268,52 @@ body.marketing-fullscreen-open { overflow: hidden; }
   .v3-rubric-actions { flex-direction: column; align-items: stretch; }
   .v3-rubric-btn-group { justify-content: flex-end; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   카드 높이·여백 정합 방어 (전역 · 03.087.01)
+   grid로 묶인 통계/정보 카드들의 행 높이와 패딩을 강제 일치시킨다.
+   콘텐츠 길이(하단 메타가 1줄 vs 2줄 등)로 인한 미묘한 정렬 어긋남을 차단.
+   ══════════════════════════════════════════════════════════ */
+
+/* AI 사용량 카드 — 값/서브/비용 각각 1줄 고정 */
+.v3-ai-usage-stat {
+  min-height: 118px;
+  padding: 12px 14px;
+  gap: 4px;
+}
+.v3-ai-usage-label,
+.v3-ai-usage-value,
+.v3-ai-usage-sub,
+.v3-ai-usage-cost {
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v3-ai-usage-label { line-height: 1.25; }
+.v3-ai-usage-value { line-height: 1.15; }
+.v3-ai-usage-sub,
+.v3-ai-usage-cost { line-height: 1.35; }
+
+/* v3-stats-grid (대시보드 등) 높이 일치 */
+.v3-stats-grid { grid-auto-rows: 1fr; align-items: stretch; }
+.v3-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.v3-stat .v3-stat-sub { margin-top: auto; padding-top: 6px; }
+
+/* v3-dash-home-cell — 홈 개요 그리드 */
+.v3-dash-home-grid { grid-auto-rows: 1fr; }
+.v3-dash-home-cell { display: flex; flex-direction: column; }
+.v3-dash-home-cell .v3-dash-home-sub { margin-top: auto; padding-top: 4px; }
+
+/* Write 패널 side 카드 그룹 — 사이드 카드들이 자연스레 정렬되도록 */
+.v3-write-side .v3-card { min-height: 0; }
+
+/* 모바일 — 사용량 카드 2열에서도 높이 정합 */
+@media (max-width: 760px) {
+  .v3-ai-usage-stat { min-height: 108px; }
+}

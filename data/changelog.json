@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.087.01",
+    "date": "2026-04-19",
+    "released_at": "2026-04-19 21:30:00 KST",
+    "summary": "AI 사용량 카드 4번째(평균 지연/오류)만 하단 단가 안내가 2줄로 쌓여 미묘하게 높이가 달라 보이던 문제를 수정했습니다. 관리자 통계 그리드(v3-stats-grid/v3-ai-usage-grid/v3-dash-home-grid) 전반에 카드 높이·여백 정합을 강제하는 방어 CSS를 추가해 재발을 차단했습니다.",
+    "changes": [
+      "admin.html #ai-usage-pricing-note 기본 문구 축약: ‘llama-3.1-8b · $0.0115/1K토큰’ → ‘단가 $0.0115/1K토큰’. 전체 모델명·환율 정보는 title(hover tooltip)로 이동.",
+      "js/admin-v3.js _renderAiUsage: pricing-note 렌더 시 textContent는 단가만, title 속성에 모델·단가·환율 상세 주입.",
+      "css/admin-v3.css 방어 CSS: .v3-ai-usage-stat { min-height:118px / 모바일 108px, flex-column, gap:4px }. label/value/sub/cost 모두 display:block + white-space:nowrap + text-overflow:ellipsis 강제 — 1줄 초과 시 점점점.",
+      "v3-stats-grid / v3-dash-home-grid에 grid-auto-rows:1fr + 카드 내 flex-column + 메타 라인 margin-top:auto. 콘텐츠 길이 차이로 인한 카드 간 높이 어긋남을 전역에서 차단.",
+      "관리자 버전 03.087.00 → 03.087.01."
+    ]
+  },
+  {
     "version": "03.087.00",
     "date": "2026-04-19",
     "released_at": "2026-04-19 21:15:00 KST",

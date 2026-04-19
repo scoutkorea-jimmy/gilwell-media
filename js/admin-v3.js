@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.087.00
+ * Version: 03.087.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5527,14 +5527,16 @@
     var errors = Number(month.errors || 0);
     _setText('ai-usage-errors', '오류 ' + _fmtIntKo(errors) + '회 / 30일');
 
-    // Pricing 안내
+    // Pricing 안내 — 1줄 유지(카드 높이 정합). 상세는 title 속성으로 hover 제공.
     if (data.pricing) {
       var noteEl = document.getElementById('ai-usage-pricing-note');
       if (noteEl) {
         var rate = data.pricing.usdPer1kTokens;
-        noteEl.textContent = (data.pricing.model || 'llama-3.1-8b') +
-          ' · $' + (rate != null ? rate : 0.0115) + '/1K토큰 · ' +
-          (data.pricing.krwPerUsd ? 'USD ' + data.pricing.krwPerUsd + '원 기준' : '');
+        var rateLabel = rate != null ? rate : 0.0115;
+        noteEl.textContent = '단가 $' + rateLabel + '/1K토큰';
+        noteEl.title = (data.pricing.model || '@cf/meta/llama-3.1-8b-instruct') +
+          ' · $' + rateLabel + '/1K토큰' +
+          (data.pricing.krwPerUsd ? ' · USD ' + data.pricing.krwPerUsd + '원 기준' : '');
       }
     }
 
