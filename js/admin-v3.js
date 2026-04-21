@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.089.06
+ * Version: 03.090.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -911,6 +911,7 @@
     settings:  '사이트 설정',
     releases:  '버전기록',
     'article-scorer': '기사 채점',
+    'ai-score-history': 'AI 채점기록',
   };
 
   V3.showPanel = function (panel, settingsSection) {
@@ -956,6 +957,7 @@
     else if (panel === 'marketing') _loadMarketing();
     else if (panel === 'releases') _loadReleases();
     else if (panel === 'article-scorer') _initArticleScorer();
+    else if (panel === 'ai-score-history') _loadAiScoreHistory({ reset: true });
     else if (panel === 'settings') {
       var sec = settingsSection || _settingsSection;
       _showSettingsSection(sec);
@@ -5885,6 +5887,158 @@
       })
       .catch(function (err) { GW.showToast((err && err.message) || '복원 실패', 'error'); })
       .finally(function () { _clearButtonBusy(btn); });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     AI SCORE HISTORY — 채점 기록 조회
+  ══════════════════════════════════════════════════════════ */
+  var _aiScoreHistoryState = {
+    limit: 20,
+    offset: 0,
+    total: 0,
+    q: '',
+    grade: '',
+    minScore: null,
+    bound: false,
+  };
+
+  function _loadAiScoreHistory(opts) {
+    var state = _aiScoreHistoryState;
+    opts = opts || {};
+    if (opts.reset) {
+      state.offset = 0;
+      state.q = (document.getElementById('ai-score-history-q') || {}).value || '';
+      state.grade = (document.getElementById('ai-score-history-grade') || {}).value || '';
+      var minRaw = (document.getElementById('ai-score-history-min') || {}).value || '';
+      state.minScore = minRaw !== '' && Number.isFinite(Number(minRaw)) ? Number(minRaw) : null;
+    }
+    _bindAiScoreHistoryControls();
+
+    var listEl = document.getElementById('ai-score-history-list');
+    var statsEl = document.getElementById('ai-score-history-stats');
+    var metaEl = document.getElementById('ai-score-history-pagination-meta');
+    if (listEl) listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (statsEl) statsEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>집계 중…</div>';
+
+    var params = new URLSearchParams();
+    params.set('limit', String(state.limit));
+    params.set('offset', String(state.offset));
+    if (state.q) params.set('q', state.q);
+    if (state.grade) params.set('grade', state.grade);
+    if (state.minScore !== null) params.set('min_score', String(state.minScore));
+
+    GW.apiFetch('/api/admin/ai-score-history?' + params.toString())
+      .then(function (data) {
+        state.total = (data && data.pagination && data.pagination.total) || 0;
+        _renderAiScoreHistoryStats(statsEl, data && data.stats);
+        _renderAiScoreHistoryList(listEl, data && data.items);
+        _renderAiScoreHistoryPagination(metaEl, data && data.pagination);
+      })
+      .catch(function (err) {
+        if (listEl) listEl.innerHTML = '<div class="v3-empty" style="color:var(--v3-danger,#c0392b);">불러오기 실패: ' + GW.escapeHtml((err && err.message) || String(err)) + '</div>';
+        if (statsEl) statsEl.innerHTML = '';
+      });
+  }
+
+  function _bindAiScoreHistoryControls() {
+    if (_aiScoreHistoryState.bound) return;
+    _aiScoreHistoryState.bound = true;
+    var applyBtn = document.getElementById('ai-score-history-apply-btn');
+    var refreshBtn = document.getElementById('ai-score-history-refresh-btn');
+    var qEl = document.getElementById('ai-score-history-q');
+    var prevBtn = document.getElementById('ai-score-history-prev-btn');
+    var nextBtn = document.getElementById('ai-score-history-next-btn');
+    if (applyBtn) applyBtn.addEventListener('click', function () { _loadAiScoreHistory({ reset: true }); });
+    if (refreshBtn) refreshBtn.addEventListener('click', function () { _loadAiScoreHistory({ reset: true }); });
+    if (qEl) qEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') _loadAiScoreHistory({ reset: true }); });
+    if (prevBtn) prevBtn.addEventListener('click', function () {
+      _aiScoreHistoryState.offset = Math.max(0, _aiScoreHistoryState.offset - _aiScoreHistoryState.limit);
+      _loadAiScoreHistory({});
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function () {
+      _aiScoreHistoryState.offset += _aiScoreHistoryState.limit;
+      _loadAiScoreHistory({});
+    });
+  }
+
+  function _renderAiScoreHistoryStats(el, stats) {
+    if (!el) return;
+    if (!stats || !stats.total) {
+      el.innerHTML = '<div class="v3-empty">채점 기록이 아직 없습니다. 글쓰기 패널의 “AI 채점” 기능을 사용하면 자동으로 기록됩니다.</div>';
+      return;
+    }
+    var dist = stats.grade_distribution || {};
+    el.innerHTML =
+      '<div class="v3-stat-card"><span class="v3-stat-label">총 채점 수</span><strong class="v3-stat-value">' + stats.total + '</strong></div>' +
+      '<div class="v3-stat-card"><span class="v3-stat-label">평균 점수</span><strong class="v3-stat-value">' + stats.avg_score + ' / 100</strong></div>' +
+      '<div class="v3-stat-card"><span class="v3-stat-label">평균 응답 시간</span><strong class="v3-stat-value">' + stats.avg_latency_ms + ' ms</strong></div>' +
+      '<div class="v3-stat-card"><span class="v3-stat-label">등급 분포</span><strong class="v3-stat-value" style="font-size:13px;line-height:1.4;">' +
+        'S ' + (dist.S || 0) + ' · A ' + (dist.A || 0) + ' · B ' + (dist.B || 0) + ' · C ' + (dist.C || 0) + ' · D ' + (dist.D || 0) +
+      '</strong></div>';
+  }
+
+  function _renderAiScoreHistoryList(el, items) {
+    if (!el) return;
+    items = Array.isArray(items) ? items : [];
+    if (!items.length) {
+      el.innerHTML = '<div class="v3-empty">조건에 맞는 기록이 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = items.map(function (row) {
+      var score = row.overall_score != null ? row.overall_score : '—';
+      var grade = row.overall_grade || '—';
+      var gradeColor = _aiScoreGradeColor(grade);
+      var catHtml = (row.categories || []).map(function (c) {
+        return '<span class="v3-ai-score-cat">' + GW.escapeHtml(c.label || '') + ' ' + (c.score != null ? c.score : '—') + '/' + (c.max != null ? c.max : '—') + '</span>';
+      }).join('');
+      return '' +
+        '<details class="v3-ai-score-row" style="border-bottom:1px solid var(--v3-border,#eee);padding:12px 4px;">' +
+          '<summary style="display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;">' +
+            '<span class="v3-ai-score-grade" style="min-width:44px;text-align:center;font-weight:700;color:' + gradeColor + ';border:1px solid ' + gradeColor + ';padding:3px 8px;">' + GW.escapeHtml(grade) + '</span>' +
+            '<span class="v3-ai-score-score" style="min-width:72px;font-variant-numeric:tabular-nums;color:' + gradeColor + ';">' + score + ' / 100</span>' +
+            '<span class="v3-ai-score-title" style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + GW.escapeHtml(row.input_title || '(제목 없음)') + '</span>' +
+            '<span class="v3-ai-score-time" style="color:var(--v3-muted);font-size:12px;font-variant-numeric:tabular-nums;">' + GW.escapeHtml(row.created_at_kst || '') + '</span>' +
+          '</summary>' +
+          '<div style="padding:12px 4px 4px;display:grid;gap:10px;">' +
+            (row.overall_summary ? '<div><strong style="font-size:12px;opacity:0.65;">요약</strong><div style="margin-top:4px;">' + GW.escapeHtml(row.overall_summary) + '</div></div>' : '') +
+            (catHtml ? '<div><strong style="font-size:12px;opacity:0.65;">카테고리</strong><div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">' + catHtml + '</div></div>' : '') +
+            (row.improvement ? '<div style="border-left:3px solid #0094B4;background:rgba(0,148,180,0.06);padding:10px 12px;"><strong>개선 방향</strong><p style="margin:6px 0 0;">' + GW.escapeHtml(row.improvement) + '</p></div>' : '') +
+            (row.revision_suggestion ? '<div style="border-left:3px solid #248737;background:rgba(36,135,55,0.06);padding:10px 12px;"><strong>✏️ 수정 제안 <span style="font-weight:400;opacity:0.6;font-size:11px;">· 약 300자</span></strong><p style="margin:6px 0 0;">' + GW.escapeHtml(row.revision_suggestion) + '</p></div>' : '') +
+            '<div style="display:flex;gap:16px;font-size:12px;color:var(--v3-muted);flex-wrap:wrap;">' +
+              '<span>본문 ' + (row.input_body_chars || 0) + '자</span>' +
+              '<span>태그: ' + GW.escapeHtml(row.input_tags || '—') + '</span>' +
+              '<span>응답 ' + (row.latency_ms || 0) + 'ms</span>' +
+              '<span>추정 토큰 ' + (row.total_tokens || 0) + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</details>';
+    }).join('');
+  }
+
+  function _renderAiScoreHistoryPagination(el, pagination) {
+    var prevBtn = document.getElementById('ai-score-history-prev-btn');
+    var nextBtn = document.getElementById('ai-score-history-next-btn');
+    var total = (pagination && pagination.total) || 0;
+    var limit = (pagination && pagination.limit) || _aiScoreHistoryState.limit;
+    var offset = (pagination && pagination.offset) || 0;
+    var hasMore = pagination && pagination.has_more;
+    if (prevBtn) prevBtn.disabled = offset <= 0;
+    if (nextBtn) nextBtn.disabled = !hasMore;
+    if (el) {
+      var end = Math.min(offset + limit, total);
+      el.textContent = total ? (offset + 1) + '–' + end + ' / 총 ' + total + '건' : '';
+    }
+  }
+
+  function _aiScoreGradeColor(grade) {
+    switch (String(grade || '').toUpperCase()) {
+      case 'S': return '#248737';
+      case 'A': return '#0094B4';
+      case 'B': return '#622599';
+      case 'C': return '#FF8A3D';
+      case 'D': return '#FF5655';
+      default:  return '#777';
+    }
   }
 
   function _initArticleScorer() {

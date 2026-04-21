@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { logAiUsage } from '../../_shared/ai-usage.js';
+import { logAiScore } from '../../_shared/ai-score-log.js';
 import { loadScoreRubric } from '../../_shared/score-rubric.js';
 
 const MODEL_ID = '@cf/meta/llama-3.1-8b-instruct';
@@ -187,5 +188,28 @@ Tags: ${tags || '(없음)'}
     inputChars, outputChars, promptTokens, completionTokens, totalTokens,
     latencyMs, status: 'success',
   });
+
+  // 채점 상세 결과는 별도 ai_score_log에 축약 저장 — /api/admin/ai-score-history가 소비.
+  const scoreLogEntry = {
+    actor: 'admin',
+    ip,
+    inputTitle: title,
+    inputSubtitle: subtitle,
+    inputBodyChars: String(content || '').length,
+    inputTags: tags,
+    overallScore: result && result.overall ? Number(result.overall.score) : null,
+    overallGrade: result && result.overall ? result.overall.grade : null,
+    overallSummary: result && result.overall ? result.overall.summary : null,
+    improvement: result && result.improvement ? result.improvement : null,
+    revisionSuggestion: result && result.revision_suggestion ? result.revision_suggestion : null,
+    categories: result && Array.isArray(result.categories) ? result.categories : null,
+    latencyMs,
+    totalTokens,
+    status: 'success',
+  };
+  const scoreLogPromise = logAiScore(env, scoreLogEntry);
+  if (typeof waitUntil === 'function') waitUntil(scoreLogPromise.catch(() => {}));
+  else scoreLogPromise.catch(() => {});
+
   return json({ ok: true, result });
 }
