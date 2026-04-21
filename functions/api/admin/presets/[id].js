@@ -25,9 +25,9 @@ export async function onRequestPut({ params, request, env }) {
     `SELECT id, slug, is_builtin FROM admin_user_presets WHERE id = ?`
   ).bind(id).first();
   if (!row) return json({ error: '프리셋을 찾을 수 없습니다.' }, 404);
-  if (row.is_builtin) {
-    return json({ error: '빌트인 프리셋은 수정할 수 없습니다. 새 프리셋으로 복제해 저장하세요.' }, 409);
-  }
+  // NOTE: owner may edit built-in presets (rebalancing permission defaults is
+  // a legitimate operator task). Only slug is protected — changing it would
+  // break the seeding contract with migrations.
 
   let body;
   try { body = await request.json(); } catch {

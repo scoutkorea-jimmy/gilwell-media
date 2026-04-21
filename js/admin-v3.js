@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.097.00
+ * Version: 03.098.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1020,18 +1020,146 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     PRIVACY POLICY — /privacy 본문 HTML 편집 (owner only)
+     PRIVACY POLICY — /privacy 본문 편집 (owner only, Tiptap 에디터)
   ══════════════════════════════════════════════════════════ */
   var _privacyPolicyBound = false;
+  var _privacyTiptap = null;        // Tiptap Editor instance
+  var _privacyTiptapLoading = null; // Promise<{Editor, StarterKit, Link}>
+  var _privacySourceMode = false;   // false=Tiptap, true=HTML textarea
+
+  function _loadTiptap() {
+    if (_privacyTiptapLoading) return _privacyTiptapLoading;
+    _privacyTiptapLoading = Promise.all([
+      import('https://esm.sh/@tiptap/core@2'),
+      import('https://esm.sh/@tiptap/starter-kit@2'),
+      import('https://esm.sh/@tiptap/extension-link@2'),
+    ]).then(function (mods) {
+      return {
+        Editor: mods[0].Editor,
+        StarterKit: mods[1].default || mods[1].StarterKit,
+        Link: mods[2].default || mods[2].Link,
+      };
+    });
+    return _privacyTiptapLoading;
+  }
+
+  function _privacyGetHtml() {
+    if (_privacySourceMode) {
+      return String(document.getElementById('privacy-policy-editor-source').value || '').trim();
+    }
+    return _privacyTiptap ? _privacyTiptap.getHTML() : '';
+  }
+
+  function _privacySetHtml(html) {
+    var source = document.getElementById('privacy-policy-editor-source');
+    if (source) source.value = html || '';
+    if (_privacyTiptap) _privacyTiptap.commands.setContent(html || '', false);
+  }
+
+  function _privacyUpdateToolbarState() {
+    if (!_privacyTiptap) return;
+    var bar = document.getElementById('privacy-policy-toolbar');
+    if (!bar) return;
+    var ed = _privacyTiptap;
+    bar.querySelectorAll('button[data-cmd]').forEach(function (btn) {
+      var cmd = btn.getAttribute('data-cmd');
+      var active = false;
+      if (cmd === 'bold' || cmd === 'italic' || cmd === 'strike' || cmd === 'code' || cmd === 'blockquote' || cmd === 'bulletList' || cmd === 'orderedList' || cmd === 'link') {
+        active = ed.isActive(cmd);
+      } else if (cmd === 'heading2') active = ed.isActive('heading', { level: 2 });
+      else if (cmd === 'heading3') active = ed.isActive('heading', { level: 3 });
+      else if (cmd === 'paragraph') active = ed.isActive('paragraph');
+      btn.classList.toggle('is-active', active);
+    });
+  }
+
+  function _privacyBindToolbar() {
+    var bar = document.getElementById('privacy-policy-toolbar');
+    if (!bar || bar.dataset.bound === '1') return;
+    bar.dataset.bound = '1';
+    bar.addEventListener('mousedown', function (e) { e.preventDefault(); }); // keep focus
+    bar.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-cmd]');
+      if (!btn || !_privacyTiptap) return;
+      var cmd = btn.getAttribute('data-cmd');
+      var ed = _privacyTiptap.chain().focus();
+      switch (cmd) {
+        case 'bold': ed.toggleBold().run(); break;
+        case 'italic': ed.toggleItalic().run(); break;
+        case 'strike': ed.toggleStrike().run(); break;
+        case 'code': ed.toggleCode().run(); break;
+        case 'heading2': ed.toggleHeading({ level: 2 }).run(); break;
+        case 'heading3': ed.toggleHeading({ level: 3 }).run(); break;
+        case 'paragraph': ed.setParagraph().run(); break;
+        case 'bulletList': ed.toggleBulletList().run(); break;
+        case 'orderedList': ed.toggleOrderedList().run(); break;
+        case 'blockquote': ed.toggleBlockquote().run(); break;
+        case 'undo': ed.undo().run(); break;
+        case 'redo': ed.redo().run(); break;
+        case 'link':
+          var prev = _privacyTiptap.getAttributes('link').href || '';
+          var url = window.prompt('링크 URL', prev);
+          if (url === null) break;
+          if (url === '') { ed.unsetLink().run(); break; }
+          ed.extendMarkRange('link').setLink({ href: url, target: '_blank', rel: 'noopener noreferrer' }).run();
+          break;
+        case 'unlink': ed.unsetLink().run(); break;
+      }
+      _privacyUpdateToolbarState();
+    });
+  }
+
+  function _privacyTogglSource() {
+    var surface = document.getElementById('privacy-policy-editor-tiptap');
+    var source = document.getElementById('privacy-policy-editor-source');
+    var toolbar = document.getElementById('privacy-policy-toolbar');
+    if (!surface || !source) return;
+    if (!_privacySourceMode) {
+      // Enter source mode: pull HTML from Tiptap into textarea.
+      source.value = _privacyTiptap ? _privacyTiptap.getHTML() : '';
+      surface.hidden = true;
+      source.hidden = false;
+      if (toolbar) toolbar.style.opacity = '0.45';
+      _privacySourceMode = true;
+    } else {
+      // Return to Tiptap: push textarea HTML back into the editor.
+      if (_privacyTiptap) _privacyTiptap.commands.setContent(source.value || '', false);
+      surface.hidden = false;
+      source.hidden = true;
+      if (toolbar) toolbar.style.opacity = '1';
+      _privacySourceMode = false;
+    }
+  }
+
   function _loadPrivacyPolicyUI() {
-    var editor = document.getElementById('privacy-policy-editor');
+    var surface = document.getElementById('privacy-policy-editor-tiptap');
+    var source = document.getElementById('privacy-policy-editor-source');
     var meta = document.getElementById('privacy-policy-meta');
     var status = document.getElementById('privacy-policy-status');
-    if (!editor) return;
+    if (!surface || !source) return;
     if (status) status.textContent = '불러오는 중…';
-    GW.apiFetch('/api/settings/privacy-policy').then(function (data) {
-      editor.value = (data && data.html) || '';
-      editor.placeholder = '';
+
+    Promise.all([
+      GW.apiFetch('/api/settings/privacy-policy'),
+      _loadTiptap(),
+    ]).then(function (arr) {
+      var data = arr[0];
+      var tp = arr[1];
+      // (Re)create the editor. If a previous instance exists, destroy to keep
+      // DOM clean and unbind listeners.
+      if (_privacyTiptap) { try { _privacyTiptap.destroy(); } catch (_) {} _privacyTiptap = null; }
+      surface.innerHTML = '';
+      _privacyTiptap = new tp.Editor({
+        element: surface,
+        extensions: [tp.StarterKit, tp.Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true })],
+        content: (data && data.html) || '',
+        onTransaction: _privacyUpdateToolbarState,
+        onSelectionUpdate: _privacyUpdateToolbarState,
+      });
+      source.value = (data && data.html) || '';
+      _privacyBindToolbar();
+      _privacyUpdateToolbarState();
+
       if (meta) {
         var parts = [];
         parts.push(data && data.is_default ? '기본값 사용 중' : '사용자 지정 저장됨');
@@ -1042,13 +1170,17 @@
       if (status) status.textContent = '';
     }).catch(function (err) {
       if (status) status.textContent = '';
-      if (GW.showToast) GW.showToast((err && err.message) || '불러오기 실패', 'error');
+      if (GW.showToast) GW.showToast((err && err.message) || 'Tiptap 로드 실패 — HTML 모드로 전환', 'error');
+      // Degrade gracefully to the raw source textarea.
+      if (surface) surface.hidden = true;
+      if (source) source.hidden = false;
+      _privacySourceMode = true;
     });
 
     if (_privacyPolicyBound) return;
     _privacyPolicyBound = true;
     _bindEl('privacy-policy-save-btn', 'click', function () {
-      var html = (editor.value || '').trim();
+      var html = _privacyGetHtml();
       if (!html) { if (GW.showToast) GW.showToast('본문을 입력해주세요', 'error'); return; }
       if (status) status.textContent = '저장 중…';
       GW.apiFetch('/api/settings/privacy-policy', {
@@ -1068,7 +1200,7 @@
       if (status) status.textContent = '복원 중…';
       GW.apiFetch('/api/settings/privacy-policy', { method: 'DELETE' }).then(function (data) {
         if (status) status.textContent = '';
-        editor.value = (data && data.html) || '';
+        _privacySetHtml((data && data.html) || '');
         if (meta) meta.textContent = '기본값 사용 중';
         if (GW.showToast) GW.showToast('기본값으로 복원되었습니다.', 'success');
       }).catch(function (err) {
@@ -1076,6 +1208,7 @@
         if (GW.showToast) GW.showToast((err && err.message) || '복원 실패', 'error');
       });
     });
+    _bindEl('privacy-policy-source-toggle-btn', 'click', _privacyTogglSource);
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -2002,7 +2135,15 @@
     document.getElementById('w-cat').value        = 'korea';
     _selectedWriteTags = [];
     _renderWriteTagPills(document.getElementById('w-cat').value);
-    document.getElementById('w-author').value     = '';
+    // Phase 5: w-author is readonly and auto-populated from the session's
+    // editor_code so the public byline always reflects the central assignment.
+    var _wAuthor = document.getElementById('w-author');
+    if (_wAuthor) {
+      var _meCode = (window.AccountAdmin && window.AccountAdmin.currentEditorCode)
+        ? window.AccountAdmin.currentEditorCode()
+        : '';
+      _wAuthor.value = _meCode || 'Editor.A';
+    }
     document.getElementById('w-date').value       = _kstNow();
     document.getElementById('w-youtube').value    = '';
     document.getElementById('w-cover-caption').value = '';
