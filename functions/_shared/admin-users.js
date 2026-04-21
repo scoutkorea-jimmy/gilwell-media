@@ -60,6 +60,7 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'releases',         label: '버전기록',        actions: ['view'] },
     { slug: 'homepage-issues',  label: '오류 · 이슈 기록', actions: ['view', 'write'] },
     { slug: 'site-history',     label: '사이트 히스토리',  actions: ['view'] },
+    { slug: 'kms',              label: 'KMS (Knowledge Management)', actions: ['view', 'write'] },
   ]},
 ]);
 

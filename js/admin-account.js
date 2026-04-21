@@ -107,6 +107,29 @@
       if (showOwner) n.removeAttribute('hidden');
       else n.setAttribute('hidden', '');
     });
+    _syncPermissionNav();
+  }
+
+  // Elements tagged with data-perm-slug/data-perm-action are hidden for
+  // non-owner sessions that lack the specific permission token. Owner sees
+  // everything unconditionally.
+  function _syncPermissionNav() {
+    var me = _state.me;
+    var isOwner = me && me.role === 'owner';
+    var perms = (me && me.permissions && me.permissions.permissions) || [];
+    var permSet = new Set(perms);
+    document.querySelectorAll('[data-perm-slug]').forEach(function (n) {
+      var slug = n.getAttribute('data-perm-slug');
+      var action = n.getAttribute('data-perm-action') || 'view';
+      if (isOwner) {
+        n.removeAttribute('hidden');
+        n.style.display = '';
+        return;
+      }
+      var ok = permSet.has(action + ':' + slug);
+      if (ok) { n.removeAttribute('hidden'); n.style.display = ''; }
+      else { n.setAttribute('hidden', ''); n.style.display = 'none'; }
+    });
   }
 
   /* ── 내 계정 패널 ─────────────────────────────────────────── */
@@ -301,6 +324,10 @@
     _state.draftPermissions = null;
     var modal = $('account-user-modal');
     var title = $('account-user-modal-title');
+    if (!modal || !title) {
+      _toast('사용자 모달이 로드되지 않았습니다. 페이지를 새로고침하세요.', 'error');
+      return;
+    }
     if (userId) {
       var u = _findUser(userId);
       if (!u) { _toast('사용자를 찾을 수 없습니다', 'error'); return; }
@@ -859,13 +886,22 @@
       _toast('모든 체크 해제', 'info', 2000);
     });
 
-    // Global close delegation (×, [data-close], overlay click)
+    // Global close delegation (×, [data-close], overlay click).
+    // Guarded: click targets can be text nodes on rare occasions, and
+    // .matches() is only defined on Element — a TypeError here would swallow
+    // subsequent click listeners on the page via the document handler chain.
     document.addEventListener('click', function (e) {
       var target = e.target;
-      if (target.matches('[data-close]')) {
-        _closeModal(target.getAttribute('data-close'));
-      } else if (target.classList && target.classList.contains('v3-overlay') &&
-                 (target.id === 'account-user-modal' || target.id === 'account-permission-modal' || target.id === 'account-temp-password-modal' || target.id === 'account-preset-modal')) {
+      if (!target || target.nodeType !== 1) return;
+      try {
+        if (target.matches('[data-close]')) {
+          _closeModal(target.getAttribute('data-close'));
+          return;
+        }
+      } catch (_) { /* safari older versions */ }
+      if (target.classList && target.classList.contains('v3-overlay') &&
+          (target.id === 'account-user-modal' || target.id === 'account-permission-modal' ||
+           target.id === 'account-temp-password-modal' || target.id === 'account-preset-modal')) {
         _closeModal(target.id);
       }
     });

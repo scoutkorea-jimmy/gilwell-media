@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.098.01",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:50:49 KST",
+    "summary": "사용자 관리 '사용자 추가' 버튼 미작동 원인 정비(방어 코드) + 권한 매트릭스에 KMS 접근 권한 추가 + 사이드바 data-perm-slug 기반 동적 숨김 도입.",
+    "changes": [
+      "js/admin-account.js _openUserModal: $('account-user-modal')/title 존재하지 않으면 토스트로 안내하고 조기 종료. 이전에는 null에 대한 속성 접근으로 조용히 실패했을 수 있음.",
+      "js/admin-account.js document click delegation: target.nodeType !== 1이면 조기 return + target.matches 호출을 try/catch로 감싸 구형 Safari/iOS에서의 예외가 후속 리스너 체인을 막지 않도록 방어.",
+      "functions/_shared/admin-users.js ADMIN_MENUS 시스템 그룹에 'kms' slug 추가(view + write). 권한 매트릭스 + 모든 프리셋 편집 모달에 KMS 토글 자동 노출.",
+      "db/migration_058.sql 적용: 빌트인 프리셋 3종(글쟁이·뷰어·마케팅 담당)에 view:kms 자동 추가(기존 커스텀 프리셋은 미변경). SQL json_set + json_group_array + UNION으로 중복 없이 병합.",
+      "admin.html 사이드바 KMS 외부 링크에 data-perm-slug='kms' data-perm-action='view' 추가. admin-account.js _syncPermissionNav가 세션 권한에 따라 해당 요소를 숨김/표시 — 오너는 무조건 노출.",
+      "관리자 버전 03.098.00 → 03.098.01."
+    ]
+  },
+  {
     "version": "00.130.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:38:37 KST",
