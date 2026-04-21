@@ -1,9 +1,25 @@
 {
   "items": [
   {
+    "version": "00.128.00",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:15:16 KST",
+    "summary": "Kakao AdFit 가로·세로 광고 도입 + masthead 상단 고정 복귀 + 과거 changelog 타임스탬프 KST 교정. 기존 버전기록 타임스탬프가 실제 KST가 아닌 값으로 기록되어 있던 문제를 git 커밋 시각 기반으로 정정.",
+    "changes": [
+      "광고 가로(728x90 PC / 320x50 모바일): 홈(index.html)·카테고리 보드(korea/apr/wosm/people/latest)·검색·용어집·캘린더·세계연맹 회원국·기고자 페이지 푸터 바로 위, 포스트 상세(functions/post/[id].js)의 공감/오류제보 아래, feature 컬렉션(functions/feature/[category]/[slug].js)의 푸터 위에 삽입.",
+      "광고 세로(160x600, PC 전용): 포스트 상세 사이드바의 'AI 지원 작성' 행 아래에 삽입. 모바일(≤900px)은 사이드바 자체가 공간이 없어 숨김.",
+      "한 광고 슬롯에 PC용 <ins>와 모바일용 <ins>를 둘 다 두고 미디어 쿼리로 한쪽만 표시 — 리플로 없이 화면 크기에 맞는 광고가 자동 선택됨.",
+      "Kakao AdFit 공식 가이드 준수: <ins style=\"display:none;width:100%;\">, 스크립트는 https://t1.kakaocdn.net/kas/static/ba.min.js (async), </body> 바로 위에 삽입.",
+      "CSP 업데이트(_headers + functions/_middleware.js): script-src에 https://t1.daumcdn.net, frame-src·connect-src에 https://display.ad.daum.net 추가 — 기존에 이미 허용되어 있던 https://t1.kakaocdn.net과 함께 AdFit 자원 완전 허용.",
+      "masthead 상단 고정 복귀: position:sticky + z-index:100 재적용. 운영자 재요청 반영. 홈 페이지는 기존처럼 position:relative (body[data-home-bootstrap] override).",
+      "버전기록 타임스탬프 KST 교정: 2026-04-21자 9개 엔트리(00.127.03~00.127.07 + 03.089.03~03.089.06)를 모두 실제 git 커밋 시각(20:24:38~23:02:56 KST)으로 정정. 이전에 10:00~15:30으로 기재되어 있던 값은 UTC 오프셋 실수였음.",
+      "사이트 버전 00.127.07 → 00.128.00 (광고 도입은 기능 단계 전환이므로 bbb/feature 증가, cc/fix는 00으로 리셋)."
+    ]
+  },
+  {
     "version": "00.127.07",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 15:30:00 KST",
+    "released_at": "2026-04-21 23:02:56 KST",
     "summary": "PC에서 스크롤할 때 기사 상단이 sticky masthead에 가려지던 문제 수정. 모든 페이지에서 masthead가 콘텐츠와 함께 자연스럽게 스크롤 아웃되도록 변경. 모바일 별도 compact header 동작은 그대로 유지.",
     "changes": [
       "css/style.css .masthead: position:sticky + top:0 + z-index:100 제거, position:relative로 변경. 홈 전용 override(body[data-home-bootstrap])도 통합됨.",
@@ -15,7 +31,7 @@
   {
     "version": "00.127.06",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 14:45:00 KST",
+    "released_at": "2026-04-21 22:54:55 KST",
     "summary": "공개 사이트 인라인 이벤트 핸들러 정리 — 12개 HTML의 onclick='GW.setLang(...)'과 index.html의 script onerror 핸들러를 모두 제거하고 data-* 속성 + 이벤트 위임으로 이전. 사용자 동작은 동일, CSP 강화(향후 CSP nonce 적용) 사전 작업.",
     "changes": [
       "12개 공개 HTML(index/korea/apr/wosm/people/latest/search/glossary/calendar/wosm-members/contributors/404)의 언어 토글 버튼: onclick='GW.setLang(ko|en)' → data-lang-toggle='ko|en'.",
@@ -27,7 +43,7 @@
   {
     "version": "03.089.06",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 14:45:00 KST",
+    "released_at": "2026-04-21 22:54:55 KST",
     "summary": "관리자 AI 채점 안정성·응답 개선 — (1) Workers AI 호출이 일시 실패하면 자동 1회 재시도(600ms 백오프)하여 어제 발생한 일회성 API 오류가 사용자에게 보이지 않도록. (2) 채점 응답에 약 300자 분량의 구체적인 수정 제안(revision_suggestion) 필드 신설.",
     "changes": [
       "functions/api/admin/score-article.js: env.AI.run을 1회 재시도 루프로 감싸 일시적 5xx·네트워크 블립을 흡수. 최악의 경우 응답 시간은 +600ms이지만 성공률 대폭 향상. 에러 응답 메시지도 한국어로 명확히 수정.",
@@ -40,7 +56,7 @@
   {
     "version": "00.127.05",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 13:10:00 KST",
+    "released_at": "2026-04-21 22:38:51 KST",
     "summary": "보안 감사 Batch 3 공개 사이트 측 — 공감 요청·검색 요청에 IP 기반 레이트 리밋(M4) 적용, 쿠키 인증 mutating 요청에 동일 출처 검증(M2) 추가. 일반 사용자는 차이를 느끼지 않음.",
     "changes": [
       "M4 공감: POST /api/posts/:id/like에 30회/IP/분 레이트 리밋 적용. 크롤러·스크립트가 공감 수를 부풀리는 시도 차단.",
@@ -53,7 +69,7 @@
   {
     "version": "03.089.05",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 13:10:00 KST",
+    "released_at": "2026-04-21 22:38:51 KST",
     "summary": "보안 감사 Batch 3 관리자 측 — 관리자 비밀번호 변경 UI 신설(C1). 변경 시 모든 기기의 기존 세션이 무효화되고 현재 기기만 새 토큰으로 유지됨. Cloudflare 대시보드·wrangler CLI 없이 관리자 UI에서 비밀번호 로테이션 가능.",
     "changes": [
       "새 엔드포인트 POST /api/admin/password — 현재 비밀번호 확인 → 8자 이상 새 비밀번호 확인 → PBKDF2-SHA256(150k iters, 16바이트 salt) 해시를 settings('admin_password_hash')에 저장 → admin_token_min_iat 갱신으로 기존 세션 전체 무효화 → 현재 기기에만 새 토큰 재발급.",
@@ -67,7 +83,7 @@
   {
     "version": "00.127.04",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 11:45:00 KST",
+    "released_at": "2026-04-21 20:51:18 KST",
     "summary": "보안 감사 Batch 2 — 공개 사이트에 DOMPurify 기반 HTML 살균(H1)과 외부 CDN 스크립트 SRI 무결성 검증(H4) 적용. 사용자에게 보이는 동작은 동일하지만, 저장된 HTML 본문을 통한 XSS·CDN 공급망 변조 두 가지 공격 벡터가 차단됨.",
     "changes": [
       "H1 DOMPurify: 14개 공개 HTML과 /post/[id]·/feature/[cat]/[slug] SSR 템플릿의 <head>에 DOMPurify 3.2.4 CDN 스크립트를 SRI(sha384-eEu5…) + crossorigin=anonymous + referrerpolicy=no-referrer로 프리로드.",
@@ -82,7 +98,7 @@
   {
     "version": "03.089.04",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 11:45:00 KST",
+    "released_at": "2026-04-21 20:51:18 KST",
     "summary": "관리자 페이지 CDN 리소스에 SRI 무결성 검증 적용. Editor.js 동적 로더도 SRI 맵 기반으로 전환.",
     "changes": [
       "admin.html 외부 CDN 3건(leaflet.css, leaflet.js, xlsx.full.min.js)에 integrity + crossorigin 속성 적용 — CDN 공급망이 침해되어 변조된 파일이 내려오면 브라우저가 실행을 거부.",
@@ -93,7 +109,7 @@
   {
     "version": "00.127.03",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 10:00:00 KST",
+    "released_at": "2026-04-21 20:24:38 KST",
     "summary": "보안 감사 Batch 1 — 공개 사이트 쪽 저위험·소규모 보강 8건 적용 (L1/L2/M3/M6/M7/H2/H3/H5). 실제 사용자 경험은 그대로이지만, 공감 스팸, 민감 필드 과도 노출, SVG 업로드를 통한 XSS, 인라인 이벤트 핸들러 등 잠재 공격면을 축소.",
     "changes": [
       "H5: 게시판 썸네일의 인라인 onerror 핸들러 제거 — js/board.js에서 img 요소를 생성 후 addEventListener('error')로 폴백을 붙여 CSP unsafe-inline 의존 감소.",
@@ -110,7 +126,7 @@
   {
     "version": "03.089.03",
     "date": "2026-04-21",
-    "released_at": "2026-04-21 10:00:00 KST",
+    "released_at": "2026-04-21 20:24:38 KST",
     "summary": "관리자·공용 인프라 보안 감사 Batch 1 반영 — Turnstile 미설정 경고, MIME 허용 목록, auth 주석, CORS 통일.",
     "changes": [
       "functions/_shared/turnstile.js: 프로덕션에서 TURNSTILE_SECRET 부재 시 warn 로그 + TURNSTILE_STRICT 플래그로 fail-closed 전환 가능.",

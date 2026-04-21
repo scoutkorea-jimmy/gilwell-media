@@ -68,7 +68,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/style.css?v=20260421140238">
+  <link rel="stylesheet" href="/css/style.css?v=20260421141616">
   <style>
     .feature-page {
       background:
@@ -458,6 +458,16 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         </div>
       </aside>
     </section>
+
+    <!-- Kakao AdFit horizontal — 푸터 위 (PC 728x90 / 모바일 320x50) -->
+    <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
+      <div class="kakao-adfit-pc">
+        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
+      </div>
+      <div class="kakao-adfit-mobile">
+        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
+      </div>
+    </aside>
   </main>
 
   <footer>
@@ -473,7 +483,7 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
         <h4>바로가기</h4>
         <a href="/${category}">${escapeHtml(categoryMeta.label)} 목록 →</a>
         <a href="/latest">최신 기사 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.127.07</span> · Admin <span class="admin-build-version">V03.089.06</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.128.00</span> · Admin <span class="admin-build-version">V03.089.06</span></p>
       </div>
       <div class="footer-bottom">
         <p>© 2026 ${footerTitle} · ${footerDomain}</p>
@@ -482,9 +492,10 @@ async function renderFeaturePage({ params, request, env }, headOnly = false) {
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260421140238"></script>
-  <script src="/js/site-chrome.js?v=20260421140238"></script>
+  <script src="/js/main.js?v=20260421141616"></script>
+  <script src="/js/site-chrome.js?v=20260421141616"></script>
   <script>GW.bootstrapStandardPage();</script>
+  <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
 
