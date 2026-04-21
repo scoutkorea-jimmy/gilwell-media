@@ -11445,11 +11445,20 @@ body.wosm-members-page #main-content {
    KAKAO ADFIT — 광고 슬롯
    PC: 728x90 horizontal + 160x600 vertical(사이드바 전용)
    Mobile: 320x50 horizontal만 (세로 광고는 숨김)
+
+   여백 규칙:
+     - 가로 광고: 상하 48px, 좌우 auto(중앙 정렬) + 슬롯 좌우 16px 안쪽 여백
+     - 세로 광고: 상하 40px, 좌우 auto(사이드바 내 중앙 정렬) / 내부 padding 0
    ════════════════════════════════════════════════════════════ */
 .kakao-adfit {
   display: block;
   text-align: center;
-  margin: 40px auto;
+  box-sizing: border-box;
+}
+.kakao-adfit-horizontal {
+  /* 가로 광고 공통: 기사·섹션 끝과 48px 간격 유지, 좌우 16px 내부 여백으로
+     좁은 화면에서 광고가 뷰포트에 닿지 않도록 보호. */
+  margin: 48px auto;
   padding: 0 16px;
 }
 .kakao-adfit-horizontal .kakao-adfit-pc {
@@ -11465,13 +11474,21 @@ body.wosm-members-page #main-content {
   margin: 0 auto;
 }
 .kakao-adfit-vertical {
+  /* 세로 광고: 사이드바(200px) 안에서 좌우 auto 마진으로 정확히 중앙 정렬.
+     padding 0 — .kakao-adfit의 0 16px이 상속되면 실제 슬롯이 128px로
+     좁아져 ins가 왼쪽으로 쳐져 보이는 문제 발생. */
+  display: block;
   width: 160px;
   min-height: 600px;
-  margin: 32px auto 0;
+  margin: 40px auto;
+  padding: 0;
 }
 @media (max-width: 900px) {
   .kakao-adfit-horizontal .kakao-adfit-pc { display: none; }
   .kakao-adfit-horizontal .kakao-adfit-mobile { display: block; }
   /* 세로 광고는 모바일에서 사이드바 공간 자체가 없으므로 전체 숨김 */
   .kakao-adfit-vertical { display: none; }
+  /* 모바일은 상하 여백을 32px로 약간 축소 — 좁은 화면에서 간격이 과하게
+     보이는 느낌을 줄이되 콘텐츠와 확실히 분리되는 정도는 유지. */
+  .kakao-adfit-horizontal { margin: 32px auto; padding: 0 12px; }
 }

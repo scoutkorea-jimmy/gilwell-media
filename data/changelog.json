@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.128.05",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:53:29 KST",
+    "summary": "광고 상하·좌우 여백 규칙 명시적 정비 + 사이드바 세로 광고 중앙 정렬 수정 + '도움을 주신 분들' 페이지에서 광고 전면 제외(감사 전용 페이지 규정).",
+    "changes": [
+      "css/style.css .kakao-adfit-vertical: .kakao-adfit에서 상속되던 padding:0 16px 때문에 실제 슬롯이 160→128px로 좁아져 ins가 사이드바 내에서 우측으로 쳐져 보이던 문제 해결. padding:0으로 강제 리셋하고 width:160px + margin:40px auto로 상하 40px·좌우 auto(사이드바 내 20px씩 균등) 정확 중앙 정렬.",
+      "css/style.css .kakao-adfit-horizontal: 상하 여백을 48px(PC)/32px(모바일)로 명시적으로 고정, 좌우 16px(PC)/12px(모바일) padding으로 좁은 화면에서 광고가 뷰포트에 닿지 않도록 보호. 규칙을 주석으로 박아두어 이후 회귀 방지.",
+      "contributors.html 광고 전면 제거: 가로 광고 슬롯(ins 2개)과 ba.min.js 로더 스크립트까지 모두 삭제. '도움을 주신 분들' 페이지는 감사 전용으로 유지.",
+      "사이트 버전 00.128.04 → 00.128.05."
+    ]
+  },
+  {
     "version": "00.128.04",
     "date": "2026-04-21",
     "released_at": "2026-04-21 23:47:50 KST",
