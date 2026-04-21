@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.130.00';
-  GW.ADMIN_VERSION = '03.098.01';
-  GW.ASSET_VERSION = '20260421175116';
+  GW.APP_VERSION = '00.130.01';
+  GW.ADMIN_VERSION = '03.098.02';
+  GW.ASSET_VERSION = '20260421180415';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1470,7 +1470,15 @@
           if (!(key in err)) err[key] = data[key];
         });
       }
-      if (res.status === 401 && GW.getToken && GW.getToken()) {
+      // Phase 5 note: Only the canonical session check endpoint triggers auto
+      // logout on 401. Many admin APIs still use verifyTokenRole('full') and
+      // respond 401 to valid member sessions that lack the specific role —
+      // those should be treated as "no permission" (403 semantic), not "session
+      // expired", otherwise the user gets kicked back to login immediately
+      // after signing in. A full Phase 5 retrofit will change those handlers
+      // to return 403, but until then the client decides based on the path.
+      var _isSessionEndpoint = /^(\/api\/admin\/session|\/api\/admin\/users\/me)\b/.test(String(url || ''));
+      if (res.status === 401 && _isSessionEndpoint && GW.getToken && GW.getToken()) {
         try {
           GW.clearToken();
         } catch (_) {}

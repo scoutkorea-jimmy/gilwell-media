@@ -29,7 +29,7 @@ import {
   safeCompare,
   verifyAdminPasswordHash,
 } from '../../_shared/auth.js';
-import { loadAdminUserByUsername } from '../../_shared/admin-users.js';
+import { loadAdminUserByUsername, parsePermissions } from '../../_shared/admin-users.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
@@ -186,6 +186,24 @@ export async function onRequestPost({ request, env }) {
     });
     await new Promise(r => setTimeout(r, 400));
     return json({ error: '아이디 또는 비밀번호가 올바르지 않습니다' }, 401);
+  }
+
+  // Phase 5 gate: reject members whose `permissions.access_admin` is false.
+  // Without this, the user's credential is valid but every admin API returns
+  // 401/403, causing an infinite login-kick loop after a successful sign-in.
+  // Owner role bypasses this check unconditionally.
+  if (sessionUser.role !== 'owner') {
+    const parsed = parsePermissions(sessionUser.permissions);
+    if (!parsed.access_admin) {
+      await logOperationalEvent(env, {
+        channel: 'admin', type: 'admin_login_no_access', level: 'warn',
+        actor: sessionUser.username, ip, path: '/api/admin/login',
+        message: `관리자 접근 권한 없는 계정 로그인 시도 (${sessionUser.username})`,
+      });
+      return json({
+        error: '관리자 페이지 접근 권한이 없습니다. 오너에게 권한을 요청하세요.',
+      }, 403);
+    }
   }
 
   await clearRateLimit(env, rlKey);

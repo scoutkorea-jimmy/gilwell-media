@@ -3597,6 +3597,17 @@ footer::before {
 .footer-brand {
   max-width: 520px;
 }
+.footer-brand .footer-privacy-link {
+  margin-top: var(--gap-element); /* 12px token — 연락처 그룹과 시각적으로 분리 */
+}
+.footer-brand .footer-privacy-link a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.footer-brand .footer-privacy-link a:hover {
+  opacity: .75;
+}
 
 .footer-admin {
   margin-left: auto;

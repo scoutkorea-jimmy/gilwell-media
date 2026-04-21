@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "00.130.01",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 03:03:32 KST",
+    "summary": "개인정보 처리방침 푸터 링크의 inline style을 KMS 간격 토큰 기반 CSS 클래스로 교체(가독성·일관성). privacy.html 푸터에도 동일 링크 추가.",
+    "changes": [
+      "css/style.css .footer-brand .footer-privacy-link 신규: margin-top을 --gap-element(12px) 토큰으로 지정, a의 색상은 inherit + underline 2px offset. KMS 디자인 가이드의 '수직·일반 간격은 토큰으로' 규칙 준수.",
+      "10개 공개 HTML에서 <p style='margin-top:10px;'><a ... style='color:inherit;...'> 인라인 스타일 제거 후 <p class='footer-privacy-link'><a ...> 구조로 통일.",
+      "privacy.html 푸터 브랜드 블록에도 동일 링크 추가(다른 페이지와 일관성). 관리자 블록에서는 중복 /privacy 링크 제거.",
+      "사이트 버전 00.130.00 → 00.130.01."
+    ]
+  },
+  {
+    "version": "03.098.02",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 03:03:32 KST",
+    "summary": "게스트·멤버 계정 로그인 직후 튕김 현상 수정 + 대시보드 오너 전용 카드 분리 + P0 이슈 #14 resolved 처리 + privacy API 캐시 제거 + data-perm-slug 초기 깜빡임 방지.",
+    "changes": [
+      "js/main.js GW.apiFetch 401 처리를 /api/admin/session과 /api/admin/users/me에 한정 — 기존에는 모든 admin API가 401을 반환하면 토큰을 비우고 로그인 화면으로 튕겼는데, Phase 5 API 리트로핏이 진행 중인 동안 member 계정이 대시보드 로딩 중 401을 받아 무한 로그아웃 루프에 빠지던 문제 해소. 세션 자체 만료는 세션/프로필 엔드포인트에서 충분히 감지 가능.",
+      "functions/api/admin/login.js: 로그인 성공 후 permissions.access_admin이 false인 member 계정은 403 '관리자 페이지 접근 권한이 없습니다. 오너에게 권한을 요청하세요.' 반환. ops-log에 admin_login_no_access 이벤트 기록. 오너는 unconditional bypass.",
+      "admin.html 대시보드: '인기 게시글' · '오류/로그인 시도' · '최근 설정 변경' · '릴리스 이력' 4개 카드에 data-owner-only='1' 속성 부여. 대시보드 패널 자체는 모든 권한에서 공통 노출. _syncOwnerOnlyNav가 카드 hidden을 세션 역할 기반으로 토글.",
+      "functions/api/settings/privacy-policy.js: GET 응답에서 Cache-Control: public, max-age=60 제거 → no-store. 오너가 편집·저장 직후 공개면 새로고침 시 즉시 최신 본문 보이도록 일관성 우선.",
+      "js/admin-account.js _syncPermissionNav: _state.me가 null이면 조기 return — 세션 로드 전 첫 페인트 동안 사이드바 요소가 숨겨졌다가 다시 나타나는 깜빡임 방지.",
+      "homepage_issues #14 '관리자 API 요청 실패 /api/admin/login' resolved 처리 + cause·action_items 기록 — PBKDF2 iteration 상한 버그는 V03.095.01에서 이미 수정 완료.",
+      "관리자 버전 03.098.01 → 03.098.02."
+    ]
+  },
+  {
     "version": "03.098.01",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:50:49 KST",
