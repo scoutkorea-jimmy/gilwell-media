@@ -63,11 +63,37 @@ export async function onRequestGet({ params, env, request }) {
     post.special_feature_posts = specialFeaturePosts;
 
     const origin = new URL(request.url).origin;
-    return json({ post: isAdmin ? post : serializePostImage(post, origin) });
+    return json({ post: isAdmin ? post : sanitizePublicPost(serializePostImage(post, origin)) });
   } catch (err) {
     console.error('GET /api/posts/:id error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+// Whitelist of post columns safe to expose to non-admin viewers. Any column not
+// listed here (e.g. operational/audit fields that get added later) stays server-
+// side by default, which is the behavior we want.
+const PUBLIC_POST_FIELDS = [
+  'id', 'category', 'title', 'subtitle', 'content',
+  'image_url', 'image_caption', 'image_is_placeholder', 'image_has_real_asset',
+  'gallery_images', 'youtube_url', 'location_name', 'location_address',
+  'tag', 'author', 'ai_assisted',
+  'created_at', 'publish_at', 'updated_at',
+  'views', 'likes', 'liked',
+  'special_feature', 'meta_tags',
+  'related_posts', 'manual_related_posts', 'manual_related_post_ids',
+  'related_posts_json', 'special_feature_posts',
+];
+
+function sanitizePublicPost(post) {
+  if (!post || typeof post !== 'object') return post;
+  const out = {};
+  for (const key of PUBLIC_POST_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(post, key)) {
+      out[key] = post[key];
+    }
+  }
+  return out;
 }
 
 // ── PUT /api/posts/:id ────────────────────────────────────────
@@ -496,6 +522,12 @@ async function safelyStoreDataImage(env, value, origin, prefix) {
     return await storeDataImage(env, value, origin, prefix);
   } catch (err) {
     console.error('safelyStoreDataImage error:', err);
+    // If the upload source is a data: URL and it failed (unsupported MIME,
+    // malformed base64, etc.), do NOT echo it back into the DB — that would
+    // persist e.g. an SVG/script payload as the stored image_url.
+    if (typeof value === 'string' && value.trim().startsWith('data:')) {
+      return { url: null, key: '' };
+    }
     return { url: value || null, key: '' };
   }
 }

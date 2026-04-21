@@ -5,15 +5,6 @@ const UNMATCHED_BUCKET = '국문 미확정 용어';
 const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET, UNMATCHED_BUCKET];
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
 
-export async function onRequestOptions() {
-  return new Response(null, {
-    status: 204,
-    headers: baseHeaders({
-      'Access-Control-Max-Age': '86400',
-    }),
-  });
-}
-
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const bucketFilter = String(url.searchParams.get('bucket') || '').trim();
@@ -165,18 +156,12 @@ function normalizeGlossaryRows(rows) {
     });
 }
 
-function baseHeaders(extraHeaders = {}) {
-  return Object.assign({
-    'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }, extraHeaders);
-}
-
 function json(data, status = 200, extraHeaders = {}) {
+  // CORS headers are applied globally by functions/api/_middleware.js.
   return new Response(JSON.stringify(data), {
     status,
-    headers: baseHeaders(extraHeaders),
+    headers: Object.assign({
+      'Content-Type': 'application/json; charset=utf-8',
+    }, extraHeaders),
   });
 }

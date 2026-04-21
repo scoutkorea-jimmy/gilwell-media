@@ -100,13 +100,28 @@ function isDataImageUrl(value) {
   return typeof value === 'string' && value.trim().startsWith('data:image/');
 }
 
+// Bitmap-only allowlist. SVG is deliberately excluded because SVG can carry
+// <script> and event handlers that execute when the image is loaded inline,
+// which would bypass the rest of the XSS defenses.
+const ALLOWED_IMAGE_MIMES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
 function decodeDataImage(dataUrl) {
   const commaIdx = dataUrl.indexOf(',');
   if (commaIdx < 0) throw new Error('Invalid data URL');
   const header = dataUrl.slice(0, commaIdx);
   const b64 = dataUrl.slice(commaIdx + 1);
   const mimeMatch = header.match(/data:([^;]+)/);
-  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const rawMime = (mimeMatch ? mimeMatch[1] : 'image/jpeg').toLowerCase();
+  if (!ALLOWED_IMAGE_MIMES.has(rawMime)) {
+    throw new Error(`Unsupported image type: ${rawMime}`);
+  }
+  const mimeType = rawMime === 'image/jpg' ? 'image/jpeg' : rawMime;
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
@@ -117,6 +132,5 @@ function mimeToExt(mimeType) {
   if (mimeType === 'image/png') return 'png';
   if (mimeType === 'image/webp') return 'webp';
   if (mimeType === 'image/gif') return 'gif';
-  if (mimeType === 'image/svg+xml') return 'svg';
   return 'jpg';
 }

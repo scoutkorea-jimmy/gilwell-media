@@ -268,9 +268,10 @@
 
     var thumb = '';
     if (post.image_url) {
+      // Markup only — the onerror fallback is attached below via addEventListener
+      // instead of an inline handler so that CSP can eventually drop 'unsafe-inline'.
       thumb = '<img class="post-card-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url)
-            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy"'
-            + ' onerror="var c=this.closest(\'.post-card\');if(c){c.classList.remove(\'has-thumb\');c.classList.add(\'no-thumb\');}this.remove();">';
+            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
     }
 
     var isNew = GW.isPostNew(post);
@@ -302,6 +303,15 @@
           '</div>' +
         '</div>' +
       '</div>';
+
+    var thumbEl = card.querySelector('.post-card-thumb');
+    if (thumbEl) {
+      thumbEl.addEventListener('error', function () {
+        card.classList.remove('has-thumb');
+        card.classList.add('no-thumb');
+        thumbEl.remove();
+      }, { once: true });
+    }
 
     card.addEventListener('click', function (e) {
       if (e.target.classList.contains('post-permalink')) return;
