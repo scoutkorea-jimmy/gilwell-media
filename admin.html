@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421145409">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421150442">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.090.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.090.02</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.128.05</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.090.01</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.090.02</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.128.05</span></span></div>
     </div>
 
@@ -132,6 +132,10 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="1,12 5,7 9,9 15,3"/><polyline points="11,3 15,3 15,7"/></svg>
           방문 분석
         </button>
+        <button class="v3-nav-item" data-panel="marketing">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
+          마케팅
+        </button>
         <button class="v3-nav-item" data-panel="analytics-tags">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><line x1="6.5" y1="6.5" x2="9.5" y2="9.5"/><circle cx="11.5" cy="4.5" r="1.5"/><line x1="10.3" y1="5.5" x2="8" y2="7.5"/></svg>
           태그 인사이트
@@ -139,10 +143,6 @@
         <button class="v3-nav-item" data-panel="geo-audience">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.25c3.73 0 6.75 3.02 6.75 6.75S11.73 14.75 8 14.75 1.25 11.73 1.25 8 4.27 1.25 8 1.25Z"/><path d="M1.8 6.2h12.4"/><path d="M1.8 9.8h12.4"/><path d="M8 1.5c1.9 1.85 3 4.1 3 6.5s-1.1 4.65-3 6.5c-1.9-1.85-3-4.1-3-6.5s1.1-4.65 3-6.5Z"/></svg>
           접속 국가/도시
-        </button>
-        <button class="v3-nav-item" data-panel="marketing">
-          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 12 L4 8 L7 10 L10 5 L13 7 L15 3"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="5" r="1" fill="currentColor"/></svg>
-          마케팅
         </button>
       </div>
 
@@ -812,7 +812,21 @@
                 <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs active" data-ai-usage-range="14">14일</button>
                 <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="30">30일</button>
                 <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="90">90일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="custom" id="ai-usage-custom-toggle-btn" aria-expanded="false">사용자 지정…</button>
               </div>
+            </div>
+            <div class="v3-ai-usage-custom-row" id="ai-usage-custom-row" hidden>
+              <label class="v3-ai-usage-custom-label">
+                <span>시작일</span>
+                <input type="date" id="ai-usage-custom-start">
+              </label>
+              <span class="v3-ai-usage-custom-sep" aria-hidden="true">~</span>
+              <label class="v3-ai-usage-custom-label">
+                <span>종료일</span>
+                <input type="date" id="ai-usage-custom-end">
+              </label>
+              <button type="button" class="v3-btn v3-btn-primary v3-btn-xs" id="ai-usage-custom-apply-btn">적용</button>
+              <span class="v3-ai-usage-custom-hint">최대 365일 · KST 기준</span>
             </div>
             <svg id="ai-usage-chart" class="v3-ai-usage-chart" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="일별 채점 호출 추이"></svg>
           </div>
@@ -2038,9 +2052,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421145409"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421145409"></script>
-<script src="/js/admin-v3.js?v=20260421145409"></script>
+<script src="/js/main.js?v=20260421150442"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421150442"></script>
+<script src="/js/admin-v3.js?v=20260421150442"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

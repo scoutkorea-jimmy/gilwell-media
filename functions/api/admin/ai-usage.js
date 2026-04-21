@@ -52,16 +52,38 @@ export async function onRequestGet({ request, env }) {
 
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
-  // 추이 차트용 일별 조회 기간. 클라이언트에서 7/14/30/90일 토글로 전달.
+  // 추이 차트용 일별 조회 기간.
+  //   1순위: ?start=YYYY-MM-DD & ?end=YYYY-MM-DD (사용자 지정 범위, KST 자정 경계)
+  //   2순위: ?days=N (기본 14, 1–365 클램프)
   const url = new URL(request.url);
   const rawDays = parseInt(url.searchParams.get('days') || '14', 10);
   const chartDays = Math.max(1, Math.min(365, Number.isFinite(rawDays) ? rawDays : 14));
+  const customStart = String(url.searchParams.get('start') || '').trim();
+  const customEnd   = String(url.searchParams.get('end')   || '').trim();
 
   const nowSec    = Math.floor(Date.now() / 1000);
   const dayAgo    = nowSec -  86400;
   const weekAgo   = nowSec -  86400 * 7;
   const monthAgo  = nowSec -  86400 * 30;
-  const chartFrom = nowSec - 86400 * chartDays;
+
+  let chartFrom = nowSec - 86400 * chartDays;
+  let chartTo   = nowSec;
+  let effectiveDays = chartDays;
+  let rangeMode = 'days';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(customStart) && /^\d{4}-\d{2}-\d{2}$/.test(customEnd)) {
+    // KST 자정 ~ KST 23:59:59를 unix seconds로
+    const startUnix = Math.floor(new Date(customStart + 'T00:00:00+09:00').getTime() / 1000);
+    const endUnix   = Math.floor(new Date(customEnd   + 'T23:59:59+09:00').getTime() / 1000);
+    if (Number.isFinite(startUnix) && Number.isFinite(endUnix) && endUnix > startUnix) {
+      const spanDays = Math.ceil((endUnix - startUnix) / 86400);
+      if (spanDays >= 1 && spanDays <= 365) {
+        chartFrom = startUnix;
+        chartTo   = endUnix;
+        effectiveDays = spanDays;
+        rangeMode = 'custom';
+      }
+    }
+  }
 
   try {
     const aggStmt = `
@@ -97,10 +119,10 @@ export async function onRequestGet({ request, env }) {
                COUNT(*) AS calls,
                COALESCE(SUM(total_tokens), 0) AS total_tokens
         FROM ai_usage_log
-        WHERE created_at >= ?
+        WHERE created_at >= ? AND created_at <= ?
         GROUP BY date
         ORDER BY date ASC
-      `).bind(chartFrom).all().then((r) => r.results || []),
+      `).bind(chartFrom, chartTo).all().then((r) => r.results || []),
       env.DB.prepare(`
         SELECT id, created_at, endpoint, model, status, error_code,
                input_chars, output_chars, total_tokens, latency_ms
@@ -116,7 +138,14 @@ export async function onRequestGet({ request, env }) {
       month: annotatePeriod(month),
       byEndpoint,
       byDay,
-      chart_days: chartDays,
+      chart_days: effectiveDays,
+      chart_range: {
+        mode: rangeMode,  // 'days' or 'custom'
+        start_unix: chartFrom,
+        end_unix: chartTo,
+        start_kst: formatKstDate(chartFrom),
+        end_kst: formatKstDate(chartTo),
+      },
       recent,
       pricing: Object.assign({}, LLAMA_PRICING, {
         dashboardUrl: 'https://dash.cloudflare.com/?to=/:account/ai/overview',
@@ -126,4 +155,12 @@ export async function onRequestGet({ request, env }) {
   } catch (err) {
     return json({ error: 'DB 오류', detail: String((err && err.message) || err) }, 500);
   }
+}
+
+function formatKstDate(unixSec) {
+  const n = Number(unixSec);
+  if (!Number.isFinite(n)) return '';
+  const d = new Date(n * 1000 + 9 * 3600 * 1000);
+  const pad = (x) => String(x).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }

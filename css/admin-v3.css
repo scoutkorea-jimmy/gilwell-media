@@ -4195,6 +4195,45 @@ body.marketing-fullscreen-open { overflow: hidden; }
   background: var(--v3-primary, #622599);
   color: #fff;
 }
+
+.v3-ai-usage-custom-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  background: rgba(98,37,153,0.04);
+  border: 1px dashed rgba(98,37,153,0.2);
+  border-radius: 6px;
+}
+.v3-ai-usage-custom-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: rgba(0,0,0,0.6);
+}
+.v3-ai-usage-custom-label input[type="date"] {
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  min-height: 28px;
+  background: #fff;
+}
+.v3-ai-usage-custom-sep {
+  padding: 0 4px;
+  color: rgba(0,0,0,0.4);
+  font-size: 13px;
+  align-self: center;
+}
+.v3-ai-usage-custom-hint {
+  font-size: 11px;
+  color: rgba(0,0,0,0.45);
+  align-self: center;
+  margin-left: auto;
+}
 .v3-ai-usage-chart {
   display: block;
   width: 100%;
