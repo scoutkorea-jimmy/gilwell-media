@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.093.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 01:15:00 KST",
+    "summary": "관리자 다중 사용자·권한 매트릭스 Phase 2 — 로그인 username+password + JWT에 uid/username 포함 + per-user 토큰 무효화 + owner lazy bootstrap + 공개 전환 킬 스위치 게이트. 기존 세션·쿠키·비밀번호 변경은 backward-compat 경로로 계속 작동.",
+    "changes": [
+      "functions/_shared/auth.js: createToken이 {role, uid, username} 객체 페이로드 수용(레거시 문자열 role도 계속 허용). readToken이 uid/username 반환. _isTokenFresh가 글로벌 admin_token_min_iat에 더해 per-user admin_users.token_min_iat + status==='active' 를 강제 — 다른 사용자에게 영향 없이 개별 세션 무효화 가능. bumpAdminUserTokenEpoch(env, userId) 헬퍼 추가. buildAdminSessionCookie가 admin_role 쿠키에 'full|member|editor' 정확히 반영. normalizeRole이 'owner'→'full' alias 처리로 기존 verifyTokenRole('full') 호출 전부 호환.",
+      "functions/api/admin/login.js 전면 재작성: {username?, password, cf_turnstile_response} 수용(username 생략 시 'owner' 기본). (1) admin_users에서 username 조회 → password_hash 검증. (2) 없고 username==='owner'면 settings.admin_password_hash 또는 env.ADMIN_PASSWORD로 부트스트랩 인증 후 admin_users owner 행 자동 생성(lazy seed, role='owner', permissions={access_admin:true}) — 이번 배포 후 첫 로그인이 곧 마이그레이션. (3) status==='disabled' 계정은 403. (4) 레이트 리밋을 ip:username 조합으로 세분화. (5) 성공 시 last_login_at 갱신 + JWT에 uid/username 포함 + admin_role 쿠키 정확 반영. 응답 바디에 user {id, username, display_name, role, must_change_password} 포함.",
+      "functions/api/admin/password.js 재구조: 세션 토큰에 uid 있으면 admin_users 해당 행의 password_hash 갱신 + must_change_password=0 + token_min_iat bump(본 세션만 재발급된 토큰으로 유지, 다른 기기는 무효화). uid 없는 레거시 세션은 기존 settings.admin_password_hash + 글로벌 bumpAdminTokenEpoch 경로 유지.",
+      "functions/api/admin/session.js: 인증된 세션이면 user 프로필(admin_users 행이 있을 때)과 legacy_session:true/false 플래그를 함께 반환 — 프론트가 추가 라운드트립 없이 UI 결정 가능.",
+      "functions/_shared/admin-permissions.js 신규: loadAdminSession(request, env) = 토큰+user row+권한 집합 일괄 로드. requireOwner / requireAnyAdmin / requireMenu(menuSlug, action) / sessionOwnsPost / requirePublishAllowed 헬퍼. 향후 Phase 3·4 API 재가드 시 공용 진입점.",
+      "functions/api/posts/[id].js PUT·PATCH: published=true로 전환 시 requirePublishAllowed 검사 → settings.publish_kill_switch='on'이면 owner 외 403 '현재 공개 전환이 차단되어 있습니다. 오너 승인 후 다시 시도해주세요.' 언퍼블리시(published=false)는 항상 허용 → writer가 본인 글 언제든 숨김 가능(Phase 0 결정사항).",
+      "admin.html 로그인 박스: 비밀번호 위에 아이디 입력란 추가(id='v3-username', 기본값 'owner', autocomplete=username). 기존 owner는 Enter 두 번으로 로그인 가능(아이디 → Tab 자동 Enter로 비밀번호 포커스 → Enter로 제출).",
+      "js/admin-v3.js _doLogin: {username, password, cf_turnstile_response} 전송. 응답 user.must_change_password가 true면 8초짜리 warn 토스트로 임시 비번 안내. v3-username Enter가 v3-pw로 포커스 이동.",
+      "backward compatibility: 기존 24h 미만 발급된 role='full' 토큰은 uid 없이도 _isTokenFresh 통과 → 모든 기존 세션 기대한 대로 계속 동작하다가 자연 만료 후 새 포맷으로 재로그인. 기존 verifyTokenRole(..., 'full') 호출 경로 전체 무수정 동작.",
+      "관리자 버전 03.092.00 → 03.093.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.092.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 01:03:54 KST",
