@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.092.00
+ * Version: 03.093.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -417,6 +417,12 @@
     _bindEl('v3-pw', 'keydown', function (e) {
       if (e.key === 'Enter') _doLogin();
     });
+    _bindEl('v3-username', 'keydown', function (e) {
+      if (e.key === 'Enter') {
+        var pwEl = document.getElementById('v3-pw');
+        if (pwEl) pwEl.focus();
+      }
+    });
     _bindEl('v3-pw-reveal', 'pointerdown', function (event) {
       event.preventDefault();
       _togglePasswordReveal(true);
@@ -778,6 +784,9 @@
   }
 
   function _doLogin() {
+    var usernameEl = document.getElementById('v3-username');
+    var username = usernameEl ? String(usernameEl.value || '').trim().toLowerCase() : 'owner';
+    if (!username) username = 'owner';
     var pw  = document.getElementById('v3-pw').value;
     var err = document.getElementById('v3-login-err');
     var btn = document.getElementById('v3-login-btn');
@@ -800,13 +809,18 @@
     _setButtonBusy(btn, '로그인 중…'); err.style.display = 'none';
     _apiFetch('/api/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ password: pw, cf_turnstile_response: cfToken }),
+      body: JSON.stringify({ username: username, password: pw, cf_turnstile_response: cfToken }),
     }).then(function (data) {
       GW.setToken(data.token);
       if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+      // Phase 2: must_change_password flag — surface via toast; Phase 3 will
+      // show a dedicated forced-change modal. For now we still let the user in.
+      if (data && data.user && data.user.must_change_password) {
+        if (GW.showToast) GW.showToast('임시 비밀번호입니다. 계정/보안 메뉴에서 비밀번호를 변경해주세요.', 'warn', 8000);
+      }
       _showApp();
     }).catch(function (e) {
-      var message = e && e.message ? e.message : '비밀번호가 올바르지 않습니다';
+      var message = e && e.message ? e.message : '아이디 또는 비밀번호가 올바르지 않습니다';
       err.textContent = message;
       err.style.display = 'block';
       if (GW.showToast) GW.showToast(message, 'error');

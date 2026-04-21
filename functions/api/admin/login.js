@@ -2,28 +2,47 @@
  * Gilwell Media · Admin Login
  * POST /api/admin/login
  *
- * Body:   { "password": "..." }
- * Returns 200: { "token": "...", "role": "full" }
+ * Body:   { "username"?: "owner", "password": "..." }
+ * Returns 200: { "token": "...", "role": "full"|"member", "user": {...} }
  * Returns 401: { "error": "..." }
  *
- * Required Cloudflare secrets (set in Pages dashboard):
- *   ADMIN_PASSWORD  — the admin password you choose
- *   ADMIN_SECRET    — random string for signing tokens (openssl rand -hex 32)
+ * Phase 2 behavior:
+ *   1. `username` defaults to 'owner' when omitted (legacy UI compatibility).
+ *   2. Look up admin_users by username. Active row → verify password hash.
+ *   3. If no row AND username === 'owner', fall back to:
+ *        a) settings.admin_password_hash (pre-Phase-2 stored hash)
+ *        b) env.ADMIN_PASSWORD (bootstrap secret)
+ *      On success, lazy-seed the owner row with this password hashed fresh.
+ *      This makes first sign-in after Phase 2 upgrade transparent.
+ *   4. Tokens now carry { uid, username, role }. Permissions are resolved
+ *      server-side per request from admin_users.permissions.
+ *
+ * Required Cloudflare secrets:
+ *   ADMIN_PASSWORD  — bootstrap password (retained for disaster recovery)
+ *   ADMIN_SECRET    — HMAC signing key
  */
-import { buildAdminSessionCookie, createToken, safeCompare, loadAdminPasswordHash, verifyAdminPasswordHash } from '../../_shared/auth.js';
+import {
+  buildAdminSessionCookie,
+  createToken,
+  hashAdminPassword,
+  loadAdminPasswordHash,
+  safeCompare,
+  verifyAdminPasswordHash,
+} from '../../_shared/auth.js';
+import { loadAdminUserByUsername } from '../../_shared/admin-users.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
-const MAX_ATTEMPTS   = 10;
+const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 900; // 15 minutes
 
-async function getRateLimit(env, ip) {
+async function getRateLimit(env, key) {
   try {
     const row = await env.DB.prepare(
       `SELECT attempt_count, first_attempt_at
          FROM admin_login_attempts
         WHERE ip = ?`
-    ).bind(ip).first();
+    ).bind(key).first();
     if (!row) return { count: 0, first: 0 };
     return {
       count: parseInt(row.attempt_count, 10) || 0,
@@ -32,10 +51,10 @@ async function getRateLimit(env, ip) {
   } catch { return { count: 0, first: 0 }; }
 }
 
-async function incrementRateLimit(env, ip) {
+async function incrementRateLimit(env, key) {
   const now = Math.floor(Date.now() / 1000);
   try {
-    const existing = await getRateLimit(env, ip);
+    const existing = await getRateLimit(env, key);
     const nextCount = existing.count > 0 ? existing.count + 1 : 1;
     const firstAttemptAt = existing.count > 0 && existing.first ? existing.first : now;
     await env.DB.prepare(
@@ -44,106 +63,167 @@ async function incrementRateLimit(env, ip) {
        ON CONFLICT(ip) DO UPDATE SET
          attempt_count = excluded.attempt_count,
          first_attempt_at = excluded.first_attempt_at`
-    ).bind(ip, nextCount, firstAttemptAt).run();
+    ).bind(key, nextCount, firstAttemptAt).run();
   } catch {}
 }
 
-async function clearRateLimit(env, ip) {
+async function clearRateLimit(env, key) {
   try {
     await env.DB.prepare(`DELETE FROM admin_login_attempts WHERE ip = ?`)
-      .bind(ip).run();
+      .bind(key).run();
   } catch {}
+}
+
+function normalizeUsername(raw) {
+  return String(raw == null ? '' : raw).trim().toLowerCase();
+}
+
+function jwtRoleFor(userRow) {
+  return userRow && userRow.role === 'owner' ? 'full' : 'member';
 }
 
 export async function onRequestPost({ request, env }) {
-  // Validate environment is configured
   if (!env.ADMIN_PASSWORD || !env.ADMIN_SECRET) {
     return json({ error: 'Server not configured. Set ADMIN_PASSWORD and ADMIN_SECRET secrets.' }, 500);
   }
 
-  // ── Rate limit check ────────────────────────────────────
-  const ip  = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const rl  = await getRateLimit(env, ip);
+  // Parse body early so we have username for rate-limit key
+  let body;
+  try { body = await request.json(); } catch {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+  const username = normalizeUsername(body && body.username) || 'owner';
+  const password = body && body.password;
+  const cfToken = body && body.cf_turnstile_response;
+
+  if (!password || typeof password !== 'string') {
+    return json({ error: '비밀번호를 입력해주세요' }, 400);
+  }
+
+  // Rate limit by ip+username to prevent per-account brute force without
+  // locking the whole IP on one typo.
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const rlKey = `${ip}:${username}`;
+  const rl = await getRateLimit(env, rlKey);
   const now = Math.floor(Date.now() / 1000);
 
   if (rl.count > 0 && (now - rl.first) >= WINDOW_SECONDS) {
-    // Window expired — clear stale entry
-    await clearRateLimit(env, ip);
+    await clearRateLimit(env, rlKey);
   } else if (rl.count >= MAX_ATTEMPTS) {
     const retry = WINDOW_SECONDS - (now - rl.first);
     return json({ error: `너무 많은 시도입니다. ${Math.ceil(retry / 60)}분 후 다시 시도해주세요.` }, 429);
   }
 
-  // Parse body
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const { password, cf_turnstile_response } = body;
-  if (!password || typeof password !== 'string') {
-    return json({ error: '비밀번호를 입력해주세요' }, 400);
-  }
-
-  // Verify Turnstile CAPTCHA (skipped gracefully if TURNSTILE_SECRET not configured)
-  const turnstileOk = await verifyTurnstile(cf_turnstile_response, env);
+  const turnstileOk = await verifyTurnstile(cfToken, env);
   if (!turnstileOk) {
     return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
   }
 
-  // Password verification priority:
-  //   1. D1-stored hash (set via POST /api/admin/password) — this is the source
-  //      of truth once the operator changes their password through the UI.
-  //   2. env.ADMIN_PASSWORD — initial bootstrap only. Used when no hash exists
-  //      yet (fresh deploy) or when the D1 hash record is corrupt.
-  let role = null;
-  const storedHash = await loadAdminPasswordHash(env);
-  if (storedHash) {
-    const ok = await verifyAdminPasswordHash(password, storedHash);
-    if (ok) role = 'full';
-  } else if (safeCompare(password, env.ADMIN_PASSWORD)) {
-    role = 'full';
+  let sessionUser = null;
+
+  const userRow = await loadAdminUserByUsername(env, username);
+  if (userRow) {
+    if (userRow.status === 'disabled') {
+      await logOperationalEvent(env, {
+        channel: 'admin', type: 'admin_login_blocked', level: 'warn',
+        actor: username, ip, path: '/api/admin/login',
+        message: `비활성화된 계정 로그인 시도 (${username})`,
+      });
+      return json({ error: '비활성화된 계정입니다. 관리자에게 문의해주세요.' }, 403);
+    }
+    if (userRow.status === 'active') {
+      let stored = null;
+      try { stored = JSON.parse(userRow.password_hash || 'null'); } catch {}
+      const ok = stored ? await verifyAdminPasswordHash(password, stored) : false;
+      if (ok) sessionUser = userRow;
+    }
+  } else if (username === 'owner') {
+    // Bootstrap path — only accept on the canonical 'owner' username so
+    // attackers can't use arbitrary usernames to probe the env secret.
+    const legacyHash = await loadAdminPasswordHash(env);
+    const ok = legacyHash
+      ? await verifyAdminPasswordHash(password, legacyHash)
+      : safeCompare(password, env.ADMIN_PASSWORD);
+    if (ok) {
+      try {
+        const nextHash = await hashAdminPassword(password);
+        const insert = await env.DB.prepare(
+          `INSERT INTO admin_users (username, display_name, password_hash, role, permissions, status, must_change_password)
+           VALUES (?, ?, ?, 'owner', ?, 'active', 0)`
+        ).bind(
+          'owner',
+          'Owner',
+          JSON.stringify(nextHash),
+          JSON.stringify({ access_admin: true, permissions: [] })
+        ).run();
+        const ownerId = insert && insert.meta && insert.meta.last_row_id;
+        sessionUser = {
+          id: ownerId,
+          username: 'owner',
+          display_name: 'Owner',
+          role: 'owner',
+          status: 'active',
+          must_change_password: 0,
+        };
+        await logOperationalEvent(env, {
+          channel: 'admin', type: 'admin_owner_bootstrapped', level: 'info',
+          actor: 'owner', ip, path: '/api/admin/login',
+          message: '관리자 계정 자동 생성 (lazy bootstrap from env.ADMIN_PASSWORD)',
+        });
+      } catch (err) {
+        console.error('Owner lazy-seed failed:', err);
+        // Fall through to auth failure — safer than letting them in without a row.
+      }
+    }
   }
 
-  // Timing-safe comparison — prevents brute-force timing attacks
-  if (!role) {
-    await incrementRateLimit(env, ip);
+  if (!sessionUser) {
+    await incrementRateLimit(env, rlKey);
     await logOperationalEvent(env, {
-      channel: 'admin',
-      type: 'admin_login_failed',
-      level: 'warn',
-      actor: 'unknown',
-      ip,
-      path: '/api/admin/login',
-      message: '관리자 로그인 실패',
+      channel: 'admin', type: 'admin_login_failed', level: 'warn',
+      actor: username, ip, path: '/api/admin/login',
+      message: `관리자 로그인 실패 (${username})`,
     });
-    // Artificial delay further discourages automated brute-force
     await new Promise(r => setTimeout(r, 400));
-    return json({ error: '비밀번호가 올바르지 않습니다' }, 401);
+    return json({ error: '아이디 또는 비밀번호가 올바르지 않습니다' }, 401);
   }
 
-  // Clear rate limit on success
-  await clearRateLimit(env, ip);
+  await clearRateLimit(env, rlKey);
 
-  // Issue a signed 24-hour session token
-  const token = await createToken(env.ADMIN_SECRET, role);
-  await logOperationalEvent(env, {
-    channel: 'admin',
-    type: 'admin_login_success',
-    level: 'info',
-    actor: role,
-    ip,
-    path: '/api/admin/login',
-    message: '관리자 로그인 성공',
+  try {
+    await env.DB.prepare(
+      `UPDATE admin_users SET last_login_at = datetime('now') WHERE id = ?`
+    ).bind(sessionUser.id).run();
+  } catch {}
+
+  const role = jwtRoleFor(sessionUser);
+  const token = await createToken(env.ADMIN_SECRET, {
+    role,
+    uid: sessionUser.id,
+    username: sessionUser.username,
   });
-  return json({ token, role }, 200, {
-    'Set-Cookie': buildAdminSessionCookie(token),
+
+  await logOperationalEvent(env, {
+    channel: 'admin', type: 'admin_login_success', level: 'info',
+    actor: sessionUser.username, ip, path: '/api/admin/login',
+    message: `관리자 로그인 성공 (${sessionUser.username} / ${sessionUser.role})`,
+  });
+
+  return json({
+    token,
+    role,
+    user: {
+      id: sessionUser.id,
+      username: sessionUser.username,
+      display_name: sessionUser.display_name,
+      role: sessionUser.role,
+      must_change_password: !!sessionUser.must_change_password,
+    },
+  }, 200, {
+    'Set-Cookie': buildAdminSessionCookie(token, 86400, role),
   });
 }
 
-// Only POST is allowed on this endpoint
 export function onRequestGet() {
   return json({ error: 'Method not allowed' }, 405);
 }
@@ -157,8 +237,5 @@ function json(data, status = 200, extraHeaders = {}) {
     }
     headers.set(key, value);
   }
-  return new Response(JSON.stringify(data), {
-    status,
-    headers,
-  });
+  return new Response(JSON.stringify(data), { status, headers });
 }

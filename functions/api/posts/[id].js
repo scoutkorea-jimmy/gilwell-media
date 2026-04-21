@@ -6,6 +6,7 @@
  * DELETE /api/posts/:id   ← admin only, delete post
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { loadAdminSession, requirePublishAllowed } from '../../_shared/admin-permissions.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
@@ -147,6 +148,15 @@ export async function onRequestPut({ params, request, env }) {
   if (!safePublishedInput.ok) return json({ error: safePublishedInput.error }, 400);
   const safeFeaturedInput = optionalBooleanFlag(body.featured);
   if (!safeFeaturedInput.ok) return json({ error: safeFeaturedInput.error }, 400);
+
+  // Phase 2 publish kill switch: when global setting is 'on', only owner can
+  // flip a post into public visibility. Members trying to publish hit 403.
+  // Unpublishing (published=false) stays allowed so writers can always hide.
+  if (safePublishedInput.provided && safePublishedInput.value === true) {
+    const session = await loadAdminSession(request, env);
+    const gate = await requirePublishAllowed(env, session);
+    if (gate.error) return gate.error;
+  }
 
   // Build dynamic SET clause from provided fields
   const fields = [];
@@ -302,6 +312,14 @@ export async function onRequestPatch({ params, request, env }) {
 
   if (!featuredInput.provided && !publishedInput.provided && !sortOrderInput.provided) {
     return json({ error: 'featured 또는 published 값을 입력해주세요' }, 400);
+  }
+
+  // Phase 2 publish kill switch: same rule as PUT — flip-to-public requires
+  // owner when switch is on, unpublish always allowed.
+  if (publishedInput.provided && publishedInput.value === true) {
+    const session = await loadAdminSession(request, env);
+    const gate = await requirePublishAllowed(env, session);
+    if (gate.error) return gate.error;
   }
 
   try {

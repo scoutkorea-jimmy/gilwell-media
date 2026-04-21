@@ -11,25 +11,41 @@
 /**
  * Create a signed session token valid for 24 hours.
  * @param {string} secret  ADMIN_SECRET environment variable value
- * @param {string} role    full
+ * @param {string|object} roleOrPayload
+ *   - Legacy form: role string ('full' | 'editor' | 'member')
+ *   - New form: { role, uid?, username? } — Phase 2 admin_users flow
  * @returns {Promise<string>} token string
  */
-export async function createToken(secret, role = 'full') {
-  const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+export async function createToken(secret, roleOrPayload = 'full') {
+  const input = typeof roleOrPayload === 'object' && roleOrPayload !== null
+    ? roleOrPayload
+    : { role: roleOrPayload };
+  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   // NOTE: `exp` and `iat` are stored in milliseconds (Date.now()), not the
   // JWT-standard seconds. readToken() compares against Date.now() as well.
   // Do not hand these tokens to external JWT libraries that assume seconds
   // without converting first.
-  // `iat` is used to invalidate tokens issued before the admin password change
-  // (see `admin_token_min_iat` setting + _isTokenFresh() below).
-  const payload = b64url(JSON.stringify({
+  // `iat` is used to invalidate tokens issued before a password change
+  // (global `admin_token_min_iat` + per-user `admin_users.token_min_iat`).
+  const body = {
     sub: 'admin',
-    role: normalizeRole(role),
+    role: normalizeRole(input.role),
     iat: Date.now(),
     exp: Date.now() + 86_400_000, // 24 h in ms
-  }));
+  };
+  // Phase 2: pack identity so middleware/handlers can look up permissions
+  // server-side. We intentionally do NOT pack the full permissions array
+  // to keep tokens small and let permission changes take effect immediately
+  // without rotating the session.
+  if (Number.isFinite(Number(input.uid)) && Number(input.uid) > 0) {
+    body.uid = Number(input.uid);
+  }
+  if (input.username && typeof input.username === 'string') {
+    body.username = input.username.trim().toLowerCase();
+  }
+  const payload = b64url(JSON.stringify(body));
   const data = `${header}.${payload}`;
-  const key  = await importKey(secret, ['sign']);
+  const key = await importKey(secret, ['sign']);
   const sigBuf = await crypto.subtle.sign('HMAC', key, enc(data));
   return `${data}.${bufToB64url(sigBuf)}`;
 }
@@ -58,6 +74,8 @@ export async function readToken(token, secret) {
       exp: parsed.exp,
       iat: Number(parsed.iat) || 0,
       role: normalizeRole(parsed.role),
+      uid: Number.isFinite(Number(parsed.uid)) && Number(parsed.uid) > 0 ? Number(parsed.uid) : null,
+      username: parsed.username && typeof parsed.username === 'string' ? parsed.username : null,
     };
   } catch {
     return null;
@@ -106,10 +124,30 @@ const _MIN_IAT_TTL_MS = 60_000;
 async function _isTokenFresh(env, payload) {
   if (!payload || typeof payload !== 'object') return false;
   if (!env || !env.DB) return true; // no DB binding — skip freshness
-  const minIat = await _getAdminTokenMinIat(env);
-  if (!minIat) return true;
+
+  // Global epoch (legacy) — invalidates tokens issued before a global password
+  // rotation. Still respected so pre-Phase-2 bumps continue to work.
+  const globalMinIat = await _getAdminTokenMinIat(env);
   const iat = Number(payload.iat) || 0;
-  return iat >= minIat;
+  if (globalMinIat && iat < globalMinIat) return false;
+
+  // Per-user epoch (Phase 2). If this token carries `uid`, consult the user's
+  // own row so password rotations and disable/delete events take effect
+  // without affecting other sessions. Missing row or non-active status both
+  // invalidate the session.
+  if (payload.uid) {
+    try {
+      const row = await env.DB.prepare(
+        `SELECT token_min_iat, status FROM admin_users WHERE id = ?`
+      ).bind(Number(payload.uid)).first();
+      if (!row) return false;
+      if (row.status !== 'active') return false;
+      const userMinIat = Number(row.token_min_iat) || 0;
+      if (userMinIat > 0 && iat < userMinIat) return false;
+    } catch { /* DB read failure — fall through, do not lock operator out */ }
+  }
+
+  return true;
 }
 
 async function _getAdminTokenMinIat(env) {
@@ -200,7 +238,27 @@ async function importKey(secret, usages) {
 }
 
 function normalizeRole(role) {
-  return role === 'editor' ? 'editor' : 'full';
+  // Phase 2 role set: 'full' (owner / legacy env.ADMIN_PASSWORD) · 'member'.
+  // 'owner' is accepted as an alias for 'full' during admin_users lookups
+  // (the DB uses 'owner' for clarity; JWT keeps 'full' for backwards compat).
+  // Legacy 'editor' role is preserved as a distinct value for any in-flight
+  // code that still references it — new code should use 'member'.
+  if (role === 'member') return 'member';
+  if (role === 'editor') return 'editor';
+  if (role === 'owner') return 'full';
+  return 'full';
+}
+
+/**
+ * Record current wall-clock time as the per-user token epoch, invalidating
+ * every existing session for that user. Called after password changes and
+ * disable/delete operations.
+ */
+export async function bumpAdminUserTokenEpoch(env, userId) {
+  if (!env || !env.DB || !Number.isFinite(Number(userId))) return;
+  await env.DB.prepare(
+    `UPDATE admin_users SET token_min_iat = ?, updated_at = datetime('now') WHERE id = ?`
+  ).bind(Date.now(), Number(userId)).run();
 }
 
 export function readCookie(request, name) {
@@ -216,7 +274,7 @@ export function readCookie(request, name) {
   return null;
 }
 
-export function buildAdminSessionCookie(token, maxAgeSeconds = 86400) {
+export function buildAdminSessionCookie(token, maxAgeSeconds = 86400, role = 'full') {
   const attrs = [
     'Path=/',
     'HttpOnly',
@@ -224,10 +282,11 @@ export function buildAdminSessionCookie(token, maxAgeSeconds = 86400) {
     'SameSite=Lax',
     `Max-Age=${maxAgeSeconds}`,
   ];
+  const safeRole = (role === 'member' || role === 'full' || role === 'editor') ? role : 'full';
   return [
     `admin_token=${encodeURIComponent(token)}; ${attrs.join('; ')}`,
     `admin_session=1; Path=/; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`,
-    `admin_role=full; Path=/; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`,
+    `admin_role=${safeRole}; Path=/; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`,
   ];
 }
 
