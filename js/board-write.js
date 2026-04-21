@@ -466,6 +466,18 @@
       });
   };
 
+  // SRI hashes for every CDN resource loaded dynamically here.
+  var _BOARD_WRITE_CDN_INTEGRITY = {
+    'https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.1/dist/editorjs.umd.js':
+      'sha384-3Qk35FaVNGtZ86D5asHJgGM7akscpKWK8qCTRKlW3/+E7JXMNMdXY435C6ZlBrJ4',
+    'https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.umd.js':
+      'sha384-mJYViA5YLmpq5x1Fj5reTmyAPkQLTzUK4w4kkj4dNADfMQ6Me8TxBBgcpVFZKx3l',
+    'https://cdn.jsdelivr.net/npm/@editorjs/list@1.10.0/dist/list.umd.js':
+      'sha384-pt2axkhrlqv09EbFmJffXfINJyTZxEnHXulBal/0IZoIT/DIjN9Q8pxYzvJmol8z',
+    'https://cdn.jsdelivr.net/npm/@editorjs/quote@2.7.5/dist/quote.umd.js':
+      'sha384-VXa5SbbQEZGzYpLCMMFm9tK9lOqrfbjMtFF3ajsJs3AVrG8KQJemVU/wYCVenOyX'
+  };
+
   Board.prototype._loadEditorJs = function (callback) {
     if (window.EditorJS) {
       callback();
@@ -473,8 +485,19 @@
     }
 
     function loadScript(src, cb) {
+      var integrity = Object.prototype.hasOwnProperty.call(_BOARD_WRITE_CDN_INTEGRITY, src) ? _BOARD_WRITE_CDN_INTEGRITY[src] : null;
+      if (!integrity && /^https?:/i.test(src)) {
+        console.error('[board-write] Refused to load unpinned CDN script (no SRI hash): ' + src);
+        cb();
+        return;
+      }
       var s = document.createElement('script');
       s.src = src;
+      if (integrity) {
+        s.integrity = integrity;
+        s.crossOrigin = 'anonymous';
+        s.referrerPolicy = 'no-referrer';
+      }
       s.onload = cb;
       document.head.appendChild(s);
     }

@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.127.03';
-  GW.ADMIN_VERSION = '03.089.03';
-  GW.ASSET_VERSION = '20260421112100';
+  GW.APP_VERSION = '00.127.04';
+  GW.ADMIN_VERSION = '03.089.04';
+  GW.ASSET_VERSION = '20260421115057';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -762,6 +762,58 @@
     return GW.sanitizeEditorInlineHtml(value);
   };
 
+  // Full-document sanitizer for post body HTML. Used when rendering legacy
+  // (pre-Editor.js) posts that were stored as raw HTML, and as a defense-in-depth
+  // pass over the HTML assembled from Editor.js JSON blocks.
+  //
+  // DOMPurify is preloaded via a <script> tag in the <head> of pages that render
+  // post bodies (see CLAUDE.md §2 "AI Deployment Protocol"). If for some reason
+  // it failed to load, we fall back to a conservative regex stripper that removes
+  // the classic XSS carriers: <script>, <style>, inline event handlers, and
+  // javascript:/data: URL schemes.
+  GW.sanitizeHtml = function (html) {
+    if (!html) return '';
+    var source = String(html);
+    if (typeof window !== 'undefined'
+      && window.DOMPurify
+      && typeof window.DOMPurify.sanitize === 'function') {
+      return window.DOMPurify.sanitize(source, {
+        ALLOWED_TAGS: [
+          'p', 'br', 'hr',
+          'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'code', 'sub', 'sup',
+          'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+          'ul', 'ol', 'li',
+          'blockquote', 'figure', 'figcaption',
+          'div', 'span', 'a', 'img',
+          'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td'
+        ],
+        ALLOWED_ATTR: [
+          'href', 'title', 'target', 'rel',
+          'src', 'alt', 'loading',
+          'class', 'style',
+          'colspan', 'rowspan'
+        ],
+        // Allow http(s)/mailto/tel + same-origin + hash-links + bitmap data URLs
+        // (SVG data URLs are blocked in image-storage.js on upload; this regex
+        // just belt-and-braces the client render path).
+        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|\/|#|data:image\/(?:png|jpe?g|webp|gif))/i,
+        ADD_ATTR: ['target', 'rel']
+      });
+    }
+    // Fallback path — DOMPurify missing. Strip the high-value XSS carriers so
+    // legacy HTML content at least can't run script, even without DOMPurify.
+    return source
+      .replace(/<\s*script\b[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+      .replace(/<\s*style\b[\s\S]*?<\s*\/\s*style\s*>/gi, '')
+      .replace(/<\s*iframe\b[\s\S]*?<\s*\/\s*iframe\s*>/gi, '')
+      .replace(/<\s*object\b[\s\S]*?<\s*\/\s*object\s*>/gi, '')
+      .replace(/<\s*embed\b[^>]*>/gi, '')
+      .replace(/\s+on[a-z]+\s*=\s*"[^"]*"/gi, '')
+      .replace(/\s+on[a-z]+\s*=\s*'[^']*'/gi, '')
+      .replace(/\s+on[a-z]+\s*=\s*[^\s>]+/gi, '')
+      .replace(/(href|src|xlink:href)\s*=\s*(?:"\s*javascript:[^"]*"|'\s*javascript:[^']*'|javascript:[^\s>]*)/gi, '$1="#"');
+  };
+
   GW.renderEditorListItems = function (items, listTag) {
     var childTag = listTag === 'ol' ? 'ol' : 'ul';
     return (Array.isArray(items) ? items : []).map(function (item) {
@@ -817,9 +869,12 @@
       } catch (e) { /* fall through */ }
     }
 
-    // Quill HTML output starts with a block tag
+    // Legacy Quill/WYSIWYG HTML stored by older revisions. Run it through
+    // DOMPurify so script/event-handler/javascript-URI payloads can't reach
+    // the DOM, while keeping the visible content intact (user asked that legacy
+    // posts must not render empty).
     if (/^<(p|h[1-6]|ul|ol|blockquote|div)/i.test(trimmed)) {
-      return { html: str, gallery: [] };
+      return { html: GW.sanitizeHtml(str), gallery: [] };
     }
     return { html: GW.escapeHtml(str).replace(/\n/g, '<br>'), gallery: [] };
   };
