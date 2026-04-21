@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "03.097.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:27:42 KST",
+    "summary": "관리자 Phase 5 — (1) 아이디 변경: owner 무제한·member 1회 셀프 + owner가 재부여 가능. (2) 프리셋 관리 전용 사이드바 패널 신설(owner only): 빌트인 3종 표시 + 커스텀 프리셋 CRUD. (3) 사이드바에 '개인정보 처리방침' 바로가기 추가. (4) 빌트인 프리셋 권한 재조정(writer가 homepage-issues 쓰기/view:editors 제거, marketing에 calendar 쓰기 추가).",
+    "changes": [
+      "db/migration_057.sql: admin_users.member_self_rename_used INTEGER DEFAULT 0 추가. 빌트인 preset 3종 permissions 재조정 UPDATE: writer — view:editors 제거 + write:homepage-issues 추가, marketing — write:calendar 추가.",
+      "functions/_shared/admin-users.js: loadAdminUserById/ByUsername SELECT에 member_self_rename_used 포함. serializeAdminUser가 해당 플래그를 불리언으로 직렬화.",
+      "functions/api/admin/users/[id].js PUT: body.username을 수용해 아이디 변경 처리(unique clash 체크), body.reset_member_self_rename이 true면 타깃(non-owner)의 member_self_rename_used를 0으로 리셋. 두 동작 모두 ops-log에 기록.",
+      "신규 API: PUT /api/admin/users/me/username — 자기 계정 아이디 변경(멤버 전용, 1회만 허용, 성공 시 member_self_rename_used=1 플래그 전이). 오너는 409로 차단(오너는 사용자 관리에서 직접 편집).",
+      "admin.html 사이드바 '설정' 섹션에 '개인정보 처리방침' 최상위 항목 추가(클릭 시 panel-settings + settings-privacy-policy subsection 자동 활성).",
+      "admin.html 계정 관리 섹션에 '프리셋 관리' 오너 전용 사이드바 항목 신설 + panel-account-presets 패널 + 프리셋 추가/편집 모달(slug·이름·설명 + 접근 허용 + 6그룹 27메뉴 체크박스 그리드, 빌트인 표시자 read-only).",
+      "admin.html 내 계정 패널에 '아이디 변경' 카드 추가: 멤버는 1회 한정, 이미 소진 시 disabled + 안내. 오너는 카드 전체 비활성화(문구로 사용자 관리 안내).",
+      "admin.html 사용자 편집 모달: username 입력칸을 disabled → enabled로 변경(owner는 누구든 아이디 변경 가능), non-owner 타깃에만 '아이디 변경권 재부여' 체크박스 표시(현재 사용 상태 메타 포함).",
+      "js/admin-account.js: _bindMyUsernameForm 신규, _renderMyUsernameCard로 역할·quota 기반 버튼 활성화. _loadPresetsPanel/_renderPresetsList/_openPresetModal/_savePreset/_deletePreset/_renderPresetGrid로 프리셋 CRUD 완결. _submitUserForm이 변경된 username + reset_member_self_rename 플래그를 PUT 페이로드에 포함.",
+      "js/admin-v3.js PANEL_LABELS에 account-presets 추가, _sectionLabel에 privacy-policy 라벨 추가(브레드크럼 정상화).",
+      "관리자 버전 03.096.00 → 03.097.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "00.129.01",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:16:07 KST",

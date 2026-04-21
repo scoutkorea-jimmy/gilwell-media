@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421171643">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421172820">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -89,7 +89,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.096.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.097.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.129.01</span>
     </div>
@@ -104,7 +104,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.096.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.097.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.129.01</span></span></div>
     </div>
 
@@ -239,6 +239,10 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3 h6"/><path d="M5 3 v8"/><path d="M1 11 L4 5 L7 11"/><line x1="2" y1="9" x2="6" y2="9"/><path d="M10 5 L13 14"/><path d="M13 5 L10 14"/><line x1="11" y1="10" x2="15" y2="10"/></svg>
           UI 번역
         </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="privacy-policy">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5 1.5 4.5v4.8c0 2.7 1.7 5.1 4.2 6l2.3.8 2.3-.8c2.5-.9 4.2-3.3 4.2-6V4.5L8 1.5Z"/><path d="M5 8 7.2 10.2 11 6.3"/></svg>
+          개인정보 처리방침
+        </button>
       </div>
 
       <!-- 시스템 -->
@@ -272,6 +276,10 @@
         <button class="v3-nav-item" data-panel="account-users" data-owner-only="1" hidden>
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5.5" cy="5" r="2.5"/><circle cx="11.5" cy="5.5" r="2"/><path d="M1 14 a4.5 4.5 0 0 1 9 0"/><path d="M8.5 14 a4 4 0 0 1 6.5 -3.1"/></svg>
           사용자 관리
+        </button>
+        <button class="v3-nav-item" data-panel="account-presets" data-owner-only="1" hidden>
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="12" height="3" rx="1"/><rect x="2" y="7" width="12" height="3" rx="1"/><rect x="2" y="12" width="12" height="2" rx="1"/><circle cx="12" cy="3.5" r="0.9" fill="currentColor" stroke="none"/></svg>
+          프리셋 관리
         </button>
       </div>
     </nav>
@@ -1840,6 +1848,30 @@
           </div>
         </div>
 
+        <div class="v3-card" id="account-me-username-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">아이디 변경</h2>
+              <p class="v3-card-desc" id="account-me-username-desc">
+                로그인에 사용하는 아이디를 변경합니다. <strong>멤버 계정은 1회만 본인이 직접 변경</strong>할 수 있고, 이후 변경은 오너에게 요청해야 합니다. 오너 계정은 이 카드가 비활성화되며 <strong>사용자 관리</strong>에서 본인 계정을 편집해 아이디를 바꿉니다.
+              </p>
+            </div>
+            <div class="v3-inline-meta" id="account-me-username-state">—</div>
+          </div>
+          <form id="account-me-username-form" class="v3-form-grid" autocomplete="off" novalidate>
+            <div class="v3-form-group v3-form-span-full">
+              <label class="v3-label" for="account-me-new-username">새 아이디 <span class="v3-label-opt">영문 소문자·숫자·_ · 3~32자</span></label>
+              <input class="v3-input" type="text" id="account-me-new-username" spellcheck="false" autocapitalize="off" />
+            </div>
+            <div class="v3-form-group v3-form-span-full">
+              <div class="v3-flex" style="justify-content:flex-end;gap:8px;">
+                <span id="account-me-username-status" class="v3-inline-meta" aria-live="polite"></span>
+                <button class="v3-btn v3-btn-primary" type="submit" id="account-me-username-save-btn">아이디 변경</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
         <div class="v3-card" id="account-me-password-card">
           <div class="v3-card-head">
             <div>
@@ -1921,6 +1953,32 @@
         </div>
       </div><!-- /panel-account-users -->
 
+      <!-- ═══════════════ 프리셋 관리 (account-presets) ═══════════════ -->
+      <div class="v3-panel" id="panel-account-presets">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">프리셋 관리</h1>
+            <p class="v3-page-desc">사용자에게 일괄 적용할 수 있는 권한 프리셋을 관리합니다. 빌트인 3종(글쟁이·뷰어·마케팅 담당)은 수정·삭제 불가이고, 오너가 자유롭게 커스텀 프리셋을 추가하거나 편집할 수 있습니다.</p>
+          </div>
+          <div class="v3-page-head-actions" style="display:flex;gap:8px;align-items:center;">
+            <button class="v3-btn v3-btn-ghost" type="button" id="account-presets-refresh-btn">새로고침</button>
+            <button class="v3-btn v3-btn-primary" type="button" id="account-presets-add-btn">+ 프리셋 추가</button>
+          </div>
+        </div>
+
+        <div class="v3-card" id="account-presets-list-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">프리셋 목록</h2>
+              <p class="v3-card-desc" id="account-presets-count">불러오는 중…</p>
+            </div>
+          </div>
+          <div id="account-presets-list">
+            <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+          </div>
+        </div>
+      </div><!-- /panel-account-presets -->
+
     </div><!-- /v3-content -->
   </div><!-- /v3-main -->
 </div><!-- /v3-app -->
@@ -1968,6 +2026,12 @@
         <label class="v3-checkbox">
           <input type="checkbox" id="account-user-must-change" checked />
           <span>첫 로그인 시 비밀번호 변경 강제</span>
+        </label>
+      </div>
+      <div class="v3-form-group v3-form-span-full" id="account-user-reset-rename-row" hidden>
+        <label class="v3-checkbox">
+          <input type="checkbox" id="account-user-reset-rename" />
+          <span>아이디 변경권 재부여 <span class="v3-inline-meta" id="account-user-rename-state">(현재: —)</span></span>
         </label>
       </div>
       <div class="v3-form-group v3-form-span-full">
@@ -2044,6 +2108,51 @@
     </div>
     <div class="v3-modal-foot">
       <button class="v3-btn v3-btn-primary" type="button" data-close="account-temp-password-modal">확인 · 닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 프리셋 추가/편집 모달 (이름·설명 + 권한 체크박스 그리드) -->
+<div class="v3-overlay" id="account-preset-modal" style="display:none;">
+  <div class="v3-modal v3-modal-xl">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title" id="account-preset-modal-title">프리셋 추가</h3>
+      <button class="v3-modal-close" type="button" data-close="account-preset-modal">×</button>
+    </div>
+    <div class="v3-modal-body">
+      <div class="v3-form-grid">
+        <div class="v3-form-group">
+          <label class="v3-label" for="account-preset-slug">slug <span class="v3-label-opt">영문·숫자·하이픈 2~40자 · 저장 후 변경 불가</span></label>
+          <input class="v3-input" type="text" id="account-preset-slug" spellcheck="false" autocapitalize="off" />
+        </div>
+        <div class="v3-form-group">
+          <label class="v3-label" for="account-preset-name">이름</label>
+          <input class="v3-input" type="text" id="account-preset-name" />
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-label" for="account-preset-description">설명 <span class="v3-label-opt">선택</span></label>
+          <input class="v3-input" type="text" id="account-preset-description" maxlength="500" />
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <label class="v3-checkbox">
+            <input type="checkbox" id="account-preset-access-admin" checked />
+            <span><strong>관리자 페이지 접근 허용</strong> (이 토글이 꺼지면 로그인해도 바로 차단)</span>
+          </label>
+        </div>
+        <div class="v3-form-group v3-form-span-full">
+          <div class="v3-flex" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+            <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="account-preset-clear-btn">모두 해제</button>
+          </div>
+          <div id="account-preset-grid">
+            <div class="v3-loading"><div class="v3-spinner"></div>메뉴 구조를 불러오는 중…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="v3-modal-foot">
+      <span id="account-preset-status" class="v3-inline-meta" aria-live="polite"></span>
+      <button class="v3-btn v3-btn-outline" type="button" data-close="account-preset-modal">취소</button>
+      <button class="v3-btn v3-btn-primary" type="button" id="account-preset-save-btn">저장</button>
     </div>
   </div>
 </div>
@@ -2332,9 +2441,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421171643"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421171643"></script>
-<script src="/js/admin-v3.js?v=20260421171643"></script>
+<script src="/js/main.js?v=20260421172820"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421172820"></script>
+<script src="/js/admin-v3.js?v=20260421172820"></script>
 <script src="/js/admin-account.js?v=20260421161543"></script>
 <script>
   (function () {
