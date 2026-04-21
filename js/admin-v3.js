@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.095.01
+ * Version: 03.096.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1013,7 +1013,67 @@
     else if (section === 'nav-labels') _loadNavLabelsUI();
     else if (section === 'translations') _loadTranslationsUI();
     else if (section === 'wosm-members') _loadWosmMembersUI();
+    else if (section === 'privacy-policy') _loadPrivacyPolicyUI();
     else if (section === 'account-security') _loadAccountSecurityUI();
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PRIVACY POLICY — /privacy 본문 HTML 편집 (owner only)
+  ══════════════════════════════════════════════════════════ */
+  var _privacyPolicyBound = false;
+  function _loadPrivacyPolicyUI() {
+    var editor = document.getElementById('privacy-policy-editor');
+    var meta = document.getElementById('privacy-policy-meta');
+    var status = document.getElementById('privacy-policy-status');
+    if (!editor) return;
+    if (status) status.textContent = '불러오는 중…';
+    GW.apiFetch('/api/settings/privacy-policy').then(function (data) {
+      editor.value = (data && data.html) || '';
+      editor.placeholder = '';
+      if (meta) {
+        var parts = [];
+        parts.push(data && data.is_default ? '기본값 사용 중' : '사용자 지정 저장됨');
+        if (data && data.updated_at) parts.push('최종 저장: ' + data.updated_at);
+        if (data && data.max_chars) parts.push('최대 ' + Number(data.max_chars).toLocaleString() + '자');
+        meta.textContent = parts.join(' · ');
+      }
+      if (status) status.textContent = '';
+    }).catch(function (err) {
+      if (status) status.textContent = '';
+      if (GW.showToast) GW.showToast((err && err.message) || '불러오기 실패', 'error');
+    });
+
+    if (_privacyPolicyBound) return;
+    _privacyPolicyBound = true;
+    _bindEl('privacy-policy-save-btn', 'click', function () {
+      var html = (editor.value || '').trim();
+      if (!html) { if (GW.showToast) GW.showToast('본문을 입력해주세요', 'error'); return; }
+      if (status) status.textContent = '저장 중…';
+      GW.apiFetch('/api/settings/privacy-policy', {
+        method: 'PUT',
+        body: JSON.stringify({ html: html }),
+      }).then(function (data) {
+        if (status) status.textContent = '';
+        if (GW.showToast) GW.showToast('개인정보 처리방침이 저장되었습니다.', 'success');
+        if (meta) meta.textContent = '사용자 지정 저장됨 · 최종 저장: ' + (data.updated_at || new Date().toISOString());
+      }).catch(function (err) {
+        if (status) status.textContent = '';
+        if (GW.showToast) GW.showToast((err && err.message) || '저장 실패', 'error');
+      });
+    });
+    _bindEl('privacy-policy-reset-btn', 'click', function () {
+      if (!confirm('기본 방침으로 되돌립니다. 현재 저장된 본문은 사라집니다. 계속할까요?')) return;
+      if (status) status.textContent = '복원 중…';
+      GW.apiFetch('/api/settings/privacy-policy', { method: 'DELETE' }).then(function (data) {
+        if (status) status.textContent = '';
+        editor.value = (data && data.html) || '';
+        if (meta) meta.textContent = '기본값 사용 중';
+        if (GW.showToast) GW.showToast('기본값으로 복원되었습니다.', 'success');
+      }).catch(function (err) {
+        if (status) status.textContent = '';
+        if (GW.showToast) GW.showToast((err && err.message) || '복원 실패', 'error');
+      });
+    });
   }
 
   /* ══════════════════════════════════════════════════════════

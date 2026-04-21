@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.129.01",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:16:07 KST",
+    "summary": "개인정보 처리방침 링크를 푸터 오른쪽(관리자)에서 왼쪽(브랜드 블록 · 문의 이메일 아래)으로 이동. 공공 페이지 시선 흐름에 맞춰 브랜드 정보·문의·법적고지 순서로 자연스럽게 이어지도록 재배치.",
+    "changes": [
+      "10개 공개 HTML(index/korea/apr/wosm/people/latest/calendar/glossary/search/contributors) 푸터 조정: footer-admin 섹션에서 '개인정보 처리방침 →' 링크 제거, footer-brand 섹션의 '문의: info@bpmedia.net' 아래에 data-footer-role='privacy-link' 속성 포함한 새 <p>로 배치. margin-top:10px로 연락처 그룹과 시각적으로 분리.",
+      "사이트 버전 00.129.00 → 00.129.01."
+    ]
+  },
+  {
+    "version": "03.096.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:16:07 KST",
+    "summary": "개인정보 처리방침 본문을 DB 설정으로 전환 — 오너가 관리자 콘솔에서 직접 편집 가능. 공개 /privacy 페이지는 DOMPurify로 sanitize 후 동적 렌더링. 기본값 복원 기능 포함.",
+    "changes": [
+      "신규 API: GET /api/settings/privacy-policy (public) — {html, updated_at, is_default, max_chars} 반환, 60초 CDN 캐시. PUT (owner only) — {html} 저장 + 타임스탬프 갱신. DELETE (owner only) — 저장값 제거 후 DEFAULT_PRIVACY_POLICY_HTML로 복원.",
+      "functions/_shared/privacy-policy.js 신규: DEFAULT_PRIVACY_POLICY_HTML(Phase 4와 동일한 GDPR 준수 8섹션 템플릿), loadPrivacyPolicy 로더, normalizePrivacyHtml 입력 정규화. PRIVACY_POLICY_MAX_CHARS=100,000 상한.",
+      "privacy.html: 하드코딩된 본문을 제거하고 <div id='privacy-body'> + <script>로 대체. /api/settings/privacy-policy 호출 후 DOMPurify.sanitize로 안전하게 innerHTML 주입. updated_at 있으면 '최종 개정 YYYY-MM-DD' 메타로 KST 표시.",
+      "admin.html 설정 > '개인정보 처리방침' 서브 섹션 신설: 24행 textarea HTML 편집기 + 저장/기본값 복원 버튼 + 현재 상태 메타(기본값 사용 중/사용자 지정 저장됨/최종 저장 시각/최대 자수). 설정 사이드 nav에 버튼 추가.",
+      "js/admin-v3.js _loadPrivacyPolicyUI: GET/PUT/DELETE 바인딩, 토스트 피드백, 저장 후 메타 갱신.",
+      "보안: PUT 핸들러가 <script> 태그 포함 본문을 400으로 차단. 100,000자 상한 enforce. 공개면 DOMPurify 추가 방어. 운영 로그에 actor=owner 기록.",
+      "관리자 버전 03.095.01 → 03.096.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.095.01",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:08:48 KST",
