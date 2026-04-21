@@ -1003,12 +1003,17 @@ p { margin-bottom: 6px; }
    ════════════════════════════════════════════════════════════ */
 .masthead {
   border-bottom: 3px solid var(--accent);
-  /* sticky 제거(2026-04-21) — PC에서 스크롤 시 기사 상단이 sticky masthead에
-     가려진다는 운영자 피드백 반영. 전 페이지에서 masthead가 콘텐츠와 함께
-     자연스럽게 스크롤 아웃된다. 모바일은 별도의 mobile-compact-header가
-     scroll > 72 시점에서 나타나므로 기존 UX 유지. */
-  position:      relative;
+  /* 상단 고정(2026-04-21, 운영자 재요청). 포스트 상세 페이지에서 hero
+     이미지 상단이 sticky masthead에 가려질 수 있으나, 네비 접근성을 우선.
+     필요 시 추후 shrink-on-scroll 도입 검토. */
+  position:      sticky;
+  top:           0;
+  z-index:       100;
   background:    var(--bg);
+}
+
+body[data-home-bootstrap] .masthead {
+  position: relative;
 }
 
 .masthead-top {
@@ -11429,3 +11434,38 @@ body.wosm-members-page #main-content {
   cursor: pointer;
 }
 .footer-admin .gw-theme-toggle:hover { text-decoration: underline; }
+
+/* ════════════════════════════════════════════════════════════
+   KAKAO ADFIT — 광고 슬롯
+   PC: 728x90 horizontal + 160x600 vertical(사이드바 전용)
+   Mobile: 320x50 horizontal만 (세로 광고는 숨김)
+   ════════════════════════════════════════════════════════════ */
+.kakao-adfit {
+  display: block;
+  text-align: center;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+.kakao-adfit-horizontal .kakao-adfit-pc {
+  display: block;
+  max-width: 728px;
+  min-height: 90px;
+  margin: 0 auto;
+}
+.kakao-adfit-horizontal .kakao-adfit-mobile {
+  display: none;
+  max-width: 320px;
+  min-height: 50px;
+  margin: 0 auto;
+}
+.kakao-adfit-vertical {
+  width: 160px;
+  min-height: 600px;
+  margin: 32px auto 0;
+}
+@media (max-width: 900px) {
+  .kakao-adfit-horizontal .kakao-adfit-pc { display: none; }
+  .kakao-adfit-horizontal .kakao-adfit-mobile { display: block; }
+  /* 세로 광고는 모바일에서 사이드바 공간 자체가 없으므로 전체 숨김 */
+  .kakao-adfit-vertical { display: none; }
+}
