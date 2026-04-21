@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "00.127.06",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 14:45:00 KST",
+    "summary": "공개 사이트 인라인 이벤트 핸들러 정리 — 12개 HTML의 onclick='GW.setLang(...)'과 index.html의 script onerror 핸들러를 모두 제거하고 data-* 속성 + 이벤트 위임으로 이전. 사용자 동작은 동일, CSP 강화(향후 CSP nonce 적용) 사전 작업.",
+    "changes": [
+      "12개 공개 HTML(index/korea/apr/wosm/people/latest/search/glossary/calendar/wosm-members/contributors/404)의 언어 토글 버튼: onclick='GW.setLang(ko|en)' → data-lang-toggle='ko|en'.",
+      "index.html의 7개 <script> onerror 인라인 핸들러: data-gw-script-module='xxx' + data-gw-script-primary(main.js)로 이전. head 인라인 부트스트랩 스크립트에 document.addEventListener('error', …, true) 캡처 리스너 추가.",
+      "js/site-chrome.js에 GW.setupManagedInlineHandlers() 이벤트 위임 유틸 추가 — bootstrapStandardPage()가 1회 설치. data-lang-toggle을 클릭 이벤트로 처리.",
+      "사이트 버전 00.127.05 → 00.127.06."
+    ]
+  },
+  {
+    "version": "03.089.06",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 14:45:00 KST",
+    "summary": "관리자 AI 채점 안정성·응답 개선 — (1) Workers AI 호출이 일시 실패하면 자동 1회 재시도(600ms 백오프)하여 어제 발생한 일회성 API 오류가 사용자에게 보이지 않도록. (2) 채점 응답에 약 300자 분량의 구체적인 수정 제안(revision_suggestion) 필드 신설.",
+    "changes": [
+      "functions/api/admin/score-article.js: env.AI.run을 1회 재시도 루프로 감싸 일시적 5xx·네트워크 블립을 흡수. 최악의 경우 응답 시간은 +600ms이지만 성공률 대폭 향상. 에러 응답 메시지도 한국어로 명확히 수정.",
+      "functions/api/admin/score-article.js: 프롬프트에 revision_suggestion 필드 추가 — AI가 '약 300자 분량의 구체적이고 실행 가능한 수정 제안'을 반환하도록 명시. max_tokens를 1200 → 1500으로 상향.",
+      "js/board-write.js _renderBoardScorerResult: revision_suggestion을 '✏️ 수정 제안' 카드로 렌더.",
+      "js/admin-v3.js _renderWriteScorerResult + _scorerRenderResult(전용 scorer 페이지 포함): 녹색 테마 '✏️ 수정 제안' 섹션 추가.",
+      "관리자 버전 03.089.05 → 03.089.06."
+    ]
+  },
+  {
     "version": "00.127.05",
     "date": "2026-04-21",
     "released_at": "2026-04-21 13:10:00 KST",

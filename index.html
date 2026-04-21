@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260421133819">
+  <link rel="stylesheet" href="/css/style.css?v=20260421135442">
   <script>
     (function () {
       function markHomeScriptFailure(name) {
@@ -30,6 +30,19 @@
           '</div>';
       }
       window.__GW_HOME_SCRIPT_FAILURE__ = markHomeScriptFailure;
+      // Capture <script> load errors for any tag that opted in with
+      // data-gw-script-module. Replaces the per-tag inline onerror="…" handlers
+      // so CSP can be tightened with a nonce (no inline attribute JS).
+      document.addEventListener('error', function (event) {
+        var target = event && event.target;
+        if (!target || !target.tagName || target.tagName.toUpperCase() !== 'SCRIPT') return;
+        var name = target.getAttribute && target.getAttribute('data-gw-script-module');
+        if (!name) return;
+        if (target.hasAttribute('data-gw-script-primary') && document.body && document.body.classList) {
+          document.body.classList.add('gw-script-error');
+        }
+        markHomeScriptFailure(name);
+      }, true);
       document.addEventListener('DOMContentLoaded', function () {
         if (document.documentElement && document.documentElement.classList.contains('gw-home-script-error')) {
           markHomeScriptFailure(document.documentElement.getAttribute('data-home-script-error') || '');
@@ -61,8 +74,8 @@
       <div class="masthead-right">
         <div class="masthead-stats" id="masthead-stats"></div>
         <div class="lang-toggle" aria-label="언어 선택" role="group">
-          <button class="lang-btn active" id="lang-btn-ko" onclick="GW.setLang('ko')" aria-pressed="true" aria-label="한국어로 보기">KOR</button>
-          <button class="lang-btn" id="lang-btn-en" onclick="GW.setLang('en')" aria-pressed="false" aria-label="영어로 보기">ENG</button>
+          <button class="lang-btn active" id="lang-btn-ko" data-lang-toggle="ko" aria-pressed="true" aria-label="한국어로 보기">KOR</button>
+          <button class="lang-btn" id="lang-btn-en" data-lang-toggle="en" aria-pressed="false" aria-label="영어로 보기">ENG</button>
         </div>
         <div class="masthead-search">
           <input type="text" id="mh-search-input" class="mh-search-input" placeholder="검색…" autocomplete="off" aria-label="사이트 검색어 입력" />
@@ -257,7 +270,7 @@
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.127.05</span> · Admin <span class="admin-build-version">V03.089.05</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.127.06</span> · Admin <span class="admin-build-version">V03.089.06</span></p>
         <div class="footer-live-stats" id="home-footer-stats">
           <p class="footer-live-stat">전체 방문자 <strong id="home-total-visitors">—</strong></p>
           <p class="footer-live-stat">누적 페이지뷰 <strong id="home-total-views">—</strong></p>
@@ -274,12 +287,12 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260421133819" onerror="document.body.classList.add('gw-script-error');window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('main.js')"></script>
-  <script src="/js/site-chrome.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('site-chrome.js')"></script>
-  <script src="/js/home-helpers.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-helpers.js')"></script>
-  <script src="/js/home-render.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-render.js')"></script>
-  <script src="/js/home-hero.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-hero.js')"></script>
-  <script src="/js/home-runtime.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home-runtime.js')"></script>
-  <script src="/js/home.js?v=20260421133819" onerror="window.__GW_HOME_SCRIPT_FAILURE__&&window.__GW_HOME_SCRIPT_FAILURE__('home.js')"></script>
+  <script src="/js/main.js?v=20260421135442" data-gw-script-module="main.js" data-gw-script-primary></script>
+  <script src="/js/site-chrome.js?v=20260421135442" data-gw-script-module="site-chrome.js"></script>
+  <script src="/js/home-helpers.js?v=20260421135442" data-gw-script-module="home-helpers.js"></script>
+  <script src="/js/home-render.js?v=20260421135442" data-gw-script-module="home-render.js"></script>
+  <script src="/js/home-hero.js?v=20260421135442" data-gw-script-module="home-hero.js"></script>
+  <script src="/js/home-runtime.js?v=20260421135442" data-gw-script-module="home-runtime.js"></script>
+  <script src="/js/home.js?v=20260421135442" data-gw-script-module="home.js"></script>
 </body>
 </html>
