@@ -187,7 +187,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260421143950">
+  <link rel="stylesheet" href="/css/style.css?v=20260421144823">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -311,6 +311,19 @@ export async function onRequestGet({ params, env, request }) {
           <span class="post-byline-report">오류제보 <a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a></span>
         </div>
 
+        <!-- Kakao AdFit horizontal — 기사 본문 하단, 기사 너비 기준 중앙 정렬.
+             PC 728x90 / 모바일 320x50. 이전에는 그리드 바깥에 두어 페이지 전체
+             중앙에 정렬됐지만(사이드바 공간 때문에 기사보다 우측으로 치우침),
+             여기로 옮겨 기사 column 내부에서 centering되도록 함. -->
+        <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
+          <div class="kakao-adfit-pc">
+            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
+          </div>
+          <div class="kakao-adfit-mobile">
+            <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
+          </div>
+        </aside>
+
       </div>
 
       ${renderRelatedPostsSection(relatedPosts, true, navLabels)}
@@ -339,16 +352,6 @@ export async function onRequestGet({ params, env, request }) {
       </aside>
 
     </div>
-
-    <!-- Kakao AdFit horizontal — 공감/오류제보 아래, 푸터 위 (그리드 바깥 풀 폭). PC 728x90 / 모바일 320x50. -->
-    <aside class="kakao-adfit kakao-adfit-horizontal" aria-label="광고">
-      <div class="kakao-adfit-pc">
-        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-Hcz89LyJbpNeh8B0" data-ad-width="728" data-ad-height="90"></ins>
-      </div>
-      <div class="kakao-adfit-mobile">
-        <ins class="kakao_ad_area" style="display:none;width:100%;" data-ad-unit="DAN-R2YAuLwc7UVkfzQb" data-ad-width="320" data-ad-height="50"></ins>
-      </div>
-    </aside>
   </main>
 
   <!-- ── FOOTER ── -->
@@ -366,7 +369,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.128.03</span> · Admin <span class="admin-build-version">V03.090.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.128.04</span> · Admin <span class="admin-build-version">V03.090.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -577,9 +580,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260421143950"></script>
-  <script src="/js/site-chrome.js?v=20260421143950"></script>
-  <script src="/js/post-page.js?v=20260421143950"></script>
+  <script src="/js/main.js?v=20260421144823"></script>
+  <script src="/js/site-chrome.js?v=20260421144823"></script>
+  <script src="/js/post-page.js?v=20260421144823"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
