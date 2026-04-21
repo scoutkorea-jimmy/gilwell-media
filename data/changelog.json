@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "03.094.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 01:32:19 KST",
+    "summary": "관리자 다중 사용자·권한 Phase 3 — 사이드바 '계정 관리' 섹션 신설(내 계정 / 사용자 관리) + 사용자 CRUD + 임시 비밀번호 리셋 + 소프트/하드 삭제 + 권한 체크박스 모달(27메뉴 × 보기/쓰기, 3종 빌트인 프리셋 + 커스텀 프리셋 CRUD) + 긴급 발행 차단 킬 스위치 토글 UI. 전부 오너 전용 UI; 멤버는 '내 계정' 패널에서 본인 프로필·비밀번호만 관리.",
+    "changes": [
+      "신규 API: POST /api/admin/users(사용자 생성), PUT /api/admin/users/:id(필드 수정·상태 변경·권한 저장), DELETE /api/admin/users/:id(소프트 삭제 + ?hard=1 시 완전 삭제 — 게시글은 절대 삭제 안 됨), POST /api/admin/users/:id/password-reset(임시 비번 1회 발급 + must_change_password=1 + per-user token_min_iat bump), POST /api/admin/users/:id/restore(소프트 삭제 복구).",
+      "신규 API: POST /api/admin/presets(커스텀 프리셋 생성), PUT /api/admin/presets/:id(이름·설명·권한 수정, 빌트인 read-only), DELETE /api/admin/presets/:id(커스텀만 삭제 가능).",
+      "신규 API: GET/PUT /api/admin/publish-kill-switch({on:bool}) — 오너 전용 토글. ON 상태는 ops-log에 warn 레벨로 기록.",
+      "Last-owner 보호: 마지막 활성 오너는 비활성·삭제·본인 삭제 전부 409로 차단.",
+      "functions/_shared/admin-user-validation.js 신규: username/display_name/password/editor_code/ai_daily_limit/status/permissions 검증. validatePermissions가 menu slug 화이트리스트로 잘못된 권한 토큰 사전 차단. generateTempPassword(12자, 혼동 문자 제외).",
+      "admin.html 좌측 사이드바에 '계정 관리' 섹션 추가(data-owner-only 속성으로 '사용자 관리' 항목은 오너 전용, 세션 판별 후 렌더). 메인 컨텐츠에 panel-account-me / panel-account-users 2패널 + '긴급 발행 차단' 토글 카드 + 사용자 목록 테이블 + 사용자 추가·편집 모달 + 권한 체크박스 그리드 모달(6그룹 27메뉴) + 임시 비번 결과 모달.",
+      "js/admin-account.js 신규 독립 모듈(780줄): AccountAdmin 네임스페이스. /api/admin/users/me로 세션·역할 로드 후 오너 전용 nav 노출. 권한 모달은 메뉴 그룹별 구조로 렌더링, 프리셋 select + '적용'·'모두 해제'·'관리자 접근 허용' master 토글. 사용자 생성 시 권한 편집 버튼으로 별도 모달 열어 draftPermissions에 임시 저장 후 submit에서 함께 POST. 삭제는 중첩 confirm으로 소프트/하드 선택. admin-v3.js(9,510줄)를 더 비대하게 만들지 않기 위해 별도 파일로 분리.",
+      "css/admin-v3.css 말미에 Phase 3 스타일 추가: .v3-modal-xl(1080px), .v3-switch(빨간 컬러의 킬스위치 토글), .v3-checkbox, .v3-account-table(role/status 배지 컬러: owner=보라/member=회색, active=녹색/disabled=황색/deleted=빨강), .v3-perm-group/.v3-perm-row 그리드, .v3-btn-danger.",
+      "PANEL_LABELS에 account-me/account-users 추가 → 브레드크럼 정상 표기.",
+      "기존 '설정 > 계정 보안' 서브 탭은 제거하지 않고 유지(마이그레이션 중복 엔트리) — 추후 정리.",
+      "Phase 2의 posts PUT/PATCH kill switch 게이트가 이제 오너 UI로 실시간 토글 가능. 토글 시 ops-log + 경고 토스트 + 상태 라벨 빨강색 전환.",
+      "관리자 버전 03.093.00 → 03.094.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.093.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 01:15:00 KST",

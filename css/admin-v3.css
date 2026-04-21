@@ -4571,3 +4571,168 @@ body.marketing-fullscreen-open { overflow: hidden; }
   color: var(--v3-text-m);
   font-size: 12px;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Account Management (Phase 3) — 내 계정 / 사용자 관리
+   ══════════════════════════════════════════════════════════════ */
+.v3-modal-xl { max-width: 1080px; width: 92vw; }
+
+/* Switch toggle (kill switch) */
+.v3-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px; height: 24px;
+  flex: 0 0 auto;
+}
+.v3-switch input { opacity: 0; width: 0; height: 0; }
+.v3-switch-track {
+  position: absolute; inset: 0;
+  background: var(--v3-border-m);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.v3-switch-track::before {
+  content: '';
+  position: absolute;
+  left: 3px; top: 3px;
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform .15s;
+}
+.v3-switch input:checked + .v3-switch-track { background: #dc2626; }
+.v3-switch input:checked + .v3-switch-track::before { transform: translateX(22px); }
+.v3-switch input:focus-visible + .v3-switch-track {
+  box-shadow: 0 0 0 3px rgba(220,38,38,.22);
+}
+
+/* Checkbox + label pattern */
+.v3-checkbox {
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+  font-size: var(--v3-fs-dense);
+  color: var(--v3-text);
+}
+.v3-checkbox input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--v3-primary); }
+
+/* Account users table */
+.v3-account-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.v3-account-table th,
+.v3-account-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--v3-border);
+  text-align: left;
+  vertical-align: middle;
+}
+.v3-account-table thead th {
+  background: var(--v3-content-bg);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--v3-text-m);
+  text-transform: none;
+  letter-spacing: .2px;
+}
+.v3-account-table tbody tr:hover { background: var(--v3-content-bg); }
+.v3-account-table code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  background: var(--v3-content-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.v3-account-role-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .4px;
+}
+.v3-account-role-owner { background: #7c3aed; color: #fff; }
+.v3-account-role-member { background: #e5e7eb; color: #374151; }
+
+.v3-account-status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.v3-account-status-active { background: #dcfce7; color: #166534; }
+.v3-account-status-disabled { background: #fef3c7; color: #92400e; }
+.v3-account-status-deleted { background: #fee2e2; color: #991b1b; }
+
+.v3-account-flag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #fde68a;
+  color: #78350f;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.v3-account-table [data-action] {
+  margin-right: 4px;
+}
+
+/* Permission grid modal */
+.v3-perm-group {
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius);
+  margin-bottom: 12px;
+  background: var(--v3-surface);
+}
+.v3-perm-group-title {
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--v3-content-bg);
+  border-bottom: 1px solid var(--v3-border);
+}
+.v3-perm-group-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0;
+}
+.v3-perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--v3-border);
+}
+.v3-perm-row:nth-last-child(-n+3) { border-bottom: none; }
+.v3-perm-row-label {
+  font-size: 13px;
+  color: var(--v3-text);
+}
+.v3-perm-row-toggles {
+  display: flex; gap: 10px; flex: 0 0 auto;
+}
+.v3-perm-toggle {
+  display: inline-flex; align-items: center; gap: 4px;
+  cursor: pointer; user-select: none;
+  font-size: 12px;
+  color: var(--v3-text-m);
+}
+.v3-perm-toggle input[type="checkbox"] {
+  width: 14px; height: 14px;
+  accent-color: var(--v3-primary);
+}
+
+/* Danger button */
+.v3-btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: 1px solid #b91c1c;
+}
+.v3-btn-danger:hover { background: #b91c1c; }
