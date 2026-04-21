@@ -23,14 +23,17 @@ import {
 } from '../../_shared/privacy-policy.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 
-export async function onRequestGet({ env, request }) {
+export async function onRequestGet({ env }) {
   const result = await loadPrivacyPolicy(env);
+  // Intentionally no-store: the admin editor must always see the fresh copy
+  // after a save. The payload is small (<100KB) and Pages Functions are
+  // cheap; consistency > CDN caching for this endpoint.
   return json({
     html: result.html,
     updated_at: result.updated_at,
     is_default: result.is_default,
     max_chars: PRIVACY_POLICY_MAX_CHARS,
-  }, 200, cacheHeaders());
+  });
 }
 
 export async function onRequestPut({ request, env }) {
@@ -98,14 +101,8 @@ export async function onRequestDelete({ request, env }) {
   }
 }
 
-function cacheHeaders() {
-  // Short CDN cache — the policy rarely changes and public GET is hot.
-  return { 'Cache-Control': 'public, max-age=60, s-maxage=300' };
-}
-
 function json(data, status = 200, extraHeaders = {}) {
-  const headers = new Headers({ 'Content-Type': 'application/json' });
+  const headers = new Headers({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
   for (const [k, v] of Object.entries(extraHeaders || {})) headers.set(k, v);
-  if (!extraHeaders['Cache-Control']) headers.set('Cache-Control', 'no-store');
   return new Response(JSON.stringify(data), { status, headers });
 }

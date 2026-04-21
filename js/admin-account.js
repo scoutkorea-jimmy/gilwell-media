@@ -112,11 +112,14 @@
 
   // Elements tagged with data-perm-slug/data-perm-action are hidden for
   // non-owner sessions that lack the specific permission token. Owner sees
-  // everything unconditionally.
+  // everything unconditionally. If the session has not loaded yet (me == null)
+  // we leave the element in its initial state — avoids flashing hide-then-show
+  // on first paint for legitimate users.
   function _syncPermissionNav() {
     var me = _state.me;
-    var isOwner = me && me.role === 'owner';
-    var perms = (me && me.permissions && me.permissions.permissions) || [];
+    if (!me) return;
+    var isOwner = me.role === 'owner';
+    var perms = (me.permissions && me.permissions.permissions) || [];
     var permSet = new Set(perms);
     document.querySelectorAll('[data-perm-slug]').forEach(function (n) {
       var slug = n.getAttribute('data-perm-slug');
