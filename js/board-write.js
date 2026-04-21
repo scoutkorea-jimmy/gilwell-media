@@ -36,10 +36,11 @@
     pwOverlay.innerHTML =
       '<div class="board-pw-box">' +
         '<div class="board-pw-header">글쓰기</div>' +
-        '<p class="board-pw-desc">관리자 비밀번호를 입력하세요</p>' +
+        '<p class="board-pw-desc">관리자 또는 부여된 계정으로 로그인하세요</p>' +
+        '<input type="text" id="board-pw-username" placeholder="아이디 (예: owner)" autocomplete="username" value="owner" spellcheck="false" autocapitalize="off" />' +
         '<input type="password" id="board-pw-input" placeholder="비밀번호" autocomplete="current-password" />' +
         '<div id="board-pw-turnstile" style="margin:12px 0;"></div>' +
-        '<div id="board-pw-error" class="board-pw-error">관리자만 글을 쓸 수 있습니다</div>' +
+        '<div id="board-pw-error" class="board-pw-error">아이디 또는 비밀번호가 올바르지 않습니다</div>' +
         '<div class="board-pw-actions">' +
           '<button id="board-pw-submit">확인</button>' +
           '<button id="board-pw-cancel">취소</button>' +
@@ -49,6 +50,13 @@
 
     document.getElementById('board-pw-submit').addEventListener('click', function () { self._checkPassword(); });
     document.getElementById('board-pw-cancel').addEventListener('click', function () { self._closePasswordModal(); });
+    document.getElementById('board-pw-username').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var pw = document.getElementById('board-pw-input');
+        if (pw) pw.focus();
+      }
+      if (e.key === 'Escape') self._closePasswordModal();
+    });
     document.getElementById('board-pw-input').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') self._checkPassword();
       if (e.key === 'Escape') self._closePasswordModal();
@@ -549,6 +557,8 @@
     var overlay = document.getElementById('board-pw-overlay');
     if (!overlay) return;
     document.getElementById('board-pw-input').value = '';
+    var userEl = document.getElementById('board-pw-username');
+    if (userEl && !userEl.value) userEl.value = 'owner';
     document.getElementById('board-pw-error').style.display = 'none';
     this._loginTurnstileToken = '';
     overlay.classList.add('open');
@@ -582,11 +592,19 @@
 
   Board.prototype._checkPassword = function () {
     var self = this;
+    var userEl = document.getElementById('board-pw-username');
     var input = document.getElementById('board-pw-input');
     var submitBtn = document.getElementById('board-pw-submit');
     var error = document.getElementById('board-pw-error');
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
+    if (!username) username = 'owner';
     var pw = (input.value || '').trim();
-    if (!pw) return;
+    if (!pw) {
+      error.textContent = '비밀번호를 입력해주세요';
+      error.style.display = 'block';
+      input.focus();
+      return;
+    }
     if (GW.TURNSTILE_SITE_KEY && !this._loginTurnstileToken) {
       error.textContent = 'CAPTCHA를 완료해주세요';
       error.style.display = 'block';
@@ -600,6 +618,7 @@
     GW.apiFetch('/api/admin/login', {
       method: 'POST',
       body: JSON.stringify({
+        username: username,
         password: pw,
         cf_turnstile_response: this._loginTurnstileToken || undefined,
       }),
@@ -607,11 +626,14 @@
       .then(function (data) {
         GW.setToken(data.token);
         if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        if (data && data.user && data.user.must_change_password) {
+          if (GW.showToast) GW.showToast('임시 비밀번호입니다. 관리자 페이지 → 내 계정에서 변경해주세요.', 'warn', 8000);
+        }
         self._closePasswordModal();
         self._showWriteForm();
       })
       .catch(function (err) {
-        error.textContent = err && err.message ? err.message : '관리자만 글을 쓸 수 있습니다';
+        error.textContent = err && err.message ? err.message : '아이디 또는 비밀번호가 올바르지 않습니다';
         error.style.display = 'block';
         input.value = '';
         input.focus();

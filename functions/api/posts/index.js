@@ -5,6 +5,8 @@
  * POST /api/posts                          ← admin only, create post
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { loadAdminSession, requirePublishAllowed } from '../../_shared/admin-permissions.js';
+import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
@@ -178,10 +180,14 @@ export async function onRequestGet({ request, env }) {
 // Creates a new post. Requires valid admin token.
 export async function onRequestPost({ request, env }) {
   const origin = new URL(request.url).origin;
-  // Verify admin token
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
+
+  // Phase 4 auth: owner OR member with write:write permission.
+  const session = await loadAdminSession(request, env);
+  if (!session) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
+  }
+  if (!session.isOwner && !hasMenuPermission(session.permissions, 'write', 'write')) {
+    return json({ error: '글 작성 권한이 없습니다. 오너에게 권한을 요청하세요.' }, 403);
   }
 
   // Parse and validate body
@@ -249,14 +255,29 @@ export async function onRequestPost({ request, env }) {
     existingPublishAt: '',
   });
 
-  // Get default author from settings if not provided in body
+  // Phase 4 publish kill switch — block member publishes when global switch is on.
+  if (safePublished && !session.isOwner) {
+    const gate = await requirePublishAllowed(env, session);
+    if (gate.error) return gate.error;
+  }
+
+  // Byline derivation (Phase 4):
+  //   - Member: editor_code > display_name > 'Editor.A'. body.author is ignored —
+  //     owners assign the public byline centrally via editor_code.
+  //   - Owner: body.author > settings.author_name > 'Editor.A'.
   const bodyAuthor = safeAuthorInput.value;
-  let safeAuthor = bodyAuthor;
-  if (!safeAuthor) {
-    try {
-      const authorRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'author_name'`).first();
-      safeAuthor = authorRow?.value || 'Editor.A';
-    } catch { safeAuthor = 'Editor.A'; }
+  const authorUserId = session.user ? Number(session.user.id) : null;
+  let safeAuthor;
+  if (session.isOwner) {
+    safeAuthor = bodyAuthor;
+    if (!safeAuthor) {
+      try {
+        const authorRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'author_name'`).first();
+        safeAuthor = authorRow?.value || 'Editor.A';
+      } catch { safeAuthor = 'Editor.A'; }
+    }
+  } else {
+    safeAuthor = (session.user && (session.user.editor_code || session.user.display_name)) || 'Editor.A';
   }
 
   const safeAiAssisted = ai_assisted ? 1 : 0;
@@ -269,9 +290,9 @@ export async function onRequestPost({ request, env }) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
     }
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, ai_assisted, published, featured, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
-    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
+    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, authorUserId, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
     const result = await env.DB.prepare(sql).bind(...bindings).run();
     const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
     const insertedPost = insertedId
@@ -284,7 +305,7 @@ export async function onRequestPost({ request, env }) {
         channel: 'admin',
         type: 'post_created',
         level: 'info',
-        actor: safeAuthor || 'admin',
+        actor: (session.username || safeAuthor || 'admin'),
         path: '/api/posts',
         message: '게시글 생성 · ' + String(insertedPost.title || ''),
         details: {

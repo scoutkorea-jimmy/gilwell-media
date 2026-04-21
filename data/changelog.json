@@ -1,6 +1,37 @@
 {
   "items": [
   {
+    "version": "00.129.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:03:41 KST",
+    "summary": "공개 사이트 로그인 모달 username 필드 추가(Phase 4 다중 사용자 대응) + GDPR 개인정보 처리방침 페이지 신설(/privacy) + 11개 공개 HTML 푸터에 개인정보 처리방침 링크 추가.",
+    "changes": [
+      "신규: /privacy.html (개인정보 처리방침) — GDPR Art. 6/13/14/15-22/32 기준으로 처리자 정보·수집 항목·법적 근거·보관 기간·정보주체 권리(열람·정정·삭제·이동·거부)·제3자 처리 수탁자(Cloudflare, Kakao AdFit, Turnstile)·보안 대책·아동 정보·문의처 섹션 수록. Nixgon 서체·BP미디어 공통 헤더/푸터 적용.",
+      "10개 공개 HTML 푸터(index/korea/apr/wosm/people/latest/calendar/glossary/search/contributors)에 '개인정보 처리방침 →' 링크 추가. footer-admin 섹션 '용어집 RAW로 보기'와 '다크모드로 전환' 사이에 배치.",
+      "board-write.js 공개 글쓰기 모달(board-pw-overlay): 비밀번호 단일 필드 → 아이디+비밀번호 2필드. 기본값 'owner', Phase 4 login API와 호환. must_change_password 플래그 수신 시 토스트로 안내.",
+      "calendar.html/calendar.js: 캘린더 편집 인증 모달에 아이디 필드 추가. 로그인 성공 후 write:calendar 권한 또는 owner 역할 체크해 편집 가능 여부 결정.",
+      "glossary.html/glossary.js: 용어집 로그인 모달에 아이디 필드 추가.",
+      "kms.html/kms.js: KMS 로그인 폼에 아이디 필드 추가.",
+      "사이트 버전 00.128.06 → 00.129.00."
+    ]
+  },
+  {
+    "version": "03.095.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:03:41 KST",
+    "summary": "관리자 다중 사용자·권한 Phase 4 최종 — 게시글 작성·수정·발행에 fine-grained 권한 게이트 + writer 본인 글 전용 규칙 + author_user_id 시맨틱 + AI 채점 일일 한도 강제 + GDPR Art.15/17/20/32 준수(데이터 내보내기·활동 조회·하드 삭제 시 감사 로그 익명화) + 비밀번호 해시 iteration을 Workers Web Crypto 한도(100k)에 맞춤.",
+    "changes": [
+      "POST /api/posts: verifyTokenRole('full') → loadAdminSession + hasMenuPermission('write', 'write'). Member 사용자에 대해 author_user_id=session.uid 자동 저장, byline은 editor_code > display_name > 'Editor.A' 순. Owner는 body.author 자유 지정. 발행 시 publish_kill_switch 체크.",
+      "PUT /api/posts/:id · PATCH /api/posts/:id: owner는 전체 가능, member는 write:list OR write:write AND sessionOwnsPost(author_user_id === uid) 조건에서만 가능. 에디터 추천(featured) 토글은 owner 전용.",
+      "score-article.js AI 채점 일일 한도: member 기본 10회/일(사용자별 ai_daily_limit 오버라이드 가능), KST 자정 기준 ai_usage_log status='ok' count. 한도 초과 시 429 + 사용량 안내. actor 필드를 session.username으로 일관 기록해 사용자별 감사 추적.",
+      "functions/_shared/auth.js PBKDF2_ITERS 150,000 → 100,000. Cloudflare Workers Web Crypto의 PBKDF2 상한이 100,000이라 그 이상이면 NotSupportedError로 로그인·비밀번호 변경이 500 에러. verifyAdminPasswordHash에 PBKDF2_MAX_ITERS 클램프 추가해 이전 해시(150k 등)도 안전하게 실패 처리. 기존 owner row + settings.admin_password_hash는 D1에서 100k 재해시 완료.",
+      "GDPR Art.15/20 — GET /api/admin/users/:id/export: 프로필·권한·operational_events·ai_usage_log·post_history·settings_history 전체 스냅샷을 JSON 파일로 반환(application/json; charset=utf-8, Content-Disposition: attachment). Owner는 모든 사용자, member는 본인만 접근.",
+      "GDPR Art.15 — GET /api/admin/users/:id/activity: 해당 사용자의 운영 이벤트 최근 100건을 cursor 기반으로 페이지네이션 조회. Owner/본인 접근.",
+      "GDPR Art.17 — DELETE /api/admin/users/:id?hard=1: 행 제거와 동시에 operational_events/ai_usage_log/settings_history의 actor를 '[deleted:<id>]' 토큰으로 일괄 익명화. 감사 로그는 보존되지만 개인 식별자는 제거(데이터 최소화·잊혀질 권리 조화). 게시글의 author_user_id는 orphan이 되지만 posts 자체는 절대 삭제되지 않음.",
+      "관리자 버전 03.094.00 → 03.095.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.094.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 01:32:19 KST",

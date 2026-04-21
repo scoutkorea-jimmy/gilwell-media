@@ -1,7 +1,9 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { loadAdminSession } from '../../_shared/admin-permissions.js';
 import { logAiUsage } from '../../_shared/ai-usage.js';
 import { logAiScore } from '../../_shared/ai-score-log.js';
 import { loadScoreRubric } from '../../_shared/score-rubric.js';
+import { MEMBER_DEFAULT_AI_DAILY_LIMIT, hasMenuPermission } from '../../_shared/admin-users.js';
 
 const MODEL_ID = '@cf/meta/llama-3.1-8b-instruct';
 
@@ -13,13 +15,55 @@ const json = (data, status = 200) =>
 
 export async function onRequestPost({ request, env, waitUntil }) {
   const ip = request.headers.get('CF-Connecting-IP') || '';
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
+
+  // Phase 4 auth: owner unrestricted. Member needs write:article-scorer AND
+  // must stay within their daily call limit (default 10, per-user override).
+  const session = await loadAdminSession(request, env);
+  if (!session) {
     return json({ error: '인증이 필요합니다.' }, 401);
   }
+  if (!session.isOwner && !hasMenuPermission(session.permissions, 'article-scorer', 'write')) {
+    return json({ error: 'AI 채점 권한이 없습니다.' }, 403);
+  }
+
+  const actor = session.username || 'admin';
 
   if (!env.AI) {
     return json({ error: 'Workers AI 바인딩이 설정되지 않았습니다. Cloudflare Pages 대시보드에서 AI 바인딩을 추가해주세요.' }, 503);
+  }
+
+  // Daily limit enforcement for non-owner. ai_usage_log.created_at is a unix
+  // second timestamp; count today's (KST) window.
+  if (!session.isOwner) {
+    const limit = (session.user && session.user.ai_daily_limit != null)
+      ? Number(session.user.ai_daily_limit)
+      : MEMBER_DEFAULT_AI_DAILY_LIMIT;
+    if (limit === 0) {
+      return json({ error: 'AI 채점 일일 한도가 0으로 설정되어 있습니다. 오너에게 한도 상향을 요청하세요.' }, 429);
+    }
+    try {
+      // Compute today's KST window in unix seconds.
+      const now = new Date();
+      const kstOffsetMin = 9 * 60;
+      const nowKstMs = now.getTime() + kstOffsetMin * 60_000;
+      const kstStart = new Date(nowKstMs);
+      kstStart.setUTCHours(0, 0, 0, 0);
+      const startSec = Math.floor((kstStart.getTime() - kstOffsetMin * 60_000) / 1000);
+      const countRow = await env.DB.prepare(
+        `SELECT COUNT(*) AS n FROM ai_usage_log
+          WHERE endpoint = 'score-article' AND actor = ? AND created_at >= ? AND status = 'ok'`
+      ).bind(actor, startSec).first();
+      const used = Number(countRow && countRow.n) || 0;
+      if (used >= limit) {
+        return json({
+          error: `AI 채점 일일 한도(${limit}회)를 초과했습니다. 내일 KST 자정에 초기화됩니다. 한도 상향은 오너에게 요청하세요.`,
+          limit, used, remaining: 0,
+        }, 429);
+      }
+    } catch (err) {
+      // DB error — fail open rather than block the operator. Log for audit.
+      console.error('[score-article] daily-limit check failed:', err);
+    }
   }
 
   // 로깅은 fire-and-forget. waitUntil이 없으면 promise만 발사하고 catch만 처리.
@@ -37,7 +81,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
   const inputChars = (String(title) + String(subtitle) + String(content) + String(tags)).length;
   if (!title && !content) {
     logAsync({
-      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      endpoint: 'score-article', model: MODEL_ID, ip, actor,
       inputChars, status: 'invalid', errorCode: 'empty_input',
     });
     return json({ error: '제목과 본문 중 하나 이상을 입력해주세요.' }, 400);
@@ -141,7 +185,7 @@ Tags: ${tags || '(없음)'}
 
   if (aiError) {
     logAsync({
-      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      endpoint: 'score-article', model: MODEL_ID, ip, actor,
       inputChars, latencyMs: Date.now() - startTs,
       status: 'error', errorCode: 'ai_call_failed',
     });
@@ -165,7 +209,7 @@ Tags: ${tags || '(없음)'}
 
   if (!jsonMatch) {
     logAsync({
-      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      endpoint: 'score-article', model: MODEL_ID, ip, actor,
       inputChars, outputChars, promptTokens, completionTokens, totalTokens,
       latencyMs, status: 'error', errorCode: 'parse_no_json',
     });
@@ -176,7 +220,7 @@ Tags: ${tags || '(없음)'}
   try { result = JSON.parse(jsonMatch[1]); }
   catch (_) {
     logAsync({
-      endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+      endpoint: 'score-article', model: MODEL_ID, ip, actor,
       inputChars, outputChars, promptTokens, completionTokens, totalTokens,
       latencyMs, status: 'error', errorCode: 'parse_invalid_json',
     });
@@ -184,7 +228,7 @@ Tags: ${tags || '(없음)'}
   }
 
   logAsync({
-    endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
+    endpoint: 'score-article', model: MODEL_ID, ip, actor,
     inputChars, outputChars, promptTokens, completionTokens, totalTokens,
     latencyMs, status: 'success',
   });

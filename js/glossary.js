@@ -353,15 +353,21 @@
   }
 
   function submitLogin() {
+    var userEl = byId('glossary-login-username');
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
+    if (!username) username = 'owner';
     var pw = (byId('glossary-login-password').value || '').trim();
     if (!pw) return;
     GW.apiFetch('/api/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ password: pw })
+      body: JSON.stringify({ username: username, password: pw })
     })
       .then(function (data) {
         GW.setToken(data.token);
         if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        if (data && data.user && data.user.must_change_password && GW.showToast) {
+          GW.showToast('임시 비밀번호입니다. 관리자 페이지에서 변경해주세요.', 'warn', 8000);
+        }
         closeLoginModal();
         if (_openEditorAfterLogin) {
           _openEditorAfterLogin = false;

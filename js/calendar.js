@@ -941,6 +941,8 @@
     modal.dataset.successHandler = 'true';
     modal._onSuccess = onSuccess;
     document.getElementById('calendar-login-pw').value = '';
+    var userEl = document.getElementById('calendar-login-username');
+    if (userEl && !userEl.value) userEl.value = 'owner';
     document.getElementById('calendar-login-err').style.display = 'none';
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
@@ -955,6 +957,9 @@
   }
 
   function submitLogin() {
+    var userEl = document.getElementById('calendar-login-username');
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
+    if (!username) username = 'owner';
     var password = (document.getElementById('calendar-login-pw').value || '').trim();
     var err = document.getElementById('calendar-login-err');
     var btn = document.getElementById('calendar-login-submit-btn');
@@ -968,14 +973,26 @@
     btn.textContent = '확인 중…';
     GW.apiFetch('/api/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ password: password })
+      body: JSON.stringify({ username: username, password: password })
     }).then(function (data) {
-      if (!data || !data.token || data.role !== 'full') {
-        throw new Error('관리자 권한이 필요합니다.');
+      if (!data || !data.token) {
+        throw new Error('인증에 실패했습니다.');
       }
       GW.setToken(data.token);
       GW.setAdminRole(data.role || 'full');
+      // 캘린더 편집은 owner 또는 write:calendar 권한을 가진 멤버만 가능.
+      var canManage = data.role === 'full';
+      if (!canManage && data.user && data.user.permissions) {
+        var perms = data.user.permissions.permissions || [];
+        canManage = perms.indexOf('write:calendar') !== -1;
+      }
+      if (!canManage) {
+        throw new Error('캘린더 편집 권한이 없습니다.');
+      }
       state.canManage = true;
+      if (data.user && data.user.must_change_password && GW.showToast) {
+        GW.showToast('임시 비밀번호입니다. 관리자 페이지에서 변경해주세요.', 'warn', 8000);
+      }
       var modal = document.getElementById('calendar-login-modal');
       var handler = modal && modal._onSuccess;
       closeLogin();
