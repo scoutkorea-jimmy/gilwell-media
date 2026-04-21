@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.128.03",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:39:19 KST",
+    "summary": "CSP 보강 — Kakao AdFit 실제 광고 fetch 허용 + Google Fonts @import 차단 해제. 이전까지 광고 HTML은 정상 삽입됐지만 CSP connect-src가 serv.ds.kakao.com을 막고 있어 실제 광고가 로드되지 않고 있었음. 함께 Noto Sans / Google Sans Flex도 차단되어 시스템 폰트로 폴백되던 문제도 해결.",
+    "changes": [
+      "CSP script/style/font/connect/frame 전반 업데이트(_headers + functions/_middleware.js).",
+      "style-src: fonts.googleapis.com 추가 — Google Sans Flex / Noto Sans @import 허용.",
+      "font-src: fonts.gstatic.com 추가 — Google 실제 .woff2 파일 로드.",
+      "connect-src: serv.ds.kakao.com, t1.kakaocdn.net, *.onkakao.net 추가 — AdFit SDK가 광고 배너를 fetch하고 Sentry 리포트를 보낼 수 있도록.",
+      "frame-src: t1.kakaocdn.net 추가 — 광고 iframe 노출 허용.",
+      "알려진 무시 가능 에러: Cloudflare Email Address Obfuscation(/cdn-cgi/scripts/.../email-decode.min.js)은 strict-dynamic 정책상 블록 유지. Cloudflare 대시보드 → Scrape Shield에서 비활성화하거나 그대로 두어도 mailto 링크는 평문으로 정상 동작.",
+      "사이트 버전 00.128.02 → 00.128.03."
+    ]
+  },
+  {
     "version": "03.090.01",
     "date": "2026-04-21",
     "released_at": "2026-04-21 23:33:24 KST",

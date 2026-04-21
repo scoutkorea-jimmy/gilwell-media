@@ -91,16 +91,21 @@ function buildCsp(request, nonce) {
   // Style policy is left as-is — inline `style="..."` attributes are sprinkled
   // throughout the markup (both admin and public) and tightening style-src
   // would break layout. Low priority compared to script-src.
-  const styleSrc = "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net";
+  // fonts.googleapis.com is added for @import of Google Sans Flex / Noto Sans.
+  const styleSrc = "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com";
 
   return [
     "default-src 'self'",
     scriptSrc,
     styleSrc,
     "img-src 'self' data: https:",
-    "font-src 'self' data: https://cdn.jsdelivr.net",
-    "connect-src 'self' https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net",
-    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net",
+    // fonts.gstatic.com is where Google Fonts actually serves .woff2 files.
+    "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
+    // Kakao AdFit SDK fetches ad banners from serv.ds.kakao.com, health-reports
+    // to *.onkakao.net, and loads aux assets from t1.kakaocdn.net.
+    "connect-src 'self' https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
+    // Kakao ad iframes are served from t1.kakaocdn.net.
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net",
     "media-src 'self' data: https:",
     "object-src 'none'",
     "base-uri 'self'",
