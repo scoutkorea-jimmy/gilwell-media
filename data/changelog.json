@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.128.06",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 00:32:03 KST",
+    "summary": "공개 페이지 푸터의 기사제보·문의 메일 링크를 Cloudflare Email Obfuscation 대상에서 제외 — 독자가 오류제보·문의 메일을 난독화 없이 바로 클릭해 보낼 수 있도록 `<!--email_off-->` 마커로 감쌌다.",
+    "changes": [
+      "index.html, korea.html, apr.html, wosm.html, wosm-members.html, people.html, calendar.html, latest.html, search.html, glossary.html, contributors.html 11개 공개 HTML 푸터: story@bpmedia.net(기사제보)과 info@bpmedia.net(문의) 두 mailto 링크를 `<!--email_off-->...<!--/email_off-->`로 감싸 Cloudflare Scrape Shield 이메일 난독화 적용 대상에서 빼냈다. 기존에는 일부 방문자에게 [email protected] 형태로 치환되어 클릭 시 JS 디코더가 없으면 비정상 주소로 열리던 문제를 제거.",
+      "JS 런타임 삽입 경로(js/board.js 기사 바이라인 오류제보 링크, js/glossary.js 용어집 미매칭 안내 링크)는 Cloudflare가 JS 응답을 스캔하지 않으므로 이미 난독화되지 않음 → 추가 변경 없이 동작 유지.",
+      "functions/_shared/site-copy.mjs의 DEFAULT_CONTACT_EMAILS는 문자열만 보관하고 HTML 템플릿은 포함하지 않으므로 fallback 동기화 대상 아님.",
+      "사이트 버전 00.128.05 → 00.128.06."
+    ]
+  },
+  {
     "version": "03.090.02",
     "date": "2026-04-22",
     "released_at": "2026-04-22 00:04:07 KST",
