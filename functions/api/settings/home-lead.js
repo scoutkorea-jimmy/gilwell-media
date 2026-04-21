@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
@@ -43,10 +44,7 @@ export async function onRequestGet({ env, request }) {
 
 export async function onRequestPut({ env, request }) {
   const origin = new URL(request.url).origin;
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'home-lead', 'view'); if (__gate) return __gate
 
   let body;
   try {

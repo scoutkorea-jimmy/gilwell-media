@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { DEFAULT_BOARD_COPY, normalizeBoardCopy } from '../../_shared/board-copy.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
@@ -18,10 +19,7 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'board-copy', 'view'); if (__gate) return __gate
 
   let body;
   try {

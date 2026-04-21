@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -80,10 +81,7 @@ function resolveRange(searchParams) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
   const url = new URL(request.url);

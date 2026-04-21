@@ -13,6 +13,7 @@
  * 관리자 인증 필수. 등급별·점수 기반 정렬·검색으로 품질 추이 파악용.
  */
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -24,10 +25,7 @@ const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 30;
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'ai-score-history', 'view'); if (__gate) return __gate
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
   const url = new URL(request.url);

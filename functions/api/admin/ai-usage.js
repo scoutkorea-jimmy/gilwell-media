@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import {
   estimateLlamaTokens,
   estimateLlamaCostUsd,
@@ -45,10 +46,7 @@ function annotatePeriod(row) {
  *       정확한 비용은 Cloudflare 대시보드 Workers AI 페이지 참조.
  */
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'article-scorer', 'view'); if (__gate) return __gate
 
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 

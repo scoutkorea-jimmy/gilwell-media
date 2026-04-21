@@ -1,12 +1,10 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { fetchReleaseDeployments, fetchReleaseSnapshots } from '../../_shared/release-history.js';
 import { ensureOperationalEventsTable } from '../../_shared/ops-log.js';
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'site-history', 'view'); if (__gate) return __gate
 
   try {
     await ensureOperationalEventsTable(env);

@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 import { ensureSiteVisitColumns } from '../../_shared/analytics.js';
 import { resolveCountryLabelKo } from '../../_shared/country-code-labels.js';
@@ -8,10 +9,7 @@ import { logApiError } from '../../_shared/ops-log.js';
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'geo-audience', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
   // 기간 선택 통일: days 프리셋 또는 custom start/end 둘 다 허용. 마케팅/분석/대시보드와 동일 규약.

@@ -37,7 +37,7 @@
       '<div class="board-pw-box">' +
         '<div class="board-pw-header">글쓰기</div>' +
         '<p class="board-pw-desc">관리자 또는 부여된 계정으로 로그인하세요</p>' +
-        '<input type="text" id="board-pw-username" placeholder="아이디 (예: owner)" autocomplete="username" value="owner" spellcheck="false" autocapitalize="off" />' +
+        '<input type="text" id="board-pw-username" placeholder="아이디 (예: owner)" autocomplete="username" spellcheck="false" autocapitalize="off" />' +
         '<input type="password" id="board-pw-input" placeholder="비밀번호" autocomplete="current-password" />' +
         '<div id="board-pw-turnstile" style="margin:12px 0;"></div>' +
         '<div id="board-pw-error" class="board-pw-error">아이디 또는 비밀번호가 올바르지 않습니다</div>' +
@@ -596,8 +596,13 @@
     var input = document.getElementById('board-pw-input');
     var submitBtn = document.getElementById('board-pw-submit');
     var error = document.getElementById('board-pw-error');
-    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
-    if (!username) username = 'owner';
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : '';
+    if (!username) {
+      error.textContent = '아이디를 입력해주세요';
+      error.style.display = 'block';
+      if (userEl) userEl.focus();
+      return;
+    }
     var pw = (input.value || '').trim();
     if (!pw) {
       error.textContent = '비밀번호를 입력해주세요';

@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const json = (data, status = 200, extra = {}) =>
   new Response(JSON.stringify(data), {
@@ -18,10 +19,7 @@ const json = (data, status = 200, extra = {}) =>
  * 반환: { tags: [{ name, count }] }
  */
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'meta', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
   const limit = Math.min(500, Math.max(10, Number(url.searchParams.get('limit')) || 200));
