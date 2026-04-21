@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421161543">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421163258">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -89,7 +89,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.093.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.094.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.128.06</span>
     </div>
@@ -104,7 +104,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.093.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.094.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.128.06</span></span></div>
     </div>
 
@@ -260,6 +260,19 @@
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 2h7l3 3v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M10 2v3h3"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="9" y2="11"/></svg>
           KMS <svg class="v3-nav-ext-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9"/><path d="M10 2h4v4"/><line x1="6" y1="10" x2="14" y2="2"/></svg>
         </a>
+      </div>
+
+      <!-- 계정 관리 -->
+      <div class="v3-nav-section" id="v3-nav-section-account">
+        <div class="v3-nav-section-label">계정 관리</div>
+        <button class="v3-nav-item" data-panel="account-me">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15 a6 6 0 0 1 12 0"/></svg>
+          내 계정
+        </button>
+        <button class="v3-nav-item" data-panel="account-users" data-owner-only="1" hidden>
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5.5" cy="5" r="2.5"/><circle cx="11.5" cy="5.5" r="2"/><path d="M1 14 a4.5 4.5 0 0 1 9 0"/><path d="M8.5 14 a4 4 0 0 1 6.5 -3.1"/></svg>
+          사용자 관리
+        </button>
       </div>
     </nav>
 
@@ -1764,6 +1777,113 @@
         </div>
       </div><!-- /panel-site-history -->
 
+      <!-- ═══════════════ 내 계정 (account-me) ═══════════════ -->
+      <div class="v3-panel" id="panel-account-me">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">내 계정</h1>
+            <p class="v3-page-desc">로그인 중인 계정 프로필과 비밀번호를 관리합니다. 비밀번호를 바꾸면 이 기기의 세션만 유지되고 다른 모든 기기는 즉시 로그아웃됩니다.</p>
+          </div>
+        </div>
+
+        <div class="v3-card" id="account-me-profile-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">프로필</h2>
+              <p class="v3-card-desc">읽기 전용 정보. 표시 이름·편집자 코드·권한은 오너가 <strong>사용자 관리</strong>에서 수정합니다.</p>
+            </div>
+          </div>
+          <div class="v3-form-grid" id="account-me-profile-grid">
+            <div class="v3-form-group"><label class="v3-label">아이디</label><div class="v3-inline-meta" id="account-me-username">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">표시 이름</label><div class="v3-inline-meta" id="account-me-display-name">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">역할</label><div class="v3-inline-meta" id="account-me-role">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">편집자 코드</label><div class="v3-inline-meta" id="account-me-editor-code">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">AI 채점 일일 한도</label><div class="v3-inline-meta" id="account-me-ai-limit">—</div></div>
+            <div class="v3-form-group"><label class="v3-label">마지막 로그인</label><div class="v3-inline-meta" id="account-me-last-login">—</div></div>
+          </div>
+        </div>
+
+        <div class="v3-card" id="account-me-password-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">비밀번호 변경</h2>
+              <p class="v3-card-desc">최소 8자 이상. 영문·숫자·기호를 섞어 쓰는 것을 권장합니다. 변경 즉시 다른 기기 세션이 모두 종료됩니다.</p>
+            </div>
+          </div>
+          <form id="account-me-password-form" class="v3-form-grid" autocomplete="off" novalidate>
+            <div class="v3-form-group v3-form-span-full">
+              <label class="v3-label" for="account-me-current-password">현재 비밀번호</label>
+              <input class="v3-input" type="password" id="account-me-current-password" autocomplete="current-password" required />
+            </div>
+            <div class="v3-form-group">
+              <label class="v3-label" for="account-me-new-password">새 비밀번호 <span class="v3-label-opt">8자 이상</span></label>
+              <input class="v3-input" type="password" id="account-me-new-password" autocomplete="new-password" required minlength="8" />
+            </div>
+            <div class="v3-form-group">
+              <label class="v3-label" for="account-me-new-password-confirm">새 비밀번호 확인</label>
+              <input class="v3-input" type="password" id="account-me-new-password-confirm" autocomplete="new-password" required minlength="8" />
+            </div>
+            <div class="v3-form-group v3-form-span-full">
+              <div class="v3-flex" style="justify-content:flex-end;gap:8px;">
+                <span id="account-me-password-status" class="v3-inline-meta" aria-live="polite"></span>
+                <button class="v3-btn v3-btn-primary" type="submit" id="account-me-password-save-btn">비밀번호 변경</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div><!-- /panel-account-me -->
+
+      <!-- ═══════════════ 사용자 관리 (account-users) ═══════════════ -->
+      <div class="v3-panel" id="panel-account-users">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">사용자 관리</h1>
+            <p class="v3-page-desc">파트너·기고자에게 아이디와 권한을 부여합니다. 메뉴별 보기/쓰기 권한을 체크박스로 세밀하게 관리할 수 있고, 프리셋으로 일괄 적용도 가능합니다.</p>
+          </div>
+          <div class="v3-page-head-actions" style="display:flex;gap:8px;align-items:center;">
+            <button class="v3-btn v3-btn-ghost" type="button" id="account-users-refresh-btn">새로고침</button>
+            <button class="v3-btn v3-btn-primary" type="button" id="account-users-add-btn">+ 사용자 추가</button>
+          </div>
+        </div>
+
+        <!-- 긴급 발행 차단 (Kill switch) -->
+        <div class="v3-card" id="account-kill-switch-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">긴급 발행 차단</h2>
+              <p class="v3-card-desc">
+                켜면 오너가 아닌 사용자의 게시글 <strong>공개 전환</strong>이 즉시 차단됩니다. 본인 글 숨기기(비공개 전환)는 계속 가능합니다.
+                평상시 <strong>해제</strong> 상태를 권장합니다.
+              </p>
+            </div>
+            <div class="v3-flex" style="align-items:center;gap:12px;">
+              <span id="account-kill-switch-state" class="v3-inline-meta">—</span>
+              <label class="v3-switch">
+                <input type="checkbox" id="account-kill-switch-toggle" />
+                <span class="v3-switch-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 사용자 목록 -->
+        <div class="v3-card" id="account-users-list-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">사용자 목록</h2>
+              <p class="v3-card-desc" id="account-users-count">불러오는 중…</p>
+            </div>
+            <label class="v3-flex" style="align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="account-users-show-deleted" />
+              <span class="v3-inline-meta">삭제된 계정 포함</span>
+            </label>
+          </div>
+          <div id="account-users-table">
+            <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+          </div>
+        </div>
+      </div><!-- /panel-account-users -->
+
     </div><!-- /v3-content -->
   </div><!-- /v3-main -->
 </div><!-- /v3-app -->
@@ -1771,6 +1891,125 @@
 <!-- ═══════════════════════════════════════════════════════════
      MODALS
 ════════════════════════════════════════════════════════════ -->
+
+<!-- 사용자 추가/편집 모달 (기본 프로필 필드) -->
+<div class="v3-overlay" id="account-user-modal" style="display:none;">
+  <div class="v3-modal v3-modal-lg">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title" id="account-user-modal-title">사용자 추가</h3>
+      <button class="v3-modal-close" type="button" data-close="account-user-modal">×</button>
+    </div>
+    <form id="account-user-form" class="v3-form-grid" autocomplete="off" novalidate>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-username">아이디 <span class="v3-label-opt">영문 소문자·숫자·_ · 3~32자</span></label>
+        <input class="v3-input" type="text" id="account-user-username" autocomplete="off" spellcheck="false" autocapitalize="off" required />
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-display-name">표시 이름</label>
+        <input class="v3-input" type="text" id="account-user-display-name" required />
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-password">비밀번호 <span class="v3-label-opt">8자 이상 · 신규만</span></label>
+        <input class="v3-input" type="text" id="account-user-password" spellcheck="false" autocapitalize="off" />
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-editor-code">편집자 코드 <span class="v3-label-opt">byline 표기용 · 선택</span></label>
+        <input class="v3-input" type="text" id="account-user-editor-code" placeholder="Editor.B" spellcheck="false" />
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-ai-limit">AI 채점 일일 한도 <span class="v3-label-opt">비우면 기본값 10</span></label>
+        <input class="v3-input" type="number" id="account-user-ai-limit" min="0" max="10000" step="1" />
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label" for="account-user-status">상태</label>
+        <select class="v3-input" id="account-user-status">
+          <option value="active">활성 (active)</option>
+          <option value="disabled">비활성 (disabled)</option>
+        </select>
+      </div>
+      <div class="v3-form-group v3-form-span-full">
+        <label class="v3-checkbox">
+          <input type="checkbox" id="account-user-must-change" checked />
+          <span>첫 로그인 시 비밀번호 변경 강제</span>
+        </label>
+      </div>
+      <div class="v3-form-group v3-form-span-full">
+        <div class="v3-flex" style="justify-content:space-between;align-items:center;">
+          <button class="v3-btn v3-btn-ghost" type="button" id="account-user-open-permissions-btn">권한 편집…</button>
+          <div>
+            <span id="account-user-form-status" class="v3-inline-meta" aria-live="polite"></span>
+            <button class="v3-btn v3-btn-outline" type="button" data-close="account-user-modal">취소</button>
+            <button class="v3-btn v3-btn-primary" type="submit" id="account-user-submit-btn">저장</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 권한 편집 모달 (체크박스 그리드 + 프리셋) -->
+<div class="v3-overlay" id="account-permission-modal" style="display:none;">
+  <div class="v3-modal v3-modal-xl">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title">권한 편집 <span id="account-permission-subject" class="v3-inline-meta" style="margin-left:8px;"></span></h3>
+      <button class="v3-modal-close" type="button" data-close="account-permission-modal">×</button>
+    </div>
+    <div class="v3-modal-body" id="account-permission-body">
+      <div class="v3-flex" style="align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <label class="v3-checkbox">
+          <input type="checkbox" id="account-permission-access-admin" />
+          <span><strong>관리자 페이지 접근 허용</strong> (이 토글이 꺼지면 나머지 체크박스와 무관하게 로그인 후 바로 차단됩니다)</span>
+        </label>
+      </div>
+      <div class="v3-flex" style="align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <span class="v3-label" style="margin:0;">프리셋 적용:</span>
+        <select class="v3-input" id="account-permission-preset-select" style="flex:1 1 240px;max-width:320px;">
+          <option value="">— 프리셋 선택 —</option>
+        </select>
+        <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="account-permission-apply-preset-btn">적용</button>
+        <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="account-permission-clear-btn">모두 해제</button>
+      </div>
+      <div id="account-permission-grid">
+        <div class="v3-loading"><div class="v3-spinner"></div>메뉴 구조를 불러오는 중…</div>
+      </div>
+    </div>
+    <div class="v3-modal-foot">
+      <span id="account-permission-status" class="v3-inline-meta" aria-live="polite"></span>
+      <button class="v3-btn v3-btn-outline" type="button" data-close="account-permission-modal">취소</button>
+      <button class="v3-btn v3-btn-primary" type="button" id="account-permission-save-btn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 임시 비밀번호 결과 모달 -->
+<div class="v3-overlay" id="account-temp-password-modal" style="display:none;">
+  <div class="v3-modal">
+    <div class="v3-modal-head">
+      <h3 class="v3-modal-title">임시 비밀번호 발급</h3>
+      <button class="v3-modal-close" type="button" data-close="account-temp-password-modal">×</button>
+    </div>
+    <div class="v3-modal-body">
+      <p class="v3-card-desc">
+        <strong>이 비밀번호는 이 창에서만 표시됩니다.</strong> 안전한 채널(메신저/대면)로 전달한 뒤 즉시 닫으세요.
+        해당 사용자는 첫 로그인 직후 반드시 새 비밀번호로 변경해야 합니다.
+      </p>
+      <div class="v3-form-group">
+        <label class="v3-label">사용자</label>
+        <div class="v3-inline-meta" id="account-temp-password-user">—</div>
+      </div>
+      <div class="v3-form-group">
+        <label class="v3-label">임시 비밀번호</label>
+        <div class="v3-flex" style="gap:8px;align-items:center;">
+          <input class="v3-input" id="account-temp-password-value" readonly style="font-family:ui-monospace,Menlo,monospace;font-size:16px;letter-spacing:1px;" />
+          <button class="v3-btn v3-btn-outline v3-btn-sm" type="button" id="account-temp-password-copy-btn">복사</button>
+        </div>
+      </div>
+    </div>
+    <div class="v3-modal-foot">
+      <button class="v3-btn v3-btn-primary" type="button" data-close="account-temp-password-modal">확인 · 닫기</button>
+    </div>
+  </div>
+</div>
 
 <!-- Calendar Modal -->
 <div class="v3-overlay" id="cal-modal" style="display:none;">
@@ -2056,9 +2295,10 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421161543"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421161543"></script>
-<script src="/js/admin-v3.js?v=20260421161543"></script>
+<script src="/js/main.js?v=20260421163258"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421163258"></script>
+<script src="/js/admin-v3.js?v=20260421163258"></script>
+<script src="/js/admin-account.js?v=20260421161543"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

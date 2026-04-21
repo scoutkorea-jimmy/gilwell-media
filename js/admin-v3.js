@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.093.00
+ * Version: 03.094.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -926,6 +926,8 @@
     releases:  '버전기록',
     'article-scorer': '기사 채점',
     'ai-score-history': 'AI 채점기록',
+    'account-me': '내 계정',
+    'account-users': '사용자 관리',
   };
 
   V3.showPanel = function (panel, settingsSection) {
