@@ -1283,14 +1283,14 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 #### 기능 세부 설명
 - Cloudflare Workers AI의 `@cf/meta/llama-3.1-8b-instruct` 모델로 BP미디어 기사 작성 표준에 따른 자동 채점 제공.
 - 진입점: 관리자 콘솔 → **기사 채점** 패널, 각 글쓰기 모달(관리자 + 공개) 하단의 인라인 `AI 채점` 카드.
-- 평가 범위: Title(30점), Subtitle(15점), Body 구조·흐름(35점), Tags(10점), 표기·문체·겸손도(10점). 총 100점, S/A/B/C/D 등급.
+- 평가 범위 (v2.3): Title(20점), Subtitle(20점), Body 구조(25점), 사실성(15점), 문체(10점), 홍보 구조(5점), Tags(5점). 총 100점, S/A/B/C/D 등급.
 - 결과: 종합 점수 + 등급 + 카테고리별 점수·이슈·강점 + 개선 방향 2~3줄.
 
 ### 15.2 평가 기준(rubric) 운영
 
 #### 기능 세부 설명
 - 기준 텍스트는 D1 `settings` 테이블의 `score_rubric` 키에 저장.
-- 값이 없으면 `functions/_shared/score-rubric.js`의 `DEFAULT_SCORE_RUBRIC`(BP미디어 v2.1)로 폴백.
+- 값이 없으면 `functions/_shared/score-rubric.js`의 `DEFAULT_SCORE_RUBRIC`(BP미디어 v2.3)로 폴백.
 - 변경 경로: 관리자 → 기사 채점 → 상단 **AI 채점 평가 기준** 카드 펼치기 → 텍스트 수정 → 저장.
 - 저장 즉시 다음 호출부터 Workers AI 프롬프트에 반영. 별도 배포 불필요.
 - 변경 기록은 `settings_history`에 자동 append(`recordSettingChange`). 관리자 → 운영 → 사이트 히스토리에서 조회.

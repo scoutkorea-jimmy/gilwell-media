@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.091.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 00:39:06 KST",
+    "summary": "KMS 기사 작성 표준 v2.1 → v2.3 최신화 + post_history 이력 조회 500 오류 수정. v2.3은 검색 최적화(SEO)와 메시지 전달력 강화를 위해 Title·Subtitle 규칙을 확장하고, Audit 채점 배점을 Title 20 / Subtitle 20 / Body 25 / 사실성 15 / 문체 10 / 홍보 5 / Tags 5 (총 100점)로 재편한 기준을 확정. 함께 GET /api/posts/:id/history가 500으로 떨어지던 문제를 원격 D1에 누락돼 있던 migration_050 적용으로 해결.",
+    "changes": [
+      "D1 settings.score_rubric(1순위 원본)는 이미 v2.3 본문으로 저장되어 있음(관리자 KMS 편집기에서 선반영). 이번 커밋은 2차 스냅샷 4곳 동기화.",
+      "functions/_shared/score-rubric.js DEFAULT_SCORE_RUBRIC: v2.1 요약본 → v2.3 정식 본문(11개 섹션, 2120자)로 교체. settings 레코드가 비어도 폴백이 v2.3 기준으로 나가도록 보장.",
+      "kms.html 편집 기준 원본 탭: 헤더 v2.1 Final → v2.3, 편집 패널 구조를 v2.3의 11개 섹션(목적/핵심 원칙 5항/출력 형식/Title SEO 확장/Subtitle why+impact 명사형/Body 최소 4문단/번역 및 표기/문체 및 홍보/Tags/Audit 채점/최종 정의)으로 재구성. 기존 kms-ed- 컴포넌트 클래스는 그대로 유지해 스타일 회귀 없음.",
+      "admin.html 기사 채점 패널 설명: 'BP미디어 기사 작성 표준 v2.1' → 'v2.3'.",
+      "docs/feature-definition.md §15.1 평가 범위를 v2.3 배점(Title 20 / Subtitle 20 / Body 25 / 사실성 15 / 문체 10 / 홍보 5 / Tags 5)으로 갱신. §15.2의 폴백 버전 표기도 v2.1 → v2.3.",
+      "원격 D1 migration_050 적용(ALTER TABLE post_history ADD COLUMN before_snapshot/after_snapshot TEXT). 기존에 마이그레이션이 프로덕션에 누락돼 functions/api/posts/[id]/history.js의 SELECT가 없는 컬럼을 조회하며 SQLITE_ERROR 500 반환, 관리자 기사 이력 모달이 열리지 않던 문제(사이트 오류 기록 #13 '관리자 API 요청 실패 /api/posts/170/history') 해결. 동일 쿼리 정상 응답 확인 후 homepage_issue #13 resolved 처리.",
+      "관리자 버전 03.090.02 → 03.091.00 (Feature 레벨 bump, Fix 슬롯 00 리셋)."
+    ]
+  },
+  {
     "version": "00.128.06",
     "date": "2026-04-22",
     "released_at": "2026-04-22 00:32:03 KST",
