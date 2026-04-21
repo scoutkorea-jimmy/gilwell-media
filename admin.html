@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421170919">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421171643">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -89,9 +89,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.095.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.096.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.129.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.129.01</span>
     </div>
   </div>
 </div>
@@ -104,8 +104,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.095.01</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.129.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.096.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.129.01</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -1207,6 +1207,7 @@
             <button class="v3-settings-nav-btn" data-section="nav-labels">상단 메뉴명</button>
             <button class="v3-settings-nav-btn" data-section="translations">UI 번역</button>
             <button class="v3-settings-nav-btn" data-section="wosm-members">세계연맹 회원국</button>
+            <button class="v3-settings-nav-btn" data-section="privacy-policy">개인정보 처리방침</button>
             <button class="v3-settings-nav-btn" data-section="account-security">계정 보안</button>
           </div>
 
@@ -1606,6 +1607,42 @@
                 <div class="v3-inline-meta" id="wosm-members-meta">불러오는 중…</div>
                 <div id="wosm-members-editor">
                   <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PRIVACY POLICY -->
+            <div class="v3-settings-section" id="settings-privacy-policy">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <div>
+                    <h2 class="v3-card-title">개인정보 처리방침</h2>
+                    <p class="v3-card-desc">
+                      <a href="/privacy" target="_blank" rel="noopener">/privacy</a> 페이지에 공개되는 본문을 수정합니다.
+                      HTML을 직접 입력하며, 저장 시 DOMPurify로 공개면에서 자동 sanitize됩니다(<code>&lt;script&gt;</code> 태그는 서버에서 거부).
+                      기본값으로 복원하면 deployment 시점의 GDPR 준수 기본 방침이 다시 노출됩니다.
+                    </p>
+                  </div>
+                  <div class="v3-flex" style="gap:8px;align-items:center;">
+                    <span id="privacy-policy-status" class="v3-inline-meta" aria-live="polite"></span>
+                    <button class="v3-btn v3-btn-ghost v3-btn-sm" type="button" id="privacy-policy-reset-btn">기본값으로 복원</button>
+                    <button class="v3-btn v3-btn-primary" type="button" id="privacy-policy-save-btn">저장</button>
+                  </div>
+                </div>
+                <div class="v3-form-grid">
+                  <div class="v3-form-group v3-form-span-full">
+                    <label class="v3-label" for="privacy-policy-editor">본문 HTML <span class="v3-label-opt">최대 100,000자</span></label>
+                    <textarea
+                      class="v3-input"
+                      id="privacy-policy-editor"
+                      rows="24"
+                      spellcheck="false"
+                      style="font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.55;"
+                      placeholder="본문을 불러오는 중…"></textarea>
+                  </div>
+                  <div class="v3-form-group v3-form-span-full">
+                    <div class="v3-inline-meta" id="privacy-policy-meta">—</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2295,9 +2332,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421170919"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421170919"></script>
-<script src="/js/admin-v3.js?v=20260421170919"></script>
+<script src="/js/main.js?v=20260421171643"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421171643"></script>
+<script src="/js/admin-v3.js?v=20260421171643"></script>
 <script src="/js/admin-account.js?v=20260421161543"></script>
 <script>
   (function () {
