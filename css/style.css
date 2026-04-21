@@ -1003,14 +1003,12 @@ p { margin-bottom: 6px; }
    ════════════════════════════════════════════════════════════ */
 .masthead {
   border-bottom: 3px solid var(--accent);
-  position:      sticky;
-  top:           0;
-  z-index:       100;
+  /* sticky 제거(2026-04-21) — PC에서 스크롤 시 기사 상단이 sticky masthead에
+     가려진다는 운영자 피드백 반영. 전 페이지에서 masthead가 콘텐츠와 함께
+     자연스럽게 스크롤 아웃된다. 모바일은 별도의 mobile-compact-header가
+     scroll > 72 시점에서 나타나므로 기존 UX 유지. */
+  position:      relative;
   background:    var(--bg);
-}
-
-body[data-home-bootstrap] .masthead {
-  position: relative;
 }
 
 .masthead-top {
