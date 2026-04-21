@@ -52,10 +52,16 @@ export async function onRequestGet({ request, env }) {
 
   if (!env.DB) return json({ error: 'DB 바인딩이 없습니다.' }, 503);
 
+  // 추이 차트용 일별 조회 기간. 클라이언트에서 7/14/30/90일 토글로 전달.
+  const url = new URL(request.url);
+  const rawDays = parseInt(url.searchParams.get('days') || '14', 10);
+  const chartDays = Math.max(1, Math.min(365, Number.isFinite(rawDays) ? rawDays : 14));
+
   const nowSec    = Math.floor(Date.now() / 1000);
   const dayAgo    = nowSec -  86400;
   const weekAgo   = nowSec -  86400 * 7;
   const monthAgo  = nowSec -  86400 * 30;
+  const chartFrom = nowSec - 86400 * chartDays;
 
   try {
     const aggStmt = `
@@ -94,7 +100,7 @@ export async function onRequestGet({ request, env }) {
         WHERE created_at >= ?
         GROUP BY date
         ORDER BY date ASC
-      `).bind(nowSec - 86400 * 14).all().then((r) => r.results || []),
+      `).bind(chartFrom).all().then((r) => r.results || []),
       env.DB.prepare(`
         SELECT id, created_at, endpoint, model, status, error_code,
                input_chars, output_chars, total_tokens, latency_ms
@@ -110,6 +116,7 @@ export async function onRequestGet({ request, env }) {
       month: annotatePeriod(month),
       byEndpoint,
       byDay,
+      chart_days: chartDays,
       recent,
       pricing: Object.assign({}, LLAMA_PRICING, {
         dashboardUrl: 'https://dash.cloudflare.com/?to=/:account/ai/overview',
