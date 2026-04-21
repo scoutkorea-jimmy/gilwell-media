@@ -650,10 +650,14 @@
       var kind = p.is_builtin
         ? '<span class="v3-account-role-badge v3-account-role-owner">빌트인</span>'
         : '<span class="v3-account-role-badge v3-account-role-member">커스텀</span>';
-      var actions = p.is_builtin
-        ? '<span class="v3-inline-meta">수정 불가</span>'
-        : '<button class="v3-btn v3-btn-ghost v3-btn-sm" data-preset-action="edit" data-id="' + p.id + '">편집</button>' +
-          '<button class="v3-btn v3-btn-danger v3-btn-sm" data-preset-action="delete" data-id="' + p.id + '">삭제</button>';
+      // Owner may edit any preset — even built-ins — to rebalance defaults.
+      // Delete stays restricted for built-ins so migrations can always assume
+      // the 3 canonical slugs exist.
+      var actions =
+        '<button class="v3-btn v3-btn-ghost v3-btn-sm" data-preset-action="edit" data-id="' + p.id + '">편집</button>' +
+        (p.is_builtin
+          ? '<span class="v3-inline-meta" style="margin-left:6px;">삭제 불가</span>'
+          : '<button class="v3-btn v3-btn-danger v3-btn-sm" data-preset-action="delete" data-id="' + p.id + '">삭제</button>');
       var permCount = (p.permissions && p.permissions.permissions) ? p.permissions.permissions.length : 0;
       html +=
         '<tr>' +
@@ -681,10 +685,9 @@
     if (presetId) {
       var p = (_state.presets || []).find(function (x) { return String(x.id) === String(presetId); });
       if (!p) { _toast('프리셋을 찾을 수 없습니다', 'error'); return; }
-      if (p.is_builtin) { _toast('빌트인 프리셋은 편집할 수 없습니다', 'error'); return; }
-      title.textContent = '프리셋 편집 · ' + p.name;
+      title.textContent = (p.is_builtin ? '빌트인 프리셋 편집 · ' : '프리셋 편집 · ') + p.name;
       slugEl.value = p.slug;
-      slugEl.disabled = true;
+      slugEl.disabled = true;  // slug is immutable once seeded
       nameEl.value = p.name;
       descEl.value = p.description || '';
       accessEl.checked = !!(p.permissions && p.permissions.access_admin);
@@ -921,5 +924,9 @@
     refreshUsers: _loadUsers,
     openUserModal: _openUserModal,
     openPermissionModal: _openPermissionModal,
+    // Returns the current session user's editor_code (or '' if none / not
+    // loaded yet). admin-v3.js uses this to auto-fill the write form's byline.
+    currentEditorCode: function () { return (_state.me && _state.me.editor_code) || ''; },
+    currentMe: function () { return _state.me; },
   };
 })();

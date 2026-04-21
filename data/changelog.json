@@ -1,6 +1,36 @@
 {
   "items": [
   {
+    "version": "00.130.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:38:37 KST",
+    "summary": "게시글 byline을 작성자의 편집자 코드로 자동 선택 — 사용자의 표시 이름(display_name)은 일반 공개면에 절대 노출되지 않음. 오너가 author_user_id를 변경하면 byline이 해당 사용자의 편집자 코드로 자동 전환.",
+    "changes": [
+      "functions/api/posts/index.js POST: byline 도출 로직 단순화 — 작성자 session user의 editor_code를 그대로 사용(없으면 settings.author_name → 'Editor.A'). display_name fallback 완전 제거. body.author는 더 이상 사용되지 않음.",
+      "functions/api/posts/[id].js PUT: 오너가 body.author_user_id를 변경하면 해당 admin_users의 editor_code로 posts.author 필드를 자동 재계산. body.author 자유 입력은 누구에게도 허용하지 않음 — 비오너는 아예 무시, 오너는 author_user_id 재지정으로 byline 제어.",
+      "display_name 누출 감사: 공개 posts·post detail·feed·rss 어느 경로도 admin_users.display_name을 직렬화하지 않음. display_name은 관리자 콘솔 내부에서만 사용.",
+      "사이트 버전 00.129.01 → 00.130.00."
+    ]
+  },
+  {
+    "version": "03.098.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:38:37 KST",
+    "summary": "관리자 Phase 5 보강 — (1) 글 작성 폼 '저자' 필드 읽기 전용 + 세션 편집자 코드 자동 주입. (2) 프리셋 관리에서 오너는 빌트인 프리셋도 수정 가능(삭제만 불가). (3) 개인정보 처리방침 편집기를 Tiptap WYSIWYG로 교체(+ HTML 소스 토글).",
+    "changes": [
+      "admin.html 글 작성: w-author 입력란을 readonly + tabindex=-1로 전환, 색을 회색으로 낮춰 비활성처럼 보이게 함. 레이블에 '편집자 코드 자동 적용' 태그 + 설명 문구 추가.",
+      "js/admin-v3.js _resetWrite: w-author 값을 window.AccountAdmin.currentEditorCode()로 자동 채움(없으면 'Editor.A'). 폼이 초기화될 때마다 session user의 최신 코드 반영.",
+      "js/admin-account.js: AccountAdmin.currentEditorCode()/currentMe() 메서드 노출 — 다른 모듈이 세션 사용자의 편집자 코드를 안전하게 조회 가능.",
+      "functions/api/admin/presets/[id].js PUT: 빌트인 프리셋 수정 차단 해제. slug는 여전히 변경 불가(migration seed 계약 보장). DELETE는 빌트인에 대해 여전히 409로 차단 — 시스템 canonical preset은 항상 존재 보장.",
+      "js/admin-account.js _renderPresetsList: 빌트인 행에도 [편집] 버튼 노출, [삭제]는 '삭제 불가' 텍스트로 대체. _openPresetModal의 is_builtin 거부 로직 제거.",
+      "admin.html 설정 > 개인정보 처리방침 섹션: textarea 단일 입력에서 Tiptap 에디터 + 서식 도구(굵게/기울임/취소선/H2·H3/본문/글머리·번호 목록/인용/링크·해제/인라인 코드/undo·redo)로 재구성. HTML ⇄ 에디터 토글 버튼으로 원본 소스 직접 편집도 가능. 최대 100,000자 상한 유지.",
+      "js/admin-v3.js _loadPrivacyPolicyUI: Tiptap Core + StarterKit + Link extension을 esm.sh에서 동적 import. 인스턴스를 재생성할 때 기존 편집기를 destroy하여 DOM/이벤트 누수 없음. 툴바 버튼은 mousedown preventDefault로 포커스 유지, 활성 상태는 onTransaction/onSelectionUpdate 훅으로 is-active 클래스 반영.",
+      "css/admin-v3.css 끝부분에 Tiptap 전용 스타일 추가: .v3-tiptap-toolbar(버튼·구분선·hover·active), .v3-tiptap-wrap/.v3-tiptap-surface(400px 높이·본문 타이포그래피·blockquote/code/table 렌더링 규칙).",
+      "Graceful degrade: Tiptap import 실패 시 자동으로 HTML 소스 textarea 모드로 전환 — /privacy 편집이 완전 중단되지 않음.",
+      "관리자 버전 03.097.00 → 03.098.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.097.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:27:42 KST",

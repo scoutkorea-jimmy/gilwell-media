@@ -261,23 +261,22 @@ export async function onRequestPost({ request, env }) {
     if (gate.error) return gate.error;
   }
 
-  // Byline derivation (Phase 4):
-  //   - Member: editor_code > display_name > 'Editor.A'. body.author is ignored —
-  //     owners assign the public byline centrally via editor_code.
-  //   - Owner: body.author > settings.author_name > 'Editor.A'.
-  const bodyAuthor = safeAuthorInput.value;
+  // Byline derivation (Phase 5):
+  //   Strict editor_code only. display_name is internal (admin console) and
+  //   must never leak to public bylines. body.author is ignored — owner-level
+  //   byline overrides happen via author_user_id reassignment (owner assigns
+  //   any admin_user as the author, and that user's editor_code becomes the
+  //   byline automatically).
   const authorUserId = session.user ? Number(session.user.id) : null;
-  let safeAuthor;
-  if (session.isOwner) {
-    safeAuthor = bodyAuthor;
-    if (!safeAuthor) {
-      try {
-        const authorRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'author_name'`).first();
-        safeAuthor = authorRow?.value || 'Editor.A';
-      } catch { safeAuthor = 'Editor.A'; }
-    }
-  } else {
-    safeAuthor = (session.user && (session.user.editor_code || session.user.display_name)) || 'Editor.A';
+  let safeAuthor = (session.user && session.user.editor_code) || null;
+  if (!safeAuthor) {
+    // Fall back to the site-wide default editor code. This catches the case
+    // where a newly created member has not yet been assigned an editor_code
+    // by the owner — posts still publish with a safe neutral byline.
+    try {
+      const authorRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'author_name'`).first();
+      safeAuthor = authorRow?.value || 'Editor.A';
+    } catch { safeAuthor = 'Editor.A'; }
   }
 
   const safeAiAssisted = ai_assisted ? 1 : 0;

@@ -212,11 +212,27 @@ export async function onRequestPut({ params, request, env }) {
   if (safeMetaTagsInput.provided) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
   if (safeTagInput.provided) { fields.push('tag = ?'); values.push(safeTagInput.value); }
   if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
-  if (safeAuthorInput.provided) {
-    var safeAuthor = safeAuthorInput.value || '';
-    fields.push('author = ?');
-    values.push(safeAuthor || 'Editor.A');
+  // Phase 5: byline is strictly derived from the authoring user's editor_code.
+  // Owners can reassign author by changing body.author_user_id; the byline is
+  // then recomputed from that user. display_name is never exposed publicly.
+  if (body.author_user_id !== undefined && session.isOwner) {
+    const nextAuthorUid = Number(body.author_user_id);
+    if (Number.isFinite(nextAuthorUid) && nextAuthorUid > 0) {
+      const authorRow = await env.DB.prepare(
+        `SELECT id, editor_code FROM admin_users WHERE id = ? AND status != 'deleted'`
+      ).bind(nextAuthorUid).first();
+      if (!authorRow) return json({ error: '지정한 작성자 계정을 찾을 수 없습니다.' }, 400);
+      fields.push('author_user_id = ?');
+      values.push(nextAuthorUid);
+      fields.push('author = ?');
+      values.push(authorRow.editor_code || 'Editor.A');
+    } else if (body.author_user_id === null) {
+      fields.push('author_user_id = ?');
+      values.push(null);
+    }
   }
+  // Legacy free-text body.author is ignored for non-owner (prevents
+  // impersonation) and for owner (byline comes from author_user_id).
   if (safeAiAssistedInput.provided) { fields.push('ai_assisted = ?');  values.push(safeAiAssistedInput.value); }
   if (safeSortOrderInput.provided) { fields.push('sort_order = ?'); values.push(safeSortOrderInput.value); }
   if (manual_related_posts !== undefined || body.related_posts_json !== undefined) {
