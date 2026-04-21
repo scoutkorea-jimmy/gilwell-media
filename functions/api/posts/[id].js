@@ -6,7 +6,8 @@
  * DELETE /api/posts/:id   ← admin only, delete post
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
-import { loadAdminSession, requirePublishAllowed } from '../../_shared/admin-permissions.js';
+import { loadAdminSession, requirePublishAllowed, sessionOwnsPost } from '../../_shared/admin-permissions.js';
+import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
@@ -98,11 +99,13 @@ function sanitizePublicPost(post) {
 }
 
 // ── PUT /api/posts/:id ────────────────────────────────────────
-// Updates an existing post. Requires valid admin token.
+// Updates an existing post. Owner may edit any post; members with
+// write:list or write:write may only edit posts where author_user_id = self.
 export async function onRequestPut({ params, request, env }) {
   const origin = new URL(request.url).origin;
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
+
+  const session = await loadAdminSession(request, env);
+  if (!session) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -113,6 +116,22 @@ export async function onRequestPut({ params, request, env }) {
   try {
     currentPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
   } catch (_) {}
+  if (!currentPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+
+  // Phase 4 authorization:
+  //   owner  → full control
+  //   member → needs write:list OR write:write AND must be the author.
+  //            Unauthored (legacy) posts can only be edited by owner.
+  if (!session.isOwner) {
+    const hasWrite = hasMenuPermission(session.permissions, 'list', 'write')
+                  || hasMenuPermission(session.permissions, 'write', 'write');
+    if (!hasWrite) {
+      return json({ error: '게시글 수정 권한이 없습니다.' }, 403);
+    }
+    if (!sessionOwnsPost(session, currentPost)) {
+      return json({ error: '본인이 작성한 글만 수정할 수 있습니다.' }, 403);
+    }
+  }
 
   let body;
   try {
@@ -289,11 +308,14 @@ export async function onRequestPut({ params, request, env }) {
 }
 
 // ── PATCH /api/posts/:id ──────────────────────────────────────
-// Toggle featured or published flag. Requires valid admin token.
+// Toggle featured or published flag. Owner-any, member-self-only (same rule
+// as PUT). featured flag (에디터 추천) is owner-only since members shouldn't
+// promote their own articles.
 export async function onRequestPatch({ params, request, env }) {
   const origin = new URL(request.url).origin;
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
+
+  const session = await loadAdminSession(request, env);
+  if (!session) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -303,6 +325,23 @@ export async function onRequestPatch({ params, request, env }) {
   let body;
   try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  // Pre-load the post so we can scope member access before any writes.
+  const preCheckPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
+  if (!preCheckPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
+
+  if (!session.isOwner) {
+    const hasWrite = hasMenuPermission(session.permissions, 'list', 'write')
+                  || hasMenuPermission(session.permissions, 'write', 'write');
+    if (!hasWrite) return json({ error: '게시글 상태 변경 권한이 없습니다.' }, 403);
+    if (!sessionOwnsPost(session, preCheckPost)) {
+      return json({ error: '본인이 작성한 글만 상태를 변경할 수 있습니다.' }, 403);
+    }
+    // 에디터 추천(featured) 토글은 오너 전용.
+    if (body && body.featured !== undefined) {
+      return json({ error: '에디터 추천 지정은 오너만 할 수 있습니다.' }, 403);
+    }
   }
 
   const featuredInput = optionalBooleanFlag(body.featured);

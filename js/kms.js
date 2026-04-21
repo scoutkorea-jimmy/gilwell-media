@@ -421,6 +421,9 @@
   }
 
   function doLogin() {
+    var userEl = document.getElementById('kms-username-input');
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
+    if (!username) username = 'owner';
     var pw = String((document.getElementById('kms-pw-input') || {}).value || '').trim();
     var errEl = document.getElementById('kms-login-error');
     var btn = document.getElementById('kms-login-btn');
@@ -428,10 +431,13 @@
     btn.disabled = true;
     btn.textContent = '확인 중…';
     hideLoginError();
-    GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ password: pw }) })
+    GW.apiFetch('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: username, password: pw }) })
       .then(function (data) {
         GW.setToken(data.token);
         if (GW.setAdminRole) GW.setAdminRole(data.role || 'full');
+        if (data && data.user && data.user.must_change_password && GW.showToast) {
+          GW.showToast('임시 비밀번호입니다. 관리자 페이지에서 변경해주세요.', 'warn', 8000);
+        }
         showKms();
       })
       .catch(function (err) {

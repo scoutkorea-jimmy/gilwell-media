@@ -184,15 +184,28 @@ export async function onRequestDelete({ params, request, env }) {
 
   try {
     if (hard) {
-      // Hard delete — row goes away. posts.author_user_id becomes orphan but
-      // posts themselves remain (never cascade).
-      await env.DB.prepare(`DELETE FROM admin_users WHERE id = ?`).bind(id).run();
+      // Hard delete — GDPR Art. 17 right to erasure. Drop the row but:
+      //   1. Preserve posts.author_user_id as an orphan pointer (posts live on).
+      //   2. Anonymize the username in every audit/log table so we retain the
+      //      record of *what happened* (security requirement) while erasing
+      //      the personally identifying key (*who did it*). The replacement
+      //      token is '[deleted:<uid>]' so the log stays internally consistent.
+      const anonToken = `[deleted:${id}]`;
+      const oldUsername = target.username;
+      // Ordered: delete row last so if any anonymization fails, the row still
+      // provides a target for retry.
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE operational_events SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
+        env.DB.prepare(`UPDATE ai_usage_log SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
+        env.DB.prepare(`UPDATE settings_history SET actor = ? WHERE actor = ?`).bind(anonToken, oldUsername),
+        env.DB.prepare(`DELETE FROM admin_users WHERE id = ?`).bind(id),
+      ]);
       await logOperationalEvent(env, {
         channel: 'admin', type: 'admin_user_hard_deleted', level: 'warn',
         actor: session.username || 'owner', path: `/api/admin/users/${id}`,
-        message: `사용자 완전 삭제 — ${target.username} (행 제거, 게시글은 보존)`,
+        message: `사용자 완전 삭제 — ${target.username} → ${anonToken} (GDPR Art.17 · 감사 로그는 익명화 후 보존, 게시글은 유지)`,
       });
-      return json({ success: true, hard: true });
+      return json({ success: true, hard: true, anonymized_as: anonToken });
     }
 
     await env.DB.prepare(

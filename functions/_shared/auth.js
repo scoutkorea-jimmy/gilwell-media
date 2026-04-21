@@ -301,9 +301,14 @@ export function clearAdminSessionCookie() {
 
 // ── Admin password hashing (PBKDF2-HMAC-SHA256) ──────────────
 // Stored in settings('admin_password_hash') as JSON:
-//   {"algo":"PBKDF2-SHA256","iters":150000,"salt":"<b64url>","hash":"<b64url>"}
-
-const PBKDF2_ITERS = 150_000;
+//   {"algo":"PBKDF2-SHA256","iters":100000,"salt":"<b64url>","hash":"<b64url>"}
+//
+// Workers Web Crypto enforces a 100,000 iteration ceiling for PBKDF2
+// (NotSupportedError above that). verifyAdminPasswordHash respects whatever
+// iteration count is stored on the record, so legacy higher-iter hashes fail
+// verification cleanly rather than silently falling back.
+const PBKDF2_ITERS = 100_000;
+const PBKDF2_MAX_ITERS = 100_000;
 
 export async function hashAdminPassword(password) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -320,7 +325,7 @@ export async function verifyAdminPasswordHash(password, stored) {
   if (!stored || typeof stored !== 'object') return false;
   if (stored.algo !== 'PBKDF2-SHA256') return false;
   const salt = b64urlToBuf(String(stored.salt || ''));
-  const iters = Number(stored.iters) || PBKDF2_ITERS;
+  const iters = Math.min(Number(stored.iters) || PBKDF2_ITERS, PBKDF2_MAX_ITERS);
   const expected = b64urlToBuf(String(stored.hash || ''));
   if (!salt.length || !expected.length) return false;
   const computed = await _pbkdf2(password, salt, iters);
