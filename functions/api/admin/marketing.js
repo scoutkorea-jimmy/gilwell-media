@@ -5,7 +5,7 @@ import { SITE_PATH_TITLE_FALLBACKS } from '../../_shared/site-structure.mjs';
 
 export async function onRequestGet({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

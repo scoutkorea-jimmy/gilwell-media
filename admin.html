@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421115057">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421133819">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,9 +85,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.089.04</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.089.05</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.127.04</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.127.05</span>
     </div>
   </div>
 </div>
@@ -100,8 +100,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.089.04</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.127.04</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.089.05</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.127.05</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -1098,6 +1098,7 @@
             <button class="v3-settings-nav-btn" data-section="nav-labels">상단 메뉴명</button>
             <button class="v3-settings-nav-btn" data-section="translations">UI 번역</button>
             <button class="v3-settings-nav-btn" data-section="wosm-members">세계연맹 회원국</button>
+            <button class="v3-settings-nav-btn" data-section="account-security">계정 보안</button>
           </div>
 
           <!-- Settings sections -->
@@ -1497,6 +1498,41 @@
                 <div id="wosm-members-editor">
                   <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
                 </div>
+              </div>
+            </div>
+
+            <!-- ACCOUNT SECURITY -->
+            <div class="v3-settings-section" id="settings-account-security">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <div>
+                    <h2 class="v3-card-title">관리자 비밀번호 변경</h2>
+                    <p class="v3-card-desc">
+                      비밀번호를 변경하면 현재 기기의 세션은 유지되고 <strong>다른 모든 기기의 세션은 즉시 로그아웃</strong>됩니다.
+                      최소 8자 이상으로 설정해주세요. 영문·숫자·기호를 섞어 쓰는 것을 권장합니다.
+                    </p>
+                  </div>
+                </div>
+                <form id="account-password-form" class="v3-form-grid" autocomplete="off" novalidate>
+                  <div class="v3-form-group v3-form-span-full">
+                    <label class="v3-label" for="account-current-password">현재 비밀번호</label>
+                    <input class="v3-input" type="password" id="account-current-password" name="current" autocomplete="current-password" required minlength="1" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="account-new-password">새 비밀번호 <span class="v3-label-opt">8자 이상</span></label>
+                    <input class="v3-input" type="password" id="account-new-password" name="new" autocomplete="new-password" required minlength="8" />
+                  </div>
+                  <div class="v3-form-group">
+                    <label class="v3-label" for="account-new-password-confirm">새 비밀번호 확인</label>
+                    <input class="v3-input" type="password" id="account-new-password-confirm" name="confirm" autocomplete="new-password" required minlength="8" />
+                  </div>
+                  <div class="v3-form-group v3-form-span-full">
+                    <div class="v3-flex" style="justify-content:flex-end;gap:8px;">
+                      <span id="account-password-status" class="v3-inline-meta" aria-live="polite"></span>
+                      <button class="v3-btn v3-btn-primary" type="submit" id="account-password-save-btn">비밀번호 변경</button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
 
@@ -1924,9 +1960,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421115057"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421115057"></script>
-<script src="/js/admin-v3.js?v=20260421115057"></script>
+<script src="/js/main.js?v=20260421133819"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421133819"></script>
+<script src="/js/admin-v3.js?v=20260421133819"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

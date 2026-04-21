@@ -30,7 +30,7 @@ export async function onRequestGet({ env, request }) {
   const usageTag = String(url.searchParams.get('usage') || '').trim();
   if (usageTag) {
     const token = extractToken(request);
-    if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+    if (!token || !(await verifyTokenRole(token, env, 'full'))) {
       return json({ error: '인증이 필요합니다' }, 401);
     }
     const usage = await getTagUsage(env, usageTag);
@@ -62,7 +62,7 @@ export async function onRequestGet({ env, request }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
 

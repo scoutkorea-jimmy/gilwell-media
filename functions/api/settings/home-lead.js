@@ -44,7 +44,7 @@ export async function onRequestGet({ env, request }) {
 export async function onRequestPut({ env, request }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

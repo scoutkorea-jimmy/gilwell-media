@@ -6,6 +6,7 @@
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
@@ -58,8 +59,20 @@ export async function onRequestGet({ request, env }) {
   // Admin token check — if valid token, include unpublished posts
   const token   = extractToken(request);
   const isAdmin = adminScopeRequested && token
-    ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false)
+    ? await verifyTokenRole(token, env, 'full').catch(() => false)
     : false;
+
+  // Search-heavy workload rate limit (non-admins only). We cap at 30 searches
+  // per IP per minute — generous for humans, painful for abusive scrapers.
+  if (!isAdmin && safeQ) {
+    const rl = await enforceRateLimit(env, {
+      route: 'posts-search',
+      identity: getClientIp(request),
+      limit: 30,
+      windowSeconds: 60,
+    });
+    if (!rl.ok) return rateLimitResponse(rl, '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+  }
 
   const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
   const ORDER_LATEST = `ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`;
@@ -167,7 +180,7 @@ export async function onRequestPost({ request, env }) {
   const origin = new URL(request.url).origin;
   // Verify admin token
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

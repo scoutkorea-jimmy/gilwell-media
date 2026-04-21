@@ -1,4 +1,5 @@
 import { getViewerKey, getLikeStats, isLikelyNonHumanRequest } from '../../../_shared/engagement.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../../_shared/rate-limit.js';
 
 export async function onRequestPost({ params, env, request }) {
   const id = parseInt(params.id, 10);
@@ -11,6 +12,17 @@ export async function onRequestPost({ params, env, request }) {
   if (isLikelyNonHumanRequest(request)) {
     return json({ likes: 0, liked: false }, 200);
   }
+
+  // Cap even human-origin abuse: 30 like requests / IP / minute across all
+  // posts. The INSERT OR IGNORE uniqueness already prevents multi-likes on
+  // one post, so this mainly shields the DB from hammering.
+  const rl = await enforceRateLimit(env, {
+    route: 'like',
+    identity: getClientIp(request),
+    limit: 30,
+    windowSeconds: 60,
+  });
+  if (!rl.ok) return rateLimitResponse(rl, '공감 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
 
   const post = await env.DB.prepare(`SELECT id FROM posts WHERE id = ? AND published = 1`).bind(id).first();
   if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
