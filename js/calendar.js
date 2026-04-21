@@ -958,8 +958,8 @@
 
   function submitLogin() {
     var userEl = document.getElementById('calendar-login-username');
-    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
-    if (!username) username = 'owner';
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : '';
+    
     var password = (document.getElementById('calendar-login-pw').value || '').trim();
     var err = document.getElementById('calendar-login-err');
     var btn = document.getElementById('calendar-login-submit-btn');

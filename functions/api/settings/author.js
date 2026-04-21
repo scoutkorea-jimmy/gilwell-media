@@ -3,6 +3,7 @@
  * PUT  /api/settings/author  ← admin only, update author name
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
@@ -15,10 +16,7 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'author', 'view'); if (__gate) return __gate
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
   const author = (body.author && typeof body.author === 'string') ? body.author.trim().slice(0, 60) : 'Editor.A';

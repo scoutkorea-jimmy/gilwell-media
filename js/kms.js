@@ -422,8 +422,8 @@
 
   function doLogin() {
     var userEl = document.getElementById('kms-username-input');
-    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
-    if (!username) username = 'owner';
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : '';
+    
     var pw = String((document.getElementById('kms-pw-input') || {}).value || '').trim();
     var errEl = document.getElementById('kms-login-error');
     var btn = document.getElementById('kms-login-btn');

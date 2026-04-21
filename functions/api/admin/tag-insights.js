@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { buildTagInsights } from '../../_shared/tag-insights.js';
 
 /**
@@ -16,10 +17,7 @@ import { buildTagInsights } from '../../_shared/tag-insights.js';
  *  - 태그 이름 원문 보존. 자동 통합/삭제 없음.
  */
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'analytics-tags', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
   const startParam = url.searchParams.get('start');

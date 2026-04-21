@@ -354,8 +354,8 @@
 
   function submitLogin() {
     var userEl = byId('glossary-login-username');
-    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : 'owner';
-    if (!username) username = 'owner';
+    var username = userEl ? String(userEl.value || '').trim().toLowerCase() : '';
+    
     var pw = (byId('glossary-login-password').value || '').trim();
     if (!pw) return;
     GW.apiFetch('/api/admin/login', {

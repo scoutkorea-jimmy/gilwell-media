@@ -9,16 +9,14 @@
  * Posts store author as "Editor A", "Editor B", etc.
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const LETTERS = ['A', 'B', 'C'];
 
 export async function onRequestGet({ request, env }) {
   // Require auth — editor real names are private
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'editors', 'view'); if (__gate) return __gate
 
   try {
     const row = await env.DB.prepare(
@@ -39,10 +37,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'editors', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {

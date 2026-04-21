@@ -5,6 +5,7 @@
  * PUT /api/settings/tags  ← admin only, update tags
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 const DEFAULT_TAGS = {
@@ -29,10 +30,7 @@ export async function onRequestGet({ env, request }) {
   const url = new URL(request.url);
   const usageTag = String(url.searchParams.get('usage') || '').trim();
   if (usageTag) {
-    const token = extractToken(request);
-    if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-      return json({ error: '인증이 필요합니다' }, 401);
-    }
+    const __gate = await gateMenuAccess(request, env, 'tags', 'view'); if (__gate) return __gate
     const usage = await getTagUsage(env, usageTag);
     return json(usage);
   }
@@ -61,10 +59,7 @@ export async function onRequestGet({ env, request }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'tags', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch {

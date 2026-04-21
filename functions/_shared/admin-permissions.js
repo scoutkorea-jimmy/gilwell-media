@@ -151,3 +151,47 @@ function jsonResponse(data, status) {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }
+
+/**
+ * Phase 5 retrofit helper — mirrors the shape of the original
+ * `if (!token || !verifyTokenRole(...)) return 401` pattern but switches to
+ * menu-level checks so member sessions can reach endpoints within their
+ * permission matrix.
+ *
+ * Usage at the top of a handler:
+ *   const gate = await gateMenuAccess(request, env, 'hero', 'view');
+ *   if (gate) return gate;
+ *
+ * Returns:
+ *   null            — authorized (owner or member with the specific token)
+ *   401 Response    — no valid session
+ *   403 Response    — session exists but lacks access_admin or the menu token
+ */
+export async function gateMenuAccess(request, env, menuSlug, action) {
+  const session = await loadAdminSession(request, env);
+  if (!session) return unauthorized();
+  if (session.isOwner) return null;
+  if (!session.permissions.access_admin) {
+    return forbidden('관리자 접근 권한이 없습니다.');
+  }
+  if (!hasMenuPermission(session.permissions, menuSlug, action)) {
+    const actionLabel = action === 'write' ? '쓰기' : '보기';
+    return forbidden(`이 메뉴의 ${actionLabel} 권한이 없습니다. 오너에게 요청하세요.`);
+  }
+  return null;
+}
+
+/**
+ * Minimum-bar gate — any authenticated admin session with access_admin=true.
+ * For endpoints that don't map cleanly to one of the 27 menu slugs (e.g.
+ * /api/admin/session, /api/admin/users/me, /api/admin/presets GET).
+ */
+export async function gateAnyAdmin(request, env) {
+  const session = await loadAdminSession(request, env);
+  if (!session) return unauthorized();
+  if (session.isOwner) return null;
+  if (!session.permissions.access_admin) {
+    return forbidden('관리자 접근 권한이 없습니다.');
+  }
+  return null;
+}

@@ -1,14 +1,12 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { resolveAnalyticsRange } from '../../_shared/cloudflare-analytics.js';
 import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
 
   const url = new URL(request.url);
   const range = resolveRequestedRange(url.searchParams);

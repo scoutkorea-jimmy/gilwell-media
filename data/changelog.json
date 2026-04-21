@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.099.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 03:14:16 KST",
+    "summary": "관리자 Phase 5 대규모 리트로핏 — 32개 admin/settings API가 verifyTokenRole('full') 기반 owner-only 체크에서 gateMenuAccess(slug, view|write) 기반 메뉴별 권한 체크로 전환. 멤버 계정이 자신이 부여받은 권한 매트릭스대로 관리자 콘솔을 탐색할 수 있게 됨. 로그인 폼의 'owner' 자동 채움 제거(아이디 필수 입력으로 전환).",
+    "changes": [
+      "functions/_shared/admin-permissions.js: gateMenuAccess(request, env, menuSlug, action) 헬퍼 신규 — 세션 부재 시 401, access_admin=false 시 403 '관리자 접근 권한이 없습니다', 메뉴 토큰 부재 시 403 '이 메뉴의 보기/쓰기 권한이 없습니다'. gateAnyAdmin(request, env) 최소바 헬퍼도 함께 제공.",
+      "admin/settings 32개 엔드포인트 일괄 리트로핏 — hero/home-lead/board-copy/board-banner/board-layout/ticker/tags/site-meta/author/ai-disclaimer/contributors/editors/translations/nav-labels/wosm-members/calendar-copy/calendar-tags/feature-definition/score-rubric + admin의 analytics/geo-audience/marketing/tag-insights/search-keywords/changelog/site-history/operations/homepage-issues(+[id])/ai-score-history/ai-usage/meta-tag-pool. GET=view:slug, POST/PUT/PATCH/DELETE=write:slug 자동 매핑.",
+      "리트로핏 제외: login/session/password/publish-kill-switch/users·presets CRUD(이미 requireOwner)/score-article(Phase 4 자체 로직)/site-meta/image(별도 검토). score-article·posts는 Phase 4에서 별도 처리됨.",
+      "admin.html 로그인 폼: v3-username의 value='owner' 속성 제거, placeholder='아이디'. js/admin-v3.js _doLogin: 빈 아이디 입력 시 토스트 안내 후 focus 이동, 'owner' fallback 제거. 공개 로그인 모달(board-write/calendar/glossary/kms) 4곳도 동일 처리.",
+      "효과: 뷰어 프리셋(view:* 전체) 멤버는 대시보드·분석·노출 설정·기사 목록 등 모든 메뉴 읽기 가능. 글쟁이 프리셋은 write:list/write/calendar/article-scorer로 실제 글쓰기·수정 가능. 마케팅 프리셋은 write:analytics/marketing/hero/home-lead/picks/board-copy/banner/ticker/tags/meta로 홍보 설정 저장 가능. 오너는 모든 게이트를 무조건 통과.",
+      "관리자 버전 03.098.02 → 03.099.00 (Feature bump)."
+    ]
+  },
+  {
     "version": "00.130.01",
     "date": "2026-04-22",
     "released_at": "2026-04-22 03:03:32 KST",

@@ -1,4 +1,5 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { loadScoreRubric, normalizeScoreRubric, DEFAULT_SCORE_RUBRIC, RUBRIC_MAX_CHARS } from '../../_shared/score-rubric.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
 
@@ -27,10 +28,7 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'article-scorer', 'view'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); }
@@ -58,10 +56,7 @@ export async function onRequestPut({ request, env }) {
 }
 
 export async function onRequestDelete({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'article-scorer', 'write'); if (__gate) return __gate
   try {
     const prevRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'score_rubric'`).first();
     await env.DB.prepare(`DELETE FROM settings WHERE key = 'score_rubric'`).run();
