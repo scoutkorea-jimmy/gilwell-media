@@ -34,17 +34,6 @@ export async function createToken(secret, role = 'full') {
   return `${data}.${bufToB64url(sigBuf)}`;
 }
 
-/**
- * Verify a session token.
- * @param {string} token   Token from Authorization header
- * @param {string} secret  ADMIN_SECRET environment variable value
- * @returns {Promise<boolean>}
- */
-export async function verifyToken(token, secret) {
-  const payload = await readToken(token, secret);
-  return !!payload;
-}
-
 export async function readToken(token, secret) {
   try {
     if (!token || typeof token !== 'string') return null;
