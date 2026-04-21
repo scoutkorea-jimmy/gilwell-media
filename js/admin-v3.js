@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.090.01
+ * Version: 03.090.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5776,14 +5776,21 @@
     }
   }
 
-  // 현재 선택된 차트 기간(7/14/30/90일). 범위 버튼과 연동.
-  var _aiUsageChartDays = 14;
+  // 차트 범위 상태. mode==='days'면 days 값을 쓰고, 'custom'이면 start/end를 쓴다.
+  var _aiUsageChartRange = { mode: 'days', days: 14, start: null, end: null };
 
   function _loadAiUsage(actionBtn) {
     if (actionBtn) _setButtonBusy(actionBtn, '…');
     var foot = document.getElementById('ai-usage-footline');
     if (foot) foot.classList.remove('is-stale');
-    _apiFetch('/api/admin/ai-usage?days=' + _aiUsageChartDays)
+    var qs;
+    if (_aiUsageChartRange.mode === 'custom' && _aiUsageChartRange.start && _aiUsageChartRange.end) {
+      qs = 'start=' + encodeURIComponent(_aiUsageChartRange.start) +
+           '&end=' + encodeURIComponent(_aiUsageChartRange.end);
+    } else {
+      qs = 'days=' + (_aiUsageChartRange.days || 14);
+    }
+    _apiFetch('/api/admin/ai-usage?' + qs)
       .then(function (data) {
         _renderAiUsage(data);
       })
@@ -5800,17 +5807,73 @@
     _bindAiUsageRangeButtonsOnce._bound = true;
     document.querySelectorAll('.v3-ai-usage-trend-range [data-ai-usage-range]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var days = parseInt(btn.getAttribute('data-ai-usage-range') || '14', 10);
+        var token = btn.getAttribute('data-ai-usage-range') || '14';
+        if (token === 'custom') {
+          _toggleAiUsageCustomRow(true);
+          _setAiUsageActiveButton(btn);
+          return;
+        }
+        var days = parseInt(token, 10);
         if (!Number.isFinite(days) || days <= 0) return;
-        _aiUsageChartDays = days;
-        document.querySelectorAll('.v3-ai-usage-trend-range [data-ai-usage-range]').forEach(function (b) {
-          b.classList.toggle('active', b === btn);
-        });
+        _toggleAiUsageCustomRow(false);
+        _aiUsageChartRange = { mode: 'days', days: days, start: null, end: null };
+        _setAiUsageActiveButton(btn);
         var rangeLabel = document.getElementById('ai-usage-trend-range-label');
         if (rangeLabel) rangeLabel.textContent = '최근 ' + days + '일';
         _loadAiUsage();
       });
     });
+
+    var applyBtn = document.getElementById('ai-usage-custom-apply-btn');
+    if (applyBtn) {
+      applyBtn.addEventListener('click', function () {
+        var startEl = document.getElementById('ai-usage-custom-start');
+        var endEl   = document.getElementById('ai-usage-custom-end');
+        var start   = startEl ? startEl.value : '';
+        var end     = endEl   ? endEl.value   : '';
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
+          if (typeof GW.showToast === 'function') GW.showToast('시작일과 종료일을 모두 선택해주세요', 'error');
+          return;
+        }
+        if (start > end) {
+          if (typeof GW.showToast === 'function') GW.showToast('종료일은 시작일 이후여야 합니다', 'error');
+          return;
+        }
+        var spanDays = Math.round((new Date(end + 'T00:00:00Z').getTime() - new Date(start + 'T00:00:00Z').getTime()) / 86400000) + 1;
+        if (spanDays > 365) {
+          if (typeof GW.showToast === 'function') GW.showToast('최대 365일 범위까지만 조회할 수 있습니다 (' + spanDays + '일)', 'error');
+          return;
+        }
+        _aiUsageChartRange = { mode: 'custom', days: spanDays, start: start, end: end };
+        var rangeLabel = document.getElementById('ai-usage-trend-range-label');
+        if (rangeLabel) rangeLabel.textContent = start + ' ~ ' + end + ' (' + spanDays + '일)';
+        _loadAiUsage();
+      });
+    }
+  }
+
+  function _setAiUsageActiveButton(activeBtn) {
+    document.querySelectorAll('.v3-ai-usage-trend-range [data-ai-usage-range]').forEach(function (b) {
+      b.classList.toggle('active', b === activeBtn);
+    });
+  }
+
+  function _toggleAiUsageCustomRow(show) {
+    var row = document.getElementById('ai-usage-custom-row');
+    var toggle = document.getElementById('ai-usage-custom-toggle-btn');
+    if (row) row.hidden = !show;
+    if (toggle) toggle.setAttribute('aria-expanded', show ? 'true' : 'false');
+    if (show) {
+      // 기본값: 오늘 ~ 오늘-13일 (14일 디폴트). KST 기준 YYYY-MM-DD.
+      var startEl = document.getElementById('ai-usage-custom-start');
+      var endEl   = document.getElementById('ai-usage-custom-end');
+      var toKst = function (ms) {
+        var d = new Date(ms + 9 * 3600 * 1000);
+        return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+      };
+      if (startEl && !startEl.value) startEl.value = toKst(Date.now() - 13 * 86400 * 1000);
+      if (endEl   && !endEl.value)   endEl.value   = toKst(Date.now());
+    }
   }
 
   function _renderAiUsageChart(data) {
@@ -5818,21 +5881,43 @@
     var svg = document.getElementById('ai-usage-chart');
     if (!svg) return;
 
-    var periodDays = Number(data && data.chart_days) || _aiUsageChartDays || 14;
+    var periodDays = Number(data && data.chart_days) || (_aiUsageChartRange && _aiUsageChartRange.days) || 14;
     var rangeLabel = document.getElementById('ai-usage-trend-range-label');
-    if (rangeLabel) rangeLabel.textContent = '최근 ' + periodDays + '일';
+    if (rangeLabel) {
+      if (data && data.chart_range && data.chart_range.mode === 'custom') {
+        rangeLabel.textContent = data.chart_range.start_kst + ' ~ ' + data.chart_range.end_kst + ' (' + periodDays + '일)';
+      } else {
+        rangeLabel.textContent = '최근 ' + periodDays + '일';
+      }
+    }
 
     // 기간 내 날짜를 빠짐없이 채우기 (데이터 없는 날은 0)
+    // 커스텀 범위면 start~end를 순회, 기본 모드면 오늘 기준 N일 역산.
     var map = {};
     (Array.isArray(data && data.byDay) ? data.byDay : []).forEach(function (d) {
       map[d.date] = Number(d.calls || 0);
     });
     var points = [];
-    var now = new Date();
-    for (var i = periodDays - 1; i >= 0; i -= 1) {
-      var d = new Date(now.getTime() - i * 86400 * 1000);
-      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      points.push({ date: key, calls: map[key] || 0, label: String(d.getMonth() + 1) + '/' + d.getDate() });
+    var isCustom = !!(data && data.chart_range && data.chart_range.mode === 'custom' && data.chart_range.start_kst);
+    if (isCustom) {
+      var startParts = data.chart_range.start_kst.split('-').map(Number);
+      var endParts   = data.chart_range.end_kst.split('-').map(Number);
+      // 루프를 UTC 기준으로 안전하게 (DST/timezone shift 없음)
+      var cur = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+      var stop = Date.UTC(endParts[0], endParts[1] - 1, endParts[2]);
+      while (cur <= stop) {
+        var cd = new Date(cur);
+        var key = cd.getUTCFullYear() + '-' + String(cd.getUTCMonth() + 1).padStart(2, '0') + '-' + String(cd.getUTCDate()).padStart(2, '0');
+        points.push({ date: key, calls: map[key] || 0, label: String(cd.getUTCMonth() + 1) + '/' + cd.getUTCDate() });
+        cur += 86400000;
+      }
+    } else {
+      var now = new Date();
+      for (var i = periodDays - 1; i >= 0; i -= 1) {
+        var d = new Date(now.getTime() - i * 86400 * 1000);
+        var dKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        points.push({ date: dKey, calls: map[dKey] || 0, label: String(d.getMonth() + 1) + '/' + d.getDate() });
+      }
     }
 
     // viewBox 800x220. 내부 여백 = 좌 36 / 우 12 / 상 20 / 하 38
