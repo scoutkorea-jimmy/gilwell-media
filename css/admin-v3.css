@@ -4162,6 +4162,80 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-ai-usage-spark-bar[data-empty="1"] { background: rgba(203,213,225,0.5); }
 .v3-ai-usage-spark-bar[title] { cursor: help; }
 
+/* ── 채점 사용량 꺾은선 차트 ──────────────────────────── */
+.v3-ai-usage-trend {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(98,37,153,0.22);
+}
+.v3-ai-usage-trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.v3-ai-usage-trend-title { font-size: 13px; color: var(--v3-ink, #222); }
+.v3-ai-usage-trend-range {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px;
+  background: rgba(98,37,153,0.06);
+  border-radius: 6px;
+}
+.v3-ai-usage-trend-range .v3-btn-xs {
+  padding: 4px 10px;
+  font-size: 11px;
+  min-height: 26px;
+  line-height: 1.2;
+  border-radius: 4px;
+}
+.v3-ai-usage-trend-range .active {
+  background: var(--v3-primary, #622599);
+  color: #fff;
+}
+.v3-ai-usage-chart {
+  display: block;
+  width: 100%;
+  height: 220px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 8px;
+  overflow: visible;
+}
+.v3-ai-usage-chart .chart-grid { stroke: rgba(0,0,0,0.06); stroke-width: 1; }
+.v3-ai-usage-chart .chart-axis-x,
+.v3-ai-usage-chart .chart-axis-y { fill: rgba(0,0,0,0.5); font-size: 10px; font-family: 'Google Sans Flex', 'Noto Sans', sans-serif; }
+.v3-ai-usage-chart .chart-line {
+  fill: none;
+  stroke: var(--v3-primary, #622599);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.v3-ai-usage-chart .chart-area {
+  fill: rgba(98,37,153,0.10);
+  stroke: none;
+}
+.v3-ai-usage-chart .chart-point {
+  fill: var(--v3-primary, #622599);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.v3-ai-usage-chart .chart-label {
+  fill: var(--v3-primary, #622599);
+  font-size: 10px;
+  font-family: 'Google Sans Flex', 'Noto Sans', sans-serif;
+  font-weight: 600;
+  text-anchor: middle;
+}
+.v3-ai-usage-chart .chart-label-zero { fill: rgba(0,0,0,0.25); }
+.v3-ai-usage-chart .chart-empty {
+  fill: rgba(0,0,0,0.35);
+  font-size: 11px;
+  text-anchor: middle;
+}
+
 .v3-ai-usage-footline {
   margin-top: 10px;
   padding-top: 10px;

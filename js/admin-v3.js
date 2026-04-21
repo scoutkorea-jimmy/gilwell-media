@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.090.00
+ * Version: 03.090.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -5744,27 +5744,8 @@
       else if (monthCalls >= _AI_USAGE_WARN_MONTH) monthStat.parentElement.classList.add('is-warn');
     }
 
-    // 14일 스파크라인
-    var spark = document.getElementById('ai-usage-spark');
-    if (spark) {
-      var days = Array.isArray(data.byDay) ? data.byDay : [];
-      // 오늘 기준 14일 전까지 date 키로 정규화
-      var map = {};
-      days.forEach(function (d) { map[d.date] = Number(d.calls || 0); });
-      var bars = [];
-      var now = new Date();
-      for (var i = 13; i >= 0; i -= 1) {
-        var d = new Date(now.getTime() - i * 86400 * 1000);
-        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        bars.push({ date: key, calls: map[key] || 0 });
-      }
-      var max = bars.reduce(function (m, b) { return b.calls > m ? b.calls : m; }, 0);
-      spark.innerHTML = bars.map(function (b) {
-        var pct = max > 0 ? Math.max(4, Math.round((b.calls / max) * 100)) : 0;
-        var empty = b.calls === 0 ? ' data-empty="1"' : '';
-        return '<div class="v3-ai-usage-spark-bar"' + empty + ' style="height:' + pct + '%;" title="' + b.date + ' · ' + b.calls + '회"></div>';
-      }).join('');
-    }
+    // 일별 꺾은선 차트 — 기간은 data.chart_days(서버 반환)에 맞춤
+    _renderAiUsageChart(data);
 
     // Footline
     var foot = document.getElementById('ai-usage-footline');
@@ -5795,11 +5776,14 @@
     }
   }
 
+  // 현재 선택된 차트 기간(7/14/30/90일). 범위 버튼과 연동.
+  var _aiUsageChartDays = 14;
+
   function _loadAiUsage(actionBtn) {
     if (actionBtn) _setButtonBusy(actionBtn, '…');
     var foot = document.getElementById('ai-usage-footline');
     if (foot) foot.classList.remove('is-stale');
-    _apiFetch('/api/admin/ai-usage')
+    _apiFetch('/api/admin/ai-usage?days=' + _aiUsageChartDays)
       .then(function (data) {
         _renderAiUsage(data);
       })
@@ -5809,6 +5793,131 @@
       .finally(function () {
         if (actionBtn) _clearButtonBusy(actionBtn);
       });
+  }
+
+  function _bindAiUsageRangeButtonsOnce() {
+    if (_bindAiUsageRangeButtonsOnce._bound) return;
+    _bindAiUsageRangeButtonsOnce._bound = true;
+    document.querySelectorAll('.v3-ai-usage-trend-range [data-ai-usage-range]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var days = parseInt(btn.getAttribute('data-ai-usage-range') || '14', 10);
+        if (!Number.isFinite(days) || days <= 0) return;
+        _aiUsageChartDays = days;
+        document.querySelectorAll('.v3-ai-usage-trend-range [data-ai-usage-range]').forEach(function (b) {
+          b.classList.toggle('active', b === btn);
+        });
+        var rangeLabel = document.getElementById('ai-usage-trend-range-label');
+        if (rangeLabel) rangeLabel.textContent = '최근 ' + days + '일';
+        _loadAiUsage();
+      });
+    });
+  }
+
+  function _renderAiUsageChart(data) {
+    _bindAiUsageRangeButtonsOnce();
+    var svg = document.getElementById('ai-usage-chart');
+    if (!svg) return;
+
+    var periodDays = Number(data && data.chart_days) || _aiUsageChartDays || 14;
+    var rangeLabel = document.getElementById('ai-usage-trend-range-label');
+    if (rangeLabel) rangeLabel.textContent = '최근 ' + periodDays + '일';
+
+    // 기간 내 날짜를 빠짐없이 채우기 (데이터 없는 날은 0)
+    var map = {};
+    (Array.isArray(data && data.byDay) ? data.byDay : []).forEach(function (d) {
+      map[d.date] = Number(d.calls || 0);
+    });
+    var points = [];
+    var now = new Date();
+    for (var i = periodDays - 1; i >= 0; i -= 1) {
+      var d = new Date(now.getTime() - i * 86400 * 1000);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      points.push({ date: key, calls: map[key] || 0, label: String(d.getMonth() + 1) + '/' + d.getDate() });
+    }
+
+    // viewBox 800x220. 내부 여백 = 좌 36 / 우 12 / 상 20 / 하 38
+    var VW = 800, VH = 220;
+    var PL = 36, PR = 12, PT = 20, PB = 38;
+    var innerW = VW - PL - PR;
+    var innerH = VH - PT - PB;
+    var n = points.length;
+    var maxCalls = points.reduce(function (m, p) { return p.calls > m ? p.calls : m; }, 0);
+    var yMax = maxCalls > 0 ? Math.max(1, niceCeil(maxCalls)) : 1;
+
+    function xOf(i) { return PL + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW); }
+    function yOf(v) { return PT + innerH - (v / yMax) * innerH; }
+
+    var parts = [];
+
+    // 데이터가 전혀 없으면 안내 문구만 표시
+    if (maxCalls === 0) {
+      parts.push('<text class="chart-empty" x="' + (VW / 2) + '" y="' + (VH / 2) + '">기간 내 채점 호출이 없습니다</text>');
+      // 축만 그려 시각적 뼈대 유지
+    }
+
+    // Y축 가이드 라인 4개 (0, 1/3, 2/3, max)
+    var gridSteps = [0, 1, 2, 3];
+    gridSteps.forEach(function (step) {
+      var v = (yMax * step) / 3;
+      var y = yOf(v);
+      parts.push('<line class="chart-grid" x1="' + PL + '" y1="' + y + '" x2="' + (VW - PR) + '" y2="' + y + '"/>');
+      parts.push('<text class="chart-axis-y" x="' + (PL - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + Math.round(v) + '</text>');
+    });
+
+    // X축 레이블 — 기간이 길면 솎아내기
+    var labelEvery = n <= 14 ? 1 : n <= 30 ? 3 : n <= 60 ? 5 : 10;
+    for (var xi = 0; xi < n; xi += 1) {
+      if (xi !== n - 1 && xi !== 0 && (xi % labelEvery) !== 0) continue;
+      parts.push('<text class="chart-axis-x" x="' + xOf(xi) + '" y="' + (VH - PB + 14) + '" text-anchor="middle">' + points[xi].label + '</text>');
+    }
+
+    if (maxCalls > 0) {
+      // 영역(선 아래 반투명) 경로
+      var areaPath = 'M ' + xOf(0) + ' ' + yOf(0) + ' ';
+      for (var i1 = 0; i1 < n; i1 += 1) {
+        areaPath += 'L ' + xOf(i1) + ' ' + yOf(points[i1].calls) + ' ';
+      }
+      areaPath += 'L ' + xOf(n - 1) + ' ' + yOf(0) + ' Z';
+      parts.push('<path class="chart-area" d="' + areaPath + '"/>');
+
+      // 선
+      var linePath = '';
+      for (var i2 = 0; i2 < n; i2 += 1) {
+        linePath += (i2 === 0 ? 'M ' : 'L ') + xOf(i2) + ' ' + yOf(points[i2].calls) + ' ';
+      }
+      parts.push('<path class="chart-line" d="' + linePath.trim() + '"/>');
+
+      // 포인트 원 + 라벨(사용량)
+      for (var i3 = 0; i3 < n; i3 += 1) {
+        var cx = xOf(i3), cy = yOf(points[i3].calls);
+        parts.push('<circle class="chart-point" cx="' + cx + '" cy="' + cy + '" r="3"><title>' + points[i3].date + ' · ' + points[i3].calls + '회</title></circle>');
+        // 값 라벨 — 데이터 밀도에 따라 0은 숨기고, 긴 기간은 피크만 표시
+        var showLabel =
+          (n <= 14) ||
+          (n <= 30 && (points[i3].calls > 0 || i3 === 0 || i3 === n - 1)) ||
+          (n > 30 && points[i3].calls > 0 && (points[i3].calls === maxCalls || (i3 % Math.ceil(n / 8)) === 0));
+        if (!showLabel) continue;
+        var zeroCls = points[i3].calls === 0 ? ' chart-label-zero' : '';
+        var labelY = cy - 7;
+        if (labelY < PT + 8) labelY = cy + 12; // 포인트가 상단에 붙으면 아래로
+        parts.push('<text class="chart-label' + zeroCls + '" x="' + cx + '" y="' + labelY + '">' + points[i3].calls + '</text>');
+      }
+    }
+
+    svg.innerHTML = parts.join('');
+  }
+
+  // 1, 2, 5, 10 배수로 올림하는 간단 상한 계산 (차트 Y축 눈금 가독성 개선).
+  function niceCeil(n) {
+    if (n <= 1) return 1;
+    var exp = Math.pow(10, Math.floor(Math.log10(n)));
+    var frac = n / exp;
+    var nice;
+    if (frac <= 1) nice = 1;
+    else if (frac <= 2) nice = 2;
+    else if (frac <= 5) nice = 5;
+    else nice = 10;
+    return nice * exp;
   }
 
   /* ══════════════════════════════════════════════════════════

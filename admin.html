@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421142917">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260421143356">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -85,7 +85,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.090.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.090.01</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.128.02</span>
     </div>
@@ -100,7 +100,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.090.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.090.01</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.128.02</span></span></div>
     </div>
 
@@ -804,7 +804,18 @@
               <span class="v3-ai-usage-cost" id="ai-usage-pricing-note" title="Workers AI 단가">단가 $0.0115/1K토큰</span>
             </div>
           </div>
-          <div class="v3-ai-usage-spark" id="ai-usage-spark" aria-hidden="true"></div>
+          <div class="v3-ai-usage-trend">
+            <div class="v3-ai-usage-trend-head">
+              <strong class="v3-ai-usage-trend-title">채점 사용량 추이 <span class="v3-label-opt v3-label-opt-inline" id="ai-usage-trend-range-label">최근 14일</span></strong>
+              <div class="v3-ai-usage-trend-range" role="group" aria-label="차트 기간">
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="7">7일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs active" data-ai-usage-range="14">14일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="30">30일</button>
+                <button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-ai-usage-range="90">90일</button>
+              </div>
+            </div>
+            <svg id="ai-usage-chart" class="v3-ai-usage-chart" viewBox="0 0 800 220" preserveAspectRatio="none" aria-label="일별 채점 호출 추이"></svg>
+          </div>
           <div class="v3-ai-usage-footline" id="ai-usage-footline">Cloudflare Workers AI는 neuron 단위로 청구됩니다. 정확한 비용은 Cloudflare 대시보드에서 확인하세요.</div>
         </div>
 
@@ -2027,9 +2038,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260421142917"></script>
-<script src="/js/shared-country-name-ko.js?v=20260421142917"></script>
-<script src="/js/admin-v3.js?v=20260421142917"></script>
+<script src="/js/main.js?v=20260421143356"></script>
+<script src="/js/shared-country-name-ko.js?v=20260421143356"></script>
+<script src="/js/admin-v3.js?v=20260421143356"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
