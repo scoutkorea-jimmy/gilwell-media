@@ -31,11 +31,15 @@
   };
 
   /* ── Fetch helper ─────────────────────────────────────────── */
+  // Authentication rides on the HttpOnly admin_token cookie (sent
+  // automatically with credentials: 'same-origin'). GW.getToken returns the
+  // 'admin_session' flag string ("1"), NOT a bearer JWT — do not set it as
+  // Authorization header, or the server rejects the stringified flag as a
+  // malformed token. This was the root cause of 내 계정/사용자 관리 panels
+  // rendering empty after Phase 3 deploy.
   function _api(path, opts) {
     opts = opts || {};
     var headers = new Headers(opts.headers || {});
-    var token = GW.getToken && GW.getToken();
-    if (token) headers.set('Authorization', 'Bearer ' + token);
     if (opts.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     return fetch(path, { method: opts.method || 'GET', headers: headers, body: opts.body, credentials: 'same-origin' })
       .then(function (res) {

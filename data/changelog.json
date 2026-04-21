@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "03.095.01",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 02:08:48 KST",
+    "summary": "hotfix — 계정 관리 패널(내 계정·사용자 관리)이 로그인 후에도 빈 값(—)으로만 렌더링되던 문제 수정. admin-account.js가 GW.getToken()이 반환하는 세션 플래그 '1'을 Bearer JWT로 오해해 Authorization 헤더에 넣고 있었고, 서버는 이를 malformed 토큰으로 거부해 모든 사용자 조회 API가 401을 돌려주었다.",
+    "changes": [
+      "js/admin-account.js _api 헬퍼: Authorization: Bearer <token> 헤더 구성 로직 제거. 인증은 credentials:'same-origin'로 함께 전송되는 HttpOnly admin_token 쿠키로 일원화(admin-v3.js의 GW.apiFetch와 동일 패턴).",
+      "비회귀: _init 폴링 루프는 GW.getToken() 반환값을 '로그인 상태' 불리언으로만 계속 활용. 의미상 변화 없음.",
+      "관리자 버전 03.095.00 → 03.095.01."
+    ]
+  },
+  {
     "version": "00.129.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 02:03:41 KST",
