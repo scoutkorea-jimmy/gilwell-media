@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.096.00
+ * Version: 03.097.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -928,6 +928,7 @@
     'ai-score-history': 'AI 채점기록',
     'account-me': '내 계정',
     'account-users': '사용자 관리',
+    'account-presets': '프리셋 관리',
   };
 
   V3.showPanel = function (panel, settingsSection) {
@@ -985,6 +986,7 @@
       hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
+      'privacy-policy': '개인정보 처리방침',
       'account-security': '계정 보안',
     };
     return labels[s] || s;

@@ -122,6 +122,62 @@
       me.role === 'owner' ? '무제한' :
       (me.ai_daily_limit == null ? '기본값 (10회/일)' : (me.ai_daily_limit + '회/일')));
     $('account-me-last-login') && ($('account-me-last-login').textContent = _kstDate(me.last_login_at));
+    _renderMyUsernameCard();
+  }
+
+  function _renderMyUsernameCard() {
+    var me = _state.me;
+    var card = $('account-me-username-card');
+    var state = $('account-me-username-state');
+    var input = $('account-me-new-username');
+    var btn = $('account-me-username-save-btn');
+    if (!card || !me) return;
+    if (me.role === 'owner') {
+      if (state) { state.textContent = '오너 계정 (여기서는 변경 불가)'; state.style.color = ''; }
+      if (input) { input.disabled = true; input.value = ''; input.placeholder = '사용자 관리에서 본인 계정을 편집하세요'; }
+      if (btn) btn.disabled = true;
+      return;
+    }
+    if (me.member_self_rename_used) {
+      if (state) { state.textContent = '이미 1회 소진 · 오너에게 요청하세요'; state.style.color = '#b45309'; }
+      if (input) { input.disabled = true; input.value = ''; input.placeholder = '이미 아이디를 변경했습니다'; }
+      if (btn) btn.disabled = true;
+    } else {
+      if (state) { state.textContent = '1회 남음'; state.style.color = '#15803d'; }
+      if (input) { input.disabled = false; input.placeholder = '새 아이디'; }
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function _bindMyUsernameForm() {
+    var form = $('account-me-username-form');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var next = String($('account-me-new-username').value || '').trim().toLowerCase();
+      var status = $('account-me-username-status');
+      if (!next) { _toast('새 아이디를 입력해주세요', 'error'); return; }
+      if (!/^[a-z0-9_]{3,32}$/.test(next)) {
+        _toast('영문 소문자·숫자·_ · 3~32자', 'error'); return;
+      }
+      if (_state.me && next === _state.me.username) {
+        _toast('현재 아이디와 다른 값을 입력해주세요', 'error'); return;
+      }
+      if (!confirm('아이디를 "' + next + '"로 변경합니다. 멤버 계정은 1회만 가능합니다. 계속할까요?')) return;
+      status.textContent = '변경 중…';
+      _api('/api/admin/users/me/username', {
+        method: 'PUT', body: JSON.stringify({ username: next }),
+      }).then(function (data) {
+        status.textContent = '';
+        _toast('아이디가 변경되었습니다.', 'success');
+        _state.me = (data && data.user) || _state.me;
+        _renderMyProfile();
+        form.reset();
+      }).catch(function (err) {
+        status.textContent = '';
+        _toast((err && err.message) || '변경 실패', 'error');
+      });
+    });
   }
 
   function _bindMyPasswordForm() {
@@ -250,7 +306,10 @@
       if (!u) { _toast('사용자를 찾을 수 없습니다', 'error'); return; }
       title.textContent = '사용자 편집 · ' + u.username;
       $('account-user-username').value = u.username;
-      $('account-user-username').disabled = true;
+      // Owner (of the console) may change any user's username — including the
+      // lone owner account. Keep editable unless 타깃이 owner인 경우 너무 쉽게 실수
+      // 하지 않도록 별도 확인 없이 저장 시 409 처리에 의존.
+      $('account-user-username').disabled = false;
       $('account-user-display-name').value = u.display_name || '';
       $('account-user-password').value = '';
       $('account-user-password').placeholder = '(비워두면 기존 비밀번호 유지)';
@@ -260,6 +319,19 @@
       $('account-user-status').value = u.status === 'disabled' ? 'disabled' : 'active';
       $('account-user-status').disabled = u.role === 'owner';
       $('account-user-must-change').checked = !!u.must_change_password;
+      // Show 아이디 변경권 재부여 checkbox only for non-owner targets.
+      var resetRow = $('account-user-reset-rename-row');
+      var resetCb = $('account-user-reset-rename');
+      var renameState = $('account-user-rename-state');
+      if (resetRow && resetCb && renameState) {
+        if (u.role === 'owner') {
+          resetRow.hidden = true;
+        } else {
+          resetRow.hidden = false;
+          resetCb.checked = false;
+          renameState.textContent = '(현재: ' + (u.member_self_rename_used ? '이미 소진' : '미사용') + ')';
+        }
+      }
       _state.draftPermissions = u.permissions ? {
         access_admin: !!u.permissions.access_admin,
         permissions: (u.permissions.permissions || []).slice(),
@@ -277,6 +349,8 @@
       $('account-user-status').value = 'active';
       $('account-user-status').disabled = false;
       $('account-user-must-change').checked = true;
+      var createResetRow = $('account-user-reset-rename-row');
+      if (createResetRow) createResetRow.hidden = true;
       _state.draftPermissions = { access_admin: true, permissions: [] };
     }
     $('account-user-form-status').textContent = '';
@@ -299,6 +373,7 @@
     var statusEl = $('account-user-form-status');
 
     if (id) {
+      var target = _findUser(id);
       var payload = {
         display_name: displayName,
         editor_code: editorCode,
@@ -306,6 +381,15 @@
         status: status,
         must_change_password: mustChange,
       };
+      // Owner may rename any account — send only if changed from current.
+      if (target && username && username !== target.username) {
+        payload.username = username;
+      }
+      // Reset rename quota if the owner flipped the checkbox.
+      var resetCb = $('account-user-reset-rename');
+      if (resetCb && resetCb.checked && target && target.role !== 'owner') {
+        payload.reset_member_self_rename = true;
+      }
       if (_state.draftPermissions) payload.permissions = _state.draftPermissions;
       statusEl.textContent = '저장 중…';
       _api('/api/admin/users/' + id, { method: 'PUT', body: JSON.stringify(payload) })
@@ -529,8 +613,175 @@
       });
   }
 
+  /* ── 프리셋 관리 패널 ─────────────────────────────────── */
+  function _loadPresetsPanel() {
+    var host = $('account-presets-list');
+    if (host) host.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    // Menus are needed for the preset permission grid — piggyback on /users
+    // to fetch both presets and the menu catalogue in two calls.
+    return Promise.all([
+      _api('/api/admin/presets'),
+      _state.menus && _state.menus.length ? Promise.resolve({ menus: _state.menus, menu_slugs: _state.menuSlugs }) : _api('/api/admin/users'),
+    ]).then(function (arr) {
+      _state.presets = (arr[0] && arr[0].presets) || [];
+      if (arr[1]) {
+        _state.menus = arr[1].menus || _state.menus;
+        _state.menuSlugs = arr[1].menu_slugs || _state.menuSlugs;
+      }
+      _renderPresetsList();
+    }).catch(function (err) {
+      if (host) host.innerHTML = '<div class="v3-inline-meta" style="color:#b91c1c;">로드 실패: ' + _esc(err.message) + '</div>';
+    });
+  }
+
+  function _renderPresetsList() {
+    var host = $('account-presets-list');
+    if (!host) return;
+    var rows = _state.presets || [];
+    var count = $('account-presets-count');
+    if (count) count.textContent = '총 ' + rows.length + '개 (빌트인 ' + rows.filter(function (p) { return p.is_builtin; }).length + ')';
+    if (!rows.length) {
+      host.innerHTML = '<div class="v3-inline-meta" style="padding:16px;">프리셋이 없습니다.</div>';
+      return;
+    }
+    var html = '<table class="v3-table v3-account-table">' +
+      '<thead><tr><th>구분</th><th>이름 (slug)</th><th>설명</th><th>권한 수</th><th>최근 수정</th><th style="width:160px;">관리</th></tr></thead><tbody>';
+    rows.forEach(function (p) {
+      var kind = p.is_builtin
+        ? '<span class="v3-account-role-badge v3-account-role-owner">빌트인</span>'
+        : '<span class="v3-account-role-badge v3-account-role-member">커스텀</span>';
+      var actions = p.is_builtin
+        ? '<span class="v3-inline-meta">수정 불가</span>'
+        : '<button class="v3-btn v3-btn-ghost v3-btn-sm" data-preset-action="edit" data-id="' + p.id + '">편집</button>' +
+          '<button class="v3-btn v3-btn-danger v3-btn-sm" data-preset-action="delete" data-id="' + p.id + '">삭제</button>';
+      var permCount = (p.permissions && p.permissions.permissions) ? p.permissions.permissions.length : 0;
+      html +=
+        '<tr>' +
+        '<td>' + kind + '</td>' +
+        '<td><strong>' + _esc(p.name) + '</strong><br><code>' + _esc(p.slug) + '</code></td>' +
+        '<td class="v3-inline-meta" style="max-width:360px;">' + _esc(p.description || '—') + '</td>' +
+        '<td>' + permCount + '</td>' +
+        '<td><span class="v3-inline-meta">' + _esc(_kstDate(p.updated_at)) + '</span></td>' +
+        '<td style="white-space:nowrap;">' + actions + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    host.innerHTML = html;
+  }
+
+  function _openPresetModal(presetId) {
+    _state.editingPresetId = presetId || null;
+    var modal = $('account-preset-modal');
+    var title = $('account-preset-modal-title');
+    var slugEl = $('account-preset-slug');
+    var nameEl = $('account-preset-name');
+    var descEl = $('account-preset-description');
+    var accessEl = $('account-preset-access-admin');
+    if (!modal) return;
+    if (presetId) {
+      var p = (_state.presets || []).find(function (x) { return String(x.id) === String(presetId); });
+      if (!p) { _toast('프리셋을 찾을 수 없습니다', 'error'); return; }
+      if (p.is_builtin) { _toast('빌트인 프리셋은 편집할 수 없습니다', 'error'); return; }
+      title.textContent = '프리셋 편집 · ' + p.name;
+      slugEl.value = p.slug;
+      slugEl.disabled = true;
+      nameEl.value = p.name;
+      descEl.value = p.description || '';
+      accessEl.checked = !!(p.permissions && p.permissions.access_admin);
+      _renderPresetGrid((p.permissions && p.permissions.permissions) || []);
+    } else {
+      title.textContent = '프리셋 추가';
+      slugEl.value = '';
+      slugEl.disabled = false;
+      nameEl.value = '';
+      descEl.value = '';
+      accessEl.checked = true;
+      _renderPresetGrid([]);
+    }
+    $('account-preset-status').textContent = '';
+    modal.style.display = 'flex';
+  }
+
+  function _renderPresetGrid(permArray) {
+    var host = $('account-preset-grid');
+    var set = new Set(permArray || []);
+    var html = '';
+    (_state.menus || []).forEach(function (group) {
+      html += '<div class="v3-perm-group">' +
+        '<div class="v3-perm-group-title">' + _esc(group.group) + '</div>' +
+        '<div class="v3-perm-group-rows">';
+      group.items.forEach(function (item) {
+        html += '<div class="v3-perm-row">' +
+          '<div class="v3-perm-row-label">' + _esc(item.label) +
+            ' <span class="v3-inline-meta" style="margin-left:6px;">' + _esc(item.slug) + '</span></div>' +
+          '<div class="v3-perm-row-toggles">';
+        item.actions.forEach(function (action) {
+          var key = action + ':' + item.slug;
+          var checked = set.has(key) ? 'checked' : '';
+          html += '<label class="v3-perm-toggle">' +
+            '<input type="checkbox" data-preset-perm="' + _esc(key) + '" ' + checked + ' />' +
+            '<span>' + (action === 'view' ? '보기' : '쓰기') + '</span>' +
+            '</label>';
+        });
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    });
+    host.innerHTML = html;
+  }
+
+  function _collectPresetPermissions() {
+    var grid = $('account-preset-grid');
+    var boxes = grid.querySelectorAll('input[data-preset-perm]');
+    var out = [];
+    boxes.forEach(function (cb) { if (cb.checked) out.push(cb.getAttribute('data-preset-perm')); });
+    return {
+      access_admin: !!$('account-preset-access-admin').checked,
+      permissions: out,
+    };
+  }
+
+  function _savePreset() {
+    var id = _state.editingPresetId;
+    var status = $('account-preset-status');
+    var slug = String($('account-preset-slug').value || '').trim().toLowerCase();
+    var name = String($('account-preset-name').value || '').trim();
+    var description = String($('account-preset-description').value || '').trim();
+    var perms = _collectPresetPermissions();
+
+    if (!id) {
+      if (!/^[a-z0-9-]{2,40}$/.test(slug)) { _toast('slug는 영문·숫자·하이픈 2~40자', 'error'); return; }
+    }
+    if (!name) { _toast('이름을 입력해주세요', 'error'); return; }
+
+    status.textContent = '저장 중…';
+    var req = id
+      ? _api('/api/admin/presets/' + id, { method: 'PUT', body: JSON.stringify({ name: name, description: description, permissions: perms }) })
+      : _api('/api/admin/presets', { method: 'POST', body: JSON.stringify({ slug: slug, name: name, description: description, permissions: perms }) });
+    req.then(function () {
+      status.textContent = '';
+      _closeModal('account-preset-modal');
+      _toast('프리셋이 저장되었습니다', 'success');
+      _loadPresetsPanel();
+    }).catch(function (err) {
+      status.textContent = '';
+      _toast((err && err.message) || '저장 실패', 'error');
+    });
+  }
+
+  function _deletePreset(id) {
+    var p = (_state.presets || []).find(function (x) { return String(x.id) === String(id); });
+    if (!p) return;
+    if (p.is_builtin) { _toast('빌트인 프리셋은 삭제할 수 없습니다', 'error'); return; }
+    if (!confirm('프리셋 "' + p.name + '"을(를) 삭제합니다. 이 프리셋을 이미 적용받은 사용자의 권한은 그대로 유지됩니다. 계속할까요?')) return;
+    _api('/api/admin/presets/' + id, { method: 'DELETE' })
+      .then(function () { _toast('삭제되었습니다', 'success'); _loadPresetsPanel(); })
+      .catch(function (err) { _toast((err && err.message) || '삭제 실패', 'error'); });
+  }
+
   /* ── 이벤트 바인딩 ─────────────────────────────────────── */
   function _bind() {
+    _bindMyUsernameForm();
     _bindMyPasswordForm();
 
     var addBtn = $('account-users-add-btn');
@@ -581,13 +832,37 @@
     var copyBtn = $('account-temp-password-copy-btn');
     if (copyBtn) copyBtn.addEventListener('click', _copyTempPassword);
 
+    // Preset management panel
+    var presetAddBtn = $('account-presets-add-btn');
+    if (presetAddBtn) presetAddBtn.addEventListener('click', function () { _openPresetModal(null); });
+    var presetRefreshBtn = $('account-presets-refresh-btn');
+    if (presetRefreshBtn) presetRefreshBtn.addEventListener('click', _loadPresetsPanel);
+    var presetListHost = $('account-presets-list');
+    if (presetListHost) {
+      presetListHost.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-preset-action]');
+        if (!btn) return;
+        var id = btn.getAttribute('data-id');
+        var action = btn.getAttribute('data-preset-action');
+        if (action === 'edit') _openPresetModal(id);
+        else if (action === 'delete') _deletePreset(id);
+      });
+    }
+    var presetSaveBtn = $('account-preset-save-btn');
+    if (presetSaveBtn) presetSaveBtn.addEventListener('click', _savePreset);
+    var presetClearBtn = $('account-preset-clear-btn');
+    if (presetClearBtn) presetClearBtn.addEventListener('click', function () {
+      _renderPresetGrid([]);
+      _toast('모든 체크 해제', 'info', 2000);
+    });
+
     // Global close delegation (×, [data-close], overlay click)
     document.addEventListener('click', function (e) {
       var target = e.target;
       if (target.matches('[data-close]')) {
         _closeModal(target.getAttribute('data-close'));
       } else if (target.classList && target.classList.contains('v3-overlay') &&
-                 (target.id === 'account-user-modal' || target.id === 'account-permission-modal' || target.id === 'account-temp-password-modal')) {
+                 (target.id === 'account-user-modal' || target.id === 'account-permission-modal' || target.id === 'account-temp-password-modal' || target.id === 'account-preset-modal')) {
         _closeModal(target.id);
       }
     });
@@ -599,7 +874,8 @@
     // one of our panels becomes visible.
     var meP = $('panel-account-me');
     var uP = $('panel-account-users');
-    var targets = [meP, uP].filter(Boolean);
+    var presetP = $('panel-account-presets');
+    var targets = [meP, uP, presetP].filter(Boolean);
     if (!targets.length) return;
     var obs = new MutationObserver(function (muts) {
       muts.forEach(function (m) {
@@ -608,6 +884,7 @@
         if (el.classList.contains('active')) {
           if (el.id === 'panel-account-me') _loadMe();
           if (el.id === 'panel-account-users') _loadUsers();
+          if (el.id === 'panel-account-presets') _loadPresetsPanel();
         }
       });
     });

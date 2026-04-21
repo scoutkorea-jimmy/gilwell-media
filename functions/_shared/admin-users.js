@@ -109,7 +109,7 @@ export async function loadAdminUserById(env, id) {
   const row = await env.DB.prepare(
     `SELECT id, username, display_name, role, permissions, editor_code,
             ai_daily_limit, status, must_change_password, token_min_iat,
-            created_at, last_login_at
+            member_self_rename_used, created_at, last_login_at
        FROM admin_users
       WHERE id = ? AND status != 'deleted'`
   ).bind(Number(id)).first();
@@ -121,7 +121,7 @@ export async function loadAdminUserByUsername(env, username) {
   const row = await env.DB.prepare(
     `SELECT id, username, display_name, password_hash, role, permissions,
             editor_code, ai_daily_limit, status, must_change_password,
-            token_min_iat, created_at, last_login_at
+            token_min_iat, member_self_rename_used, created_at, last_login_at
        FROM admin_users
       WHERE username = ? AND status != 'deleted'`
   ).bind(String(username).trim().toLowerCase()).first();
@@ -151,6 +151,7 @@ export function serializeAdminUser(row, { includePermissions = true } = {}) {
     ai_daily_limit: row.ai_daily_limit == null ? null : Number(row.ai_daily_limit),
     status: row.status,
     must_change_password: row.must_change_password ? true : false,
+    member_self_rename_used: row.member_self_rename_used ? true : false,
     created_at: row.created_at || null,
     last_login_at: row.last_login_at || null,
   };

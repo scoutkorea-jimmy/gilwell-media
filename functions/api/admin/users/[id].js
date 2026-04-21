@@ -20,6 +20,7 @@ import {
   validateEditorCode,
   validatePermissions,
   validateStatus,
+  validateUsername,
 } from '../../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../../_shared/ops-log.js';
 
@@ -37,7 +38,8 @@ export async function onRequestGet({ params, request, env }) {
 
   const row = await env.DB.prepare(
     `SELECT id, username, display_name, role, permissions, editor_code,
-            ai_daily_limit, status, must_change_password, created_at, last_login_at, deleted_at
+            ai_daily_limit, status, must_change_password,
+            member_self_rename_used, created_at, last_login_at, deleted_at
        FROM admin_users WHERE id = ?`
   ).bind(id).first();
   if (!row) return json({ error: '사용자를 찾을 수 없습니다.' }, 404);
@@ -64,6 +66,23 @@ export async function onRequestPut({ params, request, env }) {
   const values = [];
   const changes = [];
 
+  if (body.username !== undefined) {
+    const v = validateUsername(body.username, { allowOwner: target.role === 'owner' });
+    if (!v.ok) return json({ error: v.error }, 400);
+    if (v.value !== target.username) {
+      const clash = await env.DB.prepare(
+        `SELECT id FROM admin_users WHERE username = ? AND id != ?`
+      ).bind(v.value, id).first();
+      if (clash) return json({ error: '이미 존재하는 아이디입니다.' }, 409);
+      fields.push('username = ?'); values.push(v.value);
+      changes.push('username(' + target.username + '→' + v.value + ')');
+    }
+  }
+  // Owner may restore a member's self-rename quota at any time.
+  if (body.reset_member_self_rename === true && target.role !== 'owner') {
+    fields.push('member_self_rename_used = 0');
+    changes.push('reset_self_rename_quota');
+  }
   if (body.display_name !== undefined) {
     const v = validateDisplayName(body.display_name);
     if (!v.ok) return json({ error: v.error }, 400);

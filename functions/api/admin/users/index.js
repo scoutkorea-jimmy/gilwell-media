@@ -42,8 +42,8 @@ export async function onRequestGet({ request, env }) {
 
   const { results } = await env.DB.prepare(
     `SELECT id, username, display_name, role, permissions, editor_code,
-            ai_daily_limit, status, must_change_password, created_at,
-            last_login_at, deleted_at
+            ai_daily_limit, status, must_change_password,
+            member_self_rename_used, created_at, last_login_at, deleted_at
        FROM admin_users
       ORDER BY
         CASE role WHEN 'owner' THEN 0 ELSE 1 END,
