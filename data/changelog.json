@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.127.07",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 15:30:00 KST",
+    "summary": "PC에서 스크롤할 때 기사 상단이 sticky masthead에 가려지던 문제 수정. 모든 페이지에서 masthead가 콘텐츠와 함께 자연스럽게 스크롤 아웃되도록 변경. 모바일 별도 compact header 동작은 그대로 유지.",
+    "changes": [
+      "css/style.css .masthead: position:sticky + top:0 + z-index:100 제거, position:relative로 변경. 홈 전용 override(body[data-home-bootstrap])도 통합됨.",
+      "PC 사용자가 기사/카테고리 보드/검색 페이지에서 스크롤 내릴 때 상단 히어로 이미지·제목이 masthead 뒤로 밀려 숨겨지지 않음.",
+      "모바일은 기존처럼 scroll > 72px에서 mobile-compact-header가 나타나므로 UX 변화 없음.",
+      "사이트 버전 00.127.06 → 00.127.07."
+    ]
+  },
+  {
     "version": "00.127.06",
     "date": "2026-04-21",
     "released_at": "2026-04-21 14:45:00 KST",
