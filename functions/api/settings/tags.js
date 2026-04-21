@@ -17,6 +17,14 @@ const DEFAULT_TAGS = {
   },
 };
 
+// GET /api/settings/tags
+//   No query          → public list of tag names used by the homepage filter bars.
+//   ?category=<slug>  → public list scoped to one category.
+//   ?usage=<tag>      → ADMIN-ONLY: reveals how many posts use this tag and links.
+//
+// The admin branch is explicitly gated by the `usage` param, so no other
+// parameter combination can leak the usage data. Any unknown admin-adjacent
+// parameter should also require a valid token — add it to the gated set below.
 export async function onRequestGet({ env, request }) {
   const url = new URL(request.url);
   const usageTag = String(url.searchParams.get('usage') || '').trim();

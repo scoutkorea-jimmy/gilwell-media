@@ -30,7 +30,13 @@ export async function onRequestPut({ request, env }) {
   ]);
   const { if_revision: ifRevision } = body || {};
   const safe = normalizeSiteMeta(body || {});
-  const storedImage = await storeDataImage(env, safe.image_url, origin, 'site-meta');
+  let storedImage;
+  try {
+    storedImage = await storeDataImage(env, safe.image_url, origin, 'site-meta');
+  } catch (err) {
+    console.error('PUT /api/settings/site-meta image error:', err);
+    return json({ error: '지원하지 않는 이미지 형식입니다. JPEG / PNG / WebP / GIF만 업로드할 수 있습니다.' }, 400);
+  }
   safe.image_url = storedImage.url;
 
   try {

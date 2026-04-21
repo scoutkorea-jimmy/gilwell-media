@@ -16,6 +16,9 @@
  */
 export async function createToken(secret, role = 'full') {
   const header  = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  // NOTE: `exp` is stored in milliseconds (Date.now()), not the JWT-standard seconds.
+  // readToken() compares against Date.now() as well. Do not hand these tokens to
+  // external JWT libraries that assume seconds without converting first.
   const payload = b64url(JSON.stringify({
     sub: 'admin',
     role: normalizeRole(role),

@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "00.127.03",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 10:00:00 KST",
+    "summary": "보안 감사 Batch 1 — 공개 사이트 쪽 저위험·소규모 보강 8건 적용 (L1/L2/M3/M6/M7/H2/H3/H5). 실제 사용자 경험은 그대로이지만, 공감 스팸, 민감 필드 과도 노출, SVG 업로드를 통한 XSS, 인라인 이벤트 핸들러 등 잠재 공격면을 축소.",
+    "changes": [
+      "H5: 게시판 썸네일의 인라인 onerror 핸들러 제거 — js/board.js에서 img 요소를 생성 후 addEventListener('error')로 폴백을 붙여 CSP unsafe-inline 의존 감소.",
+      "H3: GET /api/posts/:id 공개 응답에 필드 화이트리스트(PUBLIC_POST_FIELDS) 도입 — 비관리자에게는 운영·감사 컬럼이 더 이상 노출되지 않음. 추가 컬럼이 생겨도 기본은 비공개.",
+      "H2: POST /api/posts/:id/like에 봇·프리페치 차단(isLikelyNonHumanRequest) 및 이미 좋아요한 경우 INSERT 단축 적용 — 크롤러/링크 프리뷰가 공감을 펌핑하지 못함.",
+      "M3: 데이터 URL 이미지 업로드에 MIME 허용 목록(JPEG/PNG/WebP/GIF) 적용 — SVG·script 포함 이미지가 R2에 저장되거나 DB image_url로 흘러들어가지 못하도록 다중 경로(settings/site-meta, posts CRUD)에서 차단.",
+      "M7: TURNSTILE_SECRET 미설정 프로덕션에서 console.warn 경고 1회 출력 + TURNSTILE_STRICT=1 환경변수로 fail-closed 전환 가능.",
+      "M6: GET /api/settings/tags의 auth 모델을 주석으로 명문화 — ?usage=는 관리자 전용, 그 외는 공개.",
+      "L1: /api/glossary 계열 CORS 처리를 functions/api/_middleware.js 한 곳으로 통일 — glossary/index.js, glossary/bot.js의 중복 baseHeaders 제거.",
+      "L2: functions/_shared/auth.js의 JWT exp가 JWT 표준 초가 아닌 Date.now() 기반 밀리초임을 주석으로 명시 (외부 JWT 라이브러리와 혼용 시 혼동 방지).",
+      "사이트 버전 00.127.02 → 00.127.03."
+    ]
+  },
+  {
+    "version": "03.089.03",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 10:00:00 KST",
+    "summary": "관리자·공용 인프라 보안 감사 Batch 1 반영 — Turnstile 미설정 경고, MIME 허용 목록, auth 주석, CORS 통일.",
+    "changes": [
+      "functions/_shared/turnstile.js: 프로덕션에서 TURNSTILE_SECRET 부재 시 warn 로그 + TURNSTILE_STRICT 플래그로 fail-closed 전환 가능.",
+      "functions/_shared/image-storage.js: ALLOWED_IMAGE_MIMES 화이트리스트 도입. SVG 업로드 거부(XSS 벡터 차단). 실패 시 원본 data: URL을 DB에 저장하지 않도록 safelyStoreDataImage 보강.",
+      "functions/api/settings/site-meta.js: 이미지 업로드 실패 시 400 + 한국어 에러 메시지로 관리자에게 안내.",
+      "functions/api/settings/tags.js: GET 인증 모델(공개 vs 관리자 전용 ?usage=) 주석으로 명시.",
+      "functions/api/_middleware.js: /api/glossary/* 경로는 CORS * 예외, 그 외는 동적 Origin 검증.",
+      "functions/_shared/auth.js: 토큰 exp가 밀리초 단위임을 명시.",
+      "관리자 버전 03.089.02 → 03.089.03."
+    ]
+  },
+  {
     "version": "00.127.02",
     "date": "2026-04-20",
     "released_at": "2026-04-20 02:10:00 KST",

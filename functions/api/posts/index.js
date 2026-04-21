@@ -367,6 +367,12 @@ async function safelyStoreDataImage(env, value, origin, prefix) {
     return await storeDataImage(env, value, origin, prefix);
   } catch (err) {
     console.error('safelyStoreDataImage error:', err);
+    // If the upload source is a data: URL and it failed (unsupported MIME,
+    // malformed base64, etc.), do NOT echo it back into the DB — that would
+    // persist e.g. an SVG/script payload as the stored image_url.
+    if (typeof value === 'string' && value.trim().startsWith('data:')) {
+      return { url: null, key: '' };
+    }
     return { url: value || null, key: '' };
   }
 }

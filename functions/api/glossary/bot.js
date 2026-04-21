@@ -26,9 +26,10 @@ export async function onRequestGet({ request, env }) {
     if (format === 'txt' || format === 'text') {
       return new Response(renderText(items), {
         status: 200,
-        headers: baseHeaders({
+        headers: {
           'Content-Type': 'text/plain; charset=utf-8',
-        }),
+          'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+        },
       });
     }
 
@@ -44,15 +45,6 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/glossary/bot error:', err);
     return json({ error: '용어집 데이터를 불러오지 못했습니다.' }, 500);
   }
-}
-
-export async function onRequestOptions() {
-  return new Response(null, {
-    status: 204,
-    headers: baseHeaders({
-      'Access-Control-Max-Age': '86400',
-    }),
-  });
 }
 
 function renderText(items) {
@@ -98,18 +90,13 @@ function normalizeGlossaryRows(rows) {
     });
 }
 
-function baseHeaders(extraHeaders = {}) {
-  return Object.assign({
-    'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  }, extraHeaders);
-}
-
 function json(data, status = 200, extraHeaders = {}) {
+  // CORS headers are applied globally by functions/api/_middleware.js.
   return new Response(JSON.stringify(data), {
     status,
-    headers: baseHeaders(Object.assign({ 'Content-Type': 'application/json' }, extraHeaders)),
+    headers: Object.assign({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=1800',
+    }, extraHeaders),
   });
 }

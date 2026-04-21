@@ -19,6 +19,18 @@ export async function onRequest(context) {
 }
 
 function corsHeaders(request, env) {
+  // Public machine-readable glossary endpoints are intentionally open to any origin
+  // so external apps and server-to-server clients can consume the term list without
+  // being on the prod allowlist.
+  if (isPublicGlossaryEndpoint(request)) {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    };
+  }
+
   const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
@@ -30,6 +42,14 @@ function corsHeaders(request, env) {
     headers['Vary'] = 'Origin';
   }
   return headers;
+}
+
+function isPublicGlossaryEndpoint(request) {
+  try {
+    return new URL(request.url).pathname.startsWith('/api/glossary');
+  } catch {
+    return false;
+  }
 }
 
 const ALLOWED_PROD_HOSTS = new Set(['bpmedia.net', 'www.bpmedia.net']);

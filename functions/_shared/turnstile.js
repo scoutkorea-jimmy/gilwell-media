@@ -7,12 +7,28 @@
  *      Cloudflare Pages → Settings → Environment variables
  *   3. Copy the Site Key → set window.TURNSTILE_SITE_KEY in main.js
  *
- * If TURNSTILE_SECRET is not set, verification is skipped (graceful
- * degradation — site works before Turnstile is configured).
+ * Behavior matrix:
+ *   - TURNSTILE_SECRET missing + preview/dev  → verification skipped silently (dev ergonomics)
+ *   - TURNSTILE_SECRET missing + production   → verification SKIPPED but a warn log is emitted on
+ *     every invocation so ops notices the misconfiguration. We intentionally keep fail-open here
+ *     so an expired/rotated secret can't lock the operator out of the admin panel.
+ *     Set TURNSTILE_STRICT=1 to flip this to fail-closed once confident the secret is permanent.
  */
 
+let _warnedMissingSecret = false;
+
 export async function verifyTurnstile(token, env) {
-  if (!env.TURNSTILE_SECRET) return true; // not configured → skip
+  if (!env.TURNSTILE_SECRET) {
+    const strict = String(env.TURNSTILE_STRICT || '').trim() === '1';
+    if (isProductionEnv(env)) {
+      if (!_warnedMissingSecret) {
+        console.warn('[turnstile] TURNSTILE_SECRET is not configured in production — CAPTCHA layer is disabled. strict=' + (strict ? 'on' : 'off'));
+        _warnedMissingSecret = true;
+      }
+      return !strict;
+    }
+    return true; // non-prod: skip so local dev & preview still work
+  }
   if (!token || typeof token !== 'string' || !token.trim()) return false;
   try {
     const res = await fetch(
@@ -31,4 +47,12 @@ export async function verifyTurnstile(token, env) {
   } catch {
     return false;
   }
+}
+
+function isProductionEnv(env) {
+  const flag = String((env && (env.ENVIRONMENT || env.CF_PAGES_BRANCH)) || '').toLowerCase();
+  if (!flag) return false;
+  if (flag === 'production' || flag === 'prod') return true;
+  if (flag === 'main') return true;
+  return false;
 }
