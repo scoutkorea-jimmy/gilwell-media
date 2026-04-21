@@ -28,7 +28,7 @@ export async function onRequestGet({ env }) {
 
 export async function onRequestPut({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다.' }, 401);
   }
 
@@ -59,7 +59,7 @@ export async function onRequestPut({ request, env }) {
 
 export async function onRequestDelete({ request, env }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다.' }, 401);
   }
   try {

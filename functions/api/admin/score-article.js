@@ -13,7 +13,7 @@ const json = (data, status = 200) =>
 export async function onRequestPost({ request, env, waitUntil }) {
   const ip = request.headers.get('CF-Connecting-IP') || '';
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다.' }, 401);
   }
 

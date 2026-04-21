@@ -17,7 +17,7 @@ export async function onRequestGet({ request, env }) {
   const category = url.searchParams.get('category') || null;
 
   const token = extractToken(request);
-  const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
+  const isAdmin = token ? await verifyTokenRole(token, env, 'full').catch(() => false) : false;
 
   try {
     let query;

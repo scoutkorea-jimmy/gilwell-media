@@ -36,7 +36,7 @@ export async function onRequestGet({ params, env, request }) {
     if (!post) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
     const token = extractToken(request);
-    const isAdmin = token ? await verifyTokenRole(token, env.ADMIN_SECRET, 'full').catch(() => false) : false;
+    const isAdmin = token ? await verifyTokenRole(token, env, 'full').catch(() => false) : false;
 
     // If unpublished, require admin token
     if (post.published === 0) {
@@ -101,7 +101,7 @@ function sanitizePublicPost(post) {
 export async function onRequestPut({ params, request, env }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -283,7 +283,7 @@ export async function onRequestPut({ params, request, env }) {
 export async function onRequestPatch({ params, request, env }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 
@@ -384,7 +384,7 @@ export async function onRequestPatch({ params, request, env }) {
 export async function onRequestDelete({ params, request, env }) {
   const origin = new URL(request.url).origin;
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

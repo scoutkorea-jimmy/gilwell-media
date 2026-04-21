@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.089.04
+ * Version: 03.089.05
  *
  * Versioning:
  *   V3.aaa.bb
@@ -967,6 +967,7 @@
       hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
+      'account-security': '계정 보안',
     };
     return labels[s] || s;
   }
@@ -994,6 +995,75 @@
     else if (section === 'nav-labels') _loadNavLabelsUI();
     else if (section === 'translations') _loadTranslationsUI();
     else if (section === 'wosm-members') _loadWosmMembersUI();
+    else if (section === 'account-security') _loadAccountSecurityUI();
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     ACCOUNT SECURITY — 관리자 비밀번호 변경
+  ══════════════════════════════════════════════════════════ */
+  var _accountPasswordBound = false;
+  function _loadAccountSecurityUI() {
+    var form = document.getElementById('account-password-form');
+    if (!form) return;
+    _setAccountPasswordStatus('', '');
+    // Reset fields whenever the section is reopened.
+    var current = document.getElementById('account-current-password');
+    var next = document.getElementById('account-new-password');
+    var confirm = document.getElementById('account-new-password-confirm');
+    if (current) current.value = '';
+    if (next) next.value = '';
+    if (confirm) confirm.value = '';
+    if (_accountPasswordBound) return;
+    _accountPasswordBound = true;
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      _submitAccountPasswordChange();
+    });
+  }
+
+  function _setAccountPasswordStatus(message, tone) {
+    var el = document.getElementById('account-password-status');
+    if (!el) return;
+    el.textContent = message || '';
+    el.style.color = tone === 'error' ? 'var(--v3-danger, #c0392b)'
+                   : (tone === 'success' ? 'var(--v3-success, #1f8f3f)' : '');
+  }
+
+  function _submitAccountPasswordChange() {
+    var currentEl = document.getElementById('account-current-password');
+    var newEl = document.getElementById('account-new-password');
+    var confirmEl = document.getElementById('account-new-password-confirm');
+    var btn = document.getElementById('account-password-save-btn');
+    if (!currentEl || !newEl || !confirmEl || !btn) return;
+
+    var currentPassword = currentEl.value;
+    var newPassword = newEl.value;
+    var confirmPassword = confirmEl.value;
+
+    if (!currentPassword) { _setAccountPasswordStatus('현재 비밀번호를 입력해주세요.', 'error'); currentEl.focus(); return; }
+    if (!newPassword || newPassword.length < 8) { _setAccountPasswordStatus('새 비밀번호는 최소 8자 이상이어야 합니다.', 'error'); newEl.focus(); return; }
+    if (newPassword !== confirmPassword) { _setAccountPasswordStatus('새 비밀번호와 확인 값이 일치하지 않습니다.', 'error'); confirmEl.focus(); return; }
+    if (currentPassword === newPassword) { _setAccountPasswordStatus('새 비밀번호는 현재 비밀번호와 달라야 합니다.', 'error'); newEl.focus(); return; }
+
+    btn.disabled = true;
+    _setAccountPasswordStatus('변경 중…', '');
+    GW.apiFetch('/api/admin/password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword: currentPassword, newPassword: newPassword, confirmPassword: confirmPassword })
+    })
+      .then(function (data) {
+        _setAccountPasswordStatus(
+          (data && data.message) || '비밀번호가 변경되었습니다. 다른 기기에서는 다시 로그인해야 합니다.',
+          'success'
+        );
+        currentEl.value = ''; newEl.value = ''; confirmEl.value = '';
+        if (typeof GW.showToast === 'function') GW.showToast('비밀번호가 변경되었습니다', 'success');
+      })
+      .catch(function (err) {
+        var message = (err && err.message) || '비밀번호 변경 중 오류가 발생했습니다.';
+        _setAccountPasswordStatus(message, 'error');
+      })
+      .then(function () { btn.disabled = false; });
   }
 
   /* ══════════════════════════════════════════════════════════

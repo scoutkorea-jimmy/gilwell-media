@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env }) {
     return json({ error: '관리자 로그인이 필요합니다.' }, 401);
   }
 
-  const full = await verifyTokenRole(token, env.ADMIN_SECRET, 'full');
+  const full = await verifyTokenRole(token, env, 'full');
   if (full) {
     return json({ authenticated: true, role: 'full' });
   }

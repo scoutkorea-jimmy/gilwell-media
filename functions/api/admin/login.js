@@ -10,7 +10,7 @@
  *   ADMIN_PASSWORD  — the admin password you choose
  *   ADMIN_SECRET    — random string for signing tokens (openssl rand -hex 32)
  */
-import { buildAdminSessionCookie, createToken, safeCompare } from '../../_shared/auth.js';
+import { buildAdminSessionCookie, createToken, safeCompare, loadAdminPasswordHash, verifyAdminPasswordHash } from '../../_shared/auth.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
@@ -93,8 +93,17 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
   }
 
+  // Password verification priority:
+  //   1. D1-stored hash (set via POST /api/admin/password) — this is the source
+  //      of truth once the operator changes their password through the UI.
+  //   2. env.ADMIN_PASSWORD — initial bootstrap only. Used when no hash exists
+  //      yet (fresh deploy) or when the D1 hash record is corrupt.
   let role = null;
-  if (safeCompare(password, env.ADMIN_PASSWORD)) {
+  const storedHash = await loadAdminPasswordHash(env);
+  if (storedHash) {
+    const ok = await verifyAdminPasswordHash(password, storedHash);
+    if (ok) role = 'full';
+  } else if (safeCompare(password, env.ADMIN_PASSWORD)) {
     role = 'full';
   }
 

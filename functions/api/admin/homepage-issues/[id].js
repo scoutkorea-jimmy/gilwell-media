@@ -4,7 +4,7 @@ import { deriveIp, logOperationalEvent } from '../../../_shared/ops-log.js';
 
 export async function onRequestPatch({ request, env, params }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
   const id = parseId(params && params.id);
@@ -59,7 +59,7 @@ export async function onRequestPatch({ request, env, params }) {
 
 export async function onRequestDelete({ request, env, params }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
 

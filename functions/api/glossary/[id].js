@@ -7,7 +7,7 @@ const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바'
 
 export async function onRequestPut({ request, env, params }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
   const id = parseInt(params.id, 10);
@@ -43,7 +43,7 @@ export async function onRequestPut({ request, env, params }) {
 
 export async function onRequestDelete({ request, env, params }) {
   const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env.ADMIN_SECRET, 'full'))) {
+  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다' }, 401);
   }
   const id = parseInt(params.id, 10);
