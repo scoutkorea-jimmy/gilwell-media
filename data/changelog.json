@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "00.128.01",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:24:21 KST",
+    "summary": "포스트 상세 사이드바가 sticky masthead와 겹쳐 일부 가려지던 문제 수정. sidebar position:sticky + top:100px를 제거해 기사 본문과 함께 자연스럽게 스크롤되도록 변경.",
+    "changes": [
+      "css/style.css .post-page-sidebar: position:sticky + top:100px 제거. 기존에는 masthead(sticky, z-index:100)가 사이드바 상단을 덮으면서 '섹션 / 정보 / AI 지원 작성 / 세로 광고'의 상단부가 가려졌음.",
+      "사이드바는 이제 기사 본문 옆에서 함께 스크롤되며, 기사 끝에 도달하기 전까지 항상 같은 위치에 존재. 세로 광고(160x600)도 사이드바 본래 위치에서 자연스럽게 노출.",
+      "사이트 버전 00.128.00 → 00.128.01."
+    ]
+  },
+  {
+    "version": "03.090.00",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:24:21 KST",
+    "summary": "관리자 콘솔에 'AI 채점기록' 패널 신설. AI 기사 채점이 실행될 때마다 입력 제목·본문 글자수·태그와 총점·등급·요약·개선 방향·300자 수정 제안이 D1 ai_score_log 테이블에 기록되고, 관리자 패널에서 제목·등급·최소 점수로 필터·검색하며 목록 역순 열람 가능.",
+    "changes": [
+      "D1 스키마: ai_score_log 테이블 신설 (id, created_at, actor, ip, input_title, input_subtitle, input_body_chars, input_tags, overall_score, overall_grade, overall_summary, improvement, revision_suggestion, categories_json, latency_ms, total_tokens, status, error_code). 인덱스: idx_ai_score_log_created(DESC), idx_ai_score_log_title.",
+      "새 헬퍼 functions/_shared/ai-score-log.js — logAiScore(env, entry)로 fire-and-forget 기록.",
+      "functions/api/admin/score-article.js — AI 채점 성공 시 logAiScore 호출(ctx.waitUntil). 실패해도 응답을 막지 않음.",
+      "새 엔드포인트 GET /api/admin/ai-score-history — limit/offset/q/grade/min_score 필터 지원, 페이지 통계(총 건수·평균 점수·등급 분포·평균 응답 시간) 동봉. 관리자 토큰 필수.",
+      "admin.html 사이드바에 'AI 채점기록' 메뉴(data-panel=ai-score-history) + panel-ai-score-history 패널 신설. 필터 바(제목·등급·최소 점수) + 통계 카드 + 기록 목록(<details>로 펼쳐 요약·카테고리·개선 방향·300자 수정 제안 표시) + 페이지네이션 이전/다음 버튼.",
+      "js/admin-v3.js에 _loadAiScoreHistory 및 렌더 함수들 추가. showPanel 라우터에 ai-score-history 케이스 등록. PANEL_LABELS 확장.",
+      "관리자 버전 03.089.06 → 03.090.00 (feature bump)."
+    ]
+  },
+  {
     "version": "00.128.00",
     "date": "2026-04-21",
     "released_at": "2026-04-21 23:15:16 KST",
