@@ -58,6 +58,8 @@ Tags: ${tags || '(없음)'}
 
 각 항목을 평가하고 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 출력하지 마세요.
 
+"revision_suggestion" 필드는 이 기사를 어떻게 수정하면 더 좋아질지 **약 300자(한글 기준) 분량의 구체적이고 실행 가능한 제안**으로 작성하세요. 어떤 문장을 어떻게 바꿀지, 무엇을 추가/삭제할지 명확히 제시하고 한국어로 자연스러운 문장을 사용하세요.
+
 {
   "overall": {
     "score": <0-100 정수>,
@@ -101,29 +103,50 @@ Tags: ${tags || '(없음)'}
       "strengths": []
     }
   ],
-  "improvement": "<가장 중요한 개선 방향 2~3줄>"
+  "improvement": "<가장 중요한 개선 방향 2~3줄>",
+  "revision_suggestion": "<약 300자 분량의 구체적인 수정 제안(한국어)>"
 }`;
 
   const startTs = Date.now();
+  const aiInput = {
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a Korean journalism editor. Always respond with valid JSON only, no extra text.',
+      },
+      { role: 'user', content: prompt },
+    ],
+    max_tokens: 1500,
+  };
+
+  // 1 automatic retry on transient Workers AI hiccups (short back-off).
+  // Common transient failures: 5xx from the AI gateway, queue pressure, or
+  // one-off network blips. A single retry halves the probability that a user
+  // sees a red error without doubling worst-case latency for steady-state.
   let aiResp;
-  try {
-    aiResp = await env.AI.run(MODEL_ID, {
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a Korean journalism editor. Always respond with valid JSON only, no extra text.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      max_tokens: 1200,
-    });
-  } catch (err) {
+  let aiError;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      aiResp = await env.AI.run(MODEL_ID, aiInput);
+      aiError = null;
+      break;
+    } catch (err) {
+      aiError = err;
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+    }
+  }
+
+  if (aiError) {
     logAsync({
       endpoint: 'score-article', model: MODEL_ID, ip, actor: 'admin',
       inputChars, latencyMs: Date.now() - startTs,
       status: 'error', errorCode: 'ai_call_failed',
     });
-    return json({ error: 'AI 호출 실패: ' + (err.message || String(err)) }, 502);
+    return json({
+      error: 'AI 호출이 2회 모두 실패했습니다. 잠시 후 다시 시도해주세요. · ' + (aiError.message || String(aiError)),
+    }, 502);
   }
 
   const latencyMs = Date.now() - startTs;

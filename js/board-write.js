@@ -1163,6 +1163,12 @@
     if (result.improvement) {
       html += '<div class="board-scorer-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
     }
+    if (result.revision_suggestion) {
+      html += '<div class="board-scorer-improvement board-scorer-revision">'
+        + '<strong>✏️ 수정 제안 <span class="board-scorer-revision-meta">약 300자</span></strong>'
+        + '<p>' + GW.escapeHtml(result.revision_suggestion) + '</p>'
+        + '</div>';
+    }
     out.innerHTML = html;
     out.hidden = false;
   };

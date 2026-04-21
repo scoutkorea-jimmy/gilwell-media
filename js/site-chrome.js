@@ -749,6 +749,27 @@
     if (shouldLoadTranslations) GW.loadTranslations();
     GW.setupMobileCompactHeader();
     GW.setupPullToRefresh();
+    GW.setupManagedInlineHandlers();
+  };
+
+  // Event delegation for former inline handlers (onclick/onchange/…). Declarative
+  // data-* attributes replace inline JS so CSP can enforce a nonce-based policy
+  // without 'unsafe-inline' for scripts.
+  GW.setupManagedInlineHandlers = function () {
+    if (GW._managedInlineHandlersInstalled) return;
+    GW._managedInlineHandlersInstalled = true;
+
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      if (!target || !target.closest) return;
+      var langBtn = target.closest('[data-lang-toggle]');
+      if (langBtn && typeof GW.setLang === 'function') {
+        event.preventDefault();
+        var lang = String(langBtn.getAttribute('data-lang-toggle') || '').trim();
+        if (lang === 'ko' || lang === 'en') GW.setLang(lang);
+        return;
+      }
+    });
   };
 
   GW.setupMastheadSearch = function () {

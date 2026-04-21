@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.089.05
+ * Version: 03.089.06
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2322,6 +2322,12 @@
 
     if (result.improvement) {
       html += '<div class="v3-scorer-inline-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
+    }
+    if (result.revision_suggestion) {
+      html += '<div class="v3-scorer-inline-improvement v3-scorer-inline-revision" style="border-left-color:#248737;background:rgba(36,135,55,0.06);">'
+        + '<strong>✏️ 수정 제안 <span style="font-weight:400;opacity:0.6;font-size:11px;">· 약 300자</span></strong>'
+        + '<p>' + GW.escapeHtml(result.revision_suggestion) + '</p>'
+        + '</div>';
     }
     out.innerHTML = html;
     out.hidden = false;
@@ -6104,6 +6110,12 @@
     }
     if (result.improvement) {
       bodyEl.innerHTML += '<div class="v3-scorer-improvement"><strong>개선 방향</strong><p>' + GW.escapeHtml(result.improvement) + '</p></div>';
+    }
+    if (result.revision_suggestion) {
+      bodyEl.innerHTML += '<div class="v3-scorer-improvement v3-scorer-revision" style="border-left-color:#248737;background:rgba(36,135,55,0.06);">'
+        + '<strong>✏️ 수정 제안 <span style="font-weight:400;opacity:0.6;font-size:11px;">· 약 300자</span></strong>'
+        + '<p>' + GW.escapeHtml(result.revision_suggestion) + '</p>'
+        + '</div>';
     }
 
     _scorerSetState('result');
