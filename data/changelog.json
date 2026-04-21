@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "00.128.02",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 23:28:53 KST",
+    "summary": "포스트 상세 우측 사이드바 sticky 복귀 — 기사 본문을 스크롤할 때 사이드바(섹션·정보·AI 지원 작성·세로 광고)가 따라다님. top 값을 160px로 설정해 masthead(~140px)와 겹치지 않도록 조정.",
+    "changes": [
+      "css/style.css .post-page-sidebar: position:sticky + top:160px 재적용. masthead(stats/logo/search 90px + nav 45px + border 3px ≈ 140px) 아래에 사이드바 상단이 오도록 20px 여유. 이전에는 top:100이라 masthead가 사이드바 상단을 덮었음.",
+      "이제 긴 기사를 읽을 때도 섹션 라벨·작성자·게시일·세로 광고가 화면에 항상 보임. 기사 본문이 끝나는 지점까지 따라다니다 footer 근처에서 함께 멈춤.",
+      "사이트 버전 00.128.01 → 00.128.02."
+    ]
+  },
+  {
     "version": "00.128.01",
     "date": "2026-04-21",
     "released_at": "2026-04-21 23:24:21 KST",
