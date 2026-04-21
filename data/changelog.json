@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "00.127.04",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 11:45:00 KST",
+    "summary": "보안 감사 Batch 2 — 공개 사이트에 DOMPurify 기반 HTML 살균(H1)과 외부 CDN 스크립트 SRI 무결성 검증(H4) 적용. 사용자에게 보이는 동작은 동일하지만, 저장된 HTML 본문을 통한 XSS·CDN 공급망 변조 두 가지 공격 벡터가 차단됨.",
+    "changes": [
+      "H1 DOMPurify: 14개 공개 HTML과 /post/[id]·/feature/[cat]/[slug] SSR 템플릿의 <head>에 DOMPurify 3.2.4 CDN 스크립트를 SRI(sha384-eEu5…) + crossorigin=anonymous + referrerpolicy=no-referrer로 프리로드.",
+      "H1 Client sanitizer: js/main.js에 GW.sanitizeHtml(html) 추가 — DOMPurify가 있으면 화이트리스트 기반 살균, 미로드 시 script/style/iframe/inline 이벤트/javascript: URI를 제거하는 안전한 폴백 사용.",
+      "H1 Legacy body: GW.renderTextWithMedia의 레거시 HTML passthrough 경로를 GW.sanitizeHtml()로 래핑 — 이전 Quill·WYSIWYG로 저장된 글이 비어 보이지 않으면서도 스크립트·이벤트 핸들러가 브라우저에서 실행되지 않음.",
+      "H4 SRI admin: admin.html의 leaflet.css, leaflet.js, xlsx.full.min.js에 sha384 integrity + crossorigin 속성 추가.",
+      "H4 SRI calendar: calendar.html의 leaflet.css, leaflet.js에 sha384 integrity + crossorigin 속성 추가.",
+      "H4 SRI dynamic: js/post-page.js·js/admin-v3.js·js/board-write.js의 Editor.js(editorjs/header/list/quote) 동적 로더에 _CDN_INTEGRITY 맵 도입. 등록되지 않은 외부 스크립트는 fail-safe로 로드 거부(콘솔 경고 후 done 콜백).",
+      "사이트 버전 00.127.03 → 00.127.04."
+    ]
+  },
+  {
+    "version": "03.089.04",
+    "date": "2026-04-21",
+    "released_at": "2026-04-21 11:45:00 KST",
+    "summary": "관리자 페이지 CDN 리소스에 SRI 무결성 검증 적용. Editor.js 동적 로더도 SRI 맵 기반으로 전환.",
+    "changes": [
+      "admin.html 외부 CDN 3건(leaflet.css, leaflet.js, xlsx.full.min.js)에 integrity + crossorigin 속성 적용 — CDN 공급망이 침해되어 변조된 파일이 내려오면 브라우저가 실행을 거부.",
+      "js/admin-v3.js의 Editor.js 동적 로더를 _ADMIN_CDN_INTEGRITY 맵 기반으로 전환 — 새 URL은 맵에 등록하지 않으면 로드 자체가 차단.",
+      "관리자 버전 03.089.03 → 03.089.04."
+    ]
+  },
+  {
     "version": "00.127.03",
     "date": "2026-04-21",
     "released_at": "2026-04-21 10:00:00 KST",
