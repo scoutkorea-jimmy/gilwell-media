@@ -7036,9 +7036,11 @@ footer a:hover { color: var(--white); }
 .post-page-main  { min-width: 0; }
 
 .post-page-sidebar {
-  /* sticky 제거(2026-04-21) — sticky masthead와 z-index가 겹쳐 사이드바 상단이
-     가려지는 문제. 사이드바는 기사 본문과 함께 자연스럽게 스크롤되며, 필요시
-     사이드바 광고·메타 정보는 스크롤로 접근. */
+  /* sticky 복귀(2026-04-21) — 사이드바가 기사 스크롤을 따라다니게 한다.
+     top 값은 masthead(stats/logo/search 90px + nav 45px + border 3px ≈ 140px)
+     바로 아래에 사이드바 상단이 오도록 160px로 설정 — masthead와 겹치지 않음. */
+  position: sticky;
+  top:      160px;
 }
 
 /* Sidebar sections */
