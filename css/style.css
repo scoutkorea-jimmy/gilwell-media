@@ -7028,7 +7028,10 @@ footer a:hover { color: var(--white); }
 
 .post-page-layout {
   display:               grid;
-  grid-template-columns: 1fr 280px;
+  /* 사이드바 200px — Kakao AdFit 세로 광고(160x600)가 사이드바 폭에 거의
+     꽉 차도록(좌우 20px 여유) 좁혔음(2026-04-21 운영자 요청). 기존 280px에서는
+     광고가 사이드바 중앙에 작게 놓여 빈 공간이 양쪽으로 60px씩 남아 어색. */
+  grid-template-columns: 1fr 200px;
   gap:                   48px;
   align-items:           start;
 }
