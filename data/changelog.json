@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.092.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 01:03:54 KST",
+    "summary": "관리자 다중 사용자·권한 매트릭스 시스템 Phase 1 — 스키마·프리셋·킬스위치 시드 + 읽기 API. 로그인 흐름은 그대로 유지(Phase 2에서 교체), 기존 env.ADMIN_PASSWORD 세션은 legacy owner로 취급해 정상 동작.",
+    "changes": [
+      "db/migration_056.sql 신규: admin_users(username·display_name·password_hash·role·permissions JSON·editor_code·ai_daily_limit·status·must_change_password·token_min_iat·deleted_at 등 16컬럼) + admin_user_presets(built-in + 오너 커스텀) + posts.author_user_id + idx_posts_author_user_id + settings.publish_kill_switch='off' 초기 시드.",
+      "admin_user_presets 빌트인 3종 시드: (1) 글쟁이 — 본인 글 작성·수정·발행 + 읽기; (2) 뷰어 — 전 메뉴 read-only (파트너 데모·감사용); (3) 마케팅 담당 — 분석·노출·SEO 쓰기 + 나머지 보기. 각 preset은 access_admin: true + permissions 배열(약 30~45개 'view:<slug>'/'write:<slug>')로 정의.",
+      "functions/_shared/admin-users.js 신규: ADMIN_MENUS 카탈로그(6그룹 27메뉴 단일 원본), ROLES/STATUSES 상수, parsePermissions/hasMenuPermission 권한 검사 헬퍼, loadAdminUserById/loadAdminUserByUsername/countActiveOwners DB 로더, serializeAdminUser API 직렬화.",
+      "GET /api/admin/users — Full 관리자 전용. admin_users 전체 목록 + bootstrap_required 플래그 + member 기본 일일 AI 한도(10회) + 메뉴 카탈로그 반환. Soft-deleted 포함(복구 가능 상태 노출).",
+      "GET /api/admin/users/me — 현재 세션의 사용자 프로필 + 권한. JWT에 uid가 있으면 admin_users 조회, 없으면 legacy env.ADMIN_PASSWORD 세션으로 판단하고 synthetic owner 프로필 반환(legacy_session:true 플래그).",
+      "GET /api/admin/presets — preset 카탈로그(빌트인 3종 + 향후 커스텀). 권한 모달 '이 프리셋 적용' 버튼의 소스.",
+      "Phase 1은 기존 로그인·권한 동작을 건드리지 않음. admin_users 테이블이 비어있고 writes가 Phase 3에 배치되므로 이번 배포 직후에도 관리자 콘솔·API는 기존처럼 동작.",
+      "관리자 버전 03.091.00 → 03.092.00 (Feature 레벨 bump)."
+    ]
+  },
+  {
     "version": "03.091.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 00:39:06 KST",
