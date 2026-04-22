@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.100.00
+ * Version: 03.100.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -873,6 +873,12 @@
     _syncAdminVersionLabels();
     document.getElementById('v3-login').style.display = 'none';
     document.getElementById('v3-app').hidden = false;
+    // Eager-load the session user so sidebar permission gating (hidden by
+    // default via `body:not(.admin-session-loaded)` CSS) lifts as soon as
+    // possible — no 300ms poll window where owner dashboard is invisible.
+    if (window.AccountAdmin && typeof window.AccountAdmin.refreshMe === 'function') {
+      try { window.AccountAdmin.refreshMe(); } catch (_) {}
+    }
     // Load editor.js
     _loadEditorJS(function () { _initEditor(); });
     // Load tag settings (for write form dropdown)
@@ -9653,32 +9659,32 @@
   function _sessionShowWarn() {
     if (_sessionWarnShown) return;
     _sessionWarnShown = true;
-    var modal = document.createElement('div');
-    modal.className = 'v3-modal v3-modal-open v3-session-warn-modal';
-    modal.innerHTML =
-      '<div class="v3-modal-box" style="max-width:360px;text-align:center">' +
-        '<p style="margin:0 0 8px;font-size:var(--fs-md);font-weight:600">세션 만료 예정</p>' +
-        '<p style="margin:0 0 20px;font-size:var(--fs-sm);color:var(--v3-text-muted)">5분 후 자동 로그아웃됩니다. 계속 사용하시겠습니까?</p>' +
+    var overlay = document.createElement('div');
+    overlay.className = 'v3-overlay open v3-session-overlay v3-session-warn-modal';
+    overlay.innerHTML =
+      '<div class="v3-modal v3-session-modal-box" style="max-width:420px;text-align:center;padding:var(--v3-gap-xl) var(--gap-section)">' +
+        '<p style="margin:0 0 8px;font-size:var(--fs-lead);font-weight:700;color:var(--v3-text)">세션 만료 예정</p>' +
+        '<p style="margin:0 0 20px;font-size:var(--fs-body);color:var(--v3-text-m)">5분 후 자동 로그아웃됩니다. 계속 사용하시겠습니까?</p>' +
         '<div style="display:flex;gap:10px;justify-content:center">' +
           '<button class="v3-btn v3-btn-primary" onclick="V3.sessionExtend()">연장하기</button>' +
           '<button class="v3-btn" onclick="V3.logout()">로그아웃</button>' +
         '</div>' +
       '</div>';
-    document.body.appendChild(modal);
-    _sessionWarnModal = modal;
+    document.body.appendChild(overlay);
+    _sessionWarnModal = overlay;
   }
 
   function _sessionExpire() {
     _sessionStop();
     if (_sessionWarnModal) { _sessionWarnModal.remove(); _sessionWarnModal = null; }
-    var modal = document.createElement('div');
-    modal.className = 'v3-modal v3-modal-open';
-    modal.innerHTML =
-      '<div class="v3-modal-box" style="max-width:340px;text-align:center">' +
-        '<p style="margin:0 0 8px;font-size:var(--fs-md);font-weight:600">세션이 만료되었습니다</p>' +
-        '<p style="margin:0 0 0;font-size:var(--fs-sm);color:var(--v3-text-muted)">장시간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
+    var overlay = document.createElement('div');
+    overlay.className = 'v3-overlay open v3-session-overlay v3-session-expired';
+    overlay.innerHTML =
+      '<div class="v3-modal v3-session-modal-box" style="max-width:420px;text-align:center;padding:var(--v3-gap-xl) var(--gap-section)">' +
+        '<p style="margin:0 0 8px;font-size:var(--fs-lead);font-weight:700;color:var(--v3-text)">세션이 만료되었습니다</p>' +
+        '<p style="margin:0;font-size:var(--fs-body);color:var(--v3-text-m)">장시간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
       '</div>';
-    document.body.appendChild(modal);
+    document.body.appendChild(overlay);
     GW.clearToken();
     setTimeout(function () { window.location.href = '/'; }, 5000);
   }

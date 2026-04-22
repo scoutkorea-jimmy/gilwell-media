@@ -832,6 +832,35 @@
   position: sticky; bottom: 0; background: var(--v3-surface);
 }
 
+/* Session timeout overlays — always full-viewport, sits above every other UI.
+   Previously used a nonexistent `.v3-modal-open` class so the backdrop never
+   rendered and the modal box floated on top of the admin content. */
+.v3-session-overlay {
+  position: fixed; inset: 0; display: flex !important;
+  align-items: center; justify-content: center;
+  padding: var(--v3-gap-xl); z-index: 9500;
+  pointer-events: auto;
+}
+.v3-session-warn-modal { background: rgba(15,23,42,.72); }
+.v3-session-expired     { background: rgba(8,12,24,.92); }
+.v3-session-modal-box {
+  background: var(--v3-surface);
+  border-radius: var(--v3-radius-l);
+  box-shadow: var(--v3-shadow-m);
+  width: 100%;
+}
+
+/* Permission-gated sidebar items are default-hidden until the session is
+   resolved (`_loadMe` sets `body.admin-session-loaded`). Without this gate
+   a slow /api/admin/users/me response leaves every perm-slug button visible
+   — which lets members click into panels they shouldn't see. Owner view is
+   also hidden during the ~300ms window, which is acceptable as a safety
+   trade-off. After load, `_syncPermissionNav()` reveals items per role. */
+body:not(.admin-session-loaded) #v3-nav .v3-nav-item[data-perm-slug],
+body:not(.admin-session-loaded) #v3-nav [data-owner-only="1"] {
+  display: none !important;
+}
+
 /* ── Image Upload ────────────────────────────────────────── */
 .v3-img-dropzone {
   border: 2px dashed var(--v3-border-m); border-radius: var(--v3-radius);
