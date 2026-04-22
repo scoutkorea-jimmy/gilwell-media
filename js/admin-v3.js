@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.099.00
+ * Version: 03.100.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -262,7 +262,9 @@
         }
         if (!response.ok) {
           var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
-          if (response.status !== 401) {
+          // 401 = re-login flow, 403 = legitimate permission denial (not a bug)
+          // so neither counts as a site issue worth auto-reporting.
+          if (response.status !== 401 && response.status !== 403) {
             _reportSiteIssue('admin_client_api_error', {
               message: message,
               path: _issuePathFromUrl(url),
@@ -281,6 +283,12 @@
             document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
               detail: { message: message, status: response.status }
             }));
+          } else if (response.status === 403) {
+            // Surface the server's Korean permission message (gateMenuAccess
+            // returns "이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요.")
+            // via toast so members see WHY the action failed rather than a
+            // silent panel.
+            if (GW.showToast) GW.showToast(message, 'error', 6000);
           }
           throw err;
         }
@@ -9588,7 +9596,10 @@
   }
 
   // ── Session Timeout ────────────────────────────────────────────────────────
-  var _SESSION_MS      = 30 * 60 * 1000;
+  // Aligned with server HMAC cookie TTL (functions/_shared/auth.js → 24h).
+  // Previously 30 min, which kicked users out while the server cookie was
+  // still valid. Idle reset on click/keydown/touch/scroll still applies.
+  var _SESSION_MS      = 24 * 60 * 60 * 1000;
   var _SESSION_WARN_MS =  5 * 60 * 1000;
   var _sessionDeadline     = 0;
   var _sessionWarnTimeout  = null;
@@ -9621,9 +9632,13 @@
 
   function _sessionTick() {
     var remaining = Math.max(0, _sessionDeadline - Date.now());
-    var mins = Math.floor(remaining / 60000);
+    var hours = Math.floor(remaining / 3600000);
+    var mins = Math.floor((remaining % 3600000) / 60000);
     var secs = Math.floor((remaining % 60000) / 1000);
-    var text = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var text = hours > 0
+      ? (hours + ':' + pad(mins) + ':' + pad(secs))
+      : (mins + ':' + pad(secs));
     var el = document.getElementById('v3-timer-text');
     var fill = document.getElementById('v3-timer-fill');
     var timer = document.getElementById('v3-session-timer');
@@ -9661,7 +9676,7 @@
     modal.innerHTML =
       '<div class="v3-modal-box" style="max-width:340px;text-align:center">' +
         '<p style="margin:0 0 8px;font-size:var(--fs-md);font-weight:600">세션이 만료되었습니다</p>' +
-        '<p style="margin:0 0 0;font-size:var(--fs-sm);color:var(--v3-text-muted)">30분간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
+        '<p style="margin:0 0 0;font-size:var(--fs-sm);color:var(--v3-text-muted)">장시간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
       '</div>';
     document.body.appendChild(modal);
     GW.clearToken();

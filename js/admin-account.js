@@ -133,6 +133,28 @@
       if (ok) { n.removeAttribute('hidden'); n.style.display = ''; }
       else { n.setAttribute('hidden', ''); n.style.display = 'none'; }
     });
+    _collapseEmptyNavSections();
+  }
+
+  // After per-item gating, hide any sidebar section whose visible children
+  // count is zero. The section label ("분석", "콘텐츠"…) stays with the
+  // section wrapper, so hiding the wrapper is enough.
+  function _collapseEmptyNavSections() {
+    document.querySelectorAll('#v3-nav .v3-nav-section').forEach(function (sec) {
+      var items = sec.querySelectorAll('.v3-nav-item');
+      if (!items.length) return;
+      var anyVisible = false;
+      items.forEach(function (it) {
+        if (!it.hasAttribute('hidden') && it.style.display !== 'none') anyVisible = true;
+      });
+      if (anyVisible) {
+        sec.removeAttribute('hidden');
+        sec.style.display = '';
+      } else {
+        sec.setAttribute('hidden', '');
+        sec.style.display = 'none';
+      }
+    });
   }
 
   /* ── 내 계정 패널 ─────────────────────────────────────────── */
