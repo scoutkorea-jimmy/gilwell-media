@@ -22,7 +22,7 @@ export async function onRequestPut({ params, request, env }) {
   if (!id) return json({ error: '유효하지 않은 프리셋 ID입니다.' }, 400);
 
   const row = await env.DB.prepare(
-    `SELECT id, slug, is_builtin FROM admin_user_presets WHERE id = ?`
+    `SELECT id, slug, is_builtin, permissions FROM admin_user_presets WHERE id = ?`
   ).bind(id).first();
   if (!row) return json({ error: '프리셋을 찾을 수 없습니다.' }, 404);
   // NOTE: owner may edit built-in presets (rebalancing permission defaults is
@@ -37,6 +37,7 @@ export async function onRequestPut({ params, request, env }) {
   const fields = [];
   const values = [];
   const changes = [];
+  let validatedNewPerms = null;
 
   if (body.name !== undefined) {
     const name = String(body.name || '').trim();
@@ -50,6 +51,7 @@ export async function onRequestPut({ params, request, env }) {
   if (body.permissions !== undefined) {
     const v = validatePermissions(body.permissions);
     if (!v.ok) return json({ error: v.error }, 400);
+    validatedNewPerms = v.value;
     fields.push('permissions = ?'); values.push(JSON.stringify(v.value));
     changes.push('permissions');
   }
@@ -62,17 +64,65 @@ export async function onRequestPut({ params, request, env }) {
       `UPDATE admin_user_presets SET ${fields.join(', ')} WHERE id = ?`
     ).bind(...values, id).run();
 
+    // Preset-to-user auto propagation. When permissions change, find every
+    // active member whose permissions matched the *previous* preset exactly
+    // and push the new permissions down to them. Resolves the "I edited the
+    // preset but the member didn't update" surprise — the owner's mental
+    // model is that presets are the source of truth.
+    // Safeguards:
+    //   - Owner rows are never touched (only role='member').
+    //   - access_admin is forced to true on the propagated payload so a
+    //     preset accidentally saved with access_admin=false can't lock every
+    //     linked member out of the admin panel on their next login.
+    let propagatedCount = 0;
+    if (validatedNewPerms) {
+      const oldCanonical = canonicalizePerms(parsePermBlob(row.permissions));
+      const newPermsForMember = {
+        access_admin: true,
+        permissions: validatedNewPerms.permissions,
+      };
+      const newSerialized = JSON.stringify(newPermsForMember);
+      const members = await env.DB.prepare(
+        `SELECT id, username, permissions FROM admin_users
+           WHERE status = 'active' AND role = 'member'`
+      ).all();
+      for (const m of (members.results || [])) {
+        const parsed = parsePermBlob(m.permissions);
+        if (canonicalizePerms(parsed) === oldCanonical) {
+          await env.DB.prepare(
+            `UPDATE admin_users SET permissions = ?, updated_at = datetime('now') WHERE id = ?`
+          ).bind(newSerialized, m.id).run();
+          propagatedCount += 1;
+        }
+      }
+    }
+
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_preset_updated', level: 'info',
       actor: session.username || 'owner', path: `/api/admin/presets/${id}`,
-      message: `권한 프리셋 수정 — ${row.slug} (필드: ${changes.join(', ')})`,
+      message: `권한 프리셋 수정 — ${row.slug} (필드: ${changes.join(', ')})` +
+        (propagatedCount > 0 ? ` · ${propagatedCount}명의 멤버에게 자동 반영` : ''),
     });
 
-    return json({ success: true });
+    return json({ success: true, propagated_members: propagatedCount });
   } catch (err) {
     console.error(`PUT /api/admin/presets/${id} error:`, err);
     return json({ error: '프리셋 수정 중 오류가 발생했습니다.' }, 500);
   }
+}
+
+function parsePermBlob(raw) {
+  if (raw && typeof raw === 'object') return raw;
+  if (typeof raw !== 'string' || !raw.trim()) return { access_admin: false, permissions: [] };
+  try { return JSON.parse(raw); } catch { return { access_admin: false, permissions: [] }; }
+}
+
+// Stable JSON shape for exact-match comparison. Sorting the permissions array
+// makes the string representation deterministic regardless of insertion order.
+function canonicalizePerms(perms) {
+  const list = Array.isArray(perms && perms.permissions) ? perms.permissions : [];
+  const sorted = [...list].filter((x) => typeof x === 'string').sort();
+  return JSON.stringify({ access_admin: !!(perms && perms.access_admin), permissions: sorted });
 }
 
 export async function onRequestDelete({ params, request, env }) {
