@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.100.01",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 12:13:31 KST",
+    "summary": "hotfix — 세션 만료 모달 배경 풀스크린 오버레이 + 사이드바 권한 기본-거부(default-deny) 강화. 03.100.00 배포 후 확인된 두 UX 결함 긴급 수정.",
+    "changes": [
+      "세션 모달 오버레이 복구 — 기존 className 'v3-modal v3-modal-open'은 CSS에 정의된 적 없는 클래스여서 배경 어둠막이 전혀 렌더되지 않았고, 작은 박스만 화면 위에 떠있었다. className을 'v3-overlay open v3-session-overlay'로 전환하고 .v3-session-overlay 규칙(position:fixed; inset:0; z-index:9500)을 css/admin-v3.css에 신설. v3-session-warn-modal(연장/로그아웃 선택지)은 rgba(15,23,42,.72), v3-session-expired(최종 만료)는 rgba(8,12,24,.92)로 더 짙게 — 만료 상태의 심각성을 시각적으로 강조.",
+      "사이드바 권한 기본-거부 CSS 게이트 신설 — body:not(.admin-session-loaded) #v3-nav [data-perm-slug], body:not(.admin-session-loaded) #v3-nav [data-owner-only='1']에 display:none !important. /api/admin/users/me가 늦게 응답하거나 실패해도 권한 없는 메뉴가 잠시라도 드러나지 않는다.",
+      "_loadMe 성공/실패 공통으로 _markSessionLoaded() 호출하여 body에 .admin-session-loaded 클래스 부여. 플래시 최소화 + 실패 시에도 사이드바 잠금 해제(단, _state.me가 null이면 _syncPermissionNav가 default-deny로 모두 숨김).",
+      "_syncPermissionNav() 개선 — 기존에는 me==null이면 초기 상태 유지(잠재적 유출)했으나, 이제 me 존재 여부와 무관하게 순회하고 isOwner || permSet.has('view:slug')만 허용. null 세션 = 전원 숨김으로 default-deny 정착.",
+      "admin-v3.js _showApp이 v3-app 노출 직후 window.AccountAdmin.refreshMe()를 즉시 호출하도록 추가 — 기존 admin-account.js의 300ms 폴링을 기다리지 않아 오너 대시보드 플래시 시간을 ~300ms → 수십ms로 단축.",
+      "관리자 버전 03.100.00 → 03.100.01 (Fix bump)."
+    ]
+  },
+  {
     "version": "03.100.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 12:01:08 KST",

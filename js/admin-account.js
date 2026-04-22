@@ -83,12 +83,22 @@
       _state.menuSlugs = (data && data.menu_slugs) || _state.menuSlugs;
       _syncOwnerOnlyNav();
       _renderMyProfile();
+      _markSessionLoaded();
       return _state.me;
     }).catch(function () {
       _state.me = null;
       _syncOwnerOnlyNav();
+      _markSessionLoaded();
       return null;
     });
+  }
+
+  // Sidebar items with data-perm-slug / data-owner-only are hidden by CSS
+  // until this flag is set — guarantees members never see owner-only or
+  // un-permitted items even if _loadMe is slow. Run on every _loadMe
+  // resolution (success OR failure) so the sidebar always unlocks.
+  function _markSessionLoaded() {
+    document.body.classList.add('admin-session-loaded');
   }
 
   function _isOwnerSession() {
@@ -110,27 +120,22 @@
     _syncPermissionNav();
   }
 
-  // Elements tagged with data-perm-slug/data-perm-action are hidden for
-  // non-owner sessions that lack the specific permission token. Owner sees
-  // everything unconditionally. If the session has not loaded yet (me == null)
-  // we leave the element in its initial state — avoids flashing hide-then-show
-  // on first paint for legitimate users.
+  // Elements tagged with data-perm-slug/data-perm-action are hidden unless
+  // the session user has the `<action>:<slug>` token (owner bypasses). When
+  // `me` is null (e.g. /users/me failed), default-deny: hide everything.
+  // CSS already hides these elements until `body.admin-session-loaded` is
+  // set, so there's no pre-session flash — this function runs once the
+  // class is flipped and finalizes the visibility state.
   function _syncPermissionNav() {
     var me = _state.me;
-    if (!me) return;
-    var isOwner = me.role === 'owner';
-    var perms = (me.permissions && me.permissions.permissions) || [];
+    var isOwner = !!(me && me.role === 'owner');
+    var perms = (me && me.permissions && me.permissions.permissions) || [];
     var permSet = new Set(perms);
     document.querySelectorAll('[data-perm-slug]').forEach(function (n) {
       var slug = n.getAttribute('data-perm-slug');
       var action = n.getAttribute('data-perm-action') || 'view';
-      if (isOwner) {
-        n.removeAttribute('hidden');
-        n.style.display = '';
-        return;
-      }
-      var ok = permSet.has(action + ':' + slug);
-      if (ok) { n.removeAttribute('hidden'); n.style.display = ''; }
+      var allow = isOwner || permSet.has(action + ':' + slug);
+      if (allow) { n.removeAttribute('hidden'); n.style.display = ''; }
       else { n.setAttribute('hidden', ''); n.style.display = 'none'; }
     });
     _collapseEmptyNavSections();
