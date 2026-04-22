@@ -133,6 +133,7 @@ export async function onRequestGet({ params, env, request }) {
   const isNew    = isTodayKst(publicDateValue);
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
+    subtitle: post.subtitle,
     description: descText,
     siteUrl,
     url: postUrl,
@@ -142,6 +143,9 @@ export async function onRequestGet({ params, env, request }) {
     dateModified: modifiedIso,
     author: post.author,
     category: cat.label,
+    keywords: post.meta_tags || post.tag,
+    locationName: post.location_name,
+    citations: renderedContent.citations || [],
   });
   // BreadcrumbList JSON-LD — Home → Category → Article
   const breadcrumbJsonLd = JSON.stringify({
@@ -187,7 +191,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260422041742">
+  <link rel="stylesheet" href="/css/style.css?v=20260422045506">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -369,7 +373,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.130.03</span> · Admin <span class="admin-build-version">V03.100.03</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.131.00</span> · Admin <span class="admin-build-version">V03.100.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -581,9 +585,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260422041742"></script>
-  <script src="/js/site-chrome.js?v=20260422041742"></script>
-  <script src="/js/post-page.js?v=20260422041742"></script>
+  <script src="/js/main.js?v=20260422045506"></script>
+  <script src="/js/site-chrome.js?v=20260422045506"></script>
+  <script src="/js/post-page.js?v=20260422045506"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -753,10 +757,33 @@ function toIsoString(dateStr) {
   return Number.isNaN(d.getTime()) ? normalized : d.toISOString();
 }
 
+// Citation lead tokens — paragraphs whose plain-text preview starts with any
+// of these are treated as an attribution/citation block. Rendered with
+// semantic <cite> + a .post-citation class so they (a) visually stand out
+// for readers and (b) carry a structured signal AI crawlers can pick up.
+// The captured URLs are also surfaced as NewsArticle.citation in JSON-LD.
+const CITATION_PREFIXES = [
+  '자료출처:', '자료 출처:', '출처:',
+  'source:', 'sources:', 'reference:', 'references:',
+];
+
+function isCitationText(plain) {
+  if (!plain) return false;
+  const head = plain.trim().slice(0, 30).toLowerCase();
+  return CITATION_PREFIXES.some((p) => head.startsWith(p.toLowerCase()));
+}
+
+function extractUrls(plain) {
+  if (!plain) return [];
+  const matches = String(plain).match(/https?:\/\/[^\s<>"'()]+/g) || [];
+  return matches.map((u) => u.replace(/[.,)\]]+$/, ''));
+}
+
 /** Render Editor.js JSON or plain text to HTML (server-side). */
 function renderContent(str) {
-  if (!str) return { html: '', gallery: [] };
+  if (!str) return { html: '', gallery: [], citations: [] };
   const trimmed = str.trim();
+  const citationUrls = [];
 
   if (trimmed.charAt(0) === '{') {
     try {
@@ -764,8 +791,17 @@ function renderContent(str) {
       if (Array.isArray(doc.blocks)) {
         const html = doc.blocks.map(b => {
           switch (b.type) {
-            case 'paragraph':
-              return '<p>' + renderEditorInlineText(b.data.text || '') + '</p>';
+            case 'paragraph': {
+              const rawText = b.data.text || '';
+              const inlineHtml = renderEditorInlineText(rawText);
+              if (isCitationText(rawText.replace(/<[^>]+>/g, ''))) {
+                extractUrls(rawText).forEach((u) => {
+                  if (!citationUrls.includes(u)) citationUrls.push(u);
+                });
+                return '<aside class="post-citation" role="note"><cite>' + inlineHtml + '</cite></aside>';
+              }
+              return '<p>' + inlineHtml + '</p>';
+            }
             case 'header': {
               const lvl = b.data.level || 2;
               return `<h${lvl}>${renderEditorInlineText(b.data.text || '')}</h${lvl}>`;
@@ -787,12 +823,12 @@ function renderContent(str) {
             default: return '';
           }
         }).join('');
-        return { html, gallery: [] };
+        return { html, gallery: [], citations: citationUrls };
       }
     } catch (e) { /* fall through */ }
   }
 
-  return { html: escapeHtml(str).replace(/\r\n?/g, '\n').replace(/\n/g, '<br>'), gallery: [] };
+  return { html: escapeHtml(str).replace(/\r\n?/g, '\n').replace(/\n/g, '<br>'), gallery: [], citations: [] };
 }
 
 function renderEditorInlineText(value) {
@@ -1018,11 +1054,23 @@ function buildArticleStructuredData(meta) {
   const siteOrigin = String(meta.siteUrl || '').replace(/\/+$/, '');
   const homeUrl = siteOrigin ? `${siteOrigin}/` : '';
   const logoUrl = siteOrigin ? `${siteOrigin}/img/logo.svg` : '';
+  const authorName = meta.author || 'BP미디어';
+  const authorIsCode = /^Editor\.[A-Z0-9-]+$/i.test(authorName);
+  const authorUrl = authorIsCode && siteOrigin
+    ? `${siteOrigin}/editor/${encodeURIComponent(authorName)}`
+    : undefined;
+  const datelineCity = meta.locationName
+    ? String(meta.locationName).split(',')[0].trim() || undefined
+    : undefined;
+  const citationList = Array.isArray(meta.citations) && meta.citations.length
+    ? meta.citations.map((u) => ({ '@type': 'CreativeWork', url: u }))
+    : undefined;
   return JSON.stringify([
     {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
       headline: meta.title || '',
+      alternativeHeadline: meta.subtitle || undefined,
       description: meta.description || '',
       mainEntityOfPage: {
         '@type': 'WebPage',
@@ -1033,18 +1081,31 @@ function buildArticleStructuredData(meta) {
       datePublished: meta.datePublished || '',
       dateModified: meta.dateModified || meta.datePublished || '',
       articleSection: meta.category || '',
+      // Space-separated keyword list is the schema.org Article convention
+      // that Google News + AI retrieval systems parse into topic signals.
+      keywords: meta.keywords || undefined,
+      inLanguage: 'ko-KR',
+      dateline: datelineCity,
+      // CreativeWork references extracted from "자료출처:" paragraphs. Lets
+      // AI answer systems and search engines trace our factual claims back
+      // to the primary source we verified against.
+      citation: citationList,
       isAccessibleForFree: true,
       author: {
         '@type': 'Person',
-        name: meta.author || 'BP미디어',
+        name: authorName,
+        url: authorUrl,
       },
       publisher: {
         '@type': 'Organization',
         name: 'BP미디어',
+        alternateName: 'Gilwell Media',
         url: siteOrigin || undefined,
         logo: logoUrl ? {
           '@type': 'ImageObject',
           url: logoUrl,
+          width: 512,
+          height: 512,
         } : undefined,
       },
     },

@@ -74,6 +74,10 @@ const DEFAULT_SITE_META = {
       title: '검색 · BP미디어',
       description: 'BP미디어 기사와 페이지를 검색합니다.',
     },
+    editorial_policy: {
+      title: '편집 정책 · BP미디어',
+      description: 'BP미디어의 편집 원칙, 출처 검증 절차, 정정 정책, AI 사용 범위, 그리고 AI 크롤러·LLM 인용 정책을 공개합니다.',
+    },
   },
   footer: {
     raw_text: '',

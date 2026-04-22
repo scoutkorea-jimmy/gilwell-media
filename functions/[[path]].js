@@ -21,10 +21,11 @@ export async function onRequest(context) {
 
   const html = await response.text();
   const siteMeta = await loadSiteMeta(env);
-  const [translationStrings, publicRuntime, homeSsr] = await Promise.all([
+  const [translationStrings, publicRuntime, homeSsr, pageExtraSchema] = await Promise.all([
     loadTranslationStrings(env),
     loadPublicRuntime(env),
     pageKey === 'home' ? loadHomeSsrContent(env, url.origin) : Promise.resolve(null),
+    loadPageExtraSchema(env, url.origin, pageKey),
   ]);
   const pageMeta = siteMeta.pages[pageKey] || siteMeta.pages.home;
   const canonicalPath = getCanonicalPath(url.pathname, pageKey);
@@ -42,7 +43,7 @@ export async function onRequest(context) {
 
   const updated = html
     .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(pageMeta.title)}</title>`)
-    .replace('<!-- SHARE_META -->', shareMeta);
+    .replace('<!-- SHARE_META -->', shareMeta + pageExtraSchema);
 
   const headers = new Headers(response.headers);
   headers.set('Content-Type', 'text/html; charset=UTF-8');
@@ -90,6 +91,111 @@ async function loadPageItemList(env, origin, pageKey) {
     console.error('[path] DB query failed for page:', pageKey, err);
     return [];
   }
+}
+
+// Page-specific schema.org JSON-LD appended after the shared meta block.
+// Currently covers:
+//   - /glossary       → DefinedTermSet with every term (ko/en/fr + 설명)
+//   - /wosm-members   → Dataset describing the member-country table
+// Returns "" for pages without extra schema so concatenation stays cheap.
+async function loadPageExtraSchema(env, origin, pageKey) {
+  if (!pageKey) return '';
+  try {
+    if (pageKey === 'glossary') return await buildGlossarySchema(env, origin);
+    if (pageKey === 'wosm_members') return await buildWosmMembersSchema(env, origin);
+  } catch (err) {
+    console.error('[path] extra schema build failed for', pageKey, err);
+  }
+  return '';
+}
+
+async function buildGlossarySchema(env, origin) {
+  const rs = await env.DB.prepare(
+    `SELECT id, bucket, term_ko, term_en, term_fr, description_ko
+       FROM glossary_terms
+       ORDER BY bucket, COALESCE(sort_order, 0), term_ko`
+  ).all();
+  const rows = Array.isArray(rs && rs.results) ? rs.results : [];
+  if (!rows.length) return '';
+  const termList = rows.map((row) => {
+    const names = [row.term_ko, row.term_en, row.term_fr].filter(Boolean).map((v) => String(v).trim()).filter(Boolean);
+    const primary = names[0] || '';
+    const alternates = names.slice(1);
+    const entry = {
+      '@type': 'DefinedTerm',
+      '@id': `${origin}/glossary#term-${row.id}`,
+      name: primary,
+      inDefinedTermSet: `${origin}/glossary`,
+    };
+    if (alternates.length) entry.alternateName = alternates;
+    const desc = String(row.description_ko || '').trim();
+    if (desc) entry.description = desc;
+    if (row.bucket) entry.termCode = row.bucket;
+    return entry;
+  });
+  const termSet = {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    '@id': `${origin}/glossary`,
+    name: 'BP미디어 스카우팅 용어집',
+    description: '한국어·영어·프랑스어 스카우팅 용어 사전. WOSM·APR·한국스카우트연맹 공식 표기 기준.',
+    url: `${origin}/glossary`,
+    inLanguage: ['ko-KR', 'en', 'fr'],
+    hasDefinedTerm: termList,
+    publisher: { '@type': 'Organization', name: 'BP미디어', url: origin },
+  };
+  return `\n<script type="application/ld+json">${safeJsonForScript(termSet)}</script>`;
+}
+
+async function buildWosmMembersSchema(env, origin) {
+  // Count active member countries from the settings-backed blob. Kept as a
+  // Dataset (not an ItemList) because AI systems treat Datasets as citable
+  // source data for fact-check answers about WOSM membership.
+  let memberCount = 0;
+  try {
+    const row = await env.DB.prepare(
+      `SELECT value FROM settings WHERE key = 'wosm_members_items'`
+    ).first();
+    if (row && row.value) {
+      const parsed = JSON.parse(row.value);
+      if (Array.isArray(parsed)) memberCount = parsed.length;
+      else if (Array.isArray(parsed && parsed.items)) memberCount = parsed.items.length;
+    }
+  } catch (_) {
+    memberCount = 0;
+  }
+  const dataset = {
+    '@context': 'https://schema.org',
+    '@type': 'Dataset',
+    '@id': `${origin}/wosm-members`,
+    name: '세계스카우트연맹(WOSM) 회원국 현황',
+    alternateName: 'WOSM Member Countries Dataset',
+    description: '세계스카우트연맹 가입 회원 연맹 목록과 국가·지역연맹·가입 연도·등록 규모 등 구조화 데이터. 한국어·영어 명칭 병기.',
+    url: `${origin}/wosm-members`,
+    inLanguage: ['ko-KR', 'en'],
+    isAccessibleForFree: true,
+    license: `${origin}/editorial-policy`,
+    keywords: ['WOSM', '세계스카우트연맹', 'World Organization of the Scout Movement', '회원국', '지역연맹', 'Asia-Pacific', 'Europe', 'Africa'],
+    creator: { '@type': 'Organization', name: 'BP미디어', url: origin },
+    publisher: { '@type': 'Organization', name: 'BP미디어', url: origin },
+    variableMeasured: [
+      { '@type': 'PropertyValue', name: '등록 연맹 수', value: memberCount || undefined },
+      { '@type': 'PropertyValue', name: '국가명(한글)', description: 'country_ko' },
+      { '@type': 'PropertyValue', name: '국가명(영문)', description: 'country_en' },
+      { '@type': 'PropertyValue', name: '국가명(불어)', description: 'country_fr' },
+      { '@type': 'PropertyValue', name: '지역연맹', description: 'WOSM 6개 지역 분류' },
+      { '@type': 'PropertyValue', name: '가입 연도', description: '세계연맹 가입 연도' },
+      { '@type': 'PropertyValue', name: '등록 회원 수', description: 'Census-reported scout count' },
+    ],
+  };
+  return `\n<script type="application/ld+json">${safeJsonForScript(dataset)}</script>`;
+}
+
+function safeJsonForScript(value) {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
 }
 
 async function loadTranslationStrings(env) {
