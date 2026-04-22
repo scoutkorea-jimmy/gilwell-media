@@ -821,10 +821,18 @@
     var req = id
       ? _api('/api/admin/presets/' + id, { method: 'PUT', body: JSON.stringify({ name: name, description: description, permissions: perms }) })
       : _api('/api/admin/presets', { method: 'POST', body: JSON.stringify({ slug: slug, name: name, description: description, permissions: perms }) });
-    req.then(function () {
+    req.then(function (data) {
       status.textContent = '';
       _closeModal('account-preset-modal');
-      _toast('프리셋이 저장되었습니다', 'success');
+      // Server reports how many existing members had their permissions
+      // propagated from the old preset to the new one. Surface it so the
+      // owner understands the scope of what just changed.
+      var count = (data && typeof data.propagated_members === 'number') ? data.propagated_members : 0;
+      if (count > 0) {
+        _toast('프리셋 저장 완료 · ' + count + '명의 기존 멤버 권한 자동 반영', 'success', 5000);
+      } else {
+        _toast('프리셋이 저장되었습니다', 'success');
+      }
       _loadPresetsPanel();
     }).catch(function (err) {
       status.textContent = '';

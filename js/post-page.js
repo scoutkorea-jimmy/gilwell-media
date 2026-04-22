@@ -197,16 +197,22 @@ function _initPostEditor(callback) {
   });
 }
 
-function _fillPostAuthorOptions(editors) {
-  var select = document.getElementById('post-edit-author');
-  if (!select) return;
-  var current = _postEditSeed.author || 'Editor.A';
-  var options = GW.buildEditorOptions(editors || {});
-  if (current && options.indexOf('value="' + current + '"') === -1) {
-    options = '<option value="' + GW.escapeHtml(current) + '">' + GW.escapeHtml(current) + '</option>' + options;
-  }
-  select.innerHTML = options;
-  select.value = current;
+// Phase 5 byline parity: homepage edit modal uses the same readonly author
+// input as the admin console (see admin.html #w-author). The input is populated
+// from the session user's editor_code via /api/admin/users/me — never from
+// `_postEditSeed.author`, so re-edits always reflect the current signer.
+function _fillPostAuthorOptions() {
+  var input = document.getElementById('post-edit-author');
+  if (!input) return;
+  // Optimistic default while the session call is in flight.
+  input.value = _postEditSeed.author || 'Editor.A';
+  if (!GW || !GW.apiFetch) return;
+  GW.apiFetch('/api/admin/users/me')
+    .then(function (data) {
+      var code = data && data.user && data.user.editor_code;
+      if (code) input.value = code;
+    })
+    .catch(function () { /* keep fallback */ });
 }
 
 function _syncPostCategoryChip(category) {
@@ -531,14 +537,7 @@ function _populatePostEditForm() {
   if (relatedInput) relatedInput.value = '';
   _loadPostManualRelatedResults();
   _loadPostTagOptions(_postEditState.activeCategory);
-  _fillPostAuthorOptions({});
-  GW.apiFetch('/api/settings/editors')
-    .then(function (data) {
-      _fillPostAuthorOptions((data && data.editors) || {});
-    })
-    .catch(function () {
-      _fillPostAuthorOptions({});
-    });
+  _fillPostAuthorOptions();
   _initPostEditor(function () {
     _postEditState.editor.render(_parseEditorSeed(_postEditSeed.content || '')).catch(function () {});
   });

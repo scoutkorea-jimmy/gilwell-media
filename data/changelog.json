@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "03.100.03",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 13:17:06 KST",
+    "summary": "프리셋 편집 시 기존 멤버에게 권한 자동 전파 + GUEST 계정 권한 데이터 복구 + '게스트용' 프리셋 access_admin=true 정정.",
+    "changes": [
+      "functions/api/admin/presets/[id].js PUT onRequestPut에 preset→member 자동 전파 로직 추가 — 저장 전 기존 프리셋 permissions 캔버스(canonicalizePerms로 정렬된 JSON)를 기억하고, 업데이트 후 role='member' status='active'인 모든 admin_users를 순회하며 이전 프리셋과 완전 일치하는 사용자의 permissions를 새 프리셋으로 자동 갱신. 안전장치: 오너 행은 절대 건드리지 않음 + 전파되는 permissions의 access_admin은 항상 true로 강제(실수로 access_admin=false 프리셋 저장 시 멤버가 로그인 잠기는 사고 방지).",
+      "프리셋 저장 응답에 propagated_members 카운트 포함. js/admin-account.js _savePreset 핸들러가 이를 수신해 'N명의 기존 멤버 권한 자동 반영' 토스트 표시.",
+      "operational_events admin_preset_updated 이벤트 메시지에 '· N명의 멤버에게 자동 반영' 꼬리 추가 — 감사 로그로 전파 추적 가능.",
+      "DB 직접 정정: admin_users.guest 권한을 '게스트용' 프리셋의 13개 view 권한과 동일하게 동기화(view:dashboard/list/calendar/glossary/wosm-members/analytics-visits/analytics-tags/marketing/geo-audience/releases/homepage-issues/site-history/kms). admin_user_presets.guest 프리셋도 access_admin=false → true로 정정해 다음 편집부터 자동 전파가 정상 동작하도록 함.",
+      "작성자(author) 필드 홈/관리자 일치화 — 홈페이지 편집 모달(functions/post/[id].js)의 #post-edit-author select 드롭다운을 admin.html의 #w-author와 동일한 readonly input으로 교체, 라벨 '편집자 코드 자동 적용'·안내문 '본인 편집자 코드로만 공개' 추가. js/post-page.js _fillPostAuthorOptions를 /api/admin/users/me 응답의 editor_code로 input 값 주입하도록 재작성. 기존 /api/settings/editors 드롭다운 옵션 호출 제거(불필요).",
+      "관리자 버전 03.100.02 → 03.100.03 (Fix bump)."
+    ]
+  },
+  {
+    "version": "00.130.03",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 13:17:06 KST",
+    "summary": "게시글 편집 모달(공개 홈페이지)의 작성자 필드를 관리자 콘솔과 동일한 readonly 입력으로 정렬. d559ba8(byline 자동=편집자코드) 정책이 홈페이지 경로에서 누락됐던 회귀 해소.",
+    "changes": [
+      "functions/post/[id].js 모달 HTML: 작성자 <select>를 readonly <input>으로 교체, 편집자 코드 자동 적용 안내 UI 부여. js/post-page.js _fillPostAuthorOptions가 세션 편집자 코드를 주입(fallback Editor.A).",
+      "결과: 홈에서 기사 수정하든 관리자 콘솔에서 수정하든 작성자 byline은 동일하게 세션 사용자의 editor_code로 고정. 필자 '위장' 불가.",
+      "기타 필드 차이(공개/비공개 토글·featured 체크박스)는 홈 모달 스코프 밖으로 판단해 유지(관리자 패널에서만 조정). 관련 기사 필드는 API가 manual_related_posts/related_posts_json 둘 다 수용하므로 문제 없음.",
+      "사이트 버전 00.130.02 → 00.130.03."
+    ]
+  },
+  {
     "version": "03.100.02",
     "date": "2026-04-22",
     "released_at": "2026-04-22 12:58:02 KST",
