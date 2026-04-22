@@ -41,6 +41,7 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/contributors': 'contributors',
   '/calendar': 'calendar',
   '/search': 'search',
+  '/editorial-policy': 'editorial_policy',
 });
 
 export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({

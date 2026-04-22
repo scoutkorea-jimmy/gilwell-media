@@ -24,6 +24,7 @@ async function buildSitemapResponse({ request, env }, headOnly) {
     { path: '/glossary', priority: '0.9', category: 'glossary' },
     { path: '/glossary-raw', priority: '0.8', category: 'glossary' },
     { path: '/contributors', priority: '0.5', category: null },
+    { path: '/editorial-policy', priority: '0.5', category: null },
   ];
 
   let posts = [];

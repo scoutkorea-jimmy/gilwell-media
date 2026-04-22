@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.131.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 13:54:02 KST",
+    "summary": "AI·LLM 크롤러 최적화 패키지 1~9번 일괄 적용 — /llms.txt, AI 봇 전면 허용 robots.txt, NewsArticle 스키마 대폭 보강, 뉴스 사이트맵, 용어집 DefinedTermSet, WOSM 회원국 Dataset, 편집 정책 페이지, 자료출처 구조화, /api/articles.ndjson 익스포트. 전면 허용 정책 기준(뉴스 사이트 디폴트).",
+    "changes": [
+      "/llms.txt 신규 — functions/llms.txt.js. llmstxt.org 표준 포맷으로 사이트 개요·주요 섹션·레퍼런스·피드·편집 원칙·최근 기사 20건·라이선스를 마크다운으로 제공. 30분 캐시, X-Robots-Tag: noindex.",
+      "/robots.txt에 AI 봇 12종 명시 (GPTBot·ChatGPT-User·OAI-SearchBot·ClaudeBot·Claude-Web·anthropic-ai·PerplexityBot·Perplexity-User·Google-Extended·CCBot·Applebot-Extended·Amazonbot·Bytespider·Meta-ExternalAgent) — 전면 허용, 관리/검색/출력 경로만 Disallow. Sitemap 라인에 /sitemap-news.xml 추가.",
+      "NewsArticle JSON-LD 필드 보강 (functions/post/[id].js buildArticleStructuredData) — alternativeHeadline(부제목), keywords, inLanguage='ko-KR', dateline(위치명 도시), author.url(편집자 코드 기반 /editor/<code>), publisher.alternateName='Gilwell Media', publisher.logo.width/height=512, citation(본문 자료출처 URL 배열 → CreativeWork[]).",
+      "/sitemap-news.xml 신규 (functions/sitemap-news.xml/index.js) — Google News 호환 news:news 스키마, 최근 48시간 기사 + 1000건 상한, 5분 캐시. 지역연맹별 genres 태깅(Korea Scouts / Asia-Pacific / WOSM / Scout People).",
+      "용어집 DefinedTermSet JSON-LD — functions/[[path]].js loadPageExtraSchema가 /glossary 접근 시 glossary_terms 테이블 전체를 schema.org/DefinedTermSet로 직렬화해 <head>에 삽입. 각 용어는 DefinedTerm(@id #term-<id>, name=한글, alternateName=[영·불어], description=설명, termCode=bucket).",
+      "WOSM members Dataset JSON-LD — /wosm-members 접근 시 Dataset(@type Dataset, variableMeasured 7개 컬럼 기술, 등록 연맹 수 count, license=/editorial-policy)를 삽입. AI 팩트체크 답변에 출처로 인용될 확률을 높이는 것이 목표.",
+      "/editorial-policy 신규 페이지 — 편집 원칙·AI 사용 고지·정정 정책·다양성·AI 크롤러 인용 정책·저작권 섹션 7개. NewsMediaOrganization/WebPage JSON-LD 포함, ethicsPolicy/correctionsPolicy/diversityPolicy URL 필드로 LLM의 'trust signal' 확보. site-structure/mjs·site-meta.js에 'editorial_policy' pageKey + 제목·설명 등록, sitemap.xml에도 추가. css/style.css에 .static-page 스타일 세트 신설.",
+      "본문 자료출처 구조화 (functions/post/[id].js renderContent) — 단락이 '자료출처:' '출처:' 'Source:' 등으로 시작하면 <aside class='post-citation'><cite>로 래핑. 본문 속 http(s) URL을 추출해 NewsArticle.citation 배열에 CreativeWork로 삽입. 기존 저장 데이터 마이그레이션 불필요(렌더 시 자동 적용). css/style.css에 .post-citation 인용문 스타일 추가.",
+      "/api/articles.ndjson 신규 (functions/api/articles.ndjson.js) — 최근 N일 공개 기사를 NDJSON 스트림으로 내보내는 LLM·RAG 친화 익스포트. ?days=1~365(default 90) ?limit=1~2000(default 500) ?category=korea|apr|wosm|people 지원. 첫 줄은 export_meta(publisher·license·window), 이후 각 줄은 id·url·category·title·subtitle·author_code·keywords·tags·image_url·published_at 등 구조화 필드. 15분 캐시, X-Robots-Tag noindex, CORS 허용.",
+      "사이트 버전 00.130.03 → 00.131.00 (Feature bump — AI 최적화 일괄 투입)."
+    ]
+  },
+  {
     "version": "03.100.03",
     "date": "2026-04-22",
     "released_at": "2026-04-22 13:17:06 KST",
