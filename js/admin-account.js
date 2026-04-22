@@ -121,14 +121,17 @@
   }
 
   // Elements tagged with data-perm-slug/data-perm-action are hidden unless
-  // the session user has the `<action>:<slug>` token (owner bypasses). When
-  // `me` is null (e.g. /users/me failed), default-deny: hide everything.
+  // the session user has the `<action>:<slug>` token. Any role that is not
+  // explicitly `member` is treated as owner-privileged (owner, legacy
+  // `full`, future admin roles) — defensive, never cuts owners off from
+  // their own menus. When `me` is null (/users/me failed), isOwner stays
+  // false and permSet is empty → default-deny hides everything.
   // CSS already hides these elements until `body.admin-session-loaded` is
   // set, so there's no pre-session flash — this function runs once the
   // class is flipped and finalizes the visibility state.
   function _syncPermissionNav() {
     var me = _state.me;
-    var isOwner = !!(me && me.role === 'owner');
+    var isOwner = !!(me && me.role && me.role !== 'member');
     var perms = (me && me.permissions && me.permissions.permissions) || [];
     var permSet = new Set(perms);
     document.querySelectorAll('[data-perm-slug]').forEach(function (n) {

@@ -521,7 +521,8 @@ Site 전용 추가 규칙:
   - 필터링은 [`js/admin-account.js`](js/admin-account.js) `_syncOwnerOnlyNav()` + `_syncPermissionNav()`. 세션 로드 후 자동 실행.
   - 그룹 전체가 비면 섹션 헤더까지 숨김 (`_collapseEmptyNavSections()`)
 - **백엔드 게이팅**: [`functions/_shared/admin-permissions.js`](functions/_shared/admin-permissions.js) `gateMenuAccess(request, env, slug, action)`. 오너는 무조건 통과, 멤버는 `view:<slug>` 또는 `write:<slug>` 토큰 필수. 32개 admin/settings API가 이를 사용.
-- **세션 TTL**: 서버 HMAC 쿠키 **24시간** ([`functions/_shared/auth.js`](functions/_shared/auth.js)) ↔ 클라이언트 유휴 타이머 **24시간** ([`js/admin-v3.js`](js/admin-v3.js) `_SESSION_MS`). 양쪽이 일치해야 "쿠키는 유효한데 클라이언트가 먼저 튕기는" 현상이 발생하지 않는다.
+- **세션 TTL / 강제 재로그인**: 서버 HMAC 쿠키는 24시간 유효하지만 관리자 콘솔은 **매 `/admin` 페이지 접근마다 캐시·쿠키·Cache API·Service Worker 퍼지 후 로그인 화면을 강제**한다 ([`js/admin-v3.js`](js/admin-v3.js) `_purgeAdminClientState`). 쿠키에서 자동 로그인하지 않음. 로그인 성공 후 클라이언트 유휴 타이머는 **30분**(`_SESSION_MS`). 활동(click/keydown/touch/scroll)이 있으면 리셋, 5분 전 경고, 30분 초과 시 자동 로그아웃.
+- **브라우저 캐시**: `/admin`·`/admin.html` 응답에 `Cache-Control: no-store, no-cache, must-revalidate` 설정 ([`_headers`](_headers)). HTML meta 태그(`<meta http-equiv="Cache-Control" ...>`)로 이중 방어. 새로고침이나 뒤로가기 후에도 항상 서버에서 새 HTML 요청.
 - **403 UX**: 멤버가 권한 없는 API를 호출해도 서버는 `"이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요."` 토스트를 노출. 403은 `homepage-issues/report` 자동 보고 대상에서 제외 (버그가 아니므로).
 
 ### Admin Data Safety
@@ -530,7 +531,7 @@ Site 전용 추가 규칙:
 > - 설정 수정 시 `settings_history` 스냅샷 필수 — 구현: `functions/_shared/settings-audit.js` → `recordSettingChange`, 21개 `functions/api/settings/*.js` 엔드포인트에서 호출.
 > - 태그 삭제 시 사용 중인 글 안내 필수 — 구현: `functions/api/settings/tags.js` (사용 중인 태그는 403 + 사용 글 수 반환).
 > - 인증은 HMAC-SHA256 signed httpOnly 쿠키 세션(24h)으로 단일화. 기사 수정은 세션 토큰만 검증하고 별도 비밀번호 재입력은 요구하지 않는다 — 세션 만료 시 재로그인만 거친다.
-> - 클라이언트 유휴 타이머(`_SESSION_MS`)는 서버 쿠키 TTL과 **정확히 일치**해야 한다. 짧게 잡으면 쿠키가 유효한데 선제 로그아웃이 발생해 운영자 경험이 악화된다.
+> - 클라이언트 유휴 타이머(`_SESSION_MS`)는 **30분 고정**. 서버 HMAC 쿠키 TTL(24h)보다 짧게 유지해 무활동 세션을 조기 종료한다. 단, 매 `/admin` 접근 시 쿠키 자체를 강제 만료·로그인 강제 적용하므로 쿠키 만료 시간과 불일치해도 UX 문제가 생기지 않는다.
 
 ### Admin 관련 문서
 

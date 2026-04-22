@@ -1016,7 +1016,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 ### 11.1 구조
 
 #### 기능 세부 설명
-- 인증: 비밀번호 + HMAC-SHA256 signed cookie session (24시간 유효). 클라이언트 유휴 타이머도 24시간으로 서버 TTL과 일치 (03.100.00 이전에는 30분이어서 쿠키 유효 중 선제 로그아웃 발생).
+- 인증: 비밀번호 + HMAC-SHA256 signed cookie session (24시간 유효). **매 `/admin` 접근마다 강제 재로그인** — 쿠키/sessionStorage/Cache API/Service Worker 모두 퍼지 후 로그인 화면 강제. 쿠키가 유효해도 자동 로그인하지 않는다 (03.100.02부터 적용). 로그인 성공 후 클라이언트 유휴 타이머는 **30분**(2016년부터의 운영 기준), 5분 전 경고 후 자동 로그아웃.
 - 레이아웃: 좌측 고정 사이드바(248px) + 우측 스크롤 가능 콘텐츠 영역
 - 권한 게이팅 (03.100.00 도입): 사이드바 각 버튼의 `data-perm-slug` / `data-perm-action` 속성을 `admin-account.js _syncPermissionNav()`가 세션 로드 직후 평가. 오너는 전 항목 노출, 멤버는 `permissions.permissions` 집합에 해당 `view:<slug>` 토큰이 있는 항목만 표시. 그룹 전체가 비면 섹션 헤더까지 접힘.
 - 패널 목록 (27개 메뉴 + 계정 관리 3개):

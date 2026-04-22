@@ -187,7 +187,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260422031357">
+  <link rel="stylesheet" href="/css/style.css?v=20260422035859">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -369,7 +369,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.130.01</span> · Admin <span class="admin-build-version">V03.100.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.130.02</span> · Admin <span class="admin-build-version">V03.100.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -580,9 +580,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260422031357"></script>
-  <script src="/js/site-chrome.js?v=20260422031357"></script>
-  <script src="/js/post-page.js?v=20260422031357"></script>
+  <script src="/js/main.js?v=20260422035859"></script>
+  <script src="/js/site-chrome.js?v=20260422035859"></script>
+  <script src="/js/post-page.js?v=20260422035859"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -693,11 +693,38 @@ function sanitizeEditorInlineHtml(value) {
     tokens.push({ token, html: replacement });
     return token;
   });
-  let escaped = escapeHtml(tokenized).replace(/\n/g, '<br>');
+  // Round-trip guard: Editor.js stores text with ampersands/brackets already
+  // encoded (e.g. "D&amp;I"). Escaping again produces "D&amp;amp;I" which the
+  // browser renders as literal "D&amp;I". Decode once so the final output is
+  // always single-encoded regardless of how many save/load cycles ran.
+  const normalized = decodeHtmlEntitiesOnce(tokenized);
+  let escaped = escapeHtml(normalized).replace(/\n/g, '<br>');
   tokens.forEach((entry) => {
     escaped = escaped.replace(entry.token, entry.html);
   });
   return escaped;
+}
+
+// Single-pass HTML entity decoder. Must handle every named/numeric entity in
+// ONE pass — if we chained `.replace('&amp;', '&').replace('&lt;', '<')` the
+// second call would decode `&amp;lt;` twice and produce `<` instead of the
+// intended literal `&lt;`. A single regex per match guarantees round-trip
+// safety.
+function decodeHtmlEntitiesOnce(str) {
+  return String(str).replace(/&(amp|lt|gt|quot|apos|#39|#x[0-9a-fA-F]+|#\d+);/g, function (match, entity) {
+    if (entity === 'amp')  return '&';
+    if (entity === 'lt')   return '<';
+    if (entity === 'gt')   return '>';
+    if (entity === 'quot') return '"';
+    if (entity === 'apos' || entity === '#39') return "'";
+    if (entity.charAt(0) === '#') {
+      const code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
+        ? parseInt(entity.slice(2), 16)
+        : parseInt(entity.slice(1), 10);
+      return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+    }
+    return match;
+  });
 }
 
 function formatDate(dateStr) {
