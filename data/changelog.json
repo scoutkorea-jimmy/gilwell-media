@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.100.00",
+    "date": "2026-04-22",
+    "released_at": "2026-04-22 12:01:08 KST",
+    "summary": "사이드바 권한 게이팅(계정 권한 없는 탭은 메뉴 자체에서 숨김) + 클라이언트 세션 타이머를 서버 쿠키 TTL과 동일한 24시간으로 정렬(기존 30분으로 인한 선제 로그아웃 해소) + 403 응답 전용 토스트 UX. Phase 5의 ADMIN_MENUS 카탈로그(27개 슬러그)를 사이드바 28개 버튼에 1:1 매핑하여 프론트·백엔드 이중 게이팅 완성.",
+    "changes": [
+      "admin.html 사이드바: 27개 버튼에 data-perm-slug + data-perm-action='view' 속성 부여(dashboard / analytics-visits / marketing / analytics-tags / geo-audience / list / write / calendar / glossary / article-scorer / ai-score-history / wosm-members / hero / home-lead / picks / board-copy / banner / ticker / tags / meta / author / contributors / editors / translations / releases / homepage-issues / site-history). KMS 링크는 기존 속성 유지. privacy-policy 버튼은 requireOwner 백엔드와 일치하도록 data-owner-only='1' hidden 전환.",
+      "js/admin-account.js _syncPermissionNav(): 기존 perm-slug 필터링 후 _collapseEmptyNavSections() 호출 추가. 자식이 전부 hidden인 사이드바 섹션(그룹 헤더 포함)까지 자동 숨김. 각 섹션에 data-nav-section 마커 추가(dashboard/analytics/content/display/settings/system).",
+      "js/admin-v3.js _SESSION_MS: 30분(30 * 60 * 1000) → 24시간(24 * 60 * 60 * 1000). 서버 HMAC 쿠키 TTL(functions/_shared/auth.js Date.now() + 86_400_000)과 정확히 일치. 사용자가 '자꾸 토큰 만료'라고 체감하던 근본 원인 — 쿠키는 유효한데 클라이언트가 먼저 튕기는 — 해소.",
+      "_sessionTick() 표시 포맷 확장: 1시간 이상 남으면 'H:MM:SS', 미만이면 'M:SS'. admin.html 초기 v3-timer-text 값 '30:00' → '24:00:00'. 만료 모달 문구 '30분간 활동이 없어' → '장시간 활동이 없어'.",
+      "js/admin-v3.js _apiFetch 403 처리 추가: 서버가 내려주는 한국어 메시지(예: '이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요.')를 GW.showToast로 6초간 노출. 401만 재로그인 플로우 발동, 403은 권한 안내만. 403은 /api/homepage-issues/report 자동 신고 대상에서 제외(권한 거부는 버그가 아니므로 스팸 방지).",
+      "CLAUDE.md §3 Admin에 'Admin 권한 게이팅(Phase 5 · 03.100.00)' 섹션 신설 — 사이드바 + API 이중 게이팅 패턴, data-perm-slug 속성 규약, _syncPermissionNav 동작, 세션 TTL 일치 원칙, 403 UX 원칙 명문화. Admin Data Safety에도 클라이언트 유휴 타이머 = 서버 쿠키 TTL 규칙 추가.",
+      "docs/feature-definition.md §11.1 관리자 패널 목록 최신화(27개 메뉴 + 계정 관리 3개로 재구성) + 권한 게이팅 항목 신설(data-perm-slug 속성 · _syncPermissionNav · 그룹 접힘) + 세션 TTL 24시간 일치 기록 + 403 토스트 UX 기록.",
+      "슬러그 드리프트 검증: functions/api/admin/* + functions/api/settings/* 37개 gateMenuAccess 호출의 slug가 ADMIN_MENUS(admin-users.js) 27개 카탈로그와 1:1 일치함을 확인(중복 참조 포함). privacy-policy는 requireOwner 사용(예상된 owner-only 경로).",
+      "관리자 버전 03.099.00 → 03.100.00 (Feature bump, fix reset to 00)."
+    ]
+  },
+  {
     "version": "03.099.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 03:14:16 KST",
