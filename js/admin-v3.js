@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.100.01
+ * Version: 03.100.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -410,15 +410,11 @@
       _doLogin();
     });
 
-    var token = GW.getToken && GW.getToken();
-    if (token) {
-      _verifySession().then(function (ok) {
-        if (ok) _showApp();
-        else _showLogin();
-      });
-    } else {
-      _showLogin();
-    }
+    // Every /admin page load ALWAYS forces a fresh login. No auto-sign-in
+    // from an existing cookie — this is intentional (admin operator policy).
+    // We also purge browser caches so the admin UI never serves a stale
+    // HTML/JS snapshot after a deploy.
+    _purgeAdminClientState();
 
     // Login
     _bindEl('v3-login-btn', 'click', _doLogin);
@@ -789,6 +785,45 @@
     return _apiFetch('/api/admin/session')
       .then(function (d) { return d && d.authenticated === true; })
       .catch(function () { return false; });
+  }
+
+  // Reset every piece of admin client state on /admin page load:
+  //   - drop any saved bearer flag (GW.clearToken)
+  //   - wipe sessionStorage (session timer deadline, etc.)
+  //   - invalidate the HttpOnly admin_token cookie server-side
+  //   - purge Cache API + unregister service workers so stale HTML/JS
+  //     never shows a half-signed-in admin console
+  //   - strip any pre-rendered admin surfaces (v3-app stays `hidden`)
+  //   - show the login screen and prime Turnstile
+  //
+  // Called unconditionally on DOMContentLoaded — there is no auto-sign-in
+  // from an existing cookie. Every admin session starts from scratch.
+  function _purgeAdminClientState() {
+    try { if (GW.clearToken) GW.clearToken(); } catch (_) {}
+    try { sessionStorage.clear(); } catch (_) {}
+    try { localStorage.removeItem('_gw_admin_sd'); } catch (_) {}
+    try {
+      fetch('/api/admin/session', { method: 'DELETE', credentials: 'same-origin', cache: 'no-store' }).catch(function () {});
+    } catch (_) {}
+    if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
+      try {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (k) { try { caches.delete(k); } catch (_) {} });
+        }).catch(function () {});
+      } catch (_) {}
+    }
+    if (navigator && navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+      try {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { try { r.unregister(); } catch (_) {} });
+        }).catch(function () {});
+      } catch (_) {}
+    }
+    // Defense-in-depth: keep the dashboard pane hidden even if something
+    // accidentally flips it on (stale script, double-invocation).
+    var app = document.getElementById('v3-app');
+    if (app) app.hidden = true;
+    _showLogin();
   }
 
   function _doLogin() {
@@ -9602,10 +9637,11 @@
   }
 
   // ── Session Timeout ────────────────────────────────────────────────────────
-  // Aligned with server HMAC cookie TTL (functions/_shared/auth.js → 24h).
-  // Previously 30 min, which kicked users out while the server cookie was
-  // still valid. Idle reset on click/keydown/touch/scroll still applies.
-  var _SESSION_MS      = 24 * 60 * 60 * 1000;
+  // 30-minute idle window (운영 기준). Activity resets the timer on every
+  // click/keydown/touch/scroll. Server cookie is 24h but the admin UI
+  // intentionally logs users out earlier — combined with the force-relogin
+  // on every /admin page load, this keeps admin sessions short-lived.
+  var _SESSION_MS      = 30 * 60 * 1000;
   var _SESSION_WARN_MS =  5 * 60 * 1000;
   var _sessionDeadline     = 0;
   var _sessionWarnTimeout  = null;
@@ -9682,7 +9718,7 @@
     overlay.innerHTML =
       '<div class="v3-modal v3-session-modal-box" style="max-width:420px;text-align:center;padding:var(--v3-gap-xl) var(--gap-section)">' +
         '<p style="margin:0 0 8px;font-size:var(--fs-lead);font-weight:700;color:var(--v3-text)">세션이 만료되었습니다</p>' +
-        '<p style="margin:0;font-size:var(--fs-body);color:var(--v3-text-m)">장시간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
+        '<p style="margin:0;font-size:var(--fs-body);color:var(--v3-text-m)">30분간 활동이 없어 자동 로그아웃되었습니다.<br>잠시 후 메인 페이지로 이동합니다.</p>' +
       '</div>';
     document.body.appendChild(overlay);
     GW.clearToken();

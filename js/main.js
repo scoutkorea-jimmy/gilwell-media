@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.130.01';
-  GW.ADMIN_VERSION = '03.100.01';
-  GW.ASSET_VERSION = '20260422031357';
+  GW.APP_VERSION = '00.130.02';
+  GW.ADMIN_VERSION = '03.100.02';
+  GW.ASSET_VERSION = '20260422035859';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -751,11 +751,35 @@
       tokens.push({ token: token, html: replacement });
       return token;
     });
-    var escaped = GW.escapeHtml(tokenized).replace(/\n/g, '<br>');
+    // Round-trip guard: Editor.js stores text with ampersands/brackets
+    // already encoded (e.g. "D&amp;I"). Escaping again produces
+    // "D&amp;amp;I" which renders as literal "D&amp;I". Decode once first
+    // so the output is always single-encoded regardless of history.
+    var normalized = GW.decodeHtmlEntitiesOnce(tokenized);
+    var escaped = GW.escapeHtml(normalized).replace(/\n/g, '<br>');
     tokens.forEach(function (entry) {
       escaped = escaped.replace(entry.token, entry.html);
     });
     return escaped;
+  };
+
+  // Single-pass HTML entity decoder — see server-side counterpart in
+  // functions/post/[id].js for the round-trip rationale.
+  GW.decodeHtmlEntitiesOnce = function (str) {
+    return String(str).replace(/&(amp|lt|gt|quot|apos|#39|#x[0-9a-fA-F]+|#\d+);/g, function (match, entity) {
+      if (entity === 'amp')  return '&';
+      if (entity === 'lt')   return '<';
+      if (entity === 'gt')   return '>';
+      if (entity === 'quot') return '"';
+      if (entity === 'apos' || entity === '#39') return "'";
+      if (entity.charAt(0) === '#') {
+        var code = entity.charAt(1) === 'x' || entity.charAt(1) === 'X'
+          ? parseInt(entity.slice(2), 16)
+          : parseInt(entity.slice(1), 10);
+        return Number.isFinite(code) && code > 0 ? String.fromCodePoint(code) : match;
+      }
+      return match;
+    });
   };
 
   GW.renderEditorInlineText = function (value) {
