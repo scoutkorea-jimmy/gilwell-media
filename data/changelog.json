@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.131.02",
+    "date": "2026-04-23",
+    "released_at": "2026-04-23 16:19:14 KST",
+    "summary": "AdFit 광고 영역이 깨져(broken-image placeholder) 노출되던 회귀 즉시 복구 — CSP에 t1.daumcdn.net 재허용.",
+    "changes": [
+      "functions/_middleware.js CSP 4곳(script-src legacy/public · connect-src · frame-src)에 https://t1.daumcdn.net 재추가. 직전 커밋에서 Kakao 공지 기준으로 deprecated 도메인을 정리했으나, AdFit SDK가 런타임에 여전히 t1.daumcdn.net 리소스(트래킹·iframe 내부)를 요청해 CSP 차단으로 모든 페이지 광고 슬롯이 broken 표시로 바뀌던 문제 복구.",
+      "Kakao 공지상 기존 도메인은 현재도 정상 로딩되며 deprecated 시점이 사전 통지된다. 실제 deprecation 전환 시점에 다시 정리하는 전략으로 롤백.",
+      "사이트 버전 00.131.01 → 00.131.02 (Hotfix)."
+    ]
+  },
+  {
+    "version": "03.100.06",
+    "date": "2026-04-23",
+    "released_at": "2026-04-23 16:19:14 KST",
+    "summary": "관리자/KMS 페이지의 AdFit CSP도 함께 원복 (script-src legacy 라인).",
+    "changes": [
+      "functions/_middleware.js legacy 브랜치 script-src에 t1.daumcdn.net 재추가 — 관리자·KMS HTML에서도 동일 도메인 허용 유지.",
+      "관리자 버전 03.100.05 → 03.100.06 (Hotfix)."
+    ]
+  },
+  {
     "version": "03.100.05",
     "date": "2026-04-23",
     "released_at": "2026-04-23 15:03:14 KST",
