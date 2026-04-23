@@ -942,7 +942,7 @@
     modal._onSuccess = onSuccess;
     document.getElementById('calendar-login-pw').value = '';
     var userEl = document.getElementById('calendar-login-username');
-    if (userEl && !userEl.value) userEl.value = 'owner';
+    if (userEl) userEl.value = '';
     document.getElementById('calendar-login-err').style.display = 'none';
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');

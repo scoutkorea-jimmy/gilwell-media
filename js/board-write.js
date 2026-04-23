@@ -37,7 +37,7 @@
       '<div class="board-pw-box">' +
         '<div class="board-pw-header">글쓰기</div>' +
         '<p class="board-pw-desc">관리자 또는 부여된 계정으로 로그인하세요</p>' +
-        '<input type="text" id="board-pw-username" placeholder="아이디 (예: owner)" autocomplete="username" spellcheck="false" autocapitalize="off" />' +
+        '<input type="text" id="board-pw-username" placeholder="아이디" autocomplete="off" spellcheck="false" autocapitalize="off" />' +
         '<input type="password" id="board-pw-input" placeholder="비밀번호" autocomplete="current-password" />' +
         '<div id="board-pw-turnstile" style="margin:12px 0;"></div>' +
         '<div id="board-pw-error" class="board-pw-error">아이디 또는 비밀번호가 올바르지 않습니다</div>' +
@@ -558,7 +558,7 @@
     if (!overlay) return;
     document.getElementById('board-pw-input').value = '';
     var userEl = document.getElementById('board-pw-username');
-    if (userEl && !userEl.value) userEl.value = 'owner';
+    if (userEl) userEl.value = '';
     document.getElementById('board-pw-error').style.display = 'none';
     this._loginTurnstileToken = '';
     overlay.classList.add('open');
