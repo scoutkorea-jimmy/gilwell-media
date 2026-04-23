@@ -45,9 +45,19 @@ export function buildContentPurgeUrls(origin, options = {}) {
 }
 
 export async function purgeContentCache(env, origin, options = {}) {
-  const zoneId = String(env && env.CF_ZONE_ID || '').trim();
-  const apiToken = String(env && env.CF_PURGE_API_TOKEN || '').trim();
+  // `CF_ZONE_ID` / `CF_PURGE_API_TOKEN`이 우선, 없으면 범용 Cloudflare 바인딩
+  // (`CLOUDFLARE_ZONE_ID` / `CLOUDFLARE_API_TOKEN`)로 폴백. 사용자가 cache-purge
+  // 전용 시크릿을 별도로 등록하지 않았더라도 이미 배포된 범용 API 토큰 +
+  // 계정에 설정된 zone ID만 있으면 퍼지가 돌아가도록.
+  const zoneId = String((env && (env.CF_ZONE_ID || env.CLOUDFLARE_ZONE_ID)) || '').trim();
+  const apiToken = String((env && (env.CF_PURGE_API_TOKEN || env.CLOUDFLARE_API_TOKEN)) || '').trim();
   if (!zoneId || !apiToken) {
+    // 관리자가 기사를 수정했는데 공개 페이지가 stale로 남는 회귀가 조용히
+    // 스킵되지 않도록, 토큰 부재 시에도 log는 남겨서 진단 가능하게.
+    if (!env || !env.__PURGE_WARNED__) {
+      try { console.warn('[cache-purge] skipped — missing zone_id or api_token (CF_ZONE_ID / CLOUDFLARE_ZONE_ID and CF_PURGE_API_TOKEN / CLOUDFLARE_API_TOKEN)'); } catch (_) {}
+      if (env) env.__PURGE_WARNED__ = true;
+    }
     return { skipped: true, reason: 'missing-credentials' };
   }
   const files = buildContentPurgeUrls(origin, options);

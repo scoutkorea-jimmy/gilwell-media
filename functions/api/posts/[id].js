@@ -143,13 +143,26 @@ export async function onRequestPut({ params, request, env }) {
   const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, manual_related_posts, sort_order } = body;
   const category = normalizeCategory(body.category);
 
+  // KMS 7.5.1 원칙: "한 엔드포인트 안에서 `.provided` 검사와 `field !== undefined` 직접
+  // 검사 혼용 금지". 이 PUT 핸들러는 과거 두 스타일을 섞어 써서 `provided` 플래그 누락
+  // 버그에 한 번 당했으므로(2026-04-24), 이제 모든 조건부 SET을 `hasField()` 하나로
+  // 통일한다. 검증 헬퍼는 여전히 `{ok, value}` 검증용으로 쓰되, "사용자가 보냈는가"
+  // 판단은 raw body 소유 여부로만 한다.
+  function hasField() {
+    const keys = Array.prototype.slice.call(arguments);
+    for (var i = 0; i < keys.length; i += 1) {
+      if (Object.prototype.hasOwnProperty.call(body, keys[i])) return true;
+    }
+    return false;
+  }
+
   // Validate only fields that are actually provided
-  if (category !== undefined && !VALID_POST_CATEGORIES.includes(category)) {
+  if (hasField('category') && !VALID_POST_CATEGORIES.includes(category)) {
     return json({ error: '유효하지 않은 카테고리입니다 (korea / apr / wosm / people)' }, 400);
   }
-  const safeTitleInput = title === undefined ? { ok: true, provided: false, value: undefined } : requireNonEmptyString(title, '제목', 200);
+  const safeTitleInput = hasField('title') ? requireNonEmptyString(title, '제목', 200) : { ok: true, value: undefined };
   if (!safeTitleInput.ok) return json({ error: safeTitleInput.error }, 400);
-  const safeContentInput = content === undefined ? { ok: true, provided: false, value: undefined } : requireNonEmptyString(content, '내용');
+  const safeContentInput = hasField('content') ? requireNonEmptyString(content, '내용') : { ok: true, value: undefined };
   if (!safeContentInput.ok) return json({ error: safeContentInput.error }, 400);
   const safeSubtitleInput = optionalTrimmedString(subtitle, '부제', 300);
   if (!safeSubtitleInput.ok) return json({ error: safeSubtitleInput.error }, 400);
@@ -171,27 +184,27 @@ export async function onRequestPut({ params, request, env }) {
   // Phase 2 publish kill switch: when global setting is 'on', only owner can
   // flip a post into public visibility. Members trying to publish hit 403.
   // Unpublishing (published=false) stays allowed so writers can always hide.
-  if (safePublishedInput.provided && safePublishedInput.value === true) {
+  if (hasField('published') && safePublishedInput.value === true) {
     const session = await loadAdminSession(request, env);
     const gate = await requirePublishAllowed(env, session);
     if (gate.error) return gate.error;
   }
 
-  // Build dynamic SET clause from provided fields
+  // Build dynamic SET clause from provided fields (검사는 모두 hasField로 통일).
   const fields = [];
   const values = [];
 
-  if (category  !== undefined) { fields.push('category = ?');   values.push(category); }
-  if (safeTitleInput.provided) { fields.push('title = ?'); values.push(safeTitleInput.value); }
-  if (safeSubtitleInput.provided) { fields.push('subtitle = ?'); values.push(safeSubtitleInput.value); }
-  if (content   !== undefined) {
+  if (hasField('category')) { fields.push('category = ?'); values.push(category); }
+  if (hasField('title')) { fields.push('title = ?'); values.push(safeTitleInput.value); }
+  if (hasField('subtitle')) { fields.push('subtitle = ?'); values.push(safeSubtitleInput.value); }
+  if (hasField('content')) {
     const upgradedContent = await safelyUpgradeEditorContentImages(safeContentInput.value, env, origin, 'inline');
     fields.push('content = ?');
     values.push(upgradedContent);
   }
   let oldImageToDelete = '';
   let oldGalleryToDelete = [];
-  if (image_url !== undefined || body.image_data !== undefined) {
+  if (hasField('image_url', 'image_data')) {
     const storedCover = await safelyStoreDataImage(env, sanitizeUrl(body.image_data, origin) || sanitizeUrl(image_url, origin), origin, 'cover');
     fields.push('image_url = ?');
     values.push(storedCover.url);
@@ -199,23 +212,23 @@ export async function onRequestPut({ params, request, env }) {
       oldImageToDelete = currentPost.image_url;
     }
   }
-  if (gallery_images !== undefined) {
+  if (hasField('gallery_images')) {
     const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
     fields.push('gallery_images = ?');
     values.push(serializeGalleryImages(storedGalleryImages));
     oldGalleryToDelete = diffRemovedGalleryUrls(currentPost && currentPost.gallery_images, storedGalleryImages);
   }
-  if (image_caption !== undefined) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
-  if (youtube_url !== undefined) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
-  if (location_name !== undefined) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
-  if (location_address !== undefined) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
-  if (safeMetaTagsInput.provided) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
-  if (safeTagInput.provided) { fields.push('tag = ?'); values.push(safeTagInput.value); }
-  if (special_feature !== undefined) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
+  if (hasField('image_caption')) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
+  if (hasField('youtube_url')) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
+  if (hasField('location_name')) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
+  if (hasField('location_address')) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
+  if (hasField('meta_tags')) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
+  if (hasField('tag')) { fields.push('tag = ?'); values.push(safeTagInput.value); }
+  if (hasField('special_feature')) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
   // Phase 5: byline is strictly derived from the authoring user's editor_code.
   // Owners can reassign author by changing body.author_user_id; the byline is
   // then recomputed from that user. display_name is never exposed publicly.
-  if (body.author_user_id !== undefined && session.isOwner) {
+  if (hasField('author_user_id') && session.isOwner) {
     const nextAuthorUid = Number(body.author_user_id);
     if (Number.isFinite(nextAuthorUid) && nextAuthorUid > 0) {
       const authorRow = await env.DB.prepare(
@@ -233,11 +246,11 @@ export async function onRequestPut({ params, request, env }) {
   }
   // Legacy free-text body.author is ignored for non-owner (prevents
   // impersonation) and for owner (byline comes from author_user_id).
-  if (safeAiAssistedInput.provided) { fields.push('ai_assisted = ?');  values.push(safeAiAssistedInput.value); }
-  if (safeSortOrderInput.provided) { fields.push('sort_order = ?'); values.push(safeSortOrderInput.value); }
-  if (manual_related_posts !== undefined || body.related_posts_json !== undefined) {
+  if (hasField('ai_assisted')) { fields.push('ai_assisted = ?'); values.push(safeAiAssistedInput.value); }
+  if (hasField('sort_order')) { fields.push('sort_order = ?'); values.push(safeSortOrderInput.value); }
+  if (hasField('manual_related_posts', 'related_posts_json')) {
     fields.push('manual_related_posts = ?');
-    values.push(normalizeManualRelatedPosts(manual_related_posts !== undefined ? manual_related_posts : body.related_posts_json));
+    values.push(normalizeManualRelatedPosts(hasField('manual_related_posts') ? manual_related_posts : body.related_posts_json));
   }
   const normalizedPublishAt = normalizePublishAtInput(publish_at, publish_date);
 
@@ -249,10 +262,10 @@ export async function onRequestPut({ params, request, env }) {
   fields.push("updated_at = datetime('now')");
 
   try {
-    var nextPublished = safePublishedInput.provided ? safePublishedInput.value : !!(currentPost && currentPost.published);
-    var nextFeatured = safeFeaturedInput.provided ? safeFeaturedInput.value : !!(currentPost && currentPost.featured);
+    var nextPublished = hasField('published') ? safePublishedInput.value : !!(currentPost && currentPost.published);
+    var nextFeatured = hasField('featured') ? safeFeaturedInput.value : !!(currentPost && currentPost.featured);
     if (!nextPublished) nextFeatured = false;
-    if (publish_at !== undefined || publish_date !== undefined || safePublishedInput.provided) {
+    if (hasField('publish_at', 'publish_date', 'published')) {
       const effectivePublishAt = resolveStoredPublishAt({
         published: nextPublished,
         requestedPublishAt: normalizedPublishAt,
@@ -261,11 +274,11 @@ export async function onRequestPut({ params, request, env }) {
       fields.push('publish_at = ?');
       values.push(effectivePublishAt);
     }
-    if (safePublishedInput.provided) {
+    if (hasField('published')) {
       fields.push('published = ?');
       values.push(nextPublished ? 1 : 0);
     }
-    if (safeFeaturedInput.provided || (safePublishedInput.provided && !nextFeatured && currentPost && Number(currentPost.featured || 0) === 1)) {
+    if (hasField('featured') || (hasField('published') && !nextFeatured && currentPost && Number(currentPost.featured || 0) === 1)) {
       fields.push('featured = ?');
       values.push(nextFeatured ? 1 : 0);
     }
@@ -347,6 +360,15 @@ export async function onRequestPatch({ params, request, env }) {
   const preCheckPost = await env.DB.prepare(`SELECT * FROM posts WHERE id = ?`).bind(id).first();
   if (!preCheckPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
 
+  // KMS 7.5.1 원칙: PUT과 동일하게 hasField 패턴으로 통일.
+  function hasField() {
+    const keys = Array.prototype.slice.call(arguments);
+    for (var i = 0; i < keys.length; i += 1) {
+      if (Object.prototype.hasOwnProperty.call(body || {}, keys[i])) return true;
+    }
+    return false;
+  }
+
   if (!session.isOwner) {
     const hasWrite = hasMenuPermission(session.permissions, 'list', 'write')
                   || hasMenuPermission(session.permissions, 'write', 'write');
@@ -355,7 +377,7 @@ export async function onRequestPatch({ params, request, env }) {
       return json({ error: '본인이 작성한 글만 상태를 변경할 수 있습니다.' }, 403);
     }
     // 에디터 추천(featured) 토글은 오너 전용.
-    if (body && body.featured !== undefined) {
+    if (hasField('featured')) {
       return json({ error: '에디터 추천 지정은 오너만 할 수 있습니다.' }, 403);
     }
   }
@@ -365,13 +387,13 @@ export async function onRequestPatch({ params, request, env }) {
   const sortOrderInput = optionalIntegerOrNull(body.sort_order, '정렬 순서');
   if (!sortOrderInput.ok) return json({ error: sortOrderInput.error }, 400);
 
-  if (!featuredInput.provided && !publishedInput.provided && !sortOrderInput.provided) {
+  if (!hasField('featured') && !hasField('published') && !hasField('sort_order')) {
     return json({ error: 'featured 또는 published 값을 입력해주세요' }, 400);
   }
 
   // Phase 2 publish kill switch: same rule as PUT — flip-to-public requires
   // owner when switch is on, unpublish always allowed.
-  if (publishedInput.provided && publishedInput.value === true) {
+  if (hasField('published') && publishedInput.value === true) {
     const session = await loadAdminSession(request, env);
     const gate = await requirePublishAllowed(env, session);
     if (gate.error) return gate.error;
@@ -382,8 +404,8 @@ export async function onRequestPatch({ params, request, env }) {
     if (!beforePost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
     const fields = [];
     const values = [];
-    const nextPublished = publishedInput.provided ? publishedInput.value : Number(beforePost.published || 0) === 1;
-    const requestedFeatured = featuredInput.provided ? featuredInput.value : Number(beforePost.featured || 0) === 1;
+    const nextPublished = hasField('published') ? publishedInput.value : Number(beforePost.published || 0) === 1;
+    const requestedFeatured = hasField('featured') ? featuredInput.value : Number(beforePost.featured || 0) === 1;
     const nextFeatured = nextPublished ? requestedFeatured : false;
     const effectivePublishAt = resolveStoredPublishAt({
       published: nextPublished,
@@ -391,12 +413,12 @@ export async function onRequestPatch({ params, request, env }) {
       existingPublishAt: beforePost.publish_at,
     });
 
-    if (publishedInput.provided) { fields.push('published = ?'); values.push(nextPublished ? 1 : 0); }
-    if (publishedInput.provided) { fields.push('publish_at = ?'); values.push(effectivePublishAt); }
-    if (featuredInput.provided || (publishedInput.provided && !nextFeatured && Number(beforePost.featured || 0) === 1)) {
+    if (hasField('published')) { fields.push('published = ?'); values.push(nextPublished ? 1 : 0); }
+    if (hasField('published')) { fields.push('publish_at = ?'); values.push(effectivePublishAt); }
+    if (hasField('featured') || (hasField('published') && !nextFeatured && Number(beforePost.featured || 0) === 1)) {
       fields.push('featured = ?'); values.push(nextFeatured ? 1 : 0);
     }
-    if (sortOrderInput.provided) { fields.push('sort_order = ?'); values.push(sortOrderInput.value); }
+    if (hasField('sort_order')) { fields.push('sort_order = ?'); values.push(sortOrderInput.value); }
 
     const wasPublicFeatured = Number(beforePost.featured || 0) === 1 && Number(beforePost.published || 0) === 1;
     if (nextFeatured && !wasPublicFeatured) {
@@ -412,16 +434,16 @@ export async function onRequestPatch({ params, request, env }) {
     fields.push("updated_at = datetime('now')");
     const updatedPost = await runPostUpdate(env, id, fields, values);
     if (!updatedPost) return json({ error: '게시글을 찾을 수 없습니다' }, 404);
-    if (publishedInput.provided && !nextPublished) {
+    if (hasField('published') && !nextPublished) {
       await removePostFromHomepageSettings(env, Number(id)).catch(function (err) {
         console.error('PATCH /api/posts/:id homepage cleanup error:', err);
       });
     }
     if (updatedPost) {
       var summary = [];
-      if (body.featured !== undefined) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
-      if (body.published !== undefined) summary.push(body.published ? '공개 전환' : '비공개 전환');
-      if (body.sort_order !== undefined) summary.push('정렬 순서 변경');
+      if (hasField('featured')) summary.push(body.featured ? '에디터 추천 설정' : '에디터 추천 해제');
+      if (hasField('published')) summary.push(body.published ? '공개 전환' : '비공개 전환');
+      if (hasField('sort_order')) summary.push('정렬 순서 변경');
       await recordPostHistory(env, id, 'status', beforePost, updatedPost, summary.join(' · ') || '상태 변경');
       await logOperationalEvent(env, {
         channel: 'admin',

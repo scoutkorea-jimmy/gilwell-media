@@ -1302,9 +1302,58 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 ### 13.1.1 D1 운영 메모 (2026-04-24 추가)
 
 #### 기능 세부 설명
-- **D1 단일 SQL 100KB 한계**: `wrangler d1 execute --file`은 SQL 문자열(이스케이프 포함) 100KB 초과 시 `SQLITE_TOOBIG`. 회피: 내용 축약 / 관리자 `PUT /api/settings/feature-definition`(파라미터 바인딩, 한계 없음) / CF D1 REST API `{sql, params}`.
+- **D1 단일 SQL 100KB 한계**: `wrangler d1 execute --file`은 SQL 문자열(이스케이프 포함) 100KB 초과 시 `SQLITE_TOOBIG`. 회피: 내용 축약 / 관리자 `PUT /api/settings/feature-definition`(파라미터 바인딩, 한계 없음) / CF D1 REST API `{sql, params}` / 값을 둘로 쪼개 `INSERT + UPDATE value||'...'` 패턴.
 - **CLI 동기화 시 settings_history 함께**: `INSERT OR REPLACE INTO settings`만으로는 11.5 최종 업데이트 시각이 괴리. `INSERT INTO settings_history (key, value, saved_at) SELECT key, value, datetime('now') FROM settings WHERE key='feature_definition';` 서브쿼리 패턴 사용.
 - 운영 기준: KMS 저장 버튼이 1순위, CLI는 AI 일괄 작업용 대안.
+
+### 13.1.2 CDN SRI 장애 대응 (2026-04-24 추가)
+
+#### 기능 세부 설명
+공개·관리자·KMS·Dreampath가 공통으로 의존하는 외부 CDN 스크립트는 SRI(Subresource Integrity) 해시로 고정되어 있다. CDN이 동일 버전 태그의 콘텐츠를 교체하거나 장애가 나면 해시 불일치로 스크립트 로드가 실패하고 — 관련 UI(공개 기사 수정 모달, 관리자 Editor.js 에디터, Dreampath Tiptap 에디터, 모든 페이지의 DOMPurify 뷰어)가 **전면 먹통**이 된다.
+
+**의존 목록과 핀**:
+- `cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js` — 공개 `/post/:id`, `/feature/...`, admin.html, kms.html. SHA-384 핀: `eEu5CTj3qGvu9...`.
+- `cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.1` + header/list/quote 플러그인 — 관리자 에디터. 각 SRI 핀은 `js/admin-v3.js _ADMIN_CDN_INTEGRITY` 테이블.
+- `esm.sh/@tiptap/core@2` + extensions — Dreampath 전용.
+- `challenges.cloudflare.com` Turnstile — 로그인 CAPTCHA.
+
+**장애 감지**: Console에 `Failed to find a valid digest in the 'integrity' attribute` 또는 `Failed to load resource: net::ERR_BLOCKED_BY_INTEGRITY_CHECK`. homepage_issues에도 `admin_client_api_error`로 기록될 수 있으나 스크립트 자체가 로드 실패면 _apiFetch 경로를 안 타서 자동 보고가 안 될 수 있다.
+
+**대응 플랜 (평시 준비 → 장애 시 순차)**:
+1. **평시**: 주요 핀 버전과 해시를 이 문서에 박제 (위 목록). `./scripts/verify_release_metadata.sh`가 SRI 무결성을 검증하지는 않으므로, CDN 장애는 런타임 기준 감지.
+2. **1차 대응 (5분 내)**: 운영자 대시보드에서 해당 페이지 열어 Console 확인. `integrity` 관련 오류면 CDN 장애 확정.
+3. **2차 대응 (대체 CDN으로 임시 스위치)**: 동일 파일을 `unpkg.com/<package>@<version>/<path>`에서 가져오도록 `src`·`integrity` 한 줄 수정. `unpkg`는 jsdelivr과 독립된 호스팅. CSP `script-src`에 `https://unpkg.com`은 이미 허용돼 있음 (`functions/_middleware.js`). 수정 + 배포 10분.
+4. **3차 (장기)**: 핀 버전을 최신 패치로 올리고 새 SRI 해시 계산. `curl -s <URL> | openssl dgst -sha384 -binary | base64`. changelog에 "CDN 핀 버전 업데이트"로 기록.
+5. **복구 후**: jsdelivr 상태 확인되면 CSP allowlist는 둘 다 유지, `src`만 jsdelivr로 원복. unpkg·jsdelivr 둘 다 지속 허용해두면 다음 장애 때 전환 시간 더 짧아짐.
+
+**금기**: SRI 해시를 제거하고 빠른 수리한다는 유혹. 핀 없는 CDN 스크립트는 공급망 공격(CDN 계정 탈취 → 악성 스크립트 주입) 벡터이므로 절대 금지. 장애 시에도 항상 새 해시 계산 후 반영.
+
+### 13.1.3 Cloudflare 캐시 퍼지 환경변수 (2026-04-24 추가)
+
+#### 기능 세부 설명
+`functions/_shared/cache-purge.js`는 게시글 생성·수정·삭제 시 관련 공개 경로(`/post/:id`, `/<category>`, `/api/posts?page=1` 등)의 Cloudflare edge 캐시를 퍼지한다. 환경변수가 없으면 **조용히 스킵**되어 관리자가 기사를 수정해도 공개 페이지가 최대 60초 + stale-while-revalidate 300초 동안 이전 내용을 노출한다.
+
+**필수 환경변수 (Cloudflare Pages > Settings > Environment variables)**:
+- `CF_ZONE_ID` 또는 `CLOUDFLARE_ZONE_ID` — bpmedia.net의 zone ID. `wrangler whoami` 후 대시보드에서 확인.
+- `CF_PURGE_API_TOKEN` 또는 `CLOUDFLARE_API_TOKEN` — Zone > Cache Purge 권한을 가진 API 토큰. 범용 `CLOUDFLARE_API_TOKEN`이 이미 등록돼 있다면 거기에 Cache Purge 권한만 추가하는 것이 가장 간단.
+
+**현재 상태 (2026-04-24 배포 기준)**: `CLOUDFLARE_ACCOUNT_ID`와 `CLOUDFLARE_API_TOKEN`은 설정되어 있으나 `CF_ZONE_ID`는 **미설정**. 코드는 fallback으로 `CLOUDFLARE_ZONE_ID`도 받아들이도록 정비했으므로 둘 중 하나만 추가하면 된다.
+
+**부재 시 관찰 가능한 증상**: 관리자 수정 → "저장되었습니다" 토스트는 정상, 그러나 새 탭으로 공개 `/post/:id` 열면 최대 1분간 이전 제목/본문. 사용자는 "수정이 반영 안 된다"고 느낌 (실제로는 DB 반영되었고 edge 캐시가 stale). 00.131.05 "제목 수정 안됨" 회귀와 **증상이 동일**하지만 원인은 다름 — 이쪽은 캐시, 저쪽은 UPDATE 누락.
+
+### 13.1.4 publish_at 예약 공개 처리 (2026-04-24 추가)
+
+#### 기능 세부 설명
+`ensureDuePostsPublished(env, origin)`는 현재 모든 공개 페이지 GET(`functions/[[path]].js`, `functions/post/[id].js`, `functions/rss.xml.js`, `functions/sitemap-news.xml/index.js`)에서 `.catch(err)`로 감싸 **매 요청마다 실행**된다. `publish_at <= now AND published = 0`인 게시글을 찾아 공개 전환하는 배경 작업.
+
+**현재 방식의 비용**: 공개 트래픽 N개 요청 = 동일한 D1 쿼리 N회 중복. 대부분 0건 반환하지만 쿼리 자체는 돎.
+
+**개선 방향 (제안만 — 향후 배포 시 반영)**:
+1. **Cloudflare Scheduled Worker로 이관**: `wrangler.publish-due.toml`이 이미 존재하므로, 5분 주기 cron(`crons = ["*/5 * * * *"]`)으로 별도 Worker를 띄워 `ensureDuePostsPublished`를 단독으로 돌린다. 공개 페이지 핸들러에서 inline 호출 제거.
+2. **과도기**: 제거 직전에 "inline 호출은 no-op" 브랜치로 한 배포 주기 두고 관찰 — Scheduled Worker가 5분 이내에 반드시 돌고 있는지 D1 `scheduled_worker_heartbeat` 같은 테이블로 확인.
+3. **복구 경로**: Scheduled Worker가 장애로 5분 이상 멈추면 예약 게시글이 공개되지 않는다 → 관리자 대시보드 `scheduled_worker_heartbeat` 카드 신설 + 마지막 성공 시각이 10분 넘으면 경고. inline 경로를 비상 스위치로 유지 (설정 `publish_inline_fallback=on`이면 복구 전까지 inline 실행).
+
+**왜 지금 안 하는가**: 현 트래픽(하루 수백 건)에선 inline 호출이 성능에 체감 안 됨. 트래픽 증가 시점(월 수만 PV) 또는 `ensureDuePostsPublished`가 느려지는 시점에 이관. 지금은 "방향만 박제하고 트리거 조건 관찰".
 
 ### 13.2 스모크 체크 기준
 
