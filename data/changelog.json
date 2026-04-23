@@ -1,6 +1,16 @@
 {
   "items": [
   {
+    "version": "03.100.05",
+    "date": "2026-04-23",
+    "released_at": "2026-04-23 15:03:14 KST",
+    "summary": "배포 후 검증 스크립트가 커밋 929d75a(분석 메뉴 2분할) 이후 갱신되지 않아 매 배포마다 실패하던 회귀 해소.",
+    "changes": [
+      "scripts/post_deploy_check.sh의 admin 패널 확인 조건을 최신 메뉴 구조에 맞춰 갱신 — 기존 data-panel=\"analytics\" 단일 검사를 data-panel=\"analytics-visits\" + data-panel=\"analytics-tags\" 2개 검사로 교체. 이제 deploy_production.sh가 실제 배포 후 검증까지 완주해 release snapshot 저장도 정상화.",
+      "관리자 버전 03.100.04 → 03.100.05 (Fix bump · 배포 파이프라인 정비)."
+    ]
+  },
+  {
     "version": "00.131.01",
     "date": "2026-04-23",
     "released_at": "2026-04-23 14:57:34 KST",
