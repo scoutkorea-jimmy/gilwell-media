@@ -1,7 +1,7 @@
 /**
  * Gilwell Media · /api/admin/presets
  *
- *   GET   — list all presets (3 builtin + owner's custom) [any admin]
+ *   GET   — list all presets (3 builtin + owner's custom) [OWNER ONLY]
  *   POST  — create a custom preset (owner only)
  *
  * Custom preset shape matches built-in: { slug, name, description, permissions }.
@@ -9,7 +9,6 @@
  * and builtin slugs are reserved). Owners can edit/delete customs via
  * /api/admin/presets/:id.
  */
-import { extractToken, verifyToken } from '../../_shared/auth.js';
 import { requireOwner } from '../../_shared/admin-permissions.js';
 import { validatePermissions } from '../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
@@ -18,10 +17,10 @@ const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 const BUILTIN_SLUGS = new Set(['writer', 'reader', 'marketing']);
 
 export async function onRequestGet({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyToken(token, env))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  // Preset catalog exposes every role's permission structure — strictly
+  // owner-only to prevent members from enumerating escalation targets.
+  const { error } = await requireOwner(request, env);
+  if (error) return error;
 
   const { results } = await env.DB.prepare(
     `SELECT id, slug, name, description, permissions, is_builtin, created_at, updated_at

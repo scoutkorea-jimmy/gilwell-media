@@ -850,14 +850,17 @@
   width: 100%;
 }
 
-/* Permission-gated sidebar items are default-hidden until the session is
-   resolved (`_loadMe` sets `body.admin-session-loaded`). Without this gate
-   a slow /api/admin/users/me response leaves every perm-slug button visible
-   — which lets members click into panels they shouldn't see. Owner view is
+/* Permission-gated elements are default-hidden until the session is resolved
+   (`_loadMe` sets `body.admin-session-loaded`). Without this gate a slow
+   /api/admin/users/me response leaves every perm-slug button visible —
+   which lets members click into panels they shouldn't see. The rule covers
+   BOTH sidebar items (#v3-nav) AND any other element tagged with
+   data-perm-slug / data-owner-only across the app (e.g. the 새 글 작성
+   button inside panel-list, edit/delete actions, etc.). Owner view is
    also hidden during the ~300ms window, which is acceptable as a safety
    trade-off. After load, `_syncPermissionNav()` reveals items per role. */
-body:not(.admin-session-loaded) #v3-nav .v3-nav-item[data-perm-slug],
-body:not(.admin-session-loaded) #v3-nav [data-owner-only="1"] {
+body:not(.admin-session-loaded) [data-perm-slug],
+body:not(.admin-session-loaded) [data-owner-only="1"] {
   display: none !important;
 }
 

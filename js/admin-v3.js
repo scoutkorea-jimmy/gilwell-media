@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.100.06
+ * Version: 03.100.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -984,7 +984,55 @@
     'account-presets': '프리셋 관리',
   };
 
+  // Permission guard — prevents members from bypassing sidebar gating via URL
+  // hash, DevTools, or any programmatic call. Returns true if allowed, and
+  // toasts + no-ops if denied. Owners always pass. If the session hasn't
+  // loaded yet (me === null right after login), we allow the default
+  // 'dashboard' / 'account-me' panels only — everything else waits until
+  // _loadMe resolves and a real check is possible.
+  var _OWNER_ONLY_PANELS = { 'account-users': 1, 'account-presets': 1 };
+  var _OWNER_ONLY_SETTINGS = { 'privacy-policy': 1 };
+  var _SESSION_SAFE_PANELS = { 'dashboard': 1, 'account-me': 1 };
+
+  function _panelPermSlug(panel, settingsSection) {
+    if (panel === 'settings') return settingsSection || null;
+    if (panel === 'account-me') return null;
+    return panel;
+  }
+
+  function _canAccessPanel(panel, settingsSection) {
+    var me = (window.AccountAdmin && window.AccountAdmin.currentMe && window.AccountAdmin.currentMe()) || null;
+    var isOwner = !!(me && me.role && me.role !== 'member');
+    if (isOwner) return true;
+    if (_OWNER_ONLY_PANELS[panel]) return false;
+    if (panel === 'settings' && settingsSection && _OWNER_ONLY_SETTINGS[settingsSection]) return false;
+    if (!me) {
+      // Session not yet resolved — only the safe defaults are permitted.
+      return !!_SESSION_SAFE_PANELS[panel];
+    }
+    var slug = _panelPermSlug(panel, settingsSection);
+    if (!slug) return true;
+    var perms = (me.permissions && me.permissions.permissions) || [];
+    return perms.indexOf('view:' + slug) !== -1;
+  }
+
   V3.showPanel = function (panel, settingsSection) {
+    if (!_canAccessPanel(panel, settingsSection)) {
+      if (window.GW && GW.showToast) GW.showToast('이 메뉴의 접근 권한이 없습니다.', 'error');
+      // Reset URL hash so back-button / reload doesn't retry the denied panel.
+      if (typeof location !== 'undefined' && location.hash) {
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+      }
+      // Redirect to a safe landing panel the user is allowed to see.
+      if (_panel !== 'dashboard' && _canAccessPanel('dashboard')) {
+        panel = 'dashboard'; settingsSection = undefined;
+      } else if (_canAccessPanel('account-me')) {
+        panel = 'account-me'; settingsSection = undefined;
+      } else {
+        return;
+      }
+    }
+
     if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
 
@@ -1967,8 +2015,26 @@
         if (!posts.length) {
           tbody.innerHTML = '<tr><td colspan="7"><div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div></td></tr>';
         } else {
+          // Row actions (edit / togglePublish / delete) are write operations.
+          // Hide them for readers; for writers, PUT/DELETE server still enforces
+          // author_user_id = self so non-owners can only touch their own posts.
+          var me = (window.AccountAdmin && window.AccountAdmin.currentMe && window.AccountAdmin.currentMe()) || null;
+          var isOwner = !!(me && me.role && me.role !== 'member');
+          var perms = (me && me.permissions && me.permissions.permissions) || [];
+          var canWrite = isOwner
+            || perms.indexOf('write:list') !== -1
+            || perms.indexOf('write:write') !== -1;
           tbody.innerHTML = posts.map(function (p) {
             var isPublished = Number(p && p.published || 0) === 1;
+            var actionCell = canWrite
+              ? (
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.editPost(' + p.id + ')">수정</button>' +
+                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
+                (isOwner
+                  ? '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="event.stopPropagation(); V3.deletePost(' + p.id + ')">삭제</button>'
+                  : '')
+              )
+              : '<span class="v3-text-m v3-text-s">읽기 전용</span>';
             return '<tr class="v3-row-clickable" onclick="V3.openPostPreview(' + p.id + ')">' +
               '<td><div class="v3-table-title">' + GW.escapeHtml(p.title || '(제목 없음)') + '</div>' +
                 (p.subtitle ? '<div class="v3-text-m v3-text-s">' + GW.escapeHtml(p.subtitle) + '</div>' : '') +
@@ -1978,11 +2044,7 @@
               '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
               '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
-              '<td class="v3-nowrap">' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.editPost(' + p.id + ')">수정</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" onclick="event.stopPropagation(); V3.togglePublish(' + p.id + ',' + (!isPublished) + ')">' + (isPublished ? '비공개' : '공개') + '</button>' +
-                '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="event.stopPropagation(); V3.deletePost(' + p.id + ')">삭제</button>' +
-              '</td>' +
+              '<td class="v3-nowrap">' + actionCell + '</td>' +
             '</tr>';
           }).join('');
         }
