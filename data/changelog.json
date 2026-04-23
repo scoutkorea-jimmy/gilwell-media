@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.102.00",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 05:55:00 KST",
+    "summary": "KMS §7.5.1 신설 — 00.131.04/.05에서 발생한 공개 수정 모달 이중 회귀(CSP 차단 + provided 플래그 누락)를 케이스 스터디로 박제하고 §14 개발자 체크리스트에 재발 방지 규칙 추가. 관리자 사이드바 '홈페이지' 링크는 새 탭이 아닌 현재 탭 이동으로 전환.",
+    "changes": [
+      "KMS §7.5.1 '공개 수정 모달 회귀 사례 (2026-04-24 케이스 스터디)' 신설 — 증상/원인 A(CSP 위반)/원인 B(requireNonEmptyString의 provided 플래그 누락)/재발 방지 규칙 4개/검증 명령까지 박제. 공개 SSR HTML에 inline 이벤트 속성 금지, 입력 검증 헬퍼의 {ok, provided, value} 3-튜플 일관 반환, 한 엔드포인트 안에서 .provided 검사와 field !== undefined 직접 검사 혼용 금지 원칙을 명문화.",
+      "KMS §14.1 구현 전 체크 + §14.2 구현 후 체크에 위 규칙을 체크리스트 항목으로 추가. 신규 기능 개발 시 AI·인간 모두 체크하도록 강제.",
+      "settings.feature_definition DB도 같은 스냅샷으로 동기화 — 관리자 KMS 메뉴가 새 §7.5.1을 즉시 반영.",
+      "admin.html 사이드바 풋터 '홈페이지' 링크에서 target=\"_blank\" + onclick='window.__gwAdminOpenHome' + 외부 링크 아이콘(.v3-sidebar-link-ext) 제거. 이제 클릭하면 새 탭이 아니라 현재 탭에서 / 로 이동. KMS 링크(/kms)는 기존 target=\"_blank\" 유지 — 운영자가 KMS는 참고창, 홈페이지는 탐색 대상으로 쓰는 패턴을 반영.",
+      "연관 cleanup — fallbackOpenHome 함수와 window.__gwAdminOpenHome 등록, 사용처 없어진 .v3-sidebar-link-ext CSS 룰 함께 제거.",
+      "관리자 버전 03.101.01 → 03.102.00 (Feature · KMS 케이스 스터디 신설)."
+    ]
+  },
+  {
     "version": "00.131.05",
     "date": "2026-04-24",
     "released_at": "2026-04-24 05:40:00 KST",

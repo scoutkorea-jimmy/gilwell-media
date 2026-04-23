@@ -462,7 +462,6 @@
 }
 .v3-sidebar-link:hover { background: rgba(255,255,255,.09); border-color: rgba(130,230,222,.18); color: var(--gw-canvas-white); }
 .v3-sidebar-link.danger:hover { background: rgba(255,86,85,.18); border-color: rgba(255,174,128,.32); color: var(--gw-canvas-white); }
-.v3-sidebar-link-ext { width: 10px; height: 10px; opacity: .55; flex-shrink: 0; margin-left: auto; }
 
 /* No top separator for the first (dashboard) nav section */
 .v3-nav-section-top { margin-top: 0; }
