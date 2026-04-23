@@ -104,10 +104,11 @@ export async function onRequestGet({ params, env, request }) {
   const youtubeEmbedUrl = getYouTubeEmbedUrl(post.youtube_url);
   const visibleTags = collectVisiblePostTags(post);
   const postUrl  = `${siteUrl}/post/${id}`;
+  // share_ref는 FB 스크래퍼 캐시를 매 클릭마다 무효화하려는 목적일 뿐,
+  // 기사의 고유 식별자가 아니다. og:url에 share_ref를 포함시키면 FB Graph에서
+  // 공유마다 별개 객체로 등록돼 좋아요·댓글이 집계되지 않는다. canonical과
+  // 동일하게 clean URL로 고정하고, cache-bust 효과는 request URL(쿼리 포함)로만 얻는다.
   const isShareMetaRequest = requestUrlObj.searchParams.has('share_ref') || requestUrlObj.searchParams.has('fb_share_ref');
-  const shareMetaUrl = isShareMetaRequest
-    ? requestUrlObj.toString()
-    : postUrl;
   const categoryUrl = `${siteUrl}/${post.category}`;
   const editSeed = serializeForScript({
     id,
@@ -173,12 +174,15 @@ export async function onRequestGet({ params, env, request }) {
   <meta property="og:type"        content="article"/>
   <meta property="og:title"       content="${title}"/>
   <meta property="og:description" content="${desc}"/>
-  <meta property="og:url"         content="${escapeHtml(shareMetaUrl)}"/>
-  ${ogImage ? `<meta property="og:image" content="${ogImage}"/>` : ''}
+  <meta property="og:url"         content="${postUrl}"/>
+  ${ogImage ? `<meta property="og:image" content="${ogImage}"/>
+  <meta property="og:image:secure_url" content="${ogImage}"/>
+  <meta property="og:image:alt" content="${title}"/>` : ''}
   <meta property="og:site_name"   content="${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}"/>
   <meta property="article:published_time" content="${escapeHtml(publishedIso)}"/>
   <meta property="article:modified_time" content="${escapeHtml(modifiedIso)}"/>
   <meta property="article:section" content="${escapeHtml(cat.label)}"/>
+  ${post.author ? `<meta property="article:author" content="${escapeHtml(post.author)}"/>` : ''}
   <meta name="twitter:card"       content="${ogImage ? 'summary_large_image' : 'summary'}"/>
   <meta name="twitter:title"      content="${title}"/>
   <meta name="twitter:description" content="${desc}"/>
@@ -191,7 +195,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260423073541">
+  <link rel="stylesheet" href="/css/style.css?v=20260423132958">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -373,7 +377,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.131.02</span> · Admin <span class="admin-build-version">V03.100.07</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.131.03</span> · Admin <span class="admin-build-version">V03.101.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -585,9 +589,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260423073541"></script>
-  <script src="/js/site-chrome.js?v=20260423073541"></script>
-  <script src="/js/post-page.js?v=20260423073541"></script>
+  <script src="/js/main.js?v=20260423132958"></script>
+  <script src="/js/site-chrome.js?v=20260423132958"></script>
+  <script src="/js/post-page.js?v=20260423132958"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
