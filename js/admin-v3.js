@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.100.07
+ * Version: 03.101.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -386,6 +386,10 @@
     });
     window.addEventListener('unhandledrejection', function (event) {
       var reason = event && event.reason;
+      // 401 (재로그인 요구) / 403 (권한 부족)은 정상 흐름이므로 이슈 보고 제외.
+      // _apiFetch가 re-throw한 에러가 핸들되지 않아 여기로 올라올 수 있어 방어.
+      var status = reason && typeof reason.status === 'number' ? reason.status : 0;
+      if (status === 401 || status === 403) return;
       _reportSiteIssue('admin_client_promise_rejection', {
         message: reason && reason.message ? String(reason.message) : String(reason || 'Unhandled promise rejection'),
         path: '/admin',
@@ -1992,7 +1996,7 @@
   ══════════════════════════════════════════════════════════ */
   function _loadList() {
     var tbody = document.getElementById('list-tbody');
-    tbody.innerHTML = '<tr><td colspan="7"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></td></tr>';
     _renderListSortState();
 
     var params = new URLSearchParams({
@@ -2013,7 +2017,7 @@
         document.getElementById('list-count').textContent = '총 ' + _listTotal + '건';
 
         if (!posts.length) {
-          tbody.innerHTML = '<tr><td colspan="7"><div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8"><div class="v3-empty"><div class="v3-empty-text">게시글이 없습니다</div></div></td></tr>';
         } else {
           // Row actions (edit / togglePublish / delete) are write operations.
           // Hide them for readers; for writers, PUT/DELETE server still enforces
@@ -2044,6 +2048,7 @@
               '<td>' + (isPublished ? '<span class="v3-badge v3-badge-green">공개</span>' : '<span class="v3-badge v3-badge-gray">비공개</span>') + '</td>' +
               '<td class="v3-text-m">' + GW.escapeHtml(_formatDateTimeCompact(p.created_at)) + '</td>' +
               '<td class="v3-text-m">' + _fmt(p.views || 0) + '</td>' +
+              '<td class="v3-text-m v3-nowrap">' + _formatDwellSeconds(p.avg_dwell_seconds) + '</td>' +
               '<td class="v3-nowrap">' + actionCell + '</td>' +
             '</tr>';
           }).join('');
@@ -2051,7 +2056,7 @@
         _renderPagination();
       })
       .catch(function (e) {
-        tbody.innerHTML = '<tr><td colspan="7"><div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8"><div class="v3-empty"><div class="v3-empty-text">불러오기 실패: ' + GW.escapeHtml(e.message || '') + '</div></div></td></tr>';
       });
   }
 
@@ -5865,6 +5870,15 @@
     if (!value) return '-';
     if (GW && typeof GW.formatDateTimeCompactKst === 'function') return GW.formatDateTimeCompactKst(value);
     return String(value).slice(0, 16).replace('T', ' ');
+  }
+
+  function _formatDwellSeconds(value) {
+    var seconds = Number(value);
+    if (!Number.isFinite(seconds) || seconds <= 0) return '<span class="v3-text-s">—</span>';
+    if (seconds < 60) return Math.round(seconds) + '초';
+    var mins = Math.floor(seconds / 60);
+    var secs = Math.round(seconds - mins * 60);
+    return secs ? mins + '분 ' + secs + '초' : mins + '분';
   }
 
   /* ══════════════════════════════════════════════════════════

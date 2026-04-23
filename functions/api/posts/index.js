@@ -101,7 +101,7 @@ export async function onRequestGet({ request, env }) {
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
     youtube_url,
     ${searchScoreExpr} AS search_score,
-    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
+    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes${isAdmin ? ',\n    (SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds' : ''}`;
 
   try {
     // Build WHERE conditions dynamically
