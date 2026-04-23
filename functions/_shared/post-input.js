@@ -8,6 +8,7 @@ export function requireNonEmptyString(value, fieldLabel, maxLength) {
   }
   return {
     ok: true,
+    provided: true,
     value: typeof maxLength === 'number' ? trimmed.slice(0, maxLength) : trimmed,
   };
 }

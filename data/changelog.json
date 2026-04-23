@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.131.05",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 05:40:00 KST",
+    "summary": "공개 /post/:id 수정 모달에서 제목 변경이 저장되지 않던 치명 버그 복구 — requireNonEmptyString 헬퍼가 provided 플래그를 빠뜨려 PUT UPDATE SET에 title/제목 필드가 아예 빠지고 있던 것.",
+    "changes": [
+      "functions/_shared/post-input.js requireNonEmptyString 반환 객체에 provided:true 추가. PUT /api/posts/:id가 safeTitleInput.provided 조건으로 title 필드 SET을 붙이는데, 기존 헬퍼는 ok/value만 돌려줘서 이 조건이 항상 falsy였고 결과적으로 UPDATE 구문에 title = ? 가 붙지 않아 서버는 200 OK를 돌려주면서도 제목은 그대로 남던 상태였다.",
+      "영향 범위: 공개 /post/:id 인라인 수정 모달에서 '제목'을 바꾼 경우 — 토스트는 성공인데 실제 DB의 title 컬럼이 그대로. 태그·메타태그·부제·카테고리 등은 optionalTrimmedString을 쓰기 때문에 정상 저장됐다. 관리자 admin-v3.js 경로도 동일한 서버 엔드포인트를 써서 같은 영향을 받았을 가능성 있음.",
+      "functions/api/posts/index.js POST 경로는 safeTitleInput.value만 참조하므로 provided 추가는 영향 없음 (회귀 방지 확인).",
+      "사이트 버전 00.131.04 → 00.131.05 (Hotfix · 제목 저장 복구)."
+    ]
+  },
+  {
     "version": "00.131.04",
     "date": "2026-04-24",
     "released_at": "2026-04-24 05:15:00 KST",
