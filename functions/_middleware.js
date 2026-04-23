@@ -85,8 +85,8 @@ function buildCsp(request, nonce) {
   //   - Admin/KMS: legacy 'unsafe-inline' until every inline handler in
   //     admin.html is migrated.
   const scriptSrc = legacy
-    ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://static.cloudflareinsights.com"
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://static.cloudflareinsights.com`;
+    ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com`;
 
   // Style policy is left as-is — inline `style="..."` attributes are sprinkled
   // throughout the markup (both admin and public) and tightening style-src
@@ -103,9 +103,9 @@ function buildCsp(request, nonce) {
     "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com",
     // Kakao AdFit SDK fetches ad banners from serv.ds.kakao.com, health-reports
     // to *.onkakao.net, and loads aux assets from t1.kakaocdn.net.
-    "connect-src 'self' https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
+    "connect-src 'self' https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
     // Kakao ad iframes are served from t1.kakaocdn.net.
-    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://display.ad.daum.net https://t1.kakaocdn.net",
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net",
     "media-src 'self' data: https:",
     "object-src 'none'",
     "base-uri 'self'",
