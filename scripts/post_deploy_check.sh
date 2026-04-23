@@ -57,7 +57,8 @@ echo "$SEARCH_PAGE" | grep -F '<meta name="robots" content="noindex,follow"/>' >
 echo "$BOARD_PAGE" | grep -F "WOSM" >/dev/null
 echo "$PEOPLE_PAGE" | grep -F "스카우트 인물" >/dev/null
 echo "$ADMIN_PAGE" | grep -F 'id="v3-login-btn"' >/dev/null
-echo "$ADMIN_PAGE" | grep -F 'data-panel="analytics"' >/dev/null
+echo "$ADMIN_PAGE" | grep -F 'data-panel="analytics-visits"' >/dev/null
+echo "$ADMIN_PAGE" | grep -F 'data-panel="analytics-tags"' >/dev/null
 echo "$BOARD_LAYOUT" | grep -F '"gap_px":' >/dev/null
 echo "$POSTS_JSON" | grep -F '"publish_at":' >/dev/null
 echo "$ROBOTS_TXT" | grep -F "Sitemap: ${BASE_URL}/sitemap.xml" >/dev/null
