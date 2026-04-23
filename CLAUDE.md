@@ -12,16 +12,16 @@ scope: project
 > 규칙은 **AI가 아니라 개발 목적지(Target)** 단위로 구성됩니다.
 
 **문서 구조:**
-- `§0` — Target Confirmation Protocol (모든 작업의 최우선)
-- `§1` — Common Infrastructure (모든 타겟 공통)
-- `§2` — **[Site]** 공개 홈페이지
-- `§3` — **[Admin]** 관리자 페이지
-- `§4` — **[KMS]** 운영 기준 원본
-- `§5` — **[Dreampath]** CUFS 내부 앱
+- `0` — Target Confirmation Protocol (모든 작업의 최우선)
+- `1` — Common Infrastructure (모든 타겟 공통)
+- `2` — **[Site]** 공개 홈페이지
+- `3` — **[Admin]** 관리자 페이지
+- `4` — **[KMS]** 운영 기준 원본
+- `5` — **[Dreampath]** CUFS 내부 앱
 
 ---
 
-## §0 Target Confirmation Protocol
+## 0 Target Confirmation Protocol
 
 > [!danger] 모든 작업 시작 전 필수
 > AI는 코드를 한 줄이라도 수정하기 전에 아래 절차를 수행한다.
@@ -73,7 +73,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 ### Step 1 — P0 사이트 오류·이슈 점검 (신규 작업 전 필수)
 
 > [!danger] P0 이슈 처리가 신규 작업보다 우선
-> `homepage_issues` 테이블에 `status IN ('open','monitoring')` + `severity IN ('high','critical')`인 항목이 있으면 **신규 작업을 멈추고 이것부터 해결**한다. KMS §0.2.2에 명문화됨.
+> `homepage_issues` 테이블에 `status IN ('open','monitoring')` + `severity IN ('high','critical')`인 항목이 있으면 **신규 작업을 멈추고 이것부터 해결**한다. KMS 0.2.2에 명문화됨.
 
 - 점검 방법:
   - `wrangler d1 execute gilwell-posts --remote --command "SELECT id, title, severity, status, created_at FROM homepage_issues WHERE status IN ('open','monitoring') AND severity IN ('high','critical') ORDER BY created_at DESC"`
@@ -114,14 +114,14 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 
 ### Step 4 — Target별 규칙 로드
 
-타겟 확정 후 이 문서의 해당 `§` 섹션만 적용한다. **타겟 간 규칙 혼용 금지.**
+타겟 확정 후 이 문서의 해당 `` 섹션만 적용한다. **타겟 간 규칙 혼용 금지.**
 
 | Target | 이 문서 | 보조 원본 |
 |---|---|---|
-| Site | `§1` + `§2` | [[docs/features/README\|Homepage Features Hub]], [[docs/modules/README\|Homepage Modules Hub]] |
-| Admin | `§1` + `§3` | [[docs/homepage-module-inventory\|Module Inventory]] |
-| KMS | `§1` + `§4` | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
-| Dreampath | `§1` + `§5` | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
+| Site | `1` + `2` | [[docs/features/README\|Homepage Features Hub]], [[docs/modules/README\|Homepage Modules Hub]] |
+| Admin | `1` + `3` | [[docs/homepage-module-inventory\|Module Inventory]] |
+| KMS | `1` + `4` | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
+| Dreampath | `1` + `5` | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
 
 ### Step 5 — 경계 검증
 
@@ -141,15 +141,15 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 - [ ] Git 동기화 상태를 확인했는가? 차이가 있으면 사용자에게 물었는가?
 - [ ] 타겟을 식별했는가?
 - [ ] 모호하면 질문, 명확하면 선언했는가?
-- [ ] 해당 `§` 섹션만 참조했는가?
+- [ ] 해당 `` 섹션만 참조했는가?
 - [ ] 타 타겟 규칙을 섞지 않았는가?
-- [ ] `§1` 공통 인프라 규칙을 준수했는가?
+- [ ] `1` 공통 인프라 규칙을 준수했는가?
 
 ### 예시
 
 **Case 1 — 명확:**
 > "`dreampath.html`의 툴바에 이탤릭 버튼 추가"
-> → "**Dreampath** 타겟으로 이해했습니다. `§5`의 Tiptap 4곳 수정 규칙을 따르겠습니다."
+> → "**Dreampath** 타겟으로 이해했습니다. `5`의 Tiptap 4곳 수정 규칙을 따르겠습니다."
 
 **Case 2 — 모호:**
 > "게시판 UI 고쳐줘"
@@ -161,7 +161,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 
 ---
 
-## §1 Common Infrastructure
+## 1 Common Infrastructure
 
 ### Architecture
 
@@ -306,11 +306,11 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 
 **복합 타겟 작업 (Site 포함):** Site 규칙 우선 — 질문 후 진행.
 
-**Dreampath는 별도 배포** — `./deploy.sh`가 자체 버전 bump(`dp_versions` 테이블)와 cache-bust를 처리하며, `sync_versions.sh` / `changelog.json` 경로를 사용하지 않는다. 상세는 `§5 Dreampath → Deployment` 참조.
+**Dreampath는 별도 배포** — `./deploy.sh`가 자체 버전 bump(`dp_versions` 테이블)와 cache-bust를 처리하며, `sync_versions.sh` / `changelog.json` 경로를 사용하지 않는다. 상세는 `5 Dreampath → Deployment` 참조.
 
 ---
 
-## §2 [Site] 공개 홈페이지
+## 2 [Site] 공개 홈페이지
 
 > [!abstract] Scope
 > 공개 페이지 (방문자 대상) — 홈, 카테고리 보드, 기사 상세, 검색, 용어집, 회원국 현황 등
@@ -359,7 +359,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 - 공개 표면: 홈, Korea, APR, WOSM, Scout People, 검색, 용어집, 회원국 현황, 기사 상세, 도움
 - 홈 구성: 마스트헤드 → 티커 → 히어로 → 메인 스토리 → 최신 → 인기 → 에디터 추천 → 카테고리 → 푸터 통계
 - 에디터 추천: 최대 4개, 서버에서도 강제
-- 메인 스토리 ↔ 에디터 추천 **동시 지정 허용** (2026-04-19 배타 제약 해제). 같은 기사를 두 슬롯 모두에 노출할 수 있음. 상세는 KMS §5.5.
+- 메인 스토리 ↔ 에디터 추천 **동시 지정 허용** (2026-04-19 배타 제약 해제). 같은 기사를 두 슬롯 모두에 노출할 수 있음. 상세는 KMS 5.5.
 
 ### Content & Date Rules
 
@@ -418,7 +418,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 | `--gray-300` | `#C4C4C4` | 33.5 | UI·구분선 (텍스트 금지) |
 | `--gray-100` | `#EBEBEB` | 11.1 | 섹션 배경·tint (본문 금지) |
 
-본문 기본은 `--ink`(#1F1F1F, Lc 105.1). RGB/CMYK/PMS 풀표와 배경-텍스트 조합 표는 KMS `§3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙` 참조.
+본문 기본은 `--ink`(#1F1F1F, Lc 105.1). RGB/CMYK/PMS 풀표와 배경-텍스트 조합 표는 KMS `3.4 브랜드 컬러 팔레트 및 웹 접근성 원칙` 참조.
 
 **WCAG 3.0 APCA Lc 기준 (프로젝트 공식 명암비 알고리즘):**
 - 본문 텍스트(15px+ / 400wt): **|Lc| 75+** 필수, 핵심 표면 90+ 권장
@@ -476,7 +476,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 
 ### Deployment
 
-배포 순서·버전 bump·changelog 규칙은 **§1 Common → Version & Changelog Discipline / Release & Deploy Flow** 참조.
+배포 순서·버전 bump·changelog 규칙은 **1 Common → Version & Changelog Discipline / Release & Deploy Flow** 참조.
 
 Site 전용 추가 규칙:
 - 공개 UI 변경은 오너 확인 후 production 배포 (AI Deployment Protocol: Site = 질문 후 진행)
@@ -495,7 +495,7 @@ Site 전용 추가 규칙:
 
 ---
 
-## §3 [Admin] 관리자 페이지
+## 3 [Admin] 관리자 페이지
 
 > [!abstract] Scope
 > `admin.html` + `js/admin-v3.js` — 운영자 대상 관리 도구
@@ -506,7 +506,7 @@ Site 전용 추가 규칙:
 - 모바일: 단일 폭 1단 흐름 기본
 - 탐색 기준: 좌측 사이드바 (메인 영역에 보조 메뉴 중복 금지)
 - 운영 섹션: 분석, 접속 국가/도시, 마케팅, 버전기록, 오류/이슈 기록
-- 관리자 날짜 형식: **ISO 기반 KST** — 감사 `YYYY-MM-DD HH:MM:SS KST` / 테이블 `YYYY-MM-DD HH:MM` / 필요 시 한글 변형. 상세는 KMS §2.1.
+- 관리자 날짜 형식: **ISO 기반 KST** — 감사 `YYYY-MM-DD HH:MM:SS KST` / 테이블 `YYYY-MM-DD HH:MM` / 필요 시 한글 변형. 상세는 KMS 2.1.
 - 관리자 기본 서체: 시스템 서체 (`-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`) — `NixgonFont` 사용 금지
 
 ### Admin 권한 게이팅 (Phase 5 · 03.100.00)
@@ -540,7 +540,7 @@ Site 전용 추가 규칙:
 
 ---
 
-## §4 [KMS] 운영 기준 원본
+## 4 [KMS] 운영 기준 원본
 
 > [!abstract] Scope
 > KMS = 운영 기준의 **정식 원본**. 코드가 아니라 운영 문서 영역.
@@ -561,7 +561,7 @@ Site 전용 추가 규칙:
 
 ---
 
-## §5 [Dreampath] CUFS 내부 앱
+## 5 [Dreampath] CUFS 내부 앱
 
 > [!abstract] Scope
 > 별도 도메인의 CUFS 내부 앱. 공개 사이트와 **완전히 분리된 규칙 체계**.

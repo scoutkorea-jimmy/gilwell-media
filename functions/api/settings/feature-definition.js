@@ -5,8 +5,14 @@ import { recordSettingChange } from '../../_shared/settings-audit.js';
 
 export async function onRequestGet({ env }) {
   try {
-    const content = await loadFeatureDefinition(env);
-    return json({ content }, 200);
+    const [content, updatedRow] = await Promise.all([
+      loadFeatureDefinition(env),
+      env.DB.prepare(
+        `SELECT saved_at FROM settings_history WHERE key = 'feature_definition' ORDER BY saved_at DESC LIMIT 1`
+      ).first().catch(() => null),
+    ]);
+    const updated_at = updatedRow && updatedRow.saved_at ? String(updatedRow.saved_at) : null;
+    return json({ content, updated_at }, 200);
   } catch (err) {
     console.error('GET /api/settings/feature-definition error:', err);
     return json({ content: DEFAULT_FEATURE_DEFINITION, error: 'Database error' }, 500);

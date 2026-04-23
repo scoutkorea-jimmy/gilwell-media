@@ -453,6 +453,71 @@
 
 .kms-section-link:hover { background: var(--kms-accent-bg); }
 
+/* 스크롤 스파이 — 현재 뷰포트에 보이는 섹션 하이라이트. 좌측 강조 바 + 배경. */
+.kms-section-link.is-current {
+  background: var(--kms-accent-bg);
+  box-shadow: inset 3px 0 0 var(--kms-accent, #4D006E);
+  font-weight: 600;
+}
+.kms-section-link.is-current .kms-section-title { color: var(--kms-accent, #4D006E); }
+
+/* TOP으로 이동 플로팅 버튼 — 메인 스크롤이 300px 이상일 때 노출. */
+.kms-back-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid rgba(77, 0, 110, .2);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--kms-accent, #4D006E);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(77, 0, 110, .18);
+  transition: background .12s, box-shadow .12s, transform .12s;
+}
+.kms-back-to-top:hover { background: var(--kms-accent, #4D006E); color: #fff; box-shadow: 0 6px 18px rgba(77, 0, 110, .28); transform: translateY(-1px); }
+.kms-back-to-top[hidden] { display: none; }
+@media (max-width: 768px) {
+  .kms-back-to-top { right: 16px; bottom: 16px; padding: 9px 12px; font-size: 11px; }
+}
+
+/* 버전기록 페이지네이션 */
+.kms-cl-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--kms-border, #e5e5ea);
+}
+.kms-cl-page-btn {
+  min-width: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.kms-cl-page-btn:hover:not(:disabled) { background: var(--kms-accent-bg); border-color: var(--kms-accent, #4D006E); }
+.kms-cl-page-btn.is-active { background: var(--kms-accent, #4D006E); border-color: var(--kms-accent, #4D006E); color: #fff; }
+.kms-cl-page-btn:disabled { opacity: .4; cursor: not-allowed; }
+.kms-cl-page-gap { padding: 0 4px; color: var(--kms-muted, #8e8e93); font-size: 12px; }
+.kms-cl-page-info { margin-left: auto; font-size: 11px; color: var(--kms-muted, #8e8e93); }
+.kms-cl-page-info-single { margin-top: 16px; font-size: 11px; color: var(--kms-muted, #8e8e93); text-align: right; }
+
 .kms-section-label {
   flex-shrink: 0;
   font-size: 10px;

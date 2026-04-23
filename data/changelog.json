@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.103.00",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 06:05:00 KST",
+    "summary": "KMS 페이지 UX 6종 개선 — § 기호 전면 폐기, 플로팅 TOP 버튼, 좌측 목차 스크롤 스파이, 버전기록 30개 페이지네이션, 기능정의서 최종 업데이트 시각 표시, 오늘 대화 내용 KMS 11.2/11.5/13.1.1에 박제.",
+    "changes": [
+      "KMS 11.5 신설 — KMS 페이지 공통 UI 규칙 박제 (스크롤 스파이, 플로팅 TOP 버튼, 최종 업데이트 시각, 30개 페이지네이션, § 폐기).",
+      "KMS 13.1.1 신설 — D1 운영 메모. wrangler d1 execute --file의 100KB statement 한계, 회피책(내용 축약/관리자 PUT 엔드포인트/CF REST API), CLI 동기화 시 settings_history 함께 INSERT하는 서브쿼리 패턴.",
+      "KMS 11.2 관리자 UI 규칙에 사이드바 풋터 링크 타겟 원칙 추가 (KMS는 새 탭, 홈페이지는 같은 탭).",
+      "§ 기호 전면 폐기 — docs/feature-definition.md, CLAUDE.md, kms.html 주석에서 § 제거. 숫자만으로 섹션 참조. 운영자가 § 의미를 직관적으로 모른다는 피드백 반영.",
+      "kms.html — 우하단 플로팅 TOP 버튼 추가, 기능정의서 헤더 메타 row에 '최종 업데이트' 필드 추가.",
+      "js/kms.js — IntersectionObserver 기반 스크롤 스파이(_bindScrollSpy), 메인 스크롤 300px↑에서 TOP 버튼 노출/스무스 스크롤, renderChangelog 30건 페이지네이션(_state.changelogPage), updateDocMeta에서 kms-doc-updated 표시(UTC→KST 변환).",
+      "css/admin.css — .kms-section-link.is-current(보라색 악센트 바), .kms-back-to-top(플로팅 버튼), .kms-cl-pagination 계열 스타일 추가. 더 이상 쓰이지 않는 .v3-sidebar-link-ext 룰 정리는 03.102.00에서 이미 완료.",
+      "functions/api/settings/feature-definition.js GET 응답에 updated_at 추가 — settings_history.saved_at 가장 최근값을 함께 반환해 KMS 11.5 최종 업데이트 시각을 구현.",
+      "D1 settings.feature_definition + settings_history 동기화 (100KB 한계 회피 위해 값을 반으로 쪼개 INSERT + UPDATE value || '...' 패턴 사용). 해당 경험은 13.1.1에 박제.",
+      "관리자 버전 03.102.00 → 03.103.00 (Feature · KMS UX 일괄 개선)."
+    ]
+  },
+  {
     "version": "03.102.00",
     "date": "2026-04-24",
     "released_at": "2026-04-24 05:55:00 KST",

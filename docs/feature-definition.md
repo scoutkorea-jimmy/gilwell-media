@@ -191,7 +191,7 @@ aliases: [Feature Definition, KMS Snapshot, 기능정의서]
 - `접속 국가/도시` 패널의 위치 데이터는 기능 배포 이후 새 방문부터 누적될 수 있으므로, 초기에는 국가/도시 목록이 비어 있을 수 있다.
 - 국가명 표시는 주요 ISO 국가코드에 대한 고정 한국어 매핑을 우선 사용하고, 없는 경우에만 환경 fallback을 쓴다.
 - `누적 기사 조회수`는 마케팅/노출 기준으로 볼 수 있다.
-- 기사 상세 평균 체류시간은 `post_engagement`에 쌓인 활성 체류시간을 기준으로 계산하고, 관리자 자신의 편집 세션은 제외한다. 이 값은 방문 분석 패널뿐 아니라 관리자 **게시글 목록 테이블의 '평균 체류' 컬럼**에도 기사별로 노출된다 (03.101.00 신설, `scope=admin` 요청에만 집계). 컬럼 규격은 §11.2.1 참조.
+- 기사 상세 평균 체류시간은 `post_engagement`에 쌓인 활성 체류시간을 기준으로 계산하고, 관리자 자신의 편집 세션은 제외한다. 이 값은 방문 분석 패널뿐 아니라 관리자 **게시글 목록 테이블의 '평균 체류' 컬럼**에도 기사별로 노출된다 (03.101.00 신설, `scope=admin` 요청에만 집계). 컬럼 규격은 11.2.1 참조.
 - `방문자수`와 `조회수`는 같은 의미가 아니므로 혼용하지 않는다.
 - 공유 링크에는 채널 구분을 위한 UTM을 붙인다.
 
@@ -903,24 +903,21 @@ h1, h2, h3, h4, h5, h6, strong, b {
 ### 7.5.1 공개 수정 모달 회귀 사례 (2026-04-24 케이스 스터디)
 
 #### 기능 세부 설명
-공개 `/post/:id` "수정하기 → 수정 완료" 플로우가 같은 날 **두 독립 원인**으로 동시에 깨짐. 같은 실수 방지용으로 박제.
+공개 `/post/:id` "수정하기 → 수정 완료" 플로우가 같은 날 두 독립 원인으로 동시에 깨짐.
 
-**증상**: (1) "수정 완료" 눌러도 무반응 + Console `Executing inline event handler violates … Content Security Policy directive … blocked`. (2) 해결 후 제목만 바꿔 저장하면 성공 토스트는 뜨는데 제목은 그대로. 태그·부제·카테고리는 반영됨.
+**증상**: (1) "수정 완료" 눌러도 무반응 + Console `inline event handler violates … CSP … blocked`. (2) 해결 후 제목만 바꿔 저장하면 성공 토스트는 뜨는데 제목은 그대로. 태그·부제·카테고리는 반영됨.
 
-**원인 A — CSP 위반 (00.131.04 수정)**. 공개 페이지는 `functions/_middleware.js`에서 `script-src 'nonce-…' 'strict-dynamic'`만 허용하고 `'unsafe-inline'`을 뺀다 (관리자/KMS만 legacy 허용). `functions/post/[id].js` SSR HTML에 `onclick="window._postSaveEdit()"` 등 inline 핸들러 7건이 남아 있어 차단됨. 인라인 핸들러는 nonce/hash로 허용 불가(`'unsafe-hashes'` 별도 필요).
+**원인 A — CSP 위반 (00.131.04 수정)**. 공개 페이지는 `script-src 'nonce-…' 'strict-dynamic'`만 허용하고 `'unsafe-inline'`을 뺀다 (관리자/KMS만 legacy 허용). `functions/post/[id].js` SSR HTML에 `onclick="window._postSaveEdit()"` 등 inline 핸들러 7건이 차단됨. inline은 nonce/hash로도 허용 불가(`'unsafe-hashes'` 별도 필요).
 
-**원인 B — `provided` 플래그 누락 (00.131.05 수정)**. `functions/_shared/post-input.js`의 `requireNonEmptyString`이 성공 시 `{ok, value}`만 반환하고 `provided: true`를 빠뜨렸다. PUT `/api/posts/:id`가 `if (safeTitleInput.provided) fields.push('title = ?')`로 SET 절을 조립하므로 title이 UPDATE에서 **통째로 생략**되고, 서버는 다른 필드만 UPDATE 후 200 반환. 태그는 `optionalTrimmedString`(`provided` 정상 세팅) 사용해서 저장됐음.
+**원인 B — `provided` 플래그 누락 (00.131.05 수정)**. `_shared/post-input.js`의 `requireNonEmptyString`이 성공 시 `{ok, value}`만 반환하고 `provided: true`를 빠뜨림. PUT `/api/posts/:id`가 `if (safeTitleInput.provided) fields.push('title = ?')`로 SET 절을 조립하므로 title이 UPDATE에서 통째로 생략 → 서버는 다른 필드만 UPDATE 후 200 반환. 태그는 `optionalTrimmedString`(`provided` 정상) 사용해서 저장됐음.
 
 **재발 방지 규칙**
-1. **공개 SSR HTML에 inline 이벤트 속성 금지** (`onclick`, `onchange`, `onmousedown`, `oninput`, `onkeydown`, `onsubmit`, `onload`). ID만 부여 → nonce 붙은 `.js`(예: `js/post-page.js`의 `_bindPostPageInlineHandlers()`)에서 `addEventListener`로 바인딩. 관리자/KMS legacy 허용도 장기 migration 대상 — 새 코드는 관리자에서도 인라인 금지.
-2. **입력 검증 헬퍼는 `{ok, provided, value}` 3-튜플 일관 반환**. 성공=`provided:true`, 실패=`{ok:false, error}`, body에 필드 없을 때만 `{ok:true, provided:false, value:undefined}`. 하나라도 빠지면 PUT conditional SET이 조용히 깨진다.
-3. **한 엔드포인트 안에서 `.provided` 검사와 `field !== undefined` 직접 검사 혼용 금지** — 섞이면 이번처럼 일부 필드만 저장되는 비대칭 버그 재발.
-4. 저장 토스트를 "서버 응답 실제 값 vs 요청 payload" 비교 후 띄우는 방어층은 미구현이지만 권장 — 조기 감지용.
+1. 공개 SSR HTML에 inline 이벤트 속성 금지 (`onclick`, `onchange`, `onmousedown`, `oninput`, `onkeydown`, `onsubmit`, `onload`). ID + `addEventListener`만.
+2. 입력 검증 헬퍼는 `{ok, provided, value}` 3-튜플 일관 반환. 하나라도 빠지면 PUT conditional SET이 조용히 깨진다.
+3. 한 엔드포인트 안에서 `.provided` 검사와 `field !== undefined` 직접 검사 혼용 금지.
+4. 저장 토스트 이전에 서버 응답 값 vs 요청 payload 비교로 방어층 권장 (미구현).
 
-**검증**
-- `grep -nE "on(click|change|mousedown|input|keydown|submit|load)=" functions/post/ functions/home.js functions/[a-z]*.js` 가 0건.
-- `_shared/post-input.js` 모든 export의 성공 응답에 `provided: true` 포함.
-- PUT `/api/posts/:id` 필드별 개별 변경 → D1 실제 반영 확인 (200 OK ≠ 저장 성공).
+**검증**: `grep -nE "on(click|change|mousedown|input|keydown|submit|load)=" functions/post/` 0건 + `_shared/post-input.js` 모든 export의 성공 응답에 `provided: true` 포함 + PUT 필드별 개별 변경 D1 반영 확인.
 
 ### 7.6 SEO · 구조화 데이터
 
@@ -1064,6 +1061,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 클릭 가능한 정렬/필터 기능은 실제 시각적으로 보이는 인터랙션이 반드시 동작해야 한다.
 - hover 색은 글자가 사라지지 않게 유지한다.
 - 삭제 전에는 반드시 확인 다이얼로그를 거친다.
+- **사이드바 풋터 링크 타겟 원칙 (03.102.00 고정)**: `KMS` 링크는 `target="_blank"` 유지 — 운영자가 작업 중 참고창으로 같이 켜두는 패턴. `홈페이지` 링크는 **같은 탭**에서 `/`로 이동 — 홈페이지는 탐색 대상이지 참고창이 아니다. `target="_blank"` 붙여 놓으면 사용자가 "홈페이지 확인하려다 탭만 쌓인다"고 피드백함.
 
 ### 11.2.1 게시글 목록 테이블 컬럼 (panel-list)
 
@@ -1079,7 +1077,7 @@ h1, h2, h3, h4, h5, h6, strong, b {
 7. **평균 체류** (03.101.00 신설) — `post_engagement.engaged_seconds`의 기사별 평균을 `45초` / `2분 10초` 포맷으로. 데이터 없으면 `—`. 값 0이거나 NaN도 `—`.
 8. **액션** — 오너/쓰기권한 보유자에게만 `수정` · `공개/비공개 토글` · (오너만) `삭제` 버튼. 읽기 전용 계정은 `읽기 전용` 텍스트.
 
-**평균 체류 컬럼 데이터 소스**: `GET /api/posts?scope=admin`에서만 서브쿼리 `(SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds`가 포함된다. 공개 `GET /api/posts`에는 노출되지 않아 스크래퍼가 내부 분석 지표를 긁어가지 못한다. `post_engagement` 업데이트 메커니즘은 §2.2 방문/조회 정의 참조.
+**평균 체류 컬럼 데이터 소스**: `GET /api/posts?scope=admin`에서만 서브쿼리 `(SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds`가 포함된다. 공개 `GET /api/posts`에는 노출되지 않아 스크래퍼가 내부 분석 지표를 긁어가지 못한다. `post_engagement` 업데이트 메커니즘은 2.2 방문/조회 정의 참조.
 
 **정렬 가능 컬럼** (헤더 클릭): 제목·카테고리·업로드 시각·조회. 평균 체류는 현재 정렬 미지원(게시글별 체류 데이터가 희소해 정렬 가치 낮음).
 
@@ -1118,6 +1116,17 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - **Google은 대부분의 HTTPS referer에서 검색어를 마스킹**한다. 유입이 있어도 키워드 파싱이 안 될 수 있음.
 - **Naver · Daum은 기본적으로 referer에 query 파라미터 노출** → 국내 유입 키워드 파악에 특히 유효.
 - `site_visits.referrer_url`이 수집돼 있어야 하므로 `functions/[[path]].js` 미들웨어의 방문 기록 로직을 건드리지 말 것.
+
+### 11.5 KMS 페이지 UI 규칙 (2026-04-24 신설)
+
+#### 기능 세부 설명
+KMS 5개 탭(기능정의서·API·버전기록·디자인·기사작성표준) 공통 UI 약속. 운영자 탐색 비용 절감 목적.
+
+- **좌측 목차 스크롤 스파이**: 현재 뷰포트 섹션 링크에 `.is-current` 자동 적용(보라색 악센트 바). 구현: `_bindScrollSpy()` + `IntersectionObserver`, `rootMargin: '-80px 0px -60% 0px'`로 헤더 아래 섹션을 현재로 간주.
+- **플로팅 TOP 버튼**: 메인 스크롤 300px↑에서 우하단 노출, 클릭 시 `scrollTo({top:0, behavior:'smooth'})`. 모든 탭 공통.
+- **기능정의서 탭 — 최종 업데이트 시각**: 헤더에 `YYYY년 M월 D일 오전/오후 H시 M분 S초 KST` 표기. 소스: `settings_history.saved_at` (key='feature_definition'). 서버 `GET /api/settings/feature-definition` 응답이 `{content, updated_at}`. CLI 직접 INSERT로 업데이트하면 history가 안 남으므로 13.1.1 참조.
+- **버전기록 탭 — 30개 페이지네이션**: `_state.changelogPage`로 30건씩, 하단 번호 버튼. 범위 필터 변경 시 1페이지 리셋. 30 이하면 UI 숨김. 이력 200건+일 때 첫 페인트/스크롤 부하 제거 목적.
+- **섹션 참조 표기 (2026-04-24 변경)**: § 기호 전면 폐기, 숫자만(`11.2.1 참조`). 운영자가 § 의미를 직관적으로 모른다는 피드백.
 
 ## 12. API 호출 방법
 
@@ -1290,6 +1299,13 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `wrangler pages deploy . --project-name gilwell-media --branch main`를 직접 사용하는 예외 상황에서도 preflight 없이 production 배포하지 않는다.
 - 선택 사항: `CF_ZONE_ID`, `CF_PURGE_API_TOKEN` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
 
+### 13.1.1 D1 운영 메모 (2026-04-24 추가)
+
+#### 기능 세부 설명
+- **D1 단일 SQL 100KB 한계**: `wrangler d1 execute --file`은 SQL 문자열(이스케이프 포함) 100KB 초과 시 `SQLITE_TOOBIG`. 회피: 내용 축약 / 관리자 `PUT /api/settings/feature-definition`(파라미터 바인딩, 한계 없음) / CF D1 REST API `{sql, params}`.
+- **CLI 동기화 시 settings_history 함께**: `INSERT OR REPLACE INTO settings`만으로는 11.5 최종 업데이트 시각이 괴리. `INSERT INTO settings_history (key, value, saved_at) SELECT key, value, datetime('now') FROM settings WHERE key='feature_definition';` 서브쿼리 패턴 사용.
+- 운영 기준: KMS 저장 버튼이 1순위, CLI는 AI 일괄 작업용 대안.
+
 ### 13.2 스모크 체크 기준
 
 #### 기능 세부 설명
@@ -1314,8 +1330,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 이 기능이 KMS에 정의돼 있는가
 - 문구/버튼/상태명이 기존 규칙과 충돌하지 않는가
 - 날짜/정렬/권한 규칙이 이미 정의돼 있는가
-- **공개 페이지에 새 버튼/컨트롤을 추가한다면 inline `onclick=`·`onchange=` 등의 이벤트 속성을 쓰고 있지 않은가** (§7.5.1) — 공개 CSP는 `'unsafe-inline'` 미허용. ID만 부여하고 nonce가 붙은 `.js`에서 `addEventListener`로 바인딩해야 한다.
-- **PUT/PATCH 엔드포인트의 conditional SET이 입력 검증 헬퍼의 `.provided` 플래그에 의존한다면, 호출하는 모든 헬퍼(`requireNonEmptyString` · `optionalTrimmedString` · `optionalIntegerOrNull` · `optionalBooleanFlag` 등)가 성공 시 `provided: true`를 일관되게 돌려주는지 확인** (§7.5.1). 한 엔드포인트 안에서 `.provided` 검사와 `body.field !== undefined` 직접 검사를 섞지 말 것.
+- **공개 페이지에 새 버튼/컨트롤을 추가한다면 inline `onclick=`·`onchange=` 등의 이벤트 속성을 쓰고 있지 않은가** (7.5.1) — 공개 CSP는 `'unsafe-inline'` 미허용. ID만 부여하고 nonce가 붙은 `.js`에서 `addEventListener`로 바인딩해야 한다.
+- **PUT/PATCH 엔드포인트의 conditional SET이 입력 검증 헬퍼의 `.provided` 플래그에 의존한다면, 호출하는 모든 헬퍼(`requireNonEmptyString` · `optionalTrimmedString` · `optionalIntegerOrNull` · `optionalBooleanFlag` 등)가 성공 시 `provided: true`를 일관되게 돌려주는지 확인** (7.5.1). 한 엔드포인트 안에서 `.provided` 검사와 `body.field !== undefined` 직접 검사를 섞지 말 것.
 
 ### 14.2 구현 후 체크
 
@@ -1325,7 +1341,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 버튼 높이/폰트/간격이 공통 규칙을 따르는가
 - 예외 흐름(권한 없음, 저장 실패, 삭제 차단)이 문서대로 작동하는가
 - **공개 페이지에 CSP 위반 로그가 없는가** — DevTools Console에서 해당 페이지를 열었을 때 `violates the following Content Security Policy directive` 에러 0건이어야 함.
-- **PUT/PATCH로 필드별 부분 업데이트를 한다면 각 필드를 개별적으로 바꿔보고 D1 컬럼이 실제로 반영되는지 확인** — 200 OK 응답 = 업데이트 성공이 아니다 (§7.5.1 회귀 사례가 바로 이 시나리오).
+- **PUT/PATCH로 필드별 부분 업데이트를 한다면 각 필드를 개별적으로 바꿔보고 D1 컬럼이 실제로 반영되는지 확인** — 200 OK 응답 = 업데이트 성공이 아니다 (7.5.1 회귀 사례가 바로 이 시나리오).
 
 ### 14.3 각주
 
