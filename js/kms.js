@@ -10,6 +10,8 @@
     loaded: false,
     mode: 'read',          // 'read' | 'edit'
     tab: 'docs',           // 'docs' | 'api' | 'changelog'
+    changelogPage: 1,      // 1-indexed, 30 items per page
+    docUpdatedAt: '',      // settings_history.saved_at (UTC)
     sidebarOpen: false,
     searchQuery: '',
     changelogScope: 'all',
@@ -525,6 +527,22 @@
     if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
 
+    // 맨 위로 버튼 — 스크롤 300px 이상 내려가면 노출, 클릭 시 최상단으로.
+    var backToTop = document.getElementById('kms-back-to-top');
+    if (backToTop) {
+      backToTop.addEventListener('click', function () {
+        var main = document.getElementById('kms-main');
+        (main || window).scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      var toggleBackToTop = function () {
+        var main = document.getElementById('kms-main');
+        var y = main ? main.scrollTop : (window.scrollY || window.pageYOffset || 0);
+        backToTop.hidden = y < 300;
+      };
+      (document.getElementById('kms-main') || window).addEventListener('scroll', toggleBackToTop, { passive: true });
+      window.addEventListener('resize', toggleBackToTop, { passive: true });
+    }
+
     // 검색
     var searchInput = document.getElementById('kms-search-input');
     if (searchInput) {
@@ -562,9 +580,24 @@
     });
 
     // Changelog 범위 필터
+    // 페이지네이션 버튼 (delegation — 페이지 변경 시 동적 렌더되는 버튼들).
+    document.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('[data-kms-cl-page]') : null;
+      if (!btn) return;
+      event.preventDefault();
+      var raw = btn.getAttribute('data-kms-cl-page');
+      var next = parseInt(raw, 10);
+      if (!Number.isFinite(next) || next < 1) return;
+      _state.changelogPage = next;
+      renderChangelog(_state.changelogItems, _state.changelogScope);
+      var container = document.getElementById('kms-changelog');
+      if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
     document.querySelectorAll('[data-cl-scope]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         _state.changelogScope = btn.getAttribute('data-cl-scope') || 'all';
+        _state.changelogPage = 1; // 범위 바꾸면 1페이지부터 다시.
         document.querySelectorAll('[data-cl-scope]').forEach(function (b) {
           b.classList.toggle('is-active', b === btn);
         });
@@ -683,11 +716,13 @@
       .then(function (data) {
         var content = normalizeFeatureDefinitionContent(data && typeof data.content === 'string' ? data.content : '');
         _state.docContent = content;
+        _state.docUpdatedAt = data && data.updated_at ? String(data.updated_at) : '';
         var editorInput = document.getElementById('kms-editor-input');
         if (editorInput) editorInput.value = content;
         renderDocument(content);
         renderSectionList(content);
         updateDocMeta(content);
+        _bindScrollSpy();
       })
       .catch(function (err) {
         if (body) body.innerHTML = '<div class="kms-list-empty">' + GW.escapeHtml(err.message || '기능 정의서를 불러오지 못했습니다.') + '</div>';
@@ -993,6 +1028,35 @@
     });
   }
 
+  // 스크롤 스파이 — 뷰포트에 보이는 섹션을 사이드바 링크에 is-current로 표시.
+  var _scrollSpyObserver = null;
+  var _scrollSpyActiveId = '';
+  function _bindScrollSpy() {
+    if (_scrollSpyObserver) { _scrollSpyObserver.disconnect(); _scrollSpyObserver = null; }
+    var main = document.getElementById('kms-main');
+    var targets = document.querySelectorAll('#kms-document-body [id^="kms-s-"]');
+    if (!main || !targets.length || typeof IntersectionObserver === 'undefined') return;
+    // 문서 상단이 뷰포트 상단에서 약간 아래(헤더 높이 고려)에 들어올 때를 '현재 섹션'으로 본다.
+    var visible = new Set();
+    _scrollSpyObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) visible.add(entry.target.id);
+        else visible.delete(entry.target.id);
+      });
+      // 뷰포트에 여러 섹션이 동시에 보일 때는 가장 먼저(위쪽) 것을 현재로 취급.
+      var list = Array.prototype.slice.call(targets).map(function (n) { return n.id; });
+      var firstVisible = list.find(function (id) { return visible.has(id); });
+      var currentId = firstVisible || _scrollSpyActiveId;
+      if (currentId && currentId !== _scrollSpyActiveId) {
+        _scrollSpyActiveId = currentId;
+        document.querySelectorAll('#kms-section-list [data-kms-target]').forEach(function (btn) {
+          btn.classList.toggle('is-current', btn.getAttribute('data-kms-target') === currentId);
+        });
+      }
+    }, { root: main, rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+    targets.forEach(function (t) { _scrollSpyObserver.observe(t); });
+  }
+
   function renderApiSectionList() {
     var list = document.getElementById('kms-section-list');
     if (!list) return;
@@ -1119,6 +1183,29 @@
     setText('kms-section-count', String(h2Count));
     setText('kms-section-count-doc', String(h2Count));
     setText('kms-detail-count', String(h4Count));
+    setText('kms-doc-updated', formatDocUpdatedAt(_state.docUpdatedAt));
+  }
+
+  // D1 `settings_history.saved_at`은 UTC(`datetime('now')`)로 저장되는데
+  // 운영자는 KST 기준을 본다. "YYYY. M. D. 오전/오후 H시 M분 S초" 로 표기.
+  function formatDocUpdatedAt(raw) {
+    if (!raw) return '—';
+    var s = String(raw).trim();
+    if (!s) return '—';
+    // D1 datetime('now') 포맷: "2026-04-23 23:38:04"
+    var iso = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s) ? s.replace(' ', 'T') + 'Z' : s;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return s;
+    try {
+      return d.toLocaleString('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', second: '2-digit',
+        hour12: true
+      }) + ' KST';
+    } catch (_) {
+      return s;
+    }
   }
 
   function updateVersionDisplay() {
@@ -1250,9 +1337,17 @@
       return;
     }
 
+    // 30개 단위 페이지네이션. 전체가 30 이하면 pagination UI는 숨김.
+    var PAGE_SIZE = 30;
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    var page = Math.min(Math.max(1, _state.changelogPage || 1), totalPages);
+    _state.changelogPage = page;
+    var start = (page - 1) * PAGE_SIZE;
+    var paged = filtered.slice(start, start + PAGE_SIZE);
+
     var typeColors = { Update: '#0069d9', Bugfix: '#cb2431', Hotfix: '#cb2431', Feature: '#22863a', Refactor: '#6f42c1' };
 
-    container.innerHTML = filtered.map(function (item) {
+    var itemsHtml = paged.map(function (item) {
       var type = inferChangelogType(item);
       var typeColor = typeColors[type] || '#555';
       var releaseScope = inferChangelogScope(item);
@@ -1288,6 +1383,32 @@
         changesHtml +
         '</article>';
     }).join('');
+
+    var paginationHtml = '';
+    if (totalPages > 1) {
+      var windowSize = 7; // 표시할 번호 버튼 최대 개수
+      var half = Math.floor(windowSize / 2);
+      var pStart = Math.max(1, page - half);
+      var pEnd = Math.min(totalPages, pStart + windowSize - 1);
+      pStart = Math.max(1, pEnd - windowSize + 1);
+      var nums = [];
+      for (var p = pStart; p <= pEnd; p += 1) nums.push(p);
+      paginationHtml =
+        '<nav class="kms-cl-pagination" aria-label="버전기록 페이지">' +
+          '<button type="button" class="kms-cl-page-btn" data-kms-cl-page="' + (page - 1) + '"' + (page <= 1 ? ' disabled' : '') + '>이전</button>' +
+          (pStart > 1 ? '<button type="button" class="kms-cl-page-btn" data-kms-cl-page="1">1</button>' + (pStart > 2 ? '<span class="kms-cl-page-gap">…</span>' : '') : '') +
+          nums.map(function (n) {
+            return '<button type="button" class="kms-cl-page-btn' + (n === page ? ' is-active' : '') + '" data-kms-cl-page="' + n + '">' + n + '</button>';
+          }).join('') +
+          (pEnd < totalPages ? (pEnd < totalPages - 1 ? '<span class="kms-cl-page-gap">…</span>' : '') + '<button type="button" class="kms-cl-page-btn" data-kms-cl-page="' + totalPages + '">' + totalPages + '</button>' : '') +
+          '<button type="button" class="kms-cl-page-btn" data-kms-cl-page="' + (page + 1) + '"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>' +
+          '<span class="kms-cl-page-info">' + page + ' / ' + totalPages + ' 페이지 · 총 ' + filtered.length + '건</span>' +
+        '</nav>';
+    } else {
+      paginationHtml = '<div class="kms-cl-page-info kms-cl-page-info-single">총 ' + filtered.length + '건</div>';
+    }
+
+    container.innerHTML = itemsHtml + paginationHtml;
   }
 
   // ── 디자인 시스템 탭 ──────────────────────────────────────────

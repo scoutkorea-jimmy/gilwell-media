@@ -195,7 +195,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260423204914">
+  <link rel="stylesheet" href="/css/style.css?v=20260423210609">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -377,7 +377,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.131.05</span> · Admin <span class="admin-build-version">V03.102.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.131.05</span> · Admin <span class="admin-build-version">V03.103.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -589,9 +589,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260423204914"></script>
-  <script src="/js/site-chrome.js?v=20260423204914"></script>
-  <script src="/js/post-page.js?v=20260423204914"></script>
+  <script src="/js/main.js?v=20260423210609"></script>
+  <script src="/js/site-chrome.js?v=20260423210609"></script>
+  <script src="/js/post-page.js?v=20260423210609"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
