@@ -10,7 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260422045506">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260423055807">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -92,9 +92,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.100.03</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.100.04</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.131.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.131.01</span>
     </div>
   </div>
 </div>
@@ -107,8 +107,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.100.03</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.131.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.100.04</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.131.01</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -1892,7 +1892,7 @@
           <form id="account-me-username-form" class="v3-form-grid" autocomplete="off" novalidate>
             <div class="v3-form-group v3-form-span-full">
               <label class="v3-label" for="account-me-new-username">새 아이디 <span class="v3-label-opt">영문 소문자·숫자·_ · 3~32자</span></label>
-              <input class="v3-input" type="text" id="account-me-new-username" spellcheck="false" autocapitalize="off" />
+              <input class="v3-input" type="text" id="account-me-new-username" autocomplete="off" spellcheck="false" autocapitalize="off" />
             </div>
             <div class="v3-form-group v3-form-span-full">
               <div class="v3-flex" style="justify-content:flex-end;gap:8px;">
@@ -2036,7 +2036,7 @@
       </div>
       <div class="v3-form-group">
         <label class="v3-label" for="account-user-password">비밀번호 <span class="v3-label-opt">8자 이상 · 신규만</span></label>
-        <input class="v3-input" type="text" id="account-user-password" spellcheck="false" autocapitalize="off" />
+        <input class="v3-input" type="text" id="account-user-password" autocomplete="off" spellcheck="false" autocapitalize="off" />
       </div>
       <div class="v3-form-group">
         <label class="v3-label" for="account-user-editor-code">편집자 코드 <span class="v3-label-opt">byline 표기용 · 선택</span></label>
@@ -2472,9 +2472,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260422045506"></script>
-<script src="/js/shared-country-name-ko.js?v=20260422045506"></script>
-<script src="/js/admin-v3.js?v=20260422045506"></script>
+<script src="/js/main.js?v=20260423055807"></script>
+<script src="/js/shared-country-name-ko.js?v=20260423055807"></script>
+<script src="/js/admin-v3.js?v=20260423055807"></script>
 <script src="/js/admin-account.js?v=20260421161543"></script>
 <script>
   (function () {

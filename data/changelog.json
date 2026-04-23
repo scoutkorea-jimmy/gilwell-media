@@ -1,6 +1,30 @@
 {
   "items": [
   {
+    "version": "00.131.01",
+    "date": "2026-04-23",
+    "released_at": "2026-04-23 14:57:34 KST",
+    "summary": "인증 폼에서 'owner' 자동완성·placeholder 제거 + Kakao AdFit deprecated 도메인(t1.daumcdn.net) CSP 제거 + 애널리틱스 /worm.html 오타 수정.",
+    "changes": [
+      "글쓰기·캘린더·용어집 로그인 모달의 placeholder '아이디 (예: owner)' → '아이디'로 통일. autocomplete 속성도 'username' → 'off'로 변경해 브라우저가 과거 입력값을 자동 채우지 않도록 차단 (calendar.html:217, glossary.html:191, js/board-write.js:40).",
+      "JS에서 빈 username에 'owner'를 강제 주입하던 로직 제거 (js/board-write.js:561 _showPasswordModal, js/calendar.js:945 openLogin). 이제 로그인 모달은 항상 빈 상태로 열리며 사용자가 자기 계정을 직접 입력해야 함.",
+      "Kakao AdFit web SDK 도메인 변경 공지 대응 — functions/_middleware.js CSP 정책에서 deprecated 'https://t1.daumcdn.net'을 script-src(legacy/public)·connect-src·frame-src 4곳에서 완전 제거. 신규 도메인 'https://t1.kakaocdn.net'만 유지. 실제 <script src=\"...ba.min.js\">는 이미 마이그레이션 완료된 상태였고 이번엔 정책만 정리.",
+      "functions/_shared/cloudflare-analytics.js:292 isPublicPagePath의 '/worm.html' 오타 제거. WOSM 페이지는 '/wosm.html'로 정상 집계되고 있었으나 불필요한 가짜 경로 분기 1건을 청소.",
+      "사이트 버전 00.131.00 → 00.131.01."
+    ]
+  },
+  {
+    "version": "03.100.04",
+    "date": "2026-04-23",
+    "released_at": "2026-04-23 14:57:34 KST",
+    "summary": "관리자 콘솔 계정 폼 autocomplete 누락 보완 — 브라우저가 'owner' 등 저장된 값을 제시하지 않도록 차단.",
+    "changes": [
+      "admin.html 1895 '내 계정 → 새 아이디' input에 autocomplete=\"off\" 추가. 기존엔 속성이 없어 브라우저가 과거 계정명을 자동완성으로 제시할 수 있었음.",
+      "admin.html 2039 '사용자 관리 → 비밀번호' input에 autocomplete=\"off\" 추가. type=\"text\"는 신규 생성 시 관리자가 값을 눈으로 확인하며 설정하기 위한 의도로 유지.",
+      "관리자 버전 03.100.03 → 03.100.04 (Fix bump)."
+    ]
+  },
+  {
     "version": "00.131.00",
     "date": "2026-04-22",
     "released_at": "2026-04-22 13:54:02 KST",

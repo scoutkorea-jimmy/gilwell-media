@@ -289,7 +289,7 @@ function isPublicPagePath(path) {
   if (!clean) return false;
   if (clean === '/' || clean === '/index.html') return true;
   if (clean.startsWith('/post/')) return true;
-  if (clean === '/korea.html' || clean === '/apr.html' || clean === '/wosm.html' || clean === '/worm.html' || clean === '/wosm-members.html' || clean === '/people.html' || clean === '/glossary.html' || clean === '/contributors.html' || clean === '/search.html' || clean === '/404.html') return true;
+  if (clean === '/korea.html' || clean === '/apr.html' || clean === '/wosm.html' || clean === '/wosm-members.html' || clean === '/people.html' || clean === '/glossary.html' || clean === '/contributors.html' || clean === '/search.html' || clean === '/404.html') return true;
   if (clean === '/admin.html') return false;
   if (clean.startsWith('/api/') || clean.startsWith('/cdn-cgi/') || clean.startsWith('/css/') || clean.startsWith('/js/') || clean.startsWith('/img/')) return false;
   return /\.html$/i.test(clean);
