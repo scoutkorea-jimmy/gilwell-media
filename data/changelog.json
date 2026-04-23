@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.131.04",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 05:15:00 KST",
+    "summary": "공개 기사 상세의 인라인 수정 모달이 CSP에 막혀 저장되지 않던 회귀 긴급 복구 — inline onclick 7건을 ID 기반 addEventListener로 전환.",
+    "changes": [
+      "functions/post/[id].js의 인라인 onclick 핸들러 7건 제거 (수정 모달 '수정 완료'·'취소'·'X'·슬라이드 추가 버튼, 비밀번호 로그인 모달 '확인'·'취소'·눈 아이콘, 태그 모달 닫기, 언어 토글 KOR/ENG). 공개 /post/:id는 nonce+strict-dynamic CSP가 적용돼 inline 핸들러가 'The action has been blocked' 로그와 함께 전부 차단되던 상태였다 — 사용자가 '수정 완료'를 눌러도 아무 반응이 없고 수정 내용이 반영되지 않던 이번 회귀의 직접 원인.",
+      "누락된 버튼 ID 신설 — post-login-cancel-btn, post-edit-close-x, post-gallery-btn, post-tag-modal-close. 기존에 이미 있던 post-edit-submit / post-edit-cancel / post-login-submit-btn / post-login-pw-eye 등과 함께 js/post-page.js의 _bindPostPageInlineHandlers()에서 일괄 addEventListener로 바인딩.",
+      "관리자·KMS 페이지는 legacy 'unsafe-inline' 정책 유지(functions/_middleware.js 변경 없음). 공개 페이지만 nonce-기반 CSP를 적용하는 기존 원칙 그대로, 이에 어긋나던 /post/:id SSR HTML만 최신 CSP에 맞춰 정렬한 것.",
+      "사이트 버전 00.131.03 → 00.131.04 (Hotfix · 기사 수정 반영 복구)."
+    ]
+  },
+  {
     "version": "03.101.01",
     "date": "2026-04-23",
     "released_at": "2026-04-23 23:37:13 KST",

@@ -938,6 +938,27 @@ document.getElementById('post-tag-new-input').addEventListener('keydown', functi
 document.getElementById('post-cover-btn').addEventListener('click', function () {
   window._postUploadCover();
 });
+
+// CSP fix: public /post/:id runs under nonce+strict-dynamic, so inline
+// onclick=... attributes are blocked. All former inline handlers are rebound
+// here from their element IDs.
+(function _bindPostPageInlineHandlers() {
+  function _on(id, fn) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('click', fn);
+  }
+  _on('lang-btn-ko', function () { if (GW && GW.setLang) GW.setLang('ko'); });
+  _on('lang-btn-en', function () { if (GW && GW.setLang) GW.setLang('en'); });
+  _on('post-login-pw-eye', function () { window._togglePostLoginPw(); });
+  _on('post-login-submit-btn', function () { window._postLoginSubmit(); });
+  _on('post-login-cancel-btn', function () { window._closePostLogin(); });
+  _on('post-edit-close-x', function () { window._closePostEdit(); });
+  _on('post-edit-cancel', function () { window._closePostEdit(); });
+  _on('post-edit-submit', function () { window._postSaveEdit(); });
+  _on('post-gallery-btn', function () { window._postUploadGallery(); });
+  _on('post-tag-modal-close', function () { window._closePostTagModal(); });
+}());
+
 document.addEventListener('keydown', function (event) {
   if (event.key !== 'Escape') return;
   var loginModal = document.getElementById('post-login-modal');
