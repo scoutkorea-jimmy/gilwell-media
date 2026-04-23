@@ -900,6 +900,28 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 레거시 `.post-edit-box { max-width: 760px; padding: 36px }` 스타일은 제거됨 — 공개 작성 모달과 동일 1200px 2-col.
 - 모든 DOM ID는 기존 유지(post-edit-title-input · post-edit-subtitle-input · post-edit-category · post-edit-editorjs 등)해 저장 로직(`window._postSaveEdit()`) 호환.
 
+### 7.5.1 공개 수정 모달 회귀 사례 (2026-04-24 케이스 스터디)
+
+#### 기능 세부 설명
+공개 `/post/:id` "수정하기 → 수정 완료" 플로우가 같은 날 **두 독립 원인**으로 동시에 깨짐. 같은 실수 방지용으로 박제.
+
+**증상**: (1) "수정 완료" 눌러도 무반응 + Console `Executing inline event handler violates … Content Security Policy directive … blocked`. (2) 해결 후 제목만 바꿔 저장하면 성공 토스트는 뜨는데 제목은 그대로. 태그·부제·카테고리는 반영됨.
+
+**원인 A — CSP 위반 (00.131.04 수정)**. 공개 페이지는 `functions/_middleware.js`에서 `script-src 'nonce-…' 'strict-dynamic'`만 허용하고 `'unsafe-inline'`을 뺀다 (관리자/KMS만 legacy 허용). `functions/post/[id].js` SSR HTML에 `onclick="window._postSaveEdit()"` 등 inline 핸들러 7건이 남아 있어 차단됨. 인라인 핸들러는 nonce/hash로 허용 불가(`'unsafe-hashes'` 별도 필요).
+
+**원인 B — `provided` 플래그 누락 (00.131.05 수정)**. `functions/_shared/post-input.js`의 `requireNonEmptyString`이 성공 시 `{ok, value}`만 반환하고 `provided: true`를 빠뜨렸다. PUT `/api/posts/:id`가 `if (safeTitleInput.provided) fields.push('title = ?')`로 SET 절을 조립하므로 title이 UPDATE에서 **통째로 생략**되고, 서버는 다른 필드만 UPDATE 후 200 반환. 태그는 `optionalTrimmedString`(`provided` 정상 세팅) 사용해서 저장됐음.
+
+**재발 방지 규칙**
+1. **공개 SSR HTML에 inline 이벤트 속성 금지** (`onclick`, `onchange`, `onmousedown`, `oninput`, `onkeydown`, `onsubmit`, `onload`). ID만 부여 → nonce 붙은 `.js`(예: `js/post-page.js`의 `_bindPostPageInlineHandlers()`)에서 `addEventListener`로 바인딩. 관리자/KMS legacy 허용도 장기 migration 대상 — 새 코드는 관리자에서도 인라인 금지.
+2. **입력 검증 헬퍼는 `{ok, provided, value}` 3-튜플 일관 반환**. 성공=`provided:true`, 실패=`{ok:false, error}`, body에 필드 없을 때만 `{ok:true, provided:false, value:undefined}`. 하나라도 빠지면 PUT conditional SET이 조용히 깨진다.
+3. **한 엔드포인트 안에서 `.provided` 검사와 `field !== undefined` 직접 검사 혼용 금지** — 섞이면 이번처럼 일부 필드만 저장되는 비대칭 버그 재발.
+4. 저장 토스트를 "서버 응답 실제 값 vs 요청 payload" 비교 후 띄우는 방어층은 미구현이지만 권장 — 조기 감지용.
+
+**검증**
+- `grep -nE "on(click|change|mousedown|input|keydown|submit|load)=" functions/post/ functions/home.js functions/[a-z]*.js` 가 0건.
+- `_shared/post-input.js` 모든 export의 성공 응답에 `provided: true` 포함.
+- PUT `/api/posts/:id` 필드별 개별 변경 → D1 실제 반영 확인 (200 OK ≠ 저장 성공).
+
 ### 7.6 SEO · 구조화 데이터
 
 #### 기능 세부 설명
@@ -1292,6 +1314,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 이 기능이 KMS에 정의돼 있는가
 - 문구/버튼/상태명이 기존 규칙과 충돌하지 않는가
 - 날짜/정렬/권한 규칙이 이미 정의돼 있는가
+- **공개 페이지에 새 버튼/컨트롤을 추가한다면 inline `onclick=`·`onchange=` 등의 이벤트 속성을 쓰고 있지 않은가** (§7.5.1) — 공개 CSP는 `'unsafe-inline'` 미허용. ID만 부여하고 nonce가 붙은 `.js`에서 `addEventListener`로 바인딩해야 한다.
+- **PUT/PATCH 엔드포인트의 conditional SET이 입력 검증 헬퍼의 `.provided` 플래그에 의존한다면, 호출하는 모든 헬퍼(`requireNonEmptyString` · `optionalTrimmedString` · `optionalIntegerOrNull` · `optionalBooleanFlag` 등)가 성공 시 `provided: true`를 일관되게 돌려주는지 확인** (§7.5.1). 한 엔드포인트 안에서 `.provided` 검사와 `body.field !== undefined` 직접 검사를 섞지 말 것.
 
 ### 14.2 구현 후 체크
 
@@ -1300,6 +1324,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 관리자와 공개 화면이 같은 용어를 쓰는가
 - 버튼 높이/폰트/간격이 공통 규칙을 따르는가
 - 예외 흐름(권한 없음, 저장 실패, 삭제 차단)이 문서대로 작동하는가
+- **공개 페이지에 CSP 위반 로그가 없는가** — DevTools Console에서 해당 페이지를 열었을 때 `violates the following Content Security Policy directive` 에러 0건이어야 함.
+- **PUT/PATCH로 필드별 부분 업데이트를 한다면 각 필드를 개별적으로 바꿔보고 D1 컬럼이 실제로 반영되는지 확인** — 200 OK 응답 = 업데이트 성공이 아니다 (§7.5.1 회귀 사례가 바로 이 시나리오).
 
 ### 14.3 각주
 
