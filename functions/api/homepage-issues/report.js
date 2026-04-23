@@ -1,5 +1,6 @@
 import { recordHomepageIssue } from '../../_shared/homepage-issues.js';
 import { deriveIp, logOperationalEvent } from '../../_shared/ops-log.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
 
 const ISSUE_TEMPLATES = {
   home_initial_fetch_failed: {
@@ -78,6 +79,18 @@ export async function onRequestPost({ request, env }) {
   if (!isSameOriginReport(request)) {
     return json({ error: 'Forbidden' }, 403);
   }
+
+  // 공개 POST + 인증 없음이므로 rate limit으로 DB 스팸·bloat을 방어.
+  // curl 등으로 Origin 헤더를 위조하면 same-origin 검사는 통과할 수 있어서
+  // IP당 분당 30회로 상한을 건다. 정상 클라이언트(_reportSiteIssue in
+  // admin-v3.js/post-page.js)는 fingerprint dedup 덕에 이 한도에 닿지 않음.
+  const rl = await enforceRateLimit(env, {
+    route: 'homepage-issues-report',
+    identity: getClientIp(request),
+    limit: 30,
+    windowSeconds: 60,
+  });
+  if (!rl.ok) return rateLimitResponse(rl, '이슈 보고 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
 
   let body;
   try {

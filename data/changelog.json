@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "00.131.06",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 06:30:00 KST",
+    "summary": "공개 /feature/* 언어 토글 CSP 차단 회귀 수정 — 7.5.1 케이스 스터디의 재발 방지 규칙과 동일한 수정을 특집 기사 페이지에도 적용.",
+    "changes": [
+      "functions/feature/[category]/[slug].js의 KOR/ENG 토글을 inline onclick → 표준 data-lang-toggle 속성으로 전환. 공개 CSP에서 inline 이벤트 속성이 차단되던 회귀(7.5.1 Case A의 쌍둥이 버그)를 제거.",
+      "functions/post/[id].js도 data-lang-set(예전 임시)에서 사이트 표준 data-lang-toggle로 정렬. js/site-chrome.js의 delegation handler 한 곳에서 모든 공개 페이지 언어 토글 처리.",
+      "js/post-page.js _bindPostPageInlineHandlers에서 언어 버튼 ID 기반 바인딩 제거 (site-chrome.js가 담당).",
+      "사이트 버전 00.131.05 → 00.131.06 (Hotfix · CSP 회귀 제거)."
+    ]
+  },
+  {
+    "version": "03.104.00",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 06:30:00 KST",
+    "summary": "PUT /api/posts/:id hasField 통일로 provided 누락 버그 재발 방지 + CDN SRI·캐시 퍼지·예약 공개 운영 플랜 KMS 박제 + /homepage-issues/report rate limit 추가 + cache-purge 환경변수 폴백.",
+    "changes": [
+      "functions/api/posts/[id].js PUT/PATCH 전체를 로컬 hasField() 헬퍼로 통일 — 과거 .provided 검사와 field !== undefined 직접 검사를 섞어 쓰던 코드를 한 스타일로 정렬. 2026-04-24 title 저장 누락 버그(7.5.1 Case B)의 구조적 재발 가능성 제거.",
+      "functions/_shared/cache-purge.js에 CLOUDFLARE_ZONE_ID/CLOUDFLARE_API_TOKEN fallback 추가 + credential 부재 시 console.warn 1회 출력. 전용 CF_ZONE_ID/CF_PURGE_API_TOKEN이 없어도 범용 Cloudflare 바인딩만 있으면 퍼지 동작.",
+      "functions/api/homepage-issues/report.js에 IP당 분당 30회 rate limit 추가. 공개 POST이고 인증이 없어 Origin 헤더 위조로 DB 스팸 가능하던 리스크 차단 (Turnstile까지는 불필요 — 정상 클라이언트는 fingerprint dedup으로 한도에 닿지 않음).",
+      "KMS 13.1.2 CDN SRI 장애 대응 플랜 박제 — dompurify/editorjs/tiptap 핀 목록, 1차(감지)~5차(장기) 대응 순서, jsdelivr↔unpkg 스위치 경로, 금기(SRI 제거 금지) 명문화.",
+      "KMS 13.1.3 Cloudflare 캐시 퍼지 환경변수 섹션 신설 — CF_ZONE_ID 미설정 상태 명시, CLOUDFLARE_API_TOKEN 재사용 경로 안내, 부재 시 관찰 가능한 증상까지 박제.",
+      "KMS 13.1.4 publish_at 예약 공개 처리 리팩터 방향 박제 — Cloudflare Scheduled Worker로 이관하는 3단계 계획(inline 제거 직전 no-op 과도기, heartbeat 모니터, 장애 시 비상 스위치). 지금은 방향만 기록, 트리거 조건(트래픽 증가·inline 지연)에서 실행.",
+      "관리자 버전 03.103.00 → 03.104.00 (Feature · 보안 하드닝 + KMS 운영 플랜 박제)."
+    ]
+  },
+  {
     "version": "03.103.00",
     "date": "2026-04-24",
     "released_at": "2026-04-24 06:05:00 KST",

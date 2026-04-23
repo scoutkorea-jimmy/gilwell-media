@@ -947,8 +947,7 @@ document.getElementById('post-cover-btn').addEventListener('click', function () 
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   }
-  _on('lang-btn-ko', function () { if (GW && GW.setLang) GW.setLang('ko'); });
-  _on('lang-btn-en', function () { if (GW && GW.setLang) GW.setLang('en'); });
+  // 언어 토글은 js/site-chrome.js의 [data-lang-toggle] delegation이 처리한다 — 여기서 따로 바인딩 불필요.
   _on('post-login-pw-eye', function () { window._togglePostLoginPw(); });
   _on('post-login-submit-btn', function () { window._postLoginSubmit(); });
   _on('post-login-cancel-btn', function () { window._closePostLogin(); });
