@@ -253,11 +253,11 @@ function buildTaskAlerts(tasks) {
     if (!due) return acc;
     const days = diffDaysFromToday(due);
     if (days < 0) {
-      acc.push({ kind: 'task_overdue', label: '기한 지남', title: item.title || '', meta: due, task_id: item.id, status: item.status });
+      acc.push({ kind: 'task_overdue', label: 'Overdue', title: item.title || '', meta: due, task_id: item.id, status: item.status });
       return acc;
     }
     if (days <= 3 && item.status !== 'done') {
-      acc.push({ kind: 'task_due_soon', label: '마감 임박', title: item.title || '', meta: due, task_id: item.id, status: item.status });
+      acc.push({ kind: 'task_due_soon', label: 'Due soon', title: item.title || '', meta: due, task_id: item.id, status: item.status });
     }
     return acc;
   }, []);
@@ -270,7 +270,7 @@ function buildNoteAlerts(notes) {
     .map(function (item) {
       return {
         kind: 'high_priority_note',
-        label: '중요 메모',
+        label: 'Priority note',
         title: item.title || '',
         meta: item.type || 'note',
         note_id: item.id,

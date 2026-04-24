@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env, data }) {
 
   const { title, description, assignee, status, priority, due_date } = body;
   if (!title || typeof title !== 'string' || !title.trim()) {
-    return json({ error: '제목을 입력해주세요.' }, 400);
+    return json({ error: 'Title is required.' }, 400);
   }
 
   const safeTitle       = title.trim().slice(0, 200);
@@ -63,7 +63,7 @@ export async function onRequestPut({ request, env, data }) {
   const denied = requirePerm(data, 'write:tasks'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
 
   let body;
   try { body = await request.json(); }
@@ -97,7 +97,7 @@ export async function onRequestPut({ request, env, data }) {
     values.push(body.due_date ? body.due_date.trim().slice(0, 20) : null);
   }
 
-  if (fields.length === 0) return json({ error: '변경할 내용이 없습니다.' }, 400);
+  if (fields.length === 0) return json({ error: 'No fields to update.' }, 400);
 
   fields.push("updated_at = datetime('now')");
   values.push(id);
@@ -113,7 +113,7 @@ export async function onRequestDelete({ request, env, data }) {
   const denied = requirePerm(data, 'write:tasks'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
   await env.DB.prepare(`DELETE FROM dp_tasks WHERE id = ?`).bind(id).run();
   return json({ ok: true });
 }

@@ -135,66 +135,6 @@ const DP = (() => {
     return String(slug || '').split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
   }
 
-  // -------------------------- Demo data (replaced by Phase 3 API wiring) --------------------------
-  const DATA = {
-    posts: {
-      notice: [
-        { id: 101, board: 'notice', title: 'Sprint 14 planning — agenda & goals', pinned: true, author_name: '조은', created_at: '2026-04-24T07:20:00', acknowledged: 9, total: 14, excerpt: '온보딩 리디자인과 API rate-limiting 에 집중합니다. 월요일 10시 전에 브리프 읽어 주세요.', content: '<h2>Sprint 14 목표</h2><p>온보딩 리디자인과 API rate-limiting 에 집중합니다.</p><ul><li>온보딩 플로우 3회차 테스트</li><li>API /auth 리트라이 정책 정비</li><li>Q2 로드맵 리뷰</li></ul>' },
-        { id: 102, board: 'notice', title: 'Security review findings — action required', pinned: false, author_name: '민수', created_at: '2026-04-24T04:41:00', acknowledged: 0, total: 14, unread: true, excerpt: '3건의 high-severity 항목이 발견되었습니다. 담당자 지정 완료. 시정 기한: 4월 30일.', content: '<p>3건의 <strong>high-severity</strong> 항목. 담당자 지정 완료. 시정 기한 <strong>4월 30일</strong>.</p>' },
-        { id: 103, board: 'notice', title: 'Office move — Fri Apr 26 logistics', pinned: false, author_name: 'HR', created_at: '2026-04-23T09:10:00', acknowledged: 4, total: 14, excerpt: '책상 배정 완료. 노트북과 모니터 케이블만 챙겨오세요. 나머지는 이사팀이 옮깁니다.', content: '<p>책상 배정 완료.</p>' },
-      ],
-      documents: [
-        { id: 201, board: 'documents', title: 'API v2 spec — final draft', pinned: true, author_name: '민수', created_at: '2026-04-24T12:18:00', type: 'Doc', size: '12.3 MB', content: '<h2>API v2 스펙</h2><p>최종 초안.</p>' },
-        { id: 202, board: 'documents', title: 'Onboarding redesign — wireframes v3', pinned: false, author_name: '수진', created_at: '2026-04-23T16:30:00', type: 'Fig', size: '—' },
-        { id: 203, board: 'documents', title: 'Q2 roadmap — exec summary', pinned: false, author_name: '조은', created_at: '2026-04-22T11:00:00', type: 'Doc', size: '2.4 MB' },
-        { id: 204, board: 'documents', title: 'Vendor shortlist — phase 2', pinned: false, author_name: 'L. Park', created_at: '2026-04-22T09:15:00', type: 'XLS', size: '820 KB' },
-      ],
-      minutes: [
-        { id: 301, board: 'minutes', title: 'Product weekly (Apr 22)', author_name: '수진', created_at: '2026-04-22T15:00:00', approval_status: 'pending', approvers: [
-          { name: '조은', status: 'approved', voted_at: '2026-04-22T17:20:00' },
-          { name: '민수', status: 'pending' },
-          { name: '지우', status: 'pending' },
-          { name: '정현', status: 'pending' },
-        ], content: '<h2>참석</h2><p>조은, 민수, 지우, 수진, 정현</p><h2>논의</h2><ol><li>온보딩 리디자인 v3 리뷰</li><li>API rate-limiting 정책</li><li>Q2 예산 승인</li></ol>' },
-        { id: 302, board: 'minutes', title: 'Engineering all-hands (Apr 18)', author_name: '민수', created_at: '2026-04-18T14:00:00', approval_status: 'approved', approvers: [] },
-      ],
-    },
-    tasks: [
-      { id: 408, title: 'Onboarding flow review', assignee: '정현', status: 'in_progress', priority: 'high', due_date: '2026-04-22', overdue: true },
-      { id: 411, title: 'Fix rate-limit edge case', assignee: '정현', status: 'in_progress', priority: 'high', due_date: '2026-04-23', overdue: true },
-      { id: 415, title: 'Share Q2 roadmap', assignee: '정현', status: 'todo', priority: 'normal', due_date: '2026-04-24', overdue: false },
-      { id: 420, title: 'Vendor call prep', assignee: '정현', status: 'todo', priority: 'normal', due_date: '2026-04-25', overdue: false },
-      { id: 422, title: 'Weekly status deck', assignee: 'R. Kim', status: 'todo', priority: 'normal', due_date: '2026-05-03' },
-    ],
-    notes: [
-      { id: 501, title: 'Login 500 on Safari (NOTE-89)', type: 'issue', status: 'resolved', priority: 'high', author: '정현', updated_at: '2026-04-24T10:02:00', body: 'Safari 17.x ITP blocks dp_session cookie when 3rd-party context. Fix landed 2026-04-23.' },
-      { id: 502, title: 'Rate-limit retry policy draft', type: 'note', status: 'open', priority: 'normal', author: '민수', updated_at: '2026-04-23T16:40:00', body: 'Exponential backoff with jitter, max 5 retries for 5xx.' },
-      { id: 503, title: 'Q2 budget re-allocation ask', type: 'note', status: 'open', priority: 'high', author: '조은', updated_at: '2026-04-22T11:20:00', body: 'Proposal to shift 15% from eng-ops to growth in Q2.' },
-    ],
-    events: [
-      { id: 601, title: 'Stand-up', type: 'meeting', start_date: '2026-04-24', start_time: '10:30', end_time: '10:45', sub: 'PMO · #daily' },
-      { id: 602, title: 'Sprint 14 planning', type: 'meeting', start_date: '2026-04-24', start_time: '13:00', end_time: '14:30', sub: 'All hands' },
-      { id: 603, title: '1:1 · 조은', type: 'meeting', start_date: '2026-04-24', start_time: '15:30', end_time: '16:00', sub: '정현' },
-      { id: 604, title: 'Vendor call — Acme', type: 'meeting', start_date: '2026-04-25', start_time: '14:00', end_time: '15:00', sub: 'L. Park + 2' },
-    ],
-    pendingApprovals: [
-      { id: 701, kind: 'budget', title: 'Q2 marketing budget — ₩32,400,000', requested_by: '지우', requested_days_ago: 3, overdue: true },
-      { id: 702, kind: 'minutes', title: 'Minutes · Product weekly (Apr 22)', requested_by: '수진', requested_days_ago: 0 },
-      { id: 703, kind: 'doc',    title: 'Doc · API v2 spec — final draft', requested_by: '민수', requested_days_ago: 1 },
-      { id: 704, kind: 'doc',    title: 'Doc · Brand refresh v2 proposal', requested_by: '조은', requested_days_ago: 2 },
-    ],
-    activity: [
-      { ts: '14:02', who: '지우',  text: 'changed status of <strong>TASK-412</strong> to <strong>In review</strong>' },
-      { ts: '13:41', who: '수진',  text: 'published <strong>Minutes · Product weekly</strong>' },
-      { ts: '12:18', who: '민수',  text: 'uploaded <strong>API v2 spec · final draft</strong> to /Documents' },
-      { ts: '11:55', who: '조은',  text: 'pinned announcement <strong>Sprint 14 planning</strong>' },
-      { ts: '10:02', who: '정현',  text: 'closed issue <strong>NOTE-89 · Login 500 on Safari</strong>' },
-      { ts: '09:14', who: '혜림',  text: 'added 2 risks to <strong>Q2 roadmap</strong>' },
-    ],
-    teamOnline: ['정', '조', '민', '수', '지', '혜', '재'],
-    sprint: { label: 'Sprint 14', pct: 62, done: 24, in_progress: 9, todo: 6, delta: 8 },
-  };
-
   // -------------------------- Helpers --------------------------
   const $  = (sel, el = document) => el.querySelector(sel);
   const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
@@ -1213,7 +1153,7 @@ const DP = (() => {
     const announcements = (annRes && annRes.posts) || [];
     left.appendChild(_renderAnnouncementsPanel(announcements));
     left.appendChild(_renderPendingApprovalsPanel((home && home.pending_approvals) || []));
-    // Board preview cards (PMO spec "Layout 시안 1차") — 3 latest from each board.
+    // Board preview cards (PMO spec "Layout Draft 1") — 3 latest from each board.
     // Fetched in parallel so they don't block the primary paint.
     // Skip entirely for boards the user can't view, so members with a Viewer
     // preset don't see an empty placeholder panel (would look broken).
@@ -1786,7 +1726,7 @@ const DP = (() => {
           const voteIcon = myApproval.status === 'approved' ? '✓' : '✗';
           voteCell = `<span class="dp-tag ${voteTone}">${voteIcon} ${esc(myApproval.status)}</span>`;
         } else {
-          voteCell = `<span style="color:var(--text-3);font-size:11px;font-style:italic">대상 아님</span>`;
+          voteCell = `<span style="color:var(--text-3);font-size:11px;font-style:italic">Not an approver</span>`;
         }
         return `<tr class="${rowClass}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
           <td>${titleCell}</td>
@@ -2742,9 +2682,9 @@ const DP = (() => {
   // =========================================================
   // RULES — DREAMPATH.md live viewer with right-side TOC + scroll-spy
   // Content spec: every section SHOULD document
-  //   · 개발 배경 (why we're doing this)
-  //   · 개발 목적 (what the user/system gains)
-  //   · 특이사항 / Remarks (non-obvious gotchas, prior incidents)
+  //   · Why  (why we're doing this)
+  //   · Goal (what the user/system gains)
+  //   · Remarks (non-obvious gotchas, prior incidents)
   // The viewer auto-extracts h2/h3 headings into a sticky right rail.
   // =========================================================
   async function _renderRules(root) {
@@ -3009,7 +2949,7 @@ const DP = (() => {
       <section class="dp-rules-card">
         <h2>Source of truth</h2>
         <p>These values mirror the PMO Style Tokens v2 (ERP) reference + <code>css/style.css</code>
-        on BP미디어 so Dreampath and the public site stay aligned. When a token changes in
+        on the BP Media public site so Dreampath and the marketing site stay aligned. When a token changes in
         <code>dreampath-v2.html</code> <code>:root</code>, the swatches below update automatically.</p>
       </section>
 
@@ -3051,7 +2991,7 @@ const DP = (() => {
 
       <section class="dp-rules-card">
         <h2>Typography</h2>
-        <p><strong>UI:</strong> Google Sans Flex (variable, opsz 6..144 · wght 1..1000). <strong>Mono:</strong> JetBrains Mono.</p>
+        <p><strong>UI:</strong> Google Sans Flex (variable, opsz 6..144 · wght 1..1000). <strong>Mono:</strong> ui-monospace (SF Mono / Cascadia / Menlo — OS-native, no CDN fallback).</p>
         <table>
           <thead><tr><th>Token</th><th>Size</th><th>Example</th></tr></thead>
           <tbody>
@@ -3066,7 +3006,7 @@ const DP = (() => {
       </section>
 
       <section class="dp-rules-card">
-        <h2>Spacing (BP미디어 ported)</h2>
+        <h2>Spacing (ported from BP Media)</h2>
         <div class="dp-token-grid">
           ${chip('--gap-micro',        '4px')}
           ${chip('--gap-tight',        '8px')}
@@ -4619,7 +4559,7 @@ const DP = (() => {
     // Your-vote banner — four flavors explicit:
      //  a) pending + I can still vote → Approve / Reject buttons inline
      //  b) already voted (approved|rejected) → result chip + Change button
-     //  c) minutes post but I'm NOT an approver → grey "대상 아님" notice
+     //  c) minutes post but I'm NOT an approver → grey "Not an approver" notice
      //  d) not a minutes post at all → banner hidden
     const isMinutesPost = String(p.board || '') === 'minutes';
     const myVoteBanner = (() => {
@@ -4630,7 +4570,7 @@ const DP = (() => {
         return `
           <div style="margin:14px 0 6px;padding:10px 14px;border:1px solid var(--g-200);border-radius:var(--r-sm);background:var(--surface-2);display:flex;gap:10px;align-items:center;color:var(--text-3);font-size:12px">
             <strong style="font-size:var(--fs-12);letter-spacing:0.04em;text-transform:uppercase;color:var(--text-2)">Your vote</strong>
-            <span>— 당신은 이 회의록의 승인 대상이 아닙니다 (Not an approver).</span>
+            <span>— You are not listed as an approver for this minute.</span>
           </div>
         `;
       }
