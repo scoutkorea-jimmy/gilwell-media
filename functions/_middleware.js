@@ -60,12 +60,26 @@ function generateNonce() {
   return btoa(bin).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 }
 
+// [CASE STUDY 2026-04-24 — Dreampath sidebar total outage]
+// Symptom: Every onclick on /dreampath silently died — sidebar, toolbar,
+//          modal triggers, calendar cells all unresponsive.
+// Root cause: When a nonce is present, CSP3 browsers ignore 'unsafe-inline'.
+//             This function allowlisted /admin and /kms but NOT /dreampath,
+//             so Dreampath's DP.* inline onclick (by design — see
+//             DREAMPATH.md Section 2.2) was blocked.
+// Lesson: Any new route that depends on inline event handlers MUST also
+//         be added here. Dreampath, Admin, KMS, and future sibling apps
+//         share this contract. Removing /dreampath from this list will
+//         reproduce the P0 outage instantly.
+// Ref: DREAMPATH-HISTORY.md → 2026-04-24 · A, commit 111415d.
 function isLegacyInlinePath(pathname) {
   if (!pathname) return false;
   // Admin / KMS / Dreampath surfaces still carry inline onclick/onmousedown
-  // handlers (by design for Dreampath's DP.* IIFE pattern — see CLAUDE.md §5),
-  // so they run under the legacy 'unsafe-inline' policy. Nonce enforcement
-  // on admin/kms is tracked as a follow-up; Dreampath stays on inline handlers.
+  // handlers (by design for Dreampath's DP.* IIFE pattern — see
+  // DREAMPATH.md Section 2.2), so they run under the legacy 'unsafe-inline'
+  // policy. Nonce enforcement on admin/kms is tracked as a follow-up;
+  // Dreampath stays on inline handlers permanently (closed surface: auth
+  // required + X-Frame-Options DENY + no external inline-injection vector).
   if (pathname === '/admin' || pathname === '/admin.html') return true;
   if (pathname === '/kms' || pathname === '/kms.html') return true;
   if (pathname === '/dreampath' || pathname === '/dreampath.html') return true;

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" fill="none" role="img" aria-label="DreamPath horizontal on light">
+  <defs>
+    <radialGradient id="dpHlGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#622599" stop-opacity="0.18"></stop>
+      <stop offset="55%" stop-color="#622599" stop-opacity="0"></stop>
+    </radialGradient>
+  </defs>
+  <g>
+    <circle cx="60" cy="60" r="40" fill="url(#dpHlGlow)"></circle>
+    <circle cx="60" cy="60" r="36" stroke="#622599" stroke-width="1.25" stroke-dasharray="2 5" opacity="0.5" fill="none"></circle>
+    <g stroke="#622599" stroke-width="1.5" stroke-linecap="round" opacity="0.65">
+      <line x1="60" y1="24" x2="60" y2="60"></line>
+      <line x1="91" y1="42" x2="60" y2="60"></line>
+      <line x1="91" y1="78" x2="60" y2="60"></line>
+      <line x1="60" y1="96" x2="60" y2="60"></line>
+      <line x1="29" y1="78" x2="60" y2="60"></line>
+      <line x1="29" y1="42" x2="60" y2="60"></line>
+    </g>
+    <circle cx="60" cy="24" r="4.5" fill="#248737"></circle>
+    <circle cx="91" cy="42" r="4.5" fill="#D4620A"></circle>
+    <circle cx="91" cy="78" r="4.5" fill="#B81CB8"></circle>
+    <circle cx="60" cy="96" r="4.5" fill="#C2353B"></circle>
+    <circle cx="29" cy="78" r="4.5" fill="#0094B4"></circle>
+    <circle cx="29" cy="42" r="4.5" fill="#622599"></circle>
+    <circle cx="60" cy="60" r="10" fill="#4D006E"></circle>
+  </g>
+  <g font-family="&#39;Google Sans Flex&#39;, system-ui, sans-serif" font-weight="700" letter-spacing="-0.025em">
+    <text x="132" y="72" font-size="36" fill="#1F1F1F">Dream</text>
+    <text x="240" y="72" font-size="36" fill="#622599">Path</text>
+  </g>
+</svg>
