@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "00.132.00",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 13:50:00 KST",
+    "summary": "Dreampath 새 디자인 시스템 스테이징 라우트 /dreampath-v2 신설 — 기존 /dreampath 프로덕션에 영향 없이 새 UI 시연·검증.",
+    "changes": [
+      "dreampath-v2.html + js/dreampath-v2.js 신설 — Claude 디자인 기반 새 UI. 초기 단계는 하드코딩 데이터로 시연, 이후 Phase 3에서 section 단위로 기존 28개 /api/dreampath/* 엔드포인트에 배선 예정. D1 스키마·R2 버킷·API 전부 미변경, 기존 사용자·게시글·투표·업로드 데이터 100% 보존.",
+      "img/dreampath-v2/ 격리 디렉토리 — 로고 + 37개 아이콘(기존 25개와 디자인 미세 차이). /dreampath 프로덕션 UI는 기존 /img/dreampath/ 에셋을 그대로 사용, 교차 오염 없음.",
+      "functions/_middleware.js isLegacyInlinePath() 에 /dreampath-v2, /dreampath-v2.html 추가. DP.* 인라인 onclick 구조가 새 디자인에도 그대로 적용되므로 Admin / KMS / Dreampath 와 동일한 legacy 'unsafe-inline' CSP 경로로 편입. 2026-04-24 · A (CSP 회귀 P0) 의 재발 방지 주석도 병기.",
+      "dp_versions 미등록 — 새 파일은 /dreampath 프로덕션 버전이 아닌 별도 스테이징 라우트이므로 Dreampath 버전 카운터는 v01.042.00 그대로 유지. v2 자체 버전은 파일 헤더에 1.008.03 으로 명시.",
+      "사이트 버전 00.131.07 → 00.132.00 (Feature · Dreampath v2 스테이징)."
+    ]
+  },
+  {
     "version": "00.131.07",
     "date": "2026-04-24",
     "released_at": "2026-04-24 11:35:00 KST",
