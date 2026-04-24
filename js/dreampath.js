@@ -804,6 +804,15 @@ const DP = (() => {
   function _clearSessionExpiry() {
     try { localStorage.removeItem(_SESSION_EXPIRY_KEY); } catch (_) {}
   }
+  function _bumpSessionExpiry(force) {
+    const now = Date.now();
+    const exp = _getSessionExpiry();
+    if (!exp || exp <= now) return;
+    if (force || (exp - now) < _SESSION_DURATION_MS / 2) {
+      _setSessionExpiry(now + _SESSION_DURATION_MS);
+      _sessionPromptShown = false;
+    }
+  }
   function _fmtRemaining(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
     const h = Math.floor(total / 3600);
@@ -849,24 +858,22 @@ const DP = (() => {
   function _installSessionActivityExtension() {
     if (_activityBound) return;
     _activityBound = true;
-    // Throttle — only extend if the current expiry is already in the second
-    // half of its window. Otherwise every keypress hits localStorage.
-    let last = 0;
-    const onActivity = () => {
+    // Click/touch should feel immediate: each explicit pointer interaction
+    // refreshes the idle window back to a full hour. Lower-signal activity
+    // like scroll/keydown stays throttled so we don't spam localStorage.
+    let lastPassive = 0;
+    const onPassiveActivity = () => {
       const now = Date.now();
-      if (now - last < 15_000) return;  // 15-second cool-down
-      last = now;
-      const exp = _getSessionExpiry();
-      if (!exp || exp <= now) return;
-      // Only extend when the window has less than half its duration left —
-      // avoids thrashing storage on the first 30 minutes of a fresh session.
-      if ((exp - now) < _SESSION_DURATION_MS / 2) {
-        _setSessionExpiry(now + _SESSION_DURATION_MS);
-        _sessionPromptShown = false;
-      }
+      if (now - lastPassive < 15_000) return;  // 15-second cool-down
+      lastPassive = now;
+      _bumpSessionExpiry(false);
     };
-    ['click', 'keydown', 'scroll', 'touchstart'].forEach(ev =>
-      window.addEventListener(ev, onActivity, { passive: true, capture: true })
+    const onClickActivity = () => _bumpSessionExpiry(true);
+    ['click', 'touchstart'].forEach(ev =>
+      window.addEventListener(ev, onClickActivity, { passive: true, capture: true })
+    );
+    ['keydown', 'scroll'].forEach(ev =>
+      window.addEventListener(ev, onPassiveActivity, { passive: true, capture: true })
     );
   }
 
