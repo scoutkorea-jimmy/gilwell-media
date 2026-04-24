@@ -577,6 +577,21 @@ const DP = (() => {
     if (!state.user) return 'Guest';
     return String(state.user.display_name || state.user.name || state.user.username || 'User');
   }
+  function _decodeApprovalActor(value) {
+    if (!value) return '';
+    try { return decodeURIComponent(String(value)); } catch (_) { return String(value); }
+  }
+  function _myLowerNames() {
+    return [
+      String(_displayName() || '').toLowerCase(),
+      String((state.user && state.user.username) || '').toLowerCase(),
+    ].filter(Boolean);
+  }
+  function _myApprovalForPost(post) {
+    if (!post || !Array.isArray(post.approvals)) return null;
+    const names = _myLowerNames();
+    return post.approvals.find(a => names.indexOf(String(a.approver_name || '').toLowerCase()) >= 0) || null;
+  }
   function _avatarChar() {
     if (!state.user) return '?';
     const n = _displayName();
@@ -1477,12 +1492,13 @@ const DP = (() => {
       panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No approvals pending.</div>';
       return panel;
     }
-    // pending_approvals items: { post_id, title, board, post_created_at }
+    // pending_approvals items: { post_id, approver_name, title, board, post_created_at }
     // B5 contract — each row offers TWO actions:
     //   Review   → open full post detail modal (user may also approve there)
     //   Approve  → inline vote via /api/dreampath/approvals without leaving home
     const rows = list.slice(0, 5).map(a => {
       const pid = Number(a.post_id) || 0;
+      const approverName = encodeURIComponent(String(a.approver_name || ''));
       return `
         <div class="dp-audit-row">
           <div class="main">
@@ -1497,7 +1513,7 @@ const DP = (() => {
             <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
                     onclick="DP.viewPost('${esc(a.board || 'minutes')}', ${pid})">Review</button>
             <button type="button" class="dp-btn dp-btn-primary dp-btn-sm"
-                    onclick="DP._inlineApprove(${pid})">Approve</button>
+                    onclick="DP._inlineApprove(${pid}, '${approverName}')">Approve</button>
           </div>
         </div>
       `;
@@ -1511,9 +1527,9 @@ const DP = (() => {
   //   2. Post detail modal "Your vote" banner (modal is open)
   // When a modal is open we re-open the same post so the user sees their
   // updated vote banner immediately. Otherwise we just refresh the list.
-  async function _inlineApprove(postId) {
+  async function _inlineApprove(postId, approverName) {
     if (!postId) return;
-    const approver = encodeURIComponent(_displayName());
+    const approver = encodeURIComponent(_decodeApprovalActor(approverName) || _displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'approved' });
     if (!data) return;
     toast('Approved', 'ok');
@@ -1522,10 +1538,10 @@ const DP = (() => {
     if (modalOpen) { _closeModal(); viewPost('minutes', postId); }
     else navigate(state.page);
   }
-  async function _inlineReject(postId) {
+  async function _inlineReject(postId, approverName) {
     if (!postId) return;
     if (!confirm('Reject this post? Author will need to revise.')) return;
-    const approver = encodeURIComponent(_displayName());
+    const approver = encodeURIComponent(_decodeApprovalActor(approverName) || _displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'rejected' });
     if (!data) return;
     toast('Rejected', 'ok');
@@ -1537,10 +1553,10 @@ const DP = (() => {
 
   // Revert my vote back to pending — used when a user hits "Change" on the
   // Your-vote banner after already voting. Same PUT endpoint, status='pending'.
-  async function _revertMyVote(postId) {
+  async function _revertMyVote(postId, approverName) {
     if (!postId) return;
     if (!confirm('Reset your vote back to pending? You can then vote again.')) return;
-    const approver = encodeURIComponent(_displayName());
+    const approver = encodeURIComponent(_decodeApprovalActor(approverName) || _displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'pending' });
     if (data) {
       toast('Vote reset — cast your decision again.', 'ok');
@@ -2046,8 +2062,8 @@ const DP = (() => {
         let voteCell;
         if (canVote) {
           voteCell = `
-            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)})">Approve</button>
-            <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)})">Reject</button>`;
+            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)}, '${encodeURIComponent(String((myApproval && myApproval.approver_name) || ''))}')">Approve</button>
+            <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)}, '${encodeURIComponent(String((myApproval && myApproval.approver_name) || ''))}')">Reject</button>`;
         } else if (myApproval && (myApproval.status === 'approved' || myApproval.status === 'rejected')) {
           const voteTone = myApproval.status === 'approved' ? 'ok' : 'alert';
           const voteIcon = myApproval.status === 'approved' ? '✓' : '✗';
@@ -5616,18 +5632,20 @@ const DP = (() => {
      // sorted by created_at, so a user who had already voted couldn't find
      // their own line at a glance. Now "YOUR VOTE" banner surfaces status +
      // voted_at, and the row is highlighted with accent.
-    const myLowerNames = [
-      String(_displayName() || '').toLowerCase(),
-      String((state.user && state.user.username) || '').toLowerCase(),
-    ].filter(Boolean);
+    const myLowerNames = _myLowerNames();
     const isMine = (nm) => myLowerNames.indexOf(String(nm || '').toLowerCase()) >= 0;
-    const myApproval = (p.approvals || []).find(a => isMine(a.approver_name));
+    const myApproval = _myApprovalForPost(p);
+    const myApproverEncoded = encodeURIComponent(String((myApproval && myApproval.approver_name) || ''));
     // Your-vote banner — four flavors explicit:
      //  a) pending + I can still vote → Approve / Reject buttons inline
      //  b) already voted (approved|rejected) → result chip + Change button
      //  c) minutes post but I'm NOT an approver → grey "Not an approver" notice
      //  d) not a minutes post at all → banner hidden
     const isMinutesPost = String(p.board || '') === 'minutes';
+    const footerVoteButtons = _canVoteOnPost(p)
+      ? `<button class="dp-btn dp-btn-danger" onclick="DP._inlineReject(${Number(p.id)}, '${myApproverEncoded}')">Reject</button>
+         <button class="dp-btn dp-btn-primary" onclick="DP._inlineApprove(${Number(p.id)}, '${myApproverEncoded}')">Approve</button>`
+      : '';
     const myVoteBanner = (() => {
       if (!isMinutesPost) return '';  // case (d)
       if (!myApproval) {
@@ -5646,14 +5664,14 @@ const DP = (() => {
       const buttons = !isVoted
         ? `<button class="dp-btn dp-btn-primary dp-btn-sm"
                    style="margin-left:auto"
-                   onclick="DP._inlineApprove(${Number(p.id)})">✓ Approve</button>
+                   onclick="DP._inlineApprove(${Number(p.id)}, '${myApproverEncoded}')">✓ Approve</button>
            <button class="dp-btn dp-btn-danger dp-btn-sm"
-                   onclick="DP._inlineReject(${Number(p.id)})">✗ Reject</button>`
+                   onclick="DP._inlineReject(${Number(p.id)}, '${myApproverEncoded}')">✗ Reject</button>`
         : `<span class="mono" style="color:var(--text-3);font-size:11px;margin-left:auto">
              ${myApproval.voted_at ? 'voted ' + esc(fmtTime(myApproval.voted_at)) : ''}
            </span>
            <button class="dp-btn dp-btn-ghost dp-btn-sm"
-                   onclick="DP._revertMyVote(${Number(p.id)})"
+                   onclick="DP._revertMyVote(${Number(p.id)}, '${myApproverEncoded}')"
                    title="Re-set my vote to pending">Change</button>`;
       return `
         <div style="margin:14px 0 6px;padding:12px 14px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--info-bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -5726,8 +5744,7 @@ const DP = (() => {
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
        ${canEdit ? `<button class="dp-btn dp-btn-secondary" onclick="DP._editPost('${esc(p.board)}', ${Number(p.id)})">Edit</button>` : ''}
        ${canDelete ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(p.board)}', ${Number(p.id)})">Delete</button>` : ''}
-       ${_canVoteOnPost(p) ? `<button class="dp-btn dp-btn-danger" onclick="DP._inlineReject(${Number(p.id)})">Reject</button>
-                              <button class="dp-btn dp-btn-primary" onclick="DP._inlineApprove(${Number(p.id)})">Approve</button>` : ''}`,
+       ${footerVoteButtons}`,
       { wide: true, bodyClass: 'dp-post-view' }
     );
 
@@ -5741,14 +5758,8 @@ const DP = (() => {
   // returns it on GET /posts?id=) and compare case-insensitively.
   function _canVoteOnPost(p) {
     if (!p || p.approval_status !== 'pending') return false;
-    if (!Array.isArray(p.approvals) || !p.approvals.length) return false;
-    const me = [_displayName(), state.user && state.user.username]
-      .filter(Boolean).map(s => String(s).toLowerCase());
-    return p.approvals.some(a =>
-      a.status === 'pending' &&
-      a.approver_name &&
-      me.indexOf(String(a.approver_name).toLowerCase()) >= 0
-    );
+    const mine = _myApprovalForPost(p);
+    return !!(mine && mine.status === 'pending');
   }
 
   async function _loadComments(postId) {
@@ -5886,12 +5897,12 @@ const DP = (() => {
   }
 
   // Cast the current user's vote on a meeting-minutes approval.
-  // Server matches approver by display_name OR username (lowercased) — see
-  // home.js case study comment. We send our display name and let the
-  // backend resolve.
-  async function _voteApproval(postId, status) {
-    const approverName = encodeURIComponent(_displayName());
-    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approverName, { status });
+  // Callers can pass the exact stored approver_name when they have it
+  // (home strip / post detail); otherwise we fall back to display name and
+  // let the backend's case-insensitive resolver handle it.
+  async function _voteApproval(postId, status, approverName) {
+    const approverNameParam = encodeURIComponent(_decodeApprovalActor(approverName) || _displayName());
+    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approverNameParam, { status });
     if (data) {
       toast('Vote recorded', 'ok');
       _closeModal();
