@@ -2222,17 +2222,62 @@ const DP = (() => {
     }
     window.marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
     const raw = window.marked.parse(clean);
-    body.innerHTML = '<div class="dp-modal-body" style="max-height:none;padding:24px 32px">' + _sanitize(raw) + '</div>';
+    const sanitized = _sanitize(raw);
 
-    // Post-process: add IDs to h2/h3 for anchor nav; build TOC.
-    const headings = body.querySelectorAll('h2, h3');
+    // [CASE STUDY 2026-04-24 — Dev Rules section cards]
+    // Users asked for each top-level section (h2) to be visually separated
+    // into its own card with a clear header. We parse the flat sanitized
+    // HTML into sections (anything before first h2 → intro card; each h2
+    // and the content until the next h2 → its own card). Subsections (h3)
+    // stay inside their parent card.
+    const scratch = document.createElement('div');
+    scratch.innerHTML = sanitized;
+    const nodes = Array.from(scratch.childNodes);
+    const sections = [];
+    let intro = [];
+    let current = null;
+    for (const n of nodes) {
+      if (n.nodeType === 1 && n.tagName === 'H2') {
+        if (current) sections.push(current);
+        current = { title: n.textContent.trim(), nodes: [] };
+      } else if (current) {
+        current.nodes.push(n);
+      } else {
+        intro.push(n);
+      }
+    }
+    if (current) sections.push(current);
+
+    body.innerHTML = '';
+    const cardsHost = document.createElement('div');
+    cardsHost.className = 'dp-rules-cards';
+    // Intro card (content before first H2)
+    if (intro.length) {
+      const card = document.createElement('section');
+      card.className = 'dp-rules-card dp-rules-intro';
+      intro.forEach(n => card.appendChild(n));
+      cardsHost.appendChild(card);
+    }
     const items = [];
-    headings.forEach((el, i) => {
+    sections.forEach((sec, i) => {
       const slug = 'rule-' + i;
-      el.id = slug;
-      const lvl = el.tagName === 'H2' ? 2 : 3;
-      items.push({ slug, lvl, text: el.textContent.trim() });
+      const card = document.createElement('section');
+      card.className = 'dp-rules-card';
+      card.id = slug;
+      const h2 = document.createElement('h2');
+      h2.id = slug + '-h';
+      h2.textContent = sec.title;
+      card.appendChild(h2);
+      sec.nodes.forEach(n => card.appendChild(n));
+      cardsHost.appendChild(card);
+      items.push({ slug, lvl: 2, text: sec.title });
+      card.querySelectorAll('h3').forEach((h3, j) => {
+        const sub = slug + '-s' + j;
+        h3.id = sub;
+        items.push({ slug: sub, lvl: 3, text: h3.textContent.trim() });
+      });
     });
+    body.appendChild(cardsHost);
 
     const tocBody = $('#dp-rules-toc-body');
     tocBody.innerHTML = items.map(it => `
@@ -2255,16 +2300,13 @@ const DP = (() => {
   let _rulesScrollHandler = null;
   function _installRulesScrollSpy() {
     if (_rulesScrollHandler) window.removeEventListener('scroll', _rulesScrollHandler);
-    const headings = $$('#dp-rules-body h2, #dp-rules-body h3');
+    // Watch card sections (h2 lives inside each card) + nested h3s for fine-grained spy.
+    const targets = $$('.dp-rules-card, #dp-rules-body h3');
     const update = () => {
-      const y = window.scrollY + 80;  // account for topbar
+      const y = window.scrollY + 80;
       let active = null;
-      headings.forEach(hd => {
-        if (hd.offsetTop <= y) active = hd.id;
-      });
-      $$('.dp-toc-item').forEach(a => {
-        a.classList.toggle('dp-toc-active', a.dataset.slug === active);
-      });
+      targets.forEach(t => { if (t.offsetTop <= y) active = t.id; });
+      $$('.dp-toc-item').forEach(a => a.classList.toggle('dp-toc-active', a.dataset.slug === active));
     };
     _rulesScrollHandler = update;
     window.addEventListener('scroll', update, { passive: true });
@@ -2281,59 +2323,82 @@ const DP = (() => {
       h('div', { style: { color: 'var(--text-3)', fontSize: '12px' } }, 'Primary-operator surface for the Dreampath instance.'),
     ]));
 
-    const [boardsRes, usersRes, versionsRes] = await Promise.all([
-      api('GET', 'boards'),
-      api('GET', 'users'),
-      api('GET', 'versions'),
+    // Fire all counters in parallel — each failure tolerated independently.
+    const [boardsRes, usersRes, versionsRes, contactsRes, eventsRes, tasksRes, notesRes, deptsRes] = await Promise.all([
+      api('GET', 'boards').catch(() => null),
+      api('GET', 'users').catch(() => null),
+      api('GET', 'versions').catch(() => null),
+      api('GET', 'contacts').catch(() => null),
+      api('GET', 'events?month=' + todayISO().slice(0, 7)).catch(() => null),
+      api('GET', 'tasks').catch(() => null),
+      api('GET', 'notes').catch(() => null),
+      api('GET', 'departments').catch(() => null),
     ]);
     const boards = (boardsRes && boardsRes.boards) || [];
     const users = (usersRes && usersRes.users) || [];
     const versions = (versionsRes && versionsRes.versions) || [];
+    const contacts = (contactsRes && contactsRes.contacts) || [];
+    const events = (eventsRes && eventsRes.events) || [];
+    const tasks = (tasksRes && tasksRes.tasks) || [];
+    const notes = (notesRes && notesRes.notes) || [];
+    const depts = (deptsRes && deptsRes.departments) || [];
+    const activeUsers = users.filter(u => u.is_active).length;
+    const inactiveUsers = users.length - activeUsers;
 
-    const tiles = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' } });
+    // Tile: count + sub + dispatch. [CASE STUDY 2026-04-24 — no eval() in CSP]
+    // Early version used eval(t.onclick) which works nowhere with strict CSP.
+    // Tiles now hold a real function reference that runs on click.
     const tileData = [
-      { title: 'Boards',   count: boards.length,   sub: 'manage post boards + team boards', icon: 'layers',       onclick: 'DP._openBoardManager()' },
-      { title: 'Users',    count: users.length,    sub: 'create / edit / deactivate users', icon: 'users-admin',  onclick: "DP.navigate('users')" },
-      { title: 'Versions', count: versions.length, sub: 'release log · BP changelog format', icon: 'file-text',   onclick: "DP.navigate('versions')" },
-      { title: 'Dev Rules', count: '',             sub: 'DREAMPATH.md live-rendered',        icon: 'compass',     onclick: "DP.navigate('rules')" },
+      { title: 'Boards',       count: boards.length,   sub: 'manage post boards + team boards',         icon: 'layers',      run: () => _scrollToAnchor('adm-boards') },
+      { title: 'Users',        count: users.length,    sub: activeUsers + ' active · ' + inactiveUsers + ' disabled', icon: 'users-admin', run: () => navigate('users') },
+      { title: 'Departments',  count: depts.length,    sub: 'team tokens used by team boards + contacts', icon: 'community', run: () => _scrollToAnchor('adm-depts') },
+      { title: 'Versions',     count: versions.length, sub: 'release log · BP changelog format',         icon: 'file-text',   run: () => navigate('versions') },
+      { title: 'Contacts',     count: contacts.length, sub: 'partners / vendors / advisors',             icon: 'phone',       run: () => navigate('contacts') },
+      { title: 'Events',       count: events.length,   sub: 'this month',                                 icon: 'calendar',   run: () => navigate('calendar') },
+      { title: 'Tasks',        count: tasks.length,    sub: tasks.filter(t => t.status !== 'done').length + ' open', icon: 'check',       run: () => navigate('tasks') },
+      { title: 'Notes / Issues', count: notes.length, sub: notes.filter(n => n.status === 'open').length + ' open', icon: 'clipboard',  run: () => navigate('notes') },
+      { title: 'Dev Rules',    count: '',              sub: 'DREAMPATH.md live-rendered',                 icon: 'compass',     run: () => navigate('rules') },
     ];
+    const tiles = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px', marginBottom: '20px' } });
     tileData.forEach(t => {
       const tile = h('button', {
-        type: 'button',
-        className: 'dp-panel',
-        style: { padding: '20px', textAlign: 'left', cursor: 'pointer', border: 'var(--bd)', borderRadius: 'var(--r-md)', background: '#fff', fontFamily: 'inherit' },
-        onclick: () => { eval(t.onclick); },
+        type: 'button', className: 'dp-panel',
+        style: { padding: '16px 18px', textAlign: 'left', cursor: 'pointer', border: 'var(--bd)', borderRadius: 'var(--r-md)', background: '#fff', fontFamily: 'inherit' },
+        onclick: t.run,
       });
       tile.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <span class="ico" style="width:18px;height:18px;background-color:var(--navy);-webkit-mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/18px 18px no-repeat;mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/18px 18px no-repeat"></span>
-          <strong style="font-size:var(--fs-14);color:var(--text)">${esc(t.title)}</strong>
-          ${t.count !== '' ? `<span style="margin-left:auto;font-family:var(--font-mono);color:var(--text-3);font-size:11px">${t.count}</span>` : ''}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span class="ico" style="width:16px;height:16px;background-color:var(--navy);-webkit-mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat;mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat"></span>
+          <strong style="font-size:var(--fs-13);color:var(--text)">${esc(t.title)}</strong>
+          ${t.count !== '' ? `<span style="margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text);font-size:var(--fs-14);font-weight:600">${t.count}</span>` : ''}
         </div>
-        <div style="font-size:var(--fs-12);color:var(--text-3);line-height:1.5">${esc(t.sub)}</div>
+        <div style="font-size:11px;color:var(--text-3);line-height:1.5">${esc(t.sub)}</div>
       `;
       tiles.appendChild(tile);
     });
     root.appendChild(tiles);
 
-    // Quick actions row
+    // Quick actions row — all onclick references are DP.* which is CSP-safe.
     const actions = h('div', { className: 'dp-panel', style: { padding: '18px 20px', marginBottom: '20px' } });
     actions.innerHTML = `
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
         <h3 style="margin:0;font-size:var(--fs-13);font-weight:600">Quick actions</h3>
+        <span style="font-size:11px;color:var(--text-3)">common housekeeping tasks</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="dp-btn dp-btn-primary" onclick="DP._openBoardEditor()">+ New board</button>
         <button class="dp-btn dp-btn-primary" onclick="DP._openUserEditor()">+ New user</button>
+        <button class="dp-btn dp-btn-primary" onclick="DP._openDepartmentEditor()">+ New department</button>
         <button class="dp-btn dp-btn-primary" onclick="DP._openVersionEditor()">+ Log version</button>
-        <button class="dp-btn dp-btn-secondary" onclick="DP.navigate('contacts')">Contacts</button>
+        <button class="dp-btn dp-btn-primary" onclick="DP._openContactEditor()">+ New contact</button>
+        <button class="dp-btn dp-btn-secondary" onclick="DP.openSearch()">Global search</button>
         <button class="dp-btn dp-btn-secondary" onclick="DP.navigate('rules')">Dev Rules</button>
       </div>
     `;
     root.appendChild(actions);
 
-    // Inline board list (also acts as delete surface — admin-only via API)
-    const boardPanel = h('div', { className: 'dp-panel' });
+    // Inline board list
+    const boardPanel = h('div', { className: 'dp-panel', id: 'adm-boards', style: { marginBottom: '20px', scrollMarginTop: '64px' } });
     const PROTECTED = new Set(['announcements', 'documents', 'minutes']);
     boardPanel.innerHTML = `
       <div class="dp-panel-head">
@@ -2361,6 +2426,87 @@ const DP = (() => {
       </table>
     `;
     root.appendChild(boardPanel);
+
+    // Departments panel — used by team-board routing + contacts grouping
+    const deptPanel = h('div', { className: 'dp-panel', id: 'adm-depts', style: { marginBottom: '20px', scrollMarginTop: '64px' } });
+    deptPanel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Departments <span class="count">${depts.length}</span></h3>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openDepartmentEditor()">+ Department</button>
+      </div>
+      ${depts.length ? `
+        <table class="dp-table">
+          <thead><tr><th>Name</th><th style="width:170px">Created</th><th style="width:90px"></th></tr></thead>
+          <tbody>
+            ${depts.map(d => `
+              <tr>
+                <td>${esc(d.name || '')}</td>
+                <td class="mono">${esc(fmtTime(d.created_at))}</td>
+                <td style="text-align:right">
+                  <button class="dp-btn dp-btn-danger dp-btn-sm" onclick="DP._deleteDepartment(${Number(d.id)}, '${esc(d.name)}')">Delete</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No departments yet.</div>'}
+    `;
+    root.appendChild(deptPanel);
+
+    // Users preview (top 10) with quick link to full list
+    const userPanel = h('div', { className: 'dp-panel' });
+    userPanel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Users <span class="count">${users.length}</span></h3>
+        <a href="#" onclick="event.preventDefault();DP.navigate('users')" style="font-size:11px;color:var(--text-3)">Manage all →</a>
+      </div>
+      <table class="dp-table">
+        <thead><tr><th style="width:120px">Username</th><th>Display name</th><th style="width:80px">Role</th><th style="width:120px">Team</th><th style="width:90px">Status</th><th style="width:140px">Last login</th></tr></thead>
+        <tbody>
+          ${users.slice(0, 10).map(u => `
+            <tr onclick="DP._openUserEditor(${Number(u.id)})">
+              <td><strong>${esc(u.username)}</strong></td>
+              <td>${esc(u.display_name || '')}</td>
+              <td><span class="dp-tag ${u.role === 'admin' ? 'info' : 'neutral'}">${esc(u.role || 'member')}</span></td>
+              <td>${esc(u.department || '—')}</td>
+              <td><span class="dp-tag ${u.is_active ? 'ok' : 'alert'}">${u.is_active ? 'active' : 'disabled'}</span></td>
+              <td class="mono">${esc(fmtTime(u.last_login_at))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    root.appendChild(userPanel);
+  }
+
+  function _scrollToAnchor(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Department CRUD (admin only via API)
+  function _openDepartmentEditor() {
+    _openModal(
+      'New department',
+      `<div class="dp-field" style="margin-bottom:0">
+        <label>Name <span style="font-weight:400;color:var(--text-3);margin-left:4px">(e.g. "Team Korea", "Finance", "Product")</span></label>
+        <input class="dp-input" id="dp-d-name" autocomplete="off">
+      </div>`,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveDepartment()">Add</button>`
+    );
+    setTimeout(() => { const i = $('#dp-d-name'); if (i) i.focus(); }, 40);
+  }
+  async function _saveDepartment() {
+    const name = ($('#dp-d-name').value || '').trim();
+    if (!name) { toast('Name required', 'err'); return; }
+    const data = await api('POST', 'departments', { name });
+    if (data) { toast('Department added', 'ok'); _closeModal(); navigate('reference'); }
+  }
+  async function _deleteDepartment(id, name) {
+    if (!confirm('Delete department "' + name + '"?')) return;
+    const data = await api('DELETE', 'departments?id=' + Number(id));
+    if (data) { toast('Deleted', 'ok'); navigate('reference'); }
   }
 
   // Board manager quick modal
@@ -2893,13 +3039,16 @@ const DP = (() => {
       p.title || '(Untitled)',
       `
       <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <span class="dp-tag neutral">POST-${String(p.id).padStart(4, '0')}</span>
         <span class="dp-tag neutral">${esc(p.board)}</span>
         <span>by <strong style="color:var(--text-2)">${esc(p.author_name || '')}</strong></span>
         <span>·</span>
         <span class="mono">${esc(fmtTime(p.created_at))}</span>
         ${p.approval_status ? `<span>·</span><span class="dp-tag ${approvalTone}">${esc(p.approval_status)}</span>` : ''}
-        ${p.view_count ? `<span>·</span><span>${p.view_count} views</span>` : ''}
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;color:var(--text-2);font-weight:500">
+          <span aria-hidden="true">👁</span>
+          <span style="font-variant-numeric:tabular-nums">${Number(p.view_count || 0)}</span>
+          <span>views</span>
+        </span>
       </div>
       ${_sanitize(p.content || '')}
       ${filesHtml}
@@ -3419,7 +3568,8 @@ const DP = (() => {
     openSearch, _searchOpen,
     _verPage,
     _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
-    _scrollToRule,
+    _openDepartmentEditor, _saveDepartment, _deleteDepartment,
+    _scrollToRule, _scrollToAnchor,
   };
 })();
 
