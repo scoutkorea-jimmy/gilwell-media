@@ -68,11 +68,19 @@ function json(data, status = 200) {
 
 export async function onRequestGet({ env, data }) {
   const user = await env.DB.prepare(
-    `SELECT id, username, display_name, role, email, phone, department,
-            role_title, emergency_note, avatar_url, avatar_pos, created_at
-       FROM dp_users WHERE id = ?`
+    `SELECT u.id, u.username, u.display_name, u.role, u.email, u.phone, u.department,
+            u.role_title, u.emergency_note, u.avatar_url, u.avatar_pos, u.created_at,
+            u.preset_id, p.slug AS preset_slug, p.name AS preset_name, p.permissions AS preset_permissions
+       FROM dp_users u
+  LEFT JOIN dp_permission_presets p ON p.id = u.preset_id
+      WHERE u.id = ?`
   ).bind(data.dpUser.uid).first();
   if (!user) return json({ error: 'User not found.' }, 404);
+  // Parse the JSON permissions array so the client does not have to.
+  let perms = [];
+  try { perms = JSON.parse(user.preset_permissions || '{"permissions":[]}').permissions || []; } catch (_e) { perms = []; }
+  user.permissions = perms;
+  delete user.preset_permissions;
   return json({ user });
 }
 
