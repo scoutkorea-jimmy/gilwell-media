@@ -201,6 +201,20 @@ const DP = (() => {
       element: el,
       extensions: [
         t.StarterKit,
+        t.Underline,
+        t.Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } }),
+        t.Highlight.configure({ multicolor: true }),
+        t.TextAlign.configure({ types: ['heading', 'paragraph'] }),
+        t.Subscript,
+        t.Superscript,
+        t.TaskList,
+        t.TaskItem.configure({ nested: true }),
+        t.HorizontalRule,
+        t.TextStyle,
+        t.Color,
+        t.Typography,
+        t.Placeholder.configure({ placeholder: 'Write something…' }),
+        t.CharacterCount,
         t.Table.configure({ resizable: false }),
         t.TableRow,
         t.TableHeader,
@@ -218,30 +232,92 @@ const DP = (() => {
     $$('.dp-te-btn[data-cmd]').forEach(btn => {
       const cmd = btn.dataset.cmd;
       let active = false;
-      if      (cmd === 'bold')        active = _tiptapEditor.isActive('bold');
-      else if (cmd === 'italic')      active = _tiptapEditor.isActive('italic');
-      else if (cmd === 'strike')      active = _tiptapEditor.isActive('strike');
-      else if (cmd === 'h2')          active = _tiptapEditor.isActive('heading', { level: 2 });
-      else if (cmd === 'h3')          active = _tiptapEditor.isActive('heading', { level: 3 });
-      else if (cmd === 'bulletList')  active = _tiptapEditor.isActive('bulletList');
-      else if (cmd === 'orderedList') active = _tiptapEditor.isActive('orderedList');
-      else if (cmd === 'blockquote')  active = _tiptapEditor.isActive('blockquote');
-      else if (cmd === 'insertTable') active = _tiptapEditor.isActive('table');
+      // Simple marks / nodes
+      if      (cmd === 'bold')          active = _tiptapEditor.isActive('bold');
+      else if (cmd === 'italic')        active = _tiptapEditor.isActive('italic');
+      else if (cmd === 'underline')     active = _tiptapEditor.isActive('underline');
+      else if (cmd === 'strike')        active = _tiptapEditor.isActive('strike');
+      else if (cmd === 'code')          active = _tiptapEditor.isActive('code');
+      else if (cmd === 'codeBlock')     active = _tiptapEditor.isActive('codeBlock');
+      else if (cmd === 'highlight')     active = _tiptapEditor.isActive('highlight');
+      else if (cmd === 'subscript')     active = _tiptapEditor.isActive('subscript');
+      else if (cmd === 'superscript')   active = _tiptapEditor.isActive('superscript');
+      else if (cmd === 'h1')            active = _tiptapEditor.isActive('heading', { level: 1 });
+      else if (cmd === 'h2')            active = _tiptapEditor.isActive('heading', { level: 2 });
+      else if (cmd === 'h3')            active = _tiptapEditor.isActive('heading', { level: 3 });
+      else if (cmd === 'paragraph')     active = _tiptapEditor.isActive('paragraph');
+      else if (cmd === 'bulletList')    active = _tiptapEditor.isActive('bulletList');
+      else if (cmd === 'orderedList')   active = _tiptapEditor.isActive('orderedList');
+      else if (cmd === 'taskList')      active = _tiptapEditor.isActive('taskList');
+      else if (cmd === 'blockquote')    active = _tiptapEditor.isActive('blockquote');
+      else if (cmd === 'insertTable')   active = _tiptapEditor.isActive('table');
+      else if (cmd === 'alignLeft')     active = _tiptapEditor.isActive({ textAlign: 'left' });
+      else if (cmd === 'alignCenter')   active = _tiptapEditor.isActive({ textAlign: 'center' });
+      else if (cmd === 'alignRight')    active = _tiptapEditor.isActive({ textAlign: 'right' });
+      else if (cmd === 'alignJustify')  active = _tiptapEditor.isActive({ textAlign: 'justify' });
+      else if (cmd === 'link')          active = _tiptapEditor.isActive('link');
       btn.classList.toggle('is-active', active);
     });
+    // Character-count readout so long posts don't balloon silently. Free
+    // extension exposes .storage.characterCount.characters(). 50k is the
+    // posts.js content slice cap.
+    const cEl = document.getElementById('dp-te-charcount');
+    if (cEl && _tiptapEditor.storage && _tiptapEditor.storage.characterCount) {
+      const ch = _tiptapEditor.storage.characterCount.characters();
+      cEl.textContent = ch.toLocaleString() + ' / 50,000';
+      cEl.style.color = ch > 45_000 ? 'var(--alert)' : 'var(--text-3)';
+    }
   }
 
   function _execTiptapCmd(cmd) {
     if (!_tiptapEditor) return;
     const c = _tiptapEditor.chain().focus();
-    if      (cmd === 'bold')        c.toggleBold().run();
-    else if (cmd === 'italic')      c.toggleItalic().run();
-    else if (cmd === 'strike')      c.toggleStrike().run();
-    else if (cmd === 'h2')          c.toggleHeading({ level: 2 }).run();
-    else if (cmd === 'h3')          c.toggleHeading({ level: 3 }).run();
-    else if (cmd === 'bulletList')  c.toggleBulletList().run();
-    else if (cmd === 'orderedList') c.toggleOrderedList().run();
-    else if (cmd === 'blockquote')  c.toggleBlockquote().run();
+    // Marks
+    if      (cmd === 'bold')          c.toggleBold().run();
+    else if (cmd === 'italic')        c.toggleItalic().run();
+    else if (cmd === 'underline')     c.toggleUnderline().run();
+    else if (cmd === 'strike')        c.toggleStrike().run();
+    else if (cmd === 'code')          c.toggleCode().run();
+    else if (cmd === 'highlight')     c.toggleHighlight().run();
+    else if (cmd === 'subscript')     c.toggleSubscript().run();
+    else if (cmd === 'superscript')   c.toggleSuperscript().run();
+    // Blocks
+    else if (cmd === 'paragraph')     c.setParagraph().run();
+    else if (cmd === 'h1')            c.toggleHeading({ level: 1 }).run();
+    else if (cmd === 'h2')            c.toggleHeading({ level: 2 }).run();
+    else if (cmd === 'h3')            c.toggleHeading({ level: 3 }).run();
+    else if (cmd === 'bulletList')    c.toggleBulletList().run();
+    else if (cmd === 'orderedList')   c.toggleOrderedList().run();
+    else if (cmd === 'taskList')      c.toggleTaskList().run();
+    else if (cmd === 'blockquote')    c.toggleBlockquote().run();
+    else if (cmd === 'codeBlock')     c.toggleCodeBlock().run();
+    else if (cmd === 'horizontalRule') c.setHorizontalRule().run();
+    else if (cmd === 'hardBreak')     c.setHardBreak().run();
+    // Alignment
+    else if (cmd === 'alignLeft')     c.setTextAlign('left').run();
+    else if (cmd === 'alignCenter')   c.setTextAlign('center').run();
+    else if (cmd === 'alignRight')    c.setTextAlign('right').run();
+    else if (cmd === 'alignJustify')  c.setTextAlign('justify').run();
+    // Undo / redo
+    else if (cmd === 'undo')          c.undo().run();
+    else if (cmd === 'redo')          c.redo().run();
+    // Link — prompt for URL on apply, unset on toggle-off
+    else if (cmd === 'link') {
+      const prev = _tiptapEditor.getAttributes('link').href;
+      const url = prompt('URL', prev || 'https://');
+      if (url === null) return;        // cancel
+      if (url === '')   { _tiptapEditor.chain().focus().unsetLink().run(); return; }
+      _tiptapEditor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    }
+    // Color — simple prompt (hex); cleared when blank. Avoids shipping a
+    // bulky color-picker library.
+    else if (cmd === 'color') {
+      const cur = _tiptapEditor.getAttributes('textStyle').color || '';
+      const v = prompt('Text color (hex e.g. #146E7A, leave blank to clear)', cur);
+      if (v === null) return;
+      if (v === '') _tiptapEditor.chain().focus().unsetColor().run();
+      else          _tiptapEditor.chain().focus().setColor(v).run();
+    }
     else if (cmd === 'insertTable') c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     else if (cmd === 'insertImage') {
       const input = document.createElement('input');
@@ -272,6 +348,58 @@ const DP = (() => {
 
   function _destroyTiptap() {
     if (_tiptapEditor) { try { _tiptapEditor.destroy(); } catch (_) {} _tiptapEditor = null; }
+  }
+
+  // Toolbar spec shared by New Post + Edit Post editors. Exposes every free
+  // Tiptap extension we loaded: marks (bold/italic/underline/strike/code/
+  // highlight/sub/super), headings, lists (bullet/ordered/task), blocks
+  // (blockquote, codeBlock, HR), alignment, link, image, table, color,
+  // undo/redo. Each entry is either { cmd, label|icon, title } or { sep: true }.
+  const _TIPTAP_TOOLBAR = [
+    { cmd: 'undo',          label: '↶',          title: 'Undo (⌘Z)' },
+    { cmd: 'redo',          label: '↷',          title: 'Redo (⌘⇧Z)' },
+    { sep: true },
+    { cmd: 'paragraph',     label: '¶',          title: 'Paragraph' },
+    { cmd: 'h1',            label: 'H1',         title: 'Heading 1' },
+    { cmd: 'h2',            label: 'H2',         title: 'Heading 2' },
+    { cmd: 'h3',            label: 'H3',         title: 'Heading 3' },
+    { sep: true },
+    { cmd: 'bold',          icon: 'bold',        title: 'Bold (⌘B)' },
+    { cmd: 'italic',        icon: 'italic',      title: 'Italic (⌘I)' },
+    { cmd: 'underline',     label: 'U',          title: 'Underline (⌘U)' },
+    { cmd: 'strike',        label: 'S',          title: 'Strikethrough' },
+    { cmd: 'code',          label: '</>',        title: 'Inline code' },
+    { cmd: 'highlight',     label: '▪',          title: 'Highlight' },
+    { cmd: 'superscript',   label: 'x²',         title: 'Superscript' },
+    { cmd: 'subscript',     label: 'x₂',         title: 'Subscript' },
+    { sep: true },
+    { cmd: 'alignLeft',     label: '⯇',          title: 'Align left' },
+    { cmd: 'alignCenter',   label: '⯀',          title: 'Align center' },
+    { cmd: 'alignRight',    label: '⯈',          title: 'Align right' },
+    { cmd: 'alignJustify',  label: '≡',          title: 'Justify' },
+    { sep: true },
+    { cmd: 'bulletList',    icon: 'list-ul',     title: 'Bulleted list' },
+    { cmd: 'orderedList',   label: '1.',         title: 'Numbered list' },
+    { cmd: 'taskList',      label: '☑',          title: 'Task list' },
+    { cmd: 'blockquote',    label: '❝',          title: 'Quote' },
+    { cmd: 'codeBlock',     label: '{;}',        title: 'Code block' },
+    { cmd: 'horizontalRule', label: '―',         title: 'Horizontal rule' },
+    { sep: true },
+    { cmd: 'link',          label: '🔗',         title: 'Link' },
+    { cmd: 'color',         label: '🎨',         title: 'Text color' },
+    { cmd: 'insertTable',   label: '⊞',          title: 'Table' },
+    { cmd: 'insertImage',   icon: 'scroll',      title: 'Image' },
+  ];
+
+  function _renderTiptapToolbar() {
+    return _TIPTAP_TOOLBAR.map(b => {
+      if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
+      const inner = b.icon
+        ? `<span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/${esc(b.icon)}.svg')"></span>`
+        : `<span>${esc(b.label)}</span>`;
+      return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}" title="${esc(b.title || b.cmd)}"
+                       onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
+    }).join('');
   }
 
   // -------------------------- Files --------------------------
@@ -4748,23 +4876,7 @@ const DP = (() => {
       state: 'uploaded',
     }));
 
-    const toolbarBtns = [
-      { cmd: 'bold', icon: 'bold' }, { cmd: 'italic', icon: 'italic' },
-      { sep: true },
-      { cmd: 'h2', label: 'H2' }, { cmd: 'h3', label: 'H3' },
-      { sep: true },
-      { cmd: 'bulletList', icon: 'list-ul' }, { cmd: 'orderedList', label: '1.' },
-      { cmd: 'blockquote', label: '❝' }, { cmd: 'insertTable', label: '⊞' },
-      { cmd: 'insertImage', icon: 'scroll' },
-    ];
-    const toolbar = toolbarBtns.map(b => {
-      if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
-      const inner = b.icon
-        ? `<span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/${esc(b.icon)}.svg')"></span>`
-        : `<span>${esc(b.label)}</span>`;
-      return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}"
-                       onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
-    }).join('');
+    const toolbar = _renderTiptapToolbar();
 
     _openModal(
       'Edit post',
@@ -4774,10 +4886,11 @@ const DP = (() => {
         <input class="dp-input" id="dp-edit-title" value="${esc(p.title || '')}">
       </div>
       <div class="dp-field">
-        <label>Content</label>
-        <div class="dp-te-wrapper">
+        <label>Content <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
+        <div class="dp-te-wrapper dp-te-resize">
           <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
           <div class="dp-te-editor" id="dp-tt-post"></div>
+          <div class="dp-te-handle" aria-hidden="true" title="Drag to resize"></div>
         </div>
       </div>
       <div class="dp-field">
@@ -5043,38 +5156,18 @@ const DP = (() => {
     // Approver roster for minutes. Only shown when board = minutes (toggled
     // via board dropdown onchange). Fetched once up-front so picking "minutes"
     // doesn't require a round-trip.
+    //
+    // UI is a chip-based search picker ("To:" email field metaphor): type to
+    // filter, click a suggestion → chip appears above. Designed to scale to
+    // hundreds of users, unlike the earlier flat checkbox list.
     const usersRes = await api('GET', 'users?picker=1').catch(() => null);
     const roster = (usersRes && usersRes.users) || [];
-    const approverChecks = roster.map(u => `
-      <label class="dp-check-row">
-        <input type="checkbox" class="dp-new-appr-cb" value="${esc(u.display_name)}">
-        <span>${esc(u.display_name)}</span>
-      </label>
-    `).join('');
+    // Stash the roster on a module-level handle so the reactive filter code
+    // below can see it without closure gymnastics.
+    _approverRoster = roster;
+    _approverPicked = [];
 
-    const toolbarBtns = [
-      { cmd: 'bold',        icon: 'bold',         title: 'Bold' },
-      { cmd: 'italic',      icon: 'italic',       title: 'Italic' },
-      { cmd: 'strike',      icon: 'x',            title: 'Strikethrough' },
-      { sep: true },
-      { cmd: 'h2',          label: 'H2',          title: 'Heading 2' },
-      { cmd: 'h3',          label: 'H3',          title: 'Heading 3' },
-      { sep: true },
-      { cmd: 'bulletList',  icon: 'list-ul',      title: 'Bulleted list' },
-      { cmd: 'orderedList', label: '1.',          title: 'Numbered list' },
-      { cmd: 'blockquote',  label: '❝',           title: 'Quote' },
-      { sep: true },
-      { cmd: 'insertTable', label: '⊞',           title: 'Table' },
-      { cmd: 'insertImage', icon: 'scroll',       title: 'Insert image' },
-    ];
-    const toolbar = toolbarBtns.map(b => {
-      if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
-      const inner = b.icon
-        ? `<span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/${esc(b.icon)}.svg')"></span>`
-        : `<span>${esc(b.label)}</span>`;
-      return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}" title="${esc(b.title)}"
-                       onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
-    }).join('');
+    const toolbar = _renderTiptapToolbar();
 
     _openModal(
       'New post',
@@ -5083,19 +5176,28 @@ const DP = (() => {
         <label for="dp-new-board">Board</label>
         <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()">${boardOpts}</select>
       </div>
-      <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'}">
+      <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'};flex-direction:column">
         <label>Approvers <span style="color:var(--alert);font-weight:400;margin-left:4px">(required for Meeting Minutes)</span></label>
-        <div class="dp-check-grid">${approverChecks || '<span style="color:var(--text-3);font-size:12px">No users available.</span>'}</div>
+        <div class="dp-chip-picker" id="dp-new-approvers">
+          <div class="dp-chip-picked" id="dp-new-appr-chips"></div>
+          <input type="text" class="dp-chip-input" id="dp-new-appr-q" autocomplete="off"
+                 placeholder="Type a name to add an approver…"
+                 oninput="DP._approverFilter(this.value)"
+                 onfocus="DP._approverFilter(this.value)"
+                 onkeydown="DP._approverKeydown(event)">
+          <div class="dp-chip-suggest" id="dp-new-appr-suggest" role="listbox" aria-label="Matching users"></div>
+        </div>
       </div>
       <div class="dp-field">
         <label for="dp-new-title">Title</label>
         <input class="dp-input" id="dp-new-title" placeholder="Title" autocomplete="off">
       </div>
       <div class="dp-field">
-        <label>Content</label>
-        <div class="dp-te-wrapper">
+        <label>Content <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
+        <div class="dp-te-wrapper dp-te-resize">
           <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
           <div class="dp-te-editor" id="dp-tt-post"></div>
+          <div class="dp-te-handle" aria-hidden="true" title="Drag to resize"></div>
         </div>
       </div>
       <div class="dp-field" style="margin-bottom:0">
@@ -5128,6 +5230,98 @@ const DP = (() => {
     const field = $('#dp-new-approvers-field');
     if (!boardSel || !field) return;
     field.style.display = boardSel.value === 'minutes' ? 'flex' : 'none';
+    // Clear any held picks when the board changes away from minutes.
+    if (boardSel.value !== 'minutes') {
+      _approverPicked = [];
+      _renderApproverChips();
+    }
+  }
+
+  // -------------------------- Approver chip picker --------------------------
+  // Shared state. Populated when _openPostEditor fetches the roster. The
+  // picker itself is stateless HTML; everything lives on these two arrays.
+  let _approverRoster = [];    // [{id, display_name}, ...] from /users?picker=1
+  let _approverPicked = [];    // display_name strings in order of selection
+
+  function _renderApproverChips() {
+    const host = document.getElementById('dp-new-appr-chips');
+    if (!host) return;
+    if (!_approverPicked.length) { host.innerHTML = ''; return; }
+    host.innerHTML = _approverPicked.map(name => `
+      <span class="dp-chip">
+        <span>${esc(name)}</span>
+        <button type="button" class="dp-chip-x" aria-label="Remove ${esc(name)}"
+                onclick="DP._approverRemove('${esc(name.replace(/'/g, "\\'"))}')">×</button>
+      </span>
+    `).join('');
+  }
+
+  function _approverFilter(query) {
+    const q = String(query || '').trim().toLowerCase();
+    const suggest = document.getElementById('dp-new-appr-suggest');
+    if (!suggest) return;
+    // Exclude already-picked names; rank: prefix > contains.
+    const pickedLower = new Set(_approverPicked.map(n => n.toLowerCase()));
+    const hits = _approverRoster
+      .map(u => ({ u, name: u.display_name || u.username || '' }))
+      .filter(x => x.name && !pickedLower.has(x.name.toLowerCase()))
+      .filter(x => !q || x.name.toLowerCase().includes(q))
+      .sort((a, b) => {
+        if (!q) return a.name.localeCompare(b.name);
+        const ap = a.name.toLowerCase().startsWith(q) ? 0 : 1;
+        const bp = b.name.toLowerCase().startsWith(q) ? 0 : 1;
+        return ap - bp || a.name.localeCompare(b.name);
+      })
+      .slice(0, 8);
+    if (!hits.length) {
+      suggest.innerHTML = `<div class="dp-chip-empty">No matches${q ? ' for "' + esc(q) + '"' : ''}</div>`;
+      suggest.classList.add('on');
+      return;
+    }
+    suggest.innerHTML = hits.map((x, i) => `
+      <button type="button" class="dp-chip-opt" data-i="${i}"
+              onmousedown="event.preventDefault();DP._approverPick('${esc(String(x.name).replace(/'/g, "\\'"))}')">
+        <span>${esc(x.name)}</span>
+        ${x.u.department ? `<span class="dp-chip-opt-meta">${esc(x.u.department)}</span>` : ''}
+      </button>
+    `).join('');
+    suggest.classList.add('on');
+  }
+
+  function _approverPick(name) {
+    if (!name) return;
+    if (!_approverPicked.includes(name)) _approverPicked.push(name);
+    _renderApproverChips();
+    const input = document.getElementById('dp-new-appr-q');
+    if (input) { input.value = ''; input.focus(); }
+    _approverFilter('');
+  }
+
+  function _approverRemove(name) {
+    _approverPicked = _approverPicked.filter(n => n !== name);
+    _renderApproverChips();
+    const input = document.getElementById('dp-new-appr-q');
+    if (input) _approverFilter(input.value || '');
+  }
+
+  function _approverKeydown(e) {
+    // Backspace on empty input deletes the last chip — standard "To:" field UX.
+    if (e.key === 'Backspace' && !e.target.value && _approverPicked.length) {
+      _approverPicked.pop();
+      _renderApproverChips();
+      _approverFilter('');
+      return;
+    }
+    // Enter picks the first suggestion so users can keyboard-only drive the form.
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = document.querySelector('#dp-new-appr-suggest .dp-chip-opt');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+    }
+    if (e.key === 'Escape') {
+      const s = document.getElementById('dp-new-appr-suggest');
+      if (s) s.classList.remove('on');
+    }
   }
 
   function _canPostToBoard(slug) {
@@ -5150,11 +5344,14 @@ const DP = (() => {
 
     // Minutes require approvers. Validate client-side so the user doesn't
     // spend the Tiptap editor round-trip only to be rejected server-side.
+    // Read from the chip picker state (_approverPicked) instead of checkboxes.
     let approvers = null;
     if (board === 'minutes') {
-      approvers = Array.from(document.querySelectorAll('.dp-new-appr-cb:checked')).map(cb => cb.value).filter(Boolean);
+      approvers = _approverPicked.slice();
       if (!approvers.length) {
-        toast('Select at least one approver for Meeting Minutes', 'err');
+        toast('Add at least one approver for Meeting Minutes', 'err');
+        const q = document.getElementById('dp-new-appr-q');
+        if (q) q.focus();
         return;
       }
     }
@@ -5190,6 +5387,7 @@ const DP = (() => {
     _extendSession,
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
+    _approverFilter, _approverPick, _approverRemove, _approverKeydown,
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
     _openVersionEditor, _saveVersion,

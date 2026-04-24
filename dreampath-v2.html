@@ -1205,6 +1205,67 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-te-editor .ProseMirror table th, .dp-te-editor .ProseMirror table td { border: var(--bd); padding: 6px 10px; min-width: 60px; }
 .dp-te-editor .ProseMirror table th { background: var(--g-100); font-weight: 600; }
 .dp-te-editor .ProseMirror img { max-width: 100%; height: auto; }
+/* Extra Tiptap marks / nodes loaded post 2026-04-24 */
+.dp-te-editor .ProseMirror mark, .dp-te-editor .ProseMirror [style*="background-color"] {
+  background: color-mix(in srgb, var(--warn) 30%, transparent); padding: 0 2px;
+}
+.dp-te-editor .ProseMirror u { text-decoration: underline; }
+.dp-te-editor .ProseMirror s { text-decoration: line-through; }
+.dp-te-editor .ProseMirror pre {
+  background: var(--g-900); color: var(--g-100);
+  padding: 12px 14px; border-radius: var(--r-sm);
+  font-family: var(--font-mono); font-size: var(--fs-12); line-height: 1.55;
+  overflow-x: auto; margin: 10px 0;
+}
+.dp-te-editor .ProseMirror pre code { background: transparent; color: inherit; padding: 0; }
+.dp-te-editor .ProseMirror hr {
+  border: none; border-top: 1px solid var(--g-300); margin: 16px 0;
+}
+.dp-te-editor .ProseMirror a {
+  color: var(--accent); text-decoration: underline;
+}
+.dp-te-editor .ProseMirror ul[data-type="taskList"] {
+  list-style: none; padding-left: 4px;
+}
+.dp-te-editor .ProseMirror ul[data-type="taskList"] li {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: 2px 0;
+}
+.dp-te-editor .ProseMirror ul[data-type="taskList"] li > label {
+  flex-shrink: 0; user-select: none; margin-top: 3px;
+}
+.dp-te-editor .ProseMirror ul[data-type="taskList"] li > div { flex: 1; min-width: 0; }
+.dp-te-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-3); content: attr(data-placeholder);
+  float: left; height: 0; pointer-events: none;
+}
+
+/* Drag-to-resize on the editor wrapper. Using native CSS `resize: vertical`
+   on the editor pane so the whole wrapper (toolbar + editor) expands with
+   the handle. Resize persists during this session; a reload restores the
+   default. */
+.dp-te-wrapper.dp-te-resize .dp-te-editor {
+  resize: vertical;
+  overflow-y: auto;
+  min-height: 220px;
+  max-height: 70vh;
+}
+/* Visual grip at the bottom-right of the editor (browser native ::-webkit-resizer
+   is tiny and hard to spot). This handle overlays it so the UX is discoverable. */
+.dp-te-handle {
+  height: 10px;
+  margin: 0;
+  background:
+    linear-gradient(180deg, transparent 4px, var(--g-300) 4px, var(--g-300) 5px, transparent 5px),
+    var(--surface-2);
+  border: var(--bd); border-top: none;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+  cursor: ns-resize;
+  display: grid; place-items: center;
+  color: var(--text-3); font-size: 10px;
+  pointer-events: none;   /* the real resize is the native :resize on editor */
+}
+.dp-te-handle::after { content: "⋯"; letter-spacing: 2px; }
 
 /* File picker + list */
 .dp-file-picker {
@@ -1338,6 +1399,63 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
+
+/* Chip picker — "To:" field metaphor for user selection (approvers, future
+   task owners). Input sits below the picked chips; a suggestion list opens
+   below as the user types. Scales to arbitrary roster size. */
+.dp-chip-picker {
+  position: relative;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px; background: var(--surface);
+  border: 1px solid var(--g-300); border-radius: var(--r-sm);
+}
+.dp-chip-picker:focus-within { border-color: var(--navy-600); box-shadow: 0 0 0 1px var(--navy-600); }
+.dp-chip-picked {
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.dp-chip-picked:empty { display: none; }
+.dp-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 4px 2px 10px;
+  background: var(--info-bg); color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: var(--fs-12); font-weight: 500;
+  max-width: 100%;
+}
+.dp-chip-x {
+  width: 18px; height: 18px; padding: 0;
+  border: none; background: transparent; color: inherit;
+  font-size: 14px; line-height: 1;
+  cursor: pointer; border-radius: 50%;
+}
+.dp-chip-x:hover { background: rgba(10,92,158,0.18); }
+.dp-chip-input {
+  border: none; outline: none; background: transparent;
+  padding: 4px 6px; min-width: 160px;
+  font: inherit; font-size: var(--fs-13); color: var(--text);
+}
+.dp-chip-suggest {
+  position: absolute; left: 0; right: 0; top: 100%;
+  margin-top: 4px; z-index: 5;
+  background: var(--surface);
+  border: var(--bd); border-radius: var(--r-sm);
+  box-shadow: var(--shadow-pop);
+  max-height: 220px; overflow-y: auto;
+  display: none;
+}
+.dp-chip-suggest.on { display: block; }
+.dp-chip-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; text-align: left;
+  padding: 8px 12px; font: inherit; font-size: var(--fs-13);
+  background: transparent; border: none; color: var(--text);
+  cursor: pointer;
+}
+.dp-chip-opt:hover,
+.dp-chip-opt:focus-visible { background: var(--g-100); }
+.dp-chip-opt-meta { color: var(--text-3); font-size: 11px; }
+.dp-chip-empty { padding: 12px; color: var(--text-3); font-size: 12px; text-align: center; }
 
 /* Multi-select check grid — used in Task editor Owners. Two columns on
    desktop, one on mobile. Each row is a clickable label wrapping an actual
@@ -1480,12 +1598,29 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
 <!-- Tiptap loader — esm.sh allowed in CSP connect-src. Sets window.__DP_Tiptap
-     and fires 'tiptap-ready' so _waitForTiptap(cb) can mount lazily. -->
+     and fires 'tiptap-ready' so _waitForTiptap(cb) can mount lazily.
+     Loads every first-party free extension so the toolbar can expose the
+     full free feature set (underline, link, code block, task list,
+     text align, highlight, color, typography, horizontal rule, etc.). -->
 <script type="module">
   try {
     const [
       { Editor },
       { default: StarterKit },
+      { default: Underline },
+      { default: Link },
+      { default: Highlight },
+      { default: TextAlign },
+      { default: Subscript },
+      { default: Superscript },
+      { default: TaskList },
+      { default: TaskItem },
+      { default: HorizontalRule },
+      { default: Color },
+      { default: TextStyle },
+      { default: Typography },
+      { default: Placeholder },
+      { default: CharacterCount },
       { default: Table },
       { default: TableRow },
       { default: TableHeader },
@@ -1494,13 +1629,33 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
     ] = await Promise.all([
       import('https://esm.sh/@tiptap/core@2'),
       import('https://esm.sh/@tiptap/starter-kit@2'),
+      import('https://esm.sh/@tiptap/extension-underline@2'),
+      import('https://esm.sh/@tiptap/extension-link@2'),
+      import('https://esm.sh/@tiptap/extension-highlight@2'),
+      import('https://esm.sh/@tiptap/extension-text-align@2'),
+      import('https://esm.sh/@tiptap/extension-subscript@2'),
+      import('https://esm.sh/@tiptap/extension-superscript@2'),
+      import('https://esm.sh/@tiptap/extension-task-list@2'),
+      import('https://esm.sh/@tiptap/extension-task-item@2'),
+      import('https://esm.sh/@tiptap/extension-horizontal-rule@2'),
+      import('https://esm.sh/@tiptap/extension-color@2'),
+      import('https://esm.sh/@tiptap/extension-text-style@2'),
+      import('https://esm.sh/@tiptap/extension-typography@2'),
+      import('https://esm.sh/@tiptap/extension-placeholder@2'),
+      import('https://esm.sh/@tiptap/extension-character-count@2'),
       import('https://esm.sh/@tiptap/extension-table@2'),
       import('https://esm.sh/@tiptap/extension-table-row@2'),
       import('https://esm.sh/@tiptap/extension-table-header@2'),
       import('https://esm.sh/@tiptap/extension-table-cell@2'),
       import('https://esm.sh/@tiptap/extension-image@2'),
     ]);
-    window.__DP_Tiptap = { Editor, StarterKit, Table, TableRow, TableHeader, TableCell, Image };
+    window.__DP_Tiptap = {
+      Editor, StarterKit,
+      Underline, Link, Highlight, TextAlign, Subscript, Superscript,
+      TaskList, TaskItem, HorizontalRule,
+      Color, TextStyle, Typography, Placeholder, CharacterCount,
+      Table, TableRow, TableHeader, TableCell, Image,
+    };
     window.dispatchEvent(new CustomEvent('tiptap-ready'));
   } catch (e) {
     console.warn('[Dreampath v2] Tiptap failed to load:', e);
