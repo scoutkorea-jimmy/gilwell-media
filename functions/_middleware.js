@@ -83,15 +83,13 @@ function isLegacyInlinePath(pathname) {
   if (pathname === '/admin' || pathname === '/admin.html') return true;
   if (pathname === '/kms' || pathname === '/kms.html') return true;
   if (pathname === '/dreampath' || pathname === '/dreampath.html') return true;
-  // [CASE STUDY 2026-04-24 — /dreampath-v2 staging route]
-  // Lesson from 2026-04-24 · A: any route that ships DP.* inline onclick
-  // must be registered here BEFORE deploy, otherwise the entire surface
-  // dies silently under strict-dynamic CSP. /dreampath-v2 is the staging
-  // home of the new design system while /dreampath (production) keeps
-  // receiving user traffic. Remove this line only when v2 is cut over
-  // and the route is retired.
-  // Ref: DREAMPATH-HISTORY.md 2026-04-24 · F (staging deploy).
-  if (pathname === '/dreampath-v2' || pathname === '/dreampath-v2.html') return true;
+  // [CASE STUDY 2026-04-24 — /dreampath-v2 staging route RETIRED]
+  // The /dreampath-v2 alias was the staging home of the new design system
+  // while /dreampath still served the legacy UI. After cutover + a
+  // release of verification (v01.051 → v01.053) the v2 route + source
+  // files were deleted. Leaving this note so a future grep finds the
+  // history; the allowlist entry is gone.
+  // Ref: DREAMPATH-HISTORY.md 2026-04-24 · F (staging), v01.054 (retire).
   if (pathname.startsWith('/admin/') || pathname.startsWith('/kms/')) return true;
   return false;
 }

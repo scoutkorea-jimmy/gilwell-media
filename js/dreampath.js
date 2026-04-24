@@ -7,10 +7,11 @@
 // files — see DREAMPATH.md Section 2.1 and the matching comment in
 // /dreampath production bundle.
 //
-// [CASE STUDY 2026-04-24 — /dreampath-v2 CSP allowlist]
+// [CASE STUDY 2026-04-24 — /dreampath CSP allowlist]
 // This route depends on functions/_middleware.js isLegacyInlinePath()
 // including "/dreampath". Removing that line reproduces the total
-// sidebar outage from 2026-04-24 · A instantly.
+// sidebar outage from 2026-04-24 · A instantly. The older /dreampath-v2
+// staging alias was retired in v01.054.
 //
 // [CASE STUDY 2026-04-24 — user.name may be missing]
 // Legacy /dreampath sessions left localStorage.dp_user lacking a `name`
@@ -20,7 +21,7 @@
 
 // Boot probe — if present, page renders in-place error instead of blank.
 try {
-  document.title = '[v2 boot] ' + document.title;
+  document.title = '[dp boot] ' + document.title;
   document.documentElement.setAttribute('data-v2-boot', 'parse');
 } catch (_) {}
 
@@ -956,7 +957,7 @@ const DP = (() => {
       ]),
     ]);
     root.appendChild(overlay);
-    document.title = '[v2 ok] Dreampath PMO — Sign in';
+    document.title = '[dp ok] Dreampath PMO — Sign in';
   }
 
   async function login() {
@@ -6528,13 +6529,13 @@ function _dpBoot() {
     document.documentElement.setAttribute('data-v2-boot', 'init-start');
     DP.init();
     document.documentElement.setAttribute('data-v2-boot', 'init-done');
-    document.title = document.title.replace(/^\[v2 boot\]\s*/, '[v2 ok] ');
+    document.title = document.title.replace(/^\[dp boot\]\s*/, '[dp ok] ');
   } catch (err) {
     document.documentElement.setAttribute('data-v2-boot', 'init-error');
-    document.title = '[v2 ERROR] ' + (err && err.message || err);
+    document.title = '[dp ERROR] ' + (err && err.message || err);
     const root = document.getElementById('dp-root');
     if (root) {
-      root.innerHTML = '<pre style="padding:24px;font:13px monospace;color:#B42318;white-space:pre-wrap;max-width:900px;margin:40px auto;background:#fff;border:1px solid #E5E7EB;border-radius:4px;">v2 boot error — ' +
+      root.innerHTML = '<pre style="padding:24px;font:13px monospace;color:#B42318;white-space:pre-wrap;max-width:900px;margin:40px auto;background:#fff;border:1px solid #E5E7EB;border-radius:4px;">dp boot error — ' +
         String(err && err.message || err) + '\n\n' +
         String(err && err.stack || '').split('\n').slice(0, 12).join('\n') +
         '</pre>';
