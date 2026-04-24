@@ -128,6 +128,27 @@ byte-identical. v2 is a parallel surface wired to the real backend.
 **교훈**: **ERP 는 정보 밀도 최대화가 우선.** "pretty narrow center" 는 브로셔 사이트에는 맞지만 운영 도구에는 부적절.
 **code_refs**: `dreampath-v2.html` `.dp-page` rule.
 
+### 케이스 11 — 보안 · 안정 감사 (2026-04-24 post-Phase 3.13)
+
+**점검 범위 / Scope**: 전체 API 배선 완료 시점에서의 체크.
+
+**결과 / Findings**:
+
+1. **XSS** — 사용자 입력 HTML 은 모두 `_sanitize()` (DOMPurify) 경유 후 `innerHTML`. 템플릿 문자열의 동적 값은 `esc()` 이스케이프. 감사 시점에 미살균 innerHTML 주입 경로 없음.
+2. **CSRF** — 모든 fetch 가 `credentials: 'same-origin'`. dp_token httpOnly. 외부 origin 에서의 작성 API 호출 불가. SameSite=Lax 쿠키.
+3. **CSP** — `/dreampath-v2` 는 `isLegacyInlinePath` 경로라 `'unsafe-inline'` 허용. 의도된 trade-off (Section 10 · 케이스 1 참조). 외부 inline 주입 표면 없음 (내부 전용 + 인증 필수 + X-Frame-Options DENY).
+4. **SQL injection** — 전 쿼리 `.bind(...)`. 컬럼명·PRAGMA 는 하드코딩. 감사 OK.
+5. **Auth** — PBKDF2 100k · safeCompare · IP 당 15분/10회 rate limit · 실패 시 400ms delay. 토큰 30일 JWT (httpOnly). 감사 OK.
+6. **File upload** — 서버: per-file 100MB + 확장자 블랙리스트 (exe/sh/bat/cmd/dll/...). 프론트: 추가로 total 100MB / 최대 10개. R2 ACL 은 인증된 계정 전용.
+7. **Session takeover** — dp_token 은 JavaScript 접근 불가 (httpOnly). dp_session=1 은 단순 flag — 탈취해도 인증 불가.
+8. **Dependency trust** — esm.sh Tiptap, cdnjs DOMPurify/marked, Google Fonts. 모두 https, SRI 미적용 상태 (CLAUDE.md 13.1.2 플랜 유지). 장기적으로 SRI + self-host 고민.
+
+**조치 / Actions**: 감사 결과 즉시 조치 필요 항목 없음. SRI 적용은 별도 Phase 로 분리.
+
+**교훈 / Lessons**: 감사는 매 Phase 종료 시점에 실시. 이 엔트리를 참고 레이어로 둔다.
+
+---
+
 ### 케이스 10 — `DATA` 상수 vs 실 API 의 데이터 shape 불일치
 
 **증상**: Phase 3 배선 전에 데모 `DATA.posts.notice` / `DATA.tasks` 로 UI 작성 → 실 API 는 `announcements` 슬러그 + 다른 필드 (author_id 등) 를 반환 → 배선 후 `_renderAnnouncementsPanel` 등이 빈 상태 / 이상 값으로 렌더.
