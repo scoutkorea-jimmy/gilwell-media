@@ -871,7 +871,14 @@ const DP = (() => {
         loadUsers();
         break;
       case 'account':      loadAccount(); break;
-      case 'devrules':     loadDevRules(); break;
+      case 'devrules':
+        if (currentUser?.role !== 'admin') { navigate('home'); return; }
+        loadDevRules();
+        break;
+      case 'versions':
+        if (currentUser?.role !== 'admin') { navigate('home'); return; }
+        loadVersionHistory();
+        break;
       case 'settings':
         if (currentUser?.username !== 'jimmy' && currentUser?.role !== 'admin') { navigate('home'); return; }
         loadSettings();
@@ -3552,19 +3559,187 @@ const DP = (() => {
     setInterval(tick, 1000);
   }
 
-  // ── Dev Rules & Version History ────────────────────────────────────────────
+  // ── Dev Rules — DREAMPATH.md 문서 뷰어 ─────────────────────────────────────
+  //
+  // [CASE STUDY 2026-04-24 — Dev Rules was stuffed with version log]
+  // Symptom: "Dev Rules" menu previously rendered dp_versions table mixed
+  //          with hardcoded handbook cards — no live connection to the
+  //          actual rules document, so DREAMPATH.md updates never reached
+  //          the in-app viewer.
+  // Root cause: renderDevRules() duplicated content that DREAMPATH.md now
+  //             owns canonically. Rules and version log were tangled.
+  // Lesson: Dev Rules fetches the live DREAMPATH.md and renders it via
+  //         marked + DOMPurify. Version log is its own sibling route
+  //         ('versions'). If the .md file moves or renames, update
+  //         DEVRULES_DOC_URL below and the 'versions' route target.
+  // Ref: DREAMPATH.md Section 19, DREAMPATH-HISTORY.md 2026-04-24 · E.
+  const DEVRULES_DOC_URL = '/DREAMPATH.md';
+  let _devRulesRendered = false;       // cache single fetch per session
+  let _devRulesScrollHandler = null;   // scroll-spy listener (cleanup)
+
   async function loadDevRules() {
-    const container = $('dp-devrules-content');
-    if (!container) return;
-    const data = await api('GET', 'versions');
-    renderDevRules(data?.versions || []);
+    const contentEl = $('dp-devrules-content');
+    const tocEl = $('dp-devrules-toc-items');
+    if (!contentEl || !tocEl) return;
+
+    // Re-binding scroll-spy every visit is fine — removing the previous
+    // listener prevents stacking if user navigates in/out repeatedly.
+    if (_devRulesScrollHandler) {
+      window.removeEventListener('scroll', _devRulesScrollHandler);
+      _devRulesScrollHandler = null;
+    }
+
+    if (!_devRulesRendered) {
+      contentEl.innerHTML = '<div class="dp-doc-loading">Loading Dev Rules…</div>';
+      tocEl.innerHTML = '<div style="color:var(--text-3);font-size:12px">Loading…</div>';
+    }
+
+    let md = '';
+    try {
+      const res = await fetch(DEVRULES_DOC_URL, { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      md = await res.text();
+    } catch (err) {
+      contentEl.innerHTML = `<div class="dp-doc-loading" style="color:var(--red)">
+        Failed to load DREAMPATH.md: ${esc(String(err.message || err))}
+      </div>`;
+      return;
+    }
+
+    _renderDevRulesDoc(md);
+    _devRulesRendered = true;
+
+    // Install scroll-spy: highlights the TOC item matching the heading
+    // currently near the top of the viewport. rAF-throttled for cost.
+    let pending = false;
+    _devRulesScrollHandler = function () {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        _updateDevRulesTocActive();
+      });
+    };
+    window.addEventListener('scroll', _devRulesScrollHandler, { passive: true });
+    _updateDevRulesTocActive();
   }
 
+  function _renderDevRulesDoc(md) {
+    const contentEl = $('dp-devrules-content');
+    const tocEl = $('dp-devrules-toc-items');
+    if (!contentEl || !tocEl) return;
+
+    // [CASE STUDY — DOMPurify is mandatory before any .innerHTML with
+    // third-party content. marked output is HTML, and even though the
+    // source is our own file, contributors may paste quoted tags. Treat
+    // the MD file as untrusted to keep the Critical Prohibition #4
+    // invariant intact.]
+    if (typeof window.marked === 'undefined') {
+      contentEl.innerHTML = '<div class="dp-doc-loading" style="color:var(--red)">marked.js failed to load.</div>';
+      return;
+    }
+
+    // Reset for idempotent re-renders.
+    window.marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
+
+    // Pre-process: strip Obsidian-style frontmatter (--- ... ---) and
+    // wiki-links ([[target|label]] → label) so marked output stays clean.
+    let body = md.replace(/^---\n[\s\S]*?\n---\n*/, '');
+    body = body.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2');
+    body = body.replace(/\[\[([^\]]+)\]\]/g, '$1');
+    // Remove GFM alert callouts (> [!important] header + body) visual markers
+    // — leave the block quote content, just strip the [!tag] header line.
+    body = body.replace(/^>\s*\[!\w+\][^\n]*\n?/gm, '> ');
+
+    const rawHtml = window.marked.parse(body);
+    const safeHtml = window.DOMPurify
+      ? window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
+      : rawHtml;
+
+    // Inject IDs onto h2 / h3 so the TOC can anchor. marked@14 leaves
+    // headings without IDs when headerIds:false — we slug them here with
+    // predictable values so the URL hash is also human-readable.
+    const temp = document.createElement('div');
+    temp.innerHTML = safeHtml;
+    const headings = temp.querySelectorAll('h2, h3');
+    const tocItems = [];
+    const usedIds = new Set();
+    headings.forEach((h) => {
+      const text = h.textContent.trim();
+      let slug = text.toLowerCase()
+        .replace(/[^\w가-힣\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 64) || 'section';
+      let unique = slug;
+      let n = 1;
+      while (usedIds.has(unique)) unique = slug + '-' + (++n);
+      usedIds.add(unique);
+      h.id = unique;
+      tocItems.push({ id: unique, level: h.tagName === 'H2' ? 2 : 3, text });
+    });
+
+    contentEl.innerHTML = temp.innerHTML;
+    tocEl.innerHTML = tocItems.map(item => {
+      const cls = item.level === 3 ? 'dp-doc-toc-h3' : 'dp-doc-toc-h2';
+      return `<a href="#${esc(item.id)}" class="${cls}" data-toc-id="${esc(item.id)}">${esc(item.text)}</a>`;
+    }).join('') || '<div style="color:var(--text-3);font-size:12px">Empty document.</div>';
+
+    // TOC click → smooth scroll + update hash without page jump.
+    tocEl.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', (e) => {
+        const id = a.getAttribute('data-toc-id');
+        const target = document.getElementById(id);
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        history.replaceState(null, '', '#' + id);
+      });
+    });
+
+    // If URL already has a hash, honor it on first render.
+    if (location.hash && location.hash.length > 1) {
+      const initial = document.getElementById(location.hash.slice(1));
+      if (initial) setTimeout(() => initial.scrollIntoView({ behavior: 'auto', block: 'start' }), 80);
+    }
+  }
+
+  function _updateDevRulesTocActive() {
+    const tocEl = $('dp-devrules-toc-items');
+    const contentEl = $('dp-devrules-content');
+    if (!tocEl || !contentEl) return;
+    const headings = contentEl.querySelectorAll('h2, h3');
+    if (!headings.length) return;
+    // Active = last heading whose top is above the viewport's 120px line.
+    const threshold = 120;
+    let activeId = headings[0].id;
+    for (const h of headings) {
+      const rect = h.getBoundingClientRect();
+      if (rect.top <= threshold) activeId = h.id;
+      else break;
+    }
+    tocEl.querySelectorAll('a').forEach(a => {
+      a.classList.toggle('dp-doc-toc-active', a.getAttribute('data-toc-id') === activeId);
+    });
+  }
+
+  // ── Version History — dp_versions 테이블 ───────────────────────────────────
+  //
+  // Separated from Dev Rules on 2026-04-24 per user request. Version History
+  // is the shipped-log (numbered releases + descriptions + dates). Dev Rules
+  // is how-to-build. Keep the two views decoupled.
   let _verPage = 0;
   const VER_PER_PAGE = 20;
 
-  function renderDevRules(versions) {
-    const container = $('dp-devrules-content');
+  async function loadVersionHistory() {
+    const container = $('dp-versions-content');
+    if (!container) return;
+    const data = await api('GET', 'versions');
+    renderVersionHistory(data?.versions || []);
+  }
+
+  function renderVersionHistory(versions) {
+    const container = $('dp-versions-content');
     if (!container) return;
     const latest = versions[0];
     const isAdmin = currentUser?.role === 'admin';
@@ -3581,9 +3756,14 @@ const DP = (() => {
         <button class="dp-btn dp-btn--ghost dp-btn--sm" ${_verPage >= totalPages - 1 ? 'disabled' : ''} onclick="DP._verChangePage(1)">Next →</button>
       </div>` : '';
 
+    // Version History is a standalone log now — the handbook / rules /
+    // AI-notice content that used to live here moved to DREAMPATH.md
+    // and is rendered under the "Dev Rules" sidebar item via marked.
+    // Keep this view focused on: current-version hero + aa.bbb.cc format
+    // explanation + paginated version table + "+ Log Version" button.
     container.innerHTML = `
       <div class="dp-section-header">
-        <h2 class="dp-section-title">Development Rules</h2>
+        <h2 class="dp-section-title">Version History</h2>
         ${isAdmin ? `<button class="dp-btn dp-btn--primary dp-btn--sm" onclick="DP.addVersion()">+ Log Version</button>` : ''}
       </div>
 
@@ -3593,108 +3773,6 @@ const DP = (() => {
           <div class="dp-version-hero-number">${latest ? `v${esc(latest.version)}` : '—'}</div>
         </div>
         ${latest ? `<div style="opacity:.7;font-size:13px;margin-left:auto">${esc(latest.description || '')}<br><span style="font-size:11px">${fmtDate(latest.released_at)}</span></div>` : ''}
-      </div>
-
-      <div class="dp-ai-notice">
-        <div class="dp-ai-notice-icon">🤖</div>
-        <div>
-          <div class="dp-ai-notice-title">AI 개발자 / AI Developer — 코드 수정 전 전체 내용 숙지 필수</div>
-          <div class="dp-ai-notice-body">
-            이 페이지는 Dreampath의 <strong>공식 개발 핸드북</strong>입니다.
-            Claude, GPT, Gemini 등 AI 에이전트가 개발을 보조하는 경우,
-            <strong>코드를 한 줄도 수정하기 전에</strong> 이 페이지의 모든 섹션을 읽어야 합니다.
-            프로젝트 루트의 <strong>CLAUDE.md</strong>가 이 규칙을 강제합니다.
-            <br>
-            <span style="opacity:.7;font-size:12px">This page is the canonical dev handbook. Any AI agent must read all sections before making code changes. CLAUDE.md at the project root enforces this.</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="dp-handbook-grid">
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">🏗 Architecture</div>
-          <div class="dp-hb-rule"><strong>Platform:</strong> Cloudflare Pages + D1 (SQLite) + Workers</div>
-          <div class="dp-hb-rule"><strong>No build step</strong> — 파일 그대로 배포 (빌드 없음)</div>
-          <div class="dp-hb-rule"><strong>DB binding:</strong> <code>env.DB</code> (모든 Function 파일에서)</div>
-          <div class="dp-hb-rule"><strong>Auth:</strong> HMAC-SHA256 · <code>functions/_shared/auth.js</code></div>
-          <div class="dp-hb-rule">Admin 세션 24h · Dreampath 세션 1h (쿠키 기반)</div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">📁 Key Files</div>
-          <div class="dp-hb-rule"><code>dreampath.html</code> — Dreampath 전용 인라인 CSS</div>
-          <div class="dp-hb-rule"><code>js/dreampath.js</code> — 모든 프론트엔드 로직 (IIFE)</div>
-          <div class="dp-hb-rule"><code>functions/api/dreampath/posts.js</code> — 게시글 CRUD + 접근 제어</div>
-          <div class="dp-hb-rule"><code>functions/api/dreampath/approvals.js</code> — 회의록 다중 승인 투표</div>
-          <div class="dp-hb-rule"><code>functions/api/dreampath/upload.js</code> — 파일 업로드 + 확장자 차단</div>
-          <div class="dp-hb-rule"><code>functions/api/dreampath/</code> — 모든 API 엔드포인트</div>
-          <div class="dp-hb-rule"><code>functions/_shared/auth.js</code> — 인증 코어 (책임자 승인 없이 수정 금지)</div>
-          <div class="dp-hb-rule"><code>deploy.sh</code> — 배포 + 버전 자동 등록</div>
-          <div class="dp-hb-rule"><code>CLAUDE.md</code> — AI 개발자 필독 규칙 (프로젝트 루트)</div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">⚙️ Frontend Conventions</div>
-          <div class="dp-hb-rule">IIFE 구조: <code>const DP = (() => &#123; ... &#125;)()</code> — 절대 분리 금지</div>
-          <div class="dp-hb-rule">모든 public 메서드는 <code>return &#123;&#125;</code> 블록에 반드시 추가</div>
-          <div class="dp-hb-rule">인라인 이벤트: <code>onclick="DP.method()"</code> — 항상 <code>DP.</code> 프리픽스</div>
-          <div class="dp-hb-rule">툴바 버튼은 <code>onmousedown + preventDefault</code> 사용 (에디터 포커스 유지)</div>
-          <div class="dp-hb-rule">색상은 반드시 <code>var(--name)</code> CSS 변수만 사용</div>
-          <div class="dp-hb-rule">CUFS 브랜드: Green <code>#146E7A</code> · Navy <code>#002D56</code> · Gold <code>#8D714E</code></div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">✍️ Rich Text (게시글 + 노트)</div>
-          <div class="dp-hb-rule"><strong>에디터:</strong> Tiptap (<code>esm.sh</code> CDN) — 탑재 위치: createPost, editPost, createNote, editNote (4곳)</div>
-          <div class="dp-hb-rule"><strong>로드 중인 Extensions:</strong> <code>starter-kit</code>, <code>extension-table</code>, <code>extension-table-row</code>, <code>extension-table-header</code>, <code>extension-table-cell</code></div>
-          <div class="dp-hb-rule"><strong>뷰어:</strong> DOMPurify (cdnjs) — 모든 HTML 출력 정제 필수</div>
-          <div class="dp-hb-rule"><strong>비동기 초기화:</strong> Tiptap은 비동기 로드 → 반드시 <code>_waitForTiptap(cb)</code> 헬퍼로 초기화</div>
-          <div class="dp-hb-rule">기존 plain-text 게시글 → <code>_legacyToHtml()</code>으로 자동 변환 (하위 호환)</div>
-          <div class="dp-hb-rule"><code>_destroyTiptap()</code>은 <code>closeModal()</code>에서 자동 호출됨</div>
-          <div class="dp-hb-rule">새 extension 추가 시: <code>dreampath.html</code> import + <code>_initTiptap()</code> + <code>_execTiptapCmd</code> + 툴바 HTML 4곳 모두 수정</div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">🚀 Deployment</div>
-          <div class="dp-hb-rule"><code>./deploy.sh</code> — git 메시지에서 타입 자동 감지</div>
-          <div class="dp-hb-rule"><code>./deploy.sh feature "설명"</code> — <code>bbb</code> 증가 (기능 추가)</div>
-          <div class="dp-hb-rule"><code>./deploy.sh fix "설명"</code> — <code>cc</code> 증가 (버그픽스)</div>
-          <div class="dp-hb-rule"><code>./deploy.sh --skip-version</code> — 버전 기록 없이 배포만</div>
-          <div class="dp-hb-rule">D1 <code>dp_versions</code> 테이블에 자동 등록됨</div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">🚫 Critical Prohibitions</div>
-          <div class="dp-hb-warn"><code>auth.js</code> — 충분한 테스트 없이 수정 금지</div>
-          <div class="dp-hb-warn">사용자 입력 HTML → DOMPurify 없이 <code>innerHTML</code> 금지</div>
-          <div class="dp-hb-warn">인증 토큰을 <code>localStorage</code>에 저장 금지</div>
-          <div class="dp-hb-warn">기존 DB 컬럼 삭제/변경 금지 — 컬럼 추가(<code>ALTER TABLE ADD COLUMN</code>)만 허용</div>
-          <div class="dp-hb-warn">의미 있는 변경 후 <code>./deploy.sh</code> 버전 등록 생략 금지</div>
-          <div class="dp-hb-warn"><code>dreampath.js</code>의 IIFE 구조를 분리하거나 모듈화 금지</div>
-          <div class="dp-hb-warn">외부 CDN 변경 시 반드시 버전 고정 여부 확인 필수</div>
-          <div class="dp-hb-warn"><code>dp_post_approvals</code> INSERT 시 <code>approver_id</code> (NOT NULL) 반드시 포함</div>
-          <div class="dp-hb-warn"><code>.env</code> 또는 시크릿 값 절대 커밋 금지</div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">🌐 Team Boards</div>
-          <div class="dp-hb-rule"><strong>게시판 목록:</strong> <code>announcements</code>, <code>documents</code>, <code>minutes</code>, <code>team_korea</code>, <code>team_nepal</code>, <code>team_indonesia</code>, <code>team_pakistan</code></div>
-          <div class="dp-hb-rule"><strong>접근 규칙:</strong> 어드민 → 모든 게시판 / 일반 유저 → 자기 팀 보드만 읽기·쓰기</div>
-          <div class="dp-hb-rule"><strong>⚠️ <code>department</code>는 JWT에 없음</strong> — <code>data.dpUser</code>: <code>&#123; uid, username, role, name &#125;</code> (department 미포함)</div>
-          <div class="dp-hb-rule">팀 보드 접근 판별 시 항상 DB 별도 조회 필요: <code>SELECT department FROM dp_users WHERE id = ?</code></div>
-          <div class="dp-hb-rule"><strong>매칭 패턴:</strong> <code>department.toLowerCase().includes('korea/nepal/indonesia/pakistan')</code></div>
-          <div class="dp-hb-rule">프론트엔드: <code>_teamBoard(department)</code> / 백엔드: <code>_deptMatchesBoard(department, board)</code></div>
-        </div>
-
-        <div class="dp-hb-card">
-          <div class="dp-hb-card-title">🔐 API Access Control</div>
-          <div class="dp-hb-rule"><strong>게시글 작성 (POST):</strong> 어드민 → 전체 / 일반 유저 → 자기 팀 보드만</div>
-          <div class="dp-hb-rule"><strong>게시글 수정 (PUT):</strong> 어드민 → 전체 / 일반 유저 → <code>author_id = uid</code> 본인 글만</div>
-          <div class="dp-hb-rule"><strong>회의록 잠금:</strong> <code>approval_status = 'approved'</code>이면 content 수정 → <strong>HTTP 423 LOCKED</strong></div>
-          <div class="dp-hb-rule"><strong>파일 업로드 차단:</strong> <code>.exe .sh .bat .cmd .dll .ps1 .vbs .jar .dmg .pkg .msi</code> 등 실행 파일 전체</div>
-          <div class="dp-hb-rule"><strong>승인 Override:</strong> 어드민의 타인 투표 변경은 <strong>2026-04-01 이전</strong> 생성 게시글만 허용</div>
-          <div class="dp-hb-rule">승인 재계산: 투표/승인자 변경 시 과반수 초과 여부 자동 재계산 → <code>dp_board_posts.approval_status</code> 업데이트</div>
-        </div>
       </div>
 
       <div class="dp-version-rules">
@@ -3748,7 +3826,7 @@ const DP = (() => {
 
   function _verChangePage(delta) {
     _verPage = Math.max(0, _verPage + delta);
-    loadDevRules();
+    loadVersionHistory();
   }
 
   async function addVersion() {
@@ -3777,7 +3855,7 @@ const DP = (() => {
         closeModal();
         // Update footer
         if ($('dp-version-display')) $('dp-version-display').textContent = `v${data.version}`;
-        loadDevRules();
+        loadVersionHistory();
       },
     });
   }
@@ -4877,6 +4955,7 @@ const DP = (() => {
     extendSession,
     _showAllRecent,
     _homeTaskQuick,
+    loadVersionHistory,
     _clearEventPicker,
     loadSettings,
     _settingsReset,

@@ -1674,6 +1674,193 @@
     #dp-main { padding-bottom: 40px; }
     @media (max-width: 640px) { .dp-footer { left: 0; } }
 
+    /* ── Dev Rules — doc viewer (KMS-style) ──────────────────────
+       Layout: sticky TOC on the left + scrollable markdown content
+       on the right. Mobile collapses to a single column with TOC
+       rendered as a collapsible top panel. Markdown is parsed by
+       marked.js and sanitized by DOMPurify before innerHTML. */
+    .dp-doc-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .dp-doc-toc {
+      position: sticky;
+      top: 24px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      padding: 18px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      font-size: 13px;
+    }
+    .dp-doc-toc-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-2);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-doc-toc a {
+      display: block;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--text-2);
+      text-decoration: none;
+      line-height: 1.4;
+      margin-bottom: 2px;
+      transition: background .12s, color .12s;
+    }
+    .dp-doc-toc a:hover,
+    .dp-doc-toc a:focus-visible {
+      background: var(--accent-light);
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .dp-doc-toc a.dp-doc-toc-active {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 600;
+      border-left: 3px solid var(--accent);
+      padding-left: 7px;
+    }
+    .dp-doc-toc a.dp-doc-toc-h3 {
+      padding-left: 22px;
+      font-size: 12px;
+      color: var(--text-3);
+    }
+    .dp-doc-toc a.dp-doc-toc-h3.dp-doc-toc-active {
+      padding-left: 19px;
+    }
+    .dp-doc-content {
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 40px;
+      box-shadow: var(--shadow);
+      line-height: 1.65;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .dp-doc-content h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+      margin: 0 0 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--accent);
+      color: var(--text);
+    }
+    .dp-doc-content h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 36px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 16px;
+    }
+    .dp-doc-content h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 24px 0 10px;
+      color: var(--accent);
+      scroll-margin-top: 16px;
+    }
+    .dp-doc-content h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 18px 0 8px;
+      color: var(--text-2);
+    }
+    .dp-doc-content p  { margin: 0 0 12px; }
+    .dp-doc-content ul,
+    .dp-doc-content ol { margin: 0 0 14px 22px; }
+    .dp-doc-content li { margin-bottom: 4px; }
+    .dp-doc-content code {
+      background: var(--gray-100);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+    .dp-doc-content pre {
+      background: #0F2035;
+      color: #E8EEF5;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 0 0 16px;
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+    .dp-doc-content pre code {
+      background: transparent;
+      border: none;
+      color: inherit;
+      padding: 0;
+    }
+    .dp-doc-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 16px;
+      font-size: 13px;
+    }
+    .dp-doc-content th,
+    .dp-doc-content td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .dp-doc-content th {
+      background: var(--gray-100);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .dp-doc-content blockquote {
+      border-left: 4px solid var(--accent-mid);
+      background: var(--accent-light);
+      padding: 12px 16px;
+      margin: 0 0 14px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: var(--text);
+    }
+    .dp-doc-content blockquote p:last-child { margin-bottom: 0; }
+    .dp-doc-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+    .dp-doc-content a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .dp-doc-content a:hover { color: var(--accent-hover); }
+    .dp-doc-loading {
+      padding: 60px 40px;
+      text-align: center;
+      color: var(--text-3);
+      font-size: 14px;
+    }
+    @media (max-width: 900px) {
+      .dp-doc-layout { grid-template-columns: 1fr; }
+      .dp-doc-toc {
+        position: static;
+        max-height: 280px;
+      }
+      .dp-doc-content { padding: 24px 20px; }
+    }
+
     /* ── Dev Rules Section ───────────────────────────────────── */
     .dp-version-hero {
       background: linear-gradient(135deg, #002D56, #146E7A);
@@ -2636,6 +2823,11 @@
         <span>Dev Rules</span>
       </div>
 
+      <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="versions" aria-label="버전 히스토리" onclick="DP.navigate('versions')">
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/calendar.svg')"></span>
+        <span>Version History</span>
+      </div>
+
       <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="settings" aria-label="설정" onclick="DP.navigate('settings')">
         <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/settings.svg')"></span>
         <span>Settings</span>
@@ -2790,10 +2982,25 @@
       </div>
     </div>
 
-    <!-- Dev Rules -->
+    <!-- Dev Rules — DREAMPATH.md viewer (KMS-style with TOC + scroll-spy) -->
     <div id="dp-section-devrules" class="dp-section dp-admin-only dp-hidden">
-      <div id="dp-devrules-content">
-        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading...</div>
+      <div class="dp-doc-layout">
+        <aside class="dp-doc-toc" id="dp-devrules-toc" aria-label="Dev Rules 목차">
+          <div class="dp-doc-toc-title">Contents</div>
+          <div id="dp-devrules-toc-items">
+            <div style="color:var(--text-3);font-size:12px">Loading…</div>
+          </div>
+        </aside>
+        <article class="dp-doc-content" id="dp-devrules-content" tabindex="-1" aria-label="Dreampath 개발 규칙">
+          <div class="dp-doc-loading">Loading Dev Rules…</div>
+        </article>
+      </div>
+    </div>
+
+    <!-- Version History — dp_versions log (split off from Dev Rules) -->
+    <div id="dp-section-versions" class="dp-section dp-admin-only dp-hidden">
+      <div id="dp-versions-content">
+        <div style="padding:40px;text-align:center;color:var(--text-3)">Loading version history…</div>
       </div>
     </div>
 
@@ -2828,6 +3035,10 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<!-- marked.js — CommonMark + GFM parser used by the Dev Rules doc viewer.
+     DOMPurify wraps the output before innerHTML assignment (DREAMPATH.md
+     Critical Prohibitions #4). cdnjs is already on the CSP allowlist. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/14.1.3/marked.min.js"></script>
 <script type="module">
   try {
     const [
