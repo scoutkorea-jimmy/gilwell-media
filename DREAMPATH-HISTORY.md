@@ -25,10 +25,116 @@ sibling: DREAMPATH.md
 
 날짜 역순.
 
+- [2026-04-24 · V2](#2026-04-24--v2) · **/dreampath-v2 마이그레이션 전수 케이스 박제** (P0 10건 · 설계 근거)
 - [2026-04-24 · D](#2026-04-24--d) · v01.040.00 — 홈 전면 개편 + 모바일 접근성 + 새 로고 + B1~B5
 - [2026-04-24 · C](#2026-04-24--c) · 디자인 시스템 도입 + 문서 완전 분리
 - [2026-04-24 · B](#2026-04-24--b) · Dreampath 홈 UX · 접근성 검토 (계획)
 - [2026-04-24 · A](#2026-04-24--a) · CSP 회귀 · 사이드바 전체 마비 (P0)
+
+---
+
+## 2026-04-24 · V2
+
+### /dreampath-v2 마이그레이션 전수 케이스 박제
+
+**국문 요약**
+Claude 디자인 세션으로 만든 ERP-밀도 기반 새 UI를 `/dreampath-v2` 스테이징
+루트로 배포하면서 발견한 10개 이슈를 한 엔트리에 박제. 목적: Dreampath의
+독립 도메인 이전 또는 v3 리디자인 때 같은 함정을 다시 밟지 않기. 프로덕션
+`/dreampath` 는 끝까지 미변경 — D1 · R2 · 28 API 전부 보존된 상태로 v2 는
+스테이징에서 실 API 와 배선까지 완료.
+
+**English Summary**
+Recording every issue hit while migrating the Claude-design ERP UI to the
+`/dreampath-v2` staging route — 10 cases, one entry, so the next Dreampath
+overhaul (v3, independent-domain split, etc.) never steps on the same mines.
+Production `/dreampath` was not touched; D1 / R2 / 28 API endpoints remain
+byte-identical. v2 is a parallel surface wired to the real backend.
+
+**왜 v2 를 만들었는가 / Why v2 exists**
+- 공개 사이트(BP Media) 의 ERP-density 디자인 토큰 시스템 (PMO Style Tokens v2) 적용 — 13px UI 기본, 2px 라운드, flat, 32px 행 높이, ⌘K command palette, motion 120ms 철학.
+- 기존 `/dreampath` UI 는 모바일 접근성 개편(v01.040.00) 직후에도 시각적 밀도 · 정보 위계 · 감사로그 가시성이 ERP 운영 기준에 비해 느슨했음.
+- 독립 도메인 이전 전에 "새 디자인 + 새 문서" 를 스테이징 레일 위에서 완성해 두면, 이전 시점에 파일만 옮기면 되도록.
+
+### 케이스 1 — `/dreampath-v2` CSP 누락으로 인라인 onclick 전면 차단
+
+**증상**: 로그인 직후 사이드바 · 스탯 칩 · 모달 트리거 전부 무반응. 콘솔에 `Refused to execute inline event handler because it violates … 'nonce-…' 'strict-dynamic'`.
+**원인**: 공개 사이트 CSP 가 nonce + strict-dynamic 이라 `'unsafe-inline'` 이 무시됨. `functions/_middleware.js isLegacyInlinePath()` 가 `/admin` `/kms` `/dreampath` 만 예외로 등록되어 있었고 `/dreampath-v2` 는 빠져 있었음.
+**수정**: `isLegacyInlinePath()` 에 `/dreampath-v2` / `/dreampath-v2.html` 추가. Admin / KMS / Dreampath / Dreampath-v2 는 legacy `'unsafe-inline'` 을 공유.
+**교훈**: **Dreampath 파생 경로를 새로 만들 때마다 `isLegacyInlinePath()` 를 동시에 업데이트.** 추가 안 하면 전체 surface 가 조용히 죽는다. `functions/_middleware.js` 상단 주석이 이 규칙의 상주 체크포인트.
+**code_refs**: `functions/_middleware.js` `isLegacyInlinePath()`.
+
+### 케이스 2 — legacy `dp_user` 에 `name` 없는 계정 → `slice()` 터짐
+
+**증상**: `/dreampath` 에서 먼저 로그인한 사용자가 `/dreampath-v2` 접근 시 blank page + `TypeError: Cannot read properties of undefined (reading 'slice')` at `_renderSidebar`.
+**원인**: 구 `/dreampath` me.js 응답 중 `display_name` 이 비어 `localStorage.dp_user` 에 `name: null` 로 저장된 계정이 존재. 새 v2 `_renderSidebar` 가 `state.user.name.slice(0,1)` 직접 호출.
+**수정**: `_displayName()` / `_avatarChar()` / `_roleLine()` 3 헬퍼 신설. `display_name → name → username → 'User'` 폴백 체인. 5곳의 직접 접근 전부 헬퍼 경유로 교체.
+**교훈**: **user 객체의 임의 필드를 직접 dereference 하지 않는다.** 특히 `state.user.name.x` 같은 depth-2 접근은 legacy 세션에서 언제든 터진다.
+**code_refs**: `js/dreampath-v2.js` `_displayName` / `_avatarChar` / `_roleLine`.
+
+### 케이스 3 — `./deploy.sh --skip-version` 은 캐시 버스트가 안 된다
+
+**증상**: v2 JS 를 수정하고 `--skip-version` 으로 배포했는데 사용자 브라우저가 이전 JS 를 계속 실행. 수정한 내용이 프로덕션에 "안 보임".
+**원인**: `deploy.sh` 는 `VERSION` 이 바뀌어야 HTML 의 `?v=` 쿼리가 바뀌고 브라우저가 새로 fetch. `--skip-version` 은 `dp_versions` 를 건드리지 않아 쿼리값이 직전과 동일 → 브라우저가 캐시된 JS 그대로 사용.
+**수정**: 반복 수정 배포 시 `./deploy.sh fix "..."` 를 쓴다 (cc 만 증가 — 의미적 부담 최소). 또는 HTML 의 `?v=` 를 타임스탬프 등 매 배포 유니크값으로 만들도록 스크립트 개조 (미적용).
+**교훈**: **`--skip-version` 은 "로그 없이 배포 테스트" 용, 사용자 피드백이 필요한 수정에는 쓰지 않는다.** HTML 자체에 `Cache-Control: no-store` 가 있어도 서브리소스 (JS/CSS) 는 기본 캐시를 탄다.
+**code_refs**: `deploy.sh` 상단 주석에 언급. `dreampath-v2.html` 의 `<script src="/js/dreampath-v2.js?v=...">` 아래 주석.
+
+### 케이스 4 — Cloudflare Pages 가 긴 한글 커밋 메시지 거부
+
+**증상**: `wrangler pages deploy` 단계에서 `Invalid commit message, it must be a valid UTF-8 string. [code: 8000111]`. 1604 바이트 한글 + 1476 바이트 한글 둘 다 거부. 1476 바이트 ASCII-only 는 즉시 성공.
+**원인**: Cloudflare 측 파이프라인 내부 처리에서 한글 포함 다중 라인 커밋 메시지를 잘못 해석. (정확한 경계 조건은 공개 안 됨.)
+**수정**: 커밋 메시지는 ASCII-only + ~1.2KB 미만으로 제한. 풍부한 변경 내역은 커밋 본문보다는 `data/changelog.json` / `DREAMPATH-HISTORY.md` 에 기록.
+**교훈**: **Dreampath 커밋 메시지는 짧은 영문 1행 + optional 영문 본문**. 상세 한글 변경 내역은 changelog / history 파일로 분리. `git commit --amend -m` 으로 구제 가능하지만 `./deploy.sh` 가 이미 부분 실행된 상태면 `git push` 가 앞서 나가므로 신중히.
+**code_refs**: memory `feedback_cloudflare_commit_msg.md` (사용자 로컬).
+
+### 케이스 5 — `viewPost` 404 시 모달이 조용히 닫히는 UX
+
+**증상**: 사용자가 승인 대기 카드의 Review 또는 홈 announcements 를 눌렀을 때, 서버가 404 (post 가 삭제됨 / team board 접근 거부) 를 반환하면 모달이 사라지고 우상단 토스트만 잠깐 뜸. "클릭했는데 왜 아무것도 안 뜨지?" 가 반복.
+**원인**: 공통 `api()` 헬퍼가 모든 non-2xx 를 토스트 + return null 로 처리했고, `viewPost` 가 null 을 받으면 `_closeModal()` 호출.
+**수정**: `_rawApi()` 저수준 클라이언트 분리. `viewPost` 는 raw 사용해 404 / 403 / 500 별로 모달 **내부** 에 `_renderPostError()` 로 inline error 카드를 그림. 모달은 명시적 Close 버튼으로만 닫힘.
+**교훈**: **조용히 사라지는 UI 는 금지.** 사용자가 클릭한 결과는 반드시 어떤 형태로든 피드백되어야 한다. "토스트 뿌리고 닫기" 는 사용자가 눈을 떼면 놓친다.
+**code_refs**: `js/dreampath-v2.js` `_rawApi`, `_renderPostError`, `viewPost`.
+
+### 케이스 6 — Tiptap 마운트 지점 2곳 (create / edit) 동기화
+
+**증상**: 새 포스트 에디터와 편집 에디터가 각각 `_openPostEditor` / `_editPost` 에 분리되어 있어, 툴바 버튼 추가 시 한쪽만 고쳐 누락되는 risk 가 프로덕션 `/dreampath` 의 "Tiptap 4-spot rule" 과 동일하게 반복.
+**원인**: v2 는 production 의 6 spot (createPost / editPost / replyToPost / createNote / editNote / replyToNote) 중 지금은 create / edit 2 곳만 구현했지만 구조적으로 같은 함정.
+**수정**: `_initTiptap` 위에 케이스 스터디 주석 고정. 툴바 버튼·extension 추가 시 **두 함수 모두** 업데이트하는 것을 grep 루틴으로 강제.
+**교훈**: Tiptap 마운트는 Dreampath 에서 영구 risk 영역. 새 기능을 한 곳에 넣을 때마다 "다른 마운트 지점은?" 을 체크.
+**code_refs**: `js/dreampath-v2.js` `_initTiptap`, `_openPostEditor`, `_editPost`.
+
+### 케이스 7 — 파일 용량 제한: per-file vs total
+
+**증상**: 사용자가 "최대 10개, 총 100MB" 를 요구. 서버 `upload.js` 는 **파일당** 100MB 만 검사. 사용자 기대는 10개 합쳐서 100MB.
+**원인**: 프로덕션 `/dreampath` 는 "5개 / 파일당 100MB" 규약이었고 서버가 파일당만 검증. 총량 검사 책임이 불분명.
+**수정**: 프론트 `_handlePickerChange` 에서 `MAX_FILES = 10` + `MAX_TOTAL_BYTES = 100 * 1024 * 1024` 이중 검증. 초과 시 해당 파일 skip + 토스트. 서버는 그대로 per-file 만 검증.
+**교훈**: **서버가 per-file cap, 프론트가 total cap** 의 이중 방어. 프론트에서 먼저 차단하되, 악의적 클라이언트에 대비해 서버도 최소 per-file 은 유지.
+**code_refs**: `js/dreampath-v2.js` `_handlePickerChange`, `_uploadPending`.
+
+### 케이스 8 — 모달을 우측 드로어로 만들었더니 "이건 모달이 아니다"
+
+**증상**: v2 초안에서 모달을 `position: fixed; right: 0; top: 0; bottom: 0; width: 720px;` 우측 드로어로 구현. 사용자 피드백 "모달로 띄워야지 우측에 띄우는게 아니라".
+**원인**: ERP 도구 (Linear, Jira 등) 가 우측 드로어를 애용해 관성으로 채택. 하지만 Dreampath 는 모달 중심 UX (확인 → 실행 → 닫기) 라 드로어는 맥락상 이질적.
+**수정**: `.dp-modal` 을 중앙 정렬 dialog 로 복귀. `.dp-modal-backdrop` 이 flex container 로 center alignment.
+**교훈**: **디자인 시스템 컴포넌트는 이 제품의 UX 관성에 맞춰 결정.** 업계 트렌드만 보고 결정하지 않는다. 사용자 기대치 반영 우선.
+**code_refs**: `dreampath-v2.html` `.dp-modal` / `.dp-modal-backdrop` CSS.
+
+### 케이스 9 — 페이지 `max-width: 1600px` 로 고정 → 오른쪽 공백
+
+**증상**: 대형 모니터에서 Team Boards / Contacts / Versions 가 오른쪽에 빈 공간 남고 콘텐츠가 가운데 모임. 사용자 피드백 "횡으로 꽉 채웠으면 좋겠어 채우다 마는게 아니라".
+**원인**: `.dp-page { max-width: 1600px; }` 로 시각적 중심 이동 방지하려 했으나, ERP 테이블의 정보 밀도를 희생.
+**수정**: `max-width` 제거, `width: 100%` 만. 사이드바 (232px) 이후 모든 가로폭 채움.
+**교훈**: **ERP 는 정보 밀도 최대화가 우선.** "pretty narrow center" 는 브로셔 사이트에는 맞지만 운영 도구에는 부적절.
+**code_refs**: `dreampath-v2.html` `.dp-page` rule.
+
+### 케이스 10 — `DATA` 상수 vs 실 API 의 데이터 shape 불일치
+
+**증상**: Phase 3 배선 전에 데모 `DATA.posts.notice` / `DATA.tasks` 로 UI 작성 → 실 API 는 `announcements` 슬러그 + 다른 필드 (author_id 등) 를 반환 → 배선 후 `_renderAnnouncementsPanel` 등이 빈 상태 / 이상 값으로 렌더.
+**원인**: 데모 데이터 객체 필드 이름을 개발자 편의로 짓고 (notice 등), API 레퍼런스와 대조 안 함.
+**수정**: Phase 3.2 배선 시점에 모든 데모 필드를 API shape 에 맞게 교정. DATA 는 아직 일부 남아있지만 API 로 대체 가능한 곳은 모두 교체. 잔존 DATA 는 Phase 4 cutover 이전에 완전 제거 예정.
+**교훈**: **데모 데이터 작성 시 API spec 을 먼저 고정.** shape mismatch 는 UI 전체를 다시 고쳐야 할 수 있음 — 데모는 API 의 부분 집합으로만.
+**code_refs**: `functions/api/dreampath/home.js` 의 case study 주석, `js/dreampath-v2.js` 의 현재 남은 `DATA` 참조 (향후 제거 대상).
 
 ---
 

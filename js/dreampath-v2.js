@@ -68,12 +68,18 @@ const DP = (() => {
         { id: 'tasks',         label: 'Tasks',           icon: 'check' },
         { id: 'notes',         label: 'Notes / Issues',  icon: 'clipboard' },
       ]},
-      { title: 'Teams', items: teamBoards.length
-        ? teamBoards.concat([{ id: 'calendar', label: 'Calendar', icon: 'calendar' },
-                             { id: 'contacts', label: 'Contacts', icon: 'phone' }])
-        : [{ id: 'calendar', label: 'Calendar', icon: 'calendar' },
-           { id: 'contacts', label: 'Contacts', icon: 'phone' }]
-      },
+      // Teams group — Team Boards landing first, then each accessible team
+      // with its country flag in place of an SVG icon (sidebar rendering
+      // special-cases `flag` to skip the CSS-mask path).
+      { title: 'Teams', items: [
+          { id: 'teams', label: 'Team Boards', icon: 'users-admin' },
+          ...teamBoards.map(b => ({
+            id: b.id, label: b.label,
+            flag: _countryFlag(b.id.slice(5)),
+          })),
+          { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+          { id: 'contacts', label: 'Contacts', icon: 'phone' },
+      ] },
       { title: 'Reference', items: (isAdmin
         ? [{ id: 'users',    label: 'Users',     icon: 'users-admin' },
            { id: 'rules',    label: 'Dev Rules', icon: 'layers' },
@@ -707,7 +713,9 @@ const DP = (() => {
       ${group.items.map(it => `
         <button type="button" class="dp-nav-item" data-page="${esc(it.id)}"
                 onclick="DP.navigate('${esc(it.id)}')" aria-label="${esc(it.label)}">
-          ${icon(it.icon)}
+          ${it.flag
+            ? `<span class="dp-nav-flag" aria-hidden="true">${it.flag}</span>`
+            : icon(it.icon)}
           <span>${esc(it.label)}</span>
           ${it.badge ? `<span class="count">${it.badge}</span>` : ''}
         </button>
@@ -818,6 +826,7 @@ const DP = (() => {
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
       calendar:      () => { _renderCalendar(pageEl);      label = 'Calendar'; },
       contacts:      () => { _renderContacts(pageEl);      label = 'Contacts'; },
+      teams:         () => { _renderTeamsLanding(pageEl);  label = 'Team Boards'; },
       users:         () => {
         if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderUsers(pageEl); label = 'Users';
@@ -1065,7 +1074,17 @@ const DP = (() => {
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'approved' });
     if (data) {
       toast('Approved', 'ok');
-      if (state.page === 'home') navigate('home');
+      navigate(state.page);
+    }
+  }
+  async function _inlineReject(postId) {
+    if (!postId) return;
+    if (!confirm('Reject this post? Author will need to revise.')) return;
+    const approver = encodeURIComponent(_displayName());
+    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'rejected' });
+    if (data) {
+      toast('Rejected', 'ok');
+      navigate(state.page);
     }
   }
 
@@ -1268,34 +1287,72 @@ const DP = (() => {
 
     const isMinutes = (key === 'minutes');
     const headers = isMinutes
-      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:140px">Approval</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
+      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:140px">Approval</th><th style="width:170px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
       : '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
 
-    const rows = posts.map(p => {
+    // [CASE STUDY — revision threading via parent_post_id]
+    // Rejected minutes that were revised are stored with a parent_post_id
+    // pointing at the previous version. We display them indented under the
+    // parent with a "ㄴ" prefix so the approval history is visible at a glance
+    // without clicking into each one.
+    const byId = new Map(posts.map(p => [Number(p.id), p]));
+    const roots = [];
+    const childrenByParent = {};
+    posts.forEach(p => {
+      const parent = p.parent_post_id && byId.get(Number(p.parent_post_id));
+      if (parent) {
+        const k = Number(parent.id);
+        (childrenByParent[k] = childrenByParent[k] || []).push(p);
+      } else {
+        roots.push(p);
+      }
+    });
+
+    function renderPostRow(p, depth) {
       const id = 'POST-' + String(p.id).padStart(4, '0');
       const pin = p.pinned ? '<span class="dp-pin" style="margin-right:6px" aria-label="Pinned"></span>' : '';
       const ts = fmtTime(p.updated_at || p.created_at);
+      const indent = depth > 0
+        ? `<span style="display:inline-block;width:${depth * 18}px"></span><span style="color:var(--text-3);margin-right:6px;font-family:var(--font-mono)">ㄴ</span>`
+        : '';
+      const titleCell = `${indent}${pin}${esc(p.title)}${depth > 0 ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>` : ''}`;
+
       if (isMinutes) {
         const s = p.approval_status || 'draft';
-        const tone = s === 'approved' ? 'ok' : s === 'pending' ? 'warn' : 'neutral';
+        const tone = s === 'approved' ? 'ok' : s === 'pending' ? 'warn' : s === 'rejected' ? 'alert' : 'neutral';
+        const inlineVote = (s === 'pending')
+          ? `<button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)})">Approve</button>
+             <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)})">Reject</button>`
+          : `<span class="dp-tag ${tone}">${esc(s)}</span>`;
         return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
           <td class="mono">${id}</td>
-          <td>${pin}${esc(p.title)}</td>
+          <td>${titleCell}</td>
           <td>${esc(p.author_name || '')}</td>
           <td><span class="dp-tag ${tone}">${esc(s)}</span></td>
+          <td style="white-space:nowrap">${inlineVote}</td>
           <td class="mono">${p.comment_count || 0}</td>
           <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
       return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
         <td class="mono">${id}</td>
-        <td>${pin}${esc(p.title)}</td>
+        <td>${titleCell}</td>
         <td>${esc(p.author_name || '')}</td>
         <td class="mono">${p.comment_count || 0}</td>
         <td class="mono">${p.view_count || 0}</td>
         <td class="mono">${esc(ts)}</td>
       </tr>`;
-    }).join('');
+    }
+
+    const rowsList = [];
+    function walk(p, depth) {
+      rowsList.push(renderPostRow(p, depth));
+      const kids = childrenByParent[Number(p.id)] || [];
+      kids.sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+      kids.forEach(k => walk(k, depth + 1));
+    }
+    roots.forEach(r => walk(r, 0));
+    const rows = rowsList.join('');
 
     const panel = h('div', { className: 'dp-panel' });
     panel.innerHTML = `
@@ -1777,10 +1834,21 @@ const DP = (() => {
     );
   }
 
-  // ===== Contacts — /api/dreampath/contacts =====
+  // ===== Contacts — /api/dreampath/contacts, grouped by `department` =====
+  // [CASE STUDY — v2 grouping uses department field]
+  // The user's design groups contacts into Partners / Vendors / Advisors.
+  // The dp_contacts table only has a free-text `department` column, so we
+  // partition client-side: any row whose department contains one of those
+  // tokens goes into that bucket; the rest fall to "Other".
   async function _renderContacts(root) {
     root.innerHTML = '';
-    root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Contacts')]));
+    const isAdmin = state.user && state.user.role === 'admin';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Contacts'),
+      h('div', { style: { display: 'flex', gap: '8px' } }, isAdmin ? [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openContactEditor() }, '+ Contact'),
+      ] : []),
+    ]));
     const loading = h('div', { className: 'dp-panel' });
     loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading contacts…</div>';
     root.appendChild(loading);
@@ -1794,32 +1862,278 @@ const DP = (() => {
       empty.innerHTML = `
         <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/phone.svg')"></span></div>
         <h4>No contacts</h4>
-        <p>Emergency and project contacts show up here once added by an admin.</p>
+        <p>Partner, vendor, and advisor contacts show up here once added.</p>
       `;
       root.appendChild(empty);
       return;
     }
 
-    const rows = contacts.map(c => `
-      <tr>
-        <td><strong>${esc(c.name || '—')}</strong></td>
-        <td>${esc(c.role_title || '')}</td>
-        <td>${esc(c.department || '')}</td>
-        <td class="mono">${c.phone ? '<a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' : '—'}</td>
-        <td>${c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '—'}</td>
-        <td style="color:var(--text-3)">${esc(c.note || '')}</td>
-      </tr>
-    `).join('');
+    const groups = { Partners: [], Vendors: [], Advisors: [], Other: [] };
+    contacts.forEach(c => {
+      const d = String(c.department || '').toLowerCase();
+      if (d.includes('partner')) groups.Partners.push(c);
+      else if (d.includes('vendor'))  groups.Vendors.push(c);
+      else if (d.includes('advisor')) groups.Advisors.push(c);
+      else groups.Other.push(c);
+    });
 
-    const panel = h('div', { className: 'dp-panel' });
-    panel.innerHTML = `
-      <div class="dp-panel-head"><h3>Team contacts <span class="count">${contacts.length}</span></h3></div>
-      <table class="dp-table">
-        <thead><tr><th style="width:140px">Name</th><th style="width:160px">Role</th><th style="width:140px">Team</th><th style="width:140px">Phone</th><th>Email</th><th>Note</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    const search = h('div', { style: { marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' } });
+    search.innerHTML = `<input class="dp-input" id="dp-contacts-filter" type="search" placeholder="Search name / email / phone…" style="max-width:280px" oninput="DP._filterContacts()">`;
+    root.appendChild(search);
+
+    Object.keys(groups).forEach(groupName => {
+      const list = groups[groupName];
+      if (!list.length) return;
+      const panel = h('div', { className: 'dp-panel', style: { marginBottom: '20px' } });
+      const rows = list.map(c => {
+        const note = c.note || '';
+        const statusTone = /renew/i.test(note) ? 'warn' : /retainer|active|ongoing/i.test(note) ? 'ok' : /evaluat/i.test(note) ? 'info' : 'neutral';
+        const statusText = note || (groupName === 'Partners' ? 'Active' : groupName === 'Advisors' ? 'On retainer' : groupName === 'Vendors' ? 'Evaluating' : '—');
+        return `<tr class="dp-contact-row" data-search="${esc((c.name || '') + ' ' + (c.email || '') + ' ' + (c.phone || '') + ' ' + (c.role_title || ''))}">
+          <td><strong>${esc(c.name || '—')}</strong></td>
+          <td>${esc(c.role_title || '—')}</td>
+          <td>${esc(c.department || '—')}</td>
+          <td>${c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '—'}</td>
+          <td class="mono">${c.phone ? '<a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' : '—'}</td>
+          <td><span class="dp-tag ${statusTone}">${esc(statusText)}</span></td>
+          ${isAdmin ? `<td style="text-align:right"><button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._openContactEditor(${Number(c.id)})">Edit</button></td>` : ''}
+        </tr>`;
+      }).join('');
+      panel.innerHTML = `
+        <div class="dp-panel-head">
+          <h3>${esc(groupName)} <span class="count">${list.length}</span></h3>
+        </div>
+        <table class="dp-table">
+          <thead><tr>
+            <th style="width:170px">Name</th>
+            <th style="width:180px">Role</th>
+            <th style="width:180px">Primary contact</th>
+            <th style="width:220px">Email</th>
+            <th style="width:150px">Phone</th>
+            <th style="width:140px">Status</th>
+            ${isAdmin ? '<th style="width:70px"></th>' : ''}
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+      root.appendChild(panel);
+    });
+  }
+  function _filterContacts() {
+    const q = ($('#dp-contacts-filter').value || '').trim().toLowerCase();
+    $$('.dp-contact-row').forEach(r => {
+      const hay = (r.dataset.search || '').toLowerCase();
+      r.style.display = (!q || hay.includes(q)) ? '' : 'none';
+    });
+  }
+
+  async function _openContactEditor(id) {
+    let existing = null;
+    if (id) {
+      const data = await api('GET', 'contacts');
+      if (data) existing = (data.contacts || []).find(c => Number(c.id) === Number(id));
+    }
+    const isEdit = !!existing;
+    _openModal(
+      isEdit ? 'Edit contact' : 'New contact',
+      `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field"><label>Name</label><input class="dp-input" id="dp-c-name" value="${esc(existing ? existing.name : '')}"></div>
+        <div class="dp-field"><label>Role / Title</label><input class="dp-input" id="dp-c-role" value="${esc(existing ? (existing.role_title || '') : '')}"></div>
+      </div>
+      <div class="dp-field">
+        <label>Group</label>
+        <select class="dp-select" id="dp-c-dept">
+          <option value="Partner"${existing && /partner/i.test(existing.department || '') ? ' selected' : ''}>Partner</option>
+          <option value="Vendor"${existing && /vendor/i.test(existing.department || '') ? ' selected' : ''}>Vendor</option>
+          <option value="Advisor"${existing && /advisor/i.test(existing.department || '') ? ' selected' : ''}>Advisor</option>
+          <option value="Other"${!existing || !/partner|vendor|advisor/i.test(existing.department || '') ? ' selected' : ''}>Other</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field"><label>Email</label><input class="dp-input" id="dp-c-email" type="email" value="${esc(existing ? (existing.email || '') : '')}"></div>
+        <div class="dp-field"><label>Phone</label><input class="dp-input" id="dp-c-phone" value="${esc(existing ? (existing.phone || '') : '')}"></div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>Status / Note</label>
+        <input class="dp-input" id="dp-c-note" value="${esc(existing ? (existing.note || '') : '')}" placeholder="Active · Evaluating · Renewal May · etc.">
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       ${isEdit ? `<button class="dp-btn dp-btn-danger" onclick="DP._deleteContact(${Number(existing.id)})">Delete</button>` : ''}
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveContact(${isEdit ? Number(existing.id) : 'null'})">${isEdit ? 'Save' : 'Create'}</button>`
+    );
+  }
+  async function _saveContact(id) {
+    const body = {
+      name:       ($('#dp-c-name').value || '').trim(),
+      role_title: ($('#dp-c-role').value || '').trim(),
+      department: $('#dp-c-dept').value,
+      email:      ($('#dp-c-email').value || '').trim(),
+      phone:      ($('#dp-c-phone').value || '').trim(),
+      note:       ($('#dp-c-note').value || '').trim(),
+    };
+    if (!body.name) { toast('Name required', 'err'); return; }
+    const data = id
+      ? await api('PUT',  'contacts?id=' + id, body)
+      : await api('POST', 'contacts', body);
+    if (data) { toast(id ? 'Saved' : 'Added', 'ok'); _closeModal(); navigate('contacts'); }
+  }
+  async function _deleteContact(id) {
+    if (!confirm('Delete this contact?')) return;
+    const data = await api('DELETE', 'contacts?id=' + Number(id));
+    if (data) { toast('Deleted', 'ok'); _closeModal(); navigate('contacts'); }
+  }
+
+  // ===== Team Boards — landing page layout from user design =====
+  // Builds team cards from state.boards (board_type='team') + counts real
+  // posts/tasks server-side per team. Below the grid, renders the member
+  // roster from /contacts?team (=dp_users.is_active=1) with per-user stats.
+  async function _renderTeamsLanding(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Team Boards'),
+      h('div', { style: { color: 'var(--text-3)', fontSize: '12px' } }, [
+        h('span', { id: 'dp-teams-meta' }, 'Loading…'),
+      ]),
+    ]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading teams…</div>';
+    root.appendChild(loading);
+
+    // Parallel: contacts API (gives us team member list) + posts/tasks per board for counts
+    const teams = (state.boards || []).filter(b => b.board_type === 'team');
+    const [contactsRes, tasksRes, ...postCountsArr] = await Promise.all([
+      api('GET', 'contacts'),
+      api('GET', 'tasks'),
+      ...teams.map(t => api('GET', 'posts?board=' + encodeURIComponent(t.slug) + '&limit=100').catch(() => null)),
+    ]);
+    loading.remove();
+
+    const team = (contactsRes && contactsRes.team) || [];
+    const tasks = (tasksRes && tasksRes.tasks) || [];
+
+    // Team cards grid
+    const cards = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' } });
+    teams.forEach((t, idx) => {
+      const postsRes = postCountsArr[idx];
+      const posts = (postsRes && postsRes.posts) || [];
+      const country = t.slug.slice(5);  // team_xxx → xxx
+      const flag = _countryFlag(country);
+      const countryName = country.charAt(0).toUpperCase() + country.slice(1);
+
+      // Count members matching this country in their department
+      const members = team.filter(u => String(u.department || '').toLowerCase().includes(country));
+      const leadGuess = members.find(u => /lead|chief|head|pm/i.test(u.role_title || ''));
+      const openCt = posts.filter(p => p.approval_status !== 'approved').length;
+      const doneCt = posts.filter(p => p.approval_status === 'approved').length;
+      const total = Math.max(openCt + doneCt, 1);
+      const pct = Math.round((doneCt / total) * 100);
+
+      const card = h('div', { className: 'dp-panel', style: { padding: '16px 18px', cursor: 'pointer' }, onclick: () => navigate(t.slug) });
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+          <div>
+            <div style="font-size:var(--fs-16);font-weight:600;display:flex;align-items:center;gap:8px">
+              <span style="font-size:20px;line-height:1">${flag}</span>
+              <span>${esc(t.title || ('Team ' + countryName))}</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px">
+              ${leadGuess ? 'Lead · <strong style="color:var(--text-2);font-weight:500">' + esc(leadGuess.name) + '</strong>' : '&nbsp;'}
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);text-align:right">${members.length} ${members.length === 1 ? 'member' : 'people'}</div>
+        </div>
+        <div style="height:4px;background:var(--g-200);border-radius:2px;overflow:hidden;margin:12px 0 8px">
+          <div style="height:100%;background:var(--navy);width:${pct}%;transition:width var(--dur-reveal) var(--ease-decel)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-3)">
+          <span><strong style="color:var(--text);font-family:var(--font-mono);font-weight:500">${openCt}</strong> open</span>
+          <span><strong style="color:var(--text);font-family:var(--font-mono);font-weight:500">${doneCt}</strong> approved</span>
+          <span style="color:var(--text);font-family:var(--font-mono);font-weight:500">${pct}%</span>
+        </div>
+      `;
+      cards.appendChild(card);
+    });
+    root.appendChild(cards);
+
+    const meta = $('#dp-teams-meta');
+    if (meta) {
+      const totalMembers = team.length;
+      const totalTasks = tasks.filter(t => t.status !== 'done').length;
+      meta.textContent = teams.length + ' teams · ' + totalMembers + ' members · ' + totalTasks + ' open tasks';
+    }
+
+    // Members grid
+    if (!team.length) return;
+    const mRoot = h('section', { className: 'dp-panel', style: { padding: '16px 18px' } });
+    const memberCards = team.map(u => {
+      const myTasks = tasks.filter(tt => String(tt.assignee || '').toLowerCase() === String(u.name || '').toLowerCase());
+      const openCt = myTasks.filter(tt => tt.status !== 'done').length;
+      const doneCt = myTasks.filter(tt => tt.status === 'done').length;
+      const initials = (u.name || '?').slice(0, 1).toUpperCase();
+      const teamSlug = _firstMatchingTeamSlug(u.department);
+      const flag = teamSlug ? _countryFlag(teamSlug.slice(5)) : '';
+      return `
+        <div style="padding:14px;border:var(--bd);border-radius:var(--r-md);background:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div class="dp-avatar" style="width:32px;height:32px;font-size:12px">${esc(initials)}</div>
+            ${flag ? `<span style="font-size:14px">${flag}</span>` : ''}
+          </div>
+          <div style="font-weight:600;font-size:var(--fs-13);color:var(--text)">${esc(u.name)}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">${esc(u.role_title || u.department || '—')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;color:var(--text-3);text-align:left">
+            <div><strong class="mono" style="color:var(--text);font-weight:500;font-size:var(--fs-13)">${openCt}</strong><br>open</div>
+            <div><strong class="mono" style="color:var(--text);font-weight:500;font-size:var(--fs-13)">${doneCt}</strong><br>done</div>
+            <div><strong class="mono" style="color:var(--text);font-weight:500;font-size:var(--fs-13)">${u.phone ? '✓' : '—'}</strong><br>contact</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    mRoot.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+        <h3 style="margin:0;font-size:var(--fs-13);font-weight:600">Members</h3>
+        <a href="#" onclick="event.preventDefault();DP.navigate('contacts')" style="font-size:11px;color:var(--text-3)">View directory →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:12px">${memberCards}</div>
     `;
-    root.appendChild(panel);
+    root.appendChild(mRoot);
+  }
+  function _firstMatchingTeamSlug(dept) {
+    const d = String(dept || '').toLowerCase();
+    const teams = (state.boards || []).filter(b => b.board_type === 'team');
+    for (const t of teams) if (d.includes(t.slug.slice(5))) return t.slug;
+    return null;
+  }
+
+  // Country → flag emoji. Unicode regional indicator pairs are easier to
+  // maintain than shipping PNG/SVG flags.
+  const COUNTRY_ISO = {
+    korea: 'KR',       southkorea: 'KR',
+    japan: 'JP',
+    china: 'CN',
+    nepal: 'NP',
+    indonesia: 'ID',
+    pakistan: 'PK',
+    india: 'IN',
+    thailand: 'TH',
+    vietnam: 'VN',
+    philippines: 'PH',
+    malaysia: 'MY',
+    singapore: 'SG',
+    taiwan: 'TW',
+    hongkong: 'HK',
+    usa: 'US', us: 'US', america: 'US',
+    uk: 'GB', britain: 'GB',
+    canada: 'CA',
+    australia: 'AU',
+    germany: 'DE',
+    france: 'FR',
+  };
+  function _countryFlag(country) {
+    const code = COUNTRY_ISO[String(country || '').toLowerCase().replace(/\s+/g, '')];
+    if (!code) return '🏳️';
+    return String.fromCodePoint(0x1F1E6 + code.charCodeAt(0) - 65, 0x1F1E6 + code.charCodeAt(1) - 65);
   }
 
   // =========================================================
@@ -2054,42 +2368,99 @@ const DP = (() => {
       return;
     }
 
+    // [CASE STUDY — description parser matches BP Media changelog format]
+    // First line is the summary; subsequent lines starting with "- " become
+    // bullet changes. Blank lines separate. This mirrors data/changelog.json
+    // entries on the public site, so operators can author version notes in
+    // exactly the same mental model whether they're on BP Media or Dreampath.
+    function parseChangelog(desc) {
+      const raw = String(desc || '').replace(/\r\n/g, '\n').trim();
+      if (!raw) return { summary: '', changes: [] };
+      const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
+      const summary = lines[0] || '';
+      const changes = lines.slice(1).map(s => s.replace(/^[-•·*]\s*/, '')).filter(Boolean);
+      return { summary, changes };
+    }
+
+    const typeTone = (t) => t === 'feature' ? 'info' : t === 'bugfix' ? 'warn' : 'neutral';
+    const typeLabel = { feature: 'Feature', bugfix: 'Fix', initial: 'Initial' };
+
     const latest = versions[0];
-    const hero = h('div', { className: 'dp-panel' });
+    const latestCl = parseChangelog(latest.description);
+
+    const hero = h('div', { className: 'dp-panel', style: { marginBottom: '20px' } });
     hero.innerHTML = `
       <div class="dp-panel-head">
-        <h3>Current · v${esc(latest.version)}</h3>
-        <span style="font-size:11px;color:var(--text-3)">${esc(fmtTime(latest.released_at))}</span>
-      </div>
-      <div class="dp-panel-body pad">
-        <div style="font-size:var(--fs-14);color:var(--text);margin-bottom:4px">
-          <span class="dp-tag ${latest.type === 'feature' ? 'info' : latest.type === 'bugfix' ? 'warn' : 'neutral'}">${esc(latest.type)}</span>
-          <span style="margin-left:8px">${esc(latest.description || '')}</span>
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <h3 style="margin:0;font-family:var(--font-mono);font-size:var(--fs-20);font-weight:500">v${esc(latest.version)}</h3>
+          <span class="dp-tag ${typeTone(latest.type)}">${esc(typeLabel[latest.type] || latest.type)}</span>
         </div>
+        <span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono)">${esc(fmtTime(latest.released_at))}</span>
+      </div>
+      <div class="dp-panel-body pad" style="padding:18px 20px">
+        <div style="font-size:var(--fs-15);color:var(--text);font-weight:500;margin-bottom:10px;line-height:1.4">
+          ${esc(latestCl.summary || '(no summary)')}
+        </div>
+        ${latestCl.changes.length ? `
+          <ul style="margin:8px 0 0;padding-left:18px;color:var(--text-2);font-size:var(--fs-13);line-height:1.7">
+            ${latestCl.changes.map(c => `<li>${esc(c)}</li>`).join('')}
+          </ul>
+        ` : ''}
       </div>
     `;
     root.appendChild(hero);
 
-    const rows = versions.map(v => {
-      const tone = v.type === 'feature' ? 'info' : v.type === 'bugfix' ? 'warn' : 'neutral';
-      return `<tr>
-        <td class="mono" style="font-weight:500">v${esc(v.version)}</td>
-        <td><span class="dp-tag ${tone}">${esc(v.type)}</span></td>
-        <td>${esc(v.description || '—')}</td>
-        <td class="mono">${esc(fmtTime(v.released_at))}</td>
-      </tr>`;
-    }).join('');
-    const panel = h('div', { className: 'dp-panel', style: { marginTop: '16px' } });
-    panel.innerHTML = `
-      <div class="dp-panel-head">
-        <h3>Release history <span class="count">${versions.length}</span></h3>
+    // Release history — one card per version, BP Media-style (summary + bullets)
+    const list = h('div');
+    versions.forEach((v, idx) => {
+      if (idx === 0) return;
+      const cl = parseChangelog(v.description);
+      const card = h('div', { className: 'dp-panel', style: { marginBottom: '12px' } });
+      card.innerHTML = `
+        <div class="dp-panel-head">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span class="mono" style="font-weight:500;color:var(--text)">v${esc(v.version)}</span>
+            <span class="dp-tag ${typeTone(v.type)}">${esc(typeLabel[v.type] || v.type)}</span>
+          </div>
+          <span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono)">${esc(fmtTime(v.released_at))}</span>
+        </div>
+        <div class="dp-panel-body pad" style="padding:12px 16px">
+          <div style="font-size:var(--fs-13);color:var(--text);margin-bottom:${cl.changes.length ? '8px' : '0'}">
+            ${esc(cl.summary || v.description || '—')}
+          </div>
+          ${cl.changes.length ? `
+            <ul style="margin:0;padding-left:18px;color:var(--text-2);font-size:var(--fs-12);line-height:1.65">
+              ${cl.changes.map(c => `<li>${esc(c)}</li>`).join('')}
+            </ul>
+          ` : ''}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+    root.appendChild(list);
+
+    // Version format guide (BP Media-style aa.bbb.cc)
+    const guide = h('div', { className: 'dp-panel', style: { marginTop: '20px' } });
+    guide.innerHTML = `
+      <div class="dp-panel-head"><h3>Version number rules</h3></div>
+      <div class="dp-panel-body pad" style="padding:16px 20px">
+        <table style="width:100%;border-collapse:collapse;font-size:var(--fs-13)">
+          <tr>
+            <td style="width:70px;font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">aa</td>
+            <td style="padding:6px 0"><strong>Major</strong> — set manually by the project owner. Represents a full redesign or major milestone.</td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">bbb</td>
+            <td style="padding:6px 0"><strong>Feature</strong> — bumped when a new feature is added or an existing one is significantly changed. <code>cc</code> resets to <code>00</code>.</td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">cc</td>
+            <td style="padding:6px 0"><strong>Fix</strong> — bumped for bug fixes and hotfixes.</td>
+          </tr>
+        </table>
       </div>
-      <table class="dp-table">
-        <thead><tr><th style="width:140px">Version</th><th style="width:90px">Type</th><th>Description</th><th style="width:170px">Released</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
     `;
-    root.appendChild(panel);
+    root.appendChild(guide);
   }
   function _openVersionEditor() {
     _openModal(
@@ -2103,8 +2474,11 @@ const DP = (() => {
         </select>
       </div>
       <div class="dp-field" style="margin-bottom:0">
-        <label>Description</label>
-        <textarea class="dp-textarea" id="dp-v-desc" placeholder="What changed in this version?"></textarea>
+        <label>Description <span style="font-weight:400;color:var(--text-3);margin-left:4px">(BP Media format: summary on line 1, bullets after)</span></label>
+        <textarea class="dp-textarea" id="dp-v-desc" rows="8" placeholder="One-line summary (user perspective, what changed and why).
+- Concrete change 1 with file / module reference
+- Concrete change 2, with numbers where possible
+- Version transition, e.g. v01.042.05 → v01.042.06"></textarea>
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
@@ -2189,13 +2563,22 @@ const DP = (() => {
     const filesHtml = (p.files || []).length ? `
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
         <div class="dp-h2" style="margin-bottom:8px">Files</div>
-        ${(p.files || []).map(f => `
-          <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:var(--fs-12)">
-            <span class="dp-tag neutral">${esc((f.file_type || '').split('/')[1] || 'file')}</span>
-            <a href="${esc(f.file_url)}" target="_blank" rel="noopener">${esc(f.file_name)}</a>
-            <span style="margin-left:auto;color:var(--text-3);font-family:var(--font-mono)">${f.file_size ? Math.round(f.file_size / 1024) + ' KB' : ''}</span>
-          </div>
-        `).join('')}
+        <div class="dp-file-list">
+          ${(p.files || []).map(f => {
+            const isImg = !!f.is_image;
+            const ext = (f.file_name || '').split('.').pop().toLowerCase().slice(0, 6);
+            return `
+              <div class="dp-file-item">
+                <span aria-hidden="true">${isImg ? '🖼' : '📎'}</span>
+                <span class="name" title="${esc(f.file_name)}">${esc(f.file_name)}</span>
+                <span class="size">${f.file_size ? Math.round(f.file_size / 1024) + ' KB' : ext.toUpperCase()}</span>
+                <a class="dp-btn dp-btn-secondary dp-btn-sm" href="${esc(f.file_url)}"
+                   download="${esc(f.file_name)}" target="_blank" rel="noopener"
+                   style="text-decoration:none;padding:0 10px">Download</a>
+              </div>
+            `;
+          }).join('')}
+        </div>
       </div>
     ` : '';
     const historyHtml = (p.history || []).length ? `
@@ -2222,10 +2605,18 @@ const DP = (() => {
       </div>
     ` : '';
 
+    // Edit gate is permissive on the client — the real authz is on the
+    // server (PUT /posts?id rejects 403 if the caller isn't admin/author).
+    // Here we just gate the *button* so the UI doesn't pretend the action
+    // is missing for people who have it. Match against uid OR display_name
+    // because the earlier prod schema stored only author_name on some rows.
     const isAdmin = state.user && state.user.role === 'admin';
-    const isAuthor = state.user && (p.author_id === state.user.uid || p.author_name === _displayName());
-    const canEdit = isAdmin || isAuthor;
-    const canDelete = isAdmin;
+    const mine = state.user && (
+      (p.author_id && Number(p.author_id) === Number(state.user.uid)) ||
+      (p.author_name && _displayName() && p.author_name === _displayName())
+    );
+    const canEdit = !!(isAdmin || mine);
+    const canDelete = !!isAdmin;
 
     _openModal(
       p.title || '(Untitled)',
@@ -2633,7 +3024,7 @@ const DP = (() => {
     openCmd, closeCmd, _cmdPick,
     openCreate, openNotifs, setDensity,
     viewPost, viewTask, viewNote,
-    _voteApproval, _inlineApprove,
+    _voteApproval, _inlineApprove, _inlineReject,
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _closeModal,
     _openTaskEditor, _saveNewTask, _taskTransition,
@@ -2643,6 +3034,7 @@ const DP = (() => {
     _editPost, _saveEditPost, _deletePost,
     _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
+    _openContactEditor, _saveContact, _deleteContact, _filterContacts,
   };
 })();
 
