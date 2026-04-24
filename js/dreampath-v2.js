@@ -68,32 +68,42 @@ const DP = (() => {
     // (deliverables) → Schedule (time-bound ops) → People → Reference
     // (admin-only ops/documentation). Calendar moved into Overview because
     // a PMO dashboard surfaces today's schedule alongside announcements.
+    //
+    // Permission preset gate: non-admins with an assigned preset only see
+    // items whose `perm` (view:<slug>) is included. Users without a preset
+    // still see everything (legacy default).
+    const guard = (items) => items.filter(it => !it.perm || _hasPerm(it.perm));
     return [
-      { title: 'Overview', items: [
-        { id: 'home',          label: 'Home',             icon: 'home' },
-        { id: 'announcements', label: 'Announcements',    icon: 'megaphone' },
-        { id: 'calendar',      label: 'Calendar',         icon: 'calendar' },
-      ]},
-      { title: 'Work', items: [
-        { id: 'documents',     label: 'Documents',        icon: 'book' },
-        { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note' },
-        { id: 'tasks',         label: 'Tasks',            icon: 'check' },
-        { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard' },
-      ]},
-      { title: 'People', items: [
-        { id: 'teams',    label: 'Team Boards', icon: 'users-admin' },
+      { title: 'Overview', items: guard([
+        { id: 'home',          label: 'Home',             icon: 'home',      perm: 'view:home' },
+        { id: 'announcements', label: 'Announcements',    icon: 'megaphone', perm: 'view:announcements' },
+        { id: 'calendar',      label: 'Calendar',         icon: 'calendar',  perm: 'view:calendar' },
+      ])},
+      { title: 'Work', items: guard([
+        { id: 'documents',     label: 'Documents',        icon: 'book',      perm: 'view:documents' },
+        { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note',      perm: 'view:minutes' },
+        { id: 'tasks',         label: 'Tasks',            icon: 'check',     perm: 'view:tasks' },
+        { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard', perm: 'view:notes' },
+      ])},
+      { title: 'People', items: guard([
+        { id: 'teams',    label: 'Team Boards', icon: 'users-admin', perm: 'view:teams' },
         ...teamBoards.map(b => ({
           id: b.id, label: b.label,
           flag: _countryFlag(b.id.slice(5)),
+          perm: 'view:teams',
         })),
-        { id: 'contacts', label: 'Contacts',    icon: 'phone' },
-      ] },
+        { id: 'contacts', label: 'Contacts',    icon: 'phone', perm: 'view:contacts' },
+      ]) },
       { title: 'Reference', items: (isOwner
         ? [{ id: 'reference', label: 'Admin console', icon: 'settings' },
            { id: 'users',     label: 'Users',         icon: 'users-admin' },
+           { id: 'presets',   label: 'Permission presets', icon: 'compass' },
            { id: 'rules',     label: 'Dev Rules',     icon: 'layers' },
            { id: 'versions',  label: 'Versions',      icon: 'file-text' }]
-        : []
+        : guard([
+            { id: 'rules',    label: 'Dev Rules',     icon: 'layers',    perm: 'view:rules' },
+            { id: 'versions', label: 'Versions',      icon: 'file-text', perm: 'view:versions' },
+          ])
       )},
     ].filter(g => g.items.length > 0);
   }
@@ -504,6 +514,12 @@ const DP = (() => {
     const dt = typeof d === 'string' ? new Date(d) : d;
     return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
   };
+  const _MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDateShort = (d) => {
+    if (!d) return '';
+    const dt = typeof d === 'string' ? new Date(d) : d;
+    return _MONTH_SHORT[dt.getMonth()] + ' ' + dt.getDate();
+  };
   const fmtTime = (iso) => {
     if (!iso) return '';
     const dt = new Date(iso);
@@ -588,9 +604,26 @@ const DP = (() => {
       phone: u.phone || '',
       role_title: u.role_title || '',
       avatar_url: u.avatar_url || '',
+      preset_id: u.preset_id || null,
+      preset_name: u.preset_name || '',
+      permissions: Array.isArray(u.permissions) ? u.permissions : [],
     };
     try { localStorage.setItem('dp_user', JSON.stringify(state.user)); } catch (_) {}
   }
+
+  // Preset-gated page access. Admins bypass. Non-admins need "view:<page>" in their
+  // preset's permissions array. If a user has no preset, we fall back to the legacy
+  // behavior (all non-admin pages visible) so existing seeded accounts keep working
+  // until owner assigns them a preset via the admin console.
+  function _hasPerm(scope) {
+    if (!state.user) return false;
+    if (state.user.role === 'admin') return true;
+    const perms = Array.isArray(state.user.permissions) ? state.user.permissions : [];
+    if (!state.user.preset_id) return scope.startsWith('view:');
+    return perms.includes(scope);
+  }
+  function _canView(page)  { return _hasPerm('view:'  + page); }
+  function _canWrite(page) { return _hasPerm('write:' + page); }
 
   async function _refreshSelf() {
     const data = await api('GET', 'me');
@@ -848,6 +881,10 @@ const DP = (() => {
         if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderUsers(pageEl); label = 'Users';
       },
+      presets:       () => {
+        if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
+        _renderPresets(pageEl); label = 'Permission presets';
+      },
       reference:     () => {
         if (!state.user || state.user.username !== 'jimmy') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderAdminConsole(pageEl); label = 'Admin console';
@@ -922,16 +959,17 @@ const DP = (() => {
     const now = new Date();
     const today = todayISO();
     const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
-    const dateStr = fmtDate(now);
-    const meetingsThisWeek = (home && home.today_summary && home.today_summary.meetings_this_week) || 0;
+    const dateStr = fmtDateShort(now);
+    const events = (home && home.events_current_month) || [];
+    const meetingsToday = events.filter(e => String(e.start_date || '').slice(0, 10) === today).length;
 
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('div', {}, [
         h('h1', {}, `Good morning, ${_displayName()}`),
         h('div', { className: 'meta' }, [
           h('span', {}, `${weekday} · ${dateStr} · `),
-          h('strong', {}, String(meetingsThisWeek)),
-          h('span', {}, ' meetings this week'),
+          h('strong', {}, String(meetingsToday)),
+          h('span', {}, meetingsToday === 1 ? ' meeting today' : ' meetings today'),
         ]),
       ]),
     ]));
@@ -947,7 +985,6 @@ const DP = (() => {
     left.appendChild(_renderPendingApprovalsPanel((home && home.pending_approvals) || []));
     left.appendChild(_renderActivityPanel((home && home.recent_changes) || []));
 
-    const events = (home && home.events_current_month) || [];
     const myTasks = (home && home.my_tasks) || [];
     const summary = (home && home.today_summary) || {};
 
@@ -961,8 +998,8 @@ const DP = (() => {
     root.appendChild(grid);
   }
 
-  // Chip metrics are all derived from /home payload + a couple of my_tasks
-  // computed fields (overdue flag is done client-side from due_date vs today).
+  // Stat strip — matches design spec (PMO Style Tokens v2): 5 chips with colored
+  // left border by tone, big stat number, trend delta beside it, sub-copy below.
   function _renderStatStrip(home, today) {
     const my = (home && home.my_tasks) || [];
     const summary = (home && home.today_summary) || {};
@@ -978,17 +1015,47 @@ const DP = (() => {
     const todayMtgs   = events.filter(e => String(e.start_date || '').slice(0, 10) === today).length;
     const hiNotes     = summary.high_priority_notes || 0;
 
-    const nextMeet = events.find(e => String(e.start_date || '').slice(0, 10) === today);
+    const nextMeet = events.slice().sort((a, b) => {
+      const ka = String(a.start_date || '') + ' ' + String(a.start_time || '');
+      const kb = String(b.start_date || '') + ' ' + String(b.start_time || '');
+      return ka.localeCompare(kb);
+    }).find(e => String(e.start_date || '').slice(0, 10) === today);
     const nextMeetText = nextMeet
-      ? 'Next · ' + (nextMeet.start_time || '') + ' ' + nextMeet.title
-      : 'No upcoming';
+      ? 'Next · ' + (nextMeet.start_time || '') + ' ' + (nextMeet.title || '').slice(0, 22)
+      : (todayMtgs === 0 ? 'Nothing scheduled' : 'See calendar');
+
+    // Task progress — done / total across open-or-recent slice
+    const taskTotal = my.length || 0;
+    const taskDone  = my.filter(t => t.status === 'done').length;
+    const pct       = taskTotal > 0 ? Math.round((taskDone / taskTotal) * 100) : 0;
+    const progressSub = taskTotal > 0
+      ? taskDone + ' of ' + taskTotal + ' complete'
+      : 'No tasks assigned';
+
+    const approvalsSub = pendingCt > 0
+      ? 'awaiting your vote'
+      : 'you are clear';
+
+    const notesSub = hiNotes > 0
+      ? 'high priority · needs attention'
+      : 'clean';
 
     const chips = [
-      { lbl: 'My tasks due',       n: tasksDue,  sub: overdue + ' overdue · act now', target: 'tasks',    tone: overdue > 0 ? 'alert' : 'info' },
-      { lbl: 'Overdue',            n: overdue,   sub: overdue > 0 ? 'past due date' : 'all caught up',   target: 'tasks',    tone: overdue > 0 ? 'alert' : 'ok' },
-      { lbl: 'Pending approvals',  n: pendingCt, sub: pendingCt > 0 ? 'awaiting your vote' : 'none',     target: 'minutes',  tone: pendingCt > 0 ? 'warn' : 'info' },
-      { lbl: "Today's meetings",   n: todayMtgs, sub: nextMeetText,                                      target: 'calendar', tone: 'info' },
-      { lbl: 'High-priority notes',n: hiNotes,   sub: hiNotes > 0 ? 'open · needs attention' : 'clean',  target: 'notes',    tone: hiNotes > 0 ? 'warn' : 'info' },
+      { lbl: 'My tasks due',       n: tasksDue,  delta: overdue > 0 ? (overdue + ' overdue') : '',
+        sub: overdue > 0 ? 'act now · past due' : (tasksDue > 0 ? 'on track' : 'all caught up'),
+        target: 'tasks',    tone: overdue > 0 ? 'alert' : (tasksDue > 0 ? 'info' : 'ok') },
+      { lbl: 'Pending approvals',  n: pendingCt, delta: '',
+        sub: approvalsSub,
+        target: 'minutes',  tone: pendingCt > 0 ? 'warn' : 'ok' },
+      { lbl: "Today's meetings",   n: todayMtgs, delta: '',
+        sub: nextMeetText,
+        target: 'calendar', tone: 'info' },
+      { lbl: 'Notes · issues',     n: hiNotes,   delta: '',
+        sub: notesSub,
+        target: 'notes',    tone: hiNotes > 0 ? 'warn' : 'ok' },
+      { lbl: 'Task progress',      n: pct + '%', delta: taskDone > 0 ? ('+' + taskDone + ' done') : '',
+        sub: progressSub,
+        target: 'tasks',    tone: pct >= 60 ? 'ok' : 'info' },
     ];
     const strip = h('section', { id: 'dp-today-strip', className: 'dp-stat-strip', 'aria-label': 'Today summary' });
     chips.forEach(c => {
@@ -1000,7 +1067,7 @@ const DP = (() => {
       });
       btn.innerHTML = `
         <div class="lbl">${esc(c.lbl)}</div>
-        <div class="val"><span class="n">${esc(String(c.n))}</span></div>
+        <div class="val"><span class="n">${esc(String(c.n))}</span>${c.delta ? `<span class="delta">${esc(c.delta)}</span>` : ''}</div>
         <div class="sub">${esc(c.sub)}</div>
       `;
       strip.appendChild(btn);
@@ -1020,14 +1087,17 @@ const DP = (() => {
       panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No announcements.</div>';
       return panel;
     }
-    const body = posts.slice(0, 3).map(p => {
+    // Pinned announcements float to the top so notices are never hidden below fresh posts.
+    const ordered = posts.slice().sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
+    const body = ordered.slice(0, 3).map(p => {
       const excerpt = String(p.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      const pinCls = p.pinned ? ' dp-post-pinned' : '';
       return `
-        <button type="button" class="dp-post-item"
+        <button type="button" class="dp-post-item${pinCls}"
                 onclick="DP.viewPost('announcements', ${Number(p.id)})"
                 aria-label="${esc(p.title)}">
           <div class="t">
-            ${p.pinned ? '<span class="dp-pin" aria-label="Pinned"></span>' : ''}
+            ${p.pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : ''}
             <span>${esc(p.title)}</span>
           </div>
           ${excerpt ? `<div class="excerpt">${esc(excerpt)}</div>` : ''}
@@ -1326,39 +1396,57 @@ const DP = (() => {
       ? '<th>Title</th><th style="width:140px">Author</th><th style="width:130px">Approval</th><th style="width:180px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
       : '<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
 
-    // [CASE STUDY — revision threading via parent_post_id]
-    // Rejected minutes that were revised are stored with a parent_post_id
-    // pointing at the previous version. We display them indented under the
-    // parent with a "ㄴ" prefix so the approval history is visible at a glance
-    // without clicking into each one.
+    // [CASE STUDY — unified threading via parent_post_id + reply_to_id]
+    // Two kinds of children are nested under a parent with a ㄴ prefix:
+    //   1) parent_post_id — minutes revisions (rejected → revised)
+    //   2) reply_to_id    — discussion replies on any board post
+    // Either relation indents one level; reply children get a "reply" tag,
+    // revision children get a "v2/v3" tag so readers can tell them apart.
     const byId = new Map(posts.map(p => [Number(p.id), p]));
     const roots = [];
     const childrenByParent = {};
+    const childKind = {};
     posts.forEach(p => {
-      const parent = p.parent_post_id && byId.get(Number(p.parent_post_id));
+      const pid = p.parent_post_id && byId.get(Number(p.parent_post_id));
+      const rid = p.reply_to_id && byId.get(Number(p.reply_to_id));
+      const parent = pid || rid;
       if (parent) {
         const k = Number(parent.id);
         (childrenByParent[k] = childrenByParent[k] || []).push(p);
+        childKind[Number(p.id)] = pid ? 'revision' : 'reply';
       } else {
         roots.push(p);
       }
     });
+    // Pinned roots bubble to the top of the root list so notices stand out.
+    roots.sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
 
     function renderPostRow(p, depth) {
-      const pin = p.pinned ? '<span class="dp-pin" style="margin-right:6px" aria-label="Pinned"></span>' : '';
+      const pinned = !!p.pinned;
+      const notice = pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : '';
       const ts = fmtTime(p.updated_at || p.created_at);
       const indent = depth > 0
         ? `<span style="display:inline-block;width:${depth * 18}px"></span><span style="color:var(--text-3);margin-right:6px;font-family:var(--font-mono)">ㄴ</span>`
         : '';
-      const revTag = depth > 0 ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>` : '';
-      const titleCell = `${indent}${pin}${esc(p.title)}${revTag}`;
+      const kind = childKind[Number(p.id)] || '';
+      const childTag = depth > 0
+        ? (kind === 'revision'
+            ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>`
+            : ` <span class="dp-tag info" style="margin-left:6px">reply</span>`)
+        : '';
+      const titleCell = `${indent}${notice}${esc(p.title)}${childTag}`;
+
+      // Pin class only applies to top-level rows — a reply under a pinned
+      // notice should not itself be tinted navy.
+      const pinClass = (pinned && depth === 0) ? 'dp-row-pinned' : '';
 
       if (isMinutes) {
         const s = p.approval_status || 'draft';
         const tone = s === 'approved' ? 'ok' : s === 'pending' ? 'warn' : s === 'rejected' ? 'alert' : 'neutral';
-        const rowClass = s === 'approved' ? 'dp-row-approved'
+        const statusCls = s === 'approved' ? 'dp-row-approved'
                        : s === 'pending'  ? 'dp-row-pending'
                        : s === 'rejected' ? 'dp-row-rejected' : '';
+        const rowClass = [pinClass, statusCls].filter(Boolean).join(' ');
         // Approve/Reject visible ONLY if I'm listed as a pending approver.
         const canVote = s === 'pending' && myPendingSet && myPendingSet.has(Number(p.id));
         const voteCell = canVote
@@ -1374,7 +1462,7 @@ const DP = (() => {
           <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
-      return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
+      return `<tr class="${pinClass}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
         <td>${titleCell}</td>
         <td>${esc(p.author_name || '')}</td>
         <td class="mono">${p.comment_count || 0}</td>
@@ -2187,8 +2275,32 @@ const DP = (() => {
   // =========================================================
   async function _renderRules(root) {
     root.innerHTML = '';
-    root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Dev Rules')]));
+    const active = state.rulesTab || 'md';
 
+    // Tab strip at the top of the page head.
+    const tabStrip = h('div', { className: 'dp-tabs', role: 'tablist' });
+    [
+      { id: 'md',     label: 'DREAMPATH.md',  sub: 'operating rules' },
+      { id: 'design', label: 'Design Guide',  sub: 'tokens · colors · spacing' },
+    ].forEach(t => {
+      const btn = h('button', {
+        type: 'button', role: 'tab',
+        className: 'dp-tab' + (t.id === active ? ' dp-tab-on' : ''),
+        'aria-selected': t.id === active ? 'true' : 'false',
+        onclick: () => { state.rulesTab = t.id; _renderRules(root); },
+      });
+      btn.innerHTML = `<span class="dp-tab-t">${esc(t.label)}</span><span class="dp-tab-s">${esc(t.sub)}</span>`;
+      tabStrip.appendChild(btn);
+    });
+    const head = h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Dev Rules')]);
+    root.appendChild(head);
+    root.appendChild(tabStrip);
+
+    if (active === 'design') { _renderRulesDesign(root); return; }
+    _renderRulesMarkdown(root);
+  }
+
+  async function _renderRulesMarkdown(root) {
     const layout = h('div', { className: 'dp-rules-layout' });
     const body = h('article', { className: 'dp-panel dp-rules-body', id: 'dp-rules-body' });
     body.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading DREAMPATH.md…</div>';
@@ -2297,6 +2409,137 @@ const DP = (() => {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Design Guide tab — static reference derived from the PMO Style Tokens v2
+  // source of truth. Matches the actual CSS variable values so changes to
+  // :root tokens are visible here (swatches pull from var(--...) directly).
+  function _renderRulesDesign(root) {
+    const host = h('div', { className: 'dp-rules-body' });
+    root.appendChild(host);
+
+    const swatch = (name, css, textOn) => `
+      <div class="dp-sw">
+        <div class="dp-sw-chip" style="background:var(${css});color:${textOn || '#fff'}">Aa</div>
+        <div class="dp-sw-meta">
+          <div class="dp-sw-name">${esc(name)}</div>
+          <div class="dp-sw-var">${esc(css)}</div>
+        </div>
+      </div>`;
+    const chip = (label, css) => `<div class="dp-token-row"><span class="dp-token-k">${esc(label)}</span><span class="dp-token-v">${esc(css)}</span></div>`;
+
+    host.innerHTML = `
+      <section class="dp-rules-card">
+        <h2>Source of truth</h2>
+        <p>These values mirror the PMO Style Tokens v2 (ERP) reference + <code>css/style.css</code>
+        on BP미디어 so Dreampath and the public site stay aligned. When a token changes in
+        <code>dreampath-v2.html</code> <code>:root</code>, the swatches below update automatically.</p>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Brand colors</h2>
+        <div class="dp-sw-grid">
+          ${swatch('Navy',       '--navy')}
+          ${swatch('Navy 700',   '--navy-700')}
+          ${swatch('Navy 600',   '--navy-600')}
+          ${swatch('Green',      '--green')}
+          ${swatch('Gold',       '--gold')}
+        </div>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Status colors</h2>
+        <div class="dp-sw-grid">
+          ${swatch('OK',     '--ok')}
+          ${swatch('Warn',   '--warn')}
+          ${swatch('Alert',  '--alert')}
+          ${swatch('Info',   '--info')}
+        </div>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Gray scale</h2>
+        <div class="dp-sw-grid">
+          ${swatch('G 950', '--g-950')}
+          ${swatch('G 900', '--g-900')}
+          ${swatch('G 700', '--g-700', '#fff')}
+          ${swatch('G 500', '--g-500', '#fff')}
+          ${swatch('G 300', '--g-300', '#1F2937')}
+          ${swatch('G 200', '--g-200', '#1F2937')}
+          ${swatch('G 150', '--g-150', '#1F2937')}
+          ${swatch('G 100', '--g-100', '#1F2937')}
+          ${swatch('G 050', '--g-050', '#1F2937')}
+        </div>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Typography</h2>
+        <p><strong>UI:</strong> Google Sans Flex (variable, opsz 6..144 · wght 1..1000). <strong>Mono:</strong> JetBrains Mono.</p>
+        <table>
+          <thead><tr><th>Token</th><th>Size</th><th>Example</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">--fs-10</td><td>10px</td><td style="font-size:10px">Metric label / caption</td></tr>
+            <tr><td class="mono">--fs-12</td><td>12px</td><td style="font-size:12px">Secondary body</td></tr>
+            <tr><td class="mono">--fs-13</td><td>13px</td><td style="font-size:13px">Primary UI (base)</td></tr>
+            <tr><td class="mono">--fs-16</td><td>16px</td><td style="font-size:16px">Modal heading</td></tr>
+            <tr><td class="mono">--fs-20</td><td>20px</td><td style="font-size:20px;font-weight:600">Page title</td></tr>
+            <tr><td class="mono">stat .n</td><td>28px / 700</td><td style="font-size:28px;font-weight:700;font-variant-numeric:tabular-nums">1,248</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Spacing (BP미디어 ported)</h2>
+        <div class="dp-token-grid">
+          ${chip('--gap-micro',        '4px')}
+          ${chip('--gap-tight',        '8px')}
+          ${chip('--gap-element',     '12px')}
+          ${chip('--gap-card',        '16px')}
+          ${chip('--gap-section',     '24px')}
+          ${chip('--gap-section-out', '32px')}
+          ${chip('--pad-page-desktop','32px')}
+          ${chip('--pad-page-tablet', '20px')}
+          ${chip('--pad-page-mobile', '12px')}
+        </div>
+        <p style="margin-top:12px;color:var(--text-3);font-size:12px">Numeric aliases <code>--s-1</code> through <code>--s-10</code> (4/8/12/16/20/24/32/40) still exist for legacy surfaces; use the semantic tokens above in new code.</p>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Shape · motion · focus</h2>
+        <div class="dp-token-grid">
+          ${chip('--r-sm',       '2px (default)')}
+          ${chip('--r-md',       '3px (modals, cards)')}
+          ${chip('--r-lg',       '4px (large surfaces)')}
+          ${chip('--row-compact','28px')}
+          ${chip('--row-default','32px')}
+          ${chip('--row-comfort','40px')}
+          ${chip('--touch-min',  '40px')}
+          ${chip('--dur-swift',  '120ms · default')}
+          ${chip('--dur-moderate','200ms')}
+          ${chip('--dur-reveal', '280ms (modals)')}
+          ${chip('--focus-ring', '2px navy-600 + halo')}
+        </div>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Data viz palette</h2>
+        <div class="dp-sw-grid">
+          ${swatch('dv-1', '--dv-1')}
+          ${swatch('dv-2', '--dv-2')}
+          ${swatch('dv-3', '--dv-3')}
+          ${swatch('dv-4', '--dv-4')}
+          ${swatch('dv-5', '--dv-5')}
+          ${swatch('dv-6', '--dv-6')}
+          ${swatch('dv-7', '--dv-7')}
+          ${swatch('dv-8', '--dv-8')}
+        </div>
+      </section>
+
+      <section class="dp-rules-card">
+        <h2>Iconography</h2>
+        <p>24×24 viewBox, <code>stroke="currentColor"</code> at <code>stroke-width: 1.75</code>, round linecap/linejoin. Rendered via CSS <code>mask-image</code> so any element inherits the parent color. All icons live in <code>img/dreampath-v2/icons/</code>.</p>
+      </section>
+    `;
+  }
+
   let _rulesScrollHandler = null;
   function _installRulesScrollSpy() {
     if (_rulesScrollHandler) window.removeEventListener('scroll', _rulesScrollHandler);
@@ -2348,16 +2591,21 @@ const DP = (() => {
     // Tile: count + sub + dispatch. [CASE STUDY 2026-04-24 — no eval() in CSP]
     // Early version used eval(t.onclick) which works nowhere with strict CSP.
     // Tiles now hold a real function reference that runs on click.
+    // Fetch preset count for the tile
+    const presetsRes = await api('GET', 'presets').catch(() => null);
+    const presetsList = (presetsRes && presetsRes.presets) || [];
+
     const tileData = [
       { title: 'Boards',       count: boards.length,   sub: 'manage post boards + team boards',         icon: 'layers',      run: () => _scrollToAnchor('adm-boards') },
       { title: 'Users',        count: users.length,    sub: activeUsers + ' active · ' + inactiveUsers + ' disabled', icon: 'users-admin', run: () => navigate('users') },
+      { title: 'Permission presets', count: presetsList.length, sub: 'page-level view/write templates', icon: 'compass',     run: () => navigate('presets') },
       { title: 'Departments',  count: depts.length,    sub: 'team tokens used by team boards + contacts', icon: 'community', run: () => _scrollToAnchor('adm-depts') },
       { title: 'Versions',     count: versions.length, sub: 'release log · BP changelog format',         icon: 'file-text',   run: () => navigate('versions') },
       { title: 'Contacts',     count: contacts.length, sub: 'partners / vendors / advisors',             icon: 'phone',       run: () => navigate('contacts') },
       { title: 'Events',       count: events.length,   sub: 'this month',                                 icon: 'calendar',   run: () => navigate('calendar') },
       { title: 'Tasks',        count: tasks.length,    sub: tasks.filter(t => t.status !== 'done').length + ' open', icon: 'check',       run: () => navigate('tasks') },
       { title: 'Notes / Issues', count: notes.length, sub: notes.filter(n => n.status === 'open').length + ' open', icon: 'clipboard',  run: () => navigate('notes') },
-      { title: 'Dev Rules',    count: '',              sub: 'DREAMPATH.md live-rendered',                 icon: 'compass',     run: () => navigate('rules') },
+      { title: 'Dev Rules',    count: '',              sub: 'DREAMPATH.md + Design Guide',                icon: 'layers',     run: () => navigate('rules') },
     ];
     const tiles = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px', marginBottom: '20px' } });
     tileData.forEach(t => {
@@ -2599,11 +2847,16 @@ const DP = (() => {
     const rows = users.map(u => {
       const roleTone = u.role === 'admin' ? 'info' : 'neutral';
       const activeTone = u.is_active ? 'ok' : 'alert';
+      const presetCell = u.role === 'admin'
+        ? '<span style="color:var(--text-3);font-size:11px">—</span>'
+        : (u.preset_name
+            ? `<span class="dp-tag neutral">${esc(u.preset_name)}</span>`
+            : `<span style="color:var(--text-3);font-size:11px">(none · all view)</span>`);
       return `<tr>
-        <td class="mono">${u.id}</td>
         <td><strong>${esc(u.username)}</strong></td>
         <td>${esc(u.display_name || '')}</td>
         <td><span class="dp-tag ${roleTone}">${esc(u.role || 'member')}</span></td>
+        <td>${presetCell}</td>
         <td>${esc(u.department || '—')}</td>
         <td>${esc(u.email || '—')}</td>
         <td class="mono">${esc(fmtTime(u.last_login_at))}</td>
@@ -2622,8 +2875,9 @@ const DP = (() => {
       <div class="dp-panel-head"><h3>All users <span class="count">${users.length}</span></h3></div>
       <table class="dp-table">
         <thead><tr>
-          <th style="width:60px">ID</th><th style="width:120px">Username</th><th>Display name</th>
-          <th style="width:80px">Role</th><th style="width:120px">Team</th><th>Email</th>
+          <th style="width:120px">Username</th><th>Display name</th>
+          <th style="width:80px">Role</th><th style="width:160px">Preset</th>
+          <th style="width:120px">Team</th><th>Email</th>
           <th style="width:140px">Last login</th><th style="width:90px">Status</th>
           <th style="width:130px;text-align:right">Actions</th>
         </tr></thead>
@@ -2633,6 +2887,186 @@ const DP = (() => {
     root.appendChild(panel);
   }
 
+  // -------------------------- Permission presets --------------------------
+  // Pages that can be toggled per preset. Admin-only pages (users, presets,
+  // reference) are intentionally excluded — those stay owner/admin gated.
+  const PRESET_PAGES = [
+    { key: 'home',          label: 'Home' },
+    { key: 'announcements', label: 'Announcements' },
+    { key: 'calendar',      label: 'Calendar' },
+    { key: 'documents',     label: 'Documents' },
+    { key: 'minutes',       label: 'Meeting Minutes' },
+    { key: 'tasks',         label: 'Tasks' },
+    { key: 'notes',         label: 'Notes / Issues' },
+    { key: 'teams',         label: 'Team Boards' },
+    { key: 'contacts',      label: 'Contacts' },
+    { key: 'rules',         label: 'Dev Rules' },
+    { key: 'versions',      label: 'Versions' },
+  ];
+
+  async function _renderPresets(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('div', {}, [
+        h('h1', {}, 'Permission presets'),
+        h('div', { className: 'meta' }, 'Assign a preset to each member to control which pages they can view or edit. Admins bypass presets.'),
+      ]),
+      h('div', {}, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPresetEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
+          h('span', {}, ' New preset'),
+        ]),
+      ]),
+    ]));
+
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading presets…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'presets');
+    loading.remove();
+    const presets = (data && data.presets) || [];
+
+    const rows = presets.map(p => {
+      let perms = [];
+      try { perms = JSON.parse(p.permissions || '{"permissions":[]}').permissions || []; } catch (_e) { perms = []; }
+      const viewCt = perms.filter(x => x.startsWith('view:')).length;
+      const writeCt = perms.filter(x => x.startsWith('write:')).length;
+      const builtinTag = p.is_builtin ? '<span class="dp-tag info" style="margin-left:6px">built-in</span>' : '';
+      return `<tr>
+        <td><strong>${esc(p.name)}</strong>${builtinTag}</td>
+        <td style="color:var(--text-2);font-size:12px">${esc(p.description || '—')}</td>
+        <td class="mono"><span class="dp-tag neutral">${viewCt} view</span> <span class="dp-tag neutral" style="margin-left:4px">${writeCt} write</span></td>
+        <td class="mono">${p.user_count || 0}</td>
+        <td style="text-align:right">
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._openPresetEditor(${Number(p.id)})">Edit</button>
+          ${!p.is_builtin
+            ? `<button class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="DP._deletePreset(${Number(p.id)}, '${esc(p.name)}', ${Number(p.user_count || 0)})">Delete</button>`
+            : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head"><h3>All presets <span class="count">${presets.length}</span></h3></div>
+      <table class="dp-table">
+        <thead><tr>
+          <th style="width:180px">Name</th>
+          <th>Description</th>
+          <th style="width:200px">Permissions</th>
+          <th style="width:80px">Users</th>
+          <th style="width:130px;text-align:right">Actions</th>
+        </tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-3);padding:40px">No presets yet.</td></tr>'}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
+  }
+
+  async function _openPresetEditor(presetId) {
+    let existing = null;
+    if (presetId) {
+      const data = await api('GET', 'presets');
+      if (data) existing = (data.presets || []).find(p => Number(p.id) === Number(presetId));
+      if (!existing) { toast('Preset not found', 'err'); return; }
+    }
+    const isEdit = !!existing;
+    let perms = [];
+    if (existing) {
+      try { perms = JSON.parse(existing.permissions || '{"permissions":[]}').permissions || []; } catch (_e) { perms = []; }
+    }
+    const has = (p) => perms.includes(p);
+
+    const gridRows = PRESET_PAGES.map(pg => `
+      <tr>
+        <td><strong>${esc(pg.label)}</strong><div style="font-size:11px;color:var(--text-3)">${esc(pg.key)}</div></td>
+        <td style="text-align:center">
+          <input type="checkbox" class="dp-preset-cb" data-scope="view:${esc(pg.key)}" ${has('view:' + pg.key) ? 'checked' : ''}>
+        </td>
+        <td style="text-align:center">
+          <input type="checkbox" class="dp-preset-cb" data-scope="write:${esc(pg.key)}" ${has('write:' + pg.key) ? 'checked' : ''}>
+        </td>
+      </tr>
+    `).join('');
+
+    const builtinNote = existing && existing.is_builtin
+      ? '<div style="padding:8px 12px;background:var(--info-bg);color:var(--navy);border-radius:2px;margin-bottom:12px;font-size:12px">Built-in preset — name and description are locked. Permissions may still be tuned.</div>'
+      : '';
+
+    _openModal(
+      isEdit ? 'Edit preset · ' + existing.name : 'New preset',
+      `
+      ${builtinNote}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-p-name">Name</label>
+          <input class="dp-input" id="dp-p-name" value="${esc(existing ? existing.name : '')}"
+                 ${existing && existing.is_builtin ? 'disabled' : ''} autocomplete="off">
+        </div>
+        <div class="dp-field">
+          <label for="dp-p-slug">Slug</label>
+          <input class="dp-input" id="dp-p-slug" value="${esc(existing ? existing.slug : '')}"
+                 ${isEdit ? 'disabled' : ''} placeholder="auto from name">
+        </div>
+      </div>
+      <div class="dp-field">
+        <label for="dp-p-desc">Description</label>
+        <input class="dp-input" id="dp-p-desc" value="${esc(existing ? (existing.description || '') : '')}"
+               ${existing && existing.is_builtin ? 'disabled' : ''} maxlength="400">
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>Page permissions</label>
+        <table class="dp-table" id="dp-preset-grid">
+          <thead><tr>
+            <th>Page</th>
+            <th style="width:80px;text-align:center">View</th>
+            <th style="width:80px;text-align:center">Write</th>
+          </tr></thead>
+          <tbody>${gridRows}</tbody>
+        </table>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._savePreset(${presetId ? Number(presetId) : 'null'})">${isEdit ? 'Save' : 'Create'}</button>`,
+      { wide: true }
+    );
+  }
+
+  async function _savePreset(id) {
+    const cbs = document.querySelectorAll('.dp-preset-cb');
+    const picked = [];
+    cbs.forEach(cb => { if (cb.checked) picked.push(cb.getAttribute('data-scope')); });
+    const body = { permissions: picked };
+    if (!id) {
+      const name = ($('#dp-p-name').value || '').trim();
+      if (!name) { toast('Name is required', 'err'); return; }
+      body.name = name;
+      body.slug = ($('#dp-p-slug').value || '').trim();
+      body.description = ($('#dp-p-desc').value || '').trim();
+      const data = await api('POST', 'presets', body);
+      if (data) { toast('Preset created', 'ok'); _closeModal(); navigate('presets'); }
+    } else {
+      // builtin locks name/desc, but allow updating from enabled fields
+      const nameEl = $('#dp-p-name');
+      const descEl = $('#dp-p-desc');
+      if (nameEl && !nameEl.disabled) body.name = nameEl.value.trim();
+      if (descEl && !descEl.disabled) body.description = descEl.value.trim();
+      const data = await api('PUT', 'presets?id=' + id, body);
+      if (data) { toast('Preset updated', 'ok'); _closeModal(); navigate('presets'); }
+    }
+  }
+
+  async function _deletePreset(id, name, userCount) {
+    if (userCount > 0) {
+      toast(`Cannot delete: ${userCount} user(s) still assigned. Reassign first.`, 'err');
+      return;
+    }
+    if (!confirm('Delete preset "' + name + '"? This cannot be undone.')) return;
+    const data = await api('DELETE', 'presets?id=' + id);
+    if (data) { toast('Preset deleted', 'ok'); navigate('presets'); }
+  }
+
   async function _openUserEditor(userId) {
     let existing = null;
     if (userId) {
@@ -2640,6 +3074,14 @@ const DP = (() => {
       if (data) existing = (data.users || []).find(u => Number(u.id) === Number(userId));
       if (!existing) { toast('User not found', 'err'); return; }
     }
+    // Fetch presets list so the editor can offer a dropdown.
+    const presetsRes = await api('GET', 'presets');
+    const presets = (presetsRes && presetsRes.presets) || [];
+    const presetOpts = ['<option value="">— none (all view by default)</option>']
+      .concat(presets.map(p =>
+        `<option value="${Number(p.id)}"${existing && existing.preset_id === p.id ? ' selected' : ''}>${esc(p.name)}${p.is_builtin ? ' (built-in)' : ''}</option>`
+      )).join('');
+
     const isEdit = !!existing;
     _openModal(
       isEdit ? 'Edit user · ' + existing.username : 'New user',
@@ -2680,6 +3122,10 @@ const DP = (() => {
           <input class="dp-input" id="dp-u-dept" value="${esc(existing ? (existing.department || '') : '')}" placeholder="e.g. team korea">
         </div>
       </div>
+      <div class="dp-field">
+        <label for="dp-u-preset">Permission preset <span style="font-weight:400;color:var(--text-3);margin-left:4px">(ignored when role = admin)</span></label>
+        <select class="dp-select" id="dp-u-preset">${presetOpts}</select>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="dp-field">
           <label for="dp-u-email">Email</label>
@@ -2697,6 +3143,8 @@ const DP = (() => {
   }
 
   async function _saveUser(id) {
+    const presetSel = $('#dp-u-preset');
+    const presetVal = presetSel ? presetSel.value : '';
     const body = {
       display_name: ($('#dp-u-display').value || '').trim(),
       role:         $('#dp-u-role').value,
@@ -2704,6 +3152,7 @@ const DP = (() => {
       department:   ($('#dp-u-dept').value || '').trim(),
       email:        ($('#dp-u-email').value || '').trim(),
       phone:        ($('#dp-u-phone').value || '').trim(),
+      preset_id:    presetVal ? Number(presetVal) : null,
     };
     const pw = ($('#dp-u-password').value || '');
     if (id) {
@@ -2927,10 +3376,14 @@ const DP = (() => {
     const m = $('#dp-modal');
     if (m) m.remove();
   }
-  function _openModal(title, bodyHtml, footButtons) {
+  function _openModal(title, bodyHtml, footButtons, opts) {
     _closeModal();
+    const wide = opts && opts.wide;
     const backdrop = h('div', { className: 'dp-modal-backdrop', id: 'dp-modal-backdrop', onclick: _closeModal });
-    const modal = h('aside', { className: 'dp-modal', id: 'dp-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title });
+    const modal = h('aside', {
+      className: 'dp-modal' + (wide ? ' dp-modal-wide' : ''),
+      id: 'dp-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title,
+    });
     modal.innerHTML = `
       <div class="dp-modal-head">
         <h2>${esc(title)}</h2>
@@ -3203,7 +3656,8 @@ const DP = (() => {
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
-       <button class="dp-btn dp-btn-primary" id="dp-edit-save" onclick="DP._saveEditPost('${esc(board)}', ${Number(postId)})">Save</button>`
+       <button class="dp-btn dp-btn-primary" id="dp-edit-save" onclick="DP._saveEditPost('${esc(board)}', ${Number(postId)})">Save</button>`,
+      { wide: true }
     );
     _waitForTiptap(() => _initTiptap('dp-tt-post', p.content || ''));
     _renderFileList();
@@ -3503,7 +3957,8 @@ const DP = (() => {
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
-       <button class="dp-btn dp-btn-primary" id="dp-new-save" onclick="DP._saveNewPost()">Publish</button>`
+       <button class="dp-btn dp-btn-primary" id="dp-new-save" onclick="DP._saveNewPost()">Publish</button>`,
+      { wide: true }
     );
 
     _waitForTiptap(() => _initTiptap('dp-tt-post', ''));
@@ -3564,6 +4019,7 @@ const DP = (() => {
     _editPost, _saveEditPost, _deletePost,
     _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
+    _openPresetEditor, _savePreset, _deletePreset,
     _openContactEditor, _saveContact, _deleteContact, _filterContacts,
     openSearch, _searchOpen,
     _verPage,

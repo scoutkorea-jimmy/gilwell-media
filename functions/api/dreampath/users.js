@@ -41,7 +41,12 @@ export async function onRequestGet({ request, env, data }) {
   }
   const err = requireAdmin(data); if (err) return err;
   const rows = await env.DB.prepare(
-    `SELECT id, username, display_name, role, email, phone, department, is_active, created_at, last_login_at FROM dp_users ORDER BY role DESC, username ASC`
+    `SELECT u.id, u.username, u.display_name, u.role, u.email, u.phone, u.department,
+            u.is_active, u.created_at, u.last_login_at,
+            u.preset_id, p.name AS preset_name, p.slug AS preset_slug
+       FROM dp_users u
+  LEFT JOIN dp_permission_presets p ON p.id = u.preset_id
+    ORDER BY u.role DESC, u.username ASC`
   ).all();
   return json({ users: rows.results || [] });
 }
@@ -51,7 +56,7 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { username, display_name, password, role, email, phone, department } = body;
+  const { username, display_name, password, role, email, phone, department, preset_id } = body;
   if (!username || !display_name || !password) return json({ error: 'username, display_name, and password are required.' }, 400);
   if (password.length < 6) return json({ error: 'Password must be at least 6 characters.' }, 400);
 
@@ -61,17 +66,20 @@ export async function onRequestPost({ request, env, data }) {
 
   const hash = await hashPassword(password);
   const safeRole = role === 'admin' ? 'admin' : 'member';
+  const pid = preset_id ? parseInt(preset_id, 10) : null;
+  const safePresetId = Number.isFinite(pid) ? pid : null;
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_users (username, display_name, password_hash, role, email, phone, department)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_users (username, display_name, password_hash, role, email, phone, department, preset_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     safeUsername,
     display_name.trim().slice(0, 100),
     hash, safeRole,
     email ? email.trim().slice(0, 200) : null,
     phone ? phone.trim().slice(0, 50) : null,
-    department ? department.trim().slice(0, 100) : null
+    department ? department.trim().slice(0, 100) : null,
+    safePresetId
   ).run();
 
   return json({ id: result.meta.last_row_id, ok: true });
@@ -98,6 +106,10 @@ export async function onRequestPut({ request, env, data }) {
   if (body.department !== undefined) { fields.push('department = ?'); values.push(body.department ? body.department.trim().slice(0, 100) : null); }
   if (body.role !== undefined) { fields.push('role = ?'); values.push(body.role === 'admin' ? 'admin' : 'member'); }
   if (body.is_active !== undefined) { fields.push('is_active = ?'); values.push(body.is_active ? 1 : 0); }
+  if (body.preset_id !== undefined) {
+    const pid = body.preset_id ? parseInt(body.preset_id, 10) : null;
+    fields.push('preset_id = ?'); values.push(Number.isFinite(pid) ? pid : null);
+  }
   if (body.new_password) {
     const hash = await hashPassword(body.new_password);
     fields.push('password_hash = ?');
