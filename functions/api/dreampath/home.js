@@ -102,9 +102,20 @@ export async function onRequestGet({ env, data }) {
         ORDER BY datetime(c.created_at) DESC, c.id DESC
         LIMIT 12`
     ).bind(...accessibleBoards).all(),
-    // Events overlapping current month (for calendar initial paint — saves
-    // the extra /events?month= round trip on home entry). Field names mirror
-    // /api/dreampath/events so renderCalendar() can consume either source.
+    // [CASE STUDY 2026-04-24 — events_current_month shape contract]
+    // Symptom (risk): Calendar renders blank colors / missing times on first
+    //                 home paint because `renderCalendar()` in dreampath.js
+    //                 expects `type` / `start_time` / `end_time` fields.
+    // Root cause: Draft of this query used `event_type` (DB column name in
+    //             a sibling API) and omitted `start_time` / `end_time`.
+    //             renderCalendar() would receive `undefined` and silently
+    //             fall back to default color / skip time labels.
+    // Lesson: This SELECT must mirror the projection of /api/dreampath/events
+    //         byte-for-byte. If that sibling API adds or renames fields, this
+    //         query must follow or renderCalendar breaks on initial paint
+    //         only (and works after the month switch fallback — the worst
+    //         kind of bug: works in dev, fails on first load).
+    // Ref: DREAMPATH.md Section 9.3, DREAMPATH-HISTORY.md 2026-04-24 · D.
     env.DB.prepare(
       `SELECT id, title, start_date, end_date, start_time, end_time, type,
               description, recurrence_type, recurrence_end, created_at
@@ -114,8 +125,20 @@ export async function onRequestGet({ env, data }) {
         ORDER BY start_date ASC, id ASC
         LIMIT 200`
     ).bind(monthStart, monthStart, nextMonthStart).all(),
-    // Pending approvals where the current user is an approver and hasn't voted.
-    // Match by approver_name against either display name or username.
+    // [CASE STUDY 2026-04-24 — pending approvals matching contract]
+    // Symptom (risk): A user with `display_name = "Jimmy Park"` but
+    //                 `username = "jimmy"` could be assigned as approver
+    //                 under either form, yet this query would miss one.
+    // Root cause: `dp_post_approvals.approver_name` is a free-form string set
+    //             at approver-assignment time. Historically it could be the
+    //             display name OR the username. Matching one form only would
+    //             hide pending approvals from the home strip.
+    // Lesson: Always match against BOTH `data.dpUser.name` (display name) AND
+    //         `data.dpUser.username`, lowercased. If the schema ever
+    //         normalizes `approver_name` to a single form, revisit this.
+    //         Also filter by `p.approval_status != 'approved'` — an already-
+    //         locked post should not surface "you need to vote" nagging.
+    // Ref: DREAMPATH.md Section 8.3, 12 B5, DREAMPATH-HISTORY.md 2026-04-24 · D.
     (matchNames.length
       ? env.DB.prepare(
           `SELECT a.post_id, a.approver_name, a.status AS my_status,

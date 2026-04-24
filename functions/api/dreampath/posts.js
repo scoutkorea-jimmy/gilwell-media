@@ -201,6 +201,17 @@ export async function onRequestPost({ request, env, data }) {
         `SELECT id, display_name FROM dp_users WHERE display_name IN (${placeholders})`
       ).bind(...names).all();
       const userMap = Object.fromEntries((usersRes.results || []).map(u => [u.display_name, u.id]));
+      // [CASE STUDY — approver_id is NOT NULL by schema]
+      // Symptom (risk): INSERT throws FOREIGN KEY / NOT NULL constraint error
+      //                 if we let `uid` be undefined (user not found in dp_users).
+      // Root cause: `dp_post_approvals.approver_id` is NOT NULL by design so
+      //             we can always resolve back to a user row even if the
+      //             approver's display_name changes later.
+      // Lesson: ALWAYS resolve `uid` before INSERT and skip rows where it's
+      //   missing (see `if (!uid) continue`). Never default to 0 or NULL.
+      //   If you ever relax this constraint, update DREAMPATH.md Section 8.1
+      //   and Critical Prohibitions simultaneously.
+      // Ref: DREAMPATH.md Section 8, Critical Prohibitions #5.
       for (const name of names) {
         const uid = userMap[name];
         if (!uid) continue;

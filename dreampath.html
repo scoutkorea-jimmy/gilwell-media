@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dreampath — Project Board</title>
   <meta name="robots" content="noindex, nofollow" />
-  <link rel="icon" type="image/svg+xml" href="/img/dreampath/logo-mark.svg" />
+  <!-- favicon.svg = 32×32 compact variant optimized for browser tabs
+       (rounded dark square + core glyph). logo-dreampath-app-icon.svg = 120×120
+       iOS home-screen variant with filled rounded background. theme-color is
+       the CUFS Navy so mobile browser chrome matches the sidebar / app icon. -->
+  <link rel="icon" type="image/svg+xml" href="/img/dreampath/favicon.svg" />
   <link rel="alternate icon" type="image/png" sizes="48x48" href="/img/favicon-48.png" />
-  <link rel="apple-touch-icon" href="/img/dreampath/logo-mark.svg" />
+  <link rel="apple-touch-icon" href="/img/dreampath/logo-dreampath-app-icon.svg" />
   <meta name="theme-color" content="#002D56" />
   <style>
     /* ── Font: S-CoreDream (Escoredream) ────────────────────────── */
@@ -342,6 +346,28 @@
       font-size: 15px;
       width: 20px;
       text-align: center;
+      flex-shrink: 0;
+    }
+    /* SVG icon via CSS mask — inherits .dp-nav-item color automatically,
+       so active state switches ink color without swapping the asset.
+       The stroke-only icon set (/img/dreampath/icons/*.svg) is designed for
+       24x24 viewBox + stroke="currentColor"; mask-image uses the alpha
+       channel of rasterized strokes, and background-color: currentColor
+       paints through the mask. DO NOT refactor to <img> + filter — we'd lose
+       color inheritance and accessibility contract in one swap. */
+    .dp-nav-icon-svg {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      background-color: currentColor;
+      mask-image: var(--dp-icon);
+      -webkit-mask-image: var(--dp-icon);
+      mask-size: 20px 20px;
+      -webkit-mask-size: 20px 20px;
+      mask-repeat: no-repeat;
+      -webkit-mask-repeat: no-repeat;
+      mask-position: center;
+      -webkit-mask-position: center;
       flex-shrink: 0;
     }
 
@@ -2545,78 +2571,78 @@
 
     <div class="dp-nav" role="list">
       <div class="dp-nav-item dp-nav-item--active" role="button" tabindex="0" data-section="home" aria-label="홈" onclick="DP.navigate('home')">
-        <span class="dp-nav-icon" aria-hidden="true">&#127968;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/home.svg')"></span>
         <span>Home</span>
       </div>
 
       <div class="dp-nav-section-label">Boards</div>
 
       <div class="dp-nav-item" role="button" tabindex="0" data-section="announcements" aria-label="공지사항" onclick="DP.navigate('announcements')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128226;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/megaphone.svg')"></span>
         <span>Announcements</span>
       </div>
       <div class="dp-nav-item" role="button" tabindex="0" data-section="documents" aria-label="프로젝트 문서" onclick="DP.navigate('documents')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128196;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/book.svg')"></span>
         <span>Project Documents</span>
       </div>
       <div class="dp-nav-item" role="button" tabindex="0" data-section="minutes" aria-label="회의록" onclick="DP.navigate('minutes')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128221;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/essay.svg')"></span>
         <span>Meeting Minutes</span>
       </div>
       <div class="dp-nav-item" role="button" tabindex="0" data-section="tasks" aria-label="할 일" onclick="DP.navigate('tasks')">
-        <span class="dp-nav-icon" aria-hidden="true">&#9989;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/check.svg')"></span>
         <span>Tasks</span>
       </div>
       <div class="dp-nav-item" role="button" tabindex="0" data-section="notes" aria-label="메모와 이슈" onclick="DP.navigate('notes')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128203;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/note.svg')"></span>
         <span>Notes &amp; Issues</span>
       </div>
 
       <div class="dp-nav-section-label dp-team-nav-label">Team Boards</div>
 
       <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_korea" data-team="korea" aria-label="팀 코리아" onclick="DP.navigate('team_korea')">
-        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/community.svg')"></span>
         <span>Team Korea</span>
       </div>
       <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_nepal" data-team="nepal" aria-label="팀 네팔" onclick="DP.navigate('team_nepal')">
-        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/community.svg')"></span>
         <span>Team Nepal</span>
       </div>
       <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_indonesia" data-team="indonesia" aria-label="팀 인도네시아" onclick="DP.navigate('team_indonesia')">
-        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/community.svg')"></span>
         <span>Team Indonesia</span>
       </div>
       <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_pakistan" data-team="pakistan" aria-label="팀 파키스탄" onclick="DP.navigate('team_pakistan')">
-        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/community.svg')"></span>
         <span>Team Pakistan</span>
       </div>
 
       <hr class="dp-nav-sep dp-team-nav-label" />
 
       <div class="dp-nav-item" role="button" tabindex="0" data-section="contacts" aria-label="프로젝트 팀 연락처" onclick="DP.navigate('contacts')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128222;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/phone.svg')"></span>
         <span>Project Team Contacts</span>
       </div>
 
       <hr class="dp-nav-sep" />
 
       <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="users" aria-label="사용자 관리" onclick="DP.navigate('users')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128101;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/users-admin.svg')"></span>
         <span>User Management</span>
       </div>
 
       <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="devrules" aria-label="개발 규칙" onclick="DP.navigate('devrules')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128196;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/compass.svg')"></span>
         <span>Dev Rules</span>
       </div>
 
       <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="settings" aria-label="설정" onclick="DP.navigate('settings')">
-        <span class="dp-nav-icon" aria-hidden="true">&#9881;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/settings.svg')"></span>
         <span>Settings</span>
       </div>
 
       <div class="dp-nav-item" role="button" tabindex="0" data-section="account" aria-label="내 계정" onclick="DP.navigate('account')">
-        <span class="dp-nav-icon" aria-hidden="true">&#128100;</span>
+        <span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/user-single.svg')"></span>
         <span>My Account</span>
       </div>
     </div>

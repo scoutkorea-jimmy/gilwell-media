@@ -1,6 +1,22 @@
 /**
  * Dreampath · Frontend v2
- * Self-contained IIFE — stored as window.DP
+ * Self-contained IIFE exposed as `DP` at the script's global scope.
+ *
+ * [CASE STUDY — IIFE boundary is load-bearing]
+ * Symptom (hypothetical): Every inline onclick="DP.foo()" on the page would
+ *   silently fail if someone refactored this into ES modules or split the
+ *   IIFE across files.
+ * Root cause: Inline event handler attributes resolve identifiers through
+ *   the page's global environment record. `const DP = (() => {...})();` at
+ *   classic-script top level lands in the Global Environment Record's
+ *   declarative binding, which inline handlers CAN see. But if you switch
+ *   to `<script type="module">` or restructure into ES modules, module-scope
+ *   `const` is NOT visible to inline handlers. Every DP.* onclick dies.
+ * Lesson: Keep this file as a classic script + single IIFE. When adding new
+ *   public methods, append them to the `return {}` block at the bottom.
+ *   DO NOT introduce `import/export` here. DO NOT split into multiple files.
+ *   See DREAMPATH.md Section 2 — "Frontend: IIFE 단일 모듈".
+ * Ref: DREAMPATH.md Section 2.1, CLAUDE.md Section 5 pointer.
  */
 const DP = (() => {
   // ── State ──────────────────────────────────────────────────────────────────
@@ -18,10 +34,19 @@ const DP = (() => {
   const SESSION_WARNING_MS = 5 * 60 * 1000;
   const SESSION_EXPIRY_KEY = 'dp_session_expires_at';
 
+  // [CASE STUDY — Home unread storage key is a public contract]
+  // The key `dp_home_last_seen_at` is read and written by this file only,
+  // but its NAME is part of Dreampath's localStorage contract. Renaming it
+  // would reset every user's "unread" state without migration.
+  // Lesson: To deprecate, dual-read the old key for one release, migrate on
+  //   access, then drop. Never silently rename.
+  // Ref: DREAMPATH.md Section 12 B2.
+  //
   // B2 — "Recent Changes" unread tracking.
   // We stamp the last home visit in localStorage. Any item newer than the
-  // stored timestamp gets the .dp-unread dot. The stamp is updated once per
-  // home render so the indicators stay accurate without server-side state.
+  // stored timestamp gets the .dp-unread dot. The stamp is updated ~1.2s
+  // after paint (not immediately) so the first view actually shows the
+  // indicators before we consume them.
   const HOME_LAST_SEEN_KEY = 'dp_home_last_seen_at';
   let _lastHomeSeenAt = '';
   let _todaySummary = null;
@@ -251,6 +276,27 @@ const DP = (() => {
     return div.innerHTML;
   }
 
+  // [CASE STUDY — Tiptap 4-spot rule (extended to 6 with replies)]
+  // Symptom (recurring risk): A toolbar button or extension works in new-post
+  //   mode but silently does nothing when editing an existing post, or vice
+  //   versa. Users report "X feature is broken for me" with no console error.
+  // Root cause: The editor is mounted in SIX distinct call sites in this
+  //   file — each one a separate modal with its own container ID. Adding an
+  //   extension to one call chain without updating the others means the
+  //   missing modal simply doesn't know about it.
+  // Lesson: When adding or removing a Tiptap extension / toolbar button,
+  //   update ALL of the following, verified via grep:
+  //     1. createPost       (~line 1858) — container `fp-tiptap`
+  //     2. editPost         (~line 1994) — container `fp-tiptap`
+  //     3. replyToPost      (~line 1778) — container `fp-tiptap`
+  //     4. createNote       (~line 4524) — container `cn-tiptap`
+  //     5. editNote         (~line 4608) — container `en-tiptap`
+  //     6. replyToNote      (~line 4439) — container `cn-tiptap`
+  //   Also update `_execTiptapCmd` command registry + toolbar HTML in 4
+  //   locations inside dreampath.html (one per core flow — replies share
+  //   toolbars with their parents).
+  //   DREAMPATH.md Section 4.3 is the canonical rule; DREAMPATH-HISTORY.md
+  //   Section "Earlier History" will record any future regressions here.
   function _initTiptap(containerId, initialHtml) {
     _destroyTiptap();
     const el = document.getElementById(containerId);
@@ -992,6 +1038,17 @@ const DP = (() => {
   }
 
   // B4 helper — inline status transition from the home strip.
+  //
+  // [CASE STUDY 2026-04-24 — tasks API uses PUT, not PATCH]
+  // Symptom: Draft of this helper used `api('PATCH', ...)`. Would have
+  //          returned 405 Method Not Allowed silently, and the task status
+  //          would appear unchanged to the user.
+  // Root cause: functions/api/dreampath/tasks.js only exports onRequestGet,
+  //             onRequestPost, onRequestPut. No onRequestPatch.
+  // Lesson: Before writing a frontend helper that mutates resources, grep
+  //         the backend file for the exact HTTP method. Dreampath backend
+  //         is consistent: PUT for updates, not PATCH.
+  // Ref: DREAMPATH.md Section 12 B4, DREAMPATH-HISTORY.md 2026-04-24 · D.
   async function _homeTaskQuick(id, newStatus) {
     const result = await api('PUT', `tasks?id=${id}`, { status: newStatus });
     if (result && !result.error) {
@@ -3995,7 +4052,10 @@ const DP = (() => {
     const isAdmin = currentUser?.role === 'admin';
     const userTeam = _teamBoard(currentUser?.department);
 
-    // Insert custom general boards (non-core) before team label
+    // Insert custom general boards (non-core) before team label.
+    // Icon: book.svg — general document/post shelf connotation. Matches the
+    // monochrome design system in /img/dreampath/icons/ (24x24 stroke icons
+    // painted via CSS mask — see .dp-nav-icon-svg rule).
     boards.filter(b => b.board_type === 'board' && !['announcements','documents','minutes'].includes(b.slug)).forEach(b => {
       const div = document.createElement('div');
       div.className = 'dp-nav-item dp-board-nav-item';
@@ -4004,11 +4064,11 @@ const DP = (() => {
       div.setAttribute('tabindex', '0');
       div.setAttribute('aria-label', b.title);
       div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
-      div.innerHTML = `<span class="dp-nav-icon" aria-hidden="true">&#128196;</span><span>${esc(b.title)}</span>`;
+      div.innerHTML = `<span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/book.svg')"></span><span>${esc(b.title)}</span>`;
       teamNav.insertAdjacentElement('beforebegin', div);
     });
 
-    // Insert team boards after team label
+    // Insert team boards after team label. Icon: community.svg (3-person group).
     let insertAfter = teamNav;
     boards.filter(b => b.board_type === 'team').forEach(b => {
       const visible = isAdmin || b.slug === userTeam;
@@ -4020,7 +4080,7 @@ const DP = (() => {
       div.setAttribute('tabindex', '0');
       div.setAttribute('aria-label', b.title);
       div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
-      div.innerHTML = `<span class="dp-nav-icon" aria-hidden="true">&#127984;</span><span>${esc(b.title)}</span>`;
+      div.innerHTML = `<span class="dp-nav-icon-svg" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/community.svg')"></span><span>${esc(b.title)}</span>`;
       insertAfter.insertAdjacentElement('afterend', div);
       insertAfter = div;
     });

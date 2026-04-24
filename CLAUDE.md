@@ -121,7 +121,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 | Site | `1` + `2` | [[docs/features/README\|Homepage Features Hub]], [[docs/modules/README\|Homepage Modules Hub]] |
 | Admin | `1` + `3` | [[docs/homepage-module-inventory\|Module Inventory]] |
 | KMS | `1` + `4` | 관리자 페이지 KMS 메뉴 (정식 원본), [[docs/feature-definition\|Feature Definition]] (스냅샷) |
-| Dreampath | `1` + `5` | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
+| **Dreampath** | **[DREAMPATH.md](DREAMPATH.md)** (Dev Rules) + **[DREAMPATH-HISTORY.md](DREAMPATH-HISTORY.md)** (이력 / 케이스 스터디) | [[docs/dreampath/README\|Dreampath Hub]], `/dreampath` Dev Rules |
 
 ### Step 5 — 경계 검증
 
@@ -561,141 +561,34 @@ Site 전용 추가 규칙:
 
 ---
 
-## 5 [Dreampath] CUFS 내부 앱
+## 5 [Dreampath] CUFS 내부 앱 — 포인터
 
-> [!abstract] Scope
-> 별도 도메인의 CUFS 내부 앱. 공개 사이트와 **완전히 분리된 규칙 체계**.
+> [!important] 이 섹션은 포인터입니다
+> Dreampath 관련 **모든** AI 작업 규칙은 **[`DREAMPATH.md`](DREAMPATH.md)** 에 있습니다.
+> 케이스 스터디 / 버전 히스토리는 **[`DREAMPATH-HISTORY.md`](DREAMPATH-HISTORY.md)** 에 있습니다.
+> 이 `CLAUDE.md` 는 Site / Admin / KMS 전용입니다.
+>
+> **왜 분리했는가**: Dreampath 는 별도 도메인 독립 예정. 지금부터 문서 경계를
+> 잘라 두면, 이전 시점에 두 파일만 새 저장소로 옮기면 됩니다.
 
-### Key Files
+### Dreampath 판별 (빠른 참조)
 
-```
-dreampath.html                        — 전용 인라인 CSS
-js/dreampath.js                       — 프론트엔드 IIFE (window.DP)
-functions/api/dreampath/posts.js      — 게시글 CRUD + 접근 제어
-functions/api/dreampath/boards.js     — 게시판 CRUD (동적 관리)
-functions/api/dreampath/events.js     — 캘린더 이벤트 + 반복 일정
-functions/api/dreampath/approvals.js  — 회의록 다중 승인
-functions/api/dreampath/upload.js     — 파일 업로드 + 확장자 차단
-functions/api/dreampath/home.js       — 홈 데이터 (접근 가능 게시판 필터)
-functions/api/dreampath/notes.js      — Notes & Issues CRUD
-functions/api/dreampath/_middleware.js — 인증 미들웨어
-```
-
-### Frontend 구조
-
-- **IIFE 패턴**: `const DP = (() => { ... })()` → `window.DP`
-- IIFE를 **절대 분리하거나 모듈화하지 말 것**
-- 모든 public 메서드는 `return {}` 블록에 포함
-- 인라인 이벤트: `onclick="DP.method()"` — 반드시 `DP.` 프리픽스
-- 툴바 버튼: `onmousedown` 사용 (focus 유지)
-
-### CSS
-
-- Dreampath CSS는 `dreampath.html` 내 `<style>` 태그에만 위치
-- 색상: `:root` CSS 변수 (`var(--accent)`, `var(--text)` 등)
-- CUFS 브랜드: Green `#146E7A` · Navy `#002D56` · Gold `#8D714E`
-
-### Rich Text Editor
-
-- **에디터**: Tiptap (esm.sh CDN, `@tiptap/core@2` + starter-kit + table extensions)
-- **뷰어**: DOMPurify (cdnjs CDN) — 모든 HTML 출력에 필수
-- **비동기 초기화**: `_waitForTiptap(cb)` 헬퍼 사용
-- 에디터 탑재: `createPost`, `editPost`, `createNote`, `editNote` (**4곳**)
-- 새 extension 추가 시: import + `_initTiptap()` + `_execTiptapCmd()` + 툴바 HTML (**4곳 모두**)
-
-### Board System
-
-> [!note] 동적 게시판
-> 게시판은 `dp_boards` 테이블에서 DB 기반으로 관리. Settings 페이지에서 관리자가 생성·삭제.
-
-**`dp_boards` 스키마:**
-
-| Column | Type | 설명 |
-|---|---|---|
-| `slug` | TEXT UNIQUE | 게시판 식별자 (e.g. `team_korea`) |
-| `title` | TEXT | 표시 이름 |
-| `board_type` | TEXT | `board` 또는 `team` |
-
-**접근 제어:**
-
-| 역할 | General Board | Team Board |
-|---|---|---|
-| admin | 전체 읽기/쓰기 | 전체 읽기/쓰기 |
-| 일반 유저 | 읽기만 | 자기 팀만 읽기/쓰기 |
-
-**Team Board 매칭:**
-
-```javascript
-// team_xxx → department에 'xxx' 포함 여부로 자동 매칭
-function _deptMatchesBoard(department, board) {
-  if (!board.startsWith('team_')) return false;
-  const country = board.slice(5);
-  return department.toLowerCase().includes(country);
-}
-```
-
-> [!warning] department는 JWT에 없음
-> `data.dpUser`: `{ uid, username, role, name }` — department 미포함.
-> 팀 보드 접근 판별 시 항상 DB 조회: `SELECT department FROM dp_users WHERE id = ?`
-
-### API Access Control (게시글)
-
-| Method | Admin | 일반 유저 |
-|---|---|---|
-| GET (목록) | 전체 | Team 보드는 자기 팀만 |
-| GET (단건) | 전체 | Team 보드는 자기 팀만 |
-| POST | 모든 게시판 | Team 보드 자기 팀만, 나머지 403 |
-| PUT | 모든 게시글 | `author_id = uid`인 본인 글만 |
-| DELETE | 전체 | 불가 |
-
-### 회의록 잠금
-
-- `approval_status = 'approved'` → content 수정 불가 → **HTTP 423 LOCKED**
-- 프론트엔드에서 423 수신 시 잠금 안내 표시
-
-### Meeting Minutes Approval
-
-**`dp_post_approvals` 테이블:**
-
-| Column | 설명 |
+| 경로 | 문서 원본 |
 |---|---|
-| `post_id` | 연결된 게시글 |
-| `approver_id` | 승인자 (NOT NULL) |
-| `status` | `pending` / `approved` / `rejected` |
-| `voted_at` | 투표 시각 (UTC) |
-| `override_by` | 어드민 강제 변경자 |
+| `dreampath.html`, `js/dreampath.js`, `functions/api/dreampath/**`, `img/dreampath/**` | **[DREAMPATH.md](DREAMPATH.md)** (Dev Rules) |
+| `functions/_middleware.js`, `functions/_shared/**`, `_headers` | **CLAUDE.md § 1** (공용 인프라) — Dreampath 영향 주의 |
 
-**로직:**
-- **과반수 초과** approved → 게시글 잠금
-- 승인자 추가/제거 후 자동 재계산
-- 어드민 Override: **2026-04-01 이전** 생성 게시글만 허용
+`functions/_middleware.js` 등 공용 인프라를 만질 때 Dreampath 가 영향을 받을 수 있습니다.
+이때는 `DREAMPATH.md` Section 10 ("CSP: `/dreampath` 레거시 경로") 와 Section 15.2
+("공용 인프라 예외") 를 반드시 함께 확인합니다.
 
-### Calendar Events
+### 공용 인프라 변경이 Dreampath 에 미치는 영향 (역사적 사례)
 
-- 반복 일정: `recurrence_type` (daily / weekly / biweekly / monthly / yearly)
-- `recurrence_end`로 반복 종료일 지정
-- 월별 조회 시 서버에서 반복 인스턴스 자동 확장 (최대 60회)
+- 2026-04-24 CSP 회귀: `isLegacyInlinePath()` 에 `/dreampath` 누락 → 사이드바 전체 마비.
+  상세: `DREAMPATH-HISTORY.md` 2026-04-24 · A.
 
-### 파일 업로드
-
-- 차단 확장자: `exe, sh, bat, cmd, ps1, vbs, jar, app, dmg, pkg, msi, dll` 등
-- 최대 100MB / 파일, 최대 5개 / 게시글
-
-### Deployment
-
-```bash
-./deploy.sh feature "설명"   # 신기능
-./deploy.sh fix "설명"       # 버그픽스
-```
-
-- 자동 버전 증가 + D1 `dp_versions` 등록
-- 버전 형식: `aa.bbb.cc` — Major(수동) . Feature(자동) . Fix(자동, Feature 시 00 초기화)
-- `deploy.sh`는 HTML cache-bust 후 `git checkout`으로 원복하므로 **HTML 변경은 반드시 커밋 후 deploy**
-
-### Dreampath Dev Rules 정식 출처
-
-- `/dreampath` 사이드바 "Dev Rules" 메뉴
-- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
+이런 변경을 반영할 때는 `VERSION` bump + `data/changelog.json` 엔트리에
+"Dreampath 영향: ..." 명시 필수 (`dp_versions` 에는 기록되지 않음).
 
 ---
 
@@ -712,7 +605,9 @@ function _deptMatchesBoard(department, board) {
 - [[docs/homepage-module-inventory|Module Inventory]] — 모듈 인벤토리
 
 ### Dreampath
-- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스
+- **[DREAMPATH.md](DREAMPATH.md)** — AI 작업 규칙 (단일 원본)
+- **[DREAMPATH-HISTORY.md](DREAMPATH-HISTORY.md)** — 버전 히스토리 / 케이스 스터디 (국·영 병기)
+- [[docs/dreampath/README|Dreampath Hub]] — 기능/API/DB 레퍼런스 (공용 문서)
 
 ### 운영 (공통)
 - [[docs/release-playbook|Release Playbook]] — 배포 절차
