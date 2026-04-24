@@ -424,7 +424,12 @@ button { cursor: pointer; }
 }
 
 .dp-btn {
-  display: inline-flex; align-items: center; gap: 6px;
+  /* Center the icon + label pair horizontally inside every button. Earlier
+     version relied on content length to sit flush-left, which made
+     multi-word labels ("Change photo", "Remove photo") look uneven when
+     the buttons were stretched to equal widths. */
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  text-align: center;
   height: var(--row-default); padding: 0 12px;
   font: inherit; font-size: var(--fs-13); font-weight: 500;
   border: 1px solid transparent; border-radius: var(--r-sm);
@@ -1399,6 +1404,28 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
+
+/* Hidden (blinded) post row — admin-only greyed style. Text desaturates so
+   admins instantly see the post is suppressed for everyone else. Non-admins
+   never see the row because the list query filters is_hidden=1 out. */
+.dp-table tbody tr.dp-row-hidden {
+  background: var(--g-100) !important;
+  color: var(--text-3);
+  opacity: 0.7;
+}
+.dp-table tbody tr.dp-row-hidden td:first-child { font-style: italic; }
+.dp-table tbody tr.dp-row-hidden:hover { background: var(--g-150) !important; opacity: 0.85; }
+
+/* Row-action buttons (Hide / Move) — ghost icons, visible on hover so they
+   don't clutter the dense board table. Admin sees them on every row. */
+.dp-row-action {
+  min-width: 28px; padding: 0 6px; height: 26px;
+  font-size: 14px; line-height: 1;
+  opacity: 0.5;
+  transition: opacity var(--dur-swift);
+}
+.dp-table tbody tr:hover .dp-row-action { opacity: 1; }
+.dp-row-action:hover { background: var(--g-150); }
 
 /* Draft-save confirmation — shown as an overlay on top of the post editor
    when the user clicks outside / hits Esc / clicks Cancel. Blocks further
