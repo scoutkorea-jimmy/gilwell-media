@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.131.07",
+    "date": "2026-04-24",
+    "released_at": "2026-04-24 11:35:00 KST",
+    "summary": "Dreampath 사이드바 전체 기능 정지 회귀 긴급 복구 — nonce/strict-dynamic CSP가 /dreampath의 인라인 onclick 전체(23개 + 런타임 190+개)를 차단하던 문제 해결.",
+    "changes": [
+      "functions/_middleware.js isLegacyInlinePath()에 /dreampath, /dreampath.html 경로 추가. 00.131.04부터 도입된 nonce + 'strict-dynamic' 공개 CSP가 inline 이벤트 속성을 전면 차단하면서 Dreampath 사이드바·툴바·모달 버튼이 모두 무반응이 되던 P0 회귀를 복구.",
+      "Dreampath는 CLAUDE.md 5에 명문화된 DP.* IIFE + 인라인 onclick 구조가 설계 원본이므로, 공개 사이트/특집처럼 data-* delegation으로 전환하지 않고 admin/kms와 동일하게 legacy 'unsafe-inline' CSP 경로로 정렬. 내부 전용 앱 + 관리자 인증 필수 + X-Frame-Options DENY로 외부 주입 표면 없음.",
+      "공개 홈페이지(/, /latest, /korea, /apr, /wosm, /people, /search, /glossary, /calendar, /post/*, /feature/*) CSP는 그대로 nonce + strict-dynamic 유지 — Dreampath 한정 예외.",
+      "사이트 버전 00.131.06 → 00.131.07 (Hotfix · Dreampath P0 회귀 복구)."
+    ]
+  },
+  {
     "version": "00.131.06",
     "date": "2026-04-24",
     "released_at": "2026-04-24 06:30:00 KST",
