@@ -1710,21 +1710,61 @@ const DP = (() => {
   async function _renderBoard(root, key, label) {
     // Skeleton header + loading placeholder.
     root.innerHTML = '';
+    const isAdminUser = state.user && state.user.role === 'admin';
+    // Sub-tabs are only meaningful for non-core boards (team_*, custom).
+    const supportsTabs = !['announcements', 'documents', 'minutes'].includes(key);
+    if (!state.boardTab) state.boardTab = {};
+    const activeTab = state.boardTab[key] || '';  // '' = "All"
+
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, label),
       h('div', {}, [
-        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPostEditor(key) }, [
+        ...(supportsTabs && isAdminUser ? [
+          h('button', {
+            className: 'dp-btn dp-btn-secondary',
+            style: { marginRight: '8px' },
+            onclick: () => _openTabManager(key, label),
+          }, [ h('span', {}, '⚙ Manage tabs') ]),
+        ] : []),
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPostEditor(key, activeTab) }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
           h('span', {}, ' New post'),
         ]),
       ]),
     ]));
+
+    // Tab bar — fetched in parallel with the post list so switching feels
+    // instant after the first load. Only rendered when the board supports
+    // tabs AND at least one tab exists.
+    let tabs = [];
+    if (supportsTabs) {
+      const tabsRes = await api('GET', 'board-tabs?board=' + encodeURIComponent(key)).catch(() => null);
+      tabs = (tabsRes && tabsRes.tabs) || [];
+      if (tabs.length) {
+        const bar = h('div', { className: 'dp-board-tabs', role: 'tablist' });
+        const mkTab = (slug, title) => {
+          const on = (slug || '') === activeTab;
+          return `
+            <button type="button" class="dp-board-tab${on ? ' on' : ''}" role="tab"
+                    aria-selected="${on ? 'true' : 'false'}"
+                    onclick="DP._setBoardTab('${esc(key)}','${esc(slug)}')">
+              ${esc(title)}
+            </button>
+          `;
+        };
+        bar.innerHTML = mkTab('', 'All') + tabs.map(t => mkTab(t.slug, t.title)).join('');
+        root.appendChild(bar);
+      }
+    }
+
     const loadingPanel = h('div', { className: 'dp-panel' });
     loadingPanel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">Loading ${esc(label)}…</div>`;
     root.appendChild(loadingPanel);
 
-    // Fetch real posts. 403/404 → team access denied or board missing.
-    const res = await _rawApi('GET', 'posts?board=' + encodeURIComponent(key) + '&limit=100');
+    // Fetch posts scoped to the active tab (or all tabs when activeTab is empty).
+    const qs = 'posts?board=' + encodeURIComponent(key) + '&limit=100'
+      + (activeTab ? '&tab=' + encodeURIComponent(activeTab) : '');
+    const res = await _rawApi('GET', qs);
     loadingPanel.remove();
 
     if (res.status === 401) { _renderLogin(); return; }
@@ -1897,6 +1937,215 @@ const DP = (() => {
       </table>
     `;
     root.appendChild(panel);
+  }
+
+  // =========================================================
+  // BOARD SUB-TABS — /api/dreampath/board-tabs
+  // =========================================================
+  // Tab state lives on state.boardTab[board_slug] = active tab slug ('' = All).
+  // Setting a new tab re-renders the current board; we don't touch the URL
+  // because board navigation is SPA-style and the session is short-lived.
+  function _setBoardTab(boardKey, tabSlug) {
+    if (!state.boardTab) state.boardTab = {};
+    state.boardTab[boardKey] = tabSlug || '';
+    // Re-navigate to the same page so _renderBoard fires with the new state.
+    navigate(state.page);
+  }
+
+  // Tab manager modal (admin only) — lists current tabs, adds new ones,
+  // edits titles + per-tab write permissions, deletes.
+  async function _openTabManager(boardKey, boardLabel) {
+    const [tabsRes, usersRes] = await Promise.all([
+      api('GET', 'board-tabs?board=' + encodeURIComponent(boardKey)),
+      api('GET', 'users?picker=1').catch(() => null),
+    ]);
+    const tabs = (tabsRes && tabsRes.tabs) || [];
+    const max  = (tabsRes && tabsRes.max)  || 5;
+    _tabMgrRoster = (usersRes && usersRes.users) || [];
+
+    const rows = tabs.map(t => {
+      const count = Array.isArray(t.allowed_users) ? t.allowed_users.length : 0;
+      const perm = t.allowed_users === null
+        ? '<span class="dp-tag neutral">All team members</span>'
+        : (count === 0
+            ? '<span class="dp-tag warn">Admins only</span>'
+            : `<span class="dp-tag info">${count} allowed</span>`);
+      return `<tr>
+        <td><strong>${esc(t.title)}</strong><div class="mono" style="font-size:11px;color:var(--text-3)">${esc(t.slug)}</div></td>
+        <td>${perm}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._openTabEditor('${esc(boardKey)}', ${Number(t.id)})">Edit</button>
+          <button class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="DP._deleteTab('${esc(boardKey)}', ${Number(t.id)}, '${esc(t.title.replace(/'/g, "\\'"))}')">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    _openModal(
+      'Tabs · ' + boardLabel,
+      `
+      <p style="margin:0 0 12px;color:var(--text-3);font-size:12px">
+        Each board can have up to <strong>${max}</strong> sub-tabs. Posts stay
+        inside their board — they can be moved between tabs here, but never
+        across boards.
+      </p>
+      <table class="dp-table dp-table-uniform">
+        <thead><tr><th>Tab</th><th style="width:180px">Write access</th><th style="width:160px;text-align:right">Actions</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="3" style="text-align:center;color:var(--text-3);padding:24px">No tabs yet.</td></tr>'}</tbody>
+      </table>
+      ${tabs.length >= max
+        ? '<p style="margin-top:14px;color:var(--text-3);font-size:12px">Limit reached — delete a tab before adding another.</p>'
+        : ''}
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${tabs.length < max
+         ? `<button class="dp-btn dp-btn-primary" onclick="DP._openTabEditor('${esc(boardKey)}', 0)">+ New tab</button>`
+         : ''}`,
+      { wide: true }
+    );
+  }
+
+  let _tabMgrRoster = [];
+  let _tabEditorAllowed = [];  // picked usernames for tab's allowed_users
+  let _tabEditorMode = 'all';  // 'all' | 'admins' | 'custom'
+
+  async function _openTabEditor(boardKey, tabId) {
+    let existing = null;
+    if (tabId) {
+      const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(boardKey));
+      existing = ((res && res.tabs) || []).find(t => Number(t.id) === Number(tabId));
+      if (!existing) { toast('Tab not found', 'err'); return; }
+    }
+    const isEdit = !!existing;
+    _tabEditorAllowed = [];
+    _tabEditorMode = 'all';
+    if (existing) {
+      if (existing.allowed_users === null) _tabEditorMode = 'all';
+      else if (!existing.allowed_users.length) _tabEditorMode = 'admins';
+      else { _tabEditorMode = 'custom'; _tabEditorAllowed = existing.allowed_users.slice(); }
+    }
+
+    _openModal(
+      isEdit ? 'Edit tab · ' + existing.title : 'New tab',
+      `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-tab-title">Title</label>
+          <input class="dp-input" id="dp-tab-title" maxlength="80" value="${esc(existing ? existing.title : '')}" autocomplete="off">
+        </div>
+        <div class="dp-field">
+          <label for="dp-tab-slug">Slug</label>
+          <input class="dp-input" id="dp-tab-slug" maxlength="32" value="${esc(existing ? existing.slug : '')}"
+                 placeholder="auto from title" ${isEdit ? 'disabled' : ''}>
+        </div>
+      </div>
+      <div class="dp-field">
+        <label>Write permission</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          <label class="dp-check-row"><input type="radio" name="dp-tab-perm" value="all"     ${_tabEditorMode === 'all'     ? 'checked' : ''} onchange="DP._setTabEditorMode(this.value)"> All team members</label>
+          <label class="dp-check-row"><input type="radio" name="dp-tab-perm" value="admins"  ${_tabEditorMode === 'admins'  ? 'checked' : ''} onchange="DP._setTabEditorMode(this.value)"> Admins only</label>
+          <label class="dp-check-row"><input type="radio" name="dp-tab-perm" value="custom"  ${_tabEditorMode === 'custom'  ? 'checked' : ''} onchange="DP._setTabEditorMode(this.value)"> Specific users</label>
+        </div>
+      </div>
+      <div class="dp-field" id="dp-tab-allowed-wrap" style="display:${_tabEditorMode === 'custom' ? 'flex' : 'none'};flex-direction:column">
+        <label>Allowed users</label>
+        <div class="dp-chip-picker">
+          <div class="dp-chip-picked" id="dp-tab-chips"></div>
+          <input type="text" class="dp-chip-input" id="dp-tab-q" autocomplete="off"
+                 placeholder="Type username to add…"
+                 oninput="DP._tabAllowedFilter(this.value)"
+                 onfocus="DP._tabAllowedFilter(this.value)"
+                 onkeydown="DP._tabAllowedKeydown(event)">
+          <div class="dp-chip-suggest" id="dp-tab-suggest"></div>
+        </div>
+        <span style="font-size:11px;color:var(--text-3);margin-top:4px">Only these usernames (plus admins) can post into this tab.</span>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveTab('${esc(boardKey)}', ${tabId ? Number(tabId) : 'null'})">${isEdit ? 'Save' : 'Create'}</button>`
+    );
+    _renderTabAllowedChips();
+  }
+
+  function _setTabEditorMode(mode) {
+    _tabEditorMode = mode;
+    const wrap = document.getElementById('dp-tab-allowed-wrap');
+    if (wrap) wrap.style.display = mode === 'custom' ? 'flex' : 'none';
+  }
+
+  function _renderTabAllowedChips() {
+    const host = document.getElementById('dp-tab-chips');
+    if (!host) return;
+    host.innerHTML = _tabEditorAllowed.map(u => `
+      <span class="dp-chip">
+        <span>${esc(u)}</span>
+        <button type="button" class="dp-chip-x" onclick="DP._tabAllowedRemove('${esc(u.replace(/'/g, "\\'"))}')">×</button>
+      </span>
+    `).join('');
+  }
+  function _tabAllowedFilter(q) {
+    const suggest = document.getElementById('dp-tab-suggest');
+    if (!suggest) return;
+    const qL = String(q || '').trim().toLowerCase();
+    const picked = new Set(_tabEditorAllowed.map(n => n.toLowerCase()));
+    const hits = _tabMgrRoster
+      .map(u => ({ name: u.username, display: u.display_name || u.username }))
+      .filter(x => x.name && !picked.has(x.name.toLowerCase()))
+      .filter(x => !qL || x.name.toLowerCase().includes(qL) || x.display.toLowerCase().includes(qL))
+      .slice(0, 8);
+    if (!hits.length) { suggest.innerHTML = '<div class="dp-chip-empty">No matches</div>'; suggest.classList.add('on'); return; }
+    suggest.innerHTML = hits.map(x => `
+      <button type="button" class="dp-chip-opt"
+              onmousedown="event.preventDefault();DP._tabAllowedPick('${esc(x.name.replace(/'/g, "\\'"))}')">
+        <span>${esc(x.display)} <span class="mono" style="color:var(--text-3)">@${esc(x.name)}</span></span>
+      </button>
+    `).join('');
+    suggest.classList.add('on');
+  }
+  function _tabAllowedPick(name) {
+    if (!_tabEditorAllowed.includes(name)) _tabEditorAllowed.push(name);
+    _renderTabAllowedChips();
+    const i = document.getElementById('dp-tab-q'); if (i) { i.value = ''; i.focus(); _tabAllowedFilter(''); }
+  }
+  function _tabAllowedRemove(name) {
+    _tabEditorAllowed = _tabEditorAllowed.filter(n => n !== name);
+    _renderTabAllowedChips();
+  }
+  function _tabAllowedKeydown(e) {
+    if (e.key === 'Backspace' && !e.target.value && _tabEditorAllowed.length) {
+      _tabEditorAllowed.pop(); _renderTabAllowedChips();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const first = document.querySelector('#dp-tab-suggest .dp-chip-opt');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') {
+      const s = document.getElementById('dp-tab-suggest'); if (s) s.classList.remove('on');
+    }
+  }
+
+  async function _saveTab(boardKey, tabId) {
+    const title = ($('#dp-tab-title').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    // Translate radio mode → allowed_users shape expected by the API.
+    const allowed = _tabEditorMode === 'all'    ? null
+                  : _tabEditorMode === 'admins' ? []
+                                                : _tabEditorAllowed.slice();
+    if (tabId) {
+      const body = { title, allowed_users: allowed };
+      const data = await api('PUT', 'board-tabs?id=' + tabId, body);
+      if (data) { toast('Tab updated', 'ok'); _closeModal(); _openTabManager(boardKey, _boardTitle(boardKey)); }
+    } else {
+      const slug = ($('#dp-tab-slug').value || '').trim();
+      const body = { board_slug: boardKey, title, allowed_users: allowed };
+      if (slug) body.slug = slug;
+      const data = await api('POST', 'board-tabs', body);
+      if (data) { toast('Tab created', 'ok'); _closeModal(); _openTabManager(boardKey, _boardTitle(boardKey)); }
+    }
+  }
+
+  async function _deleteTab(boardKey, tabId, title) {
+    if (!confirm('Delete tab "' + title + '"? Posts in this tab move back to "All".')) return;
+    const data = await api('DELETE', 'board-tabs?id=' + tabId);
+    if (data) { toast('Tab deleted', 'ok'); _openTabManager(boardKey, _boardTitle(boardKey)); }
   }
 
   // =========================================================
@@ -5145,7 +5394,7 @@ const DP = (() => {
   function openNotifs() {
     toast('Notifications — Phase 3');
   }
-  async function _openPostEditor(initialBoard) {
+  async function _openPostEditor(initialBoard, initialTab) {
     // Reset working file list for this editor session.
     _pickerFiles = [];
     const boardOpts = (state.boards || [])
@@ -5175,6 +5424,10 @@ const DP = (() => {
       <div class="dp-field">
         <label for="dp-new-board">Board</label>
         <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()">${boardOpts}</select>
+      </div>
+      <div class="dp-field" id="dp-new-tab-field" style="display:none">
+        <label for="dp-new-tab">Tab <span style="font-weight:400;color:var(--text-3);margin-left:4px">(choose which sub-tab this post belongs to)</span></label>
+        <select class="dp-select" id="dp-new-tab"><option value="">All (no tab)</option></select>
       </div>
       <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'};flex-direction:column">
         <label>Approvers <span style="color:var(--alert);font-weight:400;margin-left:4px">(required for Meeting Minutes)</span></label>
@@ -5222,10 +5475,14 @@ const DP = (() => {
 
     _waitForTiptap(() => _initTiptap('dp-tt-post', ''));
     _renderFileList();
+    // Seed the initial tab selection before the first _onPostBoardChange call
+    // so "New post" from a tabbed board lands on that tab by default.
+    _newPostTabSeed = initialTab || '';
+    _onPostBoardChange();
     setTimeout(() => { const t = $('#dp-new-title'); if (t) t.focus(); }, 60);
   }
 
-  function _onPostBoardChange() {
+  async function _onPostBoardChange() {
     const boardSel = $('#dp-new-board');
     const field = $('#dp-new-approvers-field');
     if (!boardSel || !field) return;
@@ -5235,7 +5492,24 @@ const DP = (() => {
       _approverPicked = [];
       _renderApproverChips();
     }
+    // Populate the Tab select for non-core boards. If the board has no tabs
+    // configured, hide the whole field.
+    const tabField = $('#dp-new-tab-field');
+    const tabSel   = $('#dp-new-tab');
+    if (!tabField || !tabSel) return;
+    const board = boardSel.value;
+    const isCore = ['announcements', 'documents', 'minutes'].includes(board);
+    if (isCore) { tabField.style.display = 'none'; return; }
+    const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(board)).catch(() => null);
+    const tabs = (res && res.tabs) || [];
+    if (!tabs.length) { tabField.style.display = 'none'; return; }
+    const preselect = _newPostTabSeed || '';
+    _newPostTabSeed = '';  // one-shot; next board switch doesn't reuse
+    tabSel.innerHTML = '<option value="">All (no tab)</option>'
+      + tabs.map(t => `<option value="${esc(t.slug)}"${t.slug === preselect ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
+    tabField.style.display = 'flex';
   }
+  let _newPostTabSeed = '';   // carry initialTab into the async board-change
 
   // -------------------------- Approver chip picker --------------------------
   // Shared state. Populated when _openPostEditor fetches the roster. The
@@ -5366,6 +5640,8 @@ const DP = (() => {
 
     const postBody = { board, title, content, files };
     if (approvers) postBody.approvers = approvers;
+    const tabSel = $('#dp-new-tab');
+    if (tabSel && tabSel.value) postBody.tab_slug = tabSel.value;
     const data = await api('POST', 'posts', postBody);
     if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
     if (!data) return;  // api() already toasted the error
@@ -5388,6 +5664,8 @@ const DP = (() => {
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
+    _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
+    _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
     _openVersionEditor, _saveVersion,
