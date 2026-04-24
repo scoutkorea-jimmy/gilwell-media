@@ -1326,29 +1326,49 @@ const DP = (() => {
     return panel;
   }
 
-  // B5 inline vote from home — no modal, no round-trip through viewPost.
-  // Matches the production /dreampath pattern: PUT /approvals w/ display_name
-  // as approver, server resolves by display_name OR username (lowercased).
+  // B5 inline vote — works from two entry points:
+  //   1. Home "Pending your approval" list (no modal open)
+  //   2. Post detail modal "Your vote" banner (modal is open)
+  // When a modal is open we re-open the same post so the user sees their
+  // updated vote banner immediately. Otherwise we just refresh the list.
   async function _inlineApprove(postId) {
     if (!postId) return;
     const approver = encodeURIComponent(_displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'approved' });
-    if (data) {
-      toast('Approved', 'ok');
-      // Refresh home payload so my pending set no longer includes this post.
-      state.homePayload = await api('GET', 'home');
-      navigate(state.page);
-    }
+    if (!data) return;
+    toast('Approved', 'ok');
+    state.homePayload = await api('GET', 'home');
+    const modalOpen = !!document.getElementById('dp-modal');
+    if (modalOpen) { _closeModal(); viewPost('minutes', postId); }
+    else navigate(state.page);
   }
   async function _inlineReject(postId) {
     if (!postId) return;
     if (!confirm('Reject this post? Author will need to revise.')) return;
     const approver = encodeURIComponent(_displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'rejected' });
+    if (!data) return;
+    toast('Rejected', 'ok');
+    state.homePayload = await api('GET', 'home');
+    const modalOpen = !!document.getElementById('dp-modal');
+    if (modalOpen) { _closeModal(); viewPost('minutes', postId); }
+    else navigate(state.page);
+  }
+
+  // Revert my vote back to pending — used when a user hits "Change" on the
+  // Your-vote banner after already voting. Same PUT endpoint, status='pending'.
+  async function _revertMyVote(postId) {
+    if (!postId) return;
+    if (!confirm('Reset your vote back to pending? You can then vote again.')) return;
+    const approver = encodeURIComponent(_displayName());
+    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'pending' });
     if (data) {
-      toast('Rejected', 'ok');
+      toast('Vote reset — cast your decision again.', 'ok');
       state.homePayload = await api('GET', 'home');
-      navigate(state.page);
+      // Re-open the same post so the banner updates and voting buttons return.
+      _closeModal();
+      // Find board from current state if rendering list, otherwise reload.
+      viewPost('minutes', postId);
     }
   }
 
@@ -3067,7 +3087,10 @@ const DP = (() => {
     tileData.forEach(t => {
       const tile = h('button', {
         type: 'button', className: 'dp-panel',
-        style: { padding: '16px 18px', textAlign: 'left', cursor: 'pointer', border: 'var(--bd)', borderRadius: 'var(--r-md)', background: '#fff', fontFamily: 'inherit' },
+        // Background must be a theme-aware token — earlier version hardcoded
+        // '#fff' which in dark mode left white text on white bg (numbers
+        // invisible). var(--surface) swaps to #111827 under dark.
+        style: { padding: '16px 18px', textAlign: 'left', cursor: 'pointer', border: 'var(--bd)', borderRadius: 'var(--r-md)', background: 'var(--surface)', fontFamily: 'inherit' },
         onclick: t.run,
       });
       tile.innerHTML = `
@@ -4490,15 +4513,39 @@ const DP = (() => {
     ].filter(Boolean);
     const isMine = (nm) => myLowerNames.indexOf(String(nm || '').toLowerCase()) >= 0;
     const myApproval = (p.approvals || []).find(a => isMine(a.approver_name));
-    const myVoteBanner = myApproval ? `
-      <div style="margin:14px 0 6px;padding:10px 14px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--info-bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <strong style="color:var(--accent);font-size:var(--fs-12);letter-spacing:0.04em;text-transform:uppercase">Your vote</strong>
-        <span class="dp-tag ${myApproval.status === 'approved' ? 'ok' : myApproval.status === 'rejected' ? 'alert' : 'warn'}">${esc(myApproval.status)}</span>
-        ${myApproval.voted_at
-          ? `<span class="mono" style="color:var(--text-3);font-size:11px;margin-left:auto">voted ${esc(fmtTime(myApproval.voted_at))}</span>`
-          : '<span style="color:var(--text-3);font-size:11px;margin-left:auto">awaiting your vote</span>'}
-      </div>
-    ` : '';
+    // Your-vote banner. Three flavors:
+     //  a) pending + I can still vote → show Approve / Reject buttons inline,
+     //     so the user doesn't have to scroll down to the modal footer to
+     //     cast their vote.
+     //  b) already voted (approved|rejected) → show result chip + timestamp.
+     //     A "Change vote" link re-casts as pending so they can re-enter the
+     //     flow (useful when someone voted by mistake).
+     //  c) not an approver → banner not rendered at all.
+    const myVoteBanner = myApproval ? (() => {
+      const statusLabel = myApproval.status;
+      const isVoted = statusLabel === 'approved' || statusLabel === 'rejected';
+      const tone = statusLabel === 'approved' ? 'ok' : statusLabel === 'rejected' ? 'alert' : 'warn';
+      const buttons = !isVoted
+        ? `<button class="dp-btn dp-btn-primary dp-btn-sm"
+                   style="margin-left:auto"
+                   onclick="DP._inlineApprove(${Number(p.id)})">✓ Approve</button>
+           <button class="dp-btn dp-btn-danger dp-btn-sm"
+                   onclick="DP._inlineReject(${Number(p.id)})">✗ Reject</button>`
+        : `<span class="mono" style="color:var(--text-3);font-size:11px;margin-left:auto">
+             ${myApproval.voted_at ? 'voted ' + esc(fmtTime(myApproval.voted_at)) : ''}
+           </span>
+           <button class="dp-btn dp-btn-ghost dp-btn-sm"
+                   onclick="DP._revertMyVote(${Number(p.id)})"
+                   title="Re-set my vote to pending">Change</button>`;
+      return `
+        <div style="margin:14px 0 6px;padding:12px 14px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--info-bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <strong style="color:var(--accent);font-size:var(--fs-12);letter-spacing:0.04em;text-transform:uppercase">Your vote</strong>
+          <span class="dp-tag ${tone}">${esc(statusLabel)}</span>
+          ${isVoted ? '' : '<span style="color:var(--text-2);font-size:12px">— cast your decision</span>'}
+          ${buttons}
+        </div>
+      `;
+    })() : '';
     const approvalsHtml = (p.approvals || []).length ? `
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
         <div class="dp-h2" style="margin-bottom:8px">Approvals</div>
@@ -5087,7 +5134,7 @@ const DP = (() => {
     openCmd, closeCmd, _cmdPick,
     openCreate, openNotifs, setDensity, setTheme,
     viewPost, viewTask, viewNote,
-    _voteApproval, _inlineApprove, _inlineReject,
+    _voteApproval, _inlineApprove, _inlineReject, _revertMyVote,
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
     _openTaskEditor, _saveNewTask, _taskTransition,
