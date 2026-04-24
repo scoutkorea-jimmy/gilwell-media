@@ -675,36 +675,115 @@ const DP = (() => {
   }
 
   // Live session countdown using the JWT's exp claim returned by /me. Ticks
-  // once per minute — precise enough for a "you'll need to re-log in" hint
-  // without spamming DOM writes. If the user is within 10 minutes of exp we
-  // turn the label alert-red so it can't be ignored.
+  // V1-style session timer — 1-hour idle window, localStorage-backed so a
+  // reload preserves the countdown (matches production /dreampath behavior).
+  // Activity (click/keydown/scroll) extends. At <5min we open a modal asking
+  // "extend 1 hour?"; a click Yes calls /me and resets. At 0 we logout.
+  const _SESSION_DURATION_MS = 60 * 60 * 1000;   // 1 hour
+  const _SESSION_WARNING_MS  = 5  * 60 * 1000;   // 5-min warning
+  const _SESSION_EXPIRY_KEY  = 'dp_v2_session_expires_at';
   let _sessionTickTimer = null;
+  let _sessionPromptShown = false;
+
+  function _getSessionExpiry() {
+    try {
+      const raw = localStorage.getItem(_SESSION_EXPIRY_KEY);
+      const n = raw ? Number(raw) : 0;
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    } catch (_) { return 0; }
+  }
+  function _setSessionExpiry(ms) {
+    try { localStorage.setItem(_SESSION_EXPIRY_KEY, String(ms)); } catch (_) {}
+  }
+  function _clearSessionExpiry() {
+    try { localStorage.removeItem(_SESSION_EXPIRY_KEY); } catch (_) {}
+  }
+  function _fmtRemaining(ms) {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
   function _startSessionTicker() {
     if (_sessionTickTimer) clearInterval(_sessionTickTimer);
+    // Initialize expiry if not set — first login, or post-reload without any
+    // stored expiry. Use a fresh 1-hour window.
+    if (!_getSessionExpiry()) _setSessionExpiry(Date.now() + _SESSION_DURATION_MS);
     const tick = () => {
       const el = $('#dp-session-left');
-      if (!el) return;
-      const now = Date.now();
-      const exp = state.sessionExpiresAt || 0;
-      const ms = exp - now;
-      if (ms <= 0) {
-        el.textContent = 'expired';
-        el.style.color = 'var(--alert)';
-        if (_sessionTickTimer) clearInterval(_sessionTickTimer);
+      const row = $('#dp-session-row');
+      const exp = _getSessionExpiry();
+      if (!exp) return;
+      const remaining = exp - Date.now();
+      if (el) el.textContent = _fmtRemaining(remaining);
+      if (row) row.classList.toggle('is-warning', remaining <= _SESSION_WARNING_MS && remaining > 0);
+
+      if (remaining <= 0) {
+        clearInterval(_sessionTickTimer);
+        _sessionTickTimer = null;
+        _clearSessionExpiry();
+        toast('Session expired. Signing out.', 'err');
+        setTimeout(() => logout(), 1200);
         return;
       }
-      const mins = Math.floor(ms / 60_000);
-      const days = Math.floor(mins / 60 / 24);
-      const hours = Math.floor((mins / 60) % 24);
-      let label;
-      if (days > 0) label = days + 'd ' + hours + 'h';
-      else if (hours > 0) label = hours + 'h ' + (mins % 60) + 'm';
-      else label = mins + 'm';
-      el.textContent = label;
-      el.style.color = mins < 10 ? 'var(--alert)' : '';
+      if (remaining <= _SESSION_WARNING_MS && !_sessionPromptShown) {
+        _sessionPromptShown = true;
+        _openSessionExtendPrompt();
+      }
     };
     tick();
-    _sessionTickTimer = setInterval(tick, 60_000);
+    _sessionTickTimer = setInterval(tick, 1000);
+    _installSessionActivityExtension();
+  }
+
+  let _activityBound = false;
+  function _installSessionActivityExtension() {
+    if (_activityBound) return;
+    _activityBound = true;
+    // Throttle — only extend if the current expiry is already in the second
+    // half of its window. Otherwise every keypress hits localStorage.
+    let last = 0;
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - last < 15_000) return;  // 15-second cool-down
+      last = now;
+      const exp = _getSessionExpiry();
+      if (!exp || exp <= now) return;
+      // Only extend when the window has less than half its duration left —
+      // avoids thrashing storage on the first 30 minutes of a fresh session.
+      if ((exp - now) < _SESSION_DURATION_MS / 2) {
+        _setSessionExpiry(now + _SESSION_DURATION_MS);
+        _sessionPromptShown = false;
+      }
+    };
+    ['click', 'keydown', 'scroll', 'touchstart'].forEach(ev =>
+      window.addEventListener(ev, onActivity, { passive: true, capture: true })
+    );
+  }
+
+  function _openSessionExtendPrompt() {
+    _openModal(
+      'Session ending soon',
+      `<p style="margin:0;font-size:14px;line-height:1.65;color:var(--text-2)">
+         Your session will expire in less than 5 minutes. Extend it by 1 hour?
+       </p>`,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Let it expire</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._extendSession()">Extend 1 hour</button>`
+    );
+  }
+
+  async function _extendSession() {
+    // Verify the server session is still valid — /me 401 means we already
+    // lost the cookie so extending client-only would be a lie.
+    const data = await api('GET', 'me');
+    if (!data) { _closeModal(); return; }
+    _setSessionExpiry(Date.now() + _SESSION_DURATION_MS);
+    _sessionPromptShown = false;
+    _closeModal();
+    toast('Session extended for 1 hour.', 'ok');
   }
 
   // [CASE STUDY — keyboard delegation for interactive divs]
@@ -820,9 +899,12 @@ const DP = (() => {
       return;
     }
     _acceptUser(data.user);
+    // Fresh 1-hour session starts on every successful login.
+    _setSessionExpiry(Date.now() + _SESSION_DURATION_MS);
     await _refreshBoards();
     _mountShell();
     navigate('home');
+    _startSessionTicker();
   }
 
   async function logout() {
@@ -830,6 +912,8 @@ const DP = (() => {
       await fetch('/api/dreampath/auth', { method: 'DELETE', credentials: 'same-origin', keepalive: true });
     } catch (_) {}
     try { localStorage.removeItem('dp_user'); } catch (_) {}
+    _clearSessionExpiry();
+    if (_sessionTickTimer) { clearInterval(_sessionTickTimer); _sessionTickTimer = null; }
     state.user = null;
     _renderLogin();
   }
@@ -896,8 +980,8 @@ const DP = (() => {
         ${nav}
       </nav>
       <div class="dp-side-foot">
-        <div class="dp-side-session">
-          <span>Session</span><strong id="dp-session-left">55:21</strong>
+        <div class="dp-side-session" id="dp-session-row">
+          <span>Session</span><strong id="dp-session-left">--:--</strong>
         </div>
         <div class="dp-side-version">
           <a href="#" onclick="event.preventDefault();DP.navigate('versions')" title="Version history">
@@ -1612,16 +1696,22 @@ const DP = (() => {
 
     const isMinutes = (key === 'minutes');
 
-    // [CASE STUDY 2026-04-24 — approver gating]
-    // Approve/Reject buttons only render for posts where the *current user*
-    // is a pending approver. Data source: state.home.pending_approvals (home
-    // API already returns this filtered list). If we don't have home data
-    // cached (e.g. direct link to /minutes), fetch it once here.
+    // [CASE STUDY 2026-04-24 — approver gating + 3-state Your-vote column]
+    // Originally only showed Approve/Reject buttons when user was a pending
+    // approver, and "—" otherwise — which made voted-but-locked posts and
+    // "not-an-approver" posts look identical. Now we fetch the user's full
+    // approval history once via /approvals?mine=1 and map each post to one
+    // of three states: "can vote", "voted:<status>", or "not an approver".
     let myPendingSet = _myPendingApprovalSet();
-    if (isMinutes && !myPendingSet) {
-      const h2 = await api('GET', 'home');
-      if (h2) state.homePayload = h2;
-      myPendingSet = _myPendingApprovalSet();
+    let myApprovalMap = null;
+    if (isMinutes) {
+      if (!myPendingSet) {
+        const h2 = await api('GET', 'home');
+        if (h2) state.homePayload = h2;
+        myPendingSet = _myPendingApprovalSet();
+      }
+      const mineRes = await api('GET', 'approvals?mine=1').catch(() => null);
+      myApprovalMap = new Map((mineRes && mineRes.approvals || []).map(a => [Number(a.post_id), a]));
     }
 
     const headers = isMinutes
@@ -1679,12 +1769,25 @@ const DP = (() => {
                        : s === 'pending'  ? 'dp-row-pending'
                        : s === 'rejected' ? 'dp-row-rejected' : '';
         const rowClass = [pinClass, statusCls].filter(Boolean).join(' ');
-        // Approve/Reject visible ONLY if I'm listed as a pending approver.
+        // Three-state "Your vote" cell:
+        //   a) I am a pending approver on this post → render Approve/Reject buttons
+        //   b) I voted already (approved/rejected) → show my result chip
+        //   c) I am not on the approvers list → explicit "Not an approver" label
+        //      so the column isn't ambiguous (prior "—" covered b & c together)
+        const myApproval = myApprovalMap && myApprovalMap.get(Number(p.id));
         const canVote = s === 'pending' && myPendingSet && myPendingSet.has(Number(p.id));
-        const voteCell = canVote
-          ? `<button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)})">Approve</button>
-             <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)})">Reject</button>`
-          : `<span style="color:var(--text-3);font-size:11px">—</span>`;
+        let voteCell;
+        if (canVote) {
+          voteCell = `
+            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)})">Approve</button>
+            <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)})">Reject</button>`;
+        } else if (myApproval && (myApproval.status === 'approved' || myApproval.status === 'rejected')) {
+          const voteTone = myApproval.status === 'approved' ? 'ok' : 'alert';
+          const voteIcon = myApproval.status === 'approved' ? '✓' : '✗';
+          voteCell = `<span class="dp-tag ${voteTone}">${voteIcon} ${esc(myApproval.status)}</span>`;
+        } else {
+          voteCell = `<span style="color:var(--text-3);font-size:11px;font-style:italic">대상 아님</span>`;
+        }
         return `<tr class="${rowClass}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
           <td>${titleCell}</td>
           <td>${esc(p.author_name || '')}</td>
@@ -4513,15 +4616,24 @@ const DP = (() => {
     ].filter(Boolean);
     const isMine = (nm) => myLowerNames.indexOf(String(nm || '').toLowerCase()) >= 0;
     const myApproval = (p.approvals || []).find(a => isMine(a.approver_name));
-    // Your-vote banner. Three flavors:
-     //  a) pending + I can still vote → show Approve / Reject buttons inline,
-     //     so the user doesn't have to scroll down to the modal footer to
-     //     cast their vote.
-     //  b) already voted (approved|rejected) → show result chip + timestamp.
-     //     A "Change vote" link re-casts as pending so they can re-enter the
-     //     flow (useful when someone voted by mistake).
-     //  c) not an approver → banner not rendered at all.
-    const myVoteBanner = myApproval ? (() => {
+    // Your-vote banner — four flavors explicit:
+     //  a) pending + I can still vote → Approve / Reject buttons inline
+     //  b) already voted (approved|rejected) → result chip + Change button
+     //  c) minutes post but I'm NOT an approver → grey "대상 아님" notice
+     //  d) not a minutes post at all → banner hidden
+    const isMinutesPost = String(p.board || '') === 'minutes';
+    const myVoteBanner = (() => {
+      if (!isMinutesPost) return '';  // case (d)
+      if (!myApproval) {
+        // case (c) — post is a minute but this user is not on the approvers
+        // list. Subtle muted banner so the user knows voting UI doesn't apply.
+        return `
+          <div style="margin:14px 0 6px;padding:10px 14px;border:1px solid var(--g-200);border-radius:var(--r-sm);background:var(--surface-2);display:flex;gap:10px;align-items:center;color:var(--text-3);font-size:12px">
+            <strong style="font-size:var(--fs-12);letter-spacing:0.04em;text-transform:uppercase;color:var(--text-2)">Your vote</strong>
+            <span>— 당신은 이 회의록의 승인 대상이 아닙니다 (Not an approver).</span>
+          </div>
+        `;
+      }
       const statusLabel = myApproval.status;
       const isVoted = statusLabel === 'approved' || statusLabel === 'rejected';
       const tone = statusLabel === 'approved' ? 'ok' : statusLabel === 'rejected' ? 'alert' : 'warn';
@@ -4545,7 +4657,7 @@ const DP = (() => {
           ${buttons}
         </div>
       `;
-    })() : '';
+    })();
     const approvalsHtml = (p.approvals || []).length ? `
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
         <div class="dp-h2" style="margin-bottom:8px">Approvals</div>
@@ -5135,6 +5247,7 @@ const DP = (() => {
     openCreate, openNotifs, setDensity, setTheme,
     viewPost, viewTask, viewNote,
     _voteApproval, _inlineApprove, _inlineReject, _revertMyVote,
+    _extendSession,
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
     _openTaskEditor, _saveNewTask, _taskTransition,

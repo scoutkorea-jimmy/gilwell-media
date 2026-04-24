@@ -78,6 +78,11 @@ async function verifyStoredPassword(password, storedHash, secret) {
   return { ok: true, upgradedHash: await createPasswordHash(password) };
 }
 
+// Dreampath session TTL. Aligned with v1 behavior (1 hour idle + explicit
+// Extend action). Matching server exp + cookie max-age means a token that
+// lingers in browser storage can never outlive the UI countdown.
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 async function createToken(secret, user) {
   const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = b64url(JSON.stringify({
@@ -86,7 +91,7 @@ async function createToken(secret, user) {
     username: user.username,
     role: user.role,
     name: user.display_name,
-    exp: Date.now() + 30 * 86_400_000,
+    exp: Date.now() + SESSION_TTL_MS,
   }));
   const data = `${header}.${payload}`;
   const key = await crypto.subtle.importKey('raw', enc(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -140,7 +145,7 @@ async function clearRateLimit(env, ip) {
   } catch {}
 }
 
-function buildSessionCookies(token, role, maxAgeSeconds = 30 * 86400) {
+function buildSessionCookies(token, role, maxAgeSeconds = Math.floor(SESSION_TTL_MS / 1000)) {
   const attrs = [
     'Path=/',
     'HttpOnly',
