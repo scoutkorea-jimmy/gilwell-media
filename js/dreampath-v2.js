@@ -4078,11 +4078,17 @@ const DP = (() => {
   function _openModal(title, bodyHtml, footButtons, opts) {
     _closeModal();
     const wide = opts && opts.wide;
+    const bodyClass = opts && opts.bodyClass ? ' ' + opts.bodyClass : '';
     const backdrop = h('div', { className: 'dp-modal-backdrop', id: 'dp-modal-backdrop', onclick: _closeModal });
     const modal = h('aside', {
       className: 'dp-modal' + (wide ? ' dp-modal-wide' : ''),
       id: 'dp-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title,
     });
+    // [CASE STUDY 2026-04-24 — click-outside-to-close]
+    //   The whole backdrop is click-to-close, but clicks INSIDE the modal
+    //   must not bubble up to it. stopPropagation on the modal itself keeps
+    //   the modal open when user clicks inside the body or foot.
+    modal.addEventListener('click', e => e.stopPropagation());
     modal.innerHTML = `
       <div class="dp-modal-head">
         <h2>${esc(title)}</h2>
@@ -4090,18 +4096,22 @@ const DP = (() => {
           <span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/x.svg')"></span>
         </button>
       </div>
-      <div class="dp-modal-body">${bodyHtml}</div>
+      <div class="dp-modal-body${bodyClass}">${bodyHtml}</div>
       <div class="dp-modal-foot">${footButtons || ''}</div>
     `;
     document.body.appendChild(backdrop);
-    document.body.appendChild(modal);
+    // Mount modal INSIDE the backdrop so the grid-centered layout applies.
+    backdrop.appendChild(modal);
   }
 
   async function viewPost(board, id) {
     // Show an immediate loading shell so the user sees feedback while we fetch.
+    // Wide variant: post bodies can be long (content + files + approvals +
+    // history + comments) and feel cramped inside the 820px default modal.
     const postId = Number(id);
-    _openModal('Loading…', '<div style="color:var(--text-3)">Loading post…</div>',
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    _openModal('Loading…', '<div style="color:var(--text-3);padding:40px 0;text-align:center">Loading post…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`,
+      { wide: true });
 
     // [CASE STUDY 2026-04-24 — friendly 404 in-modal]
     // Previously api() showed a toast and viewPost silently closed the
@@ -4190,7 +4200,7 @@ const DP = (() => {
     _openModal(
       p.title || '(Untitled)',
       `
-      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="dp-post-meta-bar">
         <span class="dp-tag neutral">${esc(p.board)}</span>
         <span>by <strong style="color:var(--text-2)">${esc(p.author_name || '')}</strong></span>
         <span>·</span>
@@ -4206,8 +4216,8 @@ const DP = (() => {
       ${filesHtml}
       ${approvalsHtml}
       ${historyHtml}
-      <div id="dp-comments-section" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--g-150)">
-        <div class="dp-h2" style="margin-bottom:10px">Comments</div>
+      <div id="dp-comments-section" style="margin-top:24px;padding-top:18px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:12px">Comments</div>
         <div id="dp-comments-list" style="color:var(--text-3);font-size:12px">Loading comments…</div>
         <div style="margin-top:14px;display:flex;gap:8px;align-items:flex-end">
           <textarea class="dp-textarea" id="dp-comment-input"
@@ -4220,7 +4230,8 @@ const DP = (() => {
        ${canEdit ? `<button class="dp-btn dp-btn-secondary" onclick="DP._editPost('${esc(p.board)}', ${Number(p.id)})">Edit</button>` : ''}
        ${canDelete ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(p.board)}', ${Number(p.id)})">Delete</button>` : ''}
        ${_canVoteOnPost(p) ? `<button class="dp-btn dp-btn-danger" onclick="DP._inlineReject(${Number(p.id)})">Reject</button>
-                              <button class="dp-btn dp-btn-primary" onclick="DP._inlineApprove(${Number(p.id)})">Approve</button>` : ''}`
+                              <button class="dp-btn dp-btn-primary" onclick="DP._inlineApprove(${Number(p.id)})">Approve</button>` : ''}`,
+      { wide: true, bodyClass: 'dp-post-view' }
     );
 
     // Load comments async (don't block the initial paint)
