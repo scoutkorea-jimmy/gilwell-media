@@ -215,6 +215,35 @@ const DP = (() => {
   // Icon span w/ CSS mask
   const icon = (name, cls = '') => `<span class="dp-nav-icon-svg ${cls}" aria-hidden="true" style="--dp-icon:url('/img/dreampath-v2/icons/${name}.svg')"></span>`;
 
+  // [CASE STUDY 2026-04-24 — user shape back-compat]
+  // 증상: _renderSidebar 가 state.user.name.slice(0,1) 에서 TypeError.
+  // 원인: 기존 /dreampath 세션의 localStorage.dp_user 가 { uid, username,
+  //       role, name } 스키마였고 name 이 null/빈 문자열인 계정 존재.
+  //       department 도 JWT 에 포함 안 됨 (DREAMPATH.md §1 참조).
+  // 교훈: user 객체를 직접 dereference 하지 말고 이 헬퍼 3개로만 접근.
+  //       새 필드 (display_name 등) 추가 시 여기만 업데이트.
+  // 참고: DREAMPATH.md §1 data.dpUser 스키마.
+  function _displayName() {
+    if (!state.user) return 'Guest';
+    return String(
+      state.user.display_name ||
+      state.user.name ||
+      state.user.username ||
+      'User'
+    );
+  }
+  function _avatarChar() {
+    if (!state.user) return '?';
+    const n = _displayName();
+    return n && n.length ? esc(n.slice(0, 1).toUpperCase()) : '?';
+  }
+  function _roleLine() {
+    if (!state.user) return '';
+    const role = state.user.role || '';
+    const dept = state.user.department || '';
+    return dept ? `${role} · ${dept}` : role;
+  }
+
   // -------------------------- Init --------------------------
   function init() {
     _installKeyDelegation();
@@ -342,10 +371,10 @@ const DP = (() => {
       <div class="dp-side-foot">
         <div class="dp-session">세션 <strong>55:21</strong></div>
         <div class="dp-user">
-          <div class="dp-avatar">${state.user ? esc(state.user.name.slice(0,1)) : '?'}</div>
+          <div class="dp-avatar">${_avatarChar()}</div>
           <div>
-            <div class="who">${state.user ? esc(state.user.name) : 'Guest'}</div>
-            <div class="role">${state.user ? esc(state.user.role + ' · ' + state.user.department) : ''}</div>
+            <div class="who">${esc(_displayName())}</div>
+            <div class="role">${esc(_roleLine())}</div>
           </div>
         </div>
         <button type="button" class="dp-signout" onclick="DP.logout()">로그아웃</button>
@@ -434,7 +463,7 @@ const DP = (() => {
     const now = new Date();
     const weekday = ['일','월','화','수','목','금','토'][now.getDay()];
     head.innerHTML = `
-      <h1>Good morning, ${esc(state.user?.name || '')}</h1>
+      <h1>Good morning, ${esc(_displayName())}</h1>
       <p class="sub">${weekday}요일 · ${fmt(now)} · <strong>${home.today_summary.meetings_this_week}</strong> meetings this week</p>
     `;
     root.appendChild(head);
@@ -473,7 +502,7 @@ const DP = (() => {
     const tasks = DATA.tasks;
     const pending = DATA.posts.minutes.filter(p => p.approval_status === 'pending')
       .map(p => ({ post_id: p.id, board: 'minutes', title: p.title, author: p.author_name, created_at: p.created_at }));
-    const my_tasks = tasks.filter(t => t.assignee === (state.user?.name || '정현') && t.status !== 'done')
+    const my_tasks = tasks.filter(t => t.assignee === _displayName() && t.status !== 'done')
       .sort((a, b) => (a.overdue === b.overdue ? 0 : a.overdue ? -1 : 1)).slice(0, 5);
     const todays_events = DATA.events.filter(e => e.start_date === today);
     const pinned = DATA.posts.notice.filter(p => p.pinned).concat(DATA.posts.documents.filter(p => p.pinned)).slice(0, 2);
@@ -904,7 +933,7 @@ const DP = (() => {
             <div class="dp-approver-row ${a.status}">
               <span class="status-dot"></span>
               <div style="flex:1;"><strong>${esc(a.name)}</strong><div style="font-size:11px;color:var(--text-3);">${esc(a.status === 'approved' ? (a.voted_at ? fmtTime(a.voted_at) : '승인') : a.status === 'pending' ? '대기' : '반려')}</div></div>
-              ${a.status === 'pending' && a.name === (state.user?.name || '정현') ? `<button type="button" class="dp-btn small primary" onclick="DP._approvePost(${id})">승인</button>` : ''}
+              ${a.status === 'pending' && a.name === _displayName() ? `<button type="button" class="dp-btn small primary" onclick="DP._approvePost(${id})">승인</button>` : ''}
             </div>
           `).join('')}
         </div>
@@ -922,7 +951,7 @@ const DP = (() => {
     for (const key of Object.keys(DATA.posts)) {
       const post = DATA.posts[key].find(p => p.id === postId);
       if (!post || !post.approvers) continue;
-      const me = post.approvers.find(a => a.name === (state.user?.name || '정현'));
+      const me = post.approvers.find(a => a.name === _displayName());
       if (me && me.status === 'pending') {
         me.status = 'approved';
         me.voted_at = new Date().toISOString();
@@ -987,7 +1016,7 @@ const DP = (() => {
           existing.title = t; existing.content = html; existing.pinned = pinned; existing.board = b;
         } else {
           const newId = Math.max(0, ...Object.values(DATA.posts).flat().map(p => p.id)) + 1;
-          DATA.posts[b].unshift({ id: newId, board: b, title: t, content: html, author_name: state.user?.name || 'me', created_at: new Date().toISOString(), comments: 0, pinned });
+          DATA.posts[b].unshift({ id: newId, board: b, title: t, content: html, author_name: _displayName(), created_at: new Date().toISOString(), comments: 0, pinned });
         }
         _closeModal();
         navigate(b === 'notice' ? 'announcements' : b);
