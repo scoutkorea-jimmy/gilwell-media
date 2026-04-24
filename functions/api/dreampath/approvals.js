@@ -24,6 +24,28 @@ async function _postBoard(env, postId) {
 
 export async function onRequestGet({ request, env, data }) {
   const url = new URL(request.url);
+
+  // `?mine=1` returns every approval row the caller is listed on, across all
+  // minutes, so the client can render a "my vote" column on the Minutes list
+  // without N+1 queries. Name lookup matches by lowercased display_name OR
+  // username — same rule the voting PUT uses, so behavior stays consistent.
+  if (url.searchParams.get('mine') === '1') {
+    const user = data && data.dpUser;
+    if (!user) return json({ error: 'Authentication required.' }, 401);
+    const matchNames = [String(user.name || '').trim(), String(user.username || '').trim()]
+      .filter(Boolean)
+      .map(s => s.toLowerCase());
+    if (!matchNames.length) return json({ approvals: [] });
+    const placeholders = matchNames.map(() => '?').join(',');
+    const rows = await env.DB.prepare(
+      `SELECT post_id, approver_name, status, voted_at, override_by
+         FROM dp_post_approvals
+        WHERE LOWER(approver_name) IN (${placeholders})
+        ORDER BY post_id DESC`
+    ).bind(...matchNames).all();
+    return json({ approvals: rows.results || [] });
+  }
+
   const postId = parseInt(url.searchParams.get('post_id') || '', 10);
   if (!postId) return json({ error: 'post_id is required.' }, 400);
   const board = await _postBoard(env, postId);
