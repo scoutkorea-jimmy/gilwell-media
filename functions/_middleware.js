@@ -62,10 +62,13 @@ function generateNonce() {
 
 function isLegacyInlinePath(pathname) {
   if (!pathname) return false;
-  // Admin and KMS surface still carries inline onclick/ontouchstart/onmousedown
-  // handlers, so it runs under the legacy 'unsafe-inline' policy for now.
+  // Admin / KMS / Dreampath surfaces still carry inline onclick/onmousedown
+  // handlers (by design for Dreampath's DP.* IIFE pattern — see CLAUDE.md §5),
+  // so they run under the legacy 'unsafe-inline' policy. Nonce enforcement
+  // on admin/kms is tracked as a follow-up; Dreampath stays on inline handlers.
   if (pathname === '/admin' || pathname === '/admin.html') return true;
   if (pathname === '/kms' || pathname === '/kms.html') return true;
+  if (pathname === '/dreampath' || pathname === '/dreampath.html') return true;
   if (pathname.startsWith('/admin/') || pathname.startsWith('/kms/')) return true;
   return false;
 }
