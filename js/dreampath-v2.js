@@ -75,8 +75,9 @@ const DP = (() => {
            { id: 'contacts', label: 'Contacts', icon: 'phone' }]
       },
       { title: 'Reference', items: (isAdmin
-        ? [{ id: 'rules', label: 'Dev Rules', icon: 'layers' },
-           { id: 'versions', label: 'Versions', icon: 'file-text' }]
+        ? [{ id: 'users',    label: 'Users',     icon: 'users-admin' },
+           { id: 'rules',    label: 'Dev Rules', icon: 'layers' },
+           { id: 'versions', label: 'Versions',  icon: 'file-text' }]
         : []
       )},
     ].filter(g => g.items.length > 0);
@@ -817,6 +818,10 @@ const DP = (() => {
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
       calendar:      () => { _renderCalendar(pageEl);      label = 'Calendar'; },
       contacts:      () => { _renderContacts(pageEl);      label = 'Contacts'; },
+      users:         () => {
+        if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
+        _renderUsers(pageEl); label = 'Users';
+      },
       rules:         () => { _renderRules(pageEl);         label = 'Dev Rules'; },
       versions:      () => { _renderVersions(pageEl);      label = 'Versions'; },
     };
@@ -1851,6 +1856,171 @@ const DP = (() => {
   }
 
   // =========================================================
+  // USERS — admin-only, /api/dreampath/users
+  // =========================================================
+  async function _renderUsers(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'User management'),
+      h('div', {}, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openUserEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
+          h('span', {}, ' New user'),
+        ]),
+      ]),
+    ]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading users…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'users');
+    loading.remove();
+    const users = (data && data.users) || [];
+
+    if (!users.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/users-admin.svg')"></span></div>
+        <h4>No users</h4>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    const rows = users.map(u => {
+      const roleTone = u.role === 'admin' ? 'info' : 'neutral';
+      const activeTone = u.is_active ? 'ok' : 'alert';
+      return `<tr>
+        <td class="mono">${u.id}</td>
+        <td><strong>${esc(u.username)}</strong></td>
+        <td>${esc(u.display_name || '')}</td>
+        <td><span class="dp-tag ${roleTone}">${esc(u.role || 'member')}</span></td>
+        <td>${esc(u.department || '—')}</td>
+        <td>${esc(u.email || '—')}</td>
+        <td class="mono">${esc(fmtTime(u.last_login_at))}</td>
+        <td><span class="dp-tag ${activeTone}">${u.is_active ? 'active' : 'disabled'}</span></td>
+        <td style="text-align:right">
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._openUserEditor(${Number(u.id)})">Edit</button>
+          ${u.username !== 'jimmy' && u.id !== (state.user && state.user.uid)
+            ? `<button class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="DP._deleteUser(${Number(u.id)}, '${esc(u.username)}')">Delete</button>`
+            : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head"><h3>All users <span class="count">${users.length}</span></h3></div>
+      <table class="dp-table">
+        <thead><tr>
+          <th style="width:60px">ID</th><th style="width:120px">Username</th><th>Display name</th>
+          <th style="width:80px">Role</th><th style="width:120px">Team</th><th>Email</th>
+          <th style="width:140px">Last login</th><th style="width:90px">Status</th>
+          <th style="width:130px;text-align:right">Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
+  }
+
+  async function _openUserEditor(userId) {
+    let existing = null;
+    if (userId) {
+      const data = await api('GET', 'users');
+      if (data) existing = (data.users || []).find(u => Number(u.id) === Number(userId));
+      if (!existing) { toast('User not found', 'err'); return; }
+    }
+    const isEdit = !!existing;
+    _openModal(
+      isEdit ? 'Edit user · ' + existing.username : 'New user',
+      `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-u-username">Username</label>
+          <input class="dp-input" id="dp-u-username"
+                 value="${esc(existing ? existing.username : '')}"
+                 ${isEdit ? 'disabled' : ''} autocomplete="off">
+        </div>
+        <div class="dp-field">
+          <label for="dp-u-display">Display name</label>
+          <input class="dp-input" id="dp-u-display" value="${esc(existing ? (existing.display_name || '') : '')}">
+        </div>
+      </div>
+      <div class="dp-field">
+        <label for="dp-u-password">Password ${isEdit ? '<span style="font-weight:400;color:var(--text-3);margin-left:4px">(leave blank to keep current)</span>' : ''}</label>
+        <input class="dp-input" id="dp-u-password" type="password" autocomplete="new-password">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-u-role">Role</label>
+          <select class="dp-select" id="dp-u-role">
+            <option value="member"${existing && existing.role !== 'admin' ? ' selected' : ''}>member</option>
+            <option value="admin"${existing && existing.role === 'admin' ? ' selected' : ''}>admin</option>
+          </select>
+        </div>
+        <div class="dp-field">
+          <label for="dp-u-active">Status</label>
+          <select class="dp-select" id="dp-u-active">
+            <option value="1"${!existing || existing.is_active ? ' selected' : ''}>active</option>
+            <option value="0"${existing && !existing.is_active ? ' selected' : ''}>disabled</option>
+          </select>
+        </div>
+        <div class="dp-field">
+          <label for="dp-u-dept">Team / Dept</label>
+          <input class="dp-input" id="dp-u-dept" value="${esc(existing ? (existing.department || '') : '')}" placeholder="e.g. team korea">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-u-email">Email</label>
+          <input class="dp-input" id="dp-u-email" type="email" value="${esc(existing ? (existing.email || '') : '')}">
+        </div>
+        <div class="dp-field">
+          <label for="dp-u-phone">Phone</label>
+          <input class="dp-input" id="dp-u-phone" value="${esc(existing ? (existing.phone || '') : '')}">
+        </div>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveUser(${userId ? Number(userId) : 'null'})">${isEdit ? 'Save' : 'Create'}</button>`
+    );
+  }
+
+  async function _saveUser(id) {
+    const body = {
+      display_name: ($('#dp-u-display').value || '').trim(),
+      role:         $('#dp-u-role').value,
+      is_active:    $('#dp-u-active').value === '1' ? 1 : 0,
+      department:   ($('#dp-u-dept').value || '').trim(),
+      email:        ($('#dp-u-email').value || '').trim(),
+      phone:        ($('#dp-u-phone').value || '').trim(),
+    };
+    const pw = ($('#dp-u-password').value || '');
+    if (id) {
+      // EDIT
+      if (pw) body.new_password = pw;
+      const data = await api('PUT', 'users?id=' + id, body);
+      if (data) { toast('User updated', 'ok'); _closeModal(); navigate('users'); }
+    } else {
+      // CREATE
+      const username = ($('#dp-u-username').value || '').trim();
+      if (!username) { toast('Username required', 'err'); return; }
+      if (!pw || pw.length < 6) { toast('Password must be at least 6 characters', 'err'); return; }
+      body.username = username;
+      body.password = pw;
+      const data = await api('POST', 'users', body);
+      if (data) { toast('User created', 'ok'); _closeModal(); navigate('users'); }
+    }
+  }
+
+  async function _deleteUser(id, username) {
+    if (!confirm('Delete user "' + username + '"? This cannot be undone.')) return;
+    const data = await api('DELETE', 'users?id=' + Number(id));
+    if (data) { toast('User deleted', 'ok'); navigate('users'); }
+  }
+
+  // =========================================================
   // VERSIONS — wired to /api/dreampath/versions
   // =========================================================
   async function _renderVersions(root) {
@@ -2052,6 +2222,11 @@ const DP = (() => {
       </div>
     ` : '';
 
+    const isAdmin = state.user && state.user.role === 'admin';
+    const isAuthor = state.user && (p.author_id === state.user.uid || p.author_name === _displayName());
+    const canEdit = isAdmin || isAuthor;
+    const canDelete = isAdmin;
+
     _openModal(
       p.title || '(Untitled)',
       `
@@ -2068,10 +2243,172 @@ const DP = (() => {
       ${filesHtml}
       ${approvalsHtml}
       ${historyHtml}
+      <div id="dp-comments-section" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:10px">Comments</div>
+        <div id="dp-comments-list" style="color:var(--text-3);font-size:12px">Loading comments…</div>
+        <div style="margin-top:14px;display:flex;gap:8px;align-items:flex-end">
+          <textarea class="dp-textarea" id="dp-comment-input"
+                    placeholder="Write a comment…" style="min-height:70px;flex:1"></textarea>
+          <button class="dp-btn dp-btn-primary" onclick="DP._postComment(${Number(p.id)})">Post</button>
+        </div>
+      </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${canEdit ? `<button class="dp-btn dp-btn-secondary" onclick="DP._editPost('${esc(p.board)}', ${Number(p.id)})">Edit</button>` : ''}
+       ${canDelete ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(p.board)}', ${Number(p.id)})">Delete</button>` : ''}
        ${p.approval_status === 'pending' ? '<button class="dp-btn dp-btn-primary" onclick="DP._voteApproval(' + Number(p.id) + ", 'approved')\">Approve</button>" : ''}`
     );
+
+    // Load comments async (don't block the initial paint)
+    _loadComments(Number(p.id));
+  }
+
+  async function _loadComments(postId) {
+    const host = $('#dp-comments-list');
+    if (!host) return;
+    const data = await api('GET', 'comments?post_id=' + postId);
+    if (!data) return;
+    const comments = (data.comments || []);
+    if (!comments.length) {
+      host.innerHTML = '<div style="color:var(--text-3);font-size:12px">No comments yet. Be the first.</div>';
+      return;
+    }
+    const isAdmin = state.user && state.user.role === 'admin';
+    host.innerHTML = comments.map(c => {
+      const mine = c.author_id === (state.user && state.user.uid);
+      const canDelete = isAdmin || mine;
+      return `
+        <div style="padding:10px 12px;border:var(--bd);border-radius:var(--r-sm);margin-bottom:6px;background:var(--g-050)">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:11px;color:var(--text-3);margin-bottom:4px">
+            <span><strong style="color:var(--text-2);font-weight:500">${esc(c.author_name || 'Anon')}</strong>
+                  <span class="mono" style="margin-left:6px">${esc(fmtTime(c.created_at))}</span></span>
+            ${canDelete ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
+                                   onclick="DP._deleteComment(${Number(c.id)}, ${postId})">Delete</button>` : ''}
+          </div>
+          <div style="font-size:var(--fs-13);color:var(--text);white-space:pre-wrap">${esc(c.content || '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function _postComment(postId) {
+    const input = $('#dp-comment-input');
+    const content = (input && input.value || '').trim();
+    if (!content) { toast('Comment cannot be empty', 'err'); return; }
+    const data = await api('POST', 'comments', { post_id: postId, content });
+    if (data) {
+      if (input) input.value = '';
+      _loadComments(postId);
+    }
+  }
+
+  async function _deleteComment(id, postId) {
+    if (!confirm('Delete this comment?')) return;
+    const data = await api('DELETE', 'comments?id=' + Number(id));
+    if (data) _loadComments(postId);
+  }
+
+  // -------------------------- Post edit + delete --------------------------
+  // [CASE STUDY — PUT /posts?id requires edit_note]
+  // Server rejects PUT without a non-empty edit_note (audit trail rule).
+  // Collect it via a small prompt-like UI inside the editor modal.
+  async function _editPost(board, postId) {
+    const data = await api('GET', 'posts?id=' + Number(postId));
+    if (!data || !data.post) { toast('Post not found', 'err'); return; }
+    const p = data.post;
+    _pickerFiles = (p.files || []).map(f => ({
+      id: _fileId(),
+      url: f.file_url,
+      name: f.file_name,
+      type: f.file_type,
+      size: f.file_size,
+      is_image: f.is_image ? 1 : 0,
+      state: 'uploaded',
+    }));
+
+    const toolbarBtns = [
+      { cmd: 'bold', icon: 'bold' }, { cmd: 'italic', icon: 'italic' },
+      { sep: true },
+      { cmd: 'h2', label: 'H2' }, { cmd: 'h3', label: 'H3' },
+      { sep: true },
+      { cmd: 'bulletList', icon: 'list-ul' }, { cmd: 'orderedList', label: '1.' },
+      { cmd: 'blockquote', label: '❝' }, { cmd: 'insertTable', label: '⊞' },
+      { cmd: 'insertImage', icon: 'scroll' },
+    ];
+    const toolbar = toolbarBtns.map(b => {
+      if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
+      const inner = b.icon
+        ? `<span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/${esc(b.icon)}.svg')"></span>`
+        : `<span>${esc(b.label)}</span>`;
+      return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}"
+                       onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
+    }).join('');
+
+    _openModal(
+      'Edit post',
+      `
+      <div class="dp-field">
+        <label for="dp-edit-title">Title</label>
+        <input class="dp-input" id="dp-edit-title" value="${esc(p.title || '')}">
+      </div>
+      <div class="dp-field">
+        <label>Content</label>
+        <div class="dp-te-wrapper">
+          <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
+          <div class="dp-te-editor" id="dp-tt-post"></div>
+        </div>
+      </div>
+      <div class="dp-field">
+        <label>Attachments <span id="dp-file-used" style="font-weight:400;color:var(--text-3);margin-left:6px">${_pickerFiles.length} / ${MAX_FILES} files · ${_fmtSize(_totalFileBytes())} / 100 MB</span></label>
+        <div class="dp-file-picker">
+          <input type="file" id="dp-edit-files" multiple style="display:none" onchange="DP._handlePickerChange(this)">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-edit-files').click()">
+            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath-v2/icons/plus.svg')"></span>
+            <span>Add file</span>
+          </button>
+        </div>
+        <div class="dp-file-list" id="dp-file-list"></div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label for="dp-edit-note">Edit note <span style="color:var(--alert);font-weight:400;margin-left:4px">(required)</span></label>
+        <input class="dp-input" id="dp-edit-note" placeholder="Why this change?" maxlength="500">
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" id="dp-edit-save" onclick="DP._saveEditPost('${esc(board)}', ${Number(postId)})">Save</button>`
+    );
+    _waitForTiptap(() => _initTiptap('dp-tt-post', p.content || ''));
+    _renderFileList();
+  }
+
+  async function _saveEditPost(board, postId) {
+    const btn = $('#dp-edit-save');
+    const title = ($('#dp-edit-title').value || '').trim();
+    const editNote = ($('#dp-edit-note').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    if (!editNote) { toast('Edit note is required', 'err'); $('#dp-edit-note').focus(); return; }
+    const content = _getTiptapHTML();
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    const files = await _uploadPending();
+    if (files === null) { if (btn) { btn.disabled = false; btn.textContent = 'Save'; } return; }
+    const data = await api('PUT', 'posts?id=' + Number(postId), { title, content, files, edit_note: editNote });
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+    if (data) {
+      toast('Saved', 'ok');
+      _closeModal();
+      navigate(state.page);
+    }
+  }
+
+  async function _deletePost(board, postId) {
+    if (!confirm('Delete this post? This cannot be undone.')) return;
+    const data = await api('DELETE', 'posts?id=' + Number(postId));
+    if (data) {
+      toast('Post deleted', 'ok');
+      _closeModal();
+      navigate(state.page === 'home' ? 'home' : board);
+    }
   }
 
   // Cast the current user's vote on a meeting-minutes approval.
@@ -2303,6 +2640,9 @@ const DP = (() => {
     _openNoteEditor, _saveNewNote, _resolveNote,
     _openVersionEditor, _saveVersion,
     _calDayClick, _calEventClick,
+    _editPost, _saveEditPost, _deletePost,
+    _postComment, _deleteComment,
+    _openUserEditor, _saveUser, _deleteUser,
   };
 })();
 
