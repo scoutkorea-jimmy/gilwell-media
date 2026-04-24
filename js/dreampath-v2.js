@@ -37,6 +37,7 @@ const DP = (() => {
     contrast: localStorage.getItem('dp_v2_contrast') || 'standard',
     cmdOpen: false,
     boards: [],          // Loaded from /api/dreampath/boards on init
+    latestVersion: '',   // Loaded from /api/dreampath/versions (newest row)
   };
 
   // Nav groups are derived at render time from state.user + state.boards
@@ -517,6 +518,7 @@ const DP = (() => {
       _mountShell();
       navigate('home');
       _refreshSelf();
+      _refreshLatestVersion();
     } else {
       // No local user — need /me to succeed before we know what sidebar to render.
       const [, me] = await Promise.all([_refreshBoards(), api('GET', 'me')]);
@@ -524,6 +526,7 @@ const DP = (() => {
         _acceptUser(me.user);
         _mountShell();
         navigate('home');
+        _refreshLatestVersion();
       } else {
         _renderLogin();
       }
@@ -533,6 +536,15 @@ const DP = (() => {
   async function _refreshBoards() {
     const data = await api('GET', 'boards');
     if (data && Array.isArray(data.boards)) state.boards = data.boards;
+  }
+
+  async function _refreshLatestVersion() {
+    const data = await api('GET', 'versions');
+    if (data && Array.isArray(data.versions) && data.versions.length) {
+      state.latestVersion = data.versions[0].version || '';
+      const el = $('#dp-side-ver');
+      if (el) el.textContent = 'v' + state.latestVersion;
+    }
   }
 
   // Normalize server user payload into the state.user shape used by the
@@ -714,6 +726,12 @@ const DP = (() => {
       <div class="dp-side-foot">
         <div class="dp-side-session">
           <span>Session</span><strong id="dp-session-left">55:21</strong>
+        </div>
+        <div class="dp-side-version">
+          <a href="#" onclick="event.preventDefault();DP.navigate('versions')" title="Version history">
+            <span>Version</span>
+          </a>
+          <span class="dp-ver-num" id="dp-side-ver">v${esc(state.latestVersion || state.version)}</span>
         </div>
         <div class="dp-side-user">
           <div class="dp-avatar">${esc(_avatarChar())}</div>
@@ -1288,40 +1306,74 @@ const DP = (() => {
   }
 
   // =========================================================
-  // TASKS — dense table (not kanban)
+  // TASKS — wired to /api/dreampath/tasks
   // =========================================================
-  function _renderTasks(root) {
-    const ts = DATA.tasks;
+  async function _renderTasks(root) {
+    root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, 'Tasks'),
       h('div', {}, [
-        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => toast('Tasks API — Phase 3.6 pending') }, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openTaskEditor() }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
           h('span', {}, ' New task'),
         ]),
       ]),
     ]));
-    const panel = h('div', { className: 'dp-panel' });
-    const rows = ts.map(t => {
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading tasks…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'tasks');
+    loading.remove();
+    const tasks = (data && data.tasks) || [];
+
+    if (!tasks.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/check.svg')"></span></div>
+        <h4>No tasks yet</h4>
+        <p>Create the first task to track project work.</p>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openTaskEditor()">+ New task</button>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    // Group header shows totals per status so the ERP density still reads as a board.
+    const byStatus = { todo: 0, in_progress: 0, done: 0 };
+    tasks.forEach(t => { if (byStatus[t.status] !== undefined) byStatus[t.status]++; });
+    const today = todayISO();
+
+    const rows = tasks.map(t => {
       const statusTone = t.status === 'done' ? 'ok' : t.status === 'in_progress' ? 'info' : 'neutral';
-      const dueTone = t.overdue ? 'alert' : (t.due_date === todayISO() ? 'warn' : 'neutral');
-      const prioTone = t.priority === 'high' ? 'alert' : 'neutral';
-      return `<tr onclick="DP.viewTask(${t.id})">
-        <td class="mono">TASK-${t.id}</td>
-        <td>${esc(t.title)}</td>
-        <td>${esc(t.assignee)}</td>
-        <td class="mono">${esc(t.due_date)}</td>
-        <td><span class="dp-tag ${prioTone}">${esc(t.priority)}</span></td>
-        <td><span class="dp-tag ${dueTone}">${t.overdue ? 'Overdue' : (t.due_date === todayISO() ? 'Today' : 'Scheduled')}</span></td>
-        <td><span class="dp-tag ${statusTone}">${esc(t.status)}</span></td>
+      const due = String(t.due_date || '').slice(0, 10);
+      const overdue = due && due < today && t.status !== 'done';
+      const dueTone = overdue ? 'alert' : (due === today ? 'warn' : 'neutral');
+      const prioTone = t.priority === 'high' ? 'alert' : t.priority === 'low' ? 'neutral' : 'neutral';
+      return `<tr onclick="DP.viewTask(${Number(t.id)})">
+        <td class="mono">TASK-${String(t.id).padStart(4, '0')}</td>
+        <td>${esc(t.title || '')}</td>
+        <td>${esc(t.assignee || '—')}</td>
+        <td class="mono">${esc(due || '—')}</td>
+        <td><span class="dp-tag ${prioTone}">${esc(t.priority || 'normal')}</span></td>
+        <td><span class="dp-tag ${dueTone}">${overdue ? 'Overdue' : (due === today ? 'Today' : 'Scheduled')}</span></td>
+        <td><span class="dp-tag ${statusTone}">${esc(t.status || 'todo')}</span></td>
       </tr>`;
     }).join('');
+
+    const panel = h('div', { className: 'dp-panel' });
     panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>All tasks <span class="count">${tasks.length}</span></h3>
+        <span style="font-size:11px;color:var(--text-3)">
+          ${byStatus.todo} todo · ${byStatus.in_progress} in progress · ${byStatus.done} done
+        </span>
+      </div>
       <table class="dp-table">
         <thead>
           <tr>
-            <th style="width:100px">ID</th><th>Title</th>
-            <th style="width:120px">Owner</th><th style="width:110px">Due</th>
+            <th style="width:110px">ID</th><th>Title</th>
+            <th style="width:140px">Owner</th><th style="width:110px">Due</th>
             <th style="width:90px">Priority</th><th style="width:110px">Schedule</th>
             <th style="width:110px">Status</th>
           </tr>
@@ -1332,31 +1384,258 @@ const DP = (() => {
     root.appendChild(panel);
   }
 
+  async function viewTask(id) {
+    const postId = Number(id);
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading task…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    // tasks.js returns full list on GET, so fetch list and filter locally —
+    // cheaper than a dedicated single-resource endpoint and matches what the
+    // production /dreampath client does (no cache invalidation subtleties).
+    const data = await api('GET', 'tasks');
+    if (!data) return;
+    const t = ((data.tasks) || []).find(x => Number(x.id) === postId);
+    if (!t) { _renderPostError('Task not found', 'The task may have been removed.'); return; }
+
+    const today = todayISO();
+    const due = String(t.due_date || '').slice(0, 10);
+    const overdue = due && due < today && t.status !== 'done';
+    const statusTone = t.status === 'done' ? 'ok' : t.status === 'in_progress' ? 'info' : 'neutral';
+    const prioTone = t.priority === 'high' ? 'alert' : 'neutral';
+    const dueTone = overdue ? 'alert' : (due === today ? 'warn' : 'neutral');
+
+    const transitions = [];
+    if (t.status === 'todo')        transitions.push({ to: 'in_progress', label: 'Start' });
+    if (t.status === 'in_progress') transitions.push({ to: 'done',        label: 'Mark done' });
+    if (t.status === 'done')        transitions.push({ to: 'todo',        label: 'Reopen' });
+
+    _openModal(
+      t.title || '(Untitled)',
+      `
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="dp-tag neutral">TASK-${String(t.id).padStart(4, '0')}</span>
+        <span class="dp-tag ${statusTone}">${esc(t.status)}</span>
+        <span class="dp-tag ${prioTone}">${esc(t.priority || 'normal')}</span>
+        ${due ? `<span class="dp-tag ${dueTone}">Due ${esc(due)}</span>` : ''}
+        <span>·</span>
+        <span>Owner <strong style="color:var(--text-2)">${esc(t.assignee || '—')}</strong></span>
+      </div>
+      ${t.description ? `<p>${esc(t.description)}</p>` : '<p style="color:var(--text-3)">No description.</p>'}
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--g-150);font-size:11px;color:var(--text-3)">
+        Updated <span class="mono">${esc(fmtTime(t.updated_at))}</span>
+      </div>
+      `,
+      `
+      <button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+      ${transitions.map(tr =>
+        `<button class="dp-btn dp-btn-primary" onclick="DP._taskTransition(${Number(t.id)},'${esc(tr.to)}')">${esc(tr.label)}</button>`
+      ).join('')}
+      `
+    );
+  }
+
+  async function _taskTransition(id, newStatus) {
+    const data = await api('PUT', 'tasks?id=' + Number(id), { status: newStatus });
+    if (data) {
+      toast('Task updated', 'ok');
+      _closeModal();
+      if (state.page === 'tasks') navigate('tasks');
+      else if (state.page === 'home') navigate('home');
+    }
+  }
+
+  function _openTaskEditor() {
+    _openModal(
+      'New task',
+      `
+      <div class="dp-field">
+        <label for="dp-t-title">Title</label>
+        <input class="dp-input" id="dp-t-title" placeholder="What needs doing?" autocomplete="off">
+      </div>
+      <div class="dp-field">
+        <label for="dp-t-desc">Description</label>
+        <textarea class="dp-textarea" id="dp-t-desc" placeholder="Context, links, acceptance criteria…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-t-assignee">Owner</label>
+          <input class="dp-input" id="dp-t-assignee" value="${esc(_displayName())}" placeholder="Assignee">
+        </div>
+        <div class="dp-field">
+          <label for="dp-t-due">Due</label>
+          <input class="dp-input" id="dp-t-due" type="date">
+        </div>
+        <div class="dp-field">
+          <label for="dp-t-prio">Priority</label>
+          <select class="dp-select" id="dp-t-prio">
+            <option value="low">low</option>
+            <option value="normal" selected>normal</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveNewTask()">Create</button>`
+    );
+    setTimeout(() => { const t = $('#dp-t-title'); if (t) t.focus(); }, 60);
+  }
+
+  async function _saveNewTask() {
+    const title = ($('#dp-t-title').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    const body = {
+      title,
+      description: $('#dp-t-desc').value || '',
+      assignee: $('#dp-t-assignee').value || '',
+      due_date: $('#dp-t-due').value || null,
+      priority: $('#dp-t-prio').value || 'normal',
+      status: 'todo',
+    };
+    const data = await api('POST', 'tasks', body);
+    if (data) {
+      toast('Task created', 'ok');
+      _closeModal();
+      navigate('tasks');
+    }
+  }
+
   // =========================================================
-  // NOTES / ISSUES
+  // NOTES / ISSUES — wired to /api/dreampath/notes
   // =========================================================
-  function _renderNotes(root) {
-    root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Notes / Issues')]));
-    const panel = h('div', { className: 'dp-panel' });
-    const rows = DATA.notes.map(n => {
-      const statusTone = n.status === 'resolved' ? 'ok' : 'warn';
-      const prioTone = n.priority === 'high' ? 'alert' : 'neutral';
-      return `<tr onclick="DP.viewNote(${n.id})">
-        <td class="mono">${esc(n.type === 'issue' ? 'ISS-' : 'NOTE-')}${n.id}</td>
-        <td>${esc(n.title)}</td>
-        <td>${esc(n.author)}</td>
-        <td><span class="dp-tag ${prioTone}">${esc(n.priority)}</span></td>
-        <td><span class="dp-tag ${statusTone}">${esc(n.status)}</span></td>
+  async function _renderNotes(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Notes / Issues'),
+      h('div', {}, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openNoteEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
+          h('span', {}, ' New note'),
+        ]),
+      ]),
+    ]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading notes…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'notes');
+    loading.remove();
+    const notes = (data && data.notes) || [];
+
+    if (!notes.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/clipboard.svg')"></span></div>
+        <h4>No notes or issues</h4>
+        <p>Capture decisions, open issues, or quick context here.</p>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openNoteEditor()">+ New note</button>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    const rows = notes.map(n => {
+      const statusTone = n.status === 'resolved' ? 'ok' : n.status === 'open' ? 'warn' : 'neutral';
+      const prioTone = n.priority === 'high' ? 'alert' : n.priority === 'low' ? 'neutral' : 'neutral';
+      const prefix = n.type === 'issue' ? 'ISS-' : 'NOTE-';
+      return `<tr onclick="DP.viewNote(${Number(n.id)})">
+        <td class="mono">${esc(prefix)}${String(n.id).padStart(4, '0')}</td>
+        <td>${esc(n.title || '')}</td>
+        <td><span class="dp-tag neutral">${esc(n.type || 'note')}</span></td>
+        <td><span class="dp-tag ${prioTone}">${esc(n.priority || 'normal')}</span></td>
+        <td><span class="dp-tag ${statusTone}">${esc(n.status || 'open')}</span></td>
         <td class="mono">${esc(fmtTime(n.updated_at))}</td>
       </tr>`;
     }).join('');
+    const panel = h('div', { className: 'dp-panel' });
     panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>All notes &amp; issues <span class="count">${notes.length}</span></h3>
+      </div>
       <table class="dp-table">
-        <thead><tr><th style="width:110px">ID</th><th>Title</th><th style="width:120px">Author</th><th style="width:90px">Priority</th><th style="width:110px">Status</th><th style="width:170px">Updated</th></tr></thead>
+        <thead><tr><th style="width:110px">ID</th><th>Title</th><th style="width:90px">Type</th><th style="width:90px">Priority</th><th style="width:110px">Status</th><th style="width:170px">Updated</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     `;
     root.appendChild(panel);
+  }
+
+  async function viewNote(id) {
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading note…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    // Notes API returns list only; filter client-side for detail.
+    const data = await api('GET', 'notes');
+    if (!data) return;
+    const n = ((data.notes) || []).find(x => Number(x.id) === Number(id));
+    if (!n) { _renderPostError('Note not found', 'The note may have been removed.'); return; }
+    const statusTone = n.status === 'resolved' ? 'ok' : 'warn';
+    const prioTone = n.priority === 'high' ? 'alert' : 'neutral';
+    _openModal(
+      n.title || '(Untitled)',
+      `
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="dp-tag neutral">${esc(n.type || 'note')}</span>
+        <span class="dp-tag ${prioTone}">${esc(n.priority || 'normal')}</span>
+        <span class="dp-tag ${statusTone}">${esc(n.status || 'open')}</span>
+        <span>·</span><span>Updated <span class="mono">${esc(fmtTime(n.updated_at))}</span></span>
+      </div>
+      ${_sanitize(n.content || ('<p>' + esc(n.body || '') + '</p>'))}
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${n.status !== 'resolved' ? `<button class="dp-btn dp-btn-primary" onclick="DP._resolveNote(${Number(n.id)})">Resolve</button>` : ''}`
+    );
+  }
+  async function _resolveNote(id) {
+    const data = await api('PUT', 'notes?id=' + Number(id), { status: 'resolved' });
+    if (data) { toast('Marked resolved', 'ok'); _closeModal(); navigate('notes'); }
+  }
+
+  function _openNoteEditor() {
+    _openModal(
+      'New note / issue',
+      `
+      <div class="dp-field">
+        <label for="dp-n-title">Title</label>
+        <input class="dp-input" id="dp-n-title" placeholder="Title" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-n-type">Type</label>
+          <select class="dp-select" id="dp-n-type">
+            <option value="note" selected>note</option>
+            <option value="issue">issue</option>
+          </select>
+        </div>
+        <div class="dp-field">
+          <label for="dp-n-prio">Priority</label>
+          <select class="dp-select" id="dp-n-prio">
+            <option value="low">low</option>
+            <option value="normal" selected>normal</option>
+            <option value="high">high</option>
+          </select>
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label for="dp-n-body">Body</label>
+        <textarea class="dp-textarea" id="dp-n-body" placeholder="Context, links, action items…"></textarea>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveNewNote()">Create</button>`
+    );
+    setTimeout(() => { const t = $('#dp-n-title'); if (t) t.focus(); }, 60);
+  }
+  async function _saveNewNote() {
+    const title = ($('#dp-n-title').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    const body = {
+      title,
+      type: $('#dp-n-type').value || 'note',
+      priority: $('#dp-n-prio').value || 'normal',
+      status: 'open',
+      content: '<p>' + esc($('#dp-n-body').value || '') + '</p>',
+    };
+    const data = await api('POST', 'notes', body);
+    if (data) { toast('Note created', 'ok'); _closeModal(); navigate('notes'); }
   }
 
   // =========================================================
@@ -1372,8 +1651,171 @@ const DP = (() => {
     `;
     root.appendChild(e);
   }
-  function _renderCalendar(root) { _stubPage(root, 'Calendar', 'Month grid + recurring events + drag-to-move land here in Phase 3.8.'); }
-  function _renderContacts(root) { _stubPage(root, 'Contacts', 'Project team directory — wired in Phase 3.9.'); }
+  // ===== Calendar — month grid wired to /api/dreampath/events?month=YYYY-MM =====
+  let _calCursor = null;  // Date pointing at 1st of currently viewed month
+  async function _renderCalendar(root) {
+    if (!_calCursor) _calCursor = new Date();
+    const cursor = _calCursor;
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const monthLabel = cursor.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const monthStr = year + '-' + String(month + 1).padStart(2, '0');
+
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, monthLabel),
+      h('div', { style: { display: 'flex', gap: '8px' } }, [
+        h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month - 1, 1); navigate('calendar'); } }, '← Prev'),
+        h('button', { className: 'dp-btn dp-btn-ghost dp-btn-sm',     onclick: () => { _calCursor = new Date(); navigate('calendar'); } },            'Today'),
+        h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month + 1, 1); navigate('calendar'); } }, 'Next →'),
+      ]),
+    ]));
+
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading events…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'events?month=' + monthStr);
+    loading.remove();
+    const events = (data && data.events) || [];
+
+    // Build day buckets
+    const firstDow = new Date(year, month, 1).getDay();  // 0=Sun
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const byDate = {};
+    const today = todayISO();
+    events.forEach(e => {
+      const k = String(e.start_date || '').slice(0, 10);
+      if (!byDate[k]) byDate[k] = [];
+      byDate[k].push(e);
+    });
+
+    const typeColor = {
+      meeting:  'var(--dv-2)',
+      deadline: 'var(--alert)',
+      milestone: 'var(--gold)',
+      general:  'var(--dv-3)',
+    };
+
+    const panel = h('div', { className: 'dp-panel' });
+    let rowsHtml = '';
+    const weekDayHdr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="dp-cal-wdh">${d}</div>`).join('');
+    rowsHtml += `<div class="dp-cal-grid dp-cal-head">${weekDayHdr}</div>`;
+
+    // Build grid: pad start with empty cells, then day cells
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    let gridHtml = '<div class="dp-cal-grid">';
+    cells.forEach(d => {
+      if (d == null) { gridHtml += '<div class="dp-cal-day dp-cal-day--empty"></div>'; return; }
+      const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const isToday = dateStr === today;
+      const evs = byDate[dateStr] || [];
+      gridHtml += `
+        <div class="dp-cal-day${isToday ? ' dp-cal-day--today' : ''}${evs.length ? ' dp-cal-day--has' : ''}"
+             role="button" tabindex="0"
+             onclick="DP._calDayClick('${esc(dateStr)}')"
+             aria-label="${esc(dateStr + (evs.length ? ' · ' + evs.length + ' events' : ''))}">
+          <div class="dp-cal-dnum">${d}</div>
+          ${evs.slice(0, 3).map(e => `
+            <div class="dp-cal-ev" style="border-left-color:${typeColor[e.type] || typeColor.general}"
+                 onclick="event.stopPropagation();DP._calEventClick(${Number(e.id)})"
+                 title="${esc(e.title || '')}">
+              ${e.start_time ? `<span class="t">${esc(e.start_time)}</span>` : ''}
+              <span class="name">${esc(e.title || '')}</span>
+            </div>
+          `).join('')}
+          ${evs.length > 3 ? `<div class="dp-cal-more">+${evs.length - 3} more</div>` : ''}
+        </div>
+      `;
+    });
+    gridHtml += '</div>';
+    panel.innerHTML = rowsHtml + gridHtml;
+    root.appendChild(panel);
+
+    if (!events.length) {
+      const hint = h('div', { style: { marginTop: '12px', fontSize: '12px', color: 'var(--text-3)' } }, 'No events this month.');
+      root.appendChild(hint);
+    }
+  }
+  function _calDayClick(dateStr) {
+    // Show a quick list for that day in a modal.
+    const data = [];
+    $$('.dp-cal-day--has .dp-cal-ev').forEach(() => {});
+    _openModal(
+      dateStr,
+      `<div style="font-size:var(--fs-13);color:var(--text-3)">Day detail — click an event inside the cell to open it.</div>`,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
+    );
+  }
+  async function _calEventClick(id) {
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading event…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    const data = await api('GET', 'events?id=' + Number(id));
+    if (!data) return;
+    const e = data.event;
+    if (!e) { _renderPostError('Event not found', 'It may have been removed or moved.'); return; }
+    _openModal(
+      e.title || '(Untitled event)',
+      `
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="dp-tag neutral">${esc(e.type || 'general')}</span>
+        <span class="mono">${esc(e.start_date || '')}${e.end_date && e.end_date !== e.start_date ? ' → ' + esc(e.end_date) : ''}</span>
+        ${e.start_time ? `<span>·</span><span class="mono">${esc(e.start_time)}${e.end_time ? '–' + esc(e.end_time) : ''}</span>` : ''}
+        ${e.recurrence_type ? `<span>·</span><span class="dp-tag info">repeats ${esc(e.recurrence_type)}</span>` : ''}
+      </div>
+      ${_sanitize(e.description || '<p style="color:var(--text-3)">No description.</p>')}
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
+    );
+  }
+
+  // ===== Contacts — /api/dreampath/contacts =====
+  async function _renderContacts(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Contacts')]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading contacts…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'contacts');
+    loading.remove();
+    const contacts = (data && data.contacts) || [];
+
+    if (!contacts.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/phone.svg')"></span></div>
+        <h4>No contacts</h4>
+        <p>Emergency and project contacts show up here once added by an admin.</p>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    const rows = contacts.map(c => `
+      <tr>
+        <td><strong>${esc(c.name || '—')}</strong></td>
+        <td>${esc(c.role_title || '')}</td>
+        <td>${esc(c.department || '')}</td>
+        <td class="mono">${c.phone ? '<a href="tel:' + esc(c.phone) + '">' + esc(c.phone) + '</a>' : '—'}</td>
+        <td>${c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '—'}</td>
+        <td style="color:var(--text-3)">${esc(c.note || '')}</td>
+      </tr>
+    `).join('');
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head"><h3>Team contacts <span class="count">${contacts.length}</span></h3></div>
+      <table class="dp-table">
+        <thead><tr><th style="width:140px">Name</th><th style="width:160px">Role</th><th style="width:140px">Team</th><th style="width:140px">Phone</th><th>Email</th><th>Note</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
+  }
 
   // =========================================================
   // RULES — live-fetch DREAMPATH.md (marked + DOMPurify)
@@ -1409,29 +1851,108 @@ const DP = (() => {
   }
 
   // =========================================================
-  // VERSIONS
+  // VERSIONS — wired to /api/dreampath/versions
   // =========================================================
-  function _renderVersions(root) {
-    root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Versions')]));
-    const panel = h('div', { className: 'dp-panel' });
-    panel.innerHTML = `
+  async function _renderVersions(root) {
+    root.innerHTML = '';
+    const isAdmin = state.user && state.user.role === 'admin';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Versions'),
+      h('div', {}, isAdmin ? [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openVersionEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
+          h('span', {}, ' Log version'),
+        ]),
+      ] : []),
+    ]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading version history…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'versions');
+    loading.remove();
+    const versions = (data && data.versions) || [];
+
+    if (!versions.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/file-text.svg')"></span></div>
+        <h4>No versions logged</h4>
+        <p>./deploy.sh registers a version on each production push.</p>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    const latest = versions[0];
+    const hero = h('div', { className: 'dp-panel' });
+    hero.innerHTML = `
       <div class="dp-panel-head">
-        <h3>Release history <span class="count">demo</span></h3>
+        <h3>Current · v${esc(latest.version)}</h3>
+        <span style="font-size:11px;color:var(--text-3)">${esc(fmtTime(latest.released_at))}</span>
       </div>
-      <div class="dp-panel-body">
-        <table class="dp-table">
-          <thead><tr><th style="width:120px">Version</th><th style="width:90px">Type</th><th>Description</th><th style="width:140px">Released</th></tr></thead>
-          <tbody>
-            <tr><td class="mono">v2.0.0</td><td><span class="dp-tag info">design</span></td><td>ERP token system + ⌘K + density switcher (staging)</td><td class="mono">2026-04-24</td></tr>
-            <tr><td class="mono">v01.042.01</td><td><span class="dp-tag warn">fix</span></td><td>v2 user-name guard</td><td class="mono">2026-04-24</td></tr>
-            <tr><td class="mono">v01.042.00</td><td><span class="dp-tag info">feature</span></td><td>v2 staging route + guide split</td><td class="mono">2026-04-24</td></tr>
-            <tr><td class="mono">v01.041.00</td><td><span class="dp-tag info">feature</span></td><td>Dreampath guide split + icon system</td><td class="mono">2026-04-24</td></tr>
-            <tr><td class="mono">v01.040.00</td><td><span class="dp-tag info">feature</span></td><td>Home redesign (B1~B5)</td><td class="mono">2026-04-24</td></tr>
-          </tbody>
-        </table>
+      <div class="dp-panel-body pad">
+        <div style="font-size:var(--fs-14);color:var(--text);margin-bottom:4px">
+          <span class="dp-tag ${latest.type === 'feature' ? 'info' : latest.type === 'bugfix' ? 'warn' : 'neutral'}">${esc(latest.type)}</span>
+          <span style="margin-left:8px">${esc(latest.description || '')}</span>
+        </div>
       </div>
     `;
+    root.appendChild(hero);
+
+    const rows = versions.map(v => {
+      const tone = v.type === 'feature' ? 'info' : v.type === 'bugfix' ? 'warn' : 'neutral';
+      return `<tr>
+        <td class="mono" style="font-weight:500">v${esc(v.version)}</td>
+        <td><span class="dp-tag ${tone}">${esc(v.type)}</span></td>
+        <td>${esc(v.description || '—')}</td>
+        <td class="mono">${esc(fmtTime(v.released_at))}</td>
+      </tr>`;
+    }).join('');
+    const panel = h('div', { className: 'dp-panel', style: { marginTop: '16px' } });
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Release history <span class="count">${versions.length}</span></h3>
+      </div>
+      <table class="dp-table">
+        <thead><tr><th style="width:140px">Version</th><th style="width:90px">Type</th><th>Description</th><th style="width:170px">Released</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
     root.appendChild(panel);
+  }
+  function _openVersionEditor() {
+    _openModal(
+      'Log version',
+      `
+      <div class="dp-field">
+        <label>Type</label>
+        <select class="dp-select" id="dp-v-type">
+          <option value="feature">feature — bumps bbb, resets cc to 00</option>
+          <option value="bugfix">bugfix — bumps cc</option>
+        </select>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>Description</label>
+        <textarea class="dp-textarea" id="dp-v-desc" placeholder="What changed in this version?"></textarea>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveVersion()">Save</button>`
+    );
+  }
+  async function _saveVersion() {
+    const type = $('#dp-v-type').value;
+    const description = ($('#dp-v-desc').value || '').trim();
+    if (!description) { toast('Description is required', 'err'); return; }
+    const data = await api('POST', 'versions', { type, description });
+    if (data) {
+      toast('v' + data.version + ' logged', 'ok');
+      state.latestVersion = data.version;
+      const el = $('#dp-side-ver'); if (el) el.textContent = 'v' + data.version;
+      _closeModal();
+      navigate('versions');
+    }
   }
 
   // =========================================================
@@ -1567,30 +2088,7 @@ const DP = (() => {
       if (state.page === 'home') navigate('home');
     }
   }
-  function viewTask(id) {
-    const t = DATA.tasks.find(x => x.id === id);
-    if (!t) return;
-    _openModal(
-      t.title,
-      `
-      <div style="font-size:11px;color:var(--text-3);margin-bottom:10px">
-        <span class="mono">TASK-${t.id}</span> · owned by <strong>${esc(t.assignee)}</strong>
-      </div>
-      <p>상세 내용은 Phase 3 에서 /api/dreampath/tasks 에 배선됩니다.</p>
-      `,
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
-    );
-  }
-  function viewNote(id) {
-    const n = DATA.notes.find(x => x.id === id);
-    if (!n) return;
-    _openModal(
-      n.title,
-      `<div style="font-size:11px;color:var(--text-3);margin-bottom:10px"><span class="dp-tag neutral">${esc(n.type)}</span> by <strong style="color:var(--text-2)">${esc(n.author)}</strong> · <span class="mono">${esc(fmtTime(n.updated_at))}</span></div>
-       <p>${esc(n.body)}</p>`,
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
-    );
-  }
+  // viewTask/viewNote live above with real API wiring.
 
   // Approval legacy shims — pending approvals now go through viewPost()
   // which opens the full post detail and exposes the Approve button when
@@ -1801,6 +2299,10 @@ const DP = (() => {
     _voteApproval, _inlineApprove,
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _closeModal,
+    _openTaskEditor, _saveNewTask, _taskTransition,
+    _openNoteEditor, _saveNewNote, _resolveNote,
+    _openVersionEditor, _saveVersion,
+    _calDayClick, _calEventClick,
   };
 })();
 
