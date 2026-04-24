@@ -5,6 +5,8 @@
  *      body: { status: 'approved'|'rejected'|'pending', override_note?: '...' }
  */
 
+import { hasPerm, boardScope } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -13,10 +15,22 @@ function json(data, status = 200) {
 
 const CUTOFF = '2026-04-01';
 
-export async function onRequestGet({ request, env }) {
+// Approvals are always on Meeting Minutes posts — but we look up the board
+// anyway in case someone wires approvals into a custom board later.
+async function _postBoard(env, postId) {
+  const row = await env.DB.prepare(`SELECT board FROM dp_board_posts WHERE id = ?`).bind(postId).first();
+  return row ? row.board : null;
+}
+
+export async function onRequestGet({ request, env, data }) {
   const url = new URL(request.url);
   const postId = parseInt(url.searchParams.get('post_id') || '', 10);
   if (!postId) return json({ error: 'post_id is required.' }, 400);
+  const board = await _postBoard(env, postId);
+  if (!board) return json({ error: 'Post not found.' }, 404);
+  if (!hasPerm(data.dpUser, boardScope(board, 'view'))) {
+    return json({ error: 'You do not have permission to view these approvals.' }, 403);
+  }
   const rows = await env.DB.prepare(
     `SELECT id, approver_name, status, voted_at, override_by, override_note, created_at
        FROM dp_post_approvals WHERE post_id = ? ORDER BY created_at ASC`
@@ -36,6 +50,13 @@ export async function onRequestPut({ request, env, data }) {
   const { status: newStatus, override_note } = body;
   if (!['approved', 'rejected', 'pending'].includes(newStatus)) {
     return json({ error: 'status must be approved, rejected, or pending' }, 400);
+  }
+
+  // Must at minimum be able to view the post's board (preset scope).
+  const boardRow = await _postBoard(env, postId);
+  if (!boardRow) return json({ error: 'Post not found.' }, 404);
+  if (!hasPerm(data.dpUser, boardScope(boardRow, 'view'))) {
+    return json({ error: 'You do not have permission to vote on this post.' }, 403);
   }
 
   const isAdmin = data.dpUser.role === 'admin';

@@ -1,10 +1,16 @@
 /**
  * Dreampath · Post Comments
  *
- * GET    /api/dreampath/comments?post_id=N  — list comments for a post
- * POST   /api/dreampath/comments            — add comment { post_id, content }
+ * GET    /api/dreampath/comments?post_id=N  — list comments (view:<board-scope>)
+ * POST   /api/dreampath/comments            — add comment (view:<board-scope> — can comment on anything you can read)
  * DELETE /api/dreampath/comments?id=N       — delete (own comment or admin)
+ *
+ * Comment permissions inherit from the parent post's board: if you can VIEW
+ * the post, you can see + add comments. Write:<board> is not required for
+ * commenting — otherwise a Viewer could never discuss an Announcement.
  */
+
+import { hasPerm, boardScope } from '../../_shared/dreampath-perm.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -13,10 +19,22 @@ function json(data, status = 200) {
   });
 }
 
-export async function onRequestGet({ request, env }) {
+// Loads the parent post's board so we can map to the right permission scope.
+async function _postBoard(env, postId) {
+  const row = await env.DB.prepare(`SELECT board FROM dp_board_posts WHERE id = ?`).bind(postId).first();
+  return row ? row.board : null;
+}
+
+export async function onRequestGet({ request, env, data }) {
   const url     = new URL(request.url);
   const post_id = parseInt(url.searchParams.get('post_id') || '', 10);
   if (!post_id) return json({ error: 'post_id is required.' }, 400);
+
+  const board = await _postBoard(env, post_id);
+  if (!board) return json({ error: 'Parent post not found.' }, 404);
+  if (!hasPerm(data.dpUser, boardScope(board, 'view'))) {
+    return json({ error: 'You do not have permission to view these comments.' }, 403);
+  }
 
   const rows = await env.DB.prepare(
     `SELECT id, author_id, author_name, content, parent_id, created_at
@@ -34,6 +52,12 @@ export async function onRequestPost({ request, env, data }) {
   const { post_id, content, parent_id } = body;
   if (!post_id || !content?.trim()) {
     return json({ error: 'post_id and content are required.' }, 400);
+  }
+
+  const board = await _postBoard(env, post_id);
+  if (!board) return json({ error: 'Parent post not found.' }, 404);
+  if (!hasPerm(data.dpUser, boardScope(board, 'view'))) {
+    return json({ error: 'You do not have permission to comment here.' }, 403);
   }
 
   const safeParentId = parent_id ? parseInt(parent_id, 10) || null : null;

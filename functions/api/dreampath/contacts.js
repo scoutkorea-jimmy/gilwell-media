@@ -1,16 +1,19 @@
 /**
  * Dreampath · Emergency Contacts
- * GET    /api/dreampath/contacts
- * POST   /api/dreampath/contacts          (admin)
- * PUT    /api/dreampath/contacts?id=N     (admin)
- * DELETE /api/dreampath/contacts?id=N     (admin)
+ * GET    /api/dreampath/contacts        (view:contacts)
+ * POST   /api/dreampath/contacts        (write:contacts; admin for team-wide creation)
+ * PUT    /api/dreampath/contacts?id=N   (write:contacts; admin)
+ * DELETE /api/dreampath/contacts?id=N   (admin)
  */
+
+import { requirePerm, requireAdmin } from '../../_shared/dreampath-perm.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, data }) {
+  const denied = requirePerm(data, 'view:contacts'); if (denied) return denied;
   const contacts = await env.DB.prepare(
     `SELECT id, name, role_title, department, phone, email, note, sort_order
        FROM dp_contacts ORDER BY sort_order ASC, name ASC`

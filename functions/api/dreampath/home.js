@@ -1,3 +1,5 @@
+import { requirePerm } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -6,6 +8,7 @@ function json(data, status = 200) {
 }
 
 export async function onRequestGet({ env, data }) {
+  const denied = requirePerm(data, 'view:home'); if (denied) return denied;
   const user = data && data.dpUser ? data.dpUser : null;
   if (!user) return json({ error: 'Unauthorized' }, 401);
 

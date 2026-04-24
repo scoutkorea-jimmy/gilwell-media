@@ -9,6 +9,8 @@
  *            bugfix  → aa.bbb.cc+1
  */
 
+import { requirePerm, requireAdmin } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -24,7 +26,8 @@ function formatVersion(aa, bbb, cc) {
   return `${pad(aa, 2)}.${pad(bbb, 3)}.${pad(cc, 2)}`;
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, data }) {
+  const denied = requirePerm(data, 'view:versions'); if (denied) return denied;
   const rows = await env.DB.prepare(
     `SELECT id, version, aa, bbb, cc, type, description, released_at
        FROM dp_versions
