@@ -659,6 +659,7 @@ const DP = (() => {
     _mountShell();
     navigate('home');
     _startSessionTicker();
+    _startNotifPolling();
     _refreshLatestVersion();
   }
 
@@ -897,10 +898,12 @@ const DP = (() => {
         openSearch();
         return;
       }
-      // ESC closes overlays
+      // ESC closes overlays. Draft prompt first (nested), then cmd palette,
+      // then modal via the soft close that offers to save a draft.
       if (e.key === 'Escape') {
+        if ($('#dp-draft-prompt')) { _draftPromptCancel(); return; }
         if ($('#dp-cmd-backdrop')) closeCmd();
-        if ($('#dp-modal-backdrop')) _closeModal();
+        if ($('#dp-modal-backdrop')) _requestCloseModal();
       }
     });
   }
@@ -973,6 +976,7 @@ const DP = (() => {
     _mountShell();
     navigate('home');
     _startSessionTicker();
+    _startNotifPolling();
   }
 
   async function logout() {
@@ -980,6 +984,7 @@ const DP = (() => {
       await fetch('/api/dreampath/auth', { method: 'DELETE', credentials: 'same-origin', keepalive: true });
     } catch (_) {}
     try { localStorage.removeItem('dp_user'); } catch (_) {}
+    if (_notifPollTimer) { clearInterval(_notifPollTimer); _notifPollTimer = null; }
     _clearSessionExpiry();
     if (_sessionTickTimer) { clearInterval(_sessionTickTimer); _sessionTickTimer = null; }
     state.user = null;
@@ -1103,9 +1108,10 @@ const DP = (() => {
                readonly onfocus="DP.openSearch();this.blur();" aria-label="Search">
         <kbd>⌘K</kbd>
       </label>
-      <button type="button" class="dp-iconbtn" aria-label="Notifications (3)" onclick="DP.openNotifs()">
+      <button type="button" class="dp-iconbtn" id="dp-notif-btn" aria-label="Notifications" onclick="DP.openNotifs()">
         <span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/bell.svg')"></span>
-        <span class="dot" aria-hidden="true"></span>
+        <span class="dot" id="dp-notif-dot" aria-hidden="true" style="display:none"></span>
+        <span class="dp-notif-count" id="dp-notif-count" aria-hidden="true" style="display:none"></span>
       </button>
       <button type="button" class="dp-btn dp-btn-primary" onclick="DP.openCreate()">
         <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath-v2/icons/plus.svg')"></span>
@@ -1719,13 +1725,6 @@ const DP = (() => {
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, label),
       h('div', {}, [
-        ...(supportsTabs && isAdminUser ? [
-          h('button', {
-            className: 'dp-btn dp-btn-secondary',
-            style: { marginRight: '8px' },
-            onclick: () => _openTabManager(key, label),
-          }, [ h('span', {}, '⚙ Manage tabs') ]),
-        ] : []),
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openPostEditor(key, activeTab) }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
           h('span', {}, ' New post'),
@@ -1733,28 +1732,70 @@ const DP = (() => {
       ]),
     ]));
 
-    // Tab bar — fetched in parallel with the post list so switching feels
-    // instant after the first load. Only rendered when the board supports
-    // tabs AND at least one tab exists.
+    // Tab bar — always rendered for tab-supporting boards (Default pill is
+    // always visible so the user knows where "unfiled" posts live). Admin
+    // sees inline "+" at the end and per-tab edit button on hover.
+    //
+    // UI rules per 2026-04-24 spec:
+    //   · Default = virtual tab for tab_slug = NULL. Pinned leftmost, never
+    //     draggable, never deletable, never editable.
+    //   · Non-Default tabs are drag-reorderable (admin only).
+    //   · "+" button next to last tab opens the editor directly. Capped at 5
+    //     non-default tabs.
     let tabs = [];
     if (supportsTabs) {
       const tabsRes = await api('GET', 'board-tabs?board=' + encodeURIComponent(key)).catch(() => null);
       tabs = (tabsRes && tabsRes.tabs) || [];
-      if (tabs.length) {
-        const bar = h('div', { className: 'dp-board-tabs', role: 'tablist' });
-        const mkTab = (slug, title) => {
-          const on = (slug || '') === activeTab;
-          return `
+      const bar = h('div', { className: 'dp-board-tabs', role: 'tablist', 'data-board': key });
+      const parts = [];
+      // Default pill — always first, activeTab === '' means it's selected.
+      {
+        const on = activeTab === '';
+        parts.push(`
+          <button type="button" class="dp-board-tab dp-board-tab-default${on ? ' on' : ''}" role="tab"
+                  aria-selected="${on ? 'true' : 'false'}"
+                  onclick="DP._setBoardTab('${esc(key)}','')"
+                  title="Posts that haven't been assigned to any tab">
+            Default
+          </button>
+        `);
+      }
+      // User tabs — draggable (admin). Each shows inline edit icon on hover.
+      tabs.forEach(t => {
+        const on = t.slug === activeTab;
+        const dragAttr = isAdminUser ? 'draggable="true"' : '';
+        parts.push(`
+          <div class="dp-board-tab-wrap" data-slug="${esc(t.slug)}" ${dragAttr}
+               ${isAdminUser ? `ondragstart="DP._tabDragStart(event,'${esc(t.slug)}')"
+                                ondragover="DP._tabDragOver(event)"
+                                ondragleave="DP._tabDragLeave(event)"
+                                ondrop="DP._tabDrop(event,'${esc(key)}','${esc(t.slug)}')"` : ''}>
             <button type="button" class="dp-board-tab${on ? ' on' : ''}" role="tab"
                     aria-selected="${on ? 'true' : 'false'}"
-                    onclick="DP._setBoardTab('${esc(key)}','${esc(slug)}')">
-              ${esc(title)}
+                    onclick="DP._setBoardTab('${esc(key)}','${esc(t.slug)}')">
+              ${esc(t.title)}
             </button>
-          `;
-        };
-        bar.innerHTML = mkTab('', 'All') + tabs.map(t => mkTab(t.slug, t.title)).join('');
-        root.appendChild(bar);
+            ${isAdminUser
+              ? `<button type="button" class="dp-board-tab-edit" title="Edit tab"
+                         onclick="event.stopPropagation();DP._openTabEditor('${esc(key)}', ${Number(t.id)})">⋯</button>`
+              : ''}
+          </div>
+        `);
+      });
+      // "+" button — admin, only if under the 5-tab cap.
+      if (isAdminUser && tabs.length < 5) {
+        parts.push(`
+          <button type="button" class="dp-board-tab dp-board-tab-add"
+                  title="Add a new tab (max 5)"
+                  onclick="DP._openTabEditor('${esc(key)}', 0)">+</button>
+        `);
+      } else if (isAdminUser && tabs.length >= 5) {
+        parts.push(`
+          <span class="dp-board-tab-cap" title="Maximum 5 tabs reached">5 / 5</span>
+        `);
       }
+      bar.innerHTML = parts.join('');
+      root.appendChild(bar);
     }
 
     const loadingPanel = h('div', { className: 'dp-panel' });
@@ -1849,10 +1890,15 @@ const DP = (() => {
       }
     });
     // Pinned roots bubble to the top of the root list so notices stand out.
-    roots.sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
+    // Minutes deliberately opt out of the pin/notice concept — 2026-04-24
+    // owner spec: Minutes use the approver notification flow instead of
+    // "Notice" pins. Keep the DB column but skip the pinning UI on that board.
+    if (!isMinutes) {
+      roots.sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
+    }
 
     function renderPostRow(p, depth) {
-      const pinned = !!p.pinned;
+      const pinned = !isMinutes && !!p.pinned;
       const notice = pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : '';
       const ts = fmtTime(p.updated_at || p.created_at);
       const indent = depth > 0
@@ -1950,6 +1996,48 @@ const DP = (() => {
     state.boardTab[boardKey] = tabSlug || '';
     // Re-navigate to the same page so _renderBoard fires with the new state.
     navigate(state.page);
+  }
+
+  // Drag-to-reorder state — tracks the slug being dragged. Drop handler
+   // computes the new order and fires the bulk reorder endpoint.
+  let _tabDragSlug = null;
+  function _tabDragStart(e, slug) {
+    _tabDragSlug = slug;
+    try { e.dataTransfer.setData('text/plain', slug); } catch (_) {}
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    const wrap = e.currentTarget;
+    if (wrap && wrap.classList) wrap.classList.add('is-dragging');
+  }
+  function _tabDragOver(e) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const wrap = e.currentTarget;
+    if (wrap && wrap.classList) wrap.classList.add('is-drop-target');
+  }
+  function _tabDragLeave(e) {
+    const wrap = e.currentTarget;
+    if (wrap && wrap.classList) wrap.classList.remove('is-drop-target');
+  }
+  async function _tabDrop(e, boardKey, targetSlug) {
+    e.preventDefault();
+    const wrap = e.currentTarget;
+    if (wrap && wrap.classList) wrap.classList.remove('is-drop-target');
+    const fromSlug = _tabDragSlug;
+    _tabDragSlug = null;
+    if (!fromSlug || fromSlug === targetSlug) return;
+    // Current order = visible DOM slugs, then move fromSlug to targetSlug's index.
+    const bar = document.querySelector('.dp-board-tabs[data-board="' + boardKey + '"]');
+    if (!bar) return;
+    const slugs = Array.from(bar.querySelectorAll('.dp-board-tab-wrap'))
+      .map(n => n.getAttribute('data-slug'))
+      .filter(Boolean);
+    const fromIdx = slugs.indexOf(fromSlug);
+    const toIdx = slugs.indexOf(targetSlug);
+    if (fromIdx === -1 || toIdx === -1) return;
+    slugs.splice(fromIdx, 1);
+    slugs.splice(toIdx, 0, fromSlug);
+    const res = await api('PUT', 'board-tabs?reorder=1', { board_slug: boardKey, slugs });
+    if (res) { toast('Tab order saved', 'ok'); navigate(state.page); }
   }
 
   // Tab manager modal (admin only) — lists current tabs, adds new ones,
@@ -2143,9 +2231,22 @@ const DP = (() => {
   }
 
   async function _deleteTab(boardKey, tabId, title) {
-    if (!confirm('Delete tab "' + title + '"? Posts in this tab move back to "All".')) return;
-    const data = await api('DELETE', 'board-tabs?id=' + tabId);
-    if (data) { toast('Tab deleted', 'ok'); _openTabManager(boardKey, _boardTitle(boardKey)); }
+    if (!confirm('Delete tab "' + title + '"?')) return;
+    // Use _rawApi so we can inspect the 409 "tab has posts" response and
+    // surface a longer in-modal message rather than the generic toast.
+    const res = await _rawApi('DELETE', 'board-tabs?id=' + tabId);
+    if (res.status === 409) {
+      toast(res.error || 'Tab still has posts — move or remove them first.', 'err');
+      return;
+    }
+    if (!res.ok) {
+      toast(res.error || 'Could not delete tab', 'err');
+      return;
+    }
+    toast('Tab deleted', 'ok');
+    _closeModal();
+    // Re-render the board so the tab bar loses the deleted tab immediately.
+    navigate(state.page);
   }
 
   // =========================================================
@@ -4818,6 +4919,10 @@ const DP = (() => {
   // =========================================================
   // MODAL (post/task/note detail)
   // =========================================================
+  // _closeModal force-closes the modal unconditionally. Use this ONLY when
+  // the user has explicitly chosen to dismiss (Cancel / close button / after
+  // saving). For outside-click and Esc we go through _requestCloseModal()
+  // which offers to save a draft when the New Post editor has content.
   function _closeModal() {
     _destroyTiptap();
     _pickerFiles = [];
@@ -4826,24 +4931,46 @@ const DP = (() => {
     const m = $('#dp-modal');
     if (m) m.remove();
   }
+  // Snapshot of the active modal's "is this a draftable editor?" state,
+  // captured when _openModal runs. The New Post flow sets this true; other
+  // modals leave it false so their outside-click closes immediately.
+  let _modalDraftContext = null;
+
+  function _requestCloseModal() {
+    // No modal → nothing to do.
+    if (!document.getElementById('dp-modal')) return;
+    if (!_modalDraftContext) { _closeModal(); return; }
+    // Snapshot current editor state. If empty (untouched form) just close —
+    // no point asking to save an empty draft.
+    const snap = _snapshotPostEditor();
+    if (!snap || (!snap.title && !snap.content && !snap.files.length)) {
+      _closeModal();
+      return;
+    }
+    _openDraftPrompt(snap);
+  }
+
   function _openModal(title, bodyHtml, footButtons, opts) {
     _closeModal();
+    _modalDraftContext = (opts && opts.draftContext) || null;
     const wide = opts && opts.wide;
     const bodyClass = opts && opts.bodyClass ? ' ' + opts.bodyClass : '';
-    const backdrop = h('div', { className: 'dp-modal-backdrop', id: 'dp-modal-backdrop', onclick: _closeModal });
+    const backdrop = h('div', {
+      className: 'dp-modal-backdrop',
+      id: 'dp-modal-backdrop',
+      // Outside-click routes through _requestCloseModal so New Post can
+      // offer to save a draft instead of silently destroying the content.
+      onclick: _requestCloseModal,
+    });
     const modal = h('aside', {
       className: 'dp-modal' + (wide ? ' dp-modal-wide' : ''),
       id: 'dp-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title,
     });
-    // [CASE STUDY 2026-04-24 — click-outside-to-close]
-    //   The whole backdrop is click-to-close, but clicks INSIDE the modal
-    //   must not bubble up to it. stopPropagation on the modal itself keeps
-    //   the modal open when user clicks inside the body or foot.
     modal.addEventListener('click', e => e.stopPropagation());
     modal.innerHTML = `
       <div class="dp-modal-head">
         <h2>${esc(title)}</h2>
-        <button type="button" class="dp-iconbtn" aria-label="Close" onclick="DP._closeModal()">
+        <button type="button" class="dp-iconbtn" aria-label="Close" onclick="DP._requestCloseModal()">
           <span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/x.svg')"></span>
         </button>
       </div>
@@ -4853,6 +4980,92 @@ const DP = (() => {
     document.body.appendChild(backdrop);
     // Mount modal INSIDE the backdrop so the grid-centered layout applies.
     backdrop.appendChild(modal);
+  }
+
+  // Pulls the live state of the New Post editor so we can stash it as a
+  // draft. Returns null when the modal isn't the post editor.
+  function _snapshotPostEditor() {
+    const boardSel = document.getElementById('dp-new-board');
+    const titleEl  = document.getElementById('dp-new-title');
+    if (!boardSel || !titleEl) return null;
+    const tabSel = document.getElementById('dp-new-tab');
+    return {
+      board:   boardSel.value || '',
+      tab_slug: tabSel ? tabSel.value : '',
+      title:   (titleEl.value || '').trim(),
+      content: _getTiptapHTML(),
+      files:   _pickerFiles.map(f => ({ url: f.url, name: f.name, type: f.type, size: f.size, is_image: f.is_image })),
+      approvers: _approverPicked.slice(),
+    };
+  }
+
+  function _openDraftPrompt(snap) {
+    // Lightweight nested confirmation. Shows above the (still mounted)
+    // editor; does NOT call _openModal (that would destroy the editor).
+    // Existing backdrop catches clicks; this just injects a small card.
+    if (document.getElementById('dp-draft-prompt')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'dp-draft-prompt';
+    overlay.className = 'dp-draft-prompt-wrap';
+    overlay.innerHTML = `
+      <div class="dp-draft-prompt">
+        <h3>Save draft before closing?</h3>
+        <p>Your post has unsaved content. Drafts are kept per board, up to 3 each.</p>
+        <div class="dp-draft-prompt-foot">
+          <button class="dp-btn dp-btn-secondary" onclick="DP._draftPromptCancel()">Keep editing</button>
+          <button class="dp-btn dp-btn-danger"    onclick="DP._draftPromptDiscard()">Discard</button>
+          <button class="dp-btn dp-btn-primary"   onclick="DP._draftPromptSave()">Save draft</button>
+        </div>
+      </div>
+    `;
+    // Attach inside the backdrop so it sits on top of the modal.
+    const backdrop = document.getElementById('dp-modal-backdrop');
+    (backdrop || document.body).appendChild(overlay);
+    overlay.addEventListener('click', e => e.stopPropagation());
+    // Stash the snapshot so save handler doesn't have to re-read DOM.
+    window.__dpDraftSnap = snap;
+  }
+  function _draftPromptCancel() {
+    const o = document.getElementById('dp-draft-prompt');
+    if (o) o.remove();
+  }
+  function _draftPromptDiscard() {
+    _draftPromptCancel();
+    _closeModal();
+  }
+  async function _draftPromptSave() {
+    const snap = window.__dpDraftSnap;
+    if (!snap) { _draftPromptCancel(); return; }
+    const body = {
+      board: snap.board,
+      tab_slug: snap.tab_slug || null,
+      title: snap.title,
+      content: snap.content,
+      files: snap.files,
+      approvers: snap.approvers,
+    };
+    const res = await _rawApi('POST', 'drafts', body);
+    if (res.status === 409) {
+      // Full — ask which to overwrite. Pick oldest for simplicity.
+      const oldest = (res.data && res.data.existing || []).sort((a, b) =>
+        String(a.updated_at).localeCompare(String(b.updated_at)))[0];
+      if (oldest && confirm('Draft slot full (3). Overwrite the oldest ("' + (oldest.title || 'Untitled') + '")?')) {
+        body.overwrite_id = oldest.id;
+        const r2 = await api('POST', 'drafts', body);
+        if (r2) { toast('Draft saved (overwrote oldest)', 'ok'); _draftPromptCancel(); _closeModal(); }
+      } else {
+        _draftPromptCancel();
+      }
+      return;
+    }
+    if (!res.ok) {
+      toast(res.error || 'Could not save draft', 'err');
+      _draftPromptCancel();
+      return;
+    }
+    toast('Draft saved', 'ok');
+    _draftPromptCancel();
+    _closeModal();
   }
 
   async function viewPost(board, id) {
@@ -5391,8 +5604,85 @@ const DP = (() => {
     else if (state.page === 'tasks') toast('New task — Phase 3');
     else _openPostEditor('notice');
   }
-  function openNotifs() {
-    toast('Notifications — Phase 3');
+  // -------------------------- Notifications --------------------------
+  // Bell icon → dropdown panel. Polls every 45s so the unread badge stays
+  // accurate without hammering the endpoint. Opening the panel marks all
+  // currently-visible notifications as read.
+  async function openNotifs() {
+    const data = await api('GET', 'notifications');
+    if (!data) return;
+    const items = data.notifications || [];
+    const body = items.length ? items.map(n => {
+      const isUnread = !n.read_at;
+      const clickHandler = (n.ref_type === 'post' && n.ref_id)
+        ? `DP._notifGo(${Number(n.id)}, '${esc(n.ref_type)}', ${Number(n.ref_id)})`
+        : `DP._notifMarkRead(${Number(n.id)})`;
+      return `
+        <button type="button" class="dp-notif-row${isUnread ? ' is-unread' : ''}" onclick="${clickHandler}">
+          <div class="dp-notif-main">
+            <div class="dp-notif-title">${esc(n.title || '')}</div>
+            ${n.body ? `<div class="dp-notif-body">${esc(n.body)}</div>` : ''}
+            <div class="dp-notif-meta">
+              ${n.actor_name ? `<span>${esc(n.actor_name)}</span><span> · </span>` : ''}
+              <span class="mono">${esc(fmtTime(n.created_at))}</span>
+            </div>
+          </div>
+          ${isUnread ? '<span class="dp-notif-dot" aria-label="Unread"></span>' : ''}
+        </button>
+      `;
+    }).join('') : '<div class="dp-notif-empty">No notifications yet.</div>';
+
+    _openModal(
+      'Notifications',
+      `<div class="dp-notif-list">${body}</div>`,
+      items.length
+        ? `<button class="dp-btn dp-btn-secondary" onclick="DP._notifMarkAllRead()">Mark all read</button>
+           <button class="dp-btn dp-btn-primary" onclick="DP._closeModal()">Close</button>`
+        : `<button class="dp-btn dp-btn-primary" onclick="DP._closeModal()">Close</button>`
+    );
+  }
+
+  async function _notifMarkRead(id) {
+    await api('PUT', 'notifications?id=' + Number(id));
+    _refreshNotifBadge();
+  }
+  async function _notifMarkAllRead() {
+    await api('PUT', 'notifications?all=1');
+    toast('All notifications marked read', 'ok');
+    _refreshNotifBadge();
+    openNotifs();
+  }
+  async function _notifGo(id, refType, refId) {
+    await api('PUT', 'notifications?id=' + Number(id));
+    _closeModal();
+    if (refType === 'post' && refId) {
+      // Guess the board — defaults to minutes since that's the only kind
+      // wired up so far. If a future notification targets a different board
+      // type, include board in the notification body so we can route correctly.
+      viewPost('minutes', refId);
+    }
+  }
+
+  let _notifPollTimer = null;
+  async function _refreshNotifBadge() {
+    const dot = document.getElementById('dp-notif-dot');
+    const count = document.getElementById('dp-notif-count');
+    if (!dot || !count) return;
+    const data = await api('GET', 'notifications?unread=1').catch(() => null);
+    const n = (data && data.unread_count) || 0;
+    if (n > 0) {
+      dot.style.display = '';
+      count.style.display = '';
+      count.textContent = n > 99 ? '99+' : String(n);
+    } else {
+      dot.style.display = 'none';
+      count.style.display = 'none';
+    }
+  }
+  function _startNotifPolling() {
+    if (_notifPollTimer) clearInterval(_notifPollTimer);
+    _refreshNotifBadge();
+    _notifPollTimer = setInterval(_refreshNotifBadge, 45_000);
   }
   async function _openPostEditor(initialBoard, initialTab) {
     // Reset working file list for this editor session.
@@ -5468,9 +5758,9 @@ const DP = (() => {
         <div class="dp-file-list" id="dp-file-list"></div>
       </div>
       `,
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._requestCloseModal()">Cancel</button>
        <button class="dp-btn dp-btn-primary" id="dp-new-save" onclick="DP._saveNewPost()">Publish</button>`,
-      { wide: true }
+      { wide: true, draftContext: 'new-post' }
     );
 
     _waitForTiptap(() => _initTiptap('dp-tt-post', ''));
@@ -5666,6 +5956,9 @@ const DP = (() => {
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
+    _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
+    _requestCloseModal, _draftPromptCancel, _draftPromptDiscard, _draftPromptSave,
+    _notifMarkRead, _notifMarkAllRead, _notifGo,
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
     _openVersionEditor, _saveVersion,

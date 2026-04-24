@@ -1400,11 +1400,64 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
 
-/* Team board sub-tab bar — appears above the post table on boards that
-   define tabs (team_*, custom). Pill-style selector: active tab gets the
-   accent color. Horizontally scrolls if 5 tabs overflow a narrow viewport. */
+/* Draft-save confirmation — shown as an overlay on top of the post editor
+   when the user clicks outside / hits Esc / clicks Cancel. Blocks further
+   interaction with the underlying modal until the user picks an action. */
+.dp-draft-prompt-wrap {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: rgba(17,24,39,0.55);
+  z-index: 160;
+}
+.dp-draft-prompt {
+  background: var(--surface);
+  border: var(--bd); border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  padding: 20px 24px; width: 380px; max-width: 90%;
+}
+.dp-draft-prompt h3 {
+  margin: 0 0 6px; font-size: var(--fs-16); font-weight: 600; color: var(--text);
+}
+.dp-draft-prompt p { margin: 0 0 16px; color: var(--text-2); font-size: var(--fs-13); line-height: 1.55; }
+.dp-draft-prompt-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Notification badge on the bell icon */
+.dp-notif-count {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px;
+  background: var(--alert); color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 16px;
+  display: grid; place-items: center;
+  border: 2px solid var(--surface);
+}
+
+/* Notification panel body (rendered inside the modal) */
+.dp-notif-list { display: flex; flex-direction: column; max-height: 60vh; }
+.dp-notif-row {
+  display: flex; gap: 10px; align-items: center;
+  padding: 12px 14px; text-align: left;
+  background: transparent; border: none; border-bottom: 1px solid var(--g-150);
+  font: inherit; cursor: pointer;
+  transition: background var(--dur-swift);
+}
+.dp-notif-row:last-child { border-bottom: none; }
+.dp-notif-row:hover { background: var(--g-100); }
+.dp-notif-row.is-unread { background: var(--info-bg); }
+.dp-notif-row.is-unread:hover { background: var(--info-bg); filter: brightness(0.97); }
+.dp-notif-main { flex: 1; min-width: 0; }
+.dp-notif-title { font-size: var(--fs-13); font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.dp-notif-body { font-size: var(--fs-12); color: var(--text-2); margin-bottom: 4px; }
+.dp-notif-meta { font-size: 11px; color: var(--text-3); }
+.dp-notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.dp-notif-empty { padding: 40px 20px; text-align: center; color: var(--text-3); font-size: var(--fs-12); }
+
+/* Team board sub-tab bar — always visible for tab-supporting boards.
+   "Default" pill is pinned first (never draggable / deletable); user tabs
+   follow and are drag-reorderable by admin; a trailing "+" opens the
+   new-tab editor. Drag feedback uses is-dragging / is-drop-target. */
 .dp-board-tabs {
-  display: flex; gap: 4px; flex-wrap: wrap;
+  display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
   margin: 0 0 var(--gap-section);
   padding: 4px;
   background: var(--surface-2);
@@ -1423,6 +1476,47 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   background: var(--surface); color: var(--accent);
   border-color: var(--g-200);
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.dp-board-tab-default { font-weight: 600; }
+
+/* Wrapper around user tabs so we can attach drag events on the container
+   and host the hover edit-icon overlay. */
+.dp-board-tab-wrap {
+  position: relative;
+  display: inline-flex; align-items: center;
+  border-radius: var(--r-sm);
+  cursor: grab;
+}
+.dp-board-tab-wrap:active { cursor: grabbing; }
+.dp-board-tab-wrap.is-dragging { opacity: 0.45; }
+.dp-board-tab-wrap.is-drop-target {
+  outline: 2px dashed var(--accent); outline-offset: 2px;
+}
+.dp-board-tab-edit {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px; padding: 0;
+  background: var(--surface); color: var(--text-2);
+  border: 1px solid var(--g-300); border-radius: 50%;
+  font-size: 12px; line-height: 14px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-swift);
+}
+.dp-board-tab-wrap:hover .dp-board-tab-edit { opacity: 1; }
+.dp-board-tab-edit:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Inline "+" add button — matches tab height but uses accent color */
+.dp-board-tab-add {
+  color: var(--accent); font-weight: 700; font-size: var(--fs-14);
+  border: 1px dashed var(--g-300); padding: 6px 14px; min-width: 36px;
+}
+.dp-board-tab-add:hover {
+  background: var(--info-bg); border-color: var(--accent); border-style: solid;
+}
+.dp-board-tab-cap {
+  padding: 6px 10px; font-family: var(--font-mono);
+  font-size: 11px; color: var(--text-3);
+  border: 1px dashed var(--g-300); border-radius: var(--r-sm);
 }
 
 /* Chip picker — "To:" field metaphor for user selection (approvers, future

@@ -126,6 +126,39 @@ export async function onRequestPost({ request, env, data }) {
 export async function onRequestPut({ request, env, data }) {
   const err = requireAdmin(data); if (err) return err;
   const url = new URL(request.url);
+
+  // Bulk reorder: PUT /board-tabs?reorder=1
+  // body: { board_slug: "team_korea", slugs: ["tech", "general", "social"] }
+  // Rewrites sort_order for every tab on this board in a single transaction.
+  // Used by the drag-to-reorder UI; single-tab PUT still works for
+  // title/allowed_users/individual sort_order edits.
+  if (url.searchParams.get('reorder') === '1') {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
+    const boardSlug = normalizeBoardSlug(body.board_slug);
+    const slugs = Array.isArray(body.slugs) ? body.slugs.map(s => String(s || '').toLowerCase()).filter(Boolean) : [];
+    if (!boardSlug || !slugs.length) return json({ error: 'board_slug and slugs[] required.' }, 400);
+    // Sanity check every slug exists on the board. Prevents a typo from
+    // silently zeroing out the sort_order of an unrelated tab.
+    const placeholders = slugs.map(() => '?').join(',');
+    const existing = await env.DB.prepare(
+      `SELECT slug FROM dp_board_tabs WHERE board_slug = ? AND slug IN (${placeholders})`
+    ).bind(boardSlug, ...slugs).all();
+    const known = new Set((existing.results || []).map(r => r.slug));
+    const unknown = slugs.filter(s => !known.has(s));
+    if (unknown.length) return json({ error: `Unknown tab slugs: ${unknown.join(', ')}` }, 400);
+    // Assign sort_order = index+1 in given order. We don't touch tabs not in
+    // the list — they keep their existing order (edge case: if a new tab was
+    // added between client fetch and drop, it stays at its original position).
+    for (let i = 0; i < slugs.length; i++) {
+      await env.DB.prepare(
+        `UPDATE dp_board_tabs SET sort_order = ?, updated_at = datetime('now')
+          WHERE board_slug = ? AND slug = ?`
+      ).bind(i + 1, boardSlug, slugs[i]).run();
+    }
+    return json({ ok: true, reordered: slugs.length });
+  }
+
   const id = parseInt(url.searchParams.get('id') || '', 10);
   if (!id) return json({ error: 'id required.' }, 400);
   let body;
@@ -159,15 +192,24 @@ export async function onRequestDelete({ request, env, data }) {
   if (!id) return json({ error: 'id required.' }, 400);
 
   const tab = await env.DB.prepare(
-    `SELECT board_slug, slug FROM dp_board_tabs WHERE id = ?`
+    `SELECT board_slug, slug, title FROM dp_board_tabs WHERE id = ?`
   ).bind(id).first();
   if (!tab) return json({ error: 'Tab not found.' }, 404);
 
-  // Orphaned posts fall back to the implicit "All" bucket — less destructive
-  // than a cascade delete.
-  await env.DB.prepare(
-    `UPDATE dp_board_posts SET tab_slug = NULL WHERE board = ? AND tab_slug = ?`
-  ).bind(tab.board_slug, tab.slug).run();
+  // Refuse deletion while the tab still has posts — per 2026-04-24 owner spec
+  // posts should NOT be silently orphaned to the Default bucket because that
+  // loses their categorization. Operator has to move/remove them first.
+  const postCount = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM dp_board_posts WHERE board = ? AND tab_slug = ?`
+  ).bind(tab.board_slug, tab.slug).first();
+  const n = (postCount && postCount.n) || 0;
+  if (n > 0) {
+    return json({
+      error: `Cannot delete "${tab.title}" — it still has ${n} post${n === 1 ? '' : 's'}. Move or delete the posts first.`,
+      post_count: n,
+    }, 409);
+  }
+
   await env.DB.prepare(`DELETE FROM dp_board_tabs WHERE id = ?`).bind(id).run();
   return json({ ok: true });
 }
