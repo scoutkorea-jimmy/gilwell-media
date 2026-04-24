@@ -307,6 +307,25 @@ export async function onRequestPost({ request, env, data }) {
         await env.DB.prepare(
           `INSERT OR IGNORE INTO dp_post_approvals (post_id, approver_id, approver_name) VALUES (?, ?, ?)`
         ).bind(postId, uid, name).run();
+        // Fire a "please review" notification so the approver sees it in the
+        // bell dropdown even if they're not watching the Minutes board.
+        // Skip self-assigned approvers (author adds themselves) to avoid
+        // spamming your own inbox.
+        if (uid !== data.dpUser.uid) {
+          try {
+            await env.DB.prepare(
+              `INSERT INTO dp_notifications
+                 (user_id, kind, title, body, ref_type, ref_id, actor_name)
+               VALUES (?, 'minutes_review', ?, ?, 'post', ?, ?)`
+            ).bind(
+              uid,
+              'Please review: ' + String(title).trim().slice(0, 140),
+              data.dpUser.name + ' asked you to approve a Meeting Minute.',
+              postId,
+              data.dpUser.name
+            ).run();
+          } catch (_) {}
+        }
       }
     }
   }
