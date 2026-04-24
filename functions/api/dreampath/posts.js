@@ -60,6 +60,11 @@ export async function onRequestGet({ request, env, data }) {
   const board = url.searchParams.get('board');
   const tab   = url.searchParams.get('tab');   // optional, only meaningful with board
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
+  const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
+  // When `?count=1` is also present we emit a `total` alongside the rows so
+  // the client can render "X of N" + numbered pagination without a second
+  // round-trip. Omitted in most list paths to stay cheap.
+  const wantCount = url.searchParams.get('count') === '1';
 
   const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
 
@@ -143,40 +148,56 @@ export async function onRequestGet({ request, env, data }) {
   // Admins see hidden rows (greyed in UI), non-admins don't.
   const isAdmin = data.dpUser.role === 'admin' ? 1 : 0;
 
-  let rows;
+  const SEL = `p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
+               p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
+               (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count`;
+
+  let rows, total = null;
   if (board) {
     // `tab=<slug>` scopes results to a single sub-tab. `tab=__none` filters to
-    // legacy posts with NULL tab_slug (implicit "All" bucket). Empty / missing
-    // tab returns every post regardless of tab.
-    // All three branches OR in a `(is_hidden = 0 OR isAdmin = 1)` guard so
-    // hidden posts are server-filtered for non-admins.
+    // legacy posts with NULL tab_slug. Empty / missing tab returns every
+    // post in the board regardless of tab ("All" pill behavior).
+    // Every branch includes `(is_hidden = 0 OR isAdmin = 1)` so hidden posts
+    // are server-filtered for non-admins.
     if (tab === '__none') {
       rows = await env.DB.prepare(
-        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
-                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
-           FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug IS NULL
-             AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, isAdmin, limit).all();
+        `SELECT ${SEL} FROM dp_board_posts p
+          WHERE p.board = ? AND p.tab_slug IS NULL AND (p.is_hidden = 0 OR ? = 1)
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
+      ).bind(board, isAdmin, limit, offset).all();
+      if (wantCount) {
+        const t = await env.DB.prepare(
+          `SELECT COUNT(*) AS n FROM dp_board_posts p
+            WHERE p.board = ? AND p.tab_slug IS NULL AND (p.is_hidden = 0 OR ? = 1)`
+        ).bind(board, isAdmin).first();
+        total = (t && t.n) || 0;
+      }
     } else if (tab) {
       rows = await env.DB.prepare(
-        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
-                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
-           FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug = ?
-             AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, tab, isAdmin, limit).all();
+        `SELECT ${SEL} FROM dp_board_posts p
+          WHERE p.board = ? AND p.tab_slug = ? AND (p.is_hidden = 0 OR ? = 1)
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
+      ).bind(board, tab, isAdmin, limit, offset).all();
+      if (wantCount) {
+        const t = await env.DB.prepare(
+          `SELECT COUNT(*) AS n FROM dp_board_posts p
+            WHERE p.board = ? AND p.tab_slug = ? AND (p.is_hidden = 0 OR ? = 1)`
+        ).bind(board, tab, isAdmin).first();
+        total = (t && t.n) || 0;
+      }
     } else {
       rows = await env.DB.prepare(
-        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
-                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
-           FROM dp_board_posts p WHERE p.board = ?
-             AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, isAdmin, limit).all();
+        `SELECT ${SEL} FROM dp_board_posts p
+          WHERE p.board = ? AND (p.is_hidden = 0 OR ? = 1)
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
+      ).bind(board, isAdmin, limit, offset).all();
+      if (wantCount) {
+        const t = await env.DB.prepare(
+          `SELECT COUNT(*) AS n FROM dp_board_posts p
+            WHERE p.board = ? AND (p.is_hidden = 0 OR ? = 1)`
+        ).bind(board, isAdmin).first();
+        total = (t && t.n) || 0;
+      }
     }
   } else {
     rows = await env.DB.prepare(
@@ -185,10 +206,12 @@ export async function onRequestGet({ request, env, data }) {
               (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
          FROM dp_board_posts p
         WHERE (p.is_hidden = 0 OR ? = 1)
-        ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-    ).bind(isAdmin, limit).all();
+        ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
+    ).bind(isAdmin, limit, offset).all();
   }
-  return json({ posts: rows.results || [] });
+  const payload = { posts: rows.results || [] };
+  if (total !== null) { payload.total = total; payload.limit = limit; payload.offset = offset; }
+  return json(payload);
 }
 
 export async function onRequestPost({ request, env, data }) {

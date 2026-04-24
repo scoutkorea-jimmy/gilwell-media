@@ -1405,6 +1405,51 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
 
+/* Case Studies tab — grid of cards, one per in-code [CASE STUDY …] block.
+   Fixed-height preview with pre-formatted body so comments remain legible. */
+.dp-case-grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+.dp-case-card {
+  background: var(--surface);
+  border: var(--bd); border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.dp-case-card header { display: flex; flex-direction: column; gap: 2px; }
+.dp-case-card .dp-case-title {
+  font-size: var(--fs-13); color: var(--accent); font-weight: 600;
+  line-height: 1.35;
+}
+.dp-case-card .dp-case-meta {
+  font-size: 11px; color: var(--text-3); display: flex; gap: 8px; align-items: center;
+}
+.dp-case-card .dp-case-body {
+  margin: 0; padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--g-150); border-radius: var(--r-sm);
+  font-family: var(--font-mono); font-size: var(--fs-11);
+  color: var(--text-2); line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 260px; overflow-y: auto;
+}
+
+/* Bulk-selection action bar — sits above the board table when at least one
+   row is checked. Admin-only. Persists selection across pagination via
+   state.bulkSelection keyed by (board, activeTab). */
+.dp-bulkbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px;
+  background: var(--info-bg);
+  border-bottom: 1px solid var(--g-200);
+  flex-wrap: wrap;
+}
+.dp-bulkbar-count { font-size: var(--fs-13); color: var(--text-2); }
+.dp-bulkbar-count strong { color: var(--accent); margin-right: 4px; font-size: var(--fs-14); }
+.dp-bulkbar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.dp-row-check { accent-color: var(--navy-600); cursor: pointer; }
+
 /* Hidden (blinded) post row — admin-only greyed style. Text desaturates so
    admins instantly see the post is suppressed for everyone else. Non-admins
    never see the row because the list query filters is_hidden=1 out. */
