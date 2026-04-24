@@ -131,9 +131,39 @@ if [[ "$SKIP_VERSION" == true ]]; then
   exit 0
 fi
 
+# ── 커밋 기반으로 상세 changelog 생성 ─────────────────────────────────────────
+# 사용자 요구: "Version에 요약해서 작성하지 말고 실제로 어떤 수정들이 이뤄졌는지
+# 명확하게 작성해." 이전엔 한 줄 summary만 저장했는데, 이제는 직전 버전
+# 커밋부터 HEAD까지의 커밋 제목을 bullet 목록으로 부록해서 저장한다. 포맷:
+#   <summary>\n- commit1\n- commit2\n...
+# Version 페이지 parser(parseChangelog in dreampath-v2.js)가 이미 이 포맷을
+# 이해한다. 너무 긴 엔트리는 D1에서 메모리 부담이 생기니 최대 20개로 자른다.
+LAST_VER_TAG=$(wrangler d1 execute "$DB" --remote --json \
+  --command "SELECT version FROM dp_versions ORDER BY id DESC LIMIT 1" 2>/dev/null \
+  | grep -oE '"version":"[^"]+"' | head -1 | sed 's/.*:"//; s/"//')
+# 가장 최근 버전 커밋을 찾는다 (이전 버전 문자열이 포함된 커밋 주제 기준).
+# 찾지 못하면 직전 10개 커밋을 fallback으로 사용.
+if [[ -n "$LAST_VER_TAG" ]]; then
+  LAST_VER_SHA=$(git log --grep="${LAST_VER_TAG}" --format='%H' -1 2>/dev/null || true)
+fi
+if [[ -n "$LAST_VER_SHA" ]]; then
+  COMMIT_RANGE="${LAST_VER_SHA}..HEAD"
+else
+  COMMIT_RANGE="HEAD~10..HEAD"
+fi
+COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
+  --format='- %s' 2>/dev/null | head -20 || true)
+
+if [[ -n "$COMMIT_BULLETS" ]]; then
+  FULL_DESC="${DESCRIPTION}
+${COMMIT_BULLETS}"
+else
+  FULL_DESC="$DESCRIPTION"
+fi
+
 # ── D1에 버전 기록 삽입 ───────────────────────────────────────────────────────
 NOW=$(date -u +"%Y-%m-%d %H:%M:%S")
-DESC_ESC="${DESCRIPTION//\'/\'\'}"
+DESC_ESC="${FULL_DESC//\'/\'\'}"
 TYPE_ESC="${TYPE//\'/\'\'}"
 
 echo "📝 Registering v${VERSION} ($TYPE)..."

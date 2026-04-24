@@ -43,6 +43,11 @@
   --surface:   #FFFFFF;   /* primary panel bg */
   --surface-2: var(--g-050); /* alt / striped rows */
 
+  /* Theme-aware emphasis color for UI chrome (pinned titles, active icons,
+     highlighted links). Light mode uses deep navy for drama; dark mode
+     uses the lighter navy-600 so it stays readable on dark surfaces. */
+  --accent: var(--navy);
+
   --text: var(--g-900); --text-2: var(--g-700); --text-3: var(--g-500);
   --text-on-navy: #FFFFFF; --text-on-navy-dim: #B8C5D4;
 
@@ -104,8 +109,18 @@ html[data-theme="dark"] {
   --text-2: #D1D5DB;
   --text-3: #9CA3AF;
 
+  /* Emphasis — use the lighter navy so it reads on dark bg (~4.8:1 contrast).
+     Using var(--navy) here would be invisible — that was the pinned-row bug. */
+  --accent: #5AA9E6;
+
   /* Status backgrounds — tinted for dark surfaces (muted instead of bright) */
   --ok-bg: #10281B; --warn-bg: #2D1F0D; --alert-bg: #2C1013; --info-bg: #0D1E35;
+
+  /* Status text — bump the saturation so tags stay legible on dark status tints */
+  --ok:    #3DCC73;
+  --warn:  #F0A24A;
+  --alert: #F26868;
+  --info:  #5AA9E6;
 
   --bd:        1px solid #253041;
   --bd-strong: 1px solid #374151;
@@ -122,7 +137,9 @@ html[data-theme="dark"] {
     --g-800: #E5E7EB; --g-900: #F9FAFB; --g-950: #FFFFFF;
     --surface: #111827; --surface-2: #1F2937;
     --text: #F9FAFB; --text-2: #D1D5DB; --text-3: #9CA3AF;
+    --accent: #5AA9E6;
     --ok-bg: #10281B; --warn-bg: #2D1F0D; --alert-bg: #2C1013; --info-bg: #0D1E35;
+    --ok: #3DCC73; --warn: #F0A24A; --alert: #F26868; --info: #5AA9E6;
     --bd: 1px solid #253041; --bd-strong: 1px solid #374151;
     --shadow-pop: 0 2px 10px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
   }
@@ -574,14 +591,28 @@ button { cursor: pointer; }
 }
 .dp-table tbody tr { transition: background var(--dur-instant); }
 .dp-table tbody tr:hover { background: var(--g-150); cursor: pointer; }
-/* Approval status row tints (Minutes) */
-.dp-table tbody tr.dp-row-approved { background: #F3FAF5; }
-.dp-table tbody tr.dp-row-approved:hover { background: #E7F4EC; }
-.dp-table tbody tr.dp-row-pending  { background: #FEF8EC; }
-.dp-table tbody tr.dp-row-pending:hover  { background: #FBF0D8; }
-.dp-table tbody tr.dp-row-rejected { background: #F0F0F2; color: var(--text-3); }
-.dp-table tbody tr.dp-row-rejected:hover { background: #E6E6E9; }
+/* Approval status row tints (Minutes) — use status-bg tokens so dark mode
+   auto-inverts. Earlier hardcoded cream/mint/grey literals turned into
+   illegible light-on-light rows when dark theme was active. */
+.dp-table tbody tr.dp-row-approved { background: var(--ok-bg); }
+.dp-table tbody tr.dp-row-approved:hover { background: var(--ok-bg); filter: brightness(0.96); }
+.dp-table tbody tr.dp-row-pending  { background: var(--warn-bg); }
+.dp-table tbody tr.dp-row-pending:hover  { background: var(--warn-bg); filter: brightness(0.96); }
+.dp-table tbody tr.dp-row-rejected { background: var(--g-100); color: var(--text-3); }
+.dp-table tbody tr.dp-row-rejected:hover { background: var(--g-150); }
 .dp-table tbody td { height: var(--row-default); }
+/* Uniform-row variant: every row is exactly --row-comfort (40px) tall and all
+   chips inside share the same padding/font, so a user row with a long email +
+   "Admin · all" preset tag reads the same height as a row with empty cells. */
+.dp-table.dp-table-uniform tbody tr { height: var(--row-comfort); }
+.dp-table.dp-table-uniform tbody td { height: var(--row-comfort); padding-top: 0; padding-bottom: 0; }
+.dp-table.dp-table-uniform .dp-tag {
+  min-height: 20px; padding: 2px 8px; font-size: 11px; line-height: 16px;
+  display: inline-flex; align-items: center;
+}
+.dp-table.dp-table-uniform .dp-btn-sm {
+  min-height: 24px; padding: 0 10px; font-size: 11px;
+}
 .dp-table tbody tr:last-child td { border-bottom: none; }
 .dp-table .mono { font-family: var(--font-mono); font-size: var(--fs-12); color: var(--text-3); }
 .dp-table td.num { font-family: var(--font-mono); text-align: right; }
@@ -769,13 +800,16 @@ button { cursor: pointer; }
 .dp-table tbody tr.dp-row-pinned {
   box-shadow: inset 3px 0 0 var(--navy-600);
 }
-.dp-table tbody tr.dp-row-pinned td:first-child { font-weight: 600; color: var(--navy); }
+/* `--accent` is a theme-aware emphasis color — navy in light, navy-600 in
+   dark — so pinned titles stay readable on the dark surface. Hardcoding
+   var(--navy) blended into the dark background. */
+.dp-table tbody tr.dp-row-pinned td:first-child { font-weight: 600; color: var(--accent); }
 .dp-post-item.dp-post-pinned {
-  background: #EEF5FC;
+  background: var(--info-bg);
   box-shadow: inset 3px 0 0 var(--navy-600);
 }
-.dp-post-item.dp-post-pinned .t { color: var(--navy); font-weight: 600; }
-.dp-post-item.dp-post-pinned:hover { background: #DCE8F6; }
+.dp-post-item.dp-post-pinned .t { color: var(--accent); font-weight: 600; }
+.dp-post-item.dp-post-pinned:hover { background: var(--info-bg); filter: brightness(0.96); }
 .dp-badge-notice {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 1px 7px 1px 6px;
@@ -806,7 +840,7 @@ button { cursor: pointer; }
   transition: color var(--dur-swift), border-color var(--dur-swift), background var(--dur-swift);
 }
 .dp-tab:hover { background: var(--g-100); color: var(--text); }
-.dp-tab.dp-tab-on { color: var(--navy); border-bottom-color: var(--navy); }
+.dp-tab.dp-tab-on { color: var(--accent); border-bottom-color: var(--accent); }
 .dp-tab .dp-tab-t { font-size: var(--fs-13); font-weight: 600; letter-spacing: -0.005em; }
 .dp-tab .dp-tab-s { font-size: var(--fs-11); color: var(--text-3); }
 .dp-tab.dp-tab-on .dp-tab-s { color: var(--navy-600); }
@@ -853,7 +887,7 @@ button { cursor: pointer; }
   background: var(--g-050); border: var(--bd); border-radius: var(--r-sm);
   font-size: var(--fs-12);
 }
-.dp-token-k { font-family: var(--font-mono); color: var(--navy); }
+.dp-token-k { font-family: var(--font-mono); color: var(--accent); }
 .dp-token-v { color: var(--text-3); }
 
 /* Account avatar — circular viewport with drag-to-reposition */
@@ -1005,8 +1039,8 @@ button { cursor: pointer; }
 .dp-toc-item:hover { color: var(--text); text-decoration: none; background: var(--g-100); }
 .dp-toc-item.dp-toc-h3 { padding-left: 24px; font-size: 11px; color: var(--text-3); }
 .dp-toc-item.dp-toc-active {
-  color: var(--navy); font-weight: 600;
-  border-left-color: var(--navy);
+  color: var(--accent); font-weight: 600;
+  border-left-color: var(--accent);
   background: var(--info-bg);
 }
 @media (max-width: 1100px) {
@@ -1246,6 +1280,164 @@ button { cursor: pointer; }
 }
 
 .dp-hidden { display: none !important; }
+
+/* Floating back-to-top button — hidden until the page scrolls past 400px.
+   Positioned bottom-right, above any modal/cmd backdrops only when they
+   aren't open (z-index 40 sits below modal 150). */
+.dp-top-fab {
+  position: fixed; right: 20px; bottom: 20px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: grid; place-items: center;
+  border: none; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  z-index: 40;
+  opacity: 0; transform: translateY(8px); pointer-events: none;
+  transition: opacity var(--dur-moderate), transform var(--dur-moderate);
+}
+.dp-top-fab.on { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.dp-top-fab:hover { filter: brightness(1.08); }
+.dp-top-fab svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Calendar: let the grid stretch vertically to fill the page. Without this
+   every day cell stays at the 110px min-height and the page leaves empty
+   whitespace below on tall viewports. */
+.dp-cal-grid.dp-cal-grid--fill {
+  grid-auto-rows: 1fr;
+  min-height: calc(100vh - 240px);
+}
+.dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
+.dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
+
+/* Multi-select check grid — used in Task editor Owners. Two columns on
+   desktop, one on mobile. Each row is a clickable label wrapping an actual
+   checkbox so keyboard/screen-reader access stays intact. */
+.dp-check-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 4px;
+  border: var(--bd); border-radius: var(--r-sm);
+  padding: 8px; background: var(--surface-2);
+  max-height: 200px; overflow-y: auto;
+}
+.dp-check-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px; font-size: var(--fs-12);
+  cursor: pointer; border-radius: var(--r-sm);
+}
+.dp-check-row:hover { background: var(--g-150); }
+.dp-check-row input[type="checkbox"] { accent-color: var(--navy-600); }
+
+/* ====================================================================
+   Gantt chart — Tasks → Gantt view
+   Fixed-width timeline column scrolls horizontally so tasks can span
+   up to 53 days without breaking layout. Header row has two strata:
+   week labels (month/day) on top and day numbers below.
+   ==================================================================== */
+.dp-gantt-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+}
+.dp-gantt-scroll {
+  min-width: max-content;
+}
+.dp-gantt-hdr,
+.dp-gantt-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  align-items: stretch;
+}
+.dp-gantt-hdr {
+  border-bottom: var(--bd);
+  background: var(--g-100);
+  font-size: 10px; color: var(--text-3);
+  letter-spacing: 0.04em;
+  position: sticky; top: 0; z-index: 2;
+}
+.dp-gantt-label-hdr { padding: 8px 12px; font-weight: 600; text-transform: uppercase; }
+.dp-gantt-track-hdr {
+  position: relative;
+  display: flex; flex-direction: column;
+  border-left: var(--bd);
+}
+.dp-gantt-weeks {
+  display: flex;
+  border-bottom: 1px solid var(--g-200);
+  height: 22px;
+}
+.dp-gantt-wcol {
+  padding: 3px 6px; font-weight: 600; color: var(--text-2);
+  font-size: 11px;
+  border-right: 1px solid var(--g-200);
+}
+.dp-gantt-days {
+  display: flex;
+  height: 22px;
+}
+.dp-gantt-dcol {
+  display: grid; place-items: center;
+  border-right: 1px solid var(--g-150);
+  font-size: 10px; color: var(--text-3);
+  flex-shrink: 0;
+}
+.dp-gantt-dcol.dp-gantt-weekend { background: var(--g-100); }
+.dp-gantt-dcol.dp-gantt-today { background: var(--info-bg); color: var(--accent); font-weight: 700; }
+.dp-gantt-row {
+  border-bottom: 1px solid var(--g-150);
+  min-height: 40px;
+  cursor: pointer;
+}
+.dp-gantt-row:hover { background: var(--g-100); }
+.dp-gantt-label {
+  padding: 6px 12px; display: flex; flex-direction: column; justify-content: center;
+  border-right: var(--bd);
+}
+.dp-gantt-title { font-size: var(--fs-13); font-weight: 500; color: var(--text); }
+.dp-gantt-meta  { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+.dp-gantt-track {
+  position: relative;
+  height: 40px;
+  background-image: linear-gradient(to right, var(--g-150) 1px, transparent 1px);
+  background-size: 28px 100%;
+}
+.dp-gantt-bar {
+  position: absolute; top: 10px; height: 20px;
+  border-radius: var(--r-sm);
+  display: flex; align-items: center;
+  padding: 0 6px;
+  font-size: 10px; font-weight: 500;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+.dp-gantt-bar-info    { background: var(--info); color: #fff; }
+.dp-gantt-bar-ok      { background: var(--ok); color: #fff; }
+.dp-gantt-bar-warn    { background: var(--warn); color: #fff; }
+.dp-gantt-bar-alert   { background: var(--alert); color: #fff; }
+.dp-gantt-bar-neutral { background: var(--g-400); color: var(--text); }
+.dp-gantt-todayline {
+  position: absolute; top: 0; bottom: 0;
+  width: 2px; background: var(--alert);
+  pointer-events: none; z-index: 1;
+}
+
+/* Numbered pagination (Activity log, eventually Versions too) */
+.dp-pager {
+  display: flex; align-items: center; justify-content: center;
+  gap: 4px; padding: 14px;
+  border-top: var(--bd); background: var(--surface-2);
+}
+.dp-pager button {
+  min-width: 32px; height: 32px; padding: 0 10px;
+  font: inherit; font-size: 12px;
+  background: var(--surface); color: var(--text-2);
+  border: 1px solid var(--g-200); border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.dp-pager button:hover:not(:disabled) { background: var(--g-100); color: var(--text); }
+.dp-pager button.on {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.dp-pager button:disabled { opacity: 0.4; cursor: default; }
+.dp-pager .dp-pager-gap { color: var(--text-3); padding: 0 4px; }
 
 </style>
 </head>
