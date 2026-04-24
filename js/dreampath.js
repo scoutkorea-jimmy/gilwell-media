@@ -7,7 +7,7 @@
 // files — see DREAMPATH.md Section 2.1 and the matching comment in
 // /dreampath production bundle.
 //
-// [CASE STUDY 2026-04-24 — /dreampath CSP allowlist]
+// [CASE STUDY 2026-04-24 — /dreampath-v2 CSP allowlist]
 // This route depends on functions/_middleware.js isLegacyInlinePath()
 // including "/dreampath". Removing that line reproduces the total
 // sidebar outage from 2026-04-24 · A instantly.
@@ -1775,15 +1775,18 @@ const DP = (() => {
       tabs = (tabsRes && tabsRes.tabs) || [];
       const bar = h('div', { className: 'dp-board-tabs', role: 'tablist', 'data-board': key });
       const parts = [];
-      // Default pill — always first, activeTab === '' means it's selected.
+      // "All" pill — activeTab === '' means no tab filter (every post in the
+       // board shows up, including ones that haven't been assigned to a tab).
+       // 2026-04-24 owner spec renamed this from "Default" to "All" since the
+       // pill shows the whole board, not just the unfiled bucket.
       {
         const on = activeTab === '';
         parts.push(`
           <button type="button" class="dp-board-tab dp-board-tab-default${on ? ' on' : ''}" role="tab"
                   aria-selected="${on ? 'true' : 'false'}"
                   onclick="DP._setBoardTab('${esc(key)}','')"
-                  title="Posts that haven't been assigned to any tab">
-            Default
+                  title="Every post in this board (across all tabs)">
+            All
           </button>
         `);
       }
@@ -1829,8 +1832,19 @@ const DP = (() => {
     loadingPanel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">Loading ${esc(label)}…</div>`;
     root.appendChild(loadingPanel);
 
-    // Fetch posts scoped to the active tab (or all tabs when activeTab is empty).
-    const qs = 'posts?board=' + encodeURIComponent(key) + '&limit=100'
+    // 20 posts / page per 2026-04-24 owner spec. Page index is per-board and
+    // resets to 0 when user switches tab (handled in _setBoardTab).
+    const PAGE_SIZE = 20;
+    if (!state.boardPage) state.boardPage = {};
+    const pageKey = key + ':' + (activeTab || '__all');
+    const page = state.boardPage[pageKey] || 0;
+
+    // Fetch posts scoped to the active tab (or entire board when activeTab=='').
+    // `count=1` asks the server for total so we can render numbered pagination.
+    const qs = 'posts?board=' + encodeURIComponent(key)
+      + '&limit=' + PAGE_SIZE
+      + '&offset=' + (page * PAGE_SIZE)
+      + '&count=1'
       + (activeTab ? '&tab=' + encodeURIComponent(activeTab) : '');
     const res = await _rawApi('GET', qs);
     loadingPanel.remove();
@@ -2002,7 +2016,11 @@ const DP = (() => {
           <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
+      const checkCell = canManage
+        ? `<td style="width:32px" onclick="event.stopPropagation()"><input type="checkbox" class="dp-row-check" value="${Number(p.id)}" onchange="DP._onBulkCheck(this)"></td>`
+        : '';
       return `<tr class="${[pinClass, hiddenClass].filter(Boolean).join(' ')}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
+        ${checkCell}
         <td>${titleCell}</td>
         <td>${esc(p.author_name || '')}</td>
         <td class="mono">${p.comment_count || 0}</td>
@@ -2024,17 +2042,64 @@ const DP = (() => {
     roots.forEach(r => walk(r, 0));
     const rows = rowsList.join('');
 
+    // total comes from server when ?count=1 is set. Missing total → single page.
+    const total = (res.data && typeof res.data.total === 'number') ? res.data.total : posts.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    // _buildPager wants a handler name; stash the current pageKey on module
+    // state so _boardPage(n) can find it without re-encoding into the template.
+    state.currentBoardPageKey = pageKey;
+    const pagerHtml = totalPages > 1 ? _buildPager(page, totalPages, '_boardPage') : '';
+
+    // Bulk-select action bar — admin only, non-minutes, only visible when at
+    // least one post row has a checkbox. Persists across re-renders via
+    // state.selectedPostIds[pageKey] so pagination doesn't clear the set.
+    const showBulk = canManageBoard && rows.length > 0;
+    const bulkBarHtml = showBulk ? `
+      <div class="dp-bulkbar" id="dp-bulkbar" data-pagekey="${esc(pageKey)}" data-board="${esc(key)}" style="display:none">
+        <span class="dp-bulkbar-count"><strong id="dp-bulkbar-n">0</strong> selected</span>
+        <div class="dp-bulkbar-actions">
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._bulkMove('${esc(key)}')">Move to tab…</button>
+          <button class="dp-btn dp-btn-danger dp-btn-sm"    onclick="DP._bulkSetHidden(1)">Hide</button>
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._bulkSetHidden(0)">Unhide</button>
+          <button class="dp-btn dp-btn-ghost dp-btn-sm"     onclick="DP._bulkClear()">Clear</button>
+        </div>
+      </div>
+    ` : '';
+
+    // Header gets a "select-all on this page" checkbox when bulk is enabled.
+    const headersWithCheck = showBulk
+      ? '<th style="width:32px"><input type="checkbox" id="dp-bulk-selectall" onchange="DP._bulkToggleAll(this.checked)" aria-label="Select all"></th>' + headers
+      : headers;
+
     const panel = h('div', { className: 'dp-panel' });
     panel.innerHTML = `
       <div class="dp-panel-head">
-        <h3>${esc(label)} <span class="count">${posts.length}</span></h3>
+        <h3>${esc(label)} <span class="count">${total}</span></h3>
+        <span style="color:var(--text-3);font-size:11px">
+          ${totalPages > 1 ? ('Page ' + (page + 1) + ' / ' + totalPages + ' · ') : ''}${posts.length} shown
+        </span>
       </div>
+      ${bulkBarHtml}
       <table class="dp-table">
-        <thead><tr>${headers}</tr></thead>
+        <thead><tr>${headersWithCheck}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      ${pagerHtml}
     `;
     root.appendChild(panel);
+
+    // Restore prior selection + wire row-level handlers.
+    if (showBulk) _restoreBulkSelection(pageKey);
+  }
+
+  // Numbered pager hook. _buildPager calls DP._boardPage(idx) — we look up
+  // the current pageKey from state so one handler serves every board/tab.
+  function _boardPage(idx) {
+    const pk = state.currentBoardPageKey;
+    if (!pk) return;
+    if (!state.boardPage) state.boardPage = {};
+    state.boardPage[pk] = Math.max(0, Number(idx) || 0);
+    navigate(state.page);
   }
 
   // =========================================================
@@ -2046,7 +2111,129 @@ const DP = (() => {
   function _setBoardTab(boardKey, tabSlug) {
     if (!state.boardTab) state.boardTab = {};
     state.boardTab[boardKey] = tabSlug || '';
+    // Switching tabs reveals a different slice of posts; reset this tab's
+    // page index AND clear any in-flight bulk selection since those IDs
+    // belong to the previous view.
+    if (state.boardPage) state.boardPage[boardKey + ':' + (tabSlug || '__all')] = 0;
+    _bulkClear();
     // Re-navigate to the same page so _renderBoard fires with the new state.
+    navigate(state.page);
+  }
+
+  // -------------------------- Bulk selection / actions --------------------------
+  // Rendered on team boards for admins. Selection state is keyed by pageKey
+  // (board + tab) so paginating doesn't clear picks made on previous pages.
+  if (!state.bulkSelection) state.bulkSelection = {};
+
+  function _bulkCurrentKey() {
+    const bar = document.getElementById('dp-bulkbar');
+    return bar ? bar.getAttribute('data-pagekey') : null;
+  }
+  function _bulkCurrentBoard() {
+    const bar = document.getElementById('dp-bulkbar');
+    return bar ? bar.getAttribute('data-board') : null;
+  }
+  function _bulkGetSet(key) {
+    if (!state.bulkSelection[key]) state.bulkSelection[key] = new Set();
+    return state.bulkSelection[key];
+  }
+  function _restoreBulkSelection(pageKey) {
+    const set = _bulkGetSet(pageKey);
+    document.querySelectorAll('.dp-row-check').forEach(cb => {
+      cb.checked = set.has(Number(cb.value));
+    });
+    _updateBulkBar();
+  }
+  function _onBulkCheck(cb) {
+    const key = _bulkCurrentKey();
+    if (!key) return;
+    const set = _bulkGetSet(key);
+    const id = Number(cb.value);
+    if (cb.checked) set.add(id); else set.delete(id);
+    _updateBulkBar();
+  }
+  function _bulkToggleAll(checked) {
+    const key = _bulkCurrentKey();
+    if (!key) return;
+    const set = _bulkGetSet(key);
+    document.querySelectorAll('.dp-row-check').forEach(cb => {
+      const id = Number(cb.value);
+      cb.checked = checked;
+      if (checked) set.add(id); else set.delete(id);
+    });
+    _updateBulkBar();
+  }
+  function _updateBulkBar() {
+    const key = _bulkCurrentKey();
+    const bar = document.getElementById('dp-bulkbar');
+    const n = document.getElementById('dp-bulkbar-n');
+    if (!bar || !n || !key) return;
+    const count = _bulkGetSet(key).size;
+    n.textContent = String(count);
+    bar.style.display = count > 0 ? 'flex' : 'none';
+  }
+  function _bulkClear() {
+    const key = _bulkCurrentKey();
+    if (key && state.bulkSelection) state.bulkSelection[key] = new Set();
+    document.querySelectorAll('.dp-row-check:checked').forEach(cb => { cb.checked = false; });
+    const sa = document.getElementById('dp-bulk-selectall');
+    if (sa) sa.checked = false;
+    _updateBulkBar();
+  }
+  async function _bulkSetHidden(flag) {
+    const key = _bulkCurrentKey();
+    if (!key) return;
+    const ids = Array.from(_bulkGetSet(key));
+    if (!ids.length) return;
+    if (flag && !confirm('Hide ' + ids.length + ' post' + (ids.length === 1 ? '' : 's') + '? They will be greyed for admins and invisible to everyone else.')) return;
+    let ok = 0;
+    for (const id of ids) {
+      const res = await api('PUT', 'posts?id=' + id, { is_hidden: flag ? 1 : 0, edit_note: flag ? 'Bulk hide' : 'Bulk unhide' });
+      if (res) ok += 1;
+    }
+    toast(ok + ' post' + (ok === 1 ? '' : 's') + ' ' + (flag ? 'hidden' : 'unhidden'), 'ok');
+    _bulkClear();
+    navigate(state.page);
+  }
+  async function _bulkMove(boardKey) {
+    const key = _bulkCurrentKey();
+    if (!key) return;
+    const ids = Array.from(_bulkGetSet(key));
+    if (!ids.length) return;
+    const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(boardKey)).catch(() => null);
+    const tabs = (res && res.tabs) || [];
+    const opts = ['<option value="">All (no tab)</option>']
+      .concat(tabs.map(t => `<option value="${esc(t.slug)}">${esc(t.title)}</option>`))
+      .join('');
+    _openModal(
+      'Move ' + ids.length + ' post' + (ids.length === 1 ? '' : 's') + ' to a tab',
+      `
+      <p style="margin-top:0;color:var(--text-3);font-size:12px">
+        Moving is scoped to the current board. Cross-board moves are blocked.
+      </p>
+      <div class="dp-field">
+        <label for="dp-bulk-move-tab">Target tab</label>
+        <select class="dp-select" id="dp-bulk-move-tab">${opts}</select>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._bulkMoveConfirm()">Move</button>`
+    );
+  }
+  async function _bulkMoveConfirm() {
+    const sel = document.getElementById('dp-bulk-move-tab');
+    const slug = sel ? sel.value : '';
+    const key = _bulkCurrentKey();
+    const ids = key ? Array.from(_bulkGetSet(key)) : [];
+    if (!ids.length) { _closeModal(); return; }
+    let ok = 0;
+    for (const id of ids) {
+      const res = await api('PUT', 'posts?id=' + id, { tab_slug: slug || null, edit_note: 'Bulk move to ' + (slug || 'All') });
+      if (res) ok += 1;
+    }
+    toast(ok + ' post' + (ok === 1 ? '' : 's') + ' moved', 'ok');
+    _closeModal();
+    _bulkClear();
     navigate(state.page);
   }
 
@@ -3266,8 +3453,9 @@ const DP = (() => {
     // Tab strip at the top of the page head.
     const tabStrip = h('div', { className: 'dp-tabs', role: 'tablist' });
     [
-      { id: 'md',     label: 'DREAMPATH.md',  sub: 'operating rules' },
-      { id: 'design', label: 'Design Guide',  sub: 'tokens · colors · spacing' },
+      { id: 'md',          label: 'DREAMPATH.md',  sub: 'operating rules' },
+      { id: 'casestudies', label: 'Case Studies',  sub: 'in-code comments · regressions avoided' },
+      { id: 'design',      label: 'Design Guide',  sub: 'tokens · colors · spacing' },
     ].forEach(t => {
       const btn = h('button', {
         type: 'button', role: 'tab',
@@ -3282,8 +3470,110 @@ const DP = (() => {
     root.appendChild(head);
     root.appendChild(tabStrip);
 
-    if (active === 'design') { _renderRulesDesign(root); return; }
+    if (active === 'design')      { _renderRulesDesign(root); return; }
+    if (active === 'casestudies') { _renderRulesCaseStudies(root); return; }
     _renderRulesMarkdown(root);
+  }
+
+  // Case Studies tab — scrapes every `[CASE STUDY …]` comment block from the
+  // bundled client + deployed API files and renders each as a standalone card.
+  // This surfaces the "why" behind fragile code paths that would otherwise be
+  // invisible to operators reading the in-app rules.
+  async function _renderRulesCaseStudies(root) {
+    const host = h('div');
+    host.innerHTML = '<div class="dp-panel"><div class="dp-panel-body pad" style="color:var(--text-3)">Scanning source for case-study comments…</div></div>';
+    root.appendChild(host);
+
+    // Files to scrape. Client JS + inline CSS + our API surface. Static paths
+    // — these are fetched from the same origin via the normal asset server,
+    // same thing the browser downloaded for the current page.
+    const sources = [
+      { label: 'dreampath.js',            url: '/js/dreampath.js' },
+      { label: 'dreampath.html',          url: '/dreampath.html' },
+      { label: 'DREAMPATH.md',            url: '/DREAMPATH.md' },
+    ];
+
+    // Regex catches //-style comment blocks that begin with `[CASE STUDY` and
+    // continue for subsequent lines that also start with `//`. MD files use
+    // a different marker (`> [CASE STUDY …]` blockquotes or section headers)
+    // so we bolt on a secondary scan for those.
+    function scan(label, text) {
+      const out = [];
+      if (!text) return out;
+      // JS / CSS comments — //-prefixed continuation lines.
+      const reJs = /(^|\n)[ \t]*\/\/[ \t]*\[CASE STUDY[^\]\n]*\][^\n]*(?:\n[ \t]*\/\/[^\n]*)*/g;
+      let m;
+      while ((m = reJs.exec(text)) !== null) {
+        const block = m[0].replace(/(^|\n)[ \t]*\/\/ ?/g, '$1').trim();
+        const titleMatch = block.match(/\[CASE STUDY([^\]]*)\]\s*(.*)/);
+        const title = titleMatch ? ('[CASE STUDY' + titleMatch[1].trim() + ']' + (titleMatch[2] ? ' ' + titleMatch[2].trim() : '')) : block.split('\n')[0];
+        // Line number of the match in the source.
+        const line = text.slice(0, m.index).split('\n').length + (m[1] ? 1 : 0);
+        out.push({ label, line, title, body: block.split('\n').slice(1).join('\n').trim() });
+      }
+      // Markdown block — case study inside `>` blockquote OR `###` headers.
+      const reMd = /(^|\n)>[ \t]*\[!\w+\][^\n]*\n(?:>[^\n]*\n?)+/g;
+      while ((m = reMd.exec(text)) !== null) {
+        const block = m[0].replace(/>\s?/g, '').trim();
+        if (!/case study|회귀|regression|fix/i.test(block)) continue;
+        const line = text.slice(0, m.index).split('\n').length;
+        const first = block.split('\n')[0].slice(0, 80);
+        out.push({ label, line, title: first, body: block.split('\n').slice(1).join('\n').trim() });
+      }
+      return out;
+    }
+
+    const results = [];
+    for (const s of sources) {
+      try {
+        const r = await fetch(s.url, { credentials: 'same-origin' });
+        if (!r.ok) continue;
+        const text = await r.text();
+        results.push(...scan(s.label, text));
+      } catch (_) {}
+    }
+
+    host.innerHTML = '';
+    if (!results.length) {
+      const empty = h('div', { className: 'dp-panel' });
+      empty.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">No case-study comments found.</div>';
+      host.appendChild(empty);
+      return;
+    }
+
+    // Intro card
+    const intro = h('section', { className: 'dp-panel', style: { marginBottom: '20px' } });
+    intro.innerHTML = `
+      <div class="dp-panel-body pad">
+        <strong style="color:var(--text);font-size:var(--fs-14)">${results.length} case studies</strong>
+        <p style="margin:6px 0 0;color:var(--text-2);font-size:var(--fs-12);line-height:1.55">
+          Every card below is a real in-code comment pulled from a file that ships with this
+          release. When a production regression is fixed we leave a marker like
+          <code>// [CASE STUDY &lt;date&gt; — &lt;title&gt;]</code> with the root cause + the
+          mitigation. The list here is the same one future developers see in their editor —
+          no duplicate docs.
+        </p>
+      </div>
+    `;
+    host.appendChild(intro);
+
+    // Grid of cards
+    const grid = h('div', { className: 'dp-case-grid' });
+    results.forEach((cs, i) => {
+      const card = document.createElement('section');
+      card.className = 'dp-case-card';
+      card.innerHTML = `
+        <header>
+          <strong class="dp-case-title">${esc(cs.title)}</strong>
+          <div class="dp-case-meta">
+            <span class="mono">${esc(cs.label)}:${cs.line}</span>
+          </div>
+        </header>
+        ${cs.body ? `<pre class="dp-case-body">${esc(cs.body)}</pre>` : ''}
+      `;
+      grid.appendChild(card);
+    });
+    host.appendChild(grid);
   }
 
   async function _renderRulesMarkdown(root) {
@@ -6054,6 +6344,8 @@ const DP = (() => {
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,
+    _boardPage,
+    _onBulkCheck, _bulkToggleAll, _bulkClear, _bulkSetHidden, _bulkMove, _bulkMoveConfirm,
     _requestCloseModal, _draftPromptCancel, _draftPromptDiscard, _draftPromptSave,
     _notifMarkRead, _notifMarkAllRead, _notifGo,
     _openTaskEditor, _saveNewTask, _taskTransition,
