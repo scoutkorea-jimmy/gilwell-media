@@ -38,7 +38,28 @@ export async function onRequestGet({ env, data }) {
   // Build SQL IN clause for accessible boards
   const boardPlaceholders = accessibleBoards.map(function () { return '?'; }).join(',');
 
-  const [taskRows, noteRows, postHistoryRows, eventHistoryRows, commentRows] = await Promise.all([
+  // Current month window (UTC-based date arithmetic; calendar renders in local tz
+  // but month boundaries only need to be close enough for filtering).
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+  const nextMonthStart = month === 11
+    ? `${year + 1}-01-01`
+    : `${year}-${String(month + 2).padStart(2, '0')}-01`;
+  const todayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const sevenDaysLater = new Date(year, month, now.getDate() + 7);
+  const weekEnd = `${sevenDaysLater.getFullYear()}-${String(sevenDaysLater.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysLater.getDate()).padStart(2, '0')}`;
+
+  const [
+    taskRows,
+    noteRows,
+    postHistoryRows,
+    eventHistoryRows,
+    commentRows,
+    eventRows,
+    pendingApprovalRows,
+  ] = await Promise.all([
     env.DB.prepare(
       `SELECT id, title, assignee, status, priority, due_date, updated_at
          FROM dp_tasks
@@ -81,6 +102,33 @@ export async function onRequestGet({ env, data }) {
         ORDER BY datetime(c.created_at) DESC, c.id DESC
         LIMIT 12`
     ).bind(...accessibleBoards).all(),
+    // Events overlapping current month (for calendar initial paint — saves
+    // the extra /events?month= round trip on home entry). Field names mirror
+    // /api/dreampath/events so renderCalendar() can consume either source.
+    env.DB.prepare(
+      `SELECT id, title, start_date, end_date, start_time, end_time, type,
+              description, recurrence_type, recurrence_end, created_at
+         FROM dp_events
+        WHERE (end_date >= ? OR start_date >= ?)
+          AND start_date < ?
+        ORDER BY start_date ASC, id ASC
+        LIMIT 200`
+    ).bind(monthStart, monthStart, nextMonthStart).all(),
+    // Pending approvals where the current user is an approver and hasn't voted.
+    // Match by approver_name against either display name or username.
+    (matchNames.length
+      ? env.DB.prepare(
+          `SELECT a.post_id, a.approver_name, a.status AS my_status,
+                  p.title, p.board, p.created_at AS post_created_at, p.approval_status
+             FROM dp_post_approvals a
+             JOIN dp_board_posts p ON p.id = a.post_id
+            WHERE LOWER(a.approver_name) IN (${matchNames.map(() => '?').join(',')})
+              AND a.status = 'pending'
+              AND (p.approval_status IS NULL OR p.approval_status != 'approved')
+            ORDER BY datetime(p.created_at) DESC
+            LIMIT 10`
+        ).bind(...matchNames).all()
+      : Promise.resolve({ results: [] })),
   ]);
 
   const tasks = (taskRows.results || []);
@@ -99,6 +147,7 @@ export async function onRequestGet({ env, data }) {
     .concat((postHistoryRows.results || []).map(function (item) {
       return {
         kind: 'post',
+        ref_id: item.post_id,
         title: item.title || '',
         meta: item.editor_name || '',
         note: item.edit_note || '',
@@ -108,6 +157,7 @@ export async function onRequestGet({ env, data }) {
     .concat((eventHistoryRows.results || []).map(function (item) {
       return {
         kind: 'event',
+        ref_id: item.event_id,
         title: item.title || '',
         meta: item.editor_name || '',
         note: item.edit_note || '',
@@ -117,6 +167,7 @@ export async function onRequestGet({ env, data }) {
     .concat((commentRows.results || []).map(function (item) {
       return {
         kind: 'comment',
+        ref_id: item.post_id,
         title: item.title || '',
         meta: item.author_name || '',
         note: item.content || '',
@@ -128,10 +179,45 @@ export async function onRequestGet({ env, data }) {
     })
     .slice(0, 30);
 
+  // Today / week summary — fuel for the B1 "Today" strip on home top.
+  const tasksDueToday = myTasks.filter(function (t) {
+    return String(t.due_date || '').slice(0, 10) === todayStr && t.status !== 'done';
+  }).length;
+  const tasksOverdue = myTasks.filter(function (t) {
+    const d = String(t.due_date || '').slice(0, 10);
+    return d && d < todayStr && t.status !== 'done';
+  }).length;
+  const events = (eventRows.results || []);
+  const meetingsThisWeek = events.filter(function (e) {
+    const d = String(e.start_date || '').slice(0, 10);
+    return d && d >= todayStr && d <= weekEnd;
+  }).length;
+  const pendingApprovals = (pendingApprovalRows.results || []).map(function (row) {
+    return {
+      post_id: row.post_id,
+      title: row.title || '',
+      board: row.board || '',
+      post_created_at: row.post_created_at || '',
+    };
+  });
+  const highPriorityNotes = notes.filter(function (n) {
+    return n.status === 'open' && n.priority === 'high';
+  }).length;
+
   return json({
     alerts,
     my_tasks: myTasks,
     recent_changes: recentChanges,
+    today_summary: {
+      tasks_due_today: tasksDueToday,
+      tasks_overdue: tasksOverdue,
+      meetings_this_week: meetingsThisWeek,
+      pending_approvals: pendingApprovals.length,
+      high_priority_notes: highPriorityNotes,
+      today: todayStr,
+    },
+    events_current_month: events,
+    pending_approvals: pendingApprovals,
   });
 }
 
@@ -141,11 +227,11 @@ function buildTaskAlerts(tasks) {
     if (!due) return acc;
     const days = diffDaysFromToday(due);
     if (days < 0) {
-      acc.push({ kind: 'task_overdue', label: '기한 지남', title: item.title || '', meta: due });
+      acc.push({ kind: 'task_overdue', label: '기한 지남', title: item.title || '', meta: due, task_id: item.id, status: item.status });
       return acc;
     }
     if (days <= 3 && item.status !== 'done') {
-      acc.push({ kind: 'task_due_soon', label: '마감 임박', title: item.title || '', meta: due });
+      acc.push({ kind: 'task_due_soon', label: '마감 임박', title: item.title || '', meta: due, task_id: item.id, status: item.status });
     }
     return acc;
   }, []);
@@ -161,6 +247,7 @@ function buildNoteAlerts(notes) {
         label: '중요 메모',
         title: item.title || '',
         meta: item.type || 'note',
+        note_id: item.id,
       };
     });
 }
@@ -172,4 +259,3 @@ function diffDaysFromToday(dateText) {
   const current = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return Math.round((start.getTime() - current.getTime()) / 86400000);
 }
-

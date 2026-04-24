@@ -18,6 +18,16 @@ const DP = (() => {
   const SESSION_WARNING_MS = 5 * 60 * 1000;
   const SESSION_EXPIRY_KEY = 'dp_session_expires_at';
 
+  // B2 — "Recent Changes" unread tracking.
+  // We stamp the last home visit in localStorage. Any item newer than the
+  // stored timestamp gets the .dp-unread dot. The stamp is updated once per
+  // home render so the indicators stay accurate without server-side state.
+  const HOME_LAST_SEEN_KEY = 'dp_home_last_seen_at';
+  let _lastHomeSeenAt = '';
+  let _todaySummary = null;
+  let _pendingApprovals = [];
+  let _eventsCurrentMonth = null;   // A6 — events bundled with first home load
+
   // ── Team Board helpers ─────────────────────────────────────────────────────
   const TEAM_BOARDS = ['team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
   const TEAM_BOARD_TITLES = { team_korea: 'Team Korea', team_nepal: 'Team Nepal', team_indonesia: 'Team Indonesia', team_pakistan: 'Team Pakistan' };
@@ -765,8 +775,18 @@ const DP = (() => {
   function toggleSidebar() {
     const sidebar = $('dp-sidebar');
     const overlay = $('dp-sidebar-overlay');
+    const hamburger = $('dp-hamburger');
     const isOpen = sidebar.classList.toggle('dp-sidebar--open');
     overlay.classList.toggle('dp-sidebar-overlay--open', isOpen);
+    if (hamburger) hamburger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    // Pull focus into the sidebar when it opens so a keyboard user lands on
+    // the first nav item; restore to hamburger when it closes.
+    if (isOpen) {
+      const firstItem = sidebar.querySelector('.dp-nav-item[role="button"]');
+      if (firstItem) firstItem.focus();
+    } else if (hamburger) {
+      hamburger.focus();
+    }
   }
 
   function navigate(section) {
@@ -778,9 +798,12 @@ const DP = (() => {
     if (sidebar) sidebar.classList.remove('dp-sidebar--open');
     if (overlay) overlay.classList.remove('dp-sidebar-overlay--open');
 
-    // Update nav highlights
+    // Update nav highlights + announce active state to assistive tech.
     document.querySelectorAll('.dp-nav-item').forEach(el => {
-      el.classList.toggle('dp-nav-item--active', el.dataset.section === section);
+      const isActive = el.dataset.section === section;
+      el.classList.toggle('dp-nav-item--active', isActive);
+      if (isActive) el.setAttribute('aria-current', 'page');
+      else el.removeAttribute('aria-current');
     });
 
     // Hide all sections, show target
@@ -816,14 +839,111 @@ const DP = (() => {
 
   // ── Home ───────────────────────────────────────────────────────────────────
   async function loadHome() {
-    const [homeData] = await Promise.all([api('GET', 'home'), loadCalendar(), loadBoardPreviews()]);
+    // A6 — home.js now bundles events_current_month, so we pass that into
+    // loadCalendar() instead of making a second round trip on first paint.
+    const [homeData] = await Promise.all([api('GET', 'home'), loadBoardPreviews()]);
+    _todaySummary = (homeData && homeData.today_summary) || null;
+    _pendingApprovals = (homeData && homeData.pending_approvals) || [];
+    _eventsCurrentMonth = (homeData && homeData.events_current_month) || null;
     renderHomeOps(homeData || {});
+    // Calendar paint — uses bundled events if we're still on the current month
+    // the server computed; otherwise fetches fresh.
+    const serverMonthMatches = _eventsCurrentMonth !== null
+      && calendarDate.getFullYear() === new Date().getFullYear()
+      && calendarDate.getMonth() === new Date().getMonth();
+    if (serverMonthMatches) {
+      renderCalendar(_eventsCurrentMonth);
+    } else {
+      loadCalendar();
+    }
   }
 
   function renderHomeOps(data) {
+    renderTodaySummary(_todaySummary);
+    renderPendingApprovals(_pendingApprovals);
     renderHomeAlerts(data.alerts || [], data.my_tasks || []);
     renderHomeRecent(data.recent_changes || []);
     bindHomeSearch();
+    // After paint, promote the newest recent_changes timestamp to "seen" so
+    // next visit's unread dots only cover items added since NOW.
+    if (Array.isArray(data.recent_changes) && data.recent_changes.length) {
+      const newest = data.recent_changes[0].created_at || '';
+      if (newest && newest > _lastHomeSeenAt) {
+        // Defer so the dots render once before we consume them.
+        setTimeout(() => {
+          _lastHomeSeenAt = newest;
+          localStorage.setItem(HOME_LAST_SEEN_KEY, newest);
+        }, 1200);
+      }
+    }
+  }
+
+  // B1 — Today / week summary strip.
+  // Reads counts computed by home.js and paints 5 stat chips. Each chip is
+  // keyboard-activatable (role=button + tabindex=0) and jumps to the related
+  // section via DP.navigate(). Chips with a non-zero value get a color
+  // accent (alert = overdue, warn = due today, info = neutral).
+  function renderTodaySummary(summary) {
+    const el = $('dp-today-strip');
+    if (!el) return;
+    if (!summary) {
+      el.classList.add('dp-hidden');
+      return;
+    }
+    el.classList.remove('dp-hidden');
+
+    function chip(key, label, value, target, tone) {
+      const toneCls = value > 0 && tone ? ` dp-today-chip--${tone}` : '';
+      const ariaLabel = `${label}: ${value}건`;
+      return `<div class="dp-today-chip${toneCls}" role="button" tabindex="0"
+               data-target="${esc(target)}" aria-label="${esc(ariaLabel)}"
+               onclick="DP.navigate('${esc(target)}')">
+        <span class="dp-today-chip-label">${esc(label)}</span>
+        <span class="dp-today-chip-value">
+          <span class="dp-num">${Number(value) || 0}</span>
+          <span class="dp-suffix">건</span>
+        </span>
+      </div>`;
+    }
+
+    el.innerHTML = [
+      chip('overdue',  '기한 지남',  summary.tasks_overdue,    'tasks',   'alert'),
+      chip('today',    '오늘 마감',  summary.tasks_due_today,  'tasks',   'warn'),
+      chip('meetings', '이번주 회의', summary.meetings_this_week, 'home',  'info'),
+      chip('approvals', '내 승인 대기', summary.pending_approvals, 'minutes', 'alert'),
+      chip('notes',    '중요 메모',  summary.high_priority_notes, 'notes', 'warn'),
+    ].join('');
+  }
+
+  // B5 — My pending approvals.
+  // The server filters to rows where the current user is an approver AND
+  // their vote is still 'pending' AND the post itself is not yet approved.
+  // Clicking the card opens the meeting-minutes post detail.
+  function renderPendingApprovals(list) {
+    const el = $('dp-approvals-strip');
+    if (!el) return;
+    if (!list || !list.length) {
+      el.classList.add('dp-hidden');
+      el.innerHTML = '';
+      return;
+    }
+    el.classList.remove('dp-hidden');
+    const items = list.slice(0, 5).map(item => `
+      <div class="dp-approval-card" role="button" tabindex="0"
+           data-post-id="${Number(item.post_id) || 0}"
+           aria-label="${esc('내 투표 대기: ' + (item.title || ''))}"
+           onclick="DP.viewPost(${Number(item.post_id) || 0})">
+        <div style="flex:1;min-width:0">
+          <strong>${esc(item.title || '(제목 없음)')}</strong>
+          <small>${esc(item.board || '')}${item.post_created_at ? ' · ' + fmtDate(item.post_created_at) : ''}</small>
+        </div>
+        <span class="dp-approval-card-cta">투표 필요 →</span>
+      </div>
+    `).join('');
+    el.innerHTML = `
+      <div class="dp-approvals-header">내 승인 대기 · ${list.length}건</div>
+      ${items}
+    `;
   }
 
   function renderHomeAlerts(alerts, myTasks) {
@@ -838,11 +958,31 @@ const DP = (() => {
         </div>
       `);
     });
+    // B4 — each personal task gets inline quick-toggle buttons so status can
+    // be advanced without leaving the home screen.
     (myTasks || []).forEach(task => {
+      const status = task.status || 'todo';
+      const quick = [];
+      if (status === 'todo') {
+        quick.push(`<button type="button" class="dp-task-quick-btn"
+          onclick="event.stopPropagation();DP._homeTaskQuick(${Number(task.id)},'in_progress')"
+          aria-label="${esc(task.title || '')} 시작하기">시작</button>`);
+      }
+      if (status === 'in_progress') {
+        quick.push(`<button type="button" class="dp-task-quick-btn dp-task-quick-btn--done"
+          onclick="event.stopPropagation();DP._homeTaskQuick(${Number(task.id)},'done')"
+          aria-label="${esc(task.title || '')} 완료 처리">완료</button>`);
+      }
+      if (status !== 'done') {
+        quick.push(`<button type="button" class="dp-task-quick-btn"
+          onclick="event.stopPropagation();DP.navigate('tasks');setTimeout(()=>DP.viewTask(${Number(task.id)}),120)"
+          aria-label="상세 보기">열기</button>`);
+      }
       blocks.push(`
         <div class="dp-home-item">
           <strong>${esc(task.title || '')}</strong>
-          <small>${esc((task.status || 'todo') + (task.due_date ? ' · ' + task.due_date : ''))}</small>
+          <small>${esc(status + (task.due_date ? ' · 마감 ' + task.due_date : '') + (task.priority === 'high' ? ' · 긴급' : ''))}</small>
+          ${quick.length ? `<div class="dp-task-quick-row">${quick.join('')}</div>` : ''}
         </div>
       `);
     });
@@ -851,9 +991,24 @@ const DP = (() => {
       : '<div class="dp-home-item"><strong>No urgent items.</strong><small>You have no active alerts or assigned tasks right now.</small></div>';
   }
 
+  // B4 helper — inline status transition from the home strip.
+  async function _homeTaskQuick(id, newStatus) {
+    const result = await api('PUT', `tasks?id=${id}`, { status: newStatus });
+    if (result && !result.error) {
+      showToast(newStatus === 'done' ? '완료로 표시했습니다.' : '상태를 바꿨습니다.', 'success');
+      loadHome();   // repaint alerts + today strip
+    }
+  }
+
   function _recentItemHtml(item) {
-    return `<div class="dp-home-item">
-      <strong>${esc(item.title || '')}</strong>
+    // B2 — items whose timestamp is newer than the user's last recorded home
+    // visit get the .dp-unread dot. The stamp is updated ~1.2s after paint
+    // so the first view still shows the indicator.
+    const isUnread = !!(item.created_at && _lastHomeSeenAt && item.created_at > _lastHomeSeenAt);
+    const unreadCls = isUnread ? ' dp-unread' : '';
+    const unreadSr = isUnread ? '<span class="dp-sr-only">(새 항목)</span>' : '';
+    return `<div class="dp-home-item${unreadCls}">
+      ${unreadSr}<strong>${esc(item.title || '')}</strong>
       <small>${esc((item.kind || 'item').toUpperCase() + ' · ' + (item.meta || '') + (item.created_at ? ' · ' + fmtFull(item.created_at) : ''))}</small>
       ${item.note ? `<div style="margin-top:6px;font-size:12px;color:var(--text-2)">${esc(String(item.note).slice(0, 140))}</div>` : ''}
     </div>`;
@@ -925,14 +1080,56 @@ const DP = (() => {
       resultsEl.innerHTML = '<div class="dp-home-item"><strong>No results found.</strong><small>Try another title, assignee, or keyword.</small></div>';
       return;
     }
-    resultsEl.innerHTML = `<div class="dp-search-results-compact">${results.map(item => `
-      <div class="dp-search-hit" data-kind="${esc(item.kind || '')}" data-id="${Number(item.id || 0)}">
+
+    // B3 — group results by kind so users can skim by category instead of a
+    // flat mixed list. Each kind gets an uppercase header + up to MAX hits;
+    // overflow within a kind is hidden behind a "show more" pill.
+    const MAX_PER_GROUP = 6;
+    const GROUP_LABELS = {
+      post: '게시글 / Posts',
+      comment: '댓글 / Comments',
+      task: '할 일 / Tasks',
+      note: '메모 / Notes',
+      event: '일정 / Events',
+    };
+    const GROUP_ORDER = ['post', 'comment', 'task', 'note', 'event'];
+
+    const grouped = {};
+    for (const item of results) {
+      const key = String(item.kind || 'other').toLowerCase();
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    }
+    const orderedKeys = GROUP_ORDER.filter(k => grouped[k] && grouped[k].length)
+      .concat(Object.keys(grouped).filter(k => GROUP_ORDER.indexOf(k) < 0));
+
+    function hitHtml(item) {
+      return `<div class="dp-search-hit" role="button" tabindex="0"
+        data-kind="${esc(item.kind || '')}" data-id="${Number(item.id || 0)}"
+        aria-label="${esc((item.kind || '') + ': ' + (item.title || ''))}">
         <span class="dp-search-hit-type">${esc(item.kind || 'item')}</span>
         <strong>${esc(item.title || '')}</strong>
         ${item.subtitle ? `<div style="font-size:12px;color:var(--text-2);margin-top:4px">${esc(item.subtitle)}</div>` : ''}
         ${item.meta ? `<div style="font-size:11px;color:var(--text-3);margin-top:4px">${esc(item.meta)}</div>` : ''}
-      </div>
-    `).join('')}</div>`;
+      </div>`;
+    }
+
+    const groups = orderedKeys.map(key => {
+      const items = grouped[key];
+      const shown = items.slice(0, MAX_PER_GROUP);
+      const overflow = items.length - shown.length;
+      const label = GROUP_LABELS[key] || key.toUpperCase();
+      return `<section class="dp-search-group" aria-label="${esc(label)} 검색 결과">
+        <div class="dp-search-group-label">
+          ${esc(label)}<span class="dp-search-group-count">· ${items.length}건</span>
+        </div>
+        <div class="dp-search-results-compact">${shown.map(hitHtml).join('')}</div>
+        ${overflow > 0 ? `<div style="margin-top:6px;font-size:11px;color:var(--text-3)">+${overflow} more</div>` : ''}
+      </section>`;
+    }).join('');
+
+    resultsEl.innerHTML = groups;
+
     resultsEl.querySelectorAll('.dp-search-hit').forEach(node => {
       node.addEventListener('click', () => {
         const kind = node.getAttribute('data-kind');
@@ -941,7 +1138,22 @@ const DP = (() => {
           viewPost(id);
           return;
         }
-        showToast('Task/note search is available. Detail jump can be expanded next.', 'info');
+        if (kind === 'task') {
+          navigate('tasks');
+          setTimeout(() => viewTask(id), 120);
+          return;
+        }
+        if (kind === 'note') {
+          navigate('notes');
+          setTimeout(() => viewNote(id), 120);
+          return;
+        }
+        if (kind === 'event') {
+          navigate('home');
+          setTimeout(() => viewEvent(id), 120);
+          return;
+        }
+        showToast('이 타입의 상세 화면은 아직 연결되어 있지 않습니다.', 'info');
       });
     });
   }
@@ -1067,7 +1279,7 @@ const DP = (() => {
           if (item.cs > col) rowHtml += `<div style="grid-column:${col+1}/${item.cs+1}"></div>`;
           const color = typeColors[item.ev.type] || typeColors.general;
           const label = item.showTitle ? (item.ev.recurrence_type ? '&#128260; ' : '') + esc(item.ev.title) : '&nbsp;';
-          rowHtml += `<div class="dp-cal-bar" style="grid-column:${item.cs+1}/${item.ce+1};background:${color}"
+          rowHtml += `<div class="dp-cal-bar" role="button" tabindex="0" aria-label="${esc('일정: ' + item.ev.title)}" style="grid-column:${item.cs+1}/${item.ce+1};background:${color}"
             onclick="event.stopPropagation();DP.viewEvent(${item.ev.id})"
             title="${esc(item.ev.title)}">${label}</div>`;
           col = item.ce;
@@ -1087,22 +1299,24 @@ const DP = (() => {
         const dayEvs = singleDay[dateStr] || [];
 
         const strips = dayEvs.slice(0, 2).map(ev => `
-          <div class="dp-cal-event-strip"
+          <div class="dp-cal-event-strip" role="button" tabindex="0"
+               aria-label="${esc('일정: ' + ev.title + (ev.start_time ? ' ' + ev.start_time : ''))}"
                style="background:${typeColors[ev.type]||typeColors.general}"
                draggable="true"
                ondragstart="event.stopPropagation();DP._calDragStart(event,${ev.id})"
                onclick="event.stopPropagation();DP.viewEvent(${ev.id})"
                title="${esc(ev.title)}${ev.start_time?' · '+ev.start_time:''}">
-            ${ev.start_time?`<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>`:''}${ev.recurrence_type?'&#128260; ':''}${esc(ev.title)}
+            ${ev.start_time?`<span style="opacity:.8;font-size:10px;margin-right:3px">${esc(ev.start_time)}</span>`:''}${ev.recurrence_type?'<span aria-hidden="true">&#128260; </span>':''}${esc(ev.title)}
           </div>`).join('');
 
         const moreHtml = dayEvs.length > 2
-          ? `<div class="dp-cal-more" onclick="event.stopPropagation();DP.dayClick('${dateStr}')">+${dayEvs.length - 2} more</div>`
+          ? `<div class="dp-cal-more" role="button" tabindex="0" aria-label="${esc(dateStr + ' 전체 일정 보기')}" onclick="event.stopPropagation();DP.dayClick('${dateStr}')">+${dayEvs.length - 2} more</div>`
           : '';
 
         const hasEvents = dayEvs.length > 0 || multiDay.some(ev => { const ds = date; return ev._s <= ds && ev._e >= ds; });
         cellsHtml += `
           <div class="dp-cal-day${isToday?' dp-cal-day--today':''}${isWeekend?' dp-cal-day--weekend':''}${hasEvents?' dp-cal-day--has-events':''}"
+               role="button" tabindex="0" aria-label="${esc(dateStr + (hasEvents ? ' · 일정 있음' : ''))}"
                onclick="DP.dayClick('${dateStr}')" style="cursor:pointer"
                ondragover="event.preventDefault();DP._calDragOver(event)"
                ondragleave="DP._calDragLeave(event)"
@@ -1172,8 +1386,10 @@ const DP = (() => {
       items = `<p class="dp-preview-empty">No posts yet.</p>`;
     } else {
       items = posts.map(p => `
-        <div class="dp-preview-item" onclick="DP.viewPost(${p.id})">
-          ${p.pinned ? '<span class="dp-pin-icon" title="Pinned">&#128204;</span>' : ''}
+        <div class="dp-preview-item" role="button" tabindex="0"
+             aria-label="${esc((p.pinned ? '고정 · ' : '') + (p.title || ''))}"
+             onclick="DP.viewPost(${p.id})">
+          ${p.pinned ? '<span class="dp-pin-icon" aria-hidden="true" title="Pinned">&#128204;</span>' : ''}
           <span class="dp-preview-item-title">${esc(p.title)}</span>
           <span class="dp-preview-item-date">${esc(fmtFull(p.created_at))}</span>
         </div>
@@ -1335,8 +1551,8 @@ const DP = (() => {
       <div class="dp-post-card ${statusCls} ${depthCls}" style="${depth > 0 ? `margin-left:${Math.min(depth, 10) * 28}px` : ''}" onclick="DP.viewPost(${post.id})">
         <div class="dp-post-card-inner">
           <div class="dp-post-card-meta">
-            ${isReply ? '<span class="dp-reply-badge">&#8617; Reply</span>' : ''}
-            ${post.pinned ? '<span class="dp-pin-icon">&#128204;</span>' : ''}
+            ${isReply ? '<span class="dp-reply-badge"><span aria-hidden="true">&#8617;</span> Reply</span>' : ''}
+            ${post.pinned ? '<span class="dp-pin-icon" aria-hidden="true" title="Pinned">&#128204;</span>' : ''}
             <span class="dp-post-author">${esc(post.author_name)}</span>
             <span class="dp-post-date">${post.updated_at && post.updated_at !== post.created_at ? `Edited ${esc(fmtFull(post.updated_at))}` : esc(fmtFull(post.created_at))}</span>
             ${post.file_url ? '<span class="dp-post-file-badge">&#128206; File attached</span>' : ''}
@@ -3182,6 +3398,40 @@ const DP = (() => {
   function init() {
     trackPageVisit();
 
+    // Global keyboard delegate (A2).
+    // Every interactive div that carries role="button" (or is a legacy
+    // .dp-nav-item / .dp-preview-item / .dp-home-item / .dp-cal-day) must
+    // activate on Enter/Space so keyboard + screen reader users get parity
+    // with mouse clicks. Native <button>/<a>/form elements are skipped so we
+    // don't double-fire.
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const tag = t.tagName;
+      if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      // If the element advertises role="button" or is one of our legacy
+      // interactive tile classes, treat Enter/Space as click.
+      const role = t.getAttribute('role');
+      const cls = t.classList;
+      const isInteractiveTile =
+        role === 'button' ||
+        cls.contains('dp-nav-item') ||
+        cls.contains('dp-preview-item') ||
+        cls.contains('dp-search-hit') ||
+        cls.contains('dp-home-item') ||
+        cls.contains('dp-today-chip') ||
+        cls.contains('dp-approval-card') ||
+        cls.contains('dp-task-quick-btn') ||
+        cls.contains('dp-cal-day') ||
+        cls.contains('dp-cal-event-strip') ||
+        cls.contains('dp-cal-bar') ||
+        cls.contains('dp-cal-more');
+      if (!isInteractiveTile) return;
+      e.preventDefault();
+      t.click();
+    });
+
     // Login form — enter key support
     const pwEl = $('dp-login-password');
     if (pwEl) {
@@ -3203,6 +3453,9 @@ const DP = (() => {
         if (e.target === overlay) closeModal();
       });
     }
+
+    // Persisted last-seen timestamp for B2 unread dots.
+    _lastHomeSeenAt = localStorage.getItem(HOME_LAST_SEEN_KEY) || '';
 
     // Check if already logged in
     if (hasSessionMarker()) {
@@ -3747,8 +4000,11 @@ const DP = (() => {
       const div = document.createElement('div');
       div.className = 'dp-nav-item dp-board-nav-item';
       div.dataset.section = b.slug;
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.setAttribute('aria-label', b.title);
       div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
-      div.innerHTML = `<span class="dp-nav-icon">&#128196;</span><span>${esc(b.title)}</span>`;
+      div.innerHTML = `<span class="dp-nav-icon" aria-hidden="true">&#128196;</span><span>${esc(b.title)}</span>`;
       teamNav.insertAdjacentElement('beforebegin', div);
     });
 
@@ -3760,8 +4016,11 @@ const DP = (() => {
       div.className = `dp-nav-item dp-team-nav-item${visible ? '' : ' dp-hidden'}`;
       div.dataset.section = b.slug;
       div.dataset.team = b.slug.replace('team_', '');
+      div.setAttribute('role', 'button');
+      div.setAttribute('tabindex', '0');
+      div.setAttribute('aria-label', b.title);
       div.setAttribute('onclick', `DP.navigate('${b.slug}')`);
-      div.innerHTML = `<span class="dp-nav-icon">&#127984;</span><span>${esc(b.title)}</span>`;
+      div.innerHTML = `<span class="dp-nav-icon" aria-hidden="true">&#127984;</span><span>${esc(b.title)}</span>`;
       insertAfter.insertAdjacentElement('afterend', div);
       insertAfter = div;
     });
@@ -4557,6 +4816,7 @@ const DP = (() => {
     _calDrop,
     extendSession,
     _showAllRecent,
+    _homeTaskQuick,
     _clearEventPicker,
     loadSettings,
     _settingsReset,

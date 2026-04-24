@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dreampath — Project Board</title>
   <meta name="robots" content="noindex, nofollow" />
-  <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png" />
+  <link rel="icon" type="image/svg+xml" href="/img/dreampath/logo-mark.svg" />
+  <link rel="alternate icon" type="image/png" sizes="48x48" href="/img/favicon-48.png" />
+  <link rel="apple-touch-icon" href="/img/dreampath/logo-mark.svg" />
+  <meta name="theme-color" content="#002D56" />
   <style>
     /* ── Font: S-CoreDream (Escoredream) ────────────────────────── */
     @font-face { font-family: 'Escoredream'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-1Thin.woff') format('woff'); font-weight: 100; font-display: swap; }
@@ -43,9 +46,18 @@
       --surface2: #F7F8F8;
       --border:   #DADADD;       /* CUFS Gray */
 
-      --text:   #0F2035;         /* navy-tinted dark */
-      --text-2: #4A5F72;
-      --text-3: #8A9FAF;
+      --text:   #0F2035;         /* navy-tinted dark — APCA Lc ~105 on --bg */
+      --text-2: #3E5060;         /* APCA Lc ~85 — was #4A5F72, pushed darker */
+      --text-3: #5A6B77;         /* APCA Lc ~65 — was #8A9FAF (Lc ~45, failed content threshold) */
+
+      /* BP-style neutral tokens (APCA Lc on white base). Used for meta/divider
+         tiers so Dreampath inherits the public site's contrast discipline
+         without swapping the CUFS brand. */
+      --gray-900: #030303;       /* Lc 107.7 — emphasis */
+      --gray-700: #3F3F3F;       /* Lc 96.2  — secondary text */
+      --gray-500: #6B7B85;       /* Lc ~60   — tertiary text / icon */
+      --gray-300: #C4C4C4;       /* Lc 33.5  — structure only (no text) */
+      --gray-100: #EBEBEB;       /* Lc 11.1  — section tint (no text) */
 
       --red:          #DC2626;
       --red-light:    #FEE2E2;
@@ -56,11 +68,40 @@
       --blue:         #2563EB;
       --blue-light:   #DBEAFE;
 
+      /* Priority-level tokens (used by tasks, notes, summary chips) — avoids
+         literal HEX scatter in JS templates. */
+      --priority-high:       var(--red);
+      --priority-high-bg:    var(--red-light);
+      --priority-normal:     var(--text-2);
+      --priority-normal-bg:  var(--gray-100);
+      --priority-low:        var(--text-3);
+      --priority-low-bg:     var(--gray-100);
+
       --radius:    10px;
       --radius-sm: 6px;
       --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
       --shadow-md: 0 4px 12px rgba(0,0,0,.08);
       --shadow-lg: 0 10px 30px rgba(0,0,0,.12);
+
+      /* Mobile-first accessibility tokens.
+         --touch-min = WCAG 2.5.5 target size (min 44x44). Used on every
+         interactive surface that gets hit by thumbs. */
+      --touch-min: 44px;
+      --focus-ring: 0 0 0 3px rgba(26, 155, 170, 0.55);
+    }
+    @media (prefers-contrast: more) {
+      :root {
+        --text-2: #1F2A33;
+        --text-3: #3E4B55;
+        --focus-ring: 0 0 0 3px #000;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
     }
     html, body { height: 100%; }
     body {
@@ -76,6 +117,51 @@
     button { cursor: pointer; border: none; background: none; font-family: inherit; font-size: inherit; }
     input, textarea, select { font-family: inherit; font-size: inherit; }
     .dp-hidden { display: none !important; }
+
+    /* ── Accessibility primitives ───────────────────────────────
+       Global focus ring: any element receiving keyboard focus gets a
+       high-contrast outline + token-based ring. Works alongside (does not
+       override) component-specific focus styles below. */
+    :focus { outline: none; }
+    :focus-visible {
+      outline: 2px solid var(--accent-mid);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+    .dp-sr-only {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0);
+      white-space: nowrap; border: 0;
+    }
+    .dp-skip-link {
+      position: absolute;
+      top: -100px; left: 0;
+      z-index: 9999;
+      padding: 10px 16px;
+      background: var(--accent);
+      color: #FFF;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 0 0 var(--radius-sm) 0;
+      text-decoration: none;
+    }
+    .dp-skip-link:focus,
+    .dp-skip-link:focus-visible {
+      top: 0;
+      outline: 3px solid var(--accent-mid);
+      outline-offset: 0;
+    }
+
+    /* Interactive divs wearing role=button get real button affordance
+       (pointer, focusable). JS delegates Enter/Space → click. */
+    [role="button"] { cursor: pointer; }
+    [role="button"]:focus-visible {
+      outline: 2px solid var(--accent-mid);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring);
+    }
 
     /* ── Login Screen ───────────────────────────────────────────── */
     #dp-login {
@@ -102,12 +188,18 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 64px;
-      height: 64px;
-      background: linear-gradient(135deg, #002D56, #146E7A);
-      border-radius: 16px;
-      font-size: 28px;
+      width: 72px;
+      height: 72px;
+      background: radial-gradient(circle at 50% 45%, #0A2E52 0%, #001833 72%);
+      border-radius: 18px;
       margin-bottom: 14px;
+      box-shadow: 0 6px 18px rgba(0,24,51,0.35), inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .dp-login-logo-mark img {
+      width: 84%;
+      height: 84%;
+      display: block;
+      pointer-events: none;
     }
     .dp-login-logo-title {
       font-size: 24px;
@@ -168,15 +260,21 @@
       gap: 10px;
     }
     .dp-sidebar-logo-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #002D56, #146E7A);
-      border-radius: 9px;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle at 50% 45%, #0A2E52 0%, #001833 72%);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
       flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07);
+    }
+    .dp-sidebar-logo-icon img {
+      width: 82%;
+      height: 82%;
+      display: block;
+      pointer-events: none;
     }
     .dp-sidebar-logo-text {
       font-size: 15px;
@@ -214,10 +312,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 12px;
+      padding: 11px 12px;
+      min-height: var(--touch-min);      /* WCAG 2.5.5 touch target */
       border-radius: 8px;
       cursor: pointer;
-      color: rgba(255,255,255,.65);
+      color: rgba(255,255,255,.78);      /* raised from .65 — APCA on navy */
       font-size: 13.5px;
       font-weight: 500;
       transition: background .15s, color .15s;
@@ -225,12 +324,18 @@
       margin-bottom: 2px;
     }
     .dp-nav-item:hover {
-      background: rgba(255,255,255,.07);
-      color: rgba(255,255,255,.9);
+      background: rgba(255,255,255,.08);
+      color: #FFF;
+    }
+    .dp-nav-item:focus-visible {
+      outline: 2px solid var(--accent-mid);
+      outline-offset: 2px;
+      background: rgba(255,255,255,.10);
+      color: #FFF;
     }
     .dp-nav-item--active {
-      background: rgba(79, 70, 229, .25);
-      color: #a5b4fc;
+      background: rgba(26, 155, 170, .22);   /* accent-mid tinted, was indigo literal */
+      color: #FFF;
     }
     .dp-nav-item--active .dp-nav-icon { color: var(--accent-mid); }
     .dp-nav-icon {
@@ -387,11 +492,17 @@
       justify-content: center;
       gap: 6px;
       padding: 9px 18px;
+      min-height: var(--touch-min);     /* WCAG 2.5.5 — keeps thumb-reachable */
       border-radius: var(--radius-sm);
       font-size: 13.5px;
       font-weight: 600;
       transition: background .15s, box-shadow .15s, opacity .15s;
       white-space: nowrap;
+    }
+    .dp-btn:focus-visible {
+      outline: 2px solid var(--accent-mid);
+      outline-offset: 2px;
+      box-shadow: var(--focus-ring);
     }
     .dp-btn:disabled { opacity: .55; cursor: not-allowed; }
     .dp-btn--primary {
@@ -411,8 +522,8 @@
       color: #fff;
     }
     .dp-btn--danger:hover:not(:disabled) { background: #dc2626; }
-    .dp-btn--sm { padding: 7px 14px; font-size: 12.5px; }
-    .dp-btn--xs { padding: 4px 10px; font-size: 12px; }
+    .dp-btn--sm { padding: 7px 14px; font-size: 12.5px; min-height: 36px; }
+    .dp-btn--xs { padding: 4px 10px; font-size: 12px; min-height: 28px; }
     .dp-btn--full { width: 100%; }
 
     /* ── Forms ──────────────────────────────────────────────────── */
@@ -439,18 +550,22 @@
     .dp-required { color: var(--red); }
     .dp-input {
       padding: 9px 12px;
+      min-height: var(--touch-min);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm);
       background: var(--surface);
       color: var(--text);
-      font-size: 14px;
+      font-size: 16px;               /* 16px baseline prevents iOS zoom on focus */
       transition: border-color .15s, box-shadow .15s;
       outline: none;
       width: 100%;
     }
+    @media (min-width: 768px) {
+      .dp-input { font-size: 14px; }  /* keep desktop density */
+    }
     .dp-input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+      box-shadow: var(--focus-ring);
     }
     .dp-input:disabled { background: var(--surface2); color: var(--text-2); cursor: not-allowed; }
     .dp-textarea {
@@ -680,10 +795,19 @@
       gap: 10px;
     }
     .dp-home-item {
+      position: relative;
       border: 1px solid var(--border);
       border-radius: 12px;
       background: var(--bg);
       padding: 12px 14px;
+    }
+    .dp-home-item[role="button"] {
+      transition: border-color .15s, background .15s;
+    }
+    .dp-home-item[role="button"]:hover,
+    .dp-home-item[role="button"]:focus-visible {
+      border-color: var(--accent-mid);
+      background: var(--surface);
     }
     .dp-home-item strong {
       display: block;
@@ -693,6 +817,183 @@
     .dp-home-item small {
       font-size: 12px;
       color: var(--text-3);
+    }
+    /* Unread dot for "Recent Changes" items newer than last home visit (B2). */
+    .dp-home-item.dp-unread::before {
+      content: "";
+      position: absolute;
+      top: 14px; right: 12px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-mid);
+      box-shadow: 0 0 0 3px rgba(26,155,170,0.18);
+    }
+    .dp-home-item.dp-unread strong { padding-right: 16px; }
+
+    /* ── Home — Today strip (B1) ─────────────────────────────────
+       Horizontally scrollable row of stat chips anchored to the top of the
+       home screen. Each chip is a button: Enter/Space jumps to the target
+       section. Chips collapse to a single column on narrow mobile. */
+    .dp-today-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+    .dp-today-chip {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: var(--touch-min);
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, transform .1s;
+    }
+    .dp-today-chip:hover,
+    .dp-today-chip:focus-visible {
+      border-color: var(--accent-mid);
+      background: var(--accent-light);
+    }
+    .dp-today-chip:active { transform: scale(0.98); }
+    .dp-today-chip-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .dp-today-chip-value {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .dp-today-chip-value .dp-num {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .dp-today-chip-value .dp-suffix {
+      font-size: 12px;
+      color: var(--text-2);
+    }
+    .dp-today-chip--alert { border-left: 3px solid var(--red); }
+    .dp-today-chip--alert .dp-num { color: var(--red); }
+    .dp-today-chip--warn  { border-left: 3px solid var(--yellow); }
+    .dp-today-chip--warn  .dp-num { color: var(--yellow); }
+    .dp-today-chip--info  { border-left: 3px solid var(--accent); }
+
+    /* ── Home — My Pending Approvals (B5) ──────────────────────── */
+    .dp-approvals-strip {
+      display: grid;
+      gap: 10px;
+      margin: 0 0 16px;
+    }
+    .dp-approvals-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .dp-approvals-header::before {
+      content: "";
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 3px var(--red-light);
+    }
+    .dp-approval-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      min-height: var(--touch-min);
+      border: 1px solid var(--red-light);
+      border-left: 3px solid var(--red);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .dp-approval-card:hover,
+    .dp-approval-card:focus-visible {
+      background: var(--red-light);
+      border-color: var(--red);
+    }
+    .dp-approval-card strong {
+      display: block;
+      font-size: 13.5px;
+      margin-bottom: 2px;
+    }
+    .dp-approval-card small { color: var(--text-2); font-size: 12px; }
+    .dp-approval-card-cta {
+      flex-shrink: 0;
+      color: var(--red);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── Home — Inline task quick actions (B4) ─────────────────── */
+    .dp-task-quick-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .dp-task-quick-btn {
+      min-height: 36px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      cursor: pointer;
+    }
+    .dp-task-quick-btn:hover,
+    .dp-task-quick-btn:focus-visible {
+      border-color: var(--accent-mid);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+    .dp-task-quick-btn--done {
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .dp-task-quick-btn--done:hover,
+    .dp-task-quick-btn--done:focus-visible {
+      background: var(--green-light);
+    }
+
+    /* ── Home — Search results grouped by kind (B3) ────────────── */
+    .dp-search-group { margin-bottom: 14px; }
+    .dp-search-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 6px;
+      padding-left: 4px;
+    }
+    .dp-search-group-count {
+      margin-left: 6px;
+      color: var(--text-3);
+      font-weight: 500;
     }
     .dp-inline-search {
       display: flex;
@@ -1266,6 +1567,15 @@
       #dp-board-previews { grid-template-columns: 1fr; }
       .dp-account-layout { grid-template-columns: 1fr; }
       .dp-form-row--2col { flex-direction: column; }
+      .dp-today-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 520px) {
+      .dp-today-strip {
+        grid-template-columns: 1fr 1fr;
+      }
+      .dp-today-chip-value .dp-num { font-size: 18px; }
+      .dp-home-search-bar { flex-direction: column; }
+      .dp-home-search-bar .dp-btn { width: 100%; }
     }
     /* ── Mobile topbar + sidebar drawer ───────────────────────── */
     .dp-mobile-topbar {
@@ -1277,18 +1587,26 @@
       padding: 0 16px;
     }
     .dp-hamburger {
-      width: 36px; height: 36px; border-radius: 8px;
+      width: var(--touch-min); height: var(--touch-min);
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(255,255,255,.08); color: #fff; font-size: 20px;
+      background: rgba(255,255,255,.10); color: #fff; font-size: 20px;
       cursor: pointer; flex-shrink: 0; border: none;
     }
-    .dp-hamburger:hover { background: rgba(255,255,255,.15); }
+    .dp-hamburger:hover { background: rgba(255,255,255,.18); }
+    .dp-hamburger:focus-visible { outline: 2px solid var(--accent-mid); outline-offset: 2px; }
+    .dp-mobile-topbar-logo {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .dp-mobile-topbar-logo img { width: 100%; height: 100%; display: block; }
     .dp-mobile-topbar-title {
       font-size: 15px; font-weight: 700; color: #fff;
       letter-spacing: .5px;
     }
     .dp-mobile-topbar-tagline {
-      font-size: 10px; color: rgba(255,255,255,.4);
+      font-size: 10px; color: rgba(255,255,255,.55);
       letter-spacing: .3px;
     }
     .dp-sidebar-overlay {
@@ -2155,11 +2473,13 @@
 </head>
 <body>
 
+<a class="dp-skip-link" href="#dp-main">메인 콘텐츠로 건너뛰기 / Skip to main content</a>
+
 <!-- ══════════════ LOGIN ══════════════ -->
 <div id="dp-login">
   <div class="dp-login-card">
     <div class="dp-login-logo">
-      <div class="dp-login-logo-mark">&#127776;</div>
+      <div class="dp-login-logo-mark" aria-hidden="true"><img src="/img/dreampath/logo-mark.svg" alt="" /></div>
       <div class="dp-login-logo-title">DREAMPATH</div>
       <div class="dp-login-logo-sub">Project Management Portal</div>
     </div>
@@ -2202,19 +2522,20 @@
 
   <!-- Mobile Topbar -->
   <div class="dp-mobile-topbar" id="dp-mobile-topbar">
-    <button class="dp-hamburger" id="dp-hamburger" onclick="DP.toggleSidebar()">&#9776;</button>
+    <button class="dp-hamburger" id="dp-hamburger" aria-label="메뉴 열기 / Open menu" aria-controls="dp-sidebar" aria-expanded="false" onclick="DP.toggleSidebar()"><span aria-hidden="true">&#9776;</span></button>
+    <div class="dp-mobile-topbar-logo" aria-hidden="true"><img src="/img/dreampath/logo-mark.svg" alt="" /></div>
     <div>
       <div class="dp-mobile-topbar-title">DREAMPATH</div>
       <div class="dp-mobile-topbar-tagline">Project Portal</div>
     </div>
   </div>
-  <div class="dp-sidebar-overlay" id="dp-sidebar-overlay" onclick="DP.toggleSidebar()"></div>
+  <div class="dp-sidebar-overlay" id="dp-sidebar-overlay" aria-hidden="true" onclick="DP.toggleSidebar()"></div>
 
   <!-- Sidebar -->
-  <nav id="dp-sidebar">
+  <nav id="dp-sidebar" aria-label="주 메뉴 / Primary navigation">
     <div class="dp-sidebar-logo">
       <div class="dp-sidebar-logo-inner">
-        <div class="dp-sidebar-logo-icon">&#127776;</div>
+        <div class="dp-sidebar-logo-icon" aria-hidden="true"><img src="/img/dreampath/logo-mark.svg" alt="" /></div>
         <div>
           <div class="dp-sidebar-logo-text">DREAMPATH</div>
           <span class="dp-sidebar-logo-tagline">Project Portal</span>
@@ -2222,80 +2543,80 @@
       </div>
     </div>
 
-    <div class="dp-nav">
-      <div class="dp-nav-item dp-nav-item--active" data-section="home" onclick="DP.navigate('home')">
-        <span class="dp-nav-icon">&#127968;</span>
+    <div class="dp-nav" role="list">
+      <div class="dp-nav-item dp-nav-item--active" role="button" tabindex="0" data-section="home" aria-label="홈" onclick="DP.navigate('home')">
+        <span class="dp-nav-icon" aria-hidden="true">&#127968;</span>
         <span>Home</span>
       </div>
 
       <div class="dp-nav-section-label">Boards</div>
 
-      <div class="dp-nav-item" data-section="announcements" onclick="DP.navigate('announcements')">
-        <span class="dp-nav-icon">&#128226;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="announcements" aria-label="공지사항" onclick="DP.navigate('announcements')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128226;</span>
         <span>Announcements</span>
       </div>
-      <div class="dp-nav-item" data-section="documents" onclick="DP.navigate('documents')">
-        <span class="dp-nav-icon">&#128196;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="documents" aria-label="프로젝트 문서" onclick="DP.navigate('documents')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128196;</span>
         <span>Project Documents</span>
       </div>
-      <div class="dp-nav-item" data-section="minutes" onclick="DP.navigate('minutes')">
-        <span class="dp-nav-icon">&#128221;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="minutes" aria-label="회의록" onclick="DP.navigate('minutes')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128221;</span>
         <span>Meeting Minutes</span>
       </div>
-      <div class="dp-nav-item" data-section="tasks" onclick="DP.navigate('tasks')">
-        <span class="dp-nav-icon">&#9989;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="tasks" aria-label="할 일" onclick="DP.navigate('tasks')">
+        <span class="dp-nav-icon" aria-hidden="true">&#9989;</span>
         <span>Tasks</span>
       </div>
-      <div class="dp-nav-item" data-section="notes" onclick="DP.navigate('notes')">
-        <span class="dp-nav-icon">&#128203;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="notes" aria-label="메모와 이슈" onclick="DP.navigate('notes')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128203;</span>
         <span>Notes &amp; Issues</span>
       </div>
 
       <div class="dp-nav-section-label dp-team-nav-label">Team Boards</div>
 
-      <div class="dp-nav-item dp-team-nav-item dp-hidden" data-section="team_korea" data-team="korea" onclick="DP.navigate('team_korea')">
-        <span class="dp-nav-icon">&#127984;</span>
+      <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_korea" data-team="korea" aria-label="팀 코리아" onclick="DP.navigate('team_korea')">
+        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
         <span>Team Korea</span>
       </div>
-      <div class="dp-nav-item dp-team-nav-item dp-hidden" data-section="team_nepal" data-team="nepal" onclick="DP.navigate('team_nepal')">
-        <span class="dp-nav-icon">&#127984;</span>
+      <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_nepal" data-team="nepal" aria-label="팀 네팔" onclick="DP.navigate('team_nepal')">
+        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
         <span>Team Nepal</span>
       </div>
-      <div class="dp-nav-item dp-team-nav-item dp-hidden" data-section="team_indonesia" data-team="indonesia" onclick="DP.navigate('team_indonesia')">
-        <span class="dp-nav-icon">&#127984;</span>
+      <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_indonesia" data-team="indonesia" aria-label="팀 인도네시아" onclick="DP.navigate('team_indonesia')">
+        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
         <span>Team Indonesia</span>
       </div>
-      <div class="dp-nav-item dp-team-nav-item dp-hidden" data-section="team_pakistan" data-team="pakistan" onclick="DP.navigate('team_pakistan')">
-        <span class="dp-nav-icon">&#127984;</span>
+      <div class="dp-nav-item dp-team-nav-item dp-hidden" role="button" tabindex="0" data-section="team_pakistan" data-team="pakistan" aria-label="팀 파키스탄" onclick="DP.navigate('team_pakistan')">
+        <span class="dp-nav-icon" aria-hidden="true">&#127984;</span>
         <span>Team Pakistan</span>
       </div>
 
       <hr class="dp-nav-sep dp-team-nav-label" />
 
-      <div class="dp-nav-item" data-section="contacts" onclick="DP.navigate('contacts')">
-        <span class="dp-nav-icon">&#128222;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="contacts" aria-label="프로젝트 팀 연락처" onclick="DP.navigate('contacts')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128222;</span>
         <span>Project Team Contacts</span>
       </div>
 
       <hr class="dp-nav-sep" />
 
-      <div class="dp-nav-item dp-admin-only" data-section="users" onclick="DP.navigate('users')">
-        <span class="dp-nav-icon">&#128101;</span>
+      <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="users" aria-label="사용자 관리" onclick="DP.navigate('users')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128101;</span>
         <span>User Management</span>
       </div>
 
-      <div class="dp-nav-item dp-admin-only" data-section="devrules" onclick="DP.navigate('devrules')">
-        <span class="dp-nav-icon">&#128196;</span>
+      <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="devrules" aria-label="개발 규칙" onclick="DP.navigate('devrules')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128196;</span>
         <span>Dev Rules</span>
       </div>
 
-      <div class="dp-nav-item dp-admin-only" data-section="settings" onclick="DP.navigate('settings')">
-        <span class="dp-nav-icon">&#9881;</span>
+      <div class="dp-nav-item dp-admin-only" role="button" tabindex="0" data-section="settings" aria-label="설정" onclick="DP.navigate('settings')">
+        <span class="dp-nav-icon" aria-hidden="true">&#9881;</span>
         <span>Settings</span>
       </div>
 
-      <div class="dp-nav-item" data-section="account" onclick="DP.navigate('account')">
-        <span class="dp-nav-icon">&#128100;</span>
+      <div class="dp-nav-item" role="button" tabindex="0" data-section="account" aria-label="내 계정" onclick="DP.navigate('account')">
+        <span class="dp-nav-icon" aria-hidden="true">&#128100;</span>
         <span>My Account</span>
       </div>
     </div>
@@ -2303,18 +2624,18 @@
     <div class="dp-sidebar-clock">
       <div class="dp-session-timer-row" id="dp-session-timer-row">
         <span class="dp-session-timer-label">Session</span>
-        <span class="dp-session-timer-value" id="dp-session-timer">--:--</span>
-        <button class="dp-session-extend-btn" id="dp-session-extend-btn" onclick="DP.extendSession()" title="Extend session by 1 hour / 세션 1시간 연장" style="display:none">+1h</button>
+        <span class="dp-session-timer-value" id="dp-session-timer" aria-live="polite">--:--</span>
+        <button class="dp-session-extend-btn" id="dp-session-extend-btn" onclick="DP.extendSession()" aria-label="세션 1시간 연장" title="Extend session by 1 hour / 세션 1시간 연장" style="display:none">+1h</button>
       </div>
       <div class="dp-clock-row"><span class="dp-clock-label">KST</span><span id="dp-clock-kst">--:--:--</span></div>
       <div class="dp-clock-row"><span class="dp-clock-label">Local</span><span id="dp-clock-local">--:--:--</span></div>
     </div>
     <div class="dp-sidebar-footer">
       <div class="dp-sidebar-user">
-        <div class="dp-user-avatar" id="dp-user-avatar">JD</div>
+        <div class="dp-user-avatar" id="dp-user-avatar" aria-hidden="true">JD</div>
         <span class="dp-sidebar-user-name" id="dp-user-name">Loading...</span>
       </div>
-      <button class="dp-btn-logout" onclick="DP.logout()">Sign Out</button>
+      <button class="dp-btn-logout" onclick="DP.logout()" aria-label="로그아웃">Sign Out</button>
     </div>
   </nav>
 
@@ -2323,28 +2644,35 @@
 
     <!-- Home -->
     <div id="dp-section-home" class="dp-section">
-      <div id="dp-calendar">
+      <!-- B1: Today/Week stat strip. Populated by renderTodaySummary(). -->
+      <div id="dp-today-strip" class="dp-today-strip" role="region" aria-label="오늘·이번주 요약"></div>
+
+      <!-- B5: My pending approvals (only rendered when non-empty). -->
+      <div id="dp-approvals-strip" class="dp-approvals-strip dp-hidden" role="region" aria-label="내 승인 대기 목록"></div>
+
+      <div id="dp-calendar" aria-label="월별 일정 캘린더">
         <div style="padding:40px;text-align:center;color:var(--text-3)">Loading calendar...</div>
       </div>
 
-      <div class="dp-home-search-bar">
+      <div class="dp-home-search-bar" role="search">
+        <label for="dp-home-search-input" class="dp-sr-only">Dreampath 검색</label>
         <input id="dp-home-search-input" class="dp-input" type="search" placeholder="Search posts, tasks, notes, comments…" />
         <button id="dp-home-search-btn" class="dp-btn dp-btn--primary" type="button">Search</button>
       </div>
-      <div id="dp-home-search-results"></div>
+      <div id="dp-home-search-results" aria-live="polite"></div>
 
       <div class="dp-home-grid">
         <div class="dp-home-card">
           <h3>Alerts & My Tasks</h3>
-          <div id="dp-home-alerts"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
+          <div id="dp-home-alerts" aria-live="polite"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
         </div>
         <div class="dp-home-card">
           <h3>Recent Changes</h3>
-          <div id="dp-home-recent"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
+          <div id="dp-home-recent" aria-live="polite"><div style="color:var(--text-3);font-size:13px">Loading...</div></div>
         </div>
       </div>
 
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-3);margin-bottom:14px">Recent Activity</div>
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-2);margin-bottom:14px">Recent Activity</div>
       <div id="dp-board-previews">
         <div id="dp-preview-announcements"></div>
         <div id="dp-preview-documents"></div>
