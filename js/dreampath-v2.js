@@ -15,6 +15,15 @@
 // 참고: DREAMPATH.md §10.
 // =====================================================================
 
+// [DIAG 2026-04-24] Temporary boot probe — if the script parsed and runs,
+// the page title changes to "[v2] …" and an attribute is stamped on <html>.
+// If the tab still shows "DreamPath PMO" and <html> lacks the attr, the
+// script itself never executed (CSP block / network error / parse error).
+try {
+  document.title = '[v2 boot] ' + document.title;
+  document.documentElement.setAttribute('data-v2-boot', 'parse');
+} catch (_) {}
+
 const DP = (() => {
   'use strict';
 
@@ -1326,7 +1335,32 @@ const DP = (() => {
   };
 })();
 
-document.addEventListener('DOMContentLoaded', () => DP.init());
+// [DIAG 2026-04-24] bootstrap with visible error surfacing so users can
+// report blank-page failures. If init throws, the error is painted into
+// dp-root directly instead of silently leaving the page empty.
+function _dpBoot() {
+  try {
+    document.documentElement.setAttribute('data-v2-boot', 'init-start');
+    DP.init();
+    document.documentElement.setAttribute('data-v2-boot', 'init-done');
+    document.title = document.title.replace(/^\[v2 boot\]\s*/, '[v2 ok] ');
+  } catch (err) {
+    document.documentElement.setAttribute('data-v2-boot', 'init-error');
+    document.title = '[v2 ERROR] ' + (err && err.message || err);
+    const root = document.getElementById('dp-root');
+    if (root) {
+      root.innerHTML = '<pre style="padding:24px;font:13px monospace;color:#B3261E;white-space:pre-wrap;max-width:900px;margin:40px auto;background:#FFF;border:1px solid #E4E6E8;border-radius:10px;">v2 boot error — ' +
+        String(err && err.message || err) + '\n\n' +
+        String(err && err.stack || '').split('\n').slice(0, 12).join('\n') +
+        '</pre>';
+    }
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _dpBoot);
+} else {
+  _dpBoot();
+}
 
 // Expose for inline onclick
 window.DP = DP;
