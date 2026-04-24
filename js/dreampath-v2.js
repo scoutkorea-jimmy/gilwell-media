@@ -588,21 +588,42 @@ const DP = (() => {
     return dept ? role + ' · ' + dept : role;
   }
 
-  // Date helpers
+  // Date helpers. SQLite's datetime('now') stores UTC in "YYYY-MM-DD HH:MM:SS"
+  // format with NO timezone indicator. Passing that string to new Date()
+  // interprets it as LOCAL, which silently shifts every stored timestamp by
+  // the user's offset (e.g. "10:30 UTC" rendered as "10:30 KST" = wrong by
+  // 9 hours). We normalize here: if the string looks like a DB timestamp,
+  // we append 'Z' before parsing so the Date carries real UTC instant, then
+  // let the browser format it in the local timezone (KST in Korea, etc.).
+  function _toDate(d) {
+    if (!d) return null;
+    if (d instanceof Date) return d;
+    let s = String(d).trim();
+    if (!s) return null;
+    // Already ISO-8601 with timezone? Keep as-is.
+    const hasTz = /Z$|[+-]\d{2}:?\d{2}$/.test(s);
+    if (!hasTz) {
+      // Convert "YYYY-MM-DD HH:MM:SS" → "YYYY-MM-DDTHH:MM:SSZ" (UTC).
+      s = s.replace(' ', 'T');
+      if (!/[Zz+]|[+-]\d\d:?\d\d$/.test(s)) s += 'Z';
+    }
+    const dt = new Date(s);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
   const fmtDate = (d) => {
-    if (!d) return '';
-    const dt = typeof d === 'string' ? new Date(d) : d;
+    const dt = _toDate(d);
+    if (!dt) return '';
     return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
   };
   const _MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const fmtDateShort = (d) => {
-    if (!d) return '';
-    const dt = typeof d === 'string' ? new Date(d) : d;
+    const dt = _toDate(d);
+    if (!dt) return '';
     return _MONTH_SHORT[dt.getMonth()] + ' ' + dt.getDate();
   };
   const fmtTime = (iso) => {
-    if (!iso) return '';
-    const dt = new Date(iso);
+    const dt = _toDate(iso);
+    if (!dt) return '';
     return fmtDate(dt) + ' ' + String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
   };
   const todayISO = () => fmtDate(new Date());
@@ -1544,9 +1565,15 @@ const DP = (() => {
       panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No posts yet.</div>';
       return panel;
     }
-    const ordered = posts.slice().sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
+    // Minutes never uses pin/notice — sort by time only, and skip the NOTICE
+    // badge entirely. Other boards keep the pin-first ordering.
+    const isMinutesPreview = board === 'minutes';
+    const ordered = isMinutesPreview
+      ? posts.slice()
+      : posts.slice().sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
     const body = ordered.slice(0, 3).map(p => {
-      const pinCls = p.pinned ? ' dp-post-pinned' : '';
+      const showPin = !isMinutesPreview && p.pinned;
+      const pinCls = showPin ? ' dp-post-pinned' : '';
       const statusTag = (board === 'minutes' && p.approval_status)
         ? `<span class="dp-tag ${p.approval_status === 'approved' ? 'ok' : p.approval_status === 'pending' ? 'warn' : p.approval_status === 'rejected' ? 'alert' : 'neutral'}" style="margin-left:6px">${esc(p.approval_status)}</span>`
         : '';
@@ -1555,7 +1582,7 @@ const DP = (() => {
                 onclick="DP.viewPost('${esc(board)}', ${Number(p.id)})"
                 aria-label="${esc(p.title)}">
           <div class="t">
-            ${p.pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : ''}
+            ${showPin ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : ''}
             <span>${esc(p.title)}</span>${statusTag}
           </div>
           <div class="meta">
@@ -1863,9 +1890,11 @@ const DP = (() => {
       myApprovalMap = new Map((mineRes && mineRes.approvals || []).map(a => [Number(a.post_id), a]));
     }
 
+    const canManageBoard = (state.user && state.user.role === 'admin') && !isMinutes;
     const headers = isMinutes
       ? '<th>Title</th><th style="width:140px">Author</th><th style="width:130px">Approval</th><th style="width:180px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
-      : '<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
+      : ('<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>'
+          + (canManageBoard ? '<th style="width:120px;text-align:right">Actions</th>' : ''));
 
     // [CASE STUDY — unified threading via parent_post_id + reply_to_id]
     // Two kinds of children are nested under a parent with a ㄴ prefix:
@@ -1897,9 +1926,12 @@ const DP = (() => {
       roots.sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
     }
 
+    const isAdmin = state.user && state.user.role === 'admin';
     function renderPostRow(p, depth) {
       const pinned = !isMinutes && !!p.pinned;
+      const hidden = !!p.is_hidden;          // only present for admin; others never see the row
       const notice = pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : '';
+      const blindedTag = hidden ? '<span class="dp-tag neutral" style="margin-left:6px;opacity:0.8">Blinded</span>' : '';
       const ts = fmtTime(p.updated_at || p.created_at);
       const indent = depth > 0
         ? `<span style="display:inline-block;width:${depth * 18}px"></span><span style="color:var(--text-3);margin-right:6px;font-family:var(--font-mono)">ㄴ</span>`
@@ -1910,11 +1942,30 @@ const DP = (() => {
             ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>`
             : ` <span class="dp-tag info" style="margin-left:6px">reply</span>`)
         : '';
-      const titleCell = `${indent}${notice}${esc(p.title)}${childTag}`;
+      const titleCell = `${indent}${notice}${esc(p.title)}${blindedTag}${childTag}`;
 
       // Pin class only applies to top-level rows — a reply under a pinned
       // notice should not itself be tinted navy.
+      // Hidden posts (admin-only view) override with grey styling so it's
+      // immediately obvious they're blinded from everyone else.
       const pinClass = (pinned && depth === 0) ? 'dp-row-pinned' : '';
+      const hiddenClass = hidden ? 'dp-row-hidden' : '';
+
+      // Admin-only row actions: move to tab + hide/unhide. Non-admins don't
+      // see these controls (server also rejects their PUT is_hidden).
+      const canManage = isAdmin && !isMinutes;
+      const manageCell = canManage ? `
+        <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm dp-row-action"
+                title="${hidden ? 'Unhide for all' : 'Hide (admin only)'}"
+                onclick="event.stopPropagation();DP._togglePostHidden(${Number(p.id)}, ${hidden ? 0 : 1})">
+          ${hidden ? '👁' : '🚫'}
+        </button>
+        <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm dp-row-action"
+                title="Move to another tab"
+                onclick="event.stopPropagation();DP._openMovePostMenu(${Number(p.id)}, '${esc(key)}', event.currentTarget)">
+          ⇄
+        </button>
+      ` : '';
 
       if (isMinutes) {
         const s = p.approval_status || 'draft';
@@ -1922,7 +1973,7 @@ const DP = (() => {
         const statusCls = s === 'approved' ? 'dp-row-approved'
                        : s === 'pending'  ? 'dp-row-pending'
                        : s === 'rejected' ? 'dp-row-rejected' : '';
-        const rowClass = [pinClass, statusCls].filter(Boolean).join(' ');
+        const rowClass = [pinClass, statusCls, hiddenClass].filter(Boolean).join(' ');
         // Three-state "Your vote" cell:
         //   a) I am a pending approver on this post → render Approve/Reject buttons
         //   b) I voted already (approved/rejected) → show my result chip
@@ -1951,12 +2002,13 @@ const DP = (() => {
           <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
-      return `<tr class="${pinClass}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
+      return `<tr class="${[pinClass, hiddenClass].filter(Boolean).join(' ')}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
         <td>${titleCell}</td>
         <td>${esc(p.author_name || '')}</td>
         <td class="mono">${p.comment_count || 0}</td>
         <td class="mono">${p.view_count || 0}</td>
         <td class="mono">${esc(ts)}</td>
+        ${canManage ? `<td style="white-space:nowrap;text-align:right">${manageCell}</td>` : ''}
       </tr>`;
     }
 
@@ -1996,6 +2048,48 @@ const DP = (() => {
     state.boardTab[boardKey] = tabSlug || '';
     // Re-navigate to the same page so _renderBoard fires with the new state.
     navigate(state.page);
+  }
+
+  // Admin row action: hide or unhide a post. Hidden posts stay visible to
+  // admins (greyed) but disappear from everyone else's list / detail view.
+  // Server enforces the same rule — client gate is just UX.
+  async function _togglePostHidden(postId, hiddenFlag) {
+    const label = hiddenFlag ? 'Hide' : 'Unhide';
+    if (hiddenFlag && !confirm('Hide this post? It will disappear for everyone except admins.')) return;
+    const res = await api('PUT', 'posts?id=' + Number(postId), { is_hidden: hiddenFlag ? 1 : 0, edit_note: label });
+    if (res) { toast(label + 'd', 'ok'); navigate(state.page); }
+  }
+
+  // Admin row action: move a single post between tabs within the same board.
+  // Cross-board moves are forbidden by the server. We reuse _openModal for a
+  // simple picker rather than a custom popover.
+  async function _openMovePostMenu(postId, boardKey /*, anchorEl */) {
+    const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(boardKey)).catch(() => null);
+    const tabs = (res && res.tabs) || [];
+    const opts = ['<option value="">Default (no tab)</option>']
+      .concat(tabs.map(t => `<option value="${esc(t.slug)}">${esc(t.title)}</option>`))
+      .join('');
+    _openModal(
+      'Move post to a tab',
+      `
+      <p style="margin-top:0;color:var(--text-3);font-size:12px">
+        Moving a post is scoped to the current board. Cross-board moves are blocked.
+      </p>
+      <div class="dp-field">
+        <label for="dp-move-tab">Target tab</label>
+        <select class="dp-select" id="dp-move-tab">${opts}</select>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._movePostConfirm(${Number(postId)})">Move</button>`
+    );
+  }
+  async function _movePostConfirm(postId) {
+    const sel = document.getElementById('dp-move-tab');
+    const slug = sel ? sel.value : '';
+    const body = { tab_slug: slug || null, edit_note: 'Moved to ' + (slug || 'Default') };
+    const data = await api('PUT', 'posts?id=' + Number(postId), body);
+    if (data) { toast('Post moved', 'ok'); _closeModal(); navigate(state.page); }
   }
 
   // Drag-to-reorder state — tracks the slug being dragged. Drop handler
@@ -5433,7 +5527,7 @@ const DP = (() => {
   // COMMAND PALETTE (⌘K)
   // =========================================================
   const CMD_ITEMS = [
-    { group: 'Suggested', label: 'New task',                    shortcut: 'N',   run: () => { toast('New task'); } },
+    { group: 'Suggested', label: 'New task',                    shortcut: 'N',   run: () => _openTaskEditor() },
     { group: 'Suggested', label: "Open today's minutes",        shortcut: 'M T', run: () => { navigate('minutes'); } },
     { group: 'Suggested', label: 'Approve pending requests (3)',shortcut: 'G A', run: () => { navigate('home'); } },
     { group: 'Navigation', label: 'Go to Home',         shortcut: 'G H', run: () => navigate('home') },
@@ -5601,7 +5695,9 @@ const DP = (() => {
   function openCreate() {
     if (state.page === 'minutes') _openPostEditor('minutes');
     else if (state.page === 'documents') _openPostEditor('documents');
-    else if (state.page === 'tasks') toast('New task — Phase 3');
+    else if (state.page === 'tasks') _openTaskEditor();
+    else if (state.page === 'notes') _openNoteEditor();
+    else if (state.page === 'calendar') _openEventEditor && _openEventEditor();
     else _openPostEditor('notice');
   }
   // -------------------------- Notifications --------------------------
@@ -5957,6 +6053,7 @@ const DP = (() => {
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
+    _togglePostHidden, _openMovePostMenu, _movePostConfirm,
     _requestCloseModal, _draftPromptCancel, _draftPromptDiscard, _draftPromptSave,
     _notifMarkRead, _notifMarkAllRead, _notifGo,
     _openTaskEditor, _saveNewTask, _taskTransition,

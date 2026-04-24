@@ -745,6 +745,56 @@ case-study 주석을 남깁니다. 그 코드를 고치는 사람이 반드시 �
 
 ---
 
+## Section 21 — 📝 Version Logging Discipline (NEW · 2026-04-24)
+
+> [!important] Every deploy must leave a detailed trail in `dp_versions`.
+> "Fix CSS" / "minor tweak" entries are disallowed. A version row has to
+> read like a patch-note that the owner could show to a stakeholder.
+
+### 21.1 Rule
+
+1. **Every `./deploy.sh` run creates a `dp_versions` row**. No silent deploys.
+   Use `--skip-version` only when backfilling or re-deploying unchanged code.
+2. **Description must be actionable + specific.** Banned openings:
+   - "Minor fixes", "polish", "small updates", "refactor"
+   - Anything shorter than one clause
+3. **Format**: `summary line\n- change 1\n- change 2\n- ...`
+   - First line = owner-readable summary (≤ 160 chars)
+   - Bullets = concrete changes. Include file paths / module names where it
+     clarifies scope. Numbers beat adjectives ("4 new tabs" > "added tabs").
+4. **`deploy.sh` auto-appends git commits** since the last version to the
+   description as additional bullets. Do NOT strip those — they are the
+   authoritative change list for anyone reviewing the release later.
+5. **Bumps by change type**:
+   - `feature` → `bbb` bumps, `cc` resets to 00. New capability, new UI,
+     new endpoint, new DB column.
+   - `fix` → `cc` bumps. Bug fix, copy tweak, accessibility repair.
+6. **Backfill** — if a deploy slipped without a version row, land a backfill
+   PR that recreates the row via `wrangler d1 execute ... INSERT`. Don't
+   leave gaps.
+
+### 21.2 Checklist (AI / operator self-check before `deploy.sh`)
+
+- [ ] Is every code change I'm shipping committed to `origin/main`?
+      (deploy.sh can only auto-scrape commits that are pushed; stash
+      changes won't show up in the version description.)
+- [ ] Does my summary line tell a product-owner what changed in under
+      15 words?
+- [ ] If this is a bug fix, does at least one bullet name the root cause
+      + the mitigation? (e.g. "dp_notifications schema collision; drop +
+      recreate in migration 063")
+- [ ] If I introduced a new API surface or DB migration, does a bullet
+      call that out by filename?
+
+### 21.3 Why this exists
+
+Several 2026-04 deploys went out as `./deploy.sh fix "minor"` which made
+post-mortems impossible — nobody could tell which release broke what.
+The new rule + auto-appended commit bullets should make the `dp_versions`
+table self-explanatory to anyone opening the Versions page in /dreampath.
+
+---
+
 ## Section 20 — 🎨 Dark Mode & Accessibility Design Rules (NEW · 2026-04-24)
 
 **배경**: v2 다크 모드 첫 릴리스 (v01.045.00) 직후 일부 게시판 제목이 배경에 묻히고

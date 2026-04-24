@@ -82,10 +82,16 @@ export async function onRequestGet({ request, env, data }) {
     await env.DB.prepare(`UPDATE dp_board_posts SET view_count = COALESCE(view_count, 0) + 1 WHERE id = ?`).bind(id).run();
     const post = await env.DB.prepare(
       `SELECT id, board, tab_slug, title, content, file_url, file_name,
-              author_id, author_name, pinned, linked_event_id, approver_name, approval_status, view_count, created_at, updated_at
+              author_id, author_name, pinned, linked_event_id, approver_name, approval_status, view_count, is_hidden, created_at, updated_at
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
+
+    // Hidden posts are invisible to everyone except admins — return 404 so
+    // non-admins can't even tell the post exists.
+    if (post.is_hidden && data.dpUser.role !== 'admin') {
+      return json({ error: 'Post not found.' }, 404);
+    }
 
     // Preset scope check — view:<scope> for the post's board must be granted.
     if (!hasPerm(data.dpUser, boardScope(post.board, 'view'))) {
@@ -134,44 +140,53 @@ export async function onRequestGet({ request, env, data }) {
   // ── List posts ─────────────────────────────────────────────────
   if (board && !VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
+  // Admins see hidden rows (greyed in UI), non-admins don't.
+  const isAdmin = data.dpUser.role === 'admin' ? 1 : 0;
+
   let rows;
   if (board) {
     // `tab=<slug>` scopes results to a single sub-tab. `tab=__none` filters to
     // legacy posts with NULL tab_slug (implicit "All" bucket). Empty / missing
     // tab returns every post regardless of tab.
+    // All three branches OR in a `(is_hidden = 0 OR isAdmin = 1)` guard so
+    // hidden posts are server-filtered for non-admins.
     if (tab === '__none') {
       rows = await env.DB.prepare(
         `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
                 (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
            FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug IS NULL
+             AND (p.is_hidden = 0 OR ? = 1)
           ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, limit).all();
+      ).bind(board, isAdmin, limit).all();
     } else if (tab) {
       rows = await env.DB.prepare(
         `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
                 (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
            FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug = ?
+             AND (p.is_hidden = 0 OR ? = 1)
           ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, tab, limit).all();
+      ).bind(board, tab, isAdmin, limit).all();
     } else {
       rows = await env.DB.prepare(
         `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
-                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
                 (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
            FROM dp_board_posts p WHERE p.board = ?
+             AND (p.is_hidden = 0 OR ? = 1)
           ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-      ).bind(board, limit).all();
+      ).bind(board, isAdmin, limit).all();
     }
   } else {
     rows = await env.DB.prepare(
       `SELECT p.id, p.board, p.title, p.content, p.file_url, p.file_name,
-              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.is_hidden, p.created_at, p.updated_at,
               (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
          FROM dp_board_posts p
+        WHERE (p.is_hidden = 0 OR ? = 1)
         ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-    ).bind(limit).all();
+    ).bind(isAdmin, limit).all();
   }
   return json({ posts: rows.results || [] });
 }
@@ -260,6 +275,11 @@ export async function onRequestPost({ request, env, data }) {
     if (parent) version_number = (parent.version_number || 1) + 1;
   }
 
+  // Minutes never pins — 2026-04-24 owner spec says Minutes uses approver
+  // notifications instead of the Notice/Pin concept. Force to 0 regardless
+  // of what the client sends.
+  const safePinned = (board === 'minutes') ? 0 : (pinned ? 1 : 0);
+
   const result = await env.DB.prepare(
     `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status, parent_post_id, version_number, reply_to_id, tab_slug)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -269,7 +289,7 @@ export async function onRequestPost({ request, env, data }) {
     content ? content.trim().slice(0, 50000) : null,
     data.dpUser.uid,
     data.dpUser.name,
-    pinned ? 1 : 0,
+    safePinned,
     safeLinkedEventId,
     approver_name ? approver_name.trim().slice(0, 100) : null,
     safeApprovalStatus,
@@ -413,6 +433,11 @@ export async function onRequestPut({ request, env, data }) {
   if (body.approval_status !== undefined) {
     const safeStatus = ['pending','approved','rejected'].includes(body.approval_status) ? body.approval_status : null;
     if (safeStatus) { fields.push('approval_status = ?'); values.push(safeStatus); }
+  }
+  // Hide (blind) toggle — admin only. Non-admin PUT with is_hidden silently
+  // drops the field so the author can still edit content without elevating.
+  if (body.is_hidden !== undefined && data.dpUser.role === 'admin') {
+    fields.push('is_hidden = ?'); values.push(body.is_hidden ? 1 : 0);
   }
   // Tab move — only within the same board. null clears the tab (post falls
   // back to the implicit "All" bucket). Cross-board moves are refused.
