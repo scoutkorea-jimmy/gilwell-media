@@ -420,7 +420,12 @@ button { cursor: pointer; }
 .dp-btn-secondary:hover { background: var(--g-100); }
 .dp-btn-ghost { background: transparent; color: var(--text-2); }
 .dp-btn-ghost:hover { background: var(--g-100); color: var(--text); }
-.dp-btn-danger { background: var(--surface); color: var(--alert); border-color: #F5C0BA; }
+/* Danger button border is a tinted alert color — derive from --alert with
+   low opacity so it adapts to whichever alert hue the current theme uses
+   instead of locking to a light-mode-only pink literal. */
+.dp-btn-danger { background: var(--surface); color: var(--alert); border-color: rgba(180,35,24,0.35); }
+html[data-theme="dark"] .dp-btn-danger,
+html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45); }
 .dp-btn-danger:hover { background: var(--alert-bg); }
 .dp-btn-sm { height: var(--row-compact); padding: 0 8px; font-size: var(--fs-12); }
 .dp-btn-ico {
@@ -923,6 +928,7 @@ button { cursor: pointer; }
   width: 320px;
 }
 .dp-crop-ctrls input[type="range"] { flex: 1; accent-color: var(--navy-600); }
+.dp-crop-ctrls input[type="range"]:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-sm); }
 
 /* Form field */
 .dp-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
@@ -945,7 +951,9 @@ button { cursor: pointer; }
 .dp-empty .mark {
   width: 48px; height: 48px; margin: 0 auto 12px;
   border: 1px dashed var(--g-300);
-  display: grid; place-items: center; color: var(--navy); border-radius: var(--r-sm);
+  /* Theme-aware emphasis so the icon remains visible under both themes;
+     var(--navy) was invisible on dark panel bg. */
+  display: grid; place-items: center; color: var(--accent); border-radius: var(--r-sm);
 }
 .dp-empty .mark .ico {
   width: 20px; height: 20px; background-color: currentColor;
@@ -1106,7 +1114,9 @@ button { cursor: pointer; }
 .dp-cal-day--empty { background: var(--g-100); cursor: default; }
 .dp-cal-day--empty:hover { background: var(--g-100); }
 .dp-cal-day--today { background: var(--info-bg); }
-.dp-cal-day--today:hover { background: #DDE9F5; }
+/* Today hover uses filter so the tone stays consistent across themes —
+   #DDE9F5 was a light-only literal invisible in dark. */
+.dp-cal-day--today:hover { background: var(--info-bg); filter: brightness(1.05); }
 .dp-cal-day--has .dp-cal-dnum { color: var(--navy-600); font-weight: 600; }
 .dp-cal-dnum { font-size: var(--fs-12); color: var(--text-2); font-weight: 500; font-family: var(--font-mono); }
 .dp-cal-day--today .dp-cal-dnum {
@@ -1167,6 +1177,7 @@ button { cursor: pointer; }
 }
 .dp-te-editor:focus-within { border-color: var(--navy-600); box-shadow: 0 0 0 1px var(--navy-600); }
 .dp-te-editor .ProseMirror { outline: none; min-height: 190px; }
+.dp-te-editor:focus-within { box-shadow: var(--focus-ring); border-radius: var(--r-sm); }
 .dp-te-editor .ProseMirror p { margin: 0 0 8px; }
 .dp-te-editor .ProseMirror h2 { font-size: var(--fs-18); font-weight: 600; margin: 14px 0 8px; }
 .dp-te-editor .ProseMirror h3 { font-size: var(--fs-16); font-weight: 600; margin: 12px 0 6px; color: var(--text-2); }
@@ -1235,7 +1246,9 @@ button { cursor: pointer; }
   display: flex; flex-direction: column; gap: 8px;
 }
 .dp-toast {
-  background: var(--text); color: #fff;
+  /* Dark neutral surface works in both themes (was var(--text), which flips
+     to white in dark → white-on-white toast bug). */
+  background: #111827; color: #FFFFFF;
   padding: 10px 14px; font-size: var(--fs-13); border-radius: var(--r-sm);
   box-shadow: var(--shadow-pop);
   animation: tin var(--dur-moderate) var(--ease-decel);
