@@ -58,6 +58,7 @@ export async function onRequestGet({ request, env, data }) {
   const url   = new URL(request.url);
   const id    = parseInt(url.searchParams.get('id') || '', 10);
   const board = url.searchParams.get('board');
+  const tab   = url.searchParams.get('tab');   // optional, only meaningful with board
   const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '20', 10)));
 
   const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
@@ -80,7 +81,7 @@ export async function onRequestGet({ request, env, data }) {
     // Increment view count and fetch post in one go
     await env.DB.prepare(`UPDATE dp_board_posts SET view_count = COALESCE(view_count, 0) + 1 WHERE id = ?`).bind(id).run();
     const post = await env.DB.prepare(
-      `SELECT id, board, title, content, file_url, file_name,
+      `SELECT id, board, tab_slug, title, content, file_url, file_name,
               author_id, author_name, pinned, linked_event_id, approver_name, approval_status, view_count, created_at, updated_at
          FROM dp_board_posts WHERE id = ?`
     ).bind(id).first();
@@ -135,13 +136,34 @@ export async function onRequestGet({ request, env, data }) {
 
   let rows;
   if (board) {
-    rows = await env.DB.prepare(
-      `SELECT p.id, p.board, p.title, p.content, p.file_url, p.file_name,
-              p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
-              (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
-         FROM dp_board_posts p WHERE p.board = ?
-        ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
-    ).bind(board, limit).all();
+    // `tab=<slug>` scopes results to a single sub-tab. `tab=__none` filters to
+    // legacy posts with NULL tab_slug (implicit "All" bucket). Empty / missing
+    // tab returns every post regardless of tab.
+    if (tab === '__none') {
+      rows = await env.DB.prepare(
+        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
+           FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug IS NULL
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
+      ).bind(board, limit).all();
+    } else if (tab) {
+      rows = await env.DB.prepare(
+        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
+           FROM dp_board_posts p WHERE p.board = ? AND p.tab_slug = ?
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
+      ).bind(board, tab, limit).all();
+    } else {
+      rows = await env.DB.prepare(
+        `SELECT p.id, p.board, p.tab_slug, p.title, p.content, p.file_url, p.file_name,
+                p.author_name, p.pinned, p.approval_status, p.parent_post_id, p.version_number, p.reply_to_id, p.view_count, p.created_at, p.updated_at,
+                (SELECT COUNT(*) FROM dp_post_comments c WHERE c.post_id = p.id) AS comment_count
+           FROM dp_board_posts p WHERE p.board = ?
+          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ?`
+      ).bind(board, limit).all();
+    }
   } else {
     rows = await env.DB.prepare(
       `SELECT p.id, p.board, p.title, p.content, p.file_url, p.file_name,
@@ -160,7 +182,7 @@ export async function onRequestPost({ request, env, data }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { board, title, content, pinned, files, linked_event_id, approver_name, approval_status, approvers, parent_post_id, reply_to_id } = body;
+  const { board, title, content, pinned, files, linked_event_id, approver_name, approval_status, approvers, parent_post_id, reply_to_id, tab_slug } = body;
   if (!board || !title) return json({ error: 'board and title are required.' }, 400);
   if (!VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
@@ -172,6 +194,26 @@ export async function onRequestPost({ request, env, data }) {
   if (TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
     const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
     if (!_deptMatchesBoard(u?.department, board)) return json({ error: 'Access denied.' }, 403);
+  }
+
+  // Tab validation: tab must belong to the same board. Empty / null is fine —
+  // the post goes into the implicit "All" bucket. If allowed_users is set on
+  // the tab, the caller (non-admin) must appear in it.
+  let safeTabSlug = null;
+  if (tab_slug) {
+    const row = await env.DB.prepare(
+      `SELECT allowed_users FROM dp_board_tabs WHERE board_slug = ? AND slug = ?`
+    ).bind(board, String(tab_slug).toLowerCase()).first();
+    if (!row) return json({ error: `Tab "${tab_slug}" does not belong to ${board}.` }, 400);
+    safeTabSlug = String(tab_slug).toLowerCase();
+    if (data.dpUser.role !== 'admin' && row.allowed_users) {
+      let allowed = [];
+      try { allowed = JSON.parse(row.allowed_users) || []; } catch (_) { allowed = []; }
+      const me = String(data.dpUser.username || '').toLowerCase();
+      if (allowed.length && !allowed.includes(me)) {
+        return json({ error: 'You do not have permission to post in this tab.' }, 403);
+      }
+    }
   }
 
   const safeLinkedEventId = linked_event_id ? parseInt(linked_event_id, 10) || null : null;
@@ -219,8 +261,8 @@ export async function onRequestPost({ request, env, data }) {
   }
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status, parent_post_id, version_number, reply_to_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO dp_board_posts (board, title, content, author_id, author_name, pinned, linked_event_id, approver_name, approval_status, parent_post_id, version_number, reply_to_id, tab_slug)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     board,
     title.trim().slice(0, 200),
@@ -233,7 +275,8 @@ export async function onRequestPost({ request, env, data }) {
     safeApprovalStatus,
     safeParentId,
     version_number,
-    safeReplyToId
+    safeReplyToId,
+    safeTabSlug
   ).run();
 
   const postId = result.meta.last_row_id;
@@ -351,6 +394,29 @@ export async function onRequestPut({ request, env, data }) {
   if (body.approval_status !== undefined) {
     const safeStatus = ['pending','approved','rejected'].includes(body.approval_status) ? body.approval_status : null;
     if (safeStatus) { fields.push('approval_status = ?'); values.push(safeStatus); }
+  }
+  // Tab move — only within the same board. null clears the tab (post falls
+  // back to the implicit "All" bucket). Cross-board moves are refused.
+  if (body.tab_slug !== undefined) {
+    const raw = body.tab_slug;
+    if (raw == null || raw === '') {
+      fields.push('tab_slug = ?'); values.push(null);
+    } else {
+      const slug = String(raw).toLowerCase();
+      const row = await env.DB.prepare(
+        `SELECT allowed_users FROM dp_board_tabs WHERE board_slug = ? AND slug = ?`
+      ).bind(current.board, slug).first();
+      if (!row) return json({ error: `Tab "${slug}" does not belong to ${current.board}.` }, 400);
+      if (data.dpUser.role !== 'admin' && row.allowed_users) {
+        let allowed = [];
+        try { allowed = JSON.parse(row.allowed_users) || []; } catch (_) {}
+        const me = String(data.dpUser.username || '').toLowerCase();
+        if (allowed.length && !allowed.includes(me)) {
+          return json({ error: 'You do not have permission to move posts into this tab.' }, 403);
+        }
+      }
+      fields.push('tab_slug = ?'); values.push(slug);
+    }
   }
 
   if (fields.length > 0) {

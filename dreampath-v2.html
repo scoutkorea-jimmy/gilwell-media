@@ -1400,6 +1400,31 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-day { min-height: 0; height: 100%; }
 .dp-cal-grid.dp-cal-grid--fill .dp-cal-head { height: auto; }
 
+/* Team board sub-tab bar — appears above the post table on boards that
+   define tabs (team_*, custom). Pill-style selector: active tab gets the
+   accent color. Horizontally scrolls if 5 tabs overflow a narrow viewport. */
+.dp-board-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  margin: 0 0 var(--gap-section);
+  padding: 4px;
+  background: var(--surface-2);
+  border: var(--bd); border-radius: var(--r-md);
+  overflow-x: auto;
+}
+.dp-board-tab {
+  padding: 6px 14px; min-height: 28px;
+  background: transparent; color: var(--text-2);
+  font: inherit; font-size: var(--fs-12); font-weight: 500;
+  border: 1px solid transparent; border-radius: var(--r-sm);
+  cursor: pointer; white-space: nowrap;
+}
+.dp-board-tab:hover { background: var(--surface); color: var(--text); }
+.dp-board-tab.on {
+  background: var(--surface); color: var(--accent);
+  border-color: var(--g-200);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
 /* Chip picker — "To:" field metaphor for user selection (approvers, future
    task owners). Input sits below the picked chips; a suggestion list opens
    below as the user types. Scales to arbitrary roster size. */
