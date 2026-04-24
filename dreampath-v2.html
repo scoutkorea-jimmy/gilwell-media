@@ -188,6 +188,12 @@ button { font-family: inherit; cursor: pointer; }
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-position: center; mask-position: center;
 }
+.dp-nav-item .dp-nav-flag {
+  width: 18px; height: 18px;
+  display: grid; place-items: center;
+  font-size: 13px; line-height: 1; flex-shrink: 0;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--font);
+}
 .dp-nav-item .count {
   margin-left: auto;
   font-family: var(--font-mono); font-size: 10px;
@@ -346,8 +352,8 @@ button { font-family: inherit; cursor: pointer; }
   -webkit-mask-position: center; mask-position: center;
 }
 
-/* Page body */
-.dp-page { padding: var(--s-6) var(--s-6); width: 100%; max-width: 1600px; }
+/* Page body — fills the main column; ERP grids can sprawl as wide as needed. */
+.dp-page { padding: var(--s-6) var(--s-6); width: 100%; }
 .dp-page-head {
   display: flex; justify-content: space-between; align-items: baseline;
   margin-bottom: var(--s-5); flex-wrap: wrap; gap: 8px;
@@ -597,21 +603,24 @@ button { font-family: inherit; cursor: pointer; }
 .dp-cmd-item .shortcut { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
 .dp-cmd-empty { padding: 40px 14px; text-align: center; color: var(--text-3); font-size: var(--fs-12); }
 
-/* Modal (right drawer) */
+/* Modal — centered dialog (not a right drawer) */
 .dp-modal-backdrop {
   position: fixed; inset: 0; background: rgba(17,24,39,0.45);
   z-index: 150; animation: fadein var(--dur-swift);
+  display: flex; align-items: center; justify-content: center;
+  padding: 5vh 24px;
 }
 .dp-modal {
-  position: fixed; top: 0; right: 0; bottom: 0;
-  width: 720px; max-width: 95vw;
-  background: #fff; border-left: var(--bd);
+  position: relative;
+  width: 820px; max-width: 95vw; max-height: 90vh;
+  background: #fff; border: var(--bd); border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
   display: flex; flex-direction: column;
-  animation: slidein var(--dur-reveal) var(--ease-decel);
+  animation: modalin var(--dur-reveal) var(--ease-decel);
   z-index: 151;
+  overflow: hidden;
 }
-@keyframes slidein { from { transform: translateX(20px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes modalin { from { transform: translateY(8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 .dp-modal-head {
   padding: 12px 20px;
   display: flex; justify-content: space-between; align-items: center;
@@ -875,7 +884,8 @@ button { font-family: inherit; cursor: pointer; }
   .dp-stat-strip > :nth-child(n+3) { border-top: var(--bd); }
   .dp-stat-strip > :nth-child(odd) { border-right: var(--bd); }
   .dp-stat-strip > :nth-child(even) { border-right: none; }
-  .dp-modal { width: 100vw; }
+  .dp-modal-backdrop { padding: 0; align-items: stretch; }
+  .dp-modal { width: 100vw; max-width: 100vw; max-height: 100vh; border-radius: 0; border: none; }
 }
 
 /* Print — ERP-grade */
