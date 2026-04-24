@@ -63,16 +63,19 @@ export async function onRequestGet({ env, data }) {
     eventRows,
     pendingApprovalRows,
   ] = await Promise.all([
-    env.DB.prepare(
-      `SELECT id, title, assignee, status, priority, due_date, updated_at
-         FROM dp_tasks
-        ORDER BY
-          CASE status WHEN 'todo' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END,
-          CASE priority WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
-          COALESCE(due_date, '9999-12-31') ASC,
-          datetime(updated_at) DESC
-        LIMIT 30`
-    ).all(),
+    (matchNames.length
+      ? env.DB.prepare(
+          `SELECT id, title, assignee, status, priority, due_date, updated_at
+             FROM dp_tasks
+            WHERE LOWER(TRIM(COALESCE(assignee, ''))) IN (${matchNames.map(() => '?').join(',')})
+            ORDER BY
+              CASE status WHEN 'todo' THEN 0 WHEN 'in_progress' THEN 1 ELSE 2 END,
+              CASE priority WHEN 'high' THEN 0 WHEN 'normal' THEN 1 ELSE 2 END,
+              COALESCE(due_date, '9999-12-31') ASC,
+              datetime(updated_at) DESC
+            LIMIT 30`
+        ).bind(...matchNames).all()
+      : Promise.resolve({ results: [] })),
     env.DB.prepare(
       `SELECT id, title, type, status, priority, updated_at
          FROM dp_notes
@@ -87,6 +90,7 @@ export async function onRequestGet({ env, data }) {
          FROM dp_post_history h
          JOIN dp_board_posts p ON p.id = h.post_id
         WHERE p.board IN (${boardPlaceholders})
+          AND datetime(h.edited_at) >= datetime('now', '-1 day')
         ORDER BY datetime(h.edited_at) DESC, h.id DESC
         LIMIT 12`
     ).bind(...accessibleBoards).all(),
@@ -94,6 +98,7 @@ export async function onRequestGet({ env, data }) {
       `SELECT h.event_id, h.editor_name, h.edit_note, h.edited_at, e.title
          FROM dp_event_history h
          JOIN dp_events e ON e.id = h.event_id
+        WHERE datetime(h.edited_at) >= datetime('now', '-1 day')
         ORDER BY datetime(h.edited_at) DESC, h.id DESC
         LIMIT 12`
     ).all(),
@@ -102,6 +107,7 @@ export async function onRequestGet({ env, data }) {
          FROM dp_post_comments c
          JOIN dp_board_posts p ON p.id = c.post_id
         WHERE p.board IN (${boardPlaceholders})
+          AND datetime(c.created_at) >= datetime('now', '-1 day')
         ORDER BY datetime(c.created_at) DESC, c.id DESC
         LIMIT 12`
     ).bind(...accessibleBoards).all(),
@@ -159,10 +165,7 @@ export async function onRequestGet({ env, data }) {
 
   const tasks = (taskRows.results || []);
   const notes = (noteRows.results || []);
-  const myTasks = tasks.filter(function (task) {
-    const assignee = String(task.assignee || '').trim().toLowerCase();
-    return assignee && matchNames.indexOf(assignee) >= 0;
-  }).slice(0, 6);
+  const myTasks = tasks.slice(0, 6);
 
   const alerts = []
     .concat(buildTaskAlerts(myTasks))
@@ -221,6 +224,7 @@ export async function onRequestGet({ env, data }) {
   const pendingApprovals = (pendingApprovalRows.results || []).map(function (row) {
     return {
       post_id: row.post_id,
+      approver_name: row.approver_name || '',
       title: row.title || '',
       board: row.board || '',
       post_created_at: row.post_created_at || '',

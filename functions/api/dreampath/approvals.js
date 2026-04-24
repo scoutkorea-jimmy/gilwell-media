@@ -91,8 +91,13 @@ export async function onRequestPut({ request, env, data }) {
   }
 
   const approval = await env.DB.prepare(
-    `SELECT id, status FROM dp_post_approvals WHERE post_id = ? AND approver_name = ?`
-  ).bind(postId, approverName).first();
+    `SELECT id, status, approver_name
+       FROM dp_post_approvals
+      WHERE post_id = ?
+        AND LOWER(approver_name) = ?
+      ORDER BY id ASC
+      LIMIT 1`
+  ).bind(postId, approverName.toLowerCase()).first();
   if (!approval) return json({ error: 'Approver not assigned to this post.' }, 404);
 
   const post = await env.DB.prepare(
@@ -130,12 +135,11 @@ export async function onRequestPut({ request, env, data }) {
 
   // Log to post history
   const prevStatus = approval.status;
-  const logNote = isAdminOverride
-    ? `[Admin Override] ${data.dpUser.name} changed ${approverName}'s vote from '${prevStatus}' to '${newStatus}'${override_note ? ': ' + override_note.trim() : ''}`
-    : `[Approval] ${approverName} voted ${newStatus}`;
   await env.DB.prepare(
     `INSERT INTO dp_post_history (post_id, editor_name, prev_title, prev_content, edit_note) VALUES (?, ?, ?, ?, ?)`
-  ).bind(postId, data.dpUser.name, post.title || '', null, logNote).run();
+  ).bind(postId, data.dpUser.name, post.title || '', null, isAdminOverride
+    ? `[Admin Override] ${data.dpUser.name} changed ${approval.approver_name}'s vote from '${prevStatus}' to '${newStatus}'${override_note ? ': ' + override_note.trim() : ''}`
+    : `[Approval] ${approval.approver_name} voted ${newStatus}`).run();
 
   return json({ ok: true, approval_status: newPostStatus, approved_count: approvedCount, total });
 }
