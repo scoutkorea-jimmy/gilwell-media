@@ -98,13 +98,25 @@ const DP = (() => {
         ? [{ id: 'reference', label: 'Admin console', icon: 'settings' },
            { id: 'users',     label: 'Users',         icon: 'users-admin' },
            { id: 'presets',   label: 'Permission presets', icon: 'compass' },
+           { id: 'activity',  label: 'Activity log',  icon: 'scroll' },
            { id: 'rules',     label: 'Dev Rules',     icon: 'layers' },
            { id: 'versions',  label: 'Versions',      icon: 'file-text' }]
-        : guard([
-            { id: 'rules',    label: 'Dev Rules',     icon: 'layers',    perm: 'view:rules' },
-            { id: 'versions', label: 'Versions',      icon: 'file-text', perm: 'view:versions' },
-          ])
+        : (isAdmin
+          ? [{ id: 'activity',  label: 'Activity log',  icon: 'scroll' }]
+              .concat(guard([
+                { id: 'rules',    label: 'Dev Rules',     icon: 'layers',    perm: 'view:rules' },
+                { id: 'versions', label: 'Versions',      icon: 'file-text', perm: 'view:versions' },
+              ]))
+          : guard([
+              { id: 'rules',    label: 'Dev Rules',     icon: 'layers',    perm: 'view:rules' },
+              { id: 'versions', label: 'Versions',      icon: 'file-text', perm: 'view:versions' },
+            ])
+        )
       )},
+      // Personal is always shown — every user can edit their own profile.
+      { title: 'Personal', items: [
+        { id: 'account', label: 'Account', icon: 'user-single' },
+      ]},
     ].filter(g => g.items.length > 0);
   }
 
@@ -539,6 +551,8 @@ const DP = (() => {
   // -------------------------- Init --------------------------
   async function init() {
     if (state.density !== 'default') document.documentElement.setAttribute('data-density', state.density);
+    // Reapply any local design-token overrides set via Dev Rules → Design Guide.
+    _applyStoredDesignOverrides();
 
     _installKeyDelegation();
     _installCmdHotkey();
@@ -792,8 +806,13 @@ const DP = (() => {
           </a>
           <span class="dp-ver-num" id="dp-side-ver">v${esc(state.latestVersion || state.version)}</span>
         </div>
-        <div class="dp-side-user">
-          <div class="dp-avatar">${esc(_avatarChar())}</div>
+        <div class="dp-side-user" role="button" tabindex="0"
+             title="Open account settings"
+             onclick="DP.navigate('account')"
+             style="cursor:pointer">
+          <div class="dp-avatar"${state.user && state.user.avatar_url
+            ? ` style="background-image:url('${esc(state.user.avatar_url)}');background-size:cover;background-position:center"`
+            : ''}>${state.user && state.user.avatar_url ? '' : esc(_avatarChar())}</div>
           <div>
             <div class="who">${esc(_displayName())}</div>
             <div class="role">${esc(_roleLine())}</div>
@@ -885,6 +904,11 @@ const DP = (() => {
         if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderPresets(pageEl); label = 'Permission presets';
       },
+      activity:      () => {
+        if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
+        _renderActivityLog(pageEl); label = 'Activity log';
+      },
+      account:       () => { _renderAccount(pageEl); label = 'Account'; },
       reference:     () => {
         if (!state.user || state.user.username !== 'jimmy') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderAdminConsole(pageEl); label = 'Admin console';
@@ -983,7 +1007,22 @@ const DP = (() => {
     const announcements = (annRes && annRes.posts) || [];
     left.appendChild(_renderAnnouncementsPanel(announcements));
     left.appendChild(_renderPendingApprovalsPanel((home && home.pending_approvals) || []));
-    left.appendChild(_renderActivityPanel((home && home.recent_changes) || []));
+    // Board preview cards (PMO spec "Layout 시안 1차") — 3 latest from each board.
+    // Fetched in parallel so they don't block the primary paint.
+    const docMinutesHost = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--gap-section)' } });
+    left.appendChild(docMinutesHost);
+    Promise.all([
+      api('GET', 'posts?board=documents&limit=3').catch(() => null),
+      api('GET', 'posts?board=minutes&limit=3').catch(() => null),
+    ]).then(([docsRes, minutesRes]) => {
+      docMinutesHost.appendChild(_renderBoardPreviewPanel('Documents', 'documents', (docsRes && docsRes.posts) || []));
+      docMinutesHost.appendChild(_renderBoardPreviewPanel('Meeting Minutes', 'minutes', (minutesRes && minutesRes.posts) || []));
+    });
+    // Activity feed stays on home only for admins — regular members get a
+    // quieter home and the admin-only "Activity log" page for the full audit trail.
+    if (state.user && state.user.role === 'admin') {
+      left.appendChild(_renderActivityPanel((home && home.recent_changes) || []));
+    }
 
     const myTasks = (home && home.my_tasks) || [];
     const summary = (home && home.today_summary) || {};
@@ -1179,6 +1218,47 @@ const DP = (() => {
       state.homePayload = await api('GET', 'home');
       navigate(state.page);
     }
+  }
+
+  // Compact board preview — used on home for Documents + Minutes per PMO spec.
+  // Shows 3 most recent posts from the board; click row → post detail modal.
+  function _renderBoardPreviewPanel(title, board, posts) {
+    const panel = h('section', { className: 'dp-panel', 'aria-label': title + ' preview' });
+    const head = `
+      <div class="dp-panel-head">
+        <h3>${esc(title)} <span class="count">${posts.length}</span></h3>
+        <a href="#" onclick="event.preventDefault();DP.navigate('${esc(board)}')">View all →</a>
+      </div>
+    `;
+    if (!posts.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No posts yet.</div>';
+      return panel;
+    }
+    const ordered = posts.slice().sort((a, b) => Number(b.pinned ? 1 : 0) - Number(a.pinned ? 1 : 0));
+    const body = ordered.slice(0, 3).map(p => {
+      const pinCls = p.pinned ? ' dp-post-pinned' : '';
+      const statusTag = (board === 'minutes' && p.approval_status)
+        ? `<span class="dp-tag ${p.approval_status === 'approved' ? 'ok' : p.approval_status === 'pending' ? 'warn' : p.approval_status === 'rejected' ? 'alert' : 'neutral'}" style="margin-left:6px">${esc(p.approval_status)}</span>`
+        : '';
+      return `
+        <button type="button" class="dp-post-item${pinCls}"
+                onclick="DP.viewPost('${esc(board)}', ${Number(p.id)})"
+                aria-label="${esc(p.title)}">
+          <div class="t">
+            ${p.pinned ? '<span class="dp-badge-notice" aria-label="Notice">NOTICE</span>' : ''}
+            <span>${esc(p.title)}</span>${statusTag}
+          </div>
+          <div class="meta">
+            <span class="who">${esc(p.author_name || '')}</span>
+            <span>·</span>
+            <span>${esc(fmtTime(p.updated_at || p.created_at))}</span>
+            ${p.comment_count ? `<span>·</span><span>${p.comment_count} comments</span>` : ''}
+          </div>
+        </button>
+      `;
+    }).join('');
+    panel.innerHTML = head + `<div class="dp-panel-body">${body}</div>`;
+    return panel;
   }
 
   function _renderActivityPanel(items) {
@@ -2409,21 +2489,126 @@ const DP = (() => {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Design Guide tab — static reference derived from the PMO Style Tokens v2
-  // source of truth. Matches the actual CSS variable values so changes to
-  // :root tokens are visible here (swatches pull from var(--...) directly).
+  // Design Guide tab — source of truth mirror of the PMO Style Tokens v2.
+  // Swatches pull from live CSS variables so :root changes are visible here.
+  // Edit mode (admin-only) unlocks color pickers per swatch; updates run
+  // through document.documentElement.style.setProperty() and persist in
+  // localStorage until explicitly reset. No DB round-trip — this is a local
+  // preview surface for proposing token tweaks before promoting to :root.
+  const DESIGN_EDITABLE_TOKENS = [
+    '--navy','--navy-700','--navy-600','--green','--gold',
+    '--ok','--warn','--alert','--info',
+    '--g-950','--g-900','--g-700','--g-500','--g-300','--g-200','--g-150','--g-100','--g-050',
+    '--dv-1','--dv-2','--dv-3','--dv-4','--dv-5','--dv-6','--dv-7','--dv-8',
+  ];
+
+  function _applyStoredDesignOverrides() {
+    try {
+      const raw = localStorage.getItem('dp_v2_design_overrides');
+      if (!raw) return;
+      const map = JSON.parse(raw);
+      Object.keys(map || {}).forEach(k => {
+        if (DESIGN_EDITABLE_TOKENS.includes(k)) {
+          document.documentElement.style.setProperty(k, map[k]);
+        }
+      });
+    } catch (_) {}
+  }
+  function _storeDesignOverride(token, value) {
+    try {
+      const raw = localStorage.getItem('dp_v2_design_overrides');
+      const map = raw ? JSON.parse(raw) : {};
+      if (value === null) delete map[token]; else map[token] = value;
+      localStorage.setItem('dp_v2_design_overrides', JSON.stringify(map));
+    } catch (_) {}
+  }
+
+  // Read the computed color for a CSS var and return a #rrggbb string so it
+  // can feed an <input type="color"> which only accepts hex.
+  function _tokenHex(token) {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+    if (!v) return '#000000';
+    if (/^#([0-9a-f]{3}){1,2}$/i.test(v)) {
+      if (v.length === 4) return '#' + v[1] + v[1] + v[2] + v[2] + v[3] + v[3];
+      return v.toLowerCase();
+    }
+    // Render once into a canvas to normalize rgb()/hsl()/named → hex.
+    const c = document.createElement('canvas').getContext('2d');
+    c.fillStyle = v;
+    const m = c.fillStyle.match(/^#([0-9a-f]{6})$/i);
+    return m ? c.fillStyle : '#000000';
+  }
+
+  function _toggleDesignEditMode() {
+    const on = !state.designEdit;
+    state.designEdit = on;
+    const page = $('#dp-page');
+    if (page && state.page === 'rules') _renderRules(page);
+  }
+  function _setDesignToken(token, value) {
+    if (!DESIGN_EDITABLE_TOKENS.includes(token)) return;
+    document.documentElement.style.setProperty(token, value);
+    _storeDesignOverride(token, value);
+  }
+  function _resetDesignTokens() {
+    if (!confirm('Reset all design-token overrides back to the built-in defaults?')) return;
+    DESIGN_EDITABLE_TOKENS.forEach(t => document.documentElement.style.removeProperty(t));
+    try { localStorage.removeItem('dp_v2_design_overrides'); } catch (_) {}
+    const page = $('#dp-page');
+    if (page && state.page === 'rules') _renderRules(page);
+    toast('Design tokens reset', 'ok');
+  }
+
   function _renderRulesDesign(root) {
     const host = h('div', { className: 'dp-rules-body' });
     root.appendChild(host);
 
-    const swatch = (name, css, textOn) => `
-      <div class="dp-sw">
-        <div class="dp-sw-chip" style="background:var(${css});color:${textOn || '#fff'}">Aa</div>
-        <div class="dp-sw-meta">
-          <div class="dp-sw-name">${esc(name)}</div>
-          <div class="dp-sw-var">${esc(css)}</div>
+    const isAdmin = state.user && state.user.role === 'admin';
+    const editing = !!state.designEdit;
+
+    // Editor toolbar — admin only. Toggle unlocks the color pickers on every
+    // swatch; Reset clears localStorage overrides.
+    if (isAdmin) {
+      const toolbar = h('section', { className: 'dp-rules-card' });
+      toolbar.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <strong>Edit mode</strong>
+            <div style="font-size:11px;color:var(--text-3);margin-top:2px">
+              ${editing
+                ? 'Click a swatch to open the color picker. Changes preview live and persist in this browser until reset.'
+                : 'Admin-only. Enable to tweak colors and preview instantly. Overrides stay local — no DB write.'}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="dp-btn ${editing ? 'dp-btn-primary' : 'dp-btn-secondary'}"
+                    onclick="DP._toggleDesignEditMode()">
+              ${editing ? 'Edit mode: ON' : 'Enable edit mode'}
+            </button>
+            <button class="dp-btn dp-btn-danger" onclick="DP._resetDesignTokens()">Reset overrides</button>
+          </div>
         </div>
-      </div>`;
+      `;
+      host.appendChild(toolbar);
+    }
+
+    const swatch = (name, css, textOn) => {
+      const editable = editing && DESIGN_EDITABLE_TOKENS.includes(css);
+      const hex = _tokenHex(css);
+      const chipInner = editable
+        ? `<input type="color" class="dp-sw-picker" value="${esc(hex)}"
+                  oninput="DP._setDesignToken('${esc(css)}', this.value)"
+                  aria-label="Edit ${esc(name)}">`
+        : 'Aa';
+      return `
+        <div class="dp-sw${editable ? ' dp-sw-edit' : ''}">
+          <div class="dp-sw-chip" style="background:var(${css});color:${textOn || '#fff'}">${chipInner}</div>
+          <div class="dp-sw-meta">
+            <div class="dp-sw-name">${esc(name)}</div>
+            <div class="dp-sw-var">${esc(css)}</div>
+          </div>
+        </div>`;
+    };
     const chip = (label, css) => `<div class="dp-token-row"><span class="dp-token-k">${esc(label)}</span><span class="dp-token-v">${esc(css)}</span></div>`;
 
     host.innerHTML = `
@@ -3065,6 +3250,520 @@ const DP = (() => {
     if (!confirm('Delete preset "' + name + '"? This cannot be undone.')) return;
     const data = await api('DELETE', 'presets?id=' + id);
     if (data) { toast('Preset deleted', 'ok'); navigate('presets'); }
+  }
+
+  // -------------------------- Activity log (admin) --------------------------
+  // Dedicated page for the full audit trail — post edits, event edits, comments.
+  // 20 rows per page, paginated via ?offset/?limit. Pulls from the new
+  // /api/dreampath/activity endpoint which unifies dp_post_history +
+  // dp_event_history + dp_post_comments.
+  const ACTIVITY_PAGE_SIZE = 20;
+  async function _renderActivityLog(root) {
+    root.innerHTML = '';
+    if (typeof state.activityPage !== 'number') state.activityPage = 0;
+    const page = state.activityPage;
+
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('div', {}, [
+        h('h1', {}, 'Activity log'),
+        h('div', { className: 'meta' }, 'Every post edit, event edit, and comment — admin only. Most recent first.'),
+      ]),
+    ]));
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading activity…</div>';
+    root.appendChild(panel);
+
+    const offset = page * ACTIVITY_PAGE_SIZE;
+    const data = await api('GET', 'activity?limit=' + ACTIVITY_PAGE_SIZE + '&offset=' + offset);
+    const items = (data && data.items) || [];
+    const total = (data && data.total) || 0;
+    const totalPages = Math.max(1, Math.ceil(total / ACTIVITY_PAGE_SIZE));
+    if (page >= totalPages) state.activityPage = Math.max(0, totalPages - 1);
+
+    if (!items.length) {
+      panel.innerHTML = `
+        <div class="dp-panel-head"><h3>No activity yet</h3></div>
+        <div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">Nothing to show on this page.</div>
+      `;
+      return;
+    }
+
+    const kindTone = { post: 'info', event: 'neutral', comment: 'ok' };
+    const rows = items.map(it => {
+      const kind = it.kind || 'item';
+      const tone = kindTone[kind] || 'neutral';
+      const clickable = it.ref_id && (kind === 'post' || kind === 'comment');
+      const rowAttr = clickable
+        ? `style="cursor:pointer" onclick="DP.viewPost('${esc(it.board || 'announcements')}', ${Number(it.ref_id)})"`
+        : '';
+      return `<tr ${rowAttr}>
+        <td style="width:90px"><span class="dp-tag ${tone}">${esc(kind)}</span></td>
+        <td>${esc(it.title || '(untitled)')}</td>
+        <td style="width:140px" class="mono">${esc(it.meta || '—')}</td>
+        <td style="color:var(--text-2);font-size:12px">${esc(String(it.note || '').slice(0, 160))}</td>
+        <td style="width:150px" class="mono">${esc(fmtTime(it.created_at))}</td>
+      </tr>`;
+    }).join('');
+
+    const rangeFrom = offset + 1;
+    const rangeTo = Math.min(offset + items.length, total);
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Recent activity <span class="count">${rangeFrom}–${rangeTo} of ${total}</span></h3>
+        <div style="display:flex;gap:6px">
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" ${page === 0 ? 'disabled' : ''}
+                  onclick="DP._activityPage(${page - 1})">← Previous</button>
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" ${page >= totalPages - 1 ? 'disabled' : ''}
+                  onclick="DP._activityPage(${page + 1})">Next →</button>
+        </div>
+      </div>
+      <table class="dp-table">
+        <thead><tr>
+          <th>Kind</th>
+          <th>Title</th>
+          <th>Actor</th>
+          <th>Note</th>
+          <th>When</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="dp-panel-body pad" style="display:flex;justify-content:center;gap:8px;align-items:center;color:var(--text-3);font-size:11px">
+        Page ${page + 1} of ${totalPages}
+      </div>
+    `;
+  }
+  function _activityPage(n) {
+    state.activityPage = Math.max(0, n);
+    navigate('activity');
+  }
+
+  // -------------------------- Account / Profile --------------------------
+  // Every logged-in user gets their own Account page — edit display_name,
+  // email, department, phone (with country code), role title, avatar, and
+  // password. Avatar supports drag-to-reposition + client-side 1:1 crop +
+  // 10MB cap before hitting /api/dreampath/upload.
+  const PHONE_CODES = [
+    { cc: '+82',  label: '🇰🇷 +82 Korea' },
+    { cc: '+1',   label: '🇺🇸 +1 US / Canada' },
+    { cc: '+44',  label: '🇬🇧 +44 UK' },
+    { cc: '+81',  label: '🇯🇵 +81 Japan' },
+    { cc: '+86',  label: '🇨🇳 +86 China' },
+    { cc: '+852', label: '🇭🇰 +852 Hong Kong' },
+    { cc: '+886', label: '🇹🇼 +886 Taiwan' },
+    { cc: '+65',  label: '🇸🇬 +65 Singapore' },
+    { cc: '+60',  label: '🇲🇾 +60 Malaysia' },
+    { cc: '+66',  label: '🇹🇭 +66 Thailand' },
+    { cc: '+63',  label: '🇵🇭 +63 Philippines' },
+    { cc: '+62',  label: '🇮🇩 +62 Indonesia' },
+    { cc: '+61',  label: '🇦🇺 +61 Australia' },
+    { cc: '+49',  label: '🇩🇪 +49 Germany' },
+    { cc: '+33',  label: '🇫🇷 +33 France' },
+    { cc: '+39',  label: '🇮🇹 +39 Italy' },
+    { cc: '+34',  label: '🇪🇸 +34 Spain' },
+    { cc: '+971', label: '🇦🇪 +971 UAE' },
+    { cc: '+966', label: '🇸🇦 +966 Saudi Arabia' },
+    { cc: '+91',  label: '🇮🇳 +91 India' },
+    { cc: '+55',  label: '🇧🇷 +55 Brazil' },
+    { cc: '+52',  label: '🇲🇽 +52 Mexico' },
+  ];
+
+  let _accountState = {
+    pendingAvatarUrl: null,   // set after upload, cleared after save
+    pendingAvatarPos: null,   // '50 50' style (object-position %)
+  };
+
+  async function _renderAccount(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('div', {}, [
+        h('h1', {}, 'My account'),
+        h('div', { className: 'meta' }, 'Edit your profile, contact info, and password. Avatar updates take effect immediately across the app.'),
+      ]),
+    ]));
+
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading profile…</div>';
+    root.appendChild(loading);
+
+    // Fetch fresh /me so the page always reflects server-side truth (avatar,
+    // department, etc. may have changed since last localStorage cache).
+    const [meRes, deptRes] = await Promise.all([
+      api('GET', 'me'),
+      api('GET', 'departments').catch(() => null),
+    ]);
+    loading.remove();
+    const user = (meRes && meRes.user) || null;
+    if (!user) return;
+    // Reset pending avatar buffer on fresh render.
+    _accountState = { pendingAvatarUrl: null, pendingAvatarPos: null };
+
+    const depts = (deptRes && deptRes.departments) || [];
+    const deptOpts = ['<option value="">— none —</option>']
+      .concat(depts.map(d => `<option value="${esc(d.name)}"${user.department === d.name ? ' selected' : ''}>${esc(d.name)}</option>`))
+      .join('');
+
+    // Parse stored phone "+82 10-1234-5678" into CC + number.
+    let phoneCC = '+82', phoneNum = '';
+    const phoneStr = user.phone || '';
+    const m = phoneStr.match(/^(\+\d+)\s+(.*)$/);
+    if (m) { phoneCC = m[1]; phoneNum = m[2]; }
+    else if (phoneStr) { phoneNum = phoneStr; }
+    const phoneOpts = PHONE_CODES.map(p =>
+      `<option value="${esc(p.cc)}"${phoneCC === p.cc ? ' selected' : ''}>${esc(p.label)}</option>`
+    ).join('');
+
+    const initials = (user.display_name || user.username || '?')
+      .split(/\s+/).map(s => s.charAt(0)).join('').toUpperCase().slice(0, 2);
+    const avatarPos = (user.avatar_pos || '50 50').split(' ');
+    const avatarInner = user.avatar_url
+      ? `<img id="dp-acct-avatar-img" src="${esc(user.avatar_url)}" alt="Avatar"
+             style="width:100%;height:100%;object-fit:cover;object-position:${esc(avatarPos[0])}% ${esc(avatarPos[1])}%;cursor:grab;user-select:none;-webkit-user-drag:none" draggable="false">`
+      : `<span style="font-size:48px;font-weight:700;color:#fff">${esc(initials)}</span>`;
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head"><h3>Profile</h3></div>
+      <div class="dp-panel-body pad" style="display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:flex-start">
+        <div class="dp-acct-avatar-col">
+          <div class="dp-acct-avatar" id="dp-acct-avatar">${avatarInner}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+            <label class="dp-btn dp-btn-secondary dp-btn-sm" style="cursor:pointer;justify-content:center">
+              <span>${user.avatar_url ? 'Change photo' : 'Upload photo'}</span>
+              <input type="file" id="dp-acct-file" accept="image/*" style="display:none"
+                     onchange="DP._handleAvatarPick(this)">
+            </label>
+            ${user.avatar_url
+              ? '<button class="dp-btn dp-btn-danger dp-btn-sm" onclick="DP._removeAccountAvatar()">Remove photo</button>'
+              : ''}
+            <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:4px">
+              JPG / PNG · max 10MB · drag to reposition after upload
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="dp-field">
+              <label for="dp-acct-name">Display name</label>
+              <input class="dp-input" id="dp-acct-name" value="${esc(user.display_name || '')}" maxlength="100">
+            </div>
+            <div class="dp-field">
+              <label for="dp-acct-role">Role / title</label>
+              <input class="dp-input" id="dp-acct-role" value="${esc(user.role_title || '')}" placeholder="e.g. PMO lead" maxlength="100">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="dp-field">
+              <label for="dp-acct-email">Email</label>
+              <input class="dp-input" id="dp-acct-email" type="email" value="${esc(user.email || '')}" maxlength="200">
+            </div>
+            <div class="dp-field">
+              <label for="dp-acct-dept">Department</label>
+              <select class="dp-select" id="dp-acct-dept">${deptOpts}</select>
+            </div>
+          </div>
+          <div class="dp-field">
+            <label for="dp-acct-phone-num">Phone</label>
+            <div style="display:flex;gap:8px">
+              <select class="dp-select" id="dp-acct-phone-cc" style="width:200px">${phoneOpts}</select>
+              <input class="dp-input" id="dp-acct-phone-num" type="tel"
+                     value="${esc(phoneNum)}" placeholder="10-1234-5678" style="flex:1" maxlength="30">
+            </div>
+          </div>
+          <div class="dp-field" style="margin-bottom:0">
+            <label for="dp-acct-note">Emergency note</label>
+            <textarea class="dp-textarea" id="dp-acct-note" maxlength="500"
+                      placeholder="e.g. Reach me on KakaoTalk after 6pm KST">${esc(user.emergency_note || '')}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="dp-modal-foot" style="border-top:var(--bd)">
+        <button class="dp-btn dp-btn-primary" onclick="DP._saveAccount()">Save profile</button>
+      </div>
+    `;
+    root.appendChild(panel);
+
+    // Password card
+    const pw = h('div', { className: 'dp-panel' });
+    pw.innerHTML = `
+      <div class="dp-panel-head"><h3>Change password</h3></div>
+      <div class="dp-panel-body pad">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div class="dp-field">
+            <label for="dp-acct-pw-cur">Current password</label>
+            <input class="dp-input" id="dp-acct-pw-cur" type="password" autocomplete="current-password">
+          </div>
+          <div class="dp-field">
+            <label for="dp-acct-pw-new">New password</label>
+            <input class="dp-input" id="dp-acct-pw-new" type="password" autocomplete="new-password" placeholder="Min 6 characters">
+          </div>
+          <div class="dp-field">
+            <label for="dp-acct-pw-confirm">Confirm new password</label>
+            <input class="dp-input" id="dp-acct-pw-confirm" type="password" autocomplete="new-password">
+          </div>
+        </div>
+      </div>
+      <div class="dp-modal-foot" style="border-top:var(--bd)">
+        <button class="dp-btn dp-btn-primary" onclick="DP._changeAccountPassword()">Update password</button>
+      </div>
+    `;
+    root.appendChild(pw);
+
+    // Wire up drag-to-reposition on the avatar if an image exists.
+    if (user.avatar_url) _initAvatarDrag(avatarPos.map(Number));
+  }
+
+  // Drag the avatar image inside its circular viewport to reposition focal
+  // point. Updates object-position live and stores the final % in the
+  // img's dataset.pos for _saveAccount to pick up.
+  function _initAvatarDrag(initialPos) {
+    const img = $('#dp-acct-avatar-img');
+    if (!img) return;
+    let pos = initialPos.slice();
+    let dragging = false, sx = 0, sy = 0, startPos = null;
+    img.dataset.pos = pos.join(' ');
+    img.addEventListener('mousedown', e => {
+      e.preventDefault();
+      dragging = true; sx = e.clientX; sy = e.clientY; startPos = pos.slice();
+      img.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const w = img.parentElement.offsetWidth, h = img.parentElement.offsetHeight;
+      const dx = (e.clientX - sx) / w * 100;
+      const dy = (e.clientY - sy) / h * 100;
+      pos[0] = Math.max(0, Math.min(100, startPos[0] - dx));
+      pos[1] = Math.max(0, Math.min(100, startPos[1] - dy));
+      img.style.objectPosition = pos[0] + '% ' + pos[1] + '%';
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      img.style.cursor = 'grab';
+      img.dataset.pos = pos.join(' ');
+    });
+  }
+
+  // Client-side flow: validate → open 1:1 crop modal → canvas-render →
+  // upload → stash URL in _accountState until Save Profile.
+  const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+  function _handleAvatarPick(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast('Please select an image file.', 'err'); input.value = ''; return; }
+    if (file.size > AVATAR_MAX_BYTES) {
+      toast('Image is over 10MB. Pick a smaller one or crop first.', 'err');
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => _openAvatarCrop(e.target.result, file.type);
+    reader.onerror = () => toast('Failed to read image', 'err');
+    reader.readAsDataURL(file);
+    input.value = '';
+  }
+
+  // 1:1 crop UI — loaded image sits inside a 320×320 viewport; user drags to
+  // pan and uses the zoom slider (100–400%) to scale. Commit crops to a 512×512
+  // canvas and posts as PNG. Keeping output to 512 so R2 storage stays small.
+  function _openAvatarCrop(dataUrl, mime) {
+    _openModal(
+      'Crop your avatar',
+      `
+      <p style="margin-top:0;color:var(--text-3);font-size:12px">
+        Drag the image to pan. Use the slider to zoom. Output is square (1:1) · 512×512.
+      </p>
+      <div class="dp-crop-wrap">
+        <div class="dp-crop-box" id="dp-crop-box">
+          <canvas id="dp-crop-canvas" width="512" height="512"></canvas>
+        </div>
+        <div class="dp-crop-ctrls">
+          <label for="dp-crop-zoom" style="font-size:12px;color:var(--text-2)">Zoom</label>
+          <input type="range" id="dp-crop-zoom" min="100" max="400" value="100" step="5" style="flex:1">
+          <span id="dp-crop-zoom-val" class="mono" style="font-size:12px;color:var(--text-3);width:48px;text-align:right">100%</span>
+        </div>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" id="dp-crop-apply" onclick="DP._applyAvatarCrop()">Apply</button>`
+    );
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = $('#dp-crop-canvas');
+      const ctx = canvas.getContext('2d');
+      // Fit whole image inside 512×512 viewport at zoom=100.
+      const baseScale = 512 / Math.max(img.width, img.height);
+      let zoom = 1, tx = 0, ty = 0, dragging = false, sx = 0, sy = 0, sTx = 0, sTy = 0;
+
+      const draw = () => {
+        ctx.clearRect(0, 0, 512, 512);
+        ctx.fillStyle = '#111827';
+        ctx.fillRect(0, 0, 512, 512);
+        const s = baseScale * zoom;
+        const dw = img.width * s;
+        const dh = img.height * s;
+        const dx = (512 - dw) / 2 + tx;
+        const dy = (512 - dh) / 2 + ty;
+        ctx.drawImage(img, dx, dy, dw, dh);
+      };
+      draw();
+
+      // Pan via mouse drag on the canvas.
+      canvas.style.cursor = 'grab';
+      canvas.addEventListener('mousedown', e => {
+        dragging = true; sx = e.clientX; sy = e.clientY; sTx = tx; sTy = ty;
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        // 1 canvas pixel per CSS pixel of movement (canvas is rendered at 320 logical px).
+        const rect = canvas.getBoundingClientRect();
+        const ratioX = 512 / rect.width;
+        const ratioY = 512 / rect.height;
+        tx = sTx + (e.clientX - sx) * ratioX;
+        ty = sTy + (e.clientY - sy) * ratioY;
+        draw();
+      });
+      window.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        canvas.style.cursor = 'grab';
+      });
+
+      const zoomEl = $('#dp-crop-zoom');
+      const zoomVal = $('#dp-crop-zoom-val');
+      zoomEl.addEventListener('input', () => {
+        zoom = Number(zoomEl.value) / 100;
+        zoomVal.textContent = zoomEl.value + '%';
+        draw();
+      });
+
+      // Stash canvas ref for _applyAvatarCrop.
+      window.__dpCropCtx = { canvas, mime };
+    };
+    img.src = dataUrl;
+  }
+
+  async function _applyAvatarCrop() {
+    const ctx = window.__dpCropCtx;
+    if (!ctx || !ctx.canvas) { _closeModal(); return; }
+    const btn = $('#dp-crop-apply');
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+    // Always emit PNG — keeps transparency fine, size acceptable at 512×512.
+    const blob = await new Promise(res => ctx.canvas.toBlob(res, 'image/png', 0.92));
+    if (!blob) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
+      toast('Could not process image', 'err');
+      return;
+    }
+    const fd = new FormData();
+    fd.append('file', new File([blob], 'avatar.png', { type: 'image/png' }));
+    let uploadRes;
+    try {
+      const r = await fetch('/api/dreampath/upload', {
+        method: 'POST', body: fd, credentials: 'same-origin',
+      });
+      uploadRes = await r.json();
+      if (!r.ok) throw new Error(uploadRes && uploadRes.error || 'Upload failed');
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
+      toast(String(err && err.message || err), 'err');
+      return;
+    }
+
+    _accountState.pendingAvatarUrl = uploadRes.url;
+    _accountState.pendingAvatarPos = '50 50';
+    // Re-render the avatar cell instantly so the user sees the new photo.
+    const host = $('#dp-acct-avatar');
+    if (host) {
+      host.innerHTML = `<img id="dp-acct-avatar-img" src="${esc(uploadRes.url)}" alt="Avatar"
+        style="width:100%;height:100%;object-fit:cover;object-position:50% 50%;cursor:grab;user-select:none;-webkit-user-drag:none" draggable="false">`;
+      _initAvatarDrag([50, 50]);
+    }
+    _closeModal();
+    toast('Photo uploaded — press Save profile to apply.', 'ok');
+  }
+
+  async function _removeAccountAvatar() {
+    if (!confirm('Remove profile photo?')) return;
+    _accountState.pendingAvatarUrl = '';
+    _accountState.pendingAvatarPos = '50 50';
+    const data = await api('PUT', 'me', { avatar_url: null, avatar_pos: '50 50' });
+    if (!data) return;
+    toast('Photo removed.', 'ok');
+    if (data.user) _acceptUser(data.user);
+    _refreshSidebarUser();
+    navigate('account');
+  }
+
+  async function _saveAccount() {
+    const phoneCC  = ($('#dp-acct-phone-cc').value || '').trim();
+    const phoneNum = ($('#dp-acct-phone-num').value || '').trim();
+    const phone = phoneNum ? (phoneCC + ' ' + phoneNum) : null;
+    const body = {
+      display_name:   ($('#dp-acct-name').value || '').trim(),
+      role_title:     ($('#dp-acct-role').value || '').trim() || null,
+      email:          ($('#dp-acct-email').value || '').trim() || null,
+      department:     ($('#dp-acct-dept').value || '').trim() || null,
+      phone,
+      emergency_note: ($('#dp-acct-note').value || '').trim() || null,
+    };
+    if (!body.display_name) { toast('Display name is required', 'err'); return; }
+
+    // Pending avatar from crop flow. Empty string = explicit remove.
+    if (_accountState.pendingAvatarUrl !== null) {
+      body.avatar_url = _accountState.pendingAvatarUrl || null;
+      body.avatar_pos = _accountState.pendingAvatarPos || '50 50';
+    }
+    // Pick up latest drag position even without a new upload.
+    const imgEl = $('#dp-acct-avatar-img');
+    if (imgEl && imgEl.dataset.pos && body.avatar_pos === undefined) {
+      body.avatar_pos = imgEl.dataset.pos;
+    }
+
+    const data = await api('PUT', 'me', body);
+    if (!data) return;
+    toast('Profile saved.', 'ok');
+    _accountState = { pendingAvatarUrl: null, pendingAvatarPos: null };
+    if (data.user) _acceptUser(data.user);
+    _refreshSidebarUser();
+  }
+
+  async function _changeAccountPassword() {
+    const cur = $('#dp-acct-pw-cur').value || '';
+    const next = $('#dp-acct-pw-new').value || '';
+    const conf = $('#dp-acct-pw-confirm').value || '';
+    if (!cur || !next || !conf) { toast('All password fields are required', 'err'); return; }
+    if (next.length < 6) { toast('New password must be at least 6 characters', 'err'); return; }
+    if (next !== conf) { toast('New passwords do not match', 'err'); return; }
+    const data = await api('PUT', 'me', { current_password: cur, new_password: next });
+    if (!data) return;
+    toast('Password updated.', 'ok');
+    $('#dp-acct-pw-cur').value = '';
+    $('#dp-acct-pw-new').value = '';
+    $('#dp-acct-pw-confirm').value = '';
+  }
+
+  // Refresh the sidebar avatar + name strip after profile changes.
+  function _refreshSidebarUser() {
+    const nameEl = document.querySelector('.dp-side-user .who');
+    if (nameEl) nameEl.textContent = _displayName();
+    const avaEl = document.querySelector('.dp-side-user .dp-avatar');
+    if (avaEl) {
+      if (state.user && state.user.avatar_url) {
+        avaEl.innerHTML = '';
+        avaEl.style.backgroundImage = 'url(' + state.user.avatar_url + ')';
+        avaEl.style.backgroundSize = 'cover';
+        avaEl.style.backgroundPosition = 'center';
+        avaEl.textContent = '';
+      } else {
+        avaEl.style.backgroundImage = '';
+        avaEl.textContent = _avatarChar();
+      }
+    }
   }
 
   async function _openUserEditor(userId) {
@@ -4020,6 +4719,10 @@ const DP = (() => {
     _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
     _openPresetEditor, _savePreset, _deletePreset,
+    _activityPage,
+    _handleAvatarPick, _applyAvatarCrop, _removeAccountAvatar,
+    _saveAccount, _changeAccountPassword,
+    _toggleDesignEditMode, _setDesignToken, _resetDesignTokens,
     _openContactEditor, _saveContact, _deleteContact, _filterContacts,
     openSearch, _searchOpen,
     _verPage,
