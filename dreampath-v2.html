@@ -13,18 +13,19 @@
 <link rel="alternate icon" href="/img/dreampath-v2/favicon.svg">
 <link rel="apple-touch-icon" href="/img/dreampath-v2/logo-dreampath-app-icon.svg">
 
-<!-- Inter for UI, JetBrains Mono for IDs/code. Pretendard dropped: ERP target
-     uses a single Western UI family; system Korean fallback handles hangul. -->
+<!-- English-only UI. Google Sans Flex is the sole webfont; monospace needs use
+     the OS-native ui-monospace stack so they never fall back to a Korean
+     system face (e.g. AppleMyungjo/AppleGothic/"Alice"-looking serifs) when
+     a CDN font fails to load. All Korean fallbacks and JetBrains Mono CDN
+     dropped intentionally per 2026-04-24 owner spec. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Google Sans Flex — variable font (optical size 6..144, weight 1..1000) — is the
-     new body default per 2026-04-24 user spec. JetBrains Mono kept for code/IDs. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap">
 
 <style>
 /* ====================================================================
    Dreampath v2 — ERP token system
-   Source: user-supplied "PMO Style Tokens v2 (ERP)" + "Layout 시안 1차".
+   Source: user-supplied "PMO Style Tokens v2 (ERP)" + "Layout Draft 1".
    Kept inline per DREAMPATH.md Section 3.1 (single-source CSS).
    ==================================================================== */
 :root {
@@ -63,9 +64,22 @@
   --shadow-pop: 0 2px 8px rgba(17,24,39,0.08), 0 0 0 1px rgba(17,24,39,0.05);
   --focus-ring: 0 0 0 2px var(--navy-600), 0 0 0 4px rgba(10,92,158,0.25);
 
-  --font: "Google Sans Flex", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-         "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Stack order:
+     1. Google Sans Flex (webfont, variable, loaded above)
+     2. -apple-system / BlinkMacSystemFont / Segoe UI / Roboto — system sans on
+        every major OS so latency never forces a font swap
+     3. system-ui / sans-serif as final safety net
+     NO Korean-face fallbacks — the UI is English-only; adding Apple SD
+     Gothic Neo / Noto Sans KR here was causing Korean system serifs to
+     render digits on some machines when Google Sans Flex was slow. */
+  --font: "Google Sans Flex", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Helvetica, Arial, system-ui, sans-serif;
+  /* Real monospace uses OS stack only — ui-monospace maps to SF Mono (macOS) /
+     Cascadia Mono (Win) / DejaVu Sans Mono (Linux). Dropping the JetBrains
+     Mono CDN step prevents the network-hiccup cascade that ended in the
+     Korean system serif ("Alice-like") being used for digits. */
+  --font-mono: ui-monospace, "SF Mono", "Menlo", "Cascadia Mono", "Consolas",
+               "Liberation Mono", monospace;
   --fs-10: 10px; --fs-11: 11px; --fs-12: 12px; --fs-13: 13px;
   --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px;
   --fs-20: 20px; --fs-24: 24px;
@@ -484,12 +498,11 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 }
 .dp-stat .val { display: flex; align-items: baseline; gap: 8px; }
 .dp-stat .n {
-  /* Google Sans Flex with tabular figures for stat values.
-     [CASE STUDY 2026-04-24 — stat numerals font]
-     JetBrains Mono + SF Mono fallback was rendering as a serif-looking
-     digit ("앨리스체") on some systems. Switch to the UI font with
-     tabular-nums so spacing stays aligned but the figure style matches
-     the rest of the surface. */
+  /* Google Sans Flex with tabular figures for stat values. We stay on the UI
+     font (not monospace) and rely on font-feature-settings tnum/lnum to keep
+     digit widths aligned, so the stat strip reads as one piece with the
+     surrounding copy. See Section 20 of DREAMPATH.md for why the mono font
+     chain was removed from the page (CDN fallback hazard). */
   font-family: var(--font);
   font-feature-settings: "tnum" 1, "lnum" 1;
   font-variant-numeric: tabular-nums lining-nums;

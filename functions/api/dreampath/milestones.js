@@ -55,19 +55,19 @@ export async function onRequestPost({ request, env }) {
   // Add discussion
   if (action === 'discuss') {
     const id = parseInt(url.searchParams.get('id') || '', 10);
-    if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+    if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
     const { content, author } = body;
-    if (!content || !content.trim()) return json({ error: '내용을 입력해주세요.' }, 400);
+    if (!content || !content.trim()) return json({ error: 'Content is required.' }, 400);
     const result = await env.DB.prepare(
       `INSERT INTO dp_discussions (milestone_id, content, author) VALUES (?, ?, ?)`
-    ).bind(id, content.trim().slice(0, 2000), author ? author.trim().slice(0, 50) : '익명').run();
+    ).bind(id, content.trim().slice(0, 2000), author ? author.trim().slice(0, 50) : 'Anonymous').run();
     return json({ id: result.meta.last_row_id, ok: true });
   }
 
   // Create milestone
   const { title, description, due_date, status } = body;
   if (!title || typeof title !== 'string' || !title.trim()) {
-    return json({ error: '제목을 입력해주세요.' }, 400);
+    return json({ error: 'Title is required.' }, 400);
   }
 
   const maxOrder = await env.DB.prepare(
@@ -92,7 +92,7 @@ export async function onRequestPost({ request, env }) {
 export async function onRequestPut({ request, env }) {
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
 
   let body;
   try { body = await request.json(); }
@@ -105,7 +105,7 @@ export async function onRequestPut({ request, env }) {
   if (body.due_date !== undefined) { fields.push('due_date = ?'); values.push(body.due_date ? body.due_date.trim().slice(0, 20) : null); }
   if (body.status !== undefined && VALID_STATUSES.includes(body.status)) { fields.push('status = ?'); values.push(body.status); }
 
-  if (fields.length === 0) return json({ error: '변경할 내용이 없습니다.' }, 400);
+  if (fields.length === 0) return json({ error: 'No fields to update.' }, 400);
   values.push(id);
   await env.DB.prepare(`UPDATE dp_milestones SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
   return json({ ok: true });
@@ -116,7 +116,7 @@ export async function onRequestDelete({ request, env }) {
   const id     = parseInt(url.searchParams.get('id') || '', 10);
   const action = url.searchParams.get('action');
 
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
 
   if (action === 'discuss') {
     await env.DB.prepare(`DELETE FROM dp_discussions WHERE id = ?`).bind(id).run();

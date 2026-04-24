@@ -40,14 +40,14 @@ export async function onRequestPost({ request, env, data }) {
 
   const { title, content, type, priority, added_by, reply_to_id } = body;
   if (!title || typeof title !== 'string' || !title.trim()) {
-    return json({ error: '제목을 입력해주세요.' }, 400);
+    return json({ error: 'Title is required.' }, 400);
   }
 
   const safeTitle    = title.trim().slice(0, 200);
   const safeContent  = content ? content.trim().slice(0, 5000) : null;
   const safeType     = VALID_TYPES.includes(type) ? type : 'note';
   const safePriority = VALID_PRIORITIES.includes(priority) ? priority : 'normal';
-  const safeAddedBy  = added_by ? added_by.trim().slice(0, 50) : '익명';
+  const safeAddedBy  = added_by ? added_by.trim().slice(0, 50) : 'Anonymous';
   const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
 
   // Validate reply_to_id exists
@@ -71,7 +71,7 @@ export async function onRequestPut({ request, env, data }) {
   const denied = requirePerm(data, 'write:notes'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
 
   let body;
   try { body = await request.json(); }
@@ -86,7 +86,7 @@ export async function onRequestPut({ request, env, data }) {
   if (body.status !== undefined && VALID_STATUSES.includes(body.status)) { fields.push('status = ?'); values.push(body.status); }
   if (body.priority !== undefined && VALID_PRIORITIES.includes(body.priority)) { fields.push('priority = ?'); values.push(body.priority); }
 
-  if (fields.length === 0) return json({ error: '변경할 내용이 없습니다.' }, 400);
+  if (fields.length === 0) return json({ error: 'No fields to update.' }, 400);
   fields.push("updated_at = datetime('now')");
   values.push(id);
 
@@ -98,7 +98,7 @@ export async function onRequestDelete({ request, env, data }) {
   const denied = requirePerm(data, 'write:notes'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
-  if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
+  if (!id || isNaN(id)) return json({ error: 'id is required.' }, 400);
   await env.DB.prepare(`DELETE FROM dp_notes WHERE id = ?`).bind(id).run();
   return json({ ok: true });
 }

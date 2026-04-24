@@ -220,7 +220,7 @@ export async function onRequestPost({ request, env }) {
       actor: safeUsername,
       ip,
       path: '/api/dreampath/auth',
-      message: 'Dreampath 로그인 실패',
+      message: 'Dreampath login failed',
     });
     await new Promise((r) => setTimeout(r, 400));
     return json({ error: 'Invalid username or password.' }, 401);
@@ -237,7 +237,7 @@ export async function onRequestPost({ request, env }) {
         actor: safeUsername,
         ip,
         path: '/api/dreampath/auth',
-        message: 'Dreampath 로그인 실패',
+        message: 'Dreampath login failed',
       });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Invalid username or password.' }, 401);
@@ -253,7 +253,7 @@ export async function onRequestPost({ request, env }) {
         actor: safeUsername,
         ip,
         path: '/api/dreampath/auth',
-        message: 'Dreampath 계정 미설정 로그인 실패',
+        message: 'Dreampath account not provisioned',
       });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Account not set up. Contact admin.' }, 401);
@@ -268,7 +268,7 @@ export async function onRequestPost({ request, env }) {
         actor: safeUsername,
         ip,
         path: '/api/dreampath/auth',
-        message: 'Dreampath 로그인 실패',
+        message: 'Dreampath login failed',
       });
       await new Promise((r) => setTimeout(r, 400));
       return json({ error: 'Invalid username or password.' }, 401);
@@ -288,7 +288,7 @@ export async function onRequestPost({ request, env }) {
     actor: user.username,
     ip,
     path: '/api/dreampath/auth',
-    message: 'Dreampath 로그인 성공',
+    message: 'Dreampath login success',
   });
 
   await clearRateLimit(env, ip);

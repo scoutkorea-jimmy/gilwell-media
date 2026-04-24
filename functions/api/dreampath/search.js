@@ -94,7 +94,7 @@ export async function onRequestGet({ request, env, data }) {
         kind: 'task',
         id: item.id,
         title: item.title || '',
-        subtitle: item.assignee ? '담당: ' + item.assignee : 'Task',
+        subtitle: item.assignee ? 'Owner: ' + item.assignee : 'Task',
         meta: item.due_date || item.updated_at || '',
         score: item.score || 0,
         _scope: 'view:tasks',
