@@ -38,6 +38,8 @@ const DP = (() => {
     cmdOpen: false,
     boards: [],          // Loaded from /api/dreampath/boards on init
     latestVersion: '',   // Loaded from /api/dreampath/versions (newest row)
+    homePayload: null,   // Most recent /home response — used to gate approver buttons
+    versionsPage: 0,     // 0-based page index for Versions list
   };
 
   // Nav groups are derived at render time from state.user + state.boards
@@ -47,46 +49,61 @@ const DP = (() => {
   //   AFTER _acceptUser() has hydrated the user from /me.
   function _buildNavGroups() {
     const isAdmin = state.user && state.user.role === 'admin';
+    // Reference group is reserved for the primary operator (jimmy) — housekeeping
+    // surfaces (Board manager, User manager, version log, Dev Rules). This is
+    // intentionally stricter than the `admin` role gate used on the API.
+    const isOwner = state.user && state.user.username === 'jimmy';
     const userDept = String((state.user && state.user.department) || '').toLowerCase();
     const teamBoards = (state.boards || [])
       .filter(b => b.board_type === 'team')
       .filter(b => {
         if (isAdmin) return true;
-        const country = b.slug.slice(5).toLowerCase();  // team_xxx → xxx
+        const country = b.slug.slice(5).toLowerCase();
         return country && userDept.includes(country);
       })
       .map(b => ({ id: b.slug, label: b.title || b.slug, icon: 'users-admin' }));
 
+    // [CASE STUDY 2026-04-24 — PMO nav structure]
+    // Aligned to PMO industry conventions: Overview (at-a-glance) → Work
+    // (deliverables) → Schedule (time-bound ops) → People → Reference
+    // (admin-only ops/documentation). Calendar moved into Overview because
+    // a PMO dashboard surfaces today's schedule alongside announcements.
     return [
-      { title: 'Workspace', items: [
-        { id: 'home',          label: 'Home',            icon: 'home' },
-        { id: 'announcements', label: 'Announcements',   icon: 'megaphone' },
+      { title: 'Overview', items: [
+        { id: 'home',          label: 'Home',             icon: 'home' },
+        { id: 'announcements', label: 'Announcements',    icon: 'megaphone' },
+        { id: 'calendar',      label: 'Calendar',         icon: 'calendar' },
       ]},
-      { title: 'Project', items: [
-        { id: 'documents',     label: 'Documents',       icon: 'book' },
-        { id: 'minutes',       label: 'Meeting Minutes', icon: 'note' },
-        { id: 'tasks',         label: 'Tasks',           icon: 'check' },
-        { id: 'notes',         label: 'Notes / Issues',  icon: 'clipboard' },
+      { title: 'Work', items: [
+        { id: 'documents',     label: 'Documents',        icon: 'book' },
+        { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note' },
+        { id: 'tasks',         label: 'Tasks',            icon: 'check' },
+        { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard' },
       ]},
-      // Teams group — Team Boards landing first, then each accessible team
-      // with its country flag in place of an SVG icon (sidebar rendering
-      // special-cases `flag` to skip the CSS-mask path).
-      { title: 'Teams', items: [
-          { id: 'teams', label: 'Team Boards', icon: 'users-admin' },
-          ...teamBoards.map(b => ({
-            id: b.id, label: b.label,
-            flag: _countryFlag(b.id.slice(5)),
-          })),
-          { id: 'calendar', label: 'Calendar', icon: 'calendar' },
-          { id: 'contacts', label: 'Contacts', icon: 'phone' },
+      { title: 'People', items: [
+        { id: 'teams',    label: 'Team Boards', icon: 'users-admin' },
+        ...teamBoards.map(b => ({
+          id: b.id, label: b.label,
+          flag: _countryFlag(b.id.slice(5)),
+        })),
+        { id: 'contacts', label: 'Contacts',    icon: 'phone' },
       ] },
-      { title: 'Reference', items: (isAdmin
-        ? [{ id: 'users',    label: 'Users',     icon: 'users-admin' },
-           { id: 'rules',    label: 'Dev Rules', icon: 'layers' },
-           { id: 'versions', label: 'Versions',  icon: 'file-text' }]
+      { title: 'Reference', items: (isOwner
+        ? [{ id: 'reference', label: 'Admin console', icon: 'settings' },
+           { id: 'users',     label: 'Users',         icon: 'users-admin' },
+           { id: 'rules',     label: 'Dev Rules',     icon: 'layers' },
+           { id: 'versions',  label: 'Versions',      icon: 'file-text' }]
         : []
       )},
     ].filter(g => g.items.length > 0);
+  }
+
+  // Returns Set of post_ids where current user is still listed as a pending
+  // approver. Null = home payload not loaded yet (caller should fetch first).
+  function _myPendingApprovalSet() {
+    if (!state.homePayload) return null;
+    const arr = state.homePayload.pending_approvals || [];
+    return new Set(arr.map(a => Number(a.post_id)));
   }
 
   function _boardTitle(slug) {
@@ -772,10 +789,10 @@ const DP = (() => {
         <button type="button" data-density="default" onclick="DP.setDensity('default')" title="Normal — 32px rows">Normal</button>
         <button type="button" data-density="comfort" onclick="DP.setDensity('comfort')" title="Spacious — 40px rows">Spacious</button>
       </div>
-      <label class="dp-search">
+      <label class="dp-search" onclick="DP.openSearch()">
         <span class="dp-sr-only">Search</span>
-        <input type="search" id="dp-search-input" placeholder="Search… (⌘K)"
-               onfocus="DP.openCmd()" aria-label="Search">
+        <input type="search" id="dp-search-input" placeholder="Search posts, tasks, notes, contacts…"
+               readonly onfocus="DP.openSearch();this.blur();" aria-label="Search">
         <kbd>⌘K</kbd>
       </label>
       <button type="button" class="dp-iconbtn" aria-label="Notifications (3)" onclick="DP.openNotifs()">
@@ -830,6 +847,10 @@ const DP = (() => {
       users:         () => {
         if (!state.user || state.user.role !== 'admin') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
         _renderUsers(pageEl); label = 'Users';
+      },
+      reference:     () => {
+        if (!state.user || state.user.username !== 'jimmy') { _renderHome(pageEl); label = 'Home'; state.page = 'home'; return; }
+        _renderAdminConsole(pageEl); label = 'Admin console';
       },
       rules:         () => { _renderRules(pageEl);         label = 'Dev Rules'; },
       versions:      () => { _renderVersions(pageEl);      label = 'Versions'; },
@@ -886,15 +907,14 @@ const DP = (() => {
     root.appendChild(skeleton);
 
     // Parallel fetch: /home (main payload) + /posts?board=announcements (top 3).
-    // If either fails, the page still renders with whatever came back; api()
-    // handles the 401 → login bounce, so here null just means "empty panel".
     const [home, annRes] = await Promise.all([
       api('GET', 'home'),
       api('GET', 'posts?board=announcements&limit=3'),
     ]);
 
-    // If the auth step kicked us back to login, state.user is now null.
     if (!state.user) return;
+    // Stash home payload so approver-gating in Minutes/viewPost can check it.
+    if (home) state.homePayload = home;
 
     // Replace skeleton with real page.
     root.innerHTML = '';
@@ -1074,6 +1094,8 @@ const DP = (() => {
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'approved' });
     if (data) {
       toast('Approved', 'ok');
+      // Refresh home payload so my pending set no longer includes this post.
+      state.homePayload = await api('GET', 'home');
       navigate(state.page);
     }
   }
@@ -1084,6 +1106,7 @@ const DP = (() => {
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'rejected' });
     if (data) {
       toast('Rejected', 'ok');
+      state.homePayload = await api('GET', 'home');
       navigate(state.page);
     }
   }
@@ -1286,9 +1309,22 @@ const DP = (() => {
     }
 
     const isMinutes = (key === 'minutes');
+
+    // [CASE STUDY 2026-04-24 — approver gating]
+    // Approve/Reject buttons only render for posts where the *current user*
+    // is a pending approver. Data source: state.home.pending_approvals (home
+    // API already returns this filtered list). If we don't have home data
+    // cached (e.g. direct link to /minutes), fetch it once here.
+    let myPendingSet = _myPendingApprovalSet();
+    if (isMinutes && !myPendingSet) {
+      const h2 = await api('GET', 'home');
+      if (h2) state.homePayload = h2;
+      myPendingSet = _myPendingApprovalSet();
+    }
+
     const headers = isMinutes
-      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:140px">Approval</th><th style="width:170px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
-      : '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
+      ? '<th>Title</th><th style="width:140px">Author</th><th style="width:130px">Approval</th><th style="width:180px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
+      : '<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
 
     // [CASE STUDY — revision threading via parent_post_id]
     // Rejected minutes that were revised are stored with a parent_post_id
@@ -1309,33 +1345,36 @@ const DP = (() => {
     });
 
     function renderPostRow(p, depth) {
-      const id = 'POST-' + String(p.id).padStart(4, '0');
       const pin = p.pinned ? '<span class="dp-pin" style="margin-right:6px" aria-label="Pinned"></span>' : '';
       const ts = fmtTime(p.updated_at || p.created_at);
       const indent = depth > 0
         ? `<span style="display:inline-block;width:${depth * 18}px"></span><span style="color:var(--text-3);margin-right:6px;font-family:var(--font-mono)">ㄴ</span>`
         : '';
-      const titleCell = `${indent}${pin}${esc(p.title)}${depth > 0 ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>` : ''}`;
+      const revTag = depth > 0 ? ` <span class="dp-tag neutral" style="margin-left:6px">v${p.version_number || (depth + 1)}</span>` : '';
+      const titleCell = `${indent}${pin}${esc(p.title)}${revTag}`;
 
       if (isMinutes) {
         const s = p.approval_status || 'draft';
         const tone = s === 'approved' ? 'ok' : s === 'pending' ? 'warn' : s === 'rejected' ? 'alert' : 'neutral';
-        const inlineVote = (s === 'pending')
+        const rowClass = s === 'approved' ? 'dp-row-approved'
+                       : s === 'pending'  ? 'dp-row-pending'
+                       : s === 'rejected' ? 'dp-row-rejected' : '';
+        // Approve/Reject visible ONLY if I'm listed as a pending approver.
+        const canVote = s === 'pending' && myPendingSet && myPendingSet.has(Number(p.id));
+        const voteCell = canVote
           ? `<button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="event.stopPropagation();DP._inlineApprove(${Number(p.id)})">Approve</button>
              <button type="button" class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();DP._inlineReject(${Number(p.id)})">Reject</button>`
-          : `<span class="dp-tag ${tone}">${esc(s)}</span>`;
-        return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
-          <td class="mono">${id}</td>
+          : `<span style="color:var(--text-3);font-size:11px">—</span>`;
+        return `<tr class="${rowClass}" onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
           <td>${titleCell}</td>
           <td>${esc(p.author_name || '')}</td>
           <td><span class="dp-tag ${tone}">${esc(s)}</span></td>
-          <td style="white-space:nowrap">${inlineVote}</td>
+          <td style="white-space:nowrap">${voteCell}</td>
           <td class="mono">${p.comment_count || 0}</td>
           <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
       return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
-        <td class="mono">${id}</td>
         <td>${titleCell}</td>
         <td>${esc(p.author_name || '')}</td>
         <td class="mono">${p.comment_count || 0}</td>
@@ -1343,6 +1382,8 @@ const DP = (() => {
         <td class="mono">${esc(ts)}</td>
       </tr>`;
     }
+
+    // Moved to module scope below.
 
     const rowsList = [];
     function walk(p, depth) {
@@ -2137,35 +2178,243 @@ const DP = (() => {
   }
 
   // =========================================================
-  // RULES — live-fetch DREAMPATH.md (marked + DOMPurify)
+  // RULES — DREAMPATH.md live viewer with right-side TOC + scroll-spy
+  // Content spec: every section SHOULD document
+  //   · 개발 배경 (why we're doing this)
+  //   · 개발 목적 (what the user/system gains)
+  //   · 특이사항 / Remarks (non-obvious gotchas, prior incidents)
+  // The viewer auto-extracts h2/h3 headings into a sticky right rail.
   // =========================================================
   async function _renderRules(root) {
+    root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [h('h1', {}, 'Dev Rules')]));
-    const panel = h('div', { className: 'dp-panel' });
-    panel.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading DREAMPATH.md…</div>';
-    root.appendChild(panel);
+
+    const layout = h('div', { className: 'dp-rules-layout' });
+    const body = h('article', { className: 'dp-panel dp-rules-body', id: 'dp-rules-body' });
+    body.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading DREAMPATH.md…</div>';
+    const toc  = h('aside', { className: 'dp-rules-toc', 'aria-label': 'Table of contents' });
+    toc.innerHTML = '<div class="dp-h2">Contents</div><div id="dp-rules-toc-body" style="color:var(--text-3);font-size:12px">Loading…</div>';
+    layout.append(body, toc);
+    root.appendChild(layout);
+
+    let md;
     try {
       const res = await fetch('/DREAMPATH.md', { credentials: 'same-origin' });
-      const md = await res.text();
-      const body = md.replace(/^---\n[\s\S]*?\n---\n*/, '').replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2').replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/^>\s*\[!\w+\][^\n]*\n?/gm, '> ');
-      if (!window.marked) {
-        // Inject marked if not loaded
-        await new Promise((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/14.1.3/marked.min.js';
-          s.onload = resolve; s.onerror = reject;
-          document.head.appendChild(s);
-        });
-      }
-      window.marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
-      const raw = window.marked.parse(body);
-      const clean = _sanitize(raw);
-      panel.innerHTML = '';
-      const wrap = h('div', { className: 'dp-modal-body', style: { maxHeight: 'none' } });
-      wrap.innerHTML = clean;
-      panel.appendChild(wrap);
+      md = await res.text();
     } catch (err) {
-      panel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--alert)">Failed: ${esc(String(err))}</div>`;
+      body.innerHTML = `<div class="dp-panel-body pad" style="color:var(--alert)">Failed to load: ${esc(String(err))}</div>`;
+      return;
+    }
+
+    const clean = md
+      .replace(/^---\n[\s\S]*?\n---\n*/, '')
+      .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      .replace(/^>\s*\[!\w+\][^\n]*\n?/gm, '> ');
+
+    if (!window.marked) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/14.1.3/marked.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    window.marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
+    const raw = window.marked.parse(clean);
+    body.innerHTML = '<div class="dp-modal-body" style="max-height:none;padding:24px 32px">' + _sanitize(raw) + '</div>';
+
+    // Post-process: add IDs to h2/h3 for anchor nav; build TOC.
+    const headings = body.querySelectorAll('h2, h3');
+    const items = [];
+    headings.forEach((el, i) => {
+      const slug = 'rule-' + i;
+      el.id = slug;
+      const lvl = el.tagName === 'H2' ? 2 : 3;
+      items.push({ slug, lvl, text: el.textContent.trim() });
+    });
+
+    const tocBody = $('#dp-rules-toc-body');
+    tocBody.innerHTML = items.map(it => `
+      <a href="#${esc(it.slug)}" class="dp-toc-item dp-toc-h${it.lvl}" data-slug="${esc(it.slug)}"
+         onclick="event.preventDefault();DP._scrollToRule('${esc(it.slug)}')">
+        ${esc(it.text)}
+      </a>
+    `).join('');
+
+    // Install scroll-spy to highlight active section in TOC
+    _installRulesScrollSpy();
+  }
+
+  function _scrollToRule(slug) {
+    const el = document.getElementById(slug);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  let _rulesScrollHandler = null;
+  function _installRulesScrollSpy() {
+    if (_rulesScrollHandler) window.removeEventListener('scroll', _rulesScrollHandler);
+    const headings = $$('#dp-rules-body h2, #dp-rules-body h3');
+    const update = () => {
+      const y = window.scrollY + 80;  // account for topbar
+      let active = null;
+      headings.forEach(hd => {
+        if (hd.offsetTop <= y) active = hd.id;
+      });
+      $$('.dp-toc-item').forEach(a => {
+        a.classList.toggle('dp-toc-active', a.dataset.slug === active);
+      });
+    };
+    _rulesScrollHandler = update;
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+
+  // =========================================================
+  // ADMIN CONSOLE — jimmy only · board + user + version quick ops
+  // =========================================================
+  async function _renderAdminConsole(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Admin console'),
+      h('div', { style: { color: 'var(--text-3)', fontSize: '12px' } }, 'Primary-operator surface for the Dreampath instance.'),
+    ]));
+
+    const [boardsRes, usersRes, versionsRes] = await Promise.all([
+      api('GET', 'boards'),
+      api('GET', 'users'),
+      api('GET', 'versions'),
+    ]);
+    const boards = (boardsRes && boardsRes.boards) || [];
+    const users = (usersRes && usersRes.users) || [];
+    const versions = (versionsRes && versionsRes.versions) || [];
+
+    const tiles = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' } });
+    const tileData = [
+      { title: 'Boards',   count: boards.length,   sub: 'manage post boards + team boards', icon: 'layers',       onclick: 'DP._openBoardManager()' },
+      { title: 'Users',    count: users.length,    sub: 'create / edit / deactivate users', icon: 'users-admin',  onclick: "DP.navigate('users')" },
+      { title: 'Versions', count: versions.length, sub: 'release log · BP changelog format', icon: 'file-text',   onclick: "DP.navigate('versions')" },
+      { title: 'Dev Rules', count: '',             sub: 'DREAMPATH.md live-rendered',        icon: 'compass',     onclick: "DP.navigate('rules')" },
+    ];
+    tileData.forEach(t => {
+      const tile = h('button', {
+        type: 'button',
+        className: 'dp-panel',
+        style: { padding: '20px', textAlign: 'left', cursor: 'pointer', border: 'var(--bd)', borderRadius: 'var(--r-md)', background: '#fff', fontFamily: 'inherit' },
+        onclick: () => { eval(t.onclick); },
+      });
+      tile.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <span class="ico" style="width:18px;height:18px;background-color:var(--navy);-webkit-mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/18px 18px no-repeat;mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/18px 18px no-repeat"></span>
+          <strong style="font-size:var(--fs-14);color:var(--text)">${esc(t.title)}</strong>
+          ${t.count !== '' ? `<span style="margin-left:auto;font-family:var(--font-mono);color:var(--text-3);font-size:11px">${t.count}</span>` : ''}
+        </div>
+        <div style="font-size:var(--fs-12);color:var(--text-3);line-height:1.5">${esc(t.sub)}</div>
+      `;
+      tiles.appendChild(tile);
+    });
+    root.appendChild(tiles);
+
+    // Quick actions row
+    const actions = h('div', { className: 'dp-panel', style: { padding: '18px 20px', marginBottom: '20px' } });
+    actions.innerHTML = `
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0;font-size:var(--fs-13);font-weight:600">Quick actions</h3>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="dp-btn dp-btn-primary" onclick="DP._openBoardEditor()">+ New board</button>
+        <button class="dp-btn dp-btn-primary" onclick="DP._openUserEditor()">+ New user</button>
+        <button class="dp-btn dp-btn-primary" onclick="DP._openVersionEditor()">+ Log version</button>
+        <button class="dp-btn dp-btn-secondary" onclick="DP.navigate('contacts')">Contacts</button>
+        <button class="dp-btn dp-btn-secondary" onclick="DP.navigate('rules')">Dev Rules</button>
+      </div>
+    `;
+    root.appendChild(actions);
+
+    // Inline board list (also acts as delete surface — admin-only via API)
+    const boardPanel = h('div', { className: 'dp-panel' });
+    const PROTECTED = new Set(['announcements', 'documents', 'minutes']);
+    boardPanel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Boards <span class="count">${boards.length}</span></h3>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openBoardEditor()">+ Board</button>
+      </div>
+      <table class="dp-table">
+        <thead><tr><th style="width:180px">Slug</th><th>Title</th><th style="width:110px">Type</th><th style="width:90px">Posts</th><th style="width:170px">Created</th><th style="width:90px"></th></tr></thead>
+        <tbody>
+          ${boards.map(b => `
+            <tr>
+              <td class="mono">${esc(b.slug)}</td>
+              <td>${esc(b.title || '')}</td>
+              <td><span class="dp-tag ${b.board_type === 'team' ? 'info' : 'neutral'}">${esc(b.board_type)}</span></td>
+              <td class="mono">${b.post_count || 0}</td>
+              <td class="mono">${esc(fmtTime(b.created_at))}</td>
+              <td style="text-align:right">
+                ${PROTECTED.has(b.slug) || (b.post_count || 0) > 0
+                  ? `<span style="color:var(--text-3);font-size:11px">${PROTECTED.has(b.slug) ? 'protected' : 'has posts'}</span>`
+                  : `<button class="dp-btn dp-btn-danger dp-btn-sm" onclick="DP._deleteBoard(${Number(b.id)}, '${esc(b.slug)}')">Delete</button>`}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    root.appendChild(boardPanel);
+  }
+
+  // Board manager quick modal
+  function _openBoardManager() {
+    navigate('reference');  // Already on the page; re-render ensures fresh counts
+  }
+  function _openBoardEditor() {
+    _openModal(
+      'New board',
+      `
+      <div class="dp-field">
+        <label>Slug <span style="font-weight:400;color:var(--text-3);margin-left:4px">(a-z / 0-9 / _ only · becomes the URL)</span></label>
+        <input class="dp-input" id="dp-b-slug" placeholder="e.g. team_japan" autocomplete="off" pattern="[a-z0-9_]+">
+      </div>
+      <div class="dp-field">
+        <label>Title</label>
+        <input class="dp-input" id="dp-b-title" placeholder="Board label shown in sidebar">
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>Type</label>
+        <select class="dp-select" id="dp-b-type">
+          <option value="board">board — general, everyone can read</option>
+          <option value="team">team — gated by user.department</option>
+        </select>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveNewBoard()">Create</button>`
+    );
+  }
+  async function _saveNewBoard() {
+    const slug  = ($('#dp-b-slug').value || '').trim().toLowerCase();
+    const title = ($('#dp-b-title').value || '').trim();
+    const board_type = $('#dp-b-type').value;
+    if (!/^[a-z0-9_]+$/.test(slug)) { toast('Slug must be a-z / 0-9 / _ only', 'err'); return; }
+    if (!title) { toast('Title required', 'err'); return; }
+    const data = await api('POST', 'boards', { slug, title, board_type });
+    if (data) {
+      toast('Board created', 'ok');
+      _closeModal();
+      await _refreshBoards();
+      // Re-mount shell so the new board shows up in sidebar.
+      _mountShell();
+      navigate('reference');
+    }
+  }
+  async function _deleteBoard(id, slug) {
+    if (!confirm('Delete board "' + slug + '"? Posts must be removed first.')) return;
+    const data = await api('DELETE', 'boards?id=' + Number(id));
+    if (data) {
+      toast('Board deleted', 'ok');
+      await _refreshBoards();
+      _mountShell();
+      navigate('reference');
     }
   }
 
@@ -2410,10 +2659,16 @@ const DP = (() => {
     `;
     root.appendChild(hero);
 
-    // Release history — one card per version, BP Media-style (summary + bullets)
+    // Release history — paginated, 20 cards per page (BP Media style).
+    const PAGE_SIZE = 20;
+    const rest = versions.slice(1);  // skip the hero latest
+    const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
+    if (state.versionsPage >= totalPages) state.versionsPage = 0;
+    const start = state.versionsPage * PAGE_SIZE;
+    const slice = rest.slice(start, start + PAGE_SIZE);
+
     const list = h('div');
-    versions.forEach((v, idx) => {
-      if (idx === 0) return;
+    slice.forEach(v => {
       const cl = parseChangelog(v.description);
       const card = h('div', { className: 'dp-panel', style: { marginBottom: '12px' } });
       card.innerHTML = `
@@ -2438,6 +2693,17 @@ const DP = (() => {
       list.appendChild(card);
     });
     root.appendChild(list);
+
+    if (rest.length > PAGE_SIZE) {
+      const pager = h('div', { style: { display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center', padding: '12px 0', fontSize: '12px', color: 'var(--text-3)' } });
+      const p = state.versionsPage;
+      pager.innerHTML = `
+        <button class="dp-btn dp-btn-secondary dp-btn-sm" ${p === 0 ? 'disabled' : ''} onclick="DP._verPage(-1)">← Prev</button>
+        <span style="margin:0 10px;font-family:var(--font-mono)">${p + 1} / ${totalPages}</span>
+        <button class="dp-btn dp-btn-secondary dp-btn-sm" ${p >= totalPages - 1 ? 'disabled' : ''} onclick="DP._verPage(1)">Next →</button>
+      `;
+      root.appendChild(pager);
+    }
 
     // Version format guide (BP Media-style aa.bbb.cc)
     const guide = h('div', { className: 'dp-panel', style: { marginTop: '20px' } });
@@ -2485,6 +2751,11 @@ const DP = (() => {
        <button class="dp-btn dp-btn-primary" onclick="DP._saveVersion()">Save</button>`
     );
   }
+  function _verPage(delta) {
+    state.versionsPage = Math.max(0, (state.versionsPage || 0) + delta);
+    navigate('versions');
+  }
+
   async function _saveVersion() {
     const type = $('#dp-v-type').value;
     const description = ($('#dp-v-desc').value || '').trim();
@@ -2647,11 +2918,28 @@ const DP = (() => {
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
        ${canEdit ? `<button class="dp-btn dp-btn-secondary" onclick="DP._editPost('${esc(p.board)}', ${Number(p.id)})">Edit</button>` : ''}
        ${canDelete ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(p.board)}', ${Number(p.id)})">Delete</button>` : ''}
-       ${p.approval_status === 'pending' ? '<button class="dp-btn dp-btn-primary" onclick="DP._voteApproval(' + Number(p.id) + ", 'approved')\">Approve</button>" : ''}`
+       ${_canVoteOnPost(p) ? `<button class="dp-btn dp-btn-danger" onclick="DP._inlineReject(${Number(p.id)})">Reject</button>
+                              <button class="dp-btn dp-btn-primary" onclick="DP._inlineApprove(${Number(p.id)})">Approve</button>` : ''}`
     );
 
     // Load comments async (don't block the initial paint)
     _loadComments(Number(p.id));
+  }
+
+  // Can the *current user* cast an Approve/Reject vote on this post?
+  // Rule: post is 'pending' AND the user's display_name/username appears in
+  // dp_post_approvals with status='pending'. We read p.approvals (server
+  // returns it on GET /posts?id=) and compare case-insensitively.
+  function _canVoteOnPost(p) {
+    if (!p || p.approval_status !== 'pending') return false;
+    if (!Array.isArray(p.approvals) || !p.approvals.length) return false;
+    const me = [_displayName(), state.user && state.user.username]
+      .filter(Boolean).map(s => String(s).toLowerCase());
+    return p.approvals.some(a =>
+      a.status === 'pending' &&
+      a.approver_name &&
+      me.indexOf(String(a.approver_name).toLowerCase()) >= 0
+    );
   }
 
   async function _loadComments(postId) {
@@ -2898,6 +3186,99 @@ const DP = (() => {
     if (c) { closeCmd(); c.run(); }
   }
 
+  // =========================================================
+  // Search modal — unified cross-surface search (posts/tasks/notes/contacts)
+  // Replaces the old ⌘K palette entrypoint. Real search uses /api/dreampath/search
+  // =========================================================
+  let _searchSeq = 0;
+  function openSearch() {
+    _openModal('', `
+      <div class="dp-search-input-row">
+        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/img/dreampath-v2/icons/search.svg') center/14px no-repeat;mask:url('/img/dreampath-v2/icons/search.svg') center/14px no-repeat"></span>
+        <input type="text" id="dp-search-box" placeholder="Type to search — posts, tasks, notes, events, contacts…" autocomplete="off">
+        <kbd style="font-family:var(--font-mono);font-size:10px;border:var(--bd);padding:1px 5px;border-radius:var(--r-sm);background:var(--g-100);color:var(--text-3)">ESC</kbd>
+      </div>
+      <div class="dp-search-results" id="dp-search-results">
+        <div style="padding:40px 20px;text-align:center;color:var(--text-3);font-size:12px">Start typing to search…</div>
+      </div>
+    `, '');
+    // Swap the generic modal shell for search-modal styling
+    const m = $('#dp-modal');
+    if (m) m.classList.add('dp-search-modal');
+    // Hide the modal head + foot (we use input row as the head and results are inline)
+    const hd = m && m.querySelector('.dp-modal-head'); if (hd) hd.style.display = 'none';
+    const ft = m && m.querySelector('.dp-modal-foot'); if (ft) ft.style.display = 'none';
+
+    setTimeout(() => { const i = $('#dp-search-box'); if (i) i.focus(); }, 40);
+    const input = $('#dp-search-box');
+    input.addEventListener('input', () => _runSearch(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const first = $('.dp-search-hit');
+        if (first) first.click();
+      }
+    });
+  }
+
+  async function _runSearch(q) {
+    const seq = ++_searchSeq;
+    const host = $('#dp-search-results');
+    if (!host) return;
+    const query = String(q || '').trim();
+    if (!query) {
+      host.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-3);font-size:12px">Start typing to search…</div>';
+      return;
+    }
+    host.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px">Searching…</div>';
+    const data = await api('GET', 'search?q=' + encodeURIComponent(query));
+    if (seq !== _searchSeq) return;  // stale response
+    if (!data) return;
+    const results = (data.results || []);
+    if (!results.length) {
+      host.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-3);font-size:12px">No results.</div>';
+      return;
+    }
+    const buckets = { post: [], comment: [], task: [], note: [], event: [], contact: [] };
+    results.forEach(r => {
+      const k = r.kind || 'post';
+      if (buckets[k]) buckets[k].push(r);
+      else (buckets.post = buckets.post || []).push(r);
+    });
+    const order = ['post', 'task', 'note', 'event', 'comment', 'contact'];
+    const label = { post: 'Posts', comment: 'Comments', task: 'Tasks', note: 'Notes', event: 'Events', contact: 'Contacts' };
+    let html = '';
+    order.forEach(k => {
+      const list = buckets[k];
+      if (!list || !list.length) return;
+      html += `<div class="dp-search-group"><div class="dp-search-group-label">${esc(label[k] || k)} · ${list.length}</div>`;
+      list.slice(0, 8).forEach(r => {
+        const kindAttr = esc(k);
+        const idAttr = Number(r.id || r.ref_id || 0);
+        html += `<button type="button" class="dp-search-hit"
+                  onclick="DP._searchOpen('${kindAttr}', ${idAttr}, '${esc(r.board || '')}')">
+          <span class="kind">${esc(k)}</span>
+          <div class="body">
+            <div class="title">${esc(r.title || '(untitled)')}</div>
+            ${r.subtitle || r.meta ? `<div class="meta">${esc(r.subtitle || r.meta)}</div>` : ''}
+          </div>
+          <div class="meta-ts">${r.created_at ? esc(fmtDate(r.created_at)) : ''}</div>
+        </button>`;
+      });
+      html += '</div>';
+    });
+    host.innerHTML = html;
+  }
+
+  function _searchOpen(kind, id, board) {
+    _closeModal();
+    if (kind === 'post' || kind === 'comment') {
+      viewPost(board || 'announcements', Number(id));
+    } else if (kind === 'task')   { navigate('tasks'); setTimeout(() => viewTask(Number(id)), 80); }
+    else if (kind === 'note')    { navigate('notes'); setTimeout(() => viewNote(Number(id)), 80); }
+    else if (kind === 'event')   { navigate('calendar'); setTimeout(() => _calEventClick(Number(id)), 80); }
+    else if (kind === 'contact') { navigate('contacts'); }
+  }
+
   function openCreate() {
     if (state.page === 'minutes') _openPostEditor('minutes');
     else if (state.page === 'documents') _openPostEditor('documents');
@@ -3035,6 +3416,10 @@ const DP = (() => {
     _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
     _openContactEditor, _saveContact, _deleteContact, _filterContacts,
+    openSearch, _searchOpen,
+    _verPage,
+    _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
+    _scrollToRule,
   };
 })();
 

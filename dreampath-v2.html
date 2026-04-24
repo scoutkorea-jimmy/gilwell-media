@@ -7,8 +7,11 @@
 <title>Dreampath PMO</title>
 <meta name="robots" content="noindex, nofollow">
 
-<link rel="icon" type="image/svg+xml" href="/img/dreampath-v2/favicon.svg">
-<link rel="apple-touch-icon" href="/img/dreampath-v2/logo-mark.svg">
+<!-- Favicon = full project mark (swapped from the 32×32 tab glyph to the canonical
+     logo SVG per user 2026-04-24 spec). Apple touch icon stays on app-icon. -->
+<link rel="icon" type="image/svg+xml" href="/img/dreampath-v2/logo-mark.svg">
+<link rel="alternate icon" href="/img/dreampath-v2/favicon.svg">
+<link rel="apple-touch-icon" href="/img/dreampath-v2/logo-dreampath-app-icon.svg">
 
 <!-- Inter for UI, JetBrains Mono for IDs/code. Pretendard dropped: ERP target
      uses a single Western UI family; system Korean fallback handles hangul. -->
@@ -96,18 +99,29 @@ html[data-density="comfort"] { --row-default: 40px; --touch-min: 44px; }
 /* Reset + base */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-html { height: 100%; }
+html { height: 100%; font-family: var(--font); }
 body {
   min-height: 100%;
   background: var(--g-050);
   color: var(--text);
-  font: var(--fs-13)/1.45 var(--font);
+  font-family: var(--font);
+  font-size: var(--fs-13);
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+/* [CASE STUDY 2026-04-24 — global font enforcement]
+   Previous attempt left --font on body only; form elements + some
+   nested containers were falling back to system default because the
+   `font` shorthand didn't override on everything. We now explicitly
+   force font-family on every text-bearing element. */
+body, button, input, select, textarea, optgroup, option, pre, code, kbd, samp, label {
+  font-family: var(--font);
+}
+code, kbd, samp, pre, .mono, .dp-vh-version { font-family: var(--font-mono); }
 a { color: var(--navy-600); text-decoration: none; }
 a:hover { text-decoration: underline; }
-button { font-family: inherit; cursor: pointer; }
+button { cursor: pointer; }
 
 .dp-skip {
   position: absolute; left: 0; top: -44px;
@@ -503,6 +517,13 @@ button { font-family: inherit; cursor: pointer; }
 }
 .dp-table tbody tr { transition: background var(--dur-instant); }
 .dp-table tbody tr:hover { background: var(--g-150); cursor: pointer; }
+/* Approval status row tints (Minutes) */
+.dp-table tbody tr.dp-row-approved { background: #F3FAF5; }
+.dp-table tbody tr.dp-row-approved:hover { background: #E7F4EC; }
+.dp-table tbody tr.dp-row-pending  { background: #FEF8EC; }
+.dp-table tbody tr.dp-row-pending:hover  { background: #FBF0D8; }
+.dp-table tbody tr.dp-row-rejected { background: #F0F0F2; color: var(--text-3); }
+.dp-table tbody tr.dp-row-rejected:hover { background: #E6E6E9; }
 .dp-table tbody td { height: var(--row-default); }
 .dp-table tbody tr:last-child td { border-bottom: none; }
 .dp-table .mono { font-family: var(--font-mono); font-size: var(--fs-12); color: var(--text-3); }
@@ -699,6 +720,78 @@ button { font-family: inherit; cursor: pointer; }
 .dp-login-card .brand span { font-size: 10px; color: var(--text-3); letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-top: 3px; }
 .dp-login-card p { font-size: var(--fs-12); color: var(--text-3); margin: 0 0 16px; }
 .dp-login-card .dp-btn { width: 100%; justify-content: center; }
+
+/* ====================================================================
+   Dev Rules — content + right-side sticky TOC with scroll-spy
+   ==================================================================== */
+.dp-rules-layout {
+  display: grid; grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--s-5); align-items: flex-start;
+}
+.dp-rules-body { background: #fff; border: var(--bd); min-width: 0; }
+.dp-rules-body .dp-modal-body { font-size: var(--fs-13); line-height: 1.65; padding: 24px 32px; }
+.dp-rules-body h1 { font-size: var(--fs-18); margin-top: 0; }
+.dp-rules-body h2 { font-size: var(--fs-16); padding-top: 8px; scroll-margin-top: 72px; }
+.dp-rules-body h3 { font-size: var(--fs-14); color: var(--text-2); scroll-margin-top: 72px; }
+.dp-rules-toc {
+  position: sticky; top: 64px;
+  padding: 16px 18px;
+  background: #fff; border: var(--bd);
+  max-height: calc(100vh - 80px); overflow-y: auto;
+  font-size: var(--fs-12);
+}
+.dp-rules-toc .dp-h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: var(--bd); }
+.dp-toc-item {
+  display: block; padding: 5px 10px 5px 12px;
+  color: var(--text-2); text-decoration: none;
+  border-left: 2px solid transparent;
+  line-height: 1.35;
+  transition: color var(--dur-instant), border-color var(--dur-instant), background var(--dur-instant);
+}
+.dp-toc-item:hover { color: var(--text); text-decoration: none; background: var(--g-100); }
+.dp-toc-item.dp-toc-h3 { padding-left: 24px; font-size: 11px; color: var(--text-3); }
+.dp-toc-item.dp-toc-active {
+  color: var(--navy); font-weight: 600;
+  border-left-color: var(--navy);
+  background: var(--info-bg);
+}
+@media (max-width: 1100px) {
+  .dp-rules-layout { grid-template-columns: 1fr; }
+  .dp-rules-toc { position: static; max-height: 280px; }
+}
+
+/* ====================================================================
+   Search modal — triggered from topbar input
+   ==================================================================== */
+.dp-search-modal .dp-modal-body { padding: 0; max-height: 70vh; overflow: hidden; }
+.dp-search-input-row {
+  padding: 14px 18px; border-bottom: var(--bd);
+  display: flex; align-items: center; gap: 10px;
+}
+.dp-search-input-row input {
+  flex: 1; border: none; outline: none;
+  font: inherit; font-size: var(--fs-15); color: var(--text);
+  background: transparent;
+}
+.dp-search-results { padding: 12px 0; max-height: 56vh; overflow-y: auto; }
+.dp-search-group { margin-bottom: 10px; }
+.dp-search-group-label {
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-3); padding: 8px 18px 4px; font-weight: 600;
+}
+.dp-search-hit {
+  display: grid; grid-template-columns: 80px 1fr 140px;
+  gap: 10px; padding: 8px 18px;
+  cursor: pointer;
+  border: none; background: transparent; width: 100%; text-align: left;
+  font: inherit; align-items: center;
+}
+.dp-search-hit:hover { background: var(--g-100); }
+.dp-search-hit .kind { font-size: 10px; color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase; }
+.dp-search-hit .body { min-width: 0; }
+.dp-search-hit .body .title { font-size: var(--fs-13); font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dp-search-hit .body .meta { font-size: 11px; color: var(--text-3); }
+.dp-search-hit .meta-ts { font-family: var(--font-mono); color: var(--text-3); font-size: 11px; text-align: right; }
 
 /* ====================================================================
    Calendar month grid
