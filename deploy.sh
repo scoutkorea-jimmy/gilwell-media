@@ -99,10 +99,16 @@ else
 fi
 
 # ── 캐시 버스팅: HTML 파일의 ?v= 쿼리스트링을 새 버전으로 치환 ────────────────
+# 이전 버전은 배포 후 `git checkout -- $f` 로 파일 전체를 원복했는데, 그 사이에
+# 개발자가 커밋하지 않은 *기능* 변경이 있으면 전부 날아갔다 (2026-04-24 사고).
+# 이제는 이전 `?v=` 토큰을 기억해뒀다가 배포 후 정확히 그 토큰만 복원한다.
 echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
 HTML_FILES=$(find . -maxdepth 1 -name '*.html' -type f)
+declare -a PREV_TOKENS
 for f in $HTML_FILES; do
-  # ?v=숫자.숫자.숫자 패턴을 새 버전으로 치환
+  # 가장 먼저 등장하는 ?v= 토큰 하나를 저장 (같은 파일 내에서는 모두 동일 버전이라 가정)
+  PREV=$(grep -oE '\?v=[0-9]+\.[0-9]+\.[0-9]+' "$f" 2>/dev/null | head -1 || true)
+  PREV_TOKENS+=("${f}|${PREV}")
   sed -i '' "s/?v=[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/?v=${VERSION}/g" "$f"
 done
 
@@ -111,9 +117,13 @@ echo ""
 echo "🚀 Deploying to Cloudflare Pages..."
 wrangler pages deploy . --project-name "$PROJECT"
 
-# ── HTML 원복 (git working tree를 깨끗하게 유지) ──────────────────────────────
-for f in $HTML_FILES; do
-  git checkout -- "$f" 2>/dev/null || true
+# ── HTML ?v= 토큰만 원래대로 되돌림 (커밋되지 않은 기능 변경은 건드리지 않음) ──
+for entry in "${PREV_TOKENS[@]}"; do
+  f="${entry%%|*}"
+  prev="${entry#*|}"
+  if [[ -n "$prev" ]]; then
+    sed -i '' "s/?v=[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/${prev}/g" "$f" 2>/dev/null || true
+  fi
 done
 
 if [[ "$SKIP_VERSION" == true ]]; then

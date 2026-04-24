@@ -7,6 +7,8 @@
  * DELETE /api/dreampath/events?id=N           — delete (admin only)
  */
 
+import { requirePerm } from '../../_shared/dreampath-perm.js';
+
 const VALID_RECURRENCE = ['daily', 'weekly', 'biweekly', 'monthly', 'yearly'];
 
 function json(data, status = 200) {
@@ -58,7 +60,8 @@ function expandRecurring(events, rangeStart, rangeEnd) {
   return result;
 }
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet({ request, env, data }) {
+  const denied = requirePerm(data, 'view:calendar'); if (denied) return denied;
   const url   = new URL(request.url);
   const id    = parseInt(url.searchParams.get('id') || '', 10);
   const month = url.searchParams.get('month');
@@ -125,6 +128,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env, data }) {
+  const denied = requirePerm(data, 'write:calendar'); if (denied) return denied;
   if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
@@ -156,6 +160,7 @@ export async function onRequestPost({ request, env, data }) {
 }
 
 export async function onRequestPut({ request, env, data }) {
+  const denied = requirePerm(data, 'write:calendar'); if (denied) return denied;
   // Any authenticated user can edit — middleware already verified the token
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
@@ -224,6 +229,7 @@ export async function onRequestPut({ request, env, data }) {
 }
 
 export async function onRequestDelete({ request, env, data }) {
+  const denied = requirePerm(data, 'write:calendar'); if (denied) return denied;
   if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);

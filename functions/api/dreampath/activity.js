@@ -9,18 +9,13 @@
  * Each item: { kind: 'post'|'event'|'comment', ref_id, title, meta, note, created_at, board }
  */
 
+import { requireAdmin } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
-}
-
-function requireAdmin(data) {
-  if (!data || !data.dpUser || data.dpUser.role !== 'admin') {
-    return json({ error: 'Admin access required.' }, 403);
-  }
-  return null;
 }
 
 export async function onRequestGet({ request, env, data }) {
@@ -87,9 +82,10 @@ export async function onRequestGet({ request, env, data }) {
     })))
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
-  // Total rows across the 3 sources (cheap count — we only keep per-source caps
-  // so the "total" is an approximation once history is huge. Good enough for a
-  // pagination hint; client caps total pages by it.)
+  // Total rows across the 3 sources — sum of row counts is exact because the
+  // three tables are disjoint (no row belongs to two sources). We only need
+  // an approximation of merge-sorted uniqueness if the same event were
+  // logged in two tables, which never happens in this schema.
   const [{ n: postsN } = {}, { n: eventsN } = {}, { n: commentsN } = {}] = await Promise.all([
     env.DB.prepare(`SELECT COUNT(*) AS n FROM dp_post_history`).first(),
     env.DB.prepare(`SELECT COUNT(*) AS n FROM dp_event_history`).first(),

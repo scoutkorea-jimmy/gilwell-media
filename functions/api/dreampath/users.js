@@ -22,12 +22,10 @@ async function hashPassword(password) {
   }, baseKey, 256);
   return `pbkdf2$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${bytesToHex(new Uint8Array(bits))}`;
 }
+import { requireAdmin } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-}
-function requireAdmin(data) {
-  if (data.dpUser.role !== 'admin') return json({ error: 'Admin access required.' }, 403);
-  return null;
 }
 
 export async function onRequestGet({ request, env, data }) {

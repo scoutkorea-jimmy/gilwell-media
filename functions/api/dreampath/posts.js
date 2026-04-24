@@ -2,13 +2,23 @@
  * Dreampath · Board Posts
  * GET    /api/dreampath/posts?board=X&limit=N  — list posts
  * GET    /api/dreampath/posts?id=N             — single post with files + history
- * POST   /api/dreampath/posts                  — create (admin only)
- * PUT    /api/dreampath/posts?id=N             — update, saves history (any user, edit_note required)
+ * POST   /api/dreampath/posts                  — create (needs write:<board-scope>)
+ * PUT    /api/dreampath/posts?id=N             — update, saves history (needs write scope OR author)
  * DELETE /api/dreampath/posts?id=N             — delete (admin only)
+ *
+ * Permission model (enforced server-side, Phase 5):
+ *   - GET list/detail  → view:<board-scope>
+ *   - POST / PUT       → write:<board-scope>
+ *   - DELETE           → admin role
+ *   Board-scope mapping: announcements/documents/minutes have their own scope;
+ *   every other board (team_*, custom) maps to view:teams / write:teams.
+ *   Admin role bypasses preset scopes entirely.
  *
  * File objects in POST/PUT body.files:
  *   { url, name, type, size, is_image }
  */
+
+import { hasPerm, requireAdmin, boardScope } from '../../_shared/dreampath-perm.js';
 
 // Hardcoded fallbacks — overridden at runtime by DB lookup
 const FALLBACK_VALID_BOARDS = ['announcements', 'documents', 'minutes', 'team_korea', 'team_nepal', 'team_indonesia', 'team_pakistan'];
@@ -52,10 +62,17 @@ export async function onRequestGet({ request, env, data }) {
 
   const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
 
-  // Team board access check for list requests
-  if (board && TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
-    const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
-    if (!_deptMatchesBoard(u?.department, board)) return json({ error: 'Access denied.' }, 403);
+  // Permission scope check FIRST — view:<scope> must be in the user's preset.
+  // Admin bypasses. Then, for team_* boards, department must match (keeps the
+  // legacy per-country gating on top of the preset system).
+  if (board) {
+    if (!hasPerm(data.dpUser, boardScope(board, 'view'))) {
+      return json({ error: 'You do not have permission to view this board.' }, 403);
+    }
+    if (TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
+      const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+      if (!_deptMatchesBoard(u?.department, board)) return json({ error: 'Access denied.' }, 403);
+    }
   }
 
   // ── Single post with files + history + linked event ───────────
@@ -69,7 +86,11 @@ export async function onRequestGet({ request, env, data }) {
     ).bind(id).first();
     if (!post) return json({ error: 'Post not found.' }, 404);
 
-    // Team board access check for single post
+    // Preset scope check — view:<scope> for the post's board must be granted.
+    if (!hasPerm(data.dpUser, boardScope(post.board, 'view'))) {
+      return json({ error: 'You do not have permission to view this post.' }, 403);
+    }
+    // Team board additional department check (legacy per-country gate).
     if (TEAM_BOARDS.includes(post.board) && data.dpUser.role !== 'admin') {
       const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
       if (!_deptMatchesBoard(u?.department, post.board)) return json({ error: 'Access denied.' }, 403);
@@ -136,15 +157,6 @@ export async function onRequestGet({ request, env, data }) {
 export async function onRequestPost({ request, env, data }) {
   const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
 
-  if (data.dpUser.role !== 'admin') {
-    // Non-admins can only post in their own team board
-    let body2;
-    try { body2 = await request.clone().json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    if (!TEAM_BOARDS.includes(body2.board)) return json({ error: 'Admin access required.' }, 403);
-    const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
-    if (!_deptMatchesBoard(u?.department, body2.board)) return json({ error: 'Access denied.' }, 403);
-  }
-
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
@@ -152,10 +164,27 @@ export async function onRequestPost({ request, env, data }) {
   if (!board || !title) return json({ error: 'board and title are required.' }, 400);
   if (!VALID_BOARDS.includes(board)) return json({ error: 'Invalid board.' }, 400);
 
+  // Preset scope check — write:<scope> required. Admin bypasses.
+  if (!hasPerm(data.dpUser, boardScope(board, 'write'))) {
+    return json({ error: 'You do not have permission to post to this board.' }, 403);
+  }
+  // Team boards additionally require department match (legacy per-country gate).
+  if (TEAM_BOARDS.includes(board) && data.dpUser.role !== 'admin') {
+    const u = await env.DB.prepare(`SELECT department FROM dp_users WHERE id = ?`).bind(data.dpUser.uid).first();
+    if (!_deptMatchesBoard(u?.department, board)) return json({ error: 'Access denied.' }, 403);
+  }
+
   const safeLinkedEventId = linked_event_id ? parseInt(linked_event_id, 10) || null : null;
   const safeApprovalStatus = ['pending','approved','rejected'].includes(approval_status) ? approval_status : 'pending';
   const safeParentId = parent_post_id ? parseInt(parent_post_id, 10) || null : null;
   const safeReplyToId = reply_to_id ? parseInt(reply_to_id, 10) || null : null;
+
+  // Reply chain + revision chain are mutually exclusive (DB constraint also
+  // enforces this at the schema level, but the API should reject early with
+  // a clearer error message).
+  if (safeParentId && safeReplyToId) {
+    return json({ error: 'A post cannot be both a revision (parent_post_id) and a reply (reply_to_id).' }, 400);
+  }
 
   // Validate reply_to_id exists
   if (safeReplyToId) {
@@ -258,9 +287,18 @@ export async function onRequestPut({ request, env, data }) {
   ).bind(id).first();
   if (!current) return json({ error: 'Post not found.' }, 404);
 
-  // Permission check: admin can edit anything; others can only edit their own posts
-  if (data.dpUser.role !== 'admin' && current.author_id !== data.dpUser.uid) {
-    return json({ error: 'You can only edit your own posts.' }, 403);
+  // Permission check (composite):
+  //   1. Admin can edit anything.
+  //   2. Non-admin: must have write:<scope> AND be the post author. Having the
+  //      preset scope alone is NOT enough to edit someone else's post — that
+  //      stays admin-only. The scope just gates who may edit their OWN posts.
+  if (data.dpUser.role !== 'admin') {
+    if (!hasPerm(data.dpUser, boardScope(current.board, 'write'))) {
+      return json({ error: 'You do not have permission to edit posts on this board.' }, 403);
+    }
+    if (current.author_id !== data.dpUser.uid) {
+      return json({ error: 'You can only edit your own posts.' }, 403);
+    }
   }
 
   // Content lock: approved minutes cannot be edited

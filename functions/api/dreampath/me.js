@@ -81,7 +81,10 @@ export async function onRequestGet({ env, data }) {
   try { perms = JSON.parse(user.preset_permissions || '{"permissions":[]}').permissions || []; } catch (_e) { perms = []; }
   user.permissions = perms;
   delete user.preset_permissions;
-  return json({ user });
+  // Include token expiry so the sidebar can render an accurate session
+  // countdown instead of the hardcoded "55:21" placeholder.
+  const exp = data.dpUser && data.dpUser.exp ? data.dpUser.exp : null;
+  return json({ user, session_expires_at: exp });
 }
 
 export async function onRequestPut({ request, env, data }) {
@@ -111,6 +114,18 @@ export async function onRequestPut({ request, env, data }) {
   }
 
   // Profile update
+  // Server-side phone format check mirrors the client helper. Optional country
+  // code prefix ("+82 10-1234-5678") plus 6–14 digits after stripping common
+  // separators. Stored as a display string, not parsed — just prevents
+  // nonsense values from landing in the DB.
+  if (body.phone !== undefined && body.phone) {
+    const raw = String(body.phone).trim();
+    const digitsOnly = raw.replace(/^\+?\d{0,4}\s*/, '').replace(/[\s\-().]/g, '');
+    if (!/^\d{6,14}$/.test(digitsOnly)) {
+      return json({ error: 'Phone must be 6–14 digits (optional country code prefix).' }, 400);
+    }
+  }
+
   const fields = [], values = [];
   if (body.display_name    !== undefined && body.display_name.trim())    { fields.push('display_name = ?');    values.push(body.display_name.trim().slice(0, 100)); }
   if (body.email           !== undefined) { fields.push('email = ?');           values.push(body.email?.trim()  || null); }

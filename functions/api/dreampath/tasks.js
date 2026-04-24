@@ -1,10 +1,12 @@
 /**
  * Dreampath · Tasks (Schedule)
- * GET    /api/dreampath/tasks             — list all
- * POST   /api/dreampath/tasks             — create
- * PUT    /api/dreampath/tasks?id=N        — update
- * DELETE /api/dreampath/tasks?id=N        — delete
+ * GET    /api/dreampath/tasks             — list all  (view:tasks)
+ * POST   /api/dreampath/tasks             — create    (write:tasks)
+ * PUT    /api/dreampath/tasks?id=N        — update    (write:tasks)
+ * DELETE /api/dreampath/tasks?id=N        — delete    (write:tasks)
  */
+
+import { requirePerm } from '../../_shared/dreampath-perm.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -16,7 +18,8 @@ function json(data, status = 200) {
 const VALID_STATUSES   = ['todo', 'in_progress', 'done'];
 const VALID_PRIORITIES = ['low', 'normal', 'high'];
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, data }) {
+  const denied = requirePerm(data, 'view:tasks'); if (denied) return denied;
   const rows = await env.DB.prepare(
     `SELECT id, title, description, assignee, status, priority, due_date, sort_order, created_at, updated_at
        FROM dp_tasks
@@ -25,7 +28,8 @@ export async function onRequestGet({ env }) {
   return json({ tasks: rows.results || [] });
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, data }) {
+  const denied = requirePerm(data, 'write:tasks'); if (denied) return denied;
   let body;
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
@@ -55,7 +59,8 @@ export async function onRequestPost({ request, env }) {
   return json({ id: result.meta.last_row_id, ok: true });
 }
 
-export async function onRequestPut({ request, env }) {
+export async function onRequestPut({ request, env, data }) {
+  const denied = requirePerm(data, 'write:tasks'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
   if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);
@@ -104,7 +109,8 @@ export async function onRequestPut({ request, env }) {
   return json({ ok: true });
 }
 
-export async function onRequestDelete({ request, env }) {
+export async function onRequestDelete({ request, env, data }) {
+  const denied = requirePerm(data, 'write:tasks'); if (denied) return denied;
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
   if (!id || isNaN(id)) return json({ error: 'id가 필요합니다.' }, 400);

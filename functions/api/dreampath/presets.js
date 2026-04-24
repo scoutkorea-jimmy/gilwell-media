@@ -7,15 +7,10 @@
  * DELETE /api/dreampath/presets?id=N     — delete preset (builtin + assigned users block)
  */
 
+import { requireAdmin } from '../../_shared/dreampath-perm.js';
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-}
-
-function requireAdmin(data) {
-  if (!data || !data.dpUser || data.dpUser.role !== 'admin') {
-    return json({ error: 'Admin access required.' }, 403);
-  }
-  return null;
 }
 
 function slugify(name) {

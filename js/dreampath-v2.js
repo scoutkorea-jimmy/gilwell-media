@@ -551,6 +551,10 @@ const DP = (() => {
   // -------------------------- Init --------------------------
   async function init() {
     if (state.density !== 'default') document.documentElement.setAttribute('data-density', state.density);
+    // Theme: light | dark | system. Persisted in localStorage, applied to <html>.
+    const savedTheme = localStorage.getItem('dp_v2_theme') || 'light';
+    state.theme = ['light', 'dark', 'system'].includes(savedTheme) ? savedTheme : 'light';
+    if (state.theme !== 'light') document.documentElement.setAttribute('data-theme', state.theme);
     // Reapply any local design-token overrides set via Dev Rules → Design Guide.
     _applyStoredDesignOverrides();
 
@@ -565,26 +569,43 @@ const DP = (() => {
       return;
     }
 
-    // If we already have cached user, paint shell immediately so the user
-    // sees navigation render while /me + /boards refresh in background.
-    if (state.user) {
-      await _refreshBoards();
-      _mountShell();
-      navigate('home');
-      _refreshSelf();
-      _refreshLatestVersion();
-    } else {
-      // No local user — need /me to succeed before we know what sidebar to render.
-      const [, me] = await Promise.all([_refreshBoards(), api('GET', 'me')]);
-      if (me && me.user) {
-        _acceptUser(me.user);
-        _mountShell();
-        navigate('home');
-        _refreshLatestVersion();
-      } else {
-        _renderLogin();
-      }
+    // [CASE STUDY 2026-04-24 — cold-boot permission race]
+    //   Previously painted the shell from cached `dp_user` in localStorage and
+    //   fetched `/me` in the background. For pre-Phase-5 cached users the
+    //   `permissions` array was missing, and `_hasPerm` denies by default, so
+    //   the sidebar flashed with every nav item hidden for a few hundred ms
+    //   until `/me` returned. Now we always wait for `/me` (and boards) to
+    //   complete before mounting the shell. A lightweight boot splash covers
+    //   the delay; if the wait exceeds a couple hundred ms the user sees a
+    //   "Loading…" label instead of a broken-looking sidebar.
+    _renderBootSplash();
+    const [, me] = await Promise.all([_refreshBoards(), api('GET', 'me')]);
+    if (!me || !me.user) {
+      _renderLogin();
+      return;
     }
+    _acceptUser(me.user);
+    if (me.session_expires_at) {
+      state.sessionExpiresAt = Number(me.session_expires_at);
+    }
+    _mountShell();
+    navigate('home');
+    _startSessionTicker();
+    _refreshLatestVersion();
+  }
+
+  function _renderBootSplash() {
+    const root = document.getElementById('dp-root');
+    if (!root) return;
+    root.innerHTML = `
+      <div style="display:grid;place-items:center;min-height:100vh;background:var(--g-050);color:var(--text-3);font-size:13px;font-family:var(--font)">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+          <div style="width:2px;height:2px;"></div>
+          <div class="dp-thread" style="width:120px"></div>
+          <span>Loading Dreampath…</span>
+        </div>
+      </div>
+    `;
   }
 
   async function _refreshBoards() {
@@ -625,15 +646,20 @@ const DP = (() => {
     try { localStorage.setItem('dp_user', JSON.stringify(state.user)); } catch (_) {}
   }
 
-  // Preset-gated page access. Admins bypass. Non-admins need "view:<page>" in their
-  // preset's permissions array. If a user has no preset, we fall back to the legacy
-  // behavior (all non-admin pages visible) so existing seeded accounts keep working
-  // until owner assigns them a preset via the admin console.
+  // Preset-gated page access. Admins bypass. Non-admins need "view:<page>" or
+  // "write:<page>" in their preset's permissions array.
+  //
+  // [CASE STUDY 2026-04-24 — deny-by-default]
+  //   Earlier version returned `true` for every "view:*" when a member had no
+  //   preset_id. That fallback leaked full read access whenever an owner
+  //   created a user and forgot to pick a preset. Migration 060 now
+  //   back-fills Viewer for every member missing a preset, and this helper
+  //   denies by default so a transient /me race no longer exposes pages it
+  //   shouldn't. Admin role still bypasses.
   function _hasPerm(scope) {
     if (!state.user) return false;
     if (state.user.role === 'admin') return true;
     const perms = Array.isArray(state.user.permissions) ? state.user.permissions : [];
-    if (!state.user.preset_id) return scope.startsWith('view:');
     return perms.includes(scope);
   }
   function _canView(page)  { return _hasPerm('view:'  + page); }
@@ -642,6 +668,43 @@ const DP = (() => {
   async function _refreshSelf() {
     const data = await api('GET', 'me');
     if (data && data.user) _acceptUser(data.user);
+    if (data && data.session_expires_at) {
+      state.sessionExpiresAt = Number(data.session_expires_at);
+      _startSessionTicker();
+    }
+  }
+
+  // Live session countdown using the JWT's exp claim returned by /me. Ticks
+  // once per minute — precise enough for a "you'll need to re-log in" hint
+  // without spamming DOM writes. If the user is within 10 minutes of exp we
+  // turn the label alert-red so it can't be ignored.
+  let _sessionTickTimer = null;
+  function _startSessionTicker() {
+    if (_sessionTickTimer) clearInterval(_sessionTickTimer);
+    const tick = () => {
+      const el = $('#dp-session-left');
+      if (!el) return;
+      const now = Date.now();
+      const exp = state.sessionExpiresAt || 0;
+      const ms = exp - now;
+      if (ms <= 0) {
+        el.textContent = 'expired';
+        el.style.color = 'var(--alert)';
+        if (_sessionTickTimer) clearInterval(_sessionTickTimer);
+        return;
+      }
+      const mins = Math.floor(ms / 60_000);
+      const days = Math.floor(mins / 60 / 24);
+      const hours = Math.floor((mins / 60) % 24);
+      let label;
+      if (days > 0) label = days + 'd ' + hours + 'h';
+      else if (hours > 0) label = hours + 'h ' + (mins % 60) + 'm';
+      else label = mins + 'm';
+      el.textContent = label;
+      el.style.color = mins < 10 ? 'var(--alert)' : '';
+    };
+    tick();
+    _sessionTickTimer = setInterval(tick, 60_000);
   }
 
   // [CASE STUDY — keyboard delegation for interactive divs]
@@ -665,10 +728,27 @@ const DP = (() => {
 
   function _installCmdHotkey() {
     document.addEventListener('keydown', (e) => {
-      // ⌘K / Ctrl+K
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      const t = e.target;
+      const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t.isContentEditable === true));
+      // ⌘K / Ctrl+K — global full-text SEARCH (posts/tasks/notes/events/contacts).
+      // This was previously bound to the "jump to page" command palette, but
+      // users expect ⌘K to mean search across industry-standard apps. The
+      // old nav palette is now reachable via ⌘⇧P (uncommon, power users only).
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        openSearch();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
         e.preventDefault();
         openCmd();
+        return;
+      }
+      // "/" opens search when not typing in a field (GitHub-style).
+      if (e.key === '/' && !inField) {
+        e.preventDefault();
+        openSearch();
+        return;
       }
       // ESC closes overlays
       if (e.key === 'Escape') {
@@ -841,6 +921,11 @@ const DP = (() => {
         <button type="button" data-density="default" onclick="DP.setDensity('default')" title="Normal — 32px rows">Normal</button>
         <button type="button" data-density="comfort" onclick="DP.setDensity('comfort')" title="Spacious — 40px rows">Spacious</button>
       </div>
+      <div class="dp-switcher" role="group" aria-label="Color theme">
+        <button type="button" data-theme-choice="light"  onclick="DP.setTheme('light')"  title="Light theme">Light</button>
+        <button type="button" data-theme-choice="dark"   onclick="DP.setTheme('dark')"   title="Dark theme">Dark</button>
+        <button type="button" data-theme-choice="system" onclick="DP.setTheme('system')" title="Follow OS setting">Auto</button>
+      </div>
       <label class="dp-search" onclick="DP.openSearch()">
         <span class="dp-sr-only">Search</span>
         <input type="search" id="dp-search-input" placeholder="Search posts, tasks, notes, contacts…"
@@ -857,6 +942,7 @@ const DP = (() => {
       </button>
     `;
     _updateDensityUI();
+    _updateThemeUI();
     return bar;
   }
 
@@ -872,6 +958,23 @@ const DP = (() => {
     if (d === 'default') document.documentElement.removeAttribute('data-density');
     else document.documentElement.setAttribute('data-density', d);
     _updateDensityUI();
+  }
+
+  // Theme: light / dark / system (follows OS via prefers-color-scheme).
+  // Persists to localStorage so the preference sticks across sessions, and
+  // applies immediately to <html> so every page switches in one repaint.
+  function setTheme(t) {
+    const theme = ['light', 'dark', 'system'].includes(t) ? t : 'light';
+    state.theme = theme;
+    localStorage.setItem('dp_v2_theme', theme);
+    if (theme === 'light') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', theme);
+    _updateThemeUI();
+  }
+  function _updateThemeUI() {
+    document.querySelectorAll('[data-theme-choice]').forEach(b => {
+      b.classList.toggle('on', b.getAttribute('data-theme-choice') === state.theme);
+    });
   }
 
   function toggleSide() {
@@ -1009,14 +1112,24 @@ const DP = (() => {
     left.appendChild(_renderPendingApprovalsPanel((home && home.pending_approvals) || []));
     // Board preview cards (PMO spec "Layout 시안 1차") — 3 latest from each board.
     // Fetched in parallel so they don't block the primary paint.
+    // Skip entirely for boards the user can't view, so members with a Viewer
+    // preset don't see an empty placeholder panel (would look broken).
     const docMinutesHost = h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--gap-section)' } });
-    left.appendChild(docMinutesHost);
+    const canDocs    = _canView('documents');
+    const canMinutes = _canView('minutes');
+    if (canDocs || canMinutes) left.appendChild(docMinutesHost);
     Promise.all([
-      api('GET', 'posts?board=documents&limit=3').catch(() => null),
-      api('GET', 'posts?board=minutes&limit=3').catch(() => null),
+      canDocs    ? _rawApi('GET', 'posts?board=documents&limit=3') : Promise.resolve(null),
+      canMinutes ? _rawApi('GET', 'posts?board=minutes&limit=3')   : Promise.resolve(null),
     ]).then(([docsRes, minutesRes]) => {
-      docMinutesHost.appendChild(_renderBoardPreviewPanel('Documents', 'documents', (docsRes && docsRes.posts) || []));
-      docMinutesHost.appendChild(_renderBoardPreviewPanel('Meeting Minutes', 'minutes', (minutesRes && minutesRes.posts) || []));
+      if (canDocs) {
+        const posts = (docsRes && docsRes.ok && docsRes.data && docsRes.data.posts) || [];
+        docMinutesHost.appendChild(_renderBoardPreviewPanel('Documents', 'documents', posts));
+      }
+      if (canMinutes) {
+        const posts = (minutesRes && minutesRes.ok && minutesRes.data && minutesRes.data.posts) || [];
+        docMinutesHost.appendChild(_renderBoardPreviewPanel('Meeting Minutes', 'minutes', posts));
+      }
     });
     // Activity feed stays on home only for admins — regular members get a
     // quieter home and the admin-only "Activity log" page for the full audit trail.
@@ -2284,7 +2397,7 @@ const DP = (() => {
       const teamSlug = _firstMatchingTeamSlug(u.department);
       const flag = teamSlug ? _countryFlag(teamSlug.slice(5)) : '';
       return `
-        <div style="padding:14px;border:var(--bd);border-radius:var(--r-md);background:#fff">
+        <div style="padding:14px;border:var(--bd);border-radius:var(--r-md);background:var(--surface)">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
             <div class="dp-avatar" style="width:32px;height:32px;font-size:12px">${esc(initials)}</div>
             ${flag ? `<span style="font-size:14px">${flag}</span>` : ''}
@@ -3652,15 +3765,19 @@ const DP = (() => {
     if (!ctx || !ctx.canvas) { _closeModal(); return; }
     const btn = $('#dp-crop-apply');
     if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
-    // Always emit PNG — keeps transparency fine, size acceptable at 512×512.
-    const blob = await new Promise(res => ctx.canvas.toBlob(res, 'image/png', 0.92));
+    // JPEG at 0.9 keeps quality high while producing 60-120KB files for a
+    // 512×512 viewport — 3-5× smaller than PNG, which matters because the
+    // avatar is loaded on every page (sidebar + account + contacts roster).
+    // The cropped canvas already has a solid background (#111827 fill), so
+    // transparency is not a concern.
+    const blob = await new Promise(res => ctx.canvas.toBlob(res, 'image/jpeg', 0.9));
     if (!blob) {
       if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
       toast('Could not process image', 'err');
       return;
     }
     const fd = new FormData();
-    fd.append('file', new File([blob], 'avatar.png', { type: 'image/png' }));
+    fd.append('file', new File([blob], 'avatar.jpg', { type: 'image/jpeg' }));
     let uploadRes;
     try {
       const r = await fetch('/api/dreampath/upload', {
@@ -3702,6 +3819,17 @@ const DP = (() => {
   async function _saveAccount() {
     const phoneCC  = ($('#dp-acct-phone-cc').value || '').trim();
     const phoneNum = ($('#dp-acct-phone-num').value || '').trim();
+    // Strip common separators for validation, then accept digit-only 6–14 chars.
+    // Same pattern used server-side in me.js PUT so the client catches most
+    // mistakes before the round-trip, but the server is the final gate.
+    if (phoneNum) {
+      const digitsOnly = phoneNum.replace(/[\s\-().]/g, '');
+      if (!/^\d{6,14}$/.test(digitsOnly)) {
+        toast('Phone number must be 6–14 digits (separators like - or space are OK)', 'err');
+        $('#dp-acct-phone-num').focus();
+        return;
+      }
+    }
     const phone = phoneNum ? (phoneCC + ' ' + phoneNum) : null;
     const body = {
       display_name:   ($('#dp-acct-name').value || '').trim(),
@@ -4448,8 +4576,8 @@ const DP = (() => {
     const box = h('div', { className: 'dp-cmd' });
     box.innerHTML = `
       <div class="dp-cmd-in">
-        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/img/dreampath-v2/icons/search.svg') center/14px 14px no-repeat;mask:url('/img/dreampath-v2/icons/search.svg') center/14px 14px no-repeat"></span>
-        <input type="text" id="dp-cmd-input" placeholder="Jump to…" autocomplete="off">
+        <span class="ico" aria-hidden="true" style="width:14px;height:14px;background-color:var(--text-3);-webkit-mask:url('/img/dreampath-v2/icons/compass.svg') center/14px 14px no-repeat;mask:url('/img/dreampath-v2/icons/compass.svg') center/14px 14px no-repeat"></span>
+        <input type="text" id="dp-cmd-input" placeholder="Jump to a page or action…" autocomplete="off">
         <kbd>ESC</kbd>
       </div>
       <div class="dp-cmd-list" id="dp-cmd-list"></div>
@@ -4717,7 +4845,7 @@ const DP = (() => {
   return {
     init, login, logout, navigate, toggleSide,
     openCmd, closeCmd, _cmdPick,
-    openCreate, openNotifs, setDensity,
+    openCreate, openNotifs, setDensity, setTheme,
     viewPost, viewTask, viewNote,
     _voteApproval, _inlineApprove, _inlineReject,
     _execTiptapCmd, _handlePickerChange, _removeFile,
