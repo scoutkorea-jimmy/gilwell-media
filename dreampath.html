@@ -1435,6 +1435,39 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   max-height: 260px; overflow-y: auto;
 }
 
+/* Per-board search + sort toolbar — sits between the tab bar and the post
+   table. Three clusters: search box, field checkboxes, sort controls. */
+.dp-board-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  padding: 10px 12px;
+  margin: 0 0 var(--gap-card);
+  background: var(--surface);
+  border: var(--bd); border-radius: var(--r-md);
+}
+.dp-board-search { display: flex; gap: 6px; flex: 1; min-width: 240px; }
+.dp-board-search .dp-input-sm { flex: 1; }
+.dp-input-sm, .dp-select-sm {
+  height: var(--row-compact); padding: 0 10px;
+  font-size: var(--fs-12);
+  border: 1px solid var(--g-300); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text);
+}
+.dp-input-sm:focus, .dp-select-sm:focus {
+  outline: none; border-color: var(--navy-600); box-shadow: 0 0 0 1px var(--navy-600);
+}
+.dp-board-search-opts, .dp-board-sort {
+  display: flex; gap: 10px; align-items: center;
+  font-size: var(--fs-12); color: var(--text-2);
+}
+.dp-board-search-opts-label {
+  font-size: 11px; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+}
+.dp-board-search-opts label {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+}
+.dp-board-search-opts input[type="checkbox"] { accent-color: var(--navy-600); }
+
 /* Bulk-selection action bar — sits above the board table when at least one
    row is checked. Admin-only. Persists selection across pagination via
    state.bulkSelection keyed by (board, activeTab). */

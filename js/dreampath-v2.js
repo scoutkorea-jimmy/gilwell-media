@@ -1828,6 +1828,15 @@ const DP = (() => {
       root.appendChild(bar);
     }
 
+    // Search + sort toolbar — sits between the tab bar and the post table.
+    // Mount first (above loadingPanel) so it stays on-screen while the post
+    // fetch is in flight; inputs hold the last query so typing a refinement
+    // doesn't flash-reset. Defined once here; state is read back from
+    // state.boardQuery[pageKey] after _renderBoard captures the key below.
+    const toolbar = h('div', { className: 'dp-board-toolbar' });
+    toolbar.id = 'dp-board-toolbar';
+    root.appendChild(toolbar);
+
     const loadingPanel = h('div', { className: 'dp-panel' });
     loadingPanel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">Loading ${esc(label)}…</div>`;
     root.appendChild(loadingPanel);
@@ -1839,13 +1848,62 @@ const DP = (() => {
     const pageKey = key + ':' + (activeTab || '__all');
     const page = state.boardPage[pageKey] || 0;
 
+    // Per-board search + sort state. Lives per pageKey so flipping tabs
+    // doesn't carry over the last search automatically. Defaults: no query,
+    // all fields selected, sort by updated desc.
+    if (!state.boardQuery) state.boardQuery = {};
+    if (!state.boardQuery[pageKey]) {
+      state.boardQuery[pageKey] = { q: '', fields: { title: true, content: true, author: true }, sortBy: 'updated', sortDir: 'desc' };
+    }
+    const query = state.boardQuery[pageKey];
+    const fields = [];
+    if (query.fields.title)   fields.push('title');
+    if (query.fields.content) fields.push('content');
+    if (query.fields.author)  fields.push('author');
+
     // Fetch posts scoped to the active tab (or entire board when activeTab=='').
     // `count=1` asks the server for total so we can render numbered pagination.
+    // Paint the search/sort toolbar now that we have pageKey + query.
+    toolbar.innerHTML = `
+      <div class="dp-board-search">
+        <input type="search" class="dp-input dp-input-sm" id="dp-board-q"
+               value="${esc(query.q || '')}" placeholder="Search posts…"
+               oninput="DP._boardSearchInput('${esc(pageKey)}', this.value)"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();DP._boardSearchApply('${esc(pageKey)}');}">
+        <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
+                onclick="DP._boardSearchApply('${esc(pageKey)}')">Search</button>
+        ${query.q ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm"
+                              onclick="DP._boardSearchClear('${esc(pageKey)}')">Clear</button>` : ''}
+      </div>
+      <div class="dp-board-search-opts">
+        <span class="dp-board-search-opts-label">Fields:</span>
+        <label><input type="checkbox" ${query.fields.title   ? 'checked' : ''} onchange="DP._boardSearchField('${esc(pageKey)}','title',this.checked)"> Title</label>
+        <label><input type="checkbox" ${query.fields.content ? 'checked' : ''} onchange="DP._boardSearchField('${esc(pageKey)}','content',this.checked)"> Content</label>
+        <label><input type="checkbox" ${query.fields.author  ? 'checked' : ''} onchange="DP._boardSearchField('${esc(pageKey)}','author',this.checked)"> Author</label>
+      </div>
+      <div class="dp-board-sort">
+        <span class="dp-board-search-opts-label">Sort:</span>
+        <select class="dp-select dp-select-sm" onchange="DP._boardSortBy('${esc(pageKey)}', this.value)">
+          <option value="updated"  ${query.sortBy === 'updated'  ? 'selected' : ''}>Updated</option>
+          <option value="created"  ${query.sortBy === 'created'  ? 'selected' : ''}>Created</option>
+          <option value="comments" ${query.sortBy === 'comments' ? 'selected' : ''}>Comments</option>
+          <option value="author"   ${query.sortBy === 'author'   ? 'selected' : ''}>Author</option>
+        </select>
+        <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
+                title="Toggle direction"
+                onclick="DP._boardSortDir('${esc(pageKey)}')">${query.sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}</button>
+      </div>
+    `;
+
     const qs = 'posts?board=' + encodeURIComponent(key)
       + '&limit=' + PAGE_SIZE
       + '&offset=' + (page * PAGE_SIZE)
       + '&count=1'
-      + (activeTab ? '&tab=' + encodeURIComponent(activeTab) : '');
+      + (activeTab ? '&tab=' + encodeURIComponent(activeTab) : '')
+      + (query.q ? '&q=' + encodeURIComponent(query.q) : '')
+      + (fields.length ? '&search_in=' + fields.join(',') : '')
+      + '&sort_by=' + encodeURIComponent(query.sortBy)
+      + '&sort_dir=' + encodeURIComponent(query.sortDir);
     const res = await _rawApi('GET', qs);
     loadingPanel.remove();
 
@@ -1907,8 +1965,7 @@ const DP = (() => {
     const canManageBoard = (state.user && state.user.role === 'admin') && !isMinutes;
     const headers = isMinutes
       ? '<th>Title</th><th style="width:140px">Author</th><th style="width:130px">Approval</th><th style="width:180px">Your vote</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
-      : ('<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>'
-          + (canManageBoard ? '<th style="width:120px;text-align:right">Actions</th>' : ''));
+      : '<th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
 
     // [CASE STUDY — unified threading via parent_post_id + reply_to_id]
     // Two kinds of children are nested under a parent with a ㄴ prefix:
@@ -1965,21 +2022,11 @@ const DP = (() => {
       const pinClass = (pinned && depth === 0) ? 'dp-row-pinned' : '';
       const hiddenClass = hidden ? 'dp-row-hidden' : '';
 
-      // Admin-only row actions: move to tab + hide/unhide. Non-admins don't
-      // see these controls (server also rejects their PUT is_hidden).
+      // Admin management flag — gates the leading checkbox on each row.
+      // Per-row action buttons were removed 2026-04-24 per owner spec: the
+      // bulk action bar that appears when at least one row is checked is the
+      // sole path for hide / unhide / move-to-tab on team boards.
       const canManage = isAdmin && !isMinutes;
-      const manageCell = canManage ? `
-        <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm dp-row-action"
-                title="${hidden ? 'Unhide for all' : 'Hide (admin only)'}"
-                onclick="event.stopPropagation();DP._togglePostHidden(${Number(p.id)}, ${hidden ? 0 : 1})">
-          ${hidden ? '👁' : '🚫'}
-        </button>
-        <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm dp-row-action"
-                title="Move to another tab"
-                onclick="event.stopPropagation();DP._openMovePostMenu(${Number(p.id)}, '${esc(key)}', event.currentTarget)">
-          ⇄
-        </button>
-      ` : '';
 
       if (isMinutes) {
         const s = p.approval_status || 'draft';
@@ -2026,7 +2073,6 @@ const DP = (() => {
         <td class="mono">${p.comment_count || 0}</td>
         <td class="mono">${p.view_count || 0}</td>
         <td class="mono">${esc(ts)}</td>
-        ${canManage ? `<td style="white-space:nowrap;text-align:right">${manageCell}</td>` : ''}
       </tr>`;
     }
 
@@ -2090,6 +2136,51 @@ const DP = (() => {
 
     // Restore prior selection + wire row-level handlers.
     if (showBulk) _restoreBulkSelection(pageKey);
+  }
+
+  // -------------------------- Board search + sort --------------------------
+  // All handlers key off pageKey (board + tab) because the toolbar in
+  // _renderBoard stamps that onto every onclick/onchange.
+  function _boardQuery(pageKey) {
+    if (!state.boardQuery) state.boardQuery = {};
+    if (!state.boardQuery[pageKey]) {
+      state.boardQuery[pageKey] = { q: '', fields: { title: true, content: true, author: true }, sortBy: 'updated', sortDir: 'desc' };
+    }
+    return state.boardQuery[pageKey];
+  }
+  function _boardSearchInput(pageKey, value) {
+    // Live-track the value but don't re-render until Enter / Search button
+    // so every keystroke doesn't trigger a D1 round-trip.
+    _boardQuery(pageKey).q = String(value || '');
+  }
+  function _boardSearchApply(pageKey) {
+    if (state.boardPage) state.boardPage[pageKey] = 0;  // new search → page 1
+    navigate(state.page);
+  }
+  function _boardSearchClear(pageKey) {
+    const q = _boardQuery(pageKey);
+    q.q = '';
+    if (state.boardPage) state.boardPage[pageKey] = 0;
+    navigate(state.page);
+  }
+  function _boardSearchField(pageKey, field, checked) {
+    const q = _boardQuery(pageKey);
+    q.fields[field] = !!checked;
+    // Only trigger a new fetch if the user has an active search — toggling
+    // fields with an empty query is a silent config change.
+    if (q.q) { state.boardPage[pageKey] = 0; navigate(state.page); }
+  }
+  function _boardSortBy(pageKey, value) {
+    const q = _boardQuery(pageKey);
+    q.sortBy = String(value || 'updated').toLowerCase();
+    if (state.boardPage) state.boardPage[pageKey] = 0;
+    navigate(state.page);
+  }
+  function _boardSortDir(pageKey) {
+    const q = _boardQuery(pageKey);
+    q.sortDir = q.sortDir === 'asc' ? 'desc' : 'asc';
+    if (state.boardPage) state.boardPage[pageKey] = 0;
+    navigate(state.page);
   }
 
   // Numbered pager hook. _buildPager calls DP._boardPage(idx) — we look up
@@ -6102,8 +6193,14 @@ const DP = (() => {
         <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()">${boardOpts}</select>
       </div>
       <div class="dp-field" id="dp-new-tab-field" style="display:none">
-        <label for="dp-new-tab">Tab <span style="font-weight:400;color:var(--text-3);margin-left:4px">(choose which sub-tab this post belongs to)</span></label>
-        <select class="dp-select" id="dp-new-tab"><option value="">All (no tab)</option></select>
+        <label for="dp-new-tab">Tab <span style="font-weight:400;color:var(--text-3);margin-left:4px">(pick a sub-tab, or leave as "All")</span></label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="dp-select" id="dp-new-tab" style="flex:1"><option value="">All (no tab)</option></select>
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
+                  id="dp-new-tab-add"
+                  title="Create a new tab inline"
+                  onclick="DP._newPostAddTab()">＋ Add tab</button>
+        </div>
       </div>
       <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'};flex-direction:column">
         <label>Approvers <span style="color:var(--alert);font-weight:400;margin-left:4px">(required for Meeting Minutes)</span></label>
@@ -6168,24 +6265,77 @@ const DP = (() => {
       _approverPicked = [];
       _renderApproverChips();
     }
-    // Populate the Tab select for non-core boards. If the board has no tabs
-    // configured, hide the whole field.
+    // Populate the Tab select for non-core boards. Always visible for
+    // team/custom boards — even with zero tabs configured — so the author
+    // can inline-create one via the "+ Add tab…" sentinel option.
     const tabField = $('#dp-new-tab-field');
     const tabSel   = $('#dp-new-tab');
     if (!tabField || !tabSel) return;
     const board = boardSel.value;
     const isCore = ['announcements', 'documents', 'minutes'].includes(board);
     if (isCore) { tabField.style.display = 'none'; return; }
-    const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(board)).catch(() => null);
-    const tabs = (res && res.tabs) || [];
-    if (!tabs.length) { tabField.style.display = 'none'; return; }
-    const preselect = _newPostTabSeed || '';
-    _newPostTabSeed = '';  // one-shot; next board switch doesn't reuse
-    tabSel.innerHTML = '<option value="">All (no tab)</option>'
-      + tabs.map(t => `<option value="${esc(t.slug)}"${t.slug === preselect ? ' selected' : ''}>${esc(t.title)}</option>`).join('');
+    await _refreshNewPostTabSelect(board);
     tabField.style.display = 'flex';
   }
+  async function _refreshNewPostTabSelect(board) {
+    const tabSel = $('#dp-new-tab');
+    if (!tabSel) return;
+    const res = await api('GET', 'board-tabs?board=' + encodeURIComponent(board)).catch(() => null);
+    const tabs = (res && res.tabs) || [];
+    const preselect = _newPostTabSeed || '';
+    _newPostTabSeed = '';  // one-shot
+
+    const tabOpts = tabs.map(t =>
+      `<option value="${esc(t.slug)}"${t.slug === preselect ? ' selected' : ''}>${esc(t.title)}</option>`
+    ).join('');
+    // "+ Add tab…" is the last option; picking it triggers the inline
+    // create flow via onchange. Value is reserved sentinel "__new".
+    const addOpt = tabs.length < 5
+      ? `<option value="__new" disabled style="color:var(--accent);font-weight:600">＋ Add tab…</option>`
+      : `<option disabled style="color:var(--text-3)">Max 5 tabs reached — delete one to add more</option>`;
+    tabSel.innerHTML = `
+      <option value="">All (no tab)</option>
+      ${tabOpts}
+      <option disabled>──────────</option>
+      ${addOpt}
+    `;
+    // Disabled options in HTMLSelectElement don't fire change; we use a
+    // separate "+ Add tab" button next to the select instead so admins can
+    // reach the flow in one click.
+  }
   let _newPostTabSeed = '';   // carry initialTab into the async board-change
+
+  // Opens an inline "New tab" prompt without closing the post editor. Uses a
+  // lightweight prompt + POST so the user doesn't lose draft content. After
+  // success, the Tab select is refreshed and the new tab auto-selected.
+  async function _newPostAddTab() {
+    const isAdmin = state.user && state.user.role === 'admin';
+    if (!isAdmin) { toast('Only admins can create tabs.', 'err'); return; }
+    const boardSel = $('#dp-new-board');
+    if (!boardSel) return;
+    const board = boardSel.value;
+    // Lightweight 2-step prompt — don't open a second modal on top of the
+    // post editor (would blow away the draft on close-prompt). window.prompt
+    // is intentional here for simplicity; admins can use the full Dev Rules
+    // tab manager for richer permissions later.
+    const title = window.prompt('New tab title for ' + board + ' (max 5 non-default tabs):');
+    if (!title || !title.trim()) return;
+    const res = await _rawApi('POST', 'board-tabs', { board_slug: board, title: title.trim() });
+    if (res.status === 400 && /5 tabs/.test(String(res.error || ''))) {
+      toast('이 보드는 이미 5개 탭이 있어 더 생성할 수 없습니다 (max 5).', 'err');
+      return;
+    }
+    if (!res.ok) {
+      toast(res.error || 'Could not create tab', 'err');
+      return;
+    }
+    toast('Tab created', 'ok');
+    const newSlug = (res.data && res.data.slug) || '';
+    _newPostTabSeed = newSlug;
+    await _refreshNewPostTabSelect(board);
+    const tabSel = $('#dp-new-tab');
+    if (tabSel && newSlug) tabSel.value = newSlug;
+  }
 
   // -------------------------- Approver chip picker --------------------------
   // Shared state. Populated when _openPostEditor fetches the roster. The
@@ -6340,11 +6490,14 @@ const DP = (() => {
     _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
+    _newPostAddTab,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,
     _boardPage,
+    _boardSearchInput, _boardSearchApply, _boardSearchClear,
+    _boardSearchField, _boardSortBy, _boardSortDir,
     _onBulkCheck, _bulkToggleAll, _bulkClear, _bulkSetHidden, _bulkMove, _bulkMoveConfirm,
     _requestCloseModal, _draftPromptCancel, _draftPromptDiscard, _draftPromptSave,
     _notifMarkRead, _notifMarkAllRead, _notifGo,
