@@ -159,6 +159,48 @@ const DP = (() => {
   };
   const icon = (name) => `<span class="ico" aria-hidden="true" style="--dp-icon:url('/img/dreampath-v2/icons/${name}.svg')"></span>`;
 
+  // -------------------------- API client (Phase 3) --------------------------
+  //
+  // [CASE STUDY 2026-04-24 — central API helper]
+  // All calls go through api() so the 401 branch can uniformly kick the user
+  // back to the login screen (session expired) without every caller handling
+  // it. Returns null on any failure (network / 4xx / 5xx) after surfacing a
+  // toast — callers must treat null as "no render, bail quietly".
+  async function api(method, path, body) {
+    const opts = { method, credentials: 'same-origin', headers: {} };
+    if (body !== undefined && body !== null) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    let res;
+    try {
+      res = await fetch('/api/dreampath/' + path, opts);
+    } catch (e) {
+      toast('네트워크 오류', 'err');
+      return null;
+    }
+    if (res.status === 401) {
+      // Session expired or missing — force back to login.
+      state.user = null;
+      try { localStorage.removeItem('dp_user'); } catch (_) {}
+      _renderLogin();
+      return null;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data && data.error ? data.error : 'HTTP ' + res.status, 'err');
+      return null;
+    }
+    return data;
+  }
+
+  // Dreampath session marker cookie — httpOnly dp_token is the real key,
+  // but dp_session=1 is a readable flag used purely to decide "do I even
+  // try to hit /me on page load". Missing → straight to login.
+  function _hasSessionCookie() {
+    return /(?:^|;\s*)dp_session=1(?:;|$)/.test(document.cookie || '');
+  }
+
   // User accessors — guard against legacy dp_user shape
   function _displayName() {
     if (!state.user) return 'Guest';
@@ -199,23 +241,67 @@ const DP = (() => {
   }
 
   // -------------------------- Init --------------------------
-  function init() {
-    // Apply persisted density
+  async function init() {
     if (state.density !== 'default') document.documentElement.setAttribute('data-density', state.density);
 
     _installKeyDelegation();
     _installCmdHotkey();
 
+    // Hydrate from localStorage optimistically (fast paint).
     const saved = localStorage.getItem('dp_user');
-    if (saved) {
-      try { state.user = JSON.parse(saved); } catch (_) {}
-    }
-    if (!state.user) {
+    if (saved) { try { state.user = JSON.parse(saved); } catch (_) {} }
+
+    // Decide boot path based on presence of dp_session=1 cookie.
+    // [CASE STUDY — dp_session is a gate, not a source of truth]
+    //  Presence only tells us "try /me"; absence means "straight to login".
+    //  If /me returns 401 the cookie is stale — clear local state and show login.
+    if (!_hasSessionCookie() && !state.user) {
       _renderLogin();
-    } else {
+      return;
+    }
+
+    if (state.user) {
       _mountShell();
       navigate('home');
+      // Background refresh from /me so any off-device profile change lands.
+      _refreshSelf();
+    } else {
+      // Cookie present but no cached user — hydrate from /me first.
+      const data = await api('GET', 'me');
+      if (data && data.user) {
+        _acceptUser(data.user);
+        _mountShell();
+        navigate('home');
+      } else {
+        _renderLogin();
+      }
     }
+  }
+
+  // Normalize server user payload into the state.user shape used by the
+  // rest of the UI. Server returns id/display_name; we also store the
+  // compact legacy fields (uid/name) that older callers expect.
+  function _acceptUser(u) {
+    if (!u) return;
+    state.user = {
+      uid: u.id,
+      id: u.id,
+      username: u.username,
+      display_name: u.display_name,
+      name: u.display_name || u.username,
+      role: u.role,
+      department: u.department || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      role_title: u.role_title || '',
+      avatar_url: u.avatar_url || '',
+    };
+    try { localStorage.setItem('dp_user', JSON.stringify(state.user)); } catch (_) {}
+  }
+
+  async function _refreshSelf() {
+    const data = await api('GET', 'me');
+    if (data && data.user) _acceptUser(data.user);
   }
 
   // [CASE STUDY — keyboard delegation for interactive divs]
@@ -282,15 +368,47 @@ const DP = (() => {
     document.title = '[v2 ok] Dreampath PMO — Sign in';
   }
 
-  function login() {
-    state.user = { uid: 1, username: 'jimmy', name: '정현', role: 'admin', department: 'PMO' };
-    localStorage.setItem('dp_user', JSON.stringify(state.user));
+  async function login() {
+    const uInput = $('#dp-u');
+    const pInput = $('#dp-p');
+    const username = (uInput && uInput.value || '').trim();
+    const password = (pInput && pInput.value || '');
+    if (!username || !password) {
+      toast('아이디와 비밀번호를 입력하세요', 'err');
+      return;
+    }
+    const btn = $('.dp-login-card .dp-btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+    let res;
+    try {
+      res = await fetch('/api/dreampath/auth', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch (_) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
+      toast('네트워크 오류', 'err');
+      return;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
+    if (!res.ok) {
+      toast((data && data.error) || '로그인 실패', 'err');
+      if (pInput) pInput.value = '';
+      return;
+    }
+    _acceptUser(data.user);
     _mountShell();
     navigate('home');
   }
 
-  function logout() {
-    localStorage.removeItem('dp_user');
+  async function logout() {
+    try {
+      await fetch('/api/dreampath/auth', { method: 'DELETE', credentials: 'same-origin', keepalive: true });
+    } catch (_) {}
+    try { localStorage.removeItem('dp_user'); } catch (_) {}
     state.user = null;
     _renderLogin();
   }
@@ -445,15 +563,42 @@ const DP = (() => {
   }
 
   // =========================================================
-  // HOME
+  // HOME — wired to /api/dreampath/home + /posts?board=announcements
   // =========================================================
-  function _renderHome(root) {
+  async function _renderHome(root) {
+    // Skeleton so the page isn't visually blank while fetches run.
+    root.innerHTML = '';
+    const skeleton = h('div', {});
+    skeleton.innerHTML = `
+      <div class="dp-page-head">
+        <div><h1 style="color:var(--text-3)">Loading…</h1></div>
+      </div>
+      <div class="dp-stat-strip" aria-hidden="true">
+        ${Array(5).fill(0).map(() => `<div class="dp-stat"><span class="lbl" style="background:var(--g-150);height:10px;width:60%;display:block;border-radius:2px"></span><span class="val"><span class="n" style="background:var(--g-150);height:20px;width:30px;display:block;border-radius:2px;margin:6px 0"></span></span></div>`).join('')}
+      </div>
+    `;
+    root.appendChild(skeleton);
+
+    // Parallel fetch: /home (main payload) + /posts?board=announcements (top 3).
+    // If either fails, the page still renders with whatever came back; api()
+    // handles the 401 → login bounce, so here null just means "empty panel".
+    const [home, annRes] = await Promise.all([
+      api('GET', 'home'),
+      api('GET', 'posts?board=announcements&limit=3'),
+    ]);
+
+    // If the auth step kicked us back to login, state.user is now null.
+    if (!state.user) return;
+
+    // Replace skeleton with real page.
+    root.innerHTML = '';
+
     const now = new Date();
+    const today = todayISO();
     const weekday = ['일','월','화','수','목','금','토'][now.getDay()];
     const dateStr = fmtDate(now);
-    const meetingsThisWeek = DATA.events.filter(e => e.type === 'meeting').length;
+    const meetingsThisWeek = (home && home.today_summary && home.today_summary.meetings_this_week) || 0;
 
-    // Page head
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('div', {}, [
         h('h1', {}, `Good morning, ${_displayName()}`),
@@ -465,43 +610,59 @@ const DP = (() => {
       ]),
     ]));
 
-    // Stat strip
-    root.appendChild(_renderStatStrip());
+    root.appendChild(_renderStatStrip(home, today));
 
-    // 2-col grid
     const grid = h('div', { className: 'dp-home' });
     const left = h('div', { className: 'dp-home-col' });
     const right = h('div', { className: 'dp-home-col' });
 
-    left.appendChild(_renderAnnouncementsPanel());
-    left.appendChild(_renderPendingApprovalsPanel());
-    left.appendChild(_renderActivityPanel());
+    const announcements = (annRes && annRes.posts) || [];
+    left.appendChild(_renderAnnouncementsPanel(announcements));
+    left.appendChild(_renderPendingApprovalsPanel((home && home.pending_approvals) || []));
+    left.appendChild(_renderActivityPanel((home && home.recent_changes) || []));
 
-    right.appendChild(_renderTodaySchedule());
-    right.appendChild(_renderMyTasks());
+    const events = (home && home.events_current_month) || [];
+    const myTasks = (home && home.my_tasks) || [];
+    const summary = (home && home.today_summary) || {};
+
+    right.appendChild(_renderTodaySchedule(events, today));
+    right.appendChild(_renderMyTasks(myTasks, summary));
+    // Team online + sprint progress stay as demo until dedicated APIs exist.
     right.appendChild(_renderTeamOnlinePanel());
-    right.appendChild(_renderSprintProgress());
+    right.appendChild(_renderSprintProgress(summary, myTasks));
 
     grid.append(left, right);
     root.appendChild(grid);
   }
 
-  function _renderStatStrip() {
-    const today = todayISO();
-    const myTasks = DATA.tasks.filter(t => t.assignee === _displayName());
-    const myTasksDue = myTasks.filter(t => t.status !== 'done').length;
-    const overdueCount = myTasks.filter(t => t.overdue).length;
-    const pendingApprovals = DATA.pendingApprovals.length;
-    const unreadMentions = 12; // demo
-    const todayMeetings = DATA.events.filter(e => e.start_date === today).length;
-    const sprintPct = DATA.sprint.pct;
+  // Chip metrics are all derived from /home payload + a couple of my_tasks
+  // computed fields (overdue flag is done client-side from due_date vs today).
+  function _renderStatStrip(home, today) {
+    const my = (home && home.my_tasks) || [];
+    const summary = (home && home.today_summary) || {};
+    const events = (home && home.events_current_month) || [];
+    const pending = (home && home.pending_approvals) || [];
+
+    const tasksDue    = my.filter(t => t.status !== 'done').length;
+    const overdue     = my.filter(t => {
+      const d = String(t.due_date || '').slice(0, 10);
+      return d && d < today && t.status !== 'done';
+    }).length;
+    const pendingCt   = pending.length || (summary.pending_approvals || 0);
+    const todayMtgs   = events.filter(e => String(e.start_date || '').slice(0, 10) === today).length;
+    const hiNotes     = summary.high_priority_notes || 0;
+
+    const nextMeet = events.find(e => String(e.start_date || '').slice(0, 10) === today);
+    const nextMeetText = nextMeet
+      ? 'Next · ' + (nextMeet.start_time || '') + ' ' + nextMeet.title
+      : '일정 없음';
 
     const chips = [
-      { key: 'my_tasks',        lbl: 'My tasks due',        n: myTasksDue,       sub: `${overdueCount} overdue · act now`, target: 'tasks', tone: overdueCount > 0 ? 'alert' : 'info' },
-      { key: 'pending',         lbl: 'Pending approvals',   n: pendingApprovals, sub: 'Budget · Minutes · Docs',            target: 'minutes', tone: pendingApprovals > 0 ? 'warn' : 'info' },
-      { key: 'mentions',        lbl: 'Unread mentions',     n: unreadMentions,   sub: '+5 since yesterday',                  target: 'notes', tone: 'info' },
-      { key: 'meetings',        lbl: "Today's meetings",    n: todayMeetings,    sub: 'Next · 10:30 Stand-up',               target: 'calendar', tone: 'info' },
-      { key: 'sprint',          lbl: 'Sprint 14 progress',  n: sprintPct + '%',  sub: `+${DATA.sprint.delta} pts this week`, target: 'tasks', tone: 'ok' },
+      { lbl: 'My tasks due',       n: tasksDue,  sub: overdue + ' overdue · act now', target: 'tasks',    tone: overdue > 0 ? 'alert' : 'info' },
+      { lbl: 'Overdue',            n: overdue,   sub: overdue > 0 ? 'past due date' : 'all caught up',   target: 'tasks',    tone: overdue > 0 ? 'alert' : 'ok' },
+      { lbl: 'Pending approvals',  n: pendingCt, sub: pendingCt > 0 ? 'awaiting your vote' : 'none',     target: 'minutes',  tone: pendingCt > 0 ? 'warn' : 'info' },
+      { lbl: "Today's meetings",   n: todayMtgs, sub: nextMeetText,                                      target: 'calendar', tone: 'info' },
+      { lbl: 'High-priority notes',n: hiNotes,   sub: hiNotes > 0 ? 'open · needs attention' : 'clean',  target: 'notes',    tone: hiNotes > 0 ? 'warn' : 'info' },
     ];
     const strip = h('section', { id: 'dp-today-strip', className: 'dp-stat-strip', 'aria-label': '오늘 요약' });
     chips.forEach(c => {
@@ -509,11 +670,11 @@ const DP = (() => {
         type: 'button',
         className: 'dp-stat ' + c.tone,
         onclick: () => navigate(c.target),
-        'aria-label': `${c.lbl}: ${c.n}`,
+        'aria-label': c.lbl + ': ' + c.n,
       });
       btn.innerHTML = `
         <div class="lbl">${esc(c.lbl)}</div>
-        <div class="val"><span class="n">${esc(c.n)}</span></div>
+        <div class="val"><span class="n">${esc(String(c.n))}</span></div>
         <div class="sub">${esc(c.sub)}</div>
       `;
       strip.appendChild(btn);
@@ -521,175 +682,211 @@ const DP = (() => {
     return strip;
   }
 
-  function _renderAnnouncementsPanel() {
+  function _renderAnnouncementsPanel(posts) {
     const panel = h('section', { className: 'dp-panel', 'aria-label': '공지' });
-    const posts = DATA.posts.notice.slice(0, 3);
-    panel.innerHTML = `
+    const head = `
       <div class="dp-panel-head">
-        <h3>Announcements <span class="count">${posts.length} new</span></h3>
+        <h3>Announcements <span class="count">${posts.length}</span></h3>
         <a href="#" onclick="event.preventDefault();DP.navigate('announcements')">View all →</a>
       </div>
-      <div class="dp-panel-body">
-        ${posts.map(p => `
-          <button type="button" class="dp-post-item" onclick="DP.viewPost('notice', ${p.id})"
-                  aria-label="${esc(p.title)}">
-            <div class="t">
-              ${p.pinned ? '<span class="dp-pin" aria-label="Pinned"></span>' : ''}
-              ${p.unread ? '<span class="dp-unread-dot" aria-label="new"></span>' : ''}
-              <span>${esc(p.title)}</span>
-            </div>
-            <div class="excerpt">${esc(p.excerpt || '')}</div>
-            <div class="meta">
-              <span class="who">${esc(p.author_name)}</span>
-              <span>·</span>
-              <span>${esc(fmtTime(p.created_at))}</span>
-              ${p.total ? `<span>·</span><span>${p.acknowledged}/${p.total} acknowledged</span>` : ''}
-            </div>
-          </button>
-        `).join('')}
-      </div>
     `;
-    return panel;
-  }
-
-  function _renderPendingApprovalsPanel() {
-    const panel = h('section', { className: 'dp-panel', 'aria-label': '승인 대기' });
-    const rows = DATA.pendingApprovals.map(a => `
-      <div class="dp-audit-row">
-        <div class="main">
-          <div class="title">
-            ${a.overdue ? '<span class="dp-tag alert">overdue</span>' : ''}
-            <span>${esc(a.title)}</span>
+    if (!posts.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">공지 없음</div>';
+      return panel;
+    }
+    const body = posts.slice(0, 3).map(p => {
+      const excerpt = String(p.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+      return `
+        <button type="button" class="dp-post-item"
+                onclick="DP.viewPost('announcements', ${Number(p.id)})"
+                aria-label="${esc(p.title)}">
+          <div class="t">
+            ${p.pinned ? '<span class="dp-pin" aria-label="Pinned"></span>' : ''}
+            <span>${esc(p.title)}</span>
           </div>
+          ${excerpt ? `<div class="excerpt">${esc(excerpt)}</div>` : ''}
           <div class="meta">
-            <span>Requested by</span>
-            <span class="who">${esc(a.requested_by)}</span>
+            <span class="who">${esc(p.author_name || '')}</span>
             <span>·</span>
-            <span class="ts">${a.requested_days_ago === 0 ? 'today' : a.requested_days_ago + ' day' + (a.requested_days_ago > 1 ? 's' : '') + ' ago'}</span>
+            <span>${esc(fmtTime(p.created_at))}</span>
+            ${p.comment_count ? `<span>·</span><span>${p.comment_count} 댓글</span>` : ''}
           </div>
-        </div>
-        <div class="actions">
-          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
-                  onclick="DP.reviewApproval(${a.id})">Review</button>
-          <button type="button" class="dp-btn dp-btn-primary dp-btn-sm"
-                  onclick="DP.approveApproval(${a.id})">Approve</button>
-        </div>
-      </div>
-    `).join('');
-    panel.innerHTML = `
-      <div class="dp-panel-head">
-        <h3>Pending your approval <span class="count">${DATA.pendingApprovals.length}</span></h3>
-        <a href="#" onclick="event.preventDefault();DP.navigate('minutes')">Approve all safe</a>
-      </div>
-      <div class="dp-panel-body">${rows}</div>
-    `;
+        </button>
+      `;
+    }).join('');
+    panel.innerHTML = head + `<div class="dp-panel-body">${body}</div>`;
     return panel;
   }
 
-  function _renderActivityPanel() {
+  function _renderPendingApprovalsPanel(list) {
+    const panel = h('section', { className: 'dp-panel', 'aria-label': '승인 대기' });
+    const head = `
+      <div class="dp-panel-head">
+        <h3>Pending your approval <span class="count">${list.length}</span></h3>
+        ${list.length ? `<a href="#" onclick="event.preventDefault();DP.navigate('minutes')">See all →</a>` : ''}
+      </div>
+    `;
+    if (!list.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">대기중인 승인 없음</div>';
+      return panel;
+    }
+    // pending_approvals items: { post_id, title, board, post_created_at }
+    const rows = list.slice(0, 5).map(a => {
+      const pid = Number(a.post_id) || 0;
+      return `
+        <div class="dp-audit-row">
+          <div class="main">
+            <div class="title"><span>${esc(a.title || '(제목 없음)')}</span></div>
+            <div class="meta">
+              <span class="dp-tag neutral">${esc(a.board || 'minutes')}</span>
+              <span>·</span>
+              <span class="ts">${esc(fmtTime(a.post_created_at))}</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
+                    onclick="DP.viewPost('${esc(a.board || 'minutes')}', ${pid})">Review</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    panel.innerHTML = head + `<div class="dp-panel-body">${rows}</div>`;
+    return panel;
+  }
+
+  function _renderActivityPanel(items) {
     const panel = h('section', { className: 'dp-panel', 'aria-label': 'Activity' });
-    const rows = DATA.activity.map(a => `
-      <div class="dp-audit-row">
-        <div class="main">
-          <div class="title">
-            <span class="who">@${esc(a.who)}</span>
-            <span class="dp-tag neutral">activity</span>
-          </div>
-          <div class="meta">${a.text}</div>
-        </div>
-        <div class="actions"><span class="ts" style="font-family:var(--font-mono);color:var(--text-3);font-size:11px">${esc(a.ts)}</span></div>
-      </div>
-    `).join('');
-    panel.innerHTML = `
+    const head = `
       <div class="dp-panel-head">
-        <h3>Activity <span class="count">last 24h</span></h3>
-        <a href="#" onclick="event.preventDefault();DP.openCmd()">Filter →</a>
+        <h3>Recent activity <span class="count">last 24h</span></h3>
       </div>
-      <div class="dp-panel-body">${rows}</div>
     `;
+    if (!items.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">최근 변경 없음</div>';
+      return panel;
+    }
+    // recent_changes items: { kind, ref_id, title, meta, note, created_at }
+    const kindLabel = { post: '게시글', event: '일정', comment: '댓글' };
+    const rows = items.slice(0, 8).map(it => {
+      const kind = it.kind || 'item';
+      return `
+        <div class="dp-audit-row">
+          <div class="main">
+            <div class="title">
+              <span class="dp-tag neutral">${esc(kindLabel[kind] || kind)}</span>
+              <span>${esc(it.title || '')}</span>
+            </div>
+            <div class="meta">
+              ${it.meta ? `<span class="who">${esc(it.meta)}</span><span>·</span>` : ''}
+              <span class="ts">${esc(fmtTime(it.created_at))}</span>
+              ${it.note ? `<span>·</span><span>${esc(String(it.note).slice(0, 80))}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    panel.innerHTML = head + `<div class="dp-panel-body">${rows}</div>`;
     return panel;
   }
 
-  function _renderTodaySchedule() {
-    const today = todayISO();
-    const events = DATA.events.filter(e => e.start_date === today);
+  function _renderTodaySchedule(events, today) {
+    const todays = events.filter(e => String(e.start_date || '').slice(0, 10) === today)
+      .sort((a, b) => String(a.start_time || '').localeCompare(String(b.start_time || '')));
     const panel = h('section', { className: 'dp-panel', 'aria-label': "Today's schedule" });
-    const body = events.length ? events.map(e => `
-      <div class="dp-schedule-row">
-        <div class="t">${esc(e.start_time)}</div>
-        <div class="body">
-          <div class="title">${esc(e.title)}</div>
-          <div class="sub">${esc(e.end_time ? e.start_time + '–' + e.end_time + ' · ' : '')}${esc(e.sub || '')}</div>
-        </div>
-      </div>
-    `).join('') : '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">일정 없음</div>';
-    panel.innerHTML = `
+    const head = `
       <div class="dp-panel-head">
         <h3>Today · ${esc(today)}</h3>
         <a href="#" onclick="event.preventDefault();DP.navigate('calendar')">Week →</a>
       </div>
-      <div class="dp-panel-body">${body}</div>
     `;
+    if (!todays.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">일정 없음</div>';
+      return panel;
+    }
+    const body = todays.map(e => `
+      <div class="dp-schedule-row">
+        <div class="t">${esc(e.start_time || '--:--')}</div>
+        <div class="body">
+          <div class="title">${esc(e.title)}</div>
+          <div class="sub">${esc(e.end_time ? e.start_time + '–' + e.end_time : '')}${e.type ? ' · ' + esc(e.type) : ''}</div>
+        </div>
+      </div>
+    `).join('');
+    panel.innerHTML = head + `<div class="dp-panel-body">${body}</div>`;
     return panel;
   }
 
-  function _renderMyTasks() {
-    const myTasks = DATA.tasks.filter(t => t.assignee === _displayName()).slice(0, 5);
+  function _renderMyTasks(myTasks, summary) {
     const panel = h('section', { className: 'dp-panel', 'aria-label': 'My tasks' });
-    const rows = myTasks.map(t => {
-      let dueTag = '';
-      if (t.overdue) dueTag = '<span class="dp-tag alert">Overdue</span>';
-      else if (t.due_date === todayISO()) dueTag = '<span class="dp-tag warn">Today</span>';
-      else dueTag = '<span class="dp-tag neutral">' + esc(t.due_date.slice(5).replace('-', '/')) + '</span>';
+    const slice = myTasks.slice(0, 5);
+    const dueCt = (summary && summary.tasks_due_today) || 0;
+    const head = `
+      <div class="dp-panel-head">
+        <h3>My tasks <span class="count">${slice.length} assigned</span></h3>
+        <a href="#" onclick="event.preventDefault();DP.navigate('tasks')">Board →</a>
+      </div>
+    `;
+    if (!slice.length) {
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">배정된 할 일 없음</div>';
+      return panel;
+    }
+    const today = todayISO();
+    const rows = slice.map(t => {
+      const due = String(t.due_date || '').slice(0, 10);
+      let tag;
+      if (!due) tag = '<span class="dp-tag neutral">no date</span>';
+      else if (due < today && t.status !== 'done') tag = '<span class="dp-tag alert">Overdue</span>';
+      else if (due === today) tag = '<span class="dp-tag warn">Today</span>';
+      else tag = '<span class="dp-tag neutral">' + esc(due.slice(5)) + '</span>';
       return `
-        <tr onclick="DP.viewTask(${t.id})">
-          <td class="mono">TASK-${t.id}</td>
-          <td>${esc(t.title)}</td>
-          <td>${dueTag}</td>
+        <tr onclick="DP.viewTask(${Number(t.id)})">
+          <td class="mono">TASK-${Number(t.id)}</td>
+          <td>${esc(t.title || '')}</td>
+          <td>${tag}</td>
         </tr>
       `;
     }).join('');
-    panel.innerHTML = `
-      <div class="dp-panel-head">
-        <h3>My tasks <span class="count">${myTasks.length} due</span></h3>
-        <a href="#" onclick="event.preventDefault();DP.navigate('tasks')">Board →</a>
-      </div>
-      <div class="dp-panel-body">
-        ${rows ? `<table class="dp-table"><tbody>${rows}</tbody></table>` : '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">배정된 할 일 없음</div>'}
-      </div>
-    `;
+    panel.innerHTML = head + `<div class="dp-panel-body"><table class="dp-table"><tbody>${rows}</tbody></table></div>`;
     return panel;
   }
 
+  // Team online — no dedicated API yet. Show state.user only (known online).
   function _renderTeamOnlinePanel() {
     const panel = h('section', { className: 'dp-panel', 'aria-label': 'Team online' });
-    const count = DATA.teamOnline.length;
-    const avatars = DATA.teamOnline.slice(0, 6).map(ch => `<div class="dp-avatar" title="${esc(ch)}">${esc(ch)}</div>`).join('');
-    const more = count > 6 ? `<div class="more">+${count - 6}</div>` : '';
+    const me = _avatarChar();
     panel.innerHTML = `
       <div class="dp-panel-head">
-        <h3>Team online <span class="count">${count} of 7</span></h3>
+        <h3>Team online <span class="count">실시간 presence 미구현</span></h3>
         <a href="#" onclick="event.preventDefault();DP.navigate('contacts')">Directory →</a>
       </div>
-      <div class="dp-team-online">${avatars}${more}</div>
+      <div class="dp-team-online">
+        <div class="dp-avatar" title="you">${esc(me)}</div>
+        <div class="more">+N</div>
+      </div>
     `;
     return panel;
   }
 
-  function _renderSprintProgress() {
-    const s = DATA.sprint;
-    const panel = h('section', { className: 'dp-panel', 'aria-label': 'Sprint progress' });
+  // Sprint progress — derive a rough "done vs todo" from my_tasks for now.
+  // Real sprint tracking will come when /api/dreampath/sprints lands.
+  function _renderSprintProgress(summary, myTasks) {
+    const panel = h('section', { className: 'dp-panel', 'aria-label': 'Progress' });
+    const done = myTasks.filter(t => t.status === 'done').length;
+    const inProg = myTasks.filter(t => t.status === 'in_progress').length;
+    const todo = myTasks.filter(t => t.status === 'todo').length;
+    const total = Math.max(done + inProg + todo, 1);
+    const pct = Math.round((done / total) * 100);
     panel.innerHTML = `
       <div class="dp-panel-head">
-        <h3>${esc(s.label)} · ${s.pct}%</h3>
+        <h3>My throughput · ${pct}%</h3>
         <a href="#" onclick="event.preventDefault();DP.navigate('tasks')">Details →</a>
       </div>
       <div class="dp-progress">
-        <div class="bar"><div class="fill" style="width:${s.pct}%"></div></div>
+        <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
         <div class="legend">
-          <div><strong>${s.done}</strong><span>done</span></div>
-          <div><strong>${s.in_progress}</strong><span>in progress</span></div>
-          <div><strong>${s.todo}</strong><span>todo</span></div>
+          <div><strong>${done}</strong><span>done</span></div>
+          <div><strong>${inProg}</strong><span>in progress</span></div>
+          <div><strong>${todo}</strong><span>todo</span></div>
         </div>
       </div>
     `;
@@ -940,25 +1137,85 @@ const DP = (() => {
     document.body.appendChild(modal);
   }
 
-  function viewPost(board, id) {
-    const p = (DATA.posts[board] || []).find(x => x.id === id);
-    if (!p) return;
+  async function viewPost(board, id) {
+    // Show an immediate loading shell so the user sees feedback while we fetch.
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading post…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    const data = await api('GET', 'posts?id=' + Number(id));
+    if (!data || !data.post) { _closeModal(); return; }
+    const p = data.post;
+    const approvalTone = p.approval_status === 'approved' ? 'ok' : p.approval_status === 'pending' ? 'warn' : 'neutral';
+    const filesHtml = (p.files || []).length ? `
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:8px">Files</div>
+        ${(p.files || []).map(f => `
+          <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:var(--fs-12)">
+            <span class="dp-tag neutral">${esc((f.file_type || '').split('/')[1] || 'file')}</span>
+            <a href="${esc(f.file_url)}" target="_blank" rel="noopener">${esc(f.file_name)}</a>
+            <span style="margin-left:auto;color:var(--text-3);font-family:var(--font-mono)">${f.file_size ? Math.round(f.file_size / 1024) + ' KB' : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+    const historyHtml = (p.history || []).length ? `
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:8px">Edit history</div>
+        ${(p.history || []).slice(0, 5).map(h => `
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;padding:4px 0;font-size:11px;color:var(--text-2)">
+            <span class="mono" style="color:var(--text-3)">${esc(fmtTime(h.edited_at))}</span>
+            <span><strong>${esc(h.editor_name || '')}</strong> — ${esc(h.edit_note || '')}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+    const approvalsHtml = (p.approvals || []).length ? `
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:8px">Approvals</div>
+        ${(p.approvals || []).map(a => `
+          <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:var(--fs-12)">
+            <strong>${esc(a.approver_name)}</strong>
+            <span class="dp-tag ${a.status === 'approved' ? 'ok' : a.status === 'rejected' ? 'alert' : 'warn'}">${esc(a.status)}</span>
+            ${a.voted_at ? `<span class="mono" style="color:var(--text-3);margin-left:auto">${esc(fmtTime(a.voted_at))}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
     _openModal(
-      p.title,
+      p.title || '(제목 없음)',
       `
-      <div style="font-size:11px;color:var(--text-3);margin-bottom:10px;display:flex;gap:8px;align-items:center">
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span class="dp-tag neutral">POST-${String(p.id).padStart(4, '0')}</span>
-        <span>by <strong style="color:var(--text-2)">${esc(p.author_name)}</strong></span>
+        <span class="dp-tag neutral">${esc(p.board)}</span>
+        <span>by <strong style="color:var(--text-2)">${esc(p.author_name || '')}</strong></span>
         <span>·</span>
         <span class="mono">${esc(fmtTime(p.created_at))}</span>
-        ${p.approval_status ? `<span>·</span><span class="dp-tag ${p.approval_status === 'approved' ? 'ok' : p.approval_status === 'pending' ? 'warn' : 'neutral'}">${esc(p.approval_status)}</span>` : ''}
+        ${p.approval_status ? `<span>·</span><span class="dp-tag ${approvalTone}">${esc(p.approval_status)}</span>` : ''}
+        ${p.view_count ? `<span>·</span><span>${p.view_count} views</span>` : ''}
       </div>
-      ${_sanitize(p.content || p.excerpt || '')}
+      ${_sanitize(p.content || '')}
+      ${filesHtml}
+      ${approvalsHtml}
+      ${historyHtml}
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
-       <button class="dp-btn dp-btn-secondary">Edit</button>
-       ${p.approval_status === 'pending' ? '<button class="dp-btn dp-btn-primary" onclick="DP.approveApproval(' + p.id + ')">Approve</button>' : ''}`
+       ${p.approval_status === 'pending' ? '<button class="dp-btn dp-btn-primary" onclick="DP._voteApproval(' + Number(p.id) + ", 'approved')\">Approve</button>" : ''}`
     );
+  }
+
+  // Cast the current user's vote on a meeting-minutes approval.
+  // Server matches approver by display_name OR username (lowercased) — see
+  // home.js case study comment. We send our display name and let the
+  // backend resolve.
+  async function _voteApproval(postId, status) {
+    const approverName = encodeURIComponent(_displayName());
+    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approverName, { status });
+    if (data) {
+      toast('투표 반영됨', 'ok');
+      _closeModal();
+      // If we're on home, re-render to update pending_approvals count.
+      if (state.page === 'home') navigate('home');
+    }
   }
   function viewTask(id) {
     const t = DATA.tasks.find(x => x.id === id);
@@ -985,17 +1242,9 @@ const DP = (() => {
     );
   }
 
-  // Approval actions (demo)
-  function reviewApproval(id) {
-    const a = DATA.pendingApprovals.find(x => x.id === id);
-    if (a) _openModal(a.title, `<p>검토 화면 — Phase 3 에서 API 연결.</p>`, `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
-  }
-  function approveApproval(id) {
-    DATA.pendingApprovals = DATA.pendingApprovals.filter(x => x.id !== id);
-    toast('Approved', 'ok');
-    if (state.page === 'home') navigate('home');
-    _closeModal();
-  }
+  // Approval legacy shims — pending approvals now go through viewPost()
+  // which opens the full post detail and exposes the Approve button when
+  // the server reports approval_status === 'pending'.
 
   // =========================================================
   // COMMAND PALETTE (⌘K)
@@ -1113,7 +1362,7 @@ const DP = (() => {
     openCmd, closeCmd, _cmdPick,
     openCreate, openNotifs, setDensity,
     viewPost, viewTask, viewNote,
-    reviewApproval, approveApproval,
+    _voteApproval,
     _openPostEditor, _saveNewPost, _closeModal,
   };
 })();
