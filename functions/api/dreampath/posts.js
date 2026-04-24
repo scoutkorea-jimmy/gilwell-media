@@ -66,6 +66,49 @@ export async function onRequestGet({ request, env, data }) {
   // round-trip. Omitted in most list paths to stay cheap.
   const wantCount = url.searchParams.get('count') === '1';
 
+  // Per-board search + sort (2026-04-24 owner spec). All params are optional.
+  //   q          — search text (case-insensitive substring)
+  //   search_in  — csv of {title, content, author}; defaults to all three
+  //   sort_by    — updated | comments | author (default updated)
+  //   sort_dir   — asc | desc (default desc)
+  // Only applied in the per-board list branch; the global (no-board) list
+  // keeps its original ordering to avoid breaking other callers.
+  const qRaw = String(url.searchParams.get('q') || '').trim();
+  const hasQ = !!qRaw;
+  const likeQ = '%' + qRaw.toLowerCase() + '%';
+  const searchInRaw = String(url.searchParams.get('search_in') || 'title,content,author')
+    .toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+  const searchIn = {
+    title:   searchInRaw.includes('title'),
+    content: searchInRaw.includes('content'),
+    author:  searchInRaw.includes('author'),
+  };
+  if (!searchIn.title && !searchIn.content && !searchIn.author) {
+    // defensive — if user clears every checkbox, fall back to title-only so
+    // we never run a pointless scan that matches everything.
+    searchIn.title = true;
+  }
+  const sortByRaw  = String(url.searchParams.get('sort_by')  || 'updated').toLowerCase();
+  const sortDirRaw = String(url.searchParams.get('sort_dir') || 'desc').toLowerCase();
+  const sortDir    = sortDirRaw === 'asc' ? 'ASC' : 'DESC';
+  const sortExpr   = (
+    sortByRaw === 'comments' ? `comment_count ${sortDir}, datetime(p.updated_at) DESC`
+    : sortByRaw === 'author' ? `LOWER(COALESCE(p.author_name, '')) ${sortDir}, datetime(p.updated_at) DESC`
+    : sortByRaw === 'created'? `datetime(p.created_at) ${sortDir}`
+                             : `datetime(p.updated_at) ${sortDir}`
+  );
+  // Compose the search predicate as a string + bind args. We always keep
+  // `p.pinned DESC` as the first sort key so pinned notices stay on top.
+  function searchPredicate() {
+    if (!hasQ) return { sql: '', binds: [] };
+    const clauses = [];
+    const binds = [];
+    if (searchIn.title)   { clauses.push(`LOWER(p.title)   LIKE ?`); binds.push(likeQ); }
+    if (searchIn.content) { clauses.push(`LOWER(p.content) LIKE ?`); binds.push(likeQ); }
+    if (searchIn.author)  { clauses.push(`LOWER(p.author_name) LIKE ?`); binds.push(likeQ); }
+    return { sql: ' AND (' + clauses.join(' OR ') + ')', binds };
+  }
+
   const { valid: VALID_BOARDS, teams: TEAM_BOARDS } = await _loadBoards(env);
 
   // Permission scope check FIRST — view:<scope> must be in the user's preset.
@@ -154,50 +197,22 @@ export async function onRequestGet({ request, env, data }) {
 
   let rows, total = null;
   if (board) {
-    // `tab=<slug>` scopes results to a single sub-tab. `tab=__none` filters to
-    // legacy posts with NULL tab_slug. Empty / missing tab returns every
-    // post in the board regardless of tab ("All" pill behavior).
-    // Every branch includes `(is_hidden = 0 OR isAdmin = 1)` so hidden posts
-    // are server-filtered for non-admins.
-    if (tab === '__none') {
-      rows = await env.DB.prepare(
-        `SELECT ${SEL} FROM dp_board_posts p
-          WHERE p.board = ? AND p.tab_slug IS NULL AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
-      ).bind(board, isAdmin, limit, offset).all();
-      if (wantCount) {
-        const t = await env.DB.prepare(
-          `SELECT COUNT(*) AS n FROM dp_board_posts p
-            WHERE p.board = ? AND p.tab_slug IS NULL AND (p.is_hidden = 0 OR ? = 1)`
-        ).bind(board, isAdmin).first();
-        total = (t && t.n) || 0;
-      }
-    } else if (tab) {
-      rows = await env.DB.prepare(
-        `SELECT ${SEL} FROM dp_board_posts p
-          WHERE p.board = ? AND p.tab_slug = ? AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
-      ).bind(board, tab, isAdmin, limit, offset).all();
-      if (wantCount) {
-        const t = await env.DB.prepare(
-          `SELECT COUNT(*) AS n FROM dp_board_posts p
-            WHERE p.board = ? AND p.tab_slug = ? AND (p.is_hidden = 0 OR ? = 1)`
-        ).bind(board, tab, isAdmin).first();
-        total = (t && t.n) || 0;
-      }
-    } else {
-      rows = await env.DB.prepare(
-        `SELECT ${SEL} FROM dp_board_posts p
-          WHERE p.board = ? AND (p.is_hidden = 0 OR ? = 1)
-          ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
-      ).bind(board, isAdmin, limit, offset).all();
-      if (wantCount) {
-        const t = await env.DB.prepare(
-          `SELECT COUNT(*) AS n FROM dp_board_posts p
-            WHERE p.board = ? AND (p.is_hidden = 0 OR ? = 1)`
-        ).bind(board, isAdmin).first();
-        total = (t && t.n) || 0;
-      }
+    // Tab filters: `tab=<slug>` → single sub-tab; `tab=__none` → legacy null;
+    // empty → every post (All pill). Search predicate + sort both applied to
+    // the same base set. Hidden rows are filtered for non-admins.
+    const sp = searchPredicate();
+    let tabClause = '', tabBinds = [];
+    if (tab === '__none') { tabClause = ' AND p.tab_slug IS NULL'; }
+    else if (tab)         { tabClause = ' AND p.tab_slug = ?'; tabBinds.push(tab); }
+    const baseWhere = `p.board = ?${tabClause} AND (p.is_hidden = 0 OR ? = 1)${sp.sql}`;
+    const baseBinds = [board, ...tabBinds, isAdmin, ...sp.binds];
+    const listSql = `SELECT ${SEL} FROM dp_board_posts p WHERE ${baseWhere}
+                      ORDER BY p.pinned DESC, ${sortExpr} LIMIT ? OFFSET ?`;
+    rows = await env.DB.prepare(listSql).bind(...baseBinds, limit, offset).all();
+    if (wantCount) {
+      const countSql = `SELECT COUNT(*) AS n FROM dp_board_posts p WHERE ${baseWhere}`;
+      const t = await env.DB.prepare(countSql).bind(...baseBinds).first();
+      total = (t && t.n) || 0;
     }
   } else {
     rows = await env.DB.prepare(
