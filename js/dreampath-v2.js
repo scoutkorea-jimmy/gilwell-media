@@ -36,30 +36,57 @@ const DP = (() => {
     density: localStorage.getItem('dp_v2_density') || 'default',
     contrast: localStorage.getItem('dp_v2_contrast') || 'standard',
     cmdOpen: false,
+    boards: [],          // Loaded from /api/dreampath/boards on init
   };
 
-  // Navigation groups — mirrors the tokens doc sidebar exactly
-  const NAV = [
-    { title: 'Workspace', items: [
-      { id: 'home',          label: 'Home',             icon: 'home' },
-      { id: 'announcements', label: 'Announcements',    icon: 'megaphone', badge: 3 },
-    ]},
-    { title: 'Project', items: [
-      { id: 'documents',     label: 'Documents',        icon: 'book' },
-      { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note',      badge: 2 },
-      { id: 'tasks',         label: 'Tasks',            icon: 'check',     badge: 12 },
-      { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard' },
-    ]},
-    { title: 'Team', items: [
-      { id: 'teams',         label: 'Team Boards',      icon: 'users-admin' },
-      { id: 'calendar',      label: 'Calendar',         icon: 'calendar' },
-      { id: 'contacts',      label: 'Contacts',         icon: 'phone' },
-    ]},
-    { title: 'Settings', items: [
-      { id: 'rules',         label: 'Dev Rules',        icon: 'layers' },
-      { id: 'versions',      label: 'Versions',         icon: 'file-text' },
-    ]},
-  ];
+  // Nav groups are derived at render time from state.user + state.boards
+  // so admin sees every team and members see only their assigned team.
+  // [CASE STUDY — dept string lives only in DB, not in JWT]
+  //   state.user.department comes from /me, so this function must be called
+  //   AFTER _acceptUser() has hydrated the user from /me.
+  function _buildNavGroups() {
+    const isAdmin = state.user && state.user.role === 'admin';
+    const userDept = String((state.user && state.user.department) || '').toLowerCase();
+    const teamBoards = (state.boards || [])
+      .filter(b => b.board_type === 'team')
+      .filter(b => {
+        if (isAdmin) return true;
+        const country = b.slug.slice(5).toLowerCase();  // team_xxx → xxx
+        return country && userDept.includes(country);
+      })
+      .map(b => ({ id: b.slug, label: b.title || b.slug, icon: 'users-admin' }));
+
+    return [
+      { title: 'Workspace', items: [
+        { id: 'home',          label: 'Home',            icon: 'home' },
+        { id: 'announcements', label: 'Announcements',   icon: 'megaphone' },
+      ]},
+      { title: 'Project', items: [
+        { id: 'documents',     label: 'Documents',       icon: 'book' },
+        { id: 'minutes',       label: 'Meeting Minutes', icon: 'note' },
+        { id: 'tasks',         label: 'Tasks',           icon: 'check' },
+        { id: 'notes',         label: 'Notes / Issues',  icon: 'clipboard' },
+      ]},
+      { title: 'Teams', items: teamBoards.length
+        ? teamBoards.concat([{ id: 'calendar', label: 'Calendar', icon: 'calendar' },
+                             { id: 'contacts', label: 'Contacts', icon: 'phone' }])
+        : [{ id: 'calendar', label: 'Calendar', icon: 'calendar' },
+           { id: 'contacts', label: 'Contacts', icon: 'phone' }]
+      },
+      { title: 'Reference', items: (isAdmin
+        ? [{ id: 'rules', label: 'Dev Rules', icon: 'layers' },
+           { id: 'versions', label: 'Versions', icon: 'file-text' }]
+        : []
+      )},
+    ].filter(g => g.items.length > 0);
+  }
+
+  function _boardTitle(slug) {
+    const b = (state.boards || []).find(x => x.slug === slug);
+    if (b && b.title) return b.title;
+    // Humanize fallback: team_korea → Team Korea
+    return String(slug || '').split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  }
 
   // -------------------------- Demo data (replaced by Phase 3 API wiring) --------------------------
   const DATA = {
@@ -159,6 +186,212 @@ const DP = (() => {
   };
   const icon = (name) => `<span class="ico" aria-hidden="true" style="--dp-icon:url('/img/dreampath-v2/icons/${name}.svg')"></span>`;
 
+  // -------------------------- Tiptap --------------------------
+  // Port of production /dreampath editor, retuned to the ERP tokens.
+  //
+  // [CASE STUDY — Tiptap mounts are load-bearing for create/edit flows]
+  // If this section breaks, both New Post and Edit Post editors die
+  // silently with a plain div where the editor should be. Mount sites:
+  //   1. _openPostEditor (new)  — container 'dp-tt-post'
+  //   2. _openPostEditor (edit) — container 'dp-tt-post'
+  // Reusing one container ID across modal instances is fine because
+  // _closeModal()/_destroyTiptap() tear down the previous instance.
+  let _tiptapEditor = null;
+
+  function _waitForTiptap(cb) {
+    if (window.__DP_Tiptap) { cb(); return; }
+    const handler = () => { window.removeEventListener('tiptap-ready', handler); cb(); };
+    window.addEventListener('tiptap-ready', handler);
+  }
+
+  function _initTiptap(containerId, initialHtml) {
+    _destroyTiptap();
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const t = window.__DP_Tiptap;
+    if (!t) return;
+    _tiptapEditor = new t.Editor({
+      element: el,
+      extensions: [
+        t.StarterKit,
+        t.Table.configure({ resizable: false }),
+        t.TableRow,
+        t.TableHeader,
+        t.TableCell,
+        t.Image.configure({ inline: false, allowBase64: false }),
+      ],
+      content: initialHtml || '',
+      onTransaction: () => _updateTiptapToolbar(),
+    });
+    setTimeout(() => { if (_tiptapEditor) _tiptapEditor.commands.focus('end'); }, 80);
+  }
+
+  function _updateTiptapToolbar() {
+    if (!_tiptapEditor) return;
+    $$('.dp-te-btn[data-cmd]').forEach(btn => {
+      const cmd = btn.dataset.cmd;
+      let active = false;
+      if      (cmd === 'bold')        active = _tiptapEditor.isActive('bold');
+      else if (cmd === 'italic')      active = _tiptapEditor.isActive('italic');
+      else if (cmd === 'strike')      active = _tiptapEditor.isActive('strike');
+      else if (cmd === 'h2')          active = _tiptapEditor.isActive('heading', { level: 2 });
+      else if (cmd === 'h3')          active = _tiptapEditor.isActive('heading', { level: 3 });
+      else if (cmd === 'bulletList')  active = _tiptapEditor.isActive('bulletList');
+      else if (cmd === 'orderedList') active = _tiptapEditor.isActive('orderedList');
+      else if (cmd === 'blockquote')  active = _tiptapEditor.isActive('blockquote');
+      else if (cmd === 'insertTable') active = _tiptapEditor.isActive('table');
+      btn.classList.toggle('is-active', active);
+    });
+  }
+
+  function _execTiptapCmd(cmd) {
+    if (!_tiptapEditor) return;
+    const c = _tiptapEditor.chain().focus();
+    if      (cmd === 'bold')        c.toggleBold().run();
+    else if (cmd === 'italic')      c.toggleItalic().run();
+    else if (cmd === 'strike')      c.toggleStrike().run();
+    else if (cmd === 'h2')          c.toggleHeading({ level: 2 }).run();
+    else if (cmd === 'h3')          c.toggleHeading({ level: 3 }).run();
+    else if (cmd === 'bulletList')  c.toggleBulletList().run();
+    else if (cmd === 'orderedList') c.toggleOrderedList().run();
+    else if (cmd === 'blockquote')  c.toggleBlockquote().run();
+    else if (cmd === 'insertTable') c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    else if (cmd === 'insertImage') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async () => {
+        const f = input.files[0];
+        if (!f) return;
+        if (f.size > 100 * 1024 * 1024) { toast('Max size 100MB', 'err'); return; }
+        const fd = new FormData();
+        fd.append('file', f);
+        try {
+          const r = await fetch('/api/dreampath/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+          const data = await r.json();
+          if (!r.ok) { toast(data.error || 'Upload failed', 'err'); return; }
+          if (_tiptapEditor) _tiptapEditor.chain().focus().setImage({ src: data.url }).run();
+        } catch (_) { toast('Upload failed', 'err'); }
+      };
+      input.click();
+    }
+  }
+
+  function _getTiptapHTML() {
+    if (!_tiptapEditor) return '';
+    const html = _tiptapEditor.getHTML();
+    return (html === '<p></p>' || html === '') ? '' : html;
+  }
+
+  function _destroyTiptap() {
+    if (_tiptapEditor) { try { _tiptapEditor.destroy(); } catch (_) {} _tiptapEditor = null; }
+  }
+
+  // -------------------------- Files --------------------------
+  //
+  // [CASE STUDY — total size cap is enforced client-side]
+  // Server caps each file at 100MB (see upload.js MAX_SIZE). Per user's
+  // 2026-04-24 requirement, we additionally cap the TOTAL across all files
+  // in a post at 100MB and count at 10. If this cap needs to change, update
+  // MAX_FILES/MAX_TOTAL_BYTES together, and re-verify the toast message.
+  const MAX_FILES = 10;
+  const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
+
+  // In-memory working list for the current editor modal.
+  let _pickerFiles = [];  // [{id, file, url?, name, type, size, is_image, state}]
+
+  function _fileId() { return 'f' + Math.random().toString(36).slice(2, 9); }
+
+  function _fmtSize(bytes) {
+    if (bytes == null) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  function _totalFileBytes() {
+    return _pickerFiles.reduce((s, f) => s + (f.size || 0), 0);
+  }
+
+  function _renderFileList() {
+    const host = $('#dp-file-list');
+    const used = $('#dp-file-used');
+    if (!host) return;
+    host.innerHTML = _pickerFiles.map(f => `
+      <div class="dp-file-item" data-id="${esc(f.id)}">
+        <span aria-hidden="true">${f.is_image ? '🖼' : '📎'}</span>
+        <span class="name" title="${esc(f.name)}">${esc(f.name)}</span>
+        <span class="size">${_fmtSize(f.size)}</span>
+        <button type="button" class="rm" aria-label="Remove ${esc(f.name)}"
+                onclick="DP._removeFile('${esc(f.id)}')">
+          <span class="ico"></span>
+        </button>
+      </div>
+    `).join('');
+    if (used) used.textContent = _pickerFiles.length + ' / ' + MAX_FILES + ' files · ' + _fmtSize(_totalFileBytes()) + ' / 100 MB';
+  }
+
+  function _handlePickerChange(input) {
+    const incoming = Array.from(input.files || []);
+    for (const f of incoming) {
+      if (_pickerFiles.length >= MAX_FILES) {
+        toast('Maximum ' + MAX_FILES + ' files per post', 'err');
+        break;
+      }
+      if (_totalFileBytes() + f.size > MAX_TOTAL_BYTES) {
+        toast('Total size exceeds 100MB', 'err');
+        break;
+      }
+      _pickerFiles.push({
+        id: _fileId(),
+        file: f,
+        name: f.name,
+        type: f.type || 'application/octet-stream',
+        size: f.size || 0,
+        is_image: (f.type || '').startsWith('image/') ? 1 : 0,
+        state: 'pending',
+      });
+    }
+    input.value = '';
+    _renderFileList();
+  }
+
+  function _removeFile(id) {
+    _pickerFiles = _pickerFiles.filter(f => f.id !== id);
+    _renderFileList();
+  }
+
+  // Upload all pending files in sequence, returning the array ready for
+  // posts.js to store. Returns null if any upload fails.
+  async function _uploadPending() {
+    const uploaded = [];
+    for (const f of _pickerFiles) {
+      if (f.url) { uploaded.push(_pickApiShape(f)); continue; }
+      const fd = new FormData();
+      fd.append('file', f.file);
+      let res, data;
+      try {
+        res = await fetch('/api/dreampath/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+        data = await res.json();
+      } catch (_) {
+        toast('Upload failed', 'err');
+        return null;
+      }
+      if (!res.ok) { toast(data && data.error ? data.error : 'Upload failed', 'err'); return null; }
+      f.url = data.url;
+      f.name = data.name || f.name;
+      f.type = data.type || f.type;
+      f.size = data.size || f.size;
+      f.is_image = data.is_image ? 1 : 0;
+      f.state = 'uploaded';
+      uploaded.push(_pickApiShape(f));
+    }
+    return uploaded;
+  }
+  function _pickApiShape(f) {
+    return { url: f.url, name: f.name, type: f.type, size: f.size, is_image: f.is_image ? 1 : 0 };
+  }
+
   // -------------------------- API client (Phase 3) --------------------------
   //
   // [CASE STUDY 2026-04-24 — central API helper]
@@ -167,6 +400,25 @@ const DP = (() => {
   // it. Returns null on any failure (network / 4xx / 5xx) after surfacing a
   // toast — callers must treat null as "no render, bail quietly".
   async function api(method, path, body) {
+    const res = await _rawApi(method, path, body);
+    if (!res) return null;
+    if (res.status === 401) {
+      state.user = null;
+      try { localStorage.removeItem('dp_user'); } catch (_) {}
+      _renderLogin();
+      return null;
+    }
+    if (!res.ok) {
+      toast(res.error || 'HTTP ' + res.status, 'err');
+      return null;
+    }
+    return res.data;
+  }
+
+  // Lower-level fetch — returns raw {status, ok, data, error} so callers
+  // that need to distinguish 404 from 401 from 500 (e.g. viewPost) can
+  // render their own in-place UX instead of taking api()'s auto-toast.
+  async function _rawApi(method, path, body) {
     const opts = { method, credentials: 'same-origin', headers: {} };
     if (body !== undefined && body !== null) {
       opts.headers['Content-Type'] = 'application/json';
@@ -175,23 +427,26 @@ const DP = (() => {
     let res;
     try {
       res = await fetch('/api/dreampath/' + path, opts);
-    } catch (e) {
-      toast('네트워크 오류', 'err');
-      return null;
-    }
-    if (res.status === 401) {
-      // Session expired or missing — force back to login.
-      state.user = null;
-      try { localStorage.removeItem('dp_user'); } catch (_) {}
-      _renderLogin();
+    } catch (_) {
+      toast('Network error', 'err');
       return null;
     }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      toast(data && data.error ? data.error : 'HTTP ' + res.status, 'err');
-      return null;
+    return { status: res.status, ok: res.ok, data, error: data && data.error };
+  }
+
+  function _renderPostError(title, detail) {
+    const body = $('.dp-modal-body');
+    if (body) {
+      body.innerHTML = `
+        <div class="dp-inline-error">
+          <div style="font-weight:600;margin-bottom:6px;color:var(--text)">${esc(title)}</div>
+          <div>${esc(detail)}</div>
+        </div>
+      `;
     }
-    return data;
+    const head = $('.dp-modal-head h2');
+    if (head) head.textContent = title;
   }
 
   // Dreampath session marker cookie — httpOnly dp_token is the real key,
@@ -247,35 +502,37 @@ const DP = (() => {
     _installKeyDelegation();
     _installCmdHotkey();
 
-    // Hydrate from localStorage optimistically (fast paint).
     const saved = localStorage.getItem('dp_user');
     if (saved) { try { state.user = JSON.parse(saved); } catch (_) {} }
 
-    // Decide boot path based on presence of dp_session=1 cookie.
-    // [CASE STUDY — dp_session is a gate, not a source of truth]
-    //  Presence only tells us "try /me"; absence means "straight to login".
-    //  If /me returns 401 the cookie is stale — clear local state and show login.
     if (!_hasSessionCookie() && !state.user) {
       _renderLogin();
       return;
     }
 
+    // If we already have cached user, paint shell immediately so the user
+    // sees navigation render while /me + /boards refresh in background.
     if (state.user) {
+      await _refreshBoards();
       _mountShell();
       navigate('home');
-      // Background refresh from /me so any off-device profile change lands.
       _refreshSelf();
     } else {
-      // Cookie present but no cached user — hydrate from /me first.
-      const data = await api('GET', 'me');
-      if (data && data.user) {
-        _acceptUser(data.user);
+      // No local user — need /me to succeed before we know what sidebar to render.
+      const [, me] = await Promise.all([_refreshBoards(), api('GET', 'me')]);
+      if (me && me.user) {
+        _acceptUser(me.user);
         _mountShell();
         navigate('home');
       } else {
         _renderLogin();
       }
     }
+  }
+
+  async function _refreshBoards() {
+    const data = await api('GET', 'boards');
+    if (data && Array.isArray(data.boards)) state.boards = data.boards;
   }
 
   // Normalize server user payload into the state.user shape used by the
@@ -352,7 +609,7 @@ const DP = (() => {
             h('span', {}, 'Project Management Office'),
           ]),
         ]),
-        h('p', {}, '관리자 계정으로 로그인하세요. (데모)'),
+        h('p', {}, 'Sign in with your admin account.'),
         h('div', { className: 'dp-field' }, [
           h('label', { for: 'dp-u' }, 'Username'),
           h('input', { id: 'dp-u', className: 'dp-input', type: 'text', value: 'jimmy', autocomplete: 'username' }),
@@ -374,7 +631,7 @@ const DP = (() => {
     const username = (uInput && uInput.value || '').trim();
     const password = (pInput && pInput.value || '');
     if (!username || !password) {
-      toast('아이디와 비밀번호를 입력하세요', 'err');
+      toast('Enter username and password', 'err');
       return;
     }
     const btn = $('.dp-login-card .dp-btn-primary');
@@ -389,17 +646,18 @@ const DP = (() => {
       });
     } catch (_) {
       if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
-      toast('네트워크 오류', 'err');
+      toast('Network error', 'err');
       return;
     }
     const data = await res.json().catch(() => ({}));
     if (btn) { btn.disabled = false; btn.textContent = 'Sign in'; }
     if (!res.ok) {
-      toast((data && data.error) || '로그인 실패', 'err');
+      toast((data && data.error) || 'Sign-in failed', 'err');
       if (pInput) pInput.value = '';
       return;
     }
     _acceptUser(data.user);
+    await _refreshBoards();
     _mountShell();
     navigate('home');
   }
@@ -430,7 +688,8 @@ const DP = (() => {
 
   function _renderSidebar() {
     const side = h('aside', { className: 'dp-side', role: 'complementary', id: 'dp-side' });
-    const nav = NAV.map(group => `
+    const groups = _buildNavGroups();
+    const nav = groups.map(group => `
       <h3>${esc(group.title)}</h3>
       ${group.items.map(it => `
         <button type="button" class="dp-nav-item" data-page="${esc(it.id)}"
@@ -449,7 +708,7 @@ const DP = (() => {
           <span>PMO Portal</span>
         </div>
       </div>
-      <nav class="dp-side-nav" aria-label="주 메뉴">
+      <nav class="dp-side-nav" aria-label="Main navigation">
         ${nav}
       </nav>
       <div class="dp-side-foot">
@@ -463,7 +722,7 @@ const DP = (() => {
             <div class="role">${esc(_roleLine())}</div>
           </div>
         </div>
-        <button type="button" class="dp-signout" onclick="DP.logout()">로그아웃</button>
+        <button type="button" class="dp-signout" onclick="DP.logout()">Sign out</button>
       </div>
     `;
     return side;
@@ -481,18 +740,18 @@ const DP = (() => {
         <strong id="dp-crumb-tail">Home</strong>
       </div>
       <div class="dp-top-spacer"></div>
-      <div class="dp-switcher" role="group" aria-label="Density">
-        <button type="button" data-density="compact" onclick="DP.setDensity('compact')">Compact</button>
-        <button type="button" data-density="default" onclick="DP.setDensity('default')">Default</button>
-        <button type="button" data-density="comfort" onclick="DP.setDensity('comfort')">Comfort</button>
+      <div class="dp-switcher" role="group" aria-label="Row density">
+        <button type="button" data-density="compact" onclick="DP.setDensity('compact')" title="Tight — 28px rows">Tight</button>
+        <button type="button" data-density="default" onclick="DP.setDensity('default')" title="Normal — 32px rows">Normal</button>
+        <button type="button" data-density="comfort" onclick="DP.setDensity('comfort')" title="Spacious — 40px rows">Spacious</button>
       </div>
       <label class="dp-search">
-        <span class="dp-sr-only">검색</span>
+        <span class="dp-sr-only">Search</span>
         <input type="search" id="dp-search-input" placeholder="Search… (⌘K)"
-               onfocus="DP.openCmd()" aria-label="검색">
+               onfocus="DP.openCmd()" aria-label="Search">
         <kbd>⌘K</kbd>
       </label>
-      <button type="button" class="dp-iconbtn" aria-label="알림 (3건)" onclick="DP.openNotifs()">
+      <button type="button" class="dp-iconbtn" aria-label="Notifications (3)" onclick="DP.openNotifs()">
         <span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/bell.svg')"></span>
         <span class="dot" aria-hidden="true"></span>
       </button>
@@ -533,18 +792,33 @@ const DP = (() => {
     let label = page;
     const r = {
       home:          () => { _renderHome(pageEl);         label = 'Home'; },
-      announcements: () => { _renderBoard(pageEl, 'notice', 'Announcements'); label = 'Announcements'; },
+      announcements: () => { _renderBoard(pageEl, 'announcements', 'Announcements'); label = 'Announcements'; },
       documents:     () => { _renderBoard(pageEl, 'documents', 'Documents');  label = 'Documents'; },
       minutes:       () => { _renderBoard(pageEl, 'minutes', 'Meeting Minutes'); label = 'Meeting Minutes'; },
       tasks:         () => { _renderTasks(pageEl);         label = 'Tasks'; },
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
-      teams:         () => { _renderTeams(pageEl);         label = 'Team Boards'; },
       calendar:      () => { _renderCalendar(pageEl);      label = 'Calendar'; },
       contacts:      () => { _renderContacts(pageEl);      label = 'Contacts'; },
       rules:         () => { _renderRules(pageEl);         label = 'Dev Rules'; },
       versions:      () => { _renderVersions(pageEl);      label = 'Versions'; },
     };
-    (r[page] || r.home)();
+    // Dynamic dispatch: any known board slug routes to _renderBoard.
+    // [CASE STUDY — new board types don't need code changes]
+    //   As long as the slug exists in state.boards (populated from
+    //   /api/dreampath/boards), clicking the sidebar item just works.
+    if (r[page]) {
+      r[page]();
+    } else {
+      const b = (state.boards || []).find(x => x.slug === page);
+      if (b) {
+        _renderBoard(pageEl, b.slug, b.title || b.slug);
+        label = b.title || b.slug;
+      } else {
+        _renderHome(pageEl);
+        label = 'Home';
+        state.page = 'home';
+      }
+    }
 
     const tail = $('#dp-crumb-tail');
     if (tail) tail.textContent = label;
@@ -595,7 +869,7 @@ const DP = (() => {
 
     const now = new Date();
     const today = todayISO();
-    const weekday = ['일','월','화','수','목','금','토'][now.getDay()];
+    const weekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][now.getDay()];
     const dateStr = fmtDate(now);
     const meetingsThisWeek = (home && home.today_summary && home.today_summary.meetings_this_week) || 0;
 
@@ -603,7 +877,7 @@ const DP = (() => {
       h('div', {}, [
         h('h1', {}, `Good morning, ${_displayName()}`),
         h('div', { className: 'meta' }, [
-          h('span', {}, `${weekday}요일 · ${dateStr} · `),
+          h('span', {}, `${weekday} · ${dateStr} · `),
           h('strong', {}, String(meetingsThisWeek)),
           h('span', {}, ' meetings this week'),
         ]),
@@ -655,7 +929,7 @@ const DP = (() => {
     const nextMeet = events.find(e => String(e.start_date || '').slice(0, 10) === today);
     const nextMeetText = nextMeet
       ? 'Next · ' + (nextMeet.start_time || '') + ' ' + nextMeet.title
-      : '일정 없음';
+      : 'No upcoming';
 
     const chips = [
       { lbl: 'My tasks due',       n: tasksDue,  sub: overdue + ' overdue · act now', target: 'tasks',    tone: overdue > 0 ? 'alert' : 'info' },
@@ -664,7 +938,7 @@ const DP = (() => {
       { lbl: "Today's meetings",   n: todayMtgs, sub: nextMeetText,                                      target: 'calendar', tone: 'info' },
       { lbl: 'High-priority notes',n: hiNotes,   sub: hiNotes > 0 ? 'open · needs attention' : 'clean',  target: 'notes',    tone: hiNotes > 0 ? 'warn' : 'info' },
     ];
-    const strip = h('section', { id: 'dp-today-strip', className: 'dp-stat-strip', 'aria-label': '오늘 요약' });
+    const strip = h('section', { id: 'dp-today-strip', className: 'dp-stat-strip', 'aria-label': 'Today summary' });
     chips.forEach(c => {
       const btn = h('button', {
         type: 'button',
@@ -683,7 +957,7 @@ const DP = (() => {
   }
 
   function _renderAnnouncementsPanel(posts) {
-    const panel = h('section', { className: 'dp-panel', 'aria-label': '공지' });
+    const panel = h('section', { className: 'dp-panel', 'aria-label': 'Announcements' });
     const head = `
       <div class="dp-panel-head">
         <h3>Announcements <span class="count">${posts.length}</span></h3>
@@ -691,7 +965,7 @@ const DP = (() => {
       </div>
     `;
     if (!posts.length) {
-      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">공지 없음</div>';
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No announcements.</div>';
       return panel;
     }
     const body = posts.slice(0, 3).map(p => {
@@ -709,7 +983,7 @@ const DP = (() => {
             <span class="who">${esc(p.author_name || '')}</span>
             <span>·</span>
             <span>${esc(fmtTime(p.created_at))}</span>
-            ${p.comment_count ? `<span>·</span><span>${p.comment_count} 댓글</span>` : ''}
+            ${p.comment_count ? `<span>·</span><span>${p.comment_count} comments</span>` : ''}
           </div>
         </button>
       `;
@@ -719,7 +993,7 @@ const DP = (() => {
   }
 
   function _renderPendingApprovalsPanel(list) {
-    const panel = h('section', { className: 'dp-panel', 'aria-label': '승인 대기' });
+    const panel = h('section', { className: 'dp-panel', 'aria-label': 'Pending approvals' });
     const head = `
       <div class="dp-panel-head">
         <h3>Pending your approval <span class="count">${list.length}</span></h3>
@@ -727,16 +1001,19 @@ const DP = (() => {
       </div>
     `;
     if (!list.length) {
-      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">대기중인 승인 없음</div>';
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No approvals pending.</div>';
       return panel;
     }
     // pending_approvals items: { post_id, title, board, post_created_at }
+    // B5 contract — each row offers TWO actions:
+    //   Review   → open full post detail modal (user may also approve there)
+    //   Approve  → inline vote via /api/dreampath/approvals without leaving home
     const rows = list.slice(0, 5).map(a => {
       const pid = Number(a.post_id) || 0;
       return `
         <div class="dp-audit-row">
           <div class="main">
-            <div class="title"><span>${esc(a.title || '(제목 없음)')}</span></div>
+            <div class="title"><span>${esc(a.title || '(Untitled)')}</span></div>
             <div class="meta">
               <span class="dp-tag neutral">${esc(a.board || 'minutes')}</span>
               <span>·</span>
@@ -746,12 +1023,27 @@ const DP = (() => {
           <div class="actions">
             <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
                     onclick="DP.viewPost('${esc(a.board || 'minutes')}', ${pid})">Review</button>
+            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm"
+                    onclick="DP._inlineApprove(${pid})">Approve</button>
           </div>
         </div>
       `;
     }).join('');
     panel.innerHTML = head + `<div class="dp-panel-body">${rows}</div>`;
     return panel;
+  }
+
+  // B5 inline vote from home — no modal, no round-trip through viewPost.
+  // Matches the production /dreampath pattern: PUT /approvals w/ display_name
+  // as approver, server resolves by display_name OR username (lowercased).
+  async function _inlineApprove(postId) {
+    if (!postId) return;
+    const approver = encodeURIComponent(_displayName());
+    const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approver, { status: 'approved' });
+    if (data) {
+      toast('Approved', 'ok');
+      if (state.page === 'home') navigate('home');
+    }
   }
 
   function _renderActivityPanel(items) {
@@ -762,11 +1054,11 @@ const DP = (() => {
       </div>
     `;
     if (!items.length) {
-      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">최근 변경 없음</div>';
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No recent activity.</div>';
       return panel;
     }
     // recent_changes items: { kind, ref_id, title, meta, note, created_at }
-    const kindLabel = { post: '게시글', event: '일정', comment: '댓글' };
+    const kindLabel = { post: 'post', event: 'event', comment: 'comment' };
     const rows = items.slice(0, 8).map(it => {
       const kind = it.kind || 'item';
       return `
@@ -800,7 +1092,7 @@ const DP = (() => {
       </div>
     `;
     if (!todays.length) {
-      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">일정 없음</div>';
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">Nothing scheduled today.</div>';
       return panel;
     }
     const body = todays.map(e => `
@@ -827,7 +1119,7 @@ const DP = (() => {
       </div>
     `;
     if (!slice.length) {
-      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">배정된 할 일 없음</div>';
+      panel.innerHTML = head + '<div class="dp-panel-body pad" style="color:var(--text-3);font-size:12px">No tasks assigned.</div>';
       return panel;
     }
     const today = todayISO();
@@ -856,7 +1148,7 @@ const DP = (() => {
     const me = _avatarChar();
     panel.innerHTML = `
       <div class="dp-panel-head">
-        <h3>Team online <span class="count">실시간 presence 미구현</span></h3>
+        <h3>Team online <span class="count">presence API TBD</span></h3>
         <a href="#" onclick="event.preventDefault();DP.navigate('contacts')">Directory →</a>
       </div>
       <div class="dp-team-online">
@@ -894,10 +1186,11 @@ const DP = (() => {
   }
 
   // =========================================================
-  // BOARDS
+  // BOARDS — wired to GET /api/dreampath/posts?board=X
   // =========================================================
-  function _renderBoard(root, key, label) {
-    const posts = DATA.posts[key] || [];
+  async function _renderBoard(root, key, label) {
+    // Skeleton header + loading placeholder.
+    root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, label),
       h('div', {}, [
@@ -907,7 +1200,37 @@ const DP = (() => {
         ]),
       ]),
     ]));
+    const loadingPanel = h('div', { className: 'dp-panel' });
+    loadingPanel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">Loading ${esc(label)}…</div>`;
+    root.appendChild(loadingPanel);
 
+    // Fetch real posts. 403/404 → team access denied or board missing.
+    const res = await _rawApi('GET', 'posts?board=' + encodeURIComponent(key) + '&limit=100');
+    loadingPanel.remove();
+
+    if (res.status === 401) { _renderLogin(); return; }
+    if (res.status === 403) {
+      const denied = h('div', { className: 'dp-empty' });
+      denied.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/x.svg')"></span></div>
+        <h4>Access denied</h4>
+        <p>You do not have permission to view this board.</p>
+      `;
+      root.appendChild(denied);
+      return;
+    }
+    if (!res.ok) {
+      const err = h('div', { className: 'dp-empty' });
+      err.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/x.svg')"></span></div>
+        <h4>Could not load board</h4>
+        <p>${esc(res.error || 'HTTP ' + res.status)}</p>
+      `;
+      root.appendChild(err);
+      return;
+    }
+
+    const posts = (res.data && res.data.posts) || [];
     if (!posts.length) {
       const empty = h('div', { className: 'dp-empty' });
       empty.innerHTML = `
@@ -920,46 +1243,48 @@ const DP = (() => {
       return;
     }
 
-    const table = h('div', { className: 'dp-panel' });
-    const headers = key === 'documents'
-      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:120px">Author</th><th style="width:80px">Type</th><th style="width:100px">Size</th><th style="width:160px">Updated</th>'
-      : key === 'minutes'
-      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:140px">Approval</th><th style="width:160px">Created</th>'
-      : '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:100px">Acks</th><th style="width:160px">Created</th>';
+    const isMinutes = (key === 'minutes');
+    const headers = isMinutes
+      ? '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:140px">Approval</th><th style="width:90px">Comments</th><th style="width:160px">Created</th>'
+      : '<th style="width:110px">ID</th><th>Title</th><th style="width:140px">Author</th><th style="width:90px">Comments</th><th style="width:90px">Views</th><th style="width:160px">Updated</th>';
+
     const rows = posts.map(p => {
-      const id = `POST-${String(p.id).padStart(4, '0')}`;
+      const id = 'POST-' + String(p.id).padStart(4, '0');
       const pin = p.pinned ? '<span class="dp-pin" style="margin-right:6px" aria-label="Pinned"></span>' : '';
-      if (key === 'documents') {
-        return `<tr onclick="DP.viewPost('${key}', ${p.id})">
-          <td class="mono">${id}</td>
-          <td>${pin}${esc(p.title)}</td>
-          <td>${esc(p.author_name)}</td>
-          <td><span class="dp-tag neutral">${esc(p.type || 'Doc')}</span></td>
-          <td class="mono">${esc(p.size || '—')}</td>
-          <td class="mono">${esc(fmtTime(p.created_at))}</td>
-        </tr>`;
-      }
-      if (key === 'minutes') {
+      const ts = fmtTime(p.updated_at || p.created_at);
+      if (isMinutes) {
         const s = p.approval_status || 'draft';
         const tone = s === 'approved' ? 'ok' : s === 'pending' ? 'warn' : 'neutral';
-        return `<tr onclick="DP.viewPost('${key}', ${p.id})">
+        return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
           <td class="mono">${id}</td>
           <td>${pin}${esc(p.title)}</td>
-          <td>${esc(p.author_name)}</td>
+          <td>${esc(p.author_name || '')}</td>
           <td><span class="dp-tag ${tone}">${esc(s)}</span></td>
-          <td class="mono">${esc(fmtTime(p.created_at))}</td>
+          <td class="mono">${p.comment_count || 0}</td>
+          <td class="mono">${esc(ts)}</td>
         </tr>`;
       }
-      return `<tr onclick="DP.viewPost('${key}', ${p.id})">
+      return `<tr onclick="DP.viewPost('${esc(key)}', ${Number(p.id)})">
         <td class="mono">${id}</td>
         <td>${pin}${esc(p.title)}</td>
-        <td>${esc(p.author_name)}</td>
-        <td class="mono">${p.acknowledged || 0}/${p.total || 0}</td>
-        <td class="mono">${esc(fmtTime(p.created_at))}</td>
+        <td>${esc(p.author_name || '')}</td>
+        <td class="mono">${p.comment_count || 0}</td>
+        <td class="mono">${p.view_count || 0}</td>
+        <td class="mono">${esc(ts)}</td>
       </tr>`;
     }).join('');
-    table.innerHTML = `<table class="dp-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
-    root.appendChild(table);
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>${esc(label)} <span class="count">${posts.length}</span></h3>
+      </div>
+      <table class="dp-table">
+        <thead><tr>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
   }
 
   // =========================================================
@@ -970,7 +1295,7 @@ const DP = (() => {
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, 'Tasks'),
       h('div', {}, [
-        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => toast('New task — Phase 3에서 API 연결') }, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => toast('Tasks API — Phase 3.6 pending') }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
           h('span', {}, ' New task'),
         ]),
@@ -1042,14 +1367,13 @@ const DP = (() => {
     const e = h('div', { className: 'dp-empty' });
     e.innerHTML = `
       <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/layers.svg')"></span></div>
-      <h4>${esc(title)} — Phase 3 에서 API 배선 예정</h4>
+      <h4>${esc(title)} — Phase 3 wiring pending</h4>
       <p>${esc(note)}</p>
     `;
     root.appendChild(e);
   }
-  function _renderTeams(root) { _stubPage(root, 'Team Boards', 'Team Korea/Nepal/Indonesia/Pakistan 보드가 여기 연결됩니다.'); }
-  function _renderCalendar(root) { _stubPage(root, 'Calendar', '월별 이벤트 그리드 + 반복 일정 + 드래그 이동이 여기 들어옵니다.'); }
-  function _renderContacts(root) { _stubPage(root, 'Contacts', '프로젝트 팀 연락처 디렉토리.'); }
+  function _renderCalendar(root) { _stubPage(root, 'Calendar', 'Month grid + recurring events + drag-to-move land here in Phase 3.8.'); }
+  function _renderContacts(root) { _stubPage(root, 'Contacts', 'Project team directory — wired in Phase 3.9.'); }
 
   // =========================================================
   // RULES — live-fetch DREAMPATH.md (marked + DOMPurify)
@@ -1102,7 +1426,7 @@ const DP = (() => {
             <tr><td class="mono">v01.042.01</td><td><span class="dp-tag warn">fix</span></td><td>v2 user-name guard</td><td class="mono">2026-04-24</td></tr>
             <tr><td class="mono">v01.042.00</td><td><span class="dp-tag info">feature</span></td><td>v2 staging route + guide split</td><td class="mono">2026-04-24</td></tr>
             <tr><td class="mono">v01.041.00</td><td><span class="dp-tag info">feature</span></td><td>Dreampath guide split + icon system</td><td class="mono">2026-04-24</td></tr>
-            <tr><td class="mono">v01.040.00</td><td><span class="dp-tag info">feature</span></td><td>홈 전면 개편 (B1~B5)</td><td class="mono">2026-04-24</td></tr>
+            <tr><td class="mono">v01.040.00</td><td><span class="dp-tag info">feature</span></td><td>Home redesign (B1~B5)</td><td class="mono">2026-04-24</td></tr>
           </tbody>
         </table>
       </div>
@@ -1114,6 +1438,8 @@ const DP = (() => {
   // MODAL (post/task/note detail)
   // =========================================================
   function _closeModal() {
+    _destroyTiptap();
+    _pickerFiles = [];
     const b = $('#dp-modal-backdrop');
     if (b) b.remove();
     const m = $('#dp-modal');
@@ -1139,11 +1465,35 @@ const DP = (() => {
 
   async function viewPost(board, id) {
     // Show an immediate loading shell so the user sees feedback while we fetch.
+    const postId = Number(id);
     _openModal('Loading…', '<div style="color:var(--text-3)">Loading post…</div>',
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
-    const data = await api('GET', 'posts?id=' + Number(id));
-    if (!data || !data.post) { _closeModal(); return; }
-    const p = data.post;
+
+    // [CASE STUDY 2026-04-24 — friendly 404 in-modal]
+    // Previously api() showed a toast and viewPost silently closed the
+    // modal, which felt like nothing happened. Now: if the post is
+    // missing / inaccessible, we replace the modal body with an inline
+    // explanation instead of bailing. Much clearer UX.
+    if (!postId) {
+      _renderPostError('Invalid post ID', 'The clicked post has no ID — nothing to open.');
+      return;
+    }
+    // Temporarily silence the api() error toast for 404; we render in-modal.
+    const res = await _rawApi('GET', 'posts?id=' + postId);
+    if (res.status === 401) { _renderLogin(); return; }
+    if (res.status === 404) {
+      _renderPostError('Post not found', 'This post may have been removed or is outside your access.');
+      return;
+    }
+    if (res.status === 403) {
+      _renderPostError('Access denied', 'You do not have permission to view this post.');
+      return;
+    }
+    if (!res.ok || !res.data || !res.data.post) {
+      _renderPostError('Could not load post', 'HTTP ' + res.status + (res.error ? ' — ' + res.error : ''));
+      return;
+    }
+    const p = res.data.post;
     const approvalTone = p.approval_status === 'approved' ? 'ok' : p.approval_status === 'pending' ? 'warn' : 'neutral';
     const filesHtml = (p.files || []).length ? `
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
@@ -1182,7 +1532,7 @@ const DP = (() => {
     ` : '';
 
     _openModal(
-      p.title || '(제목 없음)',
+      p.title || '(Untitled)',
       `
       <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span class="dp-tag neutral">POST-${String(p.id).padStart(4, '0')}</span>
@@ -1211,7 +1561,7 @@ const DP = (() => {
     const approverName = encodeURIComponent(_displayName());
     const data = await api('PUT', 'approvals?post_id=' + postId + '&approver=' + approverName, { status });
     if (data) {
-      toast('투표 반영됨', 'ok');
+      toast('Vote recorded', 'ok');
       _closeModal();
       // If we're on home, re-render to update pending_approvals count.
       if (state.page === 'home') navigate('home');
@@ -1331,27 +1681,113 @@ const DP = (() => {
   function openNotifs() {
     toast('Notifications — Phase 3');
   }
-  function _openPostEditor(board) {
+  function _openPostEditor(initialBoard) {
+    // Reset working file list for this editor session.
+    _pickerFiles = [];
+    const boardOpts = (state.boards || [])
+      .filter(b => b.board_type === 'board' || (b.board_type === 'team' && _canPostToBoard(b.slug)))
+      .map(b => `<option value="${esc(b.slug)}"${b.slug === initialBoard ? ' selected' : ''}>${esc(b.title || b.slug)}</option>`)
+      .join('');
+
+    const toolbarBtns = [
+      { cmd: 'bold',        icon: 'bold',         title: 'Bold' },
+      { cmd: 'italic',      icon: 'italic',       title: 'Italic' },
+      { cmd: 'strike',      icon: 'x',            title: 'Strikethrough' },
+      { sep: true },
+      { cmd: 'h2',          label: 'H2',          title: 'Heading 2' },
+      { cmd: 'h3',          label: 'H3',          title: 'Heading 3' },
+      { sep: true },
+      { cmd: 'bulletList',  icon: 'list-ul',      title: 'Bulleted list' },
+      { cmd: 'orderedList', label: '1.',          title: 'Numbered list' },
+      { cmd: 'blockquote',  label: '❝',           title: 'Quote' },
+      { sep: true },
+      { cmd: 'insertTable', label: '⊞',           title: 'Table' },
+      { cmd: 'insertImage', icon: 'scroll',       title: 'Insert image' },
+    ];
+    const toolbar = toolbarBtns.map(b => {
+      if (b.sep) return '<span class="dp-te-sep" aria-hidden="true"></span>';
+      const inner = b.icon
+        ? `<span class="ico" style="--dp-icon:url('/img/dreampath-v2/icons/${esc(b.icon)}.svg')"></span>`
+        : `<span>${esc(b.label)}</span>`;
+      return `<button type="button" class="dp-te-btn" data-cmd="${esc(b.cmd)}" title="${esc(b.title)}"
+                       onmousedown="event.preventDefault();DP._execTiptapCmd('${esc(b.cmd)}')">${inner}</button>`;
+    }).join('');
+
     _openModal(
-      'New post · ' + board,
-      `<div class="dp-field"><label>Title</label><input class="dp-input" id="dp-new-t" placeholder="Title"></div>
-       <div class="dp-field"><label>Content</label><textarea class="dp-textarea" id="dp-new-b" placeholder="Body…"></textarea></div>
-       <p style="font-size:12px;color:var(--text-3)">Tiptap 에디터는 Phase 3 에서 wiring. 지금은 plain text 데모.</p>`,
+      'New post',
+      `
+      <div class="dp-field">
+        <label for="dp-new-board">Board</label>
+        <select class="dp-select" id="dp-new-board">${boardOpts}</select>
+      </div>
+      <div class="dp-field">
+        <label for="dp-new-title">Title</label>
+        <input class="dp-input" id="dp-new-title" placeholder="Title" autocomplete="off">
+      </div>
+      <div class="dp-field">
+        <label>Content</label>
+        <div class="dp-te-wrapper">
+          <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
+          <div class="dp-te-editor" id="dp-tt-post"></div>
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>Attachments <span style="font-weight:400;color:var(--text-3);margin-left:6px" id="dp-file-used">0 / ${MAX_FILES} files · 0 B / 100 MB</span></label>
+        <div class="dp-file-picker">
+          <input type="file" id="dp-new-files" multiple style="display:none"
+                 onchange="DP._handlePickerChange(this)">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm"
+                  onclick="document.getElementById('dp-new-files').click()">
+            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath-v2/icons/plus.svg')"></span>
+            <span>Add file</span>
+          </button>
+          <span class="hint">Up to ${MAX_FILES} files, 100MB total. No .exe/.sh/.bat/.dll.</span>
+        </div>
+        <div class="dp-file-list" id="dp-file-list"></div>
+      </div>
+      `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
-       <button class="dp-btn dp-btn-primary" onclick="DP._saveNewPost('${esc(board)}')">Save</button>`
+       <button class="dp-btn dp-btn-primary" id="dp-new-save" onclick="DP._saveNewPost()">Publish</button>`
     );
+
+    _waitForTiptap(() => _initTiptap('dp-tt-post', ''));
+    _renderFileList();
+    setTimeout(() => { const t = $('#dp-new-title'); if (t) t.focus(); }, 60);
   }
-  function _saveNewPost(board) {
-    const t = $('#dp-new-t').value.trim();
-    const b = $('#dp-new-b').value.trim();
-    if (!t) { toast('제목이 필요합니다', 'err'); return; }
-    const id = Math.max(...(DATA.posts[board] || []).map(p => p.id), 0) + 1;
-    (DATA.posts[board] = DATA.posts[board] || []).unshift({
-      id, board, title: t, content: '<p>' + esc(b) + '</p>', excerpt: b, author_name: _displayName(),
-      created_at: new Date().toISOString(), acknowledged: 0, total: 0, pinned: false,
-    });
-    toast('Saved (demo)', 'ok');
+
+  function _canPostToBoard(slug) {
+    if (!state.user) return false;
+    if (state.user.role === 'admin') return true;
+    if (!slug.startsWith('team_')) return true;
+    const country = slug.slice(5).toLowerCase();
+    return String(state.user.department || '').toLowerCase().includes(country);
+  }
+
+  async function _saveNewPost() {
+    const btn = $('#dp-new-save');
+    const boardSel = $('#dp-new-board');
+    const titleEl = $('#dp-new-title');
+    const board = boardSel ? boardSel.value : '';
+    const title = (titleEl && titleEl.value || '').trim();
+    if (!board) { toast('Select a board', 'err'); return; }
+    if (!title) { toast('Title is required', 'err'); if (titleEl) titleEl.focus(); return; }
+    const content = _getTiptapHTML();
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+
+    const files = await _uploadPending();
+    if (files === null) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
+      return;  // upload error already toasted
+    }
+
+    const data = await api('POST', 'posts', { board, title, content, files });
+    if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
+    if (!data) return;  // api() already toasted the error
+
+    toast('Posted', 'ok');
     _closeModal();
+    // Refresh current page so the new post shows up.
     if (state.page === 'home') navigate('home');
     else navigate(state.page);
   }
@@ -1362,7 +1798,8 @@ const DP = (() => {
     openCmd, closeCmd, _cmdPick,
     openCreate, openNotifs, setDensity,
     viewPost, viewTask, viewNote,
-    _voteApproval,
+    _voteApproval, _inlineApprove,
+    _execTiptapCmd, _handlePickerChange, _removeFile,
     _openPostEditor, _saveNewPost, _closeModal,
   };
 })();
