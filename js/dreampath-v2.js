@@ -847,6 +847,25 @@ const DP = (() => {
     main.appendChild(h('div', { className: 'dp-page', id: 'dp-page' }));
     app.appendChild(main);
     root.appendChild(app);
+    _mountTopFab();
+  }
+
+  // Floating back-to-top button appears on every page once the user scrolls
+  // past 400px. Scroll listener is passive (doesn't block touch scroll).
+  function _mountTopFab() {
+    if (document.getElementById('dp-top-fab')) return;
+    const btn = document.createElement('button');
+    btn.id = 'dp-top-fab';
+    btn.type = 'button';
+    btn.className = 'dp-top-fab';
+    btn.setAttribute('aria-label', 'Scroll to top');
+    btn.title = 'Scroll to top';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    document.body.appendChild(btn);
+    const onScroll = () => btn.classList.toggle('on', (window.scrollY || document.documentElement.scrollTop || 0) > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
 
   function _renderSidebar() {
@@ -1692,17 +1711,37 @@ const DP = (() => {
   // =========================================================
   // TASKS — wired to /api/dreampath/tasks
   // =========================================================
+  // Parse a task's `assignee` field into a clean array. Historic rows store a
+  // single name; newer rows (post Phase-6) store "jimmy, sonny, rio" — join
+  // of display names with "," separator. Both shapes survive the round trip.
+  function _parseAssignees(raw) {
+    return String(raw || '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+
   async function _renderTasks(root) {
     root.innerHTML = '';
+    const view = state.tasksView || 'table';
+
     root.appendChild(h('div', { className: 'dp-page-head' }, [
-      h('h1', {}, 'Tasks'),
       h('div', {}, [
+        h('h1', {}, 'Tasks'),
+        h('div', { className: 'meta' }, view === 'gantt'
+          ? 'Timeline view — bars span from created date to due date.'
+          : 'Table view — every task in one flat list. Click any row to open detail.'),
+      ]),
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, [
+        // View toggle lives next to "New task" so users can flip without scrolling.
+        h('div', { className: 'dp-switcher', role: 'group', 'aria-label': 'Task view' }, [
+          h('button', { type: 'button', className: view === 'table' ? 'on' : '', onclick: () => { state.tasksView = 'table'; navigate('tasks'); } }, 'Table'),
+          h('button', { type: 'button', className: view === 'gantt' ? 'on' : '', onclick: () => { state.tasksView = 'gantt'; navigate('tasks'); } }, 'Gantt'),
+        ]),
         h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openTaskEditor() }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath-v2/icons/plus.svg')" } }),
           h('span', {}, ' New task'),
         ]),
       ]),
     ]));
+
     const loading = h('div', { className: 'dp-panel' });
     loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading tasks…</div>';
     root.appendChild(loading);
@@ -1723,6 +1762,8 @@ const DP = (() => {
       return;
     }
 
+    if (view === 'gantt') { _renderTasksGantt(root, tasks); return; }
+
     // Group header shows totals per status so the ERP density still reads as a board.
     const byStatus = { todo: 0, in_progress: 0, done: 0 };
     tasks.forEach(t => { if (byStatus[t.status] !== undefined) byStatus[t.status]++; });
@@ -1734,10 +1775,14 @@ const DP = (() => {
       const overdue = due && due < today && t.status !== 'done';
       const dueTone = overdue ? 'alert' : (due === today ? 'warn' : 'neutral');
       const prioTone = t.priority === 'high' ? 'alert' : t.priority === 'low' ? 'neutral' : 'neutral';
+      const owners = _parseAssignees(t.assignee);
+      const ownerCell = owners.length
+        ? owners.map(o => `<span class="dp-tag neutral" style="margin-right:4px">${esc(o)}</span>`).join('')
+        : '<span style="color:var(--text-3)">—</span>';
       return `<tr onclick="DP.viewTask(${Number(t.id)})">
         <td class="mono">TASK-${String(t.id).padStart(4, '0')}</td>
         <td>${esc(t.title || '')}</td>
-        <td>${esc(t.assignee || '—')}</td>
+        <td>${ownerCell}</td>
         <td class="mono">${esc(due || '—')}</td>
         <td><span class="dp-tag ${prioTone}">${esc(t.priority || 'normal')}</span></td>
         <td><span class="dp-tag ${dueTone}">${overdue ? 'Overdue' : (due === today ? 'Today' : 'Scheduled')}</span></td>
@@ -1757,13 +1802,102 @@ const DP = (() => {
         <thead>
           <tr>
             <th style="width:110px">ID</th><th>Title</th>
-            <th style="width:140px">Owner</th><th style="width:110px">Due</th>
+            <th style="width:200px">Owners</th><th style="width:110px">Due</th>
             <th style="width:90px">Priority</th><th style="width:110px">Schedule</th>
             <th style="width:110px">Status</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
+    `;
+    root.appendChild(panel);
+  }
+
+  // Gantt chart — horizontal timeline covering the 30-day window around today.
+  // Each row is a task; each bar spans from start (task.created_at or today)
+  // to due_date. Tasks without due_date render as a zero-width pin on their
+  // start date. Colors mirror the status tags (info/ok/warn/neutral).
+  function _renderTasksGantt(root, tasks) {
+    const today = new Date(todayISO() + 'T00:00:00');
+    const rangeStart = new Date(today); rangeStart.setDate(today.getDate() - 7);
+    const rangeEnd   = new Date(today); rangeEnd.setDate(today.getDate() + 45);
+    const totalDays = Math.round((rangeEnd - rangeStart) / 86_400_000);
+    const dayWidth = 28; // px per day — 53 days * 28 ≈ 1484 px, horizontal scroll
+
+    // Day/week headers
+    let hdrDays = '';
+    let hdrWeeks = '';
+    let weekStart = 0;
+    for (let i = 0; i <= totalDays; i++) {
+      const d = new Date(rangeStart); d.setDate(rangeStart.getDate() + i);
+      const dayStr = String(d.getDate()).padStart(2, '0');
+      const dow = d.getDay();
+      const isToday = d.toISOString().slice(0, 10) === todayISO();
+      const isWeekend = dow === 0 || dow === 6;
+      hdrDays += `<div class="dp-gantt-dcol${isToday ? ' dp-gantt-today' : ''}${isWeekend ? ' dp-gantt-weekend' : ''}" style="width:${dayWidth}px">${dayStr}</div>`;
+      if (dow === 1 || i === 0) {
+        // mark week boundaries; label once per week
+        const weekDays = Math.min(7 - (dow === 0 ? 6 : dow - 1), totalDays - i + 1);
+        const label = (d.getMonth() + 1) + '/' + d.getDate();
+        hdrWeeks += `<div class="dp-gantt-wcol" style="width:${weekDays * dayWidth}px">${label}</div>`;
+        weekStart = i;
+      }
+    }
+    // Today guideline offset
+    const todayOffset = Math.round((today - rangeStart) / 86_400_000) * dayWidth;
+
+    const rows = tasks.map(t => {
+      const start = t.created_at
+        ? new Date(String(t.created_at).slice(0, 10) + 'T00:00:00')
+        : today;
+      const end   = t.due_date
+        ? new Date(String(t.due_date).slice(0, 10) + 'T00:00:00')
+        : new Date(start.getTime() + 14 * 86_400_000);  // default 14-day bar
+      const startOffset = Math.max(0, Math.round((start - rangeStart) / 86_400_000));
+      const endOffset   = Math.min(totalDays, Math.round((end - rangeStart) / 86_400_000));
+      const barLeft  = startOffset * dayWidth;
+      const barWidth = Math.max(dayWidth, (endOffset - startOffset) * dayWidth);
+      const tone = t.status === 'done' ? 'ok'
+                 : t.status === 'in_progress' ? 'info'
+                 : (t.priority === 'high' ? 'alert' : 'neutral');
+      const owners = _parseAssignees(t.assignee).join(', ') || '—';
+      return `
+        <div class="dp-gantt-row" onclick="DP.viewTask(${Number(t.id)})">
+          <div class="dp-gantt-label">
+            <div class="dp-gantt-title">${esc(t.title || '')}</div>
+            <div class="dp-gantt-meta">${esc(owners)} · ${esc(t.status || 'todo')}</div>
+          </div>
+          <div class="dp-gantt-track" style="width:${totalDays * dayWidth}px">
+            <div class="dp-gantt-bar dp-gantt-bar-${tone}" style="left:${barLeft}px;width:${barWidth}px"
+                 title="${esc(t.title || '')} · ${esc(String(start.toISOString()).slice(0, 10))} → ${esc(String(end.toISOString()).slice(0, 10))}"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const panel = h('div', { className: 'dp-panel', id: 'dp-gantt' });
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>Timeline</h3>
+        <span style="font-size:11px;color:var(--text-3)">
+          ${String(rangeStart.toISOString()).slice(0, 10)} → ${String(rangeEnd.toISOString()).slice(0, 10)}
+        </span>
+      </div>
+      <div class="dp-gantt-wrap">
+        <div class="dp-gantt-scroll">
+          <div class="dp-gantt-hdr">
+            <div class="dp-gantt-label-hdr">Task</div>
+            <div class="dp-gantt-track-hdr" style="width:${totalDays * dayWidth}px">
+              <div class="dp-gantt-weeks">${hdrWeeks}</div>
+              <div class="dp-gantt-days">${hdrDays}</div>
+            </div>
+          </div>
+          <div class="dp-gantt-body" style="position:relative">
+            <div class="dp-gantt-todayline" style="left:calc(240px + ${todayOffset}px)"></div>
+            ${rows}
+          </div>
+        </div>
+      </div>
     `;
     root.appendChild(panel);
   }
@@ -1827,7 +1961,22 @@ const DP = (() => {
     }
   }
 
-  function _openTaskEditor() {
+  async function _openTaskEditor() {
+    // Fetch user roster once so the Owner multiselect can pick real users
+    // instead of asking for free-text names (which typo'd easily and broke
+    // "filter by my tasks" on home). Picker=1 is read-only; returns only
+    // display_name/id for active users — safe for any authed caller.
+    const usersRes = await api('GET', 'users?picker=1').catch(() => null);
+    const roster = (usersRes && usersRes.users) || [];
+    const myName = _displayName();
+    const ownerChecks = roster.map(u => `
+      <label class="dp-check-row">
+        <input type="checkbox" class="dp-t-own-cb" value="${esc(u.display_name)}"
+               ${u.display_name === myName ? 'checked' : ''}>
+        <span>${esc(u.display_name)}</span>
+      </label>
+    `).join('');
+
     _openModal(
       'New task',
       `
@@ -1839,11 +1988,11 @@ const DP = (() => {
         <label for="dp-t-desc">Description</label>
         <textarea class="dp-textarea" id="dp-t-desc" placeholder="Context, links, acceptance criteria…"></textarea>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <div class="dp-field">
-          <label for="dp-t-assignee">Owner</label>
-          <input class="dp-input" id="dp-t-assignee" value="${esc(_displayName())}" placeholder="Assignee">
-        </div>
+      <div class="dp-field">
+        <label>Owners <span style="font-weight:400;color:var(--text-3);margin-left:4px">(pick one or more from the user list)</span></label>
+        <div class="dp-check-grid" id="dp-t-owners">${ownerChecks || '<span style="color:var(--text-3);font-size:12px">No users available.</span>'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="dp-field">
           <label for="dp-t-due">Due</label>
           <input class="dp-input" id="dp-t-due" type="date">
@@ -1867,10 +2016,17 @@ const DP = (() => {
   async function _saveNewTask() {
     const title = ($('#dp-t-title').value || '').trim();
     if (!title) { toast('Title is required', 'err'); return; }
+    // Collapse checkboxes to a comma-separated string of display names.
+    // Backend column `assignee` is plain TEXT — splitting on "," is the
+    // minimal viable multi-assignee without a new join table. See
+    // _parseAssignees on the read path.
+    const picked = Array.from(document.querySelectorAll('.dp-t-own-cb:checked'))
+      .map(cb => cb.value)
+      .filter(Boolean);
     const body = {
       title,
       description: $('#dp-t-desc').value || '',
-      assignee: $('#dp-t-assignee').value || '',
+      assignee: picked.join(', '),
       due_date: $('#dp-t-due').value || null,
       priority: $('#dp-t-prio').value || 'normal',
       status: 'todo',
@@ -2091,7 +2247,9 @@ const DP = (() => {
     for (let i = 0; i < firstDow; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
     while (cells.length % 7 !== 0) cells.push(null);
-    let gridHtml = '<div class="dp-cal-grid">';
+    // Calendar stretches vertically to fill the page so tall viewports don't
+     // show empty whitespace below the month grid. Each row shares 1fr height.
+    let gridHtml = '<div class="dp-cal-grid dp-cal-grid--fill">';
     cells.forEach(d => {
       if (d == null) { gridHtml += '<div class="dp-cal-day dp-cal-day--empty"></div>'; return; }
       const dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -2367,7 +2525,7 @@ const DP = (() => {
           <div style="font-size:11px;color:var(--text-3);text-align:right">${members.length} ${members.length === 1 ? 'member' : 'people'}</div>
         </div>
         <div style="height:4px;background:var(--g-200);border-radius:2px;overflow:hidden;margin:12px 0 8px">
-          <div style="height:100%;background:var(--navy);width:${pct}%;transition:width var(--dur-reveal) var(--ease-decel)"></div>
+          <div style="height:100%;background:var(--accent);width:${pct}%;transition:width var(--dur-reveal) var(--ease-decel)"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-3)">
           <span><strong style="color:var(--text);font-family:var(--font-mono);font-weight:500">${openCt}</strong> open</span>
@@ -2914,7 +3072,7 @@ const DP = (() => {
       });
       tile.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <span class="ico" style="width:16px;height:16px;background-color:var(--navy);-webkit-mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat;mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat"></span>
+          <span class="ico" style="width:16px;height:16px;background-color:var(--accent);-webkit-mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat;mask:url('/img/dreampath-v2/icons/${esc(t.icon)}.svg') center/16px 16px no-repeat"></span>
           <strong style="font-size:var(--fs-13);color:var(--text)">${esc(t.title)}</strong>
           ${t.count !== '' ? `<span style="margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text);font-size:var(--fs-14);font-weight:600">${t.count}</span>` : ''}
         </div>
@@ -3142,24 +3300,30 @@ const DP = (() => {
       return;
     }
 
+    // Row uniformity: every chip cell renders a dp-tag (even "admin = no
+     // preset" or "no preset assigned") so chip heights are identical across
+     // rows. Team column uses nowrap so multi-word values like "Team Indonesia"
+     // don't wrap to 2 lines and inflate row height. Earlier version showed
+     // inconsistent heights because some cells had plain text + some had
+     // chips + some cells wrapped.
     const rows = users.map(u => {
       const roleTone = u.role === 'admin' ? 'info' : 'neutral';
       const activeTone = u.is_active ? 'ok' : 'alert';
       const presetCell = u.role === 'admin'
-        ? '<span style="color:var(--text-3);font-size:11px">—</span>'
+        ? `<span class="dp-tag neutral" style="opacity:0.55">Admin · all</span>`
         : (u.preset_name
             ? `<span class="dp-tag neutral">${esc(u.preset_name)}</span>`
-            : `<span style="color:var(--text-3);font-size:11px">(none · all view)</span>`);
+            : `<span class="dp-tag alert">No preset</span>`);
       return `<tr>
-        <td><strong>${esc(u.username)}</strong></td>
-        <td>${esc(u.display_name || '')}</td>
+        <td style="white-space:nowrap"><strong>${esc(u.username)}</strong></td>
+        <td>${esc(u.display_name || '—')}</td>
         <td><span class="dp-tag ${roleTone}">${esc(u.role || 'member')}</span></td>
         <td>${presetCell}</td>
-        <td>${esc(u.department || '—')}</td>
-        <td>${esc(u.email || '—')}</td>
-        <td class="mono">${esc(fmtTime(u.last_login_at))}</td>
+        <td style="white-space:nowrap">${esc(u.department || '—')}</td>
+        <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(u.email || '—')}</td>
+        <td class="mono" style="white-space:nowrap">${esc(fmtTime(u.last_login_at))}</td>
         <td><span class="dp-tag ${activeTone}">${u.is_active ? 'active' : 'disabled'}</span></td>
-        <td style="text-align:right">
+        <td style="text-align:right;white-space:nowrap">
           <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._openUserEditor(${Number(u.id)})">Edit</button>
           ${u.username !== 'jimmy' && u.id !== (state.user && state.user.uid)
             ? `<button class="dp-btn dp-btn-danger dp-btn-sm" style="margin-left:4px" onclick="DP._deleteUser(${Number(u.id)}, '${esc(u.username)}')">Delete</button>`
@@ -3171,13 +3335,13 @@ const DP = (() => {
     const panel = h('div', { className: 'dp-panel' });
     panel.innerHTML = `
       <div class="dp-panel-head"><h3>All users <span class="count">${users.length}</span></h3></div>
-      <table class="dp-table">
+      <table class="dp-table dp-table-uniform">
         <thead><tr>
           <th style="width:120px">Username</th><th>Display name</th>
-          <th style="width:80px">Role</th><th style="width:160px">Preset</th>
-          <th style="width:120px">Team</th><th>Email</th>
+          <th style="width:90px">Role</th><th style="width:160px">Preset</th>
+          <th style="width:140px">Team</th><th style="width:210px">Email</th>
           <th style="width:140px">Last login</th><th style="width:90px">Status</th>
-          <th style="width:130px;text-align:right">Actions</th>
+          <th style="width:140px;text-align:right">Actions</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -3289,7 +3453,7 @@ const DP = (() => {
     `).join('');
 
     const builtinNote = existing && existing.is_builtin
-      ? '<div style="padding:8px 12px;background:var(--info-bg);color:var(--navy);border-radius:2px;margin-bottom:12px;font-size:12px">Built-in preset — name and description are locked. Permissions may still be tuned.</div>'
+      ? '<div style="padding:8px 12px;background:var(--info-bg);color:var(--accent);border-radius:2px;margin-bottom:12px;font-size:12px">Built-in preset — name and description are locked. Permissions may still be tuned.</div>'
       : '';
 
     _openModal(
@@ -3424,12 +3588,6 @@ const DP = (() => {
     panel.innerHTML = `
       <div class="dp-panel-head">
         <h3>Recent activity <span class="count">${rangeFrom}–${rangeTo} of ${total}</span></h3>
-        <div style="display:flex;gap:6px">
-          <button class="dp-btn dp-btn-secondary dp-btn-sm" ${page === 0 ? 'disabled' : ''}
-                  onclick="DP._activityPage(${page - 1})">← Previous</button>
-          <button class="dp-btn dp-btn-secondary dp-btn-sm" ${page >= totalPages - 1 ? 'disabled' : ''}
-                  onclick="DP._activityPage(${page + 1})">Next →</button>
-        </div>
       </div>
       <table class="dp-table">
         <thead><tr>
@@ -3441,10 +3599,31 @@ const DP = (() => {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="dp-panel-body pad" style="display:flex;justify-content:center;gap:8px;align-items:center;color:var(--text-3);font-size:11px">
-        Page ${page + 1} of ${totalPages}
-      </div>
+      ${_buildPager(page, totalPages, '_activityPage')}
     `;
+  }
+
+  // Shared numbered pagination renderer. Shows up to 7 page numbers with
+  // ellipsis in the middle when there are more. Prev/Next arrows flank the
+  // numbers. Each button calls DP[handlerName](pageIdx). Zero-based.
+  function _buildPager(page, totalPages, handlerName) {
+    if (totalPages <= 1) return '';
+    const btn = (label, p, cls, disabled) =>
+      `<button type="button" class="${cls}" ${disabled ? 'disabled' : ''}
+         onclick="DP.${handlerName}(${p})">${label}</button>`;
+    const buttons = [];
+    buttons.push(btn('‹', Math.max(0, page - 1), '', page === 0));
+    // Window: 1, 2, …, page-1, page, page+1, …, N-1, N
+    const window = new Set([0, 1, totalPages - 2, totalPages - 1, page - 1, page, page + 1]);
+    const pages = [...window].filter(p => p >= 0 && p < totalPages).sort((a, b) => a - b);
+    let prev = -1;
+    pages.forEach(p => {
+      if (p > prev + 1) buttons.push('<span class="dp-pager-gap">…</span>');
+      buttons.push(btn(String(p + 1), p, p === page ? 'on' : '', false));
+      prev = p;
+    });
+    buttons.push(btn('›', Math.min(totalPages - 1, page + 1), '', page >= totalPages - 1));
+    return '<nav class="dp-pager" aria-label="Pagination">' + buttons.join('') + '</nav>';
   }
   function _activityPage(n) {
     state.activityPage = Math.max(0, n);
@@ -4117,13 +4296,10 @@ const DP = (() => {
     root.appendChild(list);
 
     if (rest.length > PAGE_SIZE) {
-      const pager = h('div', { style: { display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center', padding: '12px 0', fontSize: '12px', color: 'var(--text-3)' } });
-      const p = state.versionsPage;
-      pager.innerHTML = `
-        <button class="dp-btn dp-btn-secondary dp-btn-sm" ${p === 0 ? 'disabled' : ''} onclick="DP._verPage(-1)">← Prev</button>
-        <span style="margin:0 10px;font-family:var(--font-mono)">${p + 1} / ${totalPages}</span>
-        <button class="dp-btn dp-btn-secondary dp-btn-sm" ${p >= totalPages - 1 ? 'disabled' : ''} onclick="DP._verPage(1)">Next →</button>
-      `;
+      // Numbered pagination shared with Activity log. _verPageGoto takes an
+      // absolute 0-based index, unlike legacy _verPage(delta).
+      const pager = h('div');
+      pager.innerHTML = _buildPager(state.versionsPage, totalPages, '_verPageGoto');
       root.appendChild(pager);
     }
 
@@ -4134,15 +4310,15 @@ const DP = (() => {
       <div class="dp-panel-body pad" style="padding:16px 20px">
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-13)">
           <tr>
-            <td style="width:70px;font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">aa</td>
+            <td style="width:70px;font-family:var(--font-mono);font-weight:500;color:var(--accent);padding:6px 0;vertical-align:top">aa</td>
             <td style="padding:6px 0"><strong>Major</strong> — set manually by the project owner. Represents a full redesign or major milestone.</td>
           </tr>
           <tr>
-            <td style="font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">bbb</td>
+            <td style="font-family:var(--font-mono);font-weight:500;color:var(--accent);padding:6px 0;vertical-align:top">bbb</td>
             <td style="padding:6px 0"><strong>Feature</strong> — bumped when a new feature is added or an existing one is significantly changed. <code>cc</code> resets to <code>00</code>.</td>
           </tr>
           <tr>
-            <td style="font-family:var(--font-mono);font-weight:500;color:var(--navy);padding:6px 0;vertical-align:top">cc</td>
+            <td style="font-family:var(--font-mono);font-weight:500;color:var(--accent);padding:6px 0;vertical-align:top">cc</td>
             <td style="padding:6px 0"><strong>Fix</strong> — bumped for bug fixes and hotfixes.</td>
           </tr>
         </table>
@@ -4172,6 +4348,10 @@ const DP = (() => {
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
        <button class="dp-btn dp-btn-primary" onclick="DP._saveVersion()">Save</button>`
     );
+  }
+  function _verPageGoto(p) {
+    state.versionsPage = Math.max(0, Number(p) || 0);
+    navigate('versions');
   }
   function _verPage(delta) {
     state.versionsPage = Math.max(0, (state.versionsPage || 0) + delta);
@@ -4299,16 +4479,40 @@ const DP = (() => {
         `).join('')}
       </div>
     ` : '';
+    // Approvals section — when the current user is one of the approvers, pull
+     // their row to the top and tag it clearly. Previously the approvals list
+     // sorted by created_at, so a user who had already voted couldn't find
+     // their own line at a glance. Now "YOUR VOTE" banner surfaces status +
+     // voted_at, and the row is highlighted with accent.
+    const myLowerNames = [
+      String(_displayName() || '').toLowerCase(),
+      String((state.user && state.user.username) || '').toLowerCase(),
+    ].filter(Boolean);
+    const isMine = (nm) => myLowerNames.indexOf(String(nm || '').toLowerCase()) >= 0;
+    const myApproval = (p.approvals || []).find(a => isMine(a.approver_name));
+    const myVoteBanner = myApproval ? `
+      <div style="margin:14px 0 6px;padding:10px 14px;border:1px solid var(--accent);border-radius:var(--r-sm);background:var(--info-bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <strong style="color:var(--accent);font-size:var(--fs-12);letter-spacing:0.04em;text-transform:uppercase">Your vote</strong>
+        <span class="dp-tag ${myApproval.status === 'approved' ? 'ok' : myApproval.status === 'rejected' ? 'alert' : 'warn'}">${esc(myApproval.status)}</span>
+        ${myApproval.voted_at
+          ? `<span class="mono" style="color:var(--text-3);font-size:11px;margin-left:auto">voted ${esc(fmtTime(myApproval.voted_at))}</span>`
+          : '<span style="color:var(--text-3);font-size:11px;margin-left:auto">awaiting your vote</span>'}
+      </div>
+    ` : '';
     const approvalsHtml = (p.approvals || []).length ? `
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
         <div class="dp-h2" style="margin-bottom:8px">Approvals</div>
-        ${(p.approvals || []).map(a => `
-          <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:var(--fs-12)">
-            <strong>${esc(a.approver_name)}</strong>
-            <span class="dp-tag ${a.status === 'approved' ? 'ok' : a.status === 'rejected' ? 'alert' : 'warn'}">${esc(a.status)}</span>
-            ${a.voted_at ? `<span class="mono" style="color:var(--text-3);margin-left:auto">${esc(fmtTime(a.voted_at))}</span>` : ''}
-          </div>
-        `).join('')}
+        ${myVoteBanner}
+        ${(p.approvals || []).map(a => {
+          const mineRow = isMine(a.approver_name);
+          return `
+            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:var(--fs-12);${mineRow ? 'background:var(--info-bg);padding-left:8px;padding-right:8px;border-radius:var(--r-sm)' : ''}">
+              <strong style="${mineRow ? 'color:var(--accent)' : ''}">${esc(a.approver_name)}${mineRow ? ' (you)' : ''}</strong>
+              <span class="dp-tag ${a.status === 'approved' ? 'ok' : a.status === 'rejected' ? 'alert' : 'warn'}">${esc(a.status)}</span>
+              ${a.voted_at ? `<span class="mono" style="color:var(--text-3);margin-left:auto">${esc(fmtTime(a.voted_at))}</span>` : ''}
+            </div>
+          `;
+        }).join('')}
       </div>
     ` : '';
 
@@ -4729,13 +4933,25 @@ const DP = (() => {
   function openNotifs() {
     toast('Notifications — Phase 3');
   }
-  function _openPostEditor(initialBoard) {
+  async function _openPostEditor(initialBoard) {
     // Reset working file list for this editor session.
     _pickerFiles = [];
     const boardOpts = (state.boards || [])
       .filter(b => b.board_type === 'board' || (b.board_type === 'team' && _canPostToBoard(b.slug)))
       .map(b => `<option value="${esc(b.slug)}"${b.slug === initialBoard ? ' selected' : ''}>${esc(b.title || b.slug)}</option>`)
       .join('');
+
+    // Approver roster for minutes. Only shown when board = minutes (toggled
+    // via board dropdown onchange). Fetched once up-front so picking "minutes"
+    // doesn't require a round-trip.
+    const usersRes = await api('GET', 'users?picker=1').catch(() => null);
+    const roster = (usersRes && usersRes.users) || [];
+    const approverChecks = roster.map(u => `
+      <label class="dp-check-row">
+        <input type="checkbox" class="dp-new-appr-cb" value="${esc(u.display_name)}">
+        <span>${esc(u.display_name)}</span>
+      </label>
+    `).join('');
 
     const toolbarBtns = [
       { cmd: 'bold',        icon: 'bold',         title: 'Bold' },
@@ -4766,7 +4982,11 @@ const DP = (() => {
       `
       <div class="dp-field">
         <label for="dp-new-board">Board</label>
-        <select class="dp-select" id="dp-new-board">${boardOpts}</select>
+        <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()">${boardOpts}</select>
+      </div>
+      <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'}">
+        <label>Approvers <span style="color:var(--alert);font-weight:400;margin-left:4px">(required for Meeting Minutes)</span></label>
+        <div class="dp-check-grid">${approverChecks || '<span style="color:var(--text-3);font-size:12px">No users available.</span>'}</div>
       </div>
       <div class="dp-field">
         <label for="dp-new-title">Title</label>
@@ -4804,6 +5024,13 @@ const DP = (() => {
     setTimeout(() => { const t = $('#dp-new-title'); if (t) t.focus(); }, 60);
   }
 
+  function _onPostBoardChange() {
+    const boardSel = $('#dp-new-board');
+    const field = $('#dp-new-approvers-field');
+    if (!boardSel || !field) return;
+    field.style.display = boardSel.value === 'minutes' ? 'flex' : 'none';
+  }
+
   function _canPostToBoard(slug) {
     if (!state.user) return false;
     if (state.user.role === 'admin') return true;
@@ -4822,6 +5049,17 @@ const DP = (() => {
     if (!title) { toast('Title is required', 'err'); if (titleEl) titleEl.focus(); return; }
     const content = _getTiptapHTML();
 
+    // Minutes require approvers. Validate client-side so the user doesn't
+    // spend the Tiptap editor round-trip only to be rejected server-side.
+    let approvers = null;
+    if (board === 'minutes') {
+      approvers = Array.from(document.querySelectorAll('.dp-new-appr-cb:checked')).map(cb => cb.value).filter(Boolean);
+      if (!approvers.length) {
+        toast('Select at least one approver for Meeting Minutes', 'err');
+        return;
+      }
+    }
+
     if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
 
     const files = await _uploadPending();
@@ -4830,7 +5068,9 @@ const DP = (() => {
       return;  // upload error already toasted
     }
 
-    const data = await api('POST', 'posts', { board, title, content, files });
+    const postBody = { board, title, content, files };
+    if (approvers) postBody.approvers = approvers;
+    const data = await api('POST', 'posts', postBody);
     if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
     if (!data) return;  // api() already toasted the error
 
@@ -4849,7 +5089,7 @@ const DP = (() => {
     viewPost, viewTask, viewNote,
     _voteApproval, _inlineApprove, _inlineReject,
     _execTiptapCmd, _handlePickerChange, _removeFile,
-    _openPostEditor, _saveNewPost, _closeModal,
+    _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
     _openVersionEditor, _saveVersion,
@@ -4864,7 +5104,7 @@ const DP = (() => {
     _toggleDesignEditMode, _setDesignToken, _resetDesignTokens,
     _openContactEditor, _saveContact, _deleteContact, _filterContacts,
     openSearch, _searchOpen,
-    _verPage,
+    _verPage, _verPageGoto,
     _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,

@@ -186,6 +186,23 @@ export async function onRequestPost({ request, env, data }) {
     return json({ error: 'A post cannot be both a revision (parent_post_id) and a reply (reply_to_id).' }, 400);
   }
 
+  // Minutes enforcement — if the board is "minutes" and no approvers list is
+  // provided, refuse to publish. Previously the UI let users skip this and the
+  // post went out with approval_status='pending' but nobody assigned, which
+  // looked like everyone should act but nobody could. Revisions (safeParentId
+  // set) inherit their parent's approver list via the approvers copy below,
+  // so the check is skipped for them.
+  if (board === 'minutes' && !safeParentId) {
+    const approverList = Array.isArray(approvers)
+      ? approvers.map(n => String(n || '').trim()).filter(Boolean)
+      : [];
+    if (approverList.length === 0) {
+      return json({
+        error: 'Meeting Minutes require at least one approver. Open the editor and pick approvers before publishing.',
+      }, 400);
+    }
+  }
+
   // Validate reply_to_id exists
   if (safeReplyToId) {
     const parent = await env.DB.prepare(`SELECT id FROM dp_board_posts WHERE id = ?`).bind(safeReplyToId).first();
