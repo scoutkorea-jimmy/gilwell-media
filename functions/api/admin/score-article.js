@@ -114,8 +114,8 @@ Tags: ${tags || '(없음)'}
   "categories": [
     {
       "label": "Title",
-      "score": <0-30 정수>,
-      "max": 30,
+      "score": <0-25 정수>,
+      "max": 25,
       "issues": ["<문제점>"],
       "strengths": ["<잘된 점>"]
     },
@@ -128,9 +128,16 @@ Tags: ${tags || '(없음)'}
     },
     {
       "label": "Body 구조·흐름",
-      "score": <0-35 정수>,
-      "max": 35,
+      "score": <0-30 정수>,
+      "max": 30,
       "issues": [],
+      "strengths": []
+    },
+    {
+      "label": "자연도·발화감",
+      "score": <0-10 정수>,
+      "max": 10,
+      "issues": ["<자연도 문제 — 호흡/좌표/추상↔구체/단정 절제 중 어느 축인지 명시>"],
       "strengths": []
     },
     {
