@@ -1,4 +1,4 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const MISC_BUCKET = '기타';
 const UNMATCHED_BUCKET = '국문 미확정 용어';
@@ -6,10 +6,7 @@ const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', 
 const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
 
 export async function onRequestPut({ request, env, params }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'glossary', 'write'); if (__gate) return __gate
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id) || id < 1) return json({ error: 'Invalid ID' }, 400);
 
@@ -42,10 +39,7 @@ export async function onRequestPut({ request, env, params }) {
 }
 
 export async function onRequestDelete({ request, env, params }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'glossary', 'write'); if (__gate) return __gate
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id) || id < 1) return json({ error: 'Invalid ID' }, 400);
   try {

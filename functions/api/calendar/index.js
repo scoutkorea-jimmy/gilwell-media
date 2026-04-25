@@ -1,4 +1,4 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { ensureCalendarTable, normalizeCalendarInput, normalizeCalendarRows } from '../../_shared/calendar.js';
 
 export async function onRequestGet({ env }) {
@@ -43,10 +43,7 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'calendar', 'write'); if (__gate) return __gate
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
   const normalized = normalizeCalendarInput(body);

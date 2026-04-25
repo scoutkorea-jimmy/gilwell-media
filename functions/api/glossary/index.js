@@ -1,4 +1,4 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 
 const MISC_BUCKET = '기타';
 const UNMATCHED_BUCKET = '국문 미확정 용어';
@@ -57,10 +57,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'glossary', 'write'); if (__gate) return __gate
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }

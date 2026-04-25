@@ -1,3 +1,5 @@
+import { PUBLIC_DATE_EXPR } from './post-public-date.js';
+
 export function sanitizeSpecialFeature(value) {
   if (value === undefined) return undefined;
   if (value === null) return null;
@@ -30,7 +32,7 @@ export async function findSpecialFeaturePosts(env, basePost, limit = 50) {
         AND category = ?
         AND COALESCE(special_feature, '') = ?
         AND id != ?
-      ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
       LIMIT ?`
   ).bind(category, feature, postId, Math.max(1, limit)).all();
 
@@ -60,7 +62,7 @@ export async function getSpecialFeatureCollection(env, category, slug, opts = {}
         AND category = ?
         AND special_feature IS NOT NULL
         AND special_feature != ''
-      ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC`
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`
   ).bind(safeCategory).all();
 
   const items = (results || []).filter((row) => slugifySpecialFeature(row.special_feature) === safeSlug);

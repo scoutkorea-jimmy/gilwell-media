@@ -1,6 +1,30 @@
 {
   "items": [
   {
+    "version": "03.105.01",
+    "date": "2026-04-25",
+    "released_at": "2026-04-25 20:35:43 KST",
+    "summary": "캘린더·용어집 권한 게이팅을 멤버 권한 체계와 맞추고 글 저장 불리언 입력을 안전하게 보정해, 권한이 있는 운영자가 다시 정상적으로 수정할 수 있도록 정리했습니다.",
+    "changes": [
+      "functions/api/calendar/index.js, functions/api/calendar/[id].js, functions/api/glossary/index.js, functions/api/glossary/[id].js가 기존 full 토큰 고정 검증 대신 gateMenuAccess('calendar'/'glossary', 'write')를 사용하도록 변경. 오너는 그대로 통과하고, view/write 토큰이 부여된 멤버도 권한 매트릭스에 맞게 접근 가능.",
+      "functions/_shared/post-input.js의 optionalBooleanFlag가 boolean 외에 null, 빈 문자열, 숫자 0/1, 문자열 true/false/yes/no/on/off를 명시적으로 처리하도록 보강. 관리자 저장 폼과 API 호출에서 truthy/falsy 암묵 변환으로 잘못 저장될 가능성을 줄임.",
+      "관리자 버전 03.105.00 → 03.105.01 (Hotfix · 캘린더/용어집 권한 게이팅 및 불리언 입력 안정화)."
+    ]
+  },
+  {
+    "version": "00.133.00",
+    "date": "2026-04-25",
+    "released_at": "2026-04-25 20:35:43 KST",
+    "summary": "검색 결과 페이지네이션을 추가하고 공개 글 날짜 계산을 KST 기준으로 통일해, 검색·홈 통계·연관 콘텐츠의 순서와 집계가 서로 어긋나지 않도록 맞췄습니다.",
+    "changes": [
+      "js/search.js와 search.html에 검색 결과 페이지네이션 UI를 추가. 검색 결과가 16건을 넘으면 이전/번호/다음 버튼으로 페이지 이동 가능하고, 결과 수 안내에 현재 표시 구간(예: 17-32건)을 함께 표기.",
+      "functions/_shared/post-public-date.js 신설 — publish_at/created_at를 KST 기준 공개일로 계산하는 PUBLIC_DATE_EXPR를 공용화. functions/api/posts/index.js와 functions/api/home.js가 같은 식을 공유하도록 정리해 공개 정렬 기준 중복을 제거.",
+      "functions/api/stats.js의 오늘 기사 수 집계를 raw DATE(COALESCE(...)) 대신 KST 공개일 기준으로 수정. KST 자정 직후에도 당일 기사 수가 전날로 밀리는 경계 시간대 오집계를 방지.",
+      "functions/api/articles.ndjson.js, functions/_shared/special-features.js, functions/_shared/related-posts.js도 같은 PUBLIC_DATE_EXPR를 사용하도록 통일. 검색, NDJSON export, 특집 컬렉션, 연관 글 사이에서 공개일 순서와 기간 필터가 서로 달라지던 문제를 정리.",
+      "사이트 버전 00.132.00 → 00.133.00 (Feature · 검색 페이지네이션 + 공개일 KST 정합성 통일)."
+    ]
+  },
+  {
     "version": "03.105.00",
     "date": "2026-04-25",
     "released_at": "2026-04-25 11:52:55 KST",

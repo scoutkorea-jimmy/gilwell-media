@@ -3,6 +3,7 @@ import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { loadNavLabels } from '../_shared/nav-labels.js';
+import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
 
@@ -34,9 +35,6 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
-const PUBLISH_AT_KST_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE NULL END";
-const CREATED_AT_KST_EXPR = "CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE NULL END";
-const PUBLIC_DATE_EXPR = `COALESCE(${PUBLISH_AT_KST_EXPR}, ${CREATED_AT_KST_EXPR})`;
 const HOME_SECTION_ISSUE_DEFS = {
   site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
   nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },

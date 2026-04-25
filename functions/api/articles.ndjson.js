@@ -1,3 +1,5 @@
+import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
+
 /**
  * Gilwell Media · /api/articles.ndjson
  *
@@ -35,10 +37,10 @@ export async function onRequestGet({ request, env }) {
              publish_at, created_at, updated_at, views
         FROM posts
         WHERE published = 1
-          AND COALESCE(publish_at, created_at) <= datetime('now')
-          AND COALESCE(publish_at, created_at) >= datetime('now', ?)
+          AND ${PUBLIC_DATE_EXPR} <= datetime('now', '+9 hours')
+          AND ${PUBLIC_DATE_EXPR} >= datetime('now', '+9 hours', ?)
           ${category ? 'AND category = ?' : ''}
-        ORDER BY datetime(COALESCE(publish_at, created_at)) DESC, id DESC
+        ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
         LIMIT ?`;
     const binds = [`-${days} days`];
     if (category) binds.push(category);
