@@ -1,3 +1,5 @@
+import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
+
 /**
  * Gilwell Media · Article Stats
  *
@@ -18,7 +20,7 @@ export async function onRequestGet({ env }) {
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'apr'   AND published = 1`).first(),
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'wosm'  AND published = 1`).first(),
       env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE category = 'people' AND published = 1`).first(),
-      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE DATE(COALESCE(publish_at, created_at)) = ? AND published = 1`).bind(today).first(),
+      env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE date(${PUBLIC_DATE_EXPR}) = date(?) AND published = 1`).bind(today).first(),
     ]);
 
     return json({

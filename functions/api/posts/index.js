@@ -14,6 +14,7 @@ import { serializePostImage } from '../../_shared/images.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
+import { PUBLIC_DATE_EXPR } from '../../_shared/post-public-date.js';
 import { sanitizeSpecialFeature } from '../../_shared/special-features.js';
 import { purgeContentCache } from '../../_shared/cache-purge.js';
 import { ensureDuePostsPublished } from '../../_shared/publish-due-posts.js';
@@ -76,7 +77,6 @@ export async function onRequestGet({ request, env }) {
     if (!rl.ok) return rateLimitResponse(rl, '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
   }
 
-  const PUBLIC_DATE_EXPR = "COALESCE(datetime(replace(publish_at, 'T', ' ')), datetime(publish_at), datetime(replace(created_at, 'T', ' ')), datetime(created_at))";
   const ORDER_LATEST = `ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const ORDER_OLDEST = `ORDER BY ${PUBLIC_DATE_EXPR} ASC, id ASC`;
   const ORDER_VIEWS = `ORDER BY views DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
@@ -120,15 +120,15 @@ export async function onRequestGet({ request, env }) {
         baseArgs.push(publishedParam);
       }
       if (daysFilter > 0) {
-        conditions.push("datetime(COALESCE(publish_at, created_at)) >= datetime(?, ?)");
-        baseArgs.push('now', '-' + daysFilter + ' days');
+        conditions.push(`${PUBLIC_DATE_EXPR} >= datetime('now', '+9 hours', ?)`);
+        baseArgs.push('-' + daysFilter + ' days');
       }
       if (startDate) {
-        conditions.push("date(COALESCE(publish_at, created_at)) >= date(?)");
+        conditions.push(`date(${PUBLIC_DATE_EXPR}) >= date(?)`);
         baseArgs.push(startDate);
       }
       if (endDate) {
-        conditions.push("date(COALESCE(publish_at, created_at)) <= date(?)");
+        conditions.push(`date(${PUBLIC_DATE_EXPR}) <= date(?)`);
         baseArgs.push(endDate);
       }
       if (q) {

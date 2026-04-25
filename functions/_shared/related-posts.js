@@ -1,3 +1,5 @@
+import { PUBLIC_DATE_EXPR } from './post-public-date.js';
+
 export async function findRelatedPosts(env, basePost, limit = 5) {
   if (!env?.DB || !basePost?.id) return [];
   const manualPosts = await findManualRelatedPosts(env, basePost, limit);
@@ -58,7 +60,7 @@ async function findAutoRelatedPosts(env, basePost, limit, excludedIds) {
     bindings.push(basePost.category);
   }
 
-  sql += ' ORDER BY datetime(COALESCE(publish_at, created_at)) DESC LIMIT ?';
+  sql += ` ORDER BY ${PUBLIC_DATE_EXPR} DESC LIMIT ?`;
   bindings.push(anchorTerms.length ? 40 : 20);
 
   const { results } = await env.DB.prepare(sql).bind(...bindings).all();

@@ -73,12 +73,17 @@
     var searchBtn = document.getElementById('search-btn');
     var searchCount = document.getElementById('search-count');
     var searchRes = document.getElementById('search-results');
+    var searchPagination = document.getElementById('search-pagination');
     var categoryEl = document.getElementById('search-category');
     var startDateEl = document.getElementById('search-start-date');
     var endDateEl = document.getElementById('search-end-date');
     var tagEl = document.getElementById('search-tag');
     var scopeButtons = document.querySelectorAll('[data-scope]');
     var activeScope = 'site';
+    var currentPage = 1;
+    var lastQuery = '';
+    var pageSize = 16;
+    var totalPages = 1;
 
     if (!searchInput || !searchBtn || !searchCount || !searchRes) {
       return;
@@ -86,15 +91,62 @@
 
     populateCategoryFilter(categoryEl);
 
-    function doSearch(query) {
+    function renderPagination() {
+      if (!searchPagination) return;
+      if (activeScope !== 'site' || totalPages <= 1) {
+        searchPagination.innerHTML = '';
+        return;
+      }
+
+      var start = Math.max(1, currentPage - 2);
+      var end = Math.min(totalPages, start + 4);
+      start = Math.max(1, end - 4);
+      var html = '';
+
+      if (currentPage > 1) {
+        html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage - 1) + '" aria-label="이전 검색 페이지">이전</button>';
+      }
+      if (start > 1) {
+        html += '<button type="button" class="board-page-btn" data-page="1">1</button>';
+        if (start > 2) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
+      }
+      for (var page = start; page <= end; page += 1) {
+        html += '<button type="button" class="board-page-btn' + (page === currentPage ? ' active' : '') + '"' +
+          ' data-page="' + page + '"' + (page === currentPage ? ' aria-current="page"' : '') + '>' + page + '</button>';
+      }
+      if (end < totalPages) {
+        if (end < totalPages - 1) html += '<span class="board-page-ellipsis" aria-hidden="true">…</span>';
+        html += '<button type="button" class="board-page-btn" data-page="' + totalPages + '">' + totalPages + '</button>';
+      }
+      if (currentPage < totalPages) {
+        html += '<button type="button" class="board-page-btn board-page-nav" data-page="' + (currentPage + 1) + '" aria-label="다음 검색 페이지">다음</button>';
+      }
+
+      searchPagination.innerHTML = html;
+      searchPagination.querySelectorAll('[data-page]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var nextPage = parseInt(btn.getAttribute('data-page') || '1', 10);
+          if (!Number.isFinite(nextPage) || nextPage === currentPage || nextPage < 1 || nextPage > totalPages) return;
+          currentPage = nextPage;
+          doSearch(lastQuery, { preservePage: true });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    function doSearch(query, options) {
+      var opts = options || {};
       query = (query || '').trim();
       if (!query) return;
+      if (!opts.preservePage) currentPage = 1;
+      lastQuery = query;
 
       renderLoading(searchRes, searchCount);
+      if (searchPagination) searchPagination.innerHTML = '';
 
       var params = new URLSearchParams();
       params.set('q', query);
-      var endpoint = '/api/posts?page=1';
+      var endpoint = '/api/posts?page=' + currentPage;
       if (activeScope === 'dreampath') {
         endpoint = '/api/dreampath/search';
       } else {
@@ -108,28 +160,39 @@
         .then(function (data) {
           var posts = activeScope === 'dreampath' ? (data.results || []) : (data.posts || []);
           var total = data.total || posts.length;
+          pageSize = Math.max(1, parseInt(data.pageSize, 10) || posts.length || 16);
+          totalPages = Math.max(1, Math.ceil(total / pageSize));
+          var startIndex = total ? ((currentPage - 1) * pageSize) + 1 : 0;
+          var endIndex = total ? Math.min(total, startIndex + posts.length - 1) : 0;
 
           searchCount.style.display = 'block';
-          searchCount.textContent = '"' + query + '" 검색 결과 ' + total + '건';
+          searchCount.textContent = '"' + query + '" 검색 결과 ' + total + '건' +
+            (activeScope === 'site' && total ? ' · ' + startIndex + '-' + endIndex + '건 표시' : '');
 
           if (!posts.length) {
             renderEmpty(searchRes, query);
+            renderPagination();
             return;
           }
 
           renderResults(searchRes, posts, activeScope);
+          renderPagination();
         })
         .catch(function (error) {
+          totalPages = 1;
           if (activeScope === 'dreampath') {
             if (error && Number(error.status) === 401) {
               searchRes.innerHTML =
                 '<div class="search-no-results"><strong>Dreampath 로그인이 필요합니다</strong>내부 검색은 로그인한 상태에서 사용할 수 있습니다.</div>';
+              if (searchPagination) searchPagination.innerHTML = '';
               return;
             }
             renderError(searchRes, (error && error.message) ? 'Dreampath 검색 중 오류가 발생했습니다. ' + error.message : 'Dreampath 검색 중 오류가 발생했습니다.');
+            if (searchPagination) searchPagination.innerHTML = '';
             return;
           }
           renderError(searchRes, (error && error.message) ? error.message : '');
+          if (searchPagination) searchPagination.innerHTML = '';
         });
     }
 
@@ -146,11 +209,15 @@
     scopeButtons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         activeScope = btn.getAttribute('data-scope') || 'site';
+        currentPage = 1;
         scopeButtons.forEach(function (item) {
           item.classList.toggle('active', item === btn);
+          item.setAttribute('aria-pressed', item === btn ? 'true' : 'false');
         });
         var filterGrid = document.getElementById('search-filter-grid');
         if (filterGrid) filterGrid.style.display = activeScope === 'site' ? 'grid' : 'none';
+        if (searchPagination && activeScope !== 'site') searchPagination.innerHTML = '';
+        if (lastQuery) doSearch(lastQuery);
       });
     });
 

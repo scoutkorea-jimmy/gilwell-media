@@ -1,11 +1,8 @@
-import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
+import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { ensureCalendarTable, normalizeCalendarInput, normalizeCalendarRows } from '../../_shared/calendar.js';
 
 export async function onRequestPut({ request, env, params }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'calendar', 'write'); if (__gate) return __gate
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id) || id <= 0) return json({ error: '잘못된 일정 ID입니다.' }, 400);
   let body;
@@ -49,10 +46,7 @@ export async function onRequestPut({ request, env, params }) {
 }
 
 export async function onRequestDelete({ request, env, params }) {
-  const token = extractToken(request);
-  if (!token || !(await verifyTokenRole(token, env, 'full'))) {
-    return json({ error: '인증이 필요합니다.' }, 401);
-  }
+  const __gate = await gateMenuAccess(request, env, 'calendar', 'write'); if (__gate) return __gate
   const id = parseInt(params.id, 10);
   if (!Number.isFinite(id) || id <= 0) return json({ error: '잘못된 일정 ID입니다.' }, 400);
   try {

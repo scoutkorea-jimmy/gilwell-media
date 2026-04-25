@@ -42,7 +42,19 @@ export function optionalIntegerOrNull(value, fieldLabel) {
 
 export function optionalBooleanFlag(value) {
   if (value === undefined) return { ok: true, provided: false, value: undefined };
-  return { ok: true, provided: true, value: value ? 1 : 0 };
+  if (value === null || value === '') return { ok: true, provided: true, value: 0 };
+  if (typeof value === 'boolean') return { ok: true, provided: true, value: value ? 1 : 0 };
+  if (typeof value === 'number') return { ok: true, provided: true, value: value === 0 ? 0 : 1 };
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on') {
+      return { ok: true, provided: true, value: 1 };
+    }
+    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'off') {
+      return { ok: true, provided: true, value: 0 };
+    }
+  }
+  return { ok: false, error: '불리언 값이 올바르지 않습니다.' };
 }
 
 export function normalizePublishAtInput(publishAt, publishDate) {

@@ -1,0 +1,3 @@
+export const PUBLISH_AT_KST_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE NULL END";
+export const CREATED_AT_KST_EXPR = "CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN CASE WHEN instr(created_at, 'Z') > 0 OR instr(substr(created_at, 11), '+') > 0 THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE datetime(replace(created_at, 'T', ' '), '+9 hours') END ELSE NULL END";
+export const PUBLIC_DATE_EXPR = `COALESCE(${PUBLISH_AT_KST_EXPR}, ${CREATED_AT_KST_EXPR})`;
