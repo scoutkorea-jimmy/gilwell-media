@@ -2,12 +2,17 @@
  * BP미디어 · Hero Posts Setting
  *
  * GET /api/settings/hero  ← public, returns { posts: [...], interval_ms }
- * PUT /api/settings/hero  ← admin only, body: { post_ids: [N, N, N], interval_ms } (up to 5)
+ * PUT /api/settings/hero  ← admin only, body: { manual_post_ids: [N, N], manual_position, interval_ms }
  */
 import { verifyTokenRole, extractToken } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
 import { serializePostImage } from '../../_shared/images.js';
 import { recordSettingChange } from '../../_shared/settings-audit.js';
+
+const MAX_MANUAL_HERO_POSTS = 2;
+const AUTO_HERO_POST_COUNT = 3;
+const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
+const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
 
 const DEFAULT_HERO_MEDIA = {
   fit: 'cover',
@@ -35,36 +40,21 @@ export async function onRequestGet({ env, request }) {
     ]);
     const revision = revRow ? parseInt(revRow.value, 10) : 0;
 
-    if (!row) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200);
+    const heroSettings = parseHeroSettings(row && row.value);
+    const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), heroSettings.manual_post_ids);
+    const posts = await buildHeroPosts(env, origin, heroSettings.manual_post_ids, heroSettings.manual_position, mediaMap);
 
-    // Backward-compat: stored value may be plain integer (old format) or JSON array
-    let postIds = [];
-    const val = row.value.trim();
-    if (val.startsWith('[')) {
-      try { postIds = JSON.parse(val).filter(Number.isFinite); } catch { postIds = []; }
-    } else {
-      const single = parseInt(val, 10);
-      if (single > 0) postIds = [single];
-    }
-
-    if (!postIds.length) return json({ posts: [], interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: {} }, 200);
-
-    const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), postIds);
-
-    // Fetch posts in order
-    const posts = [];
-    for (const id of postIds) {
-      const post = await env.DB.prepare(
-        `SELECT id, category, title, subtitle, image_url, created_at FROM posts WHERE id = ? AND published = 1`
-      ).bind(id).first();
-      if (post) {
-        const serialized = serializePostImage(post, origin);
-        serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
-        posts.push(serialized);
-      }
-    }
-
-    return json({ posts, interval_ms: getSafeInterval(intervalRow && intervalRow.value), revision, media_map: mediaMap }, 200);
+    return json({
+      posts,
+      interval_ms: getSafeInterval(intervalRow && intervalRow.value),
+      revision,
+      media_map: mediaMap,
+      post_ids: heroSettings.manual_post_ids,
+      manual_post_ids: heroSettings.manual_post_ids,
+      manual_position: heroSettings.manual_position,
+      auto_fill_count: AUTO_HERO_POST_COUNT,
+      total_count: MAX_TOTAL_HERO_POSTS,
+    }, 200);
   } catch (err) {
     console.error('GET /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
@@ -80,15 +70,21 @@ export async function onRequestPut({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { post_ids, interval_ms, if_revision } = body;
-  if (!Array.isArray(post_ids)) {
-    return json({ error: 'post_ids 배열을 입력해주세요' }, 400);
+  const manualPostIdsInput = Array.isArray(body && body.manual_post_ids)
+    ? body.manual_post_ids
+    : body && body.post_ids;
+  const { interval_ms, if_revision } = body;
+  if (!Array.isArray(manualPostIdsInput)) {
+    return json({ error: 'manual_post_ids 배열을 입력해주세요' }, 400);
   }
 
-  const safeIds = post_ids
+  const safeIds = manualPostIdsInput
     .map(id => parseInt(id, 10))
     .filter(id => Number.isFinite(id) && id > 0)
-    .slice(0, 5);
+    .slice(0, MAX_MANUAL_HERO_POSTS);
+  const manualPosition = body && body.manual_position === 'before_auto'
+    ? 'before_auto'
+    : DEFAULT_HERO_MANUAL_POSITION;
   const safeInterval = getSafeInterval(interval_ms);
   const hasMediaMap = !!(body && typeof body.media_map === 'object' && body.media_map);
   const requestedMediaMap = hasMediaMap ? normalizeHeroMediaMap(body.media_map, safeIds) : null;
@@ -112,7 +108,10 @@ export async function onRequestPut({ request, env }) {
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('hero', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-      ).bind(JSON.stringify(safeIds)).run(),
+      ).bind(JSON.stringify({
+        manual_post_ids: safeIds,
+        manual_position: manualPosition,
+      })).run(),
       env.DB.prepare(
         `INSERT INTO settings (key, value) VALUES ('hero_interval', ?)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value`
@@ -132,7 +131,7 @@ export async function onRequestPut({ request, env }) {
         previousValue: prevHero && prevHero.value,
         path: '/api/settings/hero',
         message: 'hero 설정 변경',
-        details: { revision: nextRev, post_ids: safeIds },
+        details: { revision: nextRev, manual_post_ids: safeIds, manual_position: manualPosition },
       }),
       recordSettingChange(env, {
         key: 'hero_interval',
@@ -149,11 +148,120 @@ export async function onRequestPut({ request, env }) {
         details: { revision: nextRev, post_ids: safeIds },
       }),
     ]);
-    return json({ success: true, post_ids: safeIds, interval_ms: safeInterval, revision: nextRev, media_map: nextMediaMap });
+    return json({
+      success: true,
+      post_ids: safeIds,
+      manual_post_ids: safeIds,
+      manual_position: manualPosition,
+      interval_ms: safeInterval,
+      revision: nextRev,
+      media_map: nextMediaMap,
+      auto_fill_count: AUTO_HERO_POST_COUNT,
+      total_count: MAX_TOTAL_HERO_POSTS,
+    });
   } catch (err) {
     console.error('PUT /api/settings/hero error:', err);
     return json({ error: 'Database error' }, 500);
   }
+}
+
+function parseHeroSettings(raw) {
+  const fallback = {
+    manual_post_ids: [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
+  if (!raw) return fallback;
+
+  const value = String(raw).trim();
+  if (!value) return fallback;
+
+  if (value.startsWith('{')) {
+    const parsed = parseJsonValue(value);
+    const manualIds = Array.isArray(parsed && parsed.manual_post_ids)
+      ? parsed.manual_post_ids
+      : Array.isArray(parsed && parsed.post_ids)
+        ? parsed.post_ids
+        : [];
+    return {
+      manual_post_ids: manualIds
+        .map((id) => parseInt(id, 10))
+        .filter((id) => Number.isFinite(id) && id > 0)
+        .slice(0, MAX_MANUAL_HERO_POSTS),
+      manual_position: parsed && parsed.manual_position === 'before_auto'
+        ? 'before_auto'
+        : DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  if (value.startsWith('[')) {
+    const parsed = parseJsonValue(value);
+    return {
+      manual_post_ids: Array.isArray(parsed)
+        ? parsed.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0).slice(0, MAX_MANUAL_HERO_POSTS)
+        : [],
+      manual_position: DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  const single = parseInt(value, 10);
+  return {
+    manual_post_ids: Number.isFinite(single) && single > 0 ? [single] : [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
+}
+
+async function buildHeroPosts(env, origin, manualPostIds, manualPosition, mediaMap) {
+  const manualPosts = await loadManualHeroPosts(env, origin, manualPostIds, mediaMap);
+  const autoPosts = await loadAutomaticHeroPosts(env, origin, manualPosts.map((post) => post.id));
+  const ordered = manualPosition === 'before_auto'
+    ? manualPosts.concat(autoPosts)
+    : autoPosts.concat(manualPosts);
+  return ordered.slice(0, MAX_TOTAL_HERO_POSTS);
+}
+
+async function loadManualHeroPosts(env, origin, postIds, mediaMap) {
+  if (!Array.isArray(postIds) || !postIds.length) return [];
+
+  const posts = [];
+  for (const id of postIds) {
+    const post = await env.DB.prepare(
+      `SELECT id, category, title, subtitle, image_url, created_at, publish_at
+         FROM posts
+        WHERE id = ? AND published = 1`
+    ).bind(id).first();
+    if (!post) continue;
+    const serialized = serializePostImage(post, origin);
+    serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
+    posts.push(serialized);
+  }
+  return posts;
+}
+
+async function loadAutomaticHeroPosts(env, origin, excludedIds) {
+  const exclusions = Array.isArray(excludedIds)
+    ? excludedIds.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  const conditions = ['published = 1'];
+  const bindings = [];
+
+  if (exclusions.length) {
+    conditions.push(`id NOT IN (${exclusions.map(() => '?').join(', ')})`);
+    bindings.push(...exclusions);
+  }
+
+  const { results } = await env.DB.prepare(
+    `SELECT id, category, title, subtitle, image_url, created_at, publish_at
+       FROM posts
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY COALESCE(publish_at, created_at) DESC, id DESC
+      LIMIT ?`
+  ).bind(...bindings, AUTO_HERO_POST_COUNT).all();
+
+  return (results || []).map((post) => {
+    const serialized = serializePostImage(post, origin);
+    serialized.media = DEFAULT_HERO_MEDIA;
+    return serialized;
+  });
 }
 
 function getSafeInterval(value) {

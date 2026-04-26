@@ -10,7 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260425113610">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260426191725">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -92,9 +92,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.105.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.106.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.133.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.134.00</span>
     </div>
   </div>
 </div>
@@ -107,8 +107,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.105.01</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.133.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.106.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.134.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -183,6 +183,10 @@
         <button class="v3-nav-item" data-panel="settings" data-settings-section="wosm-members" data-perm-slug="wosm-members" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M2.5 6h11"/><path d="M2.5 10h11"/><path d="M8 2c1.8 1.6 2.8 3.7 2.8 6S9.8 12.4 8 14c-1.8-1.6-2.8-3.7-2.8-6S6.2 3.6 8 2Z"/></svg>
           세계연맹 회원국
+        </button>
+        <button class="v3-nav-item" data-panel="settings" data-settings-section="reference-sites" data-perm-slug="reference-sites" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.2 4.5h-2a2 2 0 0 0 0 4h2"/><path d="M9.8 4.5h2a2 2 0 1 1 0 4h-2"/><path d="M5.5 8h5"/><path d="M3 12.5h10"/><path d="M5.5 2.5h5"/></svg>
+          기사 참고 사이트
         </button>
       </div>
 
@@ -1219,6 +1223,7 @@
             <button class="v3-settings-nav-btn" data-section="nav-labels">상단 메뉴명</button>
             <button class="v3-settings-nav-btn" data-section="translations">UI 번역</button>
             <button class="v3-settings-nav-btn" data-section="wosm-members">세계연맹 회원국</button>
+            <button class="v3-settings-nav-btn" data-section="reference-sites">기사 참고 사이트</button>
             <button class="v3-settings-nav-btn" data-section="privacy-policy">개인정보 처리방침</button>
             <button class="v3-settings-nav-btn" data-section="account-security">계정 보안</button>
           </div>
@@ -1233,13 +1238,20 @@
                   <h2 class="v3-card-title">히어로 기사 설정</h2>
                   <button class="v3-btn v3-btn-primary v3-btn-sm" id="hero-save-btn">저장</button>
                 </div>
-                <p class="v3-card-desc v3-mb-16">홈페이지 상단 슬라이더에 표시할 기사를 최대 5개 선택합니다.</p>
+                <p class="v3-card-desc v3-mb-16">수동 기사 2개를 직접 고르고, 나머지 3개는 최신 공개 기사로 자동 채웁니다.</p>
                 <div class="v3-search-wrap v3-search-wrap-full v3-search-wrap-mb-12">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
-                  <input class="v3-search-input" type="text" id="hero-search" placeholder="기사 제목 검색…" />
+                  <input class="v3-search-input" type="text" id="hero-search" placeholder="수동으로 고정할 기사 제목 검색…" />
                 </div>
                 <div class="v3-search-results-drop" id="hero-search-results" style="display:none;"></div>
                 <div class="v3-hero-list" id="hero-slots"></div>
+                <div class="v3-form-group v3-mt-16">
+                  <label class="v3-label" for="hero-manual-position">수동 기사 표시 순서</label>
+                  <select class="v3-input v3-width-240" id="hero-manual-position">
+                    <option value="after_auto">자동 최신 3개 뒤에 표시</option>
+                    <option value="before_auto">자동 최신 3개 앞에 표시</option>
+                  </select>
+                </div>
                 <div class="v3-form-group v3-mt-16">
                   <label class="v3-label" for="hero-interval">슬라이드 전환 간격 (ms)</label>
                   <input class="v3-input v3-width-180" type="number" id="hero-interval" value="3000" min="1000" max="10000" step="500" />
@@ -1618,6 +1630,25 @@
                 </div>
                 <div class="v3-inline-meta" id="wosm-members-meta">불러오는 중…</div>
                 <div id="wosm-members-editor">
+                  <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="v3-settings-section" id="settings-reference-sites">
+              <div class="v3-card">
+                <div class="v3-card-head">
+                  <div>
+                    <h2 class="v3-card-title">기사 참고 사이트</h2>
+                    <p class="v3-card-desc">기사 탐색용 참고 사이트를 저장하고, 어떤 WOSM 지역연맹과 관련 있는지 함께 정리합니다.</p>
+                  </div>
+                  <div class="v3-flex">
+                    <button class="v3-btn v3-btn-outline v3-btn-sm" id="reference-sites-add-btn">사이트 추가</button>
+                    <button class="v3-btn v3-btn-primary v3-btn-sm" id="reference-sites-save-btn">저장</button>
+                  </div>
+                </div>
+                <div class="v3-inline-meta" id="reference-sites-meta">불러오는 중…</div>
+                <div id="reference-sites-editor">
                   <div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>
                 </div>
               </div>
@@ -2472,9 +2503,9 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260425113610"></script>
-<script src="/js/shared-country-name-ko.js?v=20260425113610"></script>
-<script src="/js/admin-v3.js?v=20260425113610"></script>
+<script src="/js/main.js?v=20260426191725"></script>
+<script src="/js/shared-country-name-ko.js?v=20260426191725"></script>
+<script src="/js/admin-v3.js?v=20260426191725"></script>
 <script src="/js/admin-account.js?v=20260421161543"></script>
 <script>
   (function () {

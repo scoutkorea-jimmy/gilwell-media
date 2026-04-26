@@ -285,6 +285,7 @@ function settingsKeyLabel(key) {
     tags: '글머리 태그',
     home_lead: '메인 스토리',
     wosm_members: '세계연맹 회원국',
+    reference_sites: '기사 참고 사이트',
     contributors: '기고자',
   }[key] || key || '설정';
 }
