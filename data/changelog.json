@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "03.106.00",
+    "date": "2026-04-27",
+    "released_at": "2026-04-27 04:16:55 KST",
+    "summary": "기사 참고 사이트 관리 탭과 지역연맹별 접속 국가 카드 6종을 추가해, 어떤 연맹 소스를 보고 있고 어디서 더 취재할지 관리자에서 한 화면으로 정리할 수 있게 했습니다.",
+    "changes": [
+      "admin.html, js/admin-v3.js, css/admin-v3.css에 `기사 참고 사이트` 설정 섹션 신설. 사이트명·링크·주요 내용 입력과 함께 WOSM 지역연맹(Africa / Arab / Asia-Pacific / European / Interamerican / 미분류) 관련 여부를 체크박스로 저장할 수 있도록 구성.",
+      "functions/api/settings/reference-sites.js 신설 — settings 테이블 `reference_sites` / `reference_sites_rev` 키에 참고 사이트 목록을 저장하고 settings_history 감사 로그를 남기도록 구현. functions/_shared/admin-users.js 권한 카탈로그와 functions/api/admin/site-history.js 라벨 맵에도 `reference-sites`를 추가.",
+      "접속 국가/도시 패널 상단 통계에 지역연맹 카드 6개를 추가. 기존 4개 핵심 카드 아래에서 각 지역연맹별 `방문 국가 수`를 바로 보여주며, 세계연맹 회원국 설정의 실제 열 정의(예: `소속 지역연맹` / `Region EN`)를 읽어 분류 기준을 고정 `column_1` 추정에서 데이터 기반 매칭으로 보강.",
+      "히어로 기사 설정도 함께 개편 — 수동 기사 최대 2개만 고정하고 나머지 3개는 최신 공개 기사로 자동 채우도록 저장 구조를 확장했으며, 수동 기사 2개를 자동 3개 앞/뒤 어디에 배치할지 관리자에서 바로 선택 가능.",
+      "관리자 버전 03.105.01 → 03.106.00 (Feature · 참고 사이트 탭 + 지역연맹 지표 + 히어로 운영 확장)."
+    ]
+  },
+  {
+    "version": "00.134.00",
+    "date": "2026-04-27",
+    "released_at": "2026-04-27 04:16:55 KST",
+    "summary": "홈 히어로가 운영자 고정 2개와 최신 기사 자동 3개를 섞어 보여주도록 바뀌고, 백그라운드 새로고침의 일시 네트워크 실패는 한 번만으로 장애로 기록되지 않게 안정화했습니다.",
+    "changes": [
+      "functions/api/home.js와 functions/api/settings/hero.js가 히어로 설정을 `manual_post_ids(최대 2개) + manual_position + interval_ms` 구조로 읽고 저장하도록 확장. 홈 응답에서는 수동 지정 기사와 최신 공개 기사 3개를 중복 없이 합성해 최대 5슬라이드로 노출.",
+      "기존 배열/단일값 형태의 hero 설정도 계속 읽도록 하위 호환을 유지하고, functions/api/posts/[id].js의 설정 정리 로직도 새 hero JSON 포맷(`manual_post_ids`)을 함께 이해하도록 보강.",
+      "js/home-runtime.js에서 2026-04-25 21:28 KST `홈 백그라운드 새로고침 실패` 모니터링 건의 근인에 맞춰 보고 기준을 완화. `Failed to fetch` 같은 generic 네트워크 실패는 온라인·가시 상태에서 3회 연속될 때만 homepage_issues로 올리고, 단발성 백그라운드 refresh 실패는 상태 배너만 띄워 실제 서버 장애와 분리.",
+      "사이트 버전 00.133.00 → 00.134.00 (Feature · 히어로 자동 혼합 + 홈 refresh 이슈 신뢰도 보정)."
+    ]
+  },
+  {
     "version": "03.105.01",
     "date": "2026-04-25",
     "released_at": "2026-04-25 20:35:43 KST",

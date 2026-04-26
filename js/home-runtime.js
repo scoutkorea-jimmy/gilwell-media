@@ -25,6 +25,7 @@
     var latestIssueKeys = [];
     var latestFatalState = false;
     var latestRefreshFailed = false;
+    var latestRefreshFailureCount = 0;
 
     function fetchHomeData(options) {
       var opts = options || {};
@@ -40,6 +41,7 @@
       latestIssueKeys = helpers.getActiveHomeIssueKeys(issues);
       latestFatalState = false;
       latestRefreshFailed = false;
+      latestRefreshFailureCount = 0;
       if (data.site_meta) {
         GW._siteMetaData = data.site_meta;
         GW.applyManagedFooterData(data.site_meta);
@@ -104,19 +106,39 @@
         })
         .catch(function (err) {
           try { console.warn('[GW home-refresh-failed]', err); } catch (_) {}
+          latestRefreshFailureCount += 1;
           latestRefreshFailed = true;
           syncHomeStatusBanner();
-          helpers.reportHomepageIssue('home_latest_refresh_failed', {
-            section: 'homepage',
-            message: (err && err.message) || 'background home refresh failed',
-            path: '/api/home'
-          });
+          if (shouldReportBackgroundRefreshError(err, latestRefreshFailureCount)) {
+            helpers.reportHomepageIssue('home_latest_refresh_failed', {
+              section: 'homepage',
+              message: (err && err.message) || 'background home refresh failed',
+              path: '/api/home'
+            });
+          }
         })
         .finally(function () {
           homeRefreshBusy = false;
           homeRefreshPromise = null;
         });
       return homeRefreshPromise;
+    }
+
+    function shouldReportBackgroundRefreshError(err, failureCount) {
+      var name = String(err && err.name || '').trim();
+      var message = String(err && err.message || '').trim();
+      var lower = message.toLowerCase();
+      var genericFetchFailure = lower === 'failed to fetch' || lower.indexOf('networkerror') >= 0;
+
+      if (name === 'AbortError') return false;
+      if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false) return false;
+      if (document.visibilityState && document.visibilityState !== 'visible') return false;
+
+      // 2026-04-25 21:28 KST: a single background "Failed to fetch" created a
+      // monitoring issue even though the server had no corroborating fault.
+      // Repeated failures still report so real /api/home instability is visible.
+      if (genericFetchFailure) return failureCount >= 3;
+      return true;
     }
 
     function bindRuntimeIssueReporting() {

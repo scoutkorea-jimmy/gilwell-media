@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.105.01
+ * Version: 03.106.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -167,6 +167,7 @@
   // Settings
   var _heroPostIds   = [];
   var _heroInterval  = 3000;
+  var _heroManualPosition = 'after_auto';
   var _tagSettings      = {};
   var _selectedWriteTags = [];
   var _tagInlineEdit    = null;
@@ -187,6 +188,8 @@
   var _wosmPublicCopy = {};
   var _wosmMembersRevision = 0;
   var _wosmMembersSearch = '';
+  var _referenceSites = [];
+  var _referenceSitesRevision = 0;
   var _wosmImportSavedMapping = {
     country_ko: '',
     country_en: 'Country Name option 1 E',
@@ -670,6 +673,8 @@
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
       _renderWosmMembersEditor();
     });
+    _bindEl('reference-sites-add-btn', 'click', _addReferenceSiteRow);
+    _bindEl('reference-sites-save-btn', 'click', _saveReferenceSites);
 
     // Hero search
     _bindEl('hero-search', 'input', function () {
@@ -1091,6 +1096,7 @@
       hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
       author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
+      'reference-sites': '기사 참고 사이트',
       'privacy-policy': '개인정보 처리방침',
       'account-security': '계정 보안',
     };
@@ -1120,6 +1126,7 @@
     else if (section === 'nav-labels') _loadNavLabelsUI();
     else if (section === 'translations') _loadTranslationsUI();
     else if (section === 'wosm-members') _loadWosmMembersUI();
+    else if (section === 'reference-sites') _loadReferenceSitesUI();
     else if (section === 'privacy-policy') _loadPrivacyPolicyUI();
     else if (section === 'account-security') _loadAccountSecurityUI();
   }
@@ -5499,16 +5506,20 @@
       _geoAudienceData = data || {};
       var summary = _geoAudienceData.summary || {};
       var range = _geoAudienceData.range || {};
-      var regionMap = _buildGeoAudienceRegionMap(Array.isArray(wosm.items) ? wosm.items : []);
+      var regionMap = _buildGeoAudienceRegionMap(Array.isArray(wosm.items) ? wosm.items : [], Array.isArray(wosm.columns) ? wosm.columns : []);
       var countries = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.countries) ? _geoAudienceData.countries : [], regionMap);
       var cities = _enrichGeoAudienceItems(Array.isArray(_geoAudienceData.cities) ? _geoAudienceData.cities : [], regionMap);
+      var regionStats = _buildGeoAudienceRegionStats(countries);
       var warmupNote = String(_geoAudienceData.warmup_note || '').trim();
 
       statsEl.innerHTML =
         _statCard('국가 수', _fmt(summary.countries || countries.length || 0), range.label || '집계 기간') +
         _statCard('도시 수', _fmt(summary.cities || 0), '도시 식별 기준') +
         _statCard('방문 수', _fmt(summary.visits || 0), (range.days || period) + '일 고유 방문') +
-        _statCard('페이지뷰', _fmt(summary.pageviews || 0), (range.days || period) + '일 전체 조회');
+        _statCard('페이지뷰', _fmt(summary.pageviews || 0), (range.days || period) + '일 전체 조회') +
+        regionStats.map(function (item) {
+          return _statCard(item.label, _fmt(item.count), '방문 국가 수');
+        }).join('');
 
       noteEl.textContent = (_geoAudienceData.tracking_note || '') + (range.label ? ' · ' + range.label + ' 기준' : '');
       if (!countries.length && warmupNote) {
@@ -5693,12 +5704,12 @@
     if (!_geoAudienceMapLayer.hasLayer(_geoAudienceMapLayers.country)) _geoAudienceMapLayer.addLayer(_geoAudienceMapLayers.country);
   }
 
-  function _buildGeoAudienceRegionMap(items) {
+  function _buildGeoAudienceRegionMap(items, columns) {
     var map = {};
+    var regionColumnKey = _findWosmRegionColumnKey(columns);
     (Array.isArray(items) ? items : []).forEach(function (item) {
-      var region = _getWosmRegionValue(item);
-      var toneClass = _getGeoRegionToneClass(region);
-      var regionLabel = _getGeoRegionLabel(region);
+      var regionKey = _canonicalGeoRegion(_getWosmRegionValue(item, columns, regionColumnKey));
+      var regionInfo = _getGeoRegionInfoByKey(regionKey);
       var aliases = []
         .concat(Array.isArray(item && item.country_aliases) ? item.country_aliases : [])
         .concat([item && item.country_ko, item && item.country_en]);
@@ -5706,8 +5717,9 @@
         var key = _normalizeGeoLookupKey(value);
         if (!key) return;
         map[key] = {
-          region_label: regionLabel,
-          region_tone_class: toneClass
+          region_key: regionInfo.key,
+          region_label: regionInfo.label,
+          region_tone_class: regionInfo.tone
         };
       });
     });
@@ -5727,6 +5739,7 @@
       if (candidates[i] && regionMap[candidates[i]]) return regionMap[candidates[i]];
     }
     return {
+      region_key: 'unclassified',
       region_label: '지역연맹 미분류',
       region_tone_class: 'is-unassigned'
     };
@@ -5805,29 +5818,81 @@
     }
   }
 
-  function _getWosmRegionValue(item) {
+  function _buildGeoAudienceRegionStats(items) {
+    var counts = {};
+    _getGeoRegionCatalog().forEach(function (region) {
+      counts[region.key] = 0;
+    });
+    (Array.isArray(items) ? items : []).forEach(function (item) {
+      var key = String(item && item.region_key || 'unclassified').trim();
+      if (!Object.prototype.hasOwnProperty.call(counts, key)) key = 'unclassified';
+      counts[key] += 1;
+    });
+    return _getGeoRegionCatalog().map(function (region) {
+      return {
+        key: region.key,
+        label: region.label,
+        count: counts[region.key] || 0
+      };
+    });
+  }
+
+  function _findWosmRegionColumnKey(columns) {
+    var list = Array.isArray(columns) ? columns : [];
+    for (var i = 0; i < list.length; i += 1) {
+      var column = list[i] || {};
+      var haystack = [
+        column.key,
+        column.label,
+        column.default_header
+      ].join(' ').toLowerCase();
+      if (haystack.indexOf('region') >= 0 || haystack.indexOf('지역연맹') >= 0) {
+        return String(column.key || '').trim();
+      }
+    }
+    return '';
+  }
+
+  function _getWosmRegionValue(item, columns, regionColumnKey) {
     if (!item) return '';
     var extra = item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
+    if (regionColumnKey && extra[regionColumnKey]) return String(extra[regionColumnKey] || '').trim();
+    var derivedColumnKey = regionColumnKey || _findWosmRegionColumnKey(columns);
+    if (derivedColumnKey && extra[derivedColumnKey]) return String(extra[derivedColumnKey] || '').trim();
     if (extra.column_1) return String(extra.column_1 || '').trim();
     var regionKey = Object.keys(extra).find(function (key) {
-      return /region/i.test(key);
+      var value = String(key || '').toLowerCase();
+      return /region/i.test(value) || value.indexOf('지역') >= 0;
     });
     return regionKey ? String(extra[regionKey] || '').trim() : '';
   }
 
-  function _getGeoRegionToneClass(region) {
-    var normalized = String(region || '').trim().toLowerCase();
-    if (normalized === 'africa') return 'is-africa';
-    if (normalized === 'arab') return 'is-arab';
-    if (normalized === 'asia-pacific') return 'is-asia-pacific';
-    if (normalized === 'european') return 'is-european';
-    if (normalized === 'interamerican') return 'is-interamerican';
-    return 'is-unassigned';
+  function _canonicalGeoRegion(value) {
+    var normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) return 'unclassified';
+    if (normalized === 'africa') return 'africa';
+    if (normalized === 'arab') return 'arab';
+    if (normalized === 'asia-pacific' || normalized === 'asia pacific') return 'asia-pacific';
+    if (normalized === 'european' || normalized === 'europe') return 'european';
+    if (normalized === 'interamerican' || normalized === 'inter-american') return 'interamerican';
+    return 'unclassified';
   }
 
-  function _getGeoRegionLabel(region) {
-    var normalized = String(region || '').trim();
-    return normalized || '지역연맹 미분류';
+  function _getGeoRegionCatalog() {
+    return [
+      { key: 'africa', label: 'Africa', tone: 'is-africa', settingValue: 'Africa' },
+      { key: 'arab', label: 'Arab', tone: 'is-arab', settingValue: 'Arab' },
+      { key: 'asia-pacific', label: 'Asia-Pacific', tone: 'is-asia-pacific', settingValue: 'Asia-Pacific' },
+      { key: 'european', label: 'European', tone: 'is-european', settingValue: 'European' },
+      { key: 'interamerican', label: 'Interamerican', tone: 'is-interamerican', settingValue: 'Interamerican' },
+      { key: 'unclassified', label: '미분류', tone: 'is-unassigned', settingValue: 'Unclassified' }
+    ];
+  }
+
+  function _getGeoRegionInfoByKey(regionKey) {
+    var key = String(regionKey || 'unclassified').trim();
+    var found = _getGeoRegionCatalog().find(function (item) { return item.key === key; });
+    return found || _getGeoRegionCatalog()[_getGeoRegionCatalog().length - 1];
   }
 
   function _getGeoRegionTone(toneClass) {
@@ -5853,14 +5918,9 @@
   }
 
   function _renderGeoRegionLegend() {
-    var items = [
-      { label: 'Africa', tone: 'is-africa' },
-      { label: 'Arab', tone: 'is-arab' },
-      { label: 'Asia-Pacific', tone: 'is-asia-pacific' },
-      { label: 'European', tone: 'is-european' },
-      { label: 'Interamerican', tone: 'is-interamerican' },
-      { label: '미분류', tone: 'is-unassigned' }
-    ];
+    var items = _getGeoRegionCatalog().map(function (item) {
+      return { label: item.label, tone: item.tone };
+    });
     return '<div class="v3-geo-legend">' + items.map(function (item) {
       return '<span class="v3-geo-legend-item"><span class="v3-geo-legend-dot ' + item.tone + '"></span>' + GW.escapeHtml(item.label) + '</span>';
     }).join('') + '</div>';
@@ -7753,8 +7813,12 @@
     var el = document.getElementById('hero-slots');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     _apiFetch('/api/settings/hero').then(function (data) {
-      _heroPostIds  = (data && data.post_ids) || ((data && Array.isArray(data.posts)) ? data.posts.map(function (p) { return p.id; }).filter(Boolean) : []);
+      _heroPostIds  = (data && data.manual_post_ids) || (data && data.post_ids) || [];
       _heroInterval = (data && data.interval_ms) || 3000;
+      _heroManualPosition = (data && data.manual_position) === 'before_auto' ? 'before_auto' : 'after_auto';
+      if (document.getElementById('hero-manual-position')) {
+        document.getElementById('hero-manual-position').value = _heroManualPosition;
+      }
       document.getElementById('hero-interval').value = _heroInterval;
       _renderHeroSlots();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
@@ -7763,7 +7827,7 @@
   function _renderHeroSlots() {
     var el = document.getElementById('hero-slots');
     if (!_heroPostIds.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">히어로 기사가 없습니다. 검색해서 추가하세요.</div></div>';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">수동 고정 기사가 없습니다. 비워두면 최신 기사 3개만 자동 노출됩니다.</div></div>';
       return;
     }
     // Fetch post details for each id
@@ -7812,7 +7876,7 @@
   }
 
   V3._addHeroPost = function (id) {
-    if (_heroPostIds.length >= 5) { GW.showToast('최대 5개까지 추가할 수 있습니다', 'error'); return; }
+    if (_heroPostIds.length >= 2) { GW.showToast('수동 히어로 기사는 최대 2개까지 추가할 수 있습니다', 'error'); return; }
     if (_heroPostIds.includes(id)) return;
     _heroPostIds.push(id);
     _renderHeroSlots();
@@ -7822,11 +7886,13 @@
 
   function _saveHero() {
     var interval = parseInt(document.getElementById('hero-interval').value, 10) || 3000;
+    var manualPosition = document.getElementById('hero-manual-position');
+    _heroManualPosition = manualPosition && manualPosition.value === 'before_auto' ? 'before_auto' : 'after_auto';
     var btn = document.getElementById('hero-save-btn');
     _setButtonBusy(btn, '저장 중…');
     _apiFetch('/api/settings/hero', {
       method: 'PUT',
-      body: JSON.stringify({ post_ids: _heroPostIds, interval_ms: interval }),
+      body: JSON.stringify({ manual_post_ids: _heroPostIds, manual_position: _heroManualPosition, interval_ms: interval }),
     }).then(function () {
       GW.showToast('히어로 설정을 저장했습니다', 'success');
       _clearButtonBusy(btn, '완료');
@@ -9194,6 +9260,181 @@
       GW.showToast(e.message || '저장 실패', 'error');
     }).finally(function () {
       if (btn.classList.contains('is-busy')) _clearButtonBusy(btn);
+    });
+  }
+
+  function _loadReferenceSitesUI() {
+    var el = document.getElementById('reference-sites-editor');
+    var meta = document.getElementById('reference-sites-meta');
+    if (el) el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (meta) meta.textContent = '불러오는 중…';
+    Promise.all([
+      _apiFetch('/api/settings/reference-sites'),
+      _apiFetch('/api/settings/wosm-members').catch(function () { return { items: [], columns: [] }; })
+    ]).then(function (results) {
+      var data = results[0] || {};
+      var wosm = results[1] || {};
+      _referenceSites = Array.isArray(data.items) ? data.items.map(_normalizeReferenceSiteEntry) : [];
+      _referenceSitesRevision = parseInt(data.revision, 10) || 0;
+      _wosmMembers = Array.isArray(wosm.items) ? wosm.items : _wosmMembers;
+      _wosmColumns = Array.isArray(wosm.columns) ? wosm.columns : _wosmColumns;
+      _renderReferenceSitesEditor(Array.isArray(wosm.items) ? wosm.items : [], Array.isArray(wosm.columns) ? wosm.columns : []);
+    }).catch(function () {
+      if (el) el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (meta) meta.textContent = '불러오기 실패';
+    });
+  }
+
+  function _normalizeReferenceSiteEntry(item) {
+    var source = item && typeof item === 'object' ? item : {};
+    return {
+      name: String(source.name || '').trim(),
+      url: String(source.url || '').trim(),
+      summary: String(source.summary || '').trim(),
+      related_federations: _sanitizeReferenceFederationList(source.related_federations)
+    };
+  }
+
+  function _sanitizeReferenceFederationList(list) {
+    var values = Array.isArray(list) ? list : [];
+    var allowed = _getGeoRegionCatalog().map(function (item) { return item.settingValue; });
+    var out = [];
+    values.forEach(function (value) {
+      var text = String(value || '').trim();
+      if (!text || allowed.indexOf(text) === -1 || out.indexOf(text) >= 0) return;
+      out.push(text);
+    });
+    return out;
+  }
+
+  function _renderReferenceSitesEditor(wosmItems, wosmColumns) {
+    var el = document.getElementById('reference-sites-editor');
+    var meta = document.getElementById('reference-sites-meta');
+    if (!el) return;
+    var regionOptions = _buildReferenceSiteRegionOptions(wosmItems, wosmColumns);
+    if (meta) {
+      meta.textContent = '총 ' + _referenceSites.length + '개 사이트 · 연동 가능한 지역연맹 ' + regionOptions.length + '개 · revision ' + _referenceSitesRevision;
+    }
+    if (!_referenceSites.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 등록한 참고 사이트가 없습니다.</div><div class="v3-issues-note">사이트명, 링크, 주요 내용과 관련 지역연맹을 함께 적어두면 기사 탐색할 때 빠르게 참고할 수 있습니다.</div></div>';
+      return;
+    }
+    el.innerHTML = _referenceSites.map(function (item, index) {
+      return '<section class="v3-refsite-card">' +
+        '<div class="v3-refsite-head">' +
+          '<strong>참고 사이트 ' + (index + 1) + '</strong>' +
+          '<button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-refsite-remove="' + index + '">삭제</button>' +
+        '</div>' +
+        '<div class="v3-refsite-grid">' +
+          '<div class="v3-refsite-field">' +
+            '<label class="v3-label" for="refsite-name-' + index + '">사이트명</label>' +
+            '<input class="v3-input" type="text" id="refsite-name-' + index + '" data-refsite-index="' + index + '" data-refsite-field="name" value="' + GW.escapeHtml(item.name || '') + '" placeholder="예: WOSM 공식 뉴스룸">' +
+          '</div>' +
+          '<div class="v3-refsite-field">' +
+            '<label class="v3-label" for="refsite-url-' + index + '">사이트 링크</label>' +
+            '<input class="v3-input" type="url" id="refsite-url-' + index + '" data-refsite-index="' + index + '" data-refsite-field="url" value="' + GW.escapeHtml(item.url || '') + '" placeholder="https://...">' +
+          '</div>' +
+        '</div>' +
+        '<div class="v3-refsite-field v3-mt-16">' +
+          '<label class="v3-label" for="refsite-summary-' + index + '">사이트 주요 내용</label>' +
+          '<textarea class="v3-input v3-textarea" rows="4" id="refsite-summary-' + index + '" data-refsite-index="' + index + '" data-refsite-field="summary" placeholder="이 사이트에서 어떤 기사나 자료를 주로 찾을 수 있는지 적어주세요.">' + GW.escapeHtml(item.summary || '') + '</textarea>' +
+        '</div>' +
+        '<div class="v3-refsite-field v3-mt-16">' +
+          '<div class="v3-label">관련 지역연맹</div>' +
+          '<div class="v3-refsite-federations">' + regionOptions.map(function (region) {
+            var checked = (item.related_federations || []).indexOf(region.settingValue) >= 0;
+            return '<label class="v3-refsite-chip">' +
+              '<input type="checkbox" data-refsite-index="' + index + '" data-refsite-federation="' + GW.escapeHtml(region.settingValue) + '"' + (checked ? ' checked' : '') + '>' +
+              '<span>' + GW.escapeHtml(region.label) + '</span>' +
+              '<small>회원국 ' + _fmt(region.memberCount) + '개국</small>' +
+            '</label>';
+          }).join('') + '</div>' +
+        '</div>' +
+      '</section>';
+    }).join('');
+
+    el.querySelectorAll('[data-refsite-field]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var index = parseInt(input.getAttribute('data-refsite-index'), 10);
+        var field = input.getAttribute('data-refsite-field');
+        if (!_referenceSites[index]) return;
+        _referenceSites[index][field] = String(input.value || '');
+      });
+    });
+    el.querySelectorAll('[data-refsite-federation]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var index = parseInt(input.getAttribute('data-refsite-index'), 10);
+        var federation = String(input.getAttribute('data-refsite-federation') || '').trim();
+        if (!_referenceSites[index] || !federation) return;
+        var list = _sanitizeReferenceFederationList(_referenceSites[index].related_federations);
+        var pos = list.indexOf(federation);
+        if (input.checked && pos === -1) list.push(federation);
+        if (!input.checked && pos >= 0) list.splice(pos, 1);
+        _referenceSites[index].related_federations = list;
+      });
+    });
+    el.querySelectorAll('[data-refsite-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-refsite-remove'), 10);
+        if (!Number.isFinite(index)) return;
+        _referenceSites.splice(index, 1);
+        _renderReferenceSitesEditor(wosmItems, wosmColumns);
+      });
+    });
+  }
+
+  function _buildReferenceSiteRegionOptions(wosmItems, wosmColumns) {
+    var counts = {};
+    _getGeoRegionCatalog().forEach(function (region) {
+      counts[region.key] = new Set();
+    });
+    var regionColumnKey = _findWosmRegionColumnKey(wosmColumns);
+    (Array.isArray(wosmItems) ? wosmItems : []).forEach(function (item) {
+      var regionKey = _canonicalGeoRegion(_getWosmRegionValue(item, wosmColumns, regionColumnKey));
+      var info = _getGeoRegionInfoByKey(regionKey);
+      var countryKey = _normalizeGeoLookupKey((item && item.country_en) || (item && item.country_ko) || '');
+      if (!countryKey) return;
+      counts[info.key].add(countryKey);
+    });
+    return _getGeoRegionCatalog().map(function (region) {
+      return {
+        key: region.key,
+        label: region.label,
+        settingValue: region.settingValue,
+        memberCount: counts[region.key] ? counts[region.key].size : 0
+      };
+    });
+  }
+
+  function _addReferenceSiteRow() {
+    _referenceSites.push({
+      name: '',
+      url: '',
+      summary: '',
+      related_federations: []
+    });
+    _renderReferenceSitesEditor(_wosmMembers, _wosmColumns);
+  }
+
+  function _saveReferenceSites() {
+    var btn = document.getElementById('reference-sites-save-btn');
+    var payload = _referenceSites.map(_normalizeReferenceSiteEntry).filter(function (item) {
+      return item.name || item.url || item.summary;
+    });
+    _setButtonBusy(btn, '저장 중…');
+    _apiFetch('/api/settings/reference-sites', {
+      method: 'PUT',
+      body: JSON.stringify({ items: payload, if_revision: _referenceSitesRevision }),
+    }).then(function (data) {
+      _referenceSites = Array.isArray(data && data.items) ? data.items.map(_normalizeReferenceSiteEntry) : payload;
+      _referenceSitesRevision = parseInt(data && data.revision, 10) || (_referenceSitesRevision + 1);
+      GW.showToast('기사 참고 사이트를 저장했습니다', 'success');
+      _renderReferenceSitesEditor(_wosmMembers, _wosmColumns);
+      _clearButtonBusy(btn, '완료');
+    }).catch(function (e) {
+      GW.showToast(e.message || '저장 실패', 'error');
+    }).finally(function () {
+      if (btn && btn.classList.contains('is-busy')) _clearButtonBusy(btn);
     });
   }
 

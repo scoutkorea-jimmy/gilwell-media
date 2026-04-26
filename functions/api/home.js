@@ -35,6 +35,11 @@ const DEFAULT_HERO_MEDIA = {
   },
 };
 
+const MAX_MANUAL_HERO_POSTS = 2;
+const AUTO_HERO_POST_COUNT = 3;
+const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
+const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
+
 const HOME_SECTION_ISSUE_DEFS = {
   site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
   nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },
@@ -275,38 +280,64 @@ async function loadHero(env, origin) {
     env.DB.prepare(`SELECT value FROM settings WHERE key = 'hero_media'`).first(),
   ]);
   const interval_ms = getSafeInterval(intervalRow && intervalRow.value);
-  if (!row) return { posts: [], interval_ms };
-
-  let postIds = [];
-  const val = String(row.value || '').trim();
-  if (val.startsWith('[')) {
-    try { postIds = JSON.parse(val).filter(Number.isFinite); } catch { postIds = []; }
-  } else {
-    const single = parseInt(val, 10);
-    if (single > 0) postIds = [single];
-  }
-  postIds = postIds.slice(0, 5);
-  if (!postIds.length) return { posts: [], interval_ms };
+  const heroSettings = parseHeroSettings(row && row.value);
+  const postIds = heroSettings.manual_post_ids;
   const mediaMap = normalizeHeroMediaMap(parseJsonValue(mediaRow && mediaRow.value), postIds);
+  const manualPosts = await loadManualHeroPosts(env, origin, postIds, mediaMap);
+  const autoPosts = await loadAutomaticHeroPosts(env, origin, manualPosts.map((post) => post.id));
+  const posts = heroSettings.manual_position === 'before_auto'
+    ? manualPosts.concat(autoPosts)
+    : autoPosts.concat(manualPosts);
 
-  const placeholders = postIds.map(() => '?').join(', ');
+  return {
+    posts: posts.slice(0, MAX_TOTAL_HERO_POSTS),
+    interval_ms,
+  };
+}
+
+async function loadManualHeroPosts(env, origin, postIds, mediaMap) {
+  if (!Array.isArray(postIds) || !postIds.length) return [];
+
+  const posts = [];
+  for (const id of postIds) {
+    const post = await env.DB.prepare(
+      `SELECT id, category, title, subtitle, image_url, created_at, publish_at
+         FROM posts
+        WHERE id = ? AND published = 1`
+    ).bind(id).first();
+    if (!post) continue;
+    const serialized = serializePostImage(post, origin);
+    serialized.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
+    posts.push(serialized);
+  }
+  return posts;
+}
+
+async function loadAutomaticHeroPosts(env, origin, excludedIds) {
+  const exclusions = Array.isArray(excludedIds)
+    ? excludedIds.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+  const conditions = ['published = 1'];
+  const bindings = [];
+
+  if (exclusions.length) {
+    conditions.push(`id NOT IN (${exclusions.map(() => '?').join(', ')})`);
+    bindings.push(...exclusions);
+  }
+
   const { results } = await env.DB.prepare(
     `SELECT id, category, title, subtitle, image_url, created_at, publish_at
        FROM posts
-      WHERE published = 1
-        AND id IN (${placeholders})`
-  ).bind(...postIds).all();
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
+      LIMIT ?`
+  ).bind(...bindings, AUTO_HERO_POST_COUNT).all();
 
-  const byId = new Map((results || []).map((post) => [post.id, serializePostImage(post, origin)]));
-  return {
-    posts: postIds.map((id) => {
-      const post = byId.get(id);
-      if (!post) return null;
-      post.media = mediaMap[String(id)] || DEFAULT_HERO_MEDIA;
-      return post;
-    }).filter(Boolean),
-    interval_ms,
-  };
+  return (results || []).map((post) => {
+    const serialized = serializePostImage(post, origin);
+    serialized.media = DEFAULT_HERO_MEDIA;
+    return serialized;
+  });
 }
 
 async function loadHomeLead(env, origin) {
@@ -419,6 +450,51 @@ function getSafeInterval(value) {
   const parsed = parseInt(value, 10);
   if (!Number.isFinite(parsed)) return 3000;
   return Math.min(15000, Math.max(2000, parsed));
+}
+
+function parseHeroSettings(raw) {
+  const fallback = {
+    manual_post_ids: [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
+  if (!raw) return fallback;
+
+  const value = String(raw).trim();
+  if (!value) return fallback;
+
+  if (value.startsWith('{')) {
+    const parsed = parseJsonValue(value);
+    const manualIds = Array.isArray(parsed && parsed.manual_post_ids)
+      ? parsed.manual_post_ids
+      : Array.isArray(parsed && parsed.post_ids)
+        ? parsed.post_ids
+        : [];
+    return {
+      manual_post_ids: manualIds
+        .map((id) => parseInt(id, 10))
+        .filter((id) => Number.isFinite(id) && id > 0)
+        .slice(0, MAX_MANUAL_HERO_POSTS),
+      manual_position: parsed && parsed.manual_position === 'before_auto'
+        ? 'before_auto'
+        : DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  if (value.startsWith('[')) {
+    const parsed = parseJsonValue(value);
+    return {
+      manual_post_ids: Array.isArray(parsed)
+        ? parsed.map((id) => parseInt(id, 10)).filter((id) => Number.isFinite(id) && id > 0).slice(0, MAX_MANUAL_HERO_POSTS)
+        : [],
+      manual_position: DEFAULT_HERO_MANUAL_POSITION,
+    };
+  }
+
+  const single = parseInt(value, 10);
+  return {
+    manual_post_ids: Number.isFinite(single) && single > 0 ? [single] : [],
+    manual_position: DEFAULT_HERO_MANUAL_POSITION,
+  };
 }
 
 function parseJsonValue(raw) {

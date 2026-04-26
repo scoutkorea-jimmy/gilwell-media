@@ -799,6 +799,16 @@ function parseIdArray(raw) {
   if (!raw) return [];
   try {
     var parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      var heroManualIds = Array.isArray(parsed.manual_post_ids)
+        ? parsed.manual_post_ids
+        : Array.isArray(parsed.post_ids)
+          ? parsed.post_ids
+          : [];
+      return heroManualIds
+        .map(function (value) { return parseInt(value, 10); })
+        .filter(function (value) { return Number.isFinite(value) && value > 0; });
+    }
     return Array.isArray(parsed)
       ? parsed.map(function (value) { return parseInt(value, 10); }).filter(function (value) { return Number.isFinite(value) && value > 0; })
       : [];

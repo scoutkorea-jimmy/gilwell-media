@@ -79,6 +79,10 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
   - `wrangler d1 execute gilwell-posts --remote --command "SELECT id, title, severity, status, created_at FROM homepage_issues WHERE status IN ('open','monitoring') AND severity IN ('high','critical') ORDER BY created_at DESC"`
   - 또는 `/api/homepage-issues?status=open` GET
   - 또는 관리자 `사이트 오류/이슈 기록` 패널
+- 시간 해석 규칙:
+  - `homepage_issues.created_at / occurred_at / updated_at` 는 **UTC 저장값**이다. 사용자가 KST 시각(예: `2026-04-25 21:28 KST`)을 말하면 **UTC(`2026-04-25 12:28 UTC`)로 변환해 함께 조회**한다.
+- 원인 판별 규칙:
+  - `Failed to fetch` 단일 기록만으로 서버 장애로 단정하지 말고, 같은 시각의 `/api/home` 응답 실패·운영 로그·반복 발생 여부를 함께 확인한다. 특히 **홈 백그라운드 새로고침**은 일시 네트워크 단절로도 기록될 수 있다.
 - P0 이슈 있으면: 사용자에게 **"P0 이슈 N건 있음. 신규 요청을 뒤로 미루고 먼저 해결하겠다"고 선언** → 해결 → changelog에 해결 내용 기록 → 신규 요청 착수
 - P0 이슈 없으면: 신규 요청 바로 진행
 - 사용자가 "P0 무시하고 신규만 진행해"라고 명시한 경우에만 예외. 묵시적 우선순위 변경 금지.

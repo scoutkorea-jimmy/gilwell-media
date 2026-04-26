@@ -39,6 +39,7 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'article-scorer',    label: '기사 채점',    actions: ['view', 'write'] },
     { slug: 'ai-score-history',  label: 'AI 채점기록',  actions: ['view'] },
     { slug: 'wosm-members',      label: '세계연맹 회원국', actions: ['view', 'write'] },
+    { slug: 'reference-sites',   label: '기사 참고 사이트', actions: ['view', 'write'] },
   ]},
   { group: '노출', items: [
     { slug: 'hero',       label: '히어로 기사',   actions: ['view', 'write'] },
