@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.106.00
+ * Version: 03.106.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -9309,12 +9309,14 @@
 
   function _renderReferenceSitesEditor(wosmItems, wosmColumns) {
     var el = document.getElementById('reference-sites-editor');
+    var listEl = document.getElementById('reference-sites-saved-list');
     var meta = document.getElementById('reference-sites-meta');
     if (!el) return;
     var regionOptions = _buildReferenceSiteRegionOptions(wosmItems, wosmColumns);
     if (meta) {
       meta.textContent = '총 ' + _referenceSites.length + '개 사이트 · 연동 가능한 지역연맹 ' + regionOptions.length + '개 · revision ' + _referenceSitesRevision;
     }
+    _renderReferenceSitesSavedList(listEl);
     if (!_referenceSites.length) {
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 등록한 참고 사이트가 없습니다.</div><div class="v3-issues-note">사이트명, 링크, 주요 내용과 관련 지역연맹을 함께 적어두면 기사 탐색할 때 빠르게 참고할 수 있습니다.</div></div>';
       return;
@@ -9381,6 +9383,29 @@
         _renderReferenceSitesEditor(wosmItems, wosmColumns);
       });
     });
+  }
+
+  function _renderReferenceSitesSavedList(el) {
+    if (!el) return;
+    if (!_referenceSites.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">저장된 참고 사이트가 아직 없습니다.</div></div>';
+      return;
+    }
+    el.innerHTML = _referenceSites.map(function (item, index) {
+      var badges = _sanitizeReferenceFederationList(item.related_federations).map(function (federation) {
+        var region = _getGeoRegionCatalog().find(function (entry) { return entry.settingValue === federation; }) || _getGeoRegionInfoByKey('unclassified');
+        return '<span class="v3-geo-region-badge ' + GW.escapeHtml(region.tone || 'is-unassigned') + '">' + GW.escapeHtml(region.label) + '</span>';
+      }).join('');
+      return '<article class="v3-refsite-saved-card">' +
+        '<div class="v3-refsite-saved-head">' +
+          '<strong>' + GW.escapeHtml(item.name || ('참고 사이트 ' + (index + 1))) + '</strong>' +
+          (item.url ? '<a class="v3-btn v3-btn-outline v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">열기</a>' : '') +
+        '</div>' +
+        (item.url ? '<div class="v3-inline-meta"><a href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.url) + '</a></div>' : '<div class="v3-inline-meta">링크 없음</div>') +
+        (item.summary ? '<p class="v3-refsite-saved-summary">' + GW.escapeHtml(item.summary) + '</p>' : '<p class="v3-refsite-saved-summary is-empty">주요 내용이 아직 입력되지 않았습니다.</p>') +
+        '<div class="v3-refsite-saved-badges">' + (badges || '<span class="v3-geo-region-badge is-unassigned">연맹 미지정</span>') + '</div>' +
+      '</article>';
+    }).join('');
   }
 
   function _buildReferenceSiteRegionOptions(wosmItems, wosmColumns) {

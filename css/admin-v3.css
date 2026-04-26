@@ -2321,6 +2321,35 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
   font-size: var(--fs-meta);
   color: var(--v3-text-m);
 }
+.v3-refsite-saved-card {
+  padding: 16px 18px;
+  border: 1px solid var(--v3-border);
+  border-radius: var(--v3-radius-l);
+  background: #fff;
+}
+.v3-refsite-saved-card + .v3-refsite-saved-card {
+  margin-top: 12px;
+}
+.v3-refsite-saved-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.v3-refsite-saved-summary {
+  margin: 12px 0;
+  color: var(--v3-text);
+  line-height: 1.7;
+}
+.v3-refsite-saved-summary.is-empty {
+  color: var(--v3-text-m);
+}
+.v3-refsite-saved-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .v3-import-map-meta {
   margin-bottom: var(--gap-card);
   font-size: var(--fs-caption);
