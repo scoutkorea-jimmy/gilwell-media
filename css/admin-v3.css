@@ -1541,6 +1541,27 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-bar-track { flex: 1; height: 7px; background: var(--v3-content-bg); border-radius: 100px; overflow: hidden; }
 .v3-bar-fill  { height: 100%; background: var(--v3-primary); border-radius: 100px; }
 .v3-bar-val   { font-size: var(--fs-caption); color: var(--v3-text-m); width: 44px; text-align: right; flex-shrink: 0; }
+
+/* ── Analytics trend chart (일자별 방문자) ──────────────────── */
+.v3-analytics-trend-card .v3-card-head { align-items: center; }
+.v3-chart-legend { display: flex; gap: var(--v3-gap-sm); flex-wrap: wrap; }
+.v3-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-caption); color: var(--v3-text-m); }
+.v3-chart-swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+.v3-chart-swatch-visits { background: var(--v3-primary); }
+.v3-chart-swatch-views  { background: var(--v3-text-s); }
+.v3-chart-wrap { width: 100%; padding: var(--gap-tight) 0 0; }
+.v3-chart-svg { display: block; width: 100%; height: auto; max-height: 280px; overflow: visible; }
+.v3-chart-grid { stroke: var(--v3-border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
+.v3-chart-axis-text { font-size: 10px; fill: var(--v3-text-s); font-family: inherit; }
+.v3-chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.v3-chart-line-visits { stroke: var(--v3-primary); }
+.v3-chart-line-views  { stroke: var(--v3-text-s); stroke-dasharray: 4 3; opacity: 0.85; }
+.v3-chart-area { stroke: none; }
+.v3-chart-area-visits { fill: var(--v3-primary); fill-opacity: 0.10; }
+.v3-chart-dot { stroke: var(--v3-surface); stroke-width: 1.5; }
+.v3-chart-dot-visits { fill: var(--v3-primary); }
+.v3-chart-dot-views  { fill: var(--v3-text-s); }
+.v3-chart-dot:hover { stroke-width: 2.5; }
 .v3-heatmap-wrap {
   overflow-x: auto;
   padding-bottom: 2px;
