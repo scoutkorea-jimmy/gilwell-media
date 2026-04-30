@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.106.00",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 00:30:00 KST",
+    "summary": "방문 분석 패널 상단에 일자별 방문자·조회수 추세 라인 차트를 추가해, 7·30·90일 기간이나 사용자 지정 범위에서 방문 흐름을 한 눈에 볼 수 있도록 했습니다.",
+    "changes": [
+      "js/admin-v3.js에 _renderAnalyticsTrendChart 함수 신설 — 외부 차트 라이브러리 없이 순수 SVG로 방문(고유)·조회(누적) 두 라인과 영역 채움, 4단 Y축 그리드, X축 라벨 자동 sampling, 데이터 포인트 호버 툴팁(SVG <title>)을 렌더.",
+      "_loadAnalyticsVisits에서 응답의 visitors.series / views.series / range.granularity를 차트 카드로 인기 기사 카드 위에 삽입. 기간이 1일이면 시각(시간)별, 그 외엔 일자별 자동 전환.",
+      "css/admin-v3.css에 .v3-chart-* 스타일 일괄 추가 — 방문 라인은 v3-primary 실선, 조회 라인은 v3-text-s 점선으로 시각적 위계를 구분하고 .v3-card-head 안에 범례 배치.",
+      "_niceCeil 헬퍼로 Y축 상한을 1·2·5 단위로 보정해 작은 표본에서도 그래프가 한쪽으로 치우치지 않도록 정리.",
+      "관리자 버전 03.105.02 → 03.106.00 (Feature · 방문 분석 일자별 라인 차트 추가)."
+    ]
+  },
+  {
     "version": "03.105.02",
     "date": "2026-04-30",
     "released_at": "2026-04-30 00:00:00 KST",
