@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.105.02",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 00:00:00 KST",
+    "summary": "관리자 글 작성 본문에서 Editor.js의 + 버튼과 드래그 핸들이 본문 위에 겹쳐 보이던 현상을 정리해, 글 작성 시 도구 아이콘이 항상 좌측 거터에만 노출되도록 했습니다.",
+    "changes": [
+      "css/admin-v3.css의 .v3-editor-wrap에 .codex-editor__redactor 좌측 패딩 60px와 하단 패딩 40px를 강제해 본문 영역과 도구 거터를 분리.",
+      "Editor.js 2.29 기본값으로 .ce-toolbar__content가 max-width 650px로 가운데 정렬되어 + 버튼·드래그 핸들이 본문 폭 가운데 떠 있던 문제를 max-width 100% + margin 0으로 무효화.",
+      ".v3-editor-wrap .ce-toolbar__plus는 left: 0, .ce-toolbar__actions는 left: 28px / right: auto로 고정해 두 아이콘이 좌측 거터에 나란히 정렬되도록 조정.",
+      "관리자 버전 03.105.01 → 03.105.02 (Hotfix · 글 작성 본문 위 Editor.js 도구 아이콘 겹침 수정)."
+    ]
+  },
+  {
     "version": "03.105.01",
     "date": "2026-04-25",
     "released_at": "2026-04-25 20:35:43 KST",

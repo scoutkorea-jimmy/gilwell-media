@@ -884,6 +884,11 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-editor-wrap:focus-within { border-color: var(--v3-primary); }
 #v3-editorjs { padding: var(--gap-tight) 40px; }
 .v3-editor-wrap .ce-block__content { max-width: 100%; }
+/* Editor.js 2.29 toolbar — keep + and drag handle in the left gutter, never on top of body text */
+.v3-editor-wrap .codex-editor__redactor { padding-left: 60px !important; padding-bottom: 40px !important; }
+.v3-editor-wrap .ce-toolbar__content { max-width: 100% !important; margin: 0 !important; }
+.v3-editor-wrap .ce-toolbar__plus { left: 0 !important; }
+.v3-editor-wrap .ce-toolbar__actions { left: 28px !important; right: auto !important; }
 
 /* ── Dashboard ───────────────────────────────────────────── */
 .v3-dash-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--v3-gap-lg); align-items: stretch; }
