@@ -1550,7 +1550,7 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-chart-swatch-visits { background: var(--v3-primary); }
 .v3-chart-swatch-views  { background: var(--v3-text-s); }
 .v3-chart-wrap { width: 100%; padding: var(--gap-tight) 0 0; }
-.v3-chart-svg { display: block; width: 100%; height: auto; max-height: 280px; overflow: visible; }
+.v3-chart-svg { display: block; width: 100%; height: auto; aspect-ratio: 800 / 240; max-height: 320px; overflow: visible; }
 .v3-chart-grid { stroke: var(--v3-border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
 .v3-chart-axis-text { font-size: 10px; fill: var(--v3-text-s); font-family: inherit; }
 .v3-chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
