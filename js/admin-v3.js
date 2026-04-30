@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.106.01
+ * Version: 03.106.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3993,7 +3993,7 @@
         '</div>' +
       '</div>' +
       '<div class="v3-chart-wrap">' +
-        '<svg class="v3-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + titleText + ' 추세">' +
+        '<svg class="v3-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + titleText + ' 추세">' +
           grid +
           '<path class="v3-chart-area v3-chart-area-visits" d="' + areaPath + '"/>' +
           '<polyline class="v3-chart-line v3-chart-line-visits" points="' + visitPoints.join(' ') + '"/>' +
@@ -4029,11 +4029,10 @@
         '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문 <strong>' + visits + '</strong></div>' +
         '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회 <strong>' + views + '</strong></div>';
       tooltip.hidden = false;
-      // SVG viewBox 좌표(0~800) → wrap 컨테이너 px로 환산
-      var svgRect = svg.getBoundingClientRect();
+      // viewBox 변환·letterboxing에 의존하지 말고, hover-zone 자체의 실제 화면 좌표를 기준으로 툴팁 위치 계산
       var wrapRect = wrap.getBoundingClientRect();
-      var scale = svgRect.width / 800;
-      var localX = (svgRect.left - wrapRect.left) + cx * scale;
+      var zoneRect = zone.getBoundingClientRect();
+      var localX = (zoneRect.left + zoneRect.width / 2) - wrapRect.left;
       var ttWidth = tooltip.offsetWidth || 160;
       var maxLeft = wrapRect.width - ttWidth - 4;
       var left = Math.max(4, Math.min(maxLeft, localX - ttWidth / 2));

@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.106.02",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 01:30:00 KST",
+    "summary": "방문 분석 차트가 화면 가로폭이 늘어날 때 비율을 잃고 납작해지던 현상을 비율 고정으로 정리하고, letterboxing이 발생해도 호버 툴팁이 정확한 위치에 뜨도록 좌표 계산을 hover-zone 실제 위치 기반으로 교체했습니다.",
+    "changes": [
+      "SVG 마크업의 preserveAspectRatio='none' 제거 — 기본값(xMidYMid meet)으로 viewBox 비율 유지. 가로 늘어남에 따라 라인이 납작해지는 시각 왜곡 제거.",
+      "css/admin-v3.css .v3-chart-svg에 aspect-ratio: 800/240 추가, max-height 280→320px로 상향. 가로폭에 비례해 세로도 자연스럽게 확장.",
+      "_wireAnalyticsChartHover의 툴팁 위치 계산을 'svg viewBox px 환산'에서 'hover-zone getBoundingClientRect 기반'으로 교체 — letterboxing 발생 시에도 호버 지점 바로 위에 정확히 위치.",
+      "관리자 버전 03.106.01 → 03.106.02 (Hotfix · 차트 비율 왜곡 수정 + 툴팁 좌표 정확도 보정)."
+    ]
+  },
+  {
     "version": "03.106.01",
     "date": "2026-04-30",
     "released_at": "2026-04-30 01:10:00 KST",
