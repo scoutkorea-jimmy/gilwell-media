@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.107.00",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 02:00:00 KST",
+    "summary": "관리자 차트(라인·바·히트맵)에 '비율 불변' 규칙을 적용하고, 차트 카드 헤드에 톱니바퀴 모양의 표시 설정 버튼을 추가해 글자 크기·간격을 즉시 조정·저장할 수 있게 했습니다.",
+    "changes": [
+      "css/admin-v3.css에 차트 전용 토큰(--gw-chart-axis-text-size / --gw-chart-bar-label-size / --gw-chart-bar-thickness / --gw-chart-line-weight / --gw-chart-row-gap / --gw-chart-legend-size / --gw-chart-heatmap-cell-h / --gw-chart-heatmap-gap)을 :root에 신설하고, body[data-chart-text='s|m|l'] · body[data-chart-spacing='s|m|l'] 데이터 속성으로 토큰을 일괄 오버라이드하도록 정리.",
+      ".v3-bar-list/.v3-bar-label/.v3-bar-track/.v3-bar-val (인기 기사·유입 경로 바 차트), .v3-chart-axis-text/.v3-chart-line/.v3-chart-legend-item (방문 추세 라인 차트), .v3-heatmap/.v3-heatmap-cell (시간·요일 히트맵)이 모두 새 토큰을 참조하도록 일괄 교체. 화면이 늘어져도 비율은 깨지 않고 글자·간격이 토큰 기준으로 조정됨.",
+      "js/admin-v3.js에 _renderChartPrefsControl/_wireChartPrefsControl 신설 — 톱니바퀴(SVG) 버튼 + 팝오버 UI(글자 크기 작게/보통/크게, 간격 좁게/보통/넓게)를 차트 카드 헤드 우측에 배치. 선택값은 localStorage(gw_chart_prefs_v1)에 저장하고 body 데이터 속성에 즉시 반영.",
+      "DOMContentLoaded 초기화 단계에 _applyChartPrefs를 호출해 첫 차트 렌더 전부터 사용자 저장값이 적용되도록 보강. ESC·바깥 클릭 시 팝오버 자동 닫힘 + radiogroup ARIA 속성으로 접근성 처리.",
+      "관리자 버전 03.106.02 → 03.107.00 (Feature · 차트 비율 불변 규칙 + 톱니바퀴 표시 설정 도입)."
+    ]
+  },
+  {
     "version": "03.106.02",
     "date": "2026-04-30",
     "released_at": "2026-04-30 01:30:00 KST",

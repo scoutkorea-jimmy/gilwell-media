@@ -1535,25 +1535,63 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
     height: 320px;
   }
 }
-.v3-bar-list { display: flex; flex-direction: column; gap: var(--gap-tight); }
+/* ── Chart sizing tokens — 모든 차트는 비율을 깨지 않고, 가로폭이 늘어나면 ──
+   ── 글자/간격을 키워 시각적 균형을 맞춘다. body[data-chart-*]로 사용자 토글. ── */
+:root {
+  --gw-chart-axis-text-size: 10px;
+  --gw-chart-bar-label-size: var(--fs-caption);
+  --gw-chart-bar-val-size:   var(--fs-caption);
+  --gw-chart-bar-thickness:  7px;
+  --gw-chart-line-weight:    2px;
+  --gw-chart-row-gap:        var(--gap-tight);
+  --gw-chart-legend-size:    var(--fs-caption);
+  --gw-chart-heatmap-cell-h: 28px;
+  --gw-chart-heatmap-gap:    7px;
+}
+body[data-chart-text="s"] {
+  --gw-chart-axis-text-size: 9px;
+  --gw-chart-bar-label-size: 11px;
+  --gw-chart-bar-val-size:   11px;
+  --gw-chart-legend-size:    11px;
+}
+body[data-chart-text="l"] {
+  --gw-chart-axis-text-size: 13px;
+  --gw-chart-bar-label-size: 14px;
+  --gw-chart-bar-val-size:   14px;
+  --gw-chart-legend-size:    14px;
+}
+body[data-chart-spacing="s"] {
+  --gw-chart-bar-thickness:  5px;
+  --gw-chart-row-gap:        4px;
+  --gw-chart-heatmap-cell-h: 22px;
+  --gw-chart-heatmap-gap:    4px;
+}
+body[data-chart-spacing="l"] {
+  --gw-chart-bar-thickness:  12px;
+  --gw-chart-row-gap:        var(--v3-gap-md);
+  --gw-chart-heatmap-cell-h: 36px;
+  --gw-chart-heatmap-gap:    10px;
+}
+
+.v3-bar-list { display: flex; flex-direction: column; gap: var(--gw-chart-row-gap); }
 .v3-bar-row { display: flex; align-items: center; gap: var(--v3-gap-sm); }
-.v3-bar-label { font-size: var(--fs-caption); color: var(--v3-text-s); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.v3-bar-track { flex: 1; height: 7px; background: var(--v3-content-bg); border-radius: 100px; overflow: hidden; }
+.v3-bar-label { font-size: var(--gw-chart-bar-label-size); color: var(--v3-text-s); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v3-bar-track { flex: 1; height: var(--gw-chart-bar-thickness); background: var(--v3-content-bg); border-radius: 100px; overflow: hidden; }
 .v3-bar-fill  { height: 100%; background: var(--v3-primary); border-radius: 100px; }
-.v3-bar-val   { font-size: var(--fs-caption); color: var(--v3-text-m); width: 44px; text-align: right; flex-shrink: 0; }
+.v3-bar-val   { font-size: var(--gw-chart-bar-val-size); color: var(--v3-text-m); width: 44px; text-align: right; flex-shrink: 0; }
 
 /* ── Analytics trend chart (일자별 방문자) ──────────────────── */
 .v3-analytics-trend-card .v3-card-head { align-items: center; }
 .v3-chart-legend { display: flex; gap: var(--v3-gap-sm); flex-wrap: wrap; }
-.v3-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-caption); color: var(--v3-text-m); }
+.v3-chart-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: var(--gw-chart-legend-size); color: var(--v3-text-m); }
 .v3-chart-swatch { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
 .v3-chart-swatch-visits { background: var(--v3-primary); }
 .v3-chart-swatch-views  { background: var(--v3-text-s); }
 .v3-chart-wrap { width: 100%; padding: var(--gap-tight) 0 0; }
 .v3-chart-svg { display: block; width: 100%; height: auto; aspect-ratio: 800 / 240; max-height: 320px; overflow: visible; }
 .v3-chart-grid { stroke: var(--v3-border); stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.7; }
-.v3-chart-axis-text { font-size: 10px; fill: var(--v3-text-s); font-family: inherit; }
-.v3-chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.v3-chart-axis-text { font-size: var(--gw-chart-axis-text-size); fill: var(--v3-text-s); font-family: inherit; }
+.v3-chart-line { fill: none; stroke-width: var(--gw-chart-line-weight); stroke-linecap: round; stroke-linejoin: round; }
 .v3-chart-line-visits { stroke: var(--v3-primary); }
 .v3-chart-line-views  { stroke: var(--v3-text-s); stroke-dasharray: 4 3; opacity: 0.85; }
 .v3-chart-area { stroke: none; }
@@ -1575,6 +1613,40 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-chart-tt-row { display: flex; align-items: center; gap: 6px; }
 .v3-chart-tt-row strong { margin-left: auto; font-weight: 700; }
 .v3-chart-tooltip .v3-chart-swatch-views { background: rgba(255,255,255,0.55); }
+
+/* Chart head tools — 차트 카드 head 우측에 범례 + 톱니바퀴를 함께 배치 */
+.v3-chart-head-tools { display: inline-flex; align-items: center; gap: var(--v3-gap-sm); flex-wrap: wrap; }
+
+/* 차트 표시 설정 (글자 크기·간격) */
+.v3-chart-prefs-control { position: relative; display: inline-flex; }
+.v3-chart-prefs-btn {
+  width: 30px; height: 30px; padding: 0; border-radius: 8px;
+  border: 1px solid var(--v3-border); background: var(--v3-surface);
+  color: var(--v3-text-m); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.v3-chart-prefs-btn:hover { border-color: var(--v3-primary); color: var(--v3-primary); }
+.v3-chart-prefs-btn[aria-expanded="true"] { background: var(--v3-primary); border-color: var(--v3-primary); color: var(--v3-surface); }
+.v3-chart-prefs-popover {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20;
+  min-width: 240px; padding: 12px;
+  border: 1px solid var(--v3-border); border-radius: 10px;
+  background: var(--v3-surface); box-shadow: 0 12px 28px rgba(15,23,42,0.10);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.v3-chart-prefs-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.v3-chart-prefs-label { font-size: var(--fs-caption); color: var(--v3-text); font-weight: 600; }
+.v3-chart-prefs-segs { display: inline-flex; border: 1px solid var(--v3-border); border-radius: 7px; overflow: hidden; }
+.v3-chart-prefs-segs button {
+  padding: 5px 10px; font-size: 11px; line-height: 1; min-height: 26px;
+  background: transparent; border: none; color: var(--v3-text-m); cursor: pointer;
+  font-family: inherit;
+}
+.v3-chart-prefs-segs button + button { border-left: 1px solid var(--v3-border); }
+.v3-chart-prefs-segs button:hover { background: var(--v3-content-bg); }
+.v3-chart-prefs-segs button.is-active { background: var(--v3-primary); color: var(--v3-surface); font-weight: 700; }
+.v3-chart-prefs-foot { font-size: 11px; color: var(--v3-text-s); padding-top: 4px; border-top: 1px dashed var(--v3-border); }
 .v3-heatmap-wrap {
   overflow-x: auto;
   padding-bottom: 2px;
@@ -1594,7 +1666,7 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-heatmap {
   display: grid;
   grid-template-columns: 86px repeat(24, minmax(30px, 1fr));
-  gap: 7px;
+  gap: var(--gw-chart-heatmap-gap);
   align-items: center;
   min-width: 930px;
 }
@@ -1619,7 +1691,7 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 }
 .v3-heatmap-cell {
   position: relative;
-  height: 28px;
+  height: var(--gw-chart-heatmap-cell-h);
   border: 1px solid rgba(109, 40, 217, 0.08);
   border-radius: 10px;
   background: rgba(109, 40, 217, 0.04);

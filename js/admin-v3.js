@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.106.02
+ * Version: 03.107.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -371,6 +371,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     _installDelegation();
     _syncAdminVersionLabels();
+    if (typeof _applyChartPrefs === 'function') _applyChartPrefs();
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     if (window.GW && typeof GW.populateCategorySelect === 'function') {
       GW.populateCategorySelect(document.getElementById('list-cat'), { includeAll: true, allLabel: '전체 카테고리' });
@@ -3879,6 +3880,100 @@
   // 하위 호환: 기존 _loadAnalytics() 호출부는 방문 분석 패널 로더로 연결
   function _loadAnalytics() { _loadAnalyticsVisits(); }
 
+  /* ── Chart display preferences (글자 크기 / 간격) — 모든 차트에 전역 적용 ── */
+  var _CHART_PREFS_KEY = 'gw_chart_prefs_v1';
+  var _CHART_PREF_VALUES = ['s', 'm', 'l'];
+  function _loadChartPrefs() {
+    var fallback = { text: 'm', spacing: 'm' };
+    try {
+      var raw = localStorage.getItem(_CHART_PREFS_KEY);
+      var p = raw ? JSON.parse(raw) : {};
+      return {
+        text:    _CHART_PREF_VALUES.indexOf(p.text)    >= 0 ? p.text    : 'm',
+        spacing: _CHART_PREF_VALUES.indexOf(p.spacing) >= 0 ? p.spacing : 'm',
+      };
+    } catch (_) { return fallback; }
+  }
+  function _saveChartPrefs(prefs) {
+    try { localStorage.setItem(_CHART_PREFS_KEY, JSON.stringify(prefs)); } catch (_) {}
+  }
+  function _applyChartPrefs(prefs) {
+    var p = prefs || _loadChartPrefs();
+    if (!document.body) return;
+    document.body.setAttribute('data-chart-text',    p.text    || 'm');
+    document.body.setAttribute('data-chart-spacing', p.spacing || 'm');
+  }
+  function _renderChartPrefsControl() {
+    var prefs = _loadChartPrefs();
+    function seg(key, label, opts) {
+      var html = '<div class="v3-chart-prefs-row"><span class="v3-chart-prefs-label">' + label + '</span>' +
+        '<div class="v3-chart-prefs-segs" role="radiogroup" data-pref="' + key + '">';
+      opts.forEach(function (opt) {
+        var active = prefs[key] === opt.val ? ' is-active' : '';
+        html += '<button type="button" role="radio" aria-checked="' + (prefs[key] === opt.val ? 'true' : 'false') +
+          '" data-val="' + opt.val + '" class="' + active + '">' + opt.txt + '</button>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+    return '<div class="v3-chart-prefs-control">' +
+      '<button type="button" class="v3-chart-prefs-btn" aria-label="차트 표시 설정" title="차트 표시 설정" aria-haspopup="dialog" aria-expanded="false">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="3"/>' +
+          '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' +
+        '</svg>' +
+      '</button>' +
+      '<div class="v3-chart-prefs-popover" role="dialog" aria-label="차트 표시 설정" hidden>' +
+        seg('text',    '글자 크기', [{val:'s',txt:'작게'},{val:'m',txt:'보통'},{val:'l',txt:'크게'}]) +
+        seg('spacing', '간격',      [{val:'s',txt:'좁게'},{val:'m',txt:'보통'},{val:'l',txt:'넓게'}]) +
+        '<div class="v3-chart-prefs-foot">설정은 이 브라우저에 저장되어 모든 차트에 즉시 적용됩니다.</div>' +
+      '</div>' +
+    '</div>';
+  }
+  function _wireChartPrefsControl(rootEl) {
+    if (!rootEl) return;
+    var control = rootEl.querySelector('.v3-chart-prefs-control');
+    if (!control || control._chartPrefsWired) return;
+    var btn = control.querySelector('.v3-chart-prefs-btn');
+    var popover = control.querySelector('.v3-chart-prefs-popover');
+    if (!btn || !popover) return;
+    function close() {
+      popover.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function toggle() {
+      var willOpen = popover.hidden;
+      popover.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+    document.addEventListener('click', function (e) {
+      if (!control.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !popover.hidden) close();
+    });
+    popover.querySelectorAll('.v3-chart-prefs-segs').forEach(function (group) {
+      var key = group.getAttribute('data-pref');
+      group.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var val = b.getAttribute('data-val');
+          var prefs = _loadChartPrefs();
+          prefs[key] = val;
+          _saveChartPrefs(prefs);
+          _applyChartPrefs(prefs);
+          group.querySelectorAll('button').forEach(function (x) {
+            var active = x === b;
+            x.classList.toggle('is-active', active);
+            x.setAttribute('aria-checked', active ? 'true' : 'false');
+          });
+        });
+      });
+    });
+    control._chartPrefsWired = true;
+  }
+  V3.applyChartPrefs = _applyChartPrefs;
+
   // 일자/시각별 방문자·조회수 라인 차트 (의존성 없이 순수 SVG)
   function _renderAnalyticsTrendChart(visitSeries, viewSeries, granularity, periodLabel) {
     var visits = Array.isArray(visitSeries) ? visitSeries : [];
@@ -3987,9 +4082,12 @@
         '<div><h2 class="v3-card-title">' + titleText +
           (subTitle ? ' <span class="v3-label-opt v3-label-opt-inline">' + subTitle + '</span>' : '') +
         '</h2></div>' +
-        '<div class="v3-chart-legend">' +
-          '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문(고유)</span>' +
-          '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회(누적)</span>' +
+        '<div class="v3-chart-head-tools">' +
+          '<div class="v3-chart-legend">' +
+            '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문(고유)</span>' +
+            '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회(누적)</span>' +
+          '</div>' +
+          _renderChartPrefsControl() +
         '</div>' +
       '</div>' +
       '<div class="v3-chart-wrap">' +
@@ -4141,7 +4239,10 @@
 
       bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
       var trendCard = bodyEl.querySelector('.v3-analytics-trend-card');
-      if (trendCard) _wireAnalyticsChartHover(trendCard);
+      if (trendCard) {
+        _wireAnalyticsChartHover(trendCard);
+        _wireChartPrefsControl(trendCard);
+      }
       _analyticsLastUpdatedAt = Date.now();
       _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
