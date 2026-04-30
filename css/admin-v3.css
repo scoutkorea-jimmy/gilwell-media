@@ -1562,6 +1562,19 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-chart-dot-visits { fill: var(--v3-primary); }
 .v3-chart-dot-views  { fill: var(--v3-text-s); }
 .v3-chart-dot:hover { stroke-width: 2.5; }
+.v3-chart-wrap { position: relative; }
+.v3-chart-hover-zone { fill: transparent; cursor: crosshair; pointer-events: all; }
+.v3-chart-guide { stroke: var(--v3-primary); stroke-width: 1; stroke-dasharray: 3 3; pointer-events: none; transition: opacity .12s; }
+.v3-chart-tooltip {
+  position: absolute; pointer-events: none; min-width: 140px; max-width: 220px;
+  padding: 8px 10px; border-radius: 8px; background: var(--v3-text);
+  color: var(--v3-surface); font-size: var(--fs-caption); line-height: 1.45;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.18); z-index: 4;
+}
+.v3-chart-tt-label { font-weight: 700; margin-bottom: 4px; opacity: 0.95; }
+.v3-chart-tt-row { display: flex; align-items: center; gap: 6px; }
+.v3-chart-tt-row strong { margin-left: auto; font-weight: 700; }
+.v3-chart-tooltip .v3-chart-swatch-views { background: rgba(255,255,255,0.55); }
 .v3-heatmap-wrap {
   overflow-x: auto;
   padding-bottom: 2px;
