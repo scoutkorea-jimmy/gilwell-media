@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.106.01",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 01:10:00 KST",
+    "summary": "방문 분석 추세 차트의 호버 정보를 OS 기본 SVG title 툴팁(지연·미스타일링) 대신 즉시 표시되는 HTML 툴팁 + 세로 가이드 라인으로 교체했습니다.",
+    "changes": [
+      "_renderAnalyticsTrendChart에 데이터 점 중심으로 한 투명 hover-zone <rect>들을 추가해 마우스 진입 즉시 해당 일자의 방문·조회수 정보가 표시되도록 처리.",
+      "_wireAnalyticsChartHover 신설 — pointerenter/pointermove/pointerleave에서 SVG viewBox 좌표를 wrap 컨테이너 px로 환산해 툴팁 left를 계산하고, 가장자리 데이터 점도 잘리지 않도록 max(4)·min(wrap-tooltipWidth-4) 클램프.",
+      "차트 안에 .v3-chart-guide 세로 점선을 둬 호버 지점에서 즉시 보이게 하고, leave 시 opacity 0으로 부드럽게 사라지도록 transition 적용.",
+      "css/admin-v3.css에 .v3-chart-tooltip · .v3-chart-tt-label · .v3-chart-tt-row 스타일 추가 — 다크 표면(var(--v3-text)) + box-shadow + pointer-events:none 으로 호버 방해 제거.",
+      "관리자 버전 03.106.00 → 03.106.01 (Hotfix · 방문 분석 차트 호버 툴팁 즉시 표시 개선)."
+    ]
+  },
+  {
     "version": "03.106.00",
     "date": "2026-04-30",
     "released_at": "2026-04-30 00:30:00 KST",

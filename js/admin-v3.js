@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.106.00
+ * Version: 03.106.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3940,7 +3940,7 @@
       grid += '<text x="' + (padL - 8) + '" y="' + (ty + 4).toFixed(1) +
         '" class="v3-chart-axis-text" text-anchor="end">' + _fmt(tv) + '</text>';
     }
-    // 데이터 포인트 + 호버 영역
+    // 데이터 포인트
     var pointsHtml = '';
     for (var p = 0; p < n; p++) {
       var px = xAt(p), pyV = yAt(visits[p] && visits[p].visits || 0), pyW = yAt(views[p] && views[p].views || 0);
@@ -3948,11 +3948,31 @@
       var visCount = Number(visits[p] && visits[p].visits || 0);
       var viewCount = Number(views[p] && views[p].views || 0);
       pointsHtml +=
-        '<circle cx="' + px.toFixed(1) + '" cy="' + pyV.toFixed(1) + '" r="3" class="v3-chart-dot v3-chart-dot-visits"><title>' +
+        '<circle data-idx="' + p + '" cx="' + px.toFixed(1) + '" cy="' + pyV.toFixed(1) + '" r="3" class="v3-chart-dot v3-chart-dot-visits"><title>' +
         GW.escapeHtml(label) + ' · 방문 ' + _fmt(visCount) + ' · 조회 ' + _fmt(viewCount) + '</title></circle>' +
-        '<circle cx="' + px.toFixed(1) + '" cy="' + pyW.toFixed(1) + '" r="2.5" class="v3-chart-dot v3-chart-dot-views"><title>' +
+        '<circle data-idx="' + p + '" cx="' + px.toFixed(1) + '" cy="' + pyW.toFixed(1) + '" r="2.5" class="v3-chart-dot v3-chart-dot-views"><title>' +
         GW.escapeHtml(label) + ' · 방문 ' + _fmt(visCount) + ' · 조회 ' + _fmt(viewCount) + '</title></circle>';
     }
+    // 호버 zone — 각 데이터 점을 중심으로 한 투명 rect (HTML 툴팁 트리거)
+    var hoverZones = '';
+    var bandHalf = stepX > 0 ? stepX / 2 : plotW / 2;
+    for (var z = 0; z < n; z++) {
+      var zx = xAt(z) - bandHalf;
+      var zw = stepX > 0 ? stepX : plotW;
+      if (z === 0) { zx = padL; }
+      if (z === n - 1 && n > 1) { zw = (W - padR) - zx; }
+      hoverZones +=
+        '<rect class="v3-chart-hover-zone" data-idx="' + z + '"' +
+        ' data-cx="' + xAt(z).toFixed(1) + '"' +
+        ' data-label="' + GW.escapeHtml(fmtTooltipLabel(visits[z])) + '"' +
+        ' data-visits="' + _fmt(Number(visits[z] && visits[z].visits || 0)) + '"' +
+        ' data-views="' + _fmt(Number(views[z] && views[z].views || 0)) + '"' +
+        ' x="' + zx.toFixed(1) + '" y="' + padT + '"' +
+        ' width="' + zw.toFixed(1) + '" height="' + plotH + '"/>';
+    }
+    // 호버 시 표시할 세로 가이드 라인 (초기엔 숨김)
+    var guideLine = '<line class="v3-chart-guide" x1="0" x2="0" y1="' + padT +
+      '" y2="' + (padT + plotH) + '" opacity="0"/>';
     // 영역 채움 (visits)
     var areaPath = 'M' + xAt(0).toFixed(1) + ',' + (padT + plotH).toFixed(1);
     for (var a = 0; a < n; a++) areaPath += ' L' + xAt(a).toFixed(1) + ',' + yAt(visits[a] && visits[a].visits || 0).toFixed(1);
@@ -3980,9 +4000,63 @@
           '<polyline class="v3-chart-line v3-chart-line-views" points="'  + viewPoints.join(' ')  + '"/>' +
           pointsHtml +
           xLabels +
+          guideLine +
+          hoverZones +
         '</svg>' +
+        '<div class="v3-chart-tooltip" hidden role="tooltip" aria-live="polite"></div>' +
       '</div>' +
     '</div>';
+  }
+
+  // 차트 호버 시 HTML 툴팁 + 세로 가이드 라인 표시
+  function _wireAnalyticsChartHover(card) {
+    if (!card || card._chartHoverWired) return;
+    var svg = card.querySelector('.v3-chart-svg');
+    var tooltip = card.querySelector('.v3-chart-tooltip');
+    var wrap = card.querySelector('.v3-chart-wrap');
+    var guide = svg && svg.querySelector('.v3-chart-guide');
+    if (!svg || !tooltip || !wrap) return;
+    var zones = svg.querySelectorAll('.v3-chart-hover-zone');
+    if (!zones.length) return;
+
+    function showAt(zone) {
+      var label = zone.getAttribute('data-label') || '';
+      var visits = zone.getAttribute('data-visits') || '0';
+      var views  = zone.getAttribute('data-views')  || '0';
+      var cx = parseFloat(zone.getAttribute('data-cx') || '0');
+      tooltip.innerHTML =
+        '<div class="v3-chart-tt-label">' + GW.escapeHtml(label) + '</div>' +
+        '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문 <strong>' + visits + '</strong></div>' +
+        '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회 <strong>' + views + '</strong></div>';
+      tooltip.hidden = false;
+      // SVG viewBox 좌표(0~800) → wrap 컨테이너 px로 환산
+      var svgRect = svg.getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var scale = svgRect.width / 800;
+      var localX = (svgRect.left - wrapRect.left) + cx * scale;
+      var ttWidth = tooltip.offsetWidth || 160;
+      var maxLeft = wrapRect.width - ttWidth - 4;
+      var left = Math.max(4, Math.min(maxLeft, localX - ttWidth / 2));
+      tooltip.style.left = left + 'px';
+      tooltip.style.top  = '4px';
+      if (guide) {
+        guide.setAttribute('x1', cx);
+        guide.setAttribute('x2', cx);
+        guide.setAttribute('opacity', '1');
+      }
+    }
+    function hideAll() {
+      tooltip.hidden = true;
+      if (guide) guide.setAttribute('opacity', '0');
+    }
+    zones.forEach(function (zone) {
+      zone.addEventListener('pointerenter', function () { showAt(zone); });
+      zone.addEventListener('pointermove',  function () { showAt(zone); });
+      zone.addEventListener('pointerleave', hideAll);
+    });
+    // 차트 영역 밖으로 나갈 때 안전 차원에서 한 번 더 숨김
+    wrap.addEventListener('pointerleave', hideAll);
+    card._chartHoverWired = true;
   }
 
   // 차트 Y축 상한을 보기 좋은 숫자로 올림 (1, 2, 5 단위)
@@ -4067,6 +4141,8 @@
       }
 
       bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
+      var trendCard = bodyEl.querySelector('.v3-analytics-trend-card');
+      if (trendCard) _wireAnalyticsChartHover(trendCard);
       _analyticsLastUpdatedAt = Date.now();
       _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
