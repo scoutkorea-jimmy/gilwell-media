@@ -3588,7 +3588,7 @@ const DP = (() => {
           <div class="dp-cal-dnum">${d}</div>
           ${evs.slice(0, 3).map(e => `
             <div class="dp-cal-ev" style="border-left-color:${typeColor[e.type] || typeColor.general}"
-                 onclick="event.stopPropagation();DP._calEventClick(${Number(e.id)})"
+                 onclick="event.stopPropagation();DP._calEventClick(${Number(e.id)}, '${esc(String(e.start_date || dateStr).slice(0, 10))}')"
                  title="${esc(e.title || '')}">
               ${e.start_time ? `<span class="t">${esc(e.start_time)}</span>` : ''}
               <span class="name">${esc(e.title || '')}</span>
@@ -3617,7 +3617,7 @@ const DP = (() => {
     const body = events.length ? `
       <div class="dp-list" style="display:grid;gap:8px">
         ${events.map(e => `
-          <button type="button" class="dp-preview-item" onclick="DP._calEventClick(${Number(e.id)})">
+          <button type="button" class="dp-preview-item" onclick="DP._calEventClick(${Number(e.id)}, '${esc(String(e.start_date || safeDate).slice(0, 10))}')">
             <div>
               <strong>${esc(e.title || '(Untitled event)')}</strong>
               <div style="font-size:11px;color:var(--text-3);margin-top:3px">
@@ -3636,21 +3636,24 @@ const DP = (() => {
        ${_canCreateCalendarEvent() ? `<button class="dp-btn dp-btn-primary" onclick="DP._openEventEditor(null, { start_date: '${esc(safeDate)}' })">New event</button>` : ''}`
     );
   }
-  async function _calEventClick(id) {
+  async function _calEventClick(id, occurrenceDate) {
     _openModal('Loading…', '<div style="color:var(--text-3)">Loading event…</div>',
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
     const data = await api('GET', 'events?id=' + Number(id));
     if (!data) return;
     const e = data.event;
     if (!e) { _renderPostError('Event not found', 'It may have been removed or moved.'); return; }
+    const safeOccurrence = String(occurrenceDate || e.start_date || '').slice(0, 10);
+    const isRecurringOccurrence = !!(e.recurrence_type && safeOccurrence && safeOccurrence !== String(e.start_date || '').slice(0, 10));
     _openModal(
       e.title || '(Untitled event)',
       `
       <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <span class="dp-tag neutral">${esc(e.type || 'general')}</span>
-        <span class="mono">${esc(e.start_date || '')}${e.end_date && e.end_date !== e.start_date ? ' → ' + esc(e.end_date) : ''}</span>
+        <span class="mono">${esc(safeOccurrence || e.start_date || '')}${e.end_date && e.end_date !== e.start_date && !isRecurringOccurrence ? ' → ' + esc(e.end_date) : ''}</span>
         ${e.start_time ? `<span>·</span><span class="mono">${esc(e.start_time)}${e.end_time ? '–' + esc(e.end_time) : ''}</span>` : ''}
         ${e.recurrence_type ? `<span>·</span><span class="dp-tag info">repeats ${esc(e.recurrence_type)}</span>` : ''}
+        ${isRecurringOccurrence ? `<span>·</span><span class="dp-tag warn">occurrence</span>` : ''}
       </div>
       ${_sanitize(e.description || '<p style="color:var(--text-3)">No description.</p>')}
       ${(e.history || []).length ? `
@@ -3666,11 +3669,11 @@ const DP = (() => {
       ` : ''}
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
-       ${_hasPerm('write:calendar') ? `<button class="dp-btn dp-btn-primary" onclick="DP._openEventEditor(${Number(e.id)})">Edit</button>` : ''}`
+       ${_hasPerm('write:calendar') ? `<button class="dp-btn dp-btn-primary" onclick="DP._openEventEditor(${Number(e.id)}, null, '${esc(safeOccurrence)}')">Edit</button>` : ''}`
     );
   }
 
-  async function _openEventEditor(id, seed) {
+  async function _openEventEditor(id, seed, occurrenceDate) {
     seed = seed || {};
     let ev = seed;
     if (id) {
@@ -3679,6 +3682,7 @@ const DP = (() => {
       ev = data.event;
     }
     const isEdit = !!id;
+    const eventOccurrenceDate = String(occurrenceDate || ev.start_date || '').slice(0, 10);
     _openModal(
       isEdit ? 'Edit event' : 'New event',
       `
@@ -3737,7 +3741,7 @@ const DP = (() => {
       ` : ''}
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
-       ${isEdit && _canCreateCalendarEvent() ? `<button class="dp-btn dp-btn-danger" onclick="DP._deleteEvent(${Number(id)})">Delete</button>` : ''}
+       ${isEdit && _canCreateCalendarEvent() ? `<button class="dp-btn dp-btn-danger" onclick="DP._requestDeleteEvent(${Number(id)}, '${esc(eventOccurrenceDate)}', '${esc(ev.recurrence_type || '')}')">Delete</button>` : ''}
        <button class="dp-btn dp-btn-primary" onclick="DP._saveEvent(${isEdit ? Number(id) : 0})">${isEdit ? 'Save changes' : 'Create event'}</button>`,
       { wide: true }
     );
@@ -3776,10 +3780,45 @@ const DP = (() => {
     }
   }
 
-  async function _deleteEvent(id) {
+  function _requestDeleteEvent(id, occurrenceDate, recurrenceType) {
     if (!id) return;
-    if (!confirm('Delete this event? This cannot be undone.')) return;
-    const data = await api('DELETE', 'events?id=' + Number(id));
+    const safeOccurrence = String(occurrenceDate || '').slice(0, 10);
+    if (!recurrenceType) {
+      _deleteEvent(id, 'event', safeOccurrence);
+      return;
+    }
+    _openModal(
+      'Delete recurring event',
+      `<p style="margin:0 0 12px;font-size:14px;line-height:1.65;color:var(--text-2)">
+         This is a repeating event. Choose how much of the series to delete.
+       </p>
+       <div style="display:grid;gap:8px">
+         <button type="button" class="dp-preview-item" onclick="DP._deleteEvent(${Number(id)}, 'single', ${_jsArg(safeOccurrence)})">
+           <div><strong>Only this event</strong><div style="font-size:11px;color:var(--text-3);margin-top:3px">${esc(safeOccurrence)} only</div></div>
+         </button>
+         <button type="button" class="dp-preview-item" onclick="DP._deleteEvent(${Number(id)}, 'following', ${_jsArg(safeOccurrence)})">
+           <div><strong>This and following events</strong><div style="font-size:11px;color:var(--text-3);margin-top:3px">Keep earlier occurrences</div></div>
+         </button>
+         <button type="button" class="dp-preview-item" onclick="DP._deleteEvent(${Number(id)}, 'all', ${_jsArg(safeOccurrence)})">
+           <div><strong>All events in this series</strong><div style="font-size:11px;color:var(--text-3);margin-top:3px">Delete the full repeating event</div></div>
+         </button>
+       </div>`,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>`,
+      { wide: true }
+    );
+  }
+
+  async function _deleteEvent(id, mode, occurrenceDate) {
+    if (!id) return;
+    const safeMode = mode || 'event';
+    const message = safeMode === 'all'
+      ? 'Delete all events in this series? This cannot be undone.'
+      : 'Delete this event? This cannot be undone.';
+    if (!confirm(message)) return;
+    const apiMode = safeMode === 'event' ? 'all' : safeMode;
+    const qs = new URLSearchParams({ id: String(Number(id)), mode: apiMode });
+    if (occurrenceDate) qs.set('occurrence_date', String(occurrenceDate).slice(0, 10));
+    const data = await api('DELETE', 'events?' + qs.toString());
     if (data) {
       toast('Event deleted', 'ok');
       _closeModal();
@@ -7181,7 +7220,7 @@ const DP = (() => {
     viewDecision, _openDecisionEditor, _saveDecision, _closeDecision,
     viewRisk, _openRiskEditor, _saveRisk, _updateRiskStatus,
     _openVersionEditor, _saveVersion,
-    _calDayClick, _calEventClick, _openEventEditor, _saveEvent, _deleteEvent,
+    _calDayClick, _calEventClick, _openEventEditor, _saveEvent, _requestDeleteEvent, _deleteEvent,
     _editPost, _saveEditPost, _deletePost,
     _showCommentReply, _cancelCommentReply, _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
