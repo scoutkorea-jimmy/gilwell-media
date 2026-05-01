@@ -135,13 +135,10 @@ if [[ "$SKIP_VERSION" == true ]]; then
   exit 0
 fi
 
-# ── 커밋 기반으로 상세 changelog 생성 ─────────────────────────────────────────
-# 사용자 요구: "Version에 요약해서 작성하지 말고 실제로 어떤 수정들이 이뤄졌는지
-# 명확하게 작성해." 이전엔 한 줄 summary만 저장했는데, 이제는 직전 버전
-# 커밋부터 HEAD까지의 커밋 제목을 bullet 목록으로 부록해서 저장한다. 포맷:
-#   <summary>\n- commit1\n- commit2\n...
-# Version 페이지 parser(parseChangelog in js/dreampath.js)가 이미 이 포맷을
-# 이해한다. 너무 긴 엔트리는 D1에서 메모리 부담이 생기니 최대 20개로 자른다.
+# ── Dreampath 전용 구조화 changelog 생성 ─────────────────────────────────────
+# dp_versions.description 은 Dreampath 전용 bilingual JSON 으로 저장한다.
+# 이전처럼 git log 를 넓게 긁으면 Site/Admin 커밋이 섞여 Version 화면을 오염시킨다.
+# 따라서 커밋 부록은 dreampath 경로/커밋만 허용하고, 화면은 JSON 을 표로 렌더링한다.
 LAST_VER_TAG=$(wrangler d1 execute "$DB" --remote --json \
   --command "SELECT version FROM dp_versions ORDER BY id DESC LIMIT 1" 2>/dev/null \
   | grep -oE '"version":"[^"]+"' | head -1 | sed 's/.*:"//; s/"//')
@@ -156,14 +153,23 @@ else
   COMMIT_RANGE="HEAD~10..HEAD"
 fi
 COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
-  --format='- %s' 2>/dev/null | head -20 || true)
+  --format='%s' -- \
+  dreampath.html js/dreampath.js functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+  2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' | head -12 || true)
 
-if [[ -n "$COMMIT_BULLETS" ]]; then
-  FULL_DESC="${DESCRIPTION}
-${COMMIT_BULLETS}"
-else
-  FULL_DESC="$DESCRIPTION"
-fi
+FULL_DESC=$(DESCRIPTION="$DESCRIPTION" COMMIT_BULLETS="$COMMIT_BULLETS" python3 - <<'PY'
+import json, os
+summary = os.environ.get("DESCRIPTION", "").strip()
+bullets = [x.strip() for x in os.environ.get("COMMIT_BULLETS", "").splitlines() if x.strip()]
+changes = [{"en": b, "ko": b} for b in bullets] or [{"en": summary, "ko": summary}]
+print(json.dumps({
+    "format": "dp-version-v2",
+    "scope": "dreampath",
+    "summary": {"en": summary, "ko": summary},
+    "changes": changes,
+}, ensure_ascii=False, separators=(",", ":")))
+PY
+)
 
 # ── D1에 버전 기록 삽입 ───────────────────────────────────────────────────────
 NOW=$(date -u +"%Y-%m-%d %H:%M:%S")

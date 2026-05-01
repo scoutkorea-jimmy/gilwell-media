@@ -80,8 +80,7 @@ export async function onRequestPost({ request, env, data }) {
   const result = await env.DB.prepare(
     `INSERT INTO dp_versions (version, aa, bbb, cc, type, description)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(version, newAA, newBBB, newCC, type, description.trim().slice(0, 1000)).run();
+  ).bind(version, newAA, newBBB, newCC, type, description.trim().slice(0, 5000)).run();
 
   return json({ id: result.meta.last_row_id, version, ok: true });
 }
-
