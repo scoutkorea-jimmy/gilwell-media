@@ -139,23 +139,18 @@ fi
 # dp_versions.description 은 Dreampath 전용 bilingual JSON 으로 저장한다.
 # 이전처럼 git log 를 넓게 긁으면 Site/Admin 커밋이 섞여 Version 화면을 오염시킨다.
 # 따라서 커밋 부록은 dreampath 경로/커밋만 허용하고, 화면은 JSON 을 표로 렌더링한다.
-LAST_VER_TAG=$(wrangler d1 execute "$DB" --remote --json \
-  --command "SELECT version FROM dp_versions ORDER BY id DESC LIMIT 1" 2>/dev/null \
-  | grep -oE '"version":"[^"]+"' | head -1 | sed 's/.*:"//; s/"//')
-# 가장 최근 버전 커밋을 찾는다 (이전 버전 문자열이 포함된 커밋 주제 기준).
-# 찾지 못하면 직전 10개 커밋을 fallback으로 사용.
-if [[ -n "$LAST_VER_TAG" ]]; then
-  LAST_VER_SHA=$(git log --grep="${LAST_VER_TAG}" --format='%H' -1 2>/dev/null || true)
-fi
-if [[ -n "$LAST_VER_SHA" ]]; then
-  COMMIT_RANGE="${LAST_VER_SHA}..HEAD"
-else
-  COMMIT_RANGE="HEAD~10..HEAD"
-fi
+# 표준 흐름은 "commit 후 deploy.sh 실행, deploy.sh가 마지막에 push" 이므로
+# 아직 원격에 없는 현재 배포 커밋만 버전 부록으로 사용한다.
+COMMIT_RANGE="origin/main..HEAD"
 COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
   --format='%s' -- \
   dreampath.html js/dreampath.js functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
   2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' | head -12 || true)
+if [[ -z "$COMMIT_BULLETS" ]]; then
+  COMMIT_BULLETS=$(git log -1 --no-merges --format='%s' -- \
+    dreampath.html js/dreampath.js functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+    2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' || true)
+fi
 
 FULL_DESC=$(DESCRIPTION="$DESCRIPTION" COMMIT_BULLETS="$COMMIT_BULLETS" python3 - <<'PY'
 import json, os
