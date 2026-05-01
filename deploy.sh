@@ -103,13 +103,17 @@ fi
 # 개발자가 커밋하지 않은 *기능* 변경이 있으면 전부 날아갔다 (2026-04-24 사고).
 # 이제는 이전 `?v=` 토큰을 기억해뒀다가 배포 후 정확히 그 토큰만 복원한다.
 echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
-HTML_FILES=$(find . -maxdepth 1 -name '*.html' -type f)
+# Dreampath deploy only needs to cache-bust the Dreampath entrypoint. Public
+# Site/Admin HTML files use the main release flow and must not receive a
+# Dreampath semver token during this Pages deploy.
+HTML_FILES="./dreampath.html"
 declare -a PREV_TOKENS
 for f in $HTML_FILES; do
-  # 가장 먼저 등장하는 ?v= 토큰 하나를 저장 (같은 파일 내에서는 모두 동일 버전이라 가정)
-  PREV=$(grep -oE '\?v=[0-9]+\.[0-9]+\.[0-9]+' "$f" 2>/dev/null | head -1 || true)
+  # 가장 먼저 등장하는 ?v= 토큰 하나를 저장. sync_versions.sh may leave a
+  # timestamp token (YYYYMMDDHHMMSS), while Dreampath deploy uses aa.bbb.cc.
+  PREV=$(grep -oE '\?v=[0-9A-Za-z.-]+' "$f" 2>/dev/null | head -1 || true)
   PREV_TOKENS+=("${f}|${PREV}")
-  sed -i '' "s/?v=[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/?v=${VERSION}/g" "$f"
+  sed -i '' -E "s#\\?v=[0-9A-Za-z.-]+#?v=${VERSION}#g" "$f"
 done
 
 # ── 배포 ──────────────────────────────────────────────────────────────────────
@@ -122,7 +126,7 @@ for entry in "${PREV_TOKENS[@]}"; do
   f="${entry%%|*}"
   prev="${entry#*|}"
   if [[ -n "$prev" ]]; then
-    sed -i '' "s/?v=[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/${prev}/g" "$f" 2>/dev/null || true
+    sed -i '' -E "s#\\?v=[0-9A-Za-z.-]+#${prev}#g" "$f" 2>/dev/null || true
   fi
 done
 

@@ -21,7 +21,6 @@
 
 // Boot probe — if present, page renders in-place error instead of blank.
 try {
-  document.title = '[dp boot] ' + document.title;
   document.documentElement.setAttribute('data-v2-boot', 'parse');
 } catch (_) {}
 
@@ -981,7 +980,7 @@ const DP = (() => {
       ]),
     ]);
     root.appendChild(overlay);
-    document.title = '[dp ok] Dreampath PMO — Sign in';
+    document.title = 'Dreampath PMO — Sign in';
   }
 
   async function login() {
@@ -7114,7 +7113,6 @@ function _dpBoot() {
     document.documentElement.setAttribute('data-v2-boot', 'init-start');
     DP.init();
     document.documentElement.setAttribute('data-v2-boot', 'init-done');
-    document.title = document.title.replace(/^\[dp boot\]\s*/, '[dp ok] ');
   } catch (err) {
     document.documentElement.setAttribute('data-v2-boot', 'init-error');
     document.title = '[dp ERROR] ' + (err && err.message || err);
