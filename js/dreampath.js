@@ -85,6 +85,7 @@ const DP = (() => {
         { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note',      perm: 'view:minutes' },
         { id: 'tasks',         label: 'Tasks',            icon: 'check',     perm: 'view:tasks' },
         { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard', perm: 'view:notes' },
+        { id: 'decisions',     label: 'Decision Log',     icon: 'target',    perm: 'view:notes' },
       ])},
       { title: 'People', items: guard([
         { id: 'teams',    label: 'Team Boards', icon: 'users-admin', perm: 'view:teams' },
@@ -1217,6 +1218,7 @@ const DP = (() => {
       minutes:       () => { _renderBoard(pageEl, 'minutes', 'Meeting Minutes'); label = 'Meeting Minutes'; },
       tasks:         () => { _renderTasks(pageEl);         label = 'Tasks'; },
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
+      decisions:     () => { _renderDecisions(pageEl);     label = 'Decision Log'; },
       calendar:      () => { _renderCalendar(pageEl);      label = 'Calendar'; },
       contacts:      () => { _renderContacts(pageEl);      label = 'Contacts'; },
       teams:         () => { _renderTeamsLanding(pageEl);  label = 'Team Boards'; },
@@ -3113,6 +3115,186 @@ const DP = (() => {
     };
     const data = await api('POST', 'notes', body);
     if (data) { toast('Note created', 'ok'); _closeModal(); navigate('notes'); }
+  }
+
+  // =========================================================
+  // DECISION LOG — PMO decision register, wired to /api/dreampath/decisions
+  // =========================================================
+  async function _renderDecisions(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('div', {}, [
+        h('h1', {}, 'Decision Log'),
+        h('div', { className: 'meta' }, 'Track what was decided, why, who recorded it, and when it should be reviewed.'),
+      ]),
+      h('div', {}, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openDecisionEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', {}, ' New decision'),
+        ]),
+      ]),
+    ]));
+
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading decisions…</div>';
+    root.appendChild(loading);
+
+    const data = await api('GET', 'decisions');
+    loading.remove();
+    const decisions = (data && data.decisions) || [];
+
+    if (!decisions.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/target.svg')"></span></div>
+        <h4>No decisions logged</h4>
+        <p>Capture the first PMO decision so the reason and follow-up stay visible.</p>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openDecisionEditor()">+ New decision</button>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+
+    const today = todayISO();
+    const active = decisions.filter(d => d.status === 'active').length;
+    const reviewDue = decisions.filter(d => d.status === 'active' && d.next_review_date && String(d.next_review_date).slice(0, 10) <= today).length;
+    const rows = decisions.map(d => {
+      const statusTone = d.status === 'active' ? 'info' : d.status === 'closed' ? 'ok' : 'neutral';
+      const review = String(d.next_review_date || '').slice(0, 10);
+      const reviewTone = review && review <= today && d.status === 'active' ? 'warn' : 'neutral';
+      const related = d.related_post_id
+        ? `<button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="event.stopPropagation();DP.viewPost('${esc(d.related_post_board || 'documents')}', ${Number(d.related_post_id)})">Open post</button>`
+        : '<span style="color:var(--text-3)">—</span>';
+      return `<tr onclick="DP.viewDecision(${Number(d.id)})">
+        <td class="mono">DEC-${String(d.id).padStart(4, '0')}</td>
+        <td>${esc(d.title || '')}</td>
+        <td><span class="dp-tag ${statusTone}">${esc(d.status || 'active')}</span></td>
+        <td class="mono">${esc(String(d.decision_date || '').slice(0, 10) || '—')}</td>
+        <td>${esc(d.decided_by || '—')}</td>
+        <td><span class="dp-tag ${reviewTone}">${review || '—'}</span></td>
+        <td>${related}</td>
+      </tr>`;
+    }).join('');
+
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>All decisions <span class="count">${decisions.length}</span></h3>
+        <span style="font-size:11px;color:var(--text-3)">${active} active · ${reviewDue} review due</span>
+      </div>
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th style="width:110px">ID</th><th>Decision</th>
+            <th style="width:110px">Status</th><th style="width:120px">Date</th>
+            <th style="width:140px">Recorded by</th><th style="width:120px">Review</th>
+            <th style="width:110px">Related</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
+  }
+
+  async function viewDecision(id) {
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading decision…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    const data = await api('GET', 'decisions');
+    if (!data) return;
+    const d = ((data.decisions) || []).find(x => Number(x.id) === Number(id));
+    if (!d) { _renderPostError('Decision not found', 'The decision may have been removed.'); return; }
+    const statusTone = d.status === 'active' ? 'info' : d.status === 'closed' ? 'ok' : 'neutral';
+    const related = d.related_post_id
+      ? `<button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.viewPost('${esc(d.related_post_board || 'documents')}', ${Number(d.related_post_id)})">Open related post</button>`
+      : '';
+    _openModal(
+      d.title || '(Untitled decision)',
+      `
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="dp-tag neutral">DEC-${String(d.id).padStart(4, '0')}</span>
+        <span class="dp-tag ${statusTone}">${esc(d.status || 'active')}</span>
+        <span>Decision date <span class="mono">${esc(String(d.decision_date || '').slice(0, 10) || '—')}</span></span>
+        <span>·</span>
+        <span>Recorded by <strong style="color:var(--text-2)">${esc(d.decided_by || '—')}</strong></span>
+        ${d.next_review_date ? `<span>· Review <span class="mono">${esc(String(d.next_review_date).slice(0, 10))}</span></span>` : ''}
+      </div>
+      <div class="dp-field"><label>Decision</label><p style="white-space:pre-wrap">${esc(d.decision || '')}</p></div>
+      ${d.context ? `<div class="dp-field"><label>Context</label><p style="white-space:pre-wrap">${esc(d.context)}</p></div>` : ''}
+      ${d.impact ? `<div class="dp-field"><label>Impact / follow-up</label><p style="white-space:pre-wrap">${esc(d.impact)}</p></div>` : ''}
+      ${d.related_post_title ? `<div class="dp-field"><label>Related post</label><p>${esc(d.related_post_title)}</p></div>` : ''}
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${related}
+       ${d.status === 'active' ? `<button class="dp-btn dp-btn-primary" onclick="DP._closeDecision(${Number(d.id)})">Close decision</button>` : ''}`,
+      { wide: true }
+    );
+  }
+
+  function _openDecisionEditor() {
+    _openModal(
+      'New decision',
+      `
+      <div class="dp-field">
+        <label for="dp-d-title">Title</label>
+        <input class="dp-input" id="dp-d-title" placeholder="Short decision title" autocomplete="off">
+      </div>
+      <div class="dp-field">
+        <label for="dp-d-decision">Decision</label>
+        <textarea class="dp-textarea" id="dp-d-decision" placeholder="What did we decide?" style="min-height:96px"></textarea>
+      </div>
+      <div class="dp-field">
+        <label for="dp-d-context">Context</label>
+        <textarea class="dp-textarea" id="dp-d-context" placeholder="Why this decision was made"></textarea>
+      </div>
+      <div class="dp-field">
+        <label for="dp-d-impact">Impact / follow-up</label>
+        <textarea class="dp-textarea" id="dp-d-impact" placeholder="What changes, who should act, or what to watch"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-d-date">Decision date</label>
+          <input class="dp-input" id="dp-d-date" type="date" value="${esc(todayISO())}">
+        </div>
+        <div class="dp-field">
+          <label for="dp-d-review">Next review</label>
+          <input class="dp-input" id="dp-d-review" type="date">
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label for="dp-d-post">Related post ID <span style="font-weight:400;color:var(--text-3)">(optional)</span></label>
+        <input class="dp-input" id="dp-d-post" inputmode="numeric" placeholder="e.g. 123">
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveDecision()">Save decision</button>`,
+      { wide: true }
+    );
+    setTimeout(() => { const t = $('#dp-d-title'); if (t) t.focus(); }, 60);
+  }
+
+  async function _saveDecision() {
+    const title = ($('#dp-d-title').value || '').trim();
+    const decision = ($('#dp-d-decision').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    if (!decision) { toast('Decision is required', 'err'); return; }
+    const body = {
+      title,
+      decision,
+      context: $('#dp-d-context').value || '',
+      impact: $('#dp-d-impact').value || '',
+      decision_date: $('#dp-d-date').value || todayISO(),
+      next_review_date: $('#dp-d-review').value || null,
+      related_post_id: $('#dp-d-post').value || null,
+      status: 'active',
+    };
+    const data = await api('POST', 'decisions', body);
+    if (data) { toast('Decision logged', 'ok'); _closeModal(); navigate('decisions'); }
+  }
+
+  async function _closeDecision(id) {
+    const data = await api('PUT', 'decisions?id=' + Number(id), { status: 'closed' });
+    if (data) { toast('Decision closed', 'ok'); _closeModal(); navigate('decisions'); }
   }
 
   // =========================================================
@@ -6569,6 +6751,7 @@ const DP = (() => {
     _notifMarkRead, _notifMarkAllRead, _notifGo,
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
+    viewDecision, _openDecisionEditor, _saveDecision, _closeDecision,
     _openVersionEditor, _saveVersion,
     _calDayClick, _calEventClick,
     _editPost, _saveEditPost, _deletePost,

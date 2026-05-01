@@ -95,6 +95,7 @@ functions/api/dreampath/ → API Workers (D1 + R2)
 | `dp_event_history` | 이벤트 수정 이력 |
 | `dp_tasks` | 할일 |
 | `dp_notes` | 노트/이슈 |
+| `dp_decisions` | PMO 의사결정 로그 |
 | `dp_contacts` | 연락처 |
 | `dp_versions` | 배포 버전 기록 |
 | `dp_sessions` | 세션 |
