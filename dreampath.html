@@ -1308,6 +1308,43 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
           mask: url('/img/dreampath/icons/x.svg') center/12px 12px no-repeat;
 }
 
+/* Board picker in the post editor. The select remains in the DOM as the state
+   source, while these cards make the destination obvious before publishing. */
+.dp-board-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+.dp-board-pick {
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--g-300);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dp-board-pick strong { font-size: var(--fs-13); font-weight: 700; }
+.dp-board-pick span { font-size: 11px; color: var(--text-3); }
+.dp-board-pick:hover,
+.dp-board-pick:focus-visible {
+  border-color: var(--navy-600);
+  box-shadow: 0 0 0 1px var(--navy-600);
+}
+.dp-board-pick.on {
+  border-color: var(--accent);
+  background: var(--info-bg);
+}
+.dp-board-pick.on span { color: var(--text-2); }
+.dp-board-pick:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
 /* Post-not-found / error inline card in modal body */
 .dp-inline-error {
   padding: 24px; text-align: center;

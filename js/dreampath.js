@@ -136,6 +136,17 @@ const DP = (() => {
     // Humanize fallback: team_korea → Team Korea
     return String(slug || '').split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
   }
+  function _boardHint(board) {
+    const slug = board && board.slug;
+    if (slug === 'announcements') return 'Notice board';
+    if (slug === 'documents') return 'Document archive';
+    if (slug === 'minutes') return 'Meeting minutes with approvals';
+    if (board && board.board_type === 'team') return 'Team workspace';
+    return 'Project board';
+  }
+  function _jsArg(value) {
+    return JSON.stringify(String(value == null ? '' : value)).replace(/</g, '\\u003c');
+  }
 
   // -------------------------- Helpers --------------------------
   const $  = (sel, el = document) => el.querySelector(sel);
@@ -3726,6 +3737,7 @@ const DP = (() => {
       ` : ''}
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       ${isEdit && _canCreateCalendarEvent() ? `<button class="dp-btn dp-btn-danger" onclick="DP._deleteEvent(${Number(id)})">Delete</button>` : ''}
        <button class="dp-btn dp-btn-primary" onclick="DP._saveEvent(${isEdit ? Number(id) : 0})">${isEdit ? 'Save changes' : 'Create event'}</button>`,
       { wide: true }
     );
@@ -3759,6 +3771,17 @@ const DP = (() => {
       : await api('POST', 'events', body);
     if (data) {
       toast(isEdit ? 'Event updated' : 'Event created', 'ok');
+      _closeModal();
+      navigate('calendar');
+    }
+  }
+
+  async function _deleteEvent(id) {
+    if (!id) return;
+    if (!confirm('Delete this event? This cannot be undone.')) return;
+    const data = await api('DELETE', 'events?id=' + Number(id));
+    if (data) {
+      toast('Event deleted', 'ok');
       _closeModal();
       navigate('calendar');
     }
@@ -6385,6 +6408,8 @@ const DP = (() => {
     const data = await api('GET', 'posts?id=' + Number(postId));
     if (!data || !data.post) { toast('Post not found', 'err'); return; }
     const p = data.post;
+    const isAdmin = state.user && state.user.role === 'admin';
+    const currentBoard = (state.boards || []).find(b => b.slug === p.board) || { slug: p.board, title: _boardTitle(p.board) };
     _pickerFiles = (p.files || []).map(f => ({
       id: _fileId(),
       url: f.file_url,
@@ -6400,6 +6425,15 @@ const DP = (() => {
     _openModal(
       'Edit post',
       `
+      <div class="dp-field">
+        <label>Board</label>
+        <div class="dp-board-pick-grid">
+          <button type="button" class="dp-board-pick on" disabled>
+            <strong>${esc(currentBoard.title || _boardTitle(currentBoard.slug))}</strong>
+            <span>${esc(_boardHint(currentBoard))}</span>
+          </button>
+        </div>
+      </div>
       <div class="dp-field">
         <label for="dp-edit-title">Title</label>
         <input class="dp-input" id="dp-edit-title" value="${esc(p.title || '')}">
@@ -6429,6 +6463,7 @@ const DP = (() => {
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       ${isAdmin ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(board)}', ${Number(postId)})">Delete</button>` : ''}
        <button class="dp-btn dp-btn-primary" id="dp-edit-save" onclick="DP._saveEditPost('${esc(board)}', ${Number(postId)})">Save</button>`,
       { wide: true }
     );
@@ -6774,10 +6809,23 @@ const DP = (() => {
   async function _openPostEditor(initialBoard, initialTab) {
     // Reset working file list for this editor session.
     _pickerFiles = [];
-    const boardOpts = (state.boards || [])
-      .filter(b => b.board_type === 'board' || (b.board_type === 'team' && _canPostToBoard(b.slug)))
-      .map(b => `<option value="${esc(b.slug)}"${b.slug === initialBoard ? ' selected' : ''}>${esc(b.title || b.slug)}</option>`)
+    const writableBoards = (state.boards || [])
+      .filter(b => b.board_type === 'board' || (b.board_type === 'team' && _canPostToBoard(b.slug)));
+    const selectedBoard = writableBoards.some(b => b.slug === initialBoard)
+      ? initialBoard
+      : ((writableBoards[0] && writableBoards[0].slug) || '');
+    const boardOpts = writableBoards
+      .map(b => `<option value="${esc(b.slug)}"${b.slug === selectedBoard ? ' selected' : ''}>${esc(b.title || b.slug)}</option>`)
       .join('');
+    const boardPicker = writableBoards.map(b => `
+      <button type="button"
+              class="dp-board-pick${b.slug === selectedBoard ? ' on' : ''}"
+              data-board-choice="${esc(b.slug)}"
+              onclick="DP._selectPostBoard(${_jsArg(b.slug)})">
+        <strong>${esc(b.title || _boardTitle(b.slug))}</strong>
+        <span>${esc(_boardHint(b))}</span>
+      </button>
+    `).join('');
 
     // Approver roster for minutes. Only shown when board = minutes (toggled
     // via board dropdown onchange). Fetched once up-front so picking "minutes"
@@ -6800,7 +6848,8 @@ const DP = (() => {
       `
       <div class="dp-field">
         <label for="dp-new-board">Board</label>
-        <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()">${boardOpts}</select>
+        <div class="dp-board-pick-grid" id="dp-new-board-picks">${boardPicker}</div>
+        <select class="dp-select" id="dp-new-board" onchange="DP._onPostBoardChange()" style="display:none">${boardOpts}</select>
       </div>
       <div class="dp-field" id="dp-new-tab-field" style="display:none">
         <label for="dp-new-tab">Tab <span style="font-weight:400;color:var(--text-3);margin-left:4px">(pick a sub-tab, or leave as "All")</span></label>
@@ -6812,7 +6861,7 @@ const DP = (() => {
                   onclick="DP._newPostAddTab()">＋ Add tab</button>
         </div>
       </div>
-      <div class="dp-field" id="dp-new-approvers-field" style="display:${initialBoard === 'minutes' ? 'flex' : 'none'};flex-direction:column">
+      <div class="dp-field" id="dp-new-approvers-field" style="display:${selectedBoard === 'minutes' ? 'flex' : 'none'};flex-direction:column">
         <label>Approvers <span style="color:var(--alert);font-weight:400;margin-left:4px">(required for Meeting Minutes)</span></label>
         <div class="dp-chip-picker" id="dp-new-approvers">
           <div class="dp-chip-picked" id="dp-new-appr-chips"></div>
@@ -6865,10 +6914,26 @@ const DP = (() => {
     setTimeout(() => { const t = $('#dp-new-title'); if (t) t.focus(); }, 60);
   }
 
+  function _syncPostBoardPicker(value) {
+    $$('#dp-new-board-picks [data-board-choice]').forEach(btn => {
+      btn.classList.toggle('on', btn.getAttribute('data-board-choice') === value);
+    });
+  }
+
+  function _selectPostBoard(slug) {
+    const boardSel = $('#dp-new-board');
+    if (!boardSel) return;
+    const next = String(slug || '');
+    if (![...boardSel.options].some(opt => opt.value === next)) return;
+    boardSel.value = next;
+    _onPostBoardChange();
+  }
+
   async function _onPostBoardChange() {
     const boardSel = $('#dp-new-board');
     const field = $('#dp-new-approvers-field');
     if (!boardSel || !field) return;
+    _syncPostBoardPicker(boardSel.value);
     field.style.display = boardSel.value === 'minutes' ? 'flex' : 'none';
     // Clear any held picks when the board changes away from minutes.
     if (boardSel.value !== 'minutes') {
@@ -7098,7 +7163,7 @@ const DP = (() => {
     _voteApproval, _inlineApprove, _inlineReject, _revertMyVote,
     _extendSession,
     _execTiptapCmd, _handlePickerChange, _removeFile,
-    _openPostEditor, _saveNewPost, _onPostBoardChange, _closeModal,
+    _openPostEditor, _saveNewPost, _onPostBoardChange, _selectPostBoard, _closeModal,
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
     _newPostAddTab,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
@@ -7116,7 +7181,7 @@ const DP = (() => {
     viewDecision, _openDecisionEditor, _saveDecision, _closeDecision,
     viewRisk, _openRiskEditor, _saveRisk, _updateRiskStatus,
     _openVersionEditor, _saveVersion,
-    _calDayClick, _calEventClick, _openEventEditor, _saveEvent,
+    _calDayClick, _calEventClick, _openEventEditor, _saveEvent, _deleteEvent,
     _editPost, _saveEditPost, _deletePost,
     _showCommentReply, _cancelCommentReply, _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
