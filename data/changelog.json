@@ -1,40 +1,15 @@
 {
   "items": [
   {
-    "version": "03.106.02",
-    "date": "2026-04-27",
-    "released_at": "2026-04-27 04:43:12 KST",
-    "summary": "기사 참고 사이트 탭의 상하 간격을 공통 규칙에 맞게 정리하고, 저장 목록을 카드 대신 검색·필터·정렬 가능한 테이블로 바꿨습니다.",
+    "version": "03.108.00",
+    "date": "2026-05-01",
+    "released_at": "2026-05-01 22:34:34 KST",
+    "summary": "관리자 최신 방문 분석 차트 개선 위에 기사 참고 사이트 관리와 지역연맹 지표를 통합해, 운영 자료와 트래픽 흐름을 한 콘솔에서 함께 관리할 수 있게 했습니다.",
     "changes": [
-      "admin.html과 css/admin-v3.css에서 `기사 참고 사이트` 섹션을 전용 stack gap(`--gap-card`) 구조로 재정렬. 임시 margin 누적 대신 같은 탭 안의 `입력 / 수정`과 `저장된 참고 사이트 목록` 사이 간격을 공통 카드 간격 규칙으로 통일.",
-      "저장 목록을 카드형에서 테이블형으로 전면 교체. 사이트명, 링크, 주요 내용, 관련 지역연맹, 바로 열기 액션을 한 줄씩 비교할 수 있게 정리.",
-      "js/admin-v3.js에 검색 범위(전체/사이트명/링크/주요 내용), 지역연맹 필터, 정렬(최신 입력순 / 사이트명 오름·내림 / 지역연맹 많은 순) 상태를 추가해 탭 안에서 즉시 탐색 가능하게 보강.",
-      "관리자 버전 03.106.01 → 03.106.02 (Hotfix · 참고 사이트 목록 테이블화 + 간격 규칙 정렬)."
-    ]
-  },
-  {
-    "version": "03.106.01",
-    "date": "2026-04-27",
-    "released_at": "2026-04-27 04:36:59 KST",
-    "summary": "기사 참고 사이트 탭 안에서 저장 결과가 바로 아래 목록 카드로 보이도록 보강해, 저장 후 어디에 반영됐는지 다시 찾지 않아도 되게 했습니다.",
-    "changes": [
-      "admin.html의 `기사 참고 사이트` 섹션을 `입력 / 수정` 영역과 `저장된 참고 사이트 목록` 영역으로 분리. 저장 후 같은 탭 안에서 즉시 결과를 확인할 수 있도록 구조를 명확하게 정리.",
-      "js/admin-v3.js에 저장 목록 렌더러를 추가해 각 참고 사이트를 카드 형태로 노출. 사이트명, 바로 열기 링크, 주요 내용, 관련 지역연맹 배지를 별도 읽기 화면으로 보여주도록 보강.",
-      "css/admin-v3.css에 저장 목록 카드 스타일을 추가해 편집 폼과 구분되도록 정리.",
-      "관리자 버전 03.106.00 → 03.106.01 (Hotfix · 기사 참고 사이트 저장 목록 가시화)."
-    ]
-  },
-  {
-    "version": "03.106.00",
-    "date": "2026-04-27",
-    "released_at": "2026-04-27 04:16:55 KST",
-    "summary": "기사 참고 사이트 관리 탭과 지역연맹별 접속 국가 카드 6종을 추가해, 어떤 연맹 소스를 보고 있고 어디서 더 취재할지 관리자에서 한 화면으로 정리할 수 있게 했습니다.",
-    "changes": [
-      "admin.html, js/admin-v3.js, css/admin-v3.css에 `기사 참고 사이트` 설정 섹션 신설. 사이트명·링크·주요 내용 입력과 함께 WOSM 지역연맹(Africa / Arab / Asia-Pacific / European / Interamerican / 미분류) 관련 여부를 체크박스로 저장할 수 있도록 구성.",
-      "functions/api/settings/reference-sites.js 신설 — settings 테이블 `reference_sites` / `reference_sites_rev` 키에 참고 사이트 목록을 저장하고 settings_history 감사 로그를 남기도록 구현. functions/_shared/admin-users.js 권한 카탈로그와 functions/api/admin/site-history.js 라벨 맵에도 `reference-sites`를 추가.",
-      "접속 국가/도시 패널 상단 통계에 지역연맹 카드 6개를 추가. 기존 4개 핵심 카드 아래에서 각 지역연맹별 `방문 국가 수`를 바로 보여주며, 세계연맹 회원국 설정의 실제 열 정의(예: `소속 지역연맹` / `Region EN`)를 읽어 분류 기준을 고정 `column_1` 추정에서 데이터 기반 매칭으로 보강.",
-      "히어로 기사 설정도 함께 개편 — 수동 기사 최대 2개만 고정하고 나머지 3개는 최신 공개 기사로 자동 채우도록 저장 구조를 확장했으며, 수동 기사 2개를 자동 3개 앞/뒤 어디에 배치할지 관리자에서 바로 선택 가능.",
-      "관리자 버전 03.105.01 → 03.106.00 (Feature · 참고 사이트 탭 + 지역연맹 지표 + 히어로 운영 확장)."
+      "admin.html, js/admin-v3.js, css/admin-v3.css에 `기사 참고 사이트` 설정 섹션을 통합. 사이트명·링크·주요 내용·WOSM 지역연맹(Africa / Arab / Asia-Pacific / European / Interamerican / 미분류)을 저장하고, 저장 목록은 검색·필터·정렬 가능한 테이블로 탐색 가능하게 정리.",
+      "functions/api/settings/reference-sites.js와 권한/감사 라벨을 함께 반영해 reference_sites / reference_sites_rev 설정 저장과 settings_history 기록이 관리자 권한 체계 안에서 동작하도록 구성.",
+      "접속 국가/도시 패널의 지역연맹 카드 6종과 원격 브랜치의 방문 분석 라인·바·히트맵 차트 개선을 함께 유지. 차트 표시 설정(글자 크기·간격)과 참고 사이트 탐색 UI가 같은 최신 관리자 화면에서 공존하도록 병합.",
+      "관리자 버전 03.107.00 → 03.108.00 (Feature · 참고 사이트 관리 통합 + 방문 분석 차트 개선 병합)."
     ]
   },
   {
@@ -47,6 +22,69 @@
       "기존 배열/단일값 형태의 hero 설정도 계속 읽도록 하위 호환을 유지하고, functions/api/posts/[id].js의 설정 정리 로직도 새 hero JSON 포맷(`manual_post_ids`)을 함께 이해하도록 보강.",
       "js/home-runtime.js에서 2026-04-25 21:28 KST `홈 백그라운드 새로고침 실패` 모니터링 건의 근인에 맞춰 보고 기준을 완화. `Failed to fetch` 같은 generic 네트워크 실패는 온라인·가시 상태에서 3회 연속될 때만 homepage_issues로 올리고, 단발성 백그라운드 refresh 실패는 상태 배너만 띄워 실제 서버 장애와 분리.",
       "사이트 버전 00.133.00 → 00.134.00 (Feature · 히어로 자동 혼합 + 홈 refresh 이슈 신뢰도 보정)."
+    ]
+  },
+  {
+    "version": "03.107.00",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 02:00:00 KST",
+    "summary": "관리자 차트(라인·바·히트맵)에 '비율 불변' 규칙을 적용하고, 차트 카드 헤드에 톱니바퀴 모양의 표시 설정 버튼을 추가해 글자 크기·간격을 즉시 조정·저장할 수 있게 했습니다.",
+    "changes": [
+      "css/admin-v3.css에 차트 전용 토큰(--gw-chart-axis-text-size / --gw-chart-bar-label-size / --gw-chart-bar-thickness / --gw-chart-line-weight / --gw-chart-row-gap / --gw-chart-legend-size / --gw-chart-heatmap-cell-h / --gw-chart-heatmap-gap)을 :root에 신설하고, body[data-chart-text='s|m|l'] · body[data-chart-spacing='s|m|l'] 데이터 속성으로 토큰을 일괄 오버라이드하도록 정리.",
+      ".v3-bar-list/.v3-bar-label/.v3-bar-track/.v3-bar-val (인기 기사·유입 경로 바 차트), .v3-chart-axis-text/.v3-chart-line/.v3-chart-legend-item (방문 추세 라인 차트), .v3-heatmap/.v3-heatmap-cell (시간·요일 히트맵)이 모두 새 토큰을 참조하도록 일괄 교체. 화면이 늘어져도 비율은 깨지 않고 글자·간격이 토큰 기준으로 조정됨.",
+      "js/admin-v3.js에 _renderChartPrefsControl/_wireChartPrefsControl 신설 — 톱니바퀴(SVG) 버튼 + 팝오버 UI(글자 크기 작게/보통/크게, 간격 좁게/보통/넓게)를 차트 카드 헤드 우측에 배치. 선택값은 localStorage(gw_chart_prefs_v1)에 저장하고 body 데이터 속성에 즉시 반영.",
+      "DOMContentLoaded 초기화 단계에 _applyChartPrefs를 호출해 첫 차트 렌더 전부터 사용자 저장값이 적용되도록 보강. ESC·바깥 클릭 시 팝오버 자동 닫힘 + radiogroup ARIA 속성으로 접근성 처리.",
+      "관리자 버전 03.106.02 → 03.107.00 (Feature · 차트 비율 불변 규칙 + 톱니바퀴 표시 설정 도입)."
+    ]
+  },
+  {
+    "version": "03.106.02",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 01:30:00 KST",
+    "summary": "방문 분석 차트가 화면 가로폭이 늘어날 때 비율을 잃고 납작해지던 현상을 비율 고정으로 정리하고, letterboxing이 발생해도 호버 툴팁이 정확한 위치에 뜨도록 좌표 계산을 hover-zone 실제 위치 기반으로 교체했습니다.",
+    "changes": [
+      "SVG 마크업의 preserveAspectRatio='none' 제거 — 기본값(xMidYMid meet)으로 viewBox 비율 유지. 가로 늘어남에 따라 라인이 납작해지는 시각 왜곡 제거.",
+      "css/admin-v3.css .v3-chart-svg에 aspect-ratio: 800/240 추가, max-height 280→320px로 상향. 가로폭에 비례해 세로도 자연스럽게 확장.",
+      "_wireAnalyticsChartHover의 툴팁 위치 계산을 'svg viewBox px 환산'에서 'hover-zone getBoundingClientRect 기반'으로 교체 — letterboxing 발생 시에도 호버 지점 바로 위에 정확히 위치.",
+      "관리자 버전 03.106.01 → 03.106.02 (Hotfix · 차트 비율 왜곡 수정 + 툴팁 좌표 정확도 보정)."
+    ]
+  },
+  {
+    "version": "03.106.01",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 01:10:00 KST",
+    "summary": "방문 분석 추세 차트의 호버 정보를 OS 기본 SVG title 툴팁(지연·미스타일링) 대신 즉시 표시되는 HTML 툴팁 + 세로 가이드 라인으로 교체했습니다.",
+    "changes": [
+      "_renderAnalyticsTrendChart에 데이터 점 중심으로 한 투명 hover-zone <rect>들을 추가해 마우스 진입 즉시 해당 일자의 방문·조회수 정보가 표시되도록 처리.",
+      "_wireAnalyticsChartHover 신설 — pointerenter/pointermove/pointerleave에서 SVG viewBox 좌표를 wrap 컨테이너 px로 환산해 툴팁 left를 계산하고, 가장자리 데이터 점도 잘리지 않도록 max(4)·min(wrap-tooltipWidth-4) 클램프.",
+      "차트 안에 .v3-chart-guide 세로 점선을 둬 호버 지점에서 즉시 보이게 하고, leave 시 opacity 0으로 부드럽게 사라지도록 transition 적용.",
+      "css/admin-v3.css에 .v3-chart-tooltip · .v3-chart-tt-label · .v3-chart-tt-row 스타일 추가 — 다크 표면(var(--v3-text)) + box-shadow + pointer-events:none 으로 호버 방해 제거.",
+      "관리자 버전 03.106.00 → 03.106.01 (Hotfix · 방문 분석 차트 호버 툴팁 즉시 표시 개선)."
+    ]
+  },
+  {
+    "version": "03.106.00",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 00:30:00 KST",
+    "summary": "방문 분석 패널 상단에 일자별 방문자·조회수 추세 라인 차트를 추가해, 7·30·90일 기간이나 사용자 지정 범위에서 방문 흐름을 한 눈에 볼 수 있도록 했습니다.",
+    "changes": [
+      "js/admin-v3.js에 _renderAnalyticsTrendChart 함수 신설 — 외부 차트 라이브러리 없이 순수 SVG로 방문(고유)·조회(누적) 두 라인과 영역 채움, 4단 Y축 그리드, X축 라벨 자동 sampling, 데이터 포인트 호버 툴팁(SVG <title>)을 렌더.",
+      "_loadAnalyticsVisits에서 응답의 visitors.series / views.series / range.granularity를 차트 카드로 인기 기사 카드 위에 삽입. 기간이 1일이면 시각(시간)별, 그 외엔 일자별 자동 전환.",
+      "css/admin-v3.css에 .v3-chart-* 스타일 일괄 추가 — 방문 라인은 v3-primary 실선, 조회 라인은 v3-text-s 점선으로 시각적 위계를 구분하고 .v3-card-head 안에 범례 배치.",
+      "_niceCeil 헬퍼로 Y축 상한을 1·2·5 단위로 보정해 작은 표본에서도 그래프가 한쪽으로 치우치지 않도록 정리.",
+      "관리자 버전 03.105.02 → 03.106.00 (Feature · 방문 분석 일자별 라인 차트 추가)."
+    ]
+  },
+  {
+    "version": "03.105.02",
+    "date": "2026-04-30",
+    "released_at": "2026-04-30 00:00:00 KST",
+    "summary": "관리자 글 작성 본문에서 Editor.js의 + 버튼과 드래그 핸들이 본문 위에 겹쳐 보이던 현상을 정리해, 글 작성 시 도구 아이콘이 항상 좌측 거터에만 노출되도록 했습니다.",
+    "changes": [
+      "css/admin-v3.css의 .v3-editor-wrap에 .codex-editor__redactor 좌측 패딩 60px와 하단 패딩 40px를 강제해 본문 영역과 도구 거터를 분리.",
+      "Editor.js 2.29 기본값으로 .ce-toolbar__content가 max-width 650px로 가운데 정렬되어 + 버튼·드래그 핸들이 본문 폭 가운데 떠 있던 문제를 max-width 100% + margin 0으로 무효화.",
+      ".v3-editor-wrap .ce-toolbar__plus는 left: 0, .ce-toolbar__actions는 left: 28px / right: auto로 고정해 두 아이콘이 좌측 거터에 나란히 정렬되도록 조정.",
+      "관리자 버전 03.105.01 → 03.105.02 (Hotfix · 글 작성 본문 위 Editor.js 도구 아이콘 겹침 수정)."
     ]
   },
   {
