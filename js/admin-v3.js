@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.106.02
+ * Version: 03.108.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -378,6 +378,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     _installDelegation();
     _syncAdminVersionLabels();
+    if (typeof _applyChartPrefs === 'function') _applyChartPrefs();
     if (window.GW && typeof GW.setupScrollTopButton === 'function') GW.setupScrollTopButton();
     if (window.GW && typeof GW.populateCategorySelect === 'function') {
       GW.populateCategorySelect(document.getElementById('list-cat'), { includeAll: true, allLabel: '전체 카테고리' });
@@ -3906,6 +3907,291 @@
   // 하위 호환: 기존 _loadAnalytics() 호출부는 방문 분석 패널 로더로 연결
   function _loadAnalytics() { _loadAnalyticsVisits(); }
 
+  /* ── Chart display preferences (글자 크기 / 간격) — 모든 차트에 전역 적용 ── */
+  var _CHART_PREFS_KEY = 'gw_chart_prefs_v1';
+  var _CHART_PREF_VALUES = ['s', 'm', 'l'];
+  function _loadChartPrefs() {
+    var fallback = { text: 'm', spacing: 'm' };
+    try {
+      var raw = localStorage.getItem(_CHART_PREFS_KEY);
+      var p = raw ? JSON.parse(raw) : {};
+      return {
+        text:    _CHART_PREF_VALUES.indexOf(p.text)    >= 0 ? p.text    : 'm',
+        spacing: _CHART_PREF_VALUES.indexOf(p.spacing) >= 0 ? p.spacing : 'm',
+      };
+    } catch (_) { return fallback; }
+  }
+  function _saveChartPrefs(prefs) {
+    try { localStorage.setItem(_CHART_PREFS_KEY, JSON.stringify(prefs)); } catch (_) {}
+  }
+  function _applyChartPrefs(prefs) {
+    var p = prefs || _loadChartPrefs();
+    if (!document.body) return;
+    document.body.setAttribute('data-chart-text',    p.text    || 'm');
+    document.body.setAttribute('data-chart-spacing', p.spacing || 'm');
+  }
+  function _renderChartPrefsControl() {
+    var prefs = _loadChartPrefs();
+    function seg(key, label, opts) {
+      var html = '<div class="v3-chart-prefs-row"><span class="v3-chart-prefs-label">' + label + '</span>' +
+        '<div class="v3-chart-prefs-segs" role="radiogroup" data-pref="' + key + '">';
+      opts.forEach(function (opt) {
+        var active = prefs[key] === opt.val ? ' is-active' : '';
+        html += '<button type="button" role="radio" aria-checked="' + (prefs[key] === opt.val ? 'true' : 'false') +
+          '" data-val="' + opt.val + '" class="' + active + '">' + opt.txt + '</button>';
+      });
+      html += '</div></div>';
+      return html;
+    }
+    return '<div class="v3-chart-prefs-control">' +
+      '<button type="button" class="v3-chart-prefs-btn" aria-label="차트 표시 설정" title="차트 표시 설정" aria-haspopup="dialog" aria-expanded="false">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="3"/>' +
+          '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>' +
+        '</svg>' +
+      '</button>' +
+      '<div class="v3-chart-prefs-popover" role="dialog" aria-label="차트 표시 설정" hidden>' +
+        seg('text',    '글자 크기', [{val:'s',txt:'작게'},{val:'m',txt:'보통'},{val:'l',txt:'크게'}]) +
+        seg('spacing', '간격',      [{val:'s',txt:'좁게'},{val:'m',txt:'보통'},{val:'l',txt:'넓게'}]) +
+        '<div class="v3-chart-prefs-foot">설정은 이 브라우저에 저장되어 모든 차트에 즉시 적용됩니다.</div>' +
+      '</div>' +
+    '</div>';
+  }
+  function _wireChartPrefsControl(rootEl) {
+    if (!rootEl) return;
+    var control = rootEl.querySelector('.v3-chart-prefs-control');
+    if (!control || control._chartPrefsWired) return;
+    var btn = control.querySelector('.v3-chart-prefs-btn');
+    var popover = control.querySelector('.v3-chart-prefs-popover');
+    if (!btn || !popover) return;
+    function close() {
+      popover.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function toggle() {
+      var willOpen = popover.hidden;
+      popover.hidden = !willOpen;
+      btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+    document.addEventListener('click', function (e) {
+      if (!control.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !popover.hidden) close();
+    });
+    popover.querySelectorAll('.v3-chart-prefs-segs').forEach(function (group) {
+      var key = group.getAttribute('data-pref');
+      group.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var val = b.getAttribute('data-val');
+          var prefs = _loadChartPrefs();
+          prefs[key] = val;
+          _saveChartPrefs(prefs);
+          _applyChartPrefs(prefs);
+          group.querySelectorAll('button').forEach(function (x) {
+            var active = x === b;
+            x.classList.toggle('is-active', active);
+            x.setAttribute('aria-checked', active ? 'true' : 'false');
+          });
+        });
+      });
+    });
+    control._chartPrefsWired = true;
+  }
+  V3.applyChartPrefs = _applyChartPrefs;
+
+  // 일자/시각별 방문자·조회수 라인 차트 (의존성 없이 순수 SVG)
+  function _renderAnalyticsTrendChart(visitSeries, viewSeries, granularity, periodLabel) {
+    var visits = Array.isArray(visitSeries) ? visitSeries : [];
+    var views  = Array.isArray(viewSeries)  ? viewSeries  : [];
+    var n = visits.length;
+    if (!n) return '';
+    var isHour = granularity === 'hour';
+    var maxVisits = 0, maxViews = 0;
+    for (var i = 0; i < n; i++) {
+      var v1 = Number(visits[i] && visits[i].visits || 0);
+      var v2 = Number((views[i] && views[i].views) || 0);
+      if (v1 > maxVisits) maxVisits = v1;
+      if (v2 > maxViews)  maxViews  = v2;
+    }
+    var maxY = Math.max(1, maxVisits, maxViews);
+    var niceMax = _niceCeil(maxY);
+    var W = 800, H = 240, padL = 44, padR = 16, padT = 18, padB = 36;
+    var plotW = W - padL - padR;
+    var plotH = H - padT - padB;
+    var stepX = n > 1 ? plotW / (n - 1) : 0;
+    function xAt(i) { return padL + (n > 1 ? i * stepX : plotW / 2); }
+    function yAt(v) { return padT + plotH * (1 - (Number(v || 0) / niceMax)); }
+    function fmtAxisLabel(item) {
+      if (!item) return '';
+      if (isHour) return String(item.hour || item.label || '').replace(/^0/, '') + '시';
+      var s = String(item.date || item.label || '');
+      var m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return m ? (Number(m[2]) + '/' + Number(m[3])) : s;
+    }
+    function fmtTooltipLabel(item) {
+      if (!item) return '';
+      if (isHour) return String(item.hour || item.label || '') + ':00';
+      return String(item.date || item.label || '');
+    }
+    // 점·라인 좌표 계산
+    var visitPoints = [], viewPoints = [];
+    for (var k = 0; k < n; k++) {
+      visitPoints.push(xAt(k).toFixed(1) + ',' + yAt(visits[k] && visits[k].visits || 0).toFixed(1));
+      viewPoints.push(xAt(k).toFixed(1)  + ',' + yAt(views[k]  && views[k].views  || 0).toFixed(1));
+    }
+    // X축 라벨 sampling — 너무 빽빽하지 않게
+    var labelStep = 1;
+    if (n > 12) labelStep = Math.ceil(n / 8);
+    var xLabels = '';
+    for (var j = 0; j < n; j++) {
+      if (j !== 0 && j !== n - 1 && (j % labelStep) !== 0) continue;
+      xLabels += '<text x="' + xAt(j).toFixed(1) + '" y="' + (H - 14) +
+        '" class="v3-chart-axis-text" text-anchor="middle">' +
+        GW.escapeHtml(fmtAxisLabel(visits[j])) + '</text>';
+    }
+    // Y축 4단 그리드
+    var grid = '';
+    var ticks = [0, 0.25, 0.5, 0.75, 1];
+    for (var t = 0; t < ticks.length; t++) {
+      var ty = padT + plotH * (1 - ticks[t]);
+      var tv = Math.round(niceMax * ticks[t]);
+      grid += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + ty.toFixed(1) +
+        '" y2="' + ty.toFixed(1) + '" class="v3-chart-grid"/>';
+      grid += '<text x="' + (padL - 8) + '" y="' + (ty + 4).toFixed(1) +
+        '" class="v3-chart-axis-text" text-anchor="end">' + _fmt(tv) + '</text>';
+    }
+    // 데이터 포인트
+    var pointsHtml = '';
+    for (var p = 0; p < n; p++) {
+      var px = xAt(p), pyV = yAt(visits[p] && visits[p].visits || 0), pyW = yAt(views[p] && views[p].views || 0);
+      var label = fmtTooltipLabel(visits[p]);
+      var visCount = Number(visits[p] && visits[p].visits || 0);
+      var viewCount = Number(views[p] && views[p].views || 0);
+      pointsHtml +=
+        '<circle data-idx="' + p + '" cx="' + px.toFixed(1) + '" cy="' + pyV.toFixed(1) + '" r="3" class="v3-chart-dot v3-chart-dot-visits"><title>' +
+        GW.escapeHtml(label) + ' · 방문 ' + _fmt(visCount) + ' · 조회 ' + _fmt(viewCount) + '</title></circle>' +
+        '<circle data-idx="' + p + '" cx="' + px.toFixed(1) + '" cy="' + pyW.toFixed(1) + '" r="2.5" class="v3-chart-dot v3-chart-dot-views"><title>' +
+        GW.escapeHtml(label) + ' · 방문 ' + _fmt(visCount) + ' · 조회 ' + _fmt(viewCount) + '</title></circle>';
+    }
+    // 호버 zone — 각 데이터 점을 중심으로 한 투명 rect (HTML 툴팁 트리거)
+    var hoverZones = '';
+    var bandHalf = stepX > 0 ? stepX / 2 : plotW / 2;
+    for (var z = 0; z < n; z++) {
+      var zx = xAt(z) - bandHalf;
+      var zw = stepX > 0 ? stepX : plotW;
+      if (z === 0) { zx = padL; }
+      if (z === n - 1 && n > 1) { zw = (W - padR) - zx; }
+      hoverZones +=
+        '<rect class="v3-chart-hover-zone" data-idx="' + z + '"' +
+        ' data-cx="' + xAt(z).toFixed(1) + '"' +
+        ' data-label="' + GW.escapeHtml(fmtTooltipLabel(visits[z])) + '"' +
+        ' data-visits="' + _fmt(Number(visits[z] && visits[z].visits || 0)) + '"' +
+        ' data-views="' + _fmt(Number(views[z] && views[z].views || 0)) + '"' +
+        ' x="' + zx.toFixed(1) + '" y="' + padT + '"' +
+        ' width="' + zw.toFixed(1) + '" height="' + plotH + '"/>';
+    }
+    // 호버 시 표시할 세로 가이드 라인 (초기엔 숨김)
+    var guideLine = '<line class="v3-chart-guide" x1="0" x2="0" y1="' + padT +
+      '" y2="' + (padT + plotH) + '" opacity="0"/>';
+    // 영역 채움 (visits)
+    var areaPath = 'M' + xAt(0).toFixed(1) + ',' + (padT + plotH).toFixed(1);
+    for (var a = 0; a < n; a++) areaPath += ' L' + xAt(a).toFixed(1) + ',' + yAt(visits[a] && visits[a].visits || 0).toFixed(1);
+    areaPath += ' L' + xAt(n - 1).toFixed(1) + ',' + (padT + plotH).toFixed(1) + ' Z';
+
+    var titleText = '일자별 방문자';
+    if (isHour) titleText = '시각별 방문자';
+    var subTitle = periodLabel ? GW.escapeHtml(periodLabel) : '';
+
+    return '<div class="v3-card v3-mt-16 v3-analytics-trend-card">' +
+      '<div class="v3-card-head">' +
+        '<div><h2 class="v3-card-title">' + titleText +
+          (subTitle ? ' <span class="v3-label-opt v3-label-opt-inline">' + subTitle + '</span>' : '') +
+        '</h2></div>' +
+        '<div class="v3-chart-head-tools">' +
+          '<div class="v3-chart-legend">' +
+            '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문(고유)</span>' +
+            '<span class="v3-chart-legend-item"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회(누적)</span>' +
+          '</div>' +
+          _renderChartPrefsControl() +
+        '</div>' +
+      '</div>' +
+      '<div class="v3-chart-wrap">' +
+        '<svg class="v3-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + titleText + ' 추세">' +
+          grid +
+          '<path class="v3-chart-area v3-chart-area-visits" d="' + areaPath + '"/>' +
+          '<polyline class="v3-chart-line v3-chart-line-visits" points="' + visitPoints.join(' ') + '"/>' +
+          '<polyline class="v3-chart-line v3-chart-line-views" points="'  + viewPoints.join(' ')  + '"/>' +
+          pointsHtml +
+          xLabels +
+          guideLine +
+          hoverZones +
+        '</svg>' +
+        '<div class="v3-chart-tooltip" hidden role="tooltip" aria-live="polite"></div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // 차트 호버 시 HTML 툴팁 + 세로 가이드 라인 표시
+  function _wireAnalyticsChartHover(card) {
+    if (!card || card._chartHoverWired) return;
+    var svg = card.querySelector('.v3-chart-svg');
+    var tooltip = card.querySelector('.v3-chart-tooltip');
+    var wrap = card.querySelector('.v3-chart-wrap');
+    var guide = svg && svg.querySelector('.v3-chart-guide');
+    if (!svg || !tooltip || !wrap) return;
+    var zones = svg.querySelectorAll('.v3-chart-hover-zone');
+    if (!zones.length) return;
+
+    function showAt(zone) {
+      var label = zone.getAttribute('data-label') || '';
+      var visits = zone.getAttribute('data-visits') || '0';
+      var views  = zone.getAttribute('data-views')  || '0';
+      var cx = parseFloat(zone.getAttribute('data-cx') || '0');
+      tooltip.innerHTML =
+        '<div class="v3-chart-tt-label">' + GW.escapeHtml(label) + '</div>' +
+        '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-visits"></span>방문 <strong>' + visits + '</strong></div>' +
+        '<div class="v3-chart-tt-row"><span class="v3-chart-swatch v3-chart-swatch-views"></span>조회 <strong>' + views + '</strong></div>';
+      tooltip.hidden = false;
+      // viewBox 변환·letterboxing에 의존하지 말고, hover-zone 자체의 실제 화면 좌표를 기준으로 툴팁 위치 계산
+      var wrapRect = wrap.getBoundingClientRect();
+      var zoneRect = zone.getBoundingClientRect();
+      var localX = (zoneRect.left + zoneRect.width / 2) - wrapRect.left;
+      var ttWidth = tooltip.offsetWidth || 160;
+      var maxLeft = wrapRect.width - ttWidth - 4;
+      var left = Math.max(4, Math.min(maxLeft, localX - ttWidth / 2));
+      tooltip.style.left = left + 'px';
+      tooltip.style.top  = '4px';
+      if (guide) {
+        guide.setAttribute('x1', cx);
+        guide.setAttribute('x2', cx);
+        guide.setAttribute('opacity', '1');
+      }
+    }
+    function hideAll() {
+      tooltip.hidden = true;
+      if (guide) guide.setAttribute('opacity', '0');
+    }
+    zones.forEach(function (zone) {
+      zone.addEventListener('pointerenter', function () { showAt(zone); });
+      zone.addEventListener('pointermove',  function () { showAt(zone); });
+      zone.addEventListener('pointerleave', hideAll);
+    });
+    // 차트 영역 밖으로 나갈 때 안전 차원에서 한 번 더 숨김
+    wrap.addEventListener('pointerleave', hideAll);
+    card._chartHoverWired = true;
+  }
+
+  // 차트 Y축 상한을 보기 좋은 숫자로 올림 (1, 2, 5 단위)
+  function _niceCeil(value) {
+    var v = Math.max(1, Math.ceil(Number(value || 0)));
+    var pow = Math.pow(10, Math.max(0, String(v).length - 1));
+    var lead = v / pow;
+    var nice = lead <= 1 ? 1 : (lead <= 2 ? 2 : (lead <= 5 ? 5 : 10));
+    return nice * pow;
+  }
+
   function _loadAnalyticsVisits() {
     if (_analyticsLoading) return;
     var statsEl = document.getElementById('analytics-stats');
@@ -3938,6 +4224,10 @@
         _statCard('평균 체류',       _fmt(summary.average_dwell_seconds || 0) + '초', '기간 평균');
 
       var html = '';
+      var trendGranularity = (data.range && data.range.granularity) || 'day';
+      var trendPeriodLabel = _periodLabel(_analyticsPeriodState);
+      html += _renderAnalyticsTrendChart(visitors.series || [], views.series || [], trendGranularity, trendPeriodLabel);
+
       if (topPosts.length) {
         var maxV = Math.max.apply(null, topPosts.map(function (p) { return p.views || 0; }));
         html += '<div class="v3-card v3-mt-16"><div class="v3-card-head"><h2 class="v3-card-title">인기 기사 (조회수)</h2></div><div class="v3-bar-list">';
@@ -3975,6 +4265,11 @@
       }
 
       bodyEl.innerHTML = (noteHtml + html) || '<div class="v3-card"><div class="v3-empty"><div class="v3-empty-text">분석 데이터가 없습니다</div></div></div>';
+      var trendCard = bodyEl.querySelector('.v3-analytics-trend-card');
+      if (trendCard) {
+        _wireAnalyticsChartHover(trendCard);
+        _wireChartPrefsControl(trendCard);
+      }
       _analyticsLastUpdatedAt = Date.now();
       _updateAnalyticsRefreshMeta();
     }).catch(function (e) {
