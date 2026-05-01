@@ -5842,18 +5842,30 @@ const DP = (() => {
     function parseChangelog(desc) {
       const raw = String(desc || '').replace(/\r\n/g, '\n').trim();
       if (!raw) return { excluded: false, summary: '', summary_en: '', summary_ko: '', context_en: '', context_ko: '', changes: [] };
-      if (raw.charAt(0) === '{') {
+      const jsonCandidates = [raw];
+      if (raw.charAt(0) === '"' || raw.charAt(0) === "'") {
         try {
-          const parsed = JSON.parse(raw);
+          const unwrapped = JSON.parse(raw);
+          if (typeof unwrapped === 'string') jsonCandidates.push(unwrapped.trim());
+        } catch (_) {}
+      }
+      if (raw.includes('\\"')) jsonCandidates.push(raw.replace(/\\"/g, '"'));
+      for (const candidate of jsonCandidates) {
+        if (candidate.charAt(0) !== '{') continue;
+        try {
+          const parsed = JSON.parse(candidate);
           if (parsed && parsed.format === 'dp-version-v2') {
             return {
               excluded: parsed.scope === 'excluded',
               summary: (parsed.summary && (parsed.summary.ko || parsed.summary.en)) || '',
               summary_en: (parsed.summary && parsed.summary.en) || '',
               summary_ko: (parsed.summary && parsed.summary.ko) || '',
+              background_en: (parsed.background && parsed.background.en) || '',
+              background_ko: (parsed.background && parsed.background.ko) || '',
               context_en: (parsed.context && parsed.context.en) || '',
               context_ko: (parsed.context && parsed.context.ko) || '',
               changes: Array.isArray(parsed.changes) ? parsed.changes : [],
+              implementation: Array.isArray(parsed.implementation) ? parsed.implementation : [],
             };
           }
         } catch (_) {}
@@ -5864,43 +5876,69 @@ const DP = (() => {
         const text = s.replace(/^[-•·*]\s*/, '');
         return { en: text, ko: text };
       }).filter(x => x.en || x.ko);
-      return { excluded: false, summary, summary_en: summary, summary_ko: summary, context_en: '', context_ko: '', changes };
+      return { excluded: false, summary, summary_en: summary, summary_ko: summary, background_en: '', background_ko: '', context_en: '', context_ko: '', changes, implementation: [] };
     }
 
     function renderVersionNote(cl, compact) {
       const rows = cl.changes && cl.changes.length
         ? cl.changes
         : [{ en: cl.summary_en || cl.summary || '', ko: cl.summary_ko || cl.summary || '' }];
-      const context = cl.context_en || cl.context_ko ? `
-        <div style="margin-top:${compact ? '8px' : '12px'};font-size:${compact ? 'var(--fs-12)' : 'var(--fs-13)'};line-height:1.65;color:var(--text-2)">
-          <strong style="color:var(--text)">Context</strong>
-          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:6px">
-            <div>${esc(cl.context_en || '')}</div>
-            <div>${esc(cl.context_ko || '')}</div>
+      const implRows = cl.implementation && cl.implementation.length ? cl.implementation : [];
+      const sectionGap = compact ? '12px' : '16px';
+      const tableFont = compact ? 'var(--fs-12)' : 'var(--fs-13)';
+      const langGrid = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px';
+      const langCell = 'padding:10px 12px;border:1px solid var(--g-150);background:var(--surface-2);border-radius:6px;min-width:0';
+      const badgeBase = 'display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.02em;margin-bottom:7px';
+      const block = (label, en, ko) => en || ko ? `
+        <div style="margin-top:${sectionGap}">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);font-weight:700;margin-bottom:7px">${label}</div>
+          <div style="${langGrid}">
+            <div style="${langCell}">
+              <span style="${badgeBase};color:#8ab4ff;background:rgba(72,133,237,.14);border:1px solid rgba(72,133,237,.28)">EN</span>
+              <div style="color:var(--text-2);line-height:1.65">${esc(en || '')}</div>
+            </div>
+            <div style="${langCell}">
+              <span style="${badgeBase};color:#80d69f;background:rgba(36,135,55,.16);border:1px solid rgba(36,135,55,.32)">KO</span>
+              <div style="color:var(--text);line-height:1.65">${esc(ko || '')}</div>
+            </div>
           </div>
         </div>
       ` : '';
-      return `
-        <div style="font-size:${compact ? 'var(--fs-13)' : 'var(--fs-15)'};color:var(--text);font-weight:600;margin-bottom:10px;line-height:1.45">
-          ${esc(cl.summary_ko || cl.summary || '(no summary)')}
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:${compact ? 'var(--fs-12)' : 'var(--fs-13)'};line-height:1.6">
-          <thead>
-            <tr>
-              <th style="width:50%;text-align:left;padding:7px 8px;border-bottom:1px solid var(--g-200);color:var(--text-2)">English</th>
-              <th style="width:50%;text-align:left;padding:7px 8px;border-bottom:1px solid var(--g-200);color:var(--text-2)">Korean</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows.map(row => `
+      const table = (label, bodyRows) => bodyRows && bodyRows.length ? `
+        <div style="margin-top:${sectionGap}">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);font-weight:700;margin-bottom:7px">${label}</div>
+          <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:${tableFont};line-height:1.65;border:1px solid var(--g-150);border-radius:7px;overflow:hidden">
+            <thead>
               <tr>
-                <td style="vertical-align:top;padding:8px;border-bottom:1px solid var(--g-100);color:var(--text-2)">${esc(row.en || '')}</td>
-                <td style="vertical-align:top;padding:8px;border-bottom:1px solid var(--g-100);color:var(--text-2)">${esc(row.ko || '')}</td>
+                <th style="width:50%;text-align:left;padding:9px 10px;border-bottom:1px solid var(--g-150);background:rgba(72,133,237,.12);color:#8ab4ff">English</th>
+                <th style="width:50%;text-align:left;padding:9px 10px;border-bottom:1px solid var(--g-150);background:rgba(36,135,55,.14);color:#80d69f">한국어</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        ${context}
+            </thead>
+            <tbody>
+              ${bodyRows.map(row => `
+                <tr>
+                  <td style="vertical-align:top;padding:10px;border-top:1px solid var(--g-100);color:var(--text-2);background:rgba(72,133,237,.035)">${esc(row.en || '')}</td>
+                  <td style="vertical-align:top;padding:10px;border-top:1px solid var(--g-100);color:var(--text);background:rgba(36,135,55,.04)">${esc(row.ko || '')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : '';
+      return `
+        <div style="${langGrid}">
+          <div style="${langCell}">
+            <span style="${badgeBase};color:#8ab4ff;background:rgba(72,133,237,.14);border:1px solid rgba(72,133,237,.28)">Feature summary · EN</span>
+            <div style="font-size:${compact ? 'var(--fs-13)' : 'var(--fs-15)'};color:var(--text);font-weight:650;line-height:1.5">${esc(cl.summary_en || cl.summary || '(no summary)')}</div>
+          </div>
+          <div style="${langCell}">
+            <span style="${badgeBase};color:#80d69f;background:rgba(36,135,55,.16);border:1px solid rgba(36,135,55,.32)">기능 요약 · KO</span>
+            <div style="font-size:${compact ? 'var(--fs-13)' : 'var(--fs-15)'};color:var(--text);font-weight:650;line-height:1.5">${esc(cl.summary_ko || cl.summary || '(요약 없음)')}</div>
+          </div>
+        </div>
+        ${block('Background / 맥락과 배경', cl.background_en || cl.context_en, cl.background_ko || cl.context_ko)}
+        ${table('What changed / 변경 내용', rows)}
+        ${table('Implementation details / 구현 기술', implRows)}
       `;
     }
 
