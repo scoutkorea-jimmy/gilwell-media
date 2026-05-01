@@ -3515,6 +3515,9 @@ const DP = (() => {
         h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month - 1, 1); navigate('calendar'); } }, '← Prev'),
         h('button', { className: 'dp-btn dp-btn-ghost dp-btn-sm',     onclick: () => { _calCursor = new Date(); navigate('calendar'); } },            'Today'),
         h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month + 1, 1); navigate('calendar'); } }, 'Next →'),
+        ...(state.user && state.user.role === 'admin' ? [
+          h('button', { className: 'dp-btn dp-btn-primary dp-btn-sm', onclick: () => _openEventEditor(null, { start_date: todayISO() }) }, '+ Event'),
+        ] : []),
       ]),
     ]));
 
@@ -3616,9 +3619,126 @@ const DP = (() => {
         ${e.recurrence_type ? `<span>·</span><span class="dp-tag info">repeats ${esc(e.recurrence_type)}</span>` : ''}
       </div>
       ${_sanitize(e.description || '<p style="color:var(--text-3)">No description.</p>')}
+      ${(e.history || []).length ? `
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--g-150)">
+          <div class="dp-h2" style="margin-bottom:8px">Edit history</div>
+          ${(e.history || []).slice(0, 5).map(h => `
+            <div style="display:grid;grid-template-columns:90px 1fr;gap:12px;padding:4px 0;font-size:11px;color:var(--text-2)">
+              <span class="mono" style="color:var(--text-3)">${esc(fmtTime(h.edited_at))}</span>
+              <span><strong>${esc(h.editor_name || '')}</strong> — ${esc(h.edit_note || '')}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
       `,
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${_hasPerm('write:calendar') ? `<button class="dp-btn dp-btn-primary" onclick="DP._openEventEditor(${Number(e.id)})">Edit</button>` : ''}`
     );
+  }
+
+  async function _openEventEditor(id, seed) {
+    seed = seed || {};
+    let ev = seed;
+    if (id) {
+      const data = await api('GET', 'events?id=' + Number(id));
+      if (!data || !data.event) { toast('Event not found', 'err'); return; }
+      ev = data.event;
+    }
+    const isEdit = !!id;
+    _openModal(
+      isEdit ? 'Edit event' : 'New event',
+      `
+      <div class="dp-field">
+        <label for="dp-e-title">Title</label>
+        <input class="dp-input" id="dp-e-title" placeholder="Event title" autocomplete="off" value="${esc(ev.title || '')}">
+      </div>
+      <div class="dp-field">
+        <label for="dp-e-desc">Description</label>
+        <textarea class="dp-textarea" id="dp-e-desc" placeholder="Agenda, context, links…">${esc(ev.description || '')}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-e-start">Start date</label>
+          <input class="dp-input" id="dp-e-start" type="date" value="${esc(String(ev.start_date || todayISO()).slice(0, 10))}">
+        </div>
+        <div class="dp-field">
+          <label for="dp-e-end">End date</label>
+          <input class="dp-input" id="dp-e-end" type="date" value="${esc(String(ev.end_date || '').slice(0, 10))}">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-e-start-time">Start time</label>
+          <input class="dp-input" id="dp-e-start-time" type="time" value="${esc(ev.start_time || '')}">
+        </div>
+        <div class="dp-field">
+          <label for="dp-e-end-time">End time</label>
+          <input class="dp-input" id="dp-e-end-time" type="time" value="${esc(ev.end_time || '')}">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field">
+          <label for="dp-e-type">Type</label>
+          <select class="dp-select" id="dp-e-type">
+            ${['general', 'meeting', 'deadline', 'milestone'].map(x => `<option value="${x}" ${String(ev.type || 'general') === x ? 'selected' : ''}>${x}</option>`).join('')}
+          </select>
+        </div>
+        <div class="dp-field">
+          <label for="dp-e-recur">Repeats</label>
+          <select class="dp-select" id="dp-e-recur">
+            <option value="" ${!ev.recurrence_type ? 'selected' : ''}>none</option>
+            ${['daily', 'weekly', 'biweekly', 'monthly', 'yearly'].map(x => `<option value="${x}" ${String(ev.recurrence_type || '') === x ? 'selected' : ''}>${x}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="dp-field">
+        <label for="dp-e-recur-end">Repeat until</label>
+        <input class="dp-input" id="dp-e-recur-end" type="date" value="${esc(String(ev.recurrence_end || '').slice(0, 10))}">
+      </div>
+      ${isEdit ? `
+        <div class="dp-field" style="margin-bottom:0">
+          <label for="dp-e-note">Edit reason</label>
+          <input class="dp-input" id="dp-e-note" placeholder="Required for audit history">
+        </div>
+      ` : ''}
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveEvent(${isEdit ? Number(id) : 0})">${isEdit ? 'Save changes' : 'Create event'}</button>`,
+      { wide: true }
+    );
+    setTimeout(() => { const title = $('#dp-e-title'); if (title) title.focus(); }, 60);
+  }
+
+  async function _saveEvent(id) {
+    const title = ($('#dp-e-title').value || '').trim();
+    const startDate = ($('#dp-e-start').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    if (!startDate) { toast('Start date is required', 'err'); return; }
+    const body = {
+      title,
+      description: $('#dp-e-desc').value || '',
+      start_date: startDate,
+      end_date: $('#dp-e-end').value || null,
+      start_time: $('#dp-e-start-time').value || null,
+      end_time: $('#dp-e-end-time').value || null,
+      type: $('#dp-e-type').value || 'general',
+      recurrence_type: $('#dp-e-recur').value || null,
+      recurrence_end: $('#dp-e-recur-end').value || null,
+    };
+    const isEdit = !!Number(id);
+    if (isEdit) {
+      const note = ($('#dp-e-note').value || '').trim();
+      if (!note) { toast('Edit reason is required', 'err'); return; }
+      body.edit_note = note;
+    }
+    const data = isEdit
+      ? await api('PUT', 'events?id=' + Number(id), body)
+      : await api('POST', 'events', body);
+    if (data) {
+      toast(isEdit ? 'Event updated' : 'Event created', 'ok');
+      _closeModal();
+      navigate('calendar');
+    }
   }
 
   // ===== Contacts — /api/dreampath/contacts, grouped by `department` =====
@@ -6945,7 +7065,7 @@ const DP = (() => {
     viewDecision, _openDecisionEditor, _saveDecision, _closeDecision,
     viewRisk, _openRiskEditor, _saveRisk, _updateRiskStatus,
     _openVersionEditor, _saveVersion,
-    _calDayClick, _calEventClick,
+    _calDayClick, _calEventClick, _openEventEditor, _saveEvent,
     _editPost, _saveEditPost, _deletePost,
     _showCommentReply, _cancelCommentReply, _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
