@@ -17,13 +17,19 @@ function json(data, status = 200) {
 
 const VALID_STATUSES   = ['todo', 'in_progress', 'done'];
 const VALID_PRIORITIES = ['low', 'normal', 'high'];
+const VALID_SOURCE_TYPES = ['post', 'comment', 'decision', 'manual'];
 
 export async function onRequestGet({ env, data }) {
   const denied = requirePerm(data, 'view:tasks'); if (denied) return denied;
   const rows = await env.DB.prepare(
-    `SELECT id, title, description, assignee, status, priority, due_date, sort_order, created_at, updated_at
-       FROM dp_tasks
-      ORDER BY status ASC, sort_order ASC, created_at ASC`
+    `SELECT t.id, t.title, t.description, t.assignee, t.status, t.priority, t.due_date,
+            t.sort_order, t.related_post_id, t.source_type, t.source_ref_id,
+            t.created_at, t.updated_at,
+            p.title AS related_post_title,
+            p.board AS related_post_board
+       FROM dp_tasks t
+       LEFT JOIN dp_board_posts p ON p.id = t.related_post_id
+      ORDER BY t.status ASC, t.sort_order ASC, t.created_at ASC`
   ).all();
   return json({ tasks: rows.results || [] });
 }
@@ -34,7 +40,7 @@ export async function onRequestPost({ request, env, data }) {
   try { body = await request.json(); }
   catch { return json({ error: 'Invalid JSON' }, 400); }
 
-  const { title, description, assignee, status, priority, due_date } = body;
+  const { title, description, assignee, status, priority, due_date, related_post_id, source_type, source_ref_id } = body;
   if (!title || typeof title !== 'string' || !title.trim()) {
     return json({ error: 'Title is required.' }, 400);
   }
@@ -45,6 +51,13 @@ export async function onRequestPost({ request, env, data }) {
   const safeStatus      = VALID_STATUSES.includes(status) ? status : 'todo';
   const safePriority    = VALID_PRIORITIES.includes(priority) ? priority : 'normal';
   const safeDueDate     = due_date ? due_date.trim().slice(0, 20) : null;
+  const safeSourceType  = VALID_SOURCE_TYPES.includes(source_type) ? source_type : 'manual';
+  const safeSourceRefId = source_ref_id ? parseInt(source_ref_id, 10) || null : null;
+  let safeRelatedPostId = related_post_id ? parseInt(related_post_id, 10) || null : null;
+  if (safeRelatedPostId) {
+    const post = await env.DB.prepare(`SELECT id FROM dp_board_posts WHERE id = ?`).bind(safeRelatedPostId).first();
+    if (!post) safeRelatedPostId = null;
+  }
 
   const maxOrder = await env.DB.prepare(
     `SELECT COALESCE(MAX(sort_order), 0) as m FROM dp_tasks WHERE status = ?`
@@ -52,9 +65,9 @@ export async function onRequestPost({ request, env, data }) {
   const sortOrder = (maxOrder?.m || 0) + 1;
 
   const result = await env.DB.prepare(
-    `INSERT INTO dp_tasks (title, description, assignee, status, priority, due_date, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).bind(safeTitle, safeDescription, safeAssignee, safeStatus, safePriority, safeDueDate, sortOrder).run();
+    `INSERT INTO dp_tasks (title, description, assignee, status, priority, due_date, sort_order, related_post_id, source_type, source_ref_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(safeTitle, safeDescription, safeAssignee, safeStatus, safePriority, safeDueDate, sortOrder, safeRelatedPostId, safeSourceType, safeSourceRefId).run();
 
   return json({ id: result.meta.last_row_id, ok: true });
 }
