@@ -5836,24 +5836,79 @@ const DP = (() => {
       return;
     }
 
-    // [CASE STUDY — description parser matches BP Media changelog format]
-    // First line is the summary; subsequent lines starting with "- " become
-    // bullet changes. Blank lines separate. This mirrors data/changelog.json
-    // entries on the public site, so operators can author version notes in
-    // exactly the same mental model whether they're on BP Media or Dreampath.
+    // [CASE STUDY — Dreampath bilingual version notes]
+    // Current rows store JSON so the Versions page can render a stable
+    // Korean/English table. Older rows are still accepted as plain text.
     function parseChangelog(desc) {
       const raw = String(desc || '').replace(/\r\n/g, '\n').trim();
-      if (!raw) return { summary: '', changes: [] };
+      if (!raw) return { excluded: false, summary: '', summary_en: '', summary_ko: '', context_en: '', context_ko: '', changes: [] };
+      if (raw.charAt(0) === '{') {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.format === 'dp-version-v2') {
+            return {
+              excluded: parsed.scope === 'excluded',
+              summary: (parsed.summary && (parsed.summary.ko || parsed.summary.en)) || '',
+              summary_en: (parsed.summary && parsed.summary.en) || '',
+              summary_ko: (parsed.summary && parsed.summary.ko) || '',
+              context_en: (parsed.context && parsed.context.en) || '',
+              context_ko: (parsed.context && parsed.context.ko) || '',
+              changes: Array.isArray(parsed.changes) ? parsed.changes : [],
+            };
+          }
+        } catch (_) {}
+      }
       const lines = raw.split('\n').map(s => s.trim()).filter(Boolean);
       const summary = lines[0] || '';
-      const changes = lines.slice(1).map(s => s.replace(/^[-•·*]\s*/, '')).filter(Boolean);
-      return { summary, changes };
+      const changes = lines.slice(1).map(s => {
+        const text = s.replace(/^[-•·*]\s*/, '');
+        return { en: text, ko: text };
+      }).filter(x => x.en || x.ko);
+      return { excluded: false, summary, summary_en: summary, summary_ko: summary, context_en: '', context_ko: '', changes };
+    }
+
+    function renderVersionNote(cl, compact) {
+      const rows = cl.changes && cl.changes.length
+        ? cl.changes
+        : [{ en: cl.summary_en || cl.summary || '', ko: cl.summary_ko || cl.summary || '' }];
+      const context = cl.context_en || cl.context_ko ? `
+        <div style="margin-top:${compact ? '8px' : '12px'};font-size:${compact ? 'var(--fs-12)' : 'var(--fs-13)'};line-height:1.65;color:var(--text-2)">
+          <strong style="color:var(--text)">Context</strong>
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:6px">
+            <div>${esc(cl.context_en || '')}</div>
+            <div>${esc(cl.context_ko || '')}</div>
+          </div>
+        </div>
+      ` : '';
+      return `
+        <div style="font-size:${compact ? 'var(--fs-13)' : 'var(--fs-15)'};color:var(--text);font-weight:600;margin-bottom:10px;line-height:1.45">
+          ${esc(cl.summary_ko || cl.summary || '(no summary)')}
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:${compact ? 'var(--fs-12)' : 'var(--fs-13)'};line-height:1.6">
+          <thead>
+            <tr>
+              <th style="width:50%;text-align:left;padding:7px 8px;border-bottom:1px solid var(--g-200);color:var(--text-2)">English</th>
+              <th style="width:50%;text-align:left;padding:7px 8px;border-bottom:1px solid var(--g-200);color:var(--text-2)">Korean</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td style="vertical-align:top;padding:8px;border-bottom:1px solid var(--g-100);color:var(--text-2)">${esc(row.en || '')}</td>
+                <td style="vertical-align:top;padding:8px;border-bottom:1px solid var(--g-100);color:var(--text-2)">${esc(row.ko || '')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        ${context}
+      `;
     }
 
     const typeTone = (t) => t === 'feature' ? 'info' : t === 'bugfix' ? 'warn' : 'neutral';
     const typeLabel = { feature: 'Feature', bugfix: 'Fix', initial: 'Initial' };
 
-    const latest = versions[0];
+    const visibleVersions = versions.filter(v => !parseChangelog(v.description).excluded);
+    const latest = visibleVersions[0];
     const latestCl = parseChangelog(latest.description);
 
     const hero = h('div', { className: 'dp-panel', style: { marginBottom: '20px' } });
@@ -5866,21 +5921,14 @@ const DP = (() => {
         <span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono)">${esc(fmtTime(latest.released_at))}</span>
       </div>
       <div class="dp-panel-body pad" style="padding:18px 20px">
-        <div style="font-size:var(--fs-15);color:var(--text);font-weight:500;margin-bottom:10px;line-height:1.4">
-          ${esc(latestCl.summary || '(no summary)')}
-        </div>
-        ${latestCl.changes.length ? `
-          <ul style="margin:8px 0 0;padding-left:18px;color:var(--text-2);font-size:var(--fs-13);line-height:1.7">
-            ${latestCl.changes.map(c => `<li>${esc(c)}</li>`).join('')}
-          </ul>
-        ` : ''}
+        ${renderVersionNote(latestCl, false)}
       </div>
     `;
     root.appendChild(hero);
 
     // Release history — paginated, 20 cards per page (BP Media style).
     const PAGE_SIZE = 20;
-    const rest = versions.slice(1);  // skip the hero latest
+    const rest = visibleVersions.slice(1);  // skip the hero latest
     const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
     if (state.versionsPage >= totalPages) state.versionsPage = 0;
     const start = state.versionsPage * PAGE_SIZE;
@@ -5899,14 +5947,7 @@ const DP = (() => {
           <span style="font-size:11px;color:var(--text-3);font-family:var(--font-mono)">${esc(fmtTime(v.released_at))}</span>
         </div>
         <div class="dp-panel-body pad" style="padding:12px 16px">
-          <div style="font-size:var(--fs-13);color:var(--text);margin-bottom:${cl.changes.length ? '8px' : '0'}">
-            ${esc(cl.summary || v.description || '—')}
-          </div>
-          ${cl.changes.length ? `
-            <ul style="margin:0;padding-left:18px;color:var(--text-2);font-size:var(--fs-12);line-height:1.65">
-              ${cl.changes.map(c => `<li>${esc(c)}</li>`).join('')}
-            </ul>
-          ` : ''}
+          ${renderVersionNote(cl, true)}
         </div>
       `;
       list.appendChild(card);
