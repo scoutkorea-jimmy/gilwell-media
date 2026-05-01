@@ -275,6 +275,7 @@ CDN URL / 버전은 함부로 바꾸지 않습니다. SRI 리스크는 CLAUDE.md
 | `dp_tasks` | `id, title, assignee, status, priority, due_date, related_post_id, source_type, source_ref_id, updated_at` |
 | `dp_notes` | `id, title, type, status, priority, updated_at` |
 | `dp_decisions` | `id, title, decision, status, decided_by, decision_date, next_review_date, related_post_id` |
+| `dp_risks` | `id, title, kind, status, probability, impact, severity, owner, due_date, related_post_id` |
 | `dp_events` | `id, title, start_date, end_date, start_time, end_time, type, recurrence_type, recurrence_end` |
 | `dp_event_history` | `event_id, editor_name, edit_note, edited_at` |
 | `dp_versions` | `version, aa, bbb, cc, type, description, released_at` |
