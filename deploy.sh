@@ -162,6 +162,16 @@ print(json.dumps({
     "scope": "dreampath",
     "summary": {"en": summary, "ko": summary},
     "changes": changes,
+    "background": {
+        "en": "This release was created from the Dreampath deployment flow so operators can understand what changed without reading commits.",
+        "ko": "이 배포는 드림패스 배포 흐름에서 생성된 기록으로, 운영자가 커밋을 읽지 않아도 변경 내용을 이해할 수 있게 남깁니다."
+    },
+    "implementation": [
+        {
+            "en": "deploy.sh stored a structured dp-version-v2 JSON row in dp_versions and limited commit collection to Dreampath-owned paths.",
+            "ko": "deploy.sh가 dp_versions에 dp-version-v2 JSON 행을 저장하고 커밋 수집 범위를 드림패스 소유 경로로 제한했습니다."
+        }
+    ],
 }, ensure_ascii=False, separators=(",", ":")))
 PY
 )
