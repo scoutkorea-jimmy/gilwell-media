@@ -86,6 +86,7 @@ const DP = (() => {
         { id: 'tasks',         label: 'Tasks',            icon: 'check',     perm: 'view:tasks' },
         { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard', perm: 'view:notes' },
         { id: 'decisions',     label: 'Decision Log',     icon: 'target',    perm: 'view:notes' },
+        { id: 'risks',         label: 'Risk Register',    icon: 'target',    perm: 'view:notes' },
       ])},
       { title: 'People', items: guard([
         { id: 'teams',    label: 'Team Boards', icon: 'users-admin', perm: 'view:teams' },
@@ -1219,6 +1220,7 @@ const DP = (() => {
       tasks:         () => { _renderTasks(pageEl);         label = 'Tasks'; },
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
       decisions:     () => { _renderDecisions(pageEl);     label = 'Decision Log'; },
+      risks:         () => { _renderRisks(pageEl);         label = 'Risk Register'; },
       calendar:      () => { _renderCalendar(pageEl);      label = 'Calendar'; },
       contacts:      () => { _renderContacts(pageEl);      label = 'Contacts'; },
       teams:         () => { _renderTeamsLanding(pageEl);  label = 'Team Boards'; },
@@ -3317,6 +3319,170 @@ const DP = (() => {
   async function _closeDecision(id) {
     const data = await api('PUT', 'decisions?id=' + Number(id), { status: 'closed' });
     if (data) { toast('Decision closed', 'ok'); _closeModal(); navigate('decisions'); }
+  }
+
+  // =========================================================
+  // RISK REGISTER — PMO risks, issues, dependencies, blockers
+  // =========================================================
+  function _riskTone(value) {
+    return value === 'critical' || value === 'high' ? 'alert' : value === 'medium' ? 'warn' : 'neutral';
+  }
+
+  async function _renderRisks(root) {
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('div', {}, [
+        h('h1', {}, 'Risk Register'),
+        h('div', { className: 'meta' }, 'Track risks, issues, dependencies, blockers, owners, mitigation, and due dates.'),
+      ]),
+      h('div', {}, [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => _openRiskEditor() }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', {}, ' New risk'),
+        ]),
+      ]),
+    ]));
+    const loading = h('div', { className: 'dp-panel' });
+    loading.innerHTML = '<div class="dp-panel-body pad" style="color:var(--text-3)">Loading risks…</div>';
+    root.appendChild(loading);
+    const data = await api('GET', 'risks');
+    loading.remove();
+    const risks = (data && data.risks) || [];
+    if (!risks.length) {
+      const empty = h('div', { className: 'dp-empty' });
+      empty.innerHTML = `
+        <div class="mark"><span class="ico" style="--dp-icon:url('/img/dreampath/icons/target.svg')"></span></div>
+        <h4>No risks registered</h4>
+        <p>Add the first risk, issue, dependency, or blocker before it hides inside a thread.</p>
+        <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._openRiskEditor()">+ New risk</button>
+      `;
+      root.appendChild(empty);
+      return;
+    }
+    const today = todayISO();
+    const open = risks.filter(r => r.status === 'open' || r.status === 'monitoring').length;
+    const critical = risks.filter(r => r.severity === 'critical' || r.severity === 'high').length;
+    const overdue = risks.filter(r => r.due_date && String(r.due_date).slice(0, 10) < today && r.status !== 'closed').length;
+    const rows = risks.map(r => {
+      const due = String(r.due_date || '').slice(0, 10);
+      const dueTone = due && due < today && r.status !== 'closed' ? 'alert' : 'neutral';
+      const related = r.related_post_id
+        ? `<button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="event.stopPropagation();DP.viewPost('${esc(r.related_post_board || 'documents')}', ${Number(r.related_post_id)})">Open post</button>`
+        : '<span style="color:var(--text-3)">—</span>';
+      return `<tr onclick="DP.viewRisk(${Number(r.id)})">
+        <td class="mono">RISK-${String(r.id).padStart(4, '0')}</td>
+        <td>${esc(r.title || '')}</td>
+        <td><span class="dp-tag neutral">${esc(r.kind || 'risk')}</span></td>
+        <td><span class="dp-tag ${_riskTone(r.severity)}">${esc(r.severity || 'medium')}</span></td>
+        <td><span class="dp-tag neutral">${esc(r.status || 'open')}</span></td>
+        <td>${esc(r.owner || '—')}</td>
+        <td><span class="dp-tag ${dueTone}">${due || '—'}</span></td>
+        <td>${related}</td>
+      </tr>`;
+    }).join('');
+    const panel = h('div', { className: 'dp-panel' });
+    panel.innerHTML = `
+      <div class="dp-panel-head">
+        <h3>All risks <span class="count">${risks.length}</span></h3>
+        <span style="font-size:11px;color:var(--text-3)">${open} open/monitoring · ${critical} high+ · ${overdue} overdue</span>
+      </div>
+      <table class="dp-table">
+        <thead>
+          <tr>
+            <th style="width:110px">ID</th><th>Title</th><th style="width:100px">Kind</th>
+            <th style="width:100px">Severity</th><th style="width:120px">Status</th>
+            <th style="width:140px">Owner</th><th style="width:110px">Due</th><th style="width:110px">Related</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    root.appendChild(panel);
+  }
+
+  async function viewRisk(id) {
+    _openModal('Loading…', '<div style="color:var(--text-3)">Loading risk…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`);
+    const data = await api('GET', 'risks');
+    if (!data) return;
+    const r = ((data.risks) || []).find(x => Number(x.id) === Number(id));
+    if (!r) { _renderPostError('Risk not found', 'The risk may have been removed.'); return; }
+    const related = r.related_post_id
+      ? `<button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.viewPost('${esc(r.related_post_board || 'documents')}', ${Number(r.related_post_id)})">Open related post</button>`
+      : '';
+    _openModal(
+      r.title || '(Untitled risk)',
+      `
+      <div style="font-size:11px;color:var(--text-3);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="dp-tag neutral">${esc(r.kind || 'risk')}</span>
+        <span class="dp-tag ${_riskTone(r.severity)}">${esc(r.severity || 'medium')}</span>
+        <span class="dp-tag neutral">${esc(r.status || 'open')}</span>
+        <span>Owner <strong style="color:var(--text-2)">${esc(r.owner || '—')}</strong></span>
+        ${r.due_date ? `<span>· Due <span class="mono">${esc(String(r.due_date).slice(0, 10))}</span></span>` : ''}
+      </div>
+      ${r.description ? `<div class="dp-field"><label>Description</label><p style="white-space:pre-wrap">${esc(r.description)}</p></div>` : ''}
+      ${r.mitigation ? `<div class="dp-field"><label>Mitigation / response</label><p style="white-space:pre-wrap">${esc(r.mitigation)}</p></div>` : ''}
+      <div class="dp-field"><label>Assessment</label><p>Probability ${esc(r.probability)} · Impact ${esc(r.impact)}</p></div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${related}
+       ${r.status !== 'closed' ? `<button class="dp-btn dp-btn-primary" onclick="DP._updateRiskStatus(${Number(r.id)}, 'closed')">Close</button>` : ''}`,
+      { wide: true }
+    );
+  }
+
+  function _openRiskEditor() {
+    const levelOptions = ['low', 'medium', 'high', 'critical'].map(x => `<option value="${x}">${x}</option>`).join('');
+    _openModal(
+      'New risk / issue',
+      `
+      <div class="dp-field"><label for="dp-r-title">Title</label><input class="dp-input" id="dp-r-title" placeholder="Risk, issue, dependency, or blocker" autocomplete="off"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field"><label for="dp-r-kind">Kind</label><select class="dp-select" id="dp-r-kind"><option value="risk">risk</option><option value="issue">issue</option><option value="dependency">dependency</option><option value="blocker">blocker</option></select></div>
+        <div class="dp-field"><label for="dp-r-sev">Severity</label><select class="dp-select" id="dp-r-sev">${levelOptions}</select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field"><label for="dp-r-prob">Probability</label><select class="dp-select" id="dp-r-prob">${levelOptions}</select></div>
+        <div class="dp-field"><label for="dp-r-impact">Impact</label><select class="dp-select" id="dp-r-impact">${levelOptions}</select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="dp-field"><label for="dp-r-owner">Owner</label><input class="dp-input" id="dp-r-owner" placeholder="Owner"></div>
+        <div class="dp-field"><label for="dp-r-due">Due</label><input class="dp-input" id="dp-r-due" type="date"></div>
+      </div>
+      <div class="dp-field"><label for="dp-r-desc">Description</label><textarea class="dp-textarea" id="dp-r-desc" placeholder="What can go wrong or what is blocking progress?"></textarea></div>
+      <div class="dp-field"><label for="dp-r-mit">Mitigation / response</label><textarea class="dp-textarea" id="dp-r-mit" placeholder="Response plan, owner action, escalation path"></textarea></div>
+      <div class="dp-field" style="margin-bottom:0"><label for="dp-r-post">Related post ID <span style="font-weight:400;color:var(--text-3)">(optional)</span></label><input class="dp-input" id="dp-r-post" inputmode="numeric" placeholder="e.g. 123"></div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
+       <button class="dp-btn dp-btn-primary" onclick="DP._saveRisk()">Save risk</button>`,
+      { wide: true }
+    );
+    setTimeout(() => { const t = $('#dp-r-title'); if (t) t.focus(); }, 60);
+  }
+
+  async function _saveRisk() {
+    const title = ($('#dp-r-title').value || '').trim();
+    if (!title) { toast('Title is required', 'err'); return; }
+    const body = {
+      title,
+      kind: $('#dp-r-kind').value || 'risk',
+      severity: $('#dp-r-sev').value || 'medium',
+      probability: $('#dp-r-prob').value || 'medium',
+      impact: $('#dp-r-impact').value || 'medium',
+      owner: $('#dp-r-owner').value || '',
+      due_date: $('#dp-r-due').value || null,
+      description: $('#dp-r-desc').value || '',
+      mitigation: $('#dp-r-mit').value || '',
+      related_post_id: $('#dp-r-post').value || null,
+      status: 'open',
+    };
+    const data = await api('POST', 'risks', body);
+    if (data) { toast('Risk registered', 'ok'); _closeModal(); navigate('risks'); }
+  }
+
+  async function _updateRiskStatus(id, status) {
+    const data = await api('PUT', 'risks?id=' + Number(id), { status });
+    if (data) { toast('Risk updated', 'ok'); _closeModal(); navigate('risks'); }
   }
 
   // =========================================================
@@ -6777,6 +6943,7 @@ const DP = (() => {
     _openTaskEditor, _saveNewTask, _taskTransition,
     _openNoteEditor, _saveNewNote, _resolveNote,
     viewDecision, _openDecisionEditor, _saveDecision, _closeDecision,
+    viewRisk, _openRiskEditor, _saveRisk, _updateRiskStatus,
     _openVersionEditor, _saveVersion,
     _calDayClick, _calEventClick,
     _editPost, _saveEditPost, _deletePost,
