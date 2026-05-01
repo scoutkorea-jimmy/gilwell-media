@@ -94,6 +94,16 @@ export async function onRequestDelete({ request, env, data }) {
     return json({ error: 'Not authorized.' }, 403);
   }
 
-  await env.DB.prepare(`DELETE FROM dp_post_comments WHERE id = ?`).bind(id).run();
-  return json({ ok: true });
+  const result = await env.DB.prepare(
+    `WITH RECURSIVE comment_tree(id) AS (
+       SELECT id FROM dp_post_comments WHERE id = ?
+       UNION ALL
+       SELECT c.id
+         FROM dp_post_comments c
+         JOIN comment_tree t ON c.parent_id = t.id
+     )
+     DELETE FROM dp_post_comments
+      WHERE id IN (SELECT id FROM comment_tree)`
+  ).bind(id).run();
+  return json({ ok: true, deleted_count: result.meta.changes || 0 });
 }

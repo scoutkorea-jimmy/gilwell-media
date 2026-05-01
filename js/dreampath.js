@@ -3499,6 +3499,10 @@ const DP = (() => {
   }
   // ===== Calendar — month grid wired to /api/dreampath/events?month=YYYY-MM =====
   let _calCursor = null;  // Date pointing at 1st of currently viewed month
+  let _calEventsByDate = {};
+  function _canCreateCalendarEvent() {
+    return !!(state.user && state.user.role === 'admin' && _hasPerm('write:calendar'));
+  }
   async function _renderCalendar(root) {
     if (!_calCursor) _calCursor = new Date();
     const cursor = _calCursor;
@@ -3514,7 +3518,7 @@ const DP = (() => {
         h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month - 1, 1); navigate('calendar'); } }, '← Prev'),
         h('button', { className: 'dp-btn dp-btn-ghost dp-btn-sm',     onclick: () => { _calCursor = new Date(); navigate('calendar'); } },            'Today'),
         h('button', { className: 'dp-btn dp-btn-secondary dp-btn-sm', onclick: () => { _calCursor = new Date(year, month + 1, 1); navigate('calendar'); } }, 'Next →'),
-        ...(state.user && state.user.role === 'admin' ? [
+        ...(_canCreateCalendarEvent() ? [
           h('button', { className: 'dp-btn dp-btn-primary dp-btn-sm', onclick: () => _openEventEditor(null, { start_date: todayISO() }) }, '+ Event'),
         ] : []),
       ]),
@@ -3538,6 +3542,7 @@ const DP = (() => {
       if (!byDate[k]) byDate[k] = [];
       byDate[k].push(e);
     });
+    _calEventsByDate = byDate;
 
     const typeColor = {
       meeting:  'var(--dv-2)',
@@ -3592,13 +3597,32 @@ const DP = (() => {
     }
   }
   function _calDayClick(dateStr) {
-    // Show a quick list for that day in a modal.
-    const data = [];
-    $$('.dp-cal-day--has .dp-cal-ev').forEach(() => {});
+    const safeDate = String(dateStr || '').slice(0, 10);
+    const events = (_calEventsByDate[safeDate] || []).slice().sort((a, b) => {
+      const at = a.start_time || '99:99';
+      const bt = b.start_time || '99:99';
+      return at.localeCompare(bt) || String(a.title || '').localeCompare(String(b.title || ''));
+    });
+    const body = events.length ? `
+      <div class="dp-list" style="display:grid;gap:8px">
+        ${events.map(e => `
+          <button type="button" class="dp-preview-item" onclick="DP._calEventClick(${Number(e.id)})">
+            <div>
+              <strong>${esc(e.title || '(Untitled event)')}</strong>
+              <div style="font-size:11px;color:var(--text-3);margin-top:3px">
+                ${e.start_time ? `<span class="mono">${esc(e.start_time)}${e.end_time ? '-' + esc(e.end_time) : ''}</span><span> · </span>` : ''}
+                <span>${esc(e.type || 'general')}</span>
+              </div>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    ` : '<div style="font-size:var(--fs-13);color:var(--text-3)">No events scheduled for this day.</div>';
     _openModal(
-      dateStr,
-      `<div style="font-size:var(--fs-13);color:var(--text-3)">Day detail — click an event inside the cell to open it.</div>`,
-      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>`
+      safeDate || 'Day detail',
+      body,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${_canCreateCalendarEvent() ? `<button class="dp-btn dp-btn-primary" onclick="DP._openEventEditor(null, { start_date: '${esc(safeDate)}' })">New event</button>` : ''}`
     );
   }
   async function _calEventClick(id) {
@@ -6636,13 +6660,16 @@ const DP = (() => {
     else if (state.page === 'documents') _openPostEditor('documents');
     else if (state.page === 'tasks') _openTaskEditor();
     else if (state.page === 'notes') _openNoteEditor();
-    else if (state.page === 'calendar') _openEventEditor && _openEventEditor();
+    else if (state.page === 'calendar') {
+      if (_canCreateCalendarEvent()) _openEventEditor();
+      else toast('Only admins can create calendar events.', 'err');
+    }
     else _openPostEditor('notice');
   }
   // -------------------------- Notifications --------------------------
   // Bell icon → dropdown panel. Polls every 45s so the unread badge stays
-  // accurate without hammering the endpoint. Opening the panel marks all
-  // currently-visible notifications as read.
+  // accurate without hammering the endpoint. Users can mark one item or all
+  // visible notifications as read from the panel.
   async function openNotifs() {
     const data = await api('GET', 'notifications');
     if (!data) return;
