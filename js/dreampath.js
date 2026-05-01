@@ -6654,7 +6654,7 @@ const DP = (() => {
         ? `DP._notifGo(${Number(n.id)}, '${esc(n.ref_type)}', ${Number(n.ref_id)})`
         : `DP._notifMarkRead(${Number(n.id)})`;
       return `
-        <button type="button" class="dp-notif-row${isUnread ? ' is-unread' : ''}" onclick="${clickHandler}">
+        <button type="button" class="dp-notif-row${isUnread ? ' is-unread' : ''}" data-notif-id="${Number(n.id)}" onclick="${clickHandler}">
           <div class="dp-notif-main">
             <div class="dp-notif-title">${esc(n.title || '')}</div>
             ${n.body ? `<div class="dp-notif-body">${esc(n.body)}</div>` : ''}
@@ -6679,17 +6679,30 @@ const DP = (() => {
   }
 
   async function _notifMarkRead(id) {
-    await api('PUT', 'notifications?id=' + Number(id));
-    _refreshNotifBadge();
+    const row = document.querySelector(`.dp-notif-row[data-notif-id="${Number(id)}"]`);
+    const wasUnread = !row || row.classList.contains('is-unread');
+    if (wasUnread) _bumpNotifBadge(-1);
+    if (row) {
+      row.classList.remove('is-unread');
+      const unreadDot = row.querySelector('.dp-notif-dot');
+      if (unreadDot) unreadDot.remove();
+    }
+    const data = await api('PUT', 'notifications?id=' + Number(id));
+    if (!data) _refreshNotifBadge();
   }
   async function _notifMarkAllRead() {
+    _setNotifBadgeCount(0);
     await api('PUT', 'notifications?all=1');
     toast('All notifications marked read', 'ok');
     _refreshNotifBadge();
     openNotifs();
   }
   async function _notifGo(id, refType, refId) {
-    await api('PUT', 'notifications?id=' + Number(id));
+    const row = document.querySelector(`.dp-notif-row[data-notif-id="${Number(id)}"]`);
+    const wasUnread = !row || row.classList.contains('is-unread');
+    if (wasUnread) _bumpNotifBadge(-1);
+    const data = await api('PUT', 'notifications?id=' + Number(id));
+    if (!data) _refreshNotifBadge();
     _closeModal();
     if (refType === 'post' && refId) {
       // Guess the board — defaults to minutes since that's the only kind
@@ -6700,20 +6713,32 @@ const DP = (() => {
   }
 
   let _notifPollTimer = null;
-  async function _refreshNotifBadge() {
+  function _setNotifBadgeCount(n) {
     const dot = document.getElementById('dp-notif-dot');
     const count = document.getElementById('dp-notif-count');
     if (!dot || !count) return;
-    const data = await api('GET', 'notifications?unread=1').catch(() => null);
-    const n = (data && data.unread_count) || 0;
-    if (n > 0) {
+    const safe = Math.max(0, Number(n) || 0);
+    if (safe > 0) {
       dot.style.display = '';
       count.style.display = '';
-      count.textContent = n > 99 ? '99+' : String(n);
+      count.textContent = safe > 99 ? '99+' : String(safe);
     } else {
       dot.style.display = 'none';
       count.style.display = 'none';
+      count.textContent = '';
     }
+  }
+  function _bumpNotifBadge(delta) {
+    const count = document.getElementById('dp-notif-count');
+    if (!count || count.style.display === 'none') return;
+    const raw = String(count.textContent || '0');
+    const current = raw === '99+' ? 100 : (parseInt(raw, 10) || 0);
+    _setNotifBadgeCount(current + Number(delta || 0));
+  }
+  async function _refreshNotifBadge() {
+    const data = await api('GET', 'notifications?unread=1').catch(() => null);
+    const n = (data && data.unread_count) || 0;
+    _setNotifBadgeCount(n);
   }
   function _startNotifPolling() {
     if (_notifPollTimer) clearInterval(_notifPollTimer);
