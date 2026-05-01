@@ -17,11 +17,22 @@ function json(data, status = 200) {
   });
 }
 
+function isDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+}
+
+function previousDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 // Expand recurring events into individual occurrences within a date range
-function expandRecurring(events, rangeStart, rangeEnd) {
+function expandRecurring(events, rangeStart, rangeEnd, exclusionsByEvent = new Map()) {
   const result = [];
   for (const ev of events) {
-    result.push(ev);
+    const exclusions = exclusionsByEvent.get(Number(ev.id)) || new Set();
+    if (!exclusions.has(String(ev.start_date || '').slice(0, 10))) result.push(ev);
     if (!ev.recurrence_type || !VALID_RECURRENCE.includes(ev.recurrence_type)) continue;
 
     const s = new Date(ev.start_date + 'T00:00:00');
@@ -47,6 +58,7 @@ function expandRecurring(events, rangeStart, rangeEnd) {
       const occEnd = dur ? new Date(cur.getTime() + dur).toISOString().slice(0, 10) : null;
       if (occStart > rangeEnd) break;
       if ((occEnd || occStart) < rangeStart) continue;
+      if (exclusions.has(occStart)) continue;
 
       result.push({
         ...ev,
@@ -112,7 +124,18 @@ export async function onRequestGet({ request, env, data }) {
            OR (e.recurrence_type IS NOT NULL AND e.start_date <= ? AND (e.recurrence_end IS NULL OR e.recurrence_end >= ?))
         ORDER BY e.start_date ASC, e.start_time ASC`
     ).bind(rangeStart, rangeEnd, rangeEnd, rangeStart).all();
-    const expanded = expandRecurring(rows.results || [], rangeStart, rangeEnd);
+    const exclusions = await env.DB.prepare(
+      `SELECT event_id, occurrence_date
+         FROM dp_event_exclusions
+        WHERE occurrence_date BETWEEN ? AND ?`
+    ).bind(rangeStart, rangeEnd).all();
+    const exclusionsByEvent = new Map();
+    (exclusions.results || []).forEach(row => {
+      const id = Number(row.event_id);
+      if (!exclusionsByEvent.has(id)) exclusionsByEvent.set(id, new Set());
+      exclusionsByEvent.get(id).add(String(row.occurrence_date || '').slice(0, 10));
+    });
+    const expanded = expandRecurring(rows.results || [], rangeStart, rangeEnd, exclusionsByEvent);
     return json({ events: expanded });
   } else {
     rows = await env.DB.prepare(
@@ -234,6 +257,45 @@ export async function onRequestDelete({ request, env, data }) {
   const url = new URL(request.url);
   const id  = parseInt(url.searchParams.get('id') || '', 10);
   if (!id) return json({ error: 'id is required.' }, 400);
-  await env.DB.prepare(`DELETE FROM dp_events WHERE id = ?`).bind(id).run();
-  return json({ ok: true });
+  const mode = String(url.searchParams.get('mode') || '').toLowerCase();
+  const occurrenceDate = url.searchParams.get('occurrence_date');
+  const current = await env.DB.prepare(
+    `SELECT id, start_date, recurrence_type FROM dp_events WHERE id = ?`
+  ).bind(id).first();
+  if (!current) return json({ error: 'Event not found.' }, 404);
+
+  if (!current.recurrence_type) {
+    await env.DB.prepare(`DELETE FROM dp_events WHERE id = ?`).bind(id).run();
+    return json({ ok: true, mode: 'all' });
+  }
+
+  if (!['single', 'following', 'all'].includes(mode)) {
+    return json({ error: 'Recurring event delete requires mode: single, following, or all.' }, 400);
+  }
+  if (mode !== 'all' && !isDate(occurrenceDate)) {
+    return json({ error: 'occurrence_date is required for this recurring delete mode.' }, 400);
+  }
+
+  if (mode === 'all') {
+    await env.DB.prepare(`DELETE FROM dp_events WHERE id = ?`).bind(id).run();
+    return json({ ok: true, mode });
+  }
+
+  if (mode === 'single') {
+    await env.DB.prepare(
+      `INSERT OR IGNORE INTO dp_event_exclusions (event_id, occurrence_date, created_by)
+       VALUES (?, ?, ?)`
+    ).bind(id, occurrenceDate, data.dpUser.uid).run();
+    return json({ ok: true, mode });
+  }
+
+  const startDate = String(current.start_date || '').slice(0, 10);
+  if (occurrenceDate <= startDate) {
+    await env.DB.prepare(`DELETE FROM dp_events WHERE id = ?`).bind(id).run();
+    return json({ ok: true, mode: 'all' });
+  }
+  await env.DB.prepare(
+    `UPDATE dp_events SET recurrence_end = ? WHERE id = ?`
+  ).bind(previousDate(occurrenceDate), id).run();
+  return json({ ok: true, mode });
 }
