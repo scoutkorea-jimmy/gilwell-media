@@ -62,8 +62,11 @@ export async function onRequestPost({ request, env, data }) {
 
   const safeParentId = parent_id ? parseInt(parent_id, 10) || null : null;
   if (safeParentId) {
-    const parent = await env.DB.prepare(`SELECT id FROM dp_post_comments WHERE id = ?`).bind(safeParentId).first();
+    const parent = await env.DB.prepare(`SELECT id, post_id FROM dp_post_comments WHERE id = ?`).bind(safeParentId).first();
     if (!parent) return json({ error: 'Parent comment not found.' }, 400);
+    if (Number(parent.post_id) !== Number(post_id)) {
+      return json({ error: 'Parent comment does not belong to this post.' }, 400);
+    }
   }
 
   const uid  = data.dpUser.uid;

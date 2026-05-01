@@ -5780,30 +5780,77 @@ const DP = (() => {
       return;
     }
     const isAdmin = state.user && state.user.role === 'admin';
-    host.innerHTML = comments.map(c => {
+    const byParent = new Map();
+    comments.forEach(c => {
+      const parentId = Number(c.parent_id || 0);
+      if (!byParent.has(parentId)) byParent.set(parentId, []);
+      byParent.get(parentId).push(c);
+    });
+    const knownIds = new Set(comments.map(c => Number(c.id)));
+    const roots = comments.filter(c => {
+      const parentId = Number(c.parent_id || 0);
+      return !parentId || !knownIds.has(parentId);
+    });
+    const renderComment = (c, depth) => {
       const mine = c.author_id === (state.user && state.user.uid);
       const canDelete = isAdmin || mine;
+      const children = byParent.get(Number(c.id)) || [];
+      const maxDepth = Math.min(Number(depth || 0), 4);
+      const inset = maxDepth ? 'margin-left:' + Math.min(maxDepth * 18, 72) + 'px;border-left:2px solid var(--g-150);padding-left:10px;' : '';
       return `
-        <div style="padding:10px 12px;border:var(--bd);border-radius:var(--r-sm);margin-bottom:6px;background:var(--g-050)">
+        <div style="${inset}margin-bottom:6px">
+          <div style="padding:10px 12px;border:var(--bd);border-radius:var(--r-sm);background:var(--g-050)">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:11px;color:var(--text-3);margin-bottom:4px">
             <span><strong style="color:var(--text-2);font-weight:500">${esc(c.author_name || 'Anon')}</strong>
                   <span class="mono" style="margin-left:6px">${esc(fmtTime(c.created_at))}</span></span>
-            ${canDelete ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
-                                   onclick="DP._deleteComment(${Number(c.id)}, ${postId})">Delete</button>` : ''}
+            <span style="display:inline-flex;gap:4px;align-items:center">
+              <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
+                      onclick="DP._showCommentReply(${postId}, ${Number(c.id)})">Reply</button>
+              ${canDelete ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
+                                     onclick="DP._deleteComment(${Number(c.id)}, ${postId})">Delete</button>` : ''}
+            </span>
           </div>
           <div style="font-size:var(--fs-13);color:var(--text);white-space:pre-wrap">${esc(c.content || '')}</div>
+          <div id="dp-comment-reply-slot-${Number(c.id)}"></div>
+          </div>
+          ${children.map(child => renderComment(child, maxDepth + 1)).join('')}
         </div>
       `;
-    }).join('');
+    };
+    host.innerHTML = roots.map(c => renderComment(c, 0)).join('');
   }
 
-  async function _postComment(postId) {
-    const input = $('#dp-comment-input');
+  function _showCommentReply(postId, parentId) {
+    const slot = $('#dp-comment-reply-slot-' + Number(parentId));
+    if (!slot) return;
+    slot.innerHTML = `
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end">
+        <textarea class="dp-textarea" id="dp-comment-reply-input-${Number(parentId)}"
+                  placeholder="Write a reply…" style="min-height:58px;flex:1"></textarea>
+        <button class="dp-btn dp-btn-primary" onclick="DP._postComment(${Number(postId)}, ${Number(parentId)})">Reply</button>
+        <button class="dp-btn dp-btn-ghost" onclick="DP._cancelCommentReply(${Number(parentId)})">Cancel</button>
+      </div>
+    `;
+    const input = $('#dp-comment-reply-input-' + Number(parentId));
+    if (input) input.focus();
+  }
+
+  function _cancelCommentReply(parentId) {
+    const slot = $('#dp-comment-reply-slot-' + Number(parentId));
+    if (slot) slot.innerHTML = '';
+  }
+
+  async function _postComment(postId, parentId) {
+    const safeParentId = Number(parentId || 0);
+    const input = safeParentId ? $('#dp-comment-reply-input-' + safeParentId) : $('#dp-comment-input');
     const content = (input && input.value || '').trim();
     if (!content) { toast('Comment cannot be empty', 'err'); return; }
-    const data = await api('POST', 'comments', { post_id: postId, content });
+    const payload = { post_id: postId, content };
+    if (safeParentId) payload.parent_id = safeParentId;
+    const data = await api('POST', 'comments', payload);
     if (data) {
       if (input) input.value = '';
+      if (safeParentId) _cancelCommentReply(safeParentId);
       _loadComments(postId);
     }
   }
@@ -6525,7 +6572,7 @@ const DP = (() => {
     _openVersionEditor, _saveVersion,
     _calDayClick, _calEventClick,
     _editPost, _saveEditPost, _deletePost,
-    _postComment, _deleteComment,
+    _showCommentReply, _cancelCommentReply, _postComment, _deleteComment,
     _openUserEditor, _saveUser, _deleteUser,
     _openPresetEditor, _savePreset, _deletePreset,
     _activityPage,
