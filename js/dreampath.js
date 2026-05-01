@@ -2859,6 +2859,9 @@ const DP = (() => {
     const statusTone = t.status === 'done' ? 'ok' : t.status === 'in_progress' ? 'info' : 'neutral';
     const prioTone = t.priority === 'high' ? 'alert' : 'neutral';
     const dueTone = overdue ? 'alert' : (due === today ? 'warn' : 'neutral');
+    const relatedPostButton = t.related_post_id
+      ? `<button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.viewPost('${esc(t.related_post_board || 'documents')}', ${Number(t.related_post_id)})">Open source post</button>`
+      : '';
 
     const transitions = [];
     if (t.status === 'todo')        transitions.push({ to: 'in_progress', label: 'Start' });
@@ -2877,12 +2880,16 @@ const DP = (() => {
         <span>Owner <strong style="color:var(--text-2)">${esc(t.assignee || '—')}</strong></span>
       </div>
       ${t.description ? `<p>${esc(t.description)}</p>` : '<p style="color:var(--text-3)">No description.</p>'}
+      ${t.source_type ? `<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--g-150);border-radius:var(--r-sm);background:var(--surface-2);font-size:12px;color:var(--text-2)">
+        Source: <strong>${esc(t.source_type)}</strong>${t.source_ref_id ? ' #' + esc(t.source_ref_id) : ''}${t.related_post_title ? ' · ' + esc(t.related_post_title) : ''}
+      </div>` : ''}
       <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--g-150);font-size:11px;color:var(--text-3)">
         Updated <span class="mono">${esc(fmtTime(t.updated_at))}</span>
       </div>
       `,
       `
       <button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+      ${relatedPostButton}
       ${transitions.map(tr =>
         `<button class="dp-btn dp-btn-primary" onclick="DP._taskTransition(${Number(t.id)},'${esc(tr.to)}')">${esc(tr.label)}</button>`
       ).join('')}
@@ -2900,7 +2907,8 @@ const DP = (() => {
     }
   }
 
-  async function _openTaskEditor() {
+  async function _openTaskEditor(seed) {
+    seed = seed || {};
     // Fetch user roster once so the Owner multiselect can pick real users
     // instead of asking for free-text names (which typo'd easily and broke
     // "filter by my tasks" on home). Picker=1 is read-only; returns only
@@ -2921,7 +2929,7 @@ const DP = (() => {
       `
       <div class="dp-field">
         <label for="dp-t-title">Title</label>
-        <input class="dp-input" id="dp-t-title" placeholder="What needs doing?" autocomplete="off">
+        <input class="dp-input" id="dp-t-title" placeholder="What needs doing?" autocomplete="off" value="${esc(seed.title || '')}">
       </div>
       <div class="dp-field">
         <label for="dp-t-desc">Description</label>
@@ -2945,6 +2953,14 @@ const DP = (() => {
           </select>
         </div>
       </div>
+      ${seed.related_post_id ? `
+        <input type="hidden" id="dp-t-related-post" value="${Number(seed.related_post_id)}">
+        <input type="hidden" id="dp-t-source-type" value="${esc(seed.source_type || 'post')}">
+        <input type="hidden" id="dp-t-source-ref" value="${Number(seed.source_ref_id || seed.related_post_id)}">
+        <div style="margin-top:10px;padding:10px 12px;border:1px solid var(--g-150);border-radius:var(--r-sm);background:var(--surface-2);font-size:12px;color:var(--text-2)">
+          This task will keep a link back to the source ${esc(seed.source_type || 'post')}.
+        </div>
+      ` : ''}
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Cancel</button>
        <button class="dp-btn dp-btn-primary" onclick="DP._saveNewTask()">Create</button>`
@@ -2970,6 +2986,12 @@ const DP = (() => {
       priority: $('#dp-t-prio').value || 'normal',
       status: 'todo',
     };
+    const relatedPost = $('#dp-t-related-post');
+    const sourceType = $('#dp-t-source-type');
+    const sourceRef = $('#dp-t-source-ref');
+    if (relatedPost && relatedPost.value) body.related_post_id = Number(relatedPost.value);
+    if (sourceType && sourceType.value) body.source_type = sourceType.value;
+    if (sourceRef && sourceRef.value) body.source_ref_id = Number(sourceRef.value);
     const data = await api('POST', 'tasks', body);
     if (data) {
       toast('Task created', 'ok');
@@ -5931,6 +5953,7 @@ const DP = (() => {
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">Close</button>
+       ${_hasPerm('write:tasks') ? `<button class="dp-btn dp-btn-secondary" onclick="DP._openTaskEditor({ related_post_id: ${Number(p.id)}, source_type: 'post', source_ref_id: ${Number(p.id)}, title: 'Follow up post ${Number(p.id)}' })">Create task</button>` : ''}
        ${canEdit ? `<button class="dp-btn dp-btn-secondary" onclick="DP._editPost('${esc(p.board)}', ${Number(p.id)})">Edit</button>` : ''}
        ${canDelete ? `<button class="dp-btn dp-btn-danger" onclick="DP._deletePost('${esc(p.board)}', ${Number(p.id)})">Delete</button>` : ''}
        ${footerVoteButtons}`,
@@ -5988,6 +6011,8 @@ const DP = (() => {
             <span style="display:inline-flex;gap:4px;align-items:center">
               <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
                       onclick="DP._showCommentReply(${postId}, ${Number(c.id)})">Reply</button>
+              ${_hasPerm('write:tasks') ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
+                      onclick="DP._openTaskEditor({ related_post_id: ${Number(postId)}, source_type: 'comment', source_ref_id: ${Number(c.id)}, title: 'Follow up comment ${Number(c.id)}' })">Task</button>` : ''}
               ${canDelete ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px"
                                      onclick="DP._deleteComment(${Number(c.id)}, ${postId})">Delete</button>` : ''}
             </span>
