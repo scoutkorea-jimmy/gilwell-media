@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.108.01",
+    "date": "2026-05-15",
+    "released_at": "2026-05-15 13:30:00 KST",
+    "summary": "관리자 로그인 시 이메일을 입력해도 로그인이 되도록 수정해, 아이디(`tsak1420`) 대신 이메일(`tsak1420@gmail.com`)을 넣어 6회 연속 실패하던 케이스를 정상화했습니다.",
+    "changes": [
+      "functions/api/admin/login.js에 `@` 포함 입력은 local-part로 한 번 더 admin_users 조회를 시도하는 폴백을 추가. 비밀번호 검증·rate limit·감사 로그 흐름은 그대로 유지해 보안에 영향 없음.",
+      "owner 부트스트랩 분기도 `owner@…` 형태 입력을 동일하게 인식하도록 확장. legacy ADMIN_PASSWORD 회복 경로가 이메일 입력으로도 동작.",
+      "admin.html 로그인 폼 placeholder를 `아이디 (이메일 가능)`로 갱신해, 운영자가 어떤 형식을 넣어야 하는지 즉시 인지하도록 보정.",
+      "운영 로그 근거: 2026-05-15 13:17 KST `tsak1420@gmail.com` 6회 admin_login_failed → 13:18 KST `tsak1420` 2회 admin_login_success 패턴 (operational_events).",
+      "관리자 버전 03.108.00 → 03.108.01 (Fix · 이메일 입력으로 로그인 실패 복구)."
+    ]
+  },
+  {
     "version": "03.108.00",
     "date": "2026-05-01",
     "released_at": "2026-05-01 22:34:34 KST",
