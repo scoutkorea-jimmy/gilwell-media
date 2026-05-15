@@ -219,6 +219,13 @@
   display: block; font-size: var(--fs-caption); font-weight: 600;
   color: var(--v3-text-s); margin-bottom: 6px;
 }
+.v3-login-hint {
+  font-size: var(--fs-caption);
+  color: var(--v3-text-m);
+  margin: 6px 0 4px;
+  line-height: 1.45;
+}
+.v3-login-hint strong { color: var(--v3-text-s); font-weight: 700; }
 .v3-login-field {
   position: relative;
   display: block;
