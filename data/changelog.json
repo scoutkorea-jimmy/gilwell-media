@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.108.02",
+    "date": "2026-05-15",
+    "released_at": "2026-05-15 13:45:00 KST",
+    "summary": "관리자 로그인 입력을 계정명만 받도록 다시 좁히고, 폼 라벨·placeholder·도움말로 '이메일이 아니라 계정명'임을 명시했습니다.",
+    "changes": [
+      "functions/api/admin/login.js의 이메일 → local-part 폴백 분기를 제거. `@` 포함 입력은 400 + '이메일이 아니라 계정명을 입력해주세요. (예: tsak1420)' 메시지로 즉시 거부하고 admin_login_failed로 감사 기록.",
+      "admin.html 로그인 폼 라벨을 `아이디` → `계정명`으로, placeholder를 `계정명 (예: tsak1420)`로 변경. 입력란 아래에 `이메일이 아니라 계정명을 입력해주세요.` 도움말 추가.",
+      "css/admin-v3.css에 `.v3-login-hint` 스타일 추가 (caption 크기, 텍스트 톤 v3-text-m, strong 강조).",
+      "관리자 버전 03.108.01 → 03.108.02 (Fix · 이메일 폴백 제거 + 계정명 안내 문구 도입)."
+    ]
+  },
+  {
     "version": "03.108.01",
     "date": "2026-05-15",
     "released_at": "2026-05-15 13:30:00 KST",
