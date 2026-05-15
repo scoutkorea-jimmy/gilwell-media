@@ -78,6 +78,16 @@ function normalizeUsername(raw) {
   return String(raw == null ? '' : raw).trim().toLowerCase();
 }
 
+// Users sometimes paste their email into the "아이디" field. The DB only stores
+// usernames (e.g. `tsak1420`), so we fall back to the local-part of the email
+// when the exact match fails. Password verification is unchanged.
+function emailLocalPart(value) {
+  if (typeof value !== 'string') return '';
+  const at = value.indexOf('@');
+  if (at <= 0) return '';
+  return value.slice(0, at);
+}
+
 function jwtRoleFor(userRow) {
   return userRow && userRow.role === 'owner' ? 'full' : 'member';
 }
@@ -121,7 +131,19 @@ export async function onRequestPost({ request, env }) {
 
   let sessionUser = null;
 
-  const userRow = await loadAdminUserByUsername(env, username);
+  let userRow = await loadAdminUserByUsername(env, username);
+  // Email-as-username fallback: try the local-part if the raw input has `@`.
+  let resolvedUsername = username;
+  if (!userRow) {
+    const localPart = emailLocalPart(username);
+    if (localPart && localPart !== username) {
+      const fallbackRow = await loadAdminUserByUsername(env, localPart);
+      if (fallbackRow) {
+        userRow = fallbackRow;
+        resolvedUsername = localPart;
+      }
+    }
+  }
   if (userRow) {
     if (userRow.status === 'disabled') {
       await logOperationalEvent(env, {
@@ -137,7 +159,7 @@ export async function onRequestPost({ request, env }) {
       const ok = stored ? await verifyAdminPasswordHash(password, stored) : false;
       if (ok) sessionUser = userRow;
     }
-  } else if (username === 'owner') {
+  } else if (username === 'owner' || emailLocalPart(username) === 'owner') {
     // Bootstrap path — only accept on the canonical 'owner' username so
     // attackers can't use arbitrary usernames to probe the env secret.
     const legacyHash = await loadAdminPasswordHash(env);
