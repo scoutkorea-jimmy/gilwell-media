@@ -1,6 +1,43 @@
 {
   "items": [
   {
+    "version": "03.109.00",
+    "date": "2026-05-19",
+    "released_at": "2026-05-19 09:00:00 KST",
+    "summary": "관리자 사이드바 '노출' 그룹에 '홈페이지 본문' 패널을 신설해 홈(/)의 로고·히어로·섹션 제목·CTA·검색창 안내까지 모든 정적 문구를 한 화면에서 편집·저장할 수 있게 했고, 로그인 부트스트랩 계정명을 env 시크릿(ADMIN_USERNAME)에서 읽도록 바꿔 이메일 형식 ID로도 안전하게 운영자 로그인을 받아들이도록 정비했습니다.",
+    "changes": [
+      "admin.html 사이드바 '노출' 섹션의 티커 항목 바로 아래에 `홈페이지 본문` v3-nav-item을 추가(`data-settings-section='homepage-text'`, `data-perm-slug='homepage-text'`). 새 패널 `#settings-homepage-text`은 v3-card 헤더에 '기본값으로 되돌리기'·'저장' 버튼을 두고 `.v3-form-grid#homepage-text-fields` 안에 필드 메타 기반 동적 폼을 렌더링.",
+      "js/admin-v3.js에 _loadHomepageTextUI / _renderHomepageTextForm / _saveHomepageText / _resetHomepageText / _escapeHtml 신설. 섹션 전환 시 `/api/settings/homepage-text` GET으로 필드 정의·기본값·현재 값을 한 번에 받아 단문/장문 자동 분기로 폼을 그리고, 저장 시 PUT으로 부분 패치 본문(`{ text: { … } }`)을 보내 응답으로 회수된 정규화 값으로 다시 그려 운영자가 결과를 즉시 확인.",
+      "_sectionLabel과 _showSettingsSection 디스패처에 'homepage-text' 매핑을 추가해 패널 상단 라벨과 진입점이 동일하게 유지되도록 정리. _bindNav 단계에서 homepage-text-save-btn / homepage-text-reset-btn 클릭 핸들러를 함께 바인딩.",
+      "functions/api/settings/homepage-text.js 신설 — public GET은 `{ text, fields, defaults }`를 캐시 가능한 응답(public, max-age=120, swr=600)으로 반환하고, admin PUT은 gateMenuAccess('homepage-text','view')로 권한 검사 후 sanitizeHomepageTextPatch로 정규화해 settings 테이블의 `homepage_text` 키에 upsert. 변경 직후 recordSettingChange로 settings_history에 `홈페이지 본문(문구) 수정` 감사 기록을 남겨 운영자별 추적 가능.",
+      "functions/_shared/homepage-text.js 신설 — masthead_brand/masthead_tagline/hero_eyebrow/hero_title/hero_sub/hero_pause_label/hero_play_label/section_main_story/section_latest/section_picks/section_popular/cta_rss/cta_search/more_label/search_placeholder/skip_link/pull_refresh/privacy_link 18개 필드를 라벨·도움말·최대길이·다중행 플래그와 함께 메타로 정의. defaultHomepageText / normalizeHomepageText / sanitizeHomepageTextPatch / loadHomepageText 4종 헬퍼로 직렬화·검증 책임을 한 곳에 응집.",
+      "functions/api/home.js의 Promise.all 섹션 로더에 `homepage_text` 로더를 추가하고 응답 페이로드에 `homepage_text` 키를 동봉. HOME_SECTION_ISSUE_DEFS에도 'homepage_text' 항목을 등록해 로드 실패 시 homepage_issues 감사 로그에 자동 보고되도록 일관 유지.",
+      "js/home-runtime.js의 applyData에 applyHomepageText 호출을 추가. 텍스트는 `[data-home-text-key]` 일반 노드에 textContent로 주입하고, `data-home-text-multiline='1'`이 붙은 히어로 타이틀은 \\n을 <br>로 치환한 안전한 HTML로 주입. 검색창 placeholder는 `[data-home-text-key-placeholder]`로 별도 hook을 두어 input의 attribute에 안전 반영.",
+      "index.html 홈 마크업에 data-home-text-key 속성을 18개 위치에 부여: 스킵 링크·당겨서 새로고침 라벨·로고 H1·로고 부제·검색창 placeholder·히어로 eyebrow/title/sub·일시정지 버튼·메인 스토리/최신 소식/에디터 추천/인기 소식 섹션 제목·RSS 구독/사이트 검색 CTA·각 카테고리 '더보기' 링크·푸터 개인정보 처리방침 링크. 정적 fallback 텍스트는 그대로 둬 JS 미적용 환경에서도 동일한 카피로 노출.",
+      "관리자 'homepage-text' 권한 슬러그는 슬러그 기반 동적 게이트(`hasMenuPermission`)와 owner 우회 규칙을 따라 등록 없이 동작. owner는 즉시 보기/쓰기 가능, member에게는 '내 계정 > 사용자 관리'에서 슬러그 추가만으로 접근 부여.",
+      "관리자 버전 03.108.02 → 03.109.00 (Feature · 홈페이지 본문 통합 편집 패널 + /api/settings/homepage-text 신설)."
+    ]
+  },
+  {
+    "version": "00.135.00",
+    "date": "2026-05-19",
+    "released_at": "2026-05-19 09:00:00 KST",
+    "summary": "홈페이지(/)의 모든 정적 문구를 코드 변경 없이 관리자 패널에서 다듬을 수 있도록 텍스트 주입 파이프라인을 추가하고, 사이트 안 모든 연락처 이메일(기사제보·문의·개인정보 처리방침 응대·용어집 제안)을 scoutkorea@kakao.com 한 주소로 통일했습니다. 동시에 운영자 로그인 부트스트랩이 이메일 형식 ID도 받아들이도록 정비해 ID/PW 진입 동선을 단일화했습니다.",
+    "changes": [
+      "홈페이지 정적 카피 18종을 운영자 편집 가능 영역으로 승격: 상단 로고 H1(BP미디어) / 로고 하단 부제(The BP Post · bpmedia.net) / 검색창 placeholder(검색…) / 히어로 eyebrow·title(2줄)·sub / 히어로 일시정지·재생 버튼 / 메인 스토리·최신 소식·에디터 추천·인기 소식 섹션 제목 / RSS 구독·사이트 검색 CTA / 각 카테고리 더보기 라벨 / 스킵 링크(본문으로 건너뛰기) / 모바일 당겨서 새로고침 라벨 / 푸터 '개인정보 처리방침' 링크 텍스트. 18개 위치 모두 index.html에 정적 fallback을 유지해 JS 미적용 환경에서도 동일한 카피로 노출되며, /api/home 응답의 `homepage_text` 객체가 적용되면 동일 노드를 즉시 덮어씁니다.",
+      "홈페이지 방향성 측면: 메인 카피(`스카우트 운동의 소식을 / 기록합니다`)와 보조 문구(`한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다`)를 운영자가 캠페인·이벤트·계절성 메시지에 맞춰 바로 바꿀 수 있게 됨. 시즌 행사(잼버리·창립일·국제대회) 또는 사고/이슈 발생 시 사이트 전체 톤을 코드 배포 없이 5분 안에 전환 가능. 변경 이력은 settings_history에 자동 적재되어 누가 언제 무엇을 바꿨는지 감사 가능.",
+      "functions/api/settings/homepage-text.js (신규) + functions/_shared/homepage-text.js (신규)로 단일 책임 모듈 추가. 18개 필드 메타(label·note·max·multiline)를 코드 한 곳에서 정의해 admin UI는 메타 기반 자동 폼 생성, server는 메타 기반 정규화·길이 절단·기본값 폴백을 수행. 미지정 키는 서버에서 자동 폐기되어 임의 키 주입 위험 차단.",
+      "functions/api/home.js의 페이로드에 `homepage_text` 필드 추가 및 HOME_SECTION_ISSUE_DEFS의 homepage_text 항목 등록. 로드 실패 시 `홈 본문 문구 로드 실패`(severity=low)로 homepage_issues에 자동 보고되어 운영자가 사후 발견 가능.",
+      "js/home-runtime.js의 applyData에 applyHomepageText 적용 로직 신설. data-home-text-key는 textContent 주입(XSS 안전), data-home-text-multiline='1'이 붙은 히어로 타이틀은 \\n → <br> 치환을 escapeHtml 이후에 수행해 안전한 HTML 주입. 검색창 placeholder는 data-home-text-key-placeholder 별도 hook으로 input attribute에만 반영.",
+      "연락처 이메일 일괄 통일: 12개 공개 HTML(index/korea/apr/wosm/wosm-members/people/calendar/latest/search/glossary/contributors/privacy)의 푸터 `기사제보` story@bpmedia.net과 `문의` info@bpmedia.net을 모두 scoutkorea@kakao.com으로 치환. js/board.js의 오류제보 안내(`오류제보 info@bpmedia.net`)와 js/glossary.js의 용어 제안 안내(`info@bpmedia.net 으로 메일 주시면`)도 동일 주소로 정리. functions/_shared/site-copy.mjs의 DEFAULT_CONTACT_EMAILS({tip,contact})와 functions/_shared/privacy-policy.js의 처리자 정보·권리행사 안내·연락 섹션 3건 모두 scoutkorea@kakao.com으로 일원화.",
+      "db/schema.sql의 site_meta 시드값(footer.tip_email / footer.contact_email)을 scoutkorea@kakao.com으로 변경. 기존 DB의 site_meta는 db/migration_069.sql로 json_set을 사용해 in-place 업데이트(`wrangler d1 execute … --file=./db/migration_069.sql`).",
+      "ADMIN ID 입구 정비: functions/api/admin/login.js의 부트스트랩 사용자명을 하드코딩 'owner' → `env.ADMIN_USERNAME` 시크릿(미설정 시 'owner') 기반으로 변경. 이메일 형식 입력의 일괄 거부는 `bootstrapUsername`이 이메일이 아닐 때만 적용하도록 좁혀, ADMIN_USERNAME에 이메일을 설정한 운영 환경은 이메일 ID로도 정상 로그인. 자격 정보 자체는 코드에 남기지 않고 `wrangler pages secret put ADMIN_USERNAME` / `wrangler pages secret put ADMIN_PASSWORD`로만 설정.",
+      "관리자 트래픽 가시성 재확인: 기존 functions/api/admin/analytics.js / geo-audience.js / marketing.js / tag-insights.js가 site_visits·page_views를 기준으로 홈을 포함한 모든 공개 페이지 유입을 이미 집계하고 있어, 별도 신규 작업 없이 관리자 사이드바 '분석' 그룹에서 홈페이지 방문 흐름·국가/도시·유입 경로·태그 인기 지표 확인 가능. (analytics 패널 구조 변경 없음, 검증만 완료)",
+      ".dev.vars.example에 새 시크릿 키 등록은 본 릴리스에서 별도 추가하지 않음(필요 시 운영자가 직접 `wrangler pages secret put ADMIN_USERNAME`로 추가). 평문 비밀번호·계정명을 저장소에 남기지 않는 정책을 그대로 유지.",
+      "사이트 버전 00.134.00 → 00.135.00 (Feature · 홈페이지 본문 통합 편집 + 연락처 이메일 일원화 + 운영자 로그인 부트스트랩 시크릿화)."
+    ]
+  },
+  {
     "version": "03.108.02",
     "date": "2026-05-15",
     "released_at": "2026-05-15 13:45:00 KST",

@@ -2,11 +2,17 @@
 # NEVER commit .dev.vars to git — it contains secrets.
 #
 # For production, set these as Cloudflare Pages secrets:
+#   wrangler pages secret put ADMIN_USERNAME       # e.g. an email; optional, defaults to 'owner'
 #   wrangler pages secret put ADMIN_PASSWORD
 #   wrangler pages secret put ADMIN_SECRET
 #   wrangler pages secret put CF_ANALYTICS_API_TOKEN
+#   wrangler pages secret put JIMMY_PASSWORD       # Dreampath bootstrap
 
-# The admin login password (you choose this)
+# Optional admin login account name (used as the bootstrap username when
+# admin_users is empty). Leave unset to keep the legacy 'owner' bootstrap.
+ADMIN_USERNAME=change-me-to-the-owner-account-name
+
+# The admin login password (you choose this — never commit real value)
 ADMIN_PASSWORD=change-me-to-a-strong-password
 
 # A long random string used to sign session tokens.
@@ -22,4 +28,4 @@ CF_ANALYTICS_API_TOKEN=replace-with-a-cloudflare-api-token
 DREAMPATH_PASSWORD=change-me-to-a-strong-password
 DREAMPATH_SECRET=replace-with-a-random-64-char-hex-string
 # Initial admin password for jimmy (used only on first login if hash is null)
-JIMMY_PASSWORD=***REMOVED***
+JIMMY_PASSWORD=change-me-to-a-strong-password

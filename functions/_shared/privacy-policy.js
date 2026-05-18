@@ -26,8 +26,8 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
 <ul>
   <li>서비스명: BP미디어 (bpmedia.net)</li>
   <li>운영 주체: 한국 스카우트 운동 자원봉사 네트워크</li>
-  <li>문의: <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></li>
-  <li>기사제보: <a href="mailto:story@bpmedia.net">story@bpmedia.net</a></li>
+  <li>문의: <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a></li>
+  <li>기사제보: <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a></li>
 </ul>
 
 <h2>2. 수집하는 개인정보 항목 및 법적 근거 (Art. 6 GDPR)</h2>
@@ -84,7 +84,7 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
   <li><strong>데이터 이동권 (Art. 20)</strong> — 본인 데이터를 기계 판독 가능 JSON 형태로 내보내기. 관리자 UI에서 다운로드 가능.</li>
   <li><strong>거부권 (Art. 21)</strong> — 정당한 이익 기반 처리에 대한 반대.</li>
 </ul>
-<p>권리 행사 요청은 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a>로 보내주세요.</p>
+<p>권리 행사 요청은 <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a>로 보내주세요.</p>
 
 <h2>4. 제3자 제공 및 국외 이전 (Arts. 44–49)</h2>
 <p>BP미디어는 원칙적으로 개인정보를 제3자에게 제공하지 않습니다. 다만 서비스 운영을 위해 다음 처리 수탁자의 인프라를 이용합니다.</p>
@@ -111,7 +111,7 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
 <p>본 방침이 변경될 경우 개정일과 주요 변경 내용을 이 페이지와 사이트 푸터에서 공지합니다. 중대한 변경은 운영자 페이지의 버전 기록에도 남습니다.</p>
 
 <h2>8. 연락</h2>
-<p>개인정보 관련 문의 또는 권리 행사 요청은 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a> 으로 연락해주세요. 감독기관(대한민국 개인정보보호위원회, EU 회원국 감독기관)에 불만을 제기할 권리도 있습니다.</p>`;
+<p>개인정보 관련 문의 또는 권리 행사 요청은 <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a> 으로 연락해주세요. 감독기관(대한민국 개인정보보호위원회, EU 회원국 감독기관)에 불만을 제기할 권리도 있습니다.</p>`;
 
 export const PRIVACY_POLICY_MAX_CHARS = 100_000;
 
