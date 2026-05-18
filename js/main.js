@@ -6,7 +6,7 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.136.00';
+  GW.APP_VERSION = '00.137.00';
   GW.ADMIN_VERSION = '03.109.00';
   GW.ASSET_VERSION = '20260515043725';
   GW.PALETTE = {
