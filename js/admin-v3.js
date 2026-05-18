@@ -640,8 +640,6 @@
     _bindEl('author-save-btn', 'click', _saveAuthor);
     _bindEl('banner-save-btn', 'click', _saveBanner);
     _bindEl('ticker-save-btn', 'click', _saveTicker);
-    _bindEl('homepage-text-save-btn', 'click', _saveHomepageText);
-    _bindEl('homepage-text-reset-btn', 'click', _resetHomepageText);
     _bindEl('contrib-save-btn', 'click', _saveContributors);
     _bindEl('contrib-add-btn', 'click', _addContributorRow);
     _bindEl('editors-save-btn', 'click', _saveEditors);
@@ -1117,7 +1115,7 @@
   function _sectionLabel(s) {
     var labels = {
       hero: '히어로 기사', 'home-lead': '메인 스토리', picks: '에디터 추천', tags: '태그 / 글머리', meta: '메타태그 / SEO', 'board-copy': '게시판 설명',
-      author: '저자 / 고지', banner: '게시판 배너', ticker: '티커', 'homepage-text': '홈페이지 본문',
+      author: '저자 / 고지', banner: '게시판 배너', ticker: '티커',
       contributors: '기고자', editors: '편집자 / 접근', 'nav-labels': '상단 메뉴명', translations: 'UI 번역', 'wosm-members': '세계연맹 회원국',
       'reference-sites': '기사 참고 사이트',
       'privacy-policy': '개인정보 처리방침',
@@ -1144,7 +1142,6 @@
     else if (section === 'author')  _loadAuthorUI();
     else if (section === 'banner')  _loadBannerUI();
     else if (section === 'ticker')  _loadTickerUI();
-    else if (section === 'homepage-text') _loadHomepageTextUI();
     else if (section === 'contributors') _loadContributorsUI();
     else if (section === 'editors') _loadEditorsUI();
     else if (section === 'nav-labels') _loadNavLabelsUI();
@@ -8970,95 +8967,6 @@
       })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
-  }
-
-  /* ══════════════════════════════════════════════════════════
-     SETTINGS – HOMEPAGE TEXT (전체 홈페이지 본문 문구)
-  ══════════════════════════════════════════════════════════ */
-  var _homepageTextFields = null;
-  var _homepageTextDefaults = null;
-
-  function _loadHomepageTextUI() {
-    var host = document.getElementById('homepage-text-fields');
-    if (!host) return;
-    host.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
-    _apiFetch('/api/settings/homepage-text').then(function (data) {
-      _homepageTextFields = (data && data.fields) || [];
-      _homepageTextDefaults = (data && data.defaults) || {};
-      var values = (data && data.text) || {};
-      _renderHomepageTextForm(host, _homepageTextFields, values);
-    }).catch(function (err) {
-      host.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">' +
-        (err && err.message ? _escapeHtml(err.message) : '불러오기 실패') + '</div></div>';
-    });
-  }
-
-  function _renderHomepageTextForm(host, fields, values) {
-    if (!host || !Array.isArray(fields) || !fields.length) {
-      host.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">표시할 필드가 없습니다.</div></div>';
-      return;
-    }
-    var html = fields.map(function (field) {
-      var key = field.key;
-      var safeKey = String(key).replace(/[^a-z0-9_-]/gi, '');
-      var current = typeof values[key] === 'string' ? values[key] : (field['default'] || '');
-      var max = field.max || 240;
-      var note = field.note ? '<div class="v3-form-note">' + _escapeHtml(field.note) + '</div>' : '';
-      var input = field.multiline
-        ? '<textarea class="v3-textarea" id="ht-' + safeKey + '" data-homepage-text-key="' + _escapeHtml(key) + '" rows="3" maxlength="' + max + '">' + _escapeHtml(current) + '</textarea>'
-        : '<input class="v3-input" id="ht-' + safeKey + '" data-homepage-text-key="' + _escapeHtml(key) + '" type="text" maxlength="' + max + '" value="' + _escapeHtml(current) + '" />';
-      return (
-        '<div class="v3-form-group">' +
-          '<label class="v3-label" for="ht-' + safeKey + '">' + _escapeHtml(field.label || key) + '</label>' +
-          input +
-          note +
-        '</div>'
-      );
-    }).join('');
-    host.innerHTML = html;
-  }
-
-  function _saveHomepageText() {
-    var btn = document.getElementById('homepage-text-save-btn');
-    var host = document.getElementById('homepage-text-fields');
-    if (!host) return;
-    var inputs = host.querySelectorAll('[data-homepage-text-key]');
-    var patch = {};
-    for (var i = 0; i < inputs.length; i++) {
-      var el = inputs[i];
-      var key = el.getAttribute('data-homepage-text-key');
-      if (!key) continue;
-      patch[key] = el.value != null ? String(el.value) : '';
-    }
-    _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/homepage-text', { method: 'PUT', body: JSON.stringify({ text: patch }) })
-      .then(function (data) {
-        GW.showToast('홈페이지 본문을 저장했습니다', 'success');
-        _clearButtonBusy(btn, '완료');
-        if (data && data.text) {
-          _renderHomepageTextForm(host, _homepageTextFields || [], data.text);
-        }
-      })
-      .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
-      .finally(function () { if (btn && btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
-  }
-
-  function _resetHomepageText() {
-    if (!_homepageTextDefaults) return;
-    if (!window.confirm('모든 홈페이지 본문을 기본값으로 되돌립니다. 진행할까요?')) return;
-    var host = document.getElementById('homepage-text-fields');
-    if (!host) return;
-    _renderHomepageTextForm(host, _homepageTextFields || [], _homepageTextDefaults);
-    GW.showToast('기본값으로 되돌렸습니다. 저장 버튼을 눌러 적용하세요.', 'info');
-  }
-
-  function _escapeHtml(value) {
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   /* ══════════════════════════════════════════════════════════

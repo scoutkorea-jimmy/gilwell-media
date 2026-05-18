@@ -9,23 +9,17 @@
  * Phase 2 behavior:
  *   1. `username` defaults to 'owner' when omitted (legacy UI compatibility).
  *   2. Look up admin_users by username. Active row → verify password hash.
- *   3. If no row AND username matches the bootstrap account, fall back to:
+ *   3. If no row AND username === 'owner', fall back to:
  *        a) settings.admin_password_hash (pre-Phase-2 stored hash)
  *        b) env.ADMIN_PASSWORD (bootstrap secret)
- *      On success, lazy-seed the bootstrap row with this password hashed fresh.
+ *      On success, lazy-seed the owner row with this password hashed fresh.
  *      This makes first sign-in after Phase 2 upgrade transparent.
  *   4. Tokens now carry { uid, username, role }. Permissions are resolved
  *      server-side per request from admin_users.permissions.
  *
- * Required Cloudflare secrets (set via `wrangler secret put …`, never in source):
- *   ADMIN_USERNAME  — bootstrap account login (e.g. an email). Optional;
- *                     defaults to 'owner' for backwards compatibility.
+ * Required Cloudflare secrets:
  *   ADMIN_PASSWORD  — bootstrap password (retained for disaster recovery)
  *   ADMIN_SECRET    — HMAC signing key
- *
- * Email-style logins (containing '@') are accepted — the username/password
- * pair is the only identity check. Operators using an email as their admin
- * account must set ADMIN_USERNAME to that exact email (case-insensitive).
  */
 import {
   buildAdminSessionCookie,
@@ -98,8 +92,7 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch {
     return json({ error: 'Invalid JSON body' }, 400);
   }
-  const bootstrapUsername = normalizeUsername(env.ADMIN_USERNAME) || 'owner';
-  const username = normalizeUsername(body && body.username) || bootstrapUsername;
+  const username = normalizeUsername(body && body.username) || 'owner';
   const password = body && body.password;
   const cfToken = body && body.cf_turnstile_response;
 
@@ -126,17 +119,15 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
   }
 
-  // Reject email-style input only when the operator has NOT configured the
-  // bootstrap account as an email. Without this guard, accidental email entry
-  // (autofill from mail apps) would burn rate-limit attempts on the canonical
-  // 'owner' bootstrap. Operators using an email login must set ADMIN_USERNAME.
-  if (username.indexOf('@') >= 0 && bootstrapUsername.indexOf('@') < 0) {
+  // Reject email-style input up front with a clear message — admin_users uses
+  // account names (e.g. `tsak1420`), not email addresses.
+  if (username.indexOf('@') >= 0) {
     await logOperationalEvent(env, {
       channel: 'admin', type: 'admin_login_failed', level: 'warn',
       actor: username, ip, path: '/api/admin/login',
       message: `관리자 로그인 실패 — 이메일 입력 (${username})`,
     });
-    return json({ error: '이메일이 아니라 계정명을 입력해주세요.' }, 400);
+    return json({ error: '이메일이 아니라 계정명을 입력해주세요. (예: tsak1420)' }, 400);
   }
 
   let sessionUser = null;
@@ -157,8 +148,8 @@ export async function onRequestPost({ request, env }) {
       const ok = stored ? await verifyAdminPasswordHash(password, stored) : false;
       if (ok) sessionUser = userRow;
     }
-  } else if (username === bootstrapUsername) {
-    // Bootstrap path — only accept on the configured bootstrap username so
+  } else if (username === 'owner') {
+    // Bootstrap path — only accept on the canonical 'owner' username so
     // attackers can't use arbitrary usernames to probe the env secret.
     const legacyHash = await loadAdminPasswordHash(env);
     const ok = legacyHash
@@ -171,7 +162,7 @@ export async function onRequestPost({ request, env }) {
           `INSERT INTO admin_users (username, display_name, password_hash, role, permissions, status, must_change_password)
            VALUES (?, ?, ?, 'owner', ?, 'active', 0)`
         ).bind(
-          bootstrapUsername,
+          'owner',
           'Owner',
           JSON.stringify(nextHash),
           JSON.stringify({ access_admin: true, permissions: [] })
@@ -179,7 +170,7 @@ export async function onRequestPost({ request, env }) {
         const ownerId = insert && insert.meta && insert.meta.last_row_id;
         sessionUser = {
           id: ownerId,
-          username: bootstrapUsername,
+          username: 'owner',
           display_name: 'Owner',
           role: 'owner',
           status: 'active',
@@ -187,8 +178,8 @@ export async function onRequestPost({ request, env }) {
         };
         await logOperationalEvent(env, {
           channel: 'admin', type: 'admin_owner_bootstrapped', level: 'info',
-          actor: bootstrapUsername, ip, path: '/api/admin/login',
-          message: `관리자 계정 자동 생성 (lazy bootstrap from env.ADMIN_PASSWORD as ${bootstrapUsername})`,
+          actor: 'owner', ip, path: '/api/admin/login',
+          message: '관리자 계정 자동 생성 (lazy bootstrap from env.ADMIN_PASSWORD)',
         });
       } catch (err) {
         console.error('Owner lazy-seed failed:', err);
