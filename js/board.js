@@ -413,7 +413,7 @@
       relatedHtml +
       '<div class="post-byline">' +
         (post.author ? '<span class="post-byline-author">작성자 · ' + GW.escapeHtml(post.author) + '</span>' : '') +
-        '<span class="post-byline-report">오류제보 <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a></span>' +
+        '<span class="post-byline-report">오류제보 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a></span>' +
       '</div>';
 
     inner.querySelector('#modal-close-btn').addEventListener('click', function () {

@@ -27,50 +27,6 @@
     var latestRefreshFailed = false;
     var latestRefreshFailureCount = 0;
 
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function applyHomepageText(text) {
-      if (!text || typeof text !== 'object') return;
-      try { GW._homepageText = text; } catch (_) {}
-      var nodes = document.querySelectorAll('[data-home-text-key]');
-      for (var i = 0; i < nodes.length; i++) {
-        var el = nodes[i];
-        var key = el.getAttribute('data-home-text-key');
-        if (!key || !Object.prototype.hasOwnProperty.call(text, key)) continue;
-        var value = text[key];
-        if (typeof value !== 'string') continue;
-        if (el.getAttribute('data-home-text-multiline') === '1') {
-          el.innerHTML = escapeHtml(value).replace(/\n/g, '<br>');
-        } else {
-          el.textContent = value;
-        }
-      }
-      var placeholderNodes = document.querySelectorAll('[data-home-text-key-placeholder]');
-      for (var j = 0; j < placeholderNodes.length; j++) {
-        var p = placeholderNodes[j];
-        var pkey = p.getAttribute('data-home-text-key-placeholder');
-        if (pkey && Object.prototype.hasOwnProperty.call(text, pkey) && typeof text[pkey] === 'string') {
-          p.setAttribute('placeholder', text[pkey]);
-        }
-      }
-      // Keep the hero pause/play button label in sync with the slider state if
-      // home-hero exposes the current state; otherwise the static default still
-      // matches the configured copy.
-      try {
-        var pauseBtn = document.getElementById('hero-pause-btn');
-        if (pauseBtn && pauseBtn.getAttribute('aria-pressed') === 'true' && typeof text.hero_play_label === 'string') {
-          pauseBtn.textContent = text.hero_play_label;
-        }
-      } catch (_) {}
-    }
-
     function fetchHomeData(options) {
       var opts = options || {};
       var query = opts.fresh ? '?_=' + Date.now() : '';
@@ -93,7 +49,6 @@
       GW._navLabels = data.nav_labels || {};
       GW._customStrings = (data.translations && data.translations.strings) || {};
       GW.applyLang();
-      if (data.homepage_text) applyHomepageText(data.homepage_text);
       GW._statsData = data.stats || null;
       if (GW._statsData) GW._renderStats();
       GW.renderTickerItems('ticker-inner', data.ticker && data.ticker.items);
