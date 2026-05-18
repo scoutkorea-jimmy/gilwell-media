@@ -183,7 +183,7 @@
     if (!items.length) return '';
     return '<section class="glossary-section glossary-unmatched-section">' +
       '<h3 class="glossary-section-title">국문 미확정 용어</h3>' +
-      '<p class="glossary-unmatched-note">적절한 한국어 대응 용어를 아직 찾지 못한 스카우트 용어들입니다. 언제든 <a href="mailto:info@bpmedia.net">info@bpmedia.net</a> 으로 메일 주시면 검토 후 반영하겠습니다.</p>' +
+      '<p class="glossary-unmatched-note">적절한 한국어 대응 용어를 아직 찾지 못한 스카우트 용어들입니다. 언제든 <a href="mailto:scoutkorea@kakao.com">scoutkorea@kakao.com</a> 으로 메일 주시면 검토 후 반영하겠습니다.</p>' +
       renderTable(items) +
     '</section>';
   }

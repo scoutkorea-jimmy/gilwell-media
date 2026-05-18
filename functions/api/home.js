@@ -6,6 +6,7 @@ import { loadNavLabels } from '../_shared/nav-labels.js';
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
+import { defaultHomepageText, loadHomepageText } from '../_shared/homepage-text.js';
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
@@ -44,6 +45,7 @@ const HOME_SECTION_ISSUE_DEFS = {
   site_meta: { title: '홈 사이트 메타 로드 실패', severity: 'medium', area: 'seo', source_path: '/api/home /api/settings/site-meta' },
   nav_labels: { title: '홈 메뉴명 로드 실패', severity: 'high', area: 'ui', source_path: '/api/home /api/settings/nav-labels' },
   translations: { title: '홈 번역 문자열 로드 실패', severity: 'medium', area: 'ui', source_path: '/api/home /api/settings/translations' },
+  homepage_text: { title: '홈 본문 문구 로드 실패', severity: 'low', area: 'ui', source_path: '/api/home /api/settings/homepage-text' },
   ticker: { title: '홈 티커 로드 실패', severity: 'low', area: 'homepage', source_path: '/api/home /api/settings/ticker' },
   stats: { title: '홈 통계 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home' },
   analytics: { title: '홈 푸터 분석 로드 실패', severity: 'medium', area: 'analytics', source_path: '/api/home /site_visits' },
@@ -80,6 +82,7 @@ export async function onRequestGet({ env, request }) {
       siteMeta,
       navLabels,
       translations,
+      homepageText,
       ticker,
       stats,
       footerAnalytics,
@@ -96,6 +99,7 @@ export async function onRequestGet({ env, request }) {
       resolveSection('site_meta', () => loadSiteMeta(env), null),
       resolveSection('nav_labels', () => loadNavLabels(env), {}),
       resolveSection('translations', () => loadTranslations(env), {}),
+      resolveSection('homepage_text', () => loadHomepageText(env), defaultHomepageText()),
       resolveSection('ticker', () => loadTicker(env), DEFAULT_TICKER_ITEMS),
       resolveSection('stats', () => loadStats(env), {
         korea: 0,
@@ -130,6 +134,7 @@ export async function onRequestGet({ env, request }) {
       site_meta: siteMeta,
       nav_labels: navLabels,
       translations: { strings: translations },
+      homepage_text: homepageText,
       ticker: { items: ticker },
       stats,
       analytics: footerAnalytics,
