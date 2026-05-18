@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.136.00",
+    "date": "2026-05-19",
+    "released_at": "2026-05-19 10:30:00 KST",
+    "summary": "홈 푸터의 사이트·관리자 버전을 실시간으로 폴링해 현재 보고 있는 화면이 최신 배포본인지 즉시 확인할 수 있게 했고, 새 버전이 감지되면 화면 전체를 가리는 모달을 띄워 새로고침을 유도하도록 정비했습니다. 운영자가 다듬은 본문이 실제로 배포·반영되었는지를 코드 점검 없이 푸터 한 줄로 검증할 수 있게 됨.",
+    "changes": [
+      "js/version-watch.js 신설 — 페이지 로드 시 /VERSION + /ADMIN_VERSION 두 정적 자산을 cache:'no-store' + `?_=Date.now()` 캐시 버스팅 fetch로 읽어 baseline으로 저장하고, 60초 간격(visibilitychange/focus 트리거 포함)으로 동일 자산을 다시 폴링. 응답이 baseline과 다르면 단 한 번 .gw-version-update-modal을 body에 mount하고 html.gw-version-locked로 배경 스크롤을 잠가 전체 화면 차단.",
+      "version-watch 모달 구조: 카드 안에 새 버전 뱃지(⟳) + `새 버전이 배포되었습니다` 타이틀 + 현재 보고 있는 버전 / 새 버전 두 줄 비교 + '지금 새로고침' 1차 CTA 버튼 + '이 창은 새 버전 반영을 확인할 때까지 닫히지 않습니다.' 안내. 버튼 클릭 시 sessionStorage에 gw_version_reloaded_at 기록 후 window.location.reload()로 즉시 새로고침. Enter/Space 키도 새로고침 트리거.",
+      "index.html 푸터의 .footer-build 단락에 .footer-build-status 라이브 영역 추가 + data-version-status 속성(`checking` → `live`). version-watch가 정상 응답을 받으면 푸터에 `· 최신 (HH:MM 확인)` 라벨을 노출해 운영자가 마지막 확인 시각을 즉시 식별 가능. 응답 실패 시 `· 버전 확인 실패` 라벨로 폴백.",
+      "css/style.css 끝에 .gw-version-update-modal / .gw-vum-card / .gw-vum-badge / .gw-vum-title / .gw-vum-body / .gw-vum-versions / .gw-vum-version-row / .gw-vum-btn / .gw-vum-note 스타일과 .footer-build / .footer-build-status / html.gw-version-locked 보조 스타일 일괄 추가. 라이트/다크 두 테마 모두 대응(:root[data-theme='dark'] 변형).",
+      "js/main.js의 GW.APP_VERSION / GW.ADMIN_VERSION 상수를 V00.136.00 / V03.109.00으로 갱신해 페이지 초기 paint와 fetch 베이스라인 정합 유지. index.html footer의 정적 V… 텍스트도 동일 버전으로 갱신해 JS 미적용 환경에서도 노출 일치.",
+      "동작 메커니즘 요약: deploy.sh가 새 배포 시점에 /VERSION·/ADMIN_VERSION 파일을 갱신 → 운영자 브라우저는 60초 폴링으로 변경 감지 → 모달 차단 → 새로고침 후 새 정적 HTML + 새 main.js 상수를 받아 정상 운영 재개. 모달은 한 번만 mount되므로 한 페이지 lifecycle 동안 중복 표시되지 않음.",
+      "edge case 처리: document.hidden 상태에서는 폴링 skip(불필요 트래픽 차단), FOCUS_DEBOUNCE_MS=5000ms로 focus 이벤트 연쇄 발사 차단, AbortController로 8초 fetch 타임아웃 보호, /VERSION·/ADMIN_VERSION 두 응답 중 하나라도 비면 변경 감지 트리거하지 않고 무음 실패 처리.",
+      "사이트 버전 00.135.00 → 00.136.00 (Feature · 버전 라이브 표시 + 새 버전 배포 차단 모달)."
+    ]
+  },
+  {
     "version": "03.109.00",
     "date": "2026-05-19",
     "released_at": "2026-05-19 09:00:00 KST",
