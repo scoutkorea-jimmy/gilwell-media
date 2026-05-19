@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.109.00
+ * Version: 03.109.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -9002,14 +9002,15 @@
   function _renderContributors() {
     var el = document.getElementById('contrib-list');
     if (!_contributors.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">기고자가 없습니다. 항목 추가를 눌러 추가하세요.</div></div>';
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 등록된 분이 없습니다. 항목 추가를 눌러 추가하세요.</div></div>';
       return;
     }
     el.innerHTML = _contributors.map(function (c, i) {
       return '<div class="v3-person-row">' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" style="flex:1;" />' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할" data-contrib-i="' + i + '" data-field="role" style="flex:1;" />' +
-        '<button class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" onclick="V3._removeContrib(' + i + ')">×</button>' +
+        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" style="flex:1.2;" />' +
+        '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할 / 도와주신 내용" data-contrib-i="' + i + '" data-field="role" style="flex:2;" />' +
+        '<input class="v3-input" type="date" value="' + GW.escapeHtml(c.date || '') + '" data-contrib-i="' + i + '" data-field="date" style="flex:0 0 150px;" title="기록 날짜 (선택)" />' +
+        '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" style="color:var(--v3-ink-destructive);" data-contrib-remove="' + i + '" aria-label="이 항목 삭제">×</button>' +
       '</div>';
     }).join('');
     // bind inputs
@@ -9020,10 +9021,18 @@
         if (_contributors[i]) _contributors[i][field] = input.value;
       });
     });
+    el.querySelectorAll('[data-contrib-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-contrib-remove'), 10);
+        if (!Number.isFinite(i)) return;
+        _contributors.splice(i, 1);
+        _renderContributors();
+      });
+    });
   }
 
   function _addContributorRow() {
-    _contributors.push({ name: '', role: '' });
+    _contributors.push({ name: '', role: '', date: '' });
     _renderContributors();
   }
   V3._removeContrib = function (i) { _contributors.splice(i, 1); _renderContributors(); };
@@ -9038,16 +9047,18 @@
     var btn = document.getElementById('contrib-save-btn');
     _setButtonBusy(btn, '저장 중…');
     var payload = _contributors.map(function (item) {
+      var dateRaw = String((item && item.date) || '').trim();
       return {
-        name: item && item.name || '',
-        note: item && (item.role || item.note) || '',
-        date: item && item.date || '',
+        name: String((item && item.name) || '').trim(),
+        note: String((item && (item.role || item.note)) || '').trim(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : '',
       };
-    });
+    }).filter(function (item) { return item.name; });
     _apiFetch('/api/settings/contributors', { method: 'PUT', body: JSON.stringify({ items: payload }) })
       .then(function () {
-        GW.showToast('기고자 목록을 저장했습니다', 'success');
+        GW.showToast('도움 주신 분들 목록을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
+        _loadContributorsUI();
       })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });

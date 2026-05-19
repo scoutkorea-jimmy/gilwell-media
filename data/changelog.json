@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.109.01",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 03:46:55 KST",
+    "summary": "관리자 사이드바의 '기고자' 메뉴를 공개면 라벨과 동일한 '도움 주신 분들'로 재명명하고, 입력 행에 날짜 필드와 안내문을 추가해 다시 추가/편집할 수 있도록 복원했습니다.",
+    "changes": [
+      "admin.html: 사이드바 nav 라벨과 settings 탭 라벨, 카드 제목을 `기고자` → `도움을 주신 분들`로 통일. 카드 desc에 공개 `/contributors` 링크와 입력 가이드 추가. 권한 슬러그(`contributors`)는 유지해 기존 권한·감사 로그와 호환.",
+      "js/admin-v3.js `_renderContributors`: 입력 행에 `type=\"date\"` (YYYY-MM-DD) 입력칸을 추가하고, placeholder를 `역할 / 도와주신 내용`으로 명료화. 인라인 `onclick=\"V3._removeContrib(...)\"` 핸들러를 `data-contrib-remove` 위임 바인딩으로 교체해 CSP/XSS 표면을 줄임.",
+      "js/admin-v3.js `_saveContributors`: 저장 시 date를 `^\\d{4}-\\d{2}-\\d{2}$`로 검증 후 전송, 이름 빈 행은 자동 필터링. 저장 후 `_loadContributorsUI()` 재호출로 서버 sanitize 결과를 화면에 반영. 토스트 문구를 `도움 주신 분들 목록을 저장했습니다`로 수정.",
+      "functions/api/settings/contributors.js PUT: 권한 게이트를 `gateMenuAccess(..., 'contributors', 'view')` → `'write'`로 수정. 보기 권한만 가진 멤버가 잘못 저장할 수 있던 버그를 차단 (오너 영향 없음).",
+      "관리자 버전 03.109.00 → 03.109.01 (Fix · 도움 주신 분들 admin UI 복원 + 권한 게이트 'write' 수정)."
+    ]
+  },
+  {
     "version": "03.109.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 03:34:48 KST",
