@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.110.00
+ * Version: 03.111.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -121,6 +121,12 @@
   }
   function _syncAdminVersionLabels() {
     if (GW && typeof GW.syncBuildVersion === 'function') GW.syncBuildVersion();
+    // Hook the admin into the shared new-build banner (target='admin' compares
+    // ADMIN_VERSION instead of APP_VERSION). Idempotent — main.js skips
+    // auto-init on admin-page, so this is the single subscription point.
+    if (GW && typeof GW.initVersionUpdateBanner === 'function' && !GW._versionBannerOpts) {
+      try { GW.initVersionUpdateBanner('admin'); } catch (err) { console.warn('[admin] version banner init failed:', err && err.message || err); }
+    }
     var siteVer = (GW && GW.APP_VERSION) ? 'V' + GW.APP_VERSION : '—';
     var adminVer = (GW && GW.ADMIN_VERSION) ? 'V' + GW.ADMIN_VERSION : '';
     document.querySelectorAll('.v3-ver-site').forEach(function (el) {
@@ -9149,6 +9155,19 @@
     _editors.push({ key: nextLetter, name: '' });
     _editors.sort(function (a, b) { return String(a.key).localeCompare(String(b.key)); });
     _renderEditors();
+    // UX: 새로 추가한 슬롯의 이름 입력칸으로 자동 포커스 + 부드러운 스크롤.
+    setTimeout(function () {
+      var addedIndex = -1;
+      for (var i = 0; i < _editors.length; i++) {
+        if (String(_editors[i] && _editors[i].key || '').toUpperCase() === nextLetter) { addedIndex = i; break; }
+      }
+      if (addedIndex < 0) return;
+      var input = document.querySelector('#editors-list [data-editor-i="' + addedIndex + '"][data-field="name"]');
+      if (!input) return;
+      try { input.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {}
+      try { input.focus({ preventScroll: true }); } catch (_) { try { input.focus(); } catch (_) {} }
+    }, 50);
+    GW.showToast('Editor ' + nextLetter + ' 슬롯이 추가되었습니다. 실명을 입력해주세요.', 'info', 3000);
   }
   V3._removeEditor = function (i) {
     if (!_editors[i]) return;

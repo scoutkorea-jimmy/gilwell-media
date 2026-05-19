@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "00.135.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 04:13:03 KST",
+    "summary": "새 빌드가 배포되면 우측 상단에 '🆕 새 버전이 배포되었습니다 V0.0.00 · [새로고침]' 알림 배너를 띄워, 사용자가 오래된 자산으로 계속 머무르지 않도록 명시적으로 안내합니다.",
+    "changes": [
+      "신규 GET `/api/version` 엔드포인트(`functions/api/version.js`) — `functions/_shared/build-version.js`의 `SITE_VERSION`/`ADMIN_VERSION`/`ASSET_VERSION`을 `no-store`로 반환. 클라이언트는 이 응답과 로드 당시 `GW.APP_VERSION`을 비교.",
+      "scripts/sync_versions.sh: 매 릴리스마다 `functions/_shared/build-version.js`도 동시에 갱신하도록 perl 치환 라인을 추가. 운영 흐름(`VERSION bump → sync → deploy`) 그대로 사용 가능.",
+      "js/main.js: 새 `GW.initVersionUpdateBanner(target)` API + 자동 폴러. visibility change·focus·5분 간격으로 폴링, 로드 버전과 서버 버전이 다르면 fixed top-right 배너 노출. × 닫기는 해당 버전 한정 dismissal (`localStorage.gw_build_dismissed_site`), 다음 새 버전부터 다시 노출.",
+      "공개 사이트는 `DOMContentLoaded`에서 자동 초기화하되 admin 페이지(body.admin-v3 / body.admin-page / URL `/admin*`)에서는 건너뜀.",
+      "css/style.css + css/admin-v3.css: `.gw-update-banner` 스타일 추가 (Scouting Purple 좌측 보더, 흰 배경, refresh primary 버튼, 모바일에서는 좌우 10px 마진의 full-width 배너). 관리자에서는 모달(z-index 8000) 아래(z-index 7000)로 두어 입력 중인 폼을 가리지 않음.",
+      "사이트 버전 00.134.01 → 00.135.00 (Feature · 새 빌드 알림 배너)."
+    ]
+  },
+  {
+    "version": "03.111.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 04:13:03 KST",
+    "summary": "관리자에서도 새 빌드 알림 배너가 동일하게 표시되고(ADMIN_VERSION 비교), 편집자 슬롯 추가 후 새 행의 입력칸으로 자동 포커스·부드러운 스크롤·토스트 안내를 더해 입력이 더 편해졌습니다.",
+    "changes": [
+      "js/admin-v3.js `_syncAdminVersionLabels`: 관리자 로드 시 `GW.initVersionUpdateBanner('admin')`을 1회만 호출하도록 가드. `target='admin'`이면 서버의 `admin_version`과 로드 당시 `GW.ADMIN_VERSION`을 비교해 배너 노출.",
+      "js/admin-v3.js `_addEditorRow`: 새 슬롯 추가 후 `requestAnimationFrame`이 아닌 50ms `setTimeout`으로 DOM 적용을 보장한 뒤 새 행의 이름 input을 `scrollIntoView({block:'center', behavior:'smooth'})` + `focus({preventScroll:true})`. `GW.showToast('Editor X 슬롯이 추가되었습니다. 실명을 입력해주세요.', 'info', 3000)` 안내.",
+      "css/admin-v3.css: `.gw-update-banner` 및 관련 자식 셀렉터 5종을 admin 측에도 복제 (admin은 style.css를 로드하지 않음). z-index 7000으로 모달(8000) 아래에 두어 입력 차단 방지.",
+      "관리자 버전 03.110.00 → 03.111.00 (Feature · 새 빌드 알림 배너 + 편집자 슬롯 추가 UX 개선)."
+    ]
+  },
+  {
     "version": "00.134.01",
     "date": "2026-05-20",
     "released_at": "2026-05-20 04:03:15 KST",

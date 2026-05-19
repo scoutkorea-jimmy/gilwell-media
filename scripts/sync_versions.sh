@@ -59,6 +59,10 @@ perl -0pi -e "s/\\/js\\/dreampath\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/dreampath.js?v
 perl -0pi -e "s/GW\\.APP_VERSION = '[0-9.]+'/GW.APP_VERSION = '${SITE_VERSION}'/g; s/GW\\.ADMIN_VERSION = '[0-9.]+'/GW.ADMIN_VERSION = '${ADMIN_VERSION}'/g; s/GW\\.ASSET_VERSION = '[^']+'/GW.ASSET_VERSION = '${ASSET_VERSION}'/g" js/main.js
 perl -0pi -e "s/Version: [0-9.]+/Version: ${ADMIN_VERSION}/g" js/admin-v3.js
 
+# build-version.js — read by functions/api/version.js to power the client-side
+# "new build" banner with the latest deployed numbers.
+perl -0pi -e "s/export const SITE_VERSION = '[^']+'/export const SITE_VERSION = '${SITE_VERSION}'/; s/export const ADMIN_VERSION = '[^']+'/export const ADMIN_VERSION = '${ADMIN_VERSION}'/; s/export const ASSET_VERSION = '[^']+'/export const ASSET_VERSION = '${ASSET_VERSION}'/" functions/_shared/build-version.js
+
 perl -0pi -e "s#/css/admin-v3\\.css\\?v=[0-9A-Za-z.-]+#/css/admin-v3.css?v=${ASSET_VERSION}#g; s#(<span class=\"v3-ver-str v3-ver-admin admin-build-version\">)[^<]*(</span>)#\${1}V${ADMIN_VERSION}\${2}#g; s#(<span class=\"v3-logo-version v3-ver-str v3-ver-admin admin-build-version\">)[^<]*(</span>)#\${1}V${ADMIN_VERSION}\${2}#g; s#(<span class=\"v3-ver-str v3-ver-site site-build-version\">)[^<]*(</span>)#\${1}V${SITE_VERSION}\${2}#g; s#(<span class=\"v3-ver-site site-build-version\">)[^<]*(</span>)#\${1}V${SITE_VERSION}\${2}#g; s#/js/main\\.js\\?v=[0-9A-Za-z.-]+#/js/main.js?v=${ASSET_VERSION}#g; s#/js/shared-country-name-ko\\.js\\?v=[0-9A-Za-z.-]+#/js/shared-country-name-ko.js?v=${ASSET_VERSION}#g; s#/js/admin-v3\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-v3.js?v=${ASSET_VERSION}#g" admin.html
 perl -0pi -e "s#/css/style\\.css\\?v=[0-9A-Za-z.-]+#/css/style.css?v=${ASSET_VERSION}#g; s#/css/admin\\.css\\?v=[0-9A-Za-z.-]+#/css/admin.css?v=${ASSET_VERSION}#g; s#/js/main\\.js\\?v=[0-9A-Za-z.-]+#/js/main.js?v=${ASSET_VERSION}#g; s#/js/kms\\.js\\?v=[0-9A-Za-z.-]+#/js/kms.js?v=${ASSET_VERSION}#g; s/Admin v[0-9.]+/Admin v${ADMIN_VERSION}/g" kms.html
 

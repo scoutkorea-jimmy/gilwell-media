@@ -5066,3 +5066,55 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-tiptap-surface table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
 .v3-tiptap-surface th, .v3-tiptap-surface td { border: 1px solid #e5e5e5; padding: 8px 10px; }
 .v3-tiptap-surface th { background: #f7f7f9; font-weight: 600; }
+
+/* ── New-build update banner ─────────────────────────────────────
+   Mirrors css/style.css; admin doesn't load style.css so the rules
+   are duplicated here. Stays below modal overlays (z-index 8000)
+   on purpose so a user filling a form isn't blocked. */
+.gw-update-banner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 7000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 12px 14px;
+  background: #FFFFFF;
+  color: #1F1F1F;
+  border: 1px solid #C4C4C4;
+  border-left: 4px solid #622599;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  font: 13px / 1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+.gw-update-banner.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.gw-update-banner[hidden] { display: none !important; }
+.gw-update-banner-icon { font-size: 20px; line-height: 1; }
+.gw-update-banner-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.gw-update-banner-title { font-weight: 700; color: #4D006E; }
+.gw-update-banner-version { font-size: 12px; color: #3F3F3F; font-feature-settings: 'tnum'; }
+.gw-update-banner-refresh {
+  flex-shrink: 0; padding: 6px 12px;
+  background: #622599; color: #FFFFFF; border: 0; border-radius: 6px;
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.gw-update-banner-refresh:hover { background: #4D006E; }
+.gw-update-banner-refresh:focus-visible { outline: 2px solid #FF5655; outline-offset: 2px; }
+.gw-update-banner-close {
+  flex-shrink: 0; width: 26px; height: 26px; padding: 0;
+  background: transparent; border: 0; color: #8F8F8F;
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.gw-update-banner-close:hover { color: #1F1F1F; }
+@media (max-width: 600px) {
+  .gw-update-banner {
+    top: 10px; right: 10px; left: 10px;
+    max-width: none; padding: 10px 12px; font-size: 12.5px;
+  }
+}

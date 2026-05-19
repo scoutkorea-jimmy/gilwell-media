@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.134.01';
-  GW.ADMIN_VERSION = '03.110.00';
-  GW.ASSET_VERSION = '20260519190411';
+  GW.APP_VERSION = '00.135.00';
+  GW.ADMIN_VERSION = '03.111.00';
+  GW.ASSET_VERSION = '20260519191345';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -550,6 +550,129 @@
       el.textContent = adminVer;
     });
   };
+
+  // ── New-build update banner ──────────────────────────────────────────────
+  // Polls /api/version on visibility change + every 5 minutes. If the server
+  // reports a different SITE_VERSION (admin pages compare ADMIN_VERSION
+  // instead), a fixed top-right banner offers a one-click refresh.
+  //
+  // Dismissal is per-target-version: hitting × hides only THIS specific new
+  // version. When yet another release ships, the banner reappears.
+  GW._versionBannerOpts = null;
+  GW._versionBannerLoaded = '';
+  GW._versionBannerDismissed = '';
+
+  function _readDismissedVersion(target) {
+    try {
+      var raw = window.localStorage && window.localStorage.getItem('gw_build_dismissed_' + target);
+      return String(raw || '');
+    } catch (_) { return ''; }
+  }
+  function _writeDismissedVersion(target, version) {
+    try {
+      if (window.localStorage) window.localStorage.setItem('gw_build_dismissed_' + target, version);
+    } catch (_) {}
+  }
+
+  function _ensureBannerEl() {
+    var el = document.getElementById('gw-update-banner');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'gw-update-banner';
+    el.className = 'gw-update-banner';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.hidden = true;
+    el.innerHTML =
+      '<span class="gw-update-banner-icon" aria-hidden="true">🆕</span>' +
+      '<div class="gw-update-banner-body">' +
+        '<strong class="gw-update-banner-title">새 버전이 배포되었습니다</strong>' +
+        '<span class="gw-update-banner-version" id="gw-update-banner-version"></span>' +
+      '</div>' +
+      '<button type="button" class="gw-update-banner-refresh" id="gw-update-banner-refresh">새로고침</button>' +
+      '<button type="button" class="gw-update-banner-close" id="gw-update-banner-close" aria-label="알림 닫기">×</button>';
+    document.body.appendChild(el);
+    el.querySelector('#gw-update-banner-refresh').addEventListener('click', function () {
+      try { location.reload(); } catch (_) { window.location.href = window.location.href; }
+    });
+    el.querySelector('#gw-update-banner-close').addEventListener('click', function () {
+      if (GW._versionBannerOpts && GW._versionBannerDismissed) {
+        _writeDismissedVersion(GW._versionBannerOpts.target, GW._versionBannerDismissed);
+      }
+      el.hidden = true;
+      el.classList.remove('is-visible');
+    });
+    return el;
+  }
+
+  function _showVersionBanner(newVersion) {
+    var el = _ensureBannerEl();
+    var verEl = el.querySelector('#gw-update-banner-version');
+    if (verEl) verEl.textContent = 'V' + newVersion;
+    GW._versionBannerDismissed = newVersion;
+    el.hidden = false;
+    // next frame to allow CSS transition
+    requestAnimationFrame(function () { el.classList.add('is-visible'); });
+  }
+
+  function _checkVersionOnce() {
+    var opts = GW._versionBannerOpts;
+    if (!opts || !opts.target) return;
+    if (typeof fetch !== 'function') return;
+    fetch('/api/version', { cache: 'no-store', credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        var serverVer = opts.target === 'admin'
+          ? String(data.admin_version || '')
+          : String(data.site_version || '');
+        if (!serverVer) return;
+        var loadedVer = String(GW._versionBannerLoaded || '');
+        if (serverVer === loadedVer) {
+          // Same as we loaded — banner shouldn't show.
+          var el = document.getElementById('gw-update-banner');
+          if (el && !el.hidden) { el.hidden = true; el.classList.remove('is-visible'); }
+          return;
+        }
+        if (serverVer === _readDismissedVersion(opts.target)) return; // user dismissed this exact one
+        _showVersionBanner(serverVer);
+      })
+      .catch(function (err) { console.warn('[version] poll failed:', err && err.message || err); });
+  }
+
+  GW.initVersionUpdateBanner = function (target) {
+    var loadedVersion = target === 'admin' ? GW.ADMIN_VERSION : GW.APP_VERSION;
+    if (!loadedVersion) return;
+    GW._versionBannerOpts = { target: target === 'admin' ? 'admin' : 'site' };
+    GW._versionBannerLoaded = String(loadedVersion);
+    // Initial probe shortly after load (don't block first paint).
+    setTimeout(_checkVersionOnce, 2500);
+    // Re-check whenever the tab becomes visible again.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') _checkVersionOnce();
+    });
+    window.addEventListener('focus', _checkVersionOnce);
+    // Slow background poll as a safety net (5 min).
+    setInterval(_checkVersionOnce, 5 * 60 * 1000);
+  };
+
+  // Public site auto-init. Admin opts in separately after auth.
+  if (typeof window !== 'undefined' && !window.__GW_NO_AUTO_VERSION_BANNER) {
+    var _autoBanner = function () {
+      // Skip on admin.html — admin-v3.js will init with 'admin' target after login.
+      try {
+        if (document.body && (document.body.classList.contains('admin-page') || document.body.classList.contains('admin-v3'))) return;
+        var path = (window.location && window.location.pathname || '').toLowerCase();
+        if (path === '/admin' || path === '/admin.html' || path.indexOf('/admin/') === 0) return;
+      } catch (_) {}
+      GW.initVersionUpdateBanner('site');
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _autoBanner);
+    } else {
+      _autoBanner();
+    }
+  }
 
   GW.getVersionedCacheKey = function (baseKey, version) {
     var suffix = version || GW.ASSET_VERSION || GW.APP_VERSION || 'v1';
