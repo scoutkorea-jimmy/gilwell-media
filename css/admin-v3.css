@@ -1515,6 +1515,12 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
   background: rgba(130, 230, 222, 0.28);
   color: var(--v3-ink-info-teal);
 }
+.v3-geo-pill.is-wosm,
+.v3-geo-region-badge.is-wosm,
+.v3-geo-legend-dot.is-wosm {
+  background: rgba(98, 37, 153, 0.16);
+  color: var(--gw-scouting-purple);
+}
 .v3-geo-pill.is-unassigned,
 .v3-geo-region-badge.is-unassigned,
 .v3-geo-legend-dot.is-unassigned {
@@ -1526,6 +1532,7 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-geo-legend-dot.is-asia-pacific,
 .v3-geo-legend-dot.is-european,
 .v3-geo-legend-dot.is-interamerican,
+.v3-geo-legend-dot.is-wosm,
 .v3-geo-legend-dot.is-unassigned {
   color: transparent;
 }

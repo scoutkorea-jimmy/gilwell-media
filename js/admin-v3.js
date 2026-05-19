@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.108.02
+ * Version: 03.109.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -194,6 +194,8 @@
   var _referenceSitesSearchField = 'all';
   var _referenceSitesFilterFederation = 'all';
   var _referenceSitesSort = 'created_desc';
+  var _referenceSiteModalIndex = -1; // -1 = 신규, 0+ = _referenceSites 의 편집 대상
+  var _referenceSiteModalDraft = null;
   var _wosmImportSavedMapping = {
     country_ko: '',
     country_en: 'Country Name option 1 E',
@@ -678,8 +680,15 @@
       _wosmMembersSearch = String(this.value || '').trim().toLowerCase();
       _renderWosmMembersEditor();
     });
-    _bindEl('reference-sites-add-btn', 'click', _addReferenceSiteRow);
-    _bindEl('reference-sites-save-btn', 'click', _saveReferenceSites);
+    _bindEl('reference-sites-add-btn', 'click', function () { _openReferenceSiteModal(-1); });
+    _bindEl('refsite-modal-form', 'submit', _submitReferenceSiteModal);
+    // refsite-modal backdrop close
+    var refsiteModalEl = document.getElementById('refsite-modal');
+    if (refsiteModalEl) {
+      refsiteModalEl.addEventListener('click', function (event) {
+        if (event.target === refsiteModalEl) _closeReferenceSiteModal();
+      });
+    }
     _bindEl('reference-sites-search', 'input', function () {
       _referenceSitesSearch = String(this.value || '').trim().toLowerCase();
       _renderReferenceSitesSavedList(document.getElementById('reference-sites-saved-list'));
@@ -6190,6 +6199,7 @@
     if (normalized === 'asia-pacific' || normalized === 'asia pacific') return 'asia-pacific';
     if (normalized === 'european' || normalized === 'europe') return 'european';
     if (normalized === 'interamerican' || normalized === 'inter-american') return 'interamerican';
+    if (normalized === 'wosm') return 'wosm';
     return 'unclassified';
   }
 
@@ -6200,6 +6210,7 @@
       { key: 'asia-pacific', label: 'Asia-Pacific', tone: 'is-asia-pacific', settingValue: 'Asia-Pacific' },
       { key: 'european', label: 'European', tone: 'is-european', settingValue: 'European' },
       { key: 'interamerican', label: 'Interamerican', tone: 'is-interamerican', settingValue: 'Interamerican' },
+      { key: 'wosm', label: 'WOSM', tone: 'is-wosm', settingValue: 'WOSM' },
       { key: 'unclassified', label: '미분류', tone: 'is-unassigned', settingValue: 'Unclassified' }
     ];
   }
@@ -6223,6 +6234,7 @@
       'is-asia-pacific': { stroke: '#d94b4a', fill: '#ff5655', opacity: 0.48, cityStroke: '#d94b4a', cityFill: '#ff5655', cityOpacity: 0.42 },
       'is-european': { stroke: '#007d99', fill: '#0094b4', opacity: 0.48, cityStroke: '#007d99', cityFill: '#82e6de', cityOpacity: 0.42 },
       'is-interamerican': { stroke: '#3b7f92', fill: '#82e6de', opacity: 0.5, cityStroke: '#3b7f92', cityFill: '#82e6de', cityOpacity: 0.44 },
+      'is-wosm': { stroke: '#4d006e', fill: '#622599', opacity: 0.46, cityStroke: '#4d006e', cityFill: '#622599', cityOpacity: 0.42 },
       'is-unassigned': { stroke: '#622599', fill: '#ffbdff', opacity: 0.42, cityStroke: '#622599', cityFill: '#ffbdff', cityOpacity: 0.38 }
     };
     return tones[key] || tones['is-unassigned'];
@@ -9579,9 +9591,9 @@
   }
 
   function _loadReferenceSitesUI() {
-    var el = document.getElementById('reference-sites-editor');
+    var listEl = document.getElementById('reference-sites-saved-list');
     var meta = document.getElementById('reference-sites-meta');
-    if (el) el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
+    if (listEl) listEl.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
     Promise.all([
       _apiFetch('/api/settings/reference-sites'),
@@ -9595,7 +9607,7 @@
       _wosmColumns = Array.isArray(wosm.columns) ? wosm.columns : _wosmColumns;
       _renderReferenceSitesEditor(Array.isArray(wosm.items) ? wosm.items : [], Array.isArray(wosm.columns) ? wosm.columns : []);
     }).catch(function () {
-      if (el) el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
+      if (listEl) listEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
       if (meta) meta.textContent = '불러오기 실패';
     });
   }
@@ -9623,82 +9635,14 @@
   }
 
   function _renderReferenceSitesEditor(wosmItems, wosmColumns) {
-    var el = document.getElementById('reference-sites-editor');
     var listEl = document.getElementById('reference-sites-saved-list');
     var meta = document.getElementById('reference-sites-meta');
-    if (!el) return;
     var regionOptions = _buildReferenceSiteRegionOptions(wosmItems, wosmColumns);
     _syncReferenceSitesFilterControls(regionOptions);
     if (meta) {
       meta.textContent = '총 ' + _referenceSites.length + '개 사이트 · 연동 가능한 지역연맹 ' + regionOptions.length + '개 · revision ' + _referenceSitesRevision;
     }
     _renderReferenceSitesSavedList(listEl);
-    if (!_referenceSites.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">아직 등록한 참고 사이트가 없습니다.</div><div class="v3-issues-note">사이트명, 링크, 주요 내용과 관련 지역연맹을 함께 적어두면 기사 탐색할 때 빠르게 참고할 수 있습니다.</div></div>';
-      return;
-    }
-    el.innerHTML = _referenceSites.map(function (item, index) {
-      return '<section class="v3-refsite-card">' +
-        '<div class="v3-refsite-head">' +
-          '<strong>참고 사이트 ' + (index + 1) + '</strong>' +
-          '<button type="button" class="v3-btn v3-btn-danger v3-btn-sm" data-refsite-remove="' + index + '">삭제</button>' +
-        '</div>' +
-        '<div class="v3-refsite-grid">' +
-          '<div class="v3-refsite-field">' +
-            '<label class="v3-label" for="refsite-name-' + index + '">사이트명</label>' +
-            '<input class="v3-input" type="text" id="refsite-name-' + index + '" data-refsite-index="' + index + '" data-refsite-field="name" value="' + GW.escapeHtml(item.name || '') + '" placeholder="예: WOSM 공식 뉴스룸">' +
-          '</div>' +
-          '<div class="v3-refsite-field">' +
-            '<label class="v3-label" for="refsite-url-' + index + '">사이트 링크</label>' +
-            '<input class="v3-input" type="url" id="refsite-url-' + index + '" data-refsite-index="' + index + '" data-refsite-field="url" value="' + GW.escapeHtml(item.url || '') + '" placeholder="https://...">' +
-          '</div>' +
-        '</div>' +
-        '<div class="v3-refsite-field v3-mt-16">' +
-          '<label class="v3-label" for="refsite-summary-' + index + '">사이트 주요 내용</label>' +
-          '<textarea class="v3-input v3-textarea" rows="4" id="refsite-summary-' + index + '" data-refsite-index="' + index + '" data-refsite-field="summary" placeholder="이 사이트에서 어떤 기사나 자료를 주로 찾을 수 있는지 적어주세요.">' + GW.escapeHtml(item.summary || '') + '</textarea>' +
-        '</div>' +
-        '<div class="v3-refsite-field v3-mt-16">' +
-          '<div class="v3-label">관련 지역연맹</div>' +
-          '<div class="v3-refsite-federations">' + regionOptions.map(function (region) {
-            var checked = (item.related_federations || []).indexOf(region.settingValue) >= 0;
-            return '<label class="v3-refsite-chip">' +
-              '<input type="checkbox" data-refsite-index="' + index + '" data-refsite-federation="' + GW.escapeHtml(region.settingValue) + '"' + (checked ? ' checked' : '') + '>' +
-              '<span>' + GW.escapeHtml(region.label) + '</span>' +
-              '<small>회원국 ' + _fmt(region.memberCount) + '개국</small>' +
-            '</label>';
-          }).join('') + '</div>' +
-        '</div>' +
-      '</section>';
-    }).join('');
-
-    el.querySelectorAll('[data-refsite-field]').forEach(function (input) {
-      input.addEventListener('input', function () {
-        var index = parseInt(input.getAttribute('data-refsite-index'), 10);
-        var field = input.getAttribute('data-refsite-field');
-        if (!_referenceSites[index]) return;
-        _referenceSites[index][field] = String(input.value || '');
-      });
-    });
-    el.querySelectorAll('[data-refsite-federation]').forEach(function (input) {
-      input.addEventListener('change', function () {
-        var index = parseInt(input.getAttribute('data-refsite-index'), 10);
-        var federation = String(input.getAttribute('data-refsite-federation') || '').trim();
-        if (!_referenceSites[index] || !federation) return;
-        var list = _sanitizeReferenceFederationList(_referenceSites[index].related_federations);
-        var pos = list.indexOf(federation);
-        if (input.checked && pos === -1) list.push(federation);
-        if (!input.checked && pos >= 0) list.splice(pos, 1);
-        _referenceSites[index].related_federations = list;
-      });
-    });
-    el.querySelectorAll('[data-refsite-remove]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var index = parseInt(btn.getAttribute('data-refsite-remove'), 10);
-        if (!Number.isFinite(index)) return;
-        _referenceSites.splice(index, 1);
-        _renderReferenceSitesEditor(wosmItems, wosmColumns);
-      });
-    });
   }
 
   function _renderReferenceSitesSavedList(el) {
@@ -9721,14 +9665,36 @@
         var region = _getGeoRegionCatalog().find(function (entry) { return entry.settingValue === federation; }) || _getGeoRegionInfoByKey('unclassified');
         return '<span class="v3-geo-region-badge ' + GW.escapeHtml(region.tone || 'is-unassigned') + '">' + GW.escapeHtml(region.label) + '</span>';
       }).join('');
+      var actions = '<div class="v3-flex" style="gap:4px;flex-wrap:wrap;">' +
+        (item.url ? '<a class="v3-btn v3-btn-outline v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">열기</a>' : '') +
+        '<button type="button" class="v3-btn v3-btn-outline v3-btn-xs" data-refsite-edit="' + entry.index + '">편집</button>' +
+        '<button type="button" class="v3-btn v3-btn-danger v3-btn-xs" data-refsite-delete="' + entry.index + '">삭제</button>' +
+      '</div>';
       return '<tr>' +
         '<td><div class="v3-table-title">' + GW.escapeHtml(item.name || ('참고 사이트 ' + (entry.index + 1))) + '</div></td>' +
         '<td>' + (item.url ? '<a href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">' + GW.escapeHtml(item.url) + '</a>' : '<span class="v3-inline-meta">링크 없음</span>') + '</td>' +
         '<td>' + (item.summary ? '<div class="v3-refsite-summary-cell">' + GW.escapeHtml(item.summary) + '</div>' : '<span class="v3-inline-meta">입력 없음</span>') + '</td>' +
         '<td><div class="v3-refsite-badge-cell">' + (badges || '<span class="v3-geo-region-badge is-unassigned">연맹 미지정</span>') + '</div></td>' +
-        '<td>' + (item.url ? '<a class="v3-btn v3-btn-outline v3-btn-xs" href="' + GW.escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">열기</a>' : '<span class="v3-inline-meta">—</span>') + '</td>' +
+        '<td>' + actions + '</td>' +
       '</tr>';
     }).join('') + '</tbody></table></div>';
+
+    el.querySelectorAll('[data-refsite-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-refsite-edit'), 10);
+        if (!Number.isFinite(index)) return;
+        _openReferenceSiteModal(index);
+      });
+    });
+    el.querySelectorAll('[data-refsite-delete]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var index = parseInt(btn.getAttribute('data-refsite-delete'), 10);
+        if (!Number.isFinite(index) || !_referenceSites[index]) return;
+        var name = String(_referenceSites[index].name || '참고 사이트').trim() || '참고 사이트';
+        if (!window.confirm('"' + name + '" 항목을 삭제할까요?')) return;
+        _deleteReferenceSiteAt(index);
+      });
+    });
   }
 
   function _getFilteredReferenceSites() {
@@ -9805,35 +9771,131 @@
     });
   }
 
-  function _addReferenceSiteRow() {
-    _referenceSites.push({
-      name: '',
-      url: '',
-      summary: '',
-      related_federations: []
-    });
-    _renderReferenceSitesEditor(_wosmMembers, _wosmColumns);
+  function _openReferenceSiteModal(index) {
+    var modal = document.getElementById('refsite-modal');
+    var title = document.getElementById('refsite-modal-title');
+    var nameEl = document.getElementById('refsite-modal-name');
+    var urlEl = document.getElementById('refsite-modal-url');
+    var summaryEl = document.getElementById('refsite-modal-summary');
+    var federationsEl = document.getElementById('refsite-modal-federations');
+    var statusEl = document.getElementById('refsite-modal-status');
+    if (!modal || !nameEl || !urlEl || !summaryEl || !federationsEl) {
+      GW.showToast('참고 사이트 모달이 로드되지 않았습니다. 페이지를 새로고침하세요.', 'error');
+      return;
+    }
+    var isEdit = Number.isFinite(index) && index >= 0 && _referenceSites[index];
+    _referenceSiteModalIndex = isEdit ? index : -1;
+    var source = isEdit ? _referenceSites[index] : { name: '', url: '', summary: '', related_federations: [] };
+    _referenceSiteModalDraft = {
+      name: String(source.name || ''),
+      url: String(source.url || ''),
+      summary: String(source.summary || ''),
+      related_federations: _sanitizeReferenceFederationList(source.related_federations)
+    };
+    if (title) title.textContent = isEdit ? '참고 사이트 편집' : '참고 사이트 추가';
+    nameEl.value = _referenceSiteModalDraft.name;
+    urlEl.value = _referenceSiteModalDraft.url;
+    summaryEl.value = _referenceSiteModalDraft.summary;
+    if (statusEl) statusEl.textContent = '';
+    _renderReferenceSiteModalFederations(federationsEl);
+    modal.style.display = 'flex';
+    setTimeout(function () { try { nameEl.focus(); } catch (_) {} }, 50);
   }
 
-  function _saveReferenceSites() {
-    var btn = document.getElementById('reference-sites-save-btn');
-    var payload = _referenceSites.map(_normalizeReferenceSiteEntry).filter(function (item) {
+  function _renderReferenceSiteModalFederations(container) {
+    var regionOptions = _buildReferenceSiteRegionOptions(_wosmMembers, _wosmColumns);
+    var selected = (_referenceSiteModalDraft && _referenceSiteModalDraft.related_federations) || [];
+    container.innerHTML = regionOptions.map(function (region) {
+      var checked = selected.indexOf(region.settingValue) >= 0;
+      return '<label class="v3-refsite-chip">' +
+        '<input type="checkbox" data-refsite-modal-federation="' + GW.escapeHtml(region.settingValue) + '"' + (checked ? ' checked' : '') + '>' +
+        '<span>' + GW.escapeHtml(region.label) + '</span>' +
+        '<small>회원국 ' + _fmt(region.memberCount) + '개국</small>' +
+      '</label>';
+    }).join('');
+    container.querySelectorAll('[data-refsite-modal-federation]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        if (!_referenceSiteModalDraft) return;
+        var federation = String(input.getAttribute('data-refsite-modal-federation') || '').trim();
+        if (!federation) return;
+        var list = _sanitizeReferenceFederationList(_referenceSiteModalDraft.related_federations);
+        var pos = list.indexOf(federation);
+        if (input.checked && pos === -1) list.push(federation);
+        if (!input.checked && pos >= 0) list.splice(pos, 1);
+        _referenceSiteModalDraft.related_federations = list;
+      });
+    });
+  }
+
+  function _closeReferenceSiteModal() {
+    var modal = document.getElementById('refsite-modal');
+    if (modal) modal.style.display = 'none';
+    _referenceSiteModalIndex = -1;
+    _referenceSiteModalDraft = null;
+  }
+
+  function _submitReferenceSiteModal(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    if (!_referenceSiteModalDraft) return;
+    var nameEl = document.getElementById('refsite-modal-name');
+    var urlEl = document.getElementById('refsite-modal-url');
+    var summaryEl = document.getElementById('refsite-modal-summary');
+    var statusEl = document.getElementById('refsite-modal-status');
+    var submitBtn = document.getElementById('refsite-modal-submit');
+    var draft = {
+      name: nameEl ? String(nameEl.value || '').trim() : '',
+      url: urlEl ? String(urlEl.value || '').trim() : '',
+      summary: summaryEl ? String(summaryEl.value || '').trim() : '',
+      related_federations: _sanitizeReferenceFederationList(_referenceSiteModalDraft.related_federations)
+    };
+    if (!draft.name && !draft.url && !draft.summary) {
+      if (statusEl) statusEl.textContent = '';
+      GW.showToast('사이트명·링크·주요 내용 중 하나 이상을 입력하세요', 'error');
+      return;
+    }
+    var nextItems = _referenceSites.slice();
+    if (_referenceSiteModalIndex >= 0 && nextItems[_referenceSiteModalIndex]) {
+      nextItems[_referenceSiteModalIndex] = draft;
+    } else {
+      nextItems.push(draft);
+    }
+    if (statusEl) statusEl.textContent = '저장 중…';
+    _setButtonBusy(submitBtn, '저장 중…');
+    _persistReferenceSites(nextItems).then(function () {
+      if (statusEl) statusEl.textContent = '';
+      _closeReferenceSiteModal();
+      GW.showToast(_referenceSiteModalIndex >= 0 ? '참고 사이트를 수정했습니다' : '참고 사이트를 추가했습니다', 'success');
+    }).catch(function (err) {
+      if (statusEl) statusEl.textContent = '';
+      GW.showToast((err && err.message) || '저장 실패', 'error');
+    }).finally(function () {
+      if (submitBtn) _clearButtonBusy(submitBtn);
+    });
+  }
+
+  function _deleteReferenceSiteAt(index) {
+    if (!Number.isFinite(index) || !_referenceSites[index]) return;
+    var nextItems = _referenceSites.slice();
+    nextItems.splice(index, 1);
+    _persistReferenceSites(nextItems).then(function () {
+      GW.showToast('참고 사이트를 삭제했습니다', 'success');
+    }).catch(function (err) {
+      GW.showToast((err && err.message) || '삭제 실패', 'error');
+    });
+  }
+
+  function _persistReferenceSites(items) {
+    var payload = items.map(_normalizeReferenceSiteEntry).filter(function (item) {
       return item.name || item.url || item.summary;
     });
-    _setButtonBusy(btn, '저장 중…');
-    _apiFetch('/api/settings/reference-sites', {
+    return _apiFetch('/api/settings/reference-sites', {
       method: 'PUT',
       body: JSON.stringify({ items: payload, if_revision: _referenceSitesRevision }),
     }).then(function (data) {
       _referenceSites = Array.isArray(data && data.items) ? data.items.map(_normalizeReferenceSiteEntry) : payload;
       _referenceSitesRevision = parseInt(data && data.revision, 10) || (_referenceSitesRevision + 1);
-      GW.showToast('기사 참고 사이트를 저장했습니다', 'success');
       _renderReferenceSitesEditor(_wosmMembers, _wosmColumns);
-      _clearButtonBusy(btn, '완료');
-    }).catch(function (e) {
-      GW.showToast(e.message || '저장 실패', 'error');
-    }).finally(function () {
-      if (btn && btn.classList.contains('is-busy')) _clearButtonBusy(btn);
+      return data;
     });
   }
 

@@ -4,7 +4,7 @@ import { recordSettingChange } from '../../_shared/settings-audit.js';
 const SETTING_KEY = 'reference_sites';
 const REV_KEY = 'reference_sites_rev';
 const MAX_ITEMS = 200;
-const ALLOWED_FEDERATIONS = ['Africa', 'Arab', 'Asia-Pacific', 'European', 'Interamerican', 'Unclassified'];
+const ALLOWED_FEDERATIONS = ['Africa', 'Arab', 'Asia-Pacific', 'European', 'Interamerican', 'WOSM', 'Unclassified'];
 
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'reference-sites', 'view'); if (__gate) return __gate;
@@ -116,6 +116,7 @@ function canonicalFederation(value) {
   if (normalized === 'asia-pacific' || normalized === 'asia pacific') return 'Asia-Pacific';
   if (normalized === 'european' || normalized === 'europe') return 'European';
   if (normalized === 'interamerican' || normalized === 'inter-american') return 'Interamerican';
+  if (normalized === 'wosm') return 'WOSM';
   if (normalized === 'unclassified' || normalized === '미분류') return 'Unclassified';
   return ALLOWED_FEDERATIONS.indexOf(raw) >= 0 ? raw : '';
 }
