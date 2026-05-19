@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.109.01
+ * Version: 03.110.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -838,18 +838,19 @@
   // Called unconditionally on DOMContentLoaded — there is no auto-sign-in
   // from an existing cookie. Every admin session starts from scratch.
   function _purgeAdminClientState() {
-    try { if (GW.clearToken) GW.clearToken(); } catch (_) {}
-    try { sessionStorage.clear(); } catch (_) {}
-    try { localStorage.removeItem('_gw_admin_sd'); } catch (_) {}
+    try { if (GW.clearToken) GW.clearToken(); } catch (err) { console.warn('[admin] clearToken failed:', err && err.message || err); }
+    try { sessionStorage.clear(); } catch (err) { console.warn('[admin] sessionStorage.clear failed:', err && err.message || err); }
+    try { localStorage.removeItem('_gw_admin_sd'); } catch (err) { console.warn('[admin] localStorage remove failed:', err && err.message || err); }
     try {
-      fetch('/api/admin/session', { method: 'DELETE', credentials: 'same-origin', cache: 'no-store' }).catch(function () {});
-    } catch (_) {}
+      fetch('/api/admin/session', { method: 'DELETE', credentials: 'same-origin', cache: 'no-store' })
+        .catch(function (err) { console.warn('[admin] session DELETE failed:', err && err.message || err); });
+    } catch (err) { console.warn('[admin] session DELETE setup failed:', err && err.message || err); }
     if (typeof caches !== 'undefined' && caches && typeof caches.keys === 'function') {
       try {
         caches.keys().then(function (keys) {
-          keys.forEach(function (k) { try { caches.delete(k); } catch (_) {} });
-        }).catch(function () {});
-      } catch (_) {}
+          keys.forEach(function (k) { try { caches.delete(k); } catch (err) { console.warn('[admin] caches.delete failed:', err && err.message || err); } });
+        }).catch(function (err) { console.warn('[admin] caches.keys failed:', err && err.message || err); });
+      } catch (err) { console.warn('[admin] caches API access failed:', err && err.message || err); }
     }
     if (navigator && navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
       try {
@@ -9067,23 +9068,29 @@
   /* ══════════════════════════════════════════════════════════
      SETTINGS – EDITORS
   ══════════════════════════════════════════════════════════ */
+  var EDITOR_REQUIRED_LETTERS = ['A', 'B', 'C'];
+
+  function _normalizeEditorsResponse(raw) {
+    var obj = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    var seen = {};
+    EDITOR_REQUIRED_LETTERS.forEach(function (l) { seen[l] = ''; });
+    Object.keys(obj).forEach(function (key) {
+      var letter = String(key || '').trim().toUpperCase();
+      if (!/^[A-Z]$/.test(letter)) return;
+      var value = obj[key];
+      seen[letter] = (typeof value === 'string') ? value : '';
+    });
+    return Object.keys(seen)
+      .sort()
+      .map(function (letter) { return { key: letter, name: seen[letter] }; });
+  }
+
   function _loadEditorsUI() {
     var el = document.getElementById('editors-list');
     el.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     _apiFetch('/api/settings/editors').then(function (data) {
-      var editors = Array.isArray(data) ? data : (data && data.editors) || [];
-      if (!Array.isArray(editors) && editors && typeof editors === 'object') {
-        _editors = ['A', 'B', 'C'].map(function (letter) {
-          return { key: letter, name: editors[letter] || '' };
-        });
-      } else {
-        _editors = (editors || []).map(function (item, index) {
-          return {
-            key: item && (item.key || item.letter) || String.fromCharCode(65 + index),
-            name: item && item.name || '',
-          };
-        });
-      }
+      var source = (data && data.editors) || data || {};
+      _editors = _normalizeEditorsResponse(source);
       _renderEditors();
     }).catch(function () { el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>'; });
   }
@@ -9095,28 +9102,63 @@
       return;
     }
     el.innerHTML = _editors.map(function (e, i) {
+      var letter = String(e && e.key || '').toUpperCase();
+      var isProtected = EDITOR_REQUIRED_LETTERS.indexOf(letter) >= 0;
+      var removeBtn = isProtected
+        ? '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" disabled title="Editor A·B·C는 기존 기사 byline 호환을 위해 삭제할 수 없습니다" style="opacity:.45;cursor:not-allowed;">잠김</button>'
+        : '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" data-editor-remove="' + i + '" style="color:var(--v3-ink-destructive);" aria-label="Editor ' + GW.escapeHtml(letter) + ' 슬롯 삭제">×</button>';
       return '<div class="v3-person-row">' +
-        '<div class="v3-badge v3-badge-gray" style="width:72px;text-align:center;flex:0 0 72px;">Editor ' + GW.escapeHtml(e.key || '') + '</div>' +
-        '<input class="v3-input" type="text" value="' + GW.escapeHtml(e.name || '') + '" placeholder="편집자명" data-editor-i="' + i + '" data-field="name" style="flex:1;" />' +
+        '<div class="v3-badge v3-badge-gray" style="width:84px;text-align:center;flex:0 0 84px;">Editor ' + GW.escapeHtml(letter) + '</div>' +
+        '<input class="v3-input" type="text" value="' + GW.escapeHtml(e.name || '') + '" placeholder="편집자명 (선택)" data-editor-i="' + i + '" data-field="name" style="flex:1;" />' +
+        removeBtn +
       '</div>';
     }).join('');
     el.querySelectorAll('[data-editor-i]').forEach(function (input) {
-      input.addEventListener('change', function () {
-        var i = parseInt(input.dataset.editorI, 10);
-        if (_editors[i]) _editors[i][input.dataset.field] = input.value;
-      });
       input.addEventListener('input', function () {
         var i = parseInt(input.dataset.editorI, 10);
         if (_editors[i]) _editors[i][input.dataset.field] = input.value;
       });
     });
+    el.querySelectorAll('[data-editor-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-editor-remove'), 10);
+        if (!Number.isFinite(i) || !_editors[i]) return;
+        var letter = String(_editors[i].key || '').toUpperCase();
+        if (EDITOR_REQUIRED_LETTERS.indexOf(letter) >= 0) return;
+        if (!window.confirm('Editor ' + letter + ' 슬롯을 삭제할까요? 저장하면 되돌릴 수 없습니다.')) return;
+        _editors.splice(i, 1);
+        _renderEditors();
+      });
+    });
   }
 
   function _addEditorRow() {
-    GW.showToast('편집자 슬롯은 Editor A~C 고정입니다', 'error');
+    var used = {};
+    _editors.forEach(function (e) {
+      used[String(e && e.key || '').toUpperCase()] = true;
+    });
+    var nextLetter = '';
+    for (var code = 65; code <= 90; code++) { // A..Z
+      var letter = String.fromCharCode(code);
+      if (!used[letter]) { nextLetter = letter; break; }
+    }
+    if (!nextLetter) {
+      GW.showToast('Editor 슬롯이 A~Z(26개)까지 모두 사용 중입니다', 'error');
+      return;
+    }
+    _editors.push({ key: nextLetter, name: '' });
+    _editors.sort(function (a, b) { return String(a.key).localeCompare(String(b.key)); });
+    _renderEditors();
   }
-  V3._removeEditor = function () {
-    GW.showToast('편집자 슬롯은 삭제할 수 없습니다', 'error');
+  V3._removeEditor = function (i) {
+    if (!_editors[i]) return;
+    var letter = String(_editors[i].key || '').toUpperCase();
+    if (EDITOR_REQUIRED_LETTERS.indexOf(letter) >= 0) {
+      GW.showToast('Editor A·B·C는 기존 기사 byline 호환을 위해 삭제할 수 없습니다', 'error');
+      return;
+    }
+    _editors.splice(i, 1);
+    _renderEditors();
   };
 
   function _saveEditors() {
@@ -9127,14 +9169,19 @@
     var btn = document.getElementById('editors-save-btn');
     _setButtonBusy(btn, '저장 중…');
     var editorsPayload = {};
-    _editors.forEach(function (item, index) {
-      var key = item && item.key ? item.key : String.fromCharCode(65 + index);
-      editorsPayload[key] = item && item.name ? item.name : '';
+    _editors.forEach(function (item) {
+      var key = String(item && item.key || '').toUpperCase();
+      if (!/^[A-Z]$/.test(key)) return;
+      editorsPayload[key] = item && item.name ? String(item.name) : '';
+    });
+    EDITOR_REQUIRED_LETTERS.forEach(function (letter) {
+      if (!(letter in editorsPayload)) editorsPayload[letter] = '';
     });
     _apiFetch('/api/settings/editors', { method: 'PUT', body: JSON.stringify({ editors: editorsPayload }) })
       .then(function () {
         GW.showToast('편집자 설정을 저장했습니다', 'success');
         _clearButtonBusy(btn, '완료');
+        _loadEditorsUI();
       })
       .catch(function (e) { GW.showToast(e.message || '저장 실패', 'error'); })
       .finally(function () { if (btn.classList.contains('is-busy')) _clearButtonBusy(btn); });
@@ -9667,8 +9714,18 @@
       el.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">조건에 맞는 참고 사이트가 없습니다.</div></div>';
       return;
     }
+    var sortHeader = function (column, label) {
+      var current = String(_referenceSitesSort || '');
+      var asc = column + '_asc';
+      var desc = column + '_desc';
+      var arrow = '';
+      if (current === asc) arrow = ' <span class="v3-refsite-sort-arrow" aria-hidden="true">▲</span>';
+      else if (current === desc) arrow = ' <span class="v3-refsite-sort-arrow" aria-hidden="true">▼</span>';
+      return '<th><button type="button" class="v3-refsite-sort-btn" data-refsite-sort="' + column + '">' + label + arrow + '</button></th>';
+    };
     el.innerHTML = '<div class="v3-table-wrap"><table class="v3-table v3-refsite-table"><thead><tr>' +
-      '<th>사이트명</th><th>링크</th><th>주요 내용</th><th>관련 지역연맹</th><th>작업</th>' +
+      sortHeader('name', '사이트명') + sortHeader('url', '링크') + sortHeader('summary', '주요 내용') + sortHeader('federations', '관련 지역연맹') +
+      '<th>작업</th>' +
       '</tr></thead><tbody>' +
       rows.map(function (entry) {
       var item = entry.item;
@@ -9706,6 +9763,22 @@
         _deleteReferenceSiteAt(index);
       });
     });
+    el.querySelectorAll('[data-refsite-sort]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var column = String(btn.getAttribute('data-refsite-sort') || '').trim();
+        if (!column) return;
+        var current = String(_referenceSitesSort || '');
+        // Toggle: same column flips asc/desc, different column starts asc.
+        _referenceSitesSort = (current === column + '_asc') ? (column + '_desc') : (column + '_asc');
+        var sortEl = document.getElementById('reference-sites-sort');
+        if (sortEl) {
+          // Reflect in dropdown if a matching option exists.
+          var has = Array.prototype.some.call(sortEl.options, function (opt) { return opt.value === _referenceSitesSort; });
+          if (has) sortEl.value = _referenceSitesSort;
+        }
+        _renderReferenceSitesSavedList(el);
+      });
+    });
   }
 
   function _getFilteredReferenceSites() {
@@ -9726,16 +9799,31 @@
       else target = [item.name, item.url, item.summary, federations.join(' ')].join(' ');
       return target.toLowerCase().indexOf(query) >= 0;
     });
+    var sort = String(_referenceSitesSort || 'created_desc');
+    var fedLabel = function (federations) {
+      var labels = federations.map(function (f) {
+        var info = _getGeoRegionCatalog().find(function (entry) { return entry.settingValue === f; });
+        return info ? info.label : f;
+      }).sort(function (a, b) { return String(a).localeCompare(String(b), 'ko'); });
+      return labels.join(' ');
+    };
+    var koCompare = function (av, bv) { return String(av || '').localeCompare(String(bv || ''), 'ko'); };
     rows.sort(function (left, right) {
       var a = left.item || {};
       var b = right.item || {};
-      if (_referenceSitesSort === 'name_asc') return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
-      if (_referenceSitesSort === 'name_desc') return String(b.name || '').localeCompare(String(a.name || ''), 'ko');
-      if (_referenceSitesSort === 'federations_desc') {
-        return _sanitizeReferenceFederationList(b.related_federations).length - _sanitizeReferenceFederationList(a.related_federations).length
-          || String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+      var aFed = _sanitizeReferenceFederationList(a.related_federations);
+      var bFed = _sanitizeReferenceFederationList(b.related_federations);
+      switch (sort) {
+        case 'name_asc':       return koCompare(a.name, b.name) || (right.index - left.index);
+        case 'name_desc':      return koCompare(b.name, a.name) || (right.index - left.index);
+        case 'url_asc':        return koCompare(a.url, b.url) || koCompare(a.name, b.name);
+        case 'url_desc':       return koCompare(b.url, a.url) || koCompare(a.name, b.name);
+        case 'summary_asc':    return koCompare(a.summary, b.summary) || koCompare(a.name, b.name);
+        case 'summary_desc':   return koCompare(b.summary, a.summary) || koCompare(a.name, b.name);
+        case 'federations_asc':  return koCompare(fedLabel(aFed), fedLabel(bFed)) || koCompare(a.name, b.name);
+        case 'federations_desc': return koCompare(fedLabel(bFed), fedLabel(aFed)) || koCompare(a.name, b.name);
+        default: return right.index - left.index; // created_desc
       }
-      return right.index - left.index;
     });
     return rows;
   }

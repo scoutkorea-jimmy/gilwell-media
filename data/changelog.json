@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "00.134.01",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 04:03:15 KST",
+    "summary": "홈페이지 오류 자동 보고의 노이즈를 줄이고(5분 디듀프 + 백그라운드 새로고침 severity 격하), board.js·home-helpers·admin 로그아웃 흐름에서 사일런트 catch를 가시화했습니다. site_meta 응답이 비었을 때 SSR fallback이 항상 normalized 객체를 반환합니다.",
+    "changes": [
+      "functions/api/homepage-issues/report.js: `home_latest_refresh_failed` 템플릿 severity `medium` → `low`. 비차단성(사용자 새로고침으로 복구 가능) 이벤트가 P0 대시보드를 점유하지 않도록 격하. 영향/액션 문구도 운영자가 자연 복구 여부를 빨리 판단할 수 있게 갱신.",
+      "js/home-helpers.js `reportHomepageIssue`: 기존 sessionStorage 단발 dedup 위에 **localStorage 5분 윈도우**를 추가. 동일 fingerprint(code + sorted detail)는 5분 이내 새 탭/새로고침에서도 재보고하지 않아 homepage_issues.occurrence_count 인플레이션을 차단. fetch fallback catch도 console.warn으로 가시화.",
+      "functions/api/home.js: site_meta 섹션 fallback을 `null` → `normalizeSiteMeta(null)`로 교체. DB 실패 또는 settings 비어 있을 때도 og:title/description/footer 기본값이 항상 채워져 SSR canonical+OG 메타 누락 위험 제거.",
+      "js/board.js: `_loadGridLayout`·`_loadBoardBannerInfo`·`_loadTagBar` 세 곳의 빈 catch를 `console.warn('[board] … failed:', ...)`로 교체. 회귀 발생 시 DevTools에서 근본 원인을 즉시 추적할 수 있도록 흔적 보존.",
+      "js/admin-v3.js `_purgeAdminClientState`: 토큰 정리·sessionStorage 클리어·캐시 API 정리·service worker 정리 단계의 5개 빈 catch를 모두 `console.warn`으로 교체. 매 admin 페이지 진입 시 강제 로그인 처리에서 어떤 단계가 실패했는지 사일런트 손실 없이 보임.",
+      "사이트 버전 00.134.00 → 00.134.01 (Fix · 오류 자동 보고 디듀프 + SSR fallback + 사일런트 catch 가시화)."
+    ]
+  },
+  {
+    "version": "03.110.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 04:03:15 KST",
+    "summary": "관리자 편집자 슬롯 시스템을 A~Z 자유 추가형으로 확장하고(기존 A·B·C는 byline 호환 위해 잠금), 기사 참고 사이트 테이블에 컬럼 헤더 클릭 정렬을 추가했습니다. 부가로 홈페이지 사일런트 catch 가시화·SSR fallback 강화도 함께 반영.",
+    "changes": [
+      "functions/api/settings/editors.js: 하드코딩된 `LETTERS = ['A','B','C']`를 제거. 새 `normalizeEditors` 헬퍼가 입력 객체의 모든 단일 대문자 키(A~Z)를 받아 정규화하며, 필수 슬롯 A·B·C는 누락 시 빈 문자열로 자동 생성. 60자 길이 제한·문자열 타입 검증은 유지.",
+      "admin.html `#settings-editors`: 카드 desc에 `Editor A~Z 슬롯에 내부 실명 매핑`·`A·B·C는 기존 기사 byline 호환을 위해 항상 유지` 안내문 추가. 사이드바·탭 라벨은 기존 `편집자 · 접근 관리` 유지.",
+      "js/admin-v3.js `_loadEditorsUI`/`_renderEditors`/`_addEditorRow`/`_removeEditor`/`_saveEditors`: 응답을 `_normalizeEditorsResponse`로 알파벳 순 정렬해 렌더, A·B·C 행은 `잠김` 비활성 버튼으로 표시. D 이후는 `×` 버튼 + confirm 다이얼로그로 삭제 가능. `_addEditorRow`는 사용 중인 letter를 스캔해 A~Z 중 다음 빈 슬롯을 자동 선택, 26개 모두 차면 토스트로 알림. 저장 시 A·B·C 누락 방지로 빈 문자열 자동 보충.",
+      "js/admin-v3.js `_renderReferenceSitesSavedList`: 4개 컬럼(사이트명·링크·주요 내용·관련 지역연맹)의 `<th>`를 `data-refsite-sort` 클릭 버튼으로 교체. 클릭 시 같은 컬럼은 asc↔desc 토글, 다른 컬럼은 asc 시작. 현재 정렬 컬럼 옆에 ▲/▼ 표시. 정렬 결과는 dropdown(`#reference-sites-sort`)과 양방향 동기화.",
+      "js/admin-v3.js `_getFilteredReferenceSites`: 정렬 케이스를 `name/url/summary/federations` × `asc/desc` 8종으로 확장. `federations` 정렬은 회원 연맹 라벨을 한국어 locale로 join 후 비교 (회원국 카운트가 아닌 라벨 알파벳 순으로 일관성). tie-breaker로 사이트명 비교.",
+      "admin.html `#reference-sites-sort` dropdown 옵션을 4종 → 9종으로 확장 (created_desc + 4 컬럼 × asc/desc).",
+      "css/admin-v3.css: `.v3-refsite-sort-btn`·`.v3-refsite-sort-arrow` 추가 (transparent border-0 button, hover underline, scouting-purple 화살표·focus outline).",
+      "functions/api/homepage-issues/report.js: `home_latest_refresh_failed` severity `medium` → `low` (배경 새로고침은 비차단). 영향/액션 문구도 운영자가 자연 복구 여부 판단 빠르도록 갱신.",
+      "js/home-helpers.js: `reportHomepageIssue`에 localStorage 5분 dedup 윈도우 추가 (동일 fingerprint 새 탭에서도 5분간 차단). fetch catch도 console.warn 가시화.",
+      "functions/api/home.js: site_meta fallback을 `null` → `normalizeSiteMeta(null)`로 교체해 settings 누락 시에도 SSR meta 기본값 보장.",
+      "js/board.js·js/admin-v3.js: 빈 catch (board: 3곳 / admin logout purge: 5곳)를 `console.warn`으로 교체해 회귀 시 추적 가능.",
+      "관리자 버전 03.109.01 → 03.110.00 (Feature · 편집자 A~Z 자유 추가 + 참고 사이트 컬럼 헤더 정렬 + 사이트 안정성 정비)."
+    ]
+  },
+  {
     "version": "03.109.01",
     "date": "2026-05-20",
     "released_at": "2026-05-20 03:46:55 KST",

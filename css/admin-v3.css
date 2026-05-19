@@ -2475,6 +2475,30 @@ body[data-chart-spacing="l"] {
   flex-wrap: wrap;
   gap: 8px;
 }
+.v3-refsite-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.v3-refsite-sort-btn:hover { color: var(--v3-text); text-decoration: underline; }
+.v3-refsite-sort-btn:focus-visible {
+  outline: 2px solid var(--gw-scouting-purple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.v3-refsite-sort-arrow {
+  font-size: 10px;
+  color: var(--gw-scouting-purple);
+  line-height: 1;
+}
 .v3-import-map-meta {
   margin-bottom: var(--gap-card);
   font-size: var(--fs-caption);

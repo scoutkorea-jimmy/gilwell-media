@@ -1,4 +1,4 @@
-import { loadSiteMeta } from '../_shared/site-meta.js';
+import { loadSiteMeta, normalizeSiteMeta } from '../_shared/site-meta.js';
 import { serializePostImage } from '../_shared/images.js';
 import { logApiError } from '../_shared/ops-log.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
@@ -93,7 +93,7 @@ export async function onRequestGet({ env, request }) {
       wosm,
       people,
     ] = await Promise.all([
-      resolveSection('site_meta', () => loadSiteMeta(env), null),
+      resolveSection('site_meta', () => loadSiteMeta(env), normalizeSiteMeta(null)),
       resolveSection('nav_labels', () => loadNavLabels(env), {}),
       resolveSection('translations', () => loadTranslations(env), {}),
       resolveSection('ticker', () => loadTicker(env), DEFAULT_TICKER_ITEMS),

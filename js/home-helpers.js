@@ -107,14 +107,35 @@
     return String(code || '').trim() + '|' + JSON.stringify(stable);
   }
 
+  // Cross-page-load dedup window. Same (code, detail) fingerprint from the
+  // same browser only re-reports after this many ms — otherwise transient
+  // network blips inflate homepage_issues.occurrence_count across tabs/reloads.
+  var ISSUE_REPORT_DEDUP_MS = 5 * 60 * 1000;
+
   function reportHomepageIssue(code, detail) {
     var reportCode = String(code || '').trim();
     if (!reportCode || typeof fetch !== 'function') return;
     var fingerprint = getStableIssueFingerprint(reportCode, detail || {});
+
+    // Per-tab dedup (existing behaviour — once per session).
     try {
       var sessionKey = '__gw_home_issue__' + fingerprint;
       if (window.sessionStorage && window.sessionStorage.getItem(sessionKey)) return;
       if (window.sessionStorage) window.sessionStorage.setItem(sessionKey, '1');
+    } catch (_) {}
+
+    // Cross-tab dedup: skip if the same fingerprint was reported within
+    // ISSUE_REPORT_DEDUP_MS. Uses localStorage so a refresh / new tab also
+    // honours the cooldown.
+    try {
+      if (window.localStorage) {
+        var lsKey = '__gw_home_issue_ts__' + fingerprint;
+        var raw = window.localStorage.getItem(lsKey);
+        var prevTs = raw ? parseInt(raw, 10) : 0;
+        var now = Date.now();
+        if (Number.isFinite(prevTs) && now - prevTs < ISSUE_REPORT_DEDUP_MS) return;
+        window.localStorage.setItem(lsKey, String(now));
+      }
     } catch (_) {}
 
     var payload = JSON.stringify({
@@ -137,8 +158,8 @@
         body: payload,
         keepalive: true,
         credentials: 'same-origin'
-      }).catch(function () {});
-    } catch (_) {}
+      }).catch(function (err) { console.warn('[home] issue report failed:', err && err.message || err); });
+    } catch (err) { console.warn('[home] issue report setup failed:', err && err.message || err); }
   }
 
   function getPostIdsSignature(posts) {

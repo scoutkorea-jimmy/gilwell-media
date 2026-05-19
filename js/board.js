@@ -92,7 +92,7 @@
           self.gridEl.style.marginTop = gap + 'px';
         }
       })
-      .catch(function () {});
+      .catch(function (err) { console.warn('[board] grid layout fetch failed:', err && err.message || err); });
   };
 
   Board.prototype._loadBoardBannerInfo = function () {
@@ -108,7 +108,7 @@
         };
         self._updateCount();
       })
-      .catch(function () {});
+      .catch(function (err) { console.warn('[board] banner info fetch failed:', err && err.message || err); });
   };
 
   // ── Tag filter bar ────────────────────────────────────────
@@ -148,7 +148,7 @@
           });
         });
       })
-      .catch(function () {});
+      .catch(function (err) { console.warn('[board] tag bar fetch failed:', err && err.message || err); });
   };
 
   Board.prototype._resetAndLoad = function () {
