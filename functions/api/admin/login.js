@@ -4,18 +4,17 @@
  *
  * Body:   { "username"?: "owner", "password": "..." }
  * Returns 200: { "token": "...", "role": "full"|"member", "user": {...} }
- * Returns 401: { "error": "..." }
+ * Returns 401/403/429/400: { "error": "...", "code": "rejected"|"throttled"|"bad_request"|"server_unavailable" }
  *
- * Phase 2 behavior:
- *   1. `username` defaults to 'owner' when omitted (legacy UI compatibility).
- *   2. Look up admin_users by username. Active row → verify password hash.
- *   3. If no row AND username === 'owner', fall back to:
- *        a) settings.admin_password_hash (pre-Phase-2 stored hash)
- *        b) env.ADMIN_PASSWORD (bootstrap secret)
- *      On success, lazy-seed the owner row with this password hashed fresh.
- *      This makes first sign-in after Phase 2 upgrade transparent.
- *   4. Tokens now carry { uid, username, role }. Permissions are resolved
- *      server-side per request from admin_users.permissions.
+ * Security model (2026-05-20 update):
+ *   - Rate limit is per-IP with **exponential backoff**: after 3 consecutive
+ *     failures the next attempt is blocked for 60s, then 120s, 240s, 480s,
+ *     …, doubling each subsequent failure (cap 24h).
+ *   - Counter resets on (a) any successful login or (b) 72h with no attempt.
+ *   - All authentication-rejection responses share the SAME opaque code
+ *     `"rejected"` and message — wrong-password, disabled-account,
+ *     no-admin-access, and email-style input are indistinguishable to the
+ *     caller. Detailed reasons stay in `operational_events` for audit.
  *
  * Required Cloudflare secrets:
  *   ADMIN_PASSWORD  — bootstrap password (retained for disaster recovery)
@@ -33,37 +32,58 @@ import { loadAdminUserByUsername, parsePermissions } from '../../_shared/admin-u
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 import { verifyTurnstile } from '../../_shared/turnstile.js';
 
-const MAX_ATTEMPTS = 10;
-const WINDOW_SECONDS = 900; // 15 minutes
+// --- Backoff constants ----------------------------------------------------
+//   FAIL_FREE_ATTEMPTS — how many failures trigger no wait (allows for the
+//                       occasional typo without locking out).
+//   BASE_DELAY_SECONDS — first wait once backoff kicks in.
+//   MAX_DELAY_SECONDS  — upper bound on a single wait (24 h prevents lockout
+//                       from compounding past the natural idle reset).
+//   IDLE_RESET_SECONDS — no attempt for this long → counter wiped to 0 on
+//                       the next request (regardless of failure history).
+const FAIL_FREE_ATTEMPTS = 3;
+const BASE_DELAY_SECONDS = 60;
+const MAX_DELAY_SECONDS = 24 * 60 * 60; // 24h
+const IDLE_RESET_SECONDS = 72 * 60 * 60; // 72h
+
+function requiredDelaySeconds(attemptCount) {
+  if (attemptCount < FAIL_FREE_ATTEMPTS) return 0;
+  const power = attemptCount - FAIL_FREE_ATTEMPTS;
+  // 60 * 2^power; clamp to avoid Number overflow and exceed MAX.
+  const safePower = Math.min(power, 24); // 60 * 2^24 ≈ 1B s; cap before that
+  const delay = BASE_DELAY_SECONDS * Math.pow(2, safePower);
+  return Math.min(delay, MAX_DELAY_SECONDS);
+}
 
 async function getRateLimit(env, key) {
   try {
     const row = await env.DB.prepare(
-      `SELECT attempt_count, first_attempt_at
+      `SELECT attempt_count, first_attempt_at, last_attempt_at
          FROM admin_login_attempts
         WHERE ip = ?`
     ).bind(key).first();
-    if (!row) return { count: 0, first: 0 };
+    if (!row) return { count: 0, first: 0, last: 0 };
     return {
       count: parseInt(row.attempt_count, 10) || 0,
       first: parseInt(row.first_attempt_at, 10) || 0,
+      last: parseInt(row.last_attempt_at, 10) || 0,
     };
-  } catch { return { count: 0, first: 0 }; }
+  } catch { return { count: 0, first: 0, last: 0 }; }
 }
 
-async function incrementRateLimit(env, key) {
+async function recordFailedAttempt(env, key) {
   const now = Math.floor(Date.now() / 1000);
   try {
     const existing = await getRateLimit(env, key);
     const nextCount = existing.count > 0 ? existing.count + 1 : 1;
     const firstAttemptAt = existing.count > 0 && existing.first ? existing.first : now;
     await env.DB.prepare(
-      `INSERT INTO admin_login_attempts (ip, attempt_count, first_attempt_at)
-       VALUES (?, ?, ?)
+      `INSERT INTO admin_login_attempts (ip, attempt_count, first_attempt_at, last_attempt_at)
+       VALUES (?, ?, ?, ?)
        ON CONFLICT(ip) DO UPDATE SET
          attempt_count = excluded.attempt_count,
-         first_attempt_at = excluded.first_attempt_at`
-    ).bind(key, nextCount, firstAttemptAt).run();
+         first_attempt_at = excluded.first_attempt_at,
+         last_attempt_at = excluded.last_attempt_at`
+    ).bind(key, nextCount, firstAttemptAt, now).run();
   } catch {}
 }
 
@@ -82,65 +102,100 @@ function jwtRoleFor(userRow) {
   return userRow && userRow.role === 'owner' ? 'full' : 'member';
 }
 
+// Opaque "rejected" response — never reveal which auth check failed.
+// `reasonForAudit` is logged to operational_events but never returned to the
+// caller. `extraLog` lets the caller add account/path-level context.
+async function rejected(env, request, ip, username, reasonForAudit, extraLog) {
+  await logOperationalEvent(env, {
+    channel: 'admin',
+    type: 'admin_login_failed',
+    level: 'warn',
+    actor: username || null,
+    ip,
+    path: '/api/admin/login',
+    message: reasonForAudit || '관리자 로그인 실패',
+    details: extraLog || undefined,
+  });
+  // Constant-ish timing — small randomized delay frustrates timing oracles.
+  await new Promise(r => setTimeout(r, 350 + Math.floor(Math.random() * 200)));
+  return json({ error: '로그인할 수 없습니다.', code: 'rejected' }, 401);
+}
+
 export async function onRequestPost({ request, env }) {
   if (!env.ADMIN_PASSWORD || !env.ADMIN_SECRET) {
-    return json({ error: 'Server not configured. Set ADMIN_PASSWORD and ADMIN_SECRET secrets.' }, 500);
+    return json({ error: '서버 설정이 완료되지 않았습니다.', code: 'server_unavailable' }, 500);
   }
 
-  // Parse body early so we have username for rate-limit key
+  // Parse body — opaque on malformed JSON.
   let body;
   try { body = await request.json(); } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
+    return json({ error: '잘못된 요청입니다.', code: 'bad_request' }, 400);
   }
   const username = normalizeUsername(body && body.username) || 'owner';
   const password = body && body.password;
   const cfToken = body && body.cf_turnstile_response;
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
   if (!password || typeof password !== 'string') {
-    return json({ error: '비밀번호를 입력해주세요' }, 400);
+    return json({ error: '잘못된 요청입니다.', code: 'bad_request' }, 400);
   }
 
-  // Rate limit by ip+username to prevent per-account brute force without
-  // locking the whole IP on one typo.
-  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  const rlKey = `${ip}:${username}`;
-  const rl = await getRateLimit(env, rlKey);
+  // Rate limit by IP only — random-password sprays from one source are the
+  // threat model the operator asked us to defend against. The per-account
+  // dimension lives in operational_events for audit, not in the lockout key.
+  const rlKey = ip;
+  let rl = await getRateLimit(env, rlKey);
   const now = Math.floor(Date.now() / 1000);
 
-  if (rl.count > 0 && (now - rl.first) >= WINDOW_SECONDS) {
+  // Idle reset: 72h with no further attempts wipes the counter clean.
+  if (rl.count > 0 && rl.last && (now - rl.last) >= IDLE_RESET_SECONDS) {
     await clearRateLimit(env, rlKey);
-  } else if (rl.count >= MAX_ATTEMPTS) {
-    const retry = WINDOW_SECONDS - (now - rl.first);
-    return json({ error: `너무 많은 시도입니다. ${Math.ceil(retry / 60)}분 후 다시 시도해주세요.` }, 429);
+    rl = { count: 0, first: 0, last: 0 };
+  }
+
+  // Backoff gate: if the next allowed attempt is still in the future, block.
+  if (rl.count >= FAIL_FREE_ATTEMPTS && rl.last) {
+    const delay = requiredDelaySeconds(rl.count);
+    const earliest = rl.last + delay;
+    if (now < earliest) {
+      const retryAfter = earliest - now;
+      await logOperationalEvent(env, {
+        channel: 'admin', type: 'admin_login_throttled', level: 'warn',
+        actor: username, ip, path: '/api/admin/login',
+        message: '관리자 로그인 차단 (지수 백오프)',
+        details: { attempt_count: rl.count, retry_after_seconds: retryAfter },
+      });
+      return json(
+        { error: '잠시 후 다시 시도해주세요.', code: 'throttled', retry_after: retryAfter },
+        429,
+        { 'Retry-After': String(retryAfter) }
+      );
+    }
   }
 
   const turnstileOk = await verifyTurnstile(cfToken, env);
   if (!turnstileOk) {
-    return json({ error: 'CAPTCHA 인증에 실패했습니다. 다시 시도해주세요.' }, 400);
+    // CAPTCHA failure is a separate signal — it's not a credential test, so
+    // it doesn't increment the backoff counter, but it shares the opaque
+    // rejection envelope so probes can't distinguish "wrong password" from
+    // "missing CAPTCHA" by error code.
+    return rejected(env, request, ip, username, '관리자 로그인 실패 — CAPTCHA');
   }
 
-  // Reject email-style input up front with a clear message — admin_users uses
-  // account names (e.g. `tsak1420`), not email addresses.
+  // Email-style input — historically returned a hint; now silently rejected
+  // (with audit note) to avoid leaking that admin_users keys on local-part.
   if (username.indexOf('@') >= 0) {
-    await logOperationalEvent(env, {
-      channel: 'admin', type: 'admin_login_failed', level: 'warn',
-      actor: username, ip, path: '/api/admin/login',
-      message: `관리자 로그인 실패 — 이메일 입력 (${username})`,
-    });
-    return json({ error: '이메일이 아니라 계정명을 입력해주세요. (예: tsak1420)' }, 400);
+    await recordFailedAttempt(env, rlKey);
+    return rejected(env, request, ip, username, '관리자 로그인 실패 — 이메일 형식 입력');
   }
 
   let sessionUser = null;
-
   const userRow = await loadAdminUserByUsername(env, username);
   if (userRow) {
     if (userRow.status === 'disabled') {
-      await logOperationalEvent(env, {
-        channel: 'admin', type: 'admin_login_blocked', level: 'warn',
-        actor: username, ip, path: '/api/admin/login',
-        message: `비활성화된 계정 로그인 시도 (${username})`,
-      });
-      return json({ error: '비활성화된 계정입니다. 관리자에게 문의해주세요.' }, 403);
+      // Disabled account looks identical to wrong password externally.
+      await recordFailedAttempt(env, rlKey);
+      return rejected(env, request, ip, username, '관리자 로그인 실패 — 비활성화된 계정');
     }
     if (userRow.status === 'active') {
       let stored = null;
@@ -149,8 +204,8 @@ export async function onRequestPost({ request, env }) {
       if (ok) sessionUser = userRow;
     }
   } else if (username === 'owner') {
-    // Bootstrap path — only accept on the canonical 'owner' username so
-    // attackers can't use arbitrary usernames to probe the env secret.
+    // Bootstrap path — only on the canonical 'owner' username so attackers
+    // can't probe env.ADMIN_PASSWORD against arbitrary usernames.
     const legacyHash = await loadAdminPasswordHash(env);
     const ok = legacyHash
       ? await verifyAdminPasswordHash(password, legacyHash)
@@ -189,14 +244,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (!sessionUser) {
-    await incrementRateLimit(env, rlKey);
-    await logOperationalEvent(env, {
-      channel: 'admin', type: 'admin_login_failed', level: 'warn',
-      actor: username, ip, path: '/api/admin/login',
-      message: `관리자 로그인 실패 (${username})`,
-    });
-    await new Promise(r => setTimeout(r, 400));
-    return json({ error: '아이디 또는 비밀번호가 올바르지 않습니다' }, 401);
+    await recordFailedAttempt(env, rlKey);
+    return rejected(env, request, ip, username, '관리자 로그인 실패 — 자격 증명 불일치');
   }
 
   // Phase 5 gate: reject members whose `permissions.access_admin` is false.
@@ -206,17 +255,14 @@ export async function onRequestPost({ request, env }) {
   if (sessionUser.role !== 'owner') {
     const parsed = parsePermissions(sessionUser.permissions);
     if (!parsed.access_admin) {
-      await logOperationalEvent(env, {
-        channel: 'admin', type: 'admin_login_no_access', level: 'warn',
-        actor: sessionUser.username, ip, path: '/api/admin/login',
-        message: `관리자 접근 권한 없는 계정 로그인 시도 (${sessionUser.username})`,
-      });
-      return json({
-        error: '관리자 페이지 접근 권한이 없습니다. 오너에게 권한을 요청하세요.',
-      }, 403);
+      // Valid credential but no admin access — treat as a rejection from
+      // the caller's POV (same code + message). Does NOT increment the
+      // backoff counter — the user proved they own the account.
+      return rejected(env, request, ip, sessionUser.username, '관리자 로그인 거부 — 관리자 접근 권한 없음');
     }
   }
 
+  // Success → wipe the counter for this IP.
   await clearRateLimit(env, rlKey);
 
   try {
@@ -254,7 +300,7 @@ export async function onRequestPost({ request, env }) {
 }
 
 export function onRequestGet() {
-  return json({ error: 'Method not allowed' }, 405);
+  return json({ error: '잘못된 요청입니다.', code: 'bad_request' }, 405);
 }
 
 function json(data, status = 200, extraHeaders = {}) {

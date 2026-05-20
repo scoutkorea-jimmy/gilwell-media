@@ -95,7 +95,8 @@ CREATE TABLE IF NOT EXISTS site_visits (
 CREATE TABLE IF NOT EXISTS admin_login_attempts (
   ip               TEXT PRIMARY KEY,
   attempt_count    INTEGER NOT NULL DEFAULT 0,
-  first_attempt_at INTEGER NOT NULL DEFAULT 0
+  first_attempt_at INTEGER NOT NULL DEFAULT 0,
+  last_attempt_at  INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS operational_events (
@@ -178,6 +179,7 @@ CREATE INDEX IF NOT EXISTS idx_site_visits_country_code ON site_visits(country_c
 CREATE INDEX IF NOT EXISTS idx_site_visits_city_name ON site_visits(city_name);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_sv_unique_bucket ON site_visits(viewer_key, path, visited_bucket);
 CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_first_attempt ON admin_login_attempts(first_attempt_at);
+CREATE INDEX IF NOT EXISTS idx_admin_login_attempts_last_attempt ON admin_login_attempts(last_attempt_at);
 CREATE INDEX IF NOT EXISTS idx_operational_events_time ON operational_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_operational_events_level_type ON operational_events(level, type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_post_engagement_post_time ON post_engagement(post_id, updated_at DESC);

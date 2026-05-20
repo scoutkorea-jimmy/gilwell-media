@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.111.00
+ * Version: 03.112.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -913,17 +913,86 @@
       }
       _showApp();
     }).catch(function (e) {
-      var message = e && e.message ? e.message : '아이디 또는 비밀번호가 올바르지 않습니다';
+      var data = (e && e.data) || {};
+      var code = String(data.code || '').toLowerCase();
+      var pwEl = document.getElementById('v3-pw');
+      if (pwEl) pwEl.value = '';
+      if (window.turnstile) window.turnstile.reset();
+
+      if (code === 'throttled') {
+        var retryAfter = parseInt(data.retry_after, 10);
+        if (!Number.isFinite(retryAfter) || retryAfter < 1) retryAfter = 60;
+        _startLoginThrottleCountdown(retryAfter, btn, err);
+        return;
+      }
+
+      // All other rejections (rejected / bad_request / server_unavailable /
+      // unknown) share the same generic surface so the response cannot be
+      // used to enumerate accounts, statuses, or input formats.
+      var message = code === 'server_unavailable'
+        ? '서버 설정 오류입니다. 관리자에게 문의해주세요.'
+        : '로그인할 수 없습니다.';
       err.textContent = message;
       err.style.display = 'block';
       if (GW.showToast) GW.showToast(message, 'error');
-      document.getElementById('v3-pw').value = '';
-      document.getElementById('v3-pw').focus();
-      if (window.turnstile) window.turnstile.reset();
+      if (pwEl) pwEl.focus();
     }).finally(function () {
       _loginInFlight = false;
       _clearButtonBusy(btn);
     });
+  }
+
+  // Lock the login form for the requested cool-down window. Counts down
+  // visibly in both the inline error text and the button label so the
+  // operator knows the wait is real and finite. Restores the button's
+  // original textContent (e.g. "관리자 입장") when the cool-down ends.
+  var _loginThrottleTimerId = null;
+  function _startLoginThrottleCountdown(seconds, btn, errEl) {
+    if (_loginThrottleTimerId) { clearInterval(_loginThrottleTimerId); _loginThrottleTimerId = null; }
+    var remaining = Math.max(1, parseInt(seconds, 10) || 60);
+    var pwEl = document.getElementById('v3-pw');
+    var userEl = document.getElementById('v3-username');
+    var originalLabel = (btn && (btn.dataset.defaultLabel || btn.textContent)) || '관리자 입장';
+    if (btn && !btn.dataset.defaultLabel) btn.dataset.defaultLabel = originalLabel;
+    function fmt(s) {
+      if (s >= 3600) {
+        var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+        return h + '시간 ' + (m ? m + '분 ' : '');
+      }
+      if (s >= 60) {
+        var mm = Math.floor(s / 60), ss = s % 60;
+        return mm + '분 ' + (ss ? ss + '초 ' : '');
+      }
+      return s + '초';
+    }
+    function paint() {
+      var label = '잠시 후 다시 시도해주세요. ' + fmt(remaining) + ' 남음';
+      if (errEl) { errEl.textContent = label; errEl.style.display = 'block'; }
+      if (btn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-disabled', 'true');
+        btn.textContent = '대기 ' + fmt(remaining) + ' 남음';
+      }
+      if (pwEl) pwEl.disabled = true;
+      if (userEl) userEl.disabled = true;
+    }
+    function clear() {
+      if (_loginThrottleTimerId) { clearInterval(_loginThrottleTimerId); _loginThrottleTimerId = null; }
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-disabled');
+        btn.textContent = originalLabel;
+      }
+      if (pwEl) { pwEl.disabled = false; pwEl.focus(); }
+      if (userEl) userEl.disabled = false;
+      if (errEl) errEl.textContent = '다시 시도할 수 있습니다.';
+    }
+    paint();
+    _loginThrottleTimerId = setInterval(function () {
+      remaining -= 1;
+      if (remaining <= 0) { clear(); return; }
+      paint();
+    }, 1000);
   }
 
   V3.triggerLogin = _doLogin;

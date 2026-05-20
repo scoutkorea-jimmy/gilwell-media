@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.112.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 10:41:56 KST",
+    "summary": "관리자 로그인에 지수 백오프(3회 실패부터 60·120·240···초로 2배씩 증가, 24시간 상한)와 72시간 유휴 자동 초기화를 도입하고, 모든 로그인 실패 응답을 외부에서 구별 불가능한 단일 opaque 코드(`rejected`/`throttled`/`bad_request`/`server_unavailable`)로 통일했습니다.",
+    "changes": [
+      "db/migration_069.sql: `admin_login_attempts`에 `last_attempt_at INTEGER NOT NULL DEFAULT 0` 컬럼 추가 + `idx_admin_login_attempts_last_attempt` 인덱스. 기존 행은 `first_attempt_at` 값을 last_attempt_at에 시드해 즉시 72h 유휴 규칙 적용. db/schema.sql도 동일하게 갱신해 신규 환경 호환.",
+      "functions/api/admin/login.js: 기존 15분 윈도우 10회 카운터를 제거하고 새 백오프 로직 도입. `FAIL_FREE_ATTEMPTS=3`, `BASE_DELAY_SECONDS=60`, `MAX_DELAY_SECONDS=86400`(24h), `IDLE_RESET_SECONDS=259200`(72h). 다음 시도 허용 시각 = `last_attempt_at + 60 * 2^(attempt_count - 3)`. 성공 시 row 삭제, 72h 무시도 시 자동 초기화.",
+      "functions/api/admin/login.js: rate-limit 키를 `${ip}:${username}` → `${ip}`로 변경 (무작위 비밀번호 입력 방어가 핵심 위협 모델). 사용자 단위 감사는 `operational_events`에 그대로 보존.",
+      "functions/api/admin/login.js: 모든 인증 거부 응답을 동일한 `{ error: '로그인할 수 없습니다.', code: 'rejected' }`(401)로 통일. 이메일 형식 입력·비활성화 계정·잘못된 비밀번호·CAPTCHA 실패·관리자 접근 권한 없음 모두 외부에서는 구별 불가. 상세 사유는 `operational_events`(`admin_login_failed`)에 한국어로 기록되어 운영자만 확인 가능.",
+      "functions/api/admin/login.js: 백오프 차단 응답은 `{ error: '잠시 후 다시 시도해주세요.', code: 'throttled', retry_after: <초> }`(429) + `Retry-After` 헤더. 입력 검증 실패는 `bad_request`(400), 환경 변수 누락은 `server_unavailable`(500). 응답에 타이밍 오라클 방지용 350~550ms 무작위 지연 추가.",
+      "js/admin-v3.js `_doLogin` catch: `code === 'throttled'`이면 새 `_startLoginThrottleCountdown(retry_after, btn, errEl)` 호출 — 1초 간격으로 카운트다운(예: `대기 2분 14초 남음`), 버튼·아이디·비밀번호 입력 모두 disabled, 만료 시 자동 복구. 그 외 모든 거부는 `로그인할 수 없습니다.` 단일 메시지로 표시.",
+      "관리자 버전 03.111.00 → 03.112.00 (Feature · 로그인 지수 백오프 + 72h 자동 초기화 + opaque 에러 응답)."
+    ]
+  },
+  {
     "version": "00.135.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 04:13:03 KST",
