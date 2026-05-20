@@ -69,6 +69,7 @@
   Board.prototype.init = function () {
     var self = this;
     this.pageSize = this._getPageSize();
+    this._lastFetchAt = 0;
     GW.setMastheadDate();
     GW.markActiveNav();
     this._setupModal();
@@ -88,6 +89,24 @@
       self.pageSize = nextPageSize;
       self._resetAndLoad();
     });
+    // Auto-refresh on tab return: catches posts published from admin (or another
+    // tab) without forcing the reader to hit reload. Only triggers when the
+    // user is on page 1 — a reader paged deeper into history shouldn't be
+    // yanked back to the top. Throttled by AUTO_REFRESH_MIN_SECONDS so it does
+    // not stack up if multiple focus events fire in quick succession.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') self._maybeAutoRefresh();
+    });
+    window.addEventListener('focus', function () { self._maybeAutoRefresh(); });
+  };
+
+  var AUTO_REFRESH_MIN_SECONDS = 20;
+  Board.prototype._maybeAutoRefresh = function () {
+    if (this.loading) return;
+    if (this.page > 1) return;
+    var now = Date.now();
+    if (now - (this._lastFetchAt || 0) < AUTO_REFRESH_MIN_SECONDS * 1000) return;
+    this._load({ silent: true });
   };
 
   Board.prototype._loadBoardLayout = function () {
@@ -173,11 +192,14 @@
   };
 
   // ── Load posts from API ───────────────────────────────────
-  Board.prototype._load = function () {
+  // opts.silent=true skips the loading-state grid blank-out so an auto-refresh
+  // on tab return doesn't visually flash the existing list away.
+  Board.prototype._load = function (opts) {
     if (this.loading) return;
     var self = this;
+    var silent = !!(opts && opts.silent);
     this.loading = true;
-    this._showLoading();
+    if (!silent) this._showLoading();
     this.pageSize = this._getPageSize();
 
     var searchParam = this._searchQuery ? '&q=' + encodeURIComponent(this._searchQuery) : '';
@@ -197,10 +219,11 @@
         self._renderPosts(data.posts);
         self._updateCount();
         self._renderPagination();
+        self._lastFetchAt = Date.now();
       })
       .catch(function (err) {
         console.error('[board] load failed:', err);
-        try { self._showError(); } catch (_) {}
+        if (!silent) { try { self._showError(); } catch (_) {} }
       })
       .finally(function () {
         self.loading = false;

@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.139.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 21:03:10 KST",
+    "summary": "카테고리 보드(Korea·APR·WOSM·Scout People·최신소식)에 탭 복귀 자동 갱신을 추가했습니다. 관리자가 다른 탭에서 글을 게재하면, 보드 탭으로 돌아오는 순간 새로고침 없이 새 글이 자동으로 나타납니다.",
+    "changes": [
+      "js/board.js: visibilitychange + window focus 이벤트에서 _maybeAutoRefresh() 호출. page=1 일 때만 동작하고(깊은 페이지를 보고 있는 독자를 강제로 1페이지로 끌어오지 않음) 마지막 fetch 후 20초 throttling 적용.",
+      "_load({ silent: true }) 옵션 추가: 자동 갱신은 grid 를 '로딩…'으로 비우지 않고 결과만 swap 하여 시각적 깜빡임 제거. 명시적 사용자 액션(정렬·태그·페이지 변경)에는 기존 로딩 상태 유지.",
+      "_load 성공 시 _lastFetchAt 기록 → throttle 기준점. 검색·태그·정렬 상태는 자동 갱신 사이에도 그대로 유지.",
+      "사이트 버전 00.138.00 → 00.139.00."
+    ]
+  },
+  {
     "version": "00.138.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 20:56:59 KST",
