@@ -8905,7 +8905,7 @@
      SETTINGS – BOARD COPY
   ══════════════════════════════════════════════════════════ */
   var BOARD_COPY_PAGES = (GW.getBoardCopyPageDefs && GW.getBoardCopyPageDefs()) || [
-    { key: 'latest', label: '최근 1개월 소식', note: '/latest' },
+    { key: 'latest', label: '최신 소식', note: '/latest' },
     { key: 'korea', label: 'Korea', note: '/korea' },
     { key: 'apr', label: 'APR', note: '/apr' },
     { key: 'wosm', label: 'WOSM', note: '/wosm' },
@@ -9294,7 +9294,7 @@
     var rows = (GW.getNavLabelRows && GW.getNavLabelRows()) || [
       { key: 'nav.contributors', label: '도움을 주신 분들' },
       { key: 'nav.home', label: '홈' },
-      { key: 'nav.latest', label: '1개월 소식' },
+      { key: 'nav.latest', label: '최신 소식' },
       { key: 'nav.korea', label: 'Korea' },
       { key: 'nav.apr', label: 'APR' },
       { key: 'nav.wosm', label: 'WOSM' },

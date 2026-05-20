@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.140.00';
+  GW.APP_VERSION = '00.140.01';
   GW.ADMIN_VERSION = '03.113.00';
-  GW.ASSET_VERSION = '20260520122055';
+  GW.ASSET_VERSION = '20260520123056';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -50,7 +50,7 @@
   GW.NAV_LABEL_ROWS = [
     { key: 'nav.contributors', label: '도움을 주신 분들' },
     { key: 'nav.home', label: '홈' },
-    { key: 'nav.latest', label: '1개월 소식' },
+    { key: 'nav.latest', label: '최신 소식' },
     { key: 'nav.korea', label: 'Korea' },
     { key: 'nav.apr', label: 'APR' },
     { key: 'nav.wosm', label: 'WOSM' },
@@ -60,7 +60,7 @@
     { key: 'nav.glossary', label: '용어집' }
   ];
   GW.BOARD_COPY_PAGES = [
-    { key: 'latest', label: '최근 1개월 소식', note: '/latest' },
+    { key: 'latest', label: '최신 소식', note: '/latest' },
     { key: 'korea', label: 'Korea', note: '/korea' },
     { key: 'apr', label: 'APR', note: '/apr' },
     { key: 'wosm', label: 'WOSM', note: '/wosm' },

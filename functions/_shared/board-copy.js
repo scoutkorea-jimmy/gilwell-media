@@ -1,6 +1,6 @@
 export const DEFAULT_BOARD_COPY = Object.freeze({
   latest: {
-    description: '최근 30일 동안 한국을 포함한 세계의 스카우트 소식을 한 번에 모아봅니다.',
+    description: '한국을 포함한 세계의 스카우트 소식을 한눈에 모아봅니다.',
   },
   korea: {
     description: '국내 스카우트 운동의 소식과 기록을 전합니다.',

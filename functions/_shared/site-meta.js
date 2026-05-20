@@ -35,8 +35,8 @@ const DEFAULT_SITE_META = {
       description: HOME_SEARCH_DESCRIPTION,
     },
     latest: {
-      title: '최근 1개월 소식 · BP미디어',
-      description: '최근 30일 동안 한국을 포함한 세계의 스카우트 소식을 한 번에 모아봅니다.',
+      title: '최신 소식 · BP미디어',
+      description: '한국을 포함한 세계의 스카우트 소식을 한눈에 모아봅니다.',
     },
     korea: {
       title: 'Korea · BP미디어',
@@ -387,7 +387,7 @@ function buildBreadcrumbStructuredData(pageKey, url) {
 
 function getBreadcrumbLabel(pageKey) {
   const labels = {
-    latest: '최근 1개월 소식',
+    latest: '최신 소식',
     korea: 'Korea',
     apr: 'APR',
     wosm: 'WOSM',
@@ -404,7 +404,7 @@ function getBreadcrumbLabel(pageKey) {
 function getPageTopic(pageKey) {
   const topics = {
     home: '스카우트 뉴스',
-    latest: '최근 1개월 소식',
+    latest: '최신 소식',
     korea: '한국 스카우트 소식',
     apr: '아시아태평양 스카우트 소식',
     wosm: '세계스카우트연맹 소식',
@@ -421,7 +421,7 @@ function getPageTopic(pageKey) {
 function getPageKeywords(pageKey) {
   const keywords = {
     home: 'BP미디어, 비피미디어, BPmedia, The BP Post, bpmedia.net, 스카우트 뉴스, 스카우트 미디어, WOSM, APR, 한국스카우트연맹',
-    latest: '최근 1개월 소식, 최근 30일 스카우트 뉴스, BP미디어',
+    latest: '최신 소식, 최신 스카우트 뉴스, BP미디어',
     korea: 'Korea, 한국스카우트연맹, BP미디어',
     apr: 'APR, 아시아태평양 스카우트, BP미디어',
     wosm: 'WOSM, 세계스카우트연맹, BP미디어',

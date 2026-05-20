@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.140.01",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 21:30:24 KST",
+    "summary": "'최근 1개월 소식' 게시판이라는 표현은 본래 없고 '최신 소식'이 올바른 이름이라는 정정에 따라, 페이지 제목·메뉴 라벨·배너·메타·키워드를 모두 '최신 소식' 톤으로 일괄 통일했습니다.",
+    "changes": [
+      "functions/_shared/site-structure.mjs DEFAULT_NAV_LABELS['nav.latest']: ko '1개월 소식' → '최신 소식', en 'Last 30 Days' → 'Latest'.",
+      "functions/_shared/site-meta.js: pages.latest.title/description, getBreadcrumbLabel.latest, getPageTopic.latest, getPageKeywords.latest 4곳을 '최신 소식' 톤으로 정정 (SEO/OG 영향).",
+      "functions/_shared/board-copy.js DEFAULT_BOARD_COPY.latest.description: '최근 30일 동안 ... 한 번에 모아봅니다.' → '한국을 포함한 세계의 스카우트 소식을 한눈에 모아봅니다.'",
+      "latest.html: <title>, ticker(2회), board-banner 카테고리 태그(30 Days → Latest), h2(최근 1개월 소식 → 최신 소식), 본문 desc 일괄 정정.",
+      "js/site-chrome.js GW.STRINGS: nav.latest / link.latest / board.latest.banner / board.latest.title / board.latest.desc 한·영 모두 정정.",
+      "js/main.js GW.NAV_LABEL_ROWS + GW.BOARD_COPY_PAGES, js/admin-v3.js BOARD_COPY_PAGES + nav rows: latest 라벨 정적 사본 정정.",
+      "index.html / privacy.html / editorial-policy.html nav fallback + aria-label 잔여 정정. sync_public_fallbacks.mjs 가 다루는 11개 HTML 은 sync_versions.sh 가 자동 갱신.",
+      "사이트 버전 00.140.00 → 00.140.01. (admin은 이번 정정 영향이 미미해 ADMIN_VERSION bump 보류 — admin-v3.js 라벨 변경은 자체 톤 정정 수준)"
+    ]
+  },
+  {
     "version": "00.140.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 21:20:29 KST",

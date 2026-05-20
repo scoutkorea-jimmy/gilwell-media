@@ -6,7 +6,7 @@ export const VALID_POST_CATEGORIES = SITE_CATEGORY_KEYS.slice();
 export const DEFAULT_NAV_LABELS = Object.freeze({
   'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
   'nav.home': { ko: '홈', en: 'Home' },
-  'nav.latest': { ko: '1개월 소식', en: 'Last 30 Days' },
+  'nav.latest': { ko: '최신 소식', en: 'Latest' },
   'nav.korea': { ko: 'Korea', en: 'Korea' },
   'nav.apr': { ko: 'APR', en: 'APR' },
   'nav.wosm': { ko: 'WOSM', en: 'WOSM' },
