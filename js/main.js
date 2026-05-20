@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.139.00';
+  GW.APP_VERSION = '00.139.01';
   GW.ADMIN_VERSION = '03.113.00';
-  GW.ASSET_VERSION = '20260520120337';
+  GW.ASSET_VERSION = '20260520121301';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -584,7 +584,7 @@
     el.setAttribute('aria-live', 'polite');
     el.hidden = true;
     el.innerHTML =
-      '<span class="gw-update-banner-icon" aria-hidden="true">🆕</span>' +
+      '<span class="gw-update-banner-badge" aria-hidden="true">NEW</span>' +
       '<div class="gw-update-banner-body">' +
         '<strong class="gw-update-banner-title">새 버전이 배포되었습니다</strong>' +
         '<span class="gw-update-banner-version" id="gw-update-banner-version"></span>' +

@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.139.01",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 21:12:24 KST",
+    "summary": "(1) 새 빌드 알림 배너의 🆕 이모지를 사이트 톤에 맞는 'NEW' 텍스트 뱃지로 교체. (2) 게시판 목록 fetch에 cache-bust를 강화해 다른 탭에서 글이 게재되면 즉시 반영. (3) 최근 1개월 소식의 인기순에서 기간 칩을 숨기고 누적 점수 한 가지로 단순화.",
+    "changes": [
+      "js/main.js _ensureBannerEl + css/style.css .gw-update-banner-badge: 🆕 이모지 제거 → 'NEW' 텍스트 뱃지(보라색 배경 #622599 + 흰 글자, 10px 700, letter-spacing 0.12em). 사이트 .post-kicker-new 톤과 일관.",
+      "js/board.js _load: GW.apiFetch(endpoint, { cache: 'no-store' }) 명시 + endpoint 끝에 &_t=<Date.now()> cache-buster 부여. 서버는 이미 Cache-Control: no-store 이지만 일부 브라우저·서비스 워커가 stale 응답을 서빙하던 케이스를 차단.",
+      "js/board.js _setupSortControls: category==='latest' 일 때 .board-period-bar 마크업을 생성하지 않음. _applySortStateToParams: latest 의 popular 모드는 period='all' 고정(누적 score) 및 URL ?period 미설정. 결과: 최근 1개월 소식은 [기본][인기순] 토글만 표시되고, 인기순 선택 시 '30일 발행 글 중 누적 인기' 한 가지 결과만 노출.",
+      "사이트 버전 00.139.00 → 00.139.01."
+    ]
+  },
+  {
     "version": "00.139.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 21:03:10 KST",

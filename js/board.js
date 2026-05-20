@@ -211,7 +211,12 @@
       if (value === null || value === undefined || value === '') return;
       endpoint += '&' + encodeURIComponent(key) + '=' + encodeURIComponent(String(value));
     });
-    GW.apiFetch(endpoint)
+    // Cache-bust every list fetch. The /api/posts response already sets
+    // Cache-Control: no-store, but some browsers / service workers still serve
+    // stale copies after admin publishes a new article in another tab. Adding a
+    // unique _t query guarantees the request bypasses every layer of caching.
+    endpoint += '&_t=' + Date.now();
+    GW.apiFetch(endpoint, { cache: 'no-store' })
       .then(function (data) {
         self.total   = data.total;
         self.pageSize = data.pageSize || self.pageSize || 16;
@@ -661,6 +666,11 @@
     var container = document.querySelector('.board-container');
     if (!container) return;
 
+    // latest("최근 1개월 소식") already restricts to days=30 publish window, so
+    // an extra period picker would be redundant + confusing — show just the
+    // sort toggle and pin popularity to cumulative score (period=all).
+    var showPeriodBar = this.category !== 'latest';
+
     var bar = document.createElement('div');
     bar.className = 'board-sort-bar';
     bar.innerHTML =
@@ -668,11 +678,13 @@
         '<button type="button" class="board-sort-btn" data-sort="default" role="tab" aria-selected="false">기본</button>' +
         '<button type="button" class="board-sort-btn" data-sort="popular" role="tab" aria-selected="false">인기순</button>' +
       '</div>' +
-      '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
-        VALID_PERIODS.map(function (key) {
-          return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
-        }).join('') +
-      '</div>';
+      (showPeriodBar
+        ? '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
+            VALID_PERIODS.map(function (key) {
+              return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
+            }).join('') +
+          '</div>'
+        : '');
 
     if (tagBar && tagBar.parentNode) {
       tagBar.parentNode.insertBefore(bar, tagBar);
@@ -726,9 +738,11 @@
   };
 
   Board.prototype._applySortStateToParams = function () {
+    // latest 페이지는 기간 칩이 없으므로 popular 모드일 때 period=all 고정 (누적 점수).
+    var effectivePeriod = (this.category === 'latest') ? 'all' : this._periodKey;
     if (this._sortMode === 'popular') {
       this.extraParams.sort = 'popular';
-      this.extraParams.period = this._periodKey;
+      this.extraParams.period = effectivePeriod;
     } else {
       this.extraParams.sort = (this.apiCategory && this.category !== 'latest') ? 'manual' : 'latest';
       delete this.extraParams.period;
@@ -738,7 +752,11 @@
       var url = new URL(window.location.href);
       if (this._sortMode === 'popular') {
         url.searchParams.set('sort', 'popular');
-        url.searchParams.set('period', this._periodKey);
+        if (this.category === 'latest') {
+          url.searchParams.delete('period');
+        } else {
+          url.searchParams.set('period', this._periodKey);
+        }
       } else {
         url.searchParams.delete('sort');
         url.searchParams.delete('period');
