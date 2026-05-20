@@ -11,6 +11,7 @@
  */
 
 import { hasPerm, boardScope } from '../../_shared/dreampath-perm.js';
+import { enforceRateLimit, rateLimitResponse } from '../../_shared/rate-limit.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -46,6 +47,19 @@ export async function onRequestGet({ request, env, data }) {
 }
 
 export async function onRequestPost({ request, env, data }) {
+  // Per-user comment spam guard. 15 comments per minute is plenty for a
+  // legitimate discussion thread; a script-driven flood will hit 429 quickly.
+  const uidForRl = data && data.dpUser && data.dpUser.uid;
+  if (uidForRl) {
+    const rl = await enforceRateLimit(env, {
+      route: 'dreampath-comments',
+      identity: `uid:${uidForRl}`,
+      limit: 15,
+      windowSeconds: 60,
+    });
+    if (!rl.ok) return rateLimitResponse(rl, '댓글이 너무 빠르게 등록되고 있습니다. 잠시 후 다시 시도해주세요.');
+  }
+
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 

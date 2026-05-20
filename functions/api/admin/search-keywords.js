@@ -147,6 +147,7 @@ export async function onRequestGet({ request, env }) {
       keywords,
     });
   } catch (err) {
-    return json({ error: 'DB 오류', detail: String((err && err.message) || err) }, 500);
+    console.error('GET /api/admin/search-keywords error:', err);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }

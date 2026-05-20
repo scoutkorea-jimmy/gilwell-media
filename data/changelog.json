@@ -1,6 +1,34 @@
 {
   "items": [
   {
+    "version": "00.136.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 12:28:29 KST",
+    "summary": "공개 사이트의 보안 표면 7곳을 일괄 정비했습니다. 게시글 커버 이미지의 open redirect 차단, HSTS 헤더 추가, 글 작성 API 분당 burst 제한, 다수의 API 응답에서 D1 driver 메시지 누설 차단, 그리고 dreampath 클라이언트의 DOMPurify CDN 실패 시 폴백 강화.",
+    "changes": [
+      "functions/api/posts/[id]/image.js: `Response.redirect(imgUrl, 302)` 직전에 `https://` 스킴 + 호스트 allowlist (`.r2.dev`, `.r2.cloudflarestorage.com`, `.cloudflare.com`, `bpmedia.net`, `.bpmedia.net`, `.pages.dev`) 검증. stored-XSS / 컴프로마이즈 운영자가 `javascript:` 또는 외부 호스트 URL을 심더라도 사이트 origin에서 302 우회가 불가능.",
+      "functions/api/posts/index.js POST: 작성자 단위 분당 20회 burst 제한 (`enforceRateLimit('posts-create', 'uid:<uid>', 20, 60)`). 컴프로마이즈된 editor 계정 또는 runaway 스크립트의 글 폭주 차단. 또한 catch 블록의 `err.message` 노출 제거 → `{ error: '처리에 실패했습니다.', code: 'server_error' }`로 통일.",
+      "functions/api/posts/[id].js: PUT/PATCH catch 블록 2곳의 D1 driver 메시지 노출 제거. 상세 사유는 `console.error`로만.",
+      "functions/api/settings/score-rubric.js · functions/api/admin/{ai-usage,search-keywords,meta-tag-pool,ai-score-history,tag-insights}.js: 모든 catch에서 `detail: String(err.message || err)` 패턴을 제거하고 `{ error: '처리에 실패했습니다.', code: 'server_error' }`로 통일. D1 컬럼/제약 메시지가 인증된 관리자에게도 더 이상 노출되지 않음 (least-info 원칙).",
+      "_headers: `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` 추가. 도메인 전체 HSTS 강제로 SSL strip 공격 차단 + preload 큐 등록 준비.",
+      "js/dreampath.js `_sanitize`: DOMPurify CDN이 로드되지 않은 경우 기존 셀프-allowlist(`script/iframe/object/embed/style` 제거 + `on*` 속성 제거)는 `javascript:` URL·`<svg><animate>`·`<base>` 등 우회를 막지 못했음. 폴백을 **textContent 추출 → HTML 엔티티 escape**로 교체해 모든 마크업을 플레인 텍스트로 전환 (서식 손실 < XSS 노출). 첫 호출 시 `console.warn` 1회로 CDN 차단 환경을 식별 가능.",
+      "사이트 버전 00.135.00 → 00.136.00 (Feature · 보안 표면 7곳 일괄 정비)."
+    ]
+  },
+  {
+    "version": "03.113.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 12:28:29 KST",
+    "summary": "관리자 로그인 화면의 예시 계정명을 `tsak1420` → `abcd1234`로 변경(실제 오너 계정 노출 제거). dreampath 업로드/댓글 표면에 rate limit·MIME 검증·magic-byte sniff를 추가하고, 백엔드 곳곳의 `safeCompare` 사본을 단일화했습니다.",
+    "changes": [
+      "admin.html 로그인 폼 placeholder: `계정명 (예: tsak1420)` → `계정명 (예: abcd1234)`. 실제 오너 계정 ID 외부 노출 제거. 변경 직전 changelog 엔트리에 남아 있는 `tsak1420` 흔적은 운영 이력이므로 보존.",
+      "functions/api/dreampath/upload.js: MIME allowlist (이미지·PDF·Office·zip·mp4·m4a 등 21종) + 첫 16바이트 magic-byte sniff. 클라이언트가 보낸 `file.type`을 신뢰하지 않고 서버가 도출한 MIME만 R2 `contentType`으로 사용 → 위조된 SVG/HTML 서빙 차단. 추가로 uid 단위 분당 10회 업로드 제한으로 R2 비용 펌프 abuse 차단. 확장자 blocklist에 `svg/html/htm/xml` 추가.",
+      "functions/api/dreampath/comments.js: uid 단위 분당 15회 댓글 제한. 인증된 dp 멤버 계정의 댓글 스팸 차단.",
+      "functions/api/dreampath/auth.js + functions/api/dreampath/me.js: 각자 정의돼 있던 `safeCompare` 로컬 사본 2개를 제거하고 `functions/_shared/auth.js`의 정식 export를 import. 셋이 알고리즘은 같았지만 향후 `=== ` 같은 단축 평가로 drift할 위험을 사전에 제거.",
+      "관리자 버전 03.112.00 → 03.113.00 (Feature · 보안 표면 정비 + 샘플 계정명 변경)."
+    ]
+  },
+  {
     "version": "03.112.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 10:41:56 KST",

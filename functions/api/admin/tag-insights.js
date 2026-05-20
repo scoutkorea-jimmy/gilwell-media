@@ -56,7 +56,7 @@ export async function onRequestGet({ request, env }) {
     return json(insights, 200, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('GET /api/admin/tag-insights error:', err);
-    return json({ error: 'Database error', detail: String(err && err.message || err) }, 500);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 

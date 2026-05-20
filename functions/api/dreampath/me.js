@@ -7,15 +7,10 @@
  *  Password change body: { current_password, new_password }
  */
 
+import { safeCompare } from '../../_shared/auth.js';
+
 const enc = s => new TextEncoder().encode(s);
 const PBKDF2_ITERATIONS = 100000;
-function safeCompare(a, b) {
-  if (typeof a !== 'string' || typeof b !== 'string') return false;
-  const len = Math.max(a.length, b.length);
-  let r = a.length ^ b.length;
-  for (let i = 0; i < len; i++) r |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  return r === 0;
-}
 async function hashPasswordLegacy(password, secret) {
   const key = await crypto.subtle.importKey('raw', enc(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const buf = await crypto.subtle.sign('HMAC', key, enc(password));

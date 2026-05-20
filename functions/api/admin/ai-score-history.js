@@ -132,7 +132,8 @@ export async function onRequestGet({ request, env }) {
       generated_at: Math.floor(Date.now() / 1000),
     });
   } catch (err) {
-    return json({ error: 'DB 오류', detail: String((err && err.message) || err) }, 500);
+    console.error('GET /api/admin/ai-score-history error:', err);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 

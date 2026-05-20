@@ -170,19 +170,30 @@ const DP = (() => {
     return el;
   };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  // Sanitizer: DOMPurify is the only path that delivers safe HTML. If the
+  // CDN failed to load (offline, blocked, slow first paint), we *do not*
+  // attempt a homegrown allowlist — the previous fallback let through
+  // dangerous payloads (javascript: URLs, <svg><animate>, base/link tag
+  // injection, etc.). Instead we strip to plain text, which trades formatting
+  // for guaranteed safety, and emit a one-time console warning so a stuck
+  // CDN load is at least diagnosable in the field.
+  let _domPurifyMissingWarned = false;
   const _sanitize = (html) => {
     if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
       return window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
     }
+    if (!_domPurifyMissingWarned) {
+      _domPurifyMissingWarned = true;
+      console.warn('[dreampath] DOMPurify unavailable — rendering plain text only. Check CDN reachability for cdn.jsdelivr.net.');
+    }
+    // Strip all HTML by routing through textContent. innerHTML round-trip
+    // ensures any markup in the input becomes inert text.
     const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    tmp.querySelectorAll('script, iframe, object, embed, style').forEach(n => n.remove());
-    tmp.querySelectorAll('*').forEach(n => {
-      [...n.attributes].forEach(a => {
-        if (/^on/i.test(a.name)) n.removeAttribute(a.name);
-      });
-    });
-    return tmp.innerHTML;
+    tmp.innerHTML = String(html == null ? '' : html);
+    const text = tmp.textContent || '';
+    // Re-escape so the caller's innerHTML assignment doesn't reintroduce
+    // a script tag from the textContent we just extracted (defense-in-depth).
+    return text.replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
   };
   const icon = (name) => `<span class="ico" aria-hidden="true" style="--dp-icon:url('/img/dreampath/icons/${name}.svg')"></span>`;
 

@@ -51,7 +51,8 @@ export async function onRequestPut({ request, env }) {
     });
     return json({ ok: true, content, isDefault: content === DEFAULT_SCORE_RUBRIC });
   } catch (err) {
-    return json({ error: 'DB 저장 실패', detail: String((err && err.message) || err) }, 500);
+    console.error('PUT /api/settings/score-rubric error:', err);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 
@@ -68,6 +69,7 @@ export async function onRequestDelete({ request, env }) {
     });
     return json({ ok: true, content: DEFAULT_SCORE_RUBRIC, isDefault: true });
   } catch (err) {
-    return json({ error: 'DB 초기화 실패', detail: String((err && err.message) || err) }, 500);
+    console.error('DELETE /api/settings/score-rubric error:', err);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }

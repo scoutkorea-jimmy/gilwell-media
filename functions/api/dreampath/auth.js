@@ -12,14 +12,10 @@ const MAX_ATTEMPTS = 10;
 const WINDOW_SECONDS = 900;
 const PBKDF2_ITERATIONS = 100000;
 import { logOperationalEvent } from '../../_shared/ops-log.js';
-
-function safeCompare(a, b) {
-  if (typeof a !== 'string' || typeof b !== 'string') return false;
-  const len = Math.max(a.length, b.length);
-  let r = a.length ^ b.length;
-  for (let i = 0; i < len; i += 1) r |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
-  return r === 0;
-}
+// Single source of truth for constant-time string compare. The previous
+// per-file copies risked drifting (one developer "optimizing" the loop and
+// reintroducing an early-exit timing leak).
+import { safeCompare } from '../../_shared/auth.js';
 
 async function hashPasswordLegacy(password, secret) {
   const key = await crypto.subtle.importKey('raw', enc(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);

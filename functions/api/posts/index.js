@@ -190,6 +190,18 @@ export async function onRequestPost({ request, env }) {
     return json({ error: '글 작성 권한이 없습니다. 오너에게 권한을 요청하세요.' }, 403);
   }
 
+  // Per-user article-create burst guard. Owners and writers don't legitimately
+  // publish 20 articles in a minute; a runaway script or compromised editor
+  // account would. Threshold is intentionally generous for normal use.
+  const uid = session.uid || session.username || 'admin';
+  const rl = await enforceRateLimit(env, {
+    route: 'posts-create',
+    identity: `uid:${uid}`,
+    limit: 20,
+    windowSeconds: 60,
+  });
+  if (!rl.ok) return rateLimitResponse(rl, '글 작성 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+
   // Parse and validate body
   let body;
   try {
@@ -320,8 +332,7 @@ export async function onRequestPost({ request, env }) {
     return json({ post: insertedPost }, 201);
   } catch (err) {
     console.error('POST /api/posts error:', err);
-    const message = err && err.message ? String(err.message) : 'Database error';
-    return json({ error: message }, 500);
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 

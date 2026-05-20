@@ -331,8 +331,9 @@ export async function onRequestPut({ params, request, env }) {
     return json({ post: updatedPost });
   } catch (err) {
     console.error('PUT /api/posts/:id error:', err);
-    const message = err && err.message ? String(err.message) : 'Database error';
-    return json({ error: message }, 500);
+    // Don't leak D1 driver/constraint messages — keep details in console.error
+    // for ops, return a generic envelope to callers.
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 
@@ -469,8 +470,9 @@ export async function onRequestPatch({ params, request, env }) {
     return json({ post: updatedPost });
   } catch (err) {
     console.error('PATCH /api/posts/:id error:', err);
-    const message = err && err.message ? String(err.message) : 'Database error';
-    return json({ error: message }, 500);
+    // Don't leak D1 driver/constraint messages — keep details in console.error
+    // for ops, return a generic envelope to callers.
+    return json({ error: '처리에 실패했습니다.', code: 'server_error' }, 500);
   }
 }
 
