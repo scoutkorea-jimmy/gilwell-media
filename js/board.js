@@ -30,7 +30,8 @@
     }
     // Sort/period toggle state. 'default' uses the existing manual/latest sort;
     // 'popular' uses /api/posts?sort=popular&period=… (window: 24h/7d/30d/all).
-    this.enableSortControls = opts.enableSortControls !== false && !!this.apiCategory && this.category !== 'latest';
+    // Enabled everywhere by default (incl. 최신소식/latest); callers can opt out.
+    this.enableSortControls = opts.enableSortControls !== false;
     this._sortMode = 'default';
     this._periodKey = '7d';
     if (this.enableSortControls) this._readSortStateFromUrl();

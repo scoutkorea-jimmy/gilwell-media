@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "00.138.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 20:56:59 KST",
+    "summary": "최신소식(latest) 페이지에도 인기순 정렬 + 기간 토글(24시간·7일·30일·전체)을 적용했습니다. Korea·APR·WOSM·Scout People과 동일한 사용감으로 동작합니다.",
+    "changes": [
+      "js/board.js: enableSortControls 가드에서 'category !== latest' 조건을 제거하고, apiCategory 유무에 무관하게 모든 보드(카테고리 4종 + 최신소식)에서 정렬·기간 토글이 표시되도록 변경. 최신소식의 기존 extraParams.days=30 publish 필터는 그대로 유지되어 '최근 30일 발행 글 중 인기순' 의미가 자연스럽게 결합.",
+      "최신소식에서 default 모드는 sort=latest(최신순)로 명시 설정, popular 모드는 sort=popular&period=<key>로 전환. URL 공유 동작도 동일.",
+      "사이트 버전 00.137.00 → 00.138.00."
+    ]
+  },
+  {
     "version": "00.137.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 20:46:51 KST",
