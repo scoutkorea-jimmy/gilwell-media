@@ -28,6 +28,12 @@
     if (this.apiCategory && this.category !== 'latest' && !Object.prototype.hasOwnProperty.call(this.extraParams, 'sort')) {
       this.extraParams.sort = 'manual';
     }
+    // Sort/period toggle state. 'default' uses the existing manual/latest sort;
+    // 'popular' uses /api/posts?sort=popular&period=… (window: 24h/7d/30d/all).
+    this.enableSortControls = opts.enableSortControls !== false && !!this.apiCategory && this.category !== 'latest';
+    this._sortMode = 'default';
+    this._periodKey = '7d';
+    if (this.enableSortControls) this._readSortStateFromUrl();
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
     this.bannerTotalEl = document.getElementById(opts.bannerTotalId || 'board-banner-total');
@@ -67,6 +73,10 @@
     this._setupModal();
     if (this.enableWrite) this._setupWriteFeature();
     this._setupSearch();
+    if (this.enableSortControls) {
+      this._setupSortControls();
+      this._applySortStateToParams();
+    }
     this._loadBoardLayout();
     this._loadBoardBannerInfo();
     this._load();
@@ -601,6 +611,116 @@
     this.loading = false;
     this.gridEl.innerHTML = '';
     this._load();
+  };
+
+  // ── Sort & period controls ────────────────────────────────
+  // UI: "기본" (manual/latest, current behaviour) ↔ "인기순" + period chips.
+  // Popular ranks by (window views) + (window likes × 3); "전체" falls back to
+  // cumulative views + likes × 3. State is mirrored to the URL as
+  // ?sort=popular&period=7d so links are shareable.
+  var VALID_PERIODS = ['24h', '7d', '30d', 'all'];
+  var PERIOD_LABELS = { '24h': '24시간', '7d': '7일', '30d': '30일', 'all': '전체' };
+
+  Board.prototype._readSortStateFromUrl = function () {
+    try {
+      var qs = new URLSearchParams(window.location.search);
+      var sort = String(qs.get('sort') || '').toLowerCase();
+      var period = String(qs.get('period') || '').toLowerCase();
+      if (sort === 'popular') this._sortMode = 'popular';
+      if (VALID_PERIODS.indexOf(period) !== -1) this._periodKey = period;
+    } catch (_) { /* SSR / non-browser safe */ }
+  };
+
+  Board.prototype._setupSortControls = function () {
+    var self = this;
+    var tagBar = document.getElementById('tag-filter-bar');
+    var container = document.querySelector('.board-container');
+    if (!container) return;
+
+    var bar = document.createElement('div');
+    bar.className = 'board-sort-bar';
+    bar.innerHTML =
+      '<div class="board-sort-toggle" role="tablist" aria-label="정렬 방식">' +
+        '<button type="button" class="board-sort-btn" data-sort="default" role="tab" aria-selected="false">기본</button>' +
+        '<button type="button" class="board-sort-btn" data-sort="popular" role="tab" aria-selected="false">인기순</button>' +
+      '</div>' +
+      '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
+        VALID_PERIODS.map(function (key) {
+          return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
+        }).join('') +
+      '</div>';
+
+    if (tagBar && tagBar.parentNode) {
+      tagBar.parentNode.insertBefore(bar, tagBar);
+    } else {
+      container.insertBefore(bar, container.firstChild);
+    }
+    this._sortBarEl = bar;
+
+    bar.querySelectorAll('.board-sort-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var next = btn.getAttribute('data-sort') === 'popular' ? 'popular' : 'default';
+        if (next === self._sortMode) return;
+        self._sortMode = next;
+        self._applySortStateToParams();
+        self._renderSortControls();
+        self._resetAndLoad();
+      });
+    });
+    bar.querySelectorAll('.board-period-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var next = btn.getAttribute('data-period') || '7d';
+        if (VALID_PERIODS.indexOf(next) === -1) next = '7d';
+        if (next === self._periodKey) return;
+        self._periodKey = next;
+        self._applySortStateToParams();
+        self._renderSortControls();
+        self._resetAndLoad();
+      });
+    });
+
+    this._renderSortControls();
+  };
+
+  Board.prototype._renderSortControls = function () {
+    if (!this._sortBarEl) return;
+    var mode = this._sortMode;
+    var period = this._periodKey;
+    this._sortBarEl.querySelectorAll('.board-sort-btn').forEach(function (btn) {
+      var active = btn.getAttribute('data-sort') === (mode === 'popular' ? 'popular' : 'default');
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    var periodBar = this._sortBarEl.querySelector('.board-period-bar');
+    if (periodBar) {
+      if (mode === 'popular') periodBar.removeAttribute('hidden');
+      else periodBar.setAttribute('hidden', '');
+    }
+    this._sortBarEl.querySelectorAll('.board-period-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-period') === period);
+    });
+  };
+
+  Board.prototype._applySortStateToParams = function () {
+    if (this._sortMode === 'popular') {
+      this.extraParams.sort = 'popular';
+      this.extraParams.period = this._periodKey;
+    } else {
+      this.extraParams.sort = (this.apiCategory && this.category !== 'latest') ? 'manual' : 'latest';
+      delete this.extraParams.period;
+    }
+    // Mirror to URL so the view is shareable and survives reloads.
+    try {
+      var url = new URL(window.location.href);
+      if (this._sortMode === 'popular') {
+        url.searchParams.set('sort', 'popular');
+        url.searchParams.set('period', this._periodKey);
+      } else {
+        url.searchParams.delete('sort');
+        url.searchParams.delete('period');
+      }
+      window.history.replaceState(null, '', url.toString());
+    } catch (_) { /* ignore history failures (non-browser env) */ }
   };
 
   // ── Export ────────────────────────────────────────────────

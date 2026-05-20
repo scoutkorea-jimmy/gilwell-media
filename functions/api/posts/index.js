@@ -46,6 +46,9 @@ export async function onRequestGet({ request, env }) {
   const allRequested = url.searchParams.get('all') === '1';
   const daysFilter   = Math.max(0, parseInt(url.searchParams.get('days') || '0', 10));
   const sort         = normalizeSort(url.searchParams.get('sort'), !!q);
+  // period: window for "popular" sort (관심 활동 윈도우). Independent from days/start_date/end_date
+  // which filter publish time. null = 누적(all-time) fallback using posts.views + likes.
+  const popularPeriodHours = sort === 'popular' ? normalizePopularPeriodHours(url.searchParams.get('period')) : null;
   const requestedOrderBy = String(url.searchParams.get('order_by') || '').trim().toLowerCase();
   const requestedOrderDir = String(url.searchParams.get('order_dir') || '').trim().toLowerCase();
   const publishedParam = normalizePublishedFilter(url.searchParams.get('published'));
@@ -81,6 +84,7 @@ export async function onRequestGet({ request, env }) {
   const ORDER_OLDEST = `ORDER BY ${PUBLIC_DATE_EXPR} ASC, id ASC`;
   const ORDER_VIEWS = `ORDER BY views DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const ORDER_MANUAL = `ORDER BY sort_order IS NULL ASC, sort_order ASC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
+  const ORDER_POPULAR = `ORDER BY popularity_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const searchScoreExpr = q
     ? `(
         CASE WHEN title LIKE ? THEN 60 ELSE 0 END +
@@ -92,15 +96,46 @@ export async function onRequestGet({ request, env }) {
         CASE WHEN replace(COALESCE(title, ''), ' ', '') LIKE ? THEN 18 ELSE 0 END
       )`
     : '0';
+  // popularity score: window-based (period set) → recent views + likes*3; otherwise cumulative
+  // views + likes*3. Likes are weighted heavier because they are far rarer than views.
+  const popularityArgs = [];
+  let popularityScoreExpr = '0';
+  if (sort === 'popular') {
+    if (popularPeriodHours == null) {
+      popularityScoreExpr = `(
+        COALESCE(posts.views, 0)
+        + (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) * 3
+      )`;
+    } else {
+      // Mirror home loadPopular's path-match pattern (`/post/%` + CAST id) so we
+      // still count visits whose path carries a query-string or trailing slash.
+      popularityScoreExpr = `(
+        (SELECT COUNT(*) FROM site_visits
+            WHERE path LIKE '/post/%'
+              AND CAST(SUBSTR(path, 7) AS INTEGER) = posts.id
+              AND datetime(visited_at) >= datetime('now', ?))
+        + (SELECT COUNT(*) FROM post_likes
+            WHERE post_id = posts.id
+              AND datetime(liked_at) >= datetime('now', ?)) * 3
+      )`;
+      const windowArg = '-' + popularPeriodHours + ' hours';
+      popularityArgs.push(windowArg, windowArg);
+    }
+  }
   const ORDER_RELEVANCE = `ORDER BY search_score DESC, ${PUBLIC_DATE_EXPR} DESC, id DESC`;
   const adminOrder = isAdmin ? buildAdminOrder(requestedOrderBy, requestedOrderDir, PUBLIC_DATE_EXPR) : '';
   const useManualOrder = !adminOrder && ((allRequested && isAdmin) || (sort === 'manual' && !!category && !q && !tagFilter));
   const ORDER = useManualOrder
     ? ORDER_MANUAL
-    : (adminOrder || (sort === 'oldest' ? ORDER_OLDEST : (sort === 'views' ? ORDER_VIEWS : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST))));
+    : (adminOrder
+        || (sort === 'popular' ? ORDER_POPULAR
+        : (sort === 'oldest' ? ORDER_OLDEST
+        : (sort === 'views' ? ORDER_VIEWS
+        : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)))));
   const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
     youtube_url,
     ${searchScoreExpr} AS search_score,
+    ${popularityScoreExpr} AS popularity_score,
     (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes${isAdmin ? ',\n    (SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds' : ''}`;
 
   try {
@@ -157,8 +192,8 @@ export async function onRequestGet({ request, env }) {
     const countQuery = `SELECT COUNT(*) AS total FROM posts ${WHERE}`;
 
     const postsStmt = allRequested && isAdmin
-      ? env.DB.prepare(postsQuery).bind(...scoreArgs, ...baseArgs)
-      : env.DB.prepare(postsQuery).bind(...scoreArgs, ...baseArgs, pageSize, offset);
+      ? env.DB.prepare(postsQuery).bind(...scoreArgs, ...popularityArgs, ...baseArgs)
+      : env.DB.prepare(postsQuery).bind(...scoreArgs, ...popularityArgs, ...baseArgs, pageSize, offset);
     const { results: posts }     = await postsStmt.all();
     const { results: countRows } = await env.DB.prepare(countQuery).bind(...baseArgs).all();
     const total = countRows[0]?.total ?? 0;
@@ -449,8 +484,19 @@ function normalizeSort(value, hasSearch) {
   if (normalized === 'oldest') return 'oldest';
   if (normalized === 'views') return 'views';
   if (normalized === 'manual') return 'manual';
+  if (normalized === 'popular') return 'popular';
   if (normalized === 'relevance' && hasSearch) return 'relevance';
   return 'latest';
+}
+
+// Accepts: 24h | 7d | 30d | all (or '' / null). Returns hours or null (= cumulative).
+function normalizePopularPeriodHours(value) {
+  var v = String(value || '').trim().toLowerCase();
+  if (v === '' || v === 'all') return null;
+  if (v === '24h' || v === '1d') return 24;
+  if (v === '7d') return 24 * 7;
+  if (v === '30d') return 24 * 30;
+  return 24 * 7;
 }
 
 function normalizePublishedFilter(value) {

@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "00.137.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 20:46:51 KST",
+    "summary": "Korea / APR / WOSM / Scout People 보드에 '인기순' 정렬을 추가했습니다. 24시간·7일·30일·전체 기간 중 가장 많은 관심(조회·공감)을 받은 글을 한눈에 볼 수 있고, 정렬·기간 상태가 URL에 반영되어 그대로 공유할 수 있습니다.",
+    "changes": [
+      "js/board.js: 카테고리 보드 상단에 정렬 토글([기본]·[인기순])과 기간 칩(24시간·7일·30일·전체, 기본 7일)을 동적 삽입. URL 쿼리 ?sort=popular&period=7d로 상태 보존(history.replaceState). category가 'latest'이거나 apiCategory가 없으면 토글 자동 비활성 — latest.html 회귀 없음.",
+      "functions/api/posts/index.js: sort=popular + period=24h|7d|30d|all 신규 지원. 점수 = (기간 윈도우 내 site_visits '/post/%' 카운트) + (기간 윈도우 내 post_likes 카운트 × 3). period=all일 때는 누적 posts.views + likes×3로 폴백. 매칭은 home.js loadPopular와 동일한 path LIKE + CAST(SUBSTR) 패턴이라 쿼리스트링이 붙은 방문 경로도 누락 없이 집계.",
+      "css/style.css: .board-sort-bar / .board-sort-toggle / .board-period-bar 스타일 추가(태그 필터바 토큰 재사용, --black/--border/--muted 만 사용해 색 일관성 유지, focus-visible 인디케이터 포함, 480/900px 반응형).",
+      "공개 HTML 4종(korea/apr/wosm/people) 마크업 변경 없음 — board.js가 tag-filter-bar 앞에 sort-bar를 런타임 삽입.",
+      "사이트 버전 00.136.00 → 00.137.00."
+    ]
+  },
+  {
     "version": "00.136.00",
     "date": "2026-05-20",
     "released_at": "2026-05-20 12:28:29 KST",
