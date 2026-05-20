@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.140.00",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 21:20:29 KST",
+    "summary": "'최신소식' 페이지의 의미를 바로잡았습니다. 기본 노출은 전체 기간이며, 사용자가 [전체][하루][일주일][30일] 토글로 직접 좁힐 수 있습니다. 정렬 [기본][인기순]과 독립적으로 동작합니다.",
+    "changes": [
+      "latest.html: new GW.Board 옵션에서 extraParams.days=30 default 제거. 첫 진입은 전체 기간 노출.",
+      "js/board.js: latest 페이지 전용 publish-date 필터 토글 [전체][하루][일주일][30일] 신설. 정렬 토글([기본][인기순])과 같은 줄에 표시되며 별개 상태(_daysFilter)로 동작. URL ?days=1|7|30 동기화, 0(전체)일 때는 파라미터 제거. 다른 카테고리 보드(korea·apr·wosm·people)는 영향 없음 — 그쪽은 인기 윈도우 칩 [24시간][7일][30일][전체]를 기존 그대로 유지.",
+      "css/style.css: .board-days-bar / .board-days-btn 스타일 추가 (.board-period-bar 와 같은 톤, '기간' 라벨 prefix).",
+      "사이트 버전 00.139.01 → 00.140.00."
+    ]
+  },
+  {
     "version": "00.139.01",
     "date": "2026-05-20",
     "released_at": "2026-05-20 21:12:24 KST",

@@ -6997,6 +6997,45 @@ footer a:hover { color: var(--white); }
 }
 .board-period-btn:focus-visible { outline: 2px solid var(--scouting-purple, #622599); outline-offset: 2px; }
 
+/* latest 전용 publish-date 필터 (전체/하루/일주일/30일). 정렬·인기 윈도우와 분리. */
+.board-days-bar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--gap-tight);
+  align-items: center;
+}
+.board-days-bar::before {
+  content: '기간';
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.board-days-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--chip-height);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 999px;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.board-days-btn.active,
+.board-days-btn:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+.board-days-btn:focus-visible { outline: 2px solid var(--scouting-purple, #622599); outline-offset: 2px; }
+
 @media (max-width: 900px) { .board-sort-bar { padding: 10px var(--gap-section); gap: 10px 14px; } }
 @media (max-width: 480px) {
   .board-sort-bar { padding: var(--gap-tight) var(--gap-card); gap: 8px; }

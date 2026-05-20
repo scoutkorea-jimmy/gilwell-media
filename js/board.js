@@ -34,6 +34,9 @@
     this.enableSortControls = opts.enableSortControls !== false;
     this._sortMode = 'default';
     this._periodKey = '7d';
+    // Publish-date filter (latest 페이지 전용). 0 = 전체 / 1·7·30 = 최근 N일.
+    // 다른 카테고리 보드는 이 토글을 표시하지 않으며 0 으로 고정.
+    this._daysFilter = 0;
     if (this.enableSortControls) this._readSortStateFromUrl();
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
@@ -650,6 +653,9 @@
   var VALID_PERIODS = ['24h', '7d', '30d', 'all'];
   var PERIOD_LABELS = { '24h': '24시간', '7d': '7일', '30d': '30일', 'all': '전체' };
 
+  var VALID_DAYS_FILTER = [0, 1, 7, 30];
+  var DAYS_FILTER_LABELS = { 0: '전체', 1: '하루', 7: '일주일', 30: '30일' };
+
   Board.prototype._readSortStateFromUrl = function () {
     try {
       var qs = new URLSearchParams(window.location.search);
@@ -657,6 +663,11 @@
       var period = String(qs.get('period') || '').toLowerCase();
       if (sort === 'popular') this._sortMode = 'popular';
       if (VALID_PERIODS.indexOf(period) !== -1) this._periodKey = period;
+      // Only latest page exposes this control, so only read it there.
+      if (this.category === 'latest') {
+        var daysRaw = parseInt(qs.get('days') || '0', 10);
+        if (VALID_DAYS_FILTER.indexOf(daysRaw) !== -1) this._daysFilter = daysRaw;
+      }
     } catch (_) { /* SSR / non-browser safe */ }
   };
 
@@ -666,10 +677,9 @@
     var container = document.querySelector('.board-container');
     if (!container) return;
 
-    // latest("최근 1개월 소식") already restricts to days=30 publish window, so
-    // an extra period picker would be redundant + confusing — show just the
-    // sort toggle and pin popularity to cumulative score (period=all).
-    var showPeriodBar = this.category !== 'latest';
+    // latest 페이지는 인기 윈도우 칩 대신 publish-date 필터 토글을 노출한다.
+    // 다른 카테고리 보드는 그 반대 (인기 윈도우 칩만, publish 필터는 없음).
+    var isLatest = this.category === 'latest';
 
     var bar = document.createElement('div');
     bar.className = 'board-sort-bar';
@@ -678,13 +688,17 @@
         '<button type="button" class="board-sort-btn" data-sort="default" role="tab" aria-selected="false">기본</button>' +
         '<button type="button" class="board-sort-btn" data-sort="popular" role="tab" aria-selected="false">인기순</button>' +
       '</div>' +
-      (showPeriodBar
-        ? '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
+      (isLatest
+        ? '<div class="board-days-bar" role="group" aria-label="기간 선택">' +
+            VALID_DAYS_FILTER.map(function (n) {
+              return '<button type="button" class="board-days-btn" data-days="' + n + '">' + DAYS_FILTER_LABELS[n] + '</button>';
+            }).join('') +
+          '</div>'
+        : '<div class="board-period-bar" role="group" aria-label="기간 선택" hidden>' +
             VALID_PERIODS.map(function (key) {
               return '<button type="button" class="board-period-btn" data-period="' + key + '">' + PERIOD_LABELS[key] + '</button>';
             }).join('') +
-          '</div>'
-        : '');
+          '</div>');
 
     if (tagBar && tagBar.parentNode) {
       tagBar.parentNode.insertBefore(bar, tagBar);
@@ -714,6 +728,17 @@
         self._resetAndLoad();
       });
     });
+    bar.querySelectorAll('.board-days-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var next = parseInt(btn.getAttribute('data-days') || '0', 10);
+        if (VALID_DAYS_FILTER.indexOf(next) === -1) next = 0;
+        if (next === self._daysFilter) return;
+        self._daysFilter = next;
+        self._applySortStateToParams();
+        self._renderSortControls();
+        self._resetAndLoad();
+      });
+    });
 
     this._renderSortControls();
   };
@@ -735,24 +760,35 @@
     this._sortBarEl.querySelectorAll('.board-period-btn').forEach(function (btn) {
       btn.classList.toggle('active', btn.getAttribute('data-period') === period);
     });
+    var days = String(this._daysFilter || 0);
+    this._sortBarEl.querySelectorAll('.board-days-btn').forEach(function (btn) {
+      btn.classList.toggle('active', String(btn.getAttribute('data-days') || '0') === days);
+    });
   };
 
   Board.prototype._applySortStateToParams = function () {
+    var isLatest = this.category === 'latest';
     // latest 페이지는 기간 칩이 없으므로 popular 모드일 때 period=all 고정 (누적 점수).
-    var effectivePeriod = (this.category === 'latest') ? 'all' : this._periodKey;
+    var effectivePeriod = isLatest ? 'all' : this._periodKey;
     if (this._sortMode === 'popular') {
       this.extraParams.sort = 'popular';
       this.extraParams.period = effectivePeriod;
     } else {
-      this.extraParams.sort = (this.apiCategory && this.category !== 'latest') ? 'manual' : 'latest';
+      this.extraParams.sort = (this.apiCategory && !isLatest) ? 'manual' : 'latest';
       delete this.extraParams.period;
+    }
+    // Latest 전용 publish-date 필터. 0 = 전체 → 파라미터 미설정.
+    if (isLatest && this._daysFilter > 0) {
+      this.extraParams.days = this._daysFilter;
+    } else {
+      delete this.extraParams.days;
     }
     // Mirror to URL so the view is shareable and survives reloads.
     try {
       var url = new URL(window.location.href);
       if (this._sortMode === 'popular') {
         url.searchParams.set('sort', 'popular');
-        if (this.category === 'latest') {
+        if (isLatest) {
           url.searchParams.delete('period');
         } else {
           url.searchParams.set('period', this._periodKey);
@@ -760,6 +796,11 @@
       } else {
         url.searchParams.delete('sort');
         url.searchParams.delete('period');
+      }
+      if (isLatest && this._daysFilter > 0) {
+        url.searchParams.set('days', String(this._daysFilter));
+      } else if (isLatest) {
+        url.searchParams.delete('days');
       }
       window.history.replaceState(null, '', url.toString());
     } catch (_) { /* ignore history failures (non-browser env) */ }
