@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "00.140.02",
+    "date": "2026-05-20",
+    "released_at": "2026-05-20 22:48:00 KST",
+    "summary": "최신 소식의 기본 노출을 다시 30일로 되돌리고, publish-date 토글에서 '전체' 옵션을 제거했습니다. 이제 [하루][일주일][30일] 세 가지 중에서만 고를 수 있고, 진입 시 30일이 기본 선택입니다.",
+    "changes": [
+      "js/board.js: VALID_DAYS_FILTER 에서 0(전체) 제거 → [1, 7, 30]. DAYS_FILTER_LABELS 도 동일하게 축소.",
+      "Board 생성자: category==='latest' 일 때 _daysFilter 초기값을 30 으로 강제. 그 외 카테고리는 0(미적용) 유지.",
+      "_applySortStateToParams: latest 면 extraParams.days 를 항상 1/7/30 중 하나로 강제 설정. URL 동기화는 default(30) 일 때 ?days= 미설정으로 깔끔하게 유지, 1·7 선택 시에만 명시.",
+      "사이트 버전 00.140.01 → 00.140.02."
+    ]
+  },
+  {
     "version": "00.140.01",
     "date": "2026-05-20",
     "released_at": "2026-05-20 21:30:24 KST",

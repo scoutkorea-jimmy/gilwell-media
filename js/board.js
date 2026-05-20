@@ -34,9 +34,10 @@
     this.enableSortControls = opts.enableSortControls !== false;
     this._sortMode = 'default';
     this._periodKey = '7d';
-    // Publish-date filter (latest 페이지 전용). 0 = 전체 / 1·7·30 = 최근 N일.
-    // 다른 카테고리 보드는 이 토글을 표시하지 않으며 0 으로 고정.
-    this._daysFilter = 0;
+    // Publish-date filter (latest 페이지 전용). 1·7·30 = 최근 N일.
+    // latest 기본은 30일이고 '전체' 개념은 노출하지 않는다. 다른 카테고리
+    // 보드는 이 토글을 표시하지 않으며 0(미적용) 으로 둔다.
+    this._daysFilter = this.category === 'latest' ? 30 : 0;
     if (this.enableSortControls) this._readSortStateFromUrl();
     this.gridEl   = document.getElementById(opts.gridId   || 'board-grid');
     this.countEl  = document.getElementById(opts.countId  || 'board-count');
@@ -653,8 +654,8 @@
   var VALID_PERIODS = ['24h', '7d', '30d', 'all'];
   var PERIOD_LABELS = { '24h': '24시간', '7d': '7일', '30d': '30일', 'all': '전체' };
 
-  var VALID_DAYS_FILTER = [0, 1, 7, 30];
-  var DAYS_FILTER_LABELS = { 0: '전체', 1: '하루', 7: '일주일', 30: '30일' };
+  var VALID_DAYS_FILTER = [1, 7, 30];
+  var DAYS_FILTER_LABELS = { 1: '하루', 7: '일주일', 30: '30일' };
 
   Board.prototype._readSortStateFromUrl = function () {
     try {
@@ -777,9 +778,9 @@
       this.extraParams.sort = (this.apiCategory && !isLatest) ? 'manual' : 'latest';
       delete this.extraParams.period;
     }
-    // Latest 전용 publish-date 필터. 0 = 전체 → 파라미터 미설정.
-    if (isLatest && this._daysFilter > 0) {
-      this.extraParams.days = this._daysFilter;
+    // Latest 전용 publish-date 필터. 항상 1/7/30 중 하나가 강제된다 ('전체' 없음).
+    if (isLatest) {
+      this.extraParams.days = this._daysFilter || 30;
     } else {
       delete this.extraParams.days;
     }
@@ -797,10 +798,13 @@
         url.searchParams.delete('sort');
         url.searchParams.delete('period');
       }
-      if (isLatest && this._daysFilter > 0) {
-        url.searchParams.set('days', String(this._daysFilter));
-      } else if (isLatest) {
-        url.searchParams.delete('days');
+      if (isLatest) {
+        // default(30) 은 URL 깔끔하게 유지하기 위해 명시 안 함.
+        if (this._daysFilter && this._daysFilter !== 30) {
+          url.searchParams.set('days', String(this._daysFilter));
+        } else {
+          url.searchParams.delete('days');
+        }
       }
       window.history.replaceState(null, '', url.toString());
     } catch (_) { /* ignore history failures (non-browser env) */ }
