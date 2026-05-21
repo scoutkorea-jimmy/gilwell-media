@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "03.114.01",
+    "date": "2026-05-21",
+    "released_at": "2026-05-21 22:51:21 KST",
+    "summary": "방문 분석 차트의 ⚙ 설정 팝오버(글자 크기·간격)가 한 번 열리면 닫히지 않던 회귀를 수정했습니다. CSS specificity 충돌로 hidden 속성이 무효화되던 문제였습니다.",
+    "changes": [
+      "css/admin-v3.css: .v3-chart-prefs-popover[hidden] { display: none; } 조합 셀렉터(0,2,0) 추가. 기존 .v3-chart-prefs-popover { display: flex } 클래스 규칙이 user-agent [hidden] { display: none } 와 specificity 동률(0,1,0)이고 cascade order 상 author 규칙이 뒤에 와서 [hidden]을 이겨버리던 회귀를 차단.",
+      "버그 결과: JS toggle()이 popover.hidden = true로 정상 호출되지만 display:flex가 그대로 살아남아 팝오버가 화면에 계속 노출됨. close() 로직 자체는 정상이라 JS 수정 없이 CSS 한 줄로 해결.",
+      "관리자 버전 03.114.00 → 03.114.01."
+    ]
+  },
+  {
     "version": "00.141.00",
     "date": "2026-05-21",
     "released_at": "2026-05-21 22:02:57 KST",

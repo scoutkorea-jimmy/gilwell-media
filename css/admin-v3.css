@@ -1650,6 +1650,9 @@ body[data-chart-spacing="l"] {
   background: var(--v3-surface); box-shadow: 0 12px 28px rgba(15,23,42,0.10);
   display: flex; flex-direction: column; gap: 10px;
 }
+/* author class(display:flex)가 user-agent [hidden]을 specificity 동률로 이겨버려서
+   hidden 속성이 무효화되던 회귀를 막는다. 조합 셀렉터(0,2,0)로 [hidden]일 때 강제 숨김. */
+.v3-chart-prefs-popover[hidden] { display: none; }
 .v3-chart-prefs-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .v3-chart-prefs-label { font-size: var(--fs-caption); color: var(--v3-text); font-weight: 600; }
 .v3-chart-prefs-segs { display: inline-flex; border: 1px solid var(--v3-border); border-radius: 7px; overflow: hidden; }
