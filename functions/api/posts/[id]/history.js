@@ -1,4 +1,5 @@
 import { verifyTokenRole, extractToken } from '../../../_shared/auth.js';
+import { summarizeHistoryDiff } from '../../../_shared/post-history.js';
 
 export async function onRequestGet({ params, request, env }) {
   const token = extractToken(request);
@@ -10,6 +11,11 @@ export async function onRequestGet({ params, request, env }) {
   if (!Number.isFinite(id) || id < 1) {
     return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
   }
+
+  // ?detail=full 시에만 무거운 before/after_snapshot JSON을 응답에 포함.
+  // 기본 경로는 요약 diff만 보내서 페이로드를 줄인다.
+  const url = new URL(request.url);
+  const wantFullDetail = url.searchParams.get('detail') === 'full';
 
   try {
     const post = await env.DB.prepare(
@@ -30,15 +36,22 @@ export async function onRequestGet({ params, request, env }) {
     return json({
       post,
       history: (results || []).map(function (item) {
-        return {
+        const before = item.before_snapshot || null;
+        const after = item.after_snapshot || item.snapshot || null;
+        const diff = summarizeHistoryDiff(before, after);
+        const row = {
           id: item.id || 0,
           action: item.action || 'update',
           summary: item.summary || '',
-          snapshot: item.snapshot || null,
-          before_snapshot: item.before_snapshot || item.snapshot || null,
-          after_snapshot: item.after_snapshot || item.snapshot || null,
           created_at: item.created_at || '',
+          diff,
         };
+        if (wantFullDetail) {
+          row.snapshot = item.snapshot || null;
+          row.before_snapshot = before;
+          row.after_snapshot = after;
+        }
+        return row;
       }),
     });
   } catch (err) {

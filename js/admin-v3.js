@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.113.00
+ * Version: 03.114.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3109,11 +3109,91 @@
     _apiFetch('/api/posts/' + id + '/history').then(function (data) {
       var items = (data && data.history) || [];
       if (!items.length) { list.textContent = '수정 기록 없음'; return; }
-      list.innerHTML = items.slice(0, 5).map(function (h) {
-        return '<div style="margin-bottom:5px;"><span class="v3-badge v3-badge-gray">' + GW.escapeHtml(h.action || '') + '</span> ' +
-          '<span>' + GW.escapeHtml(h.summary || '') + '</span></div>';
-      }).join('');
+      list.innerHTML = items.slice(0, 20).map(_renderPostHistoryRow).join('');
     }).catch(function () { list.textContent = '기록 없음'; });
+  }
+
+  function _renderPostHistoryRow(h) {
+    var dt = _formatKstTimestamp(h.created_at);
+    var action = String(h.action || 'update');
+    var actionLabel = _historyActionLabel(action);
+    var actionTone = action === 'create' ? 'v3-badge-green' : (action === 'status' ? 'v3-badge-blue' : 'v3-badge-gray');
+    var summary = h.summary ? '<span style="color:#888;font-size:11px;margin-left:6px;">' + GW.escapeHtml(h.summary) + '</span>' : '';
+    var diffHtml = _renderHistoryDiff(h.diff);
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--gray-100, #ebebeb);">' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+        '<span style="font-family:monospace;font-size:12px;color:#444;">' + GW.escapeHtml(dt) + '</span>' +
+        '<span class="v3-badge ' + actionTone + '">' + actionLabel + '</span>' +
+        summary +
+      '</div>' +
+      (diffHtml ? '<div style="margin-top:4px;line-height:1.5;">' + diffHtml + '</div>' : '') +
+    '</div>';
+  }
+
+  function _historyActionLabel(action) {
+    if (action === 'create') return '생성';
+    if (action === 'status') return '상태변경';
+    if (action === 'delete') return '삭제';
+    return '수정';
+  }
+
+  // post_history.created_at = D1 datetime('now') = 'YYYY-MM-DD HH:MM:SS' UTC.
+  // 운영자에겐 KST로 환산해 보여준다 (admin date rule: YYYY-MM-DD HH:MM KST).
+  function _formatKstTimestamp(raw) {
+    if (!raw) return '';
+    var s = String(raw).trim();
+    if (!s) return '';
+    if (s.indexOf('T') < 0 && s.indexOf(' ') > 0) s = s.replace(' ', 'T');
+    if (!/Z$/.test(s) && !/[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return raw;
+    try {
+      var parts = new Intl.DateTimeFormat('ko-KR', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      }).formatToParts(d).reduce(function (acc, p) { acc[p.type] = p.value; return acc; }, {});
+      return parts.year + '-' + parts.month + '-' + parts.day + ' ' + parts.hour + ':' + parts.minute;
+    } catch (_) { return raw; }
+  }
+
+  function _renderHistoryDiff(diff) {
+    var fields = diff && Array.isArray(diff.fields) ? diff.fields : [];
+    if (!fields.length) return '';
+    return fields.map(function (f) {
+      var label = '<span style="font-size:12px;color:#333;">' + GW.escapeHtml(f.label || '') + '</span>';
+      if (f.kind === 'text') {
+        var delta = Number(f.delta) || 0;
+        var sign = delta > 0 ? '+' : (delta < 0 ? '' : '±');
+        var color = delta > 0 ? '#16803c' : (delta < 0 ? '#c0392b' : '#666');
+        var bln = Number(f.before_len) || 0;
+        var aln = Number(f.after_len) || 0;
+        return '<span style="display:inline-block;margin-right:10px;font-size:12px;">' +
+          label + ' <span style="color:#666;">' + bln + '→' + aln + '자</span>' +
+          ' <span style="color:' + color + ';font-weight:600;">(' + sign + delta + ')</span>' +
+        '</span>';
+      }
+      if (f.kind === 'count') {
+        var dn = Number(f.delta) || 0;
+        var csign = dn > 0 ? '+' : (dn < 0 ? '' : '±');
+        var ccolor = dn > 0 ? '#16803c' : (dn < 0 ? '#c0392b' : '#666');
+        return '<span style="display:inline-block;margin-right:10px;font-size:12px;">' +
+          label + ' <span style="color:#666;">' + (Number(f.before) || 0) + '→' + (Number(f.after) || 0) + '개</span>' +
+          ' <span style="color:' + ccolor + ';font-weight:600;">(' + csign + dn + ')</span>' +
+        '</span>';
+      }
+      if (f.kind === 'flag') {
+        var changeMap = { added: '추가', removed: '제거', changed: '변경', on: '공개됨', off: '비공개로 전환' };
+        var changeLabel = changeMap[f.change] || '변경';
+        var tone = f.change === 'added' || f.change === 'on' ? '#16803c'
+                 : f.change === 'removed' || f.change === 'off' ? '#c0392b'
+                 : '#555';
+        return '<span style="display:inline-block;margin-right:10px;font-size:12px;">' +
+          label + ' <span style="color:' + tone + ';font-weight:600;">' + changeLabel + '</span>' +
+        '</span>';
+      }
+      return '';
+    }).join('');
   }
 
   /* ── Cover image ── */

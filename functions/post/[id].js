@@ -1,7 +1,7 @@
 import { verifyTokenRole, extractToken } from '../_shared/auth.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../_shared/engagement.js';
 import { getYouTubeEmbedUrl } from '../_shared/youtube.js';
-import { ADSENSE_ACCOUNT } from '../_shared/site-meta.js';
+import { ADSENSE_ACCOUNT, getResolvedShareImage, loadSiteMeta } from '../_shared/site-meta.js';
 import { findManualRelatedPosts, findRelatedPosts } from '../_shared/related-posts.js';
 import { findSpecialFeaturePosts, slugifySpecialFeature } from '../_shared/special-features.js';
 import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
@@ -32,13 +32,14 @@ export async function onRequestGet({ params, env, request }) {
     console.error('GET /post/:id auto publish error:', err);
   });
 
-  let post, disclaimerRow, publicRuntimeRow, navLabels;
+  let post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta;
   try {
-    [post, disclaimerRow, publicRuntimeRow, navLabels] = await Promise.all([
+    [post, disclaimerRow, publicRuntimeRow, navLabels, siteMeta] = await Promise.all([
       env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_disclaimer'").first(),
       env.DB.prepare("SELECT value FROM settings WHERE key = 'public_runtime'").first(),
       loadNavLabels(env),
+      loadSiteMeta(env),
     ]);
   } catch (err) {
     console.error('GET /post/:id DB error:', err);
@@ -90,11 +91,13 @@ export async function onRequestGet({ params, env, request }) {
   const publicDateValue = post.publish_at || post.created_at;
   const publishedIso = toIsoString(publicDateValue);
   const modifiedIso = toIsoString(post.updated_at || post.created_at);
+  // 이미지가 없는 글도 공유 시 텍스트만 노출되지 않도록 사이트 기본 OG 이미지로 fallback.
+  // 우선순위: 글 자체 이미지 → 관리자 설정 사이트 공유 이미지 → /img/og-default.png
   const ogImage  = post.image_url
     ? (post.image_url.startsWith('http')
         ? escapeHtml(post.image_url)
         : `${siteUrl}/api/posts/${id}/image`)
-    : '';
+    : escapeHtml(getResolvedShareImage(siteMeta, siteUrl));
   const dateStr  = formatDate(publicDateValue);
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
@@ -195,7 +198,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260520134828">
+  <link rel="stylesheet" href="/css/style.css?v=20260521130358">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -377,7 +380,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.140.02</span> · Admin <span class="admin-build-version">V03.113.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.141.00</span> · Admin <span class="admin-build-version">V03.114.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -589,9 +592,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260520134828"></script>
-  <script src="/js/site-chrome.js?v=20260520134828"></script>
-  <script src="/js/post-page.js?v=20260520134828"></script>
+  <script src="/js/main.js?v=20260521130358"></script>
+  <script src="/js/site-chrome.js?v=20260521130358"></script>
+  <script src="/js/post-page.js?v=20260521130358"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

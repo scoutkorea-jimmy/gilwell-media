@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "00.141.00",
+    "date": "2026-05-21",
+    "released_at": "2026-05-21 22:02:57 KST",
+    "summary": "대표 이미지가 없는 글을 카카오·페이스북·트위터로 공유했을 때 그동안은 텍스트만 노출되어 '이미지 없는 글'처럼 보였는데, 이제는 사이트 기본 OG 이미지(또는 KMS에서 지정한 사이트 공유 이미지)가 자동으로 표시됩니다.",
+    "changes": [
+      "functions/post/[id].js: ogImage 계산을 글의 image_url이 비어 있을 때 getResolvedShareImage(siteMeta, siteUrl) fallback으로 확장. 우선순위는 글 자체 이미지 → 관리자 설정 사이트 공유 이미지 → /img/og-default.png.",
+      "fallback 경로에서도 og:image, og:image:secure_url, twitter:image, link rel=preload, JSON-LD NewsArticle.image[]가 모두 채워져 카카오·페이스북·트위터·구글 뉴스에서 일관된 카드가 출력됨. twitter:card는 1200×630 기본 이미지에 맞게 summary_large_image 유지.",
+      "Promise.all에 loadSiteMeta(env) 1콜 추가 — settings 테이블 단일 SELECT라 비용 미미.",
+      "사이트 버전 00.140.02 → 00.141.00."
+    ]
+  },
+  {
+    "version": "03.114.00",
+    "date": "2026-05-21",
+    "released_at": "2026-05-21 22:02:57 KST",
+    "summary": "운영자 화면의 글 수정기록(write-history-card)을 액션 배지 한 줄에서 'KST 타임스탬프 + 필드별 길이 diff' 형태로 확장했습니다. 어떤 글에서 누가 언제 무엇을 얼마나 바꿨는지 한눈에 보입니다.",
+    "changes": [
+      "functions/_shared/post-history.js: summarizeHistoryDiff(before, after) 신설. 11개 필드(제목·부제·본문·대표 이미지·갤러리·태그·유튜브·위치·공개·메인 스토리·예약 시각)를 before/after 스냅샷에서 비교. 본문은 Editor.js 블록 JSON을 plain text로 환산해 길이 비교.",
+      "functions/api/posts/[id]/history.js: 기본 응답에 diff: {fields:[...]} 포함, 무거운 before_snapshot/after_snapshot JSON은 ?detail=full 쿼리로만 반환해 페이로드 절감.",
+      "js/admin-v3.js _loadPostHistory: 항목 최대 5→20개, _renderPostHistoryRow로 분리. _formatKstTimestamp이 UTC 저장값을 KST 'YYYY-MM-DD HH:MM'으로 환산, _renderHistoryDiff가 색상 코드(+녹/−빨)와 (+/−N자) 표시로 길이 차분 렌더. 액션 배지 톤도 생성(green) / 상태변경(blue) / 수정(gray)로 분리.",
+      "정확한 LCS 기반 add/remove가 아닌 길이 차분 채택 사유: Workers CPU 한계(50ms) — 50개 이력 × 본문 1만자 LCS는 초 단위. 정밀 diff가 필요하면 ?detail=full로 원본 스냅샷을 받아 클라이언트에서 처리 가능 (확장 포인트 열어둠).",
+      "CLAUDE.md §6 '작업 효율성 노트' 12개 항목을 docs/working-notes.md로 분리해 매 턴 자동 컨텍스트 부담을 약 1.2K 토큰/턴 절감 (회귀 디버깅·신규 패널 착수 시 AI가 직접 읽도록 포인터만 남김).",
+      "관리자 버전 03.113.00 → 03.114.00."
+    ]
+  },
+  {
     "version": "00.140.02",
     "date": "2026-05-20",
     "released_at": "2026-05-20 22:48:00 KST",
