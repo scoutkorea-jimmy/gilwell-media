@@ -1,49 +1,20 @@
 /**
- * Gilwell Media · /post/:id.md
+ * Gilwell Media · post markdown renderer
  *
- * 각 기사의 plain markdown 미러. AI 봇(ChatGPT/Claude/Perplexity)이 HTML 파싱
- * 없이 본문을 깨끗한 텍스트로 인용·요약할 수 있도록 노출한다.
+ * /post/:id.md 의 plain markdown 본문을 만든다. AI 봇(ChatGPT/Claude/Perplexity)이
+ * HTML 파싱 없이 본문을 인용·요약할 수 있도록 깨끗한 markdown으로 노출.
  *
- * 사람용 페이지(/post/:id)와 동일한 데이터 소스에서 markdown으로 변환:
- *   - frontmatter: title, url, category, published, author, citations
- *   - body: Editor.js JSON → markdown (paragraph/header/list/quote/image/embed)
- *
- * 비공개 글, 미존재 글, .md 확장자 외 요청은 404.
+ * Cloudflare Pages가 [id].md.js 같은 dynamic+literal 라우트 패턴을 인식하지 못해
+ * 별도 함수가 아닌, post/[id].js 안에서 분기 호출하는 형태.
  */
 
-import { SITE_BRAND_NAME } from '../_shared/site-copy.mjs';
+import { SITE_BRAND_NAME } from './site-copy.mjs';
 
-export async function onRequestGet({ params, env, request }) {
-  // params.id에는 .md 확장자가 포함돼 있을 수도, 없을 수도 있는데 우리 라우트는 [id].md.js라
-  // Pages 런타임이 .md를 떼고 id만 넘긴다. (안전망 차원에서 .md suffix 한 번 더 trim)
-  const rawId = String(params.id || '').replace(/\.md$/i, '');
-  const id = parseInt(rawId, 10);
-  if (!Number.isFinite(id) || id < 1) return notFound();
-
-  let post;
-  try {
-    post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
-  } catch (err) {
-    console.error('GET /post/:id.md DB error:', err);
-    return new Response('# 오류\n\n게시글을 불러오지 못했습니다.\n', errorHeaders(500));
-  }
-  if (!post) return notFound();
-  if (post.published === 0) return notFound();
-
-  const origin = new URL(request.url).origin;
-  const postUrl = `${origin}/post/${id}`;
+export function buildPostMarkdownResponse({ post, postUrl, origin }) {
   const pubDate = String(post.publish_at || post.created_at || '').slice(0, 10);
   const updated = String(post.updated_at || '').slice(0, 10);
-
-  const md = renderPostMarkdown({
-    post,
-    postUrl,
-    pubDate,
-    updated,
-    origin,
-  });
-
-  return new Response(md, {
+  const body = renderPostMarkdown({ post, postUrl, pubDate, updated, origin });
+  return new Response(body, {
     headers: {
       'Content-Type': 'text/markdown; charset=UTF-8',
       'Cache-Control': 'public, max-age=900',
@@ -53,7 +24,16 @@ export async function onRequestGet({ params, env, request }) {
   });
 }
 
-export const onRequestHead = onRequestGet;
+export function buildMarkdownErrorResponse(status, message) {
+  return new Response(`# ${status === 404 ? '404 Not Found' : '오류'}\n\n${message || '게시글을 찾을 수 없습니다.'}\n`, {
+    status,
+    headers: {
+      'Content-Type': 'text/markdown; charset=UTF-8',
+      'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex',
+    },
+  });
+}
 
 function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
   const title = (post.title || '').trim();
@@ -103,7 +83,6 @@ function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
     bodyParts.push('');
   }
 
-  // 자료출처 — renderContent에서 citation 추출하는 로직과 같은 패턴 (자료출처: ...).
   const citations = extractCitations(post.content || '');
   if (citations.length) {
     bodyParts.push('## 자료출처');
@@ -119,13 +98,10 @@ function renderPostMarkdown({ post, postUrl, pubDate, updated, origin }) {
   return frontmatter + bodyParts.join('\n');
 }
 
-// ─── Editor.js JSON → Markdown 변환 ───────────────────────────────
-
 function editorJsonToMarkdown(raw, origin) {
   if (!raw) return '';
   let doc;
   try { doc = JSON.parse(String(raw).trim()); } catch (_) {
-    // Editor.js JSON이 아니면 HTML로 간주하고 단순 변환.
     return htmlToMarkdown(String(raw));
   }
   if (!doc || !Array.isArray(doc.blocks)) return '';
@@ -135,7 +111,7 @@ function editorJsonToMarkdown(raw, origin) {
     const data = block.data || {};
     const type = block.type;
     if (type === 'header') {
-      const level = Math.min(6, Math.max(2, Number(data.level) || 2)); // h1은 제목 한 개만 — 본문은 h2부터
+      const level = Math.min(6, Math.max(2, Number(data.level) || 2));
       out.push('#'.repeat(level) + ' ' + inlineToMd(data.text || ''));
       out.push('');
     } else if (type === 'paragraph') {
@@ -186,37 +162,28 @@ function editorJsonToMarkdown(raw, origin) {
       out.push('```');
       out.push('');
     } else if (type === 'raw') {
-      // raw HTML block — 표 등 일부 사용. Markdown으로 변환은 단순 strip.
       const text = htmlToMarkdown(String(data.html || ''));
       if (text) {
         out.push(text);
         out.push('');
       }
     }
-    // 알 수 없는 타입은 조용히 무시.
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-// 인라인 HTML 마크업 (Editor.js paragraph/header/list/quote 내부) → markdown.
 function inlineToMd(html) {
   if (!html) return '';
   let s = String(html);
-  // <a href="X">Y</a> → [Y](X)
   s = s.replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_, href, text) => {
     const inner = stripTags(text);
     return `[${inner}](${href})`;
   });
-  // bold / italic
   s = s.replace(/<(?:b|strong)>([\s\S]*?)<\/(?:b|strong)>/gi, '**$1**');
   s = s.replace(/<(?:i|em)>([\s\S]*?)<\/(?:i|em)>/gi, '*$1*');
-  // code
   s = s.replace(/<code>([\s\S]*?)<\/code>/gi, '`$1`');
-  // mark — 마크다운 표준에 없음 → 굵게로 근사
   s = s.replace(/<mark>([\s\S]*?)<\/mark>/gi, '**$1**');
-  // line break
   s = s.replace(/<br\s*\/?>/gi, '  \n');
-  // 남은 태그 strip
   s = stripTags(s);
   return decodeEntities(s).trim();
 }
@@ -227,8 +194,7 @@ function stripTags(html) {
 
 function htmlToMarkdown(html) {
   if (!html) return '';
-  const inline = inlineToMd(html);
-  return inline.replace(/\s+/g, ' ').trim();
+  return inlineToMd(html).replace(/\s+/g, ' ').trim();
 }
 
 function decodeEntities(s) {
@@ -285,7 +251,6 @@ function extractCitations(content) {
     } catch (_) { /* fall through */ }
   }
   const urls = new Set();
-  // "자료출처:" 또는 "Source:" 뒤에 오는 URL을 모두 수집.
   const sourcePattern = /(?:자료출처|출처|Source|source)\s*[:：]\s*([\s\S]*?)(?:\n\n|$)/g;
   let match;
   while ((match = sourcePattern.exec(text)) !== null) {
@@ -294,19 +259,4 @@ function extractCitations(content) {
     urlMatches.forEach((u) => urls.add(u.replace(/[)\].,;]+$/, '')));
   }
   return Array.from(urls);
-}
-
-function notFound() {
-  return new Response('# 404 Not Found\n\n해당 게시글을 찾을 수 없습니다.\n', errorHeaders(404));
-}
-
-function errorHeaders(status) {
-  return {
-    status,
-    headers: {
-      'Content-Type': 'text/markdown; charset=UTF-8',
-      'Cache-Control': 'no-store',
-      'X-Robots-Tag': 'noindex',
-    },
-  };
 }

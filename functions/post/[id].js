@@ -8,6 +8,7 @@ import { ensureDuePostsPublished } from '../_shared/publish-due-posts.js';
 import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
 import { getCategoryMeta, listEditablePostCategories } from '../_shared/category-meta.mjs';
 import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_shared/site-copy.mjs';
+import { buildPostMarkdownResponse, buildMarkdownErrorResponse } from '../_shared/post-markdown.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -23,9 +24,14 @@ import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_
  */
 
 export async function onRequestGet({ params, env, request }) {
-  // 엄격한 숫자 검증 — parseInt('123.md') = 123이라 [id].md.js 라우트가 실패하면
-  // 사용자가 .md 요청을 해도 조용히 HTML로 떨어지는 버그가 생긴다. .md/.json 등 확장자는 404.
+  // params.id는 숫자만(/post/123) 또는 .md suffix(/post/123.md) 중 하나만 허용.
+  // 다른 확장자(.json, .txt 등)는 명시적 404. AI 봇이 plain markdown을 가져갈 수 있도록 .md는 별도 분기.
+  // Pages는 [id].md.js 같은 dynamic+literal 패턴을 인식 못 해 같은 함수 안에서 분기 처리.
   const rawId = String(params.id || '');
+  const mdMatch = /^(\d+)\.md$/.exec(rawId);
+  if (mdMatch) {
+    return serveMarkdown(parseInt(mdMatch[1], 10), env, request);
+  }
   if (!/^\d+$/.test(rawId)) {
     return notFound();
   }
@@ -222,7 +228,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260522001853">
+  <link rel="stylesheet" href="/css/style.css?v=20260522002552">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -404,7 +410,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.142.00</span> · Admin <span class="admin-build-version">V03.114.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.142.01</span> · Admin <span class="admin-build-version">V03.114.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -616,9 +622,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260522001853"></script>
-  <script src="/js/site-chrome.js?v=20260522001853"></script>
-  <script src="/js/post-page.js?v=20260522001853"></script>
+  <script src="/js/main.js?v=20260522002552"></script>
+  <script src="/js/site-chrome.js?v=20260522002552"></script>
+  <script src="/js/post-page.js?v=20260522002552"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -650,6 +656,23 @@ function notFound() {
     status: 302,
     headers: { Location: '/404.html' },
   });
+}
+
+// /post/:id.md 분기 — Cloudflare Pages가 [id].md.js 같은 dynamic+literal 라우트를
+// 인식 못 해서 같은 함수에서 분기 처리. AI 봇이 HTML 파싱 없이 본문을 인용하도록 markdown 응답.
+async function serveMarkdown(id, env, request) {
+  if (!Number.isFinite(id) || id < 1) return buildMarkdownErrorResponse(404);
+  let post;
+  try {
+    post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first();
+  } catch (err) {
+    console.error('GET /post/:id.md DB error:', err);
+    return buildMarkdownErrorResponse(500, '게시글을 불러오지 못했습니다.');
+  }
+  if (!post || post.published === 0) return buildMarkdownErrorResponse(404);
+  const origin = new URL(request.url).origin;
+  const postUrl = `${origin}/post/${id}`;
+  return buildPostMarkdownResponse({ post, postUrl, origin });
 }
 
 function errorPage() {

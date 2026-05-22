@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "00.142.01",
+    "date": "2026-05-22",
+    "released_at": "2026-05-22 09:25:29 KST",
+    "summary": "/post/:id.md 라우팅 회귀 수정. 직전 배포에서 별도 함수 파일(functions/post/[id].md.js)로 markdown 미러를 만들었지만 Cloudflare Pages가 [id].md.js 같은 dynamic+literal 라우트 패턴을 인식하지 못해 302→404로 떨어지던 문제 해결.",
+    "changes": [
+      "functions/_shared/post-markdown.js 신설: buildPostMarkdownResponse / buildMarkdownErrorResponse 헬퍼 + 모든 Editor.js→markdown 변환 로직을 공유 모듈로 분리.",
+      "functions/post/[id].md.js 삭제. 대신 functions/post/[id].js 진입점에서 params.id가 ^(\\d+)\\.md$ 패턴이면 serveMarkdown(id, env, request)로 분기. 같은 라우트 함수 안에서 HTML/markdown 모두 처리.",
+      "사이트 버전 00.142.00 → 00.142.01."
+    ]
+  },
+  {
     "version": "00.142.00",
     "date": "2026-05-22",
     "released_at": "2026-05-22 09:18:18 KST",
