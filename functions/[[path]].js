@@ -295,6 +295,12 @@ async function loadHomeSsrContent(env, origin) {
     const picksRail = picksPosts.slice(0, 4);
     const leadPost = leadData.post || picksPosts[0] || latestPosts[0] || null;
 
+    // 메인 스토리 이미지는 홈 LCP candidate. 실제 이미지(placeholder 아님)일 때만 preload 후보로 노출.
+    // HTML 파싱 후 <img>에 도달해야 비로소 요청이 발생하던 것을 head에서 미리 hint해 200~500ms 단축.
+    const heroPreloadUrl = leadPost && leadPost.image_url && !leadPost.image_is_placeholder
+      ? String(leadPost.image_url)
+      : '';
+
     const payload = {
       lead: renderHomeLeadStory(leadPost, navLabels),
       latest: renderMiniList(latestRail, navLabels, {}),
@@ -304,6 +310,7 @@ async function loadHomeSsrContent(env, origin) {
       apr: renderMiniList(aprPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
       wosm: renderMiniList(wosmPosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
       people: renderMiniList(peoplePosts.slice(0, 4), navLabels, { hideCategoryChip: true }),
+      heroPreloadUrl,
       footer: {
         totalVisitors: formatCount(footerAnalytics.total_unique),
         totalViews: formatCount(footerAnalytics.total_pageviews),
@@ -358,6 +365,18 @@ function applyHomeSsrContent(response, payload) {
         element.setInnerContent(String(footerStats.todayVisitors || '0'));
       }
     });
+  // 메인 스토리 hero를 head에 preload — placeholder/로고 fallback일 때는 추가 안 함 (필요한 트래픽만).
+  if (payload.heroPreloadUrl) {
+    const safeHero = escapeHtml(payload.heroPreloadUrl);
+    rewriter = rewriter.on('head', {
+      element(element) {
+        element.append(
+          `<link rel="preload" as="image" href="${safeHero}" fetchpriority="high">`,
+          { html: true }
+        );
+      }
+    });
+  }
   return rewriter.transform(response);
 }
 

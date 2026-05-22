@@ -173,6 +173,12 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
     `<meta name="keywords" content="${escapeHtml(getPageKeywords(pageKey))}"/>`,
+    // 외부 CDN preconnect — DNS+TCP+TLS handshake 200~500ms 단축 (특히 모바일 첫 방문).
+    // DOMPurify(JSDelivr), Kakao SDK + AdFit, Daum AdFit 자산. 광고는 광고대로, 보안 라이브러리는 보안 라이브러리대로.
+    `<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>`,
+    `<link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin/>`,
+    `<link rel="dns-prefetch" href="https://t1.daumcdn.net"/>`,
+    `<link rel="dns-prefetch" href="https://display.ad.daum.net"/>`,
     `<meta property="og:locale" content="ko_KR"/>`,
     `<meta property="og:type" content="website"/>`,
     `<meta property="og:title" content="${safeTitle}"/>`,

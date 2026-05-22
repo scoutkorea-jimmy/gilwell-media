@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.142.00",
+    "date": "2026-05-22",
+    "released_at": "2026-05-22 09:18:18 KST",
+    "summary": "성능 + SEO + AI 검색 패키지. 메인 스토리 hero 이미지 preload SSR 주입(LCP 200~500ms 단축 기대), 외부 CDN preconnect/dns-prefetch, NewsArticle JSON-LD에 articleBody/wordCount 추가, /post/:id.md plain markdown 미러 신설, /llms.txt·/rss.xml HEAD 요청 회귀 수정.",
+    "changes": [
+      "functions/[[path]].js loadHomeSsrContent + applyHomeSsrContent: 홈의 메인 스토리(leadPost) 이미지가 placeholder가 아닐 때만 head에 <link rel=preload as=image fetchpriority=high>를 HTMLRewriter로 주입. HTML 파싱 후 <img>에 도달해야 비로소 시작되던 LCP candidate 요청을 head에서 미리 hint.",
+      "functions/post/[id].js: coverImage와 ogImage를 분리. coverImage(실제 페이지에 표시되는 이미지)만 preload, ogImage(공유 카드용 fallback 포함)는 og:image/twitter:image에만. 이미지 없는 글에서 og-default.png를 강제 preload하던 낭비 차단.",
+      "functions/_shared/site-meta.js buildShareMetaBlock + functions/post/[id].js head: 외부 CDN preconnect/dns-prefetch 4개 추가 (cdn.jsdelivr.net, t1.kakaocdn.net, t1.daumcdn.net, display.ad.daum.net). DNS+TCP+TLS handshake 200~500ms 단축 (특히 모바일 첫 방문).",
+      "functions/post/[id].js buildArticleStructuredData: NewsArticle schema.org에 articleBody(plain text, 5000자 cap)와 wordCount(공백 분리 토큰) 추가. ChatGPT/Claude/Perplexity·Google News가 인용·요약 시 본문을 HTML 파싱 없이 직접 식별 가능.",
+      "functions/post/[id].md.js 신설: 각 기사의 plain markdown 미러. YAML frontmatter(title/url/category/published/author/tags) + Editor.js 블록 markdown 변환(paragraph/header/list/quote/image/embed/code) + 자료출처 섹션. AI 봇이 HTML 파싱 없이 인용 가능. /post/:id 헤드에 <link rel=alternate type=text/markdown> 노출, /llms.txt 가이드에도 사용법 안내.",
+      "functions/post/[id].js: params.id 엄격 숫자 검증(^\\d+$). parseInt('123.md')=123이라 [id].md.js 라우트 실패 시 조용히 HTML로 fallback되던 잠재 버그 차단. .md/.json 등 확장자 요청은 명시적 404.",
+      "functions/llms.txt.js, functions/rss.xml.js: export const onRequestHead = onRequestGet 추가. Pages 런타임이 onRequestGet만 export된 함수의 HEAD 요청을 매치하지 못해 404로 떨어지던 회귀 수정 (Perplexity 등 일부 AI 봇이 GET 전 HEAD probe).",
+      "functions/post/[id].js: 중복되던 truncatePlain의 Editor.js→plain 변환 로직을 extractPlainBody 헬퍼로 분리. articleBody/wordCount 계산과 truncatePlain이 같은 헬퍼 공유.",
+      "사이트 버전 00.141.00 → 00.142.00."
+    ]
+  },
+  {
     "version": "03.114.01",
     "date": "2026-05-21",
     "released_at": "2026-05-21 22:51:21 KST",

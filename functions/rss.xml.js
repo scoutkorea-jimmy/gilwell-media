@@ -72,6 +72,9 @@ ${items}
   }
 }
 
+// onRequestGet만 export하면 HEAD 요청이 매치되지 않아 404로 떨어진다. 피드 리더 일부는 GET 전에 HEAD probe.
+export const onRequestHead = onRequestGet;
+
 function buildDescription(post) {
   const subtitle = typeof post.subtitle === 'string' ? post.subtitle.trim() : '';
   const summary = subtitle || truncatePlain(post.content || '', 220);

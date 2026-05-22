@@ -58,6 +58,7 @@ export async function onRequestGet({ request, env }) {
     `- [Sitemap](${origin}/sitemap.xml): 공개 페이지 전체`,
     `- [News Sitemap](${origin}/sitemap-news.xml): 최근 48시간 신규 기사 (Google News 형식)`,
     `- [Articles NDJSON](${origin}/api/articles.ndjson): 최근 기사 구조화 메타데이터 (LLM/연구 용도)`,
+    `- 기사 markdown 미러: 각 기사 URL 끝에 \`.md\`를 붙이면 frontmatter + plain markdown 본문 반환. 예: \`${origin}/post/123.md\`. HTML 파싱 없이 인용·요약 가능.`,
     '',
     '## Editorial',
     '',
@@ -100,3 +101,7 @@ export async function onRequestGet({ request, env }) {
     },
   });
 }
+
+// onRequestGet만 export하면 Cloudflare Pages가 HEAD 요청을 매치하지 못해 404로 떨어진다.
+// 일부 AI 크롤러(특히 Perplexity)는 GET 전에 HEAD로 존재 확인을 하므로 동일 핸들러로 별칭.
+export const onRequestHead = onRequestGet;

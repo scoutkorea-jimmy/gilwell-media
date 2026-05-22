@@ -23,7 +23,13 @@ import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_
  */
 
 export async function onRequestGet({ params, env, request }) {
-  const id = parseInt(params.id, 10);
+  // 엄격한 숫자 검증 — parseInt('123.md') = 123이라 [id].md.js 라우트가 실패하면
+  // 사용자가 .md 요청을 해도 조용히 HTML로 떨어지는 버그가 생긴다. .md/.json 등 확장자는 404.
+  const rawId = String(params.id || '');
+  if (!/^\d+$/.test(rawId)) {
+    return notFound();
+  }
+  const id = parseInt(rawId, 10);
   if (!Number.isFinite(id) || id < 1) {
     return notFound();
   }
@@ -91,13 +97,16 @@ export async function onRequestGet({ params, env, request }) {
   const publicDateValue = post.publish_at || post.created_at;
   const publishedIso = toIsoString(publicDateValue);
   const modifiedIso = toIsoString(post.updated_at || post.created_at);
-  // 이미지가 없는 글도 공유 시 텍스트만 노출되지 않도록 사이트 기본 OG 이미지로 fallback.
-  // 우선순위: 글 자체 이미지 → 관리자 설정 사이트 공유 이미지 → /img/og-default.png
-  const ogImage  = post.image_url
+  // coverImage = 실제 페이지 본문에 표시되는 이미지 (LCP candidate). 글에 이미지가 있을 때만 채워짐.
+  // ogImage = 공유 카드용 — coverImage가 비면 사이트 기본 OG로 fallback해 카카오/페북 카드가 비지 않게.
+  // 두 값을 분리하는 이유: preload는 실제로 페이지에 보이는 이미지만 강제 다운로드해야 LCP가 줄어든다.
+  // 합쳐두면 이미지 없는 글에서 og-default.png를 preload해 화면에는 안 보이는 이미지를 다운로드하는 낭비.
+  const coverImage = post.image_url
     ? (post.image_url.startsWith('http')
         ? escapeHtml(post.image_url)
         : `${siteUrl}/api/posts/${id}/image`)
-    : escapeHtml(getResolvedShareImage(siteMeta, siteUrl));
+    : '';
+  const ogImage = coverImage || escapeHtml(getResolvedShareImage(siteMeta, siteUrl));
   const dateStr  = formatDate(publicDateValue);
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
@@ -135,6 +144,14 @@ export async function onRequestGet({ params, env, request }) {
     publish_date: String(publicDateValue || '').slice(0, 10),
   });
   const isNew    = isTodayKst(publicDateValue);
+  // AI 검색·뉴스 패널이 인용할 수 있도록 본문 plain text를 NewsArticle.articleBody에 직접 노출.
+  // 5000자 cap = JSON-LD 직렬화 크기 폭증 방지 + Google이 권장하는 "본문 요약" 범위.
+  // wordCount는 공백 분리 토큰 수 — 한국어/영어 혼용에서도 일관된 단순 지표.
+  const articleBodyFull = extractPlainBody(post.content || '');
+  const articleBodySchema = articleBodyFull.length > 5000
+    ? articleBodyFull.slice(0, 5000).trimEnd() + '…'
+    : articleBodyFull;
+  const articleWordCount = articleBodyFull ? (articleBodyFull.match(/\S+/g) || []).length : 0;
   const articleJsonLd = buildArticleStructuredData({
     title: post.title,
     subtitle: post.subtitle,
@@ -150,6 +167,8 @@ export async function onRequestGet({ params, env, request }) {
     keywords: post.meta_tags || post.tag,
     locationName: post.location_name,
     citations: renderedContent.citations || [],
+    articleBody: articleBodySchema,
+    wordCount: articleWordCount,
   });
   // BreadcrumbList JSON-LD — Home → Category → Article
   const breadcrumbJsonLd = JSON.stringify({
@@ -191,14 +210,19 @@ export async function onRequestGet({ params, env, request }) {
   <meta name="twitter:description" content="${desc}"/>
   ${ogImage ? `<meta name="twitter:image" content="${ogImage}"/>` : ''}
   <link rel="canonical" href="${postUrl}"/>
-  ${ogImage ? `<link rel="preload" as="image" href="${ogImage}"/>` : ''}
+  <link rel="alternate" type="text/markdown" title="${title} (Markdown)" href="${postUrl}.md"/>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+  <link rel="preconnect" href="https://t1.kakaocdn.net" crossorigin/>
+  <link rel="dns-prefetch" href="https://t1.daumcdn.net"/>
+  <link rel="dns-prefetch" href="https://display.ad.daum.net"/>
+  ${coverImage ? `<link rel="preload" as="image" href="${coverImage}" fetchpriority="high"/>` : ''}
   <script type="application/ld+json">${articleJsonLd}</script>
   <script type="application/ld+json">${breadcrumbJsonLd}</script>
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg"/>
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260521135145">
+  <link rel="stylesheet" href="/css/style.css?v=20260522001853">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -380,7 +404,7 @@ export async function onRequestGet({ params, env, request }) {
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <a href="#" class="gw-theme-toggle" role="button" data-theme-toggle>다크모드로 전환 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.141.00</span> · Admin <span class="admin-build-version">V03.114.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.142.00</span> · Admin <span class="admin-build-version">V03.114.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -592,9 +616,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260521135145"></script>
-  <script src="/js/site-chrome.js?v=20260521135145"></script>
-  <script src="/js/post-page.js?v=20260521135145"></script>
+  <script src="/js/main.js?v=20260522001853"></script>
+  <script src="/js/site-chrome.js?v=20260522001853"></script>
+  <script src="/js/post-page.js?v=20260522001853"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
@@ -858,23 +882,30 @@ function renderEditorListItems(items, listTag) {
   }).join('');
 }
 
-/** Strip tags/JSON and return plain text truncated to maxLen chars. */
-function truncatePlain(str, maxLen) {
+/** Editor.js JSON 또는 HTML 문자열을 plain text로 변환 (truncate 없이 전체). */
+function extractPlainBody(str) {
   if (!str) return '';
-  if (str.trim().charAt(0) === '{') {
+  let raw = String(str);
+  if (raw.trim().charAt(0) === '{') {
     try {
-      const doc = JSON.parse(str.trim());
+      const doc = JSON.parse(raw.trim());
       if (Array.isArray(doc.blocks)) {
-        str = doc.blocks.map(b => {
-          if (b.type === 'paragraph' || b.type === 'header') return b.data.text || '';
-          if (b.type === 'list') return (b.data.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
-          if (b.type === 'quote') return b.data.text || '';
+        raw = doc.blocks.map(b => {
+          const d = b.data || {};
+          if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') return d.text || '';
+          if (b.type === 'list') return (d.items || []).map(i => typeof i === 'string' ? i : (i.content || '')).join(' ');
+          if (b.type === 'image' || b.type === 'embed') return d.caption || '';
           return '';
-        }).join(' ');
+        }).join('\n');
       }
     } catch (e) { /* fall through */ }
   }
-  const plain = str.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return raw.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Strip tags/JSON and return plain text truncated to maxLen chars. */
+function truncatePlain(str, maxLen) {
+  const plain = extractPlainBody(str);
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…';
 }
 
@@ -1079,6 +1110,10 @@ function buildArticleStructuredData(meta) {
       headline: meta.title || '',
       alternativeHeadline: meta.subtitle || undefined,
       description: meta.description || '',
+      // articleBody + wordCount — Google News·ChatGPT·Claude·Perplexity가
+      // 인용·요약 시 텍스트 우선순위로 사용. 무엇이 본문인지 HTML 파싱 없이 명시.
+      articleBody: meta.articleBody || undefined,
+      wordCount: typeof meta.wordCount === 'number' && meta.wordCount > 0 ? meta.wordCount : undefined,
       mainEntityOfPage: {
         '@type': 'WebPage',
         '@id': meta.url || '',
