@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.143.00",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 17:58:48 KST",
+    "summary": "홈의 '업데이트 안 되는 느낌'을 해소하기 위해 콘텐츠 신선도 신호 4종을 추가 — 카드 상대시간, 마스트헤드 하단 '최근 업데이트: N분 전' 배지, 재방문 시 '이전 방문 이후 새 글 N건' 카운터, 티커에 최신 기사 3건 자동 헤드라인.",
+    "changes": [
+      "js/main.js: GW.getPostDateMillis / GW.formatRelativeTime / GW.formatPostDateRelative / GW.renderPostDateLabel 4개 헬퍼 신설. 7일 이내 게시물은 '방금 전 / N분 전 / N시간 전 / 어제 / N일 전'으로 표시하고, 그 이후는 기존 절대 날짜('2026년 5월 23일')로 폴백. <time> 요소로 감싸 datetime 속성과 title 속성에 ISO/KST 풀 타임스탬프 보존.",
+      "js/board.js, js/home-render.js, js/search.js: 모든 카드/리스트/모달 메타에서 GW.formatPostDate → GW.renderPostDateLabel 로 교체. 7일 이내 게시물은 보라색(--color-scouting-purple) bold로 강조되어 즉시 '신선함' 인지 가능.",
+      "index.html + css/style.css: 티커 직하 .home-freshness-bar 신설. 좌측에 펄스 도트(reduced-motion에서는 정적) + '최근 업데이트: N분 전' + 재방문 시 '이전 방문 이후 새 글 N건'. 30초마다 상대시간 라벨 자동 갱신.",
+      "js/home-runtime.js: localStorage 'gw_home_last_visit_at' 키로 직전 방문 시각을 추적. 페이지 로드 시 직전 시각을 기억해 viewModel.latestPosts 중 그 이후 publish 된 게시물 수를 카운트. 첫 applyData 성공 직후 현재 시각을 커밋해 새로고침 루프에서 같은 숫자를 반복 노출하지 않도록 처리.",
+      "js/site-chrome.js: GW.renderTickerItems 시그니처에 opts.autoItems 추가. 운영자 지정 문구 뒤에 .ticker-headline 으로 감싼 자동 헤드라인을 최대 6개 append. js/home-runtime.js applyData 에서 viewModel.latestPosts 상위 3건의 title 을 autoItems 로 전달 — 홈 티커에서 '운영자 문구 → 최신 기사 3개 헤드라인' 순환이 자연스럽게 이어진다.",
+      "사이트 버전 00.142.01 → 00.143.00."
+    ]
+  },
+  {
     "version": "00.142.01",
     "date": "2026-05-22",
     "released_at": "2026-05-22 09:25:29 KST",

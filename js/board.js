@@ -340,7 +340,7 @@
           shareHtml +
           '<div class="post-card-engagement">공감 ' + GW.formatNumber(post.likes || 0) + '</div>' +
           '<div class="post-card-meta">' +
-            GW.formatPostDate(post) +
+            GW.renderPostDateLabel(post) +
             (post.author ? ' &nbsp;·&nbsp; <span class="post-author">' + GW.escapeHtml(post.author) + '</span>' : '') +
             ' &nbsp;<a class="post-permalink" href="/post/' + post.id + '" title="개별 페이지로 이동">↗</a>' +
           '</div>' +
@@ -446,7 +446,7 @@
         '</div>' +
         '<h2>' + GW.escapeHtml(post.title) + '</h2>' +
         subtitleHtml +
-        '<div class="modal-date">' + GW.formatPostDate(post) + '</div>' +
+        '<div class="modal-date">' + GW.renderPostDateLabel(post) + '</div>' +
       '</div>' +
       imgHtml +
       youtubeHtml +

@@ -689,7 +689,7 @@
       });
   };
 
-  GW.renderTickerItems = function (innerId, items) {
+  GW.renderTickerItems = function (innerId, items, opts) {
     var inner = document.getElementById(innerId || 'ticker-inner');
     if (!inner) return;
     var fallbackItems = String(inner.getAttribute('data-fallback-items') || '')
@@ -702,9 +702,20 @@
       'The BP Post · bpmedia.net',
     ]);
     var sep = '&nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;';
-    var run = list.map(function (text) { return GW.escapeHtml(text); }).join(sep);
+    var pieces = list.map(function (text) { return GW.escapeHtml(text); });
+    // Optional auto-appended items (e.g. latest article headlines on the
+    // home page). Wrapped so we can style them later if needed.
+    var autoItems = (opts && Array.isArray(opts.autoItems)) ? opts.autoItems
+      .map(function (text) { return String(text || '').trim(); })
+      .filter(Boolean)
+      .slice(0, 6) : [];
+    autoItems.forEach(function (text) {
+      pieces.push('<span class="ticker-headline">' + GW.escapeHtml(text) + '</span>');
+    });
+    var run = pieces.join(sep);
     inner.innerHTML = run + sep + run + sep;
-    inner.style.animationDuration = Math.max(40, list.length * 16) + 's';
+    var totalCount = pieces.length;
+    inner.style.animationDuration = Math.max(40, totalCount * 16) + 's';
   };
 
   GW.setupTickerControls = function () {

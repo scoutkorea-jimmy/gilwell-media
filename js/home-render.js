@@ -27,7 +27,7 @@
           '<div class="mini-item-text">' +
             '<div class="mini-item-labels">' + helpers.buildMiniLabels(post, options) + '</div>' +
             '<h4><a class="mini-item-link" href="' + overlayHref + '">' + GW.escapeHtml(post.title) + '</a></h4>' +
-            '<div class="mini-meta">' + GW.formatPostDate(post) + '</div>' +
+            '<div class="mini-meta">' + GW.renderPostDateLabel(post) + '</div>' +
             '<div class="mini-item-actions">' + helpers.buildMiniShareButton(post) + '</div>' +
           '</div>' +
           thumb +
@@ -79,7 +79,7 @@
             (excerpt ? '<p class="home-lead-excerpt">' + GW.escapeHtml(excerpt) + '</p>' : '') +
           '</div>' +
           '<div class="home-lead-footer">' +
-            '<div class="home-lead-meta">' + GW.formatPostDate(post) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
+            '<div class="home-lead-meta">' + GW.renderPostDateLabel(post) + (post.author ? ' · ' + GW.escapeHtml(post.author) : '') + '</div>' +
             '<div class="home-lead-actions">' +
               '<a class="home-subscribe-btn" href="/post/' + post.id + '">기사 읽기</a>' +
               '<button class="home-subscribe-btn secondary" type="button" data-share-url="/post/' + post.id + '" data-share-title="' + GW.escapeHtml(post.title) + '">공유하기</button>' +

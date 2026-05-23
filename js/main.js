@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.142.01';
+  GW.APP_VERSION = '00.143.00';
   GW.ADMIN_VERSION = '03.114.01';
-  GW.ASSET_VERSION = '20260522002552';
+  GW.ASSET_VERSION = '20260523085848';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -278,6 +278,71 @@
 
   GW.formatPostDate = function (post) {
     return GW.formatDate(GW.getPostPublicDate(post));
+  };
+
+  GW.getPostDateMillis = function (post) {
+    var raw = GW.getPostPublicDate(post);
+    if (!raw) return 0;
+    var normalized = String(raw).trim().replace(' ', 'T');
+    var withZone = /Z$|[+-]\d{2}:\d{2}$/.test(normalized) ? normalized : normalized + '+00:00';
+    var d = new Date(withZone);
+    var t = d.getTime();
+    return isNaN(t) ? 0 : t;
+  };
+
+  /**
+   * Convert a millisecond timestamp into a Korean relative-time string.
+   * Returns '' when the gap is older than the relative window so callers
+   * can fall back to an absolute date.
+   */
+  GW.formatRelativeTime = function (timestampMs, opts) {
+    if (!timestampMs) return '';
+    var now = (opts && opts.now) ? opts.now : Date.now();
+    var diff = now - timestampMs;
+    if (diff < 0) diff = 0;
+    var sec = Math.floor(diff / 1000);
+    if (sec < 60) return '방금 전';
+    var min = Math.floor(sec / 60);
+    if (min < 60) return min + '분 전';
+    var hr = Math.floor(min / 60);
+    if (hr < 24) return hr + '시간 전';
+    var day = Math.floor(hr / 24);
+    if (day === 1) return '어제';
+    if (day < 7) return day + '일 전';
+    return '';
+  };
+
+  GW.formatPostDateRelative = function (post) {
+    var ms = GW.getPostDateMillis(post);
+    var rel = GW.formatRelativeTime(ms);
+    if (rel) return rel;
+    return GW.formatDate(GW.getPostPublicDate(post));
+  };
+
+  /**
+   * Render a post date as a <time> element. Visible label flips to a relative
+   * string ("3분 전", "어제") when within 7 days; falls back to the absolute
+   * Korean date otherwise. The full timestamp stays available via title for
+   * hover/screen readers, and `datetime` carries the ISO value for assistive
+   * tech and SEO.
+   */
+  GW.renderPostDateLabel = function (post) {
+    var raw = GW.getPostPublicDate(post);
+    if (!raw) return '';
+    var ms = GW.getPostDateMillis(post);
+    var rel = ms ? GW.formatRelativeTime(ms) : '';
+    var absolute = GW.formatDate(raw);
+    var compact = GW.formatDateTimeCompactKst(raw);
+    var label = rel || absolute;
+    var iso = '';
+    if (ms) {
+      try { iso = new Date(ms).toISOString(); } catch (_) {}
+    }
+    var attrs = ' class="post-date' + (rel ? ' is-relative' : '') + '"';
+    if (iso) attrs += ' datetime="' + GW.escapeHtml(iso) + '"';
+    var titleText = rel ? (absolute + ' · ' + compact) : compact;
+    attrs += ' title="' + GW.escapeHtml(titleText) + '"';
+    return '<time' + attrs + '>' + GW.escapeHtml(label) + '</time>';
   };
 
   GW.isPostNew = function (post) {

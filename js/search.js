@@ -47,7 +47,7 @@
             '<h3>' + GW.escapeHtml(post.title) + '</h3>' +
             (post.subtitle ? '<p class="result-sub">' + GW.escapeHtml(post.subtitle) + '</p>' : '') +
             '<div class="search-result-meta">' +
-              GW.formatPostDate(post) +
+              GW.renderPostDateLabel(post) +
               (post.author ? ' &nbsp;·&nbsp; ' + GW.escapeHtml(post.author) : '') +
             '</div>' +
           '</a>'

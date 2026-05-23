@@ -27,6 +27,29 @@
     var latestRefreshFailed = false;
     var latestRefreshFailureCount = 0;
 
+    // Freshness bar / since-last-visit state. The previous-visit timestamp is
+    // sampled once per page load so post counts stay stable while the visitor
+    // is on the page; the new "current visit" is committed back to storage
+    // immediately so refreshes don't keep re-showing the same delta.
+    var LAST_VISIT_KEY = 'gw_home_last_visit_at';
+    var previousVisitMs = readPreviousVisit();
+    var freshnessLatestPublishMs = 0;
+    var freshnessTickTimer = null;
+
+    function readPreviousVisit() {
+      try {
+        var raw = window.localStorage && window.localStorage.getItem(LAST_VISIT_KEY);
+        var n = raw ? Number(raw) : 0;
+        return isFinite(n) && n > 0 ? n : 0;
+      } catch (_) { return 0; }
+    }
+
+    function writeCurrentVisit() {
+      try {
+        if (window.localStorage) window.localStorage.setItem(LAST_VISIT_KEY, String(Date.now()));
+      } catch (_) {}
+    }
+
     function fetchHomeData(options) {
       var opts = options || {};
       var query = opts.fresh ? '?_=' + Date.now() : '';
@@ -51,7 +74,6 @@
       GW.applyLang();
       GW._statsData = data.stats || null;
       if (GW._statsData) GW._renderStats();
-      GW.renderTickerItems('ticker-inner', data.ticker && data.ticker.items);
       helpers.renderHomeFooterStats(data.analytics || {});
 
       var nextHeroSignature = helpers.getHeroSignature(data.hero || {});
@@ -71,8 +93,69 @@
         { error: !!issues.lead }
       );
       render.applyMiniSections(viewModel, issues);
+      applyFreshnessFromViewModel(viewModel, data);
       lastHomeRefreshAt = Date.now();
       syncHomeStatusBanner();
+    }
+
+    var currentVisitCommitted = false;
+    function applyFreshnessFromViewModel(viewModel, data) {
+      var latestPosts = (viewModel && viewModel.latestPosts) || [];
+      var recentTitles = latestPosts.slice(0, 3)
+        .map(function (post) { return post && post.title ? String(post.title) : ''; })
+        .filter(Boolean);
+      var topPublishMs = 0;
+      var newCount = 0;
+      latestPosts.forEach(function (post) {
+        var ms = GW.getPostDateMillis(post);
+        if (ms > topPublishMs) topPublishMs = ms;
+        if (previousVisitMs && ms > previousVisitMs) newCount += 1;
+      });
+      freshnessLatestPublishMs = topPublishMs;
+      GW.renderTickerItems('ticker-inner', data.ticker && data.ticker.items, { autoItems: recentTitles });
+      renderFreshnessBar(newCount);
+      if (!currentVisitCommitted) {
+        currentVisitCommitted = true;
+        writeCurrentVisit();
+      }
+    }
+
+    function renderFreshnessBar(newCount) {
+      var bar = document.getElementById('home-freshness-bar');
+      var updatedEl = document.getElementById('home-freshness-updated');
+      var sepEl = document.getElementById('home-freshness-sep');
+      var sinceEl = document.getElementById('home-freshness-since');
+      if (!bar || !updatedEl) return;
+      if (!freshnessLatestPublishMs) {
+        bar.hidden = true;
+        return;
+      }
+      var rel = GW.formatRelativeTime(freshnessLatestPublishMs) || GW.formatDate(new Date(freshnessLatestPublishMs).toISOString());
+      updatedEl.textContent = '최근 업데이트: ' + rel;
+      var showSince = !!previousVisitMs && newCount > 0;
+      if (sinceEl) {
+        if (showSince) {
+          sinceEl.textContent = '이전 방문 이후 새 글 ' + newCount + '건';
+          sinceEl.hidden = false;
+        } else {
+          sinceEl.textContent = '';
+          sinceEl.hidden = true;
+        }
+      }
+      if (sepEl) sepEl.hidden = !showSince;
+      bar.hidden = false;
+    }
+
+    function startFreshnessTick() {
+      if (freshnessTickTimer !== null) return;
+      freshnessTickTimer = window.setInterval(function () {
+        if (document.visibilityState !== 'visible') return;
+        if (!freshnessLatestPublishMs) return;
+        var updatedEl = document.getElementById('home-freshness-updated');
+        if (!updatedEl) return;
+        var rel = GW.formatRelativeTime(freshnessLatestPublishMs) || GW.formatDate(new Date(freshnessLatestPublishMs).toISOString());
+        updatedEl.textContent = '최근 업데이트: ' + rel;
+      }, 30000);
     }
 
     function syncHomeStatusBanner() {
@@ -169,6 +252,8 @@
       latestFatalState = true;
       latestIssueKeys = [];
       lastHomeRequestAt = 0;
+      var bar = document.getElementById('home-freshness-bar');
+      if (bar) bar.hidden = true;
       GW.renderTickerItems('ticker-inner');
       GW._statsData = { korea: 0, apr: 0, wosm: 0, people: 0, today: 0 };
       if (GW._renderStats) GW._renderStats();
@@ -328,6 +413,7 @@
 
       initRefreshLifecycle();
       initPullToRefresh();
+      startFreshnessTick();
       window.addEventListener('resize', syncResponsiveSectionVisibility);
     }
 
