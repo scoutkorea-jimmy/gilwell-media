@@ -1460,9 +1460,20 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius:  0;
 }
 .post-kicker-new {
-  background:  var(--black);
-  color:       var(--white);
-  border-color:var(--black);
+  background:    var(--fire-red);
+  color:         var(--white);
+  border-color:  var(--fire-red);
+  font-weight:   700;
+  letter-spacing: 0.18em;
+  box-shadow:    0 1px 4px rgba(255, 86, 85, 0.35);
+  animation:     gwNewKickerPulse 2.6s ease-in-out infinite;
+}
+@keyframes gwNewKickerPulse {
+  0%, 100% { box-shadow: 0 1px 4px rgba(255, 86, 85, 0.35); }
+  50%      { box-shadow: 0 1px 10px rgba(255, 86, 85, 0.65); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .post-kicker-new { animation: none; }
 }
 
 /* 모든 카테고리 kicker: border-color = text color 통일 (KMS 기준 kicker는 UI 라벨로 Lc 45+ 적용).

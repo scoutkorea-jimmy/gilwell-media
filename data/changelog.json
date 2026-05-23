@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "00.143.02",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 18:48:20 KST",
+    "summary": "NEW 배지 시각 강화 — 검정 fill 에서 Fire Red(#FF5655) fill + 흰색 텍스트 + 미세한 글로우 펄스로 교체. '오늘 올라온 글'이 즉시 눈에 들어오도록 함.",
+    "changes": [
+      "css/style.css .post-kicker-new: background/border 를 --black 에서 --fire-red 로, font-weight 700 + letter-spacing 0.18em 으로 강조. box-shadow 펄스(0~10px, 2.6s ease-in-out)로 정적 카드 안에서도 시각적으로 살짝 호흡. prefers-reduced-motion 환경에서는 애니메이션 비활성화.",
+      "Fire Red 는 APR 카테고리 태그와 같은 색이지만 NEW kicker 는 작은 라벨이라 같은 카드에 둘이 나란히 보여도 '강조 색의 반복'으로 읽힘 — 의도된 동조.",
+      "사이트 버전 00.143.01 → 00.143.02."
+    ]
+  },
+  {
     "version": "00.143.01",
     "date": "2026-05-23",
     "released_at": "2026-05-23 18:10:26 KST",
