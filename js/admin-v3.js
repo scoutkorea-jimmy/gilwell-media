@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.115.00
+ * Version: 03.116.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -165,6 +165,12 @@
   var _writeDraftDebounce = null;
   var _writeLastDraftSavedAt = 0;
   var _writeDirty    = false;
+  // D1 임시저장 시스템 — localStorage 단일 슬롯 시대를 대체.
+  var _currentDraftId = null;   // 현재 작성 중인 글에 대응하는 drafts.id (POST 후 PUT 전환용)
+  var _draftListCache = [];     // 마지막으로 GET한 드래프트 목록 캐시
+  var _draftSaveInflight = false; // POST/PUT 중복 발사 방지
+  var _draftSavePending = false;  // inflight 중에 다시 변경 → 끝나면 다시 한번 저장
+  var _editorOptionsCache = null; // GET /api/settings/editors 캐시 (작성자 dropdown용)
   var _writeStatsTimer = null;
   var _metaTagPool   = null;
   var _metaTagPoolLoading = false;
@@ -2422,8 +2428,9 @@
     document.getElementById('w-cat').value        = 'korea';
     _selectedWriteTags = [];
     _renderWriteTagPills(document.getElementById('w-cat').value);
-    // Phase 5: w-author is readonly and auto-populated from the session's
-    // editor_code so the public byline always reflects the central assignment.
+    // w-author는 이제 <select>. 기본값으로 본인 editor_code 선택 (옵션이 아직
+    // 안 채워졌으면 placeholder 'Editor.A'로 두고, _loadAuthorOptions()가 끝나면
+    // dropdown 채우면서 본인 코드로 재선택).
     var _wAuthor = document.getElementById('w-author');
     if (_wAuthor) {
       var _meCode = (window.AccountAdmin && window.AccountAdmin.currentEditorCode)
@@ -2454,30 +2461,38 @@
     _editorClear();
   }
 
-  var _DRAFT_KEY_NEW = 'gw_admin_new_draft';
-  function _draftKeyForCurrent() {
-    return _editingId ? ('gw_admin_draft_edit_' + _editingId) : _DRAFT_KEY_NEW;
-  }
-
+  // ─────────────────────────────────────────────────────────────
+  // 임시저장 (D1 backend, 운영자당 최대 10개 · 14일 TTL)
+  // ─────────────────────────────────────────────────────────────
+  // localStorage 단일 슬롯 방식을 폐기하고 D1로 옮긴 이유:
+  //   1) 이미지(cover/gallery base64)가 빠지던 버그 — D1 + R2 업로드로 안전 저장
+  //   2) 10개 슬롯 + 운영자별 격리 — localStorage 5MB 한도로는 불가능
+  //   3) 14일 TTL 서버측 강제 — 클라이언트 시계 의존 X
   function _collectDraftPayload(content) {
     return {
-      editingId: _editingId || null,
+      editing_post_id: _editingId || null,
       title:           (_el('w-title')           || {}).value || '',
       subtitle:        (_el('w-subtitle')        || {}).value || '',
       category:        (_el('w-cat')             || {}).value || 'korea',
-      tags:            (_selectedWriteTags || []).slice(),
-      metaTags:        (_metaTags || []).slice(),
+      tag:             (_selectedWriteTags || []).join(','),
+      meta_tags:       (_metaTags || []).join(','),
       author:          (_el('w-author')          || {}).value || '',
-      publishAt:       (_el('w-date')            || {}).value || '',
-      youtube:         (_el('w-youtube')         || {}).value || '',
-      coverCaption:    (_el('w-cover-caption')   || {}).value || '',
-      locationName:    (_el('w-location-name')   || {}).value || '',
-      locationAddress: (_el('w-location-addr')   || {}).value || '',
-      special:         (_el('w-special')         || {}).value || '',
-      published:       !!(_el('w-published') && _el('w-published').checked),
-      featured:        !!(_el('w-featured')  && _el('w-featured').checked),
+      publish_at:      (_el('w-date')            || {}).value || '',
+      youtube_url:     (_el('w-youtube')         || {}).value || '',
+      // cover image — base64 데이터 URL이면 서버가 R2로 업로드 후 짧은 URL로 치환해 D1에 저장.
+      image_url:       _coverDataUrl || '',
+      image_caption:   (_el('w-cover-caption')   || {}).value || '',
+      gallery_images:  Array.isArray(_galleryImages) ? _galleryImages.slice() : [],
+      location_name:   (_el('w-location-name')   || {}).value || '',
+      location_address:(_el('w-location-addr')   || {}).value || '',
+      special_feature: (_el('w-special')         || {}).value || '',
+      manual_related_posts: Array.isArray(_relatedPosts)
+        ? _relatedPosts.map(function (r) { return { id: r.id, title: r.title }; })
+        : [],
+      published_flag:  !!(_el('w-published') && _el('w-published').checked),
+      featured_flag:   !!(_el('w-featured')  && _el('w-featured').checked),
+      ai_assisted:     !!(_el('w-ai') && _el('w-ai').checked),
       content:         content || '',
-      savedAt:         Date.now(),
     };
   }
 
@@ -2505,28 +2520,47 @@
     if (diff < 5000)  return '방금 전';
     if (diff < 60000) return Math.round(diff / 1000) + '초 전';
     if (diff < 3600000) return Math.round(diff / 60000) + '분 전';
-    return Math.round(diff / 3600000) + '시간 전';
+    if (diff < 86400000) return Math.round(diff / 3600000) + '시간 전';
+    return Math.round(diff / 86400000) + '일 전';
   }
 
   function _saveDraftNow() {
     var titleEl = _el('w-title');
     if (!titleEl) return;
     var hasTitle = !!titleEl.value.trim();
-    // 편집 모드라도 내용이 비어 있으면 저장하지 않음 (노이즈 방지)
     if (!hasTitle) { _setDraftStatus('idle'); return; }
+    if (_draftSaveInflight) { _draftSavePending = true; return; }
+    _draftSaveInflight = true;
     _setDraftStatus('saving');
     _editorGetData().then(function (content) {
-      try {
-        var payload = _collectDraftPayload(content);
-        localStorage.setItem(_draftKeyForCurrent(), JSON.stringify(payload));
-        _writeLastDraftSavedAt = payload.savedAt;
-        _writeDirty = false;
-        _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(payload.savedAt));
-      } catch (_) {
-        _setDraftStatus('dirty', '저장 실패 (용량 초과 가능성)');
+      var payload = _collectDraftPayload(content);
+      var isUpdate = !!_currentDraftId;
+      var url = isUpdate ? ('/api/admin/drafts/' + _currentDraftId) : '/api/admin/drafts';
+      var method = isUpdate ? 'PUT' : 'POST';
+      return _apiFetch(url, { method: method, body: JSON.stringify(payload) });
+    }).then(function (data) {
+      var draft = data && data.draft;
+      if (draft && draft.id) {
+        _currentDraftId = draft.id;
+        // 서버가 R2로 업로드한 경우 image_url이 짧은 URL로 바뀌므로 in-memory 동기화.
+        if (draft.image_url && (!_coverDataUrl || _coverDataUrl.startsWith('data:'))) {
+          _coverDataUrl = draft.image_url;
+        }
       }
-    }).catch(function () {
-      _setDraftStatus('dirty', '자동저장 대기…');
+      _writeLastDraftSavedAt = Date.now();
+      _writeDirty = false;
+      _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(_writeLastDraftSavedAt));
+      // 목록도 갱신 (제목·시각 반영)
+      _refreshDraftListCache().catch(function () {});
+    }).catch(function (err) {
+      console.error('draft save failed:', err);
+      _setDraftStatus('dirty', '저장 실패 — 잠시 후 다시 시도');
+    }).finally(function () {
+      _draftSaveInflight = false;
+      if (_draftSavePending) {
+        _draftSavePending = false;
+        setTimeout(_saveDraftNow, 100);
+      }
     });
   }
 
@@ -2539,7 +2573,6 @@
 
   function _startDraftTimer() {
     _stopDraftTimer();
-    // 30초마다 "최근 저장 시간" 라벨을 갱신 (저장은 debounce로 처리)
     _draftTimer = setInterval(function () {
       if (!_writeLastDraftSavedAt || _writeDirty) return;
       var line = _el('w-draft-line');
@@ -2554,57 +2587,222 @@
     if (_writeDraftDebounce) { clearTimeout(_writeDraftDebounce); _writeDraftDebounce = null; }
   }
 
+  // 발행(publish) 성공 시 호출 — 현재 드래프트를 서버에서 제거.
   function _clearDraft() {
-    try { localStorage.removeItem(_draftKeyForCurrent()); } catch (_) {}
+    var id = _currentDraftId;
+    _currentDraftId = null;
     _writeDirty = false;
     _writeLastDraftSavedAt = 0;
     _setDraftStatus('idle', '저장 완료');
+    if (id) {
+      _apiFetch('/api/admin/drafts/' + id, { method: 'DELETE' })
+        .catch(function () {})
+        .then(function () { _refreshDraftListCache().catch(function () {}); });
+    }
   }
 
-  function _checkAndOfferDraftRestore() {
-    try {
-      var key = _draftKeyForCurrent();
-      var raw = localStorage.getItem(key);
-      if (!raw) return;
-      var draft = JSON.parse(raw);
-      if (!draft || !draft.title) return;
-      var ageMs = Date.now() - (draft.savedAt || 0);
-      if (ageMs > 7 * 24 * 3600000) { localStorage.removeItem(key); return; }
-      var timeStr = _relativeTimeKo(draft.savedAt);
-      if (!confirm('임시 저장된 글이 있습니다 (' + timeStr + ').\n제목: ' + draft.title + '\n\n복원할까요?')) {
-        localStorage.removeItem(key);
-        return;
+  // 작성 화면 진입 시 호출 — 자기 임시저장 목록을 받아 카드에 노출.
+  function _refreshDraftListCache() {
+    return _apiFetch('/api/admin/drafts').then(function (data) {
+      _draftListCache = (data && Array.isArray(data.drafts)) ? data.drafts : [];
+      _renderDraftsCard(_draftListCache);
+      return _draftListCache;
+    }).catch(function (err) {
+      _draftListCache = [];
+      _renderDraftsCard([]);
+      throw err;
+    });
+  }
+
+  function _renderDraftsCard(drafts) {
+    var card = document.getElementById('w-drafts-card');
+    var list = document.getElementById('w-drafts-list');
+    var countEl = document.getElementById('w-drafts-count');
+    if (!card || !list) return;
+    if (!drafts.length) {
+      card.hidden = true;
+      list.innerHTML = '';
+      if (countEl) countEl.textContent = '0/10';
+      return;
+    }
+    card.hidden = false;
+    if (countEl) countEl.textContent = drafts.length + '/10';
+    list.innerHTML = drafts.map(function (d) {
+      var isCurrent = (_currentDraftId && d.id === _currentDraftId) ? ' is-current' : '';
+      var savedMs = d.updated_at ? Date.parse(_kstIso(d.updated_at)) : 0;
+      var title = (d.title && d.title.trim()) || '(제목 없음)';
+      var cat = d.category || '';
+      var editingTag = d.editing_post_id ? ('수정 중 #' + d.editing_post_id) : '신규';
+      return '<div class="v3-write-draft-item' + isCurrent + '" data-draft-id="' + d.id + '">' +
+        '<div class="v3-write-draft-item-body">' +
+          '<div class="v3-write-draft-item-title">' + GW.escapeHtml(title) + '</div>' +
+          '<div class="v3-write-draft-item-meta">' +
+            '<span>' + GW.escapeHtml(cat) + '</span>' +
+            '<span class="dot">·</span>' +
+            '<span>' + GW.escapeHtml(editingTag) + '</span>' +
+            '<span class="dot">·</span>' +
+            '<span>' + _relativeTimeKo(savedMs) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="v3-write-draft-item-actions">' +
+          '<button class="v3-write-draft-item-rm" data-rm-draft-id="' + d.id + '" title="이 임시저장 삭제" aria-label="삭제">×</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    // delegated click handlers (한 번만 바인딩)
+    if (!list.dataset.bound) {
+      list.dataset.bound = '1';
+      list.addEventListener('click', function (e) {
+        var rmBtn = e.target.closest && e.target.closest('[data-rm-draft-id]');
+        if (rmBtn) {
+          e.stopPropagation();
+          var rmId = parseInt(rmBtn.getAttribute('data-rm-draft-id'), 10);
+          if (rmId) _deleteDraft(rmId);
+          return;
+        }
+        var item = e.target.closest && e.target.closest('[data-draft-id]');
+        if (item) {
+          var id = parseInt(item.getAttribute('data-draft-id'), 10);
+          if (id) _loadDraft(id);
+        }
+      });
+    }
+  }
+
+  // D1 datetime은 'YYYY-MM-DD HH:MM:SS' UTC. 브라우저에서 파싱하려면 ISO 변환.
+  function _kstIso(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    if (s.indexOf('T') < 0 && s.indexOf(' ') > 0) s = s.replace(' ', 'T');
+    if (!/Z$/.test(s) && !/[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+    return s;
+  }
+
+  function _loadDraft(draftId) {
+    if (_writeDirty && !confirm('현재 작성 중인 내용에 변경사항이 있습니다. 다른 임시저장을 불러올까요?')) return;
+    var draft = _draftListCache.find(function (d) { return d.id === draftId; });
+    if (!draft) {
+      GW.showToast('임시저장을 찾지 못했습니다', 'error');
+      return;
+    }
+    _applyDraftPayload(draft);
+    _currentDraftId = draft.id;
+    _editingId = draft.editing_post_id || null;
+    _writeDirty = false;
+    _writeLastDraftSavedAt = Date.parse(_kstIso(draft.updated_at)) || Date.now();
+    _setDraftStatus('saved', '자동 저장됨 · ' + _relativeTimeKo(_writeLastDraftSavedAt));
+    _renderDraftsCard(_draftListCache); // is-current 갱신
+    GW.showToast('임시저장을 불러왔습니다', 'success');
+  }
+
+  function _deleteDraft(draftId) {
+    if (!confirm('이 임시저장을 삭제할까요? (되돌릴 수 없습니다)')) return;
+    _apiFetch('/api/admin/drafts/' + draftId, { method: 'DELETE' }).then(function () {
+      if (_currentDraftId === draftId) {
+        _currentDraftId = null;
+        _setDraftStatus('idle');
       }
-      _applyDraftPayload(draft);
-      localStorage.removeItem(key);
-    } catch (_) {}
+      _refreshDraftListCache();
+      GW.showToast('임시저장을 삭제했습니다', 'success');
+    }).catch(function (err) {
+      GW.showToast('삭제 실패: ' + (err && err.message || ''), 'error');
+    });
   }
 
+  // 드래프트 row → 폼 필드 매핑 (서버 응답 schema 기준)
   function _applyDraftPayload(draft) {
     try {
       if (_el('w-title'))    _el('w-title').value    = draft.title || '';
       if (_el('w-subtitle')) _el('w-subtitle').value = draft.subtitle || '';
       if (_el('w-cat'))      _el('w-cat').value      = draft.category || 'korea';
-      if (Array.isArray(draft.tags)) {
-        _selectedWriteTags = draft.tags.slice();
-        _renderWriteTagPills(draft.category || 'korea');
+      // 태그: 'a,b,c' string → array
+      var tagList = String(draft.tag || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      _selectedWriteTags = tagList;
+      _renderWriteTagPills(draft.category || 'korea');
+      var metaList = String(draft.meta_tags || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      _metaTags = metaList;
+      _renderMetaTags();
+      if (_el('w-author'))          _el('w-author').value          = draft.author || _el('w-author').value;
+      if (_el('w-date') && draft.publish_at) _el('w-date').value   = draft.publish_at;
+      if (_el('w-youtube'))         _el('w-youtube').value         = draft.youtube_url || '';
+      if (_el('w-cover-caption'))   _el('w-cover-caption').value   = draft.image_caption || '';
+      if (_el('w-location-name'))   _el('w-location-name').value   = draft.location_name || '';
+      if (_el('w-location-addr'))   _el('w-location-addr').value   = draft.location_address || '';
+      if (_el('w-special'))         _el('w-special').value         = draft.special_feature || '';
+      if (_el('w-published'))       _el('w-published').checked     = draft.published_flag !== false;
+      if (_el('w-featured'))        _el('w-featured').checked      = !!draft.featured_flag;
+      if (_el('w-ai'))              _el('w-ai').checked            = !!draft.ai_assisted;
+      // Cover image
+      if (draft.image_url) {
+        _coverDataUrl = draft.image_url;
+        _renderCoverPreview();
+      } else {
+        _coverDataUrl = null;
+        _renderCoverPreview();
       }
-      if (Array.isArray(draft.metaTags)) { _metaTags = draft.metaTags.slice(); _renderMetaTags(); }
-      if (_el('w-author'))          _el('w-author').value          = draft.author || '';
-      if (_el('w-date') && draft.publishAt) _el('w-date').value    = draft.publishAt;
-      if (_el('w-youtube'))         _el('w-youtube').value         = draft.youtube || '';
-      if (_el('w-cover-caption'))   _el('w-cover-caption').value   = draft.coverCaption || '';
-      if (_el('w-location-name'))   _el('w-location-name').value   = draft.locationName || '';
-      if (_el('w-location-addr'))   _el('w-location-addr').value   = draft.locationAddress || '';
-      if (_el('w-special'))         _el('w-special').value         = draft.special || '';
-      if (_el('w-published'))       _el('w-published').checked     = draft.published !== false;
-      if (_el('w-featured'))        _el('w-featured').checked      = !!draft.featured;
+      // Gallery
+      try {
+        _galleryImages = draft.gallery_images
+          ? (typeof draft.gallery_images === 'string' ? JSON.parse(draft.gallery_images) : draft.gallery_images)
+          : [];
+        if (!Array.isArray(_galleryImages)) _galleryImages = [];
+      } catch (_) { _galleryImages = []; }
+      _renderGallery();
+      // Manual related posts
+      try {
+        var rel = draft.manual_related_posts
+          ? (typeof draft.manual_related_posts === 'string' ? JSON.parse(draft.manual_related_posts) : draft.manual_related_posts)
+          : [];
+        _relatedPosts = Array.isArray(rel) ? rel : [];
+      } catch (_) { _relatedPosts = []; }
+      _renderRelated();
       _syncWriteFeaturedState();
       if (draft.content) _editorSetData(draft.content);
       _updateWriteStats();
       _updateSeoPreview();
-      GW.showToast('임시 저장본을 복원했습니다', 'success');
-    } catch (_) {}
+    } catch (e) {
+      console.warn('[draft] _applyDraftPayload error', e);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Author dropdown — 등록된 모든 editor (Editor.A~Z)에서 선택.
+  // ─────────────────────────────────────────────────────────────
+  function _loadAuthorOptions() {
+    var sel = _el('w-author');
+    if (!sel) return Promise.resolve();
+    var defaultCode = (window.AccountAdmin && window.AccountAdmin.currentEditorCode)
+      ? window.AccountAdmin.currentEditorCode() || ''
+      : '';
+    // 캐시 활용 — 매번 호출하면 dropdown 깜빡임.
+    var p = _editorOptionsCache
+      ? Promise.resolve(_editorOptionsCache)
+      : _apiFetch('/api/settings/editors').then(function (data) {
+          _editorOptionsCache = (data && data.editors) || {};
+          return _editorOptionsCache;
+        }).catch(function () { return {}; });
+    return p.then(function (editors) {
+      var letters = Object.keys(editors || {}).sort();
+      // 빈 이름은 미등록 — A/B/C 잠금만 표시, D~Z는 이름 있을 때만 노출.
+      var REQUIRED = { A: true, B: true, C: true };
+      var keep = letters.filter(function (l) {
+        return REQUIRED[l] || (editors[l] && editors[l].trim());
+      });
+      if (!keep.length) keep = ['A'];
+      var currentValue = sel.value || defaultCode || ('Editor.' + keep[0]);
+      sel.innerHTML = keep.map(function (l) {
+        var code = 'Editor.' + l;
+        var name = editors[l] ? ' — ' + editors[l] : '';
+        return '<option value="' + GW.escapeHtml(code) + '">' + GW.escapeHtml(code + name) + '</option>';
+      }).join('');
+      // 기본값: 세션 본인 editor_code → 없으면 첫 옵션
+      var preferred = defaultCode && keep.indexOf(defaultCode.replace(/^Editor\./, '')) >= 0
+        ? defaultCode
+        : currentValue;
+      if (Array.prototype.some.call(sel.options, function (o) { return o.value === preferred; })) {
+        sel.value = preferred;
+      }
+    });
   }
 
   /* ── Write stats (글자수 · 문단수 · 읽기시간) ── */
@@ -2947,6 +3145,7 @@
 
   V3.openWrite = function () {
     _resetWrite();
+    _currentDraftId = null;
     V3.showPanel('write');
     _initWriteEnhancementsOnce();
     _startDraftTimer();
@@ -2954,10 +3153,11 @@
     _updateWriteStats();
     _updateSeoPreview();
     _setDraftStatus('idle');
-    // 인라인 채점 결과 초기화
     var scoreOut = _el('write-scorer-result');
     if (scoreOut) { scoreOut.hidden = true; scoreOut.innerHTML = ''; }
-    setTimeout(_checkAndOfferDraftRestore, 800);
+    // 임시저장 목록 + 작성자 dropdown 채우기
+    _loadAuthorOptions();
+    _refreshDraftListCache().catch(function () {});
   };
   V3.cancelWrite = function () {
     if (_writeDirty) {
@@ -2985,10 +3185,15 @@
 
     // Reset state
     _editingId    = id;
+    _currentDraftId = null;
     _coverDataUrl = null;
     _galleryImages = [];
     _metaTags     = [];
     _relatedPosts = [];
+
+    // 작성자 dropdown + 임시저장 목록 (병렬 — post fetch와 독립)
+    _loadAuthorOptions();
+    _refreshDraftListCache().catch(function () {});
 
     _apiFetch('/api/posts/' + id)
       .then(function (data) {

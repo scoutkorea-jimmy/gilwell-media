@@ -158,6 +158,36 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS drafts (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_editor_code    TEXT    NOT NULL,
+  editing_post_id      INTEGER,
+  title                TEXT    NOT NULL DEFAULT '',
+  subtitle             TEXT,
+  category             TEXT,
+  tag                  TEXT,
+  meta_tags            TEXT,
+  author               TEXT,
+  publish_at           TEXT,
+  youtube_url          TEXT,
+  image_url            TEXT,
+  image_caption        TEXT,
+  gallery_images       TEXT,
+  location_name        TEXT,
+  location_address     TEXT,
+  special_feature      TEXT,
+  manual_related_posts TEXT,
+  published_flag       INTEGER NOT NULL DEFAULT 1,
+  featured_flag        INTEGER NOT NULL DEFAULT 0,
+  ai_assisted          INTEGER NOT NULL DEFAULT 0,
+  content              TEXT    NOT NULL DEFAULT '',
+  created_at           TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at           TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_drafts_owner_updated ON drafts(owner_editor_code, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_drafts_updated_at ON drafts(updated_at);
+
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts (category);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_publish_at ON posts (publish_at DESC);

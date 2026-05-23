@@ -4292,6 +4292,67 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-write-draft-line.is-saving { color: #0094B4; }
 .v3-write-draft-line.is-saved  { color: #248737; }
 .v3-write-draft-line.is-dirty  { color: #b0393a; }
+
+/* 임시저장 목록 카드 — 작성 화면 최상단. authoring 들어올 때 펼침/접힘 X, 목록 있을 때만 노출. */
+.v3-write-drafts-card { margin-bottom: 14px; }
+.v3-write-drafts-card[hidden] { display: none; }
+.v3-write-drafts-head { margin-bottom: 10px; }
+.v3-write-drafts-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.v3-write-draft-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--v3-border);
+  border-radius: 8px;
+  background: var(--v3-surface);
+  transition: border-color .12s, background .12s;
+  cursor: pointer;
+}
+.v3-write-draft-item:hover { border-color: var(--v3-primary); background: var(--v3-primary-lt); }
+.v3-write-draft-item.is-current { border-color: var(--v3-primary); }
+.v3-write-draft-item-body { flex: 1; min-width: 0; }
+.v3-write-draft-item-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--v3-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v3-write-draft-item-meta {
+  font-size: 11px;
+  color: var(--v3-text-s);
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.v3-write-draft-item-meta .dot { color: var(--v3-border); }
+.v3-write-draft-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.v3-write-draft-item-rm {
+  border: 1px solid var(--v3-border);
+  background: transparent;
+  color: var(--v3-text-s);
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.v3-write-draft-item-rm:hover { color: #c0392b; border-color: #c0392b; }
 .v3-write-shortcut-hint {
   margin-top: 6px;
   font-size: 10px;

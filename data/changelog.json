@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.116.00",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 23:34:12 KST",
+    "summary": "임시저장 시스템 전면 개편. localStorage 단일 슬롯 + 7일 → D1 다중 슬롯 + 14일로 이전. 운영자별 최대 10개 보관, 자동저장 시 cover/gallery 이미지까지 R2 업로드해 빠짐없이 보존. 작성 화면 최상단에 임시저장 목록 카드 노출. 글 작성자(w-author)는 readonly 입력 → dropdown으로 전환해 등록된 모든 편집자 코드(A, B, C 잠금 + D, E, F …)에서 자유 선택 가능.",
+    "changes": [
+      "DB 마이그레이션 070: drafts 테이블 신설. owner_editor_code로 운영자별 격리, 모든 글 필드(title, subtitle, category, tag, meta_tags, author, publish_at, youtube_url, image_url, image_caption, gallery_images, location_name, location_address, special_feature, manual_related_posts, published_flag, featured_flag, ai_assisted, content) + editing_post_id + created_at/updated_at. idx_drafts_owner_updated 인덱스.",
+      "functions/api/admin/drafts.js (GET/POST) + functions/api/admin/drafts/[id].js (PUT/DELETE) 신설. write 슬러그 view/write 권한 게이팅. GET 호출 시 14일 초과 row lazy 정리. POST 시 11번째 슬롯 진입하면 가장 오래된 1건 자동 삭제(LRU).",
+      "이미지 처리: 클라이언트에서 base64 데이터 URL로 들어온 cover_image와 gallery_images, Editor.js content 안의 image 블록을 functions/_shared/image-storage.js의 storeDataImage + upgradeEditorContentImages 헬퍼로 R2에 업로드 후 /api/images/<key> URL만 D1에 저장. D1 1MB cell 한도 안전 + 다중 슬롯 ×10MB+ 누적 부담 회피. 직전 임시저장에서 cover/gallery가 통째로 누락되던 버그 해결.",
+      "js/admin-v3.js: _DRAFT_KEY_NEW / localStorage 경로 전체 제거. _currentDraftId 상태 추가. _saveDraftNow → POST(첫 저장) / PUT(이후) 분기, inflight 중복 발사 방지 + pending 재발사 로직. _clearDraft → DELETE 호출. _refreshDraftListCache / _renderDraftsCard / _loadDraft / _deleteDraft 신설. _collectDraftPayload에 image_url(=_coverDataUrl), image_caption, gallery_images, ai_assisted, manual_related_posts 추가. _applyDraftPayload는 서버 응답 schema 기준으로 폼·갤러리·관련글 복원.",
+      "admin.html: panel-write 헤더 바로 다음에 #w-drafts-card 신설(임시저장 칩 그리드, 최대 10개, 14일 보관). w-author input(readonly) → <select>로 전환, '편집자 코드 선택' 라벨로 변경. 본문 설명도 'D, E, F …로도 작성·대신 게재할 수 있습니다'로 갱신.",
+      "css/admin-v3.css: .v3-write-drafts-card / .v3-write-drafts-list / .v3-write-draft-item(+is-current/hover) / .v3-write-draft-item-title/meta/actions/rm 신설. 칩 1개당 클릭 = 복원, × = 삭제, 현재 작성 중인 드래프트는 v3-primary 보더로 강조.",
+      "js/admin-v3.js _loadAuthorOptions(): GET /api/settings/editors 캐시 후 w-author <select> 옵션 채움. A/B/C는 항상 표시(이름 없어도), D~Z는 이름이 등록된 슬롯만 표시. 기본값은 세션 본인 editor_code, 없으면 첫 옵션. V3.openWrite + V3.editPost 진입 시 호출.",
+      "복원 UX 변경: confirm() 다이얼로그 → 작성 화면 상단 카드 칩 클릭. 같은 글에 대해 여러 임시저장(예: editing_post_id로 묶임)도 시간순으로 나란히 보이고 선택 가능.",
+      "관리자 버전 03.115.00 → 03.116.00."
+    ]
+  },
+  {
     "version": "03.115.00",
     "date": "2026-05-23",
     "released_at": "2026-05-23 19:01:52 KST",
