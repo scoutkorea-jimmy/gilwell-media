@@ -1026,6 +1026,14 @@ body[data-home-bootstrap] .masthead {
   margin:          0 auto;
 }
 
+.masthead-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 160px;
+}
+
 .masthead-date {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   12px;
@@ -11812,28 +11820,25 @@ body.wosm-members-page #main-content {
 }
 
 /* ── Home freshness bar ─────────────────────────────────────────────
-   Slim strip between the ticker and hero. Reports last-publish age and
-   (when relevant) the number of new posts since the visitor's last
-   session. Designed to be subtle — it should hint at activity, not
-   compete with the marquee. */
+   Sits directly under the masthead clock (left column). Reports
+   last-publish age and (when relevant) the number of new posts since
+   the visitor's last session. Designed to be subtle — sized to match
+   the date text it sits below. */
 .home-freshness-bar {
-  max-width: 1366px;
-  margin: 6px auto 0;
-  padding: 0 48px;
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 11.5px;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   color: var(--muted, #6F6F6F);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 .home-freshness-bar[hidden] { display: none; }
 .home-freshness-bar .home-freshness-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--color-forest-green, #248737);
   box-shadow: 0 0 0 0 rgba(36, 135, 55, 0.5);
@@ -11842,7 +11847,7 @@ body.wosm-members-page #main-content {
 }
 @keyframes gwFreshnessPulse {
   0%   { box-shadow: 0 0 0 0 rgba(36, 135, 55, 0.55); }
-  70%  { box-shadow: 0 0 0 8px rgba(36, 135, 55, 0); }
+  70%  { box-shadow: 0 0 0 7px rgba(36, 135, 55, 0); }
   100% { box-shadow: 0 0 0 0 rgba(36, 135, 55, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -11858,8 +11863,7 @@ body.wosm-members-page #main-content {
 .home-freshness-bar .home-freshness-since[hidden] { display: none; }
 @media (max-width: 900px) {
   .home-freshness-bar {
-    padding: 0 16px;
-    font-size: 11px;
-    gap: 8px;
+    font-size: 10.5px;
+    gap: 5px;
   }
 }

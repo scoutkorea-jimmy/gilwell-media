@@ -1,6 +1,17 @@
 {
   "items": [
   {
+    "version": "00.143.01",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 18:10:26 KST",
+    "summary": "신선도 배지 위치 조정 — 티커 아래에 있던 '최근 업데이트 / 이전 방문 이후 새 글' 표시를 마스트헤드 좌측 날짜(시계) 바로 밑으로 이동.",
+    "changes": [
+      "index.html: .masthead-left wrapper 신설 — #today-date 와 #home-freshness-bar 를 세로 스택으로 배치. 티커 아래 위치하던 .home-freshness-bar 노드를 제거.",
+      "css/style.css: .masthead-left 컬럼(flex-direction: column, gap: 4px, min-width: 160px) 추가. .home-freshness-bar 는 full-width 스트립에서 inline-flex 컴팩트(font 11px, gap 6px)로 재설계 — 시계 글자 크기와 시각 비중을 맞춤. 모바일은 10.5px / gap 5px 로 한 단계 더 축소.",
+      "사이트 버전 00.143.00 → 00.143.01."
+    ]
+  },
+  {
     "version": "00.143.00",
     "date": "2026-05-23",
     "released_at": "2026-05-23 17:58:48 KST",
