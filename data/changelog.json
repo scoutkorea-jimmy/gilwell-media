@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.116.01",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 23:50:43 KST",
+    "summary": "임시저장 본문 누락 회귀 수정. 제목 가드 완화 + Editor.js onChange 등록 + restore polling + 칩 본문 미리보기 추가.",
+    "changes": [
+      "js/admin-v3.js _saveDraftNow: '제목이 없으면 저장 안 함' 가드 완화. 이제 제목·본문·cover·gallery 중 하나라도 의미 있는 내용이 있으면 저장. 본문부터 쓰는 사용자가 자동저장이 발사조차 안 되던 회귀 차단.",
+      "js/admin-v3.js _initEditor: Editor.js 공식 onChange 콜백 등록. MutationObserver만으로는 IME 합성·블록 type 전환·이미지 삽입 등 일부 변경이 누락되던 케이스를 안전망으로 커버.",
+      "js/admin-v3.js _editorSetData: _editor가 아직 mount 안 된 상태에서 칩 클릭한 경우 100ms 간격 polling(최대 5초)으로 mount 완료 후 자동 render. CDN 다운로드 지연 + 즉시 칩 클릭의 timing 회귀 방어.",
+      "js/admin-v3.js _draftContentLooksMeaningful 신설: Editor.js JSON에서 빈 blocks / 공백 only를 검출. 의미 있는 본문일 때만 save 트리거.",
+      "js/admin-v3.js _draftBodyPreview 신설 + _renderDraftsCard: 임시저장 칩에 본문 첫 60자 plain text 2줄로 미리보기 노출. 어떤 글을 어디까지 썼는지 칩만 봐도 파악 가능.",
+      "css/admin-v3.css .v3-write-draft-item-preview: 2줄 line-clamp 스타일.",
+      "관리자 버전 03.116.00 → 03.116.01."
+    ]
+  },
+  {
     "version": "03.116.00",
     "date": "2026-05-23",
     "released_at": "2026-05-23 23:34:12 KST",

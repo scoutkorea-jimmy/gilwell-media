@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.116.00
+ * Version: 03.116.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1611,19 +1611,40 @@
         list:   { class: window.List,   inlineToolbar: true },
         quote:  { class: window.Quote,  inlineToolbar: true },
       },
+      // MutationObserver만으로는 IME 합성·블록 type 전환·이미지 삽입 등 일부
+      // 변경 패턴이 누락된다. Editor.js 공식 onChange를 함께 등록해 안전망 강화.
+      onChange: function () {
+        if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
+        if (typeof _updateWriteStats === 'function') _updateWriteStats();
+      },
     });
   }
 
   function _editorSetData(data) {
-    if (!_editor) return Promise.resolve();
-    return _editor.isReady.then(function () {
-      if (data && data.blocks) return _editor.render(data);
-      // Try parse as JSON
-      if (typeof data === 'string' && data.trim().charAt(0) === '{') {
-        try { return _editor.render(JSON.parse(data)); } catch (e) { /* ignore */ }
-      }
-      // Plain text
-      return _editor.render({ blocks: [{ type: 'paragraph', data: { text: data || '' } }] });
+    function doRender() {
+      return _editor.isReady.then(function () {
+        if (data && data.blocks) return _editor.render(data);
+        if (typeof data === 'string' && data.trim().charAt(0) === '{') {
+          try { return _editor.render(JSON.parse(data)); } catch (e) { /* ignore */ }
+        }
+        return _editor.render({ blocks: [{ type: 'paragraph', data: { text: data || '' } }] });
+      });
+    }
+    if (_editor) return doRender();
+    // Editor.js가 CDN에서 아직 mount 안 된 시점에 호출됐을 때 polling (최대 5초).
+    // 사용자가 admin 로그인 직후 곧장 임시저장 칩을 누르면 발생할 수 있는 timing 회귀 방어.
+    return new Promise(function (resolve) {
+      var tries = 0;
+      var t = setInterval(function () {
+        tries += 1;
+        if (_editor) {
+          clearInterval(t);
+          doRender().then(resolve, resolve);
+        } else if (tries > 50) {
+          clearInterval(t);
+          resolve();
+        }
+      }, 100);
     });
   }
 
@@ -2527,18 +2548,28 @@
   function _saveDraftNow() {
     var titleEl = _el('w-title');
     if (!titleEl) return;
-    var hasTitle = !!titleEl.value.trim();
-    if (!hasTitle) { _setDraftStatus('idle'); return; }
     if (_draftSaveInflight) { _draftSavePending = true; return; }
     _draftSaveInflight = true;
     _setDraftStatus('saving');
     _editorGetData().then(function (content) {
+      // 의미 있는 내용 기준: 제목 또는 본문(plain text 기준) 또는 cover/gallery 중 하나라도 있으면 저장.
+      // 기존 'title만' 가드는 본문 먼저 쓰는 사용자의 저장을 통째로 막아 "본문이 안 떠"로 인식되던 회귀.
+      var hasTitle = !!(titleEl.value || '').trim();
+      var hasBody = _draftContentLooksMeaningful(content);
+      var hasCover = !!_coverDataUrl;
+      var hasGallery = Array.isArray(_galleryImages) && _galleryImages.length > 0;
+      if (!hasTitle && !hasBody && !hasCover && !hasGallery) {
+        _setDraftStatus('idle');
+        _draftSaveInflight = false;
+        return null;
+      }
       var payload = _collectDraftPayload(content);
       var isUpdate = !!_currentDraftId;
       var url = isUpdate ? ('/api/admin/drafts/' + _currentDraftId) : '/api/admin/drafts';
       var method = isUpdate ? 'PUT' : 'POST';
       return _apiFetch(url, { method: method, body: JSON.stringify(payload) });
     }).then(function (data) {
+      if (!data) return; // early-skip (의미 있는 내용 없음)
       var draft = data && data.draft;
       if (draft && draft.id) {
         _currentDraftId = draft.id;
@@ -2601,6 +2632,66 @@
     }
   }
 
+  // Editor.js JSON content가 실제 의미 있는 text를 담고 있는지 (빈 blocks/공백만 있는 경우 false).
+  function _draftContentLooksMeaningful(content) {
+    if (!content) return false;
+    var raw = String(content).trim();
+    if (!raw) return false;
+    // Editor.js 직렬화 형식
+    if (raw.charAt(0) === '{') {
+      try {
+        var doc = JSON.parse(raw);
+        if (!doc || !Array.isArray(doc.blocks) || !doc.blocks.length) return false;
+        for (var i = 0; i < doc.blocks.length; i++) {
+          var b = doc.blocks[i];
+          if (!b || !b.data) continue;
+          var text = '';
+          if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') text = b.data.text || '';
+          else if (b.type === 'list') {
+            text = (b.data.items || []).map(function (it) { return typeof it === 'string' ? it : (it && it.content) || ''; }).join('');
+          } else if (b.type === 'image' || b.type === 'embed') {
+            return true;
+          }
+          if (String(text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, '').length > 0) return true;
+        }
+        return false;
+      } catch (_) { return false; }
+    }
+    // plain string content
+    return raw.replace(/\s+/g, '').length > 0;
+  }
+
+  // chip preview용 — Editor.js JSON에서 본문 첫 60자 plain text 추출.
+  function _draftBodyPreview(content) {
+    if (!content) return '';
+    var raw = String(content).trim();
+    if (!raw) return '';
+    var text = '';
+    if (raw.charAt(0) === '{') {
+      try {
+        var doc = JSON.parse(raw);
+        if (doc && Array.isArray(doc.blocks)) {
+          for (var i = 0; i < doc.blocks.length && text.length < 200; i++) {
+            var b = doc.blocks[i];
+            if (!b || !b.data) continue;
+            if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') {
+              text += ' ' + (b.data.text || '');
+            } else if (b.type === 'list') {
+              text += ' ' + (b.data.items || []).map(function (it) {
+                return typeof it === 'string' ? it : (it && it.content) || '';
+              }).join(' ');
+            }
+          }
+        }
+      } catch (_) { text = raw; }
+    } else {
+      text = raw;
+    }
+    text = text.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    return text.length > 60 ? text.slice(0, 60) + '…' : text;
+  }
+
   // 작성 화면 진입 시 호출 — 자기 임시저장 목록을 받아 카드에 노출.
   function _refreshDraftListCache() {
     return _apiFetch('/api/admin/drafts').then(function (data) {
@@ -2633,9 +2724,11 @@
       var title = (d.title && d.title.trim()) || '(제목 없음)';
       var cat = d.category || '';
       var editingTag = d.editing_post_id ? ('수정 중 #' + d.editing_post_id) : '신규';
+      var preview = _draftBodyPreview(d.content);
       return '<div class="v3-write-draft-item' + isCurrent + '" data-draft-id="' + d.id + '">' +
         '<div class="v3-write-draft-item-body">' +
           '<div class="v3-write-draft-item-title">' + GW.escapeHtml(title) + '</div>' +
+          (preview ? '<div class="v3-write-draft-item-preview">' + GW.escapeHtml(preview) + '</div>' : '') +
           '<div class="v3-write-draft-item-meta">' +
             '<span>' + GW.escapeHtml(cat) + '</span>' +
             '<span class="dot">·</span>' +
