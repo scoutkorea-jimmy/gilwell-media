@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.143.03';
-  GW.ADMIN_VERSION = '03.116.02';
-  GW.ASSET_VERSION = '20260523150000';
+  GW.APP_VERSION = '00.144.00';
+  GW.ADMIN_VERSION = '03.116.03';
+  GW.ASSET_VERSION = '20260523151344';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -21,7 +21,11 @@
     forestGreen: '#248737',
     leafGreen: '#9FED8F'
   };
-  GW.EDITOR_LETTERS = ['A', 'B', 'C'];
+  // A~Z 전체 슬롯 후보. 실제 dropdown에 노출되는 글자는 buildEditorOptions가 결정 — A/B/C는
+  // 항상 노출(잠금), D~Z는 settings.editors에 이름이 등록된 경우에만 노출.
+  // 기존엔 ['A','B','C'] 만 하드코딩돼서 admin 콘솔에서 Editor.D 를 추가해도 공개 모달에 안 떴음.
+  GW.EDITOR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+  GW.EDITOR_REQUIRED_LETTERS = ['A', 'B', 'C'];
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
   // ── Category metadata ─────────────────────────────────────
@@ -354,8 +358,13 @@
   };
 
   GW.buildEditorOptions = function (editors) {
-    return GW.EDITOR_LETTERS.map(function (l) {
-      var name  = (editors && editors[l]) || '';
+    var src = editors || {};
+    return GW.EDITOR_LETTERS.filter(function (l) {
+      // A/B/C 는 잠금 — 이름 없어도 항상 노출. 그 외(D~Z)는 이름이 등록된 슬롯만.
+      if (GW.EDITOR_REQUIRED_LETTERS.indexOf(l) >= 0) return true;
+      return !!(src[l] && String(src[l]).trim());
+    }).map(function (l) {
+      var name = (src[l] || '').trim();
       var label = 'Editor ' + l + (name ? ' — ' + name : '');
       return '<option value="Editor.' + l + '">' + GW.escapeHtml(label) + '</option>';
     }).join('');

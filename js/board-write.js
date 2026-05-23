@@ -83,6 +83,15 @@
           '</button>' +
         '</header>' +
 
+        // ══════════════════ 임시저장 (모달 최상단, 항상 노출) ══════════════════
+        '<section class="bw-drafts-card" id="board-drafts-card">' +
+          '<div class="bw-drafts-head">' +
+            '<h2 class="bw-card-title bw-card-title-sm">임시저장 <span class="bw-label-opt" id="board-drafts-count">0/10</span></h2>' +
+            '<span class="bw-field-hint">본문을 쓰기 시작하면 1.8초 후 자동 저장됩니다. 최근 14일간 보관, 최대 10개. 칩을 클릭하면 작성 폼에 불러옵니다.</span>' +
+          '</div>' +
+          '<div class="bw-drafts-list" id="board-drafts-list"></div>' +
+        '</section>' +
+
         '<div class="bw-layout">' +
 
           // ══════════════════ MAIN COLUMN ══════════════════
@@ -760,50 +769,12 @@
       var locationToggle = document.getElementById('board-location-toggle');
       if (locationToggle) locationToggle.open = false;
 
-      var draftKey = 'gw_draft_' + self.category;
-      var draftStr = localStorage.getItem(draftKey);
-      if (draftStr) {
-        try {
-          var draft = JSON.parse(draftStr);
-          if (draft && (draft.title || draft.editorData) && confirm('저장된 임시 글이 있습니다. 불러올까요?')) {
-            if (draft.title) document.getElementById('board-write-title-input').value = draft.title;
-            var sub2 = document.getElementById('board-write-subtitle-input');
-            if (sub2 && draft.subtitle) sub2.value = draft.subtitle;
-            var sf2 = document.getElementById('board-write-special-feature');
-            if (sf2 && draft.special_feature) sf2.value = draft.special_feature;
-            var mt2 = document.getElementById('board-write-metatags-input');
-            if (mt2 && draft.meta_tags) mt2.value = draft.meta_tags;
-            var yt2 = document.getElementById('board-write-youtube-input');
-            if (yt2 && draft.youtube_url) yt2.value = draft.youtube_url;
-            var locationName2 = document.getElementById('board-write-location-name');
-            if (locationName2 && draft.location_name) locationName2.value = draft.location_name;
-            var locationAddress2 = document.getElementById('board-write-location-address');
-            if (locationAddress2 && draft.location_address) locationAddress2.value = draft.location_address;
-            var locationToggle2 = document.getElementById('board-location-toggle');
-            if (locationToggle2) locationToggle2.open = !!(draft.location_name || draft.location_address);
-            var cap2 = document.getElementById('board-write-image-caption');
-            if (cap2) cap2.value = draft.image_caption || '';
-            var author2 = document.getElementById('board-write-author');
-            if (author2 && draft.author) author2.value = draft.author;
-            var date2 = document.getElementById('board-write-date');
-            if (date2) date2.value = GW.toDatetimeLocalValue(draft.publish_at || draft.publish_date || '') || GW.getKstDateTimeInputValue();
-            var ai2 = document.getElementById('board-ai-assisted');
-            if (ai2) ai2.checked = !!draft.ai_assisted;
-            if (draft.tags && Array.isArray(draft.tags)) self._selectedTags = draft.tags;
-            self._coverImage = draft.image_url || null;
-            self._renderCoverPreview();
-            self._galleryImages = self._parseGallerySeed(draft.gallery_images);
-            self._renderGalleryPreview();
-            var tagSel = document.getElementById('board-tag-selector');
-            if (tagSel) syncBoardTagPills(tagSel, self._selectedTags);
-            if (draft.editorData && self._editor) {
-              self._editor.render(draft.editorData).catch(function () {});
-            }
-          }
-        } catch (e) {
-          localStorage.removeItem(draftKey);
-        }
-      }
+      // D1 임시저장 목록 로드 — 카드는 모달 최상단에 항상 노출.
+      // localStorage `gw_draft_<category>` 단일 슬롯 / confirm 다이얼로그는 폐기.
+      self._currentDraftId = null;
+      self._boardDraftDirty = false;
+      self._boardLastDraftSavedAt = 0;
+      self._boardLoadDraftsList().catch(function () {});
 
       setTimeout(function () { document.getElementById('board-write-title-input').focus(); }, 100);
 
@@ -913,7 +884,13 @@
         })
           .then(function () {
             GW.showToast('게재됐습니다', 'success');
-            localStorage.removeItem('gw_draft_' + self.category);
+            // 발행 성공 — 해당 임시저장 D1에서 삭제. 옛 localStorage 잔여도 정리.
+            try { localStorage.removeItem('gw_draft_' + self.category); } catch (_) {}
+            if (self._currentDraftId) {
+              var did = self._currentDraftId;
+              self._currentDraftId = null;
+              GW.apiFetch('/api/admin/drafts/' + did, { method: 'DELETE' }).catch(function () {});
+            }
             self._stopDraftAutosave();
             self._turnstileToken = '';
             if (window.turnstile && self._turnstileWidgetId != null) {
@@ -1301,73 +1278,319 @@
     });
   };
 
+  // ─────────────────────────────────────────────────────────────
+  // D1 drafts 통합 — admin 콘솔과 동일한 시스템 (/api/admin/drafts)
+  // localStorage gw_draft_<category> 단일 슬롯 → D1 다중 슬롯(10개·14d).
+  // ─────────────────────────────────────────────────────────────
   Board.prototype._saveDraft = function (showToast) {
     var self = this;
-    var key = 'gw_draft_' + this.category;
-    var title = (document.getElementById('board-write-title-input') || {}).value || '';
-    var subEl = document.getElementById('board-write-subtitle-input');
-    var subtitle = subEl ? (subEl.value || '') : '';
-    var specialFeatureEl = document.getElementById('board-write-special-feature');
-    var mtEl = document.getElementById('board-write-metatags-input');
-    var metaTags = mtEl ? (mtEl.value || '') : '';
-    var ytEl = document.getElementById('board-write-youtube-input');
-    var youtubeUrl = ytEl ? (ytEl.value || '') : '';
-    var coverCaptionEl = document.getElementById('board-write-image-caption');
-    var locationNameEl = document.getElementById('board-write-location-name');
-    var locationAddressEl = document.getElementById('board-write-location-address');
-    var authEl = document.getElementById('board-write-author');
-    var dateEl = document.getElementById('board-write-date');
-    var aiEl = document.getElementById('board-ai-assisted');
-    var saving = {
-      title: title,
-      subtitle: subtitle,
-      special_feature: specialFeatureEl ? (specialFeatureEl.value || '') : '',
-      meta_tags: metaTags,
-      youtube_url: youtubeUrl,
-      image_caption: coverCaptionEl ? (coverCaptionEl.value || '') : '',
-      location_name: locationNameEl ? (locationNameEl.value || '') : '',
-      location_address: locationAddressEl ? (locationAddressEl.value || '') : '',
-      author: authEl ? (authEl.value || '') : '',
-      publish_at: dateEl ? GW.normalizePublishAtValue(dateEl.value || '') : '',
-      ai_assisted: aiEl ? !!aiEl.checked : false,
-      image_url: self._coverImage || null,
-      gallery_images: self._galleryImages || [],
-      tags: self._selectedTags || [],
-    };
+    var titleEl = document.getElementById('board-write-title-input');
+    if (!titleEl) return Promise.resolve();
+    if (self._draftSaveInflight) { self._draftSavePending = true; return Promise.resolve(); }
+    self._draftSaveInflight = true;
+    if (!showToast) self._setBoardDraftStatus('saving');
 
-    function storeSaving() {
-      localStorage.setItem(key, JSON.stringify(saving));
+    var editorPromise = self._editor ? self._editor.save() : Promise.resolve({ blocks: [] });
+    return editorPromise.then(function (editorData) {
+      var contentStr = JSON.stringify(editorData || { blocks: [] });
+      // 의미 있는 내용 가드 — admin과 같은 정책: title·본문·cover·gallery 중 하나라도 있으면 저장.
+      var title = (titleEl.value || '').trim();
+      var hasBody = _boardContentLooksMeaningful(contentStr);
+      var hasCover = !!self._coverImage;
+      var hasGallery = Array.isArray(self._galleryImages) && self._galleryImages.length > 0;
+      if (!title && !hasBody && !hasCover && !hasGallery) {
+        self._setBoardDraftStatus('idle');
+        self._draftSaveInflight = false;
+        return null;
+      }
+
+      var payload = _collectBoardDraftPayload(self, contentStr);
+      var isUpdate = !!self._currentDraftId;
+      var url = isUpdate ? ('/api/admin/drafts/' + self._currentDraftId) : '/api/admin/drafts';
+      var method = isUpdate ? 'PUT' : 'POST';
+      return GW.apiFetch(url, { method: method, body: JSON.stringify(payload) });
+    }).then(function (data) {
+      if (!data) return;
+      var draft = data && data.draft;
+      if (draft && draft.id) {
+        self._currentDraftId = draft.id;
+        // 서버가 R2 업로드 후 짧은 URL 반환 — base64 in-memory 상태와 동기화.
+        if (draft.image_url && (!self._coverImage || (typeof self._coverImage === 'string' && self._coverImage.startsWith('data:')))) {
+          self._coverImage = draft.image_url;
+        }
+      }
+      self._boardLastDraftSavedAt = Date.now();
+      self._boardDraftDirty = false;
+      self._setBoardDraftStatus('saved', '자동 저장됨 · 방금 전');
       if (showToast) GW.showToast('임시저장됐습니다', 'success');
-    }
-
-    if (self._editor) {
-      return self._editor.save().then(function (d) {
-        saving.editorData = d;
-        storeSaving();
-      }).catch(function () {
-        if (showToast) GW.showToast('임시저장 실패', 'error');
-      });
-    }
-    storeSaving();
-    return Promise.resolve();
+      self._boardLoadDraftsList().catch(function () {});
+    }).catch(function (err) {
+      console.error('[board-write] draft save failed:', err);
+      self._setBoardDraftStatus('dirty', '저장 실패 — 잠시 후 다시 시도');
+      if (showToast) GW.showToast('임시저장 실패', 'error');
+    }).finally(function () {
+      self._draftSaveInflight = false;
+      if (self._draftSavePending) {
+        self._draftSavePending = false;
+        setTimeout(function () { self._saveDraft(false); }, 120);
+      }
+    });
   };
 
   Board.prototype._startDraftAutosave = function () {
     var self = this;
-    this._draftTimer = setInterval(function () {
-      var title = (document.getElementById('board-write-title-input') || {}).value || '';
-      var subtitle = ((document.getElementById('board-write-subtitle-input') || {}).value || '');
-      if (!title && !subtitle) return;
-      self._saveDraft(false);
+    self._draftTimer = setInterval(function () {
+      if (!self._boardLastDraftSavedAt || self._boardDraftDirty) return;
+      // 30초마다 '~~분 전' 라벨 갱신만 — 저장 자체는 입력 이벤트 → _scheduleBoardDraftSave debounce.
+      self._setBoardDraftStatus('saved', '자동 저장됨 · ' + _boardRelativeTimeKo(self._boardLastDraftSavedAt));
     }, 30000);
   };
 
   Board.prototype._stopDraftAutosave = function () {
-    if (this._draftTimer) {
-      clearInterval(this._draftTimer);
-      this._draftTimer = null;
-    }
+    if (this._draftTimer) { clearInterval(this._draftTimer); this._draftTimer = null; }
+    if (this._boardDraftDebounce) { clearTimeout(this._boardDraftDebounce); this._boardDraftDebounce = null; }
   };
+
+  // 작성 화면 진입 시 호출.
+  Board.prototype._boardLoadDraftsList = function () {
+    var self = this;
+    return GW.apiFetch('/api/admin/drafts').then(function (data) {
+      self._draftListCache = (data && Array.isArray(data.drafts)) ? data.drafts : [];
+      _boardRenderDraftsCard(self, self._draftListCache);
+      return self._draftListCache;
+    }).catch(function (err) {
+      self._draftListCache = [];
+      _boardRenderDraftsCard(self, []);
+      throw err;
+    });
+  };
+
+  Board.prototype._boardLoadDraft = function (draftId) {
+    var self = this;
+    if (self._boardDraftDirty && !confirm('현재 작성 중인 변경사항이 있습니다. 다른 임시저장을 불러올까요?')) return;
+    var draft = (self._draftListCache || []).find(function (d) { return d.id === draftId; });
+    if (!draft) { GW.showToast('임시저장을 찾지 못했습니다', 'error'); return; }
+    _applyBoardDraftPayload(self, draft);
+    self._currentDraftId = draft.id;
+    self._boardDraftDirty = false;
+    self._boardLastDraftSavedAt = Date.parse(_boardKstIso(draft.updated_at)) || Date.now();
+    self._setBoardDraftStatus('saved', '자동 저장됨 · ' + _boardRelativeTimeKo(self._boardLastDraftSavedAt));
+    _boardRenderDraftsCard(self, self._draftListCache);
+    GW.showToast('임시저장을 불러왔습니다', 'success');
+  };
+
+  Board.prototype._boardDeleteDraft = function (draftId) {
+    var self = this;
+    if (!confirm('이 임시저장을 삭제할까요? (되돌릴 수 없습니다)')) return;
+    GW.apiFetch('/api/admin/drafts/' + draftId, { method: 'DELETE' }).then(function () {
+      if (self._currentDraftId === draftId) {
+        self._currentDraftId = null;
+        self._setBoardDraftStatus('idle');
+      }
+      self._boardLoadDraftsList();
+      GW.showToast('임시저장을 삭제했습니다', 'success');
+    }).catch(function (err) {
+      GW.showToast('삭제 실패: ' + (err && err.message || ''), 'error');
+    });
+  };
+
+  // (_setBoardDraftStatus는 line ~952 기존 정의 사용)
+
+  // ── helpers (모듈 스코프) ─────────────────────────────────
+  function _collectBoardDraftPayload(self, contentStr) {
+    return {
+      editing_post_id: null,
+      title:            (document.getElementById('board-write-title-input') || {}).value || '',
+      subtitle:         (document.getElementById('board-write-subtitle-input') || {}).value || '',
+      category:         self.category || 'korea',
+      tag:              (self._selectedTags || []).join(','),
+      meta_tags:        (document.getElementById('board-write-metatags-input') || {}).value || '',
+      author:           (document.getElementById('board-write-author') || {}).value || '',
+      publish_at:       (document.getElementById('board-write-date') || {}).value || '',
+      youtube_url:      (document.getElementById('board-write-youtube-input') || {}).value || '',
+      image_url:        self._coverImage || '',
+      image_caption:    (document.getElementById('board-write-image-caption') || {}).value || '',
+      gallery_images:   Array.isArray(self._galleryImages) ? self._galleryImages.slice() : [],
+      location_name:    (document.getElementById('board-write-location-name') || {}).value || '',
+      location_address: (document.getElementById('board-write-location-address') || {}).value || '',
+      special_feature:  (document.getElementById('board-write-special-feature') || {}).value || '',
+      manual_related_posts: [],
+      published_flag:   true,
+      featured_flag:    false,
+      ai_assisted:      !!(document.getElementById('board-ai-assisted') && document.getElementById('board-ai-assisted').checked),
+      content:          contentStr || '',
+    };
+  }
+
+  function _applyBoardDraftPayload(self, draft) {
+    try {
+      var titleEl = document.getElementById('board-write-title-input');
+      if (titleEl) titleEl.value = draft.title || '';
+      var subEl = document.getElementById('board-write-subtitle-input');
+      if (subEl) subEl.value = draft.subtitle || '';
+      var sfEl = document.getElementById('board-write-special-feature');
+      if (sfEl) sfEl.value = draft.special_feature || '';
+      var mtEl = document.getElementById('board-write-metatags-input');
+      if (mtEl) mtEl.value = draft.meta_tags || '';
+      var ytEl = document.getElementById('board-write-youtube-input');
+      if (ytEl) ytEl.value = draft.youtube_url || '';
+      var capEl = document.getElementById('board-write-image-caption');
+      if (capEl) capEl.value = draft.image_caption || '';
+      var locNameEl = document.getElementById('board-write-location-name');
+      if (locNameEl) locNameEl.value = draft.location_name || '';
+      var locAddrEl = document.getElementById('board-write-location-address');
+      if (locAddrEl) locAddrEl.value = draft.location_address || '';
+      var locToggle = document.getElementById('board-location-toggle');
+      if (locToggle) locToggle.open = !!(draft.location_name || draft.location_address);
+      var aiEl = document.getElementById('board-ai-assisted');
+      if (aiEl) aiEl.checked = !!draft.ai_assisted;
+      var authEl = document.getElementById('board-write-author');
+      if (authEl && draft.author) authEl.value = draft.author;
+      var dateEl = document.getElementById('board-write-date');
+      if (dateEl && draft.publish_at) dateEl.value = GW.toDatetimeLocalValue(draft.publish_at) || GW.getKstDateTimeInputValue();
+
+      var tagList = String(draft.tag || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+      self._selectedTags = tagList;
+      var tagSel = document.getElementById('board-tag-selector');
+      if (tagSel) syncBoardTagPills(tagSel, self._selectedTags);
+
+      self._coverImage = draft.image_url || null;
+      self._renderCoverPreview();
+      try {
+        var gallery = draft.gallery_images
+          ? (typeof draft.gallery_images === 'string' ? JSON.parse(draft.gallery_images) : draft.gallery_images)
+          : [];
+        self._galleryImages = self._parseGallerySeed(gallery);
+      } catch (_) { self._galleryImages = []; }
+      self._renderGalleryPreview();
+
+      if (draft.content && self._editor) {
+        try {
+          var doc = typeof draft.content === 'string' ? JSON.parse(draft.content) : draft.content;
+          if (doc && doc.blocks) self._editor.render(doc).catch(function () {});
+        } catch (_) {}
+      }
+
+      if (typeof self._updateBoardWriteStats === 'function') self._updateBoardWriteStats();
+      if (typeof self._updateBoardSeoPreview === 'function') self._updateBoardSeoPreview();
+    } catch (e) {
+      console.warn('[board-write] _applyBoardDraftPayload error', e);
+    }
+  }
+
+  function _boardRenderDraftsCard(self, drafts) {
+    var card = document.getElementById('board-drafts-card');
+    var list = document.getElementById('board-drafts-list');
+    var countEl = document.getElementById('board-drafts-count');
+    if (!card || !list) return;
+    if (!drafts.length) {
+      if (countEl) countEl.textContent = '0/10';
+      list.innerHTML = '<div class="bw-drafts-empty">임시저장된 글이 아직 없습니다. 본문을 쓰기 시작하면 1.8초 후 자동으로 저장되어 여기에 표시됩니다.</div>';
+      return;
+    }
+    if (countEl) countEl.textContent = drafts.length + '/10';
+    list.innerHTML = drafts.map(function (d) {
+      var isCurrent = (self._currentDraftId && d.id === self._currentDraftId) ? ' is-current' : '';
+      var savedMs = d.updated_at ? Date.parse(_boardKstIso(d.updated_at)) : 0;
+      var title = (d.title && d.title.trim()) || '(제목 없음)';
+      var cat = d.category || '';
+      var preview = _boardDraftBodyPreview(d.content);
+      return '<div class="bw-draft-item' + isCurrent + '" data-draft-id="' + d.id + '">' +
+        '<div class="bw-draft-item-body">' +
+          '<div class="bw-draft-item-title">' + GW.escapeHtml(title) + '</div>' +
+          (preview ? '<div class="bw-draft-item-preview">' + GW.escapeHtml(preview) + '</div>' : '') +
+          '<div class="bw-draft-item-meta">' +
+            '<span>' + GW.escapeHtml(cat) + '</span>' +
+            '<span class="dot">·</span>' +
+            '<span>' + _boardRelativeTimeKo(savedMs) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="bw-draft-item-actions">' +
+          '<button class="bw-draft-item-rm" type="button" data-rm-draft-id="' + d.id + '" title="이 임시저장 삭제" aria-label="삭제">×</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    if (!list.dataset.bound) {
+      list.dataset.bound = '1';
+      list.addEventListener('click', function (e) {
+        var rmBtn = e.target.closest && e.target.closest('[data-rm-draft-id]');
+        if (rmBtn) {
+          e.stopPropagation();
+          var rmId = parseInt(rmBtn.getAttribute('data-rm-draft-id'), 10);
+          if (rmId) self._boardDeleteDraft(rmId);
+          return;
+        }
+        var item = e.target.closest && e.target.closest('[data-draft-id]');
+        if (item) {
+          var id = parseInt(item.getAttribute('data-draft-id'), 10);
+          if (id) self._boardLoadDraft(id);
+        }
+      });
+    }
+  }
+
+  function _boardKstIso(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return '';
+    if (s.indexOf('T') < 0 && s.indexOf(' ') > 0) s = s.replace(' ', 'T');
+    if (!/Z$/.test(s) && !/[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+    return s;
+  }
+
+  function _boardRelativeTimeKo(ms) {
+    if (!ms) return '—';
+    var diff = Math.max(0, Date.now() - ms);
+    if (diff < 5000)  return '방금 전';
+    if (diff < 60000) return Math.round(diff / 1000) + '초 전';
+    if (diff < 3600000) return Math.round(diff / 60000) + '분 전';
+    if (diff < 86400000) return Math.round(diff / 3600000) + '시간 전';
+    return Math.round(diff / 86400000) + '일 전';
+  }
+
+  function _boardContentLooksMeaningful(content) {
+    if (!content) return false;
+    var raw = String(content).trim();
+    if (!raw || raw.charAt(0) !== '{') return raw.length > 0;
+    try {
+      var doc = JSON.parse(raw);
+      if (!doc || !Array.isArray(doc.blocks) || !doc.blocks.length) return false;
+      for (var i = 0; i < doc.blocks.length; i++) {
+        var b = doc.blocks[i];
+        if (!b || !b.data) continue;
+        if (b.type === 'image' || b.type === 'embed') return true;
+        var text = '';
+        if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') text = b.data.text || '';
+        else if (b.type === 'list') {
+          text = (b.data.items || []).map(function (it) { return typeof it === 'string' ? it : (it && it.content) || ''; }).join('');
+        }
+        if (String(text || '').replace(/<[^>]+>/g, '').replace(/\s+/g, '').length > 0) return true;
+      }
+      return false;
+    } catch (_) { return false; }
+  }
+
+  function _boardDraftBodyPreview(content) {
+    if (!content) return '';
+    var raw = String(content).trim();
+    if (!raw) return '';
+    var text = '';
+    if (raw.charAt(0) === '{') {
+      try {
+        var doc = JSON.parse(raw);
+        if (doc && Array.isArray(doc.blocks)) {
+          for (var i = 0; i < doc.blocks.length && text.length < 200; i++) {
+            var b = doc.blocks[i];
+            if (!b || !b.data) continue;
+            if (b.type === 'paragraph' || b.type === 'header' || b.type === 'quote') text += ' ' + (b.data.text || '');
+            else if (b.type === 'list') text += ' ' + (b.data.items || []).map(function (it) { return typeof it === 'string' ? it : (it && it.content) || ''; }).join(' ');
+          }
+        }
+      } catch (_) { text = raw; }
+    } else { text = raw; }
+    text = text.replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    return text.length > 60 ? text.slice(0, 60) + '…' : text;
+  }
 
   Board.prototype._renderCoverPreview = function () {
     var self = this;

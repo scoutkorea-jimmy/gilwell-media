@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "00.144.00",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 00:12:56 KST",
+    "summary": "공개 사이트의 '공식 원고 작성 도구'(board-write 모달)와 관리자 콘솔 '새 글 작성'의 임시저장 시스템을 통일했습니다. 두 화면 모두 같은 D1 백엔드(/api/admin/drafts)를 사용하므로 어디서 저장하든 같은 목록·같은 글이 보입니다. 작성자(byline) 드롭다운도 등록된 모든 편집자(A~Z)에서 자유 선택 가능.",
+    "changes": [
+      "js/board-write.js: 모달 최상단에 #board-drafts-card 임시저장 카드 신설(항상 노출, 빈 상태 '아직 없습니다' 안내). 칩 한 개 = 클릭으로 복원 / × 삭제. 칩 미리보기에 제목·본문 첫 60자·카테고리·시간 노출.",
+      "js/board-write.js _saveDraft: localStorage gw_draft_<category> 단일 슬롯 → D1 API POST(첫 저장)/PUT(이후). _currentDraftId 상태 관리. inflight 중복 발사 방지 + pending 재발사. 이미지(cover/gallery) base64는 서버에서 R2 자동 업로드 후 URL로 치환.",
+      "js/board-write.js 모달 OPEN: confirm() '저장된 임시 글이 있습니다, 불러올까요?' 다이얼로그 제거. 대신 _boardLoadDraftsList()로 카드 목록 즉시 로드.",
+      "js/board-write.js 발행 성공: 해당 _currentDraftId DELETE 호출로 D1 cleanup. 옛 localStorage 잔여도 함께 정리.",
+      "js/main.js GW.EDITOR_LETTERS: ['A','B','C'] → 'A'~'Z' 전체. GW.EDITOR_REQUIRED_LETTERS = ['A','B','C']. GW.buildEditorOptions는 A/B/C 잠금(항상 노출) + D~Z 이름 등록된 슬롯만 노출 — admin → 설정 → '편집자 · 접근'에서 Editor.D 추가하면 공개 작성 모달 dropdown에도 즉시 반영.",
+      "functions/_middleware.js CSP connect-src: 'https://cdn.jsdelivr.net' 추가. DOMPurify sourcemap(.map) fetch가 차단되던 콘솔 회귀 해소.",
+      "css/style.css: .bw-drafts-card / .bw-drafts-list / .bw-drafts-empty / .bw-draft-item(+is-current/hover/preview/meta/rm) 일괄 신설.",
+      "사이트 버전 00.143.03 → 00.144.00."
+    ]
+  },
+  {
+    "version": "03.116.03",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 00:12:56 KST",
+    "summary": "관리자 콘솔과 공개 사이트 작성 도구의 임시저장 시스템을 D1 백엔드로 통일하면서 admin 측 영향분(CSP 변경, EDITOR_LETTERS 확장)을 함께 bump.",
+    "changes": [
+      "functions/_middleware.js: CSP connect-src에 cdn.jsdelivr.net 추가. /admin 화면 콘솔에서 'Connecting to ... purify.min.js.map violates CSP' 에러 정리.",
+      "js/main.js GW.EDITOR_LETTERS: A~Z 전체 후보, GW.buildEditorOptions는 A/B/C는 항상 + D~Z는 이름 있을 때만. 관리자 → 설정 → '편집자 · 접근'에서 Editor.D, E... 추가 시 공개 모달 author dropdown에도 즉시 반영.",
+      "관리자 버전 03.116.02 → 03.116.03."
+    ]
+  },
+  {
     "version": "03.116.02",
     "date": "2026-05-23",
     "released_at": "2026-05-23 23:59:33 KST",
