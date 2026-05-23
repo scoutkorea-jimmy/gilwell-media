@@ -140,6 +140,22 @@ export async function onRequestPut({ params, request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
+  // Optimistic locking — 두 운영자가 같은 글을 동시 편집하다 한 명의 작업이 통째로
+  // 묻히는 사고를 방지. 편집 진입 시 클라이언트가 캡쳐한 updated_at을 보내면 서버의
+  // 현재값과 비교. 다르면 409 — 사용자의 입력은 admin drafts에 자동 보존되어 있음.
+  // body.expected_updated_at은 선택. 없으면 잠금 비활성 (구버전 클라이언트 호환).
+  if (body && body.expected_updated_at) {
+    const clientStamp = String(body.expected_updated_at).trim();
+    const serverStamp = String(currentPost.updated_at || '').trim();
+    if (clientStamp && serverStamp && clientStamp !== serverStamp) {
+      return json({
+        error: '다른 사용자가 이 글을 먼저 수정했습니다. 화면을 새로고침하고 임시저장 카드에서 본인 변경분을 다시 적용해주세요.',
+        code: 'EDIT_CONFLICT',
+        server_updated_at: serverStamp,
+      }, 409);
+    }
+  }
+
   const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, manual_related_posts, sort_order } = body;
   const category = normalizeCategory(body.category);
 

@@ -1,6 +1,36 @@
 {
   "items": [
   {
+    "version": "00.145.00",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 00:50:02 KST",
+    "summary": "안정성 패키지 1차: optimistic locking(글 동시편집 충돌 방지) + drafts 14일 TTL 자동 정리 cron + cleanup-drafts API.",
+    "changes": [
+      "functions/api/posts/[id].js PUT: body.expected_updated_at 검증 추가. 두 운영자가 같은 글을 동시에 편집할 때 한 명의 작업이 통째로 묻히는 사고 방지. 다르면 409 EDIT_CONFLICT 반환(본인 입력은 admin drafts에 보존되어 있으니 새로고침 후 칩에서 복원 가이드 동봉).",
+      "functions/api/jobs/cleanup-drafts.js 신설 (GET/POST): drafts 테이블의 14일 초과 row를 일괄 삭제. settings.drafts_cleanup_last_run에 마지막 실행 시각 기록.",
+      "workers/publish-due-scheduler.js: 매 5분 cron tick에 cleanup-drafts 호출 piggyback. publish-due와 병렬 발사(Promise.allSettled)로 한쪽 실패가 다른쪽에 영향 X. /api/admin/drafts GET의 lazy 정리에만 의존하던 회귀 차단.",
+      "사이트 버전 00.144.00 → 00.145.00."
+    ]
+  },
+  {
+    "version": "03.117.00",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 00:50:02 KST",
+    "summary": "안정성 패키지 1차: admin write rate-limit 일관화 + self-report 루프 가드 + 클라이언트 optimistic locking + 백업/알림 인프라.",
+    "changes": [
+      "functions/_shared/admin-permissions.js gateMenuAccess: action === 'write' 시 분당 60회 rate-limit 자동 적용. session uid 우선 + IP fallback. owner도 포함(계정 탈취 시 폭주 방어). 32개+ admin write API에 일일이 추가할 필요 없이 게이트 한 곳에서 처리.",
+      "js/admin-v3.js _apiFetch: 401/403/429 + /api/homepage-issues/report 호출 자체는 자동 보고에서 제외. homepage_issues #27(self-report 루프) 회귀 차단.",
+      "js/admin-v3.js V3.editPost + _savePost: 편집 진입 시 server updated_at 캡쳐(_editingOriginalUpdatedAt) → 저장 PUT body에 expected_updated_at 동봉. 409 EDIT_CONFLICT 응답 시 '새로고침 후 임시저장 카드에서 복원하세요' 토스트 안내.",
+      "scripts/audit_orphans.sh 신설: post_history / post_views / post_likes / post_engagement / drafts editing dead post / api_rate_limit / homepage_issues resolved 90d+ 고아 row 일괄 점검. 결과 콘솔 + --json 옵션. SELECT/COUNT만 — write 절대 없음.",
+      "scripts/backup_d1.sh 신설: wrangler d1 export로 SQL dump 생성. backups/d1/<TS>.sql.gz, 30일 자동 정리. CF PITR 외 운영자 손에 있는 백업.",
+      "scripts/backup_r2.sh 신설: R2 manifest(JSON) 백업, --full 옵션 시 객체 바이트까지. 30일 자동 정리.",
+      "workers/alert-high-severity.js + wrangler.alert-high-severity.toml 신설: 5분 간격 cron으로 신규 high/critical homepage_issues 감지 후 운영자 이메일 발송. Cloudflare Email Workers 또는 Resend API 둘 다 지원. 활성화는 secret 등록 + deploy 필요(docs/ops-runbook.md 가이드).",
+      "docs/ops-runbook.md 신설: 외부 서비스 가입(UptimeRobot · Email Workers · Resend) + 백업 cron(launchd) + 재해 복구 시나리오(D1 PITR · R2 redundancy · ADMIN_SECRET 회전) 운영 매뉴얼 1장.",
+      "homepage_issues #27 status: open → monitoring (self-report 가드로 재발 차단됐는지 모니터링).",
+      "관리자 버전 03.116.03 → 03.117.00."
+    ]
+  },
+  {
     "version": "00.144.00",
     "date": "2026-05-24",
     "released_at": "2026-05-24 00:12:56 KST",

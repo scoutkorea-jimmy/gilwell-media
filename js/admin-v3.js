@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.116.03
+ * Version: 03.117.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -167,6 +167,7 @@
   var _writeDirty    = false;
   // D1 임시저장 시스템 — localStorage 단일 슬롯 시대를 대체.
   var _currentDraftId = null;   // 현재 작성 중인 글에 대응하는 drafts.id (POST 후 PUT 전환용)
+  var _editingOriginalUpdatedAt = ''; // optimistic locking — 편집 진입 시 캡쳐한 서버 updated_at
   var _draftListCache = [];     // 마지막으로 GET한 드래프트 목록 캐시
   var _draftSaveInflight = false; // POST/PUT 중복 발사 방지
   var _draftSavePending = false;  // inflight 중에 다시 변경 → 끝나면 다시 한번 저장
@@ -284,9 +285,14 @@
         }
         if (!response.ok) {
           var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
-          // 401 = re-login flow, 403 = legitimate permission denial (not a bug)
-          // so neither counts as a site issue worth auto-reporting.
-          if (response.status !== 401 && response.status !== 403) {
+          // 자동 보고 제외 status:
+          //  401 = re-login flow (정상 만료/탈취 방지 안내)
+          //  403 = legitimate permission denial (버그 아님)
+          //  429 = rate limit (사용자 영향 아님 + self-report 루프 위험 — homepage_issues #27 케이스)
+          // 또한 /api/homepage-issues/report 호출 자체가 실패할 때는 어떤 status여도 절대 다시 보고 안 함.
+          // 그 보고가 또 실패하면 자기 자신을 재귀 보고하는 폭주가 시작됨.
+          var isSelfReportEndpoint = String(url || '').indexOf('/api/homepage-issues/report') === 0;
+          if (response.status !== 401 && response.status !== 403 && response.status !== 429 && !isSelfReportEndpoint) {
             _reportSiteIssue('admin_client_api_error', {
               message: message,
               path: _issuePathFromUrl(url),
@@ -318,15 +324,19 @@
       });
     }).catch(function (error) {
       if (error && typeof error.status === 'number') throw error;
-      _reportSiteIssue('admin_client_api_error', {
-        message: error && error.message ? String(error.message) : '관리자 API 요청 실패',
-        path: _issuePathFromUrl(url),
-        section: _panel || 'admin',
-        code: 'FETCH_FAILED',
-        source: '/js/admin-v3.js',
-        method: String(opts.method || 'GET').toUpperCase(),
-        status: '',
-      });
+      // self-report endpoint 호출 자체가 네트워크 실패한 경우는 또 보고하지 않음 (루프 방지).
+      var isSelfReportEndpoint = String(url || '').indexOf('/api/homepage-issues/report') === 0;
+      if (!isSelfReportEndpoint) {
+        _reportSiteIssue('admin_client_api_error', {
+          message: error && error.message ? String(error.message) : '관리자 API 요청 실패',
+          path: _issuePathFromUrl(url),
+          section: _panel || 'admin',
+          code: 'FETCH_FAILED',
+          source: '/js/admin-v3.js',
+          method: String(opts.method || 'GET').toUpperCase(),
+          status: '',
+        });
+      }
       throw error;
     });
   }
@@ -3290,6 +3300,8 @@
     _apiFetch('/api/posts/' + id)
       .then(function (data) {
         var p = data.post || data;
+        // optimistic locking 기준점 — 저장 시 이 값을 expected_updated_at으로 보낸다.
+        _editingOriginalUpdatedAt = String(p.updated_at || '');
         document.getElementById('write-panel-title').textContent = '글 수정: ' + (p.title || '');
         document.getElementById('w-title').value       = p.title || '';
         document.getElementById('w-subtitle').value    = p.subtitle || '';
@@ -3400,6 +3412,11 @@
       if (_galleryImages.length) {
         body.gallery_images = JSON.stringify(_galleryImages);
       }
+      // optimistic locking — 편집 진입 시 캡쳐한 server updated_at을 동봉. 서버가 현재 row의
+      // updated_at과 비교해서 다르면 409로 거절(다른 운영자가 먼저 수정한 케이스).
+      if (_editingId && _editingOriginalUpdatedAt) {
+        body.expected_updated_at = _editingOriginalUpdatedAt;
+      }
 
       var method = _editingId ? 'PUT' : 'POST';
       var url    = _editingId ? '/api/posts/' + _editingId : '/api/posts';
@@ -3423,6 +3440,8 @@
     }).then(function (data) {
       var saved = data.post || data;
       if (!_editingId && saved.id) _editingId = saved.id;
+      // 저장 직후 server updated_at으로 lock baseline 갱신 → 후속 저장에서 409 안 남.
+      if (saved && saved.updated_at) _editingOriginalUpdatedAt = String(saved.updated_at);
       _clearDraft();
       GW.showToast(Number(saved && saved.published || 0) === 1 ? '공개 상태로 저장했습니다' : '비공개 상태로 저장했습니다', 'success');
       document.getElementById('write-panel-title').textContent = '글 수정: ' + (document.getElementById('w-title').value || '');
@@ -3437,7 +3456,13 @@
       }
       _clearButtonBusy(btn, '완료');
     }).catch(function (e) {
-      GW.showToast(e.message || '저장 실패', 'error');
+      // 409 EDIT_CONFLICT — 다른 운영자가 이미 수정. 본인 입력은 admin drafts에 보존되어
+      // 있으므로 토스트로 안내하고 새로고침 권장. 새로고침 후 칩에서 본인 변경분 복원 가능.
+      if (e && e.status === 409 && e.data && e.data.code === 'EDIT_CONFLICT') {
+        GW.showToast('다른 사용자가 이 글을 먼저 수정했습니다. 새로고침 후 화면 상단 임시저장 카드에서 본인 변경분을 다시 적용해주세요.', 'error', 10000);
+      } else {
+        GW.showToast(e.message || '저장 실패', 'error');
+      }
       _clearButtonBusy(btn);
     });
   }

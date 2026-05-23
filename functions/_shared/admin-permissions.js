@@ -16,6 +16,14 @@ import {
   loadAdminUserById,
   parsePermissions,
 } from './admin-users.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from './rate-limit.js';
+
+// Admin write API 공통 rate-limit: 운영자 1명당 분당 60회.
+// 자동저장 디바운스(1.8s)·드래그앤드롭·일괄 처리 등을 감안해 여유롭게 잡되,
+// 봇/스크립트 폭주는 차단. session uid 우선 + fallback IP. owner도 동일 적용
+// (계정 탈취 시 폭주 방어).
+const ADMIN_WRITE_RATE_LIMIT = 60;
+const ADMIN_WRITE_WINDOW_SEC = 60;
 
 /**
  * Load the full admin session context in one call: token payload, matching
@@ -170,13 +178,26 @@ function jsonResponse(data, status) {
 export async function gateMenuAccess(request, env, menuSlug, action) {
   const session = await loadAdminSession(request, env);
   if (!session) return unauthorized();
-  if (session.isOwner) return null;
-  if (!session.permissions.access_admin) {
-    return forbidden('관리자 접근 권한이 없습니다.');
+  if (!session.isOwner) {
+    if (!session.permissions.access_admin) {
+      return forbidden('관리자 접근 권한이 없습니다.');
+    }
+    if (!hasMenuPermission(session.permissions, menuSlug, action)) {
+      const actionLabel = action === 'write' ? '쓰기' : '보기';
+      return forbidden(`이 메뉴의 ${actionLabel} 권한이 없습니다. 오너에게 요청하세요.`);
+    }
   }
-  if (!hasMenuPermission(session.permissions, menuSlug, action)) {
-    const actionLabel = action === 'write' ? '쓰기' : '보기';
-    return forbidden(`이 메뉴의 ${actionLabel} 권한이 없습니다. 오너에게 요청하세요.`);
+  // write 액션은 모두 분당 60회 rate-limit. owner도 포함 — 계정 탈취·스크립트
+  // 폭주 시 D1 spam을 차단. identity는 uid 우선 + IP fallback.
+  if (action === 'write') {
+    const identity = session.uid ? `uid:${session.uid}` : `ip:${getClientIp(request)}`;
+    const rl = await enforceRateLimit(env, {
+      route: `admin-write:${menuSlug}`,
+      identity,
+      limit: ADMIN_WRITE_RATE_LIMIT,
+      windowSeconds: ADMIN_WRITE_WINDOW_SEC,
+    });
+    if (!rl.ok) return rateLimitResponse(rl, '관리자 쓰기 요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요.');
   }
   return null;
 }
