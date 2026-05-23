@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.116.01
+ * Version: 03.116.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2710,13 +2710,12 @@
     var list = document.getElementById('w-drafts-list');
     var countEl = document.getElementById('w-drafts-count');
     if (!card || !list) return;
+    card.hidden = false; // 항상 노출 — 빈 상태에서도 사용자가 시스템 존재 인지.
     if (!drafts.length) {
-      card.hidden = true;
-      list.innerHTML = '';
       if (countEl) countEl.textContent = '0/10';
+      list.innerHTML = '<div class="v3-write-drafts-empty">임시저장된 글이 아직 없습니다. 본문을 쓰기 시작하면 1.8초 후 자동으로 저장되어 여기에 표시됩니다.</div>';
       return;
     }
-    card.hidden = false;
     if (countEl) countEl.textContent = drafts.length + '/10';
     list.innerHTML = drafts.map(function (d) {
       var isCurrent = (_currentDraftId && d.id === _currentDraftId) ? ' is-current' : '';

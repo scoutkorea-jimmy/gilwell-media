@@ -1,6 +1,18 @@
 {
   "items": [
   {
+    "version": "03.116.02",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 23:59:33 KST",
+    "summary": "임시저장 목록 카드를 항상 표시. 빈 상태에서도 카드 자체는 노출하고 '아직 임시저장된 글이 없습니다' 안내 표시 → 사용자가 시스템 존재를 즉시 인지 가능.",
+    "changes": [
+      "admin.html #w-drafts-card: hidden 속성 제거. 작성 화면(panel-write) 진입 즉시 페이지 헤더 바로 아래, 기본 정보 카드 위에 항상 노출.",
+      "js/admin-v3.js _renderDraftsCard: drafts 0개일 때도 card.hidden = false 유지. 'v3-write-drafts-empty' 안내 메시지 노출 — '본문을 쓰기 시작하면 1.8초 후 자동으로 저장되어 여기에 표시됩니다'.",
+      "css/admin-v3.css .v3-write-drafts-empty: 점선 보더 + 가운데 정렬 안내 박스 스타일.",
+      "관리자 버전 03.116.01 → 03.116.02."
+    ]
+  },
+  {
     "version": "03.116.01",
     "date": "2026-05-23",
     "released_at": "2026-05-23 23:50:43 KST",
