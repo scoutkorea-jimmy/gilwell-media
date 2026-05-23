@@ -119,7 +119,7 @@ export async function onRequestGet({ env, request }) {
       resolveSection('lead', () => loadHomeLead(env, origin), { post: null, media: DEFAULT_HOME_LEAD_MEDIA }),
       resolveSection('latest', () => loadLatestPosts(env, origin, 4), []),
       resolveSection('popular', () => loadPopular(env, origin, 4), []),
-      resolveSection('picks', () => loadPostList(env, origin, { featured: true, limit: 4 }), []),
+      resolveSection('picks', () => loadHomePicks(env, origin, 4), []),
       resolveSection('korea', () => loadPostList(env, origin, { category: 'korea', limit: 4 }), []),
       resolveSection('apr', () => loadPostList(env, origin, { category: 'apr', limit: 4 }), []),
       resolveSection('wosm', () => loadPostList(env, origin, { category: 'wosm', limit: 4 }), []),
@@ -355,6 +355,41 @@ async function loadHomeLead(env, origin) {
       WHERE id = ? AND published = 1`
   ).bind(postId).first();
   return { post: post ? serializePostImage(post, origin) : null, media };
+}
+
+async function loadHomePicks(env, origin, limit) {
+  const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
+  const [postsRes, orderRow] = await Promise.all([
+    env.DB.prepare(
+      `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
+              (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+         FROM posts
+        WHERE published = 1 AND featured = 1
+        ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`
+    ).all(),
+    env.DB.prepare(`SELECT value FROM settings WHERE key = 'picks_order'`).first(),
+  ]);
+  const posts = (postsRes.results || []).map((p) => serializePostImage(p, origin));
+  const order = orderRow ? safeParsePickOrder(orderRow.value) : [];
+  if (!order.length) return posts.slice(0, safeLimit);
+  const orderIdx = new Map();
+  order.forEach((id, i) => { if (!orderIdx.has(id)) orderIdx.set(id, i); });
+  const sorted = posts.slice().sort((a, b) => {
+    const ai = orderIdx.has(a.id) ? orderIdx.get(a.id) : Number.POSITIVE_INFINITY;
+    const bi = orderIdx.has(b.id) ? orderIdx.get(b.id) : Number.POSITIVE_INFINITY;
+    return ai - bi;
+  });
+  return sorted.slice(0, safeLimit);
+}
+
+function safeParsePickOrder(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((n) => parseInt(n, 10))
+      .filter((n) => Number.isFinite(n) && n > 0);
+  } catch (_) { return []; }
 }
 
 async function loadPostList(env, origin, opts = {}) {

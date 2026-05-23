@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.114.01
+ * Version: 03.115.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -187,6 +187,7 @@
   var _homeLeadPost  = null;
   var _homeLeadMedia = null;
   var _picksPosts    = [];
+  var _picksOrder    = [];
   var _picksSearchTimer = null;
   var _wosmMembers   = [];
   var _wosmColumns   = [];
@@ -378,6 +379,59 @@
       return;
     }
     btn.classList.remove('is-done');
+  }
+
+  /**
+   * Wire up HTML5 drag-and-drop reordering on the direct children of `container`.
+   * `onReorder(fromIdx, toIdx)` is called once on each successful drop — the
+   * caller is responsible for mutating the data model and re-rendering.
+   *
+   * The helper is idempotent at the row level (it tags each row with
+   * `data-dnd-bound`) so re-rendering and calling it again won't double-bind.
+   */
+  function _makeListSortable(container, onReorder) {
+    if (!container || typeof onReorder !== 'function') return;
+    var dragSrc = null;
+    Array.prototype.slice.call(container.children).forEach(function (row, idx) {
+      row.dataset.dndIndex = String(idx);
+      if (row.dataset.dndBound === '1') return;
+      row.dataset.dndBound = '1';
+      row.setAttribute('draggable', 'true');
+      row.addEventListener('dragstart', function (e) {
+        dragSrc = row;
+        row.classList.add('is-dragging');
+        try {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', row.dataset.dndIndex || '');
+        } catch (_) {}
+      });
+      row.addEventListener('dragend', function () {
+        row.classList.remove('is-dragging');
+        Array.prototype.slice.call(container.children).forEach(function (r) {
+          r.classList.remove('is-drop-target');
+        });
+        dragSrc = null;
+      });
+      row.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+      });
+      row.addEventListener('dragenter', function () {
+        if (row !== dragSrc) row.classList.add('is-drop-target');
+      });
+      row.addEventListener('dragleave', function () {
+        row.classList.remove('is-drop-target');
+      });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault();
+        row.classList.remove('is-drop-target');
+        if (!dragSrc || dragSrc === row) return;
+        var from = parseInt(dragSrc.dataset.dndIndex || '-1', 10);
+        var to = parseInt(row.dataset.dndIndex || '-1', 10);
+        if (from < 0 || to < 0 || from === to) return;
+        onReorder(from, to);
+      });
+    });
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -8577,8 +8631,14 @@
     var meta = document.getElementById('picks-meta');
     if (wrap) wrap.innerHTML = '<div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div>';
     if (meta) meta.textContent = '불러오는 중…';
-    _apiFetch('/api/posts?featured=1&limit=20&published=all&scope=admin').then(function (data) {
-      _picksPosts = (data && data.posts) || [];
+    Promise.all([
+      _apiFetch('/api/posts?featured=1&limit=20&published=all&scope=admin'),
+      _apiFetch('/api/settings/picks-order').catch(function () { return { items: [] }; }),
+    ]).then(function (results) {
+      var posts = (results[0] && results[0].posts) || [];
+      var order = (results[1] && Array.isArray(results[1].items)) ? results[1].items : [];
+      _picksOrder = order.slice();
+      _picksPosts = _applyPickOrder(posts, order);
       _renderPicksSelected();
     }).catch(function () {
       if (wrap) wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">불러오기 실패</div></div>';
@@ -8586,10 +8646,38 @@
     });
   }
 
+  function _applyPickOrder(posts, order) {
+    if (!Array.isArray(posts) || !posts.length) return [];
+    if (!Array.isArray(order) || !order.length) return posts.slice();
+    var idx = new Map();
+    order.forEach(function (id, i) {
+      var n = parseInt(id, 10);
+      if (Number.isFinite(n) && !idx.has(n)) idx.set(n, i);
+    });
+    return posts.slice().sort(function (a, b) {
+      var ai = idx.has(Number(a.id)) ? idx.get(Number(a.id)) : Number.POSITIVE_INFINITY;
+      var bi = idx.has(Number(b.id)) ? idx.get(Number(b.id)) : Number.POSITIVE_INFINITY;
+      return ai - bi;
+    });
+  }
+
+  function _savePicksOrder() {
+    var ids = _picksPosts.map(function (p) { return Number(p.id); }).filter(function (n) { return Number.isFinite(n) && n > 0; });
+    _picksOrder = ids.slice();
+    return _apiFetch('/api/settings/picks-order', {
+      method: 'PUT',
+      body: JSON.stringify({ items: ids }),
+    }).then(function () {
+      GW.showToast('에디터 추천 순서를 저장했습니다', 'success');
+    }).catch(function (err) {
+      GW.showToast((err && err.message) || '순서 저장 실패', 'error');
+    });
+  }
+
   function _renderPicksSelected() {
     var wrap = document.getElementById('picks-selected');
     var meta = document.getElementById('picks-meta');
-    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개 / 최대 4개';
+    if (meta) meta.textContent = '현재 에디터 추천 ' + _picksPosts.length + '개 / 최대 4개 · 드래그해서 순서 변경';
     if (!wrap) return;
     if (!_picksPosts.length) {
       wrap.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">선택된 에디터 추천 게시글이 없습니다.</div></div>';
@@ -8598,7 +8686,8 @@
     wrap.innerHTML = '<div class="v3-picks-list">' + _picksPosts.map(function (post) {
       var badges = '<span class="v3-badge ' + _catBadge(post.category) + '">' + GW.escapeHtml(post.category || '') + '</span><span class="v3-badge v3-badge-yellow">추천</span>';
       if (!post.published) badges += '<span class="v3-badge v3-badge-gray">비공개</span>';
-      return '<div class="v3-pick-row">' +
+      return '<div class="v3-pick-row v3-sortable-row">' +
+        '<span class="v3-drag-handle" aria-hidden="true" title="드래그해서 순서 변경">⋮⋮</span>' +
         '<div class="v3-pick-copy">' +
           '<div class="v3-pick-badges">' + badges + '</div>' +
           '<div class="v3-pick-title">' + GW.escapeHtml(post.title || '(제목 없음)') + '</div>' +
@@ -8609,6 +8698,13 @@
         '</div>' +
       '</div>';
     }).join('') + '</div>';
+    var listEl = wrap.querySelector('.v3-picks-list');
+    _makeListSortable(listEl, function (from, to) {
+      var item = _picksPosts.splice(from, 1)[0];
+      _picksPosts.splice(to, 0, item);
+      _renderPicksSelected();
+      _savePicksOrder();
+    });
   }
 
   function _searchPicks(q) {
@@ -9162,7 +9258,8 @@
       return;
     }
     el.innerHTML = _contributors.map(function (c, i) {
-      return '<div class="v3-person-row">' +
+      return '<div class="v3-person-row v3-sortable-row">' +
+        '<span class="v3-drag-handle" aria-hidden="true" title="드래그해서 순서 변경">⋮⋮</span>' +
         '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.name || '') + '" placeholder="이름" data-contrib-i="' + i + '" data-field="name" style="flex:1.2;" />' +
         '<input class="v3-input" type="text" value="' + GW.escapeHtml(c.role || '') + '" placeholder="역할 / 도와주신 내용" data-contrib-i="' + i + '" data-field="role" style="flex:2;" />' +
         '<input class="v3-input" type="date" value="' + GW.escapeHtml(c.date || '') + '" data-contrib-i="' + i + '" data-field="date" style="flex:0 0 150px;" title="기록 날짜 (선택)" />' +
@@ -9176,6 +9273,8 @@
         var field = input.dataset.field;
         if (_contributors[i]) _contributors[i][field] = input.value;
       });
+      // Inputs swallow drag events by default — don't drag from inside text fields.
+      input.addEventListener('mousedown', function (e) { e.stopPropagation(); });
     });
     el.querySelectorAll('[data-contrib-remove]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -9184,6 +9283,18 @@
         _contributors.splice(i, 1);
         _renderContributors();
       });
+    });
+    _makeListSortable(el, function (from, to) {
+      // Sync any in-flight input values before reordering so the new index
+      // mapping in _renderContributors doesn't drop the user's typing.
+      el.querySelectorAll('[data-contrib-i]').forEach(function (input) {
+        var i = parseInt(input.dataset.contribI, 10);
+        var field = input.dataset.field;
+        if (_contributors[i]) _contributors[i][field] = input.value;
+      });
+      var item = _contributors.splice(from, 1)[0];
+      _contributors.splice(to, 0, item);
+      _renderContributors();
     });
   }
 

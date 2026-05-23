@@ -1,6 +1,31 @@
 {
   "items": [
   {
+    "version": "03.115.00",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 19:01:52 KST",
+    "summary": "관리자: 도움 주신 분들 / 에디터 추천 두 패널 모두 드래그앤드롭으로 순서 변경 가능. 변경된 에디터 추천 순서는 홈 화면에도 그대로 반영.",
+    "changes": [
+      "js/admin-v3.js _makeListSortable: HTML5 native 드래그앤드롭 헬퍼 신설(컨테이너의 직속 자식을 draggable, dragstart/over/enter/leave/drop 바인딩). data-dnd-bound 가드로 재렌더링 시 중복 바인딩 방지.",
+      "js/admin-v3.js _renderContributors: 각 row에 ⋮⋮ 드래그 핸들(v3-drag-handle) 추가. 드롭 시 _contributors 배열을 splice 로 재배치 후 재렌더 — 사용자는 기존 '저장' 버튼으로 서버 반영.",
+      "js/admin-v3.js _renderPicksSelected + _loadPicksUI + _savePicksOrder + _applyPickOrder: 에디터 추천 로드 시 /api/settings/picks-order 동시 fetch 후 저장된 순서로 정렬. 드롭 즉시 PUT 으로 서버 저장(저장 버튼 없음).",
+      "css/admin-v3.css .v3-sortable-row / .v3-drag-handle / .is-dragging / .is-drop-target: cursor grab/grabbing, 드래그 중 opacity 0.45, 드롭 타겟 row 는 Scouting Purple 테두리 + 옅은 보라 배경.",
+      "관리자 버전 03.114.01 → 03.115.00."
+    ]
+  },
+  {
+    "version": "00.143.03",
+    "date": "2026-05-23",
+    "released_at": "2026-05-23 19:01:52 KST",
+    "summary": "공개 홈의 에디터 추천이 관리자에서 지정한 순서를 따르도록 변경. picks_order 설정이 있으면 해당 순서, 없으면 기존처럼 publish 날짜 내림차순.",
+    "changes": [
+      "functions/api/home.js loadHomePicks 신설 + picks 섹션이 이를 사용: published=1 AND featured=1 인 게시물을 모두 가져온 뒤 settings.picks_order(JSON 배열) 의 인덱스로 정렬. 순서에 없는 게시물은 기존 날짜순으로 뒤에 배치.",
+      "functions/api/settings/picks-order.js 신설 — GET/PUT 엔드포인트. PUT 은 picks 'write' 권한 게이팅(gateMenuAccess), settings_history 자동 스냅샷.",
+      "사이트 버전 00.143.02 → 00.143.03.",
+      "Admin 영향: 03.115.00 의 드래그앤드롭 순서가 이 변경 덕분에 공개 사이트에 그대로 노출됨."
+    ]
+  },
+  {
     "version": "00.143.02",
     "date": "2026-05-23",
     "released_at": "2026-05-23 18:48:20 KST",

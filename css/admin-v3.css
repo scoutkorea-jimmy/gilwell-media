@@ -2619,6 +2619,42 @@ body[data-chart-spacing="l"] {
   padding: var(--v3-gap-sm) var(--v3-gap-md); border: 1px solid var(--v3-border);
   border-radius: var(--v3-radius); background: var(--v3-surface);
 }
+
+/* ── Drag-and-drop sortable rows (contributors, picks) ─────
+   `.v3-sortable-row` opts a row into HTML5 native drag-and-drop set up by
+   the admin's _makeListSortable helper. The leading `.v3-drag-handle`
+   span ⋮⋮ is the visual affordance — the entire row is draggable but
+   inputs inside stop propagation so the user can still select text.
+   `.is-dragging` dims the source; `.is-drop-target` highlights the
+   hovered row so the drop position is obvious. */
+.v3-sortable-row {
+  cursor: grab;
+  transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+.v3-sortable-row:active { cursor: grabbing; }
+.v3-sortable-row.is-dragging { opacity: 0.45; }
+.v3-sortable-row.is-drop-target {
+  border-color: var(--v3-primary, #622599);
+  background: rgba(98, 37, 153, 0.06);
+}
+.v3-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex: 0 0 18px;
+  color: var(--v3-text-m, #6F6F6F);
+  font-size: 13px;
+  letter-spacing: -2px;
+  user-select: none;
+  cursor: grab;
+}
+.v3-sortable-row:active .v3-drag-handle { cursor: grabbing; }
+.v3-sortable-row input,
+.v3-sortable-row button,
+.v3-sortable-row a {
+  cursor: auto;
+}
 .v3-person-name { font-size: var(--v3-fs-dense); font-weight: 500; color: var(--v3-text); flex: 1; }
 .v3-person-meta { font-size: var(--fs-caption); color: var(--v3-text-m); }
 
