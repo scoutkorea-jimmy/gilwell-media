@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.146.05';
+  GW.APP_VERSION = '00.146.06';
   GW.ADMIN_VERSION = '03.120.02';
-  GW.ASSET_VERSION = '20260524200959';
+  GW.ASSET_VERSION = '20260524204648';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -635,6 +635,8 @@
   GW._versionBannerOpts = null;
   GW._versionBannerLoaded = '';
   GW._versionBannerDismissed = '';
+  GW._versionBannerNewVersion = '';
+  GW._versionBannerNavBound = false;
 
   function _readDismissedVersion(target) {
     try {
@@ -646,6 +648,54 @@
     try {
       if (window.localStorage) window.localStorage.setItem('gw_build_dismissed_' + target, version);
     } catch (_) {}
+  }
+
+  function _getVersionRefreshUrl(rawUrl, version) {
+    try {
+      var url = new URL(rawUrl || window.location.href, window.location.href);
+      url.searchParams.set('_gwv', String(version || Date.now()));
+      return url.toString();
+    } catch (_) {
+      return rawUrl || window.location.href;
+    }
+  }
+
+  function _stripVersionRefreshParam() {
+    try {
+      var url = new URL(window.location.href);
+      if (!url.searchParams.has('_gwv') || !window.history || !window.history.replaceState) return;
+      url.searchParams.delete('_gwv');
+      window.history.replaceState(window.history.state, document.title, url.pathname + url.search + url.hash);
+    } catch (_) {}
+  }
+
+  function _isVersionRefreshNavigation(event, link) {
+    if (!link || !GW._versionBannerNewVersion) return false;
+    if (GW._versionBannerOpts && GW._versionBannerOpts.target !== 'site') return false;
+    if (event && (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0)) return false;
+    if (link.target && link.target !== '_self') return false;
+    if (link.hasAttribute('download')) return false;
+    var href = link.getAttribute('href') || '';
+    if (!href || href.charAt(0) === '#' || /^(mailto:|tel:|javascript:)/i.test(href)) return false;
+    try {
+      var url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin) return false;
+      if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return false;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function _bindVersionRefreshNavigation() {
+    if (GW._versionBannerNavBound || typeof document === 'undefined') return;
+    GW._versionBannerNavBound = true;
+    document.addEventListener('click', function (event) {
+      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+      if (!_isVersionRefreshNavigation(event, link)) return;
+      event.preventDefault();
+      window.location.assign(_getVersionRefreshUrl(link.href, GW._versionBannerNewVersion));
+    }, true);
   }
 
   function _ensureBannerEl() {
@@ -667,7 +717,8 @@
       '<button type="button" class="gw-update-banner-close" id="gw-update-banner-close" aria-label="알림 닫기">×</button>';
     document.body.appendChild(el);
     el.querySelector('#gw-update-banner-refresh').addEventListener('click', function () {
-      try { location.reload(); } catch (_) { window.location.href = window.location.href; }
+      var nextUrl = _getVersionRefreshUrl(window.location.href, GW._versionBannerNewVersion || GW._versionBannerDismissed);
+      try { window.location.assign(nextUrl); } catch (_) { window.location.href = nextUrl; }
     });
     el.querySelector('#gw-update-banner-close').addEventListener('click', function () {
       if (GW._versionBannerOpts && GW._versionBannerDismissed) {
@@ -704,10 +755,12 @@
         var loadedVer = String(GW._versionBannerLoaded || '');
         if (serverVer === loadedVer) {
           // Same as we loaded — banner shouldn't show.
+          GW._versionBannerNewVersion = '';
           var el = document.getElementById('gw-update-banner');
           if (el && !el.hidden) { el.hidden = true; el.classList.remove('is-visible'); }
           return;
         }
+        GW._versionBannerNewVersion = serverVer;
         if (serverVer === _readDismissedVersion(opts.target)) return; // user dismissed this exact one
         _showVersionBanner(serverVer);
       })
@@ -719,6 +772,8 @@
     if (!loadedVersion) return;
     GW._versionBannerOpts = { target: target === 'admin' ? 'admin' : 'site' };
     GW._versionBannerLoaded = String(loadedVersion);
+    _stripVersionRefreshParam();
+    _bindVersionRefreshNavigation();
     // Initial probe shortly after load (don't block first paint).
     setTimeout(_checkVersionOnce, 2500);
     // Re-check whenever the tab becomes visible again.

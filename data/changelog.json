@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.146.06",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 05:46:18 KST",
+    "summary": "새 버전 알림은 유지하되, 사용자가 다른 페이지로 이동할 때 최신 버전으로 자연스럽게 전환되도록 보강.",
+    "for_users": [
+      "기사를 읽는 중에는 새 버전이 배포되어도 페이지가 임의로 바뀌지 않습니다.",
+      "새 버전 알림을 닫아도 현재 글 읽기는 유지되고, 이후 사이트 안의 다른 페이지로 이동하면 최신 버전으로 자동 전환됩니다.",
+      "새 버전 확인 주기는 기존과 동일하게 5분 간격을 유지합니다."
+    ],
+    "for_developers": [
+      "js/main.js GW.initVersionUpdateBanner: polling interval 5분 유지. 새 serverVer 감지 시 GW._versionBannerNewVersion 에 기록해 배너 닫힘 여부와 별개로 최신 버전 존재 상태를 보존.",
+      "같은 origin 내부 링크 클릭을 capture 단계에서 감지해 _gwv=<serverVer> cache-bust 파라미터를 붙여 이동. 새 페이지 로드 후 history.replaceState 로 _gwv 를 제거해 주소는 깨끗하게 유지.",
+      "새로고침 버튼도 location.reload() 대신 _gwv cache-bust URL로 이동해 stale HTML을 다시 받는 가능성을 줄임.",
+      "사이트 버전 00.146.05 → 00.146.06."
+    ]
+  },
+  {
     "version": "00.146.05",
     "date": "2026-05-25",
     "released_at": "2026-05-25 05:09:48 KST",
