@@ -6,14 +6,14 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.146.01';
+  GW.APP_VERSION = '00.146.02';
   GW.ADMIN_VERSION = '03.120.02';
-  GW.ASSET_VERSION = '20260524122147';
+  GW.ASSET_VERSION = '20260524195631';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
     midnightPurple: '#4D006E',
-    blossomPink: '#FFBDFF',
+    blossomPink: '#FF8DFF',
     fireRed: '#FF5655',
     emberOrange: '#FFAE80',
     oceanBlue: '#0094B4',
@@ -1021,18 +1021,9 @@
         ADD_ATTR: ['target', 'rel']
       });
     }
-    // Fallback path — DOMPurify missing. Strip the high-value XSS carriers so
-    // legacy HTML content at least can't run script, even without DOMPurify.
-    return source
-      .replace(/<\s*script\b[\s\S]*?<\s*\/\s*script\s*>/gi, '')
-      .replace(/<\s*style\b[\s\S]*?<\s*\/\s*style\s*>/gi, '')
-      .replace(/<\s*iframe\b[\s\S]*?<\s*\/\s*iframe\s*>/gi, '')
-      .replace(/<\s*object\b[\s\S]*?<\s*\/\s*object\s*>/gi, '')
-      .replace(/<\s*embed\b[^>]*>/gi, '')
-      .replace(/\s+on[a-z]+\s*=\s*"[^"]*"/gi, '')
-      .replace(/\s+on[a-z]+\s*=\s*'[^']*'/gi, '')
-      .replace(/\s+on[a-z]+\s*=\s*[^\s>]+/gi, '')
-      .replace(/(href|src|xlink:href)\s*=\s*(?:"\s*javascript:[^"]*"|'\s*javascript:[^']*'|javascript:[^\s>]*)/gi, '$1="#"');
+    // Fallback path — DOMPurify missing. Do not return HTML markup here:
+    // user-authored HTML may be injected with innerHTML by callers.
+    return GW.escapeHtml(source.replace(/<[^>]*>/g, ''));
   };
 
   GW.renderEditorListItems = function (items, listTag) {

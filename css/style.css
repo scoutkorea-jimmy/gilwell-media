@@ -11707,61 +11707,6 @@ body.wosm-members-page #main-content {
    (bookmarks/recent 레일은 사용자 롤백 요청으로 제거 — 2026-04-19)
    ══════════════════════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════════════════════
-   DARK MODE — data-theme="dark" 토큰 오버라이드
-   토글 버튼은 사이트 마스트헤드에 추가. prefers-color-scheme 기본값 존중.
-   ══════════════════════════════════════════════════════════ */
-:root[data-theme="dark"] {
-  /* Base neutrals — 브랜드 팔레트 유지하며 배경/텍스트만 반전 */
-  --bg:         #121218;
-  --surface:    #1a1a22;
-  --white:      #1a1a22;   /* 원래 흰 배경 요소 → 어두운 표면 */
-  --ink:        #e8e8ec;
-  --black:      #e8e8ec;   /* 원래 검은 텍스트 → 밝은 텍스트 */
-  --border:     #2d2d36;
-  --muted:      #9a9aa5;
-
-  /* Grayscale 5 반전 */
-  --gray-100:   #22222a;
-  --gray-300:   #3a3a42;
-  --gray-500:   #787882;
-  --gray-700:   #c4c4cc;
-  --gray-900:   #eeeef2;
-
-  /* 브랜드 팔레트 — 다크 배경에서 가독성 유지하도록 살짝 밝게 */
-  --scouting-purple: #8b4cc8;
-  --midnight-purple: #a66bd4;
-  --forest-green:    #4cbf5f;
-  --ocean-blue:      #30b8d8;
-  --fire-red:        #ff7272;
-  --blossom-pink:    #ffaaff;
-  --ember-orange:    #ffc9a0;
-  --river-blue:      #a8f0e8;
-  --leaf-green:      #b8f2a8;
-
-  --accent: var(--scouting-purple);
-  --card-bg: var(--surface);
-  --page-surface: var(--surface);
-  --page-surface-alt: #15151c;
-}
-:root[data-theme="dark"] body {
-  background: var(--bg);
-  color: var(--ink);
-}
-/* 다크 모드에서 이미지·미디어는 살짝 디밍 */
-:root[data-theme="dark"] .post-page-body img,
-:root[data-theme="dark"] .site-hero-media-img,
-:root[data-theme="dark"] .mini-thumb,
-:root[data-theme="dark"] .post-card-thumb {
-  filter: brightness(0.92);
-}
-
-/* 다크 모드 토글 — 푸터 링크 스타일 (다른 footer-admin 링크와 시각 통일) */
-.footer-admin .gw-theme-toggle {
-  cursor: pointer;
-}
-.footer-admin .gw-theme-toggle:hover { text-decoration: underline; }
-
 /* ════════════════════════════════════════════════════════════
    KAKAO ADFIT — 광고 슬롯
    PC: 728x90 horizontal + 160x600 vertical(사이드바 전용)
@@ -11829,10 +11774,10 @@ body.wosm-members-page #main-content {
   gap: 10px;
   max-width: min(420px, calc(100vw - 32px));
   padding: 12px 14px;
-  background: #FFFFFF;
-  color: #1F1F1F;
-  border: 1px solid #C4C4C4;
-  border-left: 4px solid #622599;
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--gray-300);
+  border-left: 4px solid var(--scouting-purple);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -11857,8 +11802,8 @@ body.wosm-members-page #main-content {
   min-width: 38px;
   height: 22px;
   padding: 0 8px;
-  background: #622599;
-  color: #FFFFFF;
+  background: var(--scouting-purple);
+  color: var(--white);
   border-radius: 4px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
@@ -11868,21 +11813,21 @@ body.wosm-members-page #main-content {
   line-height: 1;
 }
 .gw-update-banner-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-.gw-update-banner-title { font-weight: 700; color: #4D006E; }
-.gw-update-banner-version { font-size: 12px; color: #3F3F3F; font-feature-settings: 'tnum'; }
+.gw-update-banner-title { font-weight: 700; color: var(--midnight-purple); }
+.gw-update-banner-version { font-size: 12px; color: var(--gray-700); font-feature-settings: 'tnum'; }
 .gw-update-banner-refresh {
   flex-shrink: 0;
   padding: 6px 12px;
-  background: #622599;
-  color: #FFFFFF;
+  background: var(--scouting-purple);
+  color: var(--white);
   border: 0;
   border-radius: 6px;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
-.gw-update-banner-refresh:hover { background: #4D006E; }
-.gw-update-banner-refresh:focus-visible { outline: 2px solid #FF5655; outline-offset: 2px; }
+.gw-update-banner-refresh:hover { background: var(--midnight-purple); }
+.gw-update-banner-refresh:focus-visible { outline: 2px solid var(--fire-red); outline-offset: 2px; }
 .gw-update-banner-close {
   flex-shrink: 0;
   width: 26px;
@@ -11890,12 +11835,12 @@ body.wosm-members-page #main-content {
   padding: 0;
   background: transparent;
   border: 0;
-  color: #8F8F8F;
+  color: var(--gray-500);
   font-size: 18px;
   cursor: pointer;
   line-height: 1;
 }
-.gw-update-banner-close:hover { color: #1F1F1F; }
+.gw-update-banner-close:hover { color: var(--ink); }
 @media (max-width: 600px) {
   .gw-update-banner {
     top: 10px;

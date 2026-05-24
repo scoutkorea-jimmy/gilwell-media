@@ -903,39 +903,6 @@
     }
   };
 
-  /* ── Dark Mode 토글 ─────────────────────────────────────────
-     기본값 light. localStorage.gw_theme만 저장 시 반영. 푸터 링크로 토글. */
-  GW.initDarkMode = function () {
-    var THEME_KEY = 'gw_theme';
-    function currentTheme() {
-      try {
-        var saved = localStorage.getItem(THEME_KEY);
-        if (saved === 'dark' || saved === 'light') return saved;
-      } catch (_) {}
-      return 'light'; // 기본값 강제 light (prefers-color-scheme 무시)
-    }
-    function applyTheme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      document.querySelectorAll('[data-theme-toggle]').forEach(function (a) {
-        a.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
-        a.textContent = theme === 'dark' ? '라이트모드로 변경 →' : '다크모드로 전환 →';
-      });
-    }
-    function toggleTheme(e) {
-      if (e) e.preventDefault();
-      var next = currentTheme() === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
-      applyTheme(next);
-    }
-    applyTheme(currentTheme());
-    // 푸터의 다크모드 토글 링크에 클릭 이벤트 바인딩
-    document.querySelectorAll('[data-theme-toggle]').forEach(function (a) {
-      if (a._themeBound) return;
-      a._themeBound = true;
-      a.addEventListener('click', toggleTheme);
-    });
-  };
-
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', GW.applySiteChrome, { once: true });
   } else {
@@ -947,6 +914,5 @@
     GW.setupMobileCompactHeader();
     GW.setupTickerControls();
     GW.initContentGalleries(document);
-    GW.initDarkMode();
   });
 })();

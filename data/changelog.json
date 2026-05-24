@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.146.02",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 04:56:12 KST",
+    "summary": "공개 홈페이지에서 다크모드 전환 기능을 제거하고, 본문 HTML 보안 fallback과 브랜드 팔레트 불일치를 정리.",
+    "for_users": [
+      "홈페이지 푸터의 '다크모드로 전환' 링크가 제거되어 공개 사이트는 라이트 화면 기준으로만 운영됩니다.",
+      "DOMPurify가 로드되지 않는 예외 상황에서도 저장된 본문 HTML이 실행 가능한 마크업으로 표시되지 않도록 보안 fallback을 강화했습니다.",
+      "브랜드 팔레트의 Blossom Pink 값이 KMS 기준과 동일하게 맞춰져 디자인 기준의 드리프트를 줄였습니다."
+    ],
+    "for_developers": [
+      "index/korea/apr/wosm/people/latest/search/calendar/glossary/contributors/privacy 및 functions/post/[id].js footer-admin 영역에서 .gw-theme-toggle[data-theme-toggle] 링크를 제거.",
+      "js/site-chrome.js: GW.initDarkMode 함수와 DOMContentLoaded 호출 제거. css/style.css: :root[data-theme=\"dark\"] 토큰 오버라이드 및 .gw-theme-toggle 스타일 제거.",
+      "js/main.js GW.sanitizeHtml fallback: DOMPurify 미로드 시 regex allowlist HTML을 반환하지 않고 태그 제거 후 escapeHtml 한 plain text만 반환하도록 변경.",
+      "js/main.js GW.PALETTE.blossomPink: #FFBDFF → #FF8DFF. latest.html Latest badge 및 .gw-update-banner 직접 HEX 일부를 기존 CSS 토큰 참조로 교체.",
+      "사이트 버전 00.146.01 → 00.146.02."
+    ]
+  },
+  {
     "version": "00.146.01",
     "date": "2026-05-24",
     "released_at": "2026-05-24 21:21:47 KST",
