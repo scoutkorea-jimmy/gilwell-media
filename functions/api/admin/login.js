@@ -276,6 +276,9 @@ export async function onRequestPost({ request, env }) {
     role,
     uid: sessionUser.id,
     username: sessionUser.username,
+    // Login IP is sealed into the token so /api/admin/session-grace can verify
+    // a refresh comes from the same network within the 10-minute window.
+    ip,
   });
 
   await logOperationalEvent(env, {

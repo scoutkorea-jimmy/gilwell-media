@@ -536,7 +536,7 @@ Site 전용 추가 규칙:
   - 필터링은 [`js/admin-account.js`](js/admin-account.js) `_syncOwnerOnlyNav()` + `_syncPermissionNav()`. 세션 로드 후 자동 실행.
   - 그룹 전체가 비면 섹션 헤더까지 숨김 (`_collapseEmptyNavSections()`)
 - **백엔드 게이팅**: [`functions/_shared/admin-permissions.js`](functions/_shared/admin-permissions.js) `gateMenuAccess(request, env, slug, action)`. 오너는 무조건 통과, 멤버는 `view:<slug>` 또는 `write:<slug>` 토큰 필수. 32개 admin/settings API가 이를 사용.
-- **세션 TTL / 강제 재로그인**: 서버 HMAC 쿠키는 24시간 유효하지만 관리자 콘솔은 **매 `/admin` 페이지 접근마다 캐시·쿠키·Cache API·Service Worker 퍼지 후 로그인 화면을 강제**한다 ([`js/admin-v3.js`](js/admin-v3.js) `_purgeAdminClientState`). 쿠키에서 자동 로그인하지 않음. 로그인 성공 후 클라이언트 유휴 타이머는 **30분**(`_SESSION_MS`). 활동(click/keydown/touch/scroll)이 있으면 리셋, 5분 전 경고, 30분 초과 시 자동 로그아웃.
+- **세션 TTL / 강제 재로그인 + 10분 grace** (2026-05-24 핫픽스): 서버 HMAC 쿠키는 24시간 유효. 관리자 콘솔은 매 `/admin` 페이지 접근 시 [`/api/admin/session-grace`](functions/api/admin/session-grace.js) 를 먼저 호출 — **(1) 로그인 시점 IP 와 현재 IP 동일 AND (2) 토큰 iat 이후 10분 이내** 두 조건 모두 만족하면 200 응답을 받고 [`_tryAdminSessionGrace`](js/admin-v3.js) 가 `_purgeAdminClientState` 를 건너뛰고 `_showApp()` 으로 바로 진입한다 (사용자가 모르게 세션 유지). grace 실패 시(IP 변경/10분 초과/네트워크 실패/구버전 토큰)에는 기존 정책 — 캐시·쿠키·Cache API·Service Worker 퍼지 + 로그인 화면 강제. 로그인 성공 후 클라이언트 유휴 타이머는 **30분**(`_SESSION_MS`). 활동(click/keydown/touch/scroll)이 있으면 리셋, 5분 전 경고, 30분 초과 시 자동 로그아웃.
 - **브라우저 캐시**: `/admin`·`/admin.html` 응답에 `Cache-Control: no-store, no-cache, must-revalidate` 설정 ([`_headers`](_headers)). HTML meta 태그(`<meta http-equiv="Cache-Control" ...>`)로 이중 방어. 새로고침이나 뒤로가기 후에도 항상 서버에서 새 HTML 요청.
 - **403 UX**: 멤버가 권한 없는 API를 호출해도 서버는 `"이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요."` 토스트를 노출. 403은 `homepage-issues/report` 자동 보고 대상에서 제외 (버그가 아니므로).
 

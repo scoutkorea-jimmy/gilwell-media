@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.119.01",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 20:36:07 KST",
+    "summary": "핫픽스: 관리자 새로고침 시 10분 / 동일 IP 그레이스 — 매번 다시 로그인할 필요 없음.",
+    "for_users": [
+      "관리자 화면을 새로고침했을 때 매번 다시 로그인해야 하던 동작이 완화됐습니다. 로그인한 지 10분 이내이고 IP 가 그대로면 새로고침해도 로그인 상태가 유지됩니다.",
+      "10분이 지나거나 다른 네트워크(다른 와이파이·모바일 등)로 옮기면 기존대로 보안을 위해 로그인 화면을 다시 띄웁니다. 30분 유휴 자동 로그아웃, 비밀번호 변경 시 모든 세션 만료 등 다른 보안 정책은 그대로입니다."
+    ],
+    "for_developers": [
+      "functions/_shared/auth.js createToken: input.ip 필드 지원 추가 (payload.ip 로 64자 cap). readToken 응답에도 ip 필드 포함. verifyToken / verifyTokenRole 은 ip 검증 안 함 — grace 전용.",
+      "functions/api/admin/login.js: createToken 호출에 ip 전달 (이미 CF-Connecting-IP 캡쳐하고 있던 변수 재사용).",
+      "functions/api/admin/session-grace.js 신설 (GET): verifyToken 통과 + payload.ip === CF-Connecting-IP + (Date.now() - payload.iat) <= 10분 모두 만족 시 200 + { authenticated, role, user, grace.remaining_ms }. 그 외는 401 + reason. 구버전 토큰(ip 없음)은 grace_legacy_token_no_ip 로 실패.",
+      "js/admin-v3.js: _tryAdminSessionGrace() 신설. DOMContentLoaded 시 무조건 _purgeAdminClientState 호출하던 라인을 _tryAdminSessionGrace 로 교체. 200 → GW.setToken() + setAdminRole() + _showApp(). 401/네트워크 실패 → 기존 _purgeAdminClientState.",
+      "CLAUDE.md §3 Phase 5 grace 정책 명문화. 세션 grace 통과 시 캐시 퍼지/로그인 강제 건너뜀.",
+      "관리자 버전 03.119.00 → 03.119.01."
+    ]
+  },
+  {
     "version": "00.146.00",
     "date": "2026-05-24",
     "released_at": "2026-05-24 20:23:43 KST",

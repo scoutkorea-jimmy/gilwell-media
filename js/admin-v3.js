@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.119.00
+ * Version: 03.119.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -500,11 +500,14 @@
       _doLogin();
     });
 
-    // Every /admin page load ALWAYS forces a fresh login. No auto-sign-in
-    // from an existing cookie — this is intentional (admin operator policy).
-    // We also purge browser caches so the admin UI never serves a stale
-    // HTML/JS snapshot after a deploy.
-    _purgeAdminClientState();
+    // Phase 5 강제 재로그인 + 새로고침 grace (10분 · 동일 IP):
+    //   1) /api/admin/session-grace 호출 — 쿠키 토큰이 살아있고 (a) iat 이 10분
+    //      이내이고 (b) 로그인 시점 IP 와 현재 IP 가 같으면 200 응답.
+    //   2) 200 이면 _purgeAdminClientState 를 건너뛰고 바로 _showApp() 으로 진입
+    //      — 사용자가 모르게 세션 유지.
+    //   3) 그 외(401/네트워크 실패 포함)에는 기존 정책 그대로 — 모든 상태 wipe
+    //      후 로그인 화면 강제.
+    _tryAdminSessionGrace();
 
     // Login
     _bindEl('v3-login-btn', 'click', _doLogin);
@@ -902,6 +905,45 @@
       .catch(function () { return false; });
   }
 
+  // Try the 10-minute / same-IP grace before nuking session state.
+  // Cookie credentials must still be on the wire when we make this call —
+  // so we MUST fire this before any clearToken / session DELETE.
+  function _tryAdminSessionGrace() {
+    var graceCall;
+    try {
+      graceCall = fetch('/api/admin/session-grace', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' },
+      });
+    } catch (err) {
+      _purgeAdminClientState();
+      return;
+    }
+    graceCall.then(function (response) {
+      if (!response.ok) {
+        _purgeAdminClientState();
+        return null;
+      }
+      return response.json().catch(function () { return null; });
+    }).then(function (data) {
+      if (!data || data.authenticated !== true) {
+        if (data === null) return; // 이미 _purgeAdminClientState 호출됨
+        _purgeAdminClientState();
+        return;
+      }
+      // Grace 통과 — 토큰/쿠키 그대로 살리고 클라이언트 marker 만 다시 세팅.
+      try { if (GW.setToken) GW.setToken(); } catch (_) {}
+      try { if (GW.setAdminRole) GW.setAdminRole(data.role || 'full'); } catch (_) {}
+      _showApp();
+    }).catch(function (err) {
+      // 네트워크 실패 = 안전한 쪽으로 — 기존 강제 로그인 흐름.
+      console.warn('[admin] session-grace check failed:', err && err.message || err);
+      _purgeAdminClientState();
+    });
+  }
+
   // Reset every piece of admin client state on /admin page load:
   //   - drop any saved bearer flag (GW.clearToken)
   //   - wipe sessionStorage (session timer deadline, etc.)
@@ -911,8 +953,7 @@
   //   - strip any pre-rendered admin surfaces (v3-app stays `hidden`)
   //   - show the login screen and prime Turnstile
   //
-  // Called unconditionally on DOMContentLoaded — there is no auto-sign-in
-  // from an existing cookie. Every admin session starts from scratch.
+  // Called when the 10-min / same-IP grace check fails or is unavailable.
   function _purgeAdminClientState() {
     try { if (GW.clearToken) GW.clearToken(); } catch (err) { console.warn('[admin] clearToken failed:', err && err.message || err); }
     try { sessionStorage.clear(); } catch (err) { console.warn('[admin] sessionStorage.clear failed:', err && err.message || err); }

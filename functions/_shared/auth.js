@@ -43,6 +43,14 @@ export async function createToken(secret, roleOrPayload = 'full') {
   if (input.username && typeof input.username === 'string') {
     body.username = input.username.trim().toLowerCase();
   }
+  // Phase 5 grace window: pack the login-time IP so a page refresh within
+  // 10 minutes from the same IP can skip the forced re-login. Only used by
+  // /api/admin/session-grace; verifyToken / verifyTokenRole do NOT consult
+  // this field, so a roaming operator stays logged in for normal API calls
+  // until the cookie or idle timer expires.
+  if (input.ip && typeof input.ip === 'string') {
+    body.ip = input.ip.trim().slice(0, 64);
+  }
   const payload = b64url(JSON.stringify(body));
   const data = `${header}.${payload}`;
   const key = await importKey(secret, ['sign']);
@@ -76,6 +84,7 @@ export async function readToken(token, secret) {
       role: normalizeRole(parsed.role),
       uid: Number.isFinite(Number(parsed.uid)) && Number(parsed.uid) > 0 ? Number(parsed.uid) : null,
       username: parsed.username && typeof parsed.username === 'string' ? parsed.username : null,
+      ip: parsed.ip && typeof parsed.ip === 'string' ? parsed.ip : null,
     };
   } catch {
     return null;
