@@ -36,7 +36,8 @@ else
 fi
 
 echo "$MAIN_JS" | grep -F "GW.APP_VERSION = '${EXPECTED_APP_VERSION}'" >/dev/null
-echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A', 'B', 'C']" >/dev/null
+echo "$MAIN_JS" | grep -F "GW.EDITOR_LETTERS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']" >/dev/null
+echo "$MAIN_JS" | grep -F "GW.EDITOR_REQUIRED_LETTERS = ['A', 'B', 'C']" >/dev/null
 echo "$HOME_PAGE" | grep -F '<html lang="ko">' >/dev/null
 echo "$HOME_PAGE" | grep -F 'google-adsense-account' >/dev/null
 echo "$HOME_PAGE" | grep -F 'meta name="description"' >/dev/null
