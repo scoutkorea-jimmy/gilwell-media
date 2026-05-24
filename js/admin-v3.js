@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.119.01
+ * Version: 03.120.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -6952,11 +6952,15 @@
           return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
         }).join('') + '</ul>';
       }
-      return '<div class="v3-card v3-release-card">' +
+      var ver = String(item.version || '');
+      return '<div class="v3-card v3-release-card" data-release-version="' + GW.escapeHtml(ver) + '">' +
         '<div class="v3-release-head">' +
+          '<label class="v3-release-select" title="선택">' +
+            '<input type="checkbox" class="v3-release-check" data-release-version="' + GW.escapeHtml(ver) + '" />' +
+          '</label>' +
           '<div class="v3-release-head-main">' +
             '<span class="v3-release-scope v3-release-scope-' + GW.escapeHtml(s) + '">' + GW.escapeHtml(scopeLabel) + '</span>' +
-            '<span class="v3-release-version">V' + GW.escapeHtml(item.version || '') + '</span>' +
+            '<span class="v3-release-version">V' + GW.escapeHtml(ver) + '</span>' +
             '<span class="v3-badge ' + badge + '">' + GW.escapeHtml(type) + '</span>' +
           '</div>' +
           '<span class="v3-release-date">' + GW.escapeHtml(releaseDateText) + '</span>' +
@@ -6966,6 +6970,140 @@
         sectionsHtml +
       '</div>';
     }).join('');
+
+    // toolbar 노출 + 선택 상태 초기화
+    var toolbar = document.getElementById('releases-toolbar');
+    if (toolbar) toolbar.hidden = false;
+    var selectAll = document.getElementById('releases-select-all');
+    if (selectAll) selectAll.checked = false;
+    _updateReleaseSelectionCount();
+  }
+
+  // 선택된 버전들 → release item 매칭 → md 텍스트 생성 → Blob 다운로드.
+  // 네이버 블로그 게시용이 주 사용 케이스 — for_users 본문이 핵심, 개발자용은 옵션.
+  function _downloadSelectedReleases() {
+    if (!_releasesData || !_releasesData.length) return;
+    var checks = document.querySelectorAll('#releases-list .v3-release-check:checked');
+    var selectedVersions = Array.prototype.map.call(checks, function (c) { return c.getAttribute('data-release-version'); });
+    if (!selectedVersions.length) return;
+    var includeDevs = !!(document.getElementById('releases-include-devs') || {}).checked;
+    // 원본 배열 순서 유지 (최신이 위) — selectedVersions 를 Set 으로 빠르게 필터.
+    var picked = {};
+    selectedVersions.forEach(function (v) { picked[v] = true; });
+    var items = _releasesData.filter(function (item) { return picked[String(item.version || '')]; });
+    if (!items.length) return;
+
+    var nowKstReadable = (function () {
+      try {
+        var d = new Date();
+        var parts = new Intl.DateTimeFormat('sv-SE', {
+          timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        }).format(d);
+        return parts.replace('T', ' ').replace(',', '') + ' KST';
+      } catch (_) { return new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; }
+    })();
+
+    var lines = [];
+    lines.push('# BP미디어 버전 기록 (총 ' + items.length + '건)');
+    lines.push('');
+    lines.push('> 생성일: ' + nowKstReadable + '  ');
+    lines.push('> 출처: 관리자 KMS → 버전기록');
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+
+    items.forEach(function (item) {
+      var ver = String(item.version || '');
+      var scope = _inferReleaseScope(item);
+      var scopeLabel = _getReleaseScopeLabel(scope);
+      var type = _inferReleaseType(item);
+      var dateText = String(item.released_at || item.date || '');
+      lines.push('## V' + ver + ' — ' + scopeLabel + ' · ' + type);
+      lines.push('');
+      if (dateText) {
+        lines.push('**배포일**: ' + dateText);
+        lines.push('');
+      }
+      if (item.summary) {
+        lines.push('**요약**: ' + String(item.summary));
+        lines.push('');
+      }
+      var forUsers = Array.isArray(item.for_users) ? item.for_users : [];
+      var forDevs = Array.isArray(item.for_developers) ? item.for_developers : [];
+      var legacy = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
+      var hasNewFormat = forUsers.length > 0 || forDevs.length > 0;
+      if (hasNewFormat) {
+        if (forUsers.length) {
+          lines.push('**변경 사항**:');
+          lines.push('');
+          forUsers.forEach(function (line) { lines.push('- ' + String(line || '').trim()); });
+          lines.push('');
+        }
+        if (includeDevs && forDevs.length) {
+          lines.push('<details>');
+          lines.push('<summary>개발자용 기술 상세</summary>');
+          lines.push('');
+          forDevs.forEach(function (line) { lines.push('- ' + String(line || '').trim()); });
+          lines.push('');
+          lines.push('</details>');
+          lines.push('');
+        }
+      } else if (legacy.length) {
+        // Legacy 엔트리는 비/개발자 구분 없음 — 본문 그대로 노출 (블로그 글쓸 때 손으로 솎아내라는 의미).
+        lines.push('**변경 사항**:');
+        lines.push('');
+        legacy.forEach(function (line) { lines.push('- ' + String(line || '').trim()); });
+        lines.push('');
+      }
+      var issues = Array.isArray(item.issues) ? item.issues : [];
+      if (issues.length) {
+        lines.push('**정상이어야 했지만 실제로 작동하지 않았던 항목**:');
+        lines.push('');
+        issues.forEach(function (line) { lines.push('- ' + String(line || '').trim()); });
+        lines.push('');
+      }
+      lines.push('---');
+      lines.push('');
+    });
+
+    var content = lines.join('\n');
+    var blob = new Blob([content], { type: 'text/markdown; charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var fileStamp = (function () {
+      var d = new Date();
+      var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+      try {
+        var p = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        }).formatToParts(d);
+        var map = {};
+        p.forEach(function (x) { map[x.type] = x.value; });
+        return (map.year || '') + (map.month || '') + (map.day || '') + '-' + (map.hour || '') + (map.minute || '');
+      } catch (_) {
+        return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + '-' + pad(d.getUTCHours()) + pad(d.getUTCMinutes());
+      }
+    })();
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'bpmedia-changelog-' + fileStamp + '-' + items.length + 'gun.md';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try { document.body.removeChild(a); } catch (_) {}
+      URL.revokeObjectURL(url);
+    }, 100);
+    if (GW.showToast) GW.showToast(items.length + '건 다운로드됨', 'success', 2500);
+  }
+
+  function _updateReleaseSelectionCount() {
+    var checks = document.querySelectorAll('#releases-list .v3-release-check:checked');
+    var count = checks.length;
+    var label = document.getElementById('releases-selected-count');
+    if (label) label.textContent = '선택 ' + count + '건';
+    var btn = document.getElementById('releases-download-btn');
+    if (btn) btn.disabled = count === 0;
   }
 
   function _setupReleaseTabs() {
@@ -6983,6 +7121,29 @@
         }
       });
     });
+
+    // 다운로드 toolbar 핸들러 (toolbar 는 _renderReleases 가 노출).
+    var list = document.getElementById('releases-list');
+    if (list) {
+      list.addEventListener('change', function (e) {
+        var t = e.target;
+        if (t && t.classList && t.classList.contains('v3-release-check')) {
+          _updateReleaseSelectionCount();
+        }
+      });
+    }
+    var selectAll = document.getElementById('releases-select-all');
+    if (selectAll) {
+      selectAll.addEventListener('change', function () {
+        var checked = !!selectAll.checked;
+        document.querySelectorAll('#releases-list .v3-release-check').forEach(function (cb) {
+          cb.checked = checked;
+        });
+        _updateReleaseSelectionCount();
+      });
+    }
+    var dlBtn = document.getElementById('releases-download-btn');
+    if (dlBtn) dlBtn.addEventListener('click', _downloadSelectedReleases);
   }
 
   /* ══════════════════════════════════════════════════════════
