@@ -39,7 +39,7 @@ async function fetchHtml(url) {
     if (
       shared.status !== 200 ||
       /<title>\s*오류 안내/.test(shared.text) ||
-      !shared.text.includes(`property="og:url"         content="${shareUrl}"`)
+      !shared.text.includes(`property="og:url"         content="${canonicalUrl}"`)
     ) {
       issues.push({ id, kind: 'share', status: shared.status });
     }
