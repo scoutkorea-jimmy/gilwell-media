@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.120.01",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 21:06:32 KST",
+    "summary": "핫픽스: AI 채점 기록에 실행자(누가)·실행 시각·토큰 사용량 노출 + 누적 토큰 통계.",
+    "for_users": [
+      "AI 채점기록 패널에 누가 채점했는지(아이디)·언제 채점했는지·이번 채점이 토큰 몇 개를 썼는지가 행 한 줄에 함께 표시됩니다.",
+      "상단 통계 카드에 '누적 토큰 사용량'이 추가됐습니다. 평균 토큰/회도 함께 표시 — AI 비용 추정에 사용할 수 있습니다.",
+      "기존 기록은 모두 'admin' 으로만 남아있었습니다. 오늘 이후 새 채점부터는 실제 로그인한 운영자 아이디로 기록됩니다 (오너는 'owner', 멤버는 본인 username)."
+    ],
+    "for_developers": [
+      "functions/api/admin/score-article.js: logAiScore 의 entry.actor 가 'admin' 으로 하드코딩돼 있던 부분을 상위 스코프의 actor 변수(session.username || 'admin')로 교체. ai_usage_log 와 동일한 actor 값이 ai_score_log 에도 기록됨.",
+      "functions/api/admin/ai-score-history.js: stats 쿼리에 COALESCE(SUM(total_tokens), 0) AS total_tokens_sum + COALESCE(AVG(total_tokens), 0) AS avg_tokens 추가. 응답 stats 객체에 total_tokens_sum / avg_tokens 필드 노출.",
+      "js/admin-v3.js _renderAiScoreHistoryStats: '누적 토큰 사용량' stat card 추가 (총합 + 평균/회 라벨, ko-KR 천단위 구분).",
+      "js/admin-v3.js _renderAiScoreHistoryList: summary 라인에 actor pill (보라색 chip, legacy 기록은 '—') + tokens pill 추가. flex-wrap 적용해 좁은 폭에서도 깨지지 않음. detail meta 라인에는 '실행자: <strong>', '시각: <KST>' 두 항목 추가.",
+      "관리자 버전 03.120.00 → 03.120.01."
+    ]
+  },
+  {
     "version": "03.120.00",
     "date": "2026-05-24",
     "released_at": "2026-05-24 20:53:13 KST",

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.120.00
+ * Version: 03.120.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7663,10 +7663,17 @@
       return;
     }
     var dist = stats.grade_distribution || {};
+    var totalTokens = Number(stats.total_tokens_sum || 0);
+    var avgTokens = Number(stats.avg_tokens || 0);
+    var totalTokensFmt = totalTokens.toLocaleString('ko-KR');
     el.innerHTML =
       '<div class="v3-stat-card"><span class="v3-stat-label">총 채점 수</span><strong class="v3-stat-value">' + stats.total + '</strong></div>' +
       '<div class="v3-stat-card"><span class="v3-stat-label">평균 점수</span><strong class="v3-stat-value">' + stats.avg_score + ' / 100</strong></div>' +
       '<div class="v3-stat-card"><span class="v3-stat-label">평균 응답 시간</span><strong class="v3-stat-value">' + stats.avg_latency_ms + ' ms</strong></div>' +
+      '<div class="v3-stat-card"><span class="v3-stat-label">누적 토큰 사용량</span><strong class="v3-stat-value" style="font-size:15px;line-height:1.4;">' +
+        totalTokensFmt + ' tok' +
+        '<span style="display:block;font-size:11px;font-weight:400;opacity:0.7;margin-top:2px;">평균 ' + avgTokens.toLocaleString('ko-KR') + ' tok/회</span>' +
+      '</strong></div>' +
       '<div class="v3-stat-card"><span class="v3-stat-label">등급 분포</span><strong class="v3-stat-value" style="font-size:13px;line-height:1.4;">' +
         'S ' + (dist.S || 0) + ' · A ' + (dist.A || 0) + ' · B ' + (dist.B || 0) + ' · C ' + (dist.C || 0) + ' · D ' + (dist.D || 0) +
       '</strong></div>';
@@ -7686,13 +7693,23 @@
       var catHtml = (row.categories || []).map(function (c) {
         return '<span class="v3-ai-score-cat">' + GW.escapeHtml(c.label || '') + ' ' + (c.score != null ? c.score : '—') + '/' + (c.max != null ? c.max : '—') + '</span>';
       }).join('');
+      var actor = String(row.actor || '').trim();
+      var actorHtml = actor
+        ? '<span class="v3-ai-score-actor" style="font-size:12px;color:var(--v3-text-d,#1f1f1f);background:rgba(98,37,153,0.08);border:1px solid rgba(98,37,153,0.18);padding:2px 8px;border-radius:999px;white-space:nowrap;" title="채점 실행자">' + GW.escapeHtml(actor) + '</span>'
+        : '<span class="v3-ai-score-actor" style="font-size:12px;color:var(--v3-muted);" title="실행자 미기록 (legacy 기록)">—</span>';
+      var tokens = Number(row.total_tokens || 0);
+      var tokensHtml = tokens > 0
+        ? '<span class="v3-ai-score-tokens" style="font-size:12px;color:var(--v3-muted);font-variant-numeric:tabular-nums;" title="이번 채점에 사용된 추정 토큰">' + tokens.toLocaleString('ko-KR') + ' tok</span>'
+        : '';
       return '' +
         '<details class="v3-ai-score-row" style="border-bottom:1px solid var(--v3-border,#eee);padding:12px 4px;">' +
-          '<summary style="display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;">' +
+          '<summary style="display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;flex-wrap:wrap;">' +
             '<span class="v3-ai-score-grade" style="min-width:44px;text-align:center;font-weight:700;color:' + gradeColor + ';border:1px solid ' + gradeColor + ';padding:3px 8px;">' + GW.escapeHtml(grade) + '</span>' +
             '<span class="v3-ai-score-score" style="min-width:72px;font-variant-numeric:tabular-nums;color:' + gradeColor + ';">' + score + ' / 100</span>' +
-            '<span class="v3-ai-score-title" style="flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + GW.escapeHtml(row.input_title || '(제목 없음)') + '</span>' +
-            '<span class="v3-ai-score-time" style="color:var(--v3-muted);font-size:12px;font-variant-numeric:tabular-nums;">' + GW.escapeHtml(row.created_at_kst || '') + '</span>' +
+            '<span class="v3-ai-score-title" style="flex:1 1 200px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + GW.escapeHtml(row.input_title || '(제목 없음)') + '</span>' +
+            actorHtml +
+            tokensHtml +
+            '<span class="v3-ai-score-time" style="color:var(--v3-muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;">' + GW.escapeHtml(row.created_at_kst || '') + '</span>' +
           '</summary>' +
           '<div style="padding:12px 4px 4px;display:grid;gap:10px;">' +
             (row.overall_summary ? '<div><strong style="font-size:12px;opacity:0.65;">요약</strong><div style="margin-top:4px;">' + GW.escapeHtml(row.overall_summary) + '</div></div>' : '') +
@@ -7700,10 +7717,12 @@
             (row.improvement ? '<div style="border-left:3px solid #0094B4;background:rgba(0,148,180,0.06);padding:10px 12px;"><strong>개선 방향</strong><p style="margin:6px 0 0;">' + GW.escapeHtml(row.improvement) + '</p></div>' : '') +
             (row.revision_suggestion ? '<div style="border-left:3px solid #248737;background:rgba(36,135,55,0.06);padding:10px 12px;"><strong>✏️ 수정 제안 <span style="font-weight:400;opacity:0.6;font-size:11px;">· 약 300자</span></strong><p style="margin:6px 0 0;">' + GW.escapeHtml(row.revision_suggestion) + '</p></div>' : '') +
             '<div style="display:flex;gap:16px;font-size:12px;color:var(--v3-muted);flex-wrap:wrap;">' +
+              '<span>실행자: <strong style="color:var(--v3-text-d,#1f1f1f);">' + GW.escapeHtml(actor || '—') + '</strong></span>' +
+              '<span>시각: ' + GW.escapeHtml(row.created_at_kst || '—') + ' KST</span>' +
               '<span>본문 ' + (row.input_body_chars || 0) + '자</span>' +
               '<span>태그: ' + GW.escapeHtml(row.input_tags || '—') + '</span>' +
               '<span>응답 ' + (row.latency_ms || 0) + 'ms</span>' +
-              '<span>추정 토큰 ' + (row.total_tokens || 0) + '</span>' +
+              '<span>추정 토큰 ' + tokens.toLocaleString('ko-KR') + '</span>' +
             '</div>' +
           '</div>' +
         '</details>';

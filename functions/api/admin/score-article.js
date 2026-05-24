@@ -241,8 +241,10 @@ Tags: ${tags || '(없음)'}
   });
 
   // 채점 상세 결과는 별도 ai_score_log에 축약 저장 — /api/admin/ai-score-history가 소비.
+  // actor 는 상위 스코프 변수(session.username || 'admin') — 누가 채점했는지
+  // 운영 추적 가능하도록 'admin' 하드코딩을 걷어냄.
   const scoreLogEntry = {
-    actor: 'admin',
+    actor,
     ip,
     inputTitle: title,
     inputSubtitle: subtitle,

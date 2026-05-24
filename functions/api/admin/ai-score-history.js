@@ -77,7 +77,9 @@ export async function onRequestGet({ request, env }) {
           SUM(CASE WHEN overall_grade = 'B' THEN 1 ELSE 0 END) AS grade_b,
           SUM(CASE WHEN overall_grade = 'C' THEN 1 ELSE 0 END) AS grade_c,
           SUM(CASE WHEN overall_grade = 'D' THEN 1 ELSE 0 END) AS grade_d,
-          COALESCE(AVG(latency_ms), 0) AS avg_latency_ms
+          COALESCE(AVG(latency_ms), 0) AS avg_latency_ms,
+          COALESCE(SUM(total_tokens), 0) AS total_tokens_sum,
+          COALESCE(AVG(total_tokens), 0) AS avg_tokens
          FROM ai_score_log`
       ).first(),
     ]);
@@ -128,6 +130,8 @@ export async function onRequestGet({ request, env }) {
           D: Number(stats?.grade_d || 0),
         },
         avg_latency_ms: Math.round(Number(stats?.avg_latency_ms || 0)),
+        total_tokens_sum: Number(stats?.total_tokens_sum || 0),
+        avg_tokens: Math.round(Number(stats?.avg_tokens || 0)),
       },
       generated_at: Math.floor(Date.now() / 1000),
     });
