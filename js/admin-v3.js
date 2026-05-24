@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.117.00
+ * Version: 03.118.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -6864,7 +6864,10 @@
     el.innerHTML = filtered.map(function (item) {
       var type = _inferReleaseType(item);
       var badge = typeClass[type] || 'v3-badge-gray';
-      var changeItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
+      var forUsers = Array.isArray(item.for_users) ? item.for_users : [];
+      var forDevelopers = Array.isArray(item.for_developers) ? item.for_developers : [];
+      var hasNewFormat = forUsers.length > 0 || forDevelopers.length > 0;
+      var legacyChanges = Array.isArray(item.items) ? item.items : (Array.isArray(item.changes) ? item.changes : []);
       var issueItems = Array.isArray(item.issues) ? item.issues : [];
       var s = _inferReleaseScope(item);
       var releaseDateText = item.released_at || item.date || '';
@@ -6877,6 +6880,29 @@
             }).join('') + '</ul>' +
           '</div>'
         : '';
+      var sectionsHtml = '';
+      if (hasNewFormat) {
+        if (forUsers.length) {
+          sectionsHtml += '<div class="v3-release-section v3-release-section-users">' +
+            '<div class="v3-release-section-title">비개발자용 — 방향성 · 진행사항</div>' +
+            '<ul class="v3-release-items">' + forUsers.map(function (c) {
+              return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+            }).join('') + '</ul>' +
+          '</div>';
+        }
+        if (forDevelopers.length) {
+          sectionsHtml += '<details class="v3-release-section v3-release-section-devs">' +
+            '<summary class="v3-release-section-title">개발자용 — 기술 상세 (펼치기)</summary>' +
+            '<ul class="v3-release-items">' + forDevelopers.map(function (c) {
+              return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+            }).join('') + '</ul>' +
+          '</details>';
+        }
+      } else if (legacyChanges.length) {
+        sectionsHtml += '<ul class="v3-release-items">' + legacyChanges.map(function (c) {
+          return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+        }).join('') + '</ul>';
+      }
       return '<div class="v3-card v3-release-card">' +
         '<div class="v3-release-head">' +
           '<div class="v3-release-head-main">' +
@@ -6888,9 +6914,7 @@
         '</div>' +
         '<p class="v3-release-summary">' + GW.escapeHtml(item.summary || '') + '</p>' +
         issueHtml +
-        (changeItems.length ? '<ul class="v3-release-items">' + changeItems.map(function (c) {
-          return '<li>' + GW.escapeHtml(c) + '</li>';
-        }).join('') + '</ul>' : '') +
+        sectionsHtml +
       '</div>';
     }).join('');
   }

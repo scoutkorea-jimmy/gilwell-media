@@ -1414,6 +1414,39 @@ mark.kms-highlight {
   color: #831843;
   line-height: 1.65;
 }
+.kms-cl-section {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(98, 37, 153, 0.08);
+}
+.kms-cl-section-users {
+  background: rgba(240, 253, 244, 0.85);
+  border-color: rgba(36, 135, 55, 0.14);
+}
+.kms-cl-section-devs {
+  background: rgba(247, 247, 248, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.kms-cl-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2d2a26;
+  margin-bottom: 6px;
+}
+.kms-cl-section-devs > .kms-cl-section-title {
+  cursor: pointer;
+  color: #5b544c;
+  user-select: none;
+}
+.kms-cl-section-devs[open] > .kms-cl-section-title {
+  color: #2d2a26;
+  margin-bottom: 8px;
+}
+.kms-cl-section .kms-cl-changes {
+  margin-top: 4px;
+}
 
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width: 900px) {

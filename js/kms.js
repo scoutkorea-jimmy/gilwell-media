@@ -1353,13 +1353,34 @@
       var releaseScope = inferChangelogScope(item);
       var scopeLabel = changelogScopeLabel(releaseScope);
       var releaseDateText = String(item.released_at || item.date || '');
-      var changesList = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
+      var forUsers = Array.isArray(item.for_users) ? item.for_users : [];
+      var forDevelopers = Array.isArray(item.for_developers) ? item.for_developers : [];
+      var hasNewFormat = forUsers.length > 0 || forDevelopers.length > 0;
+      var legacyChanges = (Array.isArray(item.items) ? item.items : Array.isArray(item.changes) ? item.changes : []);
       var issueList = Array.isArray(item.issues) ? item.issues : [];
-      var changesHtml = changesList.length
-        ? '<ul class="kms-cl-changes">' + changesList.map(function (c) {
-            return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
-          }).join('') + '</ul>'
-        : '';
+      var sectionsHtml = '';
+      if (hasNewFormat) {
+        if (forUsers.length) {
+          sectionsHtml += '<div class="kms-cl-section kms-cl-section-users">' +
+            '<div class="kms-cl-section-title">비개발자용 — 방향성 · 진행사항</div>' +
+            '<ul class="kms-cl-changes">' + forUsers.map(function (c) {
+              return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+            }).join('') + '</ul>' +
+          '</div>';
+        }
+        if (forDevelopers.length) {
+          sectionsHtml += '<details class="kms-cl-section kms-cl-section-devs">' +
+            '<summary class="kms-cl-section-title">개발자용 — 기술 상세 (펼치기)</summary>' +
+            '<ul class="kms-cl-changes">' + forDevelopers.map(function (c) {
+              return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+            }).join('') + '</ul>' +
+          '</details>';
+        }
+      } else if (legacyChanges.length) {
+        sectionsHtml += '<ul class="kms-cl-changes">' + legacyChanges.map(function (c) {
+          return '<li>' + GW.escapeHtml(String(c || '')) + '</li>';
+        }).join('') + '</ul>';
+      }
       var issueHtml = issueList.length
         ? '<div class="kms-cl-issues-wrap">' +
             '<div class="kms-cl-issues-title">정상이어야 했지만 실제로 작동하지 않았던 항목</div>' +
@@ -1380,7 +1401,7 @@
         '</div>' +
         '<p class="kms-cl-summary">' + GW.escapeHtml(String(item.summary || '')) + '</p>' +
         issueHtml +
-        changesHtml +
+        sectionsHtml +
         '</article>';
     }).join('');
 

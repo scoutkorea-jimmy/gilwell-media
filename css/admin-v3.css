@@ -3607,6 +3607,39 @@ body.marketing-fullscreen-open { overflow: hidden; }
   margin: 0;
   padding-left: var(--v3-gap-lg);
 }
+.v3-release-section {
+  margin: 0 0 var(--v3-gap-sm);
+  padding: var(--v3-gap-sm) var(--gap-element);
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(98, 37, 153, 0.08);
+}
+.v3-release-section-users {
+  background: rgba(240, 253, 244, 0.85);
+  border-color: rgba(36, 135, 55, 0.12);
+}
+.v3-release-section-devs {
+  background: rgba(247, 247, 248, 0.85);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+.v3-release-section-title {
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  color: var(--v3-text-d);
+  margin-bottom: 6px;
+}
+.v3-release-section-devs > .v3-release-section-title {
+  cursor: pointer;
+  color: var(--v3-text-m);
+  user-select: none;
+}
+.v3-release-section-devs[open] > .v3-release-section-title {
+  color: var(--v3-text-d);
+  margin-bottom: 8px;
+}
+.v3-release-section .v3-release-items {
+  margin-top: 4px;
+}
 .v3-release-issues li {
   font-size: var(--fs-caption);
   color: var(--v3-ink-danger-deep);

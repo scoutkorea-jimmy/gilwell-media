@@ -244,18 +244,22 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 
 ### Changelog (data/changelog.json)
 
-**엔트리 포맷** (`data/changelog.json` → `items[]` 맨 앞에 prepend):
+**엔트리 포맷** (`data/changelog.json` → `items[]` 맨 앞에 prepend) — **3섹션 구조 (2026-05-24+)**:
 
 ```json
 {
-  "version": "00.113.22",
-  "date": "2026-04-18",
-  "released_at": "2026-04-18 14:55:51 KST",
+  "version": "00.145.00",
+  "date": "2026-05-24",
+  "released_at": "2026-05-24 12:00:00 KST",
   "summary": "한 줄 요약 (왜 바꿨는지 중심).",
-  "changes": [
-    "구체적 변경 1 (어떤 파일·모듈이 어떻게 바뀌었는지, 가능하면 수치 포함).",
-    "구체적 변경 2.",
-    "사이트 버전 00.113.21 → 00.113.22."
+  "for_users": [
+    "비개발자 관점 변경 1 — 무엇이 달라졌고 어떤 가치가 있는지, 방향성·진행사항 위주.",
+    "비개발자 관점 변경 2."
+  ],
+  "for_developers": [
+    "기술 상세 1 — 파일·함수·테이블·API·코드 컨텍스트.",
+    "기술 상세 2.",
+    "사이트 버전 00.144.00 → 00.145.00."
   ]
 }
 ```
@@ -264,14 +268,20 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 - `version` — `VERSION` 또는 `ADMIN_VERSION` 문자열과 **정확히 일치** (v prefix 없이)
 - `date` — `YYYY-MM-DD` (KST 기준)
 - `released_at` — `YYYY-MM-DD HH:MM:SS KST`
-- `summary` — 한국어 1문장. 사용자·운영자 관점에서 무엇이 달라졌는지
-- `changes[]` — 상세 변경 목록. 마지막 항목에 버전 번호 전이를 명시
+- `summary` — 한국어 1문장. 비개발자도 이해 가능한 톤
+- `for_users[]` — 비개발자용. 방향성·진행사항·UX 변경. 빈 배열이어도 키는 항상 포함
+- `for_developers[]` — 개발자용. 파일·함수·DB·코드 디테일. **렌더러에서 `<details>` 로 기본 접힘**. 마지막 항목에 버전 번호 전이 명시
 
 **작성 원칙:**
-1. **사용자 관점으로 기술** — 내부 리팩터도 "어떤 문제를 해결하는가"로 표현
-2. **수치·이름 포함** — 명암비, 변경된 파일 수, 비교 값 등 검증 가능한 지표를 포함
+1. **두 독자를 분리** — `for_users` 는 "왜 / 무엇이 달라졌는지" 만 (파일명 금지), `for_developers` 는 "어디를 어떻게" (파일/함수/응답코드 포함)
+2. **수치·이름 포함 (for_developers)** — 명암비, 변경된 파일 수, 비교 값 등 검증 가능한 지표
 3. **버전 bump 둘 다면 엔트리도 둘** — 사이트·관리자 각각 독립된 엔트리 (같은 `released_at` 공유 OK)
-4. **최신이 맨 위** — `items[]`에 prepend. 기존 순서 보존
+4. **최신이 맨 위** — `items[]` 에 prepend. 기존 순서 보존
+5. **legacy 엔트리는 그대로** — 03.117.00 이전 `changes[]` / `items[]` 엔트리는 수정하지 않음. 렌더러가 자동 fallback 처리
+
+**렌더러 위치:**
+- 관리자 KMS 뷰: [js/admin-v3.js](js/admin-v3.js) `_renderReleases`
+- 공개 KMS 뷰: [js/kms.js](js/kms.js) `renderChangelog`
 
 ### Release & Deploy Flow (Site / Admin / KMS)
 
