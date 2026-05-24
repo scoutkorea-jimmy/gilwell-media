@@ -26,7 +26,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     return json({ error: 'AI 채점 권한이 없습니다.' }, 403);
   }
 
-  const actor = session.username || 'admin';
+  const actor = session.username || 'unknown';
 
   if (!env.AI) {
     return json({ error: 'Workers AI 바인딩이 설정되지 않았습니다. Cloudflare Pages 대시보드에서 AI 바인딩을 추가해주세요.' }, 503);

@@ -67,6 +67,13 @@ export async function onRequestGet({ request, env }) {
   const isAdmin = adminScopeRequested && token
     ? await verifyTokenRole(token, env, 'full').catch(() => false)
     : false;
+  // includeDwell: 평균 체류 시간(avg_dwell_seconds) 노출 권한.
+  // isAdmin('full' 전용) 보다 더 넓게 — 멤버 토큰('member')도 게시글 목록
+  // 패널에 들어왔다면(=view:list 권한 통과) 운영 데이터 일관성 위해 dwell 함께 응답.
+  // 비공개 글 SELECT 등 다른 admin 전용 기능은 isAdmin 게이트 그대로 유지.
+  const includeDwell = adminScopeRequested && token
+    ? (isAdmin || await verifyTokenRole(token, env, ['full', 'member']).catch(() => false))
+    : false;
 
   // Search-heavy workload rate limit (non-admins only). We cap at 30 searches
   // per IP per minute — generous for humans, painful for abusive scrapers.
@@ -136,7 +143,7 @@ export async function onRequestGet({ request, env }) {
     youtube_url,
     ${searchScoreExpr} AS search_score,
     ${popularityScoreExpr} AS popularity_score,
-    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes${isAdmin ? ',\n    (SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds' : ''}`;
+    (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes${includeDwell ? ',\n    (SELECT ROUND(AVG(engaged_seconds), 1) FROM post_engagement WHERE post_id = posts.id) AS avg_dwell_seconds' : ''}`;
 
   try {
     // Build WHERE conditions dynamically
@@ -351,7 +358,7 @@ export async function onRequestPost({ request, env }) {
         channel: 'admin',
         type: 'post_created',
         level: 'info',
-        actor: (session.username || safeAuthor || 'admin'),
+        actor: (session.username || safeAuthor || 'unknown'),
         path: '/api/posts',
         message: '게시글 생성 · ' + String(insertedPost.title || ''),
         details: {

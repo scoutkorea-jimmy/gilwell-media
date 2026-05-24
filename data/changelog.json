@@ -1,6 +1,39 @@
 {
   "items": [
   {
+    "version": "00.146.01",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 21:21:47 KST",
+    "summary": "관리자 게시글 생성·수정·상태변경·삭제 실행자(actor) 기록을 'admin' 하드코딩에서 실제 운영자 username 으로 통일.",
+    "for_users": [
+      "관리자 운영 로그(operational_events)에 누가 글을 만들고/수정/상태변경/삭제했는지 실제 본인 아이디로 남게 됐습니다. 이전에는 모두 'admin' 또는 글 저자 이름으로 보였습니다.",
+      "오늘 이전 기록은 그대로 — 새 활동부터 본인 아이디(오너는 'owner', 멤버는 본인 username)로 적힙니다."
+    ],
+    "for_developers": [
+      "functions/api/posts/[id].js PUT post_updated: actor 를 (session.username || updatedPost.author || 'unknown') 으로 — 글 저자(Editor.X) fallback 유지하되 운영자 username 우선.",
+      "functions/api/posts/[id].js PATCH post_status_changed: 동일 패턴.",
+      "functions/api/posts/[id].js DELETE post_deleted: loadAdminSession 추가 호출 후 actor 를 (session.username || 'unknown'). 'admin' 하드코딩 제거.",
+      "functions/api/posts/index.js POST post_created: actor fallback chain 마지막을 'admin' → 'unknown' 으로 정비.",
+      "사이트 버전 00.146.00 → 00.146.01."
+    ]
+  },
+  {
+    "version": "03.120.02",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 21:21:47 KST",
+    "summary": "핫픽스: 게시글 목록의 평균 체류 시간이 멤버 계정에서 표시 안 되던 회귀 + AI 채점 실행자 fallback 정비.",
+    "for_users": [
+      "게시글 목록 표의 '평균 체류' 컬럼이 오너뿐 아니라 멤버 계정에서도 정상적으로 표시됩니다. 이전에는 멤버 토큰으로 호출할 때 컬럼이 비어 보였습니다.",
+      "AI 채점 실행자 기록의 fallback 값이 'admin' 에서 'unknown' 으로 바뀝니다 (실제로는 거의 발생하지 않지만 안전망)."
+    ],
+    "for_developers": [
+      "functions/api/posts/index.js: isAdmin('full' 전용) 옆에 includeDwell 변수 신설. includeDwell = adminScopeRequested && token && (isAdmin || verifyTokenRole(token, env, ['full','member'])). avg_dwell_seconds SELECT 게이트를 isAdmin → includeDwell 로 교체. 비공개 글 필터·페이지네이션·정렬 등 다른 admin 기능은 isAdmin 그대로.",
+      "functions/api/admin/score-article.js: const actor = session.username || 'admin' → 'unknown'. logAiScore + ai_usage_log 양쪽 동일 actor 변수 사용 중이라 한 곳 변경으로 둘 다 정비.",
+      "관리자 버전 03.120.01 → 03.120.02.",
+      "Dreampath / settings change history (recordSettingChange) 등 남은 'admin' 하드코딩은 별도 PR(마이그레이션 + 21개 settings 일괄)로 진행 예정."
+    ]
+  },
+  {
     "version": "03.120.01",
     "date": "2026-05-24",
     "released_at": "2026-05-24 21:06:32 KST",

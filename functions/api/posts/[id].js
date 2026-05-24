@@ -328,7 +328,7 @@ export async function onRequestPut({ params, request, env }) {
         channel: 'admin',
         type: 'post_updated',
         level: 'info',
-        actor: String(updatedPost.author || 'admin'),
+        actor: (session && session.username) || String(updatedPost.author || 'unknown'),
         path: '/api/posts/' + id,
         message: '게시글 수정 · ' + String(updatedPost.title || ''),
         details: {
@@ -466,7 +466,7 @@ export async function onRequestPatch({ params, request, env }) {
         channel: 'admin',
         type: 'post_status_changed',
         level: 'info',
-        actor: String(updatedPost.author || 'admin'),
+        actor: (session && session.username) || String(updatedPost.author || 'unknown'),
         path: '/api/posts/' + id,
         message: (summary.join(' · ') || '게시글 상태 변경') + ' · ' + String(updatedPost.title || ''),
         details: {
@@ -500,6 +500,9 @@ export async function onRequestDelete({ params, request, env }) {
   if (!token || !(await verifyTokenRole(token, env, 'full'))) {
     return json({ error: '인증이 필요합니다. 다시 로그인해주세요.' }, 401);
   }
+  // operational_events 의 actor 를 'admin' 하드코딩이 아니라 실제 운영자 username 으로
+  // 기록하기 위해 session 을 추가로 로드 (token 검증과 별개로 username/uid 확인용).
+  const session = await loadAdminSession(request, env);
 
   const id = parseId(params.id);
   if (id === null) return json({ error: '유효하지 않은 게시글 ID입니다' }, 400);
@@ -533,7 +536,7 @@ export async function onRequestDelete({ params, request, env }) {
       channel: 'admin',
       type: 'post_deleted',
       level: 'warn',
-      actor: 'admin',
+      actor: (session && session.username) || 'unknown',
       path: '/api/posts/' + id,
       message: '게시글 삭제 · ' + String(existing && existing.category || '') + ' · #' + String(id),
       details: {
