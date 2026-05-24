@@ -2303,8 +2303,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 14px 0 var(--gap-card);
 }
 
-#latest-list .post-kicker-new { display: none; }
-
 #latest-list .mini-item-row {
   width: 100%;
   min-height: 0;

@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.146.05",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 05:09:48 KST",
+    "summary": "홈 최신 소식 영역에서 신규 기사 NEW 강조 배지가 다시 보이도록 복구.",
+    "for_users": [
+      "홈페이지 최신 소식 목록에서 오늘 공개된 기사에 NEW 배지가 다시 표시됩니다.",
+      "새 글을 일부러 강조해 보이도록 했던 운영 의도가 홈 화면에서도 유지됩니다."
+    ],
+    "for_developers": [
+      "css/style.css: #latest-list .post-kicker-new { display: none; } 규칙 제거. js/home-helpers.js buildMiniLabels()가 생성하는 NEW chip이 홈 최신 소식에서도 그대로 노출됨.",
+      "기존 .post-kicker-new 스타일(brand fire-red 배경, white text, pulse animation, prefers-reduced-motion 대응)은 유지.",
+      "사이트 버전 00.146.04 → 00.146.05."
+    ]
+  },
+  {
     "version": "00.146.04",
     "date": "2026-05-25",
     "released_at": "2026-05-25 05:04:12 KST",
