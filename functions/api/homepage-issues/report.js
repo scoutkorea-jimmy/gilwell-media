@@ -106,13 +106,15 @@ export async function onRequestPost({ request, env }) {
   }
 
   const detail = sanitizeDetail(body && body.detail);
+  const sourcePath = normalizeSourcePath(template.source_path, detail);
+  const severity = await resolveSeverity(env, code, template, sourcePath);
   const item = await recordHomepageIssue(env, {
     title: template.title,
     issue_type: template.issue_type,
     status: template.status,
-    severity: template.severity,
+    severity,
     area: template.area,
-    source_path: normalizeSourcePath(template.source_path, detail),
+    source_path: sourcePath,
     summary: buildSummary(template.title, detail),
     impact: template.impact,
     cause: buildCause(detail),
@@ -200,6 +202,37 @@ function trim(value, max) {
 
 function nowUtcText() {
   return new Date().toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// 단발성 네트워크 단절은 사용자 새로고침으로 자연 복구되는 transient 이벤트.
+// 동일 source_path 가 최근 10분 내 누적 occurrence_count >= 3 일 때만 'high' 로
+// escalate; 그 외에는 첫 보고를 'medium' 으로 강등해 알람 잡음을 막는다.
+// home_initial_fetch_failed 와 home_client_runtime_error 가 대상.
+const TRANSIENT_DOWNGRADE_CODES = new Set([
+  'home_initial_fetch_failed',
+  'home_client_runtime_error',
+]);
+
+async function resolveSeverity(env, code, template, sourcePath) {
+  const baseSeverity = template.severity;
+  if (!TRANSIENT_DOWNGRADE_CODES.has(code)) return baseSeverity;
+  if (baseSeverity !== 'high') return baseSeverity;
+  try {
+    const row = await env.DB.prepare(
+      `SELECT occurrence_count
+         FROM homepage_issues
+        WHERE status IN ('open','monitoring')
+          AND source_path = ?
+          AND datetime(last_seen_at) > datetime('now', '-10 minutes')
+        ORDER BY datetime(updated_at) DESC
+        LIMIT 1`
+    ).bind(sourcePath).first();
+    const recentCount = (row && Number(row.occurrence_count)) || 0;
+    // recentCount 는 다음 dedup 이전 직전까지의 카운트. +1 = 이번 보고 포함.
+    return (recentCount + 1) >= 3 ? 'high' : 'medium';
+  } catch (_) {
+    return baseSeverity;
+  }
 }
 
 function json(data, status = 200) {

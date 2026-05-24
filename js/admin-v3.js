@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.118.00
+ * Version: 03.119.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2595,7 +2595,15 @@
       _refreshDraftListCache().catch(function () {});
     }).catch(function (err) {
       console.error('draft save failed:', err);
-      _setDraftStatus('dirty', '저장 실패 — 잠시 후 다시 시도');
+      // 서버가 명시적 사용자 메시지를 준 경우 (이미지 업로드 실패 등) 토스트로 표면화.
+      // _apiFetch 가 401/403/429 는 자체 처리하므로 여기로 들어오는 4xx 는 알릴 가치 있음.
+      var isImageFailure = err && err.status === 400 && err.data && err.data.code === 'IMAGE_UPLOAD_FAILED';
+      if (isImageFailure && GW.showToast) {
+        GW.showToast(err.message || '이미지 업로드 실패', 'error', 6000);
+        _setDraftStatus('dirty', '이미지 업로드 실패 — 이미지 정리 후 다시 시도');
+      } else {
+        _setDraftStatus('dirty', '저장 실패 — 잠시 후 다시 시도');
+      }
     }).finally(function () {
       _draftSaveInflight = false;
       if (_draftSavePending) {

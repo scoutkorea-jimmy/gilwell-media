@@ -1,6 +1,36 @@
 {
   "items": [
   {
+    "version": "00.146.00",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 20:23:43 KST",
+    "summary": "안정성 2차: 홈 'Failed to fetch' 단발 알람 잡음 차단.",
+    "for_users": [
+      "홈에서 잠깐 인터넷이 끊겼다가 복구되는 정도의 단발성 실패는 'medium' 으로 분류돼 운영 알람을 흔들지 않습니다. 같은 증상이 10분 안에 3회 이상 누적될 때만 'high' 로 격상돼 진짜 사고와 잡음을 구분합니다."
+    ],
+    "for_developers": [
+      "functions/api/homepage-issues/report.js: resolveSeverity() 신설. TRANSIENT_DOWNGRADE_CODES = { home_initial_fetch_failed, home_client_runtime_error } 에 대해 동일 source_path가 최근 10분 내 누적 occurrence_count >= 3 일 때만 'high' 유지, 아니면 'medium' 으로 강등. recordHomepageIssue 의 pickHigherSeverity 와 결합해 자연스럽게 escalate 됨.",
+      "사이트 버전 00.145.00 → 00.146.00."
+    ]
+  },
+  {
+    "version": "03.119.00",
+    "date": "2026-05-24",
+    "released_at": "2026-05-24 20:23:43 KST",
+    "summary": "안정성 2차: drafts cleanup cron 분리 + drafts 이미지 업로드 실패 시 구체 메시지.",
+    "for_users": [
+      "임시저장 자동 정리(14일 초과 글 삭제)가 publish-due 와 별개 worker 로 15분마다 독립 실행됩니다. 한쪽이 망가져도 다른 쪽이 계속 정리하므로 임시저장 슬롯이 무한 누적되지 않습니다.",
+      "임시저장 도중 이미지 업로드가 실패하면 '대표 이미지 업로드 실패…' / '갤러리 N번째 이미지 업로드 실패…' 같은 구체적 토스트가 뜹니다. 이전에는 'API 오류' 만 보였습니다. 해당 이미지를 빼거나 크기를 줄여 다시 시도하세요."
+    ],
+    "for_developers": [
+      "workers/cleanup-drafts-scheduler.js + wrangler.cleanup-drafts.toml 신설: 별도 worker gilwell-media-cleanup-drafts, cron */15. scripts/deploy_production.sh 에 wrangler deploy --config 라인 추가. publish-due-scheduler.js 의 piggyback 은 safety net 으로 유지 (drafts 삭제는 idempotent).",
+      "functions/api/admin/drafts.js: DraftImageUploadError 클래스 신설 + export. normalizeDraftFields() 안의 storeDataImage() 호출을 try/catch 로 감싸 cover/gallery 슬롯별로 throw. POST 핸들러는 catch (err instanceof DraftImageUploadError) → 400 { error, slot, code: 'IMAGE_UPLOAD_FAILED' } 반환.",
+      "functions/api/admin/drafts/[id].js PUT: 동일한 try/catch 로직 적용.",
+      "js/admin-v3.js _saveDraftNow().catch(): err.status === 400 && err.data.code === 'IMAGE_UPLOAD_FAILED' 이면 GW.showToast(err.message, 'error', 6000) + draft status 'dirty' 로 별도 메시지.",
+      "관리자 버전 03.118.00 → 03.119.00."
+    ]
+  },
+  {
     "version": "03.118.00",
     "date": "2026-05-24",
     "released_at": "2026-05-24 20:05:19 KST",

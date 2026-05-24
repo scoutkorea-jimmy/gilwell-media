@@ -1,8 +1,9 @@
+// publish-due는 매 5분 cron. cleanup-drafts는 별도 worker
+// (gilwell-media-cleanup-drafts, wrangler.cleanup-drafts.toml, */15 cron)로 분리됨.
+// 단, safety net으로 여기서도 piggyback 호출 — drafts 삭제는 idempotent(같은 14d+ row를
+// 두 worker가 동시 삭제해도 결과 같음)라서 한쪽이 망가져도 다른 쪽이 계속 정리.
 export default {
   async scheduled(_controller, env, ctx) {
-    // publish-due는 매 tick(5분). drafts cleanup은 가벼우니 같이 piggyback —
-    // GET /api/admin/drafts에서도 lazy 정리되지만, 운영자가 며칠 admin 안 열면
-    // row가 누적되므로 cron으로 강제 청소한다.
     ctx.waitUntil(Promise.allSettled([
       runJob(env, '/api/jobs/publish-due', 'publish-due'),
       runJob(env, '/api/jobs/cleanup-drafts', 'cleanup-drafts'),

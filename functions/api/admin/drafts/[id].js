@@ -8,7 +8,7 @@
  */
 
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
-import { normalizeDraftFields, serializeDraft, getOwnerCode } from '../drafts.js';
+import { normalizeDraftFields, serializeDraft, getOwnerCode, DraftImageUploadError } from '../drafts.js';
 
 export async function onRequestPut({ params, request, env }) {
   const gate = await gateMenuAccess(request, env, 'write', 'write');
@@ -29,7 +29,15 @@ export async function onRequestPut({ params, request, env }) {
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
   const origin = new URL(request.url).origin;
-  const fields = await normalizeDraftFields(body, env, origin);
+  let fields;
+  try {
+    fields = await normalizeDraftFields(body, env, origin);
+  } catch (err) {
+    if (err instanceof DraftImageUploadError) {
+      return json({ error: err.message, slot: err.slot, code: 'IMAGE_UPLOAD_FAILED' }, 400);
+    }
+    throw err;
+  }
 
   try {
     await env.DB.prepare(

@@ -21,6 +21,15 @@ import { storeDataImage, upgradeEditorContentImages, hasPostImageBucket } from '
 const MAX_DRAFTS_PER_OWNER = 10;
 const TTL_DAYS = 14;
 
+// normalizeDraftFields 에서 R2 업로드 실패 시 던져 POST/PUT 핸들러가 400 으로 변환.
+export class DraftImageUploadError extends Error {
+  constructor(message, slot) {
+    super(message);
+    this.name = 'DraftImageUploadError';
+    this.slot = slot; // 'cover' | 'gallery'
+  }
+}
+
 export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'write', 'view');
   if (gate) return gate;
@@ -63,7 +72,15 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
 
   const origin = new URL(request.url).origin;
-  const fields = await normalizeDraftFields(body, env, origin);
+  let fields;
+  try {
+    fields = await normalizeDraftFields(body, env, origin);
+  } catch (err) {
+    if (err instanceof DraftImageUploadError) {
+      return json({ error: err.message, slot: err.slot, code: 'IMAGE_UPLOAD_FAILED' }, 400);
+    }
+    throw err;
+  }
 
   try {
     // 11번째 슬롯 진입 시 가장 오래된 1건 삭제 (LRU).
@@ -127,8 +144,15 @@ export async function normalizeDraftFields(body, env, origin) {
   let imageUrl = String(raw.image_url || '').trim();
   if (imageUrl.startsWith('data:image/')) {
     if (hasPostImageBucket(env)) {
-      const stored = await storeDataImage(env, imageUrl, origin, 'draft-cover');
-      imageUrl = stored.url || '';
+      try {
+        const stored = await storeDataImage(env, imageUrl, origin, 'draft-cover');
+        imageUrl = stored.url || '';
+      } catch (err) {
+        throw new DraftImageUploadError(
+          '대표 이미지 업로드에 실패했습니다. 이미지 크기를 줄이거나 잠시 후 다시 시도해주세요.',
+          'cover'
+        );
+      }
     } else {
       // R2 미구성 — 짧으면(<512KB) 그냥 저장, 크면 비움 (D1 1MB cell 안전).
       if (imageUrl.length > 512 * 1024) imageUrl = '';
@@ -139,13 +163,22 @@ export async function normalizeDraftFields(body, env, origin) {
   let galleryJson = '';
   if (Array.isArray(raw.gallery_images)) {
     const normalized = [];
+    let galleryIndex = 0;
     for (const item of raw.gallery_images.slice(0, 10)) {
+      galleryIndex += 1;
       if (!item || typeof item !== 'object') continue;
       let url = String(item.url || '').trim();
       if (url.startsWith('data:image/')) {
         if (hasPostImageBucket(env)) {
-          const stored = await storeDataImage(env, url, origin, 'draft-gallery');
-          url = stored.url || '';
+          try {
+            const stored = await storeDataImage(env, url, origin, 'draft-gallery');
+            url = stored.url || '';
+          } catch (err) {
+            throw new DraftImageUploadError(
+              `갤러리 ${galleryIndex}번째 이미지 업로드에 실패했습니다. 해당 이미지를 빼거나 크기를 줄여 다시 시도해주세요.`,
+              'gallery'
+            );
+          }
         } else if (url.length > 512 * 1024) {
           url = '';
         }
