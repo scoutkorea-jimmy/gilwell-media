@@ -119,8 +119,16 @@
     const imageAdd = $('#memo-image-add');
     const imageInput = $('#memo-image-input');
     if (imageAdd && imageInput) {
-      imageAdd.addEventListener('click', () => imageInput.click());
-      imageInput.addEventListener('change', onImageInput);
+      imageAdd.addEventListener('click', () => {
+        console.log('[memo upload] image-add clicked → triggering file picker');
+        imageInput.click();
+      });
+      imageInput.addEventListener('change', (e) => {
+        console.log('[memo upload] file input change, files:', e.target.files?.length);
+        onImageInput(e);
+      });
+    } else {
+      console.warn('[memo upload] image-add or image-input not found at wire time', { imageAdd, imageInput });
     }
 
     const linkAdd = $('#memo-link-add');
@@ -523,6 +531,7 @@
 
   async function addFiles(fileList) {
     const files = Array.from(fileList || []);
+    console.log('[memo upload] addFiles called with', files.length, 'file(s)', files.map((f) => ({ name: f.name, type: f.type, size: f.size })));
     if (!files.length) return;
 
     const errors = [];
@@ -530,10 +539,17 @@
 
     for (const file of files) {
       const err = validateFile(file);
-      if (err) { errors.push(err); continue; }
+      if (err) {
+        console.warn('[memo upload] client validation rejected:', file.name, '→', err);
+        errors.push(err); continue;
+      }
       let previewDataUrl = '';
       try { previewDataUrl = await readFileAsDataUrl(file); }
-      catch { errors.push(`미리보기 생성 실패: ${file.name}`); continue; }
+      catch (e) {
+        console.error('[memo upload] FileReader failed:', file.name, e);
+        errors.push(`미리보기 생성 실패: ${file.name}`); continue;
+      }
+      console.log('[memo upload] file ready:', file.name, 'dataURL bytes:', previewDataUrl.length);
       placeholders.push({
         url: '',
         previewDataUrl,
@@ -558,6 +574,7 @@
 
     for (const ph of placeholders) {
       try {
+        console.log('[memo upload] POST /api/memorabilia/upload-image for', ph._file?.name);
         const res = await fetch('/api/memorabilia/upload-image', {
           method: 'POST',
           credentials: 'same-origin',
@@ -565,6 +582,7 @@
           body: JSON.stringify({ data_url: ph.previewDataUrl }),
         });
         const data = await res.json().catch(() => ({}));
+        console.log('[memo upload] response', res.status, data);
         if (!res.ok || !data.url) {
           const reason = upload
             ? upload.describeError(data, `HTTP ${res.status}`)
@@ -579,6 +597,7 @@
         ph.previewDataUrl = '';
         ph._file = null;
       } catch (err) {
+        console.error('[memo upload] fetch threw:', err);
         const reason = upload
           ? upload.describeError({ error: 'network' }, err.message)
           : (err.message || '네트워크 오류');
