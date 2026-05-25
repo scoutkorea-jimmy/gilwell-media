@@ -1682,3 +1682,67 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - [ ] 동일 IP에서 글 작성 30회/분 초과 → 429 응답
 - [ ] 로그인 4회 실패 → 5회 시도 시 429 + `throttled`
 - [ ] 에러 응답 본문에 `sqlite_*` / `UNIQUE constraint` 등 driver 메시지 미포함
+
+## 17. 안정성 패키지 (Stability Packages)
+
+### 17.1 운영 원칙
+
+#### 기능 세부 설명
+- 안정성 패키지는 **이미 발생한 회귀 패턴을 자동 검출·차단**하는 작업의 묶음. 새 기능이 아니라 _못 만들게_ 만드는 기반 정비다.
+- 발생한 회귀를 KMS 케이스 스터디로 남기고, 같은 클래스의 회귀를 **CI/preflight 가드**로 묶어 다시 발생하지 않게 한다.
+- 새 회귀가 잡히면 (a) 즉시 핫픽스 (b) 케이스 스터디 (c) 자동 검출 가드 추가 — 이 3단을 한 사이클로 묶는다.
+
+### 17.2 1차 (2026-05-24, 00.145.00 / 03.117.00)
+
+#### 기능 세부 설명
+- 글 동시 편집 충돌 방지 (`expected_updated_at` optimistic locking, 7.8 참조)
+- 임시저장 14일 TTL 자동 cleanup cron
+- 관리자 write API rate-limit 일관화 (`functions/_shared/rate-limit.js`)
+- self-report 루프 가드 (12.4 `/api/homepage-issues/report`)
+
+### 17.3 2차 (2026-05-24, 00.146.00 / 03.119.00)
+
+#### 기능 세부 설명
+- 홈 `Failed to fetch` 단발 알람 잡음 차단 (5분 디듀프 + transient guard)
+- drafts cleanup cron 을 `publish-due` 와 분리 (13.1.5 참조)
+- drafts 이미지 업로드 실패 시 구체 메시지 노출
+
+### 17.4 3차 (2026-05-26, 00.153.00 / 03.130.00)
+
+#### 기능 세부 설명
+이번 세션에서 잡힌 다섯 종류의 회귀를 **자동 검출 + 가드**로 묶었다.
+
+**Frontend reference audit** (`scripts/audit_frontend_refs.mjs`):
+1. **자산 캐시 토큰 드리프트** — HTML 의 `<script src>` / `<link href>` 의 `?v=` 토큰이 `scripts/sync_versions.sh` 의 perl 치환에서 누락되면 배포 후 stale 캐시로 회귀가 묻힌다. 회귀 사례: `memorabilia-shared.js` (03.128.00 에서 추가), `admin-account.js` (03.130.00 에서 추가).
+2. **CSS 클래스 정의 누락** — HTML 이 class 를 쓰는데 CSS 어디에도 정의가 없으면 의도된 스타일 적용 안 됨. 회귀 사례: `.v3-modal-backdrop` (03.127.02 — 모달이 인라인 블록으로 렌더).
+3. **JS 가 참조하는 DOM id 가 HTML 에서 사라진 경우** — null `.value` / null `.click()` 으로 TypeError. 회귀 사례: `#memo-event-en/ko` (03.125.01 hotfix).
+
+가드는 `scripts/release_preflight.sh` 에서 `--strict` 모드로 실행. critical(자산 캐시 드리프트)만 차단, CSS/DOM 경고는 warn-only (false positive 다수).
+
+**도감 동시 편집 보호** (메모라빌리아 7.8 패턴 이식):
+- `PATCH /api/memorabilia/:id` 가 `expected_updated_at` 을 받아 현재 row 의 `updated_at` 과 비교, 다르면 `409 + version_mismatch + reason` 반환.
+- 누락 시 잠금 비활성 (구버전 클라이언트 호환).
+- admin·공개 양쪽 모달 save 가 `editing.updated_at` 을 그대로 동봉. 409 응답 시 사용자 친화 알림 + 모달 유지 (저장 버튼만 재활성).
+
+**입력 라이프사이클 회귀** (03.129.00 에서 잡힘):
+- `onImageInput` 이 `e.target.files` 참조를 받자마자 `e.target.value = ''` 로 input 을 리셋해서 FileList 가 invalidate, `addFiles` 가 0개로 읽던 버그.
+- 룰: 비동기로 FileList 를 다루는 모든 핸들러는 `Array.from(e.target.files || [])` 로 **즉시 스냅샷** 후 value 리셋. 14.1 체크리스트에 포함.
+
+### 17.5 검증 명령
+
+#### 기능 세부 설명
+```bash
+# 1) 자산 캐시 토큰 드리프트 + CSS/DOM 경고 보고
+node scripts/audit_frontend_refs.mjs
+
+# 2) preflight 와 동일하게 strict 차단 모드
+node scripts/audit_frontend_refs.mjs --strict
+
+# 3) 도감 동시편집 시뮬레이션 (두 운영자 동시 저장 시 두 번째 = 409)
+curl -X PATCH /api/memorabilia/123 -H 'Cookie: <admin>' -H 'Content-Type: application/json' \
+  -d '{"expected_updated_at":"2026-05-26 14:00:00","title_en":"..."}'
+```
+
+#### 각주
+- 안정성 작업은 늘리되 _차단_ 정책은 단계적으로 강화 (warn → strict). false positive 가 운영 신뢰를 떨어뜨리지 않도록.
+- 새 회귀가 발생하면 우선 케이스 스터디로 KMS 해당 섹션에 한 단락 박제, 그 다음 audit 스크립트의 검사 규칙으로 승격.

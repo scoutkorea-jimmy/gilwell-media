@@ -815,11 +815,21 @@
     saveBtn.textContent = '저장 중…';
     try {
       if (state.editing && state.editing.id) {
-        await fetchJson(`/api/memorabilia/${state.editing.id}`, {
+        // Optimistic locking — 편집 진입 시점의 updated_at 을 동봉. 서버가
+        // 현재 row 와 다르면 409 + reason 으로 친절한 안내. (안정성 3차)
+        body.expected_updated_at = state.editing.updated_at || null;
+        const res = await fetch(`/api/memorabilia/${state.editing.id}`, {
           method: 'PATCH',
+          credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 409 && data.error === 'version_mismatch') {
+          flashError(data.reason || '다른 운영자가 먼저 저장했습니다. 새로고침 후 다시 시도해주세요.');
+          return; // 모달은 열려 있는 상태로 유지
+        }
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         toast('수정 완료', 'success');
       } else {
         await fetchJson('/api/memorabilia', {

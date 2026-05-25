@@ -34,6 +34,26 @@ export async function onRequestPatch({ request, env, params }) {
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+
+  // Optimistic locking — 동시편집 충돌 방지 (안정성 3차, 2026-05-26).
+  // 클라이언트가 편집 진입 시점에 받은 updated_at 을 expected_updated_at 으로 넘기면,
+  // 서버는 현재 row 의 updated_at 과 비교해 다르면 409 + version_mismatch 반환.
+  // 누락 시 잠금 비활성 (구버전 클라이언트 호환).
+  if (body && body.expected_updated_at) {
+    const clientStamp = String(body.expected_updated_at).trim();
+    const currentRow = await env.DB.prepare(
+      `SELECT updated_at FROM memorabilia WHERE id = ?`
+    ).bind(id).first();
+    if (!currentRow) return json({ error: 'not_found' }, 404);
+    if (String(currentRow.updated_at || '').trim() !== clientStamp) {
+      return json({
+        error: 'version_mismatch',
+        reason: '다른 운영자가 먼저 저장했습니다. 페이지를 새로고침해 최신 내용을 확인한 뒤 변경 사항을 다시 적용해주세요.',
+        server_updated_at: currentRow.updated_at,
+      }, 409);
+    }
+  }
+
   const { errors, input } = normalizeMemorabiliaInput(body || {});
   if (errors.length) return json({ error: 'validation', details: errors }, 400);
 

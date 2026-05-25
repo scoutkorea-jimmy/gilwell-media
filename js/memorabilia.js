@@ -884,12 +884,22 @@
       try {
         const url = this.editing ? `/api/memorabilia/${this.editing.id}` : '/api/memorabilia';
         const method = this.editing ? 'PATCH' : 'POST';
+        if (this.editing) {
+          // Optimistic locking — 편집 진입 시 받은 updated_at 동봉. 서버에서
+          // 동시 수정 충돌 시 409 + reason 안내. (안정성 3차)
+          body.expected_updated_at = this.editing.updated_at || null;
+        }
         const res = await fetch(url, {
           method, credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
         const data = await res.json().catch(() => ({}));
+        if (res.status === 409 && data.error === 'version_mismatch') {
+          this.flashError(data.reason || '다른 운영자가 먼저 저장했습니다. 새로고침 후 다시 시도해주세요.');
+          btn.disabled = false; btn.textContent = orig;
+          return;
+        }
         if (!res.ok) throw new Error(data.error || res.status);
         this.closeModal();
         if (location.pathname.startsWith('/memorabilia/')) {
