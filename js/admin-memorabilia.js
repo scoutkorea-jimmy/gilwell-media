@@ -10,22 +10,30 @@
   'use strict';
 
   // ── State ───────────────────────────────────────────────────────────────
+  const PAGE_SIZE = 30;
   const state = {
     items: [],
+    total: 0,
+    page: 1,                 // 1-based
     categories: [],
+    events: [],              // memorabilia_events 카탈로그 캐시 (행사 picker 용)
     editing: null,           // null | item
     images: [],              // [{url, alt_en, alt_ko, is_primary, sort_order, uploading, previewDataUrl, _file}]
     links: [],               // [{label_en, label_ko, url}]
     countryPicker: null,     // GW.MemorabiliaCountries.attach() handle
     countryLabels: {},       // {code: {ko, en}} — 목록 메타·렌더 lookup 캐시
+    selectedEventId: null,   // 편집 중인 항목의 event_id (autocomplete 결과)
     dropZoneBound: false,
     loadedOnce: false,
     catsLoadedOnce: false,
+    eventsLoadedOnce: false,
   };
 
-  // 공유 모듈 hooks (window.GW.MemorabiliaUpload / MemorabiliaCountries)
+  // 공유 모듈 hooks
   const upload = (window.GW && window.GW.MemorabiliaUpload) ? window.GW.MemorabiliaUpload : null;
   const countries = (window.GW && window.GW.MemorabiliaCountries) ? window.GW.MemorabiliaCountries : null;
+  const eventsMod = (window.GW && window.GW.MemorabiliaEvents) ? window.GW.MemorabiliaEvents : null;
+  let eventPickerHandle = null;
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -137,16 +145,64 @@
     renderList();
   }
 
-  async function loadList() {
+  async function loadList(page) {
+    if (typeof page === 'number') state.page = Math.max(1, page);
     try {
-      const data = await fetchJson('/api/memorabilia?include_drafts=1&limit=100');
+      const data = await fetchJson(`/api/memorabilia?include_drafts=1&limit=${PAGE_SIZE}&page=${state.page}`);
       state.items = data.items || [];
+      state.total = Number(data.total || 0);
       renderList();
       const meta = $('#memo-list-meta');
-      if (meta) meta.textContent = `${state.items.length}건 (드래프트 포함)`;
+      if (meta) {
+        const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+        meta.textContent = `${state.total}건 (드래프트 포함) · ${state.page}/${totalPages} 페이지`;
+      }
     } catch (err) {
       toast('목록을 불러오지 못했습니다: ' + err.message, 'error');
     }
+  }
+
+  // 페이지네이션 UI 렌더 — table 아래에 페이지 번호 버튼.
+  function renderPagination() {
+    const wrap = $('#memo-list-wrap');
+    if (!wrap) return;
+    let pag = $('#memo-list-pagination');
+    const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+    if (totalPages <= 1) {
+      if (pag) pag.remove();
+      return;
+    }
+    if (!pag) {
+      pag = document.createElement('div');
+      pag.id = 'memo-list-pagination';
+      pag.className = 'memo-list-pagination';
+      wrap.appendChild(pag);
+    }
+    const cur = state.page;
+    // 5개 윈도우 + 양 끝 + 점프 화살표
+    const pages = [];
+    const window2 = 2;
+    for (let p = Math.max(1, cur - window2); p <= Math.min(totalPages, cur + window2); p += 1) pages.push(p);
+    if (pages[0] > 1) pages.unshift('…');
+    if (pages[0] !== 1) pages.unshift(1);
+    if (pages[pages.length - 1] < totalPages - 1) pages.push('…');
+    if (pages[pages.length - 1] !== totalPages) pages.push(totalPages);
+
+    pag.innerHTML = [
+      `<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-page="${cur - 1}" ${cur === 1 ? 'disabled' : ''}>‹ 이전</button>`,
+      ...pages.map((p) =>
+        p === '…'
+          ? '<span class="memo-list-pag-ellip">…</span>'
+          : `<button type="button" class="v3-btn ${p === cur ? 'v3-btn-primary' : 'v3-btn-ghost'} v3-btn-sm" data-page="${p}">${p}</button>`
+      ),
+      `<button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-page="${cur + 1}" ${cur === totalPages ? 'disabled' : ''}>다음 ›</button>`,
+    ].join('');
+    pag.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-page]');
+      if (!btn || btn.disabled) return;
+      const p = parseInt(btn.getAttribute('data-page'), 10);
+      if (Number.isFinite(p) && p !== state.page) loadList(p);
+    }, { once: true });
   }
 
   function renderList() {
@@ -197,6 +253,7 @@
         if (it) openEditor(it);
       });
     });
+    renderPagination();
   }
 
   // ── Editor modal ────────────────────────────────────────────────────────
@@ -204,6 +261,7 @@
     if (!state.categories.length) await loadCategories(true);
     populateCategorySelect();
     ensureCountryPicker(item?.country_codes || []);
+    ensureEventPicker(item?.event_id || null, item?.event || null);
     setupDropZone();
 
     // Hydrate fields
@@ -306,6 +364,27 @@
     }
     sel.innerHTML = opts.join('');
     sel.value = cur;
+  }
+
+  // Event picker — /api/memorabilia/events + GW.MemorabiliaEvents.attach
+  function ensureEventPicker(initialId, initialEvent) {
+    if (!eventsMod) return;
+    const host = $('#memo-event-picker');
+    if (!host) return;
+    state.selectedEventId = initialId || null;
+    // 매 항목 편집 시 picker 새로 구성 (host innerHTML 교체).
+    eventPickerHandle = eventsMod.attach({
+      host,
+      initialId, initialEvent,
+      idPrefix: 'memo-ep',
+      onChange: (id, ev) => {
+        state.selectedEventId = id;
+        // event 가 선택되면 cache 갱신용으로 이름도 기록
+        if (ev) {
+          // 저장 시 normalizeMemorabiliaInput 가 event_id 기반으로 cache 갱신.
+        }
+      },
+    });
   }
 
   // Country picker — /api/memorabilia/countries + GW.MemorabiliaCountries.attach
@@ -621,8 +700,11 @@
       title_en: $('#memo-title-en').value || '',
       title_ko: $('#memo-title-ko').value || '',
       has_event: !!$('#memo-has-event').checked,
-      event_name_en: $('#memo-event-en').value || '',
-      event_name_ko: $('#memo-event-ko').value || '',
+      event_id: state.selectedEventId || null,
+      // event_name_* 는 카탈로그 참조가 있으면 서버가 카탈로그 이름으로 덮어씀.
+      // 카탈로그 없이 free-text 입력하던 legacy 항목 호환용으로 빈 문자열 유지.
+      event_name_en: '',
+      event_name_ko: '',
       year: $('#memo-year').value || null,
       category_id: $('#memo-category').value ? parseInt($('#memo-category').value, 10) : null,
       material_en: $('#memo-material-en').value || '',

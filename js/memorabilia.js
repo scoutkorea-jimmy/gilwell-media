@@ -404,6 +404,7 @@
     },
 
     countryPicker: null,
+    eventPicker: null,
 
     ensureCountryPicker(initial) {
       const host = $('#memo-country-picker');
@@ -421,6 +422,19 @@
       return this.countryPicker;
     },
 
+    ensureEventPicker(initialId, initialEvent) {
+      const host = $('#memo-event-picker');
+      if (!host) return null;
+      if (!window.GW || !window.GW.MemorabiliaEvents) return null;
+      // 매 항목 편집마다 새로 attach (host innerHTML 교체).
+      this.eventPicker = window.GW.MemorabiliaEvents.attach({
+        host,
+        initialId, initialEvent,
+        idPrefix: 'memo-ep',
+      });
+      return this.eventPicker;
+    },
+
     populateCategorySelect() {
       const sel = $('#memo-category');
       if (!sel) return;
@@ -436,6 +450,7 @@
       if (!ok) { $('#memo-login-overlay').hidden = false; return; }
       await this.ensureCategories();
       this.ensureCountryPicker([]);
+      this.ensureEventPicker(null, null);
       this.populateCategorySelect();
       this.editing = null;
       this.images = [];
@@ -475,7 +490,7 @@
     },
 
     resetForm() {
-      ['memo-title-en','memo-title-ko','memo-event-en','memo-event-ko','memo-year',
+      ['memo-title-en','memo-title-ko','memo-year',
        'memo-material-en','memo-material-ko','memo-size','memo-issuer-en','memo-issuer-ko',
        'memo-tags','memo-desc-en','memo-desc-ko'].forEach((id) => { const el = $('#'+id); if (el) el.value = ''; });
       $('#memo-has-event').checked = false;
@@ -490,8 +505,8 @@
       $('#memo-title-ko').value = item.title_ko || '';
       $('#memo-has-event').checked = !!item.has_event;
       $('#memo-event-row').hidden = !item.has_event;
-      $('#memo-event-en').value = item.event_name_en || '';
-      $('#memo-event-ko').value = item.event_name_ko || '';
+      // event picker — 카탈로그 참조(event_id) 우선; legacy event_name 만 있으면 picker 빈 상태
+      this.ensureEventPicker(item.event_id || null, item.event || null);
       $('#memo-year').value = item.year || '';
       $('#memo-category').value = item.category_id || '';
       $('#memo-material-en').value = item.material_en || '';
@@ -749,8 +764,10 @@
         title_en: $('#memo-title-en').value,
         title_ko: $('#memo-title-ko').value,
         has_event: $('#memo-has-event').checked,
-        event_name_en: $('#memo-event-en').value,
-        event_name_ko: $('#memo-event-ko').value,
+        event_id: this.eventPicker ? this.eventPicker.getEventId() : null,
+        // event_name_* 는 서버가 event_id 기준으로 카탈로그에서 가져와 덮어씀 (legacy 빈 문자열).
+        event_name_en: '',
+        event_name_ko: '',
         year: $('#memo-year').value || null,
         category_id: $('#memo-category').value ? parseInt($('#memo-category').value, 10) : null,
         material_en: $('#memo-material-en').value,

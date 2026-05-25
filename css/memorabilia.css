@@ -597,128 +597,191 @@
 
 .memo-checkbox-row { display: flex; align-items: center; gap: 6px; }
 
-/* ── Country Picker (search + chips + scrollable list) ─────────────────────
+/* ── Country Picker — 타입어헤드 드롭다운 (단순화, 2026-05-25) ────────────
    js/memorabilia-shared.js GW.MemorabiliaCountries.attach() 위젯이 사용.
-   admin / 공개 양쪽 동일 룩&필. */
-.gw-country-picker {
+   기본 상태: 입력창만 노출. 입력 시작 → 아래에 드롭다운으로 매칭 표시.
+   선택된 항목은 입력 위쪽에 작은 태그 줄로 표시 (× 로 제거). */
+.gw-country-picker-typeahead {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
+  gap: 6px;
   max-width: 100%;
 }
-.gw-cp-chip-area {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  min-height: 28px;
+.gw-cp-selected {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  min-height: 0;
 }
-.gw-cp-chip-empty {
+.gw-cp-selected:empty { display: none; }
+.gw-cp-selected-empty {
   font-size: 12px;
   color: var(--muted, #8f8f8f);
-  align-self: center;
-  padding: 4px 6px;
+  padding: 2px 0;
 }
-.gw-cp-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 8px;
-  background: rgba(98, 37, 153, 0.10);
-  color: var(--color-scouting-purple, #622599);
-  border: 1px solid rgba(98, 37, 153, 0.25);
-  border-radius: 999px;
+.gw-cp-tag {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 4px 2px 8px;
+  background: var(--gray-100, #f0f0f0);
+  color: #1f1f1f;
+  border-radius: 4px;
   font-size: 12.5px;
-  font-weight: 600;
+  line-height: 1.5;
+}
+.gw-cp-tag-x {
+  background: transparent;
+  border: 0;
   cursor: pointer;
-  transition: background 0.12s;
+  color: var(--muted, #8f8f8f);
+  padding: 0 4px;
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 3px;
 }
-.gw-cp-chip:hover { background: rgba(98, 37, 153, 0.16); }
-.gw-cp-chip span { font-weight: 700; margin-left: 2px; }
-.gw-cp-search-row {
-  display: flex; align-items: center; gap: 8px;
+.gw-cp-tag-x:hover { background: var(--gray-300, #d0d0d0); color: #1f1f1f; }
+.gw-cp-input-wrap {
+  position: relative;
 }
-.gw-cp-search {
-  flex: 1;
-  padding: 6px 10px;
+.gw-cp-input {
+  width: 100%;
+  padding: 7px 10px;
   border: 1px solid var(--gray-300, #c4c4c4);
   border-radius: 6px;
   font-size: 13px;
   background: #fff;
+  box-sizing: border-box;
 }
-.gw-cp-search:focus {
+.gw-cp-input:focus {
   outline: none;
   border-color: var(--color-scouting-purple, #622599);
   box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.16);
 }
-.gw-cp-count {
-  font-size: 11px;
-  color: var(--muted, #8f8f8f);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.gw-cp-list {
-  max-height: 280px;
-  overflow-y: auto;
-  border: 1px solid var(--gray-100, #ebebeb);
+.gw-cp-dropdown {
+  position: absolute;
+  top: calc(100% + 2px); left: 0; right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--gray-300, #c4c4c4);
   border-radius: 6px;
-  background: var(--gray-100, #fafafa);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+  max-height: 300px;
+  overflow-y: auto;
 }
-.gw-cp-loading,
-.gw-cp-empty {
-  padding: 18px 12px;
+.gw-cp-dropdown[hidden] { display: none; }
+.gw-cp-dd-empty {
+  padding: 12px;
   text-align: center;
   color: var(--muted, #8f8f8f);
   font-size: 13px;
 }
-.gw-cp-item {
+.gw-cp-dd-item {
   display: grid;
-  grid-template-columns: 22px 1fr auto 44px;
+  grid-template-columns: 1fr auto 44px;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 12px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--gray-100, #ebebeb);
+  border-bottom: 1px solid var(--gray-100, #f0f0f0);
   text-align: left;
   cursor: pointer;
   font: inherit;
   color: #1f1f1f;
-  transition: background 0.1s;
 }
-.gw-cp-item:last-child { border-bottom: 0; }
-.gw-cp-item:hover { background: rgba(98, 37, 153, 0.05); }
-.gw-cp-item.is-selected {
-  background: rgba(98, 37, 153, 0.10);
+.gw-cp-dd-item:last-child { border-bottom: 0; }
+.gw-cp-dd-item:hover,
+.gw-cp-dd-item.is-active {
+  background: rgba(98, 37, 153, 0.08);
 }
-.gw-cp-item.is-selected .gw-cp-item-name {
-  font-weight: 700;
-  color: var(--color-scouting-purple, #622599);
-}
-.gw-cp-item-check {
-  color: var(--color-scouting-purple, #622599);
-  font-weight: 700;
-  text-align: center;
-}
-.gw-cp-item-name { font-size: 13.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.gw-cp-item-en {
-  font-size: 11.5px;
-  color: var(--muted, #8f8f8f);
-  text-overflow: ellipsis;
+.gw-cp-dd-name {
+  font-size: 13.5px;
+  font-weight: 500;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.gw-cp-item-code {
+.gw-cp-dd-en {
+  font-size: 11.5px;
+  color: var(--muted, #8f8f8f);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gw-cp-dd-code {
   font-size: 11px;
   color: var(--muted, #8f8f8f);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-.gw-cp-item mark {
+.gw-cp-dd-item mark {
   background: rgba(255, 86, 85, 0.22);
   color: inherit;
   padding: 0 2px;
   border-radius: 3px;
+}
+
+/* ── Event Picker ───────────────────────────────────────────────────────── */
+.gw-event-picker {
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.gw-ep-selected-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(98, 37, 153, 0.06);
+  border: 1px solid rgba(98, 37, 153, 0.25);
+  border-radius: 8px;
+}
+.gw-ep-selected-name strong { font-size: 14px; color: #1f1f1f; }
+.gw-ep-selected-ko { font-size: 12.5px; color: #3f3f3f; margin-top: 2px; }
+.gw-ep-selected-period { font-size: 12px; color: var(--muted, #8f8f8f); margin-top: 4px; }
+.gw-ep-dd-create {
+  background: rgba(98, 37, 153, 0.06);
+  border-top: 2px solid rgba(98, 37, 153, 0.25);
+  font-weight: 600;
+}
+.gw-ep-dd-create:hover { background: rgba(98, 37, 153, 0.14); }
+.gw-ep-create-form {
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fafafa;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.gw-ep-create-form h4 { margin: 0 0 4px; font-size: 14px; }
+.gw-ep-create-row { display: flex; flex-direction: column; gap: 4px; }
+.gw-ep-create-row label { font-size: 12px; color: var(--muted, #3f3f3f); }
+.gw-ep-date {
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.gw-ep-date legend { padding: 0 4px; font-size: 12px; color: var(--muted, #3f3f3f); }
+.gw-cp-input-num { width: 90px; }
+.gw-ep-create-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.gw-ep-create-error {
+  font-size: 12.5px;
+  color: var(--color-fire-red, #d33);
+  padding: 4px 6px;
+  background: rgba(255, 86, 85, 0.10);
+  border-radius: 4px;
+}
+
+/* ── Admin list pagination ─────────────────────────────────────────────── */
+.memo-list-pagination {
+  display: flex; flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  margin-top: 12px;
+  border-top: 1px solid var(--gray-100, #ebebeb);
+}
+.memo-list-pagination .v3-btn { min-width: 32px; }
+.memo-list-pag-ellip {
+  padding: 0 8px;
+  color: var(--muted, #8f8f8f);
 }
 
 /* ── Mobile ───────────────────────────────────────────────────────────── */

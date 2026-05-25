@@ -1,6 +1,47 @@
 {
   "items": [
   {
+    "version": "03.125.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 18:31:38 KST",
+    "summary": "관리자 기념품 도감 — 국가 선택기 단순화(타입어헤드 드롭다운) + 30개 페이지네이션 + 행사 카탈로그(공통 등록·재사용·연월일 기간) + 모달에 행사 picker 통합.",
+    "for_users": [
+      "국가 선택이 훨씬 단순해졌습니다. 입력창에 검색어를 타이핑하면 그 아래로 매칭되는 국가들만 드롭다운으로 나타나고, 선택하면 위쪽에 작은 태그로 표시됩니다 (× 로 제거). 전체 199개국 리스트는 더 이상 한꺼번에 펼쳐지지 않습니다.",
+      "관리자 기념품 도감 목록이 30개씩 페이지네이션됩니다. 표 하단의 페이지 번호 / 이전·다음 버튼으로 이동합니다.",
+      "행사명을 한 번 등록하면 다른 기념품에서 재사용할 수 있습니다. 모달의 '특정 행사 관련' 체크 시 검색창이 나타나, 기존 행사를 검색해 선택하거나 '+ 신규 행사로 등록' 버튼으로 새 행사를 만들 수 있습니다.",
+      "행사 등록 시 행사기간(시작/종료)을 연·월·일 단위로 입력할 수 있고, 일은 선택사항입니다. 예: 연도만 → '2026년', 월까지 → '2026년 8월', 일까지 → '2026년 8월 1일'."
+    ],
+    "for_developers": [
+      "db/migration_072.sql (적용 완료): memorabilia_events 테이블 신설 (slug, name_en/ko, start_year/month/day, end_year/month/day, description_en/ko, archived, usage_count). memorabilia 에 event_id 컬럼 추가 (ON DELETE SET NULL).",
+      "functions/_shared/memorabilia-events.js: normalizeEventInput / formatEventPeriod / listEvents / getEvent / createEvent / updateEvent / deleteEvent / refreshUsageCount.",
+      "functions/api/memorabilia/events.js (신규): GET 목록 + POST 생성. functions/api/memorabilia/events/[id].js (신규): GET·PATCH·DELETE.",
+      "functions/_shared/memorabilia-store.js: normalizeMemorabiliaInput 에 event_id 통과. maybeHydrateEventName() 헬퍼가 event_id 기반으로 카탈로그에서 name_en/ko 를 가져와 denormalized cache 동기화. hydrateOne() 응답에 .event 객체(+period_text) 포함. usage_count 자동 증감.",
+      "functions/api/memorabilia/index.js GET 응답에 .event 미포함 (목록은 가벼움 유지) — 단건 GET 만 포함.",
+      "js/memorabilia-shared.js: attachCountryPicker 전면 재작성 — 검색 입력 + 드롭다운 + 작은 selected 태그 패턴. 기존 chip + full list 제거. GW.MemorabiliaEvents (load + attach 신규) — 행사 picker 위젯, 카탈로그 검색 + inline 신규 등록 폼 (연/월/일 6칸).",
+      "css/memorabilia.css: .gw-cp-* 클래스 재정의(타입어헤드 톤), .gw-event-picker / .gw-ep-* / .memo-list-pagination 추가.",
+      "js/admin-memorabilia.js: 30개 페이지네이션 (PAGE_SIZE=30, state.page, renderPagination). state.selectedEventId / ensureEventPicker(). save body 에 event_id 전송, event_name_* 는 빈 문자열 (서버가 카탈로그로 덮어씀).",
+      "js/memorabilia.js: editor.ensureEventPicker(initialId, initialEvent) 메서드. resetForm/fillForm/save 가 picker 기반으로 동작.",
+      "admin.html + memorabilia.html: 행사명 EN/KO input → #memo-event-picker placeholder 단일 컨테이너.",
+      "관리자 03.124.00 → 03.125.00."
+    ]
+  },
+  {
+    "version": "00.149.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 18:31:38 KST",
+    "summary": "공개 도감 — 국가 선택기 단순화(타입어헤드 드롭다운) + 모달 내 행사 picker 통합 + 행사 등록 시 연·월·일 기간 입력 (일은 선택).",
+    "for_users": [
+      "도감 등록·수정 모달의 국가 선택 UX가 크게 단순해졌습니다 — 검색 후 클릭으로 추가, × 로 제거.",
+      "특정 행사 관련 항목은 행사명을 직접 적는 대신 기존 등록된 행사를 검색해서 선택하거나 새 행사를 즉시 등록할 수 있습니다.",
+      "행사 등록 시 시작일 / 종료일을 각각 연·월·일 단위로 입력 가능 (일이 명확하지 않으면 비워두면 됨)."
+    ],
+    "for_developers": [
+      "관리자 03.125.00 항목 참조 (변경 파일·범위 동일).",
+      "공개 측 영향: memorabilia.html + js/memorabilia.js + css/memorabilia.css.",
+      "사이트 00.148.00 → 00.149.00."
+    ]
+  },
+  {
     "version": "03.124.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 18:14:48 KST",

@@ -140,11 +140,17 @@ export function normalizeMemorabiliaInput(body) {
   const has_event = body.has_event ? 1 : 0;
   const status = (body.status === 'public' ? 'public' : 'draft');
 
+  // event_id 가 명시되면 그 행사 카탈로그를 참조. 함께 들어온 event_name 은
+  // denormalized cache 로 보존 (행사 이름이 나중에 바뀌어도 빠른 표시 + 검색 인덱스).
+  // event_id == null 이면 free-text 입력 (legacy 호환).
+  const event_id = body.event_id != null && body.event_id !== '' ? (parseInt(body.event_id, 10) || null) : null;
+
   return {
     errors,
     input: {
       title_en, title_ko,
       has_event,
+      event_id,
       event_name_en: has_event ? trimStr(body.event_name_en, FIELD_LIMITS.event) : '',
       event_name_ko: has_event ? trimStr(body.event_name_ko, FIELD_LIMITS.event) : '',
       year:          normalizeYear(body.year),
@@ -206,7 +212,7 @@ export async function getMemorabiliaBySlug(db, slug, { includeDrafts = false } =
 }
 
 async function hydrateOne(db, row) {
-  const [imagesRes, countriesRes, tagsRes] = await Promise.all([
+  const [imagesRes, countriesRes, tagsRes, eventRow] = await Promise.all([
     db.prepare(`
       SELECT id, url, alt_en, alt_ko, is_primary, sort_order
         FROM memorabilia_images
@@ -223,9 +229,25 @@ async function hydrateOne(db, row) {
        WHERE mt.memorabilia_id = ?
        ORDER BY p.label
     `).bind(row.id).all(),
+    // 카탈로그 행사가 연결된 경우 함께 가져옴 (없으면 null)
+    row.event_id
+      ? db.prepare(`
+          SELECT id, slug, name_en, name_ko,
+                 start_year, start_month, start_day, end_year, end_month, end_day,
+                 description_en, description_ko, usage_count
+            FROM memorabilia_events WHERE id = ?
+        `).bind(row.event_id).first()
+      : Promise.resolve(null),
   ]);
+  // event period_text 는 클라이언트에서도 사용하므로 여기서 미리 포맷
+  let event = null;
+  if (eventRow) {
+    const { formatEventPeriod } = await import('./memorabilia-events.js');
+    event = { ...eventRow, period_text: formatEventPeriod(eventRow) };
+  }
   return {
     ...row,
+    event,                                 // 카탈로그 참조 (없으면 null)
     related_links: safeParseJson(row.related_links_json) || [],
     images:        imagesRes.results || [],
     country_codes: (countriesRes.results || []).map((r) => r.country_code),
@@ -250,11 +272,14 @@ function safeParseJson(s) {
  * exists but its relations might be partial. Acceptable for low-write admin flows.
  */
 export async function createMemorabilia(db, input, { createdBy = null } = {}) {
+  // event_id 가 주어지면 events 카탈로그에서 name 을 가져와 cache 갱신
+  await maybeHydrateEventName(db, input);
+
   const result = await db.prepare(`
     INSERT INTO memorabilia (
       slug,
       title_en, title_ko,
-      has_event, event_name_en, event_name_ko,
+      has_event, event_id, event_name_en, event_name_ko,
       year, category_id,
       material_en, material_ko,
       size_text,
@@ -265,7 +290,7 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
       status,
       created_by, created_at, updated_at, published_at
     ) VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
       datetime('now'), datetime('now'),
       CASE WHEN ? = 'public' THEN datetime('now') ELSE NULL END
     )
@@ -273,7 +298,7 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
   `).bind(
     `__pending__${Date.now()}`,                  // 임시 slug (id 받은 후 갱신)
     input.title_en, input.title_ko,
-    input.has_event, input.event_name_en, input.event_name_ko,
+    input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
     input.year, input.category_id,
     input.material_en, input.material_ko,
     input.size_text,
@@ -288,6 +313,9 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
   ).first();
 
   const id = result.id;
+  if (input.event_id) {
+    await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(input.event_id).run();
+  }
 
   // slug 갱신 (id 기반)
   const finalSlug = generateSlug(input.title_en, input.title_ko, id);
@@ -299,15 +327,18 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
 }
 
 export async function updateMemorabilia(db, id, input) {
-  const existing = await db.prepare(`SELECT id, status FROM memorabilia WHERE id = ?`).bind(id).first();
+  const existing = await db.prepare(`SELECT id, status, event_id FROM memorabilia WHERE id = ?`).bind(id).first();
   if (!existing) return null;
 
   const isPublishingNow = input.status === 'public' && existing.status !== 'public';
 
+  // event_id 변경 시 usage_count 재계산용
+  await maybeHydrateEventName(db, input);
+
   await db.prepare(`
     UPDATE memorabilia SET
       title_en = ?, title_ko = ?,
-      has_event = ?, event_name_en = ?, event_name_ko = ?,
+      has_event = ?, event_id = ?, event_name_en = ?, event_name_ko = ?,
       year = ?, category_id = ?,
       material_en = ?, material_ko = ?,
       size_text = ?,
@@ -325,7 +356,7 @@ export async function updateMemorabilia(db, id, input) {
     WHERE id = ?
   `).bind(
     input.title_en, input.title_ko,
-    input.has_event, input.event_name_en, input.event_name_ko,
+    input.has_event, input.event_id, input.event_name_en, input.event_name_ko,
     input.year, input.category_id,
     input.material_en, input.material_ko,
     input.size_text,
@@ -346,9 +377,31 @@ export async function updateMemorabilia(db, id, input) {
 }
 
 export async function deleteMemorabilia(db, id) {
+  // usage_count 감산용: 삭제 전에 event_id 캡쳐
+  const row = await db.prepare(`SELECT event_id FROM memorabilia WHERE id = ?`).bind(id).first();
   await deleteMemorabiliaFtsRow(db, id);
   // 부속 테이블은 FK ON DELETE CASCADE 로 자동 정리
   await db.prepare(`DELETE FROM memorabilia WHERE id = ?`).bind(id).run();
+  if (row && row.event_id) {
+    await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(row.event_id).run();
+  }
+}
+
+// event_id 가 주어지면 events 카탈로그에서 name_en/ko 를 가져와 input 의
+// denormalized event_name 캐시를 덮어쓴다 (행사 이름 변경 시 일관성).
+// has_event 가 false 거나 event_id 가 없으면 free-text 입력 그대로 유지.
+async function maybeHydrateEventName(db, input) {
+  if (!input.has_event || !input.event_id) return;
+  const row = await db.prepare(
+    `SELECT name_en, name_ko FROM memorabilia_events WHERE id = ?`
+  ).bind(input.event_id).first();
+  if (!row) {
+    // 잘못된 event_id → 카탈로그 참조 해제, free-text fallback
+    input.event_id = null;
+    return;
+  }
+  input.event_name_en = row.name_en || input.event_name_en || '';
+  input.event_name_ko = row.name_ko || input.event_name_ko || '';
 }
 
 async function syncRelations(db, id, input) {

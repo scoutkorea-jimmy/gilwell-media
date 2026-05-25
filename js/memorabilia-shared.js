@@ -94,138 +94,193 @@
     return found ? found.name_ko : code;
   }
 
-  // ── Country Picker 위젯 ─────────────────────────────────────────────────────
+  // ── Country Picker 위젯 (타입어헤드 드롭다운) ───────────────────────────────
+  // 디자인 원칙: 검색하지 않을 때는 입력창만 보인다 (전체 리스트·칩 영역 모두 숨김).
+  //              타이핑 시작 → 입력창 아래에 매칭 상위 8개 드롭다운으로 표시.
+  //              항목 선택 → 입력 위쪽 줄에 작은 태그로 표시 (× 로 제거).
+  //
   // opts.host          — placeholder 컨테이너 (innerHTML 교체됨)
   // opts.initial       — string[] 선택 ISO-2 코드 배열
   // opts.onChange      — (codes:string[]) => void
-  // opts.idPrefix      — 내부 ID 충돌 방지 prefix (기본: 'mcp')
+  // opts.idPrefix      — 내부 ID 충돌 방지 prefix
   // returns { getValue, setValue, focus }
   function attachCountryPicker(opts) {
     const host = opts.host;
     if (!host) throw new Error('attachCountryPicker: host required');
-    const prefix = opts.idPrefix || 'mcp';
-    let selected = new Set(opts.initial || []);
-    let query = '';
-    let items = []; // 마지막 fetch 결과
+    const prefix = opts.idPrefix || 'cp';
+    let selected = []; // 선택 순서 보존
+    (opts.initial || []).forEach((code) => { if (!selected.includes(code)) selected.push(code); });
+    let items = [];        // /api/memorabilia/countries
+    let activeIdx = -1;    // 키보드 네비게이션용
 
-    host.classList.add('gw-country-picker');
+    host.classList.add('gw-country-picker', 'gw-country-picker-typeahead');
     host.innerHTML = `
-      <div class="gw-cp-chip-area" id="${prefix}-chips" aria-live="polite"></div>
-      <div class="gw-cp-search-row">
-        <input type="search" class="gw-cp-search" id="${prefix}-search" placeholder="국가명 또는 코드 검색 (예: 몽골, MN)" autocomplete="off" spellcheck="false" />
-        <span class="gw-cp-count" id="${prefix}-count"></span>
-      </div>
-      <div class="gw-cp-list" id="${prefix}-list" role="listbox" aria-multiselectable="true">
-        <div class="gw-cp-loading">불러오는 중…</div>
+      <div class="gw-cp-selected" id="${prefix}-selected"></div>
+      <div class="gw-cp-input-wrap">
+        <input type="search" class="gw-cp-input" id="${prefix}-input" placeholder="국가명 검색 후 클릭으로 추가 (예: 몽골, MN)" autocomplete="off" spellcheck="false" />
+        <div class="gw-cp-dropdown" id="${prefix}-dropdown" role="listbox" hidden></div>
       </div>
     `;
 
-    const chipEl = host.querySelector('#' + prefix + '-chips');
-    const searchEl = host.querySelector('#' + prefix + '-search');
-    const countEl = host.querySelector('#' + prefix + '-count');
-    const listEl = host.querySelector('#' + prefix + '-list');
+    const selEl = host.querySelector('#' + prefix + '-selected');
+    const inputEl = host.querySelector('#' + prefix + '-input');
+    const dropEl = host.querySelector('#' + prefix + '-dropdown');
 
     function emit() {
-      if (typeof opts.onChange === 'function') opts.onChange(Array.from(selected));
+      if (typeof opts.onChange === 'function') opts.onChange(selected.slice());
     }
-
     function escapeHtml(s) {
       return String(s == null ? '' : s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
-
     function highlight(text, q) {
       if (!q) return escapeHtml(text);
       const safe = escapeHtml(text);
       const pattern = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      try {
-        return safe.replace(new RegExp('(' + pattern + ')', 'gi'), '<mark>$1</mark>');
-      } catch { return safe; }
+      try { return safe.replace(new RegExp('(' + pattern + ')', 'gi'), '<mark>$1</mark>'); }
+      catch { return safe; }
     }
 
-    function renderChips() {
-      if (!selected.size) {
-        chipEl.innerHTML = '<span class="gw-cp-chip-empty">선택된 국가 없음</span>';
+    function renderSelected() {
+      if (!selected.length) {
+        selEl.innerHTML = '<span class="gw-cp-selected-empty">선택된 국가 없음 — 아래에서 검색해 추가하세요</span>';
         return;
       }
-      const arr = Array.from(selected);
-      chipEl.innerHTML = arr.map((code) =>
-        `<button type="button" class="gw-cp-chip" data-remove="${escapeHtml(code)}">${escapeHtml(getCountryLabel(code))} (${escapeHtml(code)}) <span aria-hidden="true">×</span></button>`
-      ).join('');
+      selEl.innerHTML = selected.map((code) => {
+        const name = getCountryLabel(code);
+        return `<span class="gw-cp-tag" data-code="${escapeHtml(code)}">${escapeHtml(name)} <button type="button" class="gw-cp-tag-x" data-remove="${escapeHtml(code)}" aria-label="${escapeHtml(name)} 제거">×</button></span>`;
+      }).join('');
     }
 
-    function renderList() {
-      const q = query.trim().toLowerCase();
-      const filtered = items.filter((c) => {
-        if (!q) return true;
-        if (c.code.toLowerCase().includes(q)) return true;
-        if (c.name_ko && c.name_ko.toLowerCase().includes(q)) return true;
-        if (c.name_en && c.name_en.toLowerCase().includes(q)) return true;
-        return false;
-      });
-      countEl.textContent = q
-        ? `${filtered.length}/${items.length}개`
-        : `${items.length}개 국가`;
+    function closeDropdown() {
+      dropEl.hidden = true;
+      dropEl.innerHTML = '';
+      activeIdx = -1;
+    }
 
-      if (!filtered.length) {
-        listEl.innerHTML = '<div class="gw-cp-empty">검색 결과가 없습니다.</div>';
+    function renderDropdown() {
+      const q = inputEl.value.trim().toLowerCase();
+      if (!q) { closeDropdown(); return; }
+      if (!items.length) {
+        dropEl.hidden = false;
+        dropEl.innerHTML = '<div class="gw-cp-dd-empty">불러오는 중…</div>';
         return;
       }
-      listEl.innerHTML = filtered.map((c) => {
-        const on = selected.has(c.code);
-        return `<button type="button" class="gw-cp-item${on ? ' is-selected' : ''}" data-code="${escapeHtml(c.code)}" role="option" aria-selected="${on}">
-          <span class="gw-cp-item-check" aria-hidden="true">${on ? '✓' : ''}</span>
-          <span class="gw-cp-item-name">${highlight(c.name_ko || c.code, q)}</span>
-          <span class="gw-cp-item-en">${highlight(c.name_en || '', q)}</span>
-          <span class="gw-cp-item-code">${escapeHtml(c.code)}</span>
+      // 매칭: 국가코드 prefix → 한글 prefix → 영문 prefix → 부분일치 (가나다 정렬)
+      const matched = items
+        .filter((c) => !selected.includes(c.code))
+        .map((c) => {
+          const code = c.code.toLowerCase();
+          const ko = (c.name_ko || '').toLowerCase();
+          const en = (c.name_en || '').toLowerCase();
+          let score = 0;
+          if (code === q) score = 100;
+          else if (code.startsWith(q)) score = 80;
+          else if (ko.startsWith(q)) score = 70;
+          else if (en.startsWith(q)) score = 60;
+          else if (ko.includes(q) || en.includes(q) || code.includes(q)) score = 40;
+          return { c, score };
+        })
+        .filter((r) => r.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+      if (!matched.length) {
+        dropEl.hidden = false;
+        dropEl.innerHTML = '<div class="gw-cp-dd-empty">일치하는 국가가 없습니다.</div>';
+        return;
+      }
+      dropEl.hidden = false;
+      dropEl.innerHTML = matched.map((r, i) => {
+        const c = r.c;
+        return `<button type="button" class="gw-cp-dd-item${i === activeIdx ? ' is-active' : ''}" data-code="${escapeHtml(c.code)}" role="option">
+          <span class="gw-cp-dd-name">${highlight(c.name_ko || c.code, q)}</span>
+          <span class="gw-cp-dd-en">${highlight(c.name_en || '', q)}</span>
+          <span class="gw-cp-dd-code">${escapeHtml(c.code)}</span>
         </button>`;
       }).join('');
     }
 
-    // Events
-    chipEl.addEventListener('click', (e) => {
+    function addCode(code) {
+      if (!code || selected.includes(code)) return;
+      selected.push(code);
+      inputEl.value = '';
+      closeDropdown();
+      renderSelected();
+      emit();
+    }
+    function removeCode(code) {
+      const idx = selected.indexOf(code);
+      if (idx < 0) return;
+      selected.splice(idx, 1);
+      renderSelected();
+      emit();
+    }
+
+    // Selected 영역 — × 클릭으로 제거
+    selEl.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-remove]');
       if (!btn) return;
-      selected.delete(btn.getAttribute('data-remove'));
-      renderChips();
-      renderList();
-      emit();
+      removeCode(btn.getAttribute('data-remove'));
     });
 
-    searchEl.addEventListener('input', () => {
-      query = searchEl.value || '';
-      renderList();
+    // 입력 — 드롭다운 갱신
+    inputEl.addEventListener('input', () => { activeIdx = -1; renderDropdown(); });
+    inputEl.addEventListener('focus', () => { if (inputEl.value.trim()) renderDropdown(); });
+    inputEl.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+    inputEl.addEventListener('keydown', (e) => {
+      const matches = dropEl.querySelectorAll('[data-code]');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = Math.min(activeIdx + 1, matches.length - 1);
+        renderDropdown();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = Math.max(activeIdx - 1, 0);
+        renderDropdown();
+      } else if (e.key === 'Enter') {
+        if (activeIdx >= 0 && matches[activeIdx]) {
+          e.preventDefault();
+          addCode(matches[activeIdx].getAttribute('data-code'));
+        } else if (matches.length === 1) {
+          e.preventDefault();
+          addCode(matches[0].getAttribute('data-code'));
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      } else if (e.key === 'Backspace' && !inputEl.value && selected.length) {
+        // 빈 입력 + Backspace → 마지막 선택 제거 (이메일 입력 패턴)
+        removeCode(selected[selected.length - 1]);
+      }
     });
 
-    listEl.addEventListener('click', (e) => {
+    // 드롭다운 클릭으로 추가
+    dropEl.addEventListener('mousedown', (e) => {
       const btn = e.target.closest('[data-code]');
       if (!btn) return;
-      const code = btn.getAttribute('data-code');
-      if (selected.has(code)) selected.delete(code);
-      else selected.add(code);
-      renderChips();
-      renderList();
-      emit();
+      e.preventDefault(); // blur 방지
+      addCode(btn.getAttribute('data-code'));
     });
 
-    // Load + initial render
+    // Load catalog + 초기 렌더
     loadCountries().then((data) => {
       items = data;
-      renderChips();
-      renderList();
+      renderSelected();
     }).catch(() => {
-      listEl.innerHTML = '<div class="gw-cp-empty">국가 목록을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.</div>';
+      selEl.innerHTML = '<span class="gw-cp-selected-empty">국가 목록을 불러오지 못했습니다.</span>';
     });
 
+    renderSelected();
+
     return {
-      getValue: () => Array.from(selected),
+      getValue: () => selected.slice(),
       setValue: (codes) => {
-        selected = new Set(Array.isArray(codes) ? codes : []);
-        renderChips();
-        renderList();
+        selected = [];
+        (Array.isArray(codes) ? codes : []).forEach((c) => { if (!selected.includes(c)) selected.push(c); });
+        renderSelected();
       },
-      focus: () => searchEl && searchEl.focus(),
+      focus: () => inputEl && inputEl.focus(),
     };
   }
 
@@ -233,5 +288,274 @@
     load: loadCountries,
     getLabel: getCountryLabel,
     attach: attachCountryPicker,
+  };
+
+  // ── Events picker ───────────────────────────────────────────────────────────
+  // 행사 카탈로그(memorabilia_events) 에서 검색·선택. 없으면 "신규 등록" 으로 생성.
+  // opts.host         — 컨테이너
+  // opts.initialId    — 사전 선택 event_id (편집 모드)
+  // opts.initialEvent — 사전 선택 event 객체 (서버 응답 .event)
+  // opts.onChange     — (eventId | null, eventObj | null) => void
+  // returns { getEventId, getEvent, setEvent, reload }
+
+  let _eventsCache = null;
+  let _eventsPromise = null;
+  async function loadEvents(force) {
+    if (force) { _eventsCache = null; _eventsPromise = null; }
+    if (_eventsCache) return _eventsCache;
+    if (_eventsPromise) return _eventsPromise;
+    _eventsPromise = fetch('/api/memorabilia/events', { credentials: 'same-origin' })
+      .then((res) => res.ok ? res.json() : Promise.reject(new Error('HTTP ' + res.status)))
+      .then((data) => { _eventsCache = Array.isArray(data.items) ? data.items : []; return _eventsCache; })
+      .catch((err) => { _eventsPromise = null; throw err; });
+    return _eventsPromise;
+  }
+
+  function attachEventPicker(opts) {
+    const host = opts.host;
+    if (!host) throw new Error('attachEventPicker: host required');
+    const prefix = opts.idPrefix || 'ep';
+    let events = [];
+    let selectedId = opts.initialId || null;
+    let selectedEvent = opts.initialEvent || null;
+    let activeIdx = -1;
+    let creating = false;
+
+    host.classList.add('gw-event-picker');
+    host.innerHTML = `
+      <div class="gw-ep-selected" id="${prefix}-selected" hidden></div>
+      <div class="gw-cp-input-wrap">
+        <input type="search" class="gw-cp-input" id="${prefix}-input" placeholder="행사명 검색 (영문/국문) — 없으면 + 신규 등록" autocomplete="off" spellcheck="false" />
+        <div class="gw-cp-dropdown" id="${prefix}-dropdown" role="listbox" hidden></div>
+      </div>
+      <div class="gw-ep-create-form" id="${prefix}-create-form" hidden>
+        <h4>신규 행사 등록</h4>
+        <div class="gw-ep-create-row">
+          <label>행사명 (영문)</label>
+          <input type="text" id="${prefix}-new-en" class="gw-cp-input" maxlength="200" placeholder="e.g. 25th World Scout Jamboree" />
+        </div>
+        <div class="gw-ep-create-row">
+          <label>행사명 (국문)</label>
+          <input type="text" id="${prefix}-new-ko" class="gw-cp-input" maxlength="200" placeholder="예: 제25회 세계스카우트잼버리" />
+        </div>
+        <fieldset class="gw-ep-date">
+          <legend>시작일 (선택)</legend>
+          <input type="number" id="${prefix}-new-sy" class="gw-cp-input gw-cp-input-num" placeholder="연도" min="1800" max="2200" />
+          <input type="number" id="${prefix}-new-sm" class="gw-cp-input gw-cp-input-num" placeholder="월"   min="1"    max="12"   />
+          <input type="number" id="${prefix}-new-sd" class="gw-cp-input gw-cp-input-num" placeholder="일 (선택)" min="1" max="31" />
+        </fieldset>
+        <fieldset class="gw-ep-date">
+          <legend>종료일 (선택)</legend>
+          <input type="number" id="${prefix}-new-ey" class="gw-cp-input gw-cp-input-num" placeholder="연도" min="1800" max="2200" />
+          <input type="number" id="${prefix}-new-em" class="gw-cp-input gw-cp-input-num" placeholder="월"   min="1"    max="12"   />
+          <input type="number" id="${prefix}-new-ed" class="gw-cp-input gw-cp-input-num" placeholder="일 (선택)" min="1" max="31" />
+        </fieldset>
+        <div class="gw-ep-create-actions">
+          <button type="button" class="memo-btn memo-btn-outline memo-btn-sm" id="${prefix}-cancel-create">취소</button>
+          <button type="button" class="memo-btn memo-btn-primary memo-btn-sm" id="${prefix}-save-create">행사 등록</button>
+        </div>
+        <div class="gw-ep-create-error" id="${prefix}-create-error" hidden></div>
+      </div>
+    `;
+
+    const selEl = host.querySelector('#' + prefix + '-selected');
+    const inputEl = host.querySelector('#' + prefix + '-input');
+    const dropEl = host.querySelector('#' + prefix + '-dropdown');
+    const formEl = host.querySelector('#' + prefix + '-create-form');
+    const errEl = host.querySelector('#' + prefix + '-create-error');
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function highlight(text, q) {
+      if (!q) return escapeHtml(text);
+      const safe = escapeHtml(text);
+      const pattern = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      try { return safe.replace(new RegExp('(' + pattern + ')', 'gi'), '<mark>$1</mark>'); }
+      catch { return safe; }
+    }
+    function emit() {
+      if (typeof opts.onChange === 'function') opts.onChange(selectedId, selectedEvent);
+    }
+
+    function renderSelected() {
+      if (!selectedEvent) {
+        selEl.hidden = true;
+        selEl.innerHTML = '';
+        inputEl.style.display = '';
+        return;
+      }
+      selEl.hidden = false;
+      const en = selectedEvent.name_en || '';
+      const ko = selectedEvent.name_ko || '';
+      const period = selectedEvent.period_text || '';
+      selEl.innerHTML = `
+        <div class="gw-ep-selected-card">
+          <div class="gw-ep-selected-name">
+            ${en ? `<strong>${escapeHtml(en)}</strong>` : ''}
+            ${ko ? `<div class="gw-ep-selected-ko">${escapeHtml(ko)}</div>` : ''}
+            ${period ? `<div class="gw-ep-selected-period">${escapeHtml(period)}</div>` : ''}
+          </div>
+          <button type="button" class="memo-btn memo-btn-outline memo-btn-sm" data-clear="1">변경</button>
+        </div>
+      `;
+      inputEl.style.display = 'none';
+      closeDropdown();
+    }
+
+    function closeDropdown() { dropEl.hidden = true; dropEl.innerHTML = ''; activeIdx = -1; }
+
+    function renderDropdown() {
+      const q = inputEl.value.trim().toLowerCase();
+      if (!q) { closeDropdown(); return; }
+      const matched = events.map((e) => {
+        const en = (e.name_en || '').toLowerCase();
+        const ko = (e.name_ko || '').toLowerCase();
+        let score = 0;
+        if (en === q || ko === q) score = 100;
+        else if (en.startsWith(q) || ko.startsWith(q)) score = 80;
+        else if (en.includes(q) || ko.includes(q)) score = 40;
+        return { e, score };
+      }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
+
+      dropEl.hidden = false;
+      const createItem = `<button type="button" class="gw-cp-dd-item gw-ep-dd-create" data-create="1">
+        <span class="gw-cp-dd-name">+ "${escapeHtml(inputEl.value.trim())}" 신규 행사로 등록</span>
+        <span class="gw-cp-dd-en">검색 결과가 마음에 들지 않으면 직접 만드세요</span>
+      </button>`;
+
+      if (!matched.length) {
+        dropEl.innerHTML = '<div class="gw-cp-dd-empty">등록된 일치 행사 없음</div>' + createItem;
+        return;
+      }
+      dropEl.innerHTML = matched.map((r, i) => {
+        const e = r.e;
+        return `<button type="button" class="gw-cp-dd-item${i === activeIdx ? ' is-active' : ''}" data-event-id="${e.id}">
+          <span class="gw-cp-dd-name">${highlight(e.name_en || e.name_ko, q)}</span>
+          <span class="gw-cp-dd-en">${highlight(e.name_ko || '', q)}${e.period_text ? ' · ' + escapeHtml(e.period_text) : ''}</span>
+          <span class="gw-cp-dd-code">${e.usage_count || 0}건</span>
+        </button>`;
+      }).join('') + createItem;
+    }
+
+    function selectEvent(ev) {
+      selectedId = ev ? ev.id : null;
+      selectedEvent = ev || null;
+      renderSelected();
+      emit();
+    }
+
+    selEl.addEventListener('click', (e) => {
+      if (e.target.closest('[data-clear]')) {
+        selectEvent(null);
+        inputEl.value = '';
+        setTimeout(() => inputEl.focus(), 50);
+      }
+    });
+
+    inputEl.addEventListener('input', () => { activeIdx = -1; renderDropdown(); });
+    inputEl.addEventListener('focus', () => { if (inputEl.value.trim()) renderDropdown(); });
+    inputEl.addEventListener('blur', () => setTimeout(closeDropdown, 200));
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDropdown();
+    });
+
+    dropEl.addEventListener('mousedown', (e) => {
+      const createBtn = e.target.closest('[data-create]');
+      if (createBtn) {
+        e.preventDefault();
+        openCreateForm(inputEl.value.trim());
+        return;
+      }
+      const btn = e.target.closest('[data-event-id]');
+      if (!btn) return;
+      e.preventDefault();
+      const id = parseInt(btn.getAttribute('data-event-id'), 10);
+      const ev = events.find((x) => x.id === id);
+      if (ev) selectEvent(ev);
+    });
+
+    function openCreateForm(prefillName) {
+      creating = true;
+      formEl.hidden = false;
+      errEl.hidden = true;
+      // 영/한 자동 분배: 입력값이 ASCII 위주면 EN, 한글 포함이면 KO
+      const isKorean = /[가-힣]/.test(prefillName);
+      host.querySelector('#' + prefix + '-new-en').value = isKorean ? '' : prefillName;
+      host.querySelector('#' + prefix + '-new-ko').value = isKorean ? prefillName : '';
+      // 나머지 초기화
+      ['sy','sm','sd','ey','em','ed'].forEach((k) => {
+        host.querySelector('#' + prefix + '-new-' + k).value = '';
+      });
+      closeDropdown();
+    }
+    function closeCreateForm() { creating = false; formEl.hidden = true; errEl.hidden = true; }
+    host.querySelector('#' + prefix + '-cancel-create').addEventListener('click', closeCreateForm);
+    host.querySelector('#' + prefix + '-save-create').addEventListener('click', async () => {
+      errEl.hidden = true;
+      const body = {
+        name_en: host.querySelector('#' + prefix + '-new-en').value.trim(),
+        name_ko: host.querySelector('#' + prefix + '-new-ko').value.trim(),
+        start_year:  host.querySelector('#' + prefix + '-new-sy').value || null,
+        start_month: host.querySelector('#' + prefix + '-new-sm').value || null,
+        start_day:   host.querySelector('#' + prefix + '-new-sd').value || null,
+        end_year:    host.querySelector('#' + prefix + '-new-ey').value || null,
+        end_month:   host.querySelector('#' + prefix + '-new-em').value || null,
+        end_day:     host.querySelector('#' + prefix + '-new-ed').value || null,
+      };
+      try {
+        const res = await fetch('/api/memorabilia/events', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail = (data.details || []).join(' · ') || data.error || ('HTTP ' + res.status);
+          errEl.textContent = '행사 등록 실패: ' + detail;
+          errEl.hidden = false;
+          return;
+        }
+        // 카탈로그 새로고침 후 방금 만든 행사를 선택
+        events = await loadEvents(true);
+        const newEv = events.find((x) => x.id === data.id) || null;
+        if (newEv) selectEvent(newEv);
+        closeCreateForm();
+        inputEl.value = '';
+      } catch (err) {
+        errEl.textContent = '네트워크 오류: ' + err.message;
+        errEl.hidden = false;
+      }
+    });
+
+    // Initial load + render
+    loadEvents().then((data) => {
+      events = data;
+      if (selectedId && !selectedEvent) {
+        selectedEvent = events.find((e) => e.id === selectedId) || null;
+      }
+      renderSelected();
+    }).catch(() => {
+      // ignore — picker still usable for create
+    });
+
+    return {
+      getEventId: () => selectedId,
+      getEvent: () => selectedEvent,
+      setEvent: (ev) => {
+        selectedId = ev ? ev.id : null;
+        selectedEvent = ev || null;
+        renderSelected();
+      },
+      reload: () => loadEvents(true),
+    };
+  }
+
+  GW.MemorabiliaEvents = {
+    load: loadEvents,
+    attach: attachEventPicker,
   };
 })();
