@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "03.122.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 13:13:57 KST",
+    "summary": "관리자 접속 도시 목록을 국가별 접기/펼치기 그룹 트리로 개편 + 국가·도시 통합 검색 추가.",
+    "for_users": [
+      "관리자 → 접속 국가/도시 패널의 도시 목록이 국가별로 묶여서 보입니다. 기본은 모두 접혀 있고, 국가 행을 클릭하면 그 아래로 도시들이 방문 많은 순서대로 펼쳐집니다.",
+      "도시 목록 카드 상단에 검색창이 생겼습니다. 국가명(한글·원문·국가코드) 또는 도시명을 입력하면 일치하는 항목만 자동으로 펼쳐서 보여주고, 검색어가 도시명에 매칭되면 해당 도시만 강조 표시됩니다.",
+      "[모두 펼치기 / 모두 접기] 토글 버튼도 함께 추가되어 한 번에 전체 국가를 펼치거나 접을 수 있습니다."
+    ],
+    "for_developers": [
+      "admin.html: panel-geo-audience 의 #geo-audience-city-list 카드에 #geo-audience-city-search 검색 input 과 #geo-audience-city-toggle-all 버튼을 카드 헤더에 추가.",
+      "js/admin-v3.js: _renderGeoCityTable → _renderGeoCityGroupedByCountry 로 위임. 도시 배열을 country_code(없으면 country_name)로 그룹핑해 펼침 가능한 트리로 렌더. 상태: _geoAudienceExpandedCountries(Set, country_code→true), _geoAudienceCityQuery(string), _geoAudienceCitiesCache(enriched 배열). 검색은 국가명·국가코드·도시명 부분일치(case-insensitive, 한글 포함). 검색 중에는 매칭된 국가 자동 펼침 + 매칭된 도시만 노출(국가명 매칭 시 모든 도시). 입력은 120ms 디바운스. 매칭 도시명은 <mark class=v3-geo-mark> 로 강조.",
+      "js/admin-v3.js: 국가 헤더 클릭 토글은 #geo-audience-city-list 컨테이너에 click 위임. [data-geo-country-toggle] 속성으로 키 식별. 모두 펼치기/접기 버튼은 현재 펼친 비율로 다음 상태 결정(절반 미만이면 펼치기, 이상이면 접기).",
+      "css/admin-v3.css: .v3-geo-city-toolbar / .v3-geo-city-search / .v3-geo-city-search-summary / .v3-geo-city-tree / .v3-geo-country-group / .v3-geo-country-row(grid 6열) / .v3-geo-country-chevron(▶ → rotate90) / .v3-geo-country-stat / .v3-geo-city-sublist / .v3-geo-city-subtable / .v3-geo-mark 추가 + 모바일(≤720px) grid-template-areas 재배치.",
+      "API 변경 없음 — 기존 GET /api/admin/geo-audience 응답 그대로 사용.",
+      "관리자 버전 03.121.01 → 03.122.00."
+    ]
+  },
+  {
     "version": "03.121.01",
     "date": "2026-05-25",
     "released_at": "2026-05-25 10:57:17 KST",

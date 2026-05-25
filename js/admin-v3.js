@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.121.01
+ * Version: 03.122.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -244,6 +244,10 @@
   var _analyticsPeriodState = { days: 30 };
   var _analyticsTagPeriodState = { days: 30 };
   var _geoAudiencePeriodState = { days: 30 };
+  var _geoAudienceExpandedCountries = Object.create(null); // country_code → true
+  var _geoAudienceCityQuery = '';
+  var _geoAudienceCitiesCache = []; // 마지막으로 렌더한 enriched 도시 배열
+  var _geoAudienceCitySearchDebounce = null;
   var _loginInFlight = false;
   var _dashboardHeatmapMode = '7d';
   var _dashboardHeatmapStart = '';
@@ -835,6 +839,24 @@
       _loadGeoAudience();
     });
     _bindEl('geo-audience-refresh-btn', 'click', _loadGeoAudience);
+    _bindEl('geo-audience-city-search', 'input', _onGeoCitySearchInput);
+    _bindEl('geo-audience-city-toggle-all', 'click', _onGeoCityToggleAll);
+    // 도시 국가 그룹 헤더 클릭 → 펼침/접힘 (위임)
+    var _geoCityListEl = _el('geo-audience-city-list');
+    if (_geoCityListEl) {
+      _geoCityListEl.addEventListener('click', function (ev) {
+        var btn = ev.target && ev.target.closest ? ev.target.closest('[data-geo-country-toggle]') : null;
+        if (!btn) return;
+        var key = btn.getAttribute('data-geo-country-toggle');
+        if (!key) return;
+        if (_geoAudienceExpandedCountries[key]) {
+          delete _geoAudienceExpandedCountries[key];
+        } else {
+          _geoAudienceExpandedCountries[key] = true;
+        }
+        _rerenderGeoCityList();
+      });
+    }
 
     _initDashboardHeatmapControls();
 
@@ -6463,25 +6485,214 @@
   }
 
   function _renderGeoCityTable(items) {
-    if (!items.length) {
+    // 입구점은 유지하되 국가별 그룹 트리로 위임 (2026-05-25, 03.122.00).
+    _geoAudienceCitiesCache = Array.isArray(items) ? items : [];
+    return _renderGeoCityGroupedByCountry(_geoAudienceCitiesCache, _geoAudienceCityQuery);
+  }
+
+  // 도시 배열을 country_code로 그룹핑하고 검색·접힘 상태를 반영해 HTML 생성.
+  // - 기본: 모든 국가 접힘 (헤더만 노출, 클릭 시 도시 펼침)
+  // - 검색: 국가명·도시명 부분일치. 매칭된 국가는 자동 펼침 + 매칭 도시만 표시
+  //         (국가명만 매칭되면 해당 국가의 모든 도시 표시)
+  function _renderGeoCityGroupedByCountry(cities, rawQuery) {
+    if (!cities.length) {
       return '<div class="v3-empty"><div class="v3-empty-text">도시별 접속 기록이 아직 없습니다.</div><div class="v3-issues-note">일부 요청은 Cloudflare에서 도시 정보를 주지 않아 `도시 미확인`으로 집계될 수 있습니다.</div></div>';
     }
-    return '<div class="v3-geo-table-wrap"><table class="v3-geo-table"><thead><tr>' +
-      '<th>도시</th><th>국가</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +
+
+    var query = String(rawQuery || '').trim().toLowerCase();
+
+    // group by country_code (fallback: country_name)
+    var groups = Object.create(null);
+    var order = []; // 그룹 등장 순서 보존 (API가 이미 방문 desc로 보내옴)
+    cities.forEach(function (item) {
+      var key = item.country_code || item.country_name || '__unknown__';
+      if (!groups[key]) {
+        groups[key] = {
+          key: key,
+          country_code: item.country_code || '',
+          country_name: item.country_name || item.country_code || 'Unknown',
+          country_name_original: item.country_name_original || '',
+          region_tone_class: item.region_tone_class || 'is-unassigned',
+          region_label: item.region_label || '지역연맹 미분류',
+          cities: [],
+          totalVisits: 0,
+          totalPageviews: 0,
+          lastVisitAt: '',
+        };
+        order.push(key);
+      }
+      var g = groups[key];
+      g.cities.push(item);
+      g.totalVisits += Number(item.visits || 0);
+      g.totalPageviews += Number(item.pageviews || 0);
+      var lastTs = String(item.last_visit_at || '');
+      if (lastTs > g.lastVisitAt) g.lastVisitAt = lastTs;
+    });
+
+    // 검색 필터: 매칭된 국가/도시만 통과
+    var filteredOrder = order;
+    var matchedCountryCount = order.length;
+    var matchedCityCount = cities.length;
+    if (query) {
+      var nextOrder = [];
+      var nextMatchedCities = 0;
+      filteredOrder = order.filter(function (key) {
+        var g = groups[key];
+        var countryMatches = (
+          g.country_name.toLowerCase().indexOf(query) !== -1 ||
+          (g.country_name_original || '').toLowerCase().indexOf(query) !== -1 ||
+          (g.country_code || '').toLowerCase().indexOf(query) !== -1
+        );
+        if (countryMatches) {
+          // 국가명 매칭 → 모든 도시 표시
+          nextMatchedCities += g.cities.length;
+          nextOrder.push(key);
+          g._matchAll = true;
+          return true;
+        }
+        // 도시명 매칭 검사
+        var matched = g.cities.filter(function (c) {
+          var n = String(c.city_name || '').toLowerCase();
+          var no = String(c.city_name_original || '').toLowerCase();
+          return n.indexOf(query) !== -1 || no.indexOf(query) !== -1;
+        });
+        if (matched.length) {
+          g._filteredCities = matched;
+          nextMatchedCities += matched.length;
+          nextOrder.push(key);
+          return true;
+        }
+        return false;
+      });
+      matchedCountryCount = nextOrder.length;
+      matchedCityCount = nextMatchedCities;
+      filteredOrder = nextOrder;
+    }
+
+    var html = '';
+    if (query) {
+      html += '<div class="v3-geo-city-search-summary">검색 결과: ' +
+        '<strong>' + _fmt(matchedCountryCount) + '</strong>개 국가, ' +
+        '<strong>' + _fmt(matchedCityCount) + '</strong>개 도시</div>';
+    }
+
+    if (!filteredOrder.length) {
+      html += '<div class="v3-empty"><div class="v3-empty-text">검색 결과가 없습니다.</div><div class="v3-issues-note">국가명, 국가코드, 도시명(한글·원문)으로 검색할 수 있습니다.</div></div>';
+      return html;
+    }
+
+    html += '<div class="v3-geo-city-tree" role="list">';
+    filteredOrder.forEach(function (key) {
+      var g = groups[key];
+      var citiesToShow = g._filteredCities || g.cities;
+      // 검색 중이면 매칭된 국가는 자동 펼침, 아니면 사용자 토글 상태 반영
+      var expanded = query ? true : !!_geoAudienceExpandedCountries[key];
+      html += _renderGeoCountryGroup(g, citiesToShow, expanded, query);
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function _renderGeoCountryGroup(g, cities, expanded, query) {
+    var key = g.key;
+    var safeKey = GW.escapeHtml(key);
+    var headerClass = 'v3-geo-country-row' + (expanded ? ' is-expanded' : '');
+    var bodyStyle = expanded ? '' : ' hidden';
+    var cityCountText = cities.length === g.cities.length
+      ? _fmt(g.cities.length) + '개 도시'
+      : _fmt(cities.length) + '/' + _fmt(g.cities.length) + '개 도시';
+
+    var header =
+      '<button type="button" class="' + headerClass + '" data-geo-country-toggle="' + safeKey + '" aria-expanded="' + (expanded ? 'true' : 'false') + '">' +
+        '<span class="v3-geo-country-chevron" aria-hidden="true">▶</span>' +
+        '<span class="v3-geo-country-name">' +
+          '<span class="v3-geo-pill ' + GW.escapeHtml(g.region_tone_class) + '">' + GW.escapeHtml(g.country_name) + '</span>' +
+          '<span class="v3-geo-sub">' + GW.escapeHtml(g.country_code || 'N/A') + '</span>' +
+        '</span>' +
+        '<span class="v3-geo-country-stat">' +
+          '<span class="v3-geo-country-stat-num">' + _fmt(g.totalVisits) + '</span>' +
+          '<span class="v3-geo-country-stat-label">방문</span>' +
+        '</span>' +
+        '<span class="v3-geo-country-stat">' +
+          '<span class="v3-geo-country-stat-num">' + _fmt(g.totalPageviews) + '</span>' +
+          '<span class="v3-geo-country-stat-label">PV</span>' +
+        '</span>' +
+        '<span class="v3-geo-country-stat">' +
+          '<span class="v3-geo-country-stat-num">' + GW.escapeHtml(cityCountText) + '</span>' +
+        '</span>' +
+        '<span class="v3-geo-country-last">' + GW.escapeHtml(_formatDateTimeCompact(g.lastVisitAt)) + '</span>' +
+      '</button>';
+
+    var body = '<div class="v3-geo-city-sublist"' + bodyStyle + '>' +
+      '<table class="v3-geo-table v3-geo-city-subtable"><thead><tr>' +
+        '<th>도시</th><th>방문</th><th>페이지뷰</th><th>최근 접속</th>' +
       '</tr></thead><tbody>' +
-      items.slice(0, 120).map(function (item) {
-        var cityName = item.city_name || item.city_name_original || '도시 미확인';
-        var cityOriginal = String(item.city_name_original || '').trim();
-        var showOriginal = cityOriginal && cityOriginal !== cityName && cityOriginal !== '도시 미확인';
-        return '<tr>' +
-          '<td><div class="v3-geo-country-cell"><strong>' + GW.escapeHtml(cityName) + '</strong>' + (showOriginal ? '<span class="v3-geo-sub">' + GW.escapeHtml(cityOriginal) + '</span>' : '') + '</div></td>' +
-          '<td><div class="v3-geo-country-cell"><span class="v3-geo-pill ' + GW.escapeHtml(item.region_tone_class || 'is-unassigned') + '">' + GW.escapeHtml(item.country_name || item.country_code || 'Unknown') + '</span>' + _renderGeoRegionMeta(item) + '</div></td>' +
-          '<td>' + _fmt(item.visits || 0) + '</td>' +
-          '<td>' + _fmt(item.pageviews || 0) + '</td>' +
-          '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
-        '</tr>';
-      }).join('') +
-      '</tbody></table></div>';
+        cities.map(function (item) {
+          var cityName = item.city_name || item.city_name_original || '도시 미확인';
+          var cityOriginal = String(item.city_name_original || '').trim();
+          var showOriginal = cityOriginal && cityOriginal !== cityName && cityOriginal !== '도시 미확인';
+          return '<tr>' +
+            '<td><div class="v3-geo-country-cell"><strong>' + _highlightMatch(cityName, query) + '</strong>' + (showOriginal ? '<span class="v3-geo-sub">' + GW.escapeHtml(cityOriginal) + '</span>' : '') + '</div></td>' +
+            '<td>' + _fmt(item.visits || 0) + '</td>' +
+            '<td>' + _fmt(item.pageviews || 0) + '</td>' +
+            '<td>' + GW.escapeHtml(_formatDateTimeCompact(item.last_visit_at)) + '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody></table>' +
+    '</div>';
+
+    return '<div class="v3-geo-country-group" role="listitem" data-geo-country-key="' + safeKey + '">' + header + body + '</div>';
+  }
+
+  function _highlightMatch(text, query) {
+    var safe = GW.escapeHtml(String(text || ''));
+    if (!query) return safe;
+    var safeQuery = GW.escapeHtml(query);
+    // 정규식 특수 문자 이스케이프 후 case-insensitive 부분일치 강조
+    var pattern = safeQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      return safe.replace(new RegExp('(' + pattern + ')', 'gi'), '<mark class="v3-geo-mark">$1</mark>');
+    } catch (e) {
+      return safe;
+    }
+  }
+
+  function _onGeoCitySearchInput(event) {
+    var value = event && event.target ? String(event.target.value || '') : '';
+    if (_geoAudienceCitySearchDebounce) clearTimeout(_geoAudienceCitySearchDebounce);
+    _geoAudienceCitySearchDebounce = setTimeout(function () {
+      _geoAudienceCityQuery = value;
+      _rerenderGeoCityList();
+    }, 120);
+  }
+
+  function _onGeoCityToggleAll() {
+    var btn = _el('geo-audience-city-toggle-all');
+    if (!_geoAudienceCitiesCache.length) return;
+    // 현재 펼쳐진 국가 수가 전체의 절반 이상이면 모두 접기, 아니면 모두 펼치기
+    var totalCountries = 0;
+    var seen = Object.create(null);
+    _geoAudienceCitiesCache.forEach(function (c) {
+      var k = c.country_code || c.country_name || '__unknown__';
+      if (!seen[k]) { seen[k] = true; totalCountries += 1; }
+    });
+    var expandedCount = 0;
+    Object.keys(_geoAudienceExpandedCountries).forEach(function (k) {
+      if (_geoAudienceExpandedCountries[k] && seen[k]) expandedCount += 1;
+    });
+    var shouldExpandAll = expandedCount * 2 < totalCountries;
+    _geoAudienceExpandedCountries = Object.create(null);
+    if (shouldExpandAll) {
+      Object.keys(seen).forEach(function (k) { _geoAudienceExpandedCountries[k] = true; });
+    }
+    if (btn) btn.textContent = shouldExpandAll ? '모두 접기' : '모두 펼치기';
+    _rerenderGeoCityList();
+  }
+
+  function _rerenderGeoCityList() {
+    var cityEl = document.getElementById('geo-audience-city-list');
+    if (!cityEl) return;
+    cityEl.innerHTML = _renderGeoCityGroupedByCountry(_geoAudienceCitiesCache, _geoAudienceCityQuery);
   }
 
   function _renderGeoAudienceMap(countryItems, cityItems) {

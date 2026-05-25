@@ -1536,6 +1536,156 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 .v3-geo-legend-dot.is-unassigned {
   color: transparent;
 }
+
+/* ── Geo city grouped tree (2026-05-25, 03.122.00) ─────────────── */
+.v3-geo-city-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  flex-wrap: wrap;
+}
+.v3-geo-city-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 6px var(--gap-card);
+  border: 1px solid var(--v3-border);
+  border-radius: 8px;
+  font-size: var(--fs-small);
+  background: var(--v3-surface);
+  color: var(--v3-text);
+}
+.v3-geo-city-search:focus {
+  outline: none;
+  border-color: var(--v3-primary);
+  box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.16);
+}
+.v3-geo-city-search-summary {
+  margin-bottom: var(--gap-element);
+  font-size: var(--fs-small);
+  color: var(--v3-text-m);
+}
+.v3-geo-city-search-summary strong {
+  color: var(--v3-text);
+  font-weight: 700;
+}
+.v3-geo-city-tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+}
+.v3-geo-country-group {
+  border: 1px solid var(--v3-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--v3-surface);
+}
+.v3-geo-country-row {
+  display: grid;
+  grid-template-columns: 18px minmax(160px, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: var(--gap-element);
+  width: 100%;
+  padding: var(--gap-card);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--v3-text);
+  transition: background 0.15s;
+}
+.v3-geo-country-row:hover {
+  background: var(--v3-surface-alt, rgba(98, 37, 153, 0.04));
+}
+.v3-geo-country-row:focus-visible {
+  outline: 2px solid var(--v3-primary);
+  outline-offset: -2px;
+}
+.v3-geo-country-chevron {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--v3-text-m);
+  transition: transform 0.18s;
+  width: 14px;
+  text-align: center;
+}
+.v3-geo-country-row.is-expanded .v3-geo-country-chevron {
+  transform: rotate(90deg);
+}
+.v3-geo-country-name {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  min-width: 0;
+  overflow: hidden;
+}
+.v3-geo-country-name .v3-geo-pill {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v3-geo-country-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  min-width: 56px;
+}
+.v3-geo-country-stat-num {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--v3-text);
+  font-variant-numeric: tabular-nums;
+}
+.v3-geo-country-stat-label {
+  font-size: var(--fs-micro);
+  color: var(--v3-text-m);
+  margin-top: 1px;
+}
+.v3-geo-country-last {
+  font-size: var(--fs-meta);
+  color: var(--v3-text-m);
+  font-variant-numeric: tabular-nums;
+  min-width: 110px;
+  text-align: right;
+}
+.v3-geo-city-sublist {
+  padding: 0 var(--gap-card) var(--gap-card);
+  background: var(--v3-content-bg);
+  border-top: 1px solid var(--v3-border);
+}
+.v3-geo-city-sublist[hidden] { display: none; }
+.v3-geo-city-subtable {
+  margin-top: var(--gap-tight);
+  font-size: var(--fs-small);
+}
+.v3-geo-city-subtable th {
+  background: transparent;
+  color: var(--v3-text-m);
+  font-weight: 600;
+}
+.v3-geo-mark {
+  background: rgba(255, 86, 85, 0.22);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+@media (max-width: 720px) {
+  .v3-geo-country-row {
+    grid-template-columns: 18px 1fr auto;
+    grid-template-areas:
+      "chev name stat1"
+      ".    name last";
+    row-gap: 4px;
+  }
+  .v3-geo-country-row .v3-geo-country-chevron { grid-area: chev; }
+  .v3-geo-country-row .v3-geo-country-name { grid-area: name; }
+  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(1) { grid-area: stat1; }
+  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(2),
+  .v3-geo-country-row .v3-geo-country-stat:nth-of-type(3) { display: none; }
+  .v3-geo-country-row .v3-geo-country-last { grid-area: last; text-align: left; }
+}
 @media (max-width: 900px) {
   .v3-analytics-head-tools {
     justify-items: stretch;
