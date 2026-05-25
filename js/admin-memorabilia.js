@@ -571,7 +571,9 @@
     state.images.push(...placeholders);
     if (noPrimaryYet) placeholders[0].is_primary = true;
     renderImages();
+    showUploadProgress(0, placeholders.length);
 
+    let completed = 0;
     for (const ph of placeholders) {
       try {
         console.log('[memo upload] POST /api/memorabilia/upload-image for', ph._file?.name);
@@ -605,7 +607,9 @@
         const idx = state.images.indexOf(ph);
         if (idx >= 0) state.images.splice(idx, 1);
       }
+      completed += 1;
       renderImages();
+      showUploadProgress(completed, placeholders.length);
     }
 
     if (state.images.length && !state.images.some((i) => i.is_primary)) {
@@ -614,7 +618,34 @@
       renderImages();
     }
 
+    // 완료 메시지 → 2초 후 사라짐
+    const okCount = placeholders.length - errors.length;
+    if (okCount > 0) {
+      showUploadProgress(placeholders.length, placeholders.length, `✓ ${okCount}장 업로드 완료`);
+      setTimeout(() => hideUploadProgress(), 2200);
+    } else {
+      hideUploadProgress();
+    }
+
     if (errors.length) flashError(errors.join('\n'));
+  }
+
+  // 이미지 영역 상단 진행 바 — "⬆ 업로드 중… 1/3" + 진행률.
+  function showUploadProgress(done, total, customLabel) {
+    const meta = $('#memo-images-meta');
+    if (!meta) return;
+    const label = customLabel || (done < total
+      ? `⬆ 업로드 중… ${done} / ${total}`
+      : `⬆ 업로드 중… ${total}장 준비`);
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    meta.innerHTML = `<div class="memo-upload-bar">
+      <span class="memo-upload-bar-label">${label}</span>
+      <span class="memo-upload-bar-track"><span class="memo-upload-bar-fill" style="width:${pct}%"></span></span>
+    </div>`;
+  }
+  function hideUploadProgress() {
+    const meta = $('#memo-images-meta');
+    if (meta) meta.textContent = '';
   }
 
   function flashError(msg) {
@@ -646,7 +677,10 @@
   }
 
   async function onImageInput(e) {
-    const files = e.target.files;
+    // ⚠ FileList 는 input value 가 비워지면 invalidate 되므로, addFiles 호출 전에
+    // Array.from 으로 File 객체들의 스냅샷을 만들어야 한다. 이전엔 `files = e.target.files`
+    // 후 곧바로 value='' 처리해서 addFiles 가 빈 배열을 받던 회귀가 있었다.
+    const files = Array.from(e.target.files || []);
     try { e.target.value = ''; } catch {}
     await addFiles(files);
   }

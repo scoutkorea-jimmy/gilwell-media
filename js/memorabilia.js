@@ -659,6 +659,7 @@
 
     async addFiles(fileList) {
       const files = Array.from(fileList || []);
+      console.log('[memo upload] addFiles called with', files.length, 'file(s)', files.map((f) => ({ name: f.name, type: f.type, size: f.size })));
       if (!files.length) return;
 
       const errors = [];
@@ -666,10 +667,17 @@
       const newPlaceholders = [];
       for (const file of files) {
         const err = this.validateFile(file);
-        if (err) { errors.push(err); continue; }
+        if (err) {
+          console.warn('[memo upload] client validation rejected:', file.name, '→', err);
+          errors.push(err); continue;
+        }
         let previewDataUrl = '';
         try { previewDataUrl = await readFileAsDataUrl(file); }
-        catch { errors.push(`미리보기 생성 실패: ${file.name}`); continue; }
+        catch (e) {
+          console.error('[memo upload] FileReader failed:', file.name, e);
+          errors.push(`미리보기 생성 실패: ${file.name}`); continue;
+        }
+        console.log('[memo upload] file ready:', file.name, 'dataURL bytes:', previewDataUrl.length);
         const placeholder = {
           url: '',
           previewDataUrl,
@@ -696,10 +704,13 @@
         if (firstIdx >= 0) this.images[firstIdx].is_primary = true;
       }
       this.renderImages();
+      this.showUploadProgress(0, newPlaceholders.length);
 
       // 2) Upload sequentially (avoids overwhelming the bucket / D1)
+      let completed = 0;
       for (const placeholder of newPlaceholders) {
         try {
+          console.log('[memo upload] POST /api/memorabilia/upload-image for', placeholder._file?.name);
           const res = await fetch('/api/memorabilia/upload-image', {
             method: 'POST',
             credentials: 'same-origin',
@@ -707,6 +718,7 @@
             body: JSON.stringify({ data_url: placeholder.previewDataUrl }),
           });
           const data = await res.json().catch(() => ({}));
+          console.log('[memo upload] response', res.status, data);
           if (!res.ok || !data.url) {
             const reason = upload
               ? upload.describeError(data, `HTTP ${res.status}`)
@@ -722,6 +734,7 @@
           placeholder.previewDataUrl = '';
           placeholder._file = null;
         } catch (err) {
+          console.error('[memo upload] fetch threw:', err);
           const reason = upload
             ? upload.describeError({ error: 'network' }, err.message)
             : (err.message || '네트워크 오류');
@@ -729,7 +742,9 @@
           const idx = this.images.indexOf(placeholder);
           if (idx >= 0) this.images.splice(idx, 1);
         }
+        completed += 1;
         this.renderImages();
+        this.showUploadProgress(completed, newPlaceholders.length);
       }
 
       // 3) 대표 미지정이면 첫 번째 업로드 완료 항목으로
@@ -739,7 +754,34 @@
         this.renderImages();
       }
 
+      // 완료 메시지 → 2초 후 사라짐
+      const okCount = newPlaceholders.length - errors.length;
+      if (okCount > 0) {
+        this.showUploadProgress(newPlaceholders.length, newPlaceholders.length, `✓ ${okCount}장 업로드 완료`);
+        setTimeout(() => this.hideUploadProgress(), 2200);
+      } else {
+        this.hideUploadProgress();
+      }
+
       if (errors.length) this.flashError(errors.join('\n'));
+    },
+
+    // 이미지 영역 상단의 진행 바 — 큰 글자 + 진행률.
+    showUploadProgress(done, total, customLabel) {
+      const meta = $('#memo-images-meta');
+      if (!meta) return;
+      const label = customLabel || (done < total
+        ? `⬆ 업로드 중… ${done} / ${total}`
+        : `⬆ 업로드 중… ${total}장 준비`);
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      meta.innerHTML = `<div class="memo-upload-bar">
+        <span class="memo-upload-bar-label">${label}</span>
+        <span class="memo-upload-bar-track"><span class="memo-upload-bar-fill" style="width:${pct}%"></span></span>
+      </div>`;
+    },
+    hideUploadProgress() {
+      const meta = $('#memo-images-meta');
+      if (meta) meta.textContent = '';
     },
 
     flashError(msg) {
@@ -771,8 +813,10 @@
     },
 
     async onImageInput(e) {
-      const files = e.target.files;
-      // 즉시 input.value 클리어 — 같은 파일 다시 선택 가능
+      // ⚠ FileList 는 input value 가 비워지면 invalidate 된다. addFiles 호출 전에
+      // Array.from 으로 스냅샷을 떠야 한다.
+      const files = Array.from(e.target.files || []);
+      // 같은 파일 다시 선택 가능하도록 input value 클리어 (스냅샷 이후)
       try { e.target.value = ''; } catch {}
       await editor.addFiles(files);
     },

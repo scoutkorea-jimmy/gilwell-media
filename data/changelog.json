@@ -1,6 +1,37 @@
 {
   "items": [
   {
+    "version": "03.129.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:57:48 KST",
+    "summary": "기념품 도감 이미지 업로드 회귀 수정 — onImageInput 이 FileList 를 invalidate 후 addFiles 에 넘기던 버그. + 업로드 진행 바 추가 (↑ N/M + 완료 메시지).",
+    "for_users": [
+      "관리자 기념품 도감에서 이미지 추가가 클릭만 되고 실제로는 0장으로 처리되던 회귀를 수정했습니다. 이제 JPG/PNG/WebP/GIF 가 정상적으로 업로드됩니다.",
+      "이미지 영역 상단에 '⬆ 업로드 중… 1 / 3' 형태의 진행 바가 표시되고, 완료되면 '✓ N장 업로드 완료' 메시지가 잠시 떴다 사라집니다. 어디까지 진행됐는지 한눈에 보입니다."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js + js/memorabilia.js onImageInput: 이전엔 `const files = e.target.files; e.target.value = ''; await addFiles(files);` 였는데, value 리셋이 FileList 를 invalidate 해서 addFiles 가 0개로 읽었다. 콘솔 로그 \"[memo upload] file input change, files: 1\" 다음에 \"[memo upload] addFiles called with 0 file(s)\" 로 정확히 잡힘. 수정: `Array.from(e.target.files || [])` 로 File 참조 스냅샷을 먼저 만든 뒤 value 리셋.",
+      "동일 파일에 admin/공개 양쪽 모두 showUploadProgress(done,total,label) / hideUploadProgress() 추가. 완료 후 2.2 초 뒤 자동 fadeout.",
+      "css/memorabilia.css: .memo-upload-bar / .memo-upload-bar-track / .memo-upload-bar-fill (브랜드 보라색 트랙 + transition).",
+      "관리자 03.128.01 → 03.129.00."
+    ]
+  },
+  {
+    "version": "00.152.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:57:48 KST",
+    "summary": "공개 도감 — 이미지 업로드 진행 바 추가 + 업로드 회귀(0 files) 수정.",
+    "for_users": [
+      "공개 도감 페이지의 '수정' 모달에서 이미지를 추가하면 진행 상태 바('⬆ 업로드 중… N/M' → '✓ 완료')가 표시됩니다.",
+      "이전에 클릭은 되지만 0장으로 처리되던 회귀를 함께 수정했습니다."
+    ],
+    "for_developers": [
+      "관리자 03.129.00 항목 참조 (변경 범위 동일).",
+      "공개 측 영향: js/memorabilia.js + css/memorabilia.css.",
+      "사이트 00.151.00 → 00.152.00."
+    ]
+  },
+  {
     "version": "03.128.01",
     "date": "2026-05-25",
     "released_at": "2026-05-25 23:51:44 KST",

@@ -588,6 +588,38 @@
 }
 .memo-images-meta { font-size: 12px; color: var(--muted, #3f3f3f); }
 
+/* Upload progress bar — "⬆ 업로드 중… 2 / 5" + 진행률 트랙 */
+.memo-upload-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(98, 37, 153, 0.06);
+  border: 1px solid rgba(98, 37, 153, 0.2);
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 600;
+}
+.memo-upload-bar-label {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.memo-upload-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(98, 37, 153, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.memo-upload-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-scouting-purple, #622599);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
 .memo-link-row {
   display: flex; gap: 6px; margin-bottom: 6px;
   align-items: center;
