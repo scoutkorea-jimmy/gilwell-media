@@ -15,6 +15,7 @@
     items: [],
     total: 0,
     page: 1,                 // 1-based
+    listEventFilter: '',     // event_id 필터 (빈문자열 = 전체)
     categories: [],
     events: [],              // memorabilia_events 카탈로그 캐시 (행사 picker 용)
     editing: null,           // null | item
@@ -94,6 +95,11 @@
     if (newBtn) newBtn.addEventListener('click', () => openEditor(null));
     const searchInput = $('#memo-list-search');
     if (searchInput) searchInput.addEventListener('input', renderList);
+    const eventFilter = $('#memo-list-event-filter');
+    if (eventFilter) eventFilter.addEventListener('change', () => {
+      state.listEventFilter = eventFilter.value || '';
+      loadList(1);
+    });
 
     // Edit modal
     const closeBtn = $('#memo-edit-close');
@@ -128,7 +134,8 @@
 
     // Categories panel
     const catNewBtn = $('#memo-cat-new-btn');
-    if (catNewBtn) catNewBtn.addEventListener('click', promptNewCategory);
+    if (catNewBtn) catNewBtn.addEventListener('click', () => openCategoryEditor(null));
+    wireCategoryEditorOnce();
 
     // backdrop click closes
     const backdrop = $('#memo-edit-modal');
@@ -140,7 +147,7 @@
   // ── 목록 ────────────────────────────────────────────────────────────────
   async function bootList() {
     state.loadedOnce = true;
-    await Promise.all([loadList(), loadCategories(true), ensureCountryLabels()]);
+    await Promise.all([loadList(), loadCategories(true), ensureCountryLabels(), populateListEventFilter()]);
     populateCategorySelect();
     // 목록 한 번 더 렌더 — country labels 도착 이후 행사명·국가 셀에 반영
     renderList();
@@ -149,18 +156,39 @@
   async function loadList(page) {
     if (typeof page === 'number') state.page = Math.max(1, page);
     try {
-      const data = await fetchJson(`/api/memorabilia?include_drafts=1&limit=${PAGE_SIZE}&page=${state.page}`);
+      const params = new URLSearchParams({ include_drafts: '1', limit: String(PAGE_SIZE), page: String(state.page) });
+      if (state.listEventFilter) params.set('event_id', state.listEventFilter);
+      const data = await fetchJson(`/api/memorabilia?${params.toString()}`);
       state.items = data.items || [];
       state.total = Number(data.total || 0);
       renderList();
       const meta = $('#memo-list-meta');
       if (meta) {
         const totalPages = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
-        meta.textContent = `${state.total}건 (드래프트 포함) · ${state.page}/${totalPages} 페이지`;
+        const filterTag = state.listEventFilter ? ' · 행사 필터 적용' : '';
+        meta.textContent = `${state.total}건 (드래프트 포함) · ${state.page}/${totalPages} 페이지${filterTag}`;
       }
     } catch (err) {
       toast('목록을 불러오지 못했습니다: ' + err.message, 'error');
     }
+  }
+
+  // 행사 필터 드롭다운 채우기 — events 카탈로그 캐시 사용
+  async function populateListEventFilter() {
+    const sel = $('#memo-list-event-filter');
+    if (!sel || !eventsMod) return;
+    try {
+      const items = await eventsMod.load();
+      const cur = state.listEventFilter || '';
+      const opts = ['<option value="">행사 전체</option>'];
+      items.filter((e) => !e.archived).forEach((ev) => {
+        const label = (ev.name_ko || ev.name_en || `행사 #${ev.id}`)
+          + (ev.period_text ? ` (${ev.period_text})` : '');
+        opts.push(`<option value="${ev.id}">${escapeHtml(label)}</option>`);
+      });
+      sel.innerHTML = opts.join('');
+      sel.value = cur;
+    } catch {}
   }
 
   // 페이지네이션 UI 렌더 — table 아래에 페이지 번호 버튼.
@@ -796,64 +824,85 @@
       return;
     }
     wrap.innerHTML = `<table class="v3-table">
-      <thead><tr><th>슬러그</th><th>영문 라벨</th><th>국문 라벨</th><th style="width:80px">정렬</th><th style="width:80px">상태</th><th style="width:160px"></th></tr></thead>
+      <thead><tr><th>슬러그</th><th>영문 라벨</th><th>국문 라벨</th><th style="width:80px">정렬</th><th style="width:80px">상태</th><th style="width:80px"></th></tr></thead>
       <tbody>${state.categories.map((c) => `
         <tr data-cat-id="${c.id}">
           <td><code>${escapeHtml(c.slug)}</code></td>
-          <td><input class="v3-input v3-input-sm" data-cat-field="label_en" value="${escapeHtml(c.label_en)}"/></td>
-          <td><input class="v3-input v3-input-sm" data-cat-field="label_ko" value="${escapeHtml(c.label_ko)}"/></td>
-          <td><input class="v3-input v3-input-sm" data-cat-field="sort_order" type="number" value="${c.sort_order}" style="width:60px"/></td>
+          <td>${escapeHtml(c.label_en)}</td>
+          <td>${escapeHtml(c.label_ko)}</td>
+          <td>${c.sort_order}</td>
           <td>${c.archived ? '<span class="v3-badge v3-badge-muted">아카이브</span>' : '<span class="v3-badge v3-badge-success">활성</span>'}</td>
-          <td>
-            <button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-save="${c.id}">저장</button>
-            ${c.archived
-              ? `<button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-restore="${c.id}">복원</button>`
-              : `<button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-archive="${c.id}">아카이브</button>`}
-          </td>
+          <td><button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-edit="${c.id}">편집</button></td>
         </tr>`).join('')}</tbody></table>`;
 
-    $$('button[data-cat-save]', wrap).forEach((b) => b.addEventListener('click', async () => {
-      const id = parseInt(b.getAttribute('data-cat-save'), 10);
-      const row = $(`tr[data-cat-id="${id}"]`, wrap);
-      const body = {
-        label_en: $('input[data-cat-field="label_en"]', row).value,
-        label_ko: $('input[data-cat-field="label_ko"]', row).value,
-        sort_order: parseInt($('input[data-cat-field="sort_order"]', row).value, 10),
-      };
-      try {
-        await fetchJson(`/api/memorabilia/categories/${id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        });
-        await loadCategories(false);
-        toast('분류 저장됨', 'success');
-      } catch (err) { toast('저장 실패: ' + err.message, 'error'); }
-    }));
-    $$('button[data-cat-archive],button[data-cat-restore]', wrap).forEach((b) => b.addEventListener('click', async () => {
-      const id = parseInt(b.getAttribute('data-cat-archive') || b.getAttribute('data-cat-restore'), 10);
-      const archive = !!b.getAttribute('data-cat-archive');
-      try {
-        await fetchJson(`/api/memorabilia/categories/${id}`, {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ archived: archive }),
-        });
-        await loadCategories(false);
-      } catch (err) { toast('변경 실패: ' + err.message, 'error'); }
+    $$('button[data-cat-edit]', wrap).forEach((b) => b.addEventListener('click', () => {
+      const id = parseInt(b.getAttribute('data-cat-edit'), 10);
+      const target = state.categories.find((x) => x.id === id);
+      if (target) openCategoryEditor(target);
     }));
   }
 
-  async function promptNewCategory() {
-    const slug = (prompt('새 분류 slug (영문 소문자, 예: scarf)') || '').trim();
-    if (!slug) return;
-    const label_ko = (prompt('국문 라벨') || '').trim();
-    const label_en = (prompt('영문 라벨') || '').trim();
-    if (!label_ko && !label_en) return;
+  // 분류 추가/편집 모달 (prompt() 대체).
+  let _editingCategory = null;
+  let _catEditorWiredOnce = false;
+  function wireCategoryEditorOnce() {
+    if (_catEditorWiredOnce) return;
+    _catEditorWiredOnce = true;
+    $('#memo-cat-edit-close')?.addEventListener('click', closeCategoryEditor);
+    $('#memo-cat-edit-cancel')?.addEventListener('click', closeCategoryEditor);
+    $('#memo-cat-edit-save')?.addEventListener('click', saveCategory);
+    $('#memo-cat-edit-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'memo-cat-edit-modal') closeCategoryEditor();
+    });
+  }
+  function openCategoryEditor(cat) {
+    _editingCategory = cat || null;
+    $('#memo-cat-edit-title').textContent = cat ? '분류 편집' : '새 분류';
+    const slugInput = $('#memo-cat-slug');
+    slugInput.value = cat ? cat.slug : '';
+    slugInput.disabled = !!cat; // 편집 시 slug 변경 금지 (URL/DB 식별자 안정성)
+    $('#memo-cat-label-en').value = cat?.label_en || '';
+    $('#memo-cat-label-ko').value = cat?.label_ko || '';
+    $('#memo-cat-sort').value = cat?.sort_order != null ? cat.sort_order : 999;
+    $('#memo-cat-archived').checked = !!cat?.archived;
+    $('#memo-cat-edit-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCategoryEditor() {
+    $('#memo-cat-edit-modal').hidden = true;
+    document.body.style.overflow = '';
+    _editingCategory = null;
+  }
+  async function saveCategory() {
+    const body = {
+      label_en: $('#memo-cat-label-en').value.trim(),
+      label_ko: $('#memo-cat-label-ko').value.trim(),
+      sort_order: parseInt($('#memo-cat-sort').value, 10) || 999,
+      archived: $('#memo-cat-archived').checked,
+    };
+    if (!_editingCategory) {
+      const slug = $('#memo-cat-slug').value.trim();
+      if (!slug) { toast('슬러그를 입력하세요', 'error'); return; }
+      if (!/^[a-z0-9-]+$/.test(slug)) { toast('슬러그는 영문 소문자·숫자·하이픈만 허용', 'error'); return; }
+      body.slug = slug;
+    }
+    if (!body.label_en && !body.label_ko) { toast('영문 또는 국문 라벨 중 하나는 필수', 'error'); return; }
+    const saveBtn = $('#memo-cat-edit-save');
+    saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = '저장 중…';
     try {
-      await fetchJson('/api/memorabilia/categories', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, label_ko, label_en, sort_order: 999 }),
+      const url = _editingCategory ? `/api/memorabilia/categories/${_editingCategory.id}` : '/api/memorabilia/categories';
+      const method = _editingCategory ? 'PATCH' : 'POST';
+      await fetchJson(url, {
+        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       });
+      closeCategoryEditor();
       await loadCategories(false);
-      toast('분류 추가됨', 'success');
-    } catch (err) { toast('추가 실패: ' + err.message, 'error'); }
+      toast(_editingCategory ? '분류 저장됨' : '분류 추가됨', 'success');
+    } catch (err) {
+      toast((_editingCategory ? '저장' : '추가') + ' 실패: ' + err.message, 'error');
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = orig;
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════════════

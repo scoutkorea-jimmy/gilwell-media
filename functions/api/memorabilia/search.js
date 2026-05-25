@@ -29,6 +29,7 @@ export async function onRequestGet({ request, env }) {
   const q = String(url.searchParams.get('q') || '').trim();
   const countryParam = String(url.searchParams.get('country') || '').trim();
   const categoryParam = String(url.searchParams.get('category') || '').trim();
+  const eventParam = String(url.searchParams.get('event') || '').trim();
   const tagParam = String(url.searchParams.get('tag') || '').trim();
   const issuer = String(url.searchParams.get('issuer') || '').trim();
   const yearFrom = parseInt(url.searchParams.get('year_from') || '', 10);
@@ -90,6 +91,16 @@ export async function onRequestGet({ request, env }) {
   if (categories.length) {
     whereParts.push(`m.category_id IN (SELECT id FROM memorabilia_categories WHERE slug IN (${categories.map(() => '?').join(',')}))`);
     bindings.push(...categories);
+  }
+  // event_id 필터 — 콤마 다중(OR) 또는 단일 정수
+  if (eventParam) {
+    const eventIds = eventParam.split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => Number.isFinite(n));
+    if (eventIds.length) {
+      whereParts.push(`m.event_id IN (${eventIds.map(() => '?').join(',')})`);
+      bindings.push(...eventIds);
+    }
   }
   for (const tagLabel of tags) {
     whereParts.push(`m.id IN (SELECT mt.memorabilia_id FROM memorabilia_tags mt JOIN memorabilia_tag_pool tp ON tp.id = mt.tag_id WHERE tp.label = ?)`);

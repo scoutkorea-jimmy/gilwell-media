@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "03.127.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:17:37 KST",
+    "summary": "도감 분류 관리 모달화(prompt 제거) + 도감 목록 행사 필터 + API event_id 쿼리 지원.",
+    "for_users": [
+      "관리자 → 도감 분류 관리에서 '+ 새 분류' / '편집' 버튼이 prompt 창 연쇄가 아니라 정식 모달로 열립니다. 슬러그·라벨(영/국)·정렬·아카이브 여부를 한 화면에서 입력합니다.",
+      "도감 목록(관리자) 카드에 '행사 필터' 드롭다운이 추가되어, 특정 행사의 도감 항목만 추려볼 수 있습니다.",
+      "공개 /memorabilia 페이지의 필터에도 '행사 전체' 드롭다운이 추가됐습니다. URL 의 ?event=<id> 로 공유 가능."
+    ],
+    "for_developers": [
+      "admin.html: panel-memorabilia-categories 안에 #memo-cat-edit-modal 신설 (슬러그 신규 시 입력·편집 시 비활성, 라벨 EN/KO 2-col, 정렬 + archived checkbox). 도감 목록 카드 헤더에 #memo-list-event-filter <select> 추가.",
+      "js/admin-memorabilia.js: promptNewCategory 제거. wireCategoryEditorOnce / openCategoryEditor / saveCategory / closeCategoryEditor. 인라인 cat 편집 input 행을 정적 셀로 단순화. state.listEventFilter + populateListEventFilter(). loadList 가 event_id 쿼리 동봉.",
+      "functions/api/memorabilia/index.js GET: event_id 파라미터 지원 + totalRow 가 동일 whereBindings 적용 (count 불일치 회귀 방지).",
+      "functions/api/memorabilia/search.js GET: 'event' 파라미터 지원, 콤마 다중 (OR).",
+      "memorabilia.html: 필터 줄에 #memo-filter-event <select> 추가. js/memorabilia.js: populateEventOptions(), runSearch가 event 파라미터 동봉, URL 의 ?event=<id> 사전 적용.",
+      "관리자 03.126.00 → 03.127.00."
+    ]
+  },
+  {
+    "version": "00.150.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:17:37 KST",
+    "summary": "공개 도감(/memorabilia) — 필터에 '행사 전체' 드롭다운 추가. 특정 행사의 도감만 추려보기·공유 가능.",
+    "for_users": [
+      "공개 도감의 검색·필터 영역에 '행사' 드롭다운이 추가됐습니다.",
+      "선택 시 URL 에 ?event=<id> 가 붙어 그대로 공유 가능합니다."
+    ],
+    "for_developers": [
+      "관리자 03.127.00 항목 참조 (변경 범위 동일).",
+      "공개 측 영향: memorabilia.html + js/memorabilia.js.",
+      "사이트 00.149.01 → 00.150.00."
+    ]
+  },
+  {
     "version": "03.126.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 23:07:49 KST",

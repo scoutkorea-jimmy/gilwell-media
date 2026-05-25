@@ -83,13 +83,39 @@
     $('#memo-search-btn').addEventListener('click', () => { state.page = 1; runSearch(); });
     $('#memo-filter-category').addEventListener('change', () => { state.page = 1; runSearch(); });
     $('#memo-filter-country').addEventListener('change', () => { state.page = 1; runSearch(); });
+    const eventFilter = $('#memo-filter-event');
+    if (eventFilter) eventFilter.addEventListener('change', () => { state.page = 1; runSearch(); });
     $('#memo-filter-sort').addEventListener('change', () => { state.page = 1; runSearch(); });
     $('#memo-search-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { state.page = 1; runSearch(); }
     });
 
     // Load filter options
-    await Promise.all([loadCategoryOptions(), populateCountryOptions()]);
+    await Promise.all([loadCategoryOptions(), populateCountryOptions(), populateEventOptions()]);
+    // URL 의 사전 적용된 필터 반영 (q 외에 category/country/event/sort)
+    const cur = new URLSearchParams(location.search);
+    if (cur.get('category')) $('#memo-filter-category').value = cur.get('category');
+    if (cur.get('country'))  $('#memo-filter-country').value  = cur.get('country');
+    if (cur.get('event'))    { const ef = $('#memo-filter-event'); if (ef) ef.value = cur.get('event'); }
+    if (cur.get('sort'))     $('#memo-filter-sort').value     = cur.get('sort');
+  }
+
+  async function populateEventOptions() {
+    const sel = $('#memo-filter-event');
+    if (!sel) return;
+    if (!window.GW || !window.GW.MemorabiliaEvents) return;
+    try {
+      const items = await window.GW.MemorabiliaEvents.load();
+      const opts = ['<option value="">행사 전체</option>'];
+      items.filter((e) => !e.archived).forEach((ev) => {
+        const label = (ev.name_ko || ev.name_en || `행사 #${ev.id}`)
+          + (ev.period_text ? ` (${ev.period_text})` : '');
+        opts.push(`<option value="${ev.id}">${escapeHtml(label)}</option>`);
+      });
+      sel.innerHTML = opts.join('');
+    } catch (err) {
+      console.warn('events catalog load failed:', err);
+    }
   }
 
   async function loadCategoryOptions() {
@@ -130,6 +156,7 @@
     const q = ($('#memo-search-input')?.value || '').trim();
     const category = $('#memo-filter-category')?.value || '';
     const country = $('#memo-filter-country')?.value || '';
+    const eventId = $('#memo-filter-event')?.value || '';
     const sort = $('#memo-filter-sort')?.value || 'relevance';
     const meta = $('#memo-results-meta');
     const grid = $('#memo-grid');
@@ -139,6 +166,7 @@
     if (q) params.set('q', q);
     if (category) params.set('category', category);
     if (country) params.set('country', country);
+    if (eventId) params.set('event', eventId);
     if (sort !== 'relevance') params.set('sort', sort);
     if (state.page > 1) params.set('page', String(state.page));
     const newSearch = params.toString();
@@ -155,6 +183,7 @@
       });
       if (category) apiParams.set('category', category);
       if (country) apiParams.set('country', country);
+      if (eventId) apiParams.set('event', eventId);
 
       const res = await fetch('/api/memorabilia/search?' + apiParams.toString(), { credentials: 'same-origin' });
       const data = await res.json();

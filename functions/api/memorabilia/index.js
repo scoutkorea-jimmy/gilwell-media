@@ -31,6 +31,14 @@ export async function onRequestGet({ request, env }) {
   if (!includeDrafts) {
     whereParts.push(`m.status = 'public'`);
   }
+  const eventIdParam = url.searchParams.get('event_id');
+  if (eventIdParam) {
+    const eid = parseInt(eventIdParam, 10);
+    if (Number.isFinite(eid)) {
+      whereParts.push(`m.event_id = ?`);
+      bindings.push(eid);
+    }
+  }
 
   const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
 
@@ -47,13 +55,15 @@ export async function onRequestGet({ request, env }) {
      ORDER BY COALESCE(m.published_at, m.updated_at) DESC, m.id DESC
      LIMIT ? OFFSET ?
   `;
+  // WHERE 절 binding (event_id 등) 은 LIMIT/OFFSET 보다 앞에 와야 한다.
+  const whereBindings = bindings.slice();
   bindings.push(pageSize, offset);
 
   try {
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
     const totalRow = await env.DB.prepare(
       `SELECT COUNT(*) AS n FROM memorabilia m ${where}`
-    ).bind().first();
+    ).bind(...whereBindings).first();
     return json({
       items: results || [],
       page,
