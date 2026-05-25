@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260525075535">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260525075535">
+  <link rel="stylesheet" href="/css/style.css?v=20260525075945">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260525075945">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -113,9 +113,18 @@
           <form id="memo-editor-form" autocomplete="off">
             <div class="memo-form-row">
               <label class="field-label">대표 이미지 · 갤러리</label>
-              <div class="memo-images-grid" id="memo-images-grid"></div>
-              <input type="file" id="memo-image-input" accept="image/*" multiple hidden />
-              <button type="button" id="memo-image-add" style="padding:6px 12px;font-size:13px;border:1px solid var(--color-scouting-purple);background:#fff;color:var(--color-scouting-purple);border-radius:6px;cursor:pointer">이미지 추가</button>
+              <div class="memo-images-zone" id="memo-images-zone">
+                <div class="memo-images-grid" id="memo-images-grid" hidden></div>
+                <div class="memo-images-empty" id="memo-images-empty">
+                  <strong>이미지를 여기에 놓거나 "이미지 추가"를 누르세요</strong>
+                  <span>여러 장 한 번에 업로드 가능 · JPG / PNG / WebP / GIF, 각 7MB 이하</span>
+                </div>
+                <input type="file" id="memo-image-input" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" multiple hidden />
+                <div class="memo-images-actions">
+                  <button type="button" id="memo-image-add">이미지 추가</button>
+                  <div class="memo-images-meta" id="memo-images-meta"></div>
+                </div>
+              </div>
               <div class="memo-form-hint">라디오로 대표 이미지 선택. 미선택 시 첫 번째가 대표.</div>
             </div>
 
@@ -274,8 +283,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260525075535"></script>
-  <script src="/js/site-chrome.js?v=20260525075535"></script>
-  <script src="/js/memorabilia.js?v=20260525075535"></script>
+  <script src="/js/main.js?v=20260525075945"></script>
+  <script src="/js/site-chrome.js?v=20260525075945"></script>
+  <script src="/js/memorabilia.js?v=20260525075945"></script>
 </body>
 </html>

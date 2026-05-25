@@ -490,6 +490,7 @@
     showModal() {
       $('#memo-editor-modal').hidden = false;
       document.body.style.overflow = 'hidden';
+      this.setupDropZone();
     },
     closeModal() {
       $('#memo-editor-modal').hidden = true;
@@ -497,58 +498,185 @@
       this.editing = null;
     },
 
+    uploadingCount: 0,
+
     renderImages() {
       const grid = $('#memo-images-grid');
-      if (!grid) return;
-      if (!this.images.length) {
-        grid.innerHTML = '<div class="memo-form-hint">이미지가 없습니다.</div>';
-        return;
+      const empty = $('#memo-images-empty');
+      const meta = $('#memo-images-meta');
+      if (!grid || !empty) return;
+
+      const allTiles = this.images;
+      const hasAny = allTiles.length > 0;
+      grid.hidden = !hasAny;
+      empty.hidden = hasAny;
+
+      if (meta) {
+        const total = this.images.filter((i) => !i.uploading).length;
+        const uploading = this.images.filter((i) => i.uploading).length;
+        meta.textContent = total + (uploading ? ` · ${uploading}장 업로드 중…` : '') + (total > 0 ? `장 (대표: ${this.images.find((i) => i.is_primary)?.url ? '✓' : '미지정'})` : '');
       }
-      grid.innerHTML = this.images.map((img, i) => `
-        <div class="memo-image-tile" data-i="${i}">
-          <img src="${escapeHtml(img.url)}" alt=""/>
-          <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} data-primary-i="${i}"/> 대표</label>
-          <button type="button" data-img-del="${i}">삭제</button>
-        </div>
-      `).join('');
+
+      if (!hasAny) { grid.innerHTML = ''; return; }
+
+      grid.innerHTML = allTiles.map((img, i) => {
+        const classes = ['memo-image-tile'];
+        if (img.is_primary) classes.push('is-primary');
+        if (img.uploading) classes.push('uploading');
+        const badge = img.is_primary && !img.uploading ? '<div class="tile-badge">대표</div>' : '';
+        const progress = img.uploading ? `<div class="tile-progress">${img.progress || '업로드 중…'}</div>` : '';
+        const previewSrc = img.url || img.previewDataUrl || '';
+        return `
+          <div class="${classes.join(' ')}" data-i="${i}">
+            ${badge}
+            <img src="${escapeHtml(previewSrc)}" alt=""/>
+            ${progress}
+            <div class="tile-actions">
+              <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} ${img.uploading ? 'disabled' : ''} data-primary-i="${i}"/> 대표</label>
+              <button type="button" data-img-del="${i}" ${img.uploading ? 'disabled' : ''}>삭제</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
       grid.querySelectorAll('input[data-primary-i]').forEach((r) => {
         r.addEventListener('change', () => {
           const i = parseInt(r.getAttribute('data-primary-i'), 10);
           editor.images.forEach((img, idx) => { img.is_primary = idx === i; });
+          editor.renderImages();
         });
       });
       grid.querySelectorAll('button[data-img-del]').forEach((b) => {
         b.addEventListener('click', () => {
           const i = parseInt(b.getAttribute('data-img-del'), 10);
           editor.images.splice(i, 1);
-          if (editor.images.length && !editor.images.some((img) => img.is_primary)) editor.images[0].is_primary = true;
+          if (editor.images.length && !editor.images.some((img) => img.is_primary)) {
+            editor.images[0].is_primary = true;
+          }
           editor.renderImages();
         });
       });
     },
 
-    async onImageInput(e) {
-      const files = Array.from(e.target.files || []);
-      e.target.value = '';
+    validateFile(file) {
+      if (!file) return '파일이 없습니다.';
+      if (!/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type)) return `지원하지 않는 형식: ${file.name}`;
+      if (file.size > 7 * 1024 * 1024) return `파일이 너무 큽니다 (>7MB): ${file.name}`;
+      return null;
+    },
+
+    async addFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      const errors = [];
+      // 1) Validate + create local placeholder tiles with preview
+      const newPlaceholders = [];
       for (const file of files) {
-        if (!/^image\//.test(file.type)) continue;
-        try {
-          const dataUrl = await readFileAsDataUrl(file);
-          const res = await fetch('/api/memorabilia/upload-image', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data_url: dataUrl }),
-          });
-          const data = await res.json();
-          if (res.ok && data.url) {
-            const isPrimary = !editor.images.length;
-            editor.images.push({ url: data.url, alt_en: '', alt_ko: '', is_primary: isPrimary, sort_order: editor.images.length });
-          } else {
-            alert('업로드 실패: ' + (data.error || res.status));
-          }
-        } catch (err) { alert('업로드 실패: ' + err.message); }
+        const err = this.validateFile(file);
+        if (err) { errors.push(err); continue; }
+        let previewDataUrl = '';
+        try { previewDataUrl = await readFileAsDataUrl(file); }
+        catch { errors.push(`미리보기 생성 실패: ${file.name}`); continue; }
+        const placeholder = {
+          url: '',
+          previewDataUrl,
+          alt_en: '', alt_ko: '',
+          is_primary: false,
+          sort_order: this.images.length + newPlaceholders.length,
+          uploading: true,
+          progress: '업로드 중…',
+          _file: file,
+        };
+        newPlaceholders.push(placeholder);
       }
-      editor.renderImages();
+
+      if (!newPlaceholders.length) {
+        if (errors.length) this.flashError(errors.join('\n'));
+        return;
+      }
+
+      // First image becomes primary if none exists
+      const noPrimaryYet = !this.images.some((i) => i.is_primary);
+      this.images.push(...newPlaceholders);
+      if (noPrimaryYet) {
+        const firstIdx = this.images.findIndex((i) => !i.uploading || i === newPlaceholders[0]);
+        if (firstIdx >= 0) this.images[firstIdx].is_primary = true;
+      }
+      this.renderImages();
+
+      // 2) Upload sequentially (avoids overwhelming the bucket / D1)
+      for (const placeholder of newPlaceholders) {
+        try {
+          const res = await fetch('/api/memorabilia/upload-image', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data_url: placeholder.previewDataUrl }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.url) {
+            errors.push(`업로드 실패 (${placeholder._file?.name || ''}): ${data.error || 'HTTP ' + res.status}`);
+            // 실패한 placeholder는 제거
+            const idx = this.images.indexOf(placeholder);
+            if (idx >= 0) this.images.splice(idx, 1);
+            continue;
+          }
+          placeholder.url = data.url;
+          placeholder.uploading = false;
+          placeholder.previewDataUrl = '';
+          placeholder._file = null;
+        } catch (err) {
+          errors.push(`업로드 실패 (${placeholder._file?.name || ''}): ${err.message}`);
+          const idx = this.images.indexOf(placeholder);
+          if (idx >= 0) this.images.splice(idx, 1);
+        }
+        this.renderImages();
+      }
+
+      // 3) 대표 미지정이면 첫 번째 업로드 완료 항목으로
+      if (this.images.length && !this.images.some((i) => i.is_primary)) {
+        const firstReady = this.images.find((i) => !i.uploading);
+        if (firstReady) firstReady.is_primary = true;
+        this.renderImages();
+      }
+
+      if (errors.length) this.flashError(errors.join('\n'));
+    },
+
+    flashError(msg) {
+      // 사용자 친화적 토스트가 있으면 사용, 아니면 alert
+      if (window.GW && typeof window.GW.showToast === 'function') {
+        try { window.GW.showToast(msg, 'error'); return; } catch {}
+      }
+      alert(msg);
+    },
+
+    setupDropZone() {
+      const zone = $('#memo-images-zone');
+      if (!zone || zone._dropBound) return;
+      zone._dropBound = true;
+      ['dragenter', 'dragover'].forEach((ev) => zone.addEventListener(ev, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.add('drag-over');
+      }));
+      ['dragleave', 'drop'].forEach((ev) => zone.addEventListener(ev, (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (ev === 'dragleave' && zone.contains(e.relatedTarget)) return;
+        zone.classList.remove('drag-over');
+      }));
+      zone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (!dt || !dt.files || !dt.files.length) return;
+        editor.addFiles(dt.files);
+      });
+    },
+
+    async onImageInput(e) {
+      const files = e.target.files;
+      // 즉시 input.value 클리어 — 같은 파일 다시 선택 가능
+      try { e.target.value = ''; } catch {}
+      await editor.addFiles(files);
     },
 
     renderLinks() {
