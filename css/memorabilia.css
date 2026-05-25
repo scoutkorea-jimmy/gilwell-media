@@ -1,86 +1,117 @@
 /* Gilwell Media · Scout Memorabilia Encyclopedia
  *
  * 이중 표기 원칙: EN 100% / KO 90% size · 0.7 opacity.
+ * 컨테이너: 사이트 표준 1366px max-width + 48px 좌우 패딩 (glossary-page-wrap 와 동일 규칙).
  */
 
 .memorabilia-page main { background: var(--canvas, #fff); }
 
+.memorabilia-page-wrap {
+  max-width: 1366px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+}
+
 /* ── Hero / Search ─────────────────────────────────────────────────────── */
 .memo-hero {
-  background: linear-gradient(180deg, var(--gray-100, #ebebeb) 0%, transparent 100%);
-  padding: 32px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
 }
-.memo-hero-inner { max-width: 960px; margin: 0 auto; }
+.memo-hero-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .memo-hero h2 {
-  font-size: 1.8rem; font-weight: 700;
-  margin: 0 0 4px;
+  margin: 0;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 42px;
+  line-height: 1.1;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 .memo-hero-en {
   display: inline-block;
-  font-size: 0.65em; font-weight: 500;
+  font-size: 0.5em; font-weight: 500;
   opacity: 0.7;
   margin-left: 8px;
   letter-spacing: 0.04em;
 }
-.memo-hero-desc { color: var(--gray-700, #3f3f3f); margin: 4px 0 18px; word-break: keep-all; }
+.memo-hero-desc {
+  margin: 0;
+  color: var(--muted, #3f3f3f);
+  font-size: 15px; line-height: 1.7;
+  word-break: keep-all;
+}
+.memo-hero-add-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  background: var(--color-scouting-purple, #622599);
+  color: #fff; border: 0;
+  border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.memo-hero-add-btn:hover { background: var(--color-midnight-purple, #4d006e); }
 
 .memo-search-bar {
   display: flex; gap: 6px;
   background: #fff;
   border: 1.5px solid var(--gray-300, #c4c4c4);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  max-width: 600px;
 }
 .memo-search-bar input {
   flex: 1;
   border: 0; outline: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   font-size: 1rem;
   background: transparent;
 }
 .memo-search-bar button {
   border: 0; background: var(--color-scouting-purple, #622599);
   color: #fff;
-  padding: 0 14px;
-  border-radius: 6px;
+  padding: 0 16px;
+  border-radius: 8px;
   cursor: pointer;
 }
 .memo-search-bar button:hover { background: var(--color-midnight-purple, #4d006e); }
 
 .memo-filters {
   display: flex; gap: 8px;
-  margin-top: 12px;
   flex-wrap: wrap;
 }
 .memo-filters select {
   padding: 8px 12px;
   border: 1px solid var(--gray-300, #c4c4c4);
   background: #fff;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.9rem;
   cursor: pointer;
 }
 
 /* ── Results grid ─────────────────────────────────────────────────────── */
-.memo-results-wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
 .memo-results-meta {
-  color: var(--gray-700, #3f3f3f);
+  color: var(--muted, #3f3f3f);
   font-size: 0.9rem;
   margin: 0 0 14px;
 }
 
 .memo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
 }
 .memo-card {
   background: #fff;
   border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   text-decoration: none;
   color: inherit;
@@ -104,10 +135,10 @@
   display: block;
 }
 .memo-card-thumb.empty { color: var(--gray-300, #c4c4c4); font-size: 2rem; }
-.memo-card-body { padding: 10px 12px 12px; }
+.memo-card-body { padding: 12px 14px 14px; }
 .memo-card-title {
   font-size: 0.95rem; font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.35;
   margin: 0;
   overflow: hidden;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -117,19 +148,19 @@
   font-size: 0.85em;
   opacity: 0.7;
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 /* ── Pagination ───────────────────────────────────────────────────────── */
 .memo-pagination {
   display: flex; justify-content: center; gap: 4px;
-  margin: 24px 0;
+  margin: 32px 0 0;
 }
 .memo-pagination button {
   padding: 6px 12px;
   border: 1px solid var(--gray-300, #c4c4c4);
   background: #fff;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   min-width: 36px;
 }
@@ -143,13 +174,13 @@
 .memo-empty {
   text-align: center;
   padding: 48px 16px;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--muted, #3f3f3f);
+  grid-column: 1 / -1;
 }
 .memo-empty h3 { margin: 0 0 8px; }
 .memo-empty p { margin: 0 0 4px; opacity: 0.8; }
 
 /* ── Detail view ──────────────────────────────────────────────────────── */
-.memo-detail { padding: 24px 16px; }
 .memo-detail-inner { max-width: 960px; margin: 0 auto; }
 .memo-back-link {
   display: inline-block;
@@ -169,7 +200,7 @@
 .memo-detail-gallery .memo-primary-img {
   width: 100%;
   background: var(--gray-100, #ebebeb);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   max-height: 600px;
   display: flex; align-items: center; justify-content: center;
@@ -185,7 +216,7 @@
 .memo-detail-gallery .memo-thumb-row img {
   width: 80px; height: 80px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -193,7 +224,6 @@
   border-color: var(--color-scouting-purple, #622599);
 }
 
-/* ── Bilingual labeling ───────────────────────────────────────────────── */
 .memo-bilingual { line-height: 1.4; }
 .memo-bilingual .lang-en { display: block; }
 .memo-bilingual .lang-ko {
@@ -205,12 +235,13 @@
 
 .memo-detail h1.memo-detail-title {
   margin: 0 0 4px;
-  font-size: 2rem; font-weight: 700;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 36px; font-weight: 700;
   line-height: 1.2;
   word-break: keep-all;
 }
 .memo-detail-title-ko {
-  font-size: 1.4rem; font-weight: 600;
+  font-size: 22px; font-weight: 600;
   opacity: 0.7;
   margin: 0 0 16px;
   word-break: keep-all;
@@ -219,15 +250,15 @@
 .memo-detail-meta {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 8px 16px;
+  gap: 10px 18px;
   margin: 16px 0 24px;
   padding: 16px;
   background: var(--gray-100, #ebebeb);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 .memo-meta-label {
   font-size: 0.85em;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--muted, #3f3f3f);
   font-weight: 500;
 }
 .memo-meta-value { word-break: keep-all; }
@@ -247,7 +278,7 @@
   background: var(--gray-100, #ebebeb);
   border-radius: 999px;
   font-size: 0.85rem;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--muted, #3f3f3f);
   text-decoration: none;
 }
 .memo-tag-chip:hover {
@@ -260,20 +291,152 @@
   padding: 16px;
   background: #fff;
   border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 .memo-related-links h3 { margin: 0 0 8px; font-size: 1rem; }
 .memo-related-links a { display: block; padding: 4px 0; color: var(--color-scouting-purple, #622599); }
 
+/* ── Detail admin shortcut ─────────────────────────────────────────────── */
+.memo-detail-admin-bar {
+  display: flex; gap: 8px;
+  margin: 0 0 16px;
+}
+.memo-detail-admin-bar button {
+  padding: 8px 14px;
+  border: 1px solid var(--color-scouting-purple, #622599);
+  background: #fff;
+  color: var(--color-scouting-purple, #622599);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.memo-detail-admin-bar button:hover {
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+}
+
+/* ── Modal editor (공개 페이지 등록·편집) ──────────────────────────────── */
+.memo-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9000;
+  padding: 16px;
+}
+.memo-modal-backdrop[hidden] { display: none; }
+.memo-modal {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 880px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+.memo-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--gray-300, #c4c4c4);
+}
+.memo-modal-head h2 { margin: 0; font-size: 1.2rem; }
+.memo-modal-close {
+  background: none; border: 0;
+  font-size: 1.6rem; cursor: pointer;
+  width: 32px; height: 32px;
+  line-height: 1;
+  color: var(--muted, #3f3f3f);
+}
+.memo-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.memo-modal-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--gray-300, #c4c4c4);
+}
+.memo-modal-foot button {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+.memo-modal-foot button.primary {
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+  border-color: var(--color-scouting-purple, #622599);
+}
+.memo-modal-foot button.danger {
+  color: #c33; border-color: #c33;
+}
+
+.memo-form-row { margin-bottom: 14px; }
+.memo-form-row label.field-label {
+  display: block;
+  font-size: 13px; font-weight: 500;
+  color: var(--muted, #3f3f3f);
+  margin-bottom: 4px;
+}
+.memo-form-row input[type=text],
+.memo-form-row input[type=search],
+.memo-form-row input[type=number],
+.memo-form-row select,
+.memo-form-row textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.memo-form-row textarea { resize: vertical; min-height: 120px; }
+.memo-form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.memo-form-row-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.memo-form-hint { font-size: 12px; color: var(--muted, #3f3f3f); margin-top: 4px; }
+
+.memo-images-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.memo-image-tile {
+  width: 130px;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  padding: 4px;
+  border-radius: 6px;
+}
+.memo-image-tile img { width: 100%; height: 90px; object-fit: cover; border-radius: 4px; }
+.memo-image-tile label { display: block; font-size: 12px; margin-top: 4px; }
+.memo-image-tile button {
+  width: 100%; margin-top: 4px;
+  padding: 4px;
+  font-size: 12px;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.memo-link-row {
+  display: flex; gap: 6px; margin-bottom: 6px;
+  align-items: center;
+}
+.memo-link-row input { flex: 1; }
+.memo-link-row input.url { flex: 2; }
+
+.memo-checkbox-row { display: flex; align-items: center; gap: 6px; }
+
 /* ── Mobile ───────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .memo-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .memo-hero h2 { font-size: 1.4rem; }
-  .memo-hero-en { font-size: 0.7em; margin-left: 4px; }
-  .memo-detail h1.memo-detail-title { font-size: 1.4rem; }
-  .memo-detail-title-ko { font-size: 1.1rem; }
-  .memo-detail-meta { grid-template-columns: 1fr; gap: 4px 0; }
+@media (max-width: 768px) {
+  .memorabilia-page-wrap { padding: 24px 20px 60px; }
+  .memo-hero h2 { font-size: 30px; }
+  .memo-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .memo-detail h1.memo-detail-title { font-size: 24px; }
+  .memo-detail-title-ko { font-size: 18px; }
+  .memo-detail-meta { grid-template-columns: 1fr; gap: 4px 0; padding: 14px; }
   .memo-detail-meta .memo-meta-label { margin-top: 8px; }
   .memo-detail-meta .memo-meta-value { padding-bottom: 8px; border-bottom: 1px solid var(--gray-300, #c4c4c4); }
   .memo-detail-meta .memo-meta-value:last-of-type { border-bottom: 0; }
+  .memo-form-row-2col, .memo-form-row-3col { grid-template-columns: 1fr; }
+  .memo-modal { max-height: 100vh; border-radius: 0; }
 }

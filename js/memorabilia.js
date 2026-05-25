@@ -230,9 +230,17 @@
       }
       const data = await res.json();
       const item = data.item;
+      window.__memoDetailItem = item;
       document.title = `${item.title_en || item.title_ko} — 스카우트 기념품 도감 — BP미디어`;
       wrap.innerHTML = renderDetail(item);
       wireDetailEvents(wrap);
+      // Admin 편집 버튼 노출
+      if (editor.sessionChecked ? editor.isAdmin : true) {
+        editor.checkSession().then(() => {
+          const bar = document.getElementById('memo-detail-admin-bar');
+          if (bar) bar.hidden = !editor.isAdmin;
+        });
+      }
     } catch (err) {
       wrap.innerHTML = '<div class="memo-empty"><h3>로드 실패</h3><p>잠시 후 다시 시도해주세요.</p></div>';
     }
@@ -355,13 +363,371 @@
     }));
   }
 
-  // Boot: 1) 표준 사이트 chrome (nav, 푸터, 번역, 티커, 통계) 부팅,
-  //        2) 페이지 라우팅
+  // ── Editor (모달 등록·편집) ─────────────────────────────────────────────
+  const editor = {
+    isAdmin: false,
+    sessionChecked: false,
+    editing: null,
+    images: [],
+    links: [],
+    categories: [],
+
+    async checkSession() {
+      try {
+        const res = await fetch('/api/admin/session', {
+          method: 'GET', credentials: 'same-origin', cache: 'no-store',
+        });
+        const data = await res.json().catch(() => ({}));
+        this.isAdmin = !!(res.ok && data && data.authenticated);
+      } catch { this.isAdmin = false; }
+      this.sessionChecked = true;
+      return this.isAdmin;
+    },
+
+    async ensureCategories() {
+      if (this.categories.length) return;
+      try {
+        const data = await (await fetch('/api/memorabilia/categories', { credentials: 'same-origin' })).json();
+        this.categories = (data.items || []).filter((c) => !c.archived);
+      } catch {}
+    },
+
+    populateCountrySelect() {
+      const sel = $('#memo-country');
+      if (!sel || sel.options.length) return;
+      const codes = Object.keys(COUNTRY_LABELS).sort((a, b) => COUNTRY_LABELS[a].localeCompare(COUNTRY_LABELS[b], 'ko'));
+      sel.innerHTML = codes.map((c) => `<option value="${c}">${escapeHtml(COUNTRY_LABELS[c])} (${c})</option>`).join('');
+    },
+
+    populateCategorySelect() {
+      const sel = $('#memo-category');
+      if (!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">분류 선택</option>' + this.categories.map((c) =>
+        `<option value="${c.id}">${escapeHtml(c.label_ko)} / ${escapeHtml(c.label_en)}</option>`
+      ).join('');
+      sel.value = cur;
+    },
+
+    async openCreate() {
+      const ok = await this.checkSession();
+      if (!ok) { $('#memo-login-overlay').hidden = false; return; }
+      await this.ensureCategories();
+      this.populateCountrySelect();
+      this.populateCategorySelect();
+      this.editing = null;
+      this.images = [];
+      this.links = [];
+      $('#memo-editor-title').textContent = '새 도감 항목';
+      $('#memo-editor-delete').hidden = true;
+      this.resetForm();
+      this.renderImages();
+      this.renderLinks();
+      this.showModal();
+    },
+
+    async openEdit(item) {
+      const ok = await this.checkSession();
+      if (!ok) { $('#memo-login-overlay').hidden = false; return; }
+      await this.ensureCategories();
+      this.populateCountrySelect();
+      this.populateCategorySelect();
+      try {
+        const full = await (await fetch(`/api/memorabilia/${item.id}`, { credentials: 'same-origin' })).json();
+        item = full.item;
+      } catch {}
+      this.editing = item;
+      this.images = (item.images || []).map((img) => ({
+        url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
+        is_primary: !!img.is_primary, sort_order: img.sort_order || 0,
+      }));
+      this.links = (item.related_links || []).map((l) => ({
+        label_en: l.label_en || '', label_ko: l.label_ko || '', url: l.url || ''
+      }));
+      $('#memo-editor-title').textContent = '도감 항목 편집';
+      $('#memo-editor-delete').hidden = false;
+      this.fillForm(item);
+      this.renderImages();
+      this.renderLinks();
+      this.showModal();
+    },
+
+    resetForm() {
+      ['memo-title-en','memo-title-ko','memo-event-en','memo-event-ko','memo-year',
+       'memo-material-en','memo-material-ko','memo-size','memo-issuer-en','memo-issuer-ko',
+       'memo-tags','memo-desc-en','memo-desc-ko'].forEach((id) => { const el = $('#'+id); if (el) el.value = ''; });
+      $('#memo-has-event').checked = false;
+      $('#memo-event-row').hidden = true;
+      $('#memo-category').value = '';
+      $('#memo-status').value = 'draft';
+      const sel = $('#memo-country');
+      Array.from(sel.options).forEach((o) => { o.selected = false; });
+    },
+
+    fillForm(item) {
+      $('#memo-title-en').value = item.title_en || '';
+      $('#memo-title-ko').value = item.title_ko || '';
+      $('#memo-has-event').checked = !!item.has_event;
+      $('#memo-event-row').hidden = !item.has_event;
+      $('#memo-event-en').value = item.event_name_en || '';
+      $('#memo-event-ko').value = item.event_name_ko || '';
+      $('#memo-year').value = item.year || '';
+      $('#memo-category').value = item.category_id || '';
+      $('#memo-material-en').value = item.material_en || '';
+      $('#memo-material-ko').value = item.material_ko || '';
+      $('#memo-size').value = item.size_text || '';
+      $('#memo-issuer-en').value = item.issuer_en || '';
+      $('#memo-issuer-ko').value = item.issuer_ko || '';
+      $('#memo-tags').value = (item.tags || []).join(', ');
+      $('#memo-desc-en').value = readPlain(item.description_en);
+      $('#memo-desc-ko').value = readPlain(item.description_ko);
+      $('#memo-status').value = item.status || 'draft';
+      const codes = new Set(item.country_codes || []);
+      const sel = $('#memo-country');
+      Array.from(sel.options).forEach((o) => { o.selected = codes.has(o.value); });
+    },
+
+    showModal() {
+      $('#memo-editor-modal').hidden = false;
+      document.body.style.overflow = 'hidden';
+    },
+    closeModal() {
+      $('#memo-editor-modal').hidden = true;
+      document.body.style.overflow = '';
+      this.editing = null;
+    },
+
+    renderImages() {
+      const grid = $('#memo-images-grid');
+      if (!grid) return;
+      if (!this.images.length) {
+        grid.innerHTML = '<div class="memo-form-hint">이미지가 없습니다.</div>';
+        return;
+      }
+      grid.innerHTML = this.images.map((img, i) => `
+        <div class="memo-image-tile" data-i="${i}">
+          <img src="${escapeHtml(img.url)}" alt=""/>
+          <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} data-primary-i="${i}"/> 대표</label>
+          <button type="button" data-img-del="${i}">삭제</button>
+        </div>
+      `).join('');
+      grid.querySelectorAll('input[data-primary-i]').forEach((r) => {
+        r.addEventListener('change', () => {
+          const i = parseInt(r.getAttribute('data-primary-i'), 10);
+          editor.images.forEach((img, idx) => { img.is_primary = idx === i; });
+        });
+      });
+      grid.querySelectorAll('button[data-img-del]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const i = parseInt(b.getAttribute('data-img-del'), 10);
+          editor.images.splice(i, 1);
+          if (editor.images.length && !editor.images.some((img) => img.is_primary)) editor.images[0].is_primary = true;
+          editor.renderImages();
+        });
+      });
+    },
+
+    async onImageInput(e) {
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      for (const file of files) {
+        if (!/^image\//.test(file.type)) continue;
+        try {
+          const dataUrl = await readFileAsDataUrl(file);
+          const res = await fetch('/api/memorabilia/upload-image', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data_url: dataUrl }),
+          });
+          const data = await res.json();
+          if (res.ok && data.url) {
+            const isPrimary = !editor.images.length;
+            editor.images.push({ url: data.url, alt_en: '', alt_ko: '', is_primary: isPrimary, sort_order: editor.images.length });
+          } else {
+            alert('업로드 실패: ' + (data.error || res.status));
+          }
+        } catch (err) { alert('업로드 실패: ' + err.message); }
+      }
+      editor.renderImages();
+    },
+
+    renderLinks() {
+      const wrap = $('#memo-links-wrap');
+      if (!wrap) return;
+      if (!this.links.length) { wrap.innerHTML = '<div class="memo-form-hint">관련 링크 없음.</div>'; return; }
+      wrap.innerHTML = this.links.map((l, i) => `
+        <div class="memo-link-row" data-i="${i}">
+          <input placeholder="라벨 EN" value="${escapeHtml(l.label_en)}" data-link-f="label_en" data-i="${i}"/>
+          <input placeholder="라벨 KO" value="${escapeHtml(l.label_ko)}" data-link-f="label_ko" data-i="${i}"/>
+          <input class="url" placeholder="URL" value="${escapeHtml(l.url)}" data-link-f="url" data-i="${i}"/>
+          <button type="button" data-link-del="${i}" style="padding:6px 10px;border:1px solid var(--gray-300);background:#fff;border-radius:4px;cursor:pointer">삭제</button>
+        </div>
+      `).join('');
+      wrap.querySelectorAll('input[data-link-f]').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const i = parseInt(inp.getAttribute('data-i'), 10);
+          const f = inp.getAttribute('data-link-f');
+          if (editor.links[i]) editor.links[i][f] = inp.value;
+        });
+      });
+      wrap.querySelectorAll('button[data-link-del]').forEach((b) => {
+        b.addEventListener('click', () => {
+          editor.links.splice(parseInt(b.getAttribute('data-link-del'), 10), 1);
+          editor.renderLinks();
+        });
+      });
+    },
+
+    addLink() {
+      this.links.push({ label_en: '', label_ko: '', url: '' });
+      this.renderLinks();
+    },
+
+    async save() {
+      const sel = $('#memo-country');
+      const country_codes = Array.from(sel.selectedOptions).map((o) => o.value);
+      const tags = ($('#memo-tags').value || '').split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+      const body = {
+        title_en: $('#memo-title-en').value,
+        title_ko: $('#memo-title-ko').value,
+        has_event: $('#memo-has-event').checked,
+        event_name_en: $('#memo-event-en').value,
+        event_name_ko: $('#memo-event-ko').value,
+        year: $('#memo-year').value || null,
+        category_id: $('#memo-category').value ? parseInt($('#memo-category').value, 10) : null,
+        material_en: $('#memo-material-en').value,
+        material_ko: $('#memo-material-ko').value,
+        size_text: $('#memo-size').value,
+        issuer_en: $('#memo-issuer-en').value,
+        issuer_ko: $('#memo-issuer-ko').value,
+        description_en: plainToEditorJson($('#memo-desc-en').value),
+        description_ko: plainToEditorJson($('#memo-desc-ko').value),
+        related_links: this.links.filter((l) => l.url),
+        country_codes,
+        tags,
+        images: this.images,
+        status: $('#memo-status').value || 'draft',
+      };
+      const btn = $('#memo-editor-save');
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = '저장 중…';
+      try {
+        const url = this.editing ? `/api/memorabilia/${this.editing.id}` : '/api/memorabilia';
+        const method = this.editing ? 'PATCH' : 'POST';
+        const res = await fetch(url, {
+          method, credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.status);
+        this.closeModal();
+        if (location.pathname.startsWith('/memorabilia/')) {
+          // detail view — reload current
+          loadDetail(getSlugFromPath());
+        } else {
+          state.page = 1;
+          runSearch();
+        }
+      } catch (err) {
+        alert('저장 실패: ' + err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
+    },
+
+    async remove() {
+      if (!this.editing || !this.editing.id) return;
+      if (!confirm('이 도감 항목을 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+      try {
+        const res = await fetch(`/api/memorabilia/${this.editing.id}`, {
+          method: 'DELETE', credentials: 'same-origin',
+        });
+        if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || res.status); }
+        this.closeModal();
+        location.href = '/memorabilia';
+      } catch (err) { alert('삭제 실패: ' + err.message); }
+    },
+  };
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  function readPlain(stored) {
+    if (!stored) return '';
+    if (typeof stored === 'string' && stored.trim().startsWith('{')) {
+      try {
+        const j = JSON.parse(stored);
+        if (Array.isArray(j.blocks)) {
+          return j.blocks.map((b) => (b.data && (b.data.text || b.data.caption || b.data.title)) || '')
+            .filter(Boolean).map((s) => s.replace(/<[^>]*>/g, '')).join('\n\n');
+        }
+      } catch {}
+    }
+    return String(stored);
+  }
+
+  function plainToEditorJson(text) {
+    const t = String(text || '').trim();
+    if (!t) return '';
+    const blocks = t.split(/\n{2,}/).map((p) => ({
+      type: 'paragraph',
+      data: { text: escapeHtml(p).replace(/\n/g, '<br>') },
+    }));
+    return JSON.stringify({ blocks });
+  }
+
+  function wireEditorEvents() {
+    const addBtn = $('#memo-add-btn');
+    if (addBtn) addBtn.addEventListener('click', () => editor.openCreate());
+
+    const detailEditBtn = $('#memo-detail-edit-btn');
+    if (detailEditBtn) detailEditBtn.addEventListener('click', () => {
+      if (window.__memoDetailItem) editor.openEdit(window.__memoDetailItem);
+    });
+
+    $('#memo-editor-close')?.addEventListener('click', () => editor.closeModal());
+    $('#memo-editor-cancel')?.addEventListener('click', () => editor.closeModal());
+    $('#memo-editor-save')?.addEventListener('click', () => editor.save());
+    $('#memo-editor-delete')?.addEventListener('click', () => editor.remove());
+    $('#memo-editor-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'memo-editor-modal') editor.closeModal();
+    });
+
+    $('#memo-has-event')?.addEventListener('change', () => {
+      $('#memo-event-row').hidden = !$('#memo-has-event').checked;
+    });
+
+    $('#memo-image-add')?.addEventListener('click', () => $('#memo-image-input').click());
+    $('#memo-image-input')?.addEventListener('change', (e) => editor.onImageInput(e));
+    $('#memo-link-add')?.addEventListener('click', () => editor.addLink());
+
+    $('#memo-login-close')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
+    $('#memo-login-cancel')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
+    $('#memo-login-overlay')?.addEventListener('click', (e) => {
+      if (e.target.id === 'memo-login-overlay') $('#memo-login-overlay').hidden = true;
+    });
+  }
+
+  // Boot: 1) 표준 사이트 chrome 부팅, 2) 에디터 이벤트, 3) 라우팅
   function boot() {
     if (window.GW && typeof window.GW.bootstrapStandardPage === 'function') {
       try { window.GW.bootstrapStandardPage(); } catch (e) {}
     }
+    wireEditorEvents();
     route();
+    // 비동기로 세션 체크 (어드민이면 detail 페이지에서 편집 버튼 노출)
+    editor.checkSession().then(() => {
+      if (editor.isAdmin) {
+        const bar = $('#memo-detail-admin-bar');
+        if (bar && !$('#memo-detail-view').hidden) bar.hidden = false;
+      }
+    });
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
