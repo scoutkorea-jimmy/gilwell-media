@@ -778,6 +778,24 @@
   overflow-y: auto; box-shadow: var(--v3-shadow-m);
 }
 .v3-modal-lg { max-width: 820px; }
+.v3-modal-md { max-width: 720px; }
+.v3-modal-sm { max-width: 520px; }
+
+/* Modal backdrop — used by memorabilia/categories/events admin modals.
+   Without this, the .v3-modal-backdrop div rendered inline below the
+   panel instead of as a centered overlay. */
+.v3-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: rgba(15, 18, 28, 0.55);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px var(--gap-card) var(--gap-section);
+  overflow-y: auto;
+}
+.v3-modal-backdrop[hidden] { display: none; }
 .v3-modal-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: var(--v3-gap-xl) var(--gap-section) var(--gap-card); border-bottom: 1px solid var(--v3-border);
