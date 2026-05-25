@@ -1,6 +1,45 @@
 {
   "items": [
   {
+    "version": "00.147.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 16:30:00 KST",
+    "summary": "스카우트 기념품 도감 신설 — 패치·뱃지·메달·항건·우표 등을 한·영 이중 표기로 등록하고 다국어 검색이 가능한 공개 도감 페이지 추가.",
+    "for_users": [
+      "상단 메뉴에 '스카우트 기념품 도감' 이 새로 들어왔습니다. 패치·뱃지·메달·항건·우표·책자 등 스카우트 관련 기념품을 한 곳에 모아 볼 수 있습니다.",
+      "각 항목은 영문/국문이 함께 보입니다 — 둘 중 한쪽만 알아도 자유롭게 검색할 수 있고, 검색 결과에는 양쪽 언어가 모두 나옵니다.",
+      "검색이 핵심 기능입니다. 검색창에 행사명·키워드·제작기관 등을 입력하면 실시간으로 결과가 좁혀집니다. 분류·국가·정렬 필터도 함께 사용할 수 있습니다.",
+      "공개 메뉴의 'WOSM' 영문 표기를 'World' 로 변경했습니다. 한국어 표기는 그대로입니다."
+    ],
+    "for_developers": [
+      "신규 라우트 /memorabilia (목록·검색) + /memorabilia/:slug (상세, _redirects 200 rewrite). memorabilia.html / js/memorabilia.js / css/memorabilia.css 추가.",
+      "공개 API: GET /api/memorabilia/search (q + facets + 글로서리 동의어 확장), GET /api/memorabilia/slug/:slug, GET /api/memorabilia/categories.",
+      "관리자 API: POST/GET /api/memorabilia, GET/PATCH/DELETE /api/memorabilia/:id, POST /api/memorabilia/categories, PATCH/DELETE /api/memorabilia/categories/:id, POST /api/memorabilia/upload-image, GET /api/memorabilia/autocomplete.",
+      "FTS5 trigram 토크나이저 기반 검색. 한국어 부분 검색을 위해 jamo_blob(자모 분해본) + choseong_blob(초성) 보조 컬럼. functions/_shared/memorabilia-search.js — decomposeJamo / extractChoseong / extractEditorJsPlain / buildSearchQuery / findGlossaryAliases / expandWithAliases.",
+      "공유 store: functions/_shared/memorabilia-store.js — 입력 정규화, 부속 테이블(images/countries/tags) 트랜잭션 동기화, FTS row upsert.",
+      "DEFAULT_NAV_LABELS['nav.wosm'].en = 'WOSM' → 'World'. nav.memorabilia 신규 항목. 13개 공개 HTML 페이지(nav.glossary 다음에) + index.html 카테고리 헤더에 fallback label 동기.",
+      "사이트 버전 00.146.06 → 00.147.00."
+    ]
+  },
+  {
+    "version": "03.123.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 16:30:00 KST",
+    "summary": "관리자에 스카우트 기념품 도감 입력 패널 + 분류 enum 관리 패널 신설.",
+    "for_users": [
+      "관리자 사이드바에 '스카우트 백과' 그룹이 새로 들어왔습니다. '기념품 도감' 에서 항목을 추가·편집·삭제하고, '도감 분류 관리' 에서 분류 (패치·뱃지·메달·항건·제복·우표·책자·기타) 를 태그처럼 관리할 수 있습니다.",
+      "기념품 입력 화면은 이미지 여러 장(대표 1장 선택), 영문/국문 제목, 행사명(선택), 다중 국가, 연도, 분류, 재질, 크기, 제작기관(자동완성), 태그(자동완성), 영문·국문 설명, 관련 링크 까지 한 화면에서 처리됩니다.",
+      "초안/공개 상태로 저장 후 단계적으로 공개할 수 있습니다."
+    ],
+    "for_developers": [
+      "admin.html: '스카우트 백과' 사이드바 섹션 + panel-memorabilia / panel-memorabilia-categories HTML 추가. functions/_shared/admin-users.js ADMIN_MENUS 에 memorabilia / memorabilia-categories 슬러그 등록 (각각 view+write).",
+      "js/admin-memorabilia.js (신규, IIFE) — admin-v3.js 와 독립. 패널 활성 감지 → 목록/모달 CRUD + 이미지 업로드 + 자동완성 + 분류 관리.",
+      "D1 마이그레이션 071: memorabilia / memorabilia_categories (8개 시드: patch/badge/medal/neckerchief/uniform/stamp/booklet/other) / memorabilia_images / memorabilia_countries / memorabilia_tag_pool / memorabilia_tags / memorabilia_fts (FTS5 trigram) / memorabilia_search_log.",
+      "admin-permissions.gateMenuAccess 로 모든 쓰기 API 게이팅. 이미지 업로드는 storeDataImage(POST_IMAGES R2) 재사용.",
+      "관리자 버전 03.122.00 → 03.123.00."
+    ]
+  },
+  {
     "version": "03.122.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 13:13:57 KST",

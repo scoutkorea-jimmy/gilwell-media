@@ -1,4 +1,6 @@
 /kms/* /kms 200
+/memorabilia/* /memorabilia 200
+/memorabilia.html /memorabilia 301
 /index.html / 301
 /korea.html /korea 301
 /apr.html /apr 301

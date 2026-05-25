@@ -30,6 +30,7 @@ SITE_FILES=(
   contributors.html
   search.html
   calendar.html
+  memorabilia.html
   functions/post/'[id]'.js
   functions/feature/'[category]'/'[slug]'.js
   functions/glossary-raw.js
@@ -53,6 +54,12 @@ PUBLIC_HTML_FILES=(
 for file in "${PUBLIC_HTML_FILES[@]}"; do
   perl -0pi -e "s/\\/js\\/board\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/board.js?v=${ASSET_VERSION}/g; s/\\/js\\/board-write\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/board-write.js?v=${ASSET_VERSION}/g; s/\\/js\\/glossary\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/glossary.js?v=${ASSET_VERSION}/g; s/\\/js\\/search\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/search.js?v=${ASSET_VERSION}/g; s/\\/js\\/calendar\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/calendar.js?v=${ASSET_VERSION}/g" "$file"
 done
+
+# memorabilia.html — its own js/css
+perl -0pi -e "s#/css/memorabilia\\.css\\?v=[0-9A-Za-z.-]+#/css/memorabilia.css?v=${ASSET_VERSION}#g; s#/js/memorabilia\\.js\\?v=[0-9A-Za-z.-]+#/js/memorabilia.js?v=${ASSET_VERSION}#g" memorabilia.html
+
+# admin.html — admin-memorabilia.js
+perl -0pi -e "s#/js/admin-memorabilia\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-memorabilia.js?v=${ASSET_VERSION}#g" admin.html
 
 perl -0pi -e "s/\\/js\\/dreampath\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/dreampath.js?v=${ASSET_VERSION}/g" dreampath.html
 

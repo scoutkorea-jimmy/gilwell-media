@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>도움을 주신 분들 — BP미디어</title>
+  <title>스카우트 기념품 도감 — BP미디어</title>
   <!-- SHARE_META -->
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
@@ -11,12 +11,12 @@
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
   <link rel="stylesheet" href="/css/style.css?v=20260525073157">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260525073157">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
-<body>
+<body class="memorabilia-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
-  <!-- ── MASTHEAD ── -->
   <header class="masthead">
     <div class="masthead-top">
       <div class="masthead-date" id="today-date"></div>
@@ -42,59 +42,61 @@
       </div>
     </div>
     <nav class="nav" data-managed-nav>
-      <a href="/contributors" class="active" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="도움을 주신 분들"></a>
       <a href="/" data-i18n="nav.home" data-fallback-label="홈"></a>
       <a href="/latest" data-i18n="nav.latest" data-fallback-label="최신 소식"></a>
       <a href="/korea" data-i18n="nav.korea" data-fallback-label="Korea"></a>
       <a href="/apr" data-i18n="nav.apr" data-fallback-label="APR"></a>
-      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="WOSM"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="World"></a>
       <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="세계연맹 회원국 현황"></a>
       <a href="/people" data-i18n="nav.people" data-fallback-label="스카우트 인물"></a>
       <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="캘린더"></a>
       <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="용어집"></a>
-      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="스카우트 기념품 도감"></a>
+      <a href="/memorabilia" class="active" data-fallback-label="스카우트 기념품 도감">스카우트 기념품 도감</a>
     </nav>
   </header>
 
-  <!-- ── TICKER ── -->
   <main id="main-content">
-  <div class="ticker">
-    <div class="ticker-inner" id="ticker-inner">
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-      BP미디어 · bpmedia.net
-      &nbsp;&nbsp;&nbsp;<span class="ticker-diamond">◆</span>&nbsp;&nbsp;&nbsp;
-    </div>
-  </div>
-
-  <!-- ── BANNER ── -->
-  <div class="board-banner">
-    <div class="board-banner-text">
-      <span class="category-tag" style="background:#622599;margin-bottom:16px;">감사</span>
-      <h2>도움을 주신 분들</h2>
-      <p data-board-copy-key="contributors">도움을 주신 모든 분들께 진심으로 감사드립니다.</p>
-    </div>
-  </div>
-
-  <!-- ── CONTRIBUTORS LIST ── -->
-  <div class="contributors-wrap">
-    <div class="contributors-thank">
-      <p>BP미디어는 스카우트 정신을 담아 자발적인 봉사로 운영됩니다.<br>
-      아래 분들의 소중한 도움 덕분에 이 공간이 지속될 수 있습니다.</p>
-    </div>
-
-    <div class="contributors-list" id="contributors-list">
-      <div class="loading-state">
-        <div class="loading-dots"><span></span><span></span><span></span></div>
+    <!-- List/Search view -->
+    <section class="memo-hero" id="memo-list-view">
+      <div class="memo-hero-inner">
+        <h2>스카우트 기념품 도감 <span class="memo-hero-en">Scout Memorabilia</span></h2>
+        <p class="memo-hero-desc">패치 · 뱃지 · 메달 · 항건 · 우표 · 책자 등 스카우트 기념품을 한 곳에 모았습니다. 영문/국문 어느 쪽으로 검색해도 찾을 수 있습니다.</p>
+        <div class="memo-search-bar">
+          <input type="search" id="memo-search-input" placeholder="검색 (제목·행사·키워드·제작기관…)" autocomplete="off" aria-label="도감 검색"/>
+          <button id="memo-search-btn" aria-label="검색"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+        </div>
+        <div class="memo-filters" id="memo-filters" aria-label="필터">
+          <select id="memo-filter-category" aria-label="분류"><option value="">분류 전체</option></select>
+          <select id="memo-filter-country" aria-label="국가"><option value="">국가 전체</option></select>
+          <select id="memo-filter-sort" aria-label="정렬">
+            <option value="relevance">관련도</option>
+            <option value="newest">최신 등록</option>
+            <option value="year_desc">최근 연도</option>
+            <option value="year_asc">오래된 연도</option>
+            <option value="title">제목순</option>
+          </select>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-    <!-- contributors: 도움을 주신 분들 페이지는 감사 전용 — 광고 없음(2026-04-21 운영자 요청) -->
+    <section class="memo-results-wrap" id="memo-results-wrap">
+      <div class="memo-results-meta" id="memo-results-meta">불러오는 중…</div>
+      <div class="memo-grid" id="memo-grid"></div>
+      <div class="memo-pagination" id="memo-pagination"></div>
+    </section>
 
-
+    <!-- Detail view (initially hidden) -->
+    <section class="memo-detail" id="memo-detail-view" hidden>
+      <div class="memo-detail-inner">
+        <a href="/memorabilia" class="memo-back-link">← 도감으로 돌아가기</a>
+        <div id="memo-detail-content">
+          <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+        </div>
+      </div>
+    </section>
   </main>
-  <!-- ── FOOTER ── -->
+
   <footer>
     <div class="footer-inner">
       <div class="footer-brand">
@@ -103,17 +105,15 @@
         <p data-footer-role="domain" style="margin-top:6px;">bpmedia.net</p>
         <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:story@bpmedia.net">story@bpmedia.net</a><!--/email_off--></p>
         <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:info@bpmedia.net">info@bpmedia.net</a><!--/email_off--></p>
-        <p class="footer-privacy-link"><a href="/privacy" data-footer-role="privacy-link">개인정보 처리방침</a></p>
       </div>
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <a href="/glossary-raw">용어집 RAW로 보기 →</a>
         <p class="footer-build">Site <span class="site-build-version">V00.147.00</span> · Admin <span class="admin-build-version">V03.123.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
-        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다. 한국스카우트연맹과 세계스카우트연맹 공식 채널이 아닌 자발적 스카우트 네트워크로 운영됩니다.</p>
+        <p data-i18n="footer.disclaimer">BP미디어는 전 세계 스카우트 소식과 활동을 기록하고 공유하는 독립 미디어 아카이브입니다.</p>
       </div>
     </div>
   </footer>
@@ -123,36 +123,6 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/js/main.js?v=20260525073157"></script>
   <script src="/js/site-chrome.js?v=20260525073157"></script>
-  <script>
-    GW.bootstrapStandardPage();
-
-    // Load contributors
-    fetch('/api/settings/contributors')
-      .then(function(r){ return r.json(); })
-      .then(function(data) {
-        var list = document.getElementById('contributors-list');
-        var items = data.items || [];
-        if (!items.length) {
-          list.innerHTML = '<p class="contributors-empty">아직 등록된 분들이 없습니다.</p>';
-          return;
-        }
-        list.innerHTML = items.map(function(c) {
-          return (
-            '<div class="contributor-card">' +
-              '<span class="contributor-name">' + GW.escapeHtml(c.name) + '</span>' +
-              (c.note ? '<span class="contributor-note">' + GW.escapeHtml(c.note) + '</span>' : '') +
-              (c.date ? '<span class="contributor-date">' + GW.escapeHtml(c.date) + '</span>' : '') +
-            '</div>'
-          );
-        }).join('');
-      })
-      .catch(function() {
-        document.getElementById('contributors-list').innerHTML =
-          '<p class="contributors-empty">불러오지 못했습니다.</p>';
-      });
-  </script>
-  <!-- Kakao AdFit ba.min.js 로더도 함께 제외 — 광고 없는 페이지이므로 불필요 -->
-
-
+  <script src="/js/memorabilia.js?v=20260525073157"></script>
 </body>
 </html>

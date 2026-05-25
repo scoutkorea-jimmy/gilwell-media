@@ -10,11 +10,12 @@
     'nav.latest': { ko: '최신 소식', en: 'Latest' },
     'nav.korea': { ko: 'Korea', en: 'Korea' },
     'nav.apr': { ko: 'APR', en: 'APR' },
-    'nav.wosm': { ko: 'WOSM', en: 'WOSM' },
+    'nav.wosm': { ko: 'WOSM', en: 'World' },
     'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
     'nav.calendar': { ko: '캘린더', en: 'Calendar' },
     'nav.glossary': { ko: '용어집', en: 'Glossary' },
+    'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
     'hero.eyebrow': { ko: 'BP미디어 · bpmedia.net', en: 'BPmedia · bpmedia.net' },
     'hero.title': { ko: '스카우트 운동의 소식을\n기록합니다', en: 'Recording the\nScout Movement' },
     'hero.sub': { ko: '한국스카우트연맹과 세계스카우트연맹의 소식을 자발적인 봉사로 전합니다', en: 'Delivering Scout news through volunteer effort.' },
@@ -87,6 +88,7 @@
     'nav.people': true,
     'nav.calendar': true,
     'nav.glossary': true,
+    'nav.memorabilia': true,
   };
 
   GW.t = function (key) {
@@ -113,6 +115,7 @@
     { href: '/people', key: 'nav.people' },
     { href: '/calendar', key: 'nav.calendar' },
     { href: '/glossary', key: 'nav.glossary' },
+    { href: '/memorabilia', key: 'nav.memorabilia' },
   ];
 
   GW.setLang = function (lang) {

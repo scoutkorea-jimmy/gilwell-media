@@ -41,6 +41,10 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'wosm-members',      label: '세계연맹 회원국', actions: ['view', 'write'] },
     { slug: 'reference-sites',   label: '기사 참고 사이트', actions: ['view', 'write'] },
   ]},
+  { group: '스카우트 백과', items: [
+    { slug: 'memorabilia',            label: '기념품 도감',     actions: ['view', 'write'] },
+    { slug: 'memorabilia-categories', label: '도감 분류 관리', actions: ['view', 'write'] },
+  ]},
   { group: '노출', items: [
     { slug: 'hero',       label: '히어로 기사',   actions: ['view', 'write'] },
     { slug: 'home-lead',  label: '메인 스토리',   actions: ['view', 'write'] },

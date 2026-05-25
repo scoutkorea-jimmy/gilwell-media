@@ -9,11 +9,12 @@ export const DEFAULT_NAV_LABELS = Object.freeze({
   'nav.latest': { ko: '최신 소식', en: 'Latest' },
   'nav.korea': { ko: 'Korea', en: 'Korea' },
   'nav.apr': { ko: 'APR', en: 'APR' },
-  'nav.wosm': { ko: 'WOSM', en: 'WOSM' },
+  'nav.wosm': { ko: 'WOSM', en: 'World' },
   'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
   'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
   'nav.calendar': { ko: '캘린더', en: 'Calendar' },
   'nav.glossary': { ko: '용어집', en: 'Glossary' },
+  'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
 });
 
 export const NAV_ITEMS = Object.freeze([
@@ -27,6 +28,7 @@ export const NAV_ITEMS = Object.freeze([
   { href: '/people', key: 'nav.people' },
   { href: '/calendar', key: 'nav.calendar' },
   { href: '/glossary', key: 'nav.glossary' },
+  { href: '/memorabilia', key: 'nav.memorabilia' },
 ]);
 
 export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
@@ -40,6 +42,7 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/glossary': 'glossary',
   '/contributors': 'contributors',
   '/calendar': 'calendar',
+  '/memorabilia': 'memorabilia',
   '/search': 'search',
   '/editorial-policy': 'editorial_policy',
 });
@@ -63,6 +66,8 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/calendar.html': DEFAULT_NAV_LABELS['nav.calendar'].ko,
   '/glossary': DEFAULT_NAV_LABELS['nav.glossary'].ko,
   '/glossary.html': DEFAULT_NAV_LABELS['nav.glossary'].ko,
+  '/memorabilia': DEFAULT_NAV_LABELS['nav.memorabilia'].ko,
+  '/memorabilia.html': DEFAULT_NAV_LABELS['nav.memorabilia'].ko,
   '/contributors': DEFAULT_NAV_LABELS['nav.contributors'].ko,
   '/contributors.html': DEFAULT_NAV_LABELS['nav.contributors'].ko,
   '/dreampath': 'Dreampath',
