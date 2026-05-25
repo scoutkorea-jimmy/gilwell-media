@@ -20,8 +20,12 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const gate = await gateMenuAccess(request, env, 'memorabilia', 'write');
-  if (gate) return gate;
+  // 도감 항목 편집 모달에서 inline 신규 행사 등록도 허용 — write:memorabilia 면 충분.
+  const eventsGate = await gateMenuAccess(request, env, 'memorabilia-events', 'write');
+  if (eventsGate) {
+    const memoGate = await gateMenuAccess(request, env, 'memorabilia', 'write');
+    if (memoGate) return eventsGate; // 둘 다 없으면 events gate 반환 (더 정확한 메시지)
+  }
 
   let body;
   try { body = await request.json(); } catch { return json({ error: 'invalid_json' }, 400); }

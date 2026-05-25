@@ -28,7 +28,7 @@ export async function onRequestGet({ params, env }) {
 }
 
 export async function onRequestPatch({ request, params, env }) {
-  const gate = await gateMenuAccess(request, env, 'memorabilia', 'write');
+  const gate = await gateMenuAccess(request, env, 'memorabilia-events', 'write');
   if (gate) return gate;
 
   const id = Number(params.id);
@@ -55,7 +55,7 @@ export async function onRequestPatch({ request, params, env }) {
 }
 
 export async function onRequestDelete({ request, params, env }) {
-  const gate = await gateMenuAccess(request, env, 'memorabilia', 'write');
+  const gate = await gateMenuAccess(request, env, 'memorabilia-events', 'write');
   if (gate) return gate;
 
   const id = Number(params.id);

@@ -286,8 +286,8 @@
     $('#memo-title-ko').value = item?.title_ko || '';
     $('#memo-has-event').checked = !!item?.has_event;
     $('#memo-event-row').hidden = !item?.has_event;
-    $('#memo-event-en').value = item?.event_name_en || '';
-    $('#memo-event-ko').value = item?.event_name_ko || '';
+    // event_name 은 더 이상 free-text input 없음 — event picker (#memo-event-picker)
+    // 가 책임. (ensureEventPicker 가 위에서 이미 초기화됨.)
     $('#memo-year').value = item?.year || '';
     $('#memo-category').value = item?.category_id || '';
     $('#memo-material-en').value = item?.material_en || '';

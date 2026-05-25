@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.125.01",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:03:38 KST",
+    "summary": "핫픽스: 관리자 기념품 도감 항목 편집 클릭 시 TypeError (event_name 입력 필드 제거 후 잔존 참조) 수정.",
+    "for_users": [
+      "관리자 → 기념품 도감 목록에서 '편집' 버튼을 누르면 모달이 열리지 않던 회귀를 수정했습니다."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js openEditor(): #memo-event-en / #memo-event-ko 직접 .value 할당을 제거. 행사명은 이미 ensureEventPicker 가 동일 시점에 #memo-event-picker 를 초기화하므로 free-text 입력 필드는 더 이상 없음. (03.125.00 에서 picker 도입 시 HTML 은 제거됐으나 JS 가 stale 참조를 유지 → null TypeError.)",
+      "이어지는 03.126.00 배포에서 events 카탈로그 관리 패널과 admin 권한 슬러그(memorabilia-events) 가 합쳐서 들어갑니다.",
+      "관리자 03.125.00 → 03.125.01."
+    ]
+  },
+  {
     "version": "03.125.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 18:31:38 KST",
