@@ -242,8 +242,12 @@ async function hydrateOne(db, row) {
   // event period_text 는 클라이언트에서도 사용하므로 여기서 미리 포맷
   let event = null;
   if (eventRow) {
-    const { formatEventPeriod } = await import('./memorabilia-events.js');
-    event = { ...eventRow, period_text: formatEventPeriod(eventRow) };
+    const { formatEventPeriod, formatEventPeriodEn } = await import('./memorabilia-events.js');
+    event = {
+      ...eventRow,
+      period_text: formatEventPeriod(eventRow),
+      period_text_en: formatEventPeriodEn(eventRow),
+    };
   }
   return {
     ...row,

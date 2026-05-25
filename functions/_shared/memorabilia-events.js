@@ -103,6 +103,37 @@ export function formatEventPeriod(row) {
   return `${s} ~ ${e}`;
 }
 
+const MONTH_ABBR_EN = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// 영문 기간 포맷: "Aug 1 – 12, 2023" / "Aug 1, 2023 – Sep 5, 2023" / "2023" / "Aug 2023".
+// 사용자 알림: 같은 연·월이면 동일 패턴으로 축약 (한글과 대응).
+export function formatEventPeriodEn(row) {
+  if (!row) return '';
+  const fmtSide = (y, m, d) => {
+    if (y == null) return '';
+    if (m == null) return `${y}`;
+    if (d == null) return `${MONTH_ABBR_EN[m]} ${y}`;
+    return `${MONTH_ABBR_EN[m]} ${d}, ${y}`;
+  };
+  const s = fmtSide(row.start_year, row.start_month, row.start_day);
+  const e = fmtSide(row.end_year, row.end_month, row.end_day);
+  if (!s && !e) return '';
+  if (s && !e) return s;
+  if (!s && e) return `~ ${e}`;
+  if (s === e) return s;
+  // 같은 연·월·둘 다 day 있음: "Aug 1 – 12, 2023"
+  if (row.start_year === row.end_year && row.start_month != null && row.start_month === row.end_month
+      && row.start_day != null && row.end_day != null) {
+    return `${MONTH_ABBR_EN[row.start_month]} ${row.start_day} – ${row.end_day}, ${row.start_year}`;
+  }
+  // 같은 연도 다른 월
+  if (row.start_year === row.end_year && row.start_month != null && row.end_month != null) {
+    if (row.end_day != null) return `${MONTH_ABBR_EN[row.start_month]} ${row.start_day || ''}${row.start_day ? ' ' : ''}– ${MONTH_ABBR_EN[row.end_month]} ${row.end_day}, ${row.start_year}`.replace(/  +/g, ' ');
+    return `${MONTH_ABBR_EN[row.start_month]} – ${MONTH_ABBR_EN[row.end_month]} ${row.start_year}`;
+  }
+  return `${s} – ${e}`;
+}
+
 export async function listEvents(db, { archived = false } = {}) {
   const whereArchived = archived ? '' : 'WHERE archived = 0';
   const { results } = await db.prepare(
@@ -117,6 +148,7 @@ export async function listEvents(db, { archived = false } = {}) {
   return (results || []).map((row) => ({
     ...row,
     period_text: formatEventPeriod(row),
+    period_text_en: formatEventPeriodEn(row),
   }));
 }
 
@@ -129,7 +161,7 @@ export async function getEvent(db, id) {
        FROM memorabilia_events WHERE id = ?`
   ).bind(id).first();
   if (!row) return null;
-  return { ...row, period_text: formatEventPeriod(row) };
+  return { ...row, period_text: formatEventPeriod(row), period_text_en: formatEventPeriodEn(row) };
 }
 
 export async function createEvent(db, input) {

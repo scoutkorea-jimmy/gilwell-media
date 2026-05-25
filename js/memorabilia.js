@@ -265,6 +265,11 @@
       const item = data.item;
       window.__memoDetailItem = item;
       document.title = `${item.title_en || item.title_ko} — 스카우트 기념품 도감 — BP미디어`;
+      // detail 페이지 직접 진입(/memorabilia/:slug) 시에도 국가 라벨 EN/KO 캐시 필요.
+      // populateCountryOptions() 가 캐시를 채우므로 렌더 전에 한 번 실행.
+      if (!Object.keys(COUNTRY_LABELS).length) {
+        try { await populateCountryOptions(); } catch {}
+      }
       wrap.innerHTML = renderDetail(item);
       wireDetailEvents(wrap);
       // Admin 수정 버튼 — 쓰기 권한 보유자(owner OR write:memorabilia) 만 노출
@@ -286,19 +291,32 @@
     const meta = [];
     if (item.has_event && (item.event_name_en || item.event_name_ko)) {
       // 카탈로그 참조가 있으면 행사명 + 기간을 함께 표시. 없으면 free-text 이름만.
-      const period = item.event && item.event.period_text ? item.event.period_text : '';
+      const periodKo = item.event && item.event.period_text ? item.event.period_text : '';
+      const periodEn = item.event && item.event.period_text_en ? item.event.period_text_en : '';
       const enLine = item.event_name_en
         ? `<span class="lang-en" lang="en">${escapeHtml(item.event_name_en)}</span>` : '';
       const koLine = item.event_name_ko
         ? `<span class="lang-ko" lang="ko">${escapeHtml(item.event_name_ko)}</span>` : '';
       meta.push(metaRow('행사명', enLine, koLine));
-      if (period) meta.push(metaRow('행사기간', escapeHtml(period), ''));
+      if (periodEn || periodKo) {
+        // 분류·제작기관 패턴과 동일: 영문이 위, 국문이 아래
+        const enP = periodEn ? `<span class="lang-en" lang="en">${escapeHtml(periodEn)}</span>` : '';
+        const koP = periodKo ? `<span class="lang-ko" lang="ko">${escapeHtml(periodKo)}</span>` : '';
+        meta.push(metaRow('행사기간', enP, koP));
+      }
     }
     if (item.country_codes && item.country_codes.length) {
-      // EN: "Korea, Japan" — name_en 우선, 없으면 코드 / KO: "한국, 일본" — name_ko
-      const enLabels = item.country_codes.map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].en) || c).join(', ');
-      const koLabels = item.country_codes.map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].ko) || c).join(', ');
-      meta.push(metaRow('국가', enLabels, koLabels));
+      // EN: "Korea, Japan" (영문 위) / KO: "한국, 일본" (국문 아래) — 분류·제작기관과 동일 패턴.
+      const enLabels = item.country_codes
+        .map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].en) || c)
+        .filter(Boolean).join(', ');
+      const koLabels = item.country_codes
+        .map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].ko) || c)
+        .filter(Boolean).join(', ');
+      const enLine = enLabels ? `<span class="lang-en" lang="en">${escapeHtml(enLabels)}</span>` : '';
+      const koLine = koLabels && koLabels !== enLabels
+        ? `<span class="lang-ko" lang="ko">${escapeHtml(koLabels)}</span>` : '';
+      meta.push(metaRow('국가', enLine, koLine));
     }
     if (item.year) meta.push(metaRow('연도', `${item.year}`, ''));
     if (item.category_label_en || item.category_label_ko) {

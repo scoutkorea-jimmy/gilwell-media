@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "00.151.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:44:54 KST",
+    "summary": "공개 도감 상세 — 국가/행사기간 영문·국문 분리 표시 (KRKR → Korea / 한국). 행사기간도 \"Aug 1 – 12, 2023\" / \"2023년 8월 1일 ~ 12일\" 두 줄로.",
+    "for_users": [
+      "도감 상세 페이지의 '국가' 메타가 \"KRKR\" 처럼 코드가 두 번 붙어 보이던 문제를 수정했습니다. 분류·제작기관과 같은 패턴으로 영문(Korea) 위 + 국문(한국) 아래로 표시됩니다.",
+      "'행사기간' 메타도 영문(Aug 1 – 12, 2023) + 국문(2023년 8월 1일 ~ 12일) 두 줄로 함께 표시됩니다."
+    ],
+    "for_developers": [
+      "원인: detail 페이지(/memorabilia/:slug) 직접 진입 시 populateCountryOptions() 가 호출되지 않아 COUNTRY_LABELS 캐시가 비었고, fallback 으로 country_code 가 EN/KO 양쪽에 그대로 들어가 'KR' + 'KR' 가 .memo-bilingual 내부에 inline 으로 'KRKR' 표시됨. 추가로 country 메타 행만 lang-en/lang-ko span wrapper 가 빠져 stack CSS 가 적용 안 됨.",
+      "js/memorabilia.js loadDetail(): renderDetail 호출 전 캐시가 비어 있으면 populateCountryOptions() 를 await 해서 채움. renderDetail country 행을 <span class=lang-en/ko> 로 감싸 분류·제작기관과 동일 패턴 적용. enLabels === koLabels 이면 KO 줄 생략 (중복 방지).",
+      "functions/_shared/memorabilia-events.js: formatEventPeriodEn() 신규. \"Aug 1 – 12, 2023\" / \"Aug 1, 2023 – Sep 5, 2023\" / \"2023\" / \"Aug 2023\" 정밀도별 포맷.",
+      "listEvents·getEvent·memorabilia-store hydrateOne 응답에 period_text_en 동봉. 클라이언트 renderDetail 이 EN/KO 두 줄 메타로 렌더.",
+      "사이트 00.150.01 → 00.151.00."
+    ]
+  },
+  {
+    "version": "03.128.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:44:54 KST",
+    "summary": "관리자 도감 — 편집 모달 진입 시 행사 picker 가 hydrated event 객체로 정확히 채워지도록 + sync_versions.sh 가 memorabilia-shared.js / 공유 memorabilia.css 캐시 토큰을 admin.html 에도 갱신.",
+    "for_users": [
+      "관리자 → 기념품 도감 항목을 '편집' 으로 열 때 행사 picker 영역이 현재 선택된 행사로 정확히 표시됩니다 (이전엔 첫 진입 직후엔 picker 가 빈 상태로 보이는 경우가 있었음).",
+      "관리자 측에서 행사 picker / 1:1 이미지 타일 / 국가 picker 의 최신 UX 가 캐시 무효화 후 즉시 반영됩니다."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js openEditor(): full detail fetch 이후 item.event_id || item.event 가 있으면 ensureEventPicker(item.event_id, item.event) 재호출. 초기 호출은 shallow list row 이라 event_id/event 가 없어 picker 가 비어 있었던 회귀.",
+      "scripts/sync_versions.sh: memorabilia.html 의 /js/memorabilia-shared.js 토큰 + admin.html 의 /js/memorabilia-shared.js / /css/memorabilia.css 토큰 갱신을 추가. 03.124~03.127 변경분이 admin 쪽 캐시에 늦게 반영되던 잠재 회귀 차단.",
+      "관리자 03.127.02 → 03.128.00."
+    ]
+  },
+  {
     "version": "03.127.02",
     "date": "2026-05-25",
     "released_at": "2026-05-25 23:30:43 KST",

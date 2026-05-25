@@ -332,6 +332,13 @@
     // country picker — initial 값 반영
     if (state.countryPicker) state.countryPicker.setValue(item?.country_codes || []);
 
+    // event picker — 초기 openEditor 진입 시점에는 shallow list row 만 있어
+    // event_id / event 가 없을 수 있다. 위 fetchJson(`/api/memorabilia/${id}`) 로
+    // 받은 hydrated item 의 event 객체로 picker 를 재초기화.
+    if (item && (item.event_id || item.event)) {
+      ensureEventPicker(item.event_id || null, item.event || null);
+    }
+
     state.images = (item?.images || []).map((img) => ({
       url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
       is_primary: !!img.is_primary, sort_order: img.sort_order || 0,
