@@ -169,7 +169,8 @@
 
     if (total === 0) {
       meta.textContent = q ? `"${q}" 검색 결과 없음` : '아직 등록된 기념품이 없습니다.';
-      grid.innerHTML = `<div class="memo-empty"><h3>${q ? '결과가 없어요' : '준비 중입니다'}</h3><p>${q ? '다른 키워드로 검색해보세요.' : '곧 다양한 기념품이 추가됩니다.'}</p></div>`;
+      const adminHint = !q ? `<p style="margin-top:12px;font-size:.9em;opacity:.7">관리자라면 <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">관리자 페이지의 '스카우트 백과 → 기념품 도감'</a>에서 항목을 추가할 수 있습니다.</p>` : '';
+      grid.innerHTML = `<div class="memo-empty"><h3>${q ? '결과가 없어요' : '준비 중입니다'}</h3><p>${q ? '다른 키워드로 검색해보세요.' : '곧 다양한 기념품이 추가됩니다.'}</p>${adminHint}</div>`;
       $('#memo-pagination').innerHTML = '';
       return;
     }
@@ -354,11 +355,18 @@
     }));
   }
 
-  // Boot
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', route);
-  } else {
+  // Boot: 1) 표준 사이트 chrome (nav, 푸터, 번역, 티커, 통계) 부팅,
+  //        2) 페이지 라우팅
+  function boot() {
+    if (window.GW && typeof window.GW.bootstrapStandardPage === 'function') {
+      try { window.GW.bootstrapStandardPage(); } catch (e) {}
+    }
     route();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
   // Handle back/forward
   window.addEventListener('popstate', route);
