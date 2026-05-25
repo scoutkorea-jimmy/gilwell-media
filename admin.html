@@ -10,7 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260525140407">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260525140820">
   <link rel="stylesheet" href="/css/memorabilia.css?v=20260525080618">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.125.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.126.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.149.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.149.01</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.125.01</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.149.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.126.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.149.01</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -202,6 +202,10 @@
         <button class="v3-nav-item" data-panel="memorabilia-categories" data-perm-slug="memorabilia-categories" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
           도감 분류 관리
+        </button>
+        <button class="v3-nav-item" data-panel="memorabilia-events" data-perm-slug="memorabilia-events" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="5" y1="2" x2="5" y2="4"/><line x1="11" y1="2" x2="11" y2="4"/></svg>
+          행사 카탈로그
         </button>
       </div>
 
@@ -2148,6 +2152,89 @@
         </div>
       </div><!-- /panel-memorabilia-categories -->
 
+      <!-- ════════════════════ MEMORABILIA EVENTS (행사 카탈로그) ════════════════════ -->
+      <div class="v3-panel" id="panel-memorabilia-events">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">행사 카탈로그</h1>
+            <p class="v3-page-desc">기념품 도감에서 사용되는 공통 행사 목록입니다. 한 번 등록한 행사는 여러 도감 항목에서 재사용됩니다. 행사기간은 연·월·일 단위 (일은 선택).</p>
+          </div>
+          <div class="v3-page-head-right">
+            <button class="v3-btn v3-btn-primary" id="memo-ev-new-btn">+ 새 행사</button>
+          </div>
+        </div>
+        <div class="v3-card">
+          <div class="v3-inline-meta" id="memo-ev-meta">불러오는 중…</div>
+          <div id="memo-ev-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
+
+        <!-- 행사 편집 모달 -->
+        <div class="v3-modal-backdrop" id="memo-ev-edit-modal" hidden>
+          <div class="v3-modal v3-modal-md" role="dialog" aria-labelledby="memo-ev-edit-title">
+            <div class="v3-modal-head">
+              <h2 id="memo-ev-edit-title">새 행사</h2>
+              <button class="v3-modal-close" id="memo-ev-edit-close" aria-label="닫기">×</button>
+            </div>
+            <div class="v3-modal-body">
+              <form id="memo-ev-edit-form" autocomplete="off">
+                <div class="v3-form-row v3-form-row-2col">
+                  <div>
+                    <label class="v3-label" for="memo-ev-name-en">행사명 (영문)</label>
+                    <input class="v3-input" id="memo-ev-name-en" type="text" maxlength="200" placeholder="e.g. 25th World Scout Jamboree" />
+                  </div>
+                  <div>
+                    <label class="v3-label" for="memo-ev-name-ko">행사명 (국문)</label>
+                    <input class="v3-input" id="memo-ev-name-ko" type="text" maxlength="200" placeholder="예: 제25회 세계스카우트잼버리" />
+                  </div>
+                </div>
+
+                <div class="v3-form-row">
+                  <label class="v3-label">행사 기간 (선택)</label>
+                  <div class="memo-ev-date-row">
+                    <fieldset class="memo-ev-date-fieldset">
+                      <legend>시작일</legend>
+                      <input type="number" class="v3-input" id="memo-ev-sy" placeholder="연도" min="1800" max="2200" />
+                      <input type="number" class="v3-input" id="memo-ev-sm" placeholder="월"   min="1"    max="12"   />
+                      <input type="number" class="v3-input" id="memo-ev-sd" placeholder="일 (선택)" min="1" max="31" />
+                    </fieldset>
+                    <fieldset class="memo-ev-date-fieldset">
+                      <legend>종료일</legend>
+                      <input type="number" class="v3-input" id="memo-ev-ey" placeholder="연도" min="1800" max="2200" />
+                      <input type="number" class="v3-input" id="memo-ev-em" placeholder="월"   min="1"    max="12"   />
+                      <input type="number" class="v3-input" id="memo-ev-ed" placeholder="일 (선택)" min="1" max="31" />
+                    </fieldset>
+                  </div>
+                  <div class="v3-inline-meta">일이 명확하지 않으면 비워두세요. 자동으로 "월까지" 또는 "연도만" 형식으로 표시됩니다.</div>
+                </div>
+
+                <div class="v3-form-row v3-form-row-2col">
+                  <div>
+                    <label class="v3-label" for="memo-ev-desc-en">설명 (영문, 선택)</label>
+                    <textarea class="v3-input" id="memo-ev-desc-en" rows="3" maxlength="2000"></textarea>
+                  </div>
+                  <div>
+                    <label class="v3-label" for="memo-ev-desc-ko">설명 (국문, 선택)</label>
+                    <textarea class="v3-input" id="memo-ev-desc-ko" rows="3" maxlength="2000"></textarea>
+                  </div>
+                </div>
+
+                <div class="v3-form-row">
+                  <label class="v3-checkbox-label">
+                    <input type="checkbox" id="memo-ev-archived" />
+                    <span>아카이브 (목록·picker 에서 숨김 — 기존 참조 항목은 유지)</span>
+                  </label>
+                </div>
+              </form>
+            </div>
+            <div class="v3-modal-foot">
+              <button class="v3-btn v3-btn-outline" id="memo-ev-edit-cancel">취소</button>
+              <button class="v3-btn v3-btn-danger v3-btn-outline" id="memo-ev-edit-delete" hidden>삭제</button>
+              <button class="v3-btn v3-btn-primary" id="memo-ev-edit-save">저장</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /panel-memorabilia-events -->
+
       <!-- ═══════════════ 내 계정 (account-me) ═══════════════ -->
       <div class="v3-panel" id="panel-account-me">
         <div class="v3-page-head">
@@ -2806,12 +2893,12 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260525140407"></script>
-<script src="/js/shared-country-name-ko.js?v=20260525140407"></script>
+<script src="/js/main.js?v=20260525140820"></script>
+<script src="/js/shared-country-name-ko.js?v=20260525140820"></script>
 <script src="/js/memorabilia-shared.js?v=20260525080618"></script>
-<script src="/js/admin-v3.js?v=20260525140407"></script>
+<script src="/js/admin-v3.js?v=20260525140820"></script>
 <script src="/js/admin-account.js?v=20260421161543"></script>
-<script src="/js/admin-memorabilia.js?v=20260525140407"></script>
+<script src="/js/admin-memorabilia.js?v=20260525140820"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

@@ -256,9 +256,14 @@
 
     const meta = [];
     if (item.has_event && (item.event_name_en || item.event_name_ko)) {
-      meta.push(metaRow('행사명',
-        item.event_name_en ? `<span class="lang-en" lang="en">${escapeHtml(item.event_name_en)}</span>` : '',
-        item.event_name_ko ? `<span class="lang-ko" lang="ko">${escapeHtml(item.event_name_ko)}</span>` : ''));
+      // 카탈로그 참조가 있으면 행사명 + 기간을 함께 표시. 없으면 free-text 이름만.
+      const period = item.event && item.event.period_text ? item.event.period_text : '';
+      const enLine = item.event_name_en
+        ? `<span class="lang-en" lang="en">${escapeHtml(item.event_name_en)}</span>` : '';
+      const koLine = item.event_name_ko
+        ? `<span class="lang-ko" lang="ko">${escapeHtml(item.event_name_ko)}</span>` : '';
+      meta.push(metaRow('행사명', enLine, koLine));
+      if (period) meta.push(metaRow('행사기간', escapeHtml(period), ''));
     }
     if (item.country_codes && item.country_codes.length) {
       // EN: "Korea, Japan" — name_en 우선, 없으면 코드 / KO: "한국, 일본" — name_ko

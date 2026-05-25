@@ -76,12 +76,13 @@
 
   // ── Init: 패널 활성화 감지 ──────────────────────────────────────────────
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-panel="memorabilia"], [data-panel="memorabilia-categories"]');
+    const btn = e.target.closest('[data-panel="memorabilia"], [data-panel="memorabilia-categories"], [data-panel="memorabilia-events"]');
     if (!btn) return;
     const panel = btn.getAttribute('data-panel');
     setTimeout(() => {
       if (panel === 'memorabilia' && !state.loadedOnce) bootList();
       if (panel === 'memorabilia-categories' && !state.catsLoadedOnce) bootCategories();
+      if (panel === 'memorabilia-events' && !state.eventsLoadedOnce) bootEvents();
     }, 60);
   }, true);
 
@@ -853,5 +854,170 @@
       await loadCategories(false);
       toast('분류 추가됨', 'success');
     } catch (err) { toast('추가 실패: ' + err.message, 'error'); }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 행사 카탈로그 (panel-memorabilia-events)
+  // ══════════════════════════════════════════════════════════════════════════
+  let _editingEvent = null;   // 모달에 hydrated 된 행사 row | null (신규)
+  let _eventsWiredOnce = false;
+
+  async function bootEvents() {
+    state.eventsLoadedOnce = true;
+    wireEventsPanelOnce();
+    await loadEventsList();
+  }
+
+  function wireEventsPanelOnce() {
+    if (_eventsWiredOnce) return;
+    _eventsWiredOnce = true;
+    const newBtn = $('#memo-ev-new-btn');
+    if (newBtn) newBtn.addEventListener('click', () => openEventEditor(null));
+    const closeBtn = $('#memo-ev-edit-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeEventEditor);
+    const cancelBtn = $('#memo-ev-edit-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeEventEditor);
+    const saveBtn = $('#memo-ev-edit-save');
+    if (saveBtn) saveBtn.addEventListener('click', saveEvent);
+    const deleteBtn = $('#memo-ev-edit-delete');
+    if (deleteBtn) deleteBtn.addEventListener('click', deleteEventRow);
+    const backdrop = $('#memo-ev-edit-modal');
+    if (backdrop) backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeEventEditor(); });
+  }
+
+  async function loadEventsList() {
+    try {
+      const data = await fetchJson('/api/memorabilia/events?include_archived=1');
+      const items = data.items || [];
+      const wrap = $('#memo-ev-list-wrap');
+      const meta = $('#memo-ev-meta');
+      if (meta) meta.textContent = `${items.length}건 (아카이브 포함)`;
+      if (!items.length) {
+        wrap.innerHTML = '<div class="v3-empty">아직 등록된 행사가 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-empty-new">첫 행사 추가</button></div>';
+        const b = $('#memo-ev-empty-new'); if (b) b.addEventListener('click', () => openEventEditor(null));
+        return;
+      }
+      const rows = items.map((ev) => {
+        const archivedBadge = ev.archived
+          ? '<span class="v3-badge v3-badge-muted">아카이브</span>'
+          : '<span class="v3-badge v3-badge-success">활성</span>';
+        const nameEn = ev.name_en ? `<strong>${escapeHtml(ev.name_en)}</strong>` : '';
+        const nameKo = ev.name_ko ? `<div style="font-size:.85em;opacity:.75">${escapeHtml(ev.name_ko)}</div>` : '';
+        const period = ev.period_text ? escapeHtml(ev.period_text) : '<span style="opacity:.5">—</span>';
+        return `<tr>
+          <td>${nameEn}${nameKo}</td>
+          <td>${period}</td>
+          <td>${ev.usage_count || 0}건</td>
+          <td>${archivedBadge}</td>
+          <td><button class="v3-btn v3-btn-outline v3-btn-sm" data-ev-edit="${ev.id}">편집</button></td>
+        </tr>`;
+      }).join('');
+      wrap.innerHTML = `<table class="v3-table">
+        <thead><tr><th>행사명</th><th style="width:200px">기간</th><th style="width:80px">참조</th><th style="width:90px">상태</th><th style="width:80px"></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+      $$('button[data-ev-edit]', wrap).forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = parseInt(b.getAttribute('data-ev-edit'), 10);
+          const target = items.find((x) => x.id === id);
+          if (target) openEventEditor(target);
+        });
+      });
+    } catch (err) {
+      toast('행사 목록 로드 실패: ' + err.message, 'error');
+    }
+  }
+
+  function openEventEditor(ev) {
+    _editingEvent = ev;
+    $('#memo-ev-edit-title').textContent = ev ? '행사 편집' : '새 행사';
+    $('#memo-ev-edit-delete').hidden = !ev;
+    $('#memo-ev-name-en').value = ev?.name_en || '';
+    $('#memo-ev-name-ko').value = ev?.name_ko || '';
+    $('#memo-ev-sy').value = ev?.start_year || '';
+    $('#memo-ev-sm').value = ev?.start_month || '';
+    $('#memo-ev-sd').value = ev?.start_day || '';
+    $('#memo-ev-ey').value = ev?.end_year || '';
+    $('#memo-ev-em').value = ev?.end_month || '';
+    $('#memo-ev-ed').value = ev?.end_day || '';
+    $('#memo-ev-desc-en').value = ev?.description_en || '';
+    $('#memo-ev-desc-ko').value = ev?.description_ko || '';
+    $('#memo-ev-archived').checked = !!ev?.archived;
+    $('#memo-ev-edit-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEventEditor() {
+    $('#memo-ev-edit-modal').hidden = true;
+    document.body.style.overflow = '';
+    _editingEvent = null;
+  }
+
+  async function saveEvent() {
+    const body = {
+      name_en: $('#memo-ev-name-en').value.trim(),
+      name_ko: $('#memo-ev-name-ko').value.trim(),
+      start_year:  $('#memo-ev-sy').value || null,
+      start_month: $('#memo-ev-sm').value || null,
+      start_day:   $('#memo-ev-sd').value || null,
+      end_year:    $('#memo-ev-ey').value || null,
+      end_month:   $('#memo-ev-em').value || null,
+      end_day:     $('#memo-ev-ed').value || null,
+      description_en: $('#memo-ev-desc-en').value || '',
+      description_ko: $('#memo-ev-desc-ko').value || '',
+      archived: $('#memo-ev-archived').checked,
+    };
+    const saveBtn = $('#memo-ev-edit-save');
+    saveBtn.disabled = true; const orig = saveBtn.textContent; saveBtn.textContent = '저장 중…';
+    try {
+      const url = _editingEvent ? `/api/memorabilia/events/${_editingEvent.id}` : '/api/memorabilia/events';
+      const method = _editingEvent ? 'PATCH' : 'POST';
+      const res = await fetch(url, {
+        method, credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = (data.details || []).join(' · ') || data.error || `HTTP ${res.status}`;
+        throw new Error(detail);
+      }
+      // Picker cache 도 갱신 (item 모달에서 즉시 반영)
+      if (eventsMod && typeof eventsMod.load === 'function') {
+        try { await eventsMod.load(true); } catch {}
+      }
+      closeEventEditor();
+      await loadEventsList();
+      toast(_editingEvent ? '행사 수정됨' : '행사 추가됨', 'success');
+    } catch (err) {
+      toast('저장 실패: ' + err.message, 'error');
+    } finally {
+      saveBtn.disabled = false; saveBtn.textContent = orig;
+    }
+  }
+
+  async function deleteEventRow() {
+    if (!_editingEvent) return;
+    const used = Number(_editingEvent.usage_count || 0);
+    const warning = used > 0
+      ? `이 행사를 ${used}건의 도감 항목이 참조 중입니다. 삭제 시 해당 항목들의 행사 연결이 끊어집니다 (도감 항목 자체는 보존, denormalized 행사명 cache 만 표시). 계속할까요?`
+      : '이 행사를 삭제할까요? 되돌릴 수 없습니다.';
+    if (!confirm(warning)) return;
+    try {
+      const res = await fetch(`/api/memorabilia/events/${_editingEvent.id}`, {
+        method: 'DELETE', credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      if (eventsMod && typeof eventsMod.load === 'function') {
+        try { await eventsMod.load(true); } catch {}
+      }
+      closeEventEditor();
+      await loadEventsList();
+      toast('행사 삭제됨', 'success');
+    } catch (err) {
+      toast('삭제 실패: ' + err.message, 'error');
+    }
   }
 })();

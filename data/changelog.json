@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "03.126.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:07:49 KST",
+    "summary": "관리자 사이드바에 '행사 카탈로그' 신설 — 등록된 행사 목록·편집·아카이브·삭제. 행사 편집 모달에서 연·월·일 기간 입력 (일 선택).",
+    "for_users": [
+      "관리자 → 스카우트 백과 → '행사 카탈로그' 메뉴가 추가됐습니다.",
+      "이 패널에서 등록된 행사들을 목록으로 보고, 각 행사의 영문/국문 이름·시작일·종료일·설명을 편집하거나 아카이브/삭제할 수 있습니다.",
+      "행사 편집 모달의 기간 입력은 시작일·종료일 각각 [연도][월][일 (선택)] 3칸으로, 일이 명확하지 않으면 비워두면 '월까지'만 자동 표시됩니다.",
+      "표에는 각 행사가 몇 건의 도감 항목에서 사용 중인지(참조 수)도 함께 보입니다."
+    ],
+    "for_developers": [
+      "admin.html: 새 사이드바 항목 data-panel=memorabilia-events + panel-memorabilia-events 패널 + 행사 편집 모달(memo-ev-edit-modal). 시작/종료 각 3 numeric input (sy/sm/sd, ey/em/ed).",
+      "js/admin-memorabilia.js: bootEvents() + wireEventsPanelOnce() + loadEventsList() + openEventEditor / saveEvent / deleteEventRow / closeEventEditor. CRUD 후 GW.MemorabiliaEvents.load(true) 로 picker 캐시 invalidate.",
+      "css/memorabilia.css: .memo-ev-date-row / .memo-ev-date-fieldset (2-col, 모바일 1-col).",
+      "API 게이트는 이미 03.125.01 에서 memorabilia-events 슬러그 사용 (PATCH/DELETE 는 events 슬러그 전용, POST 는 memorabilia OR events 둘 다 허용).",
+      "관리자 03.125.01 → 03.126.00."
+    ]
+  },
+  {
+    "version": "00.149.01",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:07:49 KST",
+    "summary": "공개 도감 상세 — 행사 카탈로그 참조가 있는 경우 '행사기간' 메타 행이 자동으로 함께 표시.",
+    "for_users": [
+      "공개 도감 상세 페이지에서 행사 카탈로그에 연결된 항목은 '행사명' 바로 아래에 '행사기간'(예: 2026년 8월 1일 ~ 4일)이 추가로 표시됩니다."
+    ],
+    "for_developers": [
+      "js/memorabilia.js renderDetail: item.event.period_text 가 있으면 meta 에 행사기간 row 추가.",
+      "사이트 00.149.00 → 00.149.01."
+    ]
+  },
+  {
     "version": "03.125.01",
     "date": "2026-05-25",
     "released_at": "2026-05-25 23:03:38 KST",
