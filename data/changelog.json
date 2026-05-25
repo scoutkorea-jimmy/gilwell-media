@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.121.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 10:34:28 KST",
+    "summary": "KMS 기능정의서를 최근 한 달치 배포 이력(58건)에 맞춰 일괄 최신화 — 다크모드 폐기·신선도 신호·새 빌드 알림·임시저장 D1 통합·optimistic locking·AI 채점 v2.4·보안 표면 정비 등 누락 운영 기준을 모두 반영.",
+    "for_users": [
+      "관리자 → KMS 메뉴(또는 /kms 공개 뷰어)에서 최근 한 달간 추가된 기능·정책이 모두 문서로 정리되어 보입니다.",
+      "신선도 신호(최근 업데이트 N분 전 / 이전 방문 이후 새 글 N건), 카테고리 보드 인기순 정렬, 임시저장 D1 통합, AI 채점 자연도 항목, 보안 강화 등 그동안 changelog 한 줄로만 적혀있던 변경의 ‘기준·의도·운영 방법’을 KMS에서 함께 읽을 수 있습니다.",
+      "다크모드 토글은 폐기됐다는 사실과 폐기 사유도 문서에 박제됐습니다."
+    ],
+    "for_developers": [
+      "docs/feature-definition.md 갱신 — 5.2.1 다크모드 폐기, 5.5 picks_order 순서, 5.5.1 히어로 운영자 고정+자동, 5.6 hero preload SSR, 5.7 콘텐츠 신선도 신호 4종, 5.8 새 빌드 알림 배너, 6.1.1 카테고리 보드 인기순+기간 토글, 6.1.2 탭 복귀 자동 갱신, 7.6 NewsArticle JSON-LD articleBody/wordCount + OG fallback, 7.7 /post/:id.md 마크다운 미러, 7.8 글 동시편집 optimistic locking, 9.1.1/10.6.1 권한 게이팅, 11.1 세션 grace + 로그인 안전성, 11.4.1~5 방문 분석 추세 차트 + write-history-card + 임시저장 D1 + 드래그 정렬 + 편집자 슬롯 A~Z, 11.5 changelog 3섹션 + .md 다운로드, 12.4 drafts/cleanup/picks-order/reference-sites/session-grace API, 13.1.5 cleanup-drafts cron, 13.1.6 새 빌드 알림 운영 메모, 15.1~5 AI 채점 v2.4 자연도 + ai_usage_log actor + AI 채점 기록 패널, 16 보안 표면 정비 신설(00.136.00 / 03.112.00 / 03.113.00).",
+      "D1 settings.feature_definition 동기화 — 청크 분할(40KB×3) + INSERT||UPDATE 패턴으로 settings_history 스냅샷 보존(이전 66KB) → 새 81KB 본문 반영. KMS 13.1.1 운영 메모대로 처리.",
+      "ASSET_VERSION/HTML 자산 캐시 버스트 토큰은 sync_versions.sh 가 갱신.",
+      "관리자 버전 03.120.02 → 03.121.00."
+    ]
+  },
+  {
     "version": "00.146.06",
     "date": "2026-05-25",
     "released_at": "2026-05-25 05:46:18 KST",

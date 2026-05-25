@@ -764,14 +764,13 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 카테고리 네비게이션
 - 티커 — **일시정지 버튼 없음**(2026-04-19 제거). 슬라이드 일시정지는 히어로의 `hero-pause-btn`만 유일.
 
-### 5.2.1 다크 모드 토글 (2026-04-19 재정비)
+### 5.2.1 다크 모드 토글 (2026-05-25 폐기, 00.146.02)
 
 #### 기능 세부 설명
-- **기본값은 항상 light.** `prefers-color-scheme: dark`는 무시하고, 사용자가 수동 전환한 경우에만 `localStorage.gw_theme`에 `light`/`dark` 저장·반영.
-- 토글 위치: **푸터** `용어집 RAW로 보기 →` 바로 아래에 같은 스타일 텍스트 링크로 배치.
-- 라벨: 라이트 상태 `다크모드로 전환 →` · 다크 상태 `라이트모드로 변경 →` (토글 시 실시간 전환).
-- 셀렉터: `[data-theme-toggle]` — `GW.initDarkMode()`가 bind. 마스트헤드 원형 아이콘 버튼은 사용자 피드백으로 제거됨.
-- 다크 팔레트: `:root[data-theme="dark"]`에서 브랜드 10색·그레이스케일 5색을 다크 배경 가독성에 맞춰 밝기 보정. 이미지·썸네일은 `filter: brightness(0.92)`로 살짝 디밍.
+- **공개 사이트에서 다크모드 전환 기능을 전면 제거**한다. `[data-theme-toggle]` 컨트롤·`GW.initDarkMode()`·`:root[data-theme="dark"]` 팔레트·`localStorage.gw_theme` 저장 모두 폐기.
+- 폐기 사유: 운영자 1인 + 사외 독자 위주 사이트에서 다크 팔레트 유지비(브랜드 10색 다크 보정·이미지 디밍 검수·접근성 |Lc| 재검증)가 사용량 대비 과도. 대신 시스템 설정(OS·브라우저 reader mode)에 위임.
+- 본문 HTML sanitizer fallback(`GW.sanitizeHtml`)이 DOMPurify 로드 실패 시 escape-only로 폴백하도록 보강하면서 함께 정리. 다크 폴백이 브랜드 팔레트와 불일치하던 사례도 동시 해소.
+- 추후 다크모드 재도입은 KMS 회의 + Site `bbb` bump + 3.4 컬러 팔레트 다크 변형 재정의가 전제. 코드만 살리는 부활은 금지.
 
 ### 5.3 히어로 슬라이드
 
@@ -800,16 +799,61 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 인기 소식은 운영 정의에 따른 인기 기사 목록이다.
 - 에디터 추천은 운영자 수동 추천 영역이다.
 - 에디터 추천은 최대 4개까지만 유지하며, 이 제한은 관리자 UI와 서버 저장 API 모두에서 강제한다.
+- **에디터 추천 순서는 관리자가 지정한 순서를 따른다** (2026-05-23, 00.143.03 / 03.115.00). `settings.picks_order`(post id 배열, key=`picks_order`)가 있으면 그 순서로 노출하고, 없으면 기존처럼 `publish_at` 내림차순으로 폴백. 관리자 `에디터 추천` 패널에서 드래그앤드롭으로 순서 변경 — `PUT /api/settings/picks-order`. `도움 주신 분들` 패널도 동일 패턴으로 드래그 정렬 가능.
 - 메인 스토리와 에디터 추천은 같은 게시글을 **동시에 지정할 수 있다**. 운영자 판단으로 동일 게시글을 상단 스토리와 에디터 추천에 함께 노출할 수 있어야 한다. 이전에는 배타 제약을 걸었으나 운영 유연성을 막는 부작용이 커서 2026-04-19에 해제했다. 동시 지정 시 공개 홈은 메인 스토리 슬롯과 에디터 추천 카드 양쪽에 같은 기사가 표시된다.
 - 관리자 추천 목록은 비공개 추천 글도 함께 보여주되, 비공개 배지로 상태를 구분한다.
-- 홈의 에디터 추천 / 카테고리 보드 노출 정렬은 게시판 수동 정렬(`sort_order`)과 분리하고 `publish_at` 기준 최신순을 우선한다.
+- 홈의 카테고리 보드 노출 정렬은 게시판 수동 정렬(`sort_order`)과 분리하고 `publish_at` 기준 최신순을 우선한다. 에디터 추천은 `picks_order` 우선.
 - 카드의 버튼/태그/날짜 위치는 공통 규칙을 따른다.
 - 홈 API 일부 섹션이 fallback 데이터로 내려간 경우, 공개 화면은 해당 사실을 상태 배너로 드러내고 영향 섹션을 요약해서 보여준다.
 - 홈 초기 HTML에는 메인 스토리, 최신 소식, 인기 소식, 에디터 추천, 카테고리 컬럼의 실제 기사 링크를 서버 렌더링 fallback으로 포함해야 한다.
 - 검색엔진이 자바스크립트를 완전히 실행하지 못해도 홈에서 기사 제목, 링크, 날짜, 요약을 바로 읽을 수 있어야 한다.
-- 백그라운드 새로고침 실패 시에도 조용히 무시하지 않고, 현재 내용이 이전 상태일 수 있음을 사용자에게 알린다.
+- 백그라운드 새로고침 실패 시에도 조용히 무시하지 않고, 현재 내용이 이전 상태일 수 있음을 사용자에게 알린다. 단 **단발성 네트워크 끊김은 P0 alarm으로 격하**한다 — 00.146.00 (안정성 2차)에서 `Failed to fetch` 1회짜리 보고를 자동 차단해 노이즈 잡음을 제거했다. 5분 디듀프 + 백그라운드 새로고침 severity 격하 (00.134.01 / 00.134.00).
 
-### 5.6 홈 접근성 / 상호작용 규칙
+#### 최신소식 페이지 의미 (`/latest`, 2026-05-20 정리)
+- 페이지 이름은 **최신소식**으로 통일. '최근 1개월 소식'·'latest news' 같은 변형은 사용하지 않는다 (00.140.01).
+- 진입 시 기본 노출: 최근 **30일**. 정렬 [기본][인기순] · 기간 [하루][일주일][30일] 토글. '전체' 옵션은 없다 (00.140.02 — 빈 페이지·페이지네이션 과부하 문제).
+- 정렬 [기본] = `publish_at` 내림차순, [인기순] = `sort=popular&period=…`. 정렬·기간 상태는 URL 쿼리에 반영해 공유 가능.
+
+### 5.5.1 히어로 슬라이드 운영자 고정 + 자동 채움 (2026-04-27, 00.134.00)
+
+#### 기능 세부 설명
+- 히어로는 운영자가 관리자에서 고정한 **최대 2개** + 최신 공개 기사 **자동 3개**를 섞어 보여준다. 운영자 고정이 비어 있으면 자동 5개로 채움.
+- 자동 채움은 `publish_at` 내림차순 + 같은 카테고리 연속 출현 방지(다양성 보정). 운영자 고정 슬롯과 중복되는 기사는 자동 채움에서 제외한다.
+- 백그라운드 새로고침의 일시 네트워크 단절은 한 번만으로는 장애로 기록되지 않는다 (transient guard, [[0.2.2 사이트 오류·이슈 기록의 절대 우선순위]] 시간 해석 규칙과 동일 정신).
+
+### 5.6 메인 스토리 hero 이미지 preload (2026-05-22, 00.142.00)
+
+#### 기능 세부 설명
+- 홈 SSR 시 메인 스토리 hero 이미지를 `<link rel="preload" as="image" fetchpriority="high">`로 head에 주입한다. LCP 200~500ms 단축 기대.
+- 외부 CDN(jsdelivr/unpkg/cloudflare/google) `preconnect` + `dns-prefetch` 동시 주입.
+- 구현: `functions/_shared/site-render.js` SSR 헬퍼. 이미지 URL은 `home_lead.coverImage` 또는 자동 fallback.
+
+### 5.7 콘텐츠 신선도 신호 (2026-05-23, 00.143.00~03)
+
+#### 기능 세부 설명
+홈에서 "업데이트 안 되는 느낌"을 해소하기 위해 4종 신선도 신호를 동시에 노출한다.
+
+1. **카드 상대시간** — 최신 소식·인기 소식·에디터 추천 카드의 날짜를 절대(`YYYY년 M월 D일`) 옆에 `· 3시간 전` 형식으로 병기. `GW.formatRelativeTime()` 헬퍼. 24시간 이내만 상대 표기, 이후는 절대 표기만.
+2. **마스트헤드 하단 신선도 바** (`#home-freshness-bar`) — 마스트헤드 좌측 날짜(시계) 바로 밑(2026-05-23 00.143.01 위치 조정)에 `최근 업데이트: N분 전 · 이전 방문 이후 새 글 N건` 노출. 30초 주기 tick으로 상대시간 자동 갱신 (`freshnessTickTimer`).
+3. **재방문 카운터** — `localStorage.gw_last_visit_ts`보다 새로운 `publish_at`의 글 수. 신규 방문(저장값 없음)일 때는 숨김. 카운터 클릭 시 `/latest`로 이동.
+4. **티커 자동 헤드라인** — 운영자 설정 티커 문구 뒤에 최신 공개 기사 3건 제목을 자동 추가. 운영자가 비워둬도 사이트가 비어 보이지 않음.
+
+#### NEW 배지 시각 규칙 (2026-05-23 / 2026-05-25, 00.143.02 / 00.146.05)
+- 트리거: 게시 후 24시간 이내. `data-published-at` 기준.
+- 색상: `background: var(--color-fire-red, #FF5655)` 채움 + `color: #FFFFFF` 흰색 텍스트. 이전 검정 fill에서 교체 — APCA |Lc| 검증(헤더·UI 18px+ bold 기준 |Lc| 45+) 통과.
+- 펄스: `@keyframes gw-new-pulse`로 `box-shadow` 미세 글로우 (≤8px, opacity 0.25→0).
+- 노출 위치: 홈 최신 소식 카드·기사 상세 헤더·게시판 카드. 00.146.05에서 홈 최신 소식 렌더러가 배지 클래스를 누락한 회귀 복구.
+
+### 5.8 새 빌드 알림 배너 (2026-05-20, 00.135.00 / 00.139.01 / 00.146.06)
+
+#### 기능 세부 설명
+- 사용자가 오래된 자산(캐시된 HTML/JS)으로 머무르지 않도록, 새 빌드가 배포되면 우측 상단에 알림 배너를 띄운다.
+- 비교 기준: 공개는 `GW.APP_VERSION` (현재 로드된 자산), 관리자는 `GW.ADMIN_VERSION` (03.111.00에서 추가). `/api/site-meta` 등 다음 API 응답 헤더의 빌드 버전과 비교.
+- 표기: `NEW 새 버전이 배포되었습니다 V0.0.00 · [새로고침]` 텍스트 뱃지. 이모지(🆕) 대신 'NEW' 텍스트 유지 (00.139.01 — 사이트 톤 통일).
+- 사용자가 한 번 닫으면 `sessionStorage.gw_dismissed_build`에 닫은 버전을 기록 → 다음 새 빌드까지는 다시 안 띄움.
+- 페이지 이동 시 자연스러운 전환 (00.146.06): 사용자가 알림을 닫지 않고 메뉴 클릭으로 다른 페이지로 이동하면, 그 SPA-like 전환 후에도 최신 버전이 적용된 상태로 표시되도록 보강. 새로고침 버튼은 그대로 유지.
+
+### 5.9 홈 접근성 / 상호작용 규칙
 
 #### 기능 세부 설명
 - 홈에는 `본문으로 건너뛰기` skip-link와 `#main-content` 메인 랜드마크를 유지한다.
@@ -829,6 +873,22 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 제목 길이와 상관없이 카드 하단 메타 정렬 유지
 - 공유, 공감, 날짜, 작성자 메타는 하단 고정
 - 카테고리 게시판 기본 목록은 검색/필터가 없을 때 관리자 수동 정렬(`sort_order`)을 그대로 따른다.
+
+### 6.1.1 인기순 정렬 + 기간 토글 (2026-05-20, 00.137.00 / 00.138.00)
+
+#### 기능 세부 설명
+- Korea / APR / WOSM / Scout People 보드 + 최신소식(`/latest`) 모두 [기본][인기순] 정렬 토글을 지원한다.
+- 인기순 기간 칩: [24시간][7일][30일][전체]. 기본 진입은 카테고리 보드는 [기본] 정렬, `/latest`는 [기본] + 30일.
+- API: `GET /api/posts?sort=popular&period=24h|7d|30d|all&category=…`. 정렬·기간 상태는 URL 쿼리(`?sort=popular&period=7d`)에 반영해 그대로 공유 가능.
+- 인기 점수 산정: 조회수 + 공감수 (운영 정의는 12.4 API 항목 참조). period 외 글은 점수에서 제외.
+- 최신소식 인기순에서는 기간 칩을 숨기고 누적 점수 한 가지로만 표시 (00.139.01).
+
+### 6.1.2 카테고리 보드 탭 복귀 자동 갱신 (2026-05-20, 00.139.00)
+
+#### 기능 세부 설명
+- 운영자가 다른 탭에서 글을 게재하면, 보드 탭으로 돌아오는 순간 새로고침 없이 새 글이 자동으로 나타난다. `document.visibilitychange` + `window.focus` 이벤트에서 board fetch 재실행.
+- 게시판 목록 fetch에 cache-bust 강화 (`?_=Date.now()`) — 다른 탭에서 게재한 직후 즉시 반영 (00.139.01).
+- 무한 재실행 방지: 마지막 fetch 후 10초 grace.
 
 ### 6.2 글 작성 (관리자 패널)
 
@@ -923,10 +983,33 @@ h1, h2, h3, h4, h5, h6, strong, b {
 
 #### 기능 세부 설명
 기사 상세는 `<head>`에 아래 JSON-LD 2종을 주입한다:
-- **`Article`**: 제목·설명·siteUrl·postUrl·image·publishedIso·modifiedIso·author·category. `buildArticleStructuredData()`.
+- **`NewsArticle`** (2026-05-22, 00.142.00 — `Article` → `NewsArticle`로 격상): 제목·설명·siteUrl·postUrl·image·publishedIso·modifiedIso·author·category + **`articleBody`(본문 plain text, 본문 첫 800자)** + **`wordCount`** + **`inLanguage: "ko"`**. Google News / AI 검색(Perplexity·SGE) 인덱싱에 본문 일부를 직접 노출. `buildArticleStructuredData()`.
 - **`BreadcrumbList`** (2026-04-19 신설): itemListElement 3단계 — `홈(siteUrl/)` → `카테고리(categoryUrl)` → `기사 제목`. Google 검색 결과 breadcrumb 풍부화.
 - `<meta>`: description(부제목 우선, 없으면 본문 140자 truncate), keywords(meta_tags), OG/Twitter 카드.
 - canonical은 `${siteUrl}/post/${id}` 고정. share_ref 쿼리는 canonical에서 제외.
+
+#### OG 이미지 fallback (2026-05-21, 00.141.00)
+- 대표 이미지가 없는 글을 카카오·페이스북·트위터로 공유하면 그동안은 텍스트만 노출됐다. 이제는 사이트 기본 OG 이미지(`settings.site_meta.og_image` 또는 `/img/og-default.png`)가 자동으로 표시된다.
+- 우선순위: 게시글 cover_image > `home_lead.share_image` > `site_meta.og_image` > `/img/og-default.png`.
+- 캐시 자동 차단: 공개 게시글 감사 스크립트(`scripts/audit_public_posts.sh`)가 canonical og:url 정책 준수도 검증 (00.146.04 — 공유 URL이 canonical 일치 + share_ref 쿼리 제외).
+
+### 7.7 마크다운 미러 `/post/:id.md` (2026-05-22, 00.142.01)
+
+#### 기능 세부 설명
+- AI 검색 크롤러(GPTBot / PerplexityBot / ClaudeBot / GoogleOther)가 본문을 그대로 읽을 수 있도록 모든 공개 게시글에 마크다운 미러를 제공한다. 예: `https://bpmedia.net/post/123.md`.
+- 라우팅: `functions/post/[id].js`가 `Accept: text/markdown` 또는 URL 끝 `.md`를 감지해 markdown으로 응답. 별도 함수 파일(`functions/post/[id].md.js`)을 만들지 않는다 — Cloudflare Pages가 `[id].md.js` 같은 dynamic+literal 라우트 패턴을 인식하지 못해 회귀 발생 사례(00.142.00 → 00.142.01 핫픽스).
+- 응답 형식: `# {제목}\n\n_{부제목}_\n\n— BP미디어, {작성자}, {날짜}\n\n{본문 markdown}\n\n원문: {canonical}`. Editor.js JSON → markdown 변환은 `_shared/editor-to-markdown.js`.
+- `robots.txt`는 `.md` 변형도 허용. 사이트맵에는 canonical `/post/:id`만 포함.
+
+### 7.8 글 동시 편집 충돌 방지 (optimistic locking, 2026-05-24, 00.145.00 / 03.117.00)
+
+#### 기능 세부 설명
+- 두 운영자가 같은 글을 동시에 열어 편집·저장하면 나중 저장이 먼저 저장을 덮어쓰던 문제를 차단.
+- 편집 진입 시점에 서버 `updated_at`을 클라이언트가 캡쳐(`_editingOriginalUpdatedAt`). 저장 시 `PUT /api/posts/:id`에 `expected_updated_at`을 동봉.
+- 서버는 현재 row의 `updated_at`과 `expected_updated_at`을 비교. 일치하지 않으면 **409 Conflict** + `code: "version_mismatch"` + 현재 서버 상태 요약(누가/언제 저장했는지) 반환.
+- 클라이언트는 409 응답 시 모달로 "다른 운영자가 먼저 저장했습니다. 내 변경을 새로 가져온 내용 위에 다시 적용하세요"라고 안내. 자동 머지하지 않는다.
+- `expected_updated_at`이 없는 요청도 허용(구버전 클라이언트 호환) — 단 이 경로는 잠금 비활성으로 동작하므로, **새로 추가하는 편집 화면은 반드시 `expected_updated_at` 전송**.
+- 동일 패턴이 적용된 화면: 관리자 게시글 수정 모달 · 공개 `/post/:id` 수정 모달.
 - **페이스북·공유 미리보기 원칙 (00.131.03 개정)**: `og:url`도 canonical과 동일하게 clean URL(`postUrl`)로 항상 고정한다. `GW.buildShareUrl()`이 클릭마다 새로 생성하는 `share_ref`는 **페이스북 스크래퍼 캐시를 무효화하려는 목적**일 뿐 기사의 식별자가 아니므로, 공유에 쓰는 request URL(`sharer.php?u=...`에 인코딩되는 URL)에만 유지하고 `og:url` 메타에는 절대 포함시키지 않는다. 과거처럼 `og:url`에 share_ref를 넣으면 Facebook Graph에서 매 공유가 별개 객체로 등록돼 좋아요·댓글·공유 수가 같은 기사에 합산되지 않는 회귀가 발생한다 (00.131.03 이전에 있었던 구현을 정정).
 - 페이스북·트위터 카드 풍부화 태그 (00.131.03 추가): `og:image:secure_url`(HTTPS 명시) · `og:image:alt`(기사 제목) · `article:author`(저자 코드 `Editor.X`). 커버 이미지가 있으면 `twitter:card`는 `summary_large_image`로 자동 전환.
 
@@ -948,6 +1031,12 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 검색 가능한 지식 사전
 - `용어 / 설명 / 둘 다` 검색 대상 전환
 - 검색엔진용 RAW 문서 제공
+
+### 9.1.1 권한 게이팅 (2026-04-25, 03.105.01)
+
+#### 기능 세부 설명
+- 용어집 패널 `glossary`는 멤버 권한 체계와 정렬됨. `view:glossary` / `write:glossary` 권한 슬러그로 사이드바 가시성 + API 게이팅.
+- 권한 토큰이 없는 멤버는 사이드바 메뉴 자체가 숨김. API 직접 호출 시 403 + "이 메뉴의 보기 권한이 없습니다" 토스트.
 
 ### 9.2 관리자 관점 규칙
 
@@ -1008,6 +1097,13 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - `WOSM` : 세계스카우트운동 / 기본값 — 색상 `#2a8b3b`
 - 유효하지 않은 값은 `WOSM`으로 정규화한다.
 
+### 10.6.1 권한 게이팅 (2026-04-25, 03.105.01)
+
+#### 기능 세부 설명
+- 캘린더 패널 `calendar`는 멤버 권한 체계와 정렬됨. `view:calendar` / `write:calendar` 권한 슬러그로 사이드바 가시성 + API 게이팅.
+- `POST/PUT/DELETE /api/calendar*`는 `write:calendar` 토큰 필수. 멤버가 `write` 없이 호출하면 403.
+- 글 저장 시 불리언 입력은 안전 보정(`Number(Boolean(x))`) — `"true"` / `"false"` 문자열도 정상 처리. 03.105.01 회귀 사례 후 추가.
+
 ### 10.7 일정 등록/수정 (관리자)
 
 #### 기능 세부 설명
@@ -1037,15 +1133,17 @@ h1, h2, h3, h4, h5, h6, strong, b {
 ### 11.1 구조
 
 #### 기능 세부 설명
-- 인증: 비밀번호 + HMAC-SHA256 signed cookie session (24시간 유효). **매 `/admin` 접근마다 강제 재로그인** — 쿠키/sessionStorage/Cache API/Service Worker 모두 퍼지 후 로그인 화면 강제. 쿠키가 유효해도 자동 로그인하지 않는다 (03.100.02부터 적용). 로그인 성공 후 클라이언트 유휴 타이머는 **30분**(2016년부터의 운영 기준), 5분 전 경고 후 자동 로그아웃.
+- 인증: 비밀번호 + HMAC-SHA256 signed cookie session (24시간 유효). **매 `/admin` 접근마다 강제 재로그인** — 쿠키/sessionStorage/Cache API/Service Worker 모두 퍼지 후 로그인 화면 강제. 쿠키가 유효해도 자동 로그인하지 않는다 (03.100.02부터 적용). 로그인 성공 후 클라이언트 유휴 타이머는 **30분**, 5분 전 경고 후 자동 로그아웃.
+- **세션 grace (2026-05-24, 03.119.01)**: 새로고침·뒤로가기 시 매번 다시 로그인하면 운영자 피로도가 크다. `GET /api/admin/session-grace`가 **(1) 로그인 시점 IP 와 현재 IP 동일 AND (2) 토큰 iat 이후 10분 이내** 두 조건을 모두 만족하면 200 응답 → `_tryAdminSessionGrace`가 `_purgeAdminClientState`를 건너뛰고 `_showApp()`로 바로 진입(사용자 모르게 세션 유지). grace 실패 시(IP 변경/10분 초과/네트워크 실패/구버전 토큰)는 기존 정책 — 캐시·쿠키·Cache API·Service Worker 퍼지 + 로그인 화면 강제.
+- **로그인 안전성 (2026-05-20, 03.112.00 / 03.108.x)**: 지수 백오프 — 3회 실패부터 60·120·240···초로 2배씩 증가, 24시간 상한. 72시간 유휴 자동 초기화. 모든 로그인 실패 응답은 외부에서 구별 불가능한 단일 opaque 코드(`rejected`/`throttled`/`bad_request`) — 계정 존재 여부·비밀번호 정확도를 분리 측정 불가. 로그인 입력은 **계정명만 허용** (이메일 입력 시 거절, 03.108.02). 예시 placeholder는 실제 운영자 계정명 노출을 피해 `abcd1234` 사용 (03.113.00).
 - 레이아웃: 좌측 고정 사이드바(248px) + 우측 스크롤 가능 콘텐츠 영역
 - 권한 게이팅 (03.100.00 도입): 사이드바 각 버튼의 `data-perm-slug` / `data-perm-action` 속성을 `admin-account.js _syncPermissionNav()`가 세션 로드 직후 평가. 오너는 전 항목 노출, 멤버는 `permissions.permissions` 집합에 해당 `view:<slug>` 토큰이 있는 항목만 표시. 그룹 전체가 비면 섹션 헤더까지 접힘.
 - 패널 목록 (27개 메뉴 + 계정 관리 3개):
   - 대시보드: `대시보드`
   - 분석: `방문 분석`, `마케팅`, `태그 인사이트`, `접속 국가/도시`
-  - 콘텐츠: `게시글 목록`, `새 글 작성`, `캘린더`, `용어집`, `기사 채점`, `AI 채점기록`, `세계연맹 회원국`
+  - 콘텐츠: `게시글 목록`, `새 글 작성`, `캘린더`, `용어집`, `기사 채점`, `AI 채점기록`, `세계연맹 회원국`, **`기사 참고 사이트`** (2026-04-30, 03.108.00 / 03.109.00 도입)
   - 노출: `히어로 기사`, `메인 스토리`, `에디터 추천`, `게시판 설명`, `게시판 배너`, `티커`
-  - 설정: `태그/글머리`, `SEO·메타태그`, `저자·AI 고지`, `기고자`, `편집자·접근`, `UI 번역`, `개인정보 처리방침` (오너 전용)
+  - 설정: `태그/글머리`, `SEO·메타태그`, `저자·AI 고지`, **`도움 주신 분들`** (구 `기고자`, 2026-04-25 03.109.01 라벨 통일), `편집자·접근`, `UI 번역`, `개인정보 처리방침` (오너 전용)
   - 시스템: `버전기록`, `오류·이슈 기록`, `사이트 히스토리`, `KMS`
   - 계정 관리: `내 계정` (전원), `사용자 관리` (오너 전용), `프리셋 관리` (오너 전용)
 - 대시보드 하단 운영 카드에는 `발행 예정 / 초안`, `오류 / 로그인 시도`, `최근 설정 변경`, `릴리스 이력`을 표시한다.
@@ -1117,6 +1215,50 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - **Naver · Daum은 기본적으로 referer에 query 파라미터 노출** → 국내 유입 키워드 파악에 특히 유효.
 - `site_visits.referrer_url`이 수집돼 있어야 하므로 `functions/[[path]].js` 미들웨어의 방문 기록 로직을 건드리지 말 것.
 
+### 11.4.1 방문 분석 추세 라인 차트 (2026-04-30, 03.106.00~02 / 03.107.00 / 03.114.01)
+
+#### 기능 세부 설명
+- 방문 분석 패널 상단에 일자별 방문자·조회수 추세 **라인 차트** 추가. 7일·30일·90일 + 사용자 지정 범위(`v3-period-bar` 공유) 지원.
+- **호버 인터랙션**: OS 기본 SVG `<title>` 툴팁(지연·미스타일링) 대신 즉시 표시되는 HTML 툴팁 + 세로 가이드 라인. hover-zone 실제 좌표 기반(letterboxing 영향 없음, 03.106.02).
+- **비율 불변 규칙 (03.107.00)**: 모든 관리자 차트(라인·바·히트맵)는 화면 가로폭이 늘어나도 비율을 잃지 않도록 `preserveAspectRatio="xMidYMid meet"` + viewBox 고정. letterboxing이 발생해도 차트 자체는 일그러지지 않음.
+- **⚙ 표시 설정 팝오버**: 차트 카드 헤드의 톱니바퀴 버튼으로 글자 크기(`xs/sm/md/lg`)·간격(`compact/normal/loose`) 즉시 조정 + 운영자별 `localStorage.gw_chart_display`에 저장. 03.114.01에서 CSS specificity 충돌로 hidden 속성이 무효화되며 한 번 열리면 닫히지 않던 회귀 수정.
+- 30초 자동 새로고침 루프 합류.
+
+### 11.4.2 글 수정기록 카드 (write-history-card, 2026-05-21, 03.114.00)
+
+#### 기능 세부 설명
+- 운영자 화면의 글 수정기록을 액션 배지 한 줄에서 **KST 타임스탬프 + 필드별 길이 diff** 형태로 확장.
+- 표기: `2026-05-21 14:32:18 KST · username · 제목(+5자) 부제(-12자) 본문(+248자)`.
+- 데이터 소스: `posts_history` 테이블의 `before_snapshot` / `after_snapshot` JSON. 필드별로 `String(after).length - String(before).length` 계산.
+- 카드 위치: 게시글 수정 모달 하단 + `사이트 히스토리` 패널.
+- 의도: "누가 언제 무엇을 얼마나 바꿨는지" 한눈에. 다인 운영 환경에서 책임 추적 + 회귀 디버깅 단축.
+
+### 11.4.3 임시저장 시스템 D1 통합 (2026-05-23~24, 03.116.00~03 / 00.144.00)
+
+#### 기능 세부 설명
+- **localStorage 단일 슬롯 + 7일** 시스템 → **D1 다중 슬롯 + 14일**로 전면 이전.
+- 공개 사이트의 `board-write` 모달과 관리자 콘솔 `새 글 작성`이 **같은 D1 백엔드**(`/api/admin/drafts`)를 공유. 어디서 저장하든 같은 목록·같은 글이 보임.
+- 운영자별 최대 **10개** 보관. 11번째 저장 시 가장 오래된 슬롯 자동 삭제.
+- 자동저장 시 cover_image·gallery 이미지도 R2에 함께 업로드해 빠짐없이 보존(이미지 누락 회귀 없음).
+- 작성 화면 최상단에 임시저장 목록 카드 항상 노출. 빈 상태에서도 카드 자체는 노출하고 `아직 임시저장된 글이 없습니다` 안내 표시 (03.116.02) → 사용자가 시스템 존재를 즉시 인지.
+- 임시저장 본문 누락 방지: 제목 가드 완화 + Editor.js `onChange` 정상 등록 + restore polling + 칩 본문 미리보기 추가 (03.116.01 회귀 수정).
+- 14일 경과 슬롯은 cleanup-drafts cron이 자동 삭제 (13.1.5 참조). drafts 이미지 업로드 실패 시 구체 메시지 노출 (03.119.00).
+- 작성자(author) 기록은 **실제 운영자 username**으로 통일 (00.146.01). 이전에는 일부 경로가 `'admin'` 하드코딩이었다 — 게시글 생성·수정·상태변경·삭제 모두 `request.user.username` 기준.
+
+### 11.4.4 방문 분석 / 도움 주신 분들 드래그앤드롭 정렬 (2026-05-23, 03.115.00)
+
+#### 기능 세부 설명
+- 관리자 **에디터 추천** 패널과 **도움 주신 분들** 패널 모두 항목을 드래그앤드롭으로 순서 변경 가능.
+- 에디터 추천 변경은 즉시 `picks_order` 설정에 반영되어 공개 홈에도 그대로 표시 (5.5 참조).
+- 도움 주신 분들 순서는 `settings.contributors`의 배열 인덱스로 보존.
+
+### 11.4.5 편집자 슬롯 A~Z 확장 (2026-05-20, 03.110.00 / 03.111.00 / 00.146.03)
+
+#### 기능 세부 설명
+- 편집자 슬롯을 기존 A·B·C 3종 고정 → **A~Z 자유 추가형**으로 확장. A·B·C는 byline 호환을 위해 잠금(삭제·이름 변경 불가), D~Z는 자유 추가/삭제.
+- 슬롯 추가 시 새 행의 입력칸으로 자동 포커스 + 부드러운 스크롤 + 토스트 안내(03.111.00).
+- 배포 후 점검 스크립트(`post_deploy_check.sh`)도 A~Z 확장 기준으로 갱신 (00.146.03 — 이전엔 A·B·C만 검증해서 D~Z 추가가 회귀로 잡혔다).
+
 ### 11.5 KMS 페이지 UI 규칙 (2026-04-24 신설)
 
 #### 기능 세부 설명
@@ -1126,6 +1268,8 @@ KMS 5개 탭(기능정의서·API·버전기록·디자인·기사작성표준) 
 - **플로팅 TOP 버튼**: 메인 스크롤 300px↑에서 우하단 노출, 클릭 시 `scrollTo({top:0, behavior:'smooth'})`. 모든 탭 공통.
 - **기능정의서 탭 — 최종 업데이트 시각**: 헤더에 `YYYY년 M월 D일 오전/오후 H시 M분 S초 KST` 표기. 소스: `settings_history.saved_at` (key='feature_definition'). 서버 `GET /api/settings/feature-definition` 응답이 `{content, updated_at}`. CLI 직접 INSERT로 업데이트하면 history가 안 남으므로 13.1.1 참조.
 - **버전기록 탭 — 30개 페이지네이션**: `_state.changelogPage`로 30건씩, 하단 번호 버튼. 범위 필터 변경 시 1페이지 리셋. 30 이하면 UI 숨김. 이력 200건+일 때 첫 페인트/스크롤 부하 제거 목적.
+- **버전기록 3섹션 포맷 (2026-05-24, 03.118.00)**: changelog 엔트리는 `summary` · `for_users` · `for_developers` 3섹션 분리 렌더. 개발자용 섹션은 기본 접힘(`<details>` 위젯) — 비개발자 운영자에게는 한 줄 요약 + 사용자 관점 변경만 보이고, 상세 기술 컨텍스트는 펼쳐야 노출. 작성 포맷 상세는 [CLAUDE.md §1 Changelog](../CLAUDE.md) 참조.
+- **버전기록 .md 다운로드 (2026-05-24, 03.120.00)**: 관리자 버전기록 패널에서 항목을 체크박스로 선택 → `선택 항목 다운로드` 버튼으로 한 번에 markdown 파일 일괄 다운로드. 네이버 블로그 게시용 — markdown 본문에 `> 출처: 관리자 KMS → 버전기록` 자동 푸터.
 - **섹션 참조 표기 (2026-04-24 변경)**: § 기호 전면 폐기, 숫자만(`11.2.1 참조`). 운영자가 § 의미를 직관적으로 모른다는 피드백.
 
 ## 12. API 호출 방법
@@ -1213,7 +1357,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET /api/posts` — 목록 (파라미터: 11.3 참조)
 - `POST /api/posts` — 생성 (인증 필요)
 - `GET /api/posts/:id` — 상세
-- `PUT /api/posts/:id` — 수정 (인증 필요)
+- `PUT /api/posts/:id` — 수정 (인증 필요). `expected_updated_at` 동봉 시 optimistic locking 활성 (7.8 참조). 불일치 시 `409 + code: version_mismatch`.
 - `PATCH /api/posts/:id` — 공개/추천/정렬 상태 변경 (인증 필요)
 - `PATCH /api/posts/:id` 에서 `featured=1` 저장 시 공개 추천 글이 이미 4개면 `409`로 거부한다.
 - `DELETE /api/posts/:id` — 삭제 (인증 필요)
@@ -1256,6 +1400,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET/PUT /api/settings/calendar-copy` — 캘린더 카피 설정
 - `GET/PUT /api/settings/calendar-tags` — 캘린더 분류 태그
 - `GET/PUT /api/settings/feature-definition` — KMS 문서
+- `GET/PUT /api/settings/picks-order` — 에디터 추천 순서(`post id` 배열). 없으면 `publish_at desc` 폴백 (5.5 참조)
+- `GET/PUT /api/settings/reference-sites` — 기사 참고 사이트 (2026-04-30, 03.108.00 / 03.109.00). 사이트 추가·편집은 모달로 분리해 한 번에 하나씩 다룬다. 관련 지역연맹에 WOSM 상위 연맹 1종 포함
 
 **분석 (방문 분석 + 태그 인사이트 · 2026-04-19 사이드바 2메뉴 분리)**
 - `GET /api/admin/analytics` — 방문 분석 전용 엔드포인트(`panel-analytics-visits`). `days`/`start`/`end` (프리셋+커스텀 범위) + `tag_*` 프리픽스 동시 허용. 오늘 방문·조회, 기간 합계, 인기 기사, 유입 경로, 평균 체류, 방문 히트맵(월~일 × 시간대, 셀 우상단에 같은 시간대 공개 게시글 발행 수), 유입 해석 노트(UTM + 리퍼러 기반으로 카카오톡/페이스북/검색/직접 세분화). 히트맵 기간은 `1주` · `1개월` · `직접 지정` · `전체` 독립 조절. `panel-analytics-visits`는 `마지막 갱신 시각`을 표시하고 `30초 자동 새로고침`을 지원한다.
@@ -1265,16 +1411,32 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - `GET /api/admin/operations` — 운영 대시보드/릴리스 이력
 - `GET /api/admin/homepage-issues` — 사이트 오류/이슈 기록 조회
 - `PATCH /api/admin/homepage-issues/:id` — 사이트 오류/이슈 기록 상태 변경
-- `POST /api/homepage-issues/report` — 공개 홈 자동 오류 보고와 관리자 클라이언트 API 실패 보고. 이 기록과 전역 API 오류 로그가 함께 `사이트 오류/이슈 기록` 패널에 누적된다.
+- `POST /api/homepage-issues/report` — 공개 홈 자동 오류 보고와 관리자 클라이언트 API 실패 보고. 이 기록과 전역 API 오류 로그가 함께 `사이트 오류/이슈 기록` 패널에 누적된다. **self-report 루프 가드(03.117.00)**: 자동 보고 API 자체의 실패는 다시 자동 보고하지 않음(무한 루프 차단).
 - `POST /api/analytics/visit` — 방문 기록 (공개)
 - `POST /api/analytics/post-engagement` — 체류시간 기록 (공개)
 - `GET /api/analytics/today` — 오늘 방문자/조회수
+
+**임시저장 (drafts, 2026-05-23~24)**
+- `GET /api/admin/drafts` — 운영자별 임시저장 목록(최신순, 최대 10개)
+- `POST /api/admin/drafts` — 새 슬롯 저장 (제목·본문·cover·gallery 포함)
+- `GET /api/admin/drafts/:id` — 슬롯 상세
+- `PUT /api/admin/drafts/:id` — 슬롯 덮어쓰기 (자동저장)
+- `DELETE /api/admin/drafts/:id` — 슬롯 삭제
+- `POST /api/jobs/cleanup-drafts` — 14일 경과 슬롯 자동 정리 (인증 없음, idempotent — cleanup-drafts cron이 5분 주기로 호출, 13.1.5 참조)
+
+**세션 / 운영**
+- `GET /api/admin/session-grace` — 10분 / 동일 IP 그레이스 체크 (11.1 / 03.119.01 참조)
+- `GET /api/admin/ai-score-history` — AI 채점 기록(실행자·실행 시각·토큰 사용량 포함, 15.3 / 03.120.01 참조)
+
+**Rate limiting (2026-05-24, 03.117.00)**
+- `functions/_shared/rate-limit.js` D1 fixed-window limiter — admin write 경로(글 작성/수정/삭제 + drafts + settings)를 통일된 임계값으로 보호. 글 작성 API 분당 burst 제한(00.136.00)도 동일 limiter 사용. 초과 시 `429 + Retry-After`.
 
 **피드/메타**
 - `GET /api/home` — 홈 화면 데이터
 - `GET /api/stats` — 사이트 통계
 - `GET /rss.xml` — RSS 피드
 - `GET /sitemap.xml` — 사이트맵
+- `GET /post/:id.md` — 마크다운 미러 (AI 검색 크롤러용, 7.7 참조)
 
 ### 12.5 에러 처리 규칙
 
@@ -1355,6 +1517,25 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 **왜 지금 안 하는가**: 현 트래픽(하루 수백 건)에선 inline 호출이 성능에 체감 안 됨. 트래픽 증가 시점(월 수만 PV) 또는 `ensureDuePostsPublished`가 느려지는 시점에 이관. 지금은 "방향만 박제하고 트리거 조건 관찰".
 
+### 13.1.5 drafts cleanup cron (2026-05-24 추가, 00.145.00 / 03.119.00)
+
+#### 기능 세부 설명
+- 임시저장 슬롯은 운영자별 최대 10개 + 14일 TTL. 콘솔을 며칠간 안 열면 row가 누적되므로 cron이 자동 정리.
+- 워커: `workers/cleanup-drafts-scheduler.js`, 설정 `wrangler.cleanup-drafts.toml`(name = `gilwell-media-cleanup-drafts`).
+- 주기: 5분(`publish-due` 워커와 동일 호스팅 패턴, 별도 워커로 분리해 장애 영향 격리).
+- 호출: `POST /api/jobs/cleanup-drafts` — 인증 없음, idempotent + side-effect 좁음. `now() - created_at > 14d` 슬롯 삭제 + R2 cover/gallery 자산 정리.
+- 환경변수: 워커에 `SITE_ORIGIN` 필수. 미설정 시 워커가 throw — 배포 시 반드시 확인.
+- 운영 메모: `publish-due`와 cleanup이 같은 워커에 있으면 한쪽 장애가 다른 쪽까지 멈추던 운영 부담이 있어 03.119.00에서 분리. drafts 이미지 업로드 실패 시에도 구체 메시지를 사용자에게 노출.
+
+### 13.1.6 새 빌드 알림 배너 운영 메모 (2026-05-20 추가, 00.135.00 / 03.111.00)
+
+#### 기능 세부 설명
+- 새 빌드가 배포되면 공개·관리자 양쪽 우측 상단에 `NEW 새 버전이 배포되었습니다 V0.0.00 · [새로고침]` 배너 자동 노출 (5.8 참조).
+- 버전 비교 기준: 공개는 `GW.APP_VERSION` ↔ API 응답 헤더 `X-Site-Version`. 관리자는 `GW.ADMIN_VERSION` ↔ `X-Admin-Version`.
+- 운영자가 한 번 닫으면 `sessionStorage.gw_dismissed_build`에 닫은 버전 기록 → 다음 새 빌드까지 다시 안 띄움.
+- 페이지 이동 시 자연스러운 전환 (00.146.06): 사용자가 닫지 않고 메뉴 클릭으로 다른 페이지 이동 → 새 페이지는 최신 자산으로 로드되며 배너는 새 페이지에서 다시 평가.
+- 운영 메모: production 배포 직후 운영자가 관리자 콘솔을 열어두고 있으면 자동 갱신되지 않아 회귀 디버깅이 어려운 경우가 잦았다. 이 배너로 "현재 보는 자산이 최신인지" 즉시 확인 가능.
+
 ### 13.2 스모크 체크 기준
 
 #### 기능 세부 설명
@@ -1405,7 +1586,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 #### 기능 세부 설명
 - Cloudflare Workers AI의 `@cf/meta/llama-3.1-8b-instruct` 모델로 BP미디어 기사 작성 표준에 따른 자동 채점 제공.
 - 진입점: 관리자 콘솔 → **기사 채점** 패널, 각 글쓰기 모달(관리자 + 공개) 하단의 인라인 `AI 채점` 카드.
-- 평가 범위 (v2.3): Title(20점), Subtitle(20점), Body 구조(25점), 사실성(15점), 문체(10점), 홍보 구조(5점), Tags(5점). 총 100점, S/A/B/C/D 등급.
+- 평가 범위 (v2.4, 2026-04-25 03.105.00): Title(20점), Subtitle(20점), Body 구조(25점), 사실성(15점), 문체(10점), 홍보 구조(5점), Tags(5점), **자연도·발화감(10점)**. v2.3 대비 자연도·발화감 항목 신설 — 사실성·구조가 통과해도 글이 평탄·기계적이면 독자에게 닿지 않으므로 사람이 쓴 보도문의 호흡·좌표·표현 절제를 별도 항목으로 점검. v2.3의 흐름 연결성 5점 + 행위 중심 서술 일부 5점이 이 항목으로 이전. 총 100점 기준 유지, S/A/B/C/D 등급.
 - 결과: 종합 점수 + 등급 + 카테고리별 점수·이슈·강점 + 개선 방향 2~3줄.
 
 ### 15.2 평가 기준(rubric) 운영
@@ -1433,7 +1614,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 #### 로깅 (ai_usage_log)
 - 모든 호출은 성공·실패·입력오류·파싱실패에 관계없이 `ai_usage_log` 테이블에 한 행 append.
-- 컬럼: `created_at`(Unix s), `endpoint`, `model`, `ip`, `actor`, `input_chars`, `output_chars`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `latency_ms`, `status`, `error_code`.
+- 컬럼: `created_at`(Unix s), `endpoint`, `model`, `ip`, `actor`(2026-05-24 03.120.01에서 실제 운영자 username 정확 기록 — 이전엔 일부 경로가 `'admin'` 하드코딩, 03.120.02 fallback 정비로 멤버 계정도 정상 기록), `input_chars`, `output_chars`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `latency_ms`, `status`, `error_code`.
 - `status` 값: `success` / `error` / `invalid`. `error_code`: `empty_input` / `ai_call_failed` / `parse_no_json` / `parse_invalid_json`.
 - Workers AI 응답에 `usage` 메타가 없는 경우 `functions/_shared/ai-usage.js`의 Llama 추정치(1자당 0.55토큰)로 `total_tokens` 자동 채움.
 - 기록은 `ctx.waitUntil()` 기반 fire-and-forget. 본 API 응답을 막지 않음.
@@ -1448,12 +1629,55 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 14일 일별 스파크라인 + Cloudflare 대시보드 외부 링크.
 - 가격 기준: `$0.0115/1K 토큰 · USD 1,360원` (조정은 `functions/_shared/ai-usage.js` `LLAMA_USD_PER_1K_TOKENS`/`USD_TO_KRW` 상수).
 
+### 15.5 AI 채점 기록 패널 (2026-05-24, 03.120.01)
+
+#### 기능 세부 설명
+- 관리자 사이드바 `AI 채점기록` 패널은 `ai_usage_log` 기반으로 각 호출의 **실행자(누가) · 실행 시각(KST 초 단위) · 토큰 사용량(prompt + completion + total)** 을 1행 1호출로 노출.
+- 상단 요약: 운영자별 누적 토큰 통계 (오늘 / 7일 / 30일 / 전체). 채점 비용을 운영자 단위로 추적 가능.
+- 정렬: 실행 시각 내림차순 기본. 운영자별 필터.
+- 데이터 소스: `GET /api/admin/ai-score-history`. `score-article`만이 아니라 모든 endpoint(`/api/admin/score-article` + 향후 추가될 AI 호출)를 같은 로그에 누적.
+
 #### API
 - `GET /api/admin/ai-usage` — Full 관리자 전용. `{ today, week, month, byEndpoint, byDay, recent, pricing }`.
 
-### 15.5 각주
+### 15.6 각주
 
 #### 각주
 - 기준 변경은 운영 의사결정이므로 관리자 UI에서 처리한다. 코드·DB 직접 수정 금지.
 - 사용량 기록은 내부 추정이며 정확한 청구는 Cloudflare 대시보드 neuron 단위를 따른다.
 - 공개 글쓰기 모달의 인라인 채점 버튼도 동일 엔드포인트를 호출하므로 사용량·비용에 합산된다.
+
+## 16. 보안 표면 정비 (2026-05-20 일괄, 00.136.00 / 03.112.00 / 03.113.00)
+
+### 16.1 개요
+
+#### 기능 세부 설명
+공개·관리자·Dreampath 전역에서 7개 보안 표면을 일괄 정비한 결과를 운영 기준으로 박제. 변경된 동작은 사용자에게 보이지 않지만, 운영자가 회귀 검증 시 반드시 알고 있어야 한다.
+
+### 16.2 공개 사이트 보안 표면 (00.136.00)
+
+#### 기능 세부 설명
+1. **게시글 커버 이미지 open redirect 차단** — `cover_image` URL은 `bpmedia.net` · R2 · 허용 CDN allowlist만 통과. 외부 URL은 저장 시점에 거절(`400 + cover_image_invalid`).
+2. **HSTS 헤더 추가** — 모든 응답에 `Strict-Transport-Security: max-age=15552000; includeSubDomains; preload`. SSL strip 공격 차단.
+3. **글 작성 API 분당 burst 제한** — `POST /api/posts` + `PUT /api/posts/:id` + `DELETE` 모두 13.x의 D1 rate limiter 적용. 분당 동일 IP 30회 초과 시 429.
+4. **D1 driver 메시지 누설 차단** — 다수 API에서 SQLite 원본 메시지(예: `UNIQUE constraint failed: posts.slug`)를 그대로 응답하던 경로를 사용자 친화 메시지로 표준화. 내부 컬럼명·인덱스명 노출 차단.
+5. **Dreampath 클라이언트 DOMPurify 폴백** — Dreampath 클라이언트에서 DOMPurify 로드 실패 시 본문은 escape-only로 표시(이전엔 빈 본문). 인증·권한 흐름과 무관한 보안 표면 정리.
+
+### 16.3 관리자 로그인 강화 (03.112.00 / 03.113.00)
+
+#### 기능 세부 설명
+- **지수 백오프**: 3회 실패부터 60·120·240···초로 2배씩 증가, 24시간 상한. IP + 계정명 조합 기준.
+- **72시간 유휴 자동 초기화**: 마지막 실패 후 72시간 지나면 백오프 카운터 리셋(영구 잠금 방지).
+- **opaque 코드**: 모든 로그인 실패 응답을 외부에서 구별 불가능한 단일 코드(`rejected`/`throttled`/`bad_request`)로 통일 — 계정 존재 여부·비밀번호 정확도 분리 측정 불가.
+- **입력 보호**: 로그인 입력은 계정명만 허용 (이메일 입력 시 거절, 03.108.02). 예시 placeholder는 `abcd1234` (실 운영자 계정명 노출 방지, 03.113.00).
+- **safeCompare**: 비밀번호 비교는 `crypto.timingSafeEqual` 기반 상수시간 비교. 사이트 곳곳의 토큰 비교도 동일 함수로 통일 (03.113.00).
+- 자세한 운영 기준은 [[CLAUDE.md 1 Common Infrastructure]] 의 인증·rate limiting 섹션 참조.
+
+### 16.4 검증 (배포 전후)
+
+#### 기능 세부 설명
+- [ ] 외부 URL로 cover_image 저장 시도 → 400 거절 확인
+- [ ] `curl -I https://bpmedia.net/` → `Strict-Transport-Security` 헤더 존재
+- [ ] 동일 IP에서 글 작성 30회/분 초과 → 429 응답
+- [ ] 로그인 4회 실패 → 5회 시도 시 429 + `throttled`
+- [ ] 에러 응답 본문에 `sqlite_*` / `UNIQUE constraint` 등 driver 메시지 미포함
