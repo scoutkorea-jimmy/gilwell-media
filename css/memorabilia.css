@@ -47,17 +47,7 @@
   font-size: 15px; line-height: 1.7;
   word-break: keep-all;
 }
-.memo-hero-add-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 18px;
-  background: var(--color-scouting-purple, #622599);
-  color: #fff; border: 0;
-  border-radius: 8px;
-  font-size: 14px; font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-}
-.memo-hero-add-btn:hover { background: var(--color-midnight-purple, #4d006e); }
+/* 호환 유지용 빈 룰 (구 .memo-hero-add-btn 사용처는 .memo-btn-primary 로 마이그레이션됨) */
 
 .memo-search-bar {
   display: flex; gap: 6px;
@@ -301,24 +291,12 @@
   display: flex; gap: 8px;
   margin: 0 0 16px;
 }
-.memo-detail-admin-bar button {
-  padding: 8px 14px;
-  border: 1px solid var(--color-scouting-purple, #622599);
-  background: #fff;
-  color: var(--color-scouting-purple, #622599);
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-}
-.memo-detail-admin-bar button:hover {
-  background: var(--color-scouting-purple, #622599);
-  color: #fff;
-}
+/* 버튼 스타일은 .memo-btn-outline 통일 사용 */
 
 /* ── Modal editor (공개 페이지 등록·편집) ──────────────────────────────── */
 .memo-modal-backdrop {
   position: fixed; inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   display: flex; align-items: center; justify-content: center;
   z-index: 9000;
   padding: 16px;
@@ -327,58 +305,158 @@
 .memo-modal {
   background: #fff;
   border-radius: 12px;
-  max-width: 880px;
+  max-width: 920px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 92vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
 }
 .memo-modal-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid var(--gray-300, #c4c4c4);
+  background: #fff;
 }
-.memo-modal-head h2 { margin: 0; font-size: 1.2rem; }
+.memo-modal-head h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 .memo-modal-close {
   background: none; border: 0;
-  font-size: 1.6rem; cursor: pointer;
+  font-size: 22px; cursor: pointer;
   width: 32px; height: 32px;
   line-height: 1;
   color: var(--muted, #3f3f3f);
+  border-radius: 6px;
 }
+.memo-modal-close:hover { background: var(--gray-100, #ebebeb); }
 .memo-modal-body {
   padding: 20px 24px;
   overflow-y: auto;
   flex: 1;
+  background: #f7f7f9;
 }
 .memo-modal-foot {
   display: flex; justify-content: flex-end; gap: 8px;
-  padding: 12px 24px;
+  padding: 14px 24px;
   border-top: 1px solid var(--gray-300, #c4c4c4);
-}
-.memo-modal-foot button {
-  padding: 9px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--gray-300, #c4c4c4);
   background: #fff;
-  cursor: pointer;
-  font-size: 14px;
 }
-.memo-modal-foot button.primary {
+
+/* ── 통일 버튼 시스템 (사이트 --btn-height-secondary 기준 36px) ──────── */
+.memo-btn {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink, #1f1f1f);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1;
+}
+.memo-btn:hover { border-color: var(--ink, #1f1f1f); }
+.memo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.memo-btn:disabled:hover { border-color: var(--gray-300, #c4c4c4); }
+
+.memo-btn-primary {
   background: var(--color-scouting-purple, #622599);
   color: #fff;
   border-color: var(--color-scouting-purple, #622599);
 }
-.memo-modal-foot button.danger {
-  color: #c33; border-color: #c33;
+.memo-btn-primary:hover {
+  background: var(--color-midnight-purple, #4d006e);
+  border-color: var(--color-midnight-purple, #4d006e);
+}
+.memo-btn-outline {
+  border-color: var(--color-scouting-purple, #622599);
+  color: var(--color-scouting-purple, #622599);
+}
+.memo-btn-outline:hover {
+  background: var(--color-scouting-purple, #622599);
+  color: #fff;
+}
+.memo-btn-danger {
+  border-color: rgba(204, 68, 68, 0.5);
+  color: #c33;
+}
+.memo-btn-danger:hover {
+  background: #c33;
+  color: #fff;
+  border-color: #c33;
+}
+.memo-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted, #3f3f3f);
+}
+.memo-btn-ghost:hover {
+  background: var(--gray-100, #ebebeb);
+  border-color: transparent;
+}
+.memo-btn-sm {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.memo-btn-lg {
+  min-height: 44px;
+  padding: 0 22px;
+  font-size: 14px;
+  border-radius: 8px;
 }
 
-.memo-form-row { margin-bottom: 14px; }
+/* ── 섹션 카드 ────────────────────────────────────────────────────────── */
+.memo-section {
+  margin-bottom: 14px;
+  padding: 16px 18px 18px;
+  background: #fff;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 10px;
+}
+.memo-section:last-child { margin-bottom: 4px; }
+.memo-section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-100, #ebebeb);
+}
+.memo-section-head h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-700, #3f3f3f);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.memo-section-head .section-hint {
+  font-size: 11px;
+  color: var(--muted, #888);
+  letter-spacing: 0;
+}
+
+/* ── 폼 필드 ─────────────────────────────────────────────────────────── */
+.memo-form-row { margin-bottom: 12px; }
+.memo-form-row:last-child { margin-bottom: 0; }
 .memo-form-row label.field-label {
   display: block;
-  font-size: 13px; font-weight: 500;
-  color: var(--muted, #3f3f3f);
-  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-700, #3f3f3f);
+  margin-bottom: 5px;
 }
 .memo-form-row input[type=text],
 .memo-form-row input[type=search],
@@ -386,17 +464,45 @@
 .memo-form-row select,
 .memo-form-row textarea {
   width: 100%;
-  padding: 9px 12px;
+  min-height: 36px;
+  padding: 7px 12px;
   border: 1px solid var(--gray-300, #c4c4c4);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
   box-sizing: border-box;
+  background: #fff;
+  color: var(--ink, #1f1f1f);
+  transition: border-color 0.15s;
 }
-.memo-form-row textarea { resize: vertical; min-height: 120px; }
+.memo-form-row input:focus,
+.memo-form-row select:focus,
+.memo-form-row textarea:focus {
+  outline: 0;
+  border-color: var(--color-scouting-purple, #622599);
+  box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.12);
+}
+.memo-form-row select[multiple] { min-height: 96px; padding: 4px 6px; }
+.memo-form-row textarea { resize: vertical; min-height: 110px; padding: 9px 12px; }
 .memo-form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .memo-form-row-3col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.memo-form-hint { font-size: 12px; color: var(--muted, #3f3f3f); margin-top: 4px; }
+.memo-form-hint {
+  font-size: 11px;
+  color: var(--muted, #888);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.memo-checkbox-row {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink, #1f1f1f);
+}
+.memo-checkbox-row input[type=checkbox] {
+  width: 16px; height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-scouting-purple, #622599);
+}
 
 .memo-images-zone {
   border: 2px dashed var(--gray-300, #c4c4c4);
@@ -453,16 +559,7 @@
   display: flex; align-items: center; gap: 4px;
   cursor: pointer;
 }
-.memo-image-tile .tile-actions button {
-  padding: 4px 8px;
-  font-size: 12px;
-  border: 1px solid var(--gray-300, #c4c4c4);
-  background: #fff;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #c33;
-}
-.memo-image-tile .tile-actions button:hover { background: #fee; }
+/* 타일 삭제 버튼은 .memo-btn-sm.memo-btn-danger 통일 사용 — 별도 스타일 없음 */
 .memo-image-tile .tile-badge {
   position: absolute;
   top: 8px; left: 8px;
@@ -485,18 +582,8 @@
 }
 .memo-images-actions {
   display: flex; gap: 8px; align-items: center;
-  margin-top: 8px;
+  margin-top: 10px;
 }
-.memo-images-actions button {
-  padding: 7px 14px;
-  font-size: 13px;
-  border: 1px solid var(--color-scouting-purple, #622599);
-  background: #fff;
-  color: var(--color-scouting-purple, #622599);
-  border-radius: 6px;
-  cursor: pointer;
-}
-.memo-images-actions button:hover { background: var(--color-scouting-purple, #622599); color: #fff; }
 .memo-images-meta { font-size: 12px; color: var(--muted, #3f3f3f); }
 
 .memo-link-row {

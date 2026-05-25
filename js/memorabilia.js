@@ -533,7 +533,7 @@
             ${progress}
             <div class="tile-actions">
               <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} ${img.uploading ? 'disabled' : ''} data-primary-i="${i}"/> 대표</label>
-              <button type="button" data-img-del="${i}" ${img.uploading ? 'disabled' : ''}>삭제</button>
+              <button type="button" class="memo-btn memo-btn-sm memo-btn-danger" data-img-del="${i}" ${img.uploading ? 'disabled' : ''}>삭제</button>
             </div>
           </div>
         `;
@@ -688,7 +688,7 @@
           <input placeholder="라벨 EN" value="${escapeHtml(l.label_en)}" data-link-f="label_en" data-i="${i}"/>
           <input placeholder="라벨 KO" value="${escapeHtml(l.label_ko)}" data-link-f="label_ko" data-i="${i}"/>
           <input class="url" placeholder="URL" value="${escapeHtml(l.url)}" data-link-f="url" data-i="${i}"/>
-          <button type="button" data-link-del="${i}" style="padding:6px 10px;border:1px solid var(--gray-300);background:#fff;border-radius:4px;cursor:pointer">삭제</button>
+          <button type="button" class="memo-btn memo-btn-sm memo-btn-danger" data-link-del="${i}">삭제</button>
         </div>
       `).join('');
       wrap.querySelectorAll('input[data-link-f]').forEach((inp) => {
