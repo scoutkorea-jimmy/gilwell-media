@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.121.01",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 10:57:17 KST",
+    "summary": "폐기된 preview-deploy 시절 잔재 정리 — promote-preview GitHub Actions 워크플로 삭제 + 문서·미들웨어의 'production 검수 게이트' 표현을 단일 main → production 흐름 기준으로 일괄 갱신.",
+    "for_users": [
+      "운영자 입장에서 보이는 동작은 그대로입니다. KMS / README / Release Playbook 등을 열었을 때 '공개 사이트 production 검수 게이트' 라는 옛 용어 대신 현재 배포 흐름(관리자 실환경에서 직접 검수, 공개 변경이 있을 때만 라이브 점검 추가)으로 설명됩니다.",
+      "관리자 KMS 0.2.1 ‘관리자 변경 배포 원칙’ 문구가 명확해졌습니다."
+    ],
+    "for_developers": [
+      ".github/workflows/promote-preview.yml 삭제 (preview-deploy 게이트 폐기로 더 이상 사용되지 않음).",
+      "README.md / docs/release-playbook.md / docs/feature-definition.md §0.2.1 / functions/_shared/feature-definition.js DEFAULT 의 'production 검수 게이트와 분리' 문구를 단일 main → production 흐름 기반 설명으로 교체.",
+      "docs/stability-implementation-plan.md §2 Preview System Removal 을 '완료(2026-Q2)'로 표기하고 검증 명령(rg)을 영구 가드로 명문화.",
+      "functions/api/_middleware.js: PREVIEW_HOST_SUFFIXES → PAGES_DEV_HOST_SUFFIXES 로 리네이밍 + 주석을 'Cloudflare Pages 가 main 배포마다 자동 할당하는 *.pages.dev 호스트' 로 명확화. 동작 변경 없음.",
+      "D1 settings.feature_definition 재동기화(81,634 chars), settings_history 스냅샷 보존.",
+      "관리자 버전 03.121.00 → 03.121.01."
+    ]
+  },
+  {
     "version": "03.121.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 10:34:28 KST",

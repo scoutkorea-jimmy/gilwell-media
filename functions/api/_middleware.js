@@ -23,10 +23,11 @@ export async function onRequest(context) {
 }
 
 // CSRF defense — for cookie-authenticated mutating methods, require the
-// request to come from our own origin (or one of the ALLOWED_PROD_HOSTS /
-// *.pages.dev preview hosts). Browsers always send Origin or Referer on
-// cross-site fetches that carry cookies. Server-to-server clients using
-// Bearer tokens (which don't come with cookies anyway) are exempt.
+// request to come from our own origin (one of ALLOWED_PROD_HOSTS or the
+// *.pages.dev host that Cloudflare Pages auto-assigns to every deployment
+// of the main branch). Browsers always send Origin or Referer on cross-site
+// fetches that carry cookies. Server-to-server clients using Bearer tokens
+// (which don't come with cookies anyway) are exempt.
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 function enforceSameOriginForMutations(request) {
@@ -58,7 +59,7 @@ function enforceSameOriginForMutations(request) {
     const requestHost = new URL(request.url).hostname;
     if (originHost === requestHost) return null;
     if (ALLOWED_PROD_HOSTS.has(originHost)) return null;
-    if (PREVIEW_HOST_SUFFIXES.some((suffix) => originHost.endsWith(suffix))) return null;
+    if (PAGES_DEV_HOST_SUFFIXES.some((suffix) => originHost.endsWith(suffix))) return null;
   } catch {
     return csrfReject('Unable to evaluate request origin.');
   }
@@ -115,7 +116,7 @@ function isPublicGlossaryEndpoint(request) {
 }
 
 const ALLOWED_PROD_HOSTS = new Set(['bpmedia.net', 'www.bpmedia.net']);
-const PREVIEW_HOST_SUFFIXES = ['.pages.dev'];
+const PAGES_DEV_HOST_SUFFIXES = ['.pages.dev'];
 
 function getAllowedOrigin(request, env) {
   const origin = request.headers.get('Origin');
@@ -127,7 +128,7 @@ function getAllowedOrigin(request, env) {
 
     if (host === requestUrl.hostname) return origin;
     if (ALLOWED_PROD_HOSTS.has(host)) return origin;
-    if (PREVIEW_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) return origin;
+    if (PAGES_DEV_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) return origin;
 
     const extra = String((env && env.CORS_EXTRA_ORIGINS) || '')
       .split(',')

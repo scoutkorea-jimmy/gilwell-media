@@ -22,8 +22,7 @@ aliases: [Release Playbook, 배포 절차]
 9. `main` 기준 production 배포
 10. 라이브 검증
 
-관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리한다.
-관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않는다.
+관리자 콘솔과 KMS 변경은 관리자 실환경(`/admin`, `/kms`)에서 직접 검수한다. 공개 페이지가 함께 바뀌었을 때만 공개 사이트 라이브 점검 체크리스트를 적용한다.
 
 ## Production 배포
 
@@ -102,4 +101,4 @@ wrangler pages deployment list --project-name gilwell-media
 - 로컬 참고용 untracked 파일은 배포 차단 대상이 아니지만, staging/commit 대상에 섞이지 않아야 한다.
 - `wrangler pages deploy ...`를 직접 사용할 때도 반드시 `./scripts/release_preflight.sh`를 먼저 통과해야 한다.
 - Git 자동 배포가 지연되거나 누락될 수 있으므로, production `Deployments`의 커밋 SHA와 응답 버전을 같이 확인한다.
-- 관리자(KMS 포함) 변경은 공개 사이트 production QA를 필수 게이트로 두지 않는다.
+- 관리자(KMS 포함) 변경은 관리자 실환경에서 직접 검수한다. 공개 페이지가 동시에 바뀐 경우에만 공개 사이트 라이브 점검을 같이 한다.

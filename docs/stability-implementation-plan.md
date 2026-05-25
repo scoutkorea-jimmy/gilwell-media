@@ -15,14 +15,14 @@ aliases: [Stability Plan, 안정성 계획]
 - pretty URL 메타 처리는 경로 정규화 레이어를 도입해 해결한다.
 - 게시글 API 입력 검증은 공통 헬퍼로 통합한다.
 - 버전 하드코딩은 장기적으로 단일 소스 + 자동 동기화 스크립트 구조로 전환한다.
-- preview 시스템은 완전 삭제한다.
+- preview-deploy 시스템은 완전 폐기됐다 (2026-Q2 완료).
 - 관리자 인증 관련 문서는 쿠키 기반 세션 구조로 통일한다.
 - 하드코딩은 먼저 인벤토리를 만들고, 정책을 정의한 뒤, 운영값은 `settings`, 구조값은 공통 상수로 정리한다.
 
 ## 권장 실행 순서
 
 1. 하드코딩 인벤토리 작성
-2. preview 시스템 완전 삭제
+2. ~~preview 시스템 완전 삭제~~ (완료, 2026-Q2)
 3. `post_history` 스키마 및 API 확장
 4. site meta pretty URL 정규화
 5. posts API 공통 입력 검증 도입
@@ -69,43 +69,25 @@ aliases: [Stability Plan, 안정성 계획]
 - 운영에서 자주 바뀌는 값: `settings`로 이동
 - 구조적으로 거의 변하지 않는 값: 공통 constants 모듈로 이동
 - 버전/릴리즈 값: `VERSION` 및 자동 동기화 스크립트 기준으로 정리
-- preview/폐기 기능 값: 삭제
+- 폐기 기능 값: 삭제
 
 검증:
 - 인벤토리 문서에 각 항목별 위치, 값, 위험도, 이전 대상이 기록되어야 한다.
 
-### 2. Preview System Removal
+### 2. Preview System Removal (✅ 완료, 2026-05-25)
 
-목표:
-- 더 이상 사용하지 않는 preview 검수, 승격, 롤백 관련 기능을 코드베이스에서 제거한다.
+preview-deploy 게이트(별도 preview 환경에서 체크리스트 승인 후 production으로 promote하는 워크플로)는 2026-Q2에 폐기됐다. 이 항목은 더 이상 작업 대상이 아니다.
 
-삭제 대상 파일:
-- `functions/api/preview/history.js`
-- `functions/api/preview/promote.js`
-- `functions/api/preview/release.js`
-- `functions/api/preview/rollback.js`
-- `functions/_shared/preview-ops.js`
-- `functions/_shared/preview-release-data.js`
+**완료 내역**:
+- 삭제됨: `functions/api/preview/*`, `functions/_shared/preview-ops.js`, `functions/_shared/preview-release-data.js`, `docs/preview-release-checklist.md`, `.github/workflows/promote-preview.yml`
+- `js/main.js`·`css/style.css`·`js/kms.js`에서 preview runtime/modal/launcher/promote/rollback/history 로직 제거 완료
+- `functions/api/admin/operations.js`는 운영 복구용 deployment/history로 재정의
+- `README.md` / `docs/release-playbook.md` / `docs/feature-definition.md §0.2.1` / `functions/_shared/feature-definition.js` 의 "production 검수 게이트" 문구 모두 단일 main → production 흐름 기반으로 정리
+- 원격 `origin/preview` 브랜치 정리는 운영자(오너) 판단으로 진행. `gh api -X DELETE repos/scoutkorea-jimmy/gilwell-media/git/refs/heads/preview` 로 삭제 가능
 
-수정 대상 파일:
-- `js/main.js`
-- `css/style.css`
-- `js/kms.js`
-- `functions/api/admin/operations.js`
-- `data/changelog.json`
-
-세부 작업:
-- `js/main.js`에서 preview runtime state, modal, launcher, promote, rollback, history fetch 로직 제거
-- `css/style.css`에서 `.preview-*` 관련 스타일 제거
-- `js/kms.js`에서 preview API 설명 제거
-- `functions/api/admin/operations.js`에서 preview snapshot/deployment 의존성 제거 또는 production용 history 기능으로 분리
-- `data/changelog.json`은 기존 히스토리를 유지하되, 이후 운영 문구는 preview 종료 기준으로 정리
-
-결정 필요:
-- `functions/api/admin/operations.js`의 deployment/snapshot 조회는 preview 기능이 아니라 운영 복구 정보로 재정의할지 함께 판단
-
-검증:
-- `rg -n "api/preview|preview-ops|preview-release-data|preview-review|preview-runtime"` 결과가 운영 허용 범위 밖에서 남지 않아야 한다.
+**검증 (영구)**:
+- `rg -n "api/preview|preview-ops|preview-release-data|preview-review|preview-runtime"` 결과가 운영 허용 범위 밖에 0건이어야 한다.
+- `.github/workflows/`에 promote/preview 관련 워크플로가 없어야 한다.
 
 ### 3. Post History Before/After Snapshots
 
@@ -330,7 +312,7 @@ aliases: [Stability Plan, 안정성 계획]
 - 게시글 생성, 수정, 상태 변경 후 history 응답 확인
 - `/contributors`, `/contributors.html`, `/search`, `/search.html` 메타 동일성 확인
 - posts API malformed payload에 대한 400 응답 확인
-- preview 관련 API 경로 제거 확인
+- preview 관련 API 경로 잔재 0건 확인 (`rg -n "api/preview|preview-ops|preview-release-data|preview-review|preview-runtime"`)
 - 관리자 로그인 후 cookie 기반 세션 유지 확인
 - 버전 동기화 후 site/admin 자산 쿼리 문자열 일치 확인
 
@@ -339,6 +321,6 @@ aliases: [Stability Plan, 안정성 계획]
 - 현재 워크트리에는 이미 아래 변경이 남아 있다.
 - `README.md`
 - `docs/release-playbook.md`
-- `docs/preview-release-checklist.md` 삭제
+- `docs/preview-release-checklist.md` 삭제 (완료)
 
 위 변경과 충돌하지 않도록, 실제 구현 단계에서는 새 작업 브랜치 또는 단계별 커밋으로 나누는 편이 안전하다.

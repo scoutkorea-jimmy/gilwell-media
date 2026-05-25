@@ -342,8 +342,7 @@ post_views / post_likes / site_visits
 ## 9. Redeploy After Changes
 
 Git 연동 자동 배포가 동작하는 구성이어도, 실제 운영에서는 자동 배포 지연이나 누락이 발생할 수 있습니다.
-관리자 콘솔과 KMS 변경은 공개 사이트 production 검수 게이트와 분리합니다.
-관리자(KMS 포함) 변경은 관리자 실환경에서 직접 확인하며, 공개 페이지 변경이 없으면 production 체크리스트 통과를 완료 조건으로 삼지 않습니다.
+관리자 콘솔과 KMS 변경은 관리자 실환경(`/admin`, `/kms`)에서 직접 검수합니다. 공개 페이지가 함께 바뀐 경우에만 공개 사이트 라이브 점검을 추가로 진행합니다.
 
 1. `git switch main`
 2. `git status --short`
