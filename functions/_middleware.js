@@ -129,7 +129,8 @@ function buildCsp(request, nonce) {
     // to *.onkakao.net, and loads aux assets from t1.kakaocdn.net.
     // cdn.jsdelivr.net 은 DOMPurify sourcemap(.map) 요청 때문에 필요. script-src에는
     // 이미 있지만 sourcemap은 brower devtools가 fetch로 가져와 connect-src 적용을 받는다.
-    "connect-src 'self' https://cdn.jsdelivr.net https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
+    // unpkg.com 도 동일 이유 (leaflet.js.map). leaflet 자체는 script-src 로 통과.
+    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
     // Kakao ad iframes are served from t1.kakaocdn.net.
     "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net",
     "media-src 'self' data: https:",

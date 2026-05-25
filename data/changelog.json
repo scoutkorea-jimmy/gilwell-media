@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "03.127.01",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:28:17 KST",
+    "summary": "CSP 정리: leaflet.js.map 소스맵 fetch 콘솔 경고 제거 (unpkg.com 을 connect-src 에 추가).",
+    "for_users": [
+      "관리자 로그인 화면에서 DevTools 콘솔을 열었을 때 보이던 'leaflet.js.map blocked by CSP' 빨간 줄이 사라집니다. 실제 기능은 영향 없음 — 소스맵 디버그 도움 정보만 차단됐던 케이스."
+    ],
+    "for_developers": [
+      "functions/_middleware.js CSP connect-src: https://unpkg.com 추가. script-src 엔 이미 있어서 leaflet 동작 자체는 정상이었지만, 브라우저 DevTools 의 자동 sourcemap fetch 가 connect-src 적용을 받아 막혀 있었다. (KMS 16.x security surface 와 동일 정책 — script-src 에 호스트가 있으면 sourcemap 위해 connect-src 에도 동일 호스트 등재.)",
+      "session-grace 401 (스크린샷에 같이 보였던 항목) 은 로그인 안 한 상태의 정상 응답 — 코드 변경 없음.",
+      "관리자 03.127.00 → 03.127.01."
+    ]
+  },
+  {
+    "version": "00.150.01",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 23:28:17 KST",
+    "summary": "공개 사이트 CSP 정렬 — unpkg.com 의 leaflet 소스맵 fetch 콘솔 노이즈 제거.",
+    "for_users": [
+      "사이트 동작에는 영향 없음. 브라우저 콘솔의 sourcemap 차단 경고가 사라집니다."
+    ],
+    "for_developers": [
+      "관리자 03.127.01 항목 참조 (CSP 미들웨어 공통).",
+      "사이트 00.150.00 → 00.150.01."
+    ]
+  },
+  {
     "version": "03.127.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 23:17:37 KST",
