@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260525080618">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260525080618">
+  <link rel="stylesheet" href="/css/style.css?v=20260525091632">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260525091632">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -62,7 +62,7 @@
       <section class="memo-hero" id="memo-list-view">
         <div class="memo-hero-title-row">
           <h2>스카우트 기념품 도감<span class="memo-hero-en">Scout Memorabilia</span></h2>
-          <button type="button" class="memo-btn memo-btn-primary memo-btn-lg" id="memo-add-btn">✏ 도감 추가</button>
+          <button type="button" class="memo-btn memo-btn-primary memo-btn-lg" id="memo-add-btn" hidden>✏ 도감 추가</button>
         </div>
         <p class="memo-hero-desc">패치 · 뱃지 · 메달 · 항건 · 우표 · 책자 등 스카우트 기념품을 한 곳에 모았습니다. 영문/국문 어느 쪽으로 검색해도 찾을 수 있습니다.</p>
         <div class="memo-search-bar">
@@ -93,7 +93,7 @@
         <div class="memo-detail-inner">
           <a href="/memorabilia" class="memo-back-link">← 도감으로 돌아가기</a>
           <div class="memo-detail-admin-bar" id="memo-detail-admin-bar" hidden>
-            <button type="button" class="memo-btn memo-btn-outline" id="memo-detail-edit-btn">편집</button>
+            <button type="button" class="memo-btn memo-btn-outline" id="memo-detail-edit-btn">✏ 수정</button>
           </div>
           <div id="memo-detail-content">
             <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
@@ -122,7 +122,7 @@
                 <div class="memo-images-grid" id="memo-images-grid" hidden></div>
                 <div class="memo-images-empty" id="memo-images-empty">
                   <strong>이미지를 여기에 놓거나 "이미지 추가"를 누르세요</strong>
-                  <span>여러 장 한 번에 업로드 가능 · JPG / PNG / WebP / GIF, 각 7MB 이하</span>
+                  <span>1:1 정사각형 권장 · JPG / PNG / WebP / GIF, 각 9MB 이하 · 다중 업로드 가능</span>
                 </div>
                 <input type="file" id="memo-image-input" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" multiple hidden />
                 <div class="memo-images-actions">
@@ -175,9 +175,9 @@
               </div>
               <div class="memo-form-row memo-form-row-3col">
                 <div>
-                  <label class="field-label" for="memo-country">국가 (다중)</label>
-                  <select id="memo-country" multiple></select>
-                  <div class="memo-form-hint">Cmd/Ctrl 누르고 클릭으로 다중 선택</div>
+                  <label class="field-label">국가 (다중)</label>
+                  <div id="memo-country-picker"></div>
+                  <div class="memo-form-hint">국가명 또는 ISO 코드(예: 몽골, MN)로 검색 후 클릭하여 다중 선택</div>
                 </div>
                 <div>
                   <label class="field-label" for="memo-year">연도</label>
@@ -321,7 +321,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.147.00</span> · Admin <span class="admin-build-version">V03.123.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.148.00</span> · Admin <span class="admin-build-version">V03.124.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -333,8 +333,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260525080618"></script>
-  <script src="/js/site-chrome.js?v=20260525080618"></script>
-  <script src="/js/memorabilia.js?v=20260525080618"></script>
+  <script src="/js/main.js?v=20260525091632"></script>
+  <script src="/js/site-chrome.js?v=20260525091632"></script>
+  <script src="/js/memorabilia-shared.js?v=20260525080618"></script>
+  <script src="/js/memorabilia.js?v=20260525091632"></script>
 </body>
 </html>

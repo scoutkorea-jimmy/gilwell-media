@@ -1,6 +1,50 @@
 {
   "items": [
   {
+    "version": "03.124.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 18:14:48 KST",
+    "summary": "관리자 기념품 도감 — 이미지 업로드를 공개 페이지와 완전 동일하게 통일 + 국가 카탈로그 ~190개로 확장 + 검색형 국가 선택기 + 1:1 종횡비 + 업로드 실패 사유 알람 + 목록에 행사명 컬럼.",
+    "for_users": [
+      "관리자 → 스카우트 기념품 도감의 이미지 업로드가 공개 사이트 도감과 완전히 같은 방식으로 동작합니다 (드래그앤드롭 + 여러 장 업로드 + 진행 상태 표시 + 1:1 정사각형 미리보기).",
+      "업로드 실패 시 이유가 구체 알람으로 표시됩니다: 'JPG · PNG · WebP · GIF 만 업로드할 수 있어요' / '파일이 너무 큽니다 (최대 약 9MB)' / 'R2 저장소가 연결돼 있지 않습니다' 등.",
+      "국가 목록에 몽골(MN)을 비롯해 약 190개국이 모두 포함되도록 카탈로그를 대폭 확장했고, 국가명·국가코드(예: 몽골, MN)로 검색해 선택할 수 있는 검색형 국가 선택기로 교체했습니다.",
+      "관리자 도감 목록 테이블에 '행사명' 컬럼이 추가되어 행사 정보가 한눈에 보입니다."
+    ],
+    "for_developers": [
+      "functions/_shared/country-code-labels.js: COUNTRY_CODE_LABELS_KO 를 71→약 192개국으로 확장(MN 몽골 포함). getCountryCatalogSorted() 헬퍼 추가.",
+      "functions/api/memorabilia/countries.js (신규): GET → [{code, name_ko, name_en}, ...] 가나다 정렬. Cache-Control public 1h + SWR 24h.",
+      "functions/api/memorabilia/upload-image.js: 에러 코드 세분화 (invalid_json / missing_data_url / invalid_data_url / unsupported_type / too_large / bucket_unavailable / store_failed / upload_failed) + reason 한국어 알람 동봉. 한도 10MB→12MB(data URL, raw ≈ 9MB).",
+      "functions/api/memorabilia/index.js GET: has_event / event_name_en / event_name_ko 컬럼 SELECT 추가.",
+      "js/memorabilia-shared.js (신규): GW.MemorabiliaUpload (REASONS · validateFile · describeError) + GW.MemorabiliaCountries (load · attach 검색형 picker 위젯).",
+      "css/memorabilia.css: .memo-image-tile img 를 aspect-ratio: 1/1 로 강제 (1:1 원칙). .gw-country-picker / .gw-cp-chip / .gw-cp-search / .gw-cp-list / .gw-cp-item 스타일 추가.",
+      "admin.html: memorabilia 모달 마크업을 공개 측 구조로 교체. <select id=memo-country> → <div id=memo-country-picker>. css/memorabilia.css 와 js/memorabilia-shared.js 를 admin.html 에도 로드.",
+      "memorabilia.html: 모달 국가 select → picker placeholder. 스크립트 태그 추가.",
+      "js/memorabilia.js: COUNTRY_LABELS 하드코딩 제거. 모달 내부는 ensureCountryPicker 위임. 업로드 에러 메시지를 upload.describeError(payload) 로 매핑. 국가 메타 셀이 EN+KO 둘 다 표시 (KR한국 → Korea / 한국).",
+      "js/admin-memorabilia.js: COUNTRY_LABELS 하드코딩 제거. onImageInput → addFiles 패턴(드래그앤드롭 + placeholder 타일 + 진행 상태 + per-image error). renderImages 가 공개 측과 동일 클래스. 목록 테이블에 '행사명' 컬럼 추가.",
+      "memorabilia.html / js/memorabilia.js: 도감 추가/수정 UI 를 권한 게이트 — editor.canWriteMemo (owner OR write:memorabilia) true 일 때만 노출. 라벨 '편집' → '✏ 수정'.",
+      "관리자 버전 03.123.00 → 03.124.00."
+    ]
+  },
+  {
+    "version": "00.148.00",
+    "date": "2026-05-25",
+    "released_at": "2026-05-25 18:14:48 KST",
+    "summary": "공개 도감 — 국가 카탈로그 확장(몽골 포함 ~190개국) + 검색형 국가 선택기 + 1:1 종횡비 이미지 + 업로드 실패 사유 구체 알람 + 메타 셀에 영문/한글 국가명 함께 표시 + 수정은 권한 보유자만.",
+    "for_users": [
+      "공개 도감 페이지(/memorabilia)의 이미지가 1:1 정사각형 기준으로 정렬되어 보입니다.",
+      "도감 등록·수정 모달의 국가 선택이 검색형으로 바뀌어 몽골 등 약 190개국을 빠르게 찾을 수 있고, 영문·국문·ISO 코드 모두로 검색 가능합니다.",
+      "도감 상세 페이지의 '국가' 행이 영문(Korea) + 국문(한국) 두 줄로 표시되어 분류·행사명·제작기관과 톤이 통일됐습니다.",
+      "이미지 업로드가 실패하면 구체적 사유 알람이 표시됩니다 (형식·크기·저장소 상태 등).",
+      "도감 추가·수정 UI는 쓰기 권한을 가진 운영자가 로그인한 경우에만 노출됩니다."
+    ],
+    "for_developers": [
+      "관리자 03.124.00 항목 참조 (변경 파일·범위 동일).",
+      "공개 측 영향: js/memorabilia.js + memorabilia.html + css/memorabilia.css.",
+      "사이트 00.147.00 → 00.148.00."
+    ]
+  },
+  {
     "version": "00.147.00",
     "date": "2026-05-25",
     "released_at": "2026-05-25 16:30:00 KST",

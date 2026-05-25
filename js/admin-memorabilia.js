@@ -13,13 +13,19 @@
   const state = {
     items: [],
     categories: [],
-    countries: [],
     editing: null,           // null | item
-    images: [],              // [{url, alt_en, alt_ko, is_primary, sort_order}]
+    images: [],              // [{url, alt_en, alt_ko, is_primary, sort_order, uploading, previewDataUrl, _file}]
     links: [],               // [{label_en, label_ko, url}]
+    countryPicker: null,     // GW.MemorabiliaCountries.attach() handle
+    countryLabels: {},       // {code: {ko, en}} — 목록 메타·렌더 lookup 캐시
+    dropZoneBound: false,
     loadedOnce: false,
     catsLoadedOnce: false,
   };
+
+  // 공유 모듈 hooks (window.GW.MemorabiliaUpload / MemorabiliaCountries)
+  const upload = (window.GW && window.GW.MemorabiliaUpload) ? window.GW.MemorabiliaUpload : null;
+  const countries = (window.GW && window.GW.MemorabiliaCountries) ? window.GW.MemorabiliaCountries : null;
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -57,20 +63,8 @@
     });
   }
 
-  // ── 국가 코드 라벨 ───────────────────────────────────────────────────────
-  // server-side functions/_shared/country-code-labels.js 와 동기화 (정적 복제).
-  // 장기적으로는 /api/settings/countries 같은 엔드포인트로 일원화하는 게 좋음.
-  const COUNTRY_LABELS = {
-    AE:'아랍에미리트',AR:'아르헨티나',AT:'오스트리아',AU:'호주',BD:'방글라데시',BE:'벨기에',BR:'브라질',
-    CA:'캐나다',CH:'스위스',CL:'칠레',CN:'중국',CO:'콜롬비아',CZ:'체코',DE:'독일',DK:'덴마크',
-    EG:'이집트',ES:'스페인',FI:'핀란드',FR:'프랑스',GB:'영국',GR:'그리스',HK:'홍콩',HR:'크로아티아',
-    HU:'헝가리',ID:'인도네시아',IE:'아일랜드',IL:'이스라엘',IN:'인도',IQ:'이라크',IR:'이란',IT:'이탈리아',
-    JO:'요르단',JP:'일본',KE:'케냐',KR:'한국',KW:'쿠웨이트',KZ:'카자흐스탄',LK:'스리랑카',MA:'모로코',
-    MX:'멕시코',MY:'말레이시아',NG:'나이지리아',NL:'네덜란드',NO:'노르웨이',NP:'네팔',NZ:'뉴질랜드',
-    OM:'오만',PE:'페루',PH:'필리핀',PK:'파키스탄',PL:'폴란드',PT:'포르투갈',QA:'카타르',RO:'루마니아',
-    RS:'세르비아',RU:'러시아',SA:'사우디아라비아',SE:'스웨덴',SG:'싱가포르',SI:'슬로베니아',SK:'슬로바키아',
-    TH:'태국',TR:'터키',TW:'대만',UA:'우크라이나',US:'미국',VE:'베네수엘라',VN:'베트남',ZA:'남아프리카공화국',
-  };
+  // 국가 카탈로그는 /api/memorabilia/countries (functions/_shared/country-code-labels.js)
+  // 단일 소스에서 fetch. memorabilia-shared.js GW.MemorabiliaCountries 가 캐시·picker 위젯 담당.
 
   // ── Init: 패널 활성화 감지 ──────────────────────────────────────────────
   document.addEventListener('click', (e) => {
@@ -137,9 +131,10 @@
   // ── 목록 ────────────────────────────────────────────────────────────────
   async function bootList() {
     state.loadedOnce = true;
-    await Promise.all([loadList(), loadCategories(true)]);
-    populateCountrySelect();
+    await Promise.all([loadList(), loadCategories(true), ensureCountryLabels()]);
     populateCategorySelect();
+    // 목록 한 번 더 렌더 — country labels 도착 이후 행사명·국가 셀에 반영
+    renderList();
   }
 
   async function loadList() {
@@ -167,7 +162,7 @@
       return;
     }
     const html = ['<table class="v3-table"><thead><tr>',
-      '<th style="width:64px">이미지</th><th>제목</th><th style="width:80px">연도</th>',
+      '<th style="width:64px">이미지</th><th>제목</th><th>행사명</th><th style="width:80px">연도</th>',
       '<th style="width:120px">분류</th><th style="width:90px">상태</th><th style="width:80px"></th>',
       '</tr></thead><tbody>'];
     for (const it of items) {
@@ -176,12 +171,21 @@
         : '<div style="width:48px;height:48px;background:var(--gray-100);border-radius:4px"></div>';
       const title = it.title_en || it.title_ko || '(제목 없음)';
       const sub = it.title_en && it.title_ko ? `<div style="font-size:.85em;opacity:.7">${escapeHtml(it.title_ko)}</div>` : '';
+      // 행사명 — EN+KO 둘 다 있으면 두 줄, 하나만 있으면 한 줄, 행사 아님이면 —
+      let eventCell = '—';
+      if (it.has_event) {
+        const en = String(it.event_name_en || '').trim();
+        const ko = String(it.event_name_ko || '').trim();
+        if (en && ko) eventCell = `<strong>${escapeHtml(en)}</strong><div style="font-size:.85em;opacity:.7">${escapeHtml(ko)}</div>`;
+        else if (en) eventCell = `<strong>${escapeHtml(en)}</strong>`;
+        else if (ko) eventCell = `<strong>${escapeHtml(ko)}</strong>`;
+      }
       const cat = it.category_label_ko || it.category_label_en || '—';
       const statusBadge = it.status === 'public'
         ? '<span class="v3-badge v3-badge-success">공개</span>'
         : '<span class="v3-badge v3-badge-muted">초안</span>';
       html.push(`<tr><td>${thumb}</td><td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
-        `<td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td><td>${statusBadge}</td>`,
+        `<td>${eventCell}</td><td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td><td>${statusBadge}</td>`,
         `<td><button class="v3-btn v3-btn-outline v3-btn-sm" data-memo-edit="${it.id}">편집</button></td></tr>`);
     }
     html.push('</tbody></table>');
@@ -199,7 +203,8 @@
   async function openEditor(item) {
     if (!state.categories.length) await loadCategories(true);
     populateCategorySelect();
-    populateCountrySelect();
+    ensureCountryPicker(item?.country_codes || []);
+    setupDropZone();
 
     // Hydrate fields
     state.editing = item;
@@ -237,10 +242,8 @@
     $('#memo-desc-ko').value = readDescPlain(item?.description_ko);
     $('#memo-status').value = item?.status || 'draft';
 
-    // country multi-select
-    const sel = $('#memo-country');
-    const codes = new Set(item?.country_codes || []);
-    $$('option', sel).forEach((opt) => { opt.selected = codes.has(opt.value); });
+    // country picker — initial 값 반영
+    if (state.countryPicker) state.countryPicker.setValue(item?.country_codes || []);
 
     state.images = (item?.images || []).map((img) => ({
       url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
@@ -305,36 +308,79 @@
     sel.value = cur;
   }
 
-  function populateCountrySelect() {
-    const sel = $('#memo-country');
-    if (!sel || sel.options.length) return;
-    const codes = Object.keys(COUNTRY_LABELS).sort((a, b) => COUNTRY_LABELS[a].localeCompare(COUNTRY_LABELS[b], 'ko'));
-    sel.innerHTML = codes.map((c) => `<option value="${c}">${escapeHtml(COUNTRY_LABELS[c])} (${c})</option>`).join('');
+  // Country picker — /api/memorabilia/countries + GW.MemorabiliaCountries.attach
+  function ensureCountryPicker(initial) {
+    if (!countries) return null;
+    const host = $('#memo-country-picker');
+    if (!host) return null;
+    if (state.countryPicker) {
+      state.countryPicker.setValue(initial || []);
+      return state.countryPicker;
+    }
+    state.countryPicker = countries.attach({
+      host,
+      initial: initial || [],
+      idPrefix: 'memo-admin-cp',
+    });
+    return state.countryPicker;
   }
 
-  // ── Images ──────────────────────────────────────────────────────────────
+  // 목록 행사명·국가 라벨용 캐시 (loadCategories 와 같은 시점에 1회 로드)
+  async function ensureCountryLabels() {
+    if (!countries) return;
+    if (Object.keys(state.countryLabels).length) return;
+    try {
+      const items = await countries.load();
+      items.forEach((c) => { state.countryLabels[c.code] = { ko: c.name_ko, en: c.name_en || c.code }; });
+    } catch (err) {
+      console.warn('country catalog load failed:', err);
+    }
+  }
+
+  // ── Images (공개 측 memorabilia.js editor.addFiles 패턴과 동일) ──────────
   function renderImages() {
     const grid = $('#memo-images-grid');
-    if (!grid) return;
-    if (!state.images.length) {
-      grid.innerHTML = '<div class="v3-inline-meta">이미지가 없습니다. "이미지 추가"를 눌러주세요.</div>';
-      return;
+    const empty = $('#memo-images-empty');
+    const meta = $('#memo-images-meta');
+    if (!grid || !empty) return;
+
+    const hasAny = state.images.length > 0;
+    grid.hidden = !hasAny;
+    empty.hidden = hasAny;
+
+    if (meta) {
+      const total = state.images.filter((i) => !i.uploading).length;
+      const uploading = state.images.filter((i) => i.uploading).length;
+      meta.textContent = total + (uploading ? ` · ${uploading}장 업로드 중…` : '') + (total > 0 ? `장 (대표: ${state.images.find((i) => i.is_primary)?.url ? '✓' : '미지정'})` : '');
     }
-    grid.innerHTML = state.images.map((img, i) => `
-      <div class="memo-image-tile" data-i="${i}" style="display:inline-block;margin:4px;border:1px solid var(--gray-300);padding:4px;border-radius:4px;vertical-align:top;width:140px">
-        <div style="position:relative">
-          <img src="${escapeHtml(img.url)}" alt="" style="width:100%;height:100px;object-fit:cover;border-radius:3px"/>
+
+    if (!hasAny) { grid.innerHTML = ''; return; }
+
+    grid.innerHTML = state.images.map((img, i) => {
+      const classes = ['memo-image-tile'];
+      if (img.is_primary) classes.push('is-primary');
+      if (img.uploading) classes.push('uploading');
+      const badge = img.is_primary && !img.uploading ? '<div class="tile-badge">대표</div>' : '';
+      const progress = img.uploading ? `<div class="tile-progress">${escapeHtml(img.progress || '업로드 중…')}</div>` : '';
+      const previewSrc = img.url || img.previewDataUrl || '';
+      return `
+        <div class="${classes.join(' ')}" data-i="${i}">
+          ${badge}
+          <img src="${escapeHtml(previewSrc)}" alt=""/>
+          ${progress}
+          <div class="tile-actions">
+            <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} ${img.uploading ? 'disabled' : ''} data-primary-i="${i}"/> 대표</label>
+            <button type="button" class="memo-btn memo-btn-sm memo-btn-danger" data-img-del="${i}" ${img.uploading ? 'disabled' : ''}>삭제</button>
+          </div>
         </div>
-        <label style="display:block;margin-top:4px;font-size:.85em">
-          <input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} data-primary-i="${i}"/> 대표
-        </label>
-        <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" data-img-del="${i}" style="width:100%;margin-top:4px">삭제</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
     $$('input[data-primary-i]', grid).forEach((r) => {
       r.addEventListener('change', () => {
         const i = parseInt(r.getAttribute('data-primary-i'), 10);
         state.images.forEach((img, idx) => { img.is_primary = idx === i; });
+        renderImages();
       });
     });
     $$('button[data-img-del]', grid).forEach((b) => {
@@ -349,28 +395,126 @@
     });
   }
 
-  async function onImageInput(e) {
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    if (!files.length) return;
-    for (const file of files) {
-      if (!/^image\//.test(file.type)) { toast(`이미지 아님: ${file.name}`, 'error'); continue; }
-      try {
-        const dataUrl = await readFileAsDataUrl(file);
-        const res = await fetchJson('/api/memorabilia/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data_url: dataUrl }),
-        });
-        if (res?.url) {
-          const isPrimary = !state.images.length;
-          state.images.push({ url: res.url, alt_en: '', alt_ko: '', is_primary: isPrimary, sort_order: state.images.length });
-        }
-      } catch (err) {
-        toast(`업로드 실패 (${file.name}): ${err.message}`, 'error');
-      }
+  function validateFile(file) {
+    if (upload && typeof upload.validateFile === 'function') {
+      const reason = upload.validateFile(file);
+      return reason ? `${file?.name || ''}: ${reason}` : null;
     }
+    if (!file) return '파일이 비어 있습니다.';
+    if (!/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type)) return `지원하지 않는 형식: ${file.name}`;
+    if (file.size > 9 * 1024 * 1024) return `파일이 너무 큽니다 (>9MB): ${file.name}`;
+    return null;
+  }
+
+  async function addFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    const errors = [];
+    const placeholders = [];
+
+    for (const file of files) {
+      const err = validateFile(file);
+      if (err) { errors.push(err); continue; }
+      let previewDataUrl = '';
+      try { previewDataUrl = await readFileAsDataUrl(file); }
+      catch { errors.push(`미리보기 생성 실패: ${file.name}`); continue; }
+      placeholders.push({
+        url: '',
+        previewDataUrl,
+        alt_en: '', alt_ko: '',
+        is_primary: false,
+        sort_order: state.images.length + placeholders.length,
+        uploading: true,
+        progress: '업로드 중…',
+        _file: file,
+      });
+    }
+
+    if (!placeholders.length) {
+      if (errors.length) flashError(errors.join('\n'));
+      return;
+    }
+
+    const noPrimaryYet = !state.images.some((i) => i.is_primary);
+    state.images.push(...placeholders);
+    if (noPrimaryYet) placeholders[0].is_primary = true;
     renderImages();
+
+    for (const ph of placeholders) {
+      try {
+        const res = await fetch('/api/memorabilia/upload-image', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data_url: ph.previewDataUrl }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) {
+          const reason = upload
+            ? upload.describeError(data, `HTTP ${res.status}`)
+            : (data.reason || data.error || `HTTP ${res.status}`);
+          errors.push(`${ph._file?.name || '이미지'}: ${reason}`);
+          const idx = state.images.indexOf(ph);
+          if (idx >= 0) state.images.splice(idx, 1);
+          continue;
+        }
+        ph.url = data.url;
+        ph.uploading = false;
+        ph.previewDataUrl = '';
+        ph._file = null;
+      } catch (err) {
+        const reason = upload
+          ? upload.describeError({ error: 'network' }, err.message)
+          : (err.message || '네트워크 오류');
+        errors.push(`${ph._file?.name || '이미지'}: ${reason}`);
+        const idx = state.images.indexOf(ph);
+        if (idx >= 0) state.images.splice(idx, 1);
+      }
+      renderImages();
+    }
+
+    if (state.images.length && !state.images.some((i) => i.is_primary)) {
+      const firstReady = state.images.find((i) => !i.uploading);
+      if (firstReady) firstReady.is_primary = true;
+      renderImages();
+    }
+
+    if (errors.length) flashError(errors.join('\n'));
+  }
+
+  function flashError(msg) {
+    if (window.GW && typeof window.GW.showToast === 'function') {
+      try { window.GW.showToast(msg, 'error'); return; } catch {}
+    }
+    if (window.gwToast) { try { window.gwToast(msg, 'error'); return; } catch {} }
+    alert(msg);
+  }
+
+  function setupDropZone() {
+    const zone = $('#memo-images-zone');
+    if (!zone || state.dropZoneBound) return;
+    state.dropZoneBound = true;
+    ['dragenter', 'dragover'].forEach((ev) => zone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.add('drag-over');
+    }));
+    ['dragleave', 'drop'].forEach((ev) => zone.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (ev === 'dragleave' && zone.contains(e.relatedTarget)) return;
+      zone.classList.remove('drag-over');
+    }));
+    zone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !dt.files || !dt.files.length) return;
+      addFiles(dt.files);
+    });
+  }
+
+  async function onImageInput(e) {
+    const files = e.target.files;
+    try { e.target.value = ''; } catch {}
+    await addFiles(files);
   }
 
   // ── Links ───────────────────────────────────────────────────────────────
@@ -469,8 +613,7 @@
 
   // ── Save / Delete ───────────────────────────────────────────────────────
   async function save() {
-    const sel = $('#memo-country');
-    const countries = sel ? Array.from(sel.selectedOptions).map((o) => o.value) : [];
+    const country_codes = state.countryPicker ? state.countryPicker.getValue() : [];
     const tagsRaw = $('#memo-tags').value || '';
     const tags = tagsRaw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
 
@@ -490,7 +633,7 @@
       description_en: descToEditorJson($('#memo-desc-en').value),
       description_ko: descToEditorJson($('#memo-desc-ko').value),
       related_links: state.links.filter((l) => l.url),
-      country_codes: countries,
+      country_codes,
       tags,
       images: state.images,
       status: $('#memo-status').value || 'draft',

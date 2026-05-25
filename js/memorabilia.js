@@ -10,17 +10,12 @@
 (function () {
   'use strict';
 
-  const COUNTRY_LABELS = {
-    AE:'아랍에미리트',AR:'아르헨티나',AT:'오스트리아',AU:'호주',BD:'방글라데시',BE:'벨기에',BR:'브라질',
-    CA:'캐나다',CH:'스위스',CL:'칠레',CN:'중국',CO:'콜롬비아',CZ:'체코',DE:'독일',DK:'덴마크',
-    EG:'이집트',ES:'스페인',FI:'핀란드',FR:'프랑스',GB:'영국',GR:'그리스',HK:'홍콩',HR:'크로아티아',
-    HU:'헝가리',ID:'인도네시아',IE:'아일랜드',IL:'이스라엘',IN:'인도',IQ:'이라크',IR:'이란',IT:'이탈리아',
-    JO:'요르단',JP:'일본',KE:'케냐',KR:'한국',KW:'쿠웨이트',KZ:'카자흐스탄',LK:'스리랑카',MA:'모로코',
-    MX:'멕시코',MY:'말레이시아',NG:'나이지리아',NL:'네덜란드',NO:'노르웨이',NP:'네팔',NZ:'뉴질랜드',
-    OM:'오만',PE:'페루',PH:'필리핀',PK:'파키스탄',PL:'폴란드',PT:'포르투갈',QA:'카타르',RO:'루마니아',
-    RS:'세르비아',RU:'러시아',SA:'사우디아라비아',SE:'스웨덴',SG:'싱가포르',SI:'슬로베니아',SK:'슬로바키아',
-    TH:'태국',TR:'터키',TW:'대만',UA:'우크라이나',US:'미국',VE:'베네수엘라',VN:'베트남',ZA:'남아프리카공화국',
-  };
+  // 국가 카탈로그는 /api/memorabilia/countries (functions/_shared/country-code-labels.js)
+  // 단일 소스에서 fetch. 로컬 캐시는 memorabilia-shared.js GW.MemorabiliaCountries 가 관리.
+  let COUNTRY_LABELS = {}; // {code: {ko, en}} — populateCountryOptions() 에서 채움
+
+  // 업로드 에러 → 한국어 사유 (서버 응답 매핑은 memorabilia-shared.js GW.MemorabiliaUpload.describeError)
+  const upload = (window.GW && window.GW.MemorabiliaUpload) ? window.GW.MemorabiliaUpload : null;
 
   const $ = (sel) => document.querySelector(sel);
 
@@ -109,12 +104,21 @@
     } catch {}
   }
 
-  function populateCountryOptions() {
-    const sel = $('#memo-filter-country');
-    const codes = Object.keys(COUNTRY_LABELS).sort((a, b) => COUNTRY_LABELS[a].localeCompare(COUNTRY_LABELS[b], 'ko'));
-    sel.innerHTML = '<option value="">국가 전체</option>' + codes.map((c) =>
-      `<option value="${c}">${escapeHtml(COUNTRY_LABELS[c])}</option>`
-    ).join('');
+  async function populateCountryOptions() {
+    if (!window.GW || !window.GW.MemorabiliaCountries) return;
+    try {
+      const items = await window.GW.MemorabiliaCountries.load();
+      // 로컬 lookup 캐시 갱신 (renderResults 에서 메타 라벨 출력에 사용 — ko+en 둘 다 저장)
+      COUNTRY_LABELS = {};
+      items.forEach((c) => { COUNTRY_LABELS[c.code] = { ko: c.name_ko, en: c.name_en || c.code }; });
+      const sel = $('#memo-filter-country');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">국가 전체</option>' + items.map((c) =>
+        `<option value="${c.code}">${escapeHtml(c.name_ko)}</option>`
+      ).join('');
+    } catch (err) {
+      console.warn('country catalog load failed:', err);
+    }
   }
 
   function debounce(fn, ms) {
@@ -234,13 +238,11 @@
       document.title = `${item.title_en || item.title_ko} — 스카우트 기념품 도감 — BP미디어`;
       wrap.innerHTML = renderDetail(item);
       wireDetailEvents(wrap);
-      // Admin 편집 버튼 노출
-      if (editor.sessionChecked ? editor.isAdmin : true) {
-        editor.checkSession().then(() => {
-          const bar = document.getElementById('memo-detail-admin-bar');
-          if (bar) bar.hidden = !editor.isAdmin;
-        });
-      }
+      // Admin 수정 버튼 — 쓰기 권한 보유자(owner OR write:memorabilia) 만 노출
+      editor.checkSession().then(() => {
+        const bar = document.getElementById('memo-detail-admin-bar');
+        if (bar) bar.hidden = !editor.canWriteMemo;
+      });
     } catch (err) {
       wrap.innerHTML = '<div class="memo-empty"><h3>로드 실패</h3><p>잠시 후 다시 시도해주세요.</p></div>';
     }
@@ -259,9 +261,10 @@
         item.event_name_ko ? `<span class="lang-ko" lang="ko">${escapeHtml(item.event_name_ko)}</span>` : ''));
     }
     if (item.country_codes && item.country_codes.length) {
-      meta.push(metaRow('국가',
-        item.country_codes.join(', '),
-        item.country_codes.map((c) => COUNTRY_LABELS[c] || c).join(', ')));
+      // EN: "Korea, Japan" — name_en 우선, 없으면 코드 / KO: "한국, 일본" — name_ko
+      const enLabels = item.country_codes.map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].en) || c).join(', ');
+      const koLabels = item.country_codes.map((c) => (COUNTRY_LABELS[c] && COUNTRY_LABELS[c].ko) || c).join(', ');
+      meta.push(metaRow('국가', enLabels, koLabels));
     }
     if (item.year) meta.push(metaRow('연도', `${item.year}`, ''));
     if (item.category_label_en || item.category_label_ko) {
@@ -366,6 +369,9 @@
   // ── Editor (모달 등록·편집) ─────────────────────────────────────────────
   const editor = {
     isAdmin: false,
+    canWriteMemo: false, // owner OR write:memorabilia
+    role: null,
+    permSet: null,
     sessionChecked: false,
     editing: null,
     images: [],
@@ -379,7 +385,12 @@
         });
         const data = await res.json().catch(() => ({}));
         this.isAdmin = !!(res.ok && data && data.authenticated);
-      } catch { this.isAdmin = false; }
+        this.role = (data && data.role) || null;
+        const permList = (data && data.user && data.user.permissions && data.user.permissions.permissions) || [];
+        this.permSet = new Set(permList);
+        // Owner 는 무조건 통과, member 는 write:memorabilia 토큰 필요
+        this.canWriteMemo = this.isAdmin && (this.role === 'owner' || this.permSet.has('write:memorabilia'));
+      } catch { this.isAdmin = false; this.canWriteMemo = false; }
       this.sessionChecked = true;
       return this.isAdmin;
     },
@@ -392,11 +403,22 @@
       } catch {}
     },
 
-    populateCountrySelect() {
-      const sel = $('#memo-country');
-      if (!sel || sel.options.length) return;
-      const codes = Object.keys(COUNTRY_LABELS).sort((a, b) => COUNTRY_LABELS[a].localeCompare(COUNTRY_LABELS[b], 'ko'));
-      sel.innerHTML = codes.map((c) => `<option value="${c}">${escapeHtml(COUNTRY_LABELS[c])} (${c})</option>`).join('');
+    countryPicker: null,
+
+    ensureCountryPicker(initial) {
+      const host = $('#memo-country-picker');
+      if (!host) return null;
+      if (!window.GW || !window.GW.MemorabiliaCountries) return null;
+      if (this.countryPicker) {
+        this.countryPicker.setValue(initial || []);
+        return this.countryPicker;
+      }
+      this.countryPicker = window.GW.MemorabiliaCountries.attach({
+        host,
+        initial: initial || [],
+        idPrefix: 'memo-cp',
+      });
+      return this.countryPicker;
     },
 
     populateCategorySelect() {
@@ -413,7 +435,7 @@
       const ok = await this.checkSession();
       if (!ok) { $('#memo-login-overlay').hidden = false; return; }
       await this.ensureCategories();
-      this.populateCountrySelect();
+      this.ensureCountryPicker([]);
       this.populateCategorySelect();
       this.editing = null;
       this.images = [];
@@ -430,13 +452,13 @@
       const ok = await this.checkSession();
       if (!ok) { $('#memo-login-overlay').hidden = false; return; }
       await this.ensureCategories();
-      this.populateCountrySelect();
       this.populateCategorySelect();
       try {
         const full = await (await fetch(`/api/memorabilia/${item.id}`, { credentials: 'same-origin' })).json();
         item = full.item;
       } catch {}
       this.editing = item;
+      this.ensureCountryPicker(item.country_codes || []);
       this.images = (item.images || []).map((img) => ({
         url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
         is_primary: !!img.is_primary, sort_order: img.sort_order || 0,
@@ -460,8 +482,7 @@
       $('#memo-event-row').hidden = true;
       $('#memo-category').value = '';
       $('#memo-status').value = 'draft';
-      const sel = $('#memo-country');
-      Array.from(sel.options).forEach((o) => { o.selected = false; });
+      if (this.countryPicker) this.countryPicker.setValue([]);
     },
 
     fillForm(item) {
@@ -482,9 +503,7 @@
       $('#memo-desc-en').value = readPlain(item.description_en);
       $('#memo-desc-ko').value = readPlain(item.description_ko);
       $('#memo-status').value = item.status || 'draft';
-      const codes = new Set(item.country_codes || []);
-      const sel = $('#memo-country');
-      Array.from(sel.options).forEach((o) => { o.selected = codes.has(o.value); });
+      if (this.countryPicker) this.countryPicker.setValue(item.country_codes || []);
     },
 
     showModal() {
@@ -559,9 +578,15 @@
     },
 
     validateFile(file) {
+      // 공유 모듈(memorabilia-shared.js) 검증으로 사유 일원화.
+      if (upload && typeof upload.validateFile === 'function') {
+        const reason = upload.validateFile(file);
+        return reason ? `${file?.name || ''}: ${reason}` : null;
+      }
+      // Fallback (공유 모듈 로드 실패 시)
       if (!file) return '파일이 없습니다.';
       if (!/^image\/(jpeg|jpg|png|webp|gif)$/i.test(file.type)) return `지원하지 않는 형식: ${file.name}`;
-      if (file.size > 7 * 1024 * 1024) return `파일이 너무 큽니다 (>7MB): ${file.name}`;
+      if (file.size > 9 * 1024 * 1024) return `파일이 너무 큽니다 (>9MB): ${file.name}`;
       return null;
     },
 
@@ -616,7 +641,10 @@
           });
           const data = await res.json().catch(() => ({}));
           if (!res.ok || !data.url) {
-            errors.push(`업로드 실패 (${placeholder._file?.name || ''}): ${data.error || 'HTTP ' + res.status}`);
+            const reason = upload
+              ? upload.describeError(data, `HTTP ${res.status}`)
+              : (data.reason || data.error || `HTTP ${res.status}`);
+            errors.push(`${placeholder._file?.name || '이미지'}: ${reason}`);
             // 실패한 placeholder는 제거
             const idx = this.images.indexOf(placeholder);
             if (idx >= 0) this.images.splice(idx, 1);
@@ -627,7 +655,10 @@
           placeholder.previewDataUrl = '';
           placeholder._file = null;
         } catch (err) {
-          errors.push(`업로드 실패 (${placeholder._file?.name || ''}): ${err.message}`);
+          const reason = upload
+            ? upload.describeError({ error: 'network' }, err.message)
+            : (err.message || '네트워크 오류');
+          errors.push(`${placeholder._file?.name || '이미지'}: ${reason}`);
           const idx = this.images.indexOf(placeholder);
           if (idx >= 0) this.images.splice(idx, 1);
         }
@@ -712,8 +743,7 @@
     },
 
     async save() {
-      const sel = $('#memo-country');
-      const country_codes = Array.from(sel.selectedOptions).map((o) => o.value);
+      const country_codes = this.countryPicker ? this.countryPicker.getValue() : [];
       const tags = ($('#memo-tags').value || '').split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
       const body = {
         title_en: $('#memo-title-en').value,
@@ -849,9 +879,11 @@
     }
     wireEditorEvents();
     route();
-    // 비동기로 세션 체크 (어드민이면 detail 페이지에서 편집 버튼 노출)
+    // 비동기로 세션 체크 — 쓰기 권한 보유자(owner OR write:memorabilia) 만 추가/수정 UI 노출
     editor.checkSession().then(() => {
-      if (editor.isAdmin) {
+      if (editor.canWriteMemo) {
+        const addBtn = $('#memo-add-btn');
+        if (addBtn) addBtn.hidden = false;
         const bar = $('#memo-detail-admin-bar');
         if (bar && !$('#memo-detail-view').hidden) bar.hidden = false;
       }
