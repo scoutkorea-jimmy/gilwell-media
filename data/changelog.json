@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.156.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 00:50:00 KST",
+    "summary": "공개 도감 — 목록/검색/상세 페이지 전반 EN/KO 인라인 병기 누락분 보완 (정책 준수).",
+    "for_users": [
+      "스카우트 기념품 도감 페이지의 안내문·검색창·필터·결과 메시지가 모두 영문/국문 병기로 통일되었습니다 (예: 'All Categories · 분류 전체', 'Relevance · 관련도', 'Search · 검색…').",
+      "결과 메타도 'N results for \"q\" · 총 N건 · \"q\" 검색' 형태로 EN/KO 병기. '결과 없음' 안내도 동일.",
+      "상세 페이지로 진입했을 때 '← Back to memorabilia · 도감으로 돌아가기' / '✏ Edit · 수정' 도 병기.",
+      "로그인 필요 오버레이의 제목·본문·버튼 모두 EN/KO 병기."
+    ],
+    "for_developers": [
+      "memorabilia.html list view: 모든 placeholder/select option 첫 행을 'EN · KO' 결합 텍스트로 교체 (분류·국가·행사·연도 from·to·제작기관·정렬). aria-label 도 'EN · KO' 결합. .memo-bilingual-inline span pair 로 hero-desc / add button / tags-label / tags-clear / back link / detail edit btn / login overlay 전부 감쌈.",
+      "js/memorabilia.js runSearch loading/error: meta.textContent → meta.innerHTML 로 .memo-bilingual-inline 래핑. renderResults: 결과 카운트/빈 상태/관리자 hint 모두 EN/KO 병기. q 가 비어있을 때와 있을 때 분기 별도.",
+      "사이트 00.156.00 → 00.156.01 (fix — bilingual 정책 누락분 보완)."
+    ]
+  },
+  {
     "version": "00.156.00",
     "date": "2026-05-26",
     "released_at": "2026-05-27 00:15:00 KST",

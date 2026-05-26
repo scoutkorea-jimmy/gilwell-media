@@ -253,7 +253,7 @@
     const newSearch = params.toString();
     history.replaceState(null, '', '/memorabilia' + (newSearch ? '?' + newSearch : ''));
 
-    meta.textContent = '검색 중…';
+    meta.innerHTML = '<span class="memo-bilingual-inline"><span class="lang-en" lang="en">Searching…</span><span class="lang-ko" lang="ko">검색 중…</span></span>';
     grid.innerHTML = '';
 
     try {
@@ -275,7 +275,7 @@
 
       renderResults(data, q);
     } catch (err) {
-      meta.textContent = '검색 실패: ' + err.message;
+      meta.innerHTML = `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">Search failed: ${escapeHtml(err.message)}</span><span class="lang-ko" lang="ko">검색 실패: ${escapeHtml(err.message)}</span></span>`;
     }
   }
 
@@ -286,14 +286,33 @@
     const items = data.results || [];
 
     if (total === 0) {
-      meta.textContent = q ? `"${q}" 검색 결과 없음` : '아직 등록된 기념품이 없습니다.';
-      const adminHint = !q ? `<p style="margin-top:12px;font-size:.9em;opacity:.7">관리자라면 <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">관리자 페이지의 '스카우트 백과 → 기념품 도감'</a>에서 항목을 추가할 수 있습니다.</p>` : '';
-      grid.innerHTML = `<div class="memo-empty"><h3>${q ? '결과가 없어요' : '준비 중입니다'}</h3><p>${q ? '다른 키워드로 검색해보세요.' : '곧 다양한 기념품이 추가됩니다.'}</p>${adminHint}</div>`;
+      const qSafe = escapeHtml(q);
+      meta.innerHTML = q
+        ? `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">No results for "${qSafe}"</span><span class="lang-ko" lang="ko">"${qSafe}" 검색 결과 없음</span></span>`
+        : `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">No memorabilia registered yet</span><span class="lang-ko" lang="ko">아직 등록된 기념품이 없습니다.</span></span>`;
+      const adminHint = !q
+        ? `<p style="margin-top:12px;font-size:.9em;opacity:.7" class="memo-bilingual-inline">
+             <span class="lang-en" lang="en">If you are an admin, add items in the <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">admin → Scout Memorabilia</a> panel.</span>
+             <span class="lang-ko" lang="ko">관리자라면 <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">관리자 페이지의 '스카우트 백과 → 기념품 도감'</a>에서 항목을 추가할 수 있습니다.</span>
+           </p>`
+        : '';
+      const titleHtml = q
+        ? `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">No matches</span><span class="lang-ko" lang="ko">결과가 없어요</span></span>`
+        : `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">Coming soon</span><span class="lang-ko" lang="ko">준비 중입니다</span></span>`;
+      const bodyHtml = q
+        ? `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">Try a different keyword.</span><span class="lang-ko" lang="ko">다른 키워드로 검색해보세요.</span></span>`
+        : `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">More memorabilia will be added shortly.</span><span class="lang-ko" lang="ko">곧 다양한 기념품이 추가됩니다.</span></span>`;
+      grid.innerHTML = `<div class="memo-empty"><h3>${titleHtml}</h3><p>${bodyHtml}</p>${adminHint}</div>`;
       $('#memo-pagination').innerHTML = '';
       return;
     }
 
-    meta.textContent = `총 ${total}건${q ? ` · "${q}" 검색` : ''}`;
+    // 결과 카운트 — EN: "23 results for \"q\"" · KO: "총 23건 · \"q\" 검색"
+    const qSafe = escapeHtml(q);
+    meta.innerHTML = `<span class="memo-bilingual-inline">
+      <span class="lang-en" lang="en">${total} result${total === 1 ? '' : 's'}${q ? ` for "${qSafe}"` : ''}</span>
+      <span class="lang-ko" lang="ko">총 ${total}건${q ? ` · "${qSafe}" 검색` : ''}</span>
+    </span>`;
     grid.innerHTML = items.map((it) => {
       const titleEn = it.title_en || it.title_ko || '';
       const titleKo = (it.title_en && it.title_ko && it.title_en !== it.title_ko) ? it.title_ko : '';

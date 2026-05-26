@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260526144546">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526144546">
+  <link rel="stylesheet" href="/css/style.css?v=20260526145557">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526145557">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -58,44 +58,59 @@
 
   <main id="main-content">
     <div class="memorabilia-page-wrap">
-      <!-- List/Search view -->
+      <!-- List/Search view — 기본 EN/KO 병기 (도감 페이지 정책) -->
       <section class="memo-hero" id="memo-list-view">
         <div class="memo-hero-title-row">
           <h2>스카우트 기념품 도감<span class="memo-hero-en">Scout Memorabilia</span></h2>
-          <button type="button" class="memo-btn memo-btn-primary memo-btn-lg" id="memo-add-btn" hidden>✏ 도감 추가</button>
+          <button type="button" class="memo-btn memo-btn-primary memo-btn-lg memo-bilingual-inline" id="memo-add-btn" hidden>
+            <span class="lang-en" lang="en">✏ Add Item</span>
+            <span class="lang-ko" lang="ko">도감 추가</span>
+          </button>
         </div>
-        <p class="memo-hero-desc">패치 · 뱃지 · 메달 · 항건 · 우표 · 책자 등 스카우트 기념품을 한 곳에 모았습니다. 영문/국문 어느 쪽으로 검색해도 찾을 수 있습니다.</p>
+        <p class="memo-hero-desc memo-bilingual-inline">
+          <span class="lang-en" lang="en">Patches, badges, medals, neckerchiefs, stamps, and booklets — Scout memorabilia gathered in one place. Searchable in either English or Korean.</span>
+          <span class="lang-ko" lang="ko">패치 · 뱃지 · 메달 · 항건 · 우표 · 책자 등 스카우트 기념품을 한 곳에 모았습니다. 영문/국문 어느 쪽으로 검색해도 찾을 수 있습니다.</span>
+        </p>
         <div class="memo-search-bar">
-          <input type="search" id="memo-search-input" placeholder="검색 (제목·행사·키워드·제작기관…)" autocomplete="off" aria-label="도감 검색"/>
-          <button id="memo-search-btn" aria-label="검색"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+          <input type="search" id="memo-search-input" placeholder="Search · 검색 (Title · Event · Issuer · 제목 · 행사 · 제작기관…)" autocomplete="off" aria-label="Search memorabilia · 도감 검색"/>
+          <button id="memo-search-btn" aria-label="Search · 검색"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
         </div>
-        <div class="memo-filters" id="memo-filters" aria-label="필터">
-          <select id="memo-filter-category" aria-label="분류"><option value="">분류 전체</option></select>
-          <select id="memo-filter-country" aria-label="국가"><option value="">국가 전체</option></select>
-          <select id="memo-filter-event" aria-label="행사"><option value="">행사 전체</option></select>
-          <div class="memo-filter-year-range" aria-label="연도 범위">
-            <input type="number" id="memo-filter-year-from" placeholder="연도 from" min="1900" max="2100" aria-label="연도 부터"/>
+        <div class="memo-filters" id="memo-filters" aria-label="Filters · 필터">
+          <select id="memo-filter-category" aria-label="Category · 분류"><option value="">All Categories · 분류 전체</option></select>
+          <select id="memo-filter-country" aria-label="Country · 국가"><option value="">All Countries · 국가 전체</option></select>
+          <select id="memo-filter-event" aria-label="Event · 행사"><option value="">All Events · 행사 전체</option></select>
+          <div class="memo-filter-year-range" aria-label="Year range · 연도 범위">
+            <input type="number" id="memo-filter-year-from" placeholder="Year · 연도" min="1900" max="2100" aria-label="From year · 연도 부터"/>
             <span aria-hidden="true">~</span>
-            <input type="number" id="memo-filter-year-to" placeholder="to" min="1900" max="2100" aria-label="연도 까지"/>
+            <input type="number" id="memo-filter-year-to" placeholder="to" min="1900" max="2100" aria-label="To year · 연도 까지"/>
           </div>
-          <input type="text" class="memo-filter-issuer" id="memo-filter-issuer" placeholder="제작기관 검색…" autocomplete="off" aria-label="제작기관"/>
-          <select id="memo-filter-sort" aria-label="정렬">
-            <option value="relevance">관련도</option>
-            <option value="newest">최신 등록</option>
-            <option value="year_desc">최근 연도</option>
-            <option value="year_asc">오래된 연도</option>
-            <option value="title">제목순</option>
+          <input type="text" class="memo-filter-issuer" id="memo-filter-issuer" placeholder="Issuer · 제작기관" autocomplete="off" aria-label="Issuer · 제작기관"/>
+          <select id="memo-filter-sort" aria-label="Sort · 정렬">
+            <option value="relevance">Relevance · 관련도</option>
+            <option value="newest">Newest · 최신 등록</option>
+            <option value="year_desc">Year ↓ · 최근 연도</option>
+            <option value="year_asc">Year ↑ · 오래된 연도</option>
+            <option value="title">Title · 제목순</option>
           </select>
         </div>
         <div class="memo-filter-tags-wrap" id="memo-filter-tags-wrap" hidden>
-          <span class="memo-filter-tags-label">인기 태그</span>
+          <span class="memo-filter-tags-label memo-bilingual-inline">
+            <span class="lang-en" lang="en">Popular Tags</span>
+            <span class="lang-ko" lang="ko">인기 태그</span>
+          </span>
           <div class="memo-filter-tags" id="memo-filter-tags"></div>
-          <button type="button" class="memo-filter-tags-clear" id="memo-filter-tags-clear" hidden>전체 해제</button>
+          <button type="button" class="memo-filter-tags-clear memo-bilingual-inline" id="memo-filter-tags-clear" hidden>
+            <span class="lang-en" lang="en">Clear All</span>
+            <span class="lang-ko" lang="ko">전체 해제</span>
+          </button>
         </div>
       </section>
 
       <section id="memo-results-wrap">
-        <div class="memo-results-meta" id="memo-results-meta">불러오는 중…</div>
+        <div class="memo-results-meta memo-bilingual-inline" id="memo-results-meta">
+          <span class="lang-en" lang="en">Loading…</span>
+          <span class="lang-ko" lang="ko">불러오는 중…</span>
+        </div>
         <div class="memo-grid" id="memo-grid"></div>
         <div class="memo-pagination" id="memo-pagination"></div>
       </section>
@@ -103,9 +118,15 @@
       <!-- Detail view (initially hidden) -->
       <section class="memo-detail" id="memo-detail-view" hidden>
         <div class="memo-detail-inner">
-          <a href="/memorabilia" class="memo-back-link">← 도감으로 돌아가기</a>
+          <a href="/memorabilia" class="memo-back-link memo-bilingual-inline">
+            <span class="lang-en" lang="en">← Back to memorabilia</span>
+            <span class="lang-ko" lang="ko">도감으로 돌아가기</span>
+          </a>
           <div class="memo-detail-admin-bar" id="memo-detail-admin-bar" hidden>
-            <button type="button" class="memo-btn memo-btn-outline" id="memo-detail-edit-btn">✏ 수정</button>
+            <button type="button" class="memo-btn memo-btn-outline memo-bilingual-inline" id="memo-detail-edit-btn">
+              <span class="lang-en" lang="en">✏ Edit</span>
+              <span class="lang-ko" lang="ko">수정</span>
+            </button>
           </div>
           <div id="memo-detail-content">
             <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
@@ -390,16 +411,31 @@
     <div class="memo-modal-backdrop" id="memo-login-overlay" hidden>
       <div class="memo-modal" style="max-width:420px">
         <div class="memo-modal-head">
-          <h2>로그인 필요</h2>
-          <button type="button" class="memo-modal-close" id="memo-login-close" aria-label="닫기">×</button>
+          <h2 class="memo-bilingual-inline">
+            <span class="lang-en" lang="en">Login Required</span>
+            <span class="lang-ko" lang="ko">로그인 필요</span>
+          </h2>
+          <button type="button" class="memo-modal-close" id="memo-login-close" aria-label="Close · 닫기">×</button>
         </div>
         <div class="memo-modal-body">
-          <p style="margin:0 0 12px">도감 등록·편집은 관리자 또는 권한이 부여된 계정만 가능합니다.</p>
-          <p style="margin:0 0 4px;font-size:.9em;opacity:.75">관리자 페이지에서 로그인 후 다시 시도해주세요.</p>
+          <p style="margin:0 0 12px" class="memo-bilingual-inline">
+            <span class="lang-en" lang="en">Memorabilia registration and editing is available only to admins or authorized accounts.</span>
+            <span class="lang-ko" lang="ko">도감 등록·편집은 관리자 또는 권한이 부여된 계정만 가능합니다.</span>
+          </p>
+          <p style="margin:0 0 4px;font-size:.9em;opacity:.75" class="memo-bilingual-inline">
+            <span class="lang-en" lang="en">Please log in via the admin page and try again.</span>
+            <span class="lang-ko" lang="ko">관리자 페이지에서 로그인 후 다시 시도해주세요.</span>
+          </p>
         </div>
         <div class="memo-modal-foot">
-          <button type="button" class="memo-btn" id="memo-login-cancel">취소</button>
-          <a class="memo-btn memo-btn-primary" href="/admin">관리자 로그인 →</a>
+          <button type="button" class="memo-btn memo-bilingual-inline" id="memo-login-cancel">
+            <span class="lang-en" lang="en">Cancel</span>
+            <span class="lang-ko" lang="ko">취소</span>
+          </button>
+          <a class="memo-btn memo-btn-primary memo-bilingual-inline" href="/admin">
+            <span class="lang-en" lang="en">Admin Login →</span>
+            <span class="lang-ko" lang="ko">관리자 로그인 →</span>
+          </a>
         </div>
       </div>
     </div>
@@ -417,7 +453,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.156.00</span> · Admin <span class="admin-build-version">V03.136.02</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.156.01</span> · Admin <span class="admin-build-version">V03.136.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -429,9 +465,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260526144546"></script>
-  <script src="/js/site-chrome.js?v=20260526144546"></script>
-  <script src="/js/memorabilia-shared.js?v=20260526144546"></script>
-  <script src="/js/memorabilia.js?v=20260526144546"></script>
+  <script src="/js/main.js?v=20260526145557"></script>
+  <script src="/js/site-chrome.js?v=20260526145557"></script>
+  <script src="/js/memorabilia-shared.js?v=20260526145557"></script>
+  <script src="/js/memorabilia.js?v=20260526145557"></script>
 </body>
 </html>
