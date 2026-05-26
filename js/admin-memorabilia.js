@@ -31,6 +31,11 @@
     selectedIds: new Set(),  // 일괄 수정용 선택 항목 (현 페이지 한정)
     bulkEditCountryPicker: null,
     bulkEditEventPicker: null,
+    // 행사 카탈로그 관련
+    eventCategories: [],     // memorabilia_event_categories
+    eventCatsLoadedOnce: false,
+    selectedEventIds: new Set(),
+    eventCategoryFilter: '', // '' = 전체, '__none__' = 미분류, '<id>' = 특정 카테고리
   };
 
   // 공유 모듈 hooks
@@ -1671,7 +1676,60 @@
   async function bootEvents() {
     state.eventsLoadedOnce = true;
     wireEventsPanelOnce();
-    await loadEventsList();
+    await Promise.all([loadEventCategories(), loadEventsList()]);
+    populateEventCategoryControls();
+    renderEventsList();
+  }
+
+  // 행사 카테고리 카탈로그 로드 (모달·필터·편집 모달 select 채우기)
+  async function loadEventCategories() {
+    try {
+      const data = await fetchJson('/api/memorabilia/event-categories?include_archived=1');
+      state.eventCategories = data.items || [];
+      state.eventCatsLoadedOnce = true;
+    } catch (err) {
+      state.eventCategories = [];
+      console.warn('event categories load failed:', err);
+    }
+  }
+
+  function populateEventCategoryControls() {
+    // 필터 드롭다운
+    const filter = $('#memo-ev-filter-category');
+    if (filter) {
+      const cur = filter.value;
+      const opts = ['<option value="">카테고리 전체</option>', '<option value="__none__">미분류만</option>'];
+      for (const c of state.eventCategories) {
+        if (c.archived) continue;
+        opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
+      }
+      filter.innerHTML = opts.join('');
+      filter.value = cur;
+    }
+    // 편집 모달 select
+    const editSel = $('#memo-ev-category');
+    if (editSel) {
+      const cur = editSel.value;
+      const opts = ['<option value="">(미분류)</option>'];
+      for (const c of state.eventCategories) {
+        if (c.archived) continue;
+        opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
+      }
+      editSel.innerHTML = opts.join('');
+      editSel.value = cur;
+    }
+    // bulk 모달 select
+    const bulkSel = $('#memo-ev-bulk-category');
+    if (bulkSel) {
+      const cur = bulkSel.value;
+      const opts = ['<option value="">(미분류로 설정)</option>'];
+      for (const c of state.eventCategories) {
+        if (c.archived) continue;
+        opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko || c.label_en)}</option>`);
+      }
+      bulkSel.innerHTML = opts.join('');
+      bulkSel.value = cur;
+    }
   }
 
   function wireEventsPanelOnce() {
@@ -1707,6 +1765,39 @@
     if (resultClose) resultClose.addEventListener('click', closeCsvResultModal);
     if (resultOk)    resultOk.addEventListener('click', closeCsvResultModal);
     if (resultModal) resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeCsvResultModal(); });
+
+    // 카테고리 관리 모달
+    const catsOpenBtn  = $('#memo-ev-cats-open');
+    const catsCloseBtn = $('#memo-ev-cats-close');
+    const catsDoneBtn  = $('#memo-ev-cats-done');
+    const catsModal    = $('#memo-ev-cats-modal');
+    const catAddBtn    = $('#memo-ev-cat-add');
+    if (catsOpenBtn)  catsOpenBtn.addEventListener('click', openEventCategoriesModal);
+    if (catsCloseBtn) catsCloseBtn.addEventListener('click', closeEventCategoriesModal);
+    if (catsDoneBtn)  catsDoneBtn.addEventListener('click', closeEventCategoriesModal);
+    if (catsModal)    catsModal.addEventListener('click', (e) => { if (e.target === catsModal) closeEventCategoriesModal(); });
+    if (catAddBtn)    catAddBtn.addEventListener('click', addEventCategory);
+
+    // 카테고리 필터
+    const catFilter = $('#memo-ev-filter-category');
+    if (catFilter) catFilter.addEventListener('change', () => {
+      state.eventCategoryFilter = catFilter.value;
+      renderEventsList();
+    });
+
+    // 행사 일괄 수정 모달
+    const bulkClose  = $('#memo-ev-bulk-close');
+    const bulkCancel = $('#memo-ev-bulk-cancel');
+    const bulkApply  = $('#memo-ev-bulk-apply');
+    const bulkModal  = $('#memo-ev-bulk-modal');
+    if (bulkClose)  bulkClose.addEventListener('click', closeEventsBulkModal);
+    if (bulkCancel) bulkCancel.addEventListener('click', closeEventsBulkModal);
+    if (bulkApply)  bulkApply.addEventListener('click', applyEventsBulkUpdate);
+    if (bulkModal)  bulkModal.addEventListener('click', (e) => { if (e.target === bulkModal) closeEventsBulkModal(); });
+    const togCat  = $('#memo-ev-bulk-toggle-cat');
+    const togArch = $('#memo-ev-bulk-toggle-arch');
+    if (togCat)  togCat.addEventListener('change',  () => { $('#memo-ev-bulk-category').disabled = !togCat.checked; });
+    if (togArch) togArch.addEventListener('change', () => { $('#memo-ev-bulk-archived').disabled = !togArch.checked; });
   }
 
   // ── CSV 일괄 처리 ───────────────────────────────────────────────────────
@@ -1757,6 +1848,7 @@
         try { await eventsMod.load(true); } catch {}
       }
       await loadEventsList();
+      renderEventsList();
     } catch (err) {
       toast('네트워크 오류: ' + err.message, 'error');
     }
@@ -1806,47 +1898,357 @@
     document.body.style.overflow = '';
   }
 
+  // 행사 카탈로그 fetch — state.events 에 저장 후 renderEventsList 가 표시
   async function loadEventsList() {
     try {
       const data = await fetchJson('/api/memorabilia/events?include_archived=1');
-      const items = data.items || [];
-      const wrap = $('#memo-ev-list-wrap');
-      const meta = $('#memo-ev-meta');
-      if (meta) meta.textContent = `${items.length}건 (아카이브 포함)`;
-      if (!items.length) {
-        wrap.innerHTML = '<div class="v3-empty">아직 등록된 행사가 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-empty-new">첫 행사 추가</button></div>';
-        const b = $('#memo-ev-empty-new'); if (b) b.addEventListener('click', () => openEventEditor(null));
-        return;
+      state.events = data.items || [];
+    } catch (err) {
+      state.events = [];
+      toast('행사 목록 로드 실패: ' + err.message, 'error');
+    }
+  }
+
+  // 카테고리별 그룹화 + 체크박스 + bulk toolbar
+  function renderEventsList() {
+    const wrap = $('#memo-ev-list-wrap');
+    const meta = $('#memo-ev-meta');
+    if (!wrap) return;
+
+    const all = state.events || [];
+    // 필터링
+    const filter = state.eventCategoryFilter || '';
+    const items = !filter ? all
+      : filter === '__none__' ? all.filter((e) => !e.category_id)
+      : all.filter((e) => String(e.category_id) === String(filter));
+
+    if (meta) {
+      const filterTag = filter === '__none__' ? ' · 미분류 필터'
+        : filter ? ` · 카테고리 필터` : '';
+      meta.textContent = `${all.length}건 (아카이브 포함)${filterTag}`;
+    }
+
+    if (!items.length) {
+      wrap.innerHTML = filter
+        ? '<div class="v3-empty">해당 카테고리에 등록된 행사가 없습니다.</div>'
+        : '<div class="v3-empty">아직 등록된 행사가 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-empty-new">첫 행사 추가</button></div>';
+      const b = $('#memo-ev-empty-new'); if (b) b.addEventListener('click', () => openEventEditor(null));
+      renderEventsBulkToolbar();
+      return;
+    }
+
+    // 카테고리별 그룹화 (id → name). 미분류는 마지막 그룹.
+    const groups = new Map(); // key: id-or-'__none__', value: { label, sort, items: [] }
+    for (const ev of items) {
+      const key = ev.category_id ? String(ev.category_id) : '__none__';
+      if (!groups.has(key)) {
+        if (key === '__none__') {
+          groups.set(key, { label: '미분류', sort: 99999, items: [] });
+        } else {
+          const cat = state.eventCategories.find((c) => String(c.id) === key);
+          groups.set(key, {
+            label: cat ? (cat.label_ko || cat.label_en || `#${cat.id}`) : `#${key}`,
+            sort:  cat ? (cat.sort_order || 999) : 999,
+            items: [],
+          });
+        }
       }
-      const rows = items.map((ev) => {
+      groups.get(key).items.push(ev);
+    }
+    const sortedGroups = Array.from(groups.entries())
+      .sort((a, b) => (a[1].sort - b[1].sort) || a[1].label.localeCompare(b[1].label, 'ko'));
+
+    const visibleIds = items.map((e) => e.id);
+    const allChecked = visibleIds.length > 0 && visibleIds.every((id) => state.selectedEventIds.has(id));
+
+    const sections = [];
+    sections.push(`<div class="memo-ev-grouped">
+      <div class="memo-ev-group-head-row">
+        <label class="memo-ev-group-checkbox">
+          <input type="checkbox" id="memo-ev-select-all" ${allChecked ? 'checked' : ''} />
+          현재 보이는 ${visibleIds.length}건 전체 선택/해제
+        </label>
+      </div>
+    </div>`);
+
+    for (const [key, group] of sortedGroups) {
+      const groupHeader = `<div class="memo-ev-group-head"><span class="memo-ev-group-label">📁 ${escapeHtml(group.label)}</span><span class="memo-ev-group-count">${group.items.length}건</span></div>`;
+      const rows = group.items.map((ev) => {
+        const checked = state.selectedEventIds.has(ev.id);
         const archivedBadge = ev.archived
           ? '<span class="v3-badge v3-badge-muted">아카이브</span>'
           : '<span class="v3-badge v3-badge-success">활성</span>';
         const nameEn = ev.name_en ? `<strong>${escapeHtml(ev.name_en)}</strong>` : '';
         const nameKo = ev.name_ko ? `<div style="font-size:.85em;opacity:.75">${escapeHtml(ev.name_ko)}</div>` : '';
         const period = ev.period_text ? escapeHtml(ev.period_text) : '<span style="opacity:.5">—</span>';
-        return `<tr>
+        const catLabel = ev.category_label_ko || ev.category_label_en || (ev.category_id ? `#${ev.category_id}` : '<span style="opacity:.5">—</span>');
+        return `<tr data-ev-row="${ev.id}" class="${checked ? 'is-selected' : ''}" style="cursor:pointer">
+          <td><input type="checkbox" class="memo-ev-row-check" data-ev-check="${ev.id}" ${checked ? 'checked' : ''}/></td>
           <td>${nameEn}${nameKo}</td>
+          <td>${typeof catLabel === 'string' && !catLabel.startsWith('<') ? escapeHtml(catLabel) : catLabel}</td>
           <td>${period}</td>
           <td>${ev.usage_count || 0}건</td>
           <td>${archivedBadge}</td>
           <td><button class="v3-btn v3-btn-outline v3-btn-sm" data-ev-edit="${ev.id}">편집</button></td>
         </tr>`;
       }).join('');
-      wrap.innerHTML = `<table class="v3-table">
-        <thead><tr><th>행사명</th><th style="width:200px">기간</th><th style="width:80px">참조</th><th style="width:90px">상태</th><th style="width:80px"></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-      $$('button[data-ev-edit]', wrap).forEach((b) => {
-        b.addEventListener('click', async () => {
-          const id = parseInt(b.getAttribute('data-ev-edit'), 10);
-          const target = items.find((x) => x.id === id);
-          if (target) openEventEditor(target);
-        });
-      });
-    } catch (err) {
-      toast('행사 목록 로드 실패: ' + err.message, 'error');
+
+      sections.push(`<div class="memo-ev-group">
+        ${groupHeader}
+        <table class="v3-table">
+          <thead><tr>
+            <th style="width:32px"></th>
+            <th>행사명</th>
+            <th style="width:160px">카테고리</th>
+            <th style="width:180px">기간</th>
+            <th style="width:80px">참조</th>
+            <th style="width:90px">상태</th>
+            <th style="width:80px"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`);
     }
+    wrap.innerHTML = sections.join('');
+
+    // 편집 버튼
+    $$('button[data-ev-edit]', wrap).forEach((b) => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = parseInt(b.getAttribute('data-ev-edit'), 10);
+        const target = state.events.find((x) => x.id === id);
+        if (target) openEventEditor(target);
+      });
+    });
+    // 행 클릭 → 편집 모달
+    $$('tr[data-ev-row]', wrap).forEach((row) => {
+      row.addEventListener('click', () => {
+        const id = parseInt(row.getAttribute('data-ev-row'), 10);
+        const target = state.events.find((x) => x.id === id);
+        if (target) openEventEditor(target);
+      });
+    });
+    // 체크박스
+    $$('input.memo-ev-row-check', wrap).forEach((cb) => {
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        const id = parseInt(cb.getAttribute('data-ev-check'), 10);
+        if (cb.checked) state.selectedEventIds.add(id);
+        else            state.selectedEventIds.delete(id);
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.toggle('is-selected', cb.checked);
+        const head = $('#memo-ev-select-all');
+        if (head) head.checked = visibleIds.every((id2) => state.selectedEventIds.has(id2));
+        renderEventsBulkToolbar();
+      });
+    });
+    // 전체 선택
+    const head = $('#memo-ev-select-all');
+    if (head) {
+      head.addEventListener('change', () => {
+        if (head.checked) for (const id of visibleIds) state.selectedEventIds.add(id);
+        else              for (const id of visibleIds) state.selectedEventIds.delete(id);
+        renderEventsList();
+      });
+    }
+
+    renderEventsBulkToolbar();
+  }
+
+  function renderEventsBulkToolbar() {
+    const bar = $('#memo-ev-bulk-toolbar');
+    if (!bar) return;
+    const n = state.selectedEventIds.size;
+    if (n === 0) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = `
+      <span><strong>${n}개</strong> 행사 선택됨</span>
+      <button type="button" class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-bulk-open">🗂 카테고리 일괄 부여 / 상태 변경</button>
+      <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-bulk-clear">선택 해제</button>
+    `;
+    $('#memo-ev-bulk-open').addEventListener('click', openEventsBulkModal);
+    $('#memo-ev-bulk-clear').addEventListener('click', () => {
+      state.selectedEventIds.clear();
+      renderEventsList();
+    });
+  }
+
+  function openEventsBulkModal() {
+    if (!state.selectedEventIds.size) return;
+    $('#memo-ev-bulk-count').textContent = `${state.selectedEventIds.size}개`;
+    // toggles 초기화
+    $('#memo-ev-bulk-toggle-cat').checked = false;
+    $('#memo-ev-bulk-toggle-arch').checked = false;
+    $('#memo-ev-bulk-category').disabled = true;
+    $('#memo-ev-bulk-archived').disabled = true;
+    $('#memo-ev-bulk-category').value = '';
+    $('#memo-ev-bulk-archived').value = '0';
+    $('#memo-ev-bulk-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEventsBulkModal() {
+    $('#memo-ev-bulk-modal').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  async function applyEventsBulkUpdate() {
+    const ids = Array.from(state.selectedEventIds);
+    if (!ids.length) { closeEventsBulkModal(); return; }
+    const updates = {};
+    if ($('#memo-ev-bulk-toggle-cat').checked) {
+      const v = $('#memo-ev-bulk-category').value;
+      updates.category_id = v ? parseInt(v, 10) : null;
+    }
+    if ($('#memo-ev-bulk-toggle-arch').checked) {
+      updates.archived = $('#memo-ev-bulk-archived').value === '1';
+    }
+    if (!Object.keys(updates).length) {
+      toast('변경할 필드를 한 개 이상 체크하세요.', 'error');
+      return;
+    }
+    if (!confirm(`${ids.length}개 행사에 일괄 적용합니다. 계속할까요?`)) return;
+
+    const applyBtn = $('#memo-ev-bulk-apply');
+    applyBtn.disabled = true; const orig = applyBtn.textContent; applyBtn.textContent = '적용 중…';
+    try {
+      const res = await fetch('/api/memorabilia/events/bulk-update', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, updates }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(`적용 실패: ${data.detail || data.error || ('HTTP ' + res.status)}`, 'error');
+        return;
+      }
+      toast(`적용 완료 — ${data.updated || 0}건 변경됨`, 'success');
+      closeEventsBulkModal();
+      state.selectedEventIds.clear();
+      if (eventsMod && typeof eventsMod.load === 'function') {
+        try { await eventsMod.load(true); } catch {}
+      }
+      await loadEventsList();
+      renderEventsList();
+    } catch (err) {
+      toast('네트워크 오류: ' + err.message, 'error');
+    } finally {
+      applyBtn.disabled = false; applyBtn.textContent = orig;
+    }
+  }
+
+  // 카테고리 관리 모달
+  function openEventCategoriesModal() {
+    $('#memo-ev-cats-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+    renderEventCategoriesList();
+    // 신규 폼 초기화
+    $('#memo-ev-cat-new-en').value = '';
+    $('#memo-ev-cat-new-ko').value = '';
+    $('#memo-ev-cat-new-sort').value = '999';
+  }
+  function closeEventCategoriesModal() {
+    $('#memo-ev-cats-modal').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function renderEventCategoriesList() {
+    const wrap = $('#memo-ev-cats-list-wrap');
+    if (!wrap) return;
+    if (!state.eventCategories.length) {
+      wrap.innerHTML = '<div style="padding:12px; font-size:12.5px; color:var(--gray-700,#3f3f3f);">등록된 분류가 없습니다.</div>';
+      return;
+    }
+    wrap.innerHTML = `<table class="v3-table" style="font-size:12.5px;">
+      <thead><tr><th>슬러그</th><th>영문</th><th>국문</th><th style="width:60px">정렬</th><th style="width:70px">참조</th><th style="width:80px">아카이브</th><th style="width:90px"></th></tr></thead>
+      <tbody>${state.eventCategories.map((c) => `
+        <tr data-cat-row="${c.id}">
+          <td><code style="font-size:11px;">${escapeHtml(c.slug)}</code></td>
+          <td><input class="v3-input v3-input-sm" data-cat-en="${c.id}" value="${escapeHtml(c.label_en)}"/></td>
+          <td><input class="v3-input v3-input-sm" data-cat-ko="${c.id}" value="${escapeHtml(c.label_ko)}"/></td>
+          <td><input type="number" class="v3-input v3-input-sm" data-cat-sort="${c.id}" value="${c.sort_order}" style="width:60px"/></td>
+          <td>${c.usage_count || 0}건</td>
+          <td><label class="memo-checkbox-row" style="font-size:11px;"><input type="checkbox" data-cat-arch="${c.id}" ${c.archived ? 'checked' : ''}/></label></td>
+          <td>
+            <button class="v3-btn v3-btn-outline v3-btn-sm" data-cat-save="${c.id}">저장</button>
+            <button class="v3-btn v3-btn-ghost v3-btn-sm" data-cat-del="${c.id}" title="삭제 — 연결된 행사는 보존됩니다 (분류만 비워짐)">×</button>
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+
+    wrap.querySelectorAll('button[data-cat-save]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.getAttribute('data-cat-save'), 10);
+        const body = {
+          label_en:   wrap.querySelector(`[data-cat-en="${id}"]`).value.trim(),
+          label_ko:   wrap.querySelector(`[data-cat-ko="${id}"]`).value.trim(),
+          sort_order: parseInt(wrap.querySelector(`[data-cat-sort="${id}"]`).value, 10) || 999,
+          archived:   wrap.querySelector(`[data-cat-arch="${id}"]`).checked,
+        };
+        try {
+          const res = await fetch(`/api/memorabilia/event-categories/${id}`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) { toast(`저장 실패: ${data.detail || data.error}`, 'error'); return; }
+          await loadEventCategories();
+          populateEventCategoryControls();
+          renderEventCategoriesList();
+          renderEventsList();
+          toast('분류 저장됨', 'success');
+        } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
+      });
+    });
+    wrap.querySelectorAll('button[data-cat-del]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.getAttribute('data-cat-del'), 10);
+        const cat = state.eventCategories.find((c) => c.id === id);
+        const used = Number(cat?.usage_count || 0);
+        const msg = used > 0
+          ? `이 분류를 ${used}건의 행사가 사용 중입니다. 삭제하면 해당 행사들의 분류가 비워집니다(행사는 보존). 계속할까요?`
+          : '이 분류를 삭제할까요?';
+        if (!confirm(msg)) return;
+        try {
+          const res = await fetch(`/api/memorabilia/event-categories/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+          if (!res.ok) { const data = await res.json().catch(() => ({})); toast(`삭제 실패: ${data.detail || data.error}`, 'error'); return; }
+          await Promise.all([loadEventCategories(), loadEventsList()]);
+          populateEventCategoryControls();
+          renderEventCategoriesList();
+          renderEventsList();
+          toast('분류 삭제됨', 'success');
+        } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
+      });
+    });
+  }
+
+  async function addEventCategory() {
+    const body = {
+      label_en:   $('#memo-ev-cat-new-en').value.trim(),
+      label_ko:   $('#memo-ev-cat-new-ko').value.trim(),
+      sort_order: parseInt($('#memo-ev-cat-new-sort').value, 10) || 999,
+    };
+    if (!body.label_en && !body.label_ko) { toast('영문/국문 라벨 중 하나는 입력하세요.', 'error'); return; }
+    try {
+      const res = await fetch('/api/memorabilia/event-categories', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast(`추가 실패: ${data.detail || data.error}`, 'error'); return; }
+      $('#memo-ev-cat-new-en').value = '';
+      $('#memo-ev-cat-new-ko').value = '';
+      $('#memo-ev-cat-new-sort').value = '999';
+      await loadEventCategories();
+      populateEventCategoryControls();
+      renderEventCategoriesList();
+      toast('분류 추가됨', 'success');
+    } catch (err) { toast('네트워크 오류: ' + err.message, 'error'); }
   }
 
   function openEventEditor(ev) {
@@ -1855,6 +2257,10 @@
     $('#memo-ev-edit-delete').hidden = !ev;
     $('#memo-ev-name-en').value = ev?.name_en || '';
     $('#memo-ev-name-ko').value = ev?.name_ko || '';
+    // 카테고리 셀렉트는 populateEventCategoryControls 가 옵션을 채워둠 — value 만 세팅
+    populateEventCategoryControls();
+    const catSel = $('#memo-ev-category');
+    if (catSel) catSel.value = ev?.category_id ? String(ev.category_id) : '';
     $('#memo-ev-sy').value = ev?.start_year || '';
     $('#memo-ev-sm').value = ev?.start_month || '';
     $('#memo-ev-sd').value = ev?.start_day || '';
@@ -1874,9 +2280,11 @@
   }
 
   async function saveEvent() {
+    const catRaw = $('#memo-ev-category').value;
     const body = {
       name_en: $('#memo-ev-name-en').value.trim(),
       name_ko: $('#memo-ev-name-ko').value.trim(),
+      category_id: catRaw ? parseInt(catRaw, 10) : null,
       start_year:  $('#memo-ev-sy').value || null,
       start_month: $('#memo-ev-sm').value || null,
       start_day:   $('#memo-ev-sd').value || null,
@@ -1908,6 +2316,7 @@
       }
       closeEventEditor();
       await loadEventsList();
+      renderEventsList();
       toast(_editingEvent ? '행사 수정됨' : '행사 추가됨', 'success');
     } catch (err) {
       toast('저장 실패: ' + err.message, 'error');
@@ -1936,6 +2345,7 @@
       }
       closeEventEditor();
       await loadEventsList();
+      renderEventsList();
       toast('행사 삭제됨', 'success');
     } catch (err) {
       toast('삭제 실패: ' + err.message, 'error');

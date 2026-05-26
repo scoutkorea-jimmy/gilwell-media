@@ -36,6 +36,8 @@ export function normalizeEventInput(body) {
   const name_ko = String(body?.name_ko || '').trim().slice(0, 200);
   if (!name_en && !name_ko) errors.push('행사명은 영문/국문 중 하나는 입력해야 합니다.');
 
+  const category_id = intOrNull(body?.category_id);
+
   const start_year  = intOrNull(body?.start_year);
   const start_month = intOrNull(body?.start_month);
   const start_day   = intOrNull(body?.start_day);
@@ -68,6 +70,7 @@ export function normalizeEventInput(body) {
     input: {
       slug: body?.slug ? slugify(body.slug) : slugify(name_en || name_ko),
       name_en, name_ko,
+      category_id,
       start_year, start_month, start_day,
       end_year, end_month, end_day,
       description_en, description_ko,
@@ -137,18 +140,26 @@ export function formatEventPeriodEn(row) {
 // 참조 카운트는 cached memorabilia_events.usage_count 가 아니라 실시간 서브쿼리로
 // 계산. 이전엔 cached 컬럼이 update/delete 누락으로 drift 했음. cached 컬럼은
 // 호환을 위해 유지하되 응답에서는 항상 실시간 값으로 덮어쓴다 (2026-05-26 fix).
+// category_id + LEFT JOIN memorabilia_event_categories 로 분류 라벨도 포함.
 export async function listEvents(db, { archived = false } = {}) {
-  const whereArchived = archived ? '' : 'WHERE archived = 0';
+  const whereArchived = archived ? '' : 'WHERE e.archived = 0';
   const { results } = await db.prepare(
     `SELECT e.id, e.slug, e.name_en, e.name_ko,
+            e.category_id,
+            cat.slug AS category_slug, cat.label_en AS category_label_en, cat.label_ko AS category_label_ko,
             e.start_year, e.start_month, e.start_day,
             e.end_year, e.end_month, e.end_day,
             e.description_en, e.description_ko, e.archived,
             (SELECT COUNT(*) FROM memorabilia m WHERE m.event_id = e.id) AS usage_count,
             e.created_at, e.updated_at
        FROM memorabilia_events e
+       LEFT JOIN memorabilia_event_categories cat ON cat.id = e.category_id
        ${whereArchived}
-      ORDER BY COALESCE(e.start_year, 0) DESC, COALESCE(e.start_month, 0) DESC, COALESCE(e.start_day, 0) DESC, e.id DESC`
+      ORDER BY COALESCE(cat.sort_order, 999) ASC,
+               COALESCE(e.start_year, 0) DESC,
+               COALESCE(e.start_month, 0) DESC,
+               COALESCE(e.start_day, 0) DESC,
+               e.id DESC`
   ).all();
   return (results || []).map((row) => ({
     ...row,
@@ -160,15 +171,33 @@ export async function listEvents(db, { archived = false } = {}) {
 export async function getEvent(db, id) {
   const row = await db.prepare(
     `SELECT e.id, e.slug, e.name_en, e.name_ko,
+            e.category_id,
+            cat.slug AS category_slug, cat.label_en AS category_label_en, cat.label_ko AS category_label_ko,
             e.start_year, e.start_month, e.start_day,
             e.end_year, e.end_month, e.end_day,
             e.description_en, e.description_ko, e.archived,
             (SELECT COUNT(*) FROM memorabilia m WHERE m.event_id = e.id) AS usage_count,
             e.created_at, e.updated_at
-       FROM memorabilia_events e WHERE e.id = ?`
+       FROM memorabilia_events e
+       LEFT JOIN memorabilia_event_categories cat ON cat.id = e.category_id
+      WHERE e.id = ?`
   ).bind(id).first();
   if (!row) return null;
   return { ...row, period_text: formatEventPeriod(row), period_text_en: formatEventPeriodEn(row) };
+}
+
+// 카테고리 카탈로그 헬퍼 ──────────────────────────────────────────────────────
+export async function listEventCategories(db, { includeArchived = false } = {}) {
+  const where = includeArchived ? '' : 'WHERE archived = 0';
+  const { results } = await db.prepare(
+    `SELECT c.id, c.slug, c.label_en, c.label_ko, c.sort_order, c.archived,
+            c.created_at, c.updated_at,
+            (SELECT COUNT(*) FROM memorabilia_events e WHERE e.category_id = c.id) AS usage_count
+       FROM memorabilia_event_categories c
+       ${where}
+      ORDER BY c.sort_order ASC, c.label_ko ASC`
+  ).all();
+  return results || [];
 }
 
 export async function createEvent(db, input) {
@@ -181,12 +210,12 @@ export async function createEvent(db, input) {
   }
   const res = await db.prepare(
     `INSERT INTO memorabilia_events
-       (slug, name_en, name_ko,
+       (slug, name_en, name_ko, category_id,
         start_year, start_month, start_day, end_year, end_month, end_day,
         description_en, description_ko, archived)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
-    slug, input.name_en, input.name_ko,
+    slug, input.name_en, input.name_ko, input.category_id || null,
     input.start_year, input.start_month, input.start_day,
     input.end_year,   input.end_month,   input.end_day,
     input.description_en, input.description_ko,
@@ -199,6 +228,7 @@ export async function updateEvent(db, id, input) {
   await db.prepare(
     `UPDATE memorabilia_events SET
         name_en = ?, name_ko = ?,
+        category_id = ?,
         start_year = ?, start_month = ?, start_day = ?,
         end_year = ?,   end_month = ?,   end_day = ?,
         description_en = ?, description_ko = ?,
@@ -207,6 +237,7 @@ export async function updateEvent(db, id, input) {
       WHERE id = ?`
   ).bind(
     input.name_en, input.name_ko,
+    input.category_id || null,
     input.start_year, input.start_month, input.start_day,
     input.end_year,   input.end_month,   input.end_day,
     input.description_en, input.description_ko,

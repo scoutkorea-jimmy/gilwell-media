@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526132850">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526132850">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526134442">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526134442">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.135.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.136.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.155.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.135.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.136.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.155.00</span></span></div>
     </div>
 
@@ -2383,6 +2383,7 @@
             <p class="v3-page-desc">기념품 도감에서 사용되는 공통 행사 목록입니다. 한 번 등록한 행사는 여러 도감 항목에서 재사용됩니다. 행사기간은 연·월·일 단위 (일은 선택).</p>
           </div>
           <div class="v3-page-head-right" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-cats-open" title="행사 카테고리(분류) 관리">🗂 카테고리 관리</button>
             <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-tmpl-btn" title="빈 CSV 템플릿 다운로드 (Excel 호환, UTF-8 BOM)">📥 템플릿</button>
             <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-export-btn" title="모든 행사를 CSV로 내보내기">⬇ 일괄 다운로드</button>
             <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-import-btn" title="CSV로 일괄 업로드 — 동일 slug/이름은 기존 행사에 흡수">⬆ 일괄 업로드</button>
@@ -2391,8 +2392,80 @@
           </div>
         </div>
         <div class="v3-card">
+          <div class="v3-card-head">
+            <div>
+              <h2 class="v3-card-title">행사 목록</h2>
+              <p class="v3-card-desc">카테고리로 구분되어 표시됩니다. 체크박스로 여러 행사를 골라 카테고리를 일괄 부여할 수 있습니다.</p>
+            </div>
+            <div class="v3-card-actions">
+              <select class="v3-input v3-input-sm" id="memo-ev-filter-category" aria-label="카테고리 필터">
+                <option value="">카테고리 전체</option>
+                <option value="__none__">미분류만</option>
+              </select>
+            </div>
+          </div>
           <div class="v3-inline-meta" id="memo-ev-meta">불러오는 중…</div>
+          <div id="memo-ev-bulk-toolbar" class="memo-bulk-toolbar" hidden></div>
           <div id="memo-ev-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
+
+        <!-- 행사 카테고리 관리 모달 -->
+        <div class="v3-modal-backdrop" id="memo-ev-cats-modal" hidden role="dialog" aria-labelledby="memo-ev-cats-title">
+          <div class="v3-modal v3-modal-md">
+            <div class="v3-modal-head">
+              <h2 id="memo-ev-cats-title">행사 카테고리 관리</h2>
+              <button class="v3-modal-close" id="memo-ev-cats-close" aria-label="닫기">×</button>
+            </div>
+            <div class="v3-modal-body">
+              <p style="margin:0 0 12px; font-size:12.5px; color:var(--gray-700,#3f3f3f); line-height:1.6;">
+                행사 카탈로그를 구분하는 분류입니다. 정렬은 작은 값이 위로. 사용 중인 분류도 아카이브로 숨길 수 있고(연결된 행사는 보존), 삭제 시 연결된 행사들의 분류가 비워집니다.
+              </p>
+              <div id="memo-ev-cats-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+              <hr style="margin:16px 0; border:0; border-top:1px solid var(--gray-300,#c4c4c4);"/>
+              <h4 style="margin:0 0 8px; font-size:13px;">새 분류 추가</h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr 90px; gap:8px;">
+                <input class="v3-input v3-input-sm" id="memo-ev-cat-new-en" placeholder="영문 라벨"/>
+                <input class="v3-input v3-input-sm" id="memo-ev-cat-new-ko" placeholder="국문 라벨"/>
+                <input class="v3-input v3-input-sm" id="memo-ev-cat-new-sort" placeholder="정렬" type="number" value="999"/>
+              </div>
+              <div style="margin-top:8px; display:flex; justify-content:flex-end;">
+                <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-cat-add">+ 추가</button>
+              </div>
+            </div>
+            <div class="v3-modal-foot">
+              <button class="v3-btn v3-btn-outline" id="memo-ev-cats-done">완료</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 행사 일괄 수정 모달 (카테고리 / 아카이브) -->
+        <div class="v3-modal-backdrop" id="memo-ev-bulk-modal" hidden role="dialog" aria-labelledby="memo-ev-bulk-title">
+          <div class="v3-modal v3-modal-sm">
+            <div class="v3-modal-head">
+              <h2 id="memo-ev-bulk-title">행사 일괄 수정</h2>
+              <button class="v3-modal-close" id="memo-ev-bulk-close" aria-label="닫기">×</button>
+            </div>
+            <div class="v3-modal-body">
+              <p style="margin:0 0 12px; font-size:12.5px;"><strong id="memo-ev-bulk-count">0개</strong> 행사 선택됨. 체크한 필드만 일괄 적용됩니다.</p>
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" id="memo-ev-bulk-toggle-cat"/><span>카테고리 부여</span></label>
+                <select class="v3-input v3-input-sm" id="memo-ev-bulk-category" disabled>
+                  <option value="">(미분류로 설정)</option>
+                </select>
+              </div>
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" id="memo-ev-bulk-toggle-arch"/><span>아카이브 상태</span></label>
+                <select class="v3-input v3-input-sm" id="memo-ev-bulk-archived" disabled>
+                  <option value="0">활성</option>
+                  <option value="1">아카이브 (숨김)</option>
+                </select>
+              </div>
+            </div>
+            <div class="v3-modal-foot">
+              <button class="v3-btn v3-btn-outline" id="memo-ev-bulk-cancel">취소</button>
+              <button class="v3-btn v3-btn-primary" id="memo-ev-bulk-apply">적용</button>
+            </div>
+          </div>
         </div>
 
         <!-- CSV 업로드 결과 모달 -->
@@ -2433,6 +2506,14 @@
                     <label class="v3-label" for="memo-ev-name-ko">행사명 (국문)</label>
                     <input class="v3-input" id="memo-ev-name-ko" type="text" maxlength="200" placeholder="예: 제25회 세계스카우트잼버리" />
                   </div>
+                </div>
+
+                <div class="v3-form-row">
+                  <label class="v3-label" for="memo-ev-category">카테고리</label>
+                  <select class="v3-input" id="memo-ev-category">
+                    <option value="">(미분류)</option>
+                  </select>
+                  <div class="v3-inline-meta">행사를 구분하는 분류. 카테고리 목록은 상단 "🗂 카테고리 관리" 에서 수정.</div>
                 </div>
 
                 <div class="v3-form-row">
@@ -3172,13 +3253,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260526132850"></script>
-<script src="/js/shared-country-name-ko.js?v=20260526132850"></script>
-<script src="/js/memorabilia-shared.js?v=20260526132850"></script>
-<script src="/js/admin-v3.js?v=20260526132850"></script>
-<script src="/js/admin-account.js?v=20260526132850"></script>
-<script src="/js/admin-memorabilia.js?v=20260526132850"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260526132850"></script>
+<script src="/js/main.js?v=20260526134442"></script>
+<script src="/js/shared-country-name-ko.js?v=20260526134442"></script>
+<script src="/js/memorabilia-shared.js?v=20260526134442"></script>
+<script src="/js/admin-v3.js?v=20260526134442"></script>
+<script src="/js/admin-account.js?v=20260526134442"></script>
+<script src="/js/admin-memorabilia.js?v=20260526134442"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260526134442"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

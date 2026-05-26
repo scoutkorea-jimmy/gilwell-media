@@ -30,7 +30,7 @@
  * 인코딩: UTF-8 + BOM (Excel 한글 호환).
  */
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
-import { listEvents, normalizeEventInput } from '../../../_shared/memorabilia-events.js';
+import { listEvents, normalizeEventInput, listEventCategories } from '../../../_shared/memorabilia-events.js';
 
 // ─── CSV 컬럼 정의 ───────────────────────────────────────────────────────────
 // 헤더에 노출되는 한글 라벨 + 인식되는 alias 들.
@@ -38,6 +38,7 @@ const COLUMNS = [
   { key: 'slug',           label: '슬러그',         aliases: ['slug', '슬러그'] },
   { key: 'name_en',        label: '행사명(영문)',  aliases: ['name_en', 'name en', 'name-en', '행사명(영문)', '행사명영문', '영문명', '영문'] },
   { key: 'name_ko',        label: '행사명(국문)',  aliases: ['name_ko', 'name ko', 'name-ko', '행사명(국문)', '행사명국문', '국문명', '국문', '한글명'] },
+  { key: 'category',       label: '카테고리',       aliases: ['category', '카테고리', '분류', 'category_slug', 'category_ko', 'category_en'] },
   { key: 'start_date',     label: '시작일',         aliases: ['start_date', 'start date', '시작일', '시작'] },
   { key: 'end_date',       label: '종료일',         aliases: ['end_date', 'end date', '종료일', '종료'] },
   { key: 'description_en', label: '설명(영문)',    aliases: ['description_en', '설명(영문)', '설명영문', '영문설명'] },
@@ -60,6 +61,8 @@ const HELP_COMMENT = [
   '# 헤더 한 줄은 한국어 / 영어 어느 쪽이든 인식합니다. 1·2·3행은 안내(#)·헤더·샘플입니다.',
   '# ─ 슬러그: 비우면 자동 생성. 같은 슬러그/이름이 이미 있으면 해당 행을 업데이트(흡수).',
   '# ─ 행사명: 영문/국문 둘 중 하나는 필수.',
+  '# ─ 카테고리: 분류명(국문 또는 영문) 또는 슬러그. 예: "세계잼버리" / "world-jamboree".',
+  '#            등록되지 않은 카테고리면 무시되어 미분류로 저장됩니다.',
   '# ─ 시작일 / 종료일: "2023" (연도만) · "2023-08" (월까지) · "2023-08-01" (일까지) 자유 표기.',
   '#                 비우려면 빈칸으로. "2023.8.1" · "2023/8/1" · "2023년 8월 1일" 도 OK.',
   '# ─ 설명: 비워도 됨.',
@@ -188,12 +191,12 @@ export async function onRequestGet({ request, env }) {
     let rows;
     if (isTemplate) {
       rows = [
-        // 샘플 1: 연·월·일까지 명시
-        ['', '25th World Scout Jamboree', '제25회 세계스카우트잼버리', '2023-08-01', '2023-08-12', 'Held in Saemangeum, Korea.', '대한민국 새만금에서 개최.', '0'],
+        // 샘플 1: 연·월·일까지 명시 + 카테고리
+        ['', '25th World Scout Jamboree', '제25회 세계스카우트잼버리', '세계잼버리',  '2023-08-01', '2023-08-12', 'Held in Saemangeum, Korea.', '대한민국 새만금에서 개최.', '0'],
         // 샘플 2: 월까지만
-        ['', '31st APR Scout Jamboree', '제31차 아·태스카우트잼버리', '2017-08', '2017-08', 'Held in Mongolia.', '몽골에서 개최.', '0'],
-        // 샘플 3: 연도만, 아카이브
-        ['', '14th National Scout Jamboree', '제14회 한국잼버리', '1991', '1991', '', '', '0'],
+        ['', '31st APR Scout Jamboree',   '제31차 아·태스카우트잼버리', '지역잼버리 (APR 등)', '2017-08', '2017-08', 'Held in Mongolia.', '몽골에서 개최.', '0'],
+        // 샘플 3: 연도만
+        ['', '14th National Scout Jamboree', '제14회 한국잼버리',     '한국잼버리',  '1991', '1991', '', '', '0'],
       ];
     } else {
       const items = await listEvents(env.DB, { archived: true });
@@ -201,6 +204,7 @@ export async function onRequestGet({ request, env }) {
         e.slug || '',
         e.name_en || '',
         e.name_ko || '',
+        e.category_slug || '',
         formatDateForCsv(e.start_year, e.start_month, e.start_day),
         formatDateForCsv(e.end_year,   e.end_month,   e.end_day),
         e.description_en || '',
@@ -275,6 +279,15 @@ export async function onRequestPost({ request, env }) {
     if (!byNamePair.has(key)) byNamePair.set(key, e);
   }
 
+  // 카테고리 lookup — slug · label_ko · label_en 모두 매칭
+  const catCatalog = await listEventCategories(env.DB, { includeArchived: true });
+  const catLookup = new Map(); // normalized key → id
+  for (const c of catCatalog) {
+    for (const k of [c.slug, c.label_ko, c.label_en]) {
+      if (k) catLookup.set(String(k).trim().toLowerCase(), c.id);
+    }
+  }
+
   const get = (cols, key) => {
     const i = headerIdx[key];
     return i == null ? '' : String(cols[i] || '').trim();
@@ -306,10 +319,15 @@ export async function onRequestPost({ request, env }) {
       endDay   = numOrNull(get(cols, 'end_day'));
     }
 
+    // 카테고리 매칭 — slug · label_ko · label_en 어느 것이든 OK. 없으면 null(미분류).
+    const rawCat = get(cols, 'category');
+    const category_id = rawCat ? (catLookup.get(rawCat.trim().toLowerCase()) || null) : null;
+
     const row = {
       slug:           get(cols, 'slug'),
       name_en:        get(cols, 'name_en'),
       name_ko:        get(cols, 'name_ko'),
+      category_id,
       start_year:     startYear,
       start_month:    startMonth,
       start_day:      startDay,
@@ -339,7 +357,7 @@ export async function onRequestPost({ request, env }) {
       if (target) {
         await env.DB.prepare(
           `UPDATE memorabilia_events SET
-              name_en = ?, name_ko = ?,
+              name_en = ?, name_ko = ?, category_id = ?,
               start_year = ?, start_month = ?, start_day = ?,
               end_year = ?,   end_month = ?,   end_day = ?,
               description_en = ?, description_ko = ?,
@@ -347,7 +365,7 @@ export async function onRequestPost({ request, env }) {
               updated_at = datetime('now')
             WHERE id = ?`
         ).bind(
-          input.name_en, input.name_ko,
+          input.name_en, input.name_ko, input.category_id || null,
           input.start_year, input.start_month, input.start_day,
           input.end_year,   input.end_month,   input.end_day,
           input.description_en, input.description_ko,
@@ -364,12 +382,12 @@ export async function onRequestPost({ request, env }) {
         }
         const res = await env.DB.prepare(
           `INSERT INTO memorabilia_events
-            (slug, name_en, name_ko,
+            (slug, name_en, name_ko, category_id,
              start_year, start_month, start_day, end_year, end_month, end_day,
              description_en, description_ko, archived)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
-          slug, input.name_en, input.name_ko,
+          slug, input.name_en, input.name_ko, input.category_id || null,
           input.start_year, input.start_month, input.start_day,
           input.end_year,   input.end_month,   input.end_day,
           input.description_en, input.description_ko,

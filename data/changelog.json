@@ -1,6 +1,30 @@
 {
   "items": [
   {
+    "version": "03.136.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 22:30:00 KST",
+    "summary": "관리자 행사 카탈로그 — 카테고리(분류) 기능 + 카테고리별 그룹화 + 선택 항목 카테고리 일괄 부여.",
+    "for_users": [
+      "행사 카탈로그에 카테고리 개념이 추가되었습니다. 행사 목록이 '세계잼버리 / 지역잼버리 / 한국잼버리 / 세계스카우트총회 / 지역스카우트총회 / 야영대회 / 기념행사 / 기타' 등 카테고리로 자동 그룹화되어 표시됩니다.",
+      "행사 편집 모달에 카테고리 셀렉트가 추가되어 행사별로 분류를 지정할 수 있습니다. 상단의 '🗂 카테고리 관리' 버튼으로 분류 추가·이름 수정·정렬 변경·아카이브·삭제가 가능합니다.",
+      "행사 목록에서 체크박스로 여러 행사를 선택하면 '🗂 카테고리 일괄 부여' 도구가 나타납니다. 카테고리·아카이브 상태를 한 번에 적용할 수 있습니다.",
+      "상단의 카테고리 필터로 특정 카테고리만 또는 '미분류만' 보기로 좁힐 수 있습니다.",
+      "CSV 템플릿에도 '카테고리' 컬럼이 추가되어 분류 정보를 함께 import/export 할 수 있습니다 (분류명 국문/영문/슬러그 어느 것으로 입력해도 자동 매칭)."
+    ],
+    "for_developers": [
+      "db/migration_074.sql: memorabilia_event_categories 테이블 신설 (id/slug/label_en/label_ko/sort_order/archived) + memorabilia_events.category_id INTEGER NULL REFERENCES … ON DELETE SET NULL + idx_memorabilia_events_category. 8개 시드 분류(world-jamboree, regional-jamboree, national-jamboree, world-conference, regional-conference, camping, commemoration, other).",
+      "functions/_shared/memorabilia-events.js: listEvents/getEvent SELECT 에 category_id + LEFT JOIN memorabilia_event_categories 로 category_slug · category_label_en/ko 동봉. ORDER BY 1순위가 cat.sort_order. listEventCategories 신규 헬퍼. normalizeEventInput / createEvent / updateEvent 가 category_id 처리.",
+      "functions/api/memorabilia/event-categories.js (신규 GET/POST) + event-categories/[id].js (PATCH/DELETE). 권한: memorabilia-events write.",
+      "functions/api/memorabilia/events/bulk-update.js (신규): POST {ids[], updates:{category_id?, archived?}} — 단순 UPDATE SET … WHERE id IN (…).",
+      "functions/api/memorabilia/events/csv.js: '카테고리' 컬럼 추가 (alias: 카테고리/분류/category/category_slug/category_ko/category_en). 매칭은 slug · label_ko · label_en 정규화 lookup. INSERT/UPDATE 둘 다 category_id 포함.",
+      "admin.html panel-memorabilia-events: 헤더에 '🗂 카테고리 관리' 버튼 + 카테고리 필터 셀렉트 + #memo-ev-bulk-toolbar + #memo-ev-cats-modal (라벨/정렬/아카이브 인라인 편집 + 삭제 + 신규 추가) + #memo-ev-bulk-modal (카테고리/아카이브 토글). 편집 모달에 #memo-ev-category 셀렉트.",
+      "js/admin-memorabilia.js bootEvents: loadEventCategories + populateEventCategoryControls. renderEventsList 가 카테고리별 그룹화(sort_order ASC, 미분류 마지막)로 분리 렌더 + 카테고리 컬럼 + 체크박스 컬럼 + 행 클릭 → 편집 모달. renderEventsBulkToolbar / openEventsBulkModal / applyEventsBulkUpdate / openEventCategoriesModal / renderEventCategoriesList / addEventCategory.",
+      "css/admin.css: .memo-ev-grouped / .memo-ev-group-head / .memo-ev-group-label / .v3-table tr[data-ev-row].is-selected hover · selected 스타일 신규.",
+      "관리자 03.135.00 → 03.136.00 (feature — event categories + bulk assign)."
+    ]
+  },
+  {
     "version": "03.135.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 21:30:00 KST",
