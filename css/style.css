@@ -11943,9 +11943,16 @@ body.wosm-members-page #main-content {
 }
 /* .home-3col 은 원래 페이지 마지막이었기에 margin-bottom: 72px(--home-block-bottom)
    인데, 이제 그 아래 .home-memorabilia-rail 이 위치하면서 그 값이 잔여 공백으로
-   남는다. 인접 sibling 일 때만 28px 로 축소해 자연스러운 섹션 간격을 만든다. */
-.home-3col:has(+ .home-memorabilia-rail) {
-  margin-bottom: 28px;
+   남는다. 두 방식 모두 적용해 fallback 보장:
+   1) :has() 지원 브라우저(모던 Chrome/Edge/Safari 15.4+/Firefox 121+) — 인접 sibling 검사
+   2) 미지원 브라우저 — .home-memorabilia-rail 에 음수 margin-top 으로 보정 */
+.home-memorabilia-rail {
+  /* fallback: home-3col 의 72px 중 28px 만 남기도록 위로 끌어올림 */
+  margin-top: -44px;
+}
+@supports selector(:has(*)) {
+  .home-memorabilia-rail { margin-top: 0; }
+  .home-3col:has(+ .home-memorabilia-rail) { margin-bottom: 28px; }
 }
 .home-memorabilia-rail-head {
   display: flex;

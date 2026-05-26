@@ -65,15 +65,23 @@
     reloadKakaoAdfit();
   }
 
+  // 카카오 애드핏 재호출 — 첫 호출 시에만 ba.min.js 를 삽입한다. 그 이후
+  // detail view 재진입 시에는 같은 ins.kakao_ad_area 가 가시화되면 카카오
+  // 스크립트가 자동으로 다시 광고 슬롯을 채우므로 중복 삽입하지 않는다.
+  // (이전엔 매번 removeChild + 재삽입으로 스크립트 인스턴스가 누적되던 패턴.)
+  let _kakaoAdfitLoaded = false;
   function reloadKakaoAdfit() {
     try {
-      var prev = document.querySelector('script[data-kakao-adfit-loader]');
-      if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
-      var s = document.createElement('script');
+      if (_kakaoAdfitLoaded || document.querySelector('script[data-kakao-adfit-loader]')) {
+        _kakaoAdfitLoaded = true;
+        return;
+      }
+      const s = document.createElement('script');
       s.src = 'https://t1.kakaocdn.net/kas/static/ba.min.js';
       s.async = true;
       s.setAttribute('data-kakao-adfit-loader', '1');
       document.body.appendChild(s);
+      _kakaoAdfitLoaded = true;
     } catch (_) { /* 광고 실패는 페이지 동작에 영향 없게 무시 */ }
   }
 
@@ -86,14 +94,36 @@
   };
 
   // 도감 카드 그리드 컬럼 수 × 4 (4줄) = 페이지 크기. 사용자 요청 (2026-05-27).
+  // CSS .memo-grid 가 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) 형태로
+  // viewport 폭에 따라 실제 컬럼 수가 동적이므로, 가능하면 실제 grid 의 computed
+  // columns 수를 읽고 fallback 으로만 viewport 기반 추정을 사용한다.
   function computePageSize() {
-    var w = window.innerWidth || 1200;
-    var cols = w >= 1280 ? 4 : w >= 960 ? 3 : w >= 600 ? 2 : 1;
-    return cols * 4;
+    var cols = 0;
+    try {
+      var grid = document.getElementById('memo-grid');
+      if (grid) {
+        var cs = window.getComputedStyle(grid);
+        var tpl = cs && cs.gridTemplateColumns;
+        if (tpl && tpl !== 'none') {
+          // "200px 200px 200px" 또는 "minmax(...)" 가 풀려 px 값들로 옴 → 공백 split.
+          cols = tpl.split(' ').filter(function (s) { return s && s !== '0px'; }).length;
+        }
+      }
+    } catch (_) {}
+    if (!cols) {
+      var w = window.innerWidth || 1200;
+      cols = w >= 1280 ? 4 : w >= 960 ? 3 : w >= 600 ? 2 : 1;
+    }
+    return Math.max(1, cols) * 4;
   }
 
   // 에디터 태그 칩 입력 state (모달 전용 — 신규/편집 공용)
   const tagsChipState = { tags: [] };
+
+  // 검색 요청 race 방지용 — 매 runSearch 마다 토큰 증가 + 이전 fetch abort.
+  // 늦게 도착한 응답은 토큰 불일치로 버려져 최신 화면이 덮이지 않게 한다.
+  let _searchToken = 0;
+  let _searchAbortCtrl = null;
 
   async function initListIfNeeded() {
     if (state.initialized) return;
@@ -227,8 +257,19 @@
   }
 
   async function runSearch() {
-    // 매 검색마다 viewport 기준 4줄로 page size 재계산 (창 크기 변경 반영).
-    state.pageSize = computePageSize();
+    // 매 검색마다 viewport 기준 4줄로 page size 재계산. pageSize 가 변하면
+    // 현재 state.page 가 범위 밖일 수 있으므로 1로 리셋 (창 폭 변경 후 빈 페이지 방지).
+    const newPageSize = computePageSize();
+    if (newPageSize !== state.pageSize) {
+      state.pageSize = newPageSize;
+      state.page = 1;
+    }
+    // 검색 race 방지 — 매 호출마다 토큰 증가 + 이전 fetch abort.
+    _searchToken += 1;
+    const myToken = _searchToken;
+    if (_searchAbortCtrl) { try { _searchAbortCtrl.abort(); } catch (_) {} }
+    _searchAbortCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const signal = _searchAbortCtrl ? _searchAbortCtrl.signal : undefined;
     const q = ($('#memo-search-input')?.value || '').trim();
     const category = $('#memo-filter-category')?.value || '';
     const country = $('#memo-filter-country')?.value || '';
@@ -273,11 +314,26 @@
       if (issuer)   apiParams.set('issuer',    issuer);
       if (tagCsv)   apiParams.set('tag',       tagCsv);
 
-      const res = await fetch('/api/memorabilia/search?' + apiParams.toString(), { credentials: 'same-origin' });
+      const res = await fetch('/api/memorabilia/search?' + apiParams.toString(), {
+        credentials: 'same-origin',
+        signal,
+      });
+      // 늦게 도착한 응답 차단 — 그 사이 새 검색이 시작됐으면 결과 무시.
+      if (myToken !== _searchToken) return;
       const data = await res.json();
-
+      if (myToken !== _searchToken) return;
+      // 결과 총 페이지 수보다 현재 page 가 더 크면 1로 리셋 후 자동 재검색.
+      const totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.page_size || state.pageSize)));
+      if (state.page > totalPages) {
+        state.page = 1;
+        runSearch();
+        return;
+      }
       renderResults(data, q);
     } catch (err) {
+      // AbortError 는 의도된 취소 — 메시지로 노출하지 않음.
+      if (err && (err.name === 'AbortError' || err.code === 20)) return;
+      if (myToken !== _searchToken) return;
       meta.innerHTML = `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">Search failed: ${escapeHtml(err.message)}</span><span class="lang-ko" lang="ko">검색 실패: ${escapeHtml(err.message)}</span></span>`;
     }
   }

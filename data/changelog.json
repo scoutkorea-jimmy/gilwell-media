@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.159.04",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 07:30:00 KST",
+    "summary": "도감 검색 race condition 핫픽스 + 회귀 감사 4건 시정 (페이지 보정·:has() 폴백·카카오 스크립트 누적·그리드 컬럼 동기화).",
+    "for_users": [
+      "도감에서 키워드를 빠르게 입력하거나 필터를 연달아 바꿔도 가장 최신 결과만 정확히 보입니다. 이전엔 오래된 검색 결과가 새 결과를 덮어 잘못 보이는 경우가 있었습니다.",
+      "도감 페이지에서 창 크기를 바꿔 한 페이지에 보이는 카드 수가 줄어들었을 때 빈 페이지가 보이던 문제가 해결되었습니다.",
+      "도감 상세 페이지를 여러 번 들락거려도 광고 스크립트가 누적되지 않습니다.",
+      "구버전 Safari/Firefox 에서 홈 4컬럼과 도감 레일 사이 여백이 비정상으로 보이던 문제 보정."
+    ],
+    "for_developers": [
+      "js/memorabilia.js runSearch: _searchToken + AbortController 도입. 매 호출마다 토큰 증가 + 이전 fetch abort. 응답 도착 시 myToken !== _searchToken 이면 폐기. AbortError 는 메시지 노출 안 함. 빠른 연속 검색·필터 변경 race 차단.",
+      "js/memorabilia.js runSearch: pageSize 변동 감지 시 state.page=1 리셋 (창 폭 변경 후 빈 페이지 회피). 응답에서 state.page > totalPages 면 page=1 로 재검색.",
+      "js/memorabilia.js reloadKakaoAdfit: 단일 인스턴스 가드 — _kakaoAdfitLoaded 또는 data-kakao-adfit-loader 스크립트 존재 시 재삽입 skip. detail view 다회 진입 시 ba.min.js 누적 방지.",
+      "js/memorabilia.js computePageSize: 우선 .memo-grid 의 getComputedStyle().gridTemplateColumns 의 컬럼 수를 사용, fallback 만 viewport breakpoint. CSS auto-fill minmax(200px,1fr) 결과와 JS 페이지 사이즈 불일치 해소.",
+      "css/style.css: .home-memorabilia-rail { margin-top: -44px } 기본값으로 두고 @supports selector(:has(*)) 안에서 :has(+ .home-memorabilia-rail) margin-bottom 28px + 레일 margin-top 0 으로 복원. 구 Safari/Firefox 에서 fallback 으로 28px 간격 유지.",
+      "사이트 00.159.03 → 00.159.04 (fix — 검색 race + 회귀 감사 4건)."
+    ]
+  },
+  {
     "version": "03.137.03",
     "date": "2026-05-27",
     "released_at": "2026-05-27 07:00:00 KST",
