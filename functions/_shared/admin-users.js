@@ -45,6 +45,7 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'memorabilia',            label: '기념품 도감',     actions: ['view', 'write'] },
     { slug: 'memorabilia-categories', label: '도감 분류 관리', actions: ['view', 'write'] },
     { slug: 'memorabilia-events',     label: '행사 카탈로그',   actions: ['view', 'write'] },
+    { slug: 'memorabilia-comments',   label: '도감 댓글 승인', actions: ['view', 'write'] },
   ]},
   { group: '노출', items: [
     { slug: 'hero',       label: '히어로 기사',   actions: ['view', 'write'] },

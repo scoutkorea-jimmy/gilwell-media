@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260526055811">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526055811">
+  <link rel="stylesheet" href="/css/style.css?v=20260526064222">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526064222">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -98,6 +98,59 @@
           </div>
           <div id="memo-detail-content">
             <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
+          </div>
+
+          <!-- Likes + Comments (도감 전용) -->
+          <div id="memo-engagement" class="memo-engagement" hidden>
+            <div class="memo-engagement-actions">
+              <button type="button" class="memo-like-btn" id="memo-like-btn" aria-pressed="false">
+                <span class="memo-like-icon" aria-hidden="true">♡</span>
+                <span class="memo-like-label">좋아요</span>
+                <span class="memo-like-count" id="memo-like-count">0</span>
+              </button>
+            </div>
+
+            <section class="memo-comments" aria-labelledby="memo-comments-title">
+              <h3 id="memo-comments-title" class="memo-comments-title">
+                댓글 <span class="memo-comments-count" id="memo-comments-count">0</span>
+              </h3>
+              <p class="memo-comments-help">
+                누구나 작성할 수 있습니다. 관리자 검토 후 게시됩니다.
+                작성자 본인은 비밀번호로 직접 삭제할 수 있습니다.
+              </p>
+
+              <form class="memo-comment-form" id="memo-comment-form" autocomplete="off" novalidate>
+                <div class="memo-comment-row">
+                  <label class="memo-field">
+                    <span class="memo-field-label">이름 *</span>
+                    <input type="text" id="memo-c-name" maxlength="40" required>
+                  </label>
+                  <label class="memo-field">
+                    <span class="memo-field-label">소속연맹 *</span>
+                    <input type="text" id="memo-c-affiliation" maxlength="80" required
+                           placeholder="예: 한국스카우트연맹">
+                  </label>
+                  <label class="memo-field">
+                    <span class="memo-field-label">비밀번호 * (6자 이상)</span>
+                    <input type="password" id="memo-c-password" minlength="6" maxlength="128" required
+                           autocomplete="new-password">
+                  </label>
+                </div>
+                <label class="memo-field memo-field-block">
+                  <span class="memo-field-label">내용 * (1000자 이하)</span>
+                  <textarea id="memo-c-content" rows="3" maxlength="1000" required></textarea>
+                </label>
+                <div class="memo-comment-form-foot">
+                  <p class="memo-comment-privacy">
+                    댓글 작성 시 IP 주소가 90일간 저장됩니다 (스팸·악성 댓글 방지).
+                    자세한 내용은 <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>을 참고하세요.
+                  </p>
+                  <button type="submit" class="memo-btn memo-btn-primary" id="memo-comment-submit">댓글 등록</button>
+                </div>
+              </form>
+
+              <div class="memo-comment-list" id="memo-comment-list" aria-live="polite"></div>
+            </section>
           </div>
         </div>
       </section>
@@ -317,7 +370,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.153.01</span> · Admin <span class="admin-build-version">V03.130.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.154.00</span> · Admin <span class="admin-build-version">V03.131.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -329,9 +382,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260526055811"></script>
-  <script src="/js/site-chrome.js?v=20260526055811"></script>
-  <script src="/js/memorabilia-shared.js?v=20260526055811"></script>
-  <script src="/js/memorabilia.js?v=20260526055811"></script>
+  <script src="/js/main.js?v=20260526064222"></script>
+  <script src="/js/site-chrome.js?v=20260526064222"></script>
+  <script src="/js/memorabilia-shared.js?v=20260526064222"></script>
+  <script src="/js/memorabilia.js?v=20260526064222"></script>
 </body>
 </html>

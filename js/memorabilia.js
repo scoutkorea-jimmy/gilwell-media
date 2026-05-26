@@ -277,6 +277,8 @@
         const bar = document.getElementById('memo-detail-admin-bar');
         if (bar) bar.hidden = !editor.canWriteMemo;
       });
+      // 좋아요 + 댓글 패널 초기화 (공개 항목 한정)
+      try { initEngagement(item); } catch (e) { console.warn('[memo-engagement] init failed:', e); }
     } catch (err) {
       wrap.innerHTML = '<div class="memo-empty"><h3>로드 실패</h3><p>잠시 후 다시 시도해주세요.</p></div>';
     }
@@ -1019,4 +1021,239 @@
   }
   // Handle back/forward
   window.addEventListener('popstate', route);
+
+  // ── Engagement (좋아요 + 댓글) ─────────────────────────────────────────
+  let _engagementState = { memorabiliaId: null, busy: false, formBound: false };
+
+  function initEngagement(item) {
+    if (!item || !item.id) return;
+    const panel = document.getElementById('memo-engagement');
+    if (!panel) return;
+    panel.hidden = false;
+    _engagementState.memorabiliaId = item.id;
+
+    refreshLikes();
+    refreshComments();
+    wireEngagementOnce();
+  }
+
+  function wireEngagementOnce() {
+    if (_engagementState.formBound) return;
+    _engagementState.formBound = true;
+
+    const likeBtn = document.getElementById('memo-like-btn');
+    if (likeBtn) likeBtn.addEventListener('click', onLikeClick);
+
+    const form = document.getElementById('memo-comment-form');
+    if (form) form.addEventListener('submit', onCommentSubmit);
+
+    const list = document.getElementById('memo-comment-list');
+    if (list) list.addEventListener('click', onCommentListClick);
+  }
+
+  async function refreshLikes() {
+    const id = _engagementState.memorabiliaId;
+    if (!id) return;
+    try {
+      const res = await fetch(`/api/memorabilia/${id}/like`, { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json();
+      applyLikeStats(data);
+    } catch (_) {}
+  }
+
+  function applyLikeStats(data) {
+    const btn = document.getElementById('memo-like-btn');
+    const countEl = document.getElementById('memo-like-count');
+    if (!btn || !countEl) return;
+    btn.setAttribute('aria-pressed', data.liked ? 'true' : 'false');
+    countEl.textContent = String(data.likes || 0);
+  }
+
+  async function onLikeClick() {
+    const id = _engagementState.memorabiliaId;
+    if (!id) return;
+    const btn = document.getElementById('memo-like-btn');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/memorabilia/${id}/like`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        toast('좋아요를 처리하지 못했습니다.', 'error');
+        return;
+      }
+      const data = await res.json();
+      applyLikeStats(data);
+    } catch (_) {
+      toast('네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function refreshComments() {
+    const id = _engagementState.memorabiliaId;
+    if (!id) return;
+    const list = document.getElementById('memo-comment-list');
+    const countEl = document.getElementById('memo-comments-count');
+    if (!list) return;
+    try {
+      const res = await fetch(`/api/memorabilia/${id}/comments?limit=50`, { credentials: 'same-origin' });
+      if (!res.ok) {
+        list.innerHTML = '<div class="memo-comment-empty">댓글을 불러오지 못했습니다.</div>';
+        return;
+      }
+      const data = await res.json();
+      const items = data.items || [];
+      if (countEl) countEl.textContent = String(data.total || 0);
+      if (!items.length) {
+        list.innerHTML = '<div class="memo-comment-empty">아직 댓글이 없습니다. 첫 댓글을 남겨주세요.</div>';
+        return;
+      }
+      list.innerHTML = items.map(renderCommentItem).join('');
+    } catch (_) {
+      list.innerHTML = '<div class="memo-comment-empty">댓글을 불러오지 못했습니다.</div>';
+    }
+  }
+
+  function renderCommentItem(c) {
+    const date = formatCommentDate(c.created_at);
+    return `
+      <article class="memo-comment-item" data-comment-id="${c.id}">
+        <div class="memo-comment-head">
+          <span class="memo-comment-author">${escapeHtml(c.author_name)}</span>
+          <span class="memo-comment-affiliation">${escapeHtml(c.affiliation)}</span>
+          <span class="memo-comment-date">${escapeHtml(date)}</span>
+        </div>
+        <div class="memo-comment-content">${escapeHtml(c.content)}</div>
+        <div class="memo-comment-actions">
+          <button type="button" class="memo-comment-delete-btn" data-action="delete-comment" data-comment-id="${c.id}">
+            🔒 비밀번호로 삭제
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  function formatCommentDate(iso) {
+    if (!iso) return '';
+    // SQLite datetime('now') 는 UTC 'YYYY-MM-DD HH:MM:SS' 형식.
+    const norm = iso.includes('T') ? iso : iso.replace(' ', 'T') + 'Z';
+    const d = new Date(norm);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+  }
+
+  async function onCommentSubmit(e) {
+    e.preventDefault();
+    if (_engagementState.busy) return;
+    const id = _engagementState.memorabiliaId;
+    if (!id) return;
+
+    const name = $('#memo-c-name').value.trim();
+    const aff  = $('#memo-c-affiliation').value.trim();
+    const pwd  = $('#memo-c-password').value;
+    const body = $('#memo-c-content').value.trim();
+
+    if (!name || !aff || !pwd || !body) {
+      toast('모든 항목을 입력해주세요.', 'error');
+      return;
+    }
+    if (pwd.length < 6) {
+      toast('비밀번호는 6자 이상이어야 합니다.', 'error');
+      return;
+    }
+
+    const submitBtn = $('#memo-comment-submit');
+    _engagementState.busy = true;
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(`/api/memorabilia/${id}/comments`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_name: name,
+          affiliation: aff,
+          password: pwd,
+          content: body,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        toast(data.error || data.message || '잠시 후 다시 시도해주세요.', 'error');
+        return;
+      }
+      if (!res.ok) {
+        const msg = (data.messages && data.messages.length)
+          ? data.messages.join(' / ')
+          : (data.error || '댓글 등록에 실패했습니다.');
+        toast(msg, 'error');
+        return;
+      }
+      // 폼 초기화
+      $('#memo-c-name').value = '';
+      $('#memo-c-affiliation').value = '';
+      $('#memo-c-password').value = '';
+      $('#memo-c-content').value = '';
+      toast('댓글이 등록되었습니다. 관리자 검토 후 게시됩니다.', 'success');
+    } catch (_) {
+      toast('네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      _engagementState.busy = false;
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  }
+
+  async function onCommentListClick(e) {
+    const btn = e.target.closest('[data-action="delete-comment"]');
+    if (!btn) return;
+    const cid = parseInt(btn.getAttribute('data-comment-id'), 10);
+    if (!Number.isFinite(cid)) return;
+
+    const pwd = prompt('이 댓글의 비밀번호를 입력해주세요.');
+    if (pwd === null) return;
+    if (!pwd) { toast('비밀번호를 입력해주세요.', 'error'); return; }
+
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/memorabilia/comments/${cid}/delete`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        toast('비밀번호가 일치하지 않습니다.', 'error');
+        return;
+      }
+      if (!res.ok) {
+        toast(data.error || '댓글 삭제에 실패했습니다.', 'error');
+        return;
+      }
+      toast('댓글이 삭제되었습니다.', 'success');
+      refreshComments();
+    } catch (_) {
+      toast('네트워크 오류가 발생했습니다.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function toast(msg, kind) {
+    if (window.GW && typeof window.GW.toast === 'function') return window.GW.toast(msg, kind);
+    if (typeof window.gwToast === 'function') return window.gwToast(msg, kind);
+    alert(msg);
+  }
 })();

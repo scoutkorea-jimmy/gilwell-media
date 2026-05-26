@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526055811">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526055811">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526064222">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526064222">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.130.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.131.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.153.01</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.154.00</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.130.00</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.153.01</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.131.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.154.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -206,6 +206,11 @@
         <button class="v3-nav-item" data-panel="memorabilia-events" data-perm-slug="memorabilia-events" data-perm-action="view">
           <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="2" y1="6" x2="14" y2="6"/><line x1="5" y1="2" x2="5" y2="4"/><line x1="11" y1="2" x2="11" y2="4"/></svg>
           행사 카탈로그
+        </button>
+        <button class="v3-nav-item" data-panel="memorabilia-comments" data-perm-slug="memorabilia-comments" data-perm-action="view">
+          <svg class="v3-nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12v8H5l-3 2V4z"/></svg>
+          도감 댓글 승인
+          <span class="v3-nav-badge" id="memo-comments-pending-badge" hidden></span>
         </button>
       </div>
 
@@ -2005,9 +2010,30 @@
           <div class="v3-modal v3-modal-lg" role="dialog" aria-labelledby="memo-edit-title">
             <div class="v3-modal-head">
               <h2 id="memo-edit-title">새 도감 항목</h2>
-              <button class="v3-modal-close" id="memo-edit-close" aria-label="닫기">×</button>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-import-btn"
+                        title="다른 도감 항목에서 메타 정보를 복사해 채웁니다 (제목·본문·이미지 제외).">
+                  📋 다른 도감에서 불러오기
+                </button>
+                <button class="v3-modal-close" id="memo-edit-close" aria-label="닫기">×</button>
+              </div>
             </div>
             <div class="v3-modal-body">
+              <!-- 불러오기 검색 패널 (불러오기 버튼 누르면 노출) -->
+              <div id="memo-import-panel" hidden style="margin-bottom: 16px; padding: 12px; background: var(--gray-100,#ebebeb); border-radius: 8px;">
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                  <strong style="font-size:13px;">불러올 도감 항목 검색</strong>
+                  <button type="button" class="v3-modal-close" id="memo-import-close" aria-label="닫기" style="margin-left:auto;">×</button>
+                </div>
+                <input type="text" class="v3-input" id="memo-import-search"
+                       placeholder="제목·키워드로 검색 (EN/KO)" style="width:100%; margin-bottom:8px;">
+                <div id="memo-import-results" style="max-height: 240px; overflow-y:auto; background:#fff; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px;"></div>
+                <p style="margin-top:8px; font-size:11px; color:var(--gray-700,#3f3f3f);">
+                  불러오는 항목: 카테고리 · 국가 · 연도 · 재질 · 크기 · 발행처 · 행사 · 태그
+                  <br>제외 항목: 제목 · 본문 · 이미지 · 관련링크 (각 항목 고유성 유지)
+                </p>
+              </div>
+
               <form id="memo-edit-form" autocomplete="off">
                 <div class="v3-form-row">
                   <label class="v3-label">대표 이미지·갤러리</label>
@@ -2284,6 +2310,38 @@
           </div>
         </div>
       </div><!-- /panel-memorabilia-events -->
+
+      <!-- ═══════════════ 도감 댓글 승인 (memorabilia-comments) ═══════════════ -->
+      <div class="v3-panel" id="panel-memorabilia-comments">
+        <div class="v3-page-head">
+          <div class="v3-page-head-left">
+            <h1 class="v3-page-title">도감 댓글 승인</h1>
+            <p class="v3-page-desc">기념품 도감에 달린 공개 댓글을 검토합니다. 승인된 댓글만 공개 상세 페이지에 표시됩니다. 비공개 IP 주소는 모더레이션 목적으로만 사용됩니다.</p>
+          </div>
+        </div>
+
+        <div class="v3-card" style="margin-bottom: 12px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <label style="font-size:13px; color:var(--gray-700,#3f3f3f);">상태</label>
+            <select id="memoc-filter-status" class="v3-input" style="max-width:160px;">
+              <option value="pending">대기중</option>
+              <option value="approved">승인됨</option>
+              <option value="rejected">거부됨</option>
+              <option value="deleted">삭제됨</option>
+              <option value="all">전체</option>
+            </select>
+            <button type="button" class="v3-btn v3-btn-outline" id="memoc-refresh-btn">새로고침</button>
+            <span id="memoc-counts" style="margin-left:auto; font-size:13px; color:var(--gray-700,#3f3f3f);"></span>
+          </div>
+        </div>
+
+        <div class="v3-card">
+          <div id="memoc-table-wrap">
+            <div class="v3-loading" style="padding:24px; text-align:center; color:var(--gray-700,#3f3f3f);">불러오는 중…</div>
+          </div>
+          <div id="memoc-pagination" style="margin-top:12px; display:flex; gap:6px; justify-content:center;"></div>
+        </div>
+      </div><!-- /panel-memorabilia-comments -->
 
       <!-- ═══════════════ 내 계정 (account-me) ═══════════════ -->
       <div class="v3-panel" id="panel-account-me">
@@ -2943,12 +3001,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260526055811"></script>
-<script src="/js/shared-country-name-ko.js?v=20260526055811"></script>
-<script src="/js/memorabilia-shared.js?v=20260526055811"></script>
-<script src="/js/admin-v3.js?v=20260526055811"></script>
-<script src="/js/admin-account.js?v=20260526055811"></script>
-<script src="/js/admin-memorabilia.js?v=20260526055811"></script>
+<script src="/js/main.js?v=20260526064222"></script>
+<script src="/js/shared-country-name-ko.js?v=20260526064222"></script>
+<script src="/js/memorabilia-shared.js?v=20260526064222"></script>
+<script src="/js/admin-v3.js?v=20260526064222"></script>
+<script src="/js/admin-account.js?v=20260526064222"></script>
+<script src="/js/admin-memorabilia.js?v=20260526064222"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260526064222"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

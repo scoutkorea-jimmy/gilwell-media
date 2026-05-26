@@ -150,6 +150,125 @@
     if (backdrop) backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) closeEditor();
     });
+
+    // 다른 도감에서 불러오기
+    const importBtn = $('#memo-import-btn');
+    if (importBtn) importBtn.addEventListener('click', openImportPanel);
+    const importClose = $('#memo-import-close');
+    if (importClose) importClose.addEventListener('click', closeImportPanel);
+    const importSearch = $('#memo-import-search');
+    if (importSearch) {
+      importSearch.addEventListener('input', debounce(runImportSearch, 250));
+      importSearch.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); runImportSearch(); }
+      });
+    }
+  }
+
+  // ── 다른 도감 정보 불러오기 ────────────────────────────────────────────
+  function openImportPanel() {
+    const panel = $('#memo-import-panel');
+    if (!panel) return;
+    panel.hidden = false;
+    const input = $('#memo-import-search');
+    if (input) { input.value = ''; setTimeout(() => input.focus(), 30); }
+    const results = $('#memo-import-results');
+    if (results) results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">검색어를 입력하세요.</div>';
+  }
+
+  function closeImportPanel() {
+    const panel = $('#memo-import-panel');
+    if (panel) panel.hidden = true;
+  }
+
+  async function runImportSearch() {
+    const input = $('#memo-import-search');
+    const results = $('#memo-import-results');
+    if (!input || !results) return;
+    const q = input.value.trim();
+    if (!q) { results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">검색어를 입력하세요.</div>'; return; }
+    results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">검색 중…</div>';
+
+    try {
+      // 일반 검색 API 재사용 — admin 세션이면 drafts 까지 포함됨
+      const res = await fetch(`/api/memorabilia/search?q=${encodeURIComponent(q)}&limit=20`, { credentials: 'same-origin' });
+      if (!res.ok) {
+        results.innerHTML = '<div style="padding:12px; color:var(--color-fire-red,#ff5655);">검색 실패</div>';
+        return;
+      }
+      const data = await res.json();
+      const items = data.items || data.results || [];
+      // 현재 편집 중인 항목은 자기 자신 제외
+      const currentId = state.editing?.id || null;
+      const filtered = items.filter((it) => it.id !== currentId);
+      if (!filtered.length) {
+        results.innerHTML = '<div style="padding:12px; color:var(--gray-700,#3f3f3f); font-size:13px;">결과 없음</div>';
+        return;
+      }
+      results.innerHTML = filtered.map((it) => {
+        const title = it.title_ko || it.title_en || `#${it.id}`;
+        const sub   = it.title_en && it.title_ko ? it.title_en : '';
+        return `
+          <div class="memo-import-row" style="padding:8px 12px; border-bottom:1px solid var(--gray-300,#c4c4c4); cursor:pointer;" data-id="${it.id}">
+            <div style="font-weight:600; font-size:13px;">${escapeHtmlLocal(title)}</div>
+            ${sub ? `<div style="font-size:11px; color:var(--gray-700,#3f3f3f);">${escapeHtmlLocal(sub)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+      results.querySelectorAll('[data-id]').forEach((row) => {
+        row.addEventListener('click', () => importFromItem(parseInt(row.getAttribute('data-id'), 10)));
+        row.addEventListener('mouseenter', () => { row.style.background = 'var(--gray-100,#ebebeb)'; });
+        row.addEventListener('mouseleave', () => { row.style.background = ''; });
+      });
+    } catch (err) {
+      results.innerHTML = '<div style="padding:12px; color:var(--color-fire-red,#ff5655);">네트워크 오류</div>';
+    }
+  }
+
+  async function importFromItem(sourceId) {
+    if (!Number.isFinite(sourceId)) return;
+    try {
+      const full = await fetchJson(`/api/memorabilia/${sourceId}`);
+      const src = full.item;
+      if (!src) { toast('불러올 항목을 찾지 못했습니다.', 'error'); return; }
+
+      // 메타만 복사 — 제목/본문/이미지/링크는 그대로 유지
+      $('#memo-has-event').checked = !!src.has_event;
+      $('#memo-event-row').hidden = !src.has_event;
+      $('#memo-year').value = src.year || '';
+      $('#memo-category').value = src.category_id || '';
+      $('#memo-material-en').value = src.material_en || '';
+      $('#memo-material-ko').value = src.material_ko || '';
+      $('#memo-size').value = src.size_text || '';
+      $('#memo-issuer-en').value = src.issuer_en || '';
+      $('#memo-issuer-ko').value = src.issuer_ko || '';
+      $('#memo-tags').value = (src.tags || []).join(', ');
+      if (state.countryPicker) state.countryPicker.setValue(src.country_codes || []);
+      if (src.event_id || src.event) {
+        ensureEventPicker(src.event_id || null, src.event || null);
+      }
+
+      closeImportPanel();
+      toast(`"${src.title_ko || src.title_en}" 의 메타 정보를 불러왔습니다. 제목·본문·이미지는 그대로 유지됩니다.`, 'success');
+    } catch (err) {
+      toast('불러오기 실패: ' + (err.message || ''), 'error');
+    }
+  }
+
+  function escapeHtmlLocal(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function debounce(fn, ms) {
+    let t = null;
+    return function () {
+      const args = arguments;
+      const ctx = this;
+      if (t) clearTimeout(t);
+      t = setTimeout(() => { t = null; fn.apply(ctx, args); }, ms);
+    };
   }
 
   // ── 목록 ────────────────────────────────────────────────────────────────

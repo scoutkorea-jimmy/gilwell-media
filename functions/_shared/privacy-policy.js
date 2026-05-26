@@ -16,7 +16,7 @@ export const PRIVACY_SETTINGS_UPDATED_KEY = 'privacy_policy_updated_at';
 // Keep the default aligned with what we shipped in Phase 4's static
 // privacy.html so first-load UX matches regardless of DB state.
 export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
-<p class="privacy-sub">최종 개정 2026-04-22 · 본 방침은 GDPR(EU 일반 개인정보보호법) 및 대한민국 개인정보 보호법의 기본 원칙에 맞춰 작성되었습니다.</p>
+<p class="privacy-sub">최종 개정 2026-05-26 · 본 방침은 GDPR(EU 일반 개인정보보호법) 및 대한민국 개인정보 보호법의 기본 원칙에 맞춰 작성되었습니다.</p>
 
 <div class="privacy-note">
   BP미디어는 스카우트 네트워크의 자발적인 봉사로 운영되는 독립 미디어 아카이브입니다. 본 서비스는 최소한의 개인정보만 수집하며, 수집한 정보는 명시된 목적 외로는 사용하지 않습니다.
@@ -70,6 +70,13 @@ export const DEFAULT_PRIVACY_POLICY_HTML = `<h1>개인정보 처리방침</h1>
       <td>제보·문의 응대</td>
       <td>동의 (메일 작성 행위)</td>
       <td>응대 완료 후 12개월</td>
+    </tr>
+    <tr>
+      <td>도감 댓글 작성</td>
+      <td>이름, 소속연맹, 비밀번호 해시(PBKDF2-SHA256), 본문, IP 주소, User-Agent</td>
+      <td>댓글 게시·승인·삭제, 스팸·악성 댓글 방지, 작성자 자가 삭제 기능 제공</td>
+      <td>동의 (댓글 등록 행위)</td>
+      <td>IP·User-Agent 90일 이후 자동 익명화, 그 외 정보는 댓글이 유지되는 동안 보관 (작성자가 비밀번호로 직접 삭제 가능)</td>
     </tr>
   </tbody>
 </table>

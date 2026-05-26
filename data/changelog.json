@@ -1,6 +1,51 @@
 {
   "items": [
   {
+    "version": "00.154.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 16:30:00 KST",
+    "summary": "기념품 도감 — 공개 좋아요 + 승인제 댓글 기능 도입. 개인정보 처리방침에 댓글 IP 보관 조항 추가.",
+    "for_users": [
+      "기념품 도감 상세 페이지에 좋아요 버튼이 생겼습니다 — 마음에 드는 항목을 표시할 수 있습니다.",
+      "도감 항목에 누구나 댓글을 남길 수 있습니다 — 이름·소속연맹·비밀번호·내용을 입력하면 관리자 승인 후 게시됩니다.",
+      "본인이 작성한 댓글은 작성 시 입력한 비밀번호로 직접 삭제할 수 있습니다.",
+      "스팸·악성 댓글 방지를 위해 작성 시 IP 주소가 90일간 보관됩니다. 자세한 사항은 개인정보 처리방침을 참고해주세요.",
+      "기사 상세 페이지와 카테고리 페이지 상단 네비게이션에 '스카우트 기념품 도감' 메뉴가 추가되었습니다 — 그동안 일부 SSR 페이지에서 빠져 있던 부분을 보완했습니다."
+    ],
+    "for_developers": [
+      "db/migration_073.sql (신규): memorabilia_likes (memorabilia_id, viewer_key UNIQUE) + memorabilia_comments (status 'pending'/'approved'/'rejected'/'deleted', PBKDF2 password_hash+salt, ip_address 평문, user_agent, reviewed_at/by).",
+      "functions/post/[id].js + functions/feature/[category]/[slug].js: 상단 nav 에 nav.memorabilia 링크 추가 — 정적 HTML(index/korea/apr/...)에는 이미 있었으나 SSR 템플릿 2곳이 누락 → 회귀.",
+      "functions/_shared/memorabilia-comments.js (신규): PBKDF2-SHA256 100k iter 비밀번호 해싱(Web Crypto), validateCommentSubmission(), serializeCommentPublic/Admin.",
+      "functions/api/memorabilia/[id]/like.js (신규): post_likes 와 동형 viewer_key (SHA256(IP+ADMIN_SECRET)). 30/min/IP rate limit, 봇 차단.",
+      "functions/api/memorabilia/[id]/comments.js (신규): GET 승인된 것만, POST 5/시간/IP rate limit, status='pending' 으로 저장.",
+      "functions/api/memorabilia/comments/[id]/delete.js (신규): 비밀번호 검증 + soft-delete (status='deleted'). 10/시간/IP rate limit (brute-force 방어).",
+      "memorabilia.html + js/memorabilia.js + css/memorabilia.css: 좋아요 버튼, 댓글 폼(이름/소속/비밀번호/내용), 승인된 댓글 리스트, 자가 삭제 버튼.",
+      "functions/_shared/privacy-policy.js DEFAULT_PRIVACY_POLICY_HTML: 수집표에 '도감 댓글 작성' 행 추가 (IP·UA 90일 익명화). 개정일 2026-04-22 → 2026-05-26.",
+      "사이트 00.153.01 → 00.154.00."
+    ]
+  },
+  {
+    "version": "03.131.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 16:30:00 KST",
+    "summary": "기념품 도감 — 댓글 모더레이션 큐 + 다른 도감 항목 메타 정보 불러오기 기능 추가.",
+    "for_users": [
+      "관리자 사이드바에 '도감 댓글 승인' 메뉴가 추가되었습니다 — 공개 댓글을 승인·거부·삭제할 수 있습니다.",
+      "기념품 도감 항목 편집 모달에 '다른 도감에서 불러오기' 버튼이 추가되었습니다 — 기존 항목의 메타 정보(분류·국가·연도·재질·크기·발행처·행사·태그)를 한 번에 채워 반복 입력을 줄일 수 있습니다.",
+      "제목·본문·이미지는 의도적으로 복사하지 않습니다 — 각 항목의 고유성을 유지하기 위함입니다."
+    ],
+    "for_developers": [
+      "functions/api/admin/memorabilia-comments.js (신규): GET 큐 + counts(사이드바 뱃지). gateMenuAccess('memorabilia-comments','view').",
+      "functions/api/admin/memorabilia-comments/[id].js (신규): PATCH 상태 전이(approved/rejected/deleted) + reviewed_by/reviewed_at + rejection_reason.",
+      "functions/_shared/admin-users.js ADMIN_MENUS: '스카우트 백과' 그룹에 'memorabilia-comments' 슬러그 추가.",
+      "admin.html: 사이드바 항목 + 패널 #panel-memorabilia-comments(상태 필터·목록·페이지네이션). 도감 편집 모달 상단에 '📋 다른 도감에서 불러오기' 버튼 + #memo-import-panel 검색 UI.",
+      "js/admin-memorabilia-comments.js (신규): 패널 전환 감지 lazy init, 큐 렌더링, 승인/거부/삭제 액션, pending 카운트 뱃지 동기화.",
+      "js/admin-memorabilia.js: openImportPanel / runImportSearch / importFromItem — /api/memorabilia/search 재사용, 메타만 setField, 자기 자신 제외, success toast.",
+      "scripts/sync_versions.sh: admin-memorabilia-comments.js 토큰 갱신 라인 추가.",
+      "관리자 03.130.00 → 03.131.00."
+    ]
+  },
+  {
     "version": "00.153.01",
     "date": "2026-05-26",
     "released_at": "2026-05-26 14:55:00 KST",
