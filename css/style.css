@@ -1289,6 +1289,148 @@ body[data-home-bootstrap] .lang-btn:hover {
   color:      var(--accent);
 }
 
+/* ── 1차/2차 nav 드롭다운 (2026-05-27) ──
+   .nav-grouped 는 nav-group(group trigger + panel) 과 nav-link(단독) 혼합.
+   Desktop: hover + click 둘 다 / Mobile (≤900px): .nav 숨기고 mobile-compact-header 사용. */
+.nav.nav-grouped {
+  gap: 4px;
+}
+.nav-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-group-trigger {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: var(--fs-meta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: var(--gap-element) 16px;
+  min-width: 88px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s;
+  box-sizing: border-box;
+  font-weight: inherit;
+}
+.nav-group-trigger:hover,
+.nav-group-trigger.active,
+.nav-group.is-open > .nav-group-trigger {
+  color: var(--accent);
+}
+.nav-group-caret {
+  font-size: 0.7em;
+  opacity: 0.6;
+  transition: transform 0.15s;
+}
+.nav-group.is-open .nav-group-caret {
+  transform: rotate(180deg);
+}
+.nav-group-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid var(--border, #c4c4c4);
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+.nav-group.is-open .nav-group-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.nav-sublink {
+  display: block;
+  padding: 8px 12px;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink, #1f1f1f);
+  text-decoration: none;
+  border-radius: 5px;
+  white-space: nowrap;
+  text-transform: none;
+}
+.nav-sublink:hover,
+.nav-sublink.active {
+  background: rgba(98, 37, 153, 0.08);
+  color: var(--accent, #622599);
+}
+
+/* nav-link 는 .nav a 스타일을 그대로 상속 */
+
+/* 모바일: 데스크톱 .nav 숨김. mobile-compact-header 가 항상 노출 (site-chrome.js
+   updateVisibility 에서 isMobile 일 때 show). */
+@media (max-width: 900px) {
+  .nav { display: none; }
+}
+
+/* 모바일 햄버거 drawer accordion */
+.mobile-nav-group {
+  border-bottom: 1px solid var(--gray-100, #ebebeb);
+}
+.mobile-nav-group-summary {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mobile-nav-group-summary::-webkit-details-marker { display: none; }
+.mobile-nav-group-summary::after {
+  content: '▸';
+  font-size: 11px;
+  opacity: 0.5;
+  transition: transform 0.15s;
+}
+.mobile-nav-group[open] .mobile-nav-group-summary::after {
+  transform: rotate(90deg);
+}
+.mobile-nav-group-children {
+  padding: 4px 0 10px;
+  display: flex;
+  flex-direction: column;
+}
+.mobile-nav-sublink {
+  padding: 8px 28px;
+  font-size: 13px;
+  color: var(--gray-700, #3f3f3f);
+  text-decoration: none;
+}
+.mobile-nav-sublink.active,
+.mobile-nav-link.active {
+  color: var(--color-scouting-purple, #622599);
+  font-weight: 600;
+}
+.mobile-nav-link {
+  display: block;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink, #1f1f1f);
+  text-decoration: none;
+  border-bottom: 1px solid var(--gray-100, #ebebeb);
+}
+
 /* ════════════════════════════════════════════════════════════
    TICKER
    ════════════════════════════════════════════════════════════ */

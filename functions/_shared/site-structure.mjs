@@ -7,16 +7,40 @@ export const DEFAULT_NAV_LABELS = Object.freeze({
   'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
   'nav.home': { ko: '홈', en: 'Home' },
   'nav.latest': { ko: '최신 소식', en: 'Latest' },
-  'nav.korea': { ko: 'Korea', en: 'Korea' },
-  'nav.apr': { ko: 'APR', en: 'APR' },
-  'nav.wosm': { ko: 'WOSM', en: 'World' },
-  'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
+  'nav.news_group': { ko: '스카우트 소식', en: 'Scout News' },
+  'nav.korea': { ko: '한국스카우트 소식', en: 'Korea Scout News' },
+  'nav.apr': { ko: '아시아-태평양 스카우트 소식', en: 'Asia-Pacific Scout News' },
+  'nav.wosm': { ko: '세계의 스카우트 소식', en: 'World Scout News' },
   'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
-  'nav.calendar': { ko: '캘린더', en: 'Calendar' },
+  'nav.resources_group': { ko: '스카우트 자료실', en: 'Scout Resources' },
+  'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
   'nav.glossary': { ko: '용어집', en: 'Glossary' },
+  'nav.calendar': { ko: '캘린더', en: 'Calendar' },
   'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
 });
 
+// 1차/2차 메뉴 구조 — 사이트 nav 의 단일 원본. site-chrome.js / fallback sync 가
+// 이 정의를 따른다. type: 'link' (단독) | 'group' (드롭다운, children 필수).
+// 1차 group 은 click 으로 navigation 하지 않음 — 드롭다운 트리거 전용.
+export const NAV_STRUCTURE = Object.freeze([
+  { type: 'link',  href: '/',             key: 'nav.home' },
+  { type: 'link',  href: '/latest',       key: 'nav.latest' },
+  { type: 'group',                        key: 'nav.news_group', children: [
+    { href: '/korea',                     key: 'nav.korea' },
+    { href: '/apr',                       key: 'nav.apr' },
+    { href: '/wosm',                      key: 'nav.wosm' },
+    { href: '/people',                    key: 'nav.people' },
+  ] },
+  { type: 'group',                        key: 'nav.resources_group', children: [
+    { href: '/wosm-members',              key: 'nav.wosm_members' },
+    { href: '/glossary',                  key: 'nav.glossary' },
+    { href: '/calendar',                  key: 'nav.calendar' },
+  ] },
+  { type: 'link',  href: '/memorabilia',  key: 'nav.memorabilia' },
+  { type: 'link',  href: '/contributors', key: 'nav.contributors' },
+]);
+
+// Flat 호환 export — 기존 NAV_ITEMS 사용처(SSR meta 등) 가 의존하므로 그대로 유지.
 export const NAV_ITEMS = Object.freeze([
   { href: '/contributors', key: 'nav.contributors' },
   { href: '/', key: 'nav.home' },

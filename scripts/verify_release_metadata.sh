@@ -165,10 +165,16 @@ const managedNavFiles = [
   'calendar.html',
 ];
 const siteChromeJs = fs.readFileSync('js/site-chrome.js', 'utf8');
+// NAV_ITEMS 블록만 추출 — NAV_STRUCTURE children 의 동일 패턴이 잡히지 않도록.
+const navItemsBlockMatch = siteChromeJs.match(/GW\.NAV_ITEMS\s*=\s*\[([\s\S]*?)\];/);
+if (!navItemsBlockMatch) {
+  console.error('Could not locate GW.NAV_ITEMS block in js/site-chrome.js');
+  process.exit(1);
+}
 const itemRe = /\{\s*href:\s*'([^']+)'/g;
 const expected = [];
 let match;
-while ((match = itemRe.exec(siteChromeJs))) expected.push(match[1]);
+while ((match = itemRe.exec(navItemsBlockMatch[1]))) expected.push(match[1]);
 if (!expected.length) {
   console.error('Could not parse GW.NAV_ITEMS from js/site-chrome.js');
   process.exit(1);

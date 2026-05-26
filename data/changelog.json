@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "00.157.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 01:30:00 KST",
+    "summary": "공개 사이트 nav 재구성 — 6개 1차 메뉴 + 2개 드롭다운(스카우트 소식/자료실) + 모바일 햄버거. 홈 4-컬럼 카테고리 칩 일관성 회복.",
+    "for_users": [
+      "상단 메뉴가 6개 1차로 재구성되었습니다: 홈 · 최신 소식 · 스카우트 소식(▾) · 스카우트 자료실(▾) · 스카우트 기념품 도감 · 도움을 주신 분들.",
+      "'스카우트 소식' 호버/클릭 → 한국스카우트 소식 / 아시아-태평양 스카우트 소식 / 세계의 스카우트 소식 / 스카우트 인물.",
+      "'스카우트 자료실' 호버/클릭 → 세계연맹 회원국 현황 / 용어집 / 캘린더.",
+      "1차 그룹 트리거 자체는 navigation 하지 않음(드롭다운 펼치기 전용).",
+      "모바일에선 데스크톱 메뉴 대신 우측 상단 햄버거 → 드로어 안에서 1차/2차를 accordion 으로 펼침.",
+      "홈 페이지 하단 4-컬럼(한국/APR/세계/인물) 카드에 카테고리 칩이 표시되어 사이트 전반의 칩 노출이 일관됩니다."
+    ],
+    "for_developers": [
+      "functions/_shared/site-structure.mjs: DEFAULT_NAV_LABELS 에 nav.news_group / nav.resources_group 신규. nav.korea/apr/wosm 의 ko 라벨을 'Korea/APR/WOSM' → '한국스카우트 소식/아시아-태평양 스카우트 소식/세계의 스카우트 소식' 으로 정상화. NAV_STRUCTURE export 신설 (1차 6개 + 2차 7개). NAV_ITEMS 는 flat 호환용으로 유지.",
+      "js/site-chrome.js: GW.NAV_STRUCTURE + LOCKED_TRANSLATION_KEYS 확장. renderManagedNav 를 NAV_STRUCTURE 기반 재구성으로 교체 — 단독 link 와 group(button trigger + .nav-group-panel) 혼합 마크업 생성. setupNavDropdowns 가 click·hover·ESC·outside-click·aria-expanded 처리. syncMobileCompactNav 가 <details> accordion 으로 hierarchical 렌더. updateVisibility 의 스크롤 임계값 제거 — 모바일에선 햄버거 헤더 항상 노출.",
+      "css/style.css: .nav.nav-grouped + .nav-group(-trigger/-caret/-panel) + .nav-sublink 신규. .nav-group-panel 은 absolute + 호버/클릭 .is-open 시 visibility/opacity 토글. @media (max-width: 900px) { .nav { display: none } } 로 데스크톱 메뉴 모바일 숨김. .mobile-nav-group / -group-summary / -group-children / -sublink / -link 신규.",
+      "scripts/sync_public_fallbacks.mjs 실행 — 11개 HTML 의 data-fallback-label 일괄 갱신 (Korea → 한국스카우트 소식 등).",
+      "js/home-render.js: HOME_COLUMN_KEYS 렌더 options 에서 hideCategoryChip 제거 — 홈 4-컬럼에도 카테고리 칩 노출 (일관성).",
+      "사이트 00.156.01 → 00.157.00 (feature — nav 6-group dropdown + mobile hamburger + chip 일관성)."
+    ]
+  },
+  {
     "version": "00.156.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 00:50:00 KST",

@@ -8,11 +8,13 @@
     'nav.contributors': { ko: '도움을 주신 분들', en: 'Contributors' },
     'nav.home': { ko: '홈', en: 'Home' },
     'nav.latest': { ko: '최신 소식', en: 'Latest' },
-    'nav.korea': { ko: 'Korea', en: 'Korea' },
-    'nav.apr': { ko: 'APR', en: 'APR' },
-    'nav.wosm': { ko: 'WOSM', en: 'World' },
+    'nav.news_group': { ko: '스카우트 소식', en: 'Scout News' },
+    'nav.korea': { ko: '한국스카우트 소식', en: 'Korea Scout News' },
+    'nav.apr': { ko: '아시아-태평양 스카우트 소식', en: 'Asia-Pacific Scout News' },
+    'nav.wosm': { ko: '세계의 스카우트 소식', en: 'World Scout News' },
     'nav.wosm_members': { ko: '세계연맹 회원국 현황', en: 'WOSM Members Status' },
     'nav.people': { ko: '스카우트 인물', en: 'Scout People' },
+    'nav.resources_group': { ko: '스카우트 자료실', en: 'Scout Resources' },
     'nav.calendar': { ko: '캘린더', en: 'Calendar' },
     'nav.glossary': { ko: '용어집', en: 'Glossary' },
     'nav.memorabilia': { ko: '스카우트 기념품 도감', en: 'Scout Memorabilia' },
@@ -81,11 +83,13 @@
     'nav.contributors': true,
     'nav.home': true,
     'nav.latest': true,
+    'nav.news_group': true,
     'nav.korea': true,
     'nav.apr': true,
     'nav.wosm': true,
     'nav.wosm_members': true,
     'nav.people': true,
+    'nav.resources_group': true,
     'nav.calendar': true,
     'nav.glossary': true,
     'nav.memorabilia': true,
@@ -116,6 +120,26 @@
     { href: '/calendar', key: 'nav.calendar' },
     { href: '/glossary', key: 'nav.glossary' },
     { href: '/memorabilia', key: 'nav.memorabilia' },
+  ];
+
+  // 1차/2차 메뉴 구조 — desktop nav + mobile drawer 모두 이 정의를 따른다.
+  // type: 'link' = 단독 anchor / 'group' = 클릭/hover 시 children 펼침 (자체 navigation X).
+  GW.NAV_STRUCTURE = [
+    { type: 'link',  href: '/',             key: 'nav.home' },
+    { type: 'link',  href: '/latest',       key: 'nav.latest' },
+    { type: 'group', key: 'nav.news_group', children: [
+      { href: '/korea', key: 'nav.korea' },
+      { href: '/apr',   key: 'nav.apr' },
+      { href: '/wosm',  key: 'nav.wosm' },
+      { href: '/people', key: 'nav.people' },
+    ] },
+    { type: 'group', key: 'nav.resources_group', children: [
+      { href: '/wosm-members', key: 'nav.wosm_members' },
+      { href: '/glossary',     key: 'nav.glossary' },
+      { href: '/calendar',     key: 'nav.calendar' },
+    ] },
+    { type: 'link',  href: '/memorabilia',  key: 'nav.memorabilia' },
+    { type: 'link',  href: '/contributors', key: 'nav.contributors' },
   ];
 
   GW.setLang = function (lang) {
@@ -344,7 +368,21 @@
     return String(rawText || '').trim();
   };
 
+  // 활성 페이지 판별 — 단독 링크는 href 일치, group 은 자식 중 하나라도 일치하면 group 도 active.
+  function isItemActive(item, currentPath) {
+    if (item.type === 'group' && item.children) {
+      return item.children.some(function (child) { return childHrefMatches(child.href, currentPath); });
+    }
+    return childHrefMatches(item.href, currentPath);
+  }
+  function childHrefMatches(href, currentPath) {
+    if (!href) return false;
+    if (href === '/') return currentPath === '/';
+    return currentPath === href;
+  }
+
   GW.markActiveNav = function () {
+    // legacy 호환 — 현재 페이지의 단순 anchor 매칭 (NAV_STRUCTURE 가 렌더되면 renderManagedNav 가 정확히 처리)
     var page = location.pathname.split('/').pop() || 'index.html';
     document.querySelectorAll('.nav a').forEach(function (a) {
       var href = (a.getAttribute('href') || '').split('/').pop();
@@ -354,43 +392,126 @@
     });
   };
 
+  // ── 1차/2차 nav 렌더 (drop-down 지원) ──────────────────────────────────────
   GW.renderManagedNav = function () {
     var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
     document.querySelectorAll('.nav[data-managed-nav]').forEach(function (nav) {
-      var anchors = Array.from(nav.querySelectorAll('a'));
-      var byHref = new Map();
-      anchors.forEach(function (anchor) {
-        var href = (anchor.getAttribute('href') || '').replace(/\/+$/, '') || '/';
-        if (!byHref.has(href)) byHref.set(href, anchor);
-      });
-      var canPatchInPlace = anchors.length === GW.NAV_ITEMS.length &&
-        GW.NAV_ITEMS.every(function (item) { return byHref.has(item.href); });
-      if (canPatchInPlace) {
-        GW.NAV_ITEMS.forEach(function (item) {
-          var anchor = byHref.get(item.href);
-          var href = item.href;
-          var isActive = href === '/' ? currentPath === '/' : currentPath === href;
-          anchor.setAttribute('data-i18n', item.key);
-          anchor.textContent = GW.t(item.key);
-          anchor.setAttribute('aria-label', GW.t(item.key));
-          anchor.classList.toggle('active', isActive);
-        });
-      } else {
-        nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
-          var href = item.href;
-          var isActive = href === '/' ? currentPath === '/' : currentPath === href;
-          var classes = isActive ? ' class="active"' : '';
-          return '<a href="' + GW.escapeHtml(href) + '"' + classes +
-            ' data-i18n="' + GW.escapeHtml(item.key) + '"' +
-            ' aria-label="' + GW.escapeHtml(GW.t(item.key)) + '">' +
-            GW.escapeHtml(GW.t(item.key)) +
+      // NAV_STRUCTURE 기반 마크업 전체 재구성 — 기존 anchors 는 모두 교체.
+      var html = GW.NAV_STRUCTURE.map(function (item) {
+        if (item.type === 'group' && item.children && item.children.length) {
+          var groupActive = isItemActive(item, currentPath);
+          var label = GW.t(item.key);
+          var triggerCls = 'nav-group-trigger' + (groupActive ? ' active' : '');
+          var groupSlug = item.key.replace(/^nav\./, '');
+          var childrenHtml = item.children.map(function (child) {
+            var childActive = childHrefMatches(child.href, currentPath);
+            return '<a class="nav-sublink' + (childActive ? ' active' : '') + '" ' +
+              'href="' + GW.escapeHtml(child.href) + '" ' +
+              'role="menuitem" ' +
+              'data-i18n="' + GW.escapeHtml(child.key) + '">' +
+              GW.escapeHtml(GW.t(child.key)) +
+              '</a>';
+          }).join('');
+          return '<div class="nav-group" data-nav-group="' + GW.escapeHtml(groupSlug) + '">' +
+              '<button type="button" class="' + triggerCls + '" ' +
+                'data-nav-group-trigger="' + GW.escapeHtml(groupSlug) + '" ' +
+                'aria-haspopup="true" aria-expanded="false" ' +
+                'data-i18n="' + GW.escapeHtml(item.key) + '">' +
+                GW.escapeHtml(label) +
+                '<span class="nav-group-caret" aria-hidden="true">▾</span>' +
+              '</button>' +
+              '<div class="nav-group-panel" role="menu" aria-label="' + GW.escapeHtml(label) + '">' +
+                childrenHtml +
+              '</div>' +
+            '</div>';
+        }
+        // 단독 link
+        var active = childHrefMatches(item.href, currentPath);
+        return '<a class="nav-link' + (active ? ' active' : '') + '" ' +
+          'href="' + GW.escapeHtml(item.href) + '" ' +
+          'data-i18n="' + GW.escapeHtml(item.key) + '">' +
+          GW.escapeHtml(GW.t(item.key)) +
           '</a>';
-        }).join('');
-      }
+      }).join('');
+      nav.innerHTML = html;
       nav.classList.add('is-ready');
+      nav.classList.add('nav-grouped');
     });
+    setupNavDropdowns();
     if (GW.syncMobileCompactNav) GW.syncMobileCompactNav();
   };
+
+  // ── 드롭다운 인터랙션 (hover + click) ─────────────────────────────────────
+  function setupNavDropdowns() {
+    if (GW._navDropdownsBound) {
+      // 다국어 toggling 등으로 nav 가 다시 렌더된 경우에도 핸들러는 document 레벨이라 유지.
+      return;
+    }
+    GW._navDropdownsBound = true;
+
+    function closeAllExcept(skipGroup) {
+      document.querySelectorAll('.nav-group.is-open').forEach(function (g) {
+        if (g === skipGroup) return;
+        g.classList.remove('is-open');
+        var trig = g.querySelector('.nav-group-trigger');
+        if (trig) trig.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    // 클릭 토글
+    document.addEventListener('click', function (e) {
+      var trig = e.target && e.target.closest && e.target.closest('[data-nav-group-trigger]');
+      if (trig) {
+        e.preventDefault();
+        e.stopPropagation();
+        var group = trig.closest('.nav-group');
+        if (!group) return;
+        var willOpen = !group.classList.contains('is-open');
+        closeAllExcept(willOpen ? group : null);
+        group.classList.toggle('is-open', willOpen);
+        trig.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        return;
+      }
+      // outside click → 모두 닫기
+      if (!e.target.closest || !e.target.closest('.nav-group')) {
+        closeAllExcept(null);
+      }
+    });
+
+    // ESC → 닫기
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeAllExcept(null);
+    });
+
+    // hover open (데스크톱) — pointer:fine 일 때만
+    if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      document.addEventListener('mouseover', function (e) {
+        if (!e.target.closest) return;
+        var group = e.target.closest('.nav-group');
+        if (group) {
+          closeAllExcept(group);
+          if (!group.classList.contains('is-open')) {
+            group.classList.add('is-open');
+            var trig = group.querySelector('.nav-group-trigger');
+            if (trig) trig.setAttribute('aria-expanded', 'true');
+          }
+        }
+      });
+      document.addEventListener('mouseleave', function () { closeAllExcept(null); });
+      document.querySelectorAll('.nav-group').forEach(function (g) {
+        g.addEventListener('mouseleave', function () {
+          // 약간의 지연 후 닫기 (멀어졌다가 돌아오는 경우 대비)
+          setTimeout(function () {
+            if (!g.matches(':hover')) {
+              g.classList.remove('is-open');
+              var trig = g.querySelector('.nav-group-trigger');
+              if (trig) trig.setAttribute('aria-expanded', 'false');
+            }
+          }, 150);
+        });
+      });
+    }
+  }
 
   GW.ensureMobileCompactHeader = function () {
     if (typeof document === 'undefined') return null;
@@ -486,12 +607,28 @@
     var refs = GW.ensureMobileCompactHeader();
     if (!refs || !refs.nav) return;
     var currentPath = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
-    refs.nav.innerHTML = GW.NAV_ITEMS.map(function (item) {
-      var href = item.href;
-      var isActive = href === '/' ? currentPath === '/' : currentPath === href;
-      return '<a href="' + GW.escapeHtml(href) + '"' + (isActive ? ' class="active"' : '') + '>' +
-        GW.escapeHtml(GW.t(item.key)) +
-      '</a>';
+    var structure = GW.NAV_STRUCTURE || [];
+    refs.nav.innerHTML = structure.map(function (item) {
+      if (item.type === 'group' && item.children && item.children.length) {
+        var groupActive = item.children.some(function (c) { return childHrefMatches(c.href, currentPath); });
+        var groupLabel = GW.t(item.key);
+        // <details> accordion — 활성 자식이 있으면 기본 펼침
+        var openAttr = groupActive ? ' open' : '';
+        var children = item.children.map(function (child) {
+          var active = childHrefMatches(child.href, currentPath);
+          return '<a href="' + GW.escapeHtml(child.href) + '"' +
+            (active ? ' class="mobile-nav-sublink active"' : ' class="mobile-nav-sublink"') + '>' +
+            GW.escapeHtml(GW.t(child.key)) + '</a>';
+        }).join('');
+        return '<details class="mobile-nav-group' + (groupActive ? ' is-active' : '') + '"' + openAttr + '>' +
+          '<summary class="mobile-nav-group-summary">' + GW.escapeHtml(groupLabel) + '</summary>' +
+          '<div class="mobile-nav-group-children">' + children + '</div>' +
+          '</details>';
+      }
+      var active = childHrefMatches(item.href, currentPath);
+      return '<a href="' + GW.escapeHtml(item.href) + '"' +
+        (active ? ' class="mobile-nav-link active"' : ' class="mobile-nav-link"') + '>' +
+        GW.escapeHtml(GW.t(item.key)) + '</a>';
     }).join('');
   };
 
@@ -505,8 +642,10 @@
     }
 
     function updateVisibility() {
+      // Nav 6-group 재구성 (2026-05-27) — 모바일에선 데스크톱 .nav 를 숨기고
+      // 햄버거 헤더를 항상 노출 (스크롤 임계값 제거).
       var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
-      var shouldShow = isMobile && (window.pageYOffset || document.documentElement.scrollTop || 0) > 72;
+      var shouldShow = isMobile;
       refs.header.classList.toggle('is-visible', shouldShow);
       refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
       if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {

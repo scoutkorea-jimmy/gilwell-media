@@ -150,7 +150,8 @@
         viewModel.columns[key] && viewModel.columns[key].posts ? viewModel.columns[key].posts.slice(0, 4) : [],
         '게시글이 없습니다',
         {
-          hideCategoryChip: true,
+          // 4-컬럼이 카테고리별 그룹이지만, 사이트 전반에서 카테고리 칩이
+          // 일관되게 보이도록 hideCategoryChip 해제 (2026-05-27 일관성 회복).
           errorKey: issues[key] ? key : ''
         }
       );
