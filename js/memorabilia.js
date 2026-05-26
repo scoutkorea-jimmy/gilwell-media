@@ -290,6 +290,18 @@
     const primary = (item.images || []).find((i) => i.is_primary) || (item.images || [])[0];
     const others = (item.images || []).filter((i) => i !== primary);
 
+    // 라벨도 값과 동일하게 EN(위)/KO(아래) 이중표기 — 일관성 확보.
+    const L = {
+      eventName:   { en: 'Event',       ko: '행사명' },
+      eventPeriod: { en: 'Period',      ko: '행사기간' },
+      country:     { en: 'Country',     ko: '국가' },
+      year:        { en: 'Year',        ko: '연도' },
+      category:    { en: 'Category',    ko: '분류' },
+      material:    { en: 'Material',    ko: '재질' },
+      size:        { en: 'Size',        ko: '크기' },
+      issuer:      { en: 'Issuer',      ko: '제작기관' },
+    };
+
     const meta = [];
     if (item.has_event && (item.event_name_en || item.event_name_ko)) {
       // 카탈로그 참조가 있으면 행사명 + 기간을 함께 표시. 없으면 free-text 이름만.
@@ -299,12 +311,12 @@
         ? `<span class="lang-en" lang="en">${escapeHtml(item.event_name_en)}</span>` : '';
       const koLine = item.event_name_ko
         ? `<span class="lang-ko" lang="ko">${escapeHtml(item.event_name_ko)}</span>` : '';
-      meta.push(metaRow('행사명', enLine, koLine));
+      meta.push(metaRow(L.eventName, enLine, koLine));
       if (periodEn || periodKo) {
         // 분류·제작기관 패턴과 동일: 영문이 위, 국문이 아래
         const enP = periodEn ? `<span class="lang-en" lang="en">${escapeHtml(periodEn)}</span>` : '';
         const koP = periodKo ? `<span class="lang-ko" lang="ko">${escapeHtml(periodKo)}</span>` : '';
-        meta.push(metaRow('행사기간', enP, koP));
+        meta.push(metaRow(L.eventPeriod, enP, koP));
       }
     }
     if (item.country_codes && item.country_codes.length) {
@@ -318,22 +330,22 @@
       const enLine = enLabels ? `<span class="lang-en" lang="en">${escapeHtml(enLabels)}</span>` : '';
       const koLine = koLabels && koLabels !== enLabels
         ? `<span class="lang-ko" lang="ko">${escapeHtml(koLabels)}</span>` : '';
-      meta.push(metaRow('국가', enLine, koLine));
+      meta.push(metaRow(L.country, enLine, koLine));
     }
-    if (item.year) meta.push(metaRow('연도', `${item.year}`, ''));
+    if (item.year) meta.push(metaRow(L.year, `${item.year}`, ''));
     if (item.category_label_en || item.category_label_ko) {
-      meta.push(metaRow('분류',
+      meta.push(metaRow(L.category,
         item.category_label_en ? `<span class="lang-en" lang="en">${escapeHtml(item.category_label_en)}</span>` : '',
         item.category_label_ko ? `<span class="lang-ko" lang="ko">${escapeHtml(item.category_label_ko)}</span>` : ''));
     }
     if (item.material_en || item.material_ko) {
-      meta.push(metaRow('재질',
+      meta.push(metaRow(L.material,
         item.material_en ? `<span class="lang-en" lang="en">${escapeHtml(item.material_en)}</span>` : '',
         item.material_ko ? `<span class="lang-ko" lang="ko">${escapeHtml(item.material_ko)}</span>` : ''));
     }
-    if (item.size_text) meta.push(metaRow('크기', escapeHtml(item.size_text), ''));
+    if (item.size_text) meta.push(metaRow(L.size, escapeHtml(item.size_text), ''));
     if (item.issuer_en || item.issuer_ko) {
-      meta.push(metaRow('제작기관',
+      meta.push(metaRow(L.issuer,
         item.issuer_en ? `<span class="lang-en" lang="en">${escapeHtml(item.issuer_en)}</span>` : '',
         item.issuer_ko ? `<span class="lang-ko" lang="ko">${escapeHtml(item.issuer_ko)}</span>` : ''));
     }
@@ -378,7 +390,11 @@
   }
 
   function metaRow(label, en, ko) {
-    return `<div class="memo-meta-label">${escapeHtml(label)}</div><div class="memo-meta-value memo-bilingual">${en}${ko}</div>`;
+    // label 은 { en, ko } 객체. 하위호환: string 이 들어오면 KO 단일 라벨로 처리.
+    const labelEn = (label && typeof label === 'object') ? (label.en || '') : '';
+    const labelKo = (label && typeof label === 'object') ? (label.ko || '') : String(label || '');
+    const labelHtml = `${labelEn ? `<span class="lang-en" lang="en">${escapeHtml(labelEn)}</span>` : ''}${labelKo ? `<span class="lang-ko" lang="ko">${escapeHtml(labelKo)}</span>` : ''}`;
+    return `<div class="memo-meta-label memo-bilingual">${labelHtml}</div><div class="memo-meta-value memo-bilingual">${en}${ko}</div>`;
   }
 
   function renderDescription(stored) {

@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.154.01",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 16:30:00 KST",
+    "summary": "기념품 도감 상세 — 메타박스 라벨도 EN/KO 이중표기로 통일 (값과 일관성 보완).",
+    "for_users": [
+      "기념품 도감 상세 페이지의 메타 박스(행사명·국가·연도·분류·재질·크기·발행처) 라벨이 값과 동일하게 영문(위)·국문(아래) 함께 표시됩니다.",
+      "그동안 값은 EN+KO 둘 다 보였지만 라벨은 국문만 표시되어 비일관성이 있었습니다."
+    ],
+    "for_developers": [
+      "js/memorabilia.js renderDetail: 라벨 매핑 상수 L = { eventName, eventPeriod, country, year, category, material, size, issuer } { en, ko } 도입. metaRow() 첫 인자가 string 대신 {en,ko} 객체. 하위호환 string 지원 유지.",
+      "metaRow: .memo-meta-label 에도 .memo-bilingual 클래스 추가 → 기존 CSS(.memo-bilingual .lang-en/ko { display:block }) 가 자동 stacked 적용.",
+      "사이트 00.154.00 → 00.154.01 (hotfix)."
+    ]
+  },
+  {
     "version": "00.154.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 16:30:00 KST",
