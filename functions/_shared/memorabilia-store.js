@@ -460,7 +460,7 @@ async function syncRelations(db, id, input) {
   }
 }
 
-async function syncFtsForId(db, id) {
+export async function syncFtsForId(db, id) {
   // 1) 메인 + 카테고리 라벨
   const row = await db.prepare(`
     SELECT m.*, c.label_en AS category_label_en, c.label_ko AS category_label_ko

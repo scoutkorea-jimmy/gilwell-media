@@ -140,6 +140,9 @@
     // Tag autocomplete (last token)
     bindTagAutocomplete($('#memo-tags'), $('#memo-tags-suggest'));
 
+    // Bulk find/replace 일괄 수정 도구
+    wireBulkReplaceOnce();
+
     // Categories panel
     const catNewBtn = $('#memo-cat-new-btn');
     if (catNewBtn) catNewBtn.addEventListener('click', () => openCategoryEditor(null));
@@ -352,6 +355,206 @@
       if (t) clearTimeout(t);
       t = setTimeout(() => { t = null; fn.apply(ctx, args); }, ms);
     };
+  }
+
+  // ── Bulk find/replace (데이터 일괄 수정) ───────────────────────────────
+  // 한글 "{국가} 대표단" 띄어쓰기 통일, 발행처 오탈자 통일 등.
+  // /api/memorabilia/bulk-replace 호출. preset='country_rep_team_no_space' 또는
+  // operations: [{field, find, replace}] 직접 지정.
+  const BULK_FIELDS = [
+    // memorabilia
+    { value: 'issuer_ko',            label: '제작기관 (국문)',     table: 'memorabilia' },
+    { value: 'issuer_en',            label: '제작기관 (영문)',     table: 'memorabilia' },
+    { value: 'title_ko',             label: '제목 (국문)',         table: 'memorabilia' },
+    { value: 'title_en',             label: '제목 (영문)',         table: 'memorabilia' },
+    { value: 'event_name_ko',        label: '행사명 캐시 (국문)',  table: 'memorabilia' },
+    { value: 'event_name_en',        label: '행사명 캐시 (영문)',  table: 'memorabilia' },
+    { value: 'material_ko',          label: '재질 (국문)',         table: 'memorabilia' },
+    { value: 'material_en',          label: '재질 (영문)',         table: 'memorabilia' },
+    { value: 'size_text',            label: '크기',               table: 'memorabilia' },
+    { value: 'description_ko',       label: '설명 (국문)',         table: 'memorabilia' },
+    { value: 'description_en',       label: '설명 (영문)',         table: 'memorabilia' },
+    { value: 'description_plain_ko', label: '설명 검색캐시 (국문)', table: 'memorabilia' },
+    { value: 'description_plain_en', label: '설명 검색캐시 (영문)', table: 'memorabilia' },
+    // memorabilia_events
+    { value: 'name_ko',              label: '행사명 (국문) — 카탈로그',     table: 'memorabilia_events' },
+    { value: 'name_en',              label: '행사명 (영문) — 카탈로그',     table: 'memorabilia_events' },
+    { value: 'description_ko',       label: '행사 설명 (국문) — 카탈로그', table: 'memorabilia_events' },
+    { value: 'description_en',       label: '행사 설명 (영문) — 카탈로그', table: 'memorabilia_events' },
+  ];
+
+  let _bulkWired = false;
+  let _bulkRules = []; // { field, find, replace }
+
+  function wireBulkReplaceOnce() {
+    if (_bulkWired) return;
+    _bulkWired = true;
+
+    // 프리셋 버튼들 — data-preset
+    document.querySelectorAll('button[data-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const preset = btn.getAttribute('data-preset');
+        const dryRun = btn.getAttribute('data-dry') === '1';
+        runBulkReplace({ preset, dry_run: dryRun });
+      });
+    });
+
+    // 수동 규칙
+    $('#memo-bulk-rule-add')?.addEventListener('click', () => {
+      _bulkRules.push({ field: 'issuer_ko', find: '', replace: '' });
+      renderBulkRules();
+    });
+    $('#memo-bulk-manual-dry')?.addEventListener('click', () => {
+      const ops = collectBulkRules();
+      if (!ops.length) { toast('규칙을 한 개 이상 추가하세요.', 'error'); return; }
+      runBulkReplace({ operations: ops, dry_run: true });
+    });
+    $('#memo-bulk-manual-apply')?.addEventListener('click', () => {
+      const ops = collectBulkRules();
+      if (!ops.length) { toast('규칙을 한 개 이상 추가하세요.', 'error'); return; }
+      if (!confirm(`${ops.length}개 규칙을 모든 도감 항목에 일괄 적용합니다. 계속할까요?\n(되돌리기는 별도 규칙으로 다시 치환해야 함)`)) return;
+      runBulkReplace({ operations: ops, dry_run: false });
+    });
+
+    // 결과 모달
+    const closeBtn = $('#memo-bulk-result-close');
+    const okBtn    = $('#memo-bulk-result-ok');
+    const modal    = $('#memo-bulk-result-modal');
+    if (closeBtn) closeBtn.addEventListener('click', closeBulkResultModal);
+    if (okBtn)    okBtn.addEventListener('click',    closeBulkResultModal);
+    if (modal)    modal.addEventListener('click', (e) => { if (e.target === modal) closeBulkResultModal(); });
+  }
+
+  function renderBulkRules() {
+    const wrap = $('#memo-bulk-rules');
+    if (!wrap) return;
+    if (!_bulkRules.length) { wrap.innerHTML = '<div style="font-size:12px; color:var(--gray-700,#3f3f3f); padding:4px 0;">규칙 없음 — "+ 규칙 추가" 로 시작하세요.</div>'; return; }
+    wrap.innerHTML = _bulkRules.map((r, i) => `
+      <div class="memo-bulk-rule-row" data-i="${i}" style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <select class="v3-input v3-input-sm" data-bulk-field="${i}" style="min-width:180px;">
+          ${BULK_FIELDS.map((f) => `<option value="${escapeHtml(f.value)}" ${f.value === r.field ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('')}
+        </select>
+        <input class="v3-input v3-input-sm" data-bulk-find="${i}" placeholder="찾을 문자열" value="${escapeHtml(r.find)}" style="flex:1; min-width:160px;"/>
+        <span style="color:var(--gray-700,#3f3f3f);">→</span>
+        <input class="v3-input v3-input-sm" data-bulk-replace="${i}" placeholder="바꿀 문자열 (빈값 가능 = 삭제)" value="${escapeHtml(r.replace)}" style="flex:1; min-width:160px;"/>
+        <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" data-bulk-del="${i}" title="규칙 삭제">×</button>
+      </div>
+    `).join('');
+    wrap.querySelectorAll('select[data-bulk-field]').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const i = parseInt(sel.getAttribute('data-bulk-field'), 10);
+        if (_bulkRules[i]) _bulkRules[i].field = sel.value;
+      });
+    });
+    wrap.querySelectorAll('input[data-bulk-find]').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.getAttribute('data-bulk-find'), 10);
+        if (_bulkRules[i]) _bulkRules[i].find = inp.value;
+      });
+    });
+    wrap.querySelectorAll('input[data-bulk-replace]').forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.getAttribute('data-bulk-replace'), 10);
+        if (_bulkRules[i]) _bulkRules[i].replace = inp.value;
+      });
+    });
+    wrap.querySelectorAll('button[data-bulk-del]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = parseInt(btn.getAttribute('data-bulk-del'), 10);
+        _bulkRules.splice(i, 1);
+        renderBulkRules();
+      });
+    });
+  }
+
+  function collectBulkRules() {
+    return _bulkRules
+      .filter((r) => r.field && r.find && r.find !== r.replace)
+      .map((r) => ({ field: r.field, find: r.find, replace: r.replace || '' }));
+  }
+
+  async function runBulkReplace(body) {
+    try {
+      const res = await fetch('/api/memorabilia/bulk-replace', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(`실패: ${data.detail || data.error || ('HTTP ' + res.status)}`, 'error');
+        return;
+      }
+      showBulkResult(data);
+      // 적용된 경우 목록·카탈로그 캐시 새로고침
+      if (!data.dry_run && data.total_changed) {
+        if (eventsMod && typeof eventsMod.load === 'function') {
+          try { await eventsMod.load(true); } catch {}
+        }
+        await loadList();
+      }
+    } catch (err) {
+      toast('네트워크 오류: ' + err.message, 'error');
+    }
+  }
+
+  function showBulkResult(data) {
+    const modal   = $('#memo-bulk-result-modal');
+    const summary = $('#memo-bulk-result-summary');
+    const detail  = $('#memo-bulk-result-detail');
+    if (!modal || !summary || !detail) return;
+
+    const isDry = !!data.dry_run;
+    const totalMatched = (data.results || []).reduce((s, r) => s + (r.matched || r.changed || 0), 0);
+    const totalChanged = data.total_changed || 0;
+    const fts = data.fts_synced || 0;
+
+    summary.innerHTML = `
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+        ${isDry
+          ? `<span class="v3-badge" style="background:rgba(98,37,153,0.15); color:var(--color-scouting-purple,#622599);">미리보기 — 매칭 ${totalMatched}건</span>`
+          : `<span class="v3-badge v3-badge-success">변경 ${totalChanged}건</span>`
+        }
+        ${!isDry && fts ? `<span class="v3-badge v3-badge-muted">검색 인덱스 ${fts}건 재구성</span>` : ''}
+      </div>
+      <div style="font-size: 11.5px; color: var(--gray-700,#3f3f3f);">
+        ${isDry ? '실제 변경은 일어나지 않았습니다. 적용하려면 다시 "적용" 버튼을 클릭하세요.' : '변경이 즉시 반영되었습니다.'}
+      </div>
+    `;
+
+    const rows = (data.results || []).filter((r) => (r.matched || r.changed));
+    if (rows.length) {
+      detail.innerHTML = `
+        <h4 style="margin:14px 0 6px; font-size:13px;">상세</h4>
+        <div style="max-height:300px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px; background:#fff;">
+          <table class="v3-table" style="margin:0; font-size:12px;">
+            <thead><tr><th style="width:22%">테이블 · 필드</th><th style="width:30%">찾기</th><th style="width:30%">바꾸기</th><th style="width:18%">${isDry ? '매칭' : '변경'}</th></tr></thead>
+            <tbody>
+              ${rows.map((r) => `
+                <tr>
+                  <td><code style="font-size:11px;">${escapeHtmlLocal(r.table)}.${escapeHtmlLocal(r.field)}</code>${r.cascaded_from ? `<div style="font-size:10px; opacity:0.6;">↳ from ${escapeHtmlLocal(r.cascaded_from)}</div>` : ''}</td>
+                  <td style="word-break:break-all;">${escapeHtmlLocal(r.find)}</td>
+                  <td style="word-break:break-all;">${escapeHtmlLocal(r.replace) || '<span style="opacity:0.5;">(삭제)</span>'}</td>
+                  <td>${isDry ? r.matched : r.changed}건</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } else {
+      detail.innerHTML = `<p style="margin: 14px 0 0; font-size: 12.5px; color: var(--gray-700,#3f3f3f);">${isDry ? '매칭되는 항목이 없습니다.' : '변경된 항목이 없습니다.'}</p>`;
+    }
+
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBulkResultModal() {
+    const modal = $('#memo-bulk-result-modal');
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = '';
   }
 
   // ── 목록 ────────────────────────────────────────────────────────────────

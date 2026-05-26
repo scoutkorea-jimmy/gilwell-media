@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "03.134.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 20:00:00 KST",
+    "summary": "관리자 기념품 도감 — 데이터 일괄 수정 (find/replace) 도구 + 행사 CSV 템플릿 한글 친화 포맷 개선.",
+    "for_users": [
+      "관리자 → 스카우트 백과 → 기념품 도감 패널 하단에 '🛠 데이터 일괄 수정 (find/replace)' 카드 신설. 자동 프리셋 '{국가명} 대표단 → {국가명}대표단' 한 번에 통일 적용, 수동 규칙으로 'Korean Scout Assn → Korea Scout Association' 같은 발행처 표기 오탈자도 일괄 교정. '미리보기(Dry run)' 로 매칭 건수만 먼저 확인하고 적용할 수 있습니다.",
+      "행사 카탈로그 CSV 템플릿이 한글 친화 포맷으로 개선되었습니다. 컬럼이 12개 → 8개로 줄어들고 (시작일/종료일을 'YYYY-MM-DD' 한 칸으로 통합), 한글 헤더('행사명(영문)', '시작일' 등)도 그대로 인식합니다. 날짜는 '2023', '2023-08', '2023.8.1', '2023년 8월 1일' 등 자유 형식 허용.",
+      "행사 카탈로그·도감 항목 양쪽 검색 캐시(FTS)는 일괄 수정 후 자동으로 재구축되어, 변경된 표기로 즉시 검색·필터링됩니다."
+    ],
+    "for_developers": [
+      "functions/api/memorabilia/bulk-replace.js (신규): POST {operations: [{field, find, replace}], preset?, dry_run?}. 허용 필드 = memorabilia(13개 텍스트 컬럼) ∪ memorabilia_events(4개). preset 'country_rep_team_no_space' 는 COUNTRY_CODE_LABELS_KO 전수 순회로 '{name_ko} 대표단' → '{name_ko}대표단' 생성. memorabilia_events.name_* 변경 시 memorabilia.event_name_* 도 자동 cascade. 영향 받은 memorabilia ids 캡쳐 후 syncFtsForId 로 FTS 일괄 재구축. SQL LIKE escape (\\) 적용.",
+      "functions/_shared/memorabilia-store.js: syncFtsForId 를 export — bulk-replace 에서 재사용.",
+      "admin.html panel-memorabilia 하단에 <details id=\"memo-bulk-replace-card\"> 신설 — 자동 프리셋 카드 (Dry run / 적용) + 수동 규칙 행 추가/삭제/적용 UI + #memo-bulk-result-modal 결과 모달.",
+      "js/admin-memorabilia.js: BULK_FIELDS 카탈로그(17개) + wireBulkReplaceOnce / renderBulkRules / collectBulkRules / runBulkReplace / showBulkResult / closeBulkResultModal. 결과는 v3-badge + v3-table 로 변경/매칭 건수 + cascaded_from 표시.",
+      "functions/api/memorabilia/events/csv.js 전면 개편: 컬럼 (slug, name_en, name_ko, start_year~end_day, description_en/ko, archived) 12개 → (슬러그, 행사명(영문), 행사명(국문), 시작일, 종료일, 설명(영문), 설명(국문), 아카이브) 8개. parseFlexibleDate 가 'YYYY', 'YYYY-MM', 'YYYY-MM-DD', '.', '/', '년월일' 분리자 정규화. 헤더 인식은 영문 alias + 한글 alias 양방향 + 레거시 분할 컬럼 호환. parseArchivedFlag 가 0/1·true/false·yes/no·활성/아카이브 모두 인식. 템플릿 샘플 3행 (연·월·일 / 연·월 / 연도만) 제공.",
+      "관리자 03.133.00 → 03.134.00 (feature — bulk find/replace + CSV UX overhaul)."
+    ]
+  },
+  {
     "version": "03.133.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 19:15:00 KST",
