@@ -66,6 +66,7 @@
     initialized: false,
     page: 1,
     pageSize: 24,
+    selectedTags: new Set(), // 인기 태그 칩 다중 선택 (AND 필터)
   };
 
   async function initListIfNeeded() {
@@ -89,15 +90,87 @@
     $('#memo-search-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { state.page = 1; runSearch(); }
     });
+    // 연도 from/to — 입력 중에는 debounce 로, blur 시 즉시.
+    const yearFromEl = $('#memo-filter-year-from');
+    const yearToEl   = $('#memo-filter-year-to');
+    if (yearFromEl) {
+      yearFromEl.addEventListener('input', debounce(() => { state.page = 1; runSearch(); }, 320));
+      yearFromEl.addEventListener('change', () => { state.page = 1; runSearch(); });
+    }
+    if (yearToEl) {
+      yearToEl.addEventListener('input', debounce(() => { state.page = 1; runSearch(); }, 320));
+      yearToEl.addEventListener('change', () => { state.page = 1; runSearch(); });
+    }
+    // 제작기관 부분 일치 필터
+    const issuerEl = $('#memo-filter-issuer');
+    if (issuerEl) {
+      issuerEl.addEventListener('input', debounce(() => { state.page = 1; runSearch(); }, 280));
+    }
+    // 태그 전체 해제
+    const tagClearBtn = $('#memo-filter-tags-clear');
+    if (tagClearBtn) tagClearBtn.addEventListener('click', () => {
+      state.selectedTags.clear();
+      updateTagChipsActiveState();
+      tagClearBtn.hidden = true;
+      state.page = 1;
+      runSearch();
+    });
 
     // Load filter options
-    await Promise.all([loadCategoryOptions(), populateCountryOptions(), populateEventOptions()]);
-    // URL 의 사전 적용된 필터 반영 (q 외에 category/country/event/sort)
+    await Promise.all([loadCategoryOptions(), populateCountryOptions(), populateEventOptions(), loadPopularTags()]);
+    // URL 의 사전 적용된 필터 반영
     const cur = new URLSearchParams(location.search);
     if (cur.get('category')) $('#memo-filter-category').value = cur.get('category');
     if (cur.get('country'))  $('#memo-filter-country').value  = cur.get('country');
     if (cur.get('event'))    { const ef = $('#memo-filter-event'); if (ef) ef.value = cur.get('event'); }
     if (cur.get('sort'))     $('#memo-filter-sort').value     = cur.get('sort');
+    if (cur.get('year_from')) $('#memo-filter-year-from').value = cur.get('year_from');
+    if (cur.get('year_to'))   $('#memo-filter-year-to').value   = cur.get('year_to');
+    if (cur.get('issuer'))    $('#memo-filter-issuer').value    = cur.get('issuer');
+    if (cur.get('tag')) {
+      cur.get('tag').split(',').map((s) => s.trim()).filter(Boolean).forEach((t) => state.selectedTags.add(t));
+      updateTagChipsActiveState();
+      if (tagClearBtn && state.selectedTags.size) tagClearBtn.hidden = false;
+    }
+  }
+
+  // 인기 태그 칩 로드/렌더 — autocomplete?type=tag (q 없음) = usage_count 상위.
+  async function loadPopularTags() {
+    const wrap = $('#memo-filter-tags-wrap');
+    const list = $('#memo-filter-tags');
+    if (!wrap || !list) return;
+    try {
+      const res = await fetch('/api/memorabilia/autocomplete?type=tag&limit=18', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const tags = data.items || [];
+      if (!tags.length) { wrap.hidden = true; return; }
+      list.innerHTML = tags.map((t) => `
+        <button type="button" class="memo-filter-tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>
+      `).join('');
+      wrap.hidden = false;
+      list.querySelectorAll('.memo-filter-tag-chip').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const tag = btn.getAttribute('data-tag');
+          if (state.selectedTags.has(tag)) state.selectedTags.delete(tag);
+          else state.selectedTags.add(tag);
+          btn.classList.toggle('is-active', state.selectedTags.has(tag));
+          const clearBtn = $('#memo-filter-tags-clear');
+          if (clearBtn) clearBtn.hidden = state.selectedTags.size === 0;
+          state.page = 1;
+          runSearch();
+        });
+      });
+    } catch (err) {
+      console.warn('popular tags load failed:', err);
+      wrap.hidden = true;
+    }
+  }
+
+  function updateTagChipsActiveState() {
+    document.querySelectorAll('.memo-filter-tag-chip').forEach((btn) => {
+      btn.classList.toggle('is-active', state.selectedTags.has(btn.getAttribute('data-tag')));
+    });
   }
 
   async function populateEventOptions() {
@@ -158,6 +231,10 @@
     const country = $('#memo-filter-country')?.value || '';
     const eventId = $('#memo-filter-event')?.value || '';
     const sort = $('#memo-filter-sort')?.value || 'relevance';
+    const yearFrom = ($('#memo-filter-year-from')?.value || '').trim();
+    const yearTo   = ($('#memo-filter-year-to')?.value   || '').trim();
+    const issuer   = ($('#memo-filter-issuer')?.value    || '').trim();
+    const tagCsv   = Array.from(state.selectedTags).join(',');
     const meta = $('#memo-results-meta');
     const grid = $('#memo-grid');
 
@@ -168,6 +245,10 @@
     if (country) params.set('country', country);
     if (eventId) params.set('event', eventId);
     if (sort !== 'relevance') params.set('sort', sort);
+    if (yearFrom) params.set('year_from', yearFrom);
+    if (yearTo)   params.set('year_to',   yearTo);
+    if (issuer)   params.set('issuer',    issuer);
+    if (tagCsv)   params.set('tag',       tagCsv);
     if (state.page > 1) params.set('page', String(state.page));
     const newSearch = params.toString();
     history.replaceState(null, '', '/memorabilia' + (newSearch ? '?' + newSearch : ''));
@@ -184,6 +265,10 @@
       if (category) apiParams.set('category', category);
       if (country) apiParams.set('country', country);
       if (eventId) apiParams.set('event', eventId);
+      if (yearFrom) apiParams.set('year_from', yearFrom);
+      if (yearTo)   apiParams.set('year_to',   yearTo);
+      if (issuer)   apiParams.set('issuer',    issuer);
+      if (tagCsv)   apiParams.set('tag',       tagCsv);
 
       const res = await fetch('/api/memorabilia/search?' + apiParams.toString(), { credentials: 'same-origin' });
       const data = await res.json();

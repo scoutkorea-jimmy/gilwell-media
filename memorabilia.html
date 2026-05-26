@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260526141723">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526141723">
+  <link rel="stylesheet" href="/css/style.css?v=20260526144546">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526144546">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -73,6 +73,12 @@
           <select id="memo-filter-category" aria-label="분류"><option value="">분류 전체</option></select>
           <select id="memo-filter-country" aria-label="국가"><option value="">국가 전체</option></select>
           <select id="memo-filter-event" aria-label="행사"><option value="">행사 전체</option></select>
+          <div class="memo-filter-year-range" aria-label="연도 범위">
+            <input type="number" id="memo-filter-year-from" placeholder="연도 from" min="1900" max="2100" aria-label="연도 부터"/>
+            <span aria-hidden="true">~</span>
+            <input type="number" id="memo-filter-year-to" placeholder="to" min="1900" max="2100" aria-label="연도 까지"/>
+          </div>
+          <input type="text" class="memo-filter-issuer" id="memo-filter-issuer" placeholder="제작기관 검색…" autocomplete="off" aria-label="제작기관"/>
           <select id="memo-filter-sort" aria-label="정렬">
             <option value="relevance">관련도</option>
             <option value="newest">최신 등록</option>
@@ -80,6 +86,11 @@
             <option value="year_asc">오래된 연도</option>
             <option value="title">제목순</option>
           </select>
+        </div>
+        <div class="memo-filter-tags-wrap" id="memo-filter-tags-wrap" hidden>
+          <span class="memo-filter-tags-label">인기 태그</span>
+          <div class="memo-filter-tags" id="memo-filter-tags"></div>
+          <button type="button" class="memo-filter-tags-clear" id="memo-filter-tags-clear" hidden>전체 해제</button>
         </div>
       </section>
 
@@ -406,7 +417,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.155.01</span> · Admin <span class="admin-build-version">V03.136.02</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.156.00</span> · Admin <span class="admin-build-version">V03.136.02</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -418,9 +429,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260526141723"></script>
-  <script src="/js/site-chrome.js?v=20260526141723"></script>
-  <script src="/js/memorabilia-shared.js?v=20260526141723"></script>
-  <script src="/js/memorabilia.js?v=20260526141723"></script>
+  <script src="/js/main.js?v=20260526144546"></script>
+  <script src="/js/site-chrome.js?v=20260526144546"></script>
+  <script src="/js/memorabilia-shared.js?v=20260526144546"></script>
+  <script src="/js/memorabilia.js?v=20260526144546"></script>
 </body>
 </html>

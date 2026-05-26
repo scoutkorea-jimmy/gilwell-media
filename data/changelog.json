@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "00.156.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-27 00:15:00 KST",
+    "summary": "공개 도감 — 검색 필터 영역 그리드 정돈 + 연도 범위 / 제작기관 / 인기 태그 칩 필터 신설.",
+    "for_users": [
+      "분류·국가·행사·정렬 셀렉트가 그리드로 균등하게 정렬되어 폭 편차가 사라졌습니다 (모바일에서는 자동으로 줄바꿈).",
+      "연도 범위 입력 추가 — 'from ~ to' 두 칸으로 특정 시기의 기념품만 빠르게 좁힐 수 있습니다.",
+      "제작기관 부분 일치 검색 입력 추가 — '한국스카우트연맹' 일부만 입력해도 매칭.",
+      "필터 아래 '인기 태그' 칩 줄 추가. 클릭으로 다중 선택(AND)하고 '전체 해제'로 한 번에 비울 수 있습니다.",
+      "모든 새 필터 상태가 URL 쿼리에 동기화되어 새로고침·공유 시에도 보존됩니다."
+    ],
+    "for_developers": [
+      "memorabilia.html: .memo-filters 안에 .memo-filter-year-range (2개 number input + ~ separator) + .memo-filter-issuer text input 추가. 그 아래 .memo-filter-tags-wrap (label + chips + clear button) 신설.",
+      "css/memorabilia.css .memo-filters: flex → grid (repeat(auto-fit, minmax(170px, 1fr))) + 모든 자식 height:38px 통일 + focus 스타일. .memo-filter-year-range 컨테이너 내부 number input spinner 제거. .memo-filter-tag-chip (.is-active = purple bg) 신규.",
+      "js/memorabilia.js: state.selectedTags Set. loadPopularTags() 가 /api/memorabilia/autocomplete?type=tag&limit=18 결과를 칩으로 렌더 → 클릭 토글 → runSearch. yearFrom/yearTo/issuer/tag 가 URL 동기화 + apiParams 전달 — 백엔드는 이미 year_from/year_to/tag/issuer 받음 (functions/api/memorabilia/search.js).",
+      "사이트 00.155.01 → 00.156.00 (feature — search filters 확장)."
+    ]
+  },
+  {
     "version": "00.155.01",
     "date": "2026-05-26",
     "released_at": "2026-05-26 23:30:00 KST",
