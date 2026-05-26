@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.158.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 04:00:00 KST",
+    "summary": "홈 4컬럼 ↔ 도감 레일 사이 어색한 여백 제거 + 상단 메뉴 1차/2차 계층 시각 강화 + 도감 상세 페이지 광고 신설.",
+    "for_users": [
+      "홈에서 4컬럼(한국/APR/세계/인물) 카드 아래, '스카우트 기념품 도감' 영역 위에 있던 어색한 빈 공간이 정리되었습니다.",
+      "상단 메뉴의 1차(홈·최신·기념품·도움/그룹 헤더)와 드롭다운/햄버거 안 2차 항목의 시각 차이가 강화되어 계층이 한눈에 들어옵니다 — 1차는 굵은 진한 톤, 2차는 들여쓰기 + 작은 컬러 도트 + 옅은 색.",
+      "스카우트 기념품 도감 상세 페이지에도 광고가 추가되었습니다. 본문 구분선 아래, 좋아요 버튼 바로 위에 노출."
+    ],
+    "for_developers": [
+      "css/style.css .home-memorabilia-rail: margin-top 24 → 0. index.html 의 home-wrapper 안으로 섹션을 옮겨 max-width/padding 통일. .home-3col:has(+ .home-memorabilia-rail) { margin-bottom: 28px } 로 페이지 마지막 블록 가정으로 두었던 --home-block-bottom(72px) 잔여 공백 제거.",
+      "css/style.css 1차 nav: .nav a / .nav-group-trigger 에 font-weight: 700, color: var(--muted) → var(--ink). 2차 .nav-sublink: font-size 13→12, font-weight 500, color var(--gray-700), padding 7px 12px 7px 20px + ::before 4px purple/gray dot marker (active/hover 시 scouting purple).",
+      "css/style.css 모바일 햄버거 drawer: .mobile-nav-group-summary / .mobile-nav-link font-weight 600→700, font-size 14→15, color ink 명시. .mobile-nav-group-children 에 rgba(0,0,0,0.025) 배경으로 2차 영역 구분. .mobile-nav-sublink padding 8px 28px → 9px 16px 9px 36px + ::before 4px dot marker.",
+      "memorabilia.html: #memo-engagement 안 .memo-engagement-actions 직전에 <aside class='kakao-adfit kakao-adfit-horizontal'> 추가. PC 728x90(DAN-Hcz89LyJbpNeh8B0) / 모바일 320x50(DAN-R2YAuLwc7UVkfzQb) 홈과 동일 unit. body 끝에 https://t1.kakaocdn.net/kas/static/ba.min.js 스크립트 async 로 추가.",
+      "사이트 00.158.00 → 00.158.01 (fix — 홈 여백 + nav 계층 + 도감 상세 광고)."
+    ]
+  },
+  {
     "version": "00.158.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 03:10:00 KST",

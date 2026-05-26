@@ -1263,9 +1263,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav a {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      var(--fs-meta);
+  font-weight:    700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color:          var(--muted);
+  color:          var(--ink, #1f1f1f);
   text-decoration: none;
   /* 짧은 라벨(홈/캘린더/용어집)이 너무 좁아져 긴 라벨과 리듬이 깨지는 문제 보정.
      min-width 와 좌우 패딩 동일화로 탭 간 폭 편차를 줄인다 (라벨 자체는 그대로). */
@@ -1312,9 +1313,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav-group-trigger {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: var(--fs-meta);
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink, #1f1f1f);
   background: none;
   border: 0;
   padding: var(--gap-element) 16px;
@@ -1327,7 +1329,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   white-space: nowrap;
   transition: color 0.15s;
   box-sizing: border-box;
-  font-weight: inherit;
 }
 .nav-group-trigger:hover,
 .nav-group-trigger.active,
@@ -1366,15 +1367,34 @@ body[data-home-bootstrap] .lang-btn:hover {
 }
 .nav-sublink {
   display: block;
-  padding: 8px 12px;
+  /* 좌측에 컬러 마커 (4px) + 들여쓰기 — 1차 메뉴와의 계층 차이 강화 */
+  padding: 7px 12px 7px 20px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--ink, #1f1f1f);
+  color: var(--gray-700, #3f3f3f);
   text-decoration: none;
   border-radius: 5px;
   white-space: nowrap;
   text-transform: none;
+  position: relative;
+}
+.nav-sublink::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gray-300, #c4c4c4);
+  transition: background 0.15s;
+}
+.nav-sublink:hover::before,
+.nav-sublink.active::before {
+  background: var(--color-scouting-purple, #622599);
 }
 .nav-sublink:hover,
 .nav-sublink.active {
@@ -1392,14 +1412,16 @@ body[data-home-bootstrap] .lang-btn:hover {
   .nav-group-panel { min-width: 180px; max-width: calc(100vw - 24px); }
 }
 
-/* 모바일 햄버거 drawer accordion */
+/* 모바일 햄버거 drawer accordion — 1차/2차 계층 차이 강화 (2026-05-27) */
 .mobile-nav-group {
   border-bottom: 1px solid var(--gray-100, #ebebeb);
 }
 .mobile-nav-group-summary {
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
+  /* 1차: 굵게(700) + 진한 ink + 살짝 큰 폰트 + uppercase 톤은 안 줌 (한글 가독성) */
+  padding: 14px 16px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink, #1f1f1f);
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -1417,26 +1439,47 @@ body[data-home-bootstrap] .lang-btn:hover {
   transform: rotate(90deg);
 }
 .mobile-nav-group-children {
-  padding: 4px 0 10px;
+  /* 2차 영역 전체에 옅은 배경 — 그룹 단위 구분 강화 */
+  padding: 4px 0 8px;
   display: flex;
   flex-direction: column;
+  background: var(--gray-100, #ebebeb);
+  background: rgba(0, 0, 0, 0.025);
 }
 .mobile-nav-sublink {
-  padding: 8px 28px;
+  /* 2차: 더 깊은 들여쓰기 + 좌측 컬러 마커 + 옅은 색 + 작은 폰트 + medium weight */
+  position: relative;
+  padding: 9px 16px 9px 36px;
   font-size: 13px;
+  font-weight: 500;
   color: var(--gray-700, #3f3f3f);
   text-decoration: none;
+}
+.mobile-nav-sublink::before {
+  content: '';
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gray-300, #c4c4c4);
 }
 .mobile-nav-sublink.active,
 .mobile-nav-link.active {
   color: var(--color-scouting-purple, #622599);
-  font-weight: 600;
+  font-weight: 700;
+}
+.mobile-nav-sublink.active::before {
+  background: var(--color-scouting-purple, #622599);
 }
 .mobile-nav-link {
+  /* 1차 단독 링크: 그룹 summary 와 동일한 톤 */
   display: block;
-  padding: 12px 16px;
-  font-weight: 600;
-  font-size: 14px;
+  padding: 14px 16px;
+  font-weight: 700;
+  font-size: 15px;
   color: var(--ink, #1f1f1f);
   text-decoration: none;
   border-bottom: 1px solid var(--gray-100, #ebebeb);
@@ -11880,14 +11923,18 @@ body.wosm-members-page #main-content {
    ════════════════════════════════════════════════════════════ */
 /* ════════════════════════════════════════════════════════════
    HOME MEMORABILIA RAIL (2026-05-27)
-   4컬럼 카테고리 그리드 직후, 광고 직전에 위치.
+   4컬럼 카테고리 그리드 직후 home-wrapper 안에 위치.
    PC ≥901px: 6 컬럼. 모바일 ≤900px: 2 컬럼 + 처음 2개만 노출.
+   wrapper 의 max-width/padding 을 그대로 따르므로 자체 margin·padding 은 없음.
    ════════════════════════════════════════════════════════════ */
 .home-memorabilia-rail {
-  max-width: 1366px;
-  margin: 32px auto 0;
-  padding: 0 var(--pad-page-desktop, 48px);
-  box-sizing: border-box;
+  margin-top: 0;
+}
+/* .home-3col 은 원래 페이지 마지막이었기에 margin-bottom: 72px(--home-block-bottom)
+   인데, 이제 그 아래 .home-memorabilia-rail 이 위치하면서 그 값이 잔여 공백으로
+   남는다. 인접 sibling 일 때만 28px 로 축소해 자연스러운 섹션 간격을 만든다. */
+.home-3col:has(+ .home-memorabilia-rail) {
+  margin-bottom: 28px;
 }
 .home-memorabilia-rail-head {
   display: flex;
