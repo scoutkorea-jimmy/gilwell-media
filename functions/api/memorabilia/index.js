@@ -41,6 +41,12 @@ export async function onRequestGet({ request, env }) {
   }
 
   const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+  // random=1 → 홈 도감 레일 등 무작위 노출용. ORDER BY 를 RANDOM() 으로 교체.
+  // (OFFSET 은 의미 없어지지만 LIMIT 만 적용)
+  const isRandom = url.searchParams.get('random') === '1';
+  const orderClause = isRandom
+    ? 'ORDER BY RANDOM()'
+    : 'ORDER BY COALESCE(m.published_at, m.updated_at) DESC, m.id DESC';
 
   const sql = `
     SELECT m.id, m.slug, m.title_en, m.title_ko,
@@ -56,7 +62,7 @@ export async function onRequestGet({ request, env }) {
       FROM memorabilia m
       LEFT JOIN memorabilia_categories c ON c.id = m.category_id
       ${where}
-     ORDER BY COALESCE(m.published_at, m.updated_at) DESC, m.id DESC
+     ${orderClause}
      LIMIT ? OFFSET ?
   `;
   // WHERE 절 binding (event_id 등) 은 LIMIT/OFFSET 보다 앞에 와야 한다.

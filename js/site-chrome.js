@@ -641,10 +641,17 @@
     }
 
     function updateVisibility() {
-      // Nav 6-group 재구성 (2026-05-27) — 모바일에선 데스크톱 .nav 를 숨기고
-      // 햄버거 헤더를 항상 노출 (스크롤 임계값 제거).
+      // 햄버거 헤더는 모바일 한정 + .nav 가 viewport 위로 사라진 뒤에만 노출.
+      // 페이지 최상단(.nav 가 보이는 상태) 에서는 햄버거 숨김 — 사용자 요청 (2026-05-27).
       var isMobile = window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
-      var shouldShow = isMobile;
+      var navEl = document.querySelector('.masthead .nav, .nav');
+      var navHidden = false;
+      if (navEl) {
+        var rect = navEl.getBoundingClientRect();
+        // nav 의 하단이 viewport 위로 올라간 상태 = 스크롤로 nav 가 사라짐
+        navHidden = rect.bottom <= 0;
+      }
+      var shouldShow = isMobile && navHidden;
       refs.header.classList.toggle('is-visible', shouldShow);
       refs.header.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
       if (!isMobile && document.body.classList.contains('mobile-compact-drawer-open')) {

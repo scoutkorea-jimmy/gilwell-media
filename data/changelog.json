@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.158.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 03:10:00 KST",
+    "summary": "홈 4컬럼 아래에 스카우트 기념품 도감 랜덤 레일 신설(PC 6 / 모바일 2) + 모바일 nav 가로 스와이프 잠금 + 햄버거를 스크롤 후에만 노출.",
+    "for_users": [
+      "홈 페이지 카테고리 4컬럼(한국/APR/세계/인물) 아래, 광고 위에 '스카우트 기념품 도감' 랜덤 노출 영역이 새로 생겼습니다. 페이지를 새로 열 때마다 다른 도감 항목이 보입니다.",
+      "PC에서는 6개, 모바일에서는 2개의 도감이 노출되며 각 카드를 누르면 도감 상세로 이동합니다.",
+      "모바일 상단 슬라이드 메뉴가 좌우로 스와이프할 때 위아래로 흔들려 사라지는 문제가 해결되었습니다.",
+      "페이지 최상단(상단 메뉴가 보이는 상태)에서는 좌측 햄버거 메뉴가 보이지 않고, 스크롤을 내려 상단 메뉴가 사라진 뒤에야 햄버거가 등장합니다."
+    ],
+    "for_developers": [
+      "functions/api/memorabilia/index.js: GET 쿼리에 random=1 옵션 추가. true 시 ORDER BY 를 COALESCE(published_at, updated_at) DESC → RANDOM() 으로 교체. WHERE(status='public') 는 유지, LIMIT/OFFSET 그대로.",
+      "index.html: 4컬럼 home-wrapper 닫힘 직후, .kakao-adfit-horizontal 직전에 <section class='home-memorabilia-rail'> 신설. 헤더(Memorabilia · 스카우트 기념품 도감 + 더보기 →) + #home-memorabilia-grid 컨테이너. 초기 loading-state placeholder.",
+      "js/home-runtime.js: loadMemorabiliaRail() 함수 추가 — '/api/memorabilia?random=1&limit=6&_=' + Date.now() 로 fetch (cache: 'no-store'). primary_image_url 우선, 없으면 📦 placeholder. /memorabilia/:slug 링크. init() 끝에서 호출.",
+      "css/style.css: .home-memorabilia-rail / -head / -title / -grid / .home-memo-card(-thumb/-body/-title-en/-title-ko/-noimg) / .home-memorabilia-empty 추가. PC grid-template-columns: repeat(6, minmax(0,1fr)). @media(max-width:900px) 에서 repeat(2,...) + nth-child(n+3) display:none 로 모바일 2개만 노출.",
+      "js/site-chrome.js setupMobileCompactHeader().updateVisibility: 햄버거 노출 조건을 'isMobile' 단독 → 'isMobile && (.nav 의 getBoundingClientRect().bottom <= 0)' 으로 변경. nav 가 viewport 위로 사라진 후에만 햄버거 노출. scroll/resize 이벤트 핸들러는 기존 그대로.",
+      "css/style.css: .nav 에 touch-action: pan-x 추가 — 모바일에서 가로 스와이프 의도가 세로 스크롤로 hijack 되어 nav 가 위로 사라지는 문제 방지.",
+      "사이트 00.157.02 → 00.158.00 (feature — memorabilia 홈 랜덤 레일 + nav UX 핫픽스 동봉)."
+    ]
+  },
+  {
     "version": "00.157.02",
     "date": "2026-05-27",
     "released_at": "2026-05-27 02:50:00 KST",

@@ -415,6 +415,41 @@
       });
     }
 
+    function loadMemorabiliaRail() {
+      var grid = document.getElementById('home-memorabilia-grid');
+      if (!grid) return;
+      // PC 6개 fetch — 모바일은 CSS 로 처음 2개만 노출.
+      // random=1 + cache-bust 로 매 페이지 진입마다 다른 항목 노출.
+      GW.apiFetch('/api/memorabilia?random=1&limit=6&_=' + Date.now(), { cache: 'no-store' })
+        .then(function (data) {
+          var items = (data && data.items) || [];
+          if (!items.length) {
+            grid.innerHTML = '<div class="home-memorabilia-empty">아직 등록된 도감 항목이 없습니다.</div>';
+            return;
+          }
+          grid.innerHTML = items.map(function (item) {
+            var slug = item.slug || ('m-' + item.id);
+            var href = '/memorabilia/' + GW.escapeHtml(slug);
+            var titleKo = GW.escapeHtml(item.title_ko || '');
+            var titleEn = GW.escapeHtml(item.title_en || '');
+            var thumb = item.primary_image_url
+              ? '<img src="' + GW.escapeHtml(item.primary_image_url) + '" alt="' + titleKo + '" loading="lazy" decoding="async">'
+              : '<div class="home-memo-card-noimg" aria-hidden="true">📦</div>';
+            return '<a class="home-memo-card" href="' + href + '">' +
+                '<div class="home-memo-card-thumb">' + thumb + '</div>' +
+                '<div class="home-memo-card-body">' +
+                  (titleEn ? '<div class="home-memo-card-title-en">' + titleEn + '</div>' : '') +
+                  (titleKo ? '<div class="home-memo-card-title-ko">' + titleKo + '</div>' : '') +
+                '</div>' +
+              '</a>';
+          }).join('');
+        })
+        .catch(function (err) {
+          try { console.warn('[GW memorabilia-rail]', err); } catch (_) {}
+          grid.innerHTML = '';
+        });
+    }
+
     function init() {
       if (!document.body || !document.body.hasAttribute('data-home-bootstrap')) return;
       if (window.__GW_HOME_INIT__) return;
@@ -450,6 +485,7 @@
       initRefreshLifecycle();
       initPullToRefresh();
       startFreshnessTick();
+      loadMemorabiliaRail();
       window.addEventListener('resize', syncResponsiveSectionVisibility);
     }
 
