@@ -1294,9 +1294,12 @@ body[data-home-bootstrap] .lang-btn:hover {
    Desktop: hover + click 둘 다 / Mobile (≤900px): .nav 와 mobile-compact-header 동시 노출. */
 .nav.nav-grouped {
   gap: 4px;
-  /* 드롭다운 패널이 부모 .nav 의 overflow-x:auto 에 의해 잘리는 문제 방지.
-     grouped 모드는 6 그룹 고정이라 1366px max-width 내 정렬되어 가로 스크롤 불필요. */
-  overflow: visible;
+}
+/* 데스크톱(≥901px) 에서는 드롭다운 패널이 부모 .nav 의 overflow 에 의해
+   잘리지 않도록 visible. 모바일에서는 기본 overflow-x:auto 를 유지해 6 그룹이
+   가로 슬라이드로 접근 가능하도록 한다. */
+@media (min-width: 901px) {
+  .nav.nav-grouped { overflow: visible; }
 }
 .nav-group {
   position: relative;
@@ -1379,15 +1382,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 /* nav-link 는 .nav a 스타일을 그대로 상속 */
 
 /* 모바일: 데스크톱 .nav 도 같이 노출 (햄버거와 병행).
-   .nav 자체는 overflow-x: auto 라 가로 스크롤로 6 그룹 접근 가능.
-   드롭다운 패널은 데스크톱 hover 가 없으므로 .nav.nav-grouped 안에서
-   클릭으로만 동작 (setupNavDropdowns 의 click 핸들러 유지). */
+   .nav 자체는 overflow-x: auto 라 6 그룹 전체가 가로 슬라이드로 접근 가능.
+   메뉴 항목의 폰트/패딩은 데스크톱과 동일하게 유지 — 축소/삭제 금지.
+   드롭다운 패널은 모바일에서 viewport 밖 이탈 방지를 위해 폭만 제한. */
 @media (max-width: 900px) {
-  .nav { padding: 0 var(--gap-section); }
-  .nav.nav-grouped { padding-top: 4px; padding-bottom: 4px; }
-  .nav-group-trigger { padding: 10px 12px; min-width: 0; font-size: 12px; }
-  .nav-link { padding: 10px 12px !important; min-width: 0 !important; font-size: 12px !important; }
-  /* 드롭다운 패널은 좁은 화면에서 viewport 밖으로 나가지 않도록 폭 제한 */
   .nav-group-panel { min-width: 180px; max-width: calc(100vw - 24px); }
 }
 
