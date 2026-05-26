@@ -3868,6 +3868,23 @@ body.marketing-fullscreen-open { overflow: hidden; }
   color: var(--v3-text-d);
   background: #fff;
 }
+.v3-releases-filters-pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  color: var(--v3-text-m);
+}
+.v3-releases-filters-pagesize select {
+  padding: 6px 8px;
+  border: 1px solid var(--v3-border, #d6dbe5);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: var(--fs-caption);
+  background: #fff;
+  color: var(--v3-text-d);
+  cursor: pointer;
+}
 .v3-releases-filters-meta {
   margin-left: auto;
   font-size: var(--fs-caption);

@@ -18,6 +18,7 @@
     changelogQuery: '',    // 키워드 검색
     changelogFrom:  '',    // YYYY-MM-DD (inclusive)
     changelogTo:    '',    // YYYY-MM-DD (inclusive)
+    changelogPageSize: 50, // 사용자가 select 로 변경 (10/30/50/100)
     changelogItems: null,
     saveBusy: false,
     docContent: '',
@@ -627,7 +628,18 @@
         if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
       });
     }
-    // 초기화
+    // 페이지당 표시 개수 (10/30/50/100)
+    var clPageSize = document.getElementById('kms-cl-page-size');
+    if (clPageSize) {
+      clPageSize.addEventListener('change', function () {
+        var n = parseInt(clPageSize.value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 50;
+        _state.changelogPageSize = n;
+        _state.changelogPage = 1;
+        if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
+      });
+    }
+    // 초기화 — 페이지당 개수는 보존
     var clReset = document.getElementById('kms-cl-filter-reset');
     if (clReset) {
       clReset.addEventListener('click', function () {
@@ -1412,8 +1424,8 @@
       return;
     }
 
-    // 50개 단위 페이지네이션. 전체가 50 이하면 pagination UI는 숨김.
-    var PAGE_SIZE = 50;
+    // 사용자가 선택한 페이지 크기 (10/30/50/100). 전체가 그 이하면 pagination UI는 숨김.
+    var PAGE_SIZE = parseInt(_state.changelogPageSize, 10) || 50;
     var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     var page = Math.min(Math.max(1, _state.changelogPage || 1), totalPages);
     _state.changelogPage = page;

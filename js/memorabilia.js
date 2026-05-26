@@ -81,9 +81,19 @@
   const state = {
     initialized: false,
     page: 1,
-    pageSize: 24,
-    selectedTags: new Set(), // 인기 태그 칩 다중 선택 (AND 필터)
+    pageSize: 16,             // 4컬럼 × 4줄 (PC). 좁은 viewport 에서는 computePageSize() 가 조정.
+    selectedTags: new Set(),  // 인기 태그 칩 다중 선택 (AND 필터)
   };
+
+  // 도감 카드 그리드 컬럼 수 × 4 (4줄) = 페이지 크기. 사용자 요청 (2026-05-27).
+  function computePageSize() {
+    var w = window.innerWidth || 1200;
+    var cols = w >= 1280 ? 4 : w >= 960 ? 3 : w >= 600 ? 2 : 1;
+    return cols * 4;
+  }
+
+  // 에디터 태그 칩 입력 state (모달 전용 — 신규/편집 공용)
+  const tagsChipState = { tags: [] };
 
   async function initListIfNeeded() {
     if (state.initialized) return;
@@ -150,37 +160,12 @@
     }
   }
 
-  // 인기 태그 칩 로드/렌더 — autocomplete?type=tag (q 없음) = usage_count 상위.
+  // 인기 태그 영역 — 사용자 요청(2026-05-27)으로 도감 페이지에서 영구 숨김.
+  // 필터 칩 클릭 흐름 자체는 selectedTags state 와 URL ?tag= 로 유지되므로
+  // 외부에서 들어오는 태그 링크는 그대로 동작한다.
   async function loadPopularTags() {
     const wrap = $('#memo-filter-tags-wrap');
-    const list = $('#memo-filter-tags');
-    if (!wrap || !list) return;
-    try {
-      const res = await fetch('/api/memorabilia/autocomplete?type=tag&limit=18', { credentials: 'same-origin' });
-      if (!res.ok) return;
-      const data = await res.json();
-      const tags = data.items || [];
-      if (!tags.length) { wrap.hidden = true; return; }
-      list.innerHTML = tags.map((t) => `
-        <button type="button" class="memo-filter-tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>
-      `).join('');
-      wrap.hidden = false;
-      list.querySelectorAll('.memo-filter-tag-chip').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const tag = btn.getAttribute('data-tag');
-          if (state.selectedTags.has(tag)) state.selectedTags.delete(tag);
-          else state.selectedTags.add(tag);
-          btn.classList.toggle('is-active', state.selectedTags.has(tag));
-          const clearBtn = $('#memo-filter-tags-clear');
-          if (clearBtn) clearBtn.hidden = state.selectedTags.size === 0;
-          state.page = 1;
-          runSearch();
-        });
-      });
-    } catch (err) {
-      console.warn('popular tags load failed:', err);
-      wrap.hidden = true;
-    }
+    if (wrap) wrap.hidden = true;
   }
 
   function updateTagChipsActiveState() {
@@ -242,6 +227,8 @@
   }
 
   async function runSearch() {
+    // 매 검색마다 viewport 기준 4줄로 page size 재계산 (창 크기 변경 반영).
+    state.pageSize = computePageSize();
     const q = ($('#memo-search-input')?.value || '').trim();
     const category = $('#memo-filter-category')?.value || '';
     const country = $('#memo-filter-country')?.value || '';
@@ -651,6 +638,16 @@
       this.renderImages();
       this.renderLinks();
       this.showModal();
+      // 임시저장된 draft 가 있으면 복원 prompt
+      const draft = this.loadDraft();
+      if (draft) {
+        const when = draft._savedAt ? new Date(draft._savedAt).toLocaleString('ko-KR') : '';
+        if (window.confirm('임시 저장된 도감 입력 내용이 있습니다' + (when ? ' (' + when + ')' : '') + '.\n복원하시겠습니까?\n\n[확인] 복원  [취소] 무시하고 새로 작성')) {
+          this.applyDraft(draft);
+        } else {
+          this.clearDraft();
+        }
+      }
     },
 
     async openEdit(item) {
@@ -683,11 +680,14 @@
       ['memo-title-en','memo-title-ko','memo-year',
        'memo-material-en','memo-material-ko','memo-size','memo-issuer-en','memo-issuer-ko',
        'memo-tags','memo-desc-en','memo-desc-ko'].forEach((id) => { const el = $('#'+id); if (el) el.value = ''; });
+      const ti = $('#memo-tags-input'); if (ti) ti.value = '';
+      setTagChipsFromArray([]);
       $('#memo-has-event').checked = false;
       $('#memo-event-row').hidden = true;
       $('#memo-category').value = '';
       $('#memo-status').value = 'draft';
       if (this.countryPicker) this.countryPicker.setValue([]);
+      const suggestWrap = $('#memo-tags-suggestions'); if (suggestWrap) suggestWrap.hidden = true;
     },
 
     fillForm(item) {
@@ -704,7 +704,7 @@
       $('#memo-size').value = item.size_text || '';
       $('#memo-issuer-en').value = item.issuer_en || '';
       $('#memo-issuer-ko').value = item.issuer_ko || '';
-      $('#memo-tags').value = (item.tags || []).join(', ');
+      setTagChipsFromArray(item.tags || []);
       $('#memo-desc-en').value = readPlain(item.description_en);
       $('#memo-desc-ko').value = readPlain(item.description_ko);
       $('#memo-status').value = item.status || 'draft';
@@ -720,6 +720,73 @@
       $('#memo-editor-modal').hidden = true;
       document.body.style.overflow = '';
       this.editing = null;
+    },
+
+    // ── 임시저장 (신규 작성 한정) ────────────────────────────────────
+    // 편집 모드(editing 있음)에선 사용하지 않음 — 기존 항목 덮어쓰기 혼동 방지.
+    DRAFT_KEY: 'gw_memo_draft_v1',
+    collectDraft() {
+      return {
+        _savedAt: Date.now(),
+        title_en: $('#memo-title-en')?.value || '',
+        title_ko: $('#memo-title-ko')?.value || '',
+        has_event: !!$('#memo-has-event')?.checked,
+        year: $('#memo-year')?.value || '',
+        category_id: $('#memo-category')?.value || '',
+        material_en: $('#memo-material-en')?.value || '',
+        material_ko: $('#memo-material-ko')?.value || '',
+        size_text: $('#memo-size')?.value || '',
+        issuer_en: $('#memo-issuer-en')?.value || '',
+        issuer_ko: $('#memo-issuer-ko')?.value || '',
+        tags: $('#memo-tags')?.value || '',
+        desc_en: $('#memo-desc-en')?.value || '',
+        desc_ko: $('#memo-desc-ko')?.value || '',
+        country_codes: this.countryPicker ? (this.countryPicker.getValue ? this.countryPicker.getValue() : []) : [],
+      };
+    },
+    applyDraft(d) {
+      if (!d) return;
+      $('#memo-title-en').value = d.title_en || '';
+      $('#memo-title-ko').value = d.title_ko || '';
+      if (d.has_event) {
+        $('#memo-has-event').checked = true;
+        $('#memo-event-row').hidden = false;
+      }
+      $('#memo-year').value = d.year || '';
+      $('#memo-category').value = d.category_id || '';
+      $('#memo-material-en').value = d.material_en || '';
+      $('#memo-material-ko').value = d.material_ko || '';
+      $('#memo-size').value = d.size_text || '';
+      $('#memo-issuer-en').value = d.issuer_en || '';
+      $('#memo-issuer-ko').value = d.issuer_ko || '';
+      setTagChipsFromCsv(d.tags || '');
+      $('#memo-desc-en').value = d.desc_en || '';
+      $('#memo-desc-ko').value = d.desc_ko || '';
+      if (this.countryPicker && this.countryPicker.setValue && Array.isArray(d.country_codes)) {
+        this.countryPicker.setValue(d.country_codes);
+      }
+    },
+    hasDraftDirty() {
+      if (this.editing) return false; // 편집 모드에선 dirty 검사 안 함
+      const d = this.collectDraft();
+      const textDirty = !!(d.title_en || d.title_ko || d.year || d.material_en || d.material_ko ||
+        d.size_text || d.issuer_en || d.issuer_ko || d.tags || d.desc_en || d.desc_ko);
+      const countryDirty = Array.isArray(d.country_codes) && d.country_codes.length > 0;
+      const imagesDirty = !!(this.images && this.images.length);
+      return textDirty || countryDirty || imagesDirty;
+    },
+    saveDraft() {
+      try { localStorage.setItem(this.DRAFT_KEY, JSON.stringify(this.collectDraft())); }
+      catch (_) {}
+    },
+    loadDraft() {
+      try {
+        const raw = localStorage.getItem(this.DRAFT_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) { return null; }
+    },
+    clearDraft() {
+      try { localStorage.removeItem(this.DRAFT_KEY); } catch (_) {}
     },
 
     uploadingCount: 0,
@@ -1039,6 +1106,8 @@
           return;
         }
         if (!res.ok) throw new Error(data.error || res.status);
+        // 저장 성공 → 신규 작성 draft 폐기 (편집 모드면 애초에 사용 안 함)
+        if (!this.editing && this.clearDraft) this.clearDraft();
         this.closeModal();
         if (location.pathname.startsWith('/memorabilia/')) {
           // detail view — reload current
@@ -1089,6 +1158,162 @@
       } catch {}
     }
     return String(stored);
+  }
+
+  // ── Tag chip input (editor) ────────────────────────────────────────────
+  // #memo-tags-input 에서 Enter / "," 시 칩 추가, Backspace 로 마지막 제거.
+  // hidden #memo-tags 가 데이터 소스 (save() 가 .value 로 읽음).
+  function renderTagChips() {
+    const wrap = $('#memo-tags-chips');
+    const hidden = $('#memo-tags');
+    if (!wrap || !hidden) return;
+    wrap.innerHTML = tagsChipState.tags.map((t, i) =>
+      '<span class="memo-tag-chip-editor" data-i="' + i + '">' +
+        escapeHtml(t) +
+        '<button type="button" class="memo-tag-chip-x" data-i="' + i + '" aria-label="태그 제거">×</button>' +
+      '</span>'
+    ).join('');
+    hidden.value = tagsChipState.tags.join(', ');
+    wrap.querySelectorAll('.memo-tag-chip-x').forEach((b) => {
+      b.addEventListener('click', () => {
+        const i = parseInt(b.getAttribute('data-i'), 10);
+        if (Number.isFinite(i)) {
+          tagsChipState.tags.splice(i, 1);
+          renderTagChips();
+          refreshTagSuggestions();
+        }
+      });
+    });
+  }
+
+  function addTagFromText(raw) {
+    const cleaned = String(raw || '').trim().replace(/^,+|,+$/g, '').trim();
+    if (!cleaned) return false;
+    const lower = cleaned.toLowerCase();
+    if (tagsChipState.tags.some((t) => t.toLowerCase() === lower)) return false;
+    tagsChipState.tags.push(cleaned);
+    renderTagChips();
+    return true;
+  }
+
+  function setTagChipsFromArray(arr) {
+    tagsChipState.tags = Array.isArray(arr)
+      ? arr.map((t) => String(t || '').trim()).filter(Boolean)
+      : [];
+    renderTagChips();
+  }
+
+  function setTagChipsFromCsv(csv) {
+    const arr = String(csv || '').split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+    setTagChipsFromArray(arr);
+  }
+
+  function bindTagChipInput() {
+    const input = $('#memo-tags-input');
+    const wrap = $('#memo-tags-chip-input');
+    const suggest = $('#memo-tags-suggest');
+    if (!input) return;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        if (addTagFromText(input.value)) refreshTagSuggestions();
+        input.value = '';
+        if (suggest) suggest.hidden = true;
+      } else if (e.key === 'Backspace' && !input.value && tagsChipState.tags.length) {
+        tagsChipState.tags.pop();
+        renderTagChips();
+        refreshTagSuggestions();
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) {
+        if (addTagFromText(input.value)) refreshTagSuggestions();
+        input.value = '';
+      }
+      if (suggest) setTimeout(() => { suggest.hidden = true; }, 150);
+    });
+    // chip-input 영역 클릭 시 input 으로 포커스 (placeholder 외 영역)
+    if (wrap) wrap.addEventListener('click', (e) => {
+      if (e.target === wrap || e.target.id === 'memo-tags-chips') input.focus();
+    });
+
+    // 자동완성 — 현재 typing 값 기준 (기존 autocomplete API 재사용)
+    let acTimer;
+    input.addEventListener('input', () => {
+      clearTimeout(acTimer);
+      const q = input.value.trim();
+      if (q.length < 1 || !suggest) { if (suggest) suggest.hidden = true; return; }
+      acTimer = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/memorabilia/autocomplete?type=tag&q=' + encodeURIComponent(q), { credentials: 'same-origin' });
+          if (!res.ok) { suggest.hidden = true; return; }
+          const data = await res.json();
+          const existing = new Set(tagsChipState.tags.map((t) => t.toLowerCase()));
+          const items = (data.items || []).filter((s) => !existing.has(String(s).toLowerCase()) && s.toLowerCase() !== q.toLowerCase());
+          if (!items.length) { suggest.hidden = true; return; }
+          suggest.innerHTML = items.map((s) => '<div class="memo-autocomplete-item" data-val="' + escapeHtml(s) + '">' + escapeHtml(s) + '</div>').join('');
+          suggest.hidden = false;
+          suggest.querySelectorAll('.memo-autocomplete-item').forEach((d) => {
+            d.addEventListener('mousedown', (ev) => {
+              ev.preventDefault();
+              if (addTagFromText(d.getAttribute('data-val'))) refreshTagSuggestions();
+              input.value = '';
+              suggest.hidden = true;
+              input.focus();
+            });
+          });
+        } catch (_) { suggest.hidden = true; }
+      }, 200);
+    });
+  }
+
+  // 행사 기반 추천 태그 — 현재 선택된 event 의 다른 기념품에서 자주 쓰인 태그를
+  // 빈도순으로 노출. 이미 칩으로 추가된 태그는 제외.
+  let _tagSuggestTimer = null;
+  async function refreshTagSuggestions() {
+    const wrap = $('#memo-tags-suggestions');
+    const list = $('#memo-tags-suggestions-list');
+    const source = $('#memo-tags-suggestions-source');
+    if (!wrap || !list) return;
+    // event_id 가 있을 때만 (행사 기반 추천)
+    let eventId = null;
+    let eventLabel = '';
+    if (editor.eventPicker && editor.eventPicker.getValue) {
+      const v = editor.eventPicker.getValue();
+      if (v && v.id) { eventId = v.id; eventLabel = v.title_ko || v.title_en || ''; }
+    }
+    if (!eventId) { wrap.hidden = true; return; }
+    if (_tagSuggestTimer) clearTimeout(_tagSuggestTimer);
+    _tagSuggestTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/memorabilia?event_id=' + eventId + '&limit=30', { credentials: 'same-origin' });
+        if (!res.ok) { wrap.hidden = true; return; }
+        const data = await res.json();
+        const freq = {};
+        (data.items || []).forEach((it) => {
+          (it.tags || []).forEach((t) => {
+            if (!t) return;
+            freq[t] = (freq[t] || 0) + 1;
+          });
+        });
+        const existing = new Set(tagsChipState.tags.map((t) => t.toLowerCase()));
+        const top = Object.keys(freq)
+          .filter((t) => !existing.has(t.toLowerCase()))
+          .sort((a, b) => freq[b] - freq[a])
+          .slice(0, 12);
+        if (!top.length) { wrap.hidden = true; return; }
+        if (source) source.textContent = eventLabel ? '(행사: ' + eventLabel + ')' : '(행사 기반)';
+        list.innerHTML = top.map((t) =>
+          '<button type="button" class="memo-tag-suggestion" data-tag="' + escapeHtml(t) + '">+ ' + escapeHtml(t) + '</button>'
+        ).join('');
+        list.querySelectorAll('.memo-tag-suggestion').forEach((b) => {
+          b.addEventListener('click', () => {
+            if (addTagFromText(b.getAttribute('data-tag'))) refreshTagSuggestions();
+          });
+        });
+        wrap.hidden = false;
+      } catch (_) { wrap.hidden = true; }
+    }, 200);
   }
 
   // ── Autocomplete (issuer · tag) ────────────────────────────────────────
@@ -1179,8 +1404,20 @@
     $('#memo-editor-cancel')?.addEventListener('click', () => editor.closeModal());
     $('#memo-editor-save')?.addEventListener('click', () => editor.save());
     $('#memo-editor-delete')?.addEventListener('click', () => editor.remove());
+    // 바깥 영역 클릭 — 작성 중인 내용이 있으면 임시저장 prompt 후 닫기.
+    // "취소" 시 모달 유지 → 그냥 꺼지지 않도록.
     $('#memo-editor-modal')?.addEventListener('click', (e) => {
-      if (e.target.id === 'memo-editor-modal') editor.closeModal();
+      if (e.target.id !== 'memo-editor-modal') return;
+      if (editor.hasDraftDirty && editor.hasDraftDirty()) {
+        const yes = window.confirm('입력 중인 내용을 임시 저장하시겠습니까?\n\n[확인] 임시 저장 후 닫기\n[취소] 모달 유지 (계속 작성)');
+        if (yes) {
+          editor.saveDraft();
+          editor.closeModal();
+        }
+        // 취소 시 모달 유지 — 닫지 않음
+      } else {
+        editor.closeModal();
+      }
     });
 
     $('#memo-has-event')?.addEventListener('change', () => {
@@ -1191,10 +1428,15 @@
     $('#memo-image-input')?.addEventListener('change', (e) => editor.onImageInput(e));
     $('#memo-link-add')?.addEventListener('click', () => editor.addLink());
 
-    // 제작기관 · 태그 autocomplete — 사용자는 자유 입력 가능, 기존 값은 드롭다운 추천.
+    // 제작기관 autocomplete — 사용자는 자유 입력 가능, 기존 값은 드롭다운 추천.
     bindAutocomplete($('#memo-issuer-en'), $('#memo-issuer-en-suggest'), 'issuer');
     bindAutocomplete($('#memo-issuer-ko'), $('#memo-issuer-ko-suggest'), 'issuer');
-    bindTagAutocomplete($('#memo-tags'), $('#memo-tags-suggest'));
+    // 태그는 새 칩 UI 사용 — bindTagChipInput 이 내부에서 autocomplete 도 처리.
+    bindTagChipInput();
+    // 행사(event) 변경 시 추천 태그 갱신. memo-event-row 안에 picker 가 있다고 가정 — 그 안의 input/select 모두 위임 캐치.
+    const eventRow = $('#memo-event-row');
+    if (eventRow) eventRow.addEventListener('change', refreshTagSuggestions, true);
+    $('#memo-has-event')?.addEventListener('change', refreshTagSuggestions);
 
     $('#memo-login-close')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
     $('#memo-login-cancel')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });

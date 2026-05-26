@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.137.00
+ * Version: 03.137.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7072,7 +7072,7 @@
   var _releasesFrom  = ''; // YYYY-MM-DD (inclusive)
   var _releasesTo    = ''; // YYYY-MM-DD (inclusive)
   var _releasesPage  = 1;
-  var _RELEASES_PAGE_SIZE = 50;
+  var _releasesPageSize = 50; // 사용자가 select 로 변경 (10/30/50/100)
 
   function _inferReleaseScope(item) {
     var raw = String(item && item.scope || '').trim().toLowerCase();
@@ -7157,7 +7157,7 @@
   function _renderReleasesPagination(total) {
     var nav = document.getElementById('releases-pagination');
     if (!nav) return;
-    var pageSize = _RELEASES_PAGE_SIZE;
+    var pageSize = _releasesPageSize;
     var totalPages = Math.max(1, Math.ceil(total / pageSize));
     if (_releasesPage > totalPages) _releasesPage = totalPages;
     if (_releasesPage < 1) _releasesPage = 1;
@@ -7191,7 +7191,7 @@
   function _updateReleasesFilterMeta(filteredTotal, fullTotal) {
     var meta = document.getElementById('releases-filter-meta');
     if (!meta) return;
-    var pageSize = _RELEASES_PAGE_SIZE;
+    var pageSize = _releasesPageSize;
     var totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
     var fromIdx = filteredTotal === 0 ? 0 : (_releasesPage - 1) * pageSize + 1;
     var toIdx = Math.min(filteredTotal, _releasesPage * pageSize);
@@ -7212,7 +7212,7 @@
       if (toolbar0) toolbar0.hidden = true;
       return;
     }
-    var pageSize = _RELEASES_PAGE_SIZE;
+    var pageSize = _releasesPageSize;
     var totalPages = Math.max(1, Math.ceil(allFiltered.length / pageSize));
     if (_releasesPage > totalPages) _releasesPage = totalPages;
     if (_releasesPage < 1) _releasesPage = 1;
@@ -7466,7 +7466,18 @@
         _rerenderReleases();
       });
     }
-    // 초기화 — 검색·기간 모두 비우고 1페이지로 리셋
+    // 페이지당 표시 개수 — 변경 시 1페이지로 리셋
+    var pageSizeSelect = document.getElementById('releases-page-size');
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener('change', function () {
+        var n = parseInt(pageSizeSelect.value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 50;
+        _releasesPageSize = n;
+        _releasesPage = 1;
+        _rerenderReleases();
+      });
+    }
+    // 초기화 — 검색·기간 모두 비우고 1페이지로 리셋. 페이지당 개수는 보존 (사용자 선호 유지)
     var resetBtn = document.getElementById('releases-filter-reset');
     if (resetBtn) {
       resetBtn.addEventListener('click', function () {

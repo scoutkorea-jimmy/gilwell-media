@@ -539,6 +539,23 @@
   background: #fff;
   color: var(--kms-ink, #1f1f1f);
 }
+.kms-cl-filters-pagesize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+}
+.kms-cl-filters-pagesize select {
+  padding: 6px 8px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+  cursor: pointer;
+}
 .kms-cl-filters-meta {
   margin-left: auto;
   font-size: 12px;

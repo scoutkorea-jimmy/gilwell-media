@@ -1,6 +1,44 @@
 {
   "items": [
   {
+    "version": "03.137.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 05:30:00 KST",
+    "summary": "버전기록 페이지당 표시 개수 선택 (10/30/50/100) — Admin · 공개 KMS 동시 적용.",
+    "for_users": [
+      "관리자 버전기록 패널과 공개 KMS Changelog 탭에서 '한 페이지' select 로 10/30/50/100 중 원하는 개수를 골라 볼 수 있습니다 (기본 50)."
+    ],
+    "for_developers": [
+      "admin.html: .v3-releases-filters 안에 <select id='releases-page-size'> (10/30/50/100, 기본 50 selected) 추가. js/admin-v3.js: _RELEASES_PAGE_SIZE 상수 제거 → mutable _releasesPageSize state. _setupReleaseTabs change 핸들러로 갱신 + page=1 리셋, 초기화 버튼은 page-size 보존.",
+      "kms.html: .kms-cl-filters 안에 <select id='kms-cl-page-size'> 추가. js/kms.js _state.changelogPageSize (기본 50) 신설, renderChangelog 의 PAGE_SIZE 가 state 참조. change 핸들러로 갱신.",
+      "css/admin-v3.css .v3-releases-filters-pagesize / select 스타일. css/admin.css .kms-cl-filters-pagesize / select 스타일.",
+      "Admin 03.137.00 → 03.137.01 (fix — page-size select)."
+    ]
+  },
+  {
+    "version": "00.159.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 05:30:00 KST",
+    "summary": "스카우트 기념품 도감 입력 UX 대폭 개선 — 태그 칩 입력 + 행사 기반 추천 + 임시저장/복원 + 목록 4줄 페이지네이션 + 인기태그 영역 제거.",
+    "for_users": [
+      "태그 입력이 칩 형태로 명확히 구분됩니다 — Enter 또는 콤마로 추가하고, 각 칩의 × 로 제거할 수 있습니다. Backspace 로도 마지막 태그가 제거됩니다.",
+      "행사를 선택하면 같은 행사의 다른 기념품에서 자주 쓰인 태그를 빈도순으로 추천해 줍니다. 클릭 한 번에 칩으로 추가.",
+      "도감 입력 도중 모달 바깥을 실수로 클릭해도 즉시 닫히지 않고 '임시 저장하시겠습니까?' 를 묻습니다. 임시 저장하면 다음에 새 도감 작성 시 '복원하시겠습니까?' 안내가 뜹니다.",
+      "도감 목록이 화면 폭에 따라 한 번에 최대 4줄까지만 보여지고, 그 이상은 다음 페이지로 넘어갑니다 (PC 4×4=16개, 태블릿 3×4=12개, 모바일 2×4=8개).",
+      "도감 목록 페이지 상단의 '인기 태그' 영역은 노출되지 않습니다."
+    ],
+    "for_developers": [
+      "memorabilia.html: 태그 input 을 hidden 으로 전환하고 .memo-tags-chip-input(.memo-tags-chips + .memo-tags-typing) 신설. 행사 기반 추천 영역 .memo-tags-suggestions 추가.",
+      "js/memorabilia.js: tagsChipState.tags + renderTagChips / addTagFromText / setTagChipsFromArray / setTagChipsFromCsv / bindTagChipInput 신설. typing input 의 Enter/콤마 → addTag, Backspace(빈 input) → pop. autocomplete 는 기존 /api/memorabilia/autocomplete?type=tag&q= 재사용 (이미 입력된 태그는 추천에서 제외).",
+      "js/memorabilia.js refreshTagSuggestions(): editor.eventPicker.getValue().id 기반 /api/memorabilia?event_id=X&limit=30 fetch → tags 빈도 누적 → 미선택 top 12. wireEditorEvents 에서 #memo-event-row change + #memo-has-event change 위임으로 자동 갱신.",
+      "js/memorabilia.js editor.DRAFT_KEY('gw_memo_draft_v1') + collectDraft/applyDraft/hasDraftDirty/saveDraft/loadDraft/clearDraft. openCreate 끝에서 draft 있으면 confirm 복원. #memo-editor-modal 바깥 클릭 시 hasDraftDirty 이면 'confirm → 저장 후 close / 취소 → 모달 유지'. editor.save 성공 시 (!editing) clearDraft.",
+      "js/memorabilia.js state.pageSize 24 → 16 + computePageSize() (viewport ≥1280 4cols, ≥960 3cols, ≥600 2cols, else 1col, × 4 rows). runSearch 진입 시마다 재계산.",
+      "js/memorabilia.js loadPopularTags: 데이터 fetch + 칩 렌더링 로직 제거, .memo-filter-tags-wrap 만 hidden=true 로 강제 숨김. selectedTags state 와 URL ?tag= 외부 진입 흐름은 유지.",
+      "css/memorabilia.css: .memo-tags-chip-input / -chips / .memo-tag-chip-editor / -x / .memo-tags-typing 스타일. .memo-tags-suggestions / -label / -source / -list / .memo-tag-suggestion 스타일.",
+      "사이트 00.158.02 → 00.159.00 (feature — 도감 입력 UX 대규모 개선 묶음)."
+    ]
+  },
+  {
     "version": "03.137.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 04:30:00 KST",
