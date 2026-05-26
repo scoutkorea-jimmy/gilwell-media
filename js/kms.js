@@ -10,11 +10,14 @@
     loaded: false,
     mode: 'read',          // 'read' | 'edit'
     tab: 'docs',           // 'docs' | 'api' | 'changelog'
-    changelogPage: 1,      // 1-indexed, 30 items per page
+    changelogPage: 1,      // 1-indexed, 50 items per page
     docUpdatedAt: '',      // settings_history.saved_at (UTC)
     sidebarOpen: false,
     searchQuery: '',
     changelogScope: 'all',
+    changelogQuery: '',    // 키워드 검색
+    changelogFrom:  '',    // YYYY-MM-DD (inclusive)
+    changelogTo:    '',    // YYYY-MM-DD (inclusive)
     changelogItems: null,
     saveBusy: false,
     docContent: '',
@@ -593,6 +596,51 @@
       var container = document.getElementById('kms-changelog');
       if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+
+    // 검색 input — debounce 200ms
+    var clSearch = document.getElementById('kms-cl-search');
+    if (clSearch) {
+      var clSearchTimer = null;
+      clSearch.addEventListener('input', function () {
+        if (clSearchTimer) clearTimeout(clSearchTimer);
+        clSearchTimer = setTimeout(function () {
+          _state.changelogQuery = String(clSearch.value || '').trim();
+          _state.changelogPage = 1;
+          if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
+        }, 200);
+      });
+    }
+    // 기간 from/to
+    var clFrom = document.getElementById('kms-cl-date-from');
+    var clTo   = document.getElementById('kms-cl-date-to');
+    if (clFrom) {
+      clFrom.addEventListener('change', function () {
+        _state.changelogFrom = String(clFrom.value || '');
+        _state.changelogPage = 1;
+        if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
+      });
+    }
+    if (clTo) {
+      clTo.addEventListener('change', function () {
+        _state.changelogTo = String(clTo.value || '');
+        _state.changelogPage = 1;
+        if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
+      });
+    }
+    // 초기화
+    var clReset = document.getElementById('kms-cl-filter-reset');
+    if (clReset) {
+      clReset.addEventListener('click', function () {
+        if (clSearch) clSearch.value = '';
+        if (clFrom) clFrom.value = '';
+        if (clTo) clTo.value = '';
+        _state.changelogQuery = '';
+        _state.changelogFrom = '';
+        _state.changelogTo = '';
+        _state.changelogPage = 1;
+        if (_state.changelogItems) renderChangelog(_state.changelogItems, _state.changelogScope);
+      });
+    }
 
     document.querySelectorAll('[data-cl-scope]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -1322,23 +1370,50 @@
       return;
     }
 
-    var filtered = scope === 'all'
-      ? items
-      : items.filter(function (item) {
-          var s = inferChangelogScope(item);
-          if (scope === 'both') return s === 'both';
-          if (scope === 'site') return s === 'site' || s === 'both';
-          if (scope === 'admin') return s === 'admin' || s === 'both';
-          return true;
-        });
+    var q  = String(_state.changelogQuery || '').trim().toLowerCase();
+    var from = String(_state.changelogFrom || '');
+    var to   = String(_state.changelogTo   || '');
+    function isoOf(item) {
+      var raw = String(item && (item.released_at || item.date) || '');
+      var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
+      return m ? m[1] : '';
+    }
+    var filtered = items.filter(function (item) {
+      // scope
+      var s = inferChangelogScope(item);
+      if (scope === 'both' && s !== 'both') return false;
+      if (scope === 'site' && !(s === 'site' || s === 'both')) return false;
+      if (scope === 'admin' && !(s === 'admin' || s === 'both')) return false;
+      // 기간 필터
+      var iso = isoOf(item);
+      if (from && iso && iso < from) return false;
+      if (to && iso && iso > to) return false;
+      if ((from || to) && !iso) return false;
+      // 키워드 검색
+      if (q) {
+        var bag = [String(item.version || ''), String(item.summary || ''), String(item.released_at || ''), String(item.date || '')];
+        if (Array.isArray(item.for_users))       bag = bag.concat(item.for_users);
+        if (Array.isArray(item.for_developers))  bag = bag.concat(item.for_developers);
+        if (Array.isArray(item.items))           bag = bag.concat(item.items);
+        if (Array.isArray(item.changes))         bag = bag.concat(item.changes);
+        if (Array.isArray(item.issues))          bag = bag.concat(item.issues);
+        if (bag.join(' \n ').toLowerCase().indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    var metaEl = document.getElementById('kms-cl-filter-meta');
+    if (metaEl) {
+      if (filtered.length === items.length) metaEl.textContent = '총 ' + items.length + '건';
+      else metaEl.textContent = '필터 결과 ' + filtered.length + '건 / 전체 ' + items.length + '건';
+    }
 
     if (!filtered.length) {
-      container.innerHTML = '<div class="kms-list-empty">선택한 범위의 버전기록이 없습니다.</div>';
+      container.innerHTML = '<div class="kms-list-empty">조건에 맞는 버전기록이 없습니다.</div>';
       return;
     }
 
-    // 30개 단위 페이지네이션. 전체가 30 이하면 pagination UI는 숨김.
-    var PAGE_SIZE = 30;
+    // 50개 단위 페이지네이션. 전체가 50 이하면 pagination UI는 숨김.
+    var PAGE_SIZE = 50;
     var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     var page = Math.min(Math.max(1, _state.changelogPage || 1), totalPages);
     _state.changelogPage = page;

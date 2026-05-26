@@ -3819,6 +3819,87 @@ body.marketing-fullscreen-open { overflow: hidden; }
   border: 1px solid var(--v3-border, #d6dbe5);
   border-radius: 10px;
 }
+/* 검색 + 기간 필터 row (2026-05-27) */
+.v3-releases-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gap-element);
+  padding: var(--v3-gap-sm) var(--gap-element);
+  margin: var(--v3-gap-sm) 0;
+  background: #fff;
+  border: 1px solid var(--v3-border, #d6dbe5);
+  border-radius: 10px;
+}
+.v3-releases-filters-search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--v3-border, #d6dbe5);
+  border-radius: 8px;
+  font-size: var(--fs-caption);
+  font-family: inherit;
+  background: #fff;
+}
+.v3-releases-filters-search:focus {
+  outline: none;
+  border-color: var(--v3-primary, #622599);
+  box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.12);
+}
+.v3-releases-filters-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.v3-releases-filters-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-caption);
+  color: var(--v3-text-m);
+}
+.v3-releases-filters-date input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid var(--v3-border, #d6dbe5);
+  border-radius: 6px;
+  font-size: var(--fs-caption);
+  font-family: inherit;
+  color: var(--v3-text-d);
+  background: #fff;
+}
+.v3-releases-filters-meta {
+  margin-left: auto;
+  font-size: var(--fs-caption);
+  color: var(--v3-text-m);
+  font-weight: 500;
+}
+/* Pagination */
+.v3-releases-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: var(--v3-gap-md) 0 var(--v3-gap-sm);
+}
+.v3-releases-pagination-num.is-current {
+  background: var(--v3-primary, #622599);
+  color: #fff;
+  border-color: var(--v3-primary, #622599);
+}
+.v3-releases-pagination-gap {
+  padding: 0 4px;
+  color: var(--v3-text-m);
+  font-size: var(--fs-caption);
+}
+@media (max-width: 720px) {
+  .v3-releases-filters-meta {
+    margin-left: 0;
+    width: 100%;
+    order: 99;
+  }
+}
 .v3-releases-toolbar-check {
   display: inline-flex;
   align-items: center;

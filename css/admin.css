@@ -489,6 +489,66 @@
   .kms-back-to-top { right: 16px; bottom: 16px; padding: 9px 12px; font-size: 11px; }
 }
 
+/* 버전기록 검색 + 기간 필터 row (2026-05-27) */
+.kms-cl-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: 10px;
+}
+.kms-cl-filters-search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+}
+.kms-cl-filters-search:focus {
+  outline: none;
+  border-color: var(--kms-accent, #4D006E);
+  box-shadow: 0 0 0 3px rgba(77, 0, 110, 0.12);
+}
+.kms-cl-filters-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kms-cl-filters-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+}
+.kms-cl-filters-date input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid var(--kms-border, #e5e5ea);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: var(--kms-ink, #1f1f1f);
+}
+.kms-cl-filters-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--kms-muted, #6f6f6f);
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  .kms-cl-filters-meta { margin-left: 0; width: 100%; order: 99; }
+}
+
 /* 버전기록 페이지네이션 */
 .kms-cl-pagination {
   display: flex;

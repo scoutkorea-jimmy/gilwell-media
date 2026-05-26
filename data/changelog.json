@@ -1,6 +1,41 @@
 {
   "items": [
   {
+    "version": "03.137.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 04:30:00 KST",
+    "summary": "버전기록(Admin · 공개 KMS) 에 키워드 검색 + 기간 필터 + 50개 단위 페이지네이션 신설.",
+    "for_users": [
+      "관리자 버전기록 패널과 공개 KMS '버전기록 / Changelog' 탭에서 키워드를 입력하면 요약·변경사항·버전·날짜 어디에서 매칭되든 해당 엔트리를 즉시 찾을 수 있습니다 (예: 'memorabilia' 검색 → 도감 관련 변경만).",
+      "From / To 날짜 입력으로 특정 기간의 업데이트만 골라 볼 수 있습니다.",
+      "한 페이지에 50건 단위로 끊어 보여주고, 페이지 번호 + 이전/다음 버튼으로 이동할 수 있습니다.",
+      "범위(전체/Site/Admin) 필터, 검색, 기간을 자유롭게 조합할 수 있고 '초기화' 버튼으로 한 번에 해제됩니다."
+    ],
+    "for_developers": [
+      "admin.html #panel-releases: .v3-releases-tabs 다음에 .v3-releases-filters (search input + date-from/to + reset + meta) 추가. #releases-list 다음에 <nav class='v3-releases-pagination' id='releases-pagination'> 추가.",
+      "js/admin-v3.js: _releasesQuery/_releasesFrom/_releasesTo/_releasesPage state + _RELEASES_PAGE_SIZE=50. _filterReleases(items, scope, q, from, to) 로 scope+기간+키워드 통합 필터. _releaseDateIso(item) 가 released_at/date 의 YYYY-MM-DD 추출. _renderReleasesPagination(total) 가 ±2 윈도우 + first/last 버튼 마크업 출력. _renderReleases() 가 filtered.length 로 페이지 클램프 후 page slice 만 렌더, _updateReleasesFilterMeta 로 '필터 결과 N/M · X–Y (페이지 P/T)' 표시.",
+      "js/admin-v3.js _setupReleaseTabs: scope/검색/from/to/reset 핸들러 + #releases-pagination click 위임. 모든 필터 변경 시 _releasesPage=1 리셋. 페이지 이동 후 #releases-list.scrollIntoView smooth.",
+      "kms.html #kms-tab-changelog: .kms-panel-header 다음에 .kms-cl-filters (search + date-from/to + reset + meta) 추가. kms.html nav scope chips 와 별도 row.",
+      "js/kms.js _state: changelogQuery/changelogFrom/changelogTo 신설. renderChangelog() 안에서 scope 필터 → 기간 필터 → 키워드 필터 순으로 적용. PAGE_SIZE 30 → 50. kms-cl-filter-meta 갱신. setup() 에서 #kms-cl-search/-date-from/-date-to/-filter-reset 핸들러 부착 (debounce 200ms 검색).",
+      "css/admin-v3.css: .v3-releases-filters / -search / -dates / -date / -meta + .v3-releases-pagination(-num.is-current/-gap). css/admin.css: .kms-cl-filters / -search / -dates / -date / -meta. 모바일(≤720px) 에서 meta 가 줄바꿈으로 풀폭.",
+      "Admin 03.136.02 → 03.137.00 (feature — 버전기록 검색·기간·페이지네이션)."
+    ]
+  },
+  {
+    "version": "00.158.02",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 04:30:00 KST",
+    "summary": "스카우트 기념품 도감 상세 페이지 광고 정상 노출 핫픽스 (홈과 동일한 카카오 애드핏 슬롯).",
+    "for_users": [
+      "스카우트 기념품 도감 상세 페이지에서 본문 구분선 아래 / 좋아요 버튼 위 광고가 정상 노출됩니다. 홈에서 보이는 광고와 동일한 슬롯."
+    ],
+    "for_developers": [
+      "memorabilia.html: 카카오 애드핏 .kakao-adfit-horizontal 을 #memo-engagement(hidden=true) 안 → .memo-detail-inner 안 #memo-detail-content 직후로 이동 (#memo-detail-ad). 가시 영역에 위치해 ba.min.js 가 슬롯을 채울 수 있도록.",
+      "js/memorabilia.js showDetail(): loadDetail 호출 직후 reloadKakaoAdfit() 추가 — data-kakao-adfit-loader 속성으로 기존 스크립트 제거 + ba.min.js 동적 재삽입으로 ins.kakao_ad_area 재스캔 강제. detail view 가 처음 hidden 이라 첫 페이지 로드 시 ba.min.js 가 광고를 채우지 못하던 문제 해결.",
+      "사이트 00.158.01 → 00.158.02 (fix — 도감 상세 광고 슬롯 채움 보장)."
+    ]
+  },
+  {
     "version": "00.158.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 04:00:00 KST",

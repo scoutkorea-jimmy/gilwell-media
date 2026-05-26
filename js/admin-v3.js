@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.136.02
+ * Version: 03.137.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7068,6 +7068,11 @@
   ══════════════════════════════════════════════════════════ */
   var _releasesData  = null;
   var _releasesScope = 'all';
+  var _releasesQuery = '';
+  var _releasesFrom  = ''; // YYYY-MM-DD (inclusive)
+  var _releasesTo    = ''; // YYYY-MM-DD (inclusive)
+  var _releasesPage  = 1;
+  var _RELEASES_PAGE_SIZE = 50;
 
   function _inferReleaseScope(item) {
     var raw = String(item && item.scope || '').trim().toLowerCase();
@@ -7111,15 +7116,109 @@
       });
   }
 
-  function _renderReleases(el, items, scope) {
-    var filtered = scope === 'all' ? items : items.filter(function (item) {
+  function _releaseDateIso(item) {
+    // released_at("YYYY-MM-DD HH:MM:SS KST") 또는 date("YYYY-MM-DD") 의 앞 10글자 사용.
+    var raw = String(item && (item.released_at || item.date) || '');
+    var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
+  }
+
+  function _filterReleases(items, scope, query, from, to) {
+    var q = String(query || '').trim().toLowerCase();
+    return items.filter(function (item) {
+      // scope 필터
       var s = _inferReleaseScope(item);
-      return s === scope || s === 'both';
+      if (scope !== 'all' && s !== scope && s !== 'both') return false;
+      // 기간 필터 (inclusive)
+      var iso = _releaseDateIso(item);
+      if (from && iso && iso < from) return false;
+      if (to && iso && iso > to) return false;
+      if ((from || to) && !iso) return false; // 날짜 없는 엔트리는 기간 적용 시 제외
+      // 키워드 검색 — version / summary / for_users / for_developers / items / changes / date 모두 매칭
+      if (q) {
+        var bag = [
+          String(item.version || ''),
+          String(item.summary || ''),
+          String(item.released_at || ''),
+          String(item.date || ''),
+        ];
+        if (Array.isArray(item.for_users)) bag = bag.concat(item.for_users);
+        if (Array.isArray(item.for_developers)) bag = bag.concat(item.for_developers);
+        if (Array.isArray(item.items)) bag = bag.concat(item.items);
+        if (Array.isArray(item.changes)) bag = bag.concat(item.changes);
+        if (Array.isArray(item.issues)) bag = bag.concat(item.issues);
+        var hay = bag.join(' \n ').toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
     });
-    if (!filtered.length) {
-      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">버전 기록이 없습니다</div></div>';
+  }
+
+  function _renderReleasesPagination(total) {
+    var nav = document.getElementById('releases-pagination');
+    if (!nav) return;
+    var pageSize = _RELEASES_PAGE_SIZE;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (_releasesPage > totalPages) _releasesPage = totalPages;
+    if (_releasesPage < 1) _releasesPage = 1;
+    if (total <= pageSize) {
+      nav.hidden = true;
+      nav.innerHTML = '';
       return;
     }
+    nav.hidden = false;
+    var page = _releasesPage;
+    // 현재 페이지 주변 ±2 + 처음/끝 항상.
+    var nums = [];
+    var add = function (n) { if (n >= 1 && n <= totalPages && nums.indexOf(n) === -1) nums.push(n); };
+    add(1); add(totalPages);
+    for (var i = page - 2; i <= page + 2; i++) add(i);
+    nums.sort(function (a, b) { return a - b; });
+    var btnHtml = '<button type="button" class="v3-btn v3-btn-sm" data-rel-page="prev"' +
+      (page <= 1 ? ' disabled' : '') + '>‹ 이전</button>';
+    var last = 0;
+    nums.forEach(function (n) {
+      if (last && n - last > 1) btnHtml += '<span class="v3-releases-pagination-gap">…</span>';
+      btnHtml += '<button type="button" class="v3-btn v3-btn-sm v3-releases-pagination-num' +
+        (n === page ? ' is-current' : '') + '" data-rel-page="' + n + '">' + n + '</button>';
+      last = n;
+    });
+    btnHtml += '<button type="button" class="v3-btn v3-btn-sm" data-rel-page="next"' +
+      (page >= totalPages ? ' disabled' : '') + '>다음 ›</button>';
+    nav.innerHTML = btnHtml;
+  }
+
+  function _updateReleasesFilterMeta(filteredTotal, fullTotal) {
+    var meta = document.getElementById('releases-filter-meta');
+    if (!meta) return;
+    var pageSize = _RELEASES_PAGE_SIZE;
+    var totalPages = Math.max(1, Math.ceil(filteredTotal / pageSize));
+    var fromIdx = filteredTotal === 0 ? 0 : (_releasesPage - 1) * pageSize + 1;
+    var toIdx = Math.min(filteredTotal, _releasesPage * pageSize);
+    if (filteredTotal === fullTotal) {
+      meta.textContent = '총 ' + fullTotal + '건 · ' + fromIdx + '–' + toIdx + ' (페이지 ' + _releasesPage + '/' + totalPages + ')';
+    } else {
+      meta.textContent = '필터 결과 ' + filteredTotal + '건 / 전체 ' + fullTotal + '건 · ' + fromIdx + '–' + toIdx + ' (페이지 ' + _releasesPage + '/' + totalPages + ')';
+    }
+  }
+
+  function _renderReleases(el, items, scope) {
+    var allFiltered = _filterReleases(items, scope, _releasesQuery, _releasesFrom, _releasesTo);
+    if (!allFiltered.length) {
+      el.innerHTML = '<div class="v3-empty"><div class="v3-empty-icon">📋</div><div class="v3-empty-text">조건에 맞는 버전 기록이 없습니다</div></div>';
+      _updateReleasesFilterMeta(0, items.length);
+      _renderReleasesPagination(0);
+      var toolbar0 = document.getElementById('releases-toolbar');
+      if (toolbar0) toolbar0.hidden = true;
+      return;
+    }
+    var pageSize = _RELEASES_PAGE_SIZE;
+    var totalPages = Math.max(1, Math.ceil(allFiltered.length / pageSize));
+    if (_releasesPage > totalPages) _releasesPage = totalPages;
+    if (_releasesPage < 1) _releasesPage = 1;
+    _updateReleasesFilterMeta(allFiltered.length, items.length);
+    var start = (_releasesPage - 1) * pageSize;
+    var filtered = allFiltered.slice(start, start + pageSize);
     var typeClass = { Bugfix: 'v3-badge-gray', Hotfix: 'v3-badge-gray', Update: 'v3-badge-blue', Feature: 'v3-badge-green', Release: 'v3-badge-green' };
     el.innerHTML = filtered.map(function (item) {
       var type = _inferReleaseType(item);
@@ -7182,12 +7281,13 @@
       '</div>';
     }).join('');
 
-    // toolbar 노출 + 선택 상태 초기화
+    // toolbar 노출 + 선택 상태 초기화 + 페이지네이션 갱신
     var toolbar = document.getElementById('releases-toolbar');
     if (toolbar) toolbar.hidden = false;
     var selectAll = document.getElementById('releases-select-all');
     if (selectAll) selectAll.checked = false;
     _updateReleaseSelectionCount();
+    _renderReleasesPagination(allFiltered.length);
   }
 
   // 선택된 버전들 → release item 매칭 → md 텍스트 생성 → Blob 다운로드.
@@ -7317,21 +7417,88 @@
     if (btn) btn.disabled = count === 0;
   }
 
+  function _rerenderReleases() {
+    var el = document.getElementById('releases-list');
+    if (!el) return;
+    if (_releasesData) _renderReleases(el, _releasesData, _releasesScope);
+    else _loadReleases();
+  }
+
   function _setupReleaseTabs() {
     document.querySelectorAll('.v3-releases-tab').forEach(function (btn) {
       btn.addEventListener('click', function () {
         _releasesScope = btn.dataset.scope || 'all';
+        _releasesPage = 1; // scope 변경 시 1페이지로 리셋
         document.querySelectorAll('.v3-releases-tab').forEach(function (b) {
           b.classList.toggle('active', b === btn);
         });
-        var el = document.getElementById('releases-list');
-        if (_releasesData) {
-          _renderReleases(el, _releasesData, _releasesScope);
-        } else {
-          _loadReleases();
-        }
+        _rerenderReleases();
       });
     });
+
+    // 검색 input — 입력 시 debounce 후 적용
+    var searchInput = document.getElementById('releases-search');
+    if (searchInput) {
+      var _searchTimer = null;
+      searchInput.addEventListener('input', function () {
+        if (_searchTimer) clearTimeout(_searchTimer);
+        _searchTimer = setTimeout(function () {
+          _releasesQuery = String(searchInput.value || '').trim();
+          _releasesPage = 1;
+          _rerenderReleases();
+        }, 200);
+      });
+    }
+    // 기간 from/to — 변경 즉시 적용
+    var fromInput = document.getElementById('releases-date-from');
+    var toInput   = document.getElementById('releases-date-to');
+    if (fromInput) {
+      fromInput.addEventListener('change', function () {
+        _releasesFrom = String(fromInput.value || '');
+        _releasesPage = 1;
+        _rerenderReleases();
+      });
+    }
+    if (toInput) {
+      toInput.addEventListener('change', function () {
+        _releasesTo = String(toInput.value || '');
+        _releasesPage = 1;
+        _rerenderReleases();
+      });
+    }
+    // 초기화 — 검색·기간 모두 비우고 1페이지로 리셋
+    var resetBtn = document.getElementById('releases-filter-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (searchInput) searchInput.value = '';
+        if (fromInput) fromInput.value = '';
+        if (toInput) toInput.value = '';
+        _releasesQuery = ''; _releasesFrom = ''; _releasesTo = '';
+        _releasesPage = 1;
+        _rerenderReleases();
+      });
+    }
+    // 페이지네이션 버튼 위임 — 숫자/이전/다음
+    var pagination = document.getElementById('releases-pagination');
+    if (pagination) {
+      pagination.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-rel-page]');
+        if (!btn || btn.disabled) return;
+        var val = btn.getAttribute('data-rel-page');
+        if (val === 'prev') _releasesPage = Math.max(1, _releasesPage - 1);
+        else if (val === 'next') _releasesPage = _releasesPage + 1;
+        else {
+          var n = parseInt(val, 10);
+          if (Number.isFinite(n)) _releasesPage = n;
+        }
+        _rerenderReleases();
+        // 페이지 변경 시 리스트 상단으로 스크롤
+        var list = document.getElementById('releases-list');
+        if (list && list.scrollIntoView) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
 
     // 다운로드 toolbar 핸들러 (toolbar 는 _renderReleases 가 노출).
     var list = document.getElementById('releases-list');

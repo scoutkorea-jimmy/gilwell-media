@@ -59,6 +59,22 @@
     document.getElementById('memo-results-wrap').hidden = true;
     document.getElementById('memo-detail-view').hidden = false;
     loadDetail(slug);
+    // ba.min.js 는 페이지 첫 로드 시 ins.kakao_ad_area 를 스캔해 광고를 채운다.
+    // detail view 가 처음 hidden 이었다면 슬롯이 비어 있을 수 있으므로 가시화
+    // 직후 스크립트를 재로드해 다시 스캔하도록 한다.
+    reloadKakaoAdfit();
+  }
+
+  function reloadKakaoAdfit() {
+    try {
+      var prev = document.querySelector('script[data-kakao-adfit-loader]');
+      if (prev && prev.parentNode) prev.parentNode.removeChild(prev);
+      var s = document.createElement('script');
+      s.src = 'https://t1.kakaocdn.net/kas/static/ba.min.js';
+      s.async = true;
+      s.setAttribute('data-kakao-adfit-loader', '1');
+      document.body.appendChild(s);
+    } catch (_) { /* 광고 실패는 페이지 동작에 영향 없게 무시 */ }
   }
 
   // ── List/Search state ──────────────────────────────────────────────────
