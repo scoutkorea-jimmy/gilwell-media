@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "03.137.02",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 06:30:00 KST",
+    "summary": "관리자 도감 입력 모달에도 동일한 태그 칩 UI + 행사 기반 추천 적용.",
+    "for_users": [
+      "관리자 페이지의 도감 추가/편집 모달에서도 태그가 칩으로 명확히 구분됩니다. Enter / 콤마 / Tab 으로 추가, × 또는 Backspace 로 제거.",
+      "행사를 선택하면 같은 행사의 다른 기념품 태그를 추천해주고, ↑↓ + Enter / Esc 키보드 네비게이션이 동작합니다."
+    ],
+    "for_developers": [
+      "admin.html: #memo-tags 단일 input → .memo-tags-chip-input(.memo-tags-chips + .memo-tags-typing #memo-tags-input) + hidden #memo-tags 데이터 소스 + .memo-tags-suggestions 추천 영역으로 재구성. hint 텍스트 갱신.",
+      "js/admin-memorabilia.js: bindTagAutocomplete 제거. tagsChipState + renderTagChips / addTagFromText / setTagChipsFromArray / bindTagChipInput / refreshTagSuggestions 신설 (memorabilia.js 와 동일 동작). IME composition 중 이벤트 무시(e.isComposing || keyCode 229) + compositionend 핸들러 없음 → 마지막 음절 중복 토큰 버그 회피.",
+      "js/admin-memorabilia.js openEditor / fillForm: $('#memo-tags').value = ... → setTagChipsFromArray(...) 로 교체. typing input 클리어 + 추천 영역 hidden 초기화.",
+      "wireMemoEvents: bindTagAutocomplete($('#memo-tags'), ...) → bindTagChipInput(). #memo-event-row change + #memo-has-event change → refreshTagSuggestions 위임.",
+      "css/memorabilia.css 가 admin.html 에 이미 로드되어 칩 UI 스타일 자동 적용 — 별도 admin css 변경 없음.",
+      "Admin 03.137.01 → 03.137.02 (fix — 도감 칩 UI 관리자 모달 적용)."
+    ]
+  },
+  {
+    "version": "00.159.02",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 06:30:00 KST",
+    "summary": "공개 도감 태그 입력: 한글 IME 콤마 입력 시 마지막 음절이 별도 칩으로 중복 추가되던 버그 핫픽스.",
+    "for_users": [
+      "한글로 태그를 입력하다 콤마를 누르면 '호박' 뒤에 '박' 같은 마지막 글자가 별도 칩으로 따라붙던 문제가 해결되었습니다. '호박, 감자' 가 정확히 2개 칩으로 만들어집니다."
+    ],
+    "for_developers": [
+      "js/memorabilia.js bindTagChipInput: keydown 에서 e.isComposing || keyCode 229 면 조기 return (IME 처리 중 무시). input event 도 e.isComposing 면 무시.",
+      "compositionend 핸들러 완전 제거 — compositionend 직후 input event 가 별도로 발생하고 그쪽에서 콤마 split 처리하므로 이중 핸들러였음. 마지막 한글 음절이 한 번 더 split 되어 중복 칩이 되던 원인.",
+      "사이트 00.159.01 → 00.159.02 (fix — 한글 IME 콤마 중복 토큰 핫픽스)."
+    ]
+  },
+  {
     "version": "00.159.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 06:00:00 KST",

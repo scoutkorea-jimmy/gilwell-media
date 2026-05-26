@@ -146,8 +146,13 @@
     // Issuer autocomplete
     bindAutocomplete($('#memo-issuer-en'), $('#memo-issuer-en-suggest'), 'issuer');
     bindAutocomplete($('#memo-issuer-ko'), $('#memo-issuer-ko-suggest'), 'issuer');
-    // Tag autocomplete (last token)
-    bindTagAutocomplete($('#memo-tags'), $('#memo-tags-suggest'));
+    // Tag chip input (신 UI) — 한글 IME 친화 콤마 처리 + 키보드 네비게이션
+    bindTagChipInput();
+    // 행사 변경 시 추천 태그 자동 갱신
+    const eventRow = $('#memo-event-row');
+    if (eventRow) eventRow.addEventListener('change', refreshTagSuggestions, true);
+    const hasEvent = $('#memo-has-event');
+    if (hasEvent) hasEvent.addEventListener('change', refreshTagSuggestions);
 
     // Bulk find/replace 일괄 수정 도구
     wireBulkReplaceOnce();
@@ -346,7 +351,7 @@
       $('#memo-issuer-en').value = src.issuer_en || '';
       $('#memo-issuer-ko').value = src.issuer_ko || '';
     }
-    if (fieldsSet.has('tags'))     $('#memo-tags').value         = (src.tags || []).join(', ');
+    if (fieldsSet.has('tags'))     setTagChipsFromArray(src.tags || []);
     if (fieldsSet.has('country_codes') && state.countryPicker) {
       state.countryPicker.setValue(src.country_codes || []);
     }
@@ -1031,7 +1036,9 @@
     $('#memo-size').value = item?.size_text || '';
     $('#memo-issuer-en').value = item?.issuer_en || '';
     $('#memo-issuer-ko').value = item?.issuer_ko || '';
-    $('#memo-tags').value = (item?.tags || []).join(', ');
+    setTagChipsFromArray(item?.tags || []);
+    { const ti = $('#memo-tags-input'); if (ti) ti.value = ''; }
+    { const sug = $('#memo-tags-suggestions'); if (sug) sug.hidden = true; }
     $('#memo-desc-en').value = readDescPlain(item?.description_en);
     $('#memo-desc-ko').value = readDescPlain(item?.description_ko);
     $('#memo-status').value = item?.status || 'draft';
@@ -1448,34 +1455,210 @@
     input.addEventListener('blur', () => setTimeout(() => { dropdown.hidden = true; }, 150));
   }
 
-  function bindTagAutocomplete(input, dropdown) {
-    if (!input || !dropdown) return;
-    let timer;
-    input.addEventListener('input', () => {
-      clearTimeout(timer);
-      const parts = input.value.split(',');
-      const last = (parts[parts.length - 1] || '').trim();
-      if (last.length < 1) { dropdown.hidden = true; return; }
-      timer = setTimeout(async () => {
+  // ── Tag chip input (new UI, 2026-05-27) ───────────────────────────────
+  // 한글 IME 친화: 모든 콤마 처리는 input event 한 곳에서. keydown/compositionend
+  // 중복 핸들러 없음 — 마지막 한글 음절이 중복 토큰으로 들어가던 버그 방지.
+  const tagsChipState = { tags: [] };
+
+  function renderTagChips() {
+    const wrap = $('#memo-tags-chips');
+    const hidden = $('#memo-tags');
+    if (!wrap || !hidden) return;
+    wrap.innerHTML = tagsChipState.tags.map((t, i) =>
+      '<span class="memo-tag-chip-editor" data-i="' + i + '">' +
+        escapeHtml(t) +
+        '<button type="button" class="memo-tag-chip-x" data-i="' + i + '" aria-label="태그 제거">×</button>' +
+      '</span>'
+    ).join('');
+    hidden.value = tagsChipState.tags.join(', ');
+    $$('.memo-tag-chip-x', wrap).forEach((b) => {
+      b.addEventListener('click', () => {
+        const i = parseInt(b.getAttribute('data-i'), 10);
+        if (Number.isFinite(i)) {
+          tagsChipState.tags.splice(i, 1);
+          renderTagChips();
+          refreshTagSuggestions();
+        }
+      });
+    });
+  }
+  function addTagFromText(raw) {
+    const cleaned = String(raw || '').trim().replace(/^,+|,+$/g, '').trim();
+    if (!cleaned) return false;
+    const lower = cleaned.toLowerCase();
+    if (tagsChipState.tags.some((t) => t.toLowerCase() === lower)) return false;
+    tagsChipState.tags.push(cleaned);
+    renderTagChips();
+    return true;
+  }
+  function setTagChipsFromArray(arr) {
+    tagsChipState.tags = Array.isArray(arr)
+      ? arr.map((t) => String(t || '').trim()).filter(Boolean)
+      : [];
+    renderTagChips();
+  }
+  function setTagChipsFromCsv(csv) {
+    const arr = String(csv || '').split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+    setTagChipsFromArray(arr);
+  }
+  // expose to outer code (resetForm / fillForm 등에서 호출)
+  window.__adminMemoTagsChipState = tagsChipState;
+  window.__adminMemoSetTagChipsFromArray = setTagChipsFromArray;
+
+  function bindTagChipInput() {
+    const input = $('#memo-tags-input');
+    const wrap = $('#memo-tags-chip-input');
+    const suggest = $('#memo-tags-suggest');
+    if (!input) return;
+    let activeIndex = -1;
+
+    function commitInputAsTag() {
+      const v = input.value;
+      if (!v.trim()) return false;
+      const parts = v.split(',').map((s) => s.trim()).filter(Boolean);
+      let added = false;
+      parts.forEach((p) => { if (addTagFromText(p)) added = true; });
+      input.value = '';
+      activeIndex = -1;
+      if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
+      if (added) refreshTagSuggestions();
+      return added;
+    }
+
+    let acTimer;
+    input.addEventListener('input', (e) => {
+      if (e && e.isComposing) return; // IME composition 중이면 무시
+      if (input.value.indexOf(',') !== -1) {
+        const parts = input.value.split(',');
+        const tail = parts.pop();
+        parts.forEach((p) => { addTagFromText(p); });
+        input.value = (tail || '').replace(/^\s+/, '');
+        activeIndex = -1;
+        if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
+        refreshTagSuggestions();
+      }
+      clearTimeout(acTimer);
+      const q = input.value.trim();
+      if (q.length < 1 || !suggest) { if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; } return; }
+      acTimer = setTimeout(async () => {
         try {
-          const res = await fetchJson(`/api/memorabilia/autocomplete?type=tag&q=${encodeURIComponent(last)}`);
-          const items = (res.items || []).filter((s) => s.toLowerCase() !== last.toLowerCase());
-          if (!items.length) { dropdown.hidden = true; return; }
-          dropdown.innerHTML = items.map((s) => `<div class="v3-autocomplete-item" data-val="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('');
-          dropdown.hidden = false;
-          $$('.v3-autocomplete-item', dropdown).forEach((d) => {
-            d.addEventListener('mousedown', (e) => {
-              e.preventDefault();
-              parts[parts.length - 1] = ' ' + d.getAttribute('data-val');
-              input.value = parts.join(',') + ', ';
-              dropdown.hidden = true;
+          const res = await fetchJson(`/api/memorabilia/autocomplete?type=tag&q=${encodeURIComponent(q)}`);
+          const existing = new Set(tagsChipState.tags.map((t) => t.toLowerCase()));
+          const items = (res.items || []).filter((s) => !existing.has(String(s).toLowerCase()) && s.toLowerCase() !== q.toLowerCase());
+          if (!items.length) { suggest.hidden = true; suggest.innerHTML = ''; return; }
+          activeIndex = -1;
+          suggest.innerHTML = items.map((s, i) =>
+            '<div class="memo-autocomplete-item" role="option" data-i="' + i + '" data-val="' + escapeHtml(s) + '">' + escapeHtml(s) + '</div>'
+          ).join('');
+          suggest.hidden = false;
+          $$('.memo-autocomplete-item', suggest).forEach((d) => {
+            d.addEventListener('mousedown', (ev) => {
+              ev.preventDefault();
+              if (addTagFromText(d.getAttribute('data-val'))) refreshTagSuggestions();
+              input.value = '';
+              suggest.hidden = true;
+              suggest.innerHTML = '';
               input.focus();
             });
           });
-        } catch {}
+        } catch (_) { suggest.hidden = true; }
       }, 200);
     });
-    input.addEventListener('blur', () => setTimeout(() => { dropdown.hidden = true; }, 150));
+
+    input.addEventListener('keydown', (e) => {
+      if (e.isComposing || e.keyCode === 229) return; // IME 처리 중이면 무시
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (suggest && !suggest.hidden && activeIndex >= 0) {
+          const items = $$('.memo-autocomplete-item', suggest);
+          const picked = items[activeIndex];
+          if (picked) {
+            addTagFromText(picked.getAttribute('data-val'));
+            input.value = '';
+            suggest.hidden = true; suggest.innerHTML = '';
+            refreshTagSuggestions();
+            return;
+          }
+        }
+        commitInputAsTag();
+        return;
+      }
+      if (e.key === ',' || e.code === 'Comma') {
+        e.preventDefault();
+        commitInputAsTag();
+        return;
+      }
+      if (e.key === 'Backspace' && !input.value && tagsChipState.tags.length) {
+        tagsChipState.tags.pop();
+        renderTagChips();
+        refreshTagSuggestions();
+        return;
+      }
+      if (suggest && !suggest.hidden) {
+        const items = $$('.memo-autocomplete-item', suggest);
+        if (e.key === 'ArrowDown' && items.length) {
+          e.preventDefault();
+          activeIndex = Math.min(items.length - 1, activeIndex + 1);
+          items.forEach((it, i) => it.classList.toggle('is-active', i === activeIndex));
+        } else if (e.key === 'ArrowUp' && items.length) {
+          e.preventDefault();
+          activeIndex = Math.max(-1, activeIndex - 1);
+          items.forEach((it, i) => it.classList.toggle('is-active', i === activeIndex));
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          suggest.hidden = true; suggest.innerHTML = '';
+          activeIndex = -1;
+        }
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) {
+        if (addTagFromText(input.value)) refreshTagSuggestions();
+        input.value = '';
+      }
+      if (suggest) setTimeout(() => { suggest.hidden = true; suggest.innerHTML = ''; }, 150);
+    });
+    if (wrap) wrap.addEventListener('click', (e) => {
+      if (e.target === wrap || e.target.id === 'memo-tags-chips') input.focus();
+    });
+  }
+
+  // 행사 기반 추천 태그 — 같은 행사의 다른 기념품에서 자주 쓰인 태그 빈도순 top 12
+  let _tagSuggestTimer = null;
+  async function refreshTagSuggestions() {
+    const wrap = $('#memo-tags-suggestions');
+    const list = $('#memo-tags-suggestions-list');
+    const source = $('#memo-tags-suggestions-source');
+    if (!wrap || !list) return;
+    const eventId = state.selectedEventId || null;
+    if (!eventId) { wrap.hidden = true; return; }
+    if (_tagSuggestTimer) clearTimeout(_tagSuggestTimer);
+    _tagSuggestTimer = setTimeout(async () => {
+      try {
+        const res = await fetchJson(`/api/memorabilia?event_id=${eventId}&limit=30`);
+        const freq = {};
+        (res.items || []).forEach((it) => {
+          (it.tags || []).forEach((t) => { if (!t) return; freq[t] = (freq[t] || 0) + 1; });
+        });
+        const existing = new Set(tagsChipState.tags.map((t) => t.toLowerCase()));
+        const top = Object.keys(freq)
+          .filter((t) => !existing.has(t.toLowerCase()))
+          .sort((a, b) => freq[b] - freq[a])
+          .slice(0, 12);
+        if (!top.length) { wrap.hidden = true; return; }
+        if (source) source.textContent = '(행사 기반)';
+        list.innerHTML = top.map((t) =>
+          '<button type="button" class="memo-tag-suggestion" data-tag="' + escapeHtml(t) + '">+ ' + escapeHtml(t) + '</button>'
+        ).join('');
+        $$('.memo-tag-suggestion', list).forEach((b) => {
+          b.addEventListener('click', () => {
+            if (addTagFromText(b.getAttribute('data-tag'))) refreshTagSuggestions();
+          });
+        });
+        wrap.hidden = false;
+      } catch (_) { wrap.hidden = true; }
+    }, 200);
   }
 
   // ── Save / Delete ───────────────────────────────────────────────────────

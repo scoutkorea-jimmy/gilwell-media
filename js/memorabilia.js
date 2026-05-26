@@ -1230,10 +1230,14 @@
       return added;
     }
 
-    // 한글 IME 친화 — keydown 의 'Process' 케이스에서도 동작하도록 input 이벤트로
-    // 콤마가 들어왔는지 검사하고, 들어왔으면 그 시점에 split 해서 칩으로 변환.
+    // 한글 IME 친화 — 모든 콤마 처리는 input event 한 곳에서만. keydown 의
+    // ','/'Comma' 분기는 IME composition 중이면 무시 (이중 처리 방지).
+    // compositionend 직후에도 input event 가 따로 발생하므로 별도 핸들러 없음.
     let acTimer;
-    input.addEventListener('input', () => {
+    input.addEventListener('input', (e) => {
+      // IME 가 한글 음절 조립 중이면 input event 무시 — composition end 후의
+      // input event 가 다시 한 번 발생하므로 그때 처리.
+      if (e && e.isComposing) return;
       // 값 안에 콤마가 포함되면 칩으로 즉시 분리 (마지막 토큰만 입력으로 유지)
       if (input.value.indexOf(',') !== -1) {
         const parts = input.value.split(',');
@@ -1278,6 +1282,8 @@
     });
 
     input.addEventListener('keydown', (e) => {
+      // IME composition 중이면 모든 키 처리 무시 — composition end 후 input event 가 처리.
+      if (e.isComposing || e.keyCode === 229) return;
       // Enter 또는 Tab → 칩으로 commit (Tab 은 폼 이동도 막지 않게 활성 자동완성 항목이 없을 때만 default 막음)
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1328,16 +1334,10 @@
       }
     });
 
-    // IME composition 끝난 직후에도 콤마/엔터 가능성 검사
-    input.addEventListener('compositionend', () => {
-      if (input.value.indexOf(',') !== -1) {
-        const parts = input.value.split(',');
-        const tail = parts.pop();
-        parts.forEach((p) => { addTagFromText(p); });
-        input.value = (tail || '').replace(/^\s+/, '');
-        refreshTagSuggestions();
-      }
-    });
+    // compositionend 핸들러는 의도적으로 두지 않음 — compositionend 직후 input
+    // 이벤트가 따로 발생하고 그쪽에서 콤마 split 처리가 동일하게 일어난다.
+    // 이중 핸들러는 마지막 음절이 한 번 더 split 되어 별도 칩으로 추가되는
+    // 중복 토큰 버그를 일으킨다 (2026-05-27 핫픽스).
 
     input.addEventListener('blur', () => {
       if (input.value.trim()) {
