@@ -44,11 +44,15 @@ export async function onRequestGet({ request, env }) {
 
   const sql = `
     SELECT m.id, m.slug, m.title_en, m.title_ko,
-           m.has_event, m.event_name_en, m.event_name_ko,
-           m.year, m.status, m.published_at, m.updated_at,
+           m.has_event, m.event_id, m.event_name_en, m.event_name_ko,
+           m.year, m.status, m.category_id, m.published_at, m.updated_at,
            c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko,
            (SELECT url FROM memorabilia_images
-             WHERE memorabilia_id = m.id ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS primary_image_url
+             WHERE memorabilia_id = m.id ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS primary_image_url,
+           (SELECT json_group_array(p.label)
+              FROM memorabilia_tags mt
+              JOIN memorabilia_tag_pool p ON p.id = mt.tag_id
+             WHERE mt.memorabilia_id = m.id) AS tags_json
       FROM memorabilia m
       LEFT JOIN memorabilia_categories c ON c.id = m.category_id
       ${where}
@@ -61,11 +65,20 @@ export async function onRequestGet({ request, env }) {
 
   try {
     const { results } = await env.DB.prepare(sql).bind(...bindings).all();
+    // tags_json (SQLite json array) → string[] 배열로 정규화
+    const items = (results || []).map((row) => {
+      let tags = [];
+      if (row.tags_json) {
+        try { tags = JSON.parse(row.tags_json) || []; } catch {}
+      }
+      const { tags_json, ...rest } = row;
+      return { ...rest, tags };
+    });
     const totalRow = await env.DB.prepare(
       `SELECT COUNT(*) AS n FROM memorabilia m ${where}`
     ).bind(...whereBindings).first();
     return json({
-      items: results || [],
+      items,
       page,
       page_size: pageSize,
       total: totalRow?.n || 0,

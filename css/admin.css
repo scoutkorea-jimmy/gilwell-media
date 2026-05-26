@@ -7463,4 +7463,72 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .v3-table tr[data-memo-row]:hover {
   background: rgba(98, 37, 153, 0.05);
 }
+.v3-table tr[data-memo-row].is-selected {
+  background: rgba(98, 37, 153, 0.10);
+}
+.v3-table tr[data-memo-row].is-selected:hover {
+  background: rgba(98, 37, 153, 0.15);
+}
+
+/* 태그 mini 칩 (목록 컬럼) */
+.memo-tag-mini-wrap {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  max-width: 280px;
+}
+.memo-tag-mini {
+  display: inline-block;
+  padding: 1px 7px;
+  background: var(--gray-100, #ebebeb);
+  color: var(--ink, #1f1f1f);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.memo-tag-rest {
+  font-size: 11px;
+  color: var(--gray-700, #3f3f3f);
+  font-weight: 500;
+  cursor: help;
+}
+
+/* 일괄 작업 toolbar — 선택된 항목 있을 때만 노출 */
+.memo-bulk-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  background: rgba(98, 37, 153, 0.06);
+  border: 1px solid rgba(98, 37, 153, 0.25);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.memo-bulk-toolbar strong {
+  color: var(--color-scouting-purple, #622599);
+}
+
+/* 일괄 수정 모달 — 필드별 토글 영역 */
+.memo-bulkedit-field {
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fff;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 6px;
+}
+.memo-bulkedit-toggle {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink, #1f1f1f);
+}
+.memo-bulkedit-toggle input[type=checkbox] {
+  width: 16px; height: 16px;
+  accent-color: var(--color-scouting-purple, #622599);
+}
+.memo-bulkedit-field input:disabled,
+.memo-bulkedit-field select:disabled {
+  opacity: .5;
+  background: var(--gray-100, #f5f5f5);
+}
 

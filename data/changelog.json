@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "03.135.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 21:30:00 KST",
+    "summary": "관리자 기념품 도감 — 목록에 체크박스 + 태그 컬럼 + 선택 항목 일괄 수정 모달 추가.",
+    "for_users": [
+      "도감 목록 첫 컬럼에 체크박스가 추가되어, 여러 항목을 동시에 선택할 수 있습니다. 헤더 체크박스로 현재 페이지 전체를 한 번에 선택/해제할 수 있고, 페이지를 넘겨도 이전 선택은 유지됩니다.",
+      "선택된 항목이 있으면 목록 상단에 '📝 일괄 수정' 도구 막대가 나타납니다. 클릭하면 상태(초안/공개), 분류, 행사 연결, 연도, 제작기관, 태그(추가/제거), 국가(추가/제거/교체) 등 8개 필드를 선택해 한 번에 적용할 수 있습니다. 체크 해제한 필드는 기존 값을 그대로 유지합니다.",
+      "도감 목록에 '태그' 컬럼이 추가되어 항목별 태그를 칩 형태로 미리 볼 수 있습니다 (최대 5개 + 잔여 카운트)."
+    ],
+    "for_developers": [
+      "functions/api/memorabilia/index.js GET: SQL 에 (SELECT json_group_array(p.label) FROM memorabilia_tags mt JOIN memorabilia_tag_pool p ...) AS tags_json 서브쿼리 추가. 응답에서 JSON.parse 후 items[].tags = string[] 정규화. event_id / category_id 도 응답에 포함 (bulk-edit 컨텍스트용).",
+      "functions/api/memorabilia/bulk-update.js (신규): POST {ids[], updates{}}. 지원 필드 — status, category_id, has_event+event_id, year, issuer_en/ko, material_en/ko, size_text, add_tags/remove_tags/set_tags, add_country_codes/remove_country_codes/set_country_codes. event_id 변경 시 memorabilia_events.usage_count 자동 ±1, denormalized event_name_* 캐시 갱신. 모든 처리 후 syncFtsForId 일괄 호출.",
+      "admin.html panel-memorabilia: 목록 위 #memo-bulk-toolbar (선택 시 노출) + 새 #memo-bulkedit-modal (8개 필드 토글 카드 — 상태/분류/행사/연도/제작기관/태그추가/태그제거/국가).",
+      "js/admin-memorabilia.js renderList: 체크박스 컬럼 + 태그 컬럼 (.memo-tag-mini + 5개 초과 시 +N) + tr.is-selected 시각 강조. state.selectedIds Set. wireBulkEditOnce + openBulkEdit + applyBulkToggleVisual + applyBulkEdit. 국가 모드 (add/remove/set radio).",
+      "css/admin.css: .memo-tag-mini · .memo-tag-mini-wrap · .memo-tag-rest · .memo-bulk-toolbar · .memo-bulkedit-field · .memo-bulkedit-toggle · tr[data-memo-row].is-selected 스타일 신규.",
+      "관리자 03.134.00 → 03.135.00 (feature — bulk select/edit + tag column)."
+    ]
+  },
+  {
     "version": "03.134.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 20:00:00 KST",

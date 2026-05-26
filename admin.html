@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526130419">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526130419">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526132850">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526132850">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.134.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.135.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.155.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.134.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.135.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.155.00</span></span></div>
     </div>
 
@@ -2002,7 +2002,92 @@
             </div>
           </div>
           <div class="v3-inline-meta" id="memo-list-meta">불러오는 중…</div>
+          <!-- 선택된 항목이 있을 때만 노출되는 일괄 작업 도구 -->
+          <div id="memo-bulk-toolbar" class="memo-bulk-toolbar" hidden></div>
           <div id="memo-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
+
+        <!-- 선택 항목 일괄 수정 모달 -->
+        <div class="v3-modal-backdrop" id="memo-bulkedit-modal" hidden role="dialog" aria-labelledby="memo-bulkedit-title">
+          <div class="v3-modal v3-modal-lg">
+            <div class="v3-modal-head">
+              <h2 id="memo-bulkedit-title">선택 항목 일괄 수정</h2>
+              <button class="v3-modal-close" id="memo-bulkedit-close" aria-label="닫기">×</button>
+            </div>
+            <div class="v3-modal-body">
+              <p style="margin:0 0 14px; font-size:12.5px; color:var(--gray-700,#3f3f3f); line-height:1.6;">
+                체크한 필드만 일괄 적용됩니다. 체크 해제한 필드는 기존 값이 그대로 유지됩니다.
+                <strong id="memo-bulkedit-count">0개</strong> 선택됨.
+              </p>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="status"/><span>상태</span></label>
+                <select id="memo-bulkedit-status" class="v3-input v3-input-sm" disabled>
+                  <option value="draft">초안 (비공개)</option>
+                  <option value="public">공개</option>
+                </select>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="category_id"/><span>분류</span></label>
+                <select id="memo-bulkedit-category" class="v3-input v3-input-sm" disabled>
+                  <option value="">(분류 없음)</option>
+                </select>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="event"/><span>행사</span></label>
+                <div id="memo-bulkedit-event-wrap" style="opacity:.5; pointer-events:none;">
+                  <label class="memo-checkbox-row" style="margin-bottom:6px;">
+                    <input type="checkbox" id="memo-bulkedit-has-event"/>
+                    <span>행사 연결 사용</span>
+                  </label>
+                  <div id="memo-bulkedit-event-picker"></div>
+                </div>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="year"/><span>연도</span></label>
+                <input type="number" id="memo-bulkedit-year" class="v3-input v3-input-sm" min="1900" max="2100" placeholder="예: 1991" disabled style="max-width:140px"/>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="issuer"/><span>제작기관 (영문/국문)</span></label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                  <input type="text" id="memo-bulkedit-issuer-en" class="v3-input v3-input-sm" placeholder="EN" disabled />
+                  <input type="text" id="memo-bulkedit-issuer-ko" class="v3-input v3-input-sm" placeholder="KO" disabled />
+                </div>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="tags_add"/><span>태그 추가</span></label>
+                <input type="text" id="memo-bulkedit-tags-add" class="v3-input v3-input-sm" placeholder="콤마(,)로 구분 · 예: 잼버리, 새만금" disabled />
+                <div class="v3-form-hint">기존 태그는 유지하고 입력한 태그만 추가합니다.</div>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="tags_remove"/><span>태그 제거</span></label>
+                <input type="text" id="memo-bulkedit-tags-remove" class="v3-input v3-input-sm" placeholder="콤마(,)로 구분" disabled />
+                <div class="v3-form-hint">선택된 항목들에서 입력한 태그만 제거합니다 (다른 태그는 유지).</div>
+              </div>
+
+              <div class="memo-bulkedit-field">
+                <label class="memo-bulkedit-toggle"><input type="checkbox" data-bulk-toggle="countries"/><span>국가</span></label>
+                <div id="memo-bulkedit-country-wrap" style="opacity:.5; pointer-events:none;">
+                  <div style="display:flex; gap:12px; margin-bottom:6px;">
+                    <label class="memo-checkbox-row" style="font-size:12px;"><input type="radio" name="memo-bulkedit-country-mode" value="add" checked/><span>추가</span></label>
+                    <label class="memo-checkbox-row" style="font-size:12px;"><input type="radio" name="memo-bulkedit-country-mode" value="remove"/><span>제거</span></label>
+                    <label class="memo-checkbox-row" style="font-size:12px;"><input type="radio" name="memo-bulkedit-country-mode" value="set"/><span>교체</span></label>
+                  </div>
+                  <div id="memo-bulkedit-country-picker"></div>
+                </div>
+              </div>
+            </div>
+            <div class="v3-modal-foot">
+              <button class="v3-btn v3-btn-outline" id="memo-bulkedit-cancel">취소</button>
+              <button class="v3-btn v3-btn-primary" id="memo-bulkedit-apply">선택 항목에 적용</button>
+            </div>
+          </div>
         </div>
 
         <!-- 데이터 일괄 수정 (find/replace) — 접힘 가능한 도구 영역 -->
@@ -3087,13 +3172,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260526130419"></script>
-<script src="/js/shared-country-name-ko.js?v=20260526130419"></script>
-<script src="/js/memorabilia-shared.js?v=20260526130419"></script>
-<script src="/js/admin-v3.js?v=20260526130419"></script>
-<script src="/js/admin-account.js?v=20260526130419"></script>
-<script src="/js/admin-memorabilia.js?v=20260526130419"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260526130419"></script>
+<script src="/js/main.js?v=20260526132850"></script>
+<script src="/js/shared-country-name-ko.js?v=20260526132850"></script>
+<script src="/js/memorabilia-shared.js?v=20260526132850"></script>
+<script src="/js/admin-v3.js?v=20260526132850"></script>
+<script src="/js/admin-account.js?v=20260526132850"></script>
+<script src="/js/admin-memorabilia.js?v=20260526132850"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260526132850"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

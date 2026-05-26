@@ -28,6 +28,9 @@
     loadedOnce: false,
     catsLoadedOnce: false,
     eventsLoadedOnce: false,
+    selectedIds: new Set(),  // 일괄 수정용 선택 항목 (현 페이지 한정)
+    bulkEditCountryPicker: null,
+    bulkEditEventPicker: null,
   };
 
   // 공유 모듈 hooks
@@ -357,6 +360,222 @@
     };
   }
 
+  // ── Bulk toolbar + bulk-edit modal (선택 항목 일괄 수정) ───────────────
+  function renderBulkToolbar() {
+    const bar = $('#memo-bulk-toolbar');
+    if (!bar) return;
+    const n = state.selectedIds.size;
+    if (n === 0) { bar.hidden = true; bar.innerHTML = ''; return; }
+    bar.hidden = false;
+    bar.innerHTML = `
+      <span><strong>${n}개</strong> 선택됨</span>
+      <button type="button" class="v3-btn v3-btn-primary v3-btn-sm" id="memo-bulk-edit-open">📝 일괄 수정</button>
+      <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-bulk-clear">선택 해제</button>
+    `;
+    $('#memo-bulk-edit-open').addEventListener('click', openBulkEdit);
+    $('#memo-bulk-clear').addEventListener('click', () => {
+      state.selectedIds.clear();
+      renderList();
+    });
+  }
+
+  let _bulkEditWired = false;
+  function wireBulkEditOnce() {
+    if (_bulkEditWired) return;
+    _bulkEditWired = true;
+    const closeBtn = $('#memo-bulkedit-close');
+    const cancelBtn = $('#memo-bulkedit-cancel');
+    const applyBtn = $('#memo-bulkedit-apply');
+    const modal = $('#memo-bulkedit-modal');
+    if (closeBtn) closeBtn.addEventListener('click', closeBulkEdit);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeBulkEdit);
+    if (applyBtn) applyBtn.addEventListener('click', applyBulkEdit);
+    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeBulkEdit(); });
+
+    // toggle 체크박스가 자기 필드 enable/disable 조작
+    document.querySelectorAll('[data-bulk-toggle]').forEach((tog) => {
+      tog.addEventListener('change', () => {
+        const key = tog.getAttribute('data-bulk-toggle');
+        const enabled = tog.checked;
+        applyBulkToggleVisual(key, enabled);
+      });
+    });
+
+    // event has_event 토글
+    const hasEvent = $('#memo-bulkedit-has-event');
+    if (hasEvent) hasEvent.addEventListener('change', () => {
+      const picker = $('#memo-bulkedit-event-picker');
+      if (picker) picker.style.display = hasEvent.checked ? '' : 'none';
+    });
+  }
+
+  function applyBulkToggleVisual(key, enabled) {
+    const m = {
+      status:      [$('#memo-bulkedit-status')],
+      category_id: [$('#memo-bulkedit-category')],
+      event:       [$('#memo-bulkedit-event-wrap')],
+      year:        [$('#memo-bulkedit-year')],
+      issuer:      [$('#memo-bulkedit-issuer-en'), $('#memo-bulkedit-issuer-ko')],
+      tags_add:    [$('#memo-bulkedit-tags-add')],
+      tags_remove: [$('#memo-bulkedit-tags-remove')],
+      countries:   [$('#memo-bulkedit-country-wrap')],
+    };
+    const list = m[key] || [];
+    list.forEach((el) => {
+      if (!el) return;
+      if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') {
+        el.disabled = !enabled;
+      } else {
+        el.style.opacity = enabled ? '1' : '.5';
+        el.style.pointerEvents = enabled ? '' : 'none';
+      }
+    });
+  }
+
+  function openBulkEdit() {
+    const n = state.selectedIds.size;
+    if (!n) return;
+    wireBulkEditOnce();
+
+    // 카운트 + 카테고리 옵션 채우기
+    $('#memo-bulkedit-count').textContent = `${n}개`;
+    const catSel = $('#memo-bulkedit-category');
+    if (catSel) {
+      const opts = ['<option value="">(분류 없음)</option>'];
+      for (const c of state.categories) {
+        if (c.archived) continue;
+        opts.push(`<option value="${c.id}">${escapeHtml(c.label_ko)} / ${escapeHtml(c.label_en)}</option>`);
+      }
+      catSel.innerHTML = opts.join('');
+    }
+
+    // 모든 toggle 초기화 (이전 세션 잔재 제거)
+    document.querySelectorAll('[data-bulk-toggle]').forEach((tog) => {
+      tog.checked = false;
+      applyBulkToggleVisual(tog.getAttribute('data-bulk-toggle'), false);
+    });
+    // 입력값 초기화
+    $('#memo-bulkedit-status').value = 'draft';
+    $('#memo-bulkedit-category').value = '';
+    $('#memo-bulkedit-has-event').checked = false;
+    $('#memo-bulkedit-year').value = '';
+    $('#memo-bulkedit-issuer-en').value = '';
+    $('#memo-bulkedit-issuer-ko').value = '';
+    $('#memo-bulkedit-tags-add').value = '';
+    $('#memo-bulkedit-tags-remove').value = '';
+    const setModeAdd = document.querySelector('input[name="memo-bulkedit-country-mode"][value="add"]');
+    if (setModeAdd) setModeAdd.checked = true;
+
+    // event picker + country picker 초기화
+    if (eventsMod) {
+      const host = $('#memo-bulkedit-event-picker');
+      if (host) {
+        state.bulkEditEventPicker = eventsMod.attach({
+          host, initialId: null, initialEvent: null,
+          idPrefix: 'memo-be-ep',
+          onChange: () => {},
+        });
+      }
+    }
+    if (countries) {
+      const host = $('#memo-bulkedit-country-picker');
+      if (host) {
+        state.bulkEditCountryPicker = countries.attach({
+          host, initial: [], idPrefix: 'memo-be-cp',
+        });
+      }
+    }
+
+    $('#memo-bulkedit-modal').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeBulkEdit() {
+    const modal = $('#memo-bulkedit-modal');
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function isToggleChecked(key) {
+    const tog = document.querySelector(`[data-bulk-toggle="${key}"]`);
+    return !!(tog && tog.checked);
+  }
+
+  async function applyBulkEdit() {
+    const ids = Array.from(state.selectedIds);
+    if (!ids.length) { closeBulkEdit(); return; }
+
+    const updates = {};
+    if (isToggleChecked('status'))      updates.status      = $('#memo-bulkedit-status').value;
+    if (isToggleChecked('category_id')) {
+      const v = $('#memo-bulkedit-category').value;
+      updates.category_id = v ? parseInt(v, 10) : null;
+    }
+    if (isToggleChecked('event')) {
+      const has = $('#memo-bulkedit-has-event').checked;
+      updates.has_event = has;
+      const evId = state.bulkEditEventPicker ? state.bulkEditEventPicker.getEventId() : null;
+      updates.event_id = has ? (evId || null) : null;
+    }
+    if (isToggleChecked('year')) {
+      const v = $('#memo-bulkedit-year').value;
+      updates.year = v ? parseInt(v, 10) : null;
+    }
+    if (isToggleChecked('issuer')) {
+      updates.issuer_en = $('#memo-bulkedit-issuer-en').value || '';
+      updates.issuer_ko = $('#memo-bulkedit-issuer-ko').value || '';
+    }
+    if (isToggleChecked('tags_add')) {
+      const raw = $('#memo-bulkedit-tags-add').value || '';
+      updates.add_tags = raw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+    }
+    if (isToggleChecked('tags_remove')) {
+      const raw = $('#memo-bulkedit-tags-remove').value || '';
+      updates.remove_tags = raw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+    }
+    if (isToggleChecked('countries')) {
+      const mode = (document.querySelector('input[name="memo-bulkedit-country-mode"]:checked') || {}).value || 'add';
+      const codes = state.bulkEditCountryPicker ? state.bulkEditCountryPicker.getValue() : [];
+      if (mode === 'add')    updates.add_country_codes    = codes;
+      if (mode === 'remove') updates.remove_country_codes = codes;
+      if (mode === 'set')    updates.set_country_codes    = codes;
+    }
+
+    if (!Object.keys(updates).length) {
+      toast('변경할 필드를 한 개 이상 체크하세요.', 'error');
+      return;
+    }
+
+    if (!confirm(`${ids.length}개 항목에 일괄 적용합니다. 되돌릴 수 없으니 신중히 진행하세요. 계속할까요?`)) return;
+
+    const btn = $('#memo-bulkedit-apply');
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = '적용 중…';
+    try {
+      const res = await fetch('/api/memorabilia/bulk-update', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, updates }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast('적용 실패: ' + (data.detail || data.error || `HTTP ${res.status}`), 'error');
+        return;
+      }
+      const updated = data.updated || 0;
+      const skipped = data.skipped || 0;
+      const errCount = (data.errors || []).length;
+      toast(`적용 완료 — 변경 ${updated}건 · 변경 없음 ${skipped}건${errCount ? ` · 오류 ${errCount}건` : ''}`, 'success');
+      closeBulkEdit();
+      state.selectedIds.clear();
+      await loadList();
+    } catch (err) {
+      toast('네트워크 오류: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  }
+
   // ── Bulk find/replace (데이터 일괄 수정) ───────────────────────────────
   // 한글 "{국가} 대표단" 띄어쓰기 통일, 발행처 오탈자 통일 등.
   // /api/memorabilia/bulk-replace 호출. preset='country_rep_team_no_space' 또는
@@ -657,11 +876,18 @@
     if (!items.length) {
       wrap.innerHTML = '<div class="v3-empty">아직 항목이 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-empty-new">첫 항목 추가</button></div>';
       const b = $('#memo-empty-new'); if (b) b.addEventListener('click', () => openEditor(null));
+      renderBulkToolbar();
       return;
     }
-    const html = ['<table class="v3-table"><thead><tr>',
+    // 현재 페이지의 표시 가능한 id 들
+    const visibleIds = items.map((it) => it.id);
+    const allChecked = visibleIds.length > 0 && visibleIds.every((id) => state.selectedIds.has(id));
+
+    const html = ['<table class="v3-table memo-list-table"><thead><tr>',
+      `<th style="width:32px"><input type="checkbox" id="memo-list-select-all" ${allChecked ? 'checked' : ''} title="현재 페이지 전체 선택"/></th>`,
       '<th style="width:64px">이미지</th><th>제목</th><th>행사명</th><th style="width:80px">연도</th>',
-      '<th style="width:120px">분류</th><th style="width:90px">상태</th><th style="width:80px"></th>',
+      '<th style="width:120px">분류</th><th>태그</th>',
+      '<th style="width:90px">상태</th><th style="width:80px"></th>',
       '</tr></thead><tbody>'];
     for (const it of items) {
       const thumb = it.primary_image_url
@@ -682,16 +908,30 @@
       const statusBadge = it.status === 'public'
         ? '<span class="v3-badge v3-badge-success">공개</span>'
         : '<span class="v3-badge v3-badge-muted">초안</span>';
-      // 행 전체가 클릭 타깃 — 어디를 눌러도 정보 모달(편집 모달과 동일) 열림.
-      // 편집 버튼은 명시적 affordance 로 유지하되 stopPropagation 으로 중복 호출 방지.
-      html.push(`<tr data-memo-row="${it.id}" style="cursor:pointer"><td>${thumb}</td><td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
-        `<td>${eventCell}</td><td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td><td>${statusBadge}</td>`,
+      // 태그 — 칩 형태로 (최대 5개 표시 + 잔여 카운트)
+      const tags = Array.isArray(it.tags) ? it.tags : [];
+      let tagCell = '<span style="opacity:.4;font-size:11px;">—</span>';
+      if (tags.length) {
+        const shown = tags.slice(0, 5);
+        const rest = tags.length - shown.length;
+        tagCell = shown.map((t) => `<span class="memo-tag-mini">${escapeHtml(t)}</span>`).join(' ')
+          + (rest > 0 ? ` <span class="memo-tag-rest" title="${escapeHtml(tags.slice(5).join(', '))}">+${rest}</span>` : '');
+      }
+      const checked = state.selectedIds.has(it.id) ? 'checked' : '';
+      // 행 전체가 클릭 타깃 (체크박스/편집 버튼은 stopPropagation 으로 분리)
+      html.push(`<tr data-memo-row="${it.id}" style="cursor:pointer" class="${checked ? 'is-selected' : ''}">`,
+        `<td><input type="checkbox" class="memo-row-check" data-memo-check="${it.id}" ${checked}/></td>`,
+        `<td>${thumb}</td>`,
+        `<td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
+        `<td>${eventCell}</td><td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td>`,
+        `<td><div class="memo-tag-mini-wrap">${tagCell}</div></td>`,
+        `<td>${statusBadge}</td>`,
         `<td><button class="v3-btn v3-btn-outline v3-btn-sm" data-memo-edit="${it.id}">편집</button></td></tr>`);
     }
     html.push('</tbody></table>');
     wrap.innerHTML = html.join('');
-    // 행 클릭 → openEditor. 편집 버튼은 그 자체로도 동작하되, 행 핸들러 중복 호출
-    // 방지를 위해 stopPropagation.
+
+    // 행 클릭 → openEditor
     $$('tr[data-memo-row]', wrap).forEach((row) => {
       row.addEventListener('click', () => {
         const id = parseInt(row.getAttribute('data-memo-row'), 10);
@@ -707,6 +947,36 @@
         if (it) openEditor(it);
       });
     });
+    // 체크박스 — 행 클릭/편집 모달 진입 차단 + 선택 상태 업데이트
+    $$('input.memo-row-check', wrap).forEach((cb) => {
+      cb.addEventListener('click', (e) => e.stopPropagation());
+      cb.addEventListener('change', () => {
+        const id = parseInt(cb.getAttribute('data-memo-check'), 10);
+        if (cb.checked) state.selectedIds.add(id);
+        else            state.selectedIds.delete(id);
+        const tr = cb.closest('tr');
+        if (tr) tr.classList.toggle('is-selected', cb.checked);
+        // header 전체 토글 동기화
+        const head = $('#memo-list-select-all');
+        if (head) {
+          const checked = items.every((it) => state.selectedIds.has(it.id));
+          head.checked = checked;
+        }
+        renderBulkToolbar();
+      });
+    });
+    // header select-all — 현재 페이지의 모든 visibleIds 토글
+    const head = $('#memo-list-select-all');
+    if (head) {
+      head.addEventListener('click', (e) => e.stopPropagation());
+      head.addEventListener('change', () => {
+        if (head.checked) for (const id of visibleIds) state.selectedIds.add(id);
+        else              for (const id of visibleIds) state.selectedIds.delete(id);
+        renderList();
+      });
+    }
+
+    renderBulkToolbar();
     renderPagination();
   }
 
