@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.154.04",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 17:00:00 KST",
+    "summary": "P0 핫픽스 — 모바일에서 \"홈 화면 일부 기능이 제한되었습니다\" 배너가 떴던 원인 차단. /js/home-render.js 가 간헐적 503(Worker CPU 1102) 응답한 회귀.",
+    "for_users": [
+      "모바일에서 홈에 진입할 때 가끔 '홈 일부 기능이 제한되었습니다' 안내가 표시되던 문제가 해결되었습니다.",
+      "원인은 일부 정적 자산이 일시적으로 503을 반환해 스크립트가 로드되지 않은 것이었고, 서버 처리 경로를 보완하여 차단했습니다."
+    ],
+    "for_developers": [
+      "functions/[[path]].js onRequest: ensureDuePostsPublished() 가 정적 자산(/js, /css, /img...) 요청에도 await 로 실행되어 Worker CPU 한도(error 1102)를 초과시켰음.",
+      "fix: (1) pageKey 가 set 일 때만 호출 (정적 자산은 스킵) + (2) context.waitUntil 로 비차단 실행 — 자동 게시는 다음 요청까지 결과 반영, 현재 요청 응답 시간 보장.",
+      "재현 확인: curl 'https://bpmedia.net/js/home-render.js?v=20260526071446' 가 503 BYPASS '1102 Worker exceeded resource limit' 응답, 다른 동일-버전 스크립트(main.js 등)는 200 — home-render.js 가 cf-cache MISS 상태일 때만 Worker 가 호출되어 CPU 초과.",
+      "사이트 00.154.03 → 00.154.04 (P0 hotfix)."
+    ]
+  },
+  {
     "version": "00.154.03",
     "date": "2026-05-26",
     "released_at": "2026-05-26 17:25:00 KST",

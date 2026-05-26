@@ -9,9 +9,20 @@ export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const pageKey = getSitePageKey(url.pathname);
-  await ensureDuePostsPublished(env, url.origin).catch((err) => {
-    console.error('[[path]] auto publish error:', err);
-  });
+
+  // 자동 게시 트리거는 (1) HTML 페이지 요청에만 (2) waitUntil 로 비차단 실행.
+  // /js/*, /css/*, /img/* 등 정적 자산은 [[path]] catch-all 에 매칭되긴 하지만
+  // 자동 게시 로직을 돌릴 필요가 없다 — DB 라운드트립이 Worker CPU 한도(1102)
+  // 를 갉아먹어 정적 자산이 간헐적 503 으로 응답되는 회귀(2026-05-26 발견)를
+  // 방지. 페이지 요청에서도 await 로 응답 시간을 늘리는 대신 waitUntil 로
+  // 다음 요청까지만 결과가 반영되도록 한다.
+  if (pageKey && typeof context.waitUntil === 'function') {
+    context.waitUntil(
+      ensureDuePostsPublished(env, url.origin).catch((err) => {
+        console.error('[[path]] auto publish error:', err);
+      })
+    );
+  }
 
   const response = await context.next();
   if (!pageKey) return response;
