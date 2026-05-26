@@ -421,9 +421,11 @@
       }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
 
       dropEl.hidden = false;
+      // "+ 신규 행사 등록" 은 매치 결과가 없을 때만 노출 — 매치가 있을 때는
+      // 산만하지 않도록 숨김. 정말 등록된 행사가 없을 때만 필요한 옵션.
       const createItem = `<button type="button" class="gw-cp-dd-item gw-ep-dd-create" data-create="1">
         <span class="gw-cp-dd-name">+ "${escapeHtml(inputEl.value.trim())}" 신규 행사로 등록</span>
-        <span class="gw-cp-dd-en">검색 결과가 마음에 들지 않으면 직접 만드세요</span>
+        <span class="gw-cp-dd-en">기존 카탈로그에 없는 행사면 직접 만들어주세요</span>
       </button>`;
 
       if (!matched.length) {
@@ -437,7 +439,7 @@
           <span class="gw-cp-dd-en">${highlight(e.name_ko || '', q)}${e.period_text ? ' · ' + escapeHtml(e.period_text) : ''}</span>
           <span class="gw-cp-dd-code">${e.usage_count || 0}건</span>
         </button>`;
-      }).join('') + createItem;
+      }).join('');
     }
 
     function selectEvent(ev) {

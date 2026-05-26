@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260526080001">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526080001">
+  <link rel="stylesheet" href="/css/style.css?v=20260526124315">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526124315">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -290,11 +290,18 @@
               <div class="memo-form-row memo-form-row-2col">
                 <div>
                   <label class="field-label" for="memo-issuer-en">제작기관 (영문)</label>
-                  <input type="text" id="memo-issuer-en" maxlength="200" autocomplete="off" placeholder="e.g. Korea Scout Association"/>
+                  <div class="memo-autocomplete-wrap">
+                    <input type="text" id="memo-issuer-en" maxlength="200" autocomplete="off" placeholder="e.g. Korea Scout Association"/>
+                    <div class="memo-autocomplete" id="memo-issuer-en-suggest" hidden></div>
+                  </div>
+                  <div class="memo-form-hint">기존 등록된 제작기관이 있으면 검색되어 드롭다운으로 선택할 수 있습니다.</div>
                 </div>
                 <div>
                   <label class="field-label" for="memo-issuer-ko">제작기관 (국문)</label>
-                  <input type="text" id="memo-issuer-ko" maxlength="200" autocomplete="off" placeholder="예: 한국스카우트연맹"/>
+                  <div class="memo-autocomplete-wrap">
+                    <input type="text" id="memo-issuer-ko" maxlength="200" autocomplete="off" placeholder="예: 한국스카우트연맹"/>
+                    <div class="memo-autocomplete" id="memo-issuer-ko-suggest" hidden></div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -306,8 +313,11 @@
                 <span class="section-hint">검색 정확도를 높이는 태그</span>
               </div>
               <div class="memo-form-row">
-                <input type="text" id="memo-tags" placeholder="콤마(,)로 구분 · 예: 잼버리, 새만금, 25th WJ"/>
-                <div class="memo-form-hint">국문·영문 어느 쪽으로 입력해도 양방향 검색에 사용됩니다</div>
+                <div class="memo-autocomplete-wrap">
+                  <input type="text" id="memo-tags" autocomplete="off" placeholder="콤마(,)로 구분 · 예: 잼버리, 새만금, 25th WJ"/>
+                  <div class="memo-autocomplete" id="memo-tags-suggest" hidden></div>
+                </div>
+                <div class="memo-form-hint">국문·영문 어느 쪽으로 입력해도 양방향 검색에 사용됩니다. 기존 태그는 마지막 콤마 이후 입력하면 드롭다운으로 선택할 수 있습니다.</div>
               </div>
             </section>
 
@@ -396,7 +406,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.154.04</span> · Admin <span class="admin-build-version">V03.131.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.155.00</span> · Admin <span class="admin-build-version">V03.132.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -408,9 +418,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260526080001"></script>
-  <script src="/js/site-chrome.js?v=20260526080001"></script>
-  <script src="/js/memorabilia-shared.js?v=20260526080001"></script>
-  <script src="/js/memorabilia.js?v=20260526080001"></script>
+  <script src="/js/main.js?v=20260526124315"></script>
+  <script src="/js/site-chrome.js?v=20260526124315"></script>
+  <script src="/js/memorabilia-shared.js?v=20260526124315"></script>
+  <script src="/js/memorabilia.js?v=20260526124315"></script>
 </body>
 </html>

@@ -7427,3 +7427,35 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   .kms-ed-rule-grid  { grid-template-columns: 1fr; }
   .kms-ed-body-grid  { grid-template-columns: 1fr; }
 }
+
+/* ── Admin v3 autocomplete dropdown (memorabilia issuer · tag) ────────────
+   js/admin-memorabilia.js bindAutocomplete / bindTagAutocomplete 와 짝.
+   wrap 으로 감싸야 absolute 가 input 폭에 정렬됨. */
+.v3-autocomplete-wrap {
+  position: relative;
+}
+.v3-autocomplete {
+  position: absolute;
+  top: calc(100% + 2px); left: 0; right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.v3-autocomplete[hidden] { display: none; }
+.v3-autocomplete-item {
+  padding: 8px 12px;
+  font-size: 13.5px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--gray-100, #f0f0f0);
+  color: var(--ink, #1f1f1f);
+}
+.v3-autocomplete-item:last-child { border-bottom: 0; }
+.v3-autocomplete-item:hover,
+.v3-autocomplete-item.is-active {
+  background: rgba(98, 37, 153, 0.08);
+}
+

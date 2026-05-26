@@ -231,28 +231,111 @@
       const full = await fetchJson(`/api/memorabilia/${sourceId}`);
       const src = full.item;
       if (!src) { toast('불러올 항목을 찾지 못했습니다.', 'error'); return; }
-
-      // 메타만 복사 — 제목/본문/이미지/링크는 그대로 유지
-      $('#memo-has-event').checked = !!src.has_event;
-      $('#memo-event-row').hidden = !src.has_event;
-      $('#memo-year').value = src.year || '';
-      $('#memo-category').value = src.category_id || '';
-      $('#memo-material-en').value = src.material_en || '';
-      $('#memo-material-ko').value = src.material_ko || '';
-      $('#memo-size').value = src.size_text || '';
-      $('#memo-issuer-en').value = src.issuer_en || '';
-      $('#memo-issuer-ko').value = src.issuer_ko || '';
-      $('#memo-tags').value = (src.tags || []).join(', ');
-      if (state.countryPicker) state.countryPicker.setValue(src.country_codes || []);
-      if (src.event_id || src.event) {
-        ensureEventPicker(src.event_id || null, src.event || null);
-      }
-
-      closeImportPanel();
-      toast(`"${src.title_ko || src.title_en}" 의 메타 정보를 불러왔습니다. 제목·본문·이미지는 그대로 유지됩니다.`, 'success');
+      // 즉시 적용하지 않고 필드 선택 화면으로 이동 — 사용자가 어떤 필드를
+      // 불러올지 직접 고를 수 있도록.
+      showImportFieldSelector(src);
     } catch (err) {
       toast('불러오기 실패: ' + (err.message || ''), 'error');
     }
+  }
+
+  // 불러올 필드 선택 화면 — 결과 영역(#memo-import-results)을 교체.
+  function showImportFieldSelector(src) {
+    const results = $('#memo-import-results');
+    if (!results) return;
+    const title = src.title_ko || src.title_en || `#${src.id}`;
+
+    // 카탈로그에서 카테고리 라벨 lookup
+    const catRow = state.categories.find((c) => c.id === src.category_id);
+    const catLabel = catRow ? (catRow.label_ko || catRow.label_en) : '—';
+    const eventLabel = src.has_event
+      ? (src.event_name_ko || src.event_name_en || src.event?.name_ko || src.event?.name_en || '(행사명)')
+      : '— (행사 없음)';
+    const countryLabel = (src.country_codes && src.country_codes.length)
+      ? src.country_codes.map((c) => (state.countryLabels[c]?.ko) || c).join(', ')
+      : '—';
+
+    const fields = [
+      { key: 'event',         label: '행사 정보',  preview: eventLabel },
+      { key: 'year',          label: '연도',       preview: src.year ? String(src.year) : '—' },
+      { key: 'category',      label: '분류',       preview: catLabel || '—' },
+      { key: 'material',      label: '재질',       preview: (src.material_ko || src.material_en) || '—' },
+      { key: 'size',          label: '크기',       preview: src.size_text || '—' },
+      { key: 'issuer',        label: '제작기관',   preview: (src.issuer_ko || src.issuer_en) || '—' },
+      { key: 'tags',          label: '태그',       preview: (src.tags && src.tags.length) ? src.tags.join(', ') : '—' },
+      { key: 'country_codes', label: '국가',       preview: countryLabel },
+    ];
+
+    results.innerHTML = `
+      <div style="padding: 12px;">
+        <div style="font-size: 13px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-300, #c4c4c4);">
+          <strong>원본:</strong> ${escapeHtmlLocal(title)}
+        </div>
+        <div style="font-size: 11.5px; color: var(--gray-700, #3f3f3f); margin-bottom: 10px; line-height: 1.5;">
+          불러올 필드만 체크하세요. 체크 해제한 필드는 현재 입력값을 그대로 유지합니다.
+        </div>
+        <div id="memo-import-field-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+          ${fields.map((f) => `
+            <label style="display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; background: #fff; border: 1px solid var(--gray-300, #c4c4c4); border-radius: 6px; cursor: pointer;">
+              <input type="checkbox" data-import-field="${f.key}" checked style="margin-top: 3px; accent-color: var(--color-scouting-purple, #622599);" />
+              <div style="flex: 1; font-size: 12.5px;">
+                <strong>${escapeHtmlLocal(f.label)}</strong>
+                <div style="opacity: 0.75; margin-top: 2px; word-break: keep-all;">${escapeHtmlLocal(f.preview)}</div>
+              </div>
+            </label>
+          `).join('')}
+        </div>
+        <div style="display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap;">
+          <button type="button" class="v3-btn v3-btn-ghost v3-btn-sm" id="memo-import-back">← 검색으로</button>
+          <button type="button" class="v3-btn v3-btn-outline v3-btn-sm" id="memo-import-toggle-all">전체 선택/해제</button>
+          <button type="button" class="v3-btn v3-btn-primary v3-btn-sm" id="memo-import-apply">선택 항목 불러오기</button>
+        </div>
+      </div>
+    `;
+
+    $('#memo-import-back').addEventListener('click', () => runImportSearch());
+    $('#memo-import-toggle-all').addEventListener('click', () => {
+      const checks = results.querySelectorAll('input[type="checkbox"][data-import-field]');
+      const allChecked = Array.from(checks).every((c) => c.checked);
+      checks.forEach((c) => { c.checked = !allChecked; });
+    });
+    $('#memo-import-apply').addEventListener('click', () => {
+      const checked = new Set();
+      results.querySelectorAll('input[type="checkbox"][data-import-field]:checked').forEach((c) => {
+        checked.add(c.getAttribute('data-import-field'));
+      });
+      if (!checked.size) { toast('하나 이상의 필드를 선택해주세요.', 'error'); return; }
+      applyImportFields(src, checked);
+    });
+  }
+
+  function applyImportFields(src, fieldsSet) {
+    if (fieldsSet.has('event')) {
+      $('#memo-has-event').checked = !!src.has_event;
+      $('#memo-event-row').hidden = !src.has_event;
+      if (src.event_id || src.event) {
+        ensureEventPicker(src.event_id || null, src.event || null);
+      }
+    }
+    if (fieldsSet.has('year'))     $('#memo-year').value         = src.year || '';
+    if (fieldsSet.has('category')) $('#memo-category').value     = src.category_id || '';
+    if (fieldsSet.has('material')) {
+      $('#memo-material-en').value = src.material_en || '';
+      $('#memo-material-ko').value = src.material_ko || '';
+    }
+    if (fieldsSet.has('size'))     $('#memo-size').value         = src.size_text || '';
+    if (fieldsSet.has('issuer'))   {
+      $('#memo-issuer-en').value = src.issuer_en || '';
+      $('#memo-issuer-ko').value = src.issuer_ko || '';
+    }
+    if (fieldsSet.has('tags'))     $('#memo-tags').value         = (src.tags || []).join(', ');
+    if (fieldsSet.has('country_codes') && state.countryPicker) {
+      state.countryPicker.setValue(src.country_codes || []);
+    }
+
+    closeImportPanel();
+    const title = src.title_ko || src.title_en || `#${src.id}`;
+    toast(`"${title}" 의 ${fieldsSet.size}개 필드를 불러왔습니다. 제목·본문·이미지·관련링크는 그대로 유지됩니다.`, 'success');
   }
 
   function escapeHtmlLocal(s) {

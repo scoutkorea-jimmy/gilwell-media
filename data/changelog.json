@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "00.155.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 18:00:00 KST",
+    "summary": "기념품 도감 입력 UX 개선 — 제작기관·태그 자동완성 + 신규 행사 등록 정돈 + 상세 1:1 이미지 풀필.",
+    "for_users": [
+      "도감 항목을 추가/수정할 때 제작기관(영문·국문)과 태그를 입력하면 기존 데이터에서 일치하는 항목이 드롭다운으로 추천됩니다. 자유 입력도 그대로 가능합니다.",
+      "행사 선택 박스의 '+ 신규 행사로 등록' 옵션이 검색 결과가 없을 때만 나타나도록 정돈되어 산만함이 줄었습니다.",
+      "도감 상세 페이지의 대표 이미지가 1:1 정사각으로 꽉 차게 표시되어 양옆 회색 여백이 사라졌습니다 (1:1 비율 업로드 원칙 기준)."
+    ],
+    "for_developers": [
+      "memorabilia.html: #memo-issuer-en / #memo-issuer-ko / #memo-tags 를 .memo-autocomplete-wrap 으로 감싸고 #memo-*-suggest 드롭다운 div 추가 (hidden 초기 상태).",
+      "js/memorabilia.js: bindAutocomplete(input, dropdown, type) + bindTagAutocomplete(input, dropdown) 신규. /api/memorabilia/autocomplete?type=issuer|tag 호출, mousedown 으로 선택. wireEditorEvents 에서 3개 input 바인딩.",
+      "css/memorabilia.css: .memo-autocomplete-wrap (position:relative) + .memo-autocomplete (absolute top:100%+2 / max-height:240) + .memo-autocomplete-item 추가. 상세 .memo-primary-img 를 aspect-ratio:1/1 + max-width:600 + margin:0 auto + background:transparent 로 재설계 — 1:1 이미지가 컨테이너 전체를 채워 회색 letterbox 제거.",
+      "js/memorabilia-shared.js attachEventPicker: dropdown 의 createItem 을 matched.length === 0 일 때만 노출 (기존엔 항상 하단 노출). 매치된 행사가 있으면 createItem 숨김 — 명백히 새 행사가 필요한 경우(매치 없음)에만 prompt.",
+      "사이트 00.154.04 → 00.155.00 (feature)."
+    ]
+  },
+  {
+    "version": "03.132.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 18:00:00 KST",
+    "summary": "관리자 기념품 도감 — 자동완성 드롭다운 시각화 + 다른 도감에서 불러올 때 필드별 선택 UI 추가.",
+    "for_users": [
+      "관리자 → 스카우트 백과 → 기념품 도감 편집 모달에서 제작기관·태그 입력 시 기존 값이 드롭다운으로 추천됩니다 (이전엔 로직만 있고 시각 표시가 없어 동작하지 않는 것처럼 보였음).",
+      "다른 도감 항목에서 메타 정보를 가져올 때, 항목을 클릭하면 가져올 필드(행사·연도·분류·재질·크기·제작기관·태그·국가)를 체크박스로 골라 적용할 수 있는 단계가 추가되었습니다. 체크 해제한 필드는 현재 입력값을 그대로 유지합니다."
+    ],
+    "for_developers": [
+      "admin.html: panel-memorabilia 편집 모달의 #memo-issuer-en/ko, #memo-tags 를 .v3-autocomplete-wrap (position:relative) 로 감싸고 .v3-autocomplete 에 hidden 초기 속성 부여. 안내 hint 추가.",
+      "css/admin.css 끝부분에 .v3-autocomplete-wrap / .v3-autocomplete (absolute) / .v3-autocomplete-item (hover · is-active) 스타일 신규. bindAutocomplete / bindTagAutocomplete 는 이미 wire 되어 있어 JS 변경 없음.",
+      "js/admin-memorabilia.js importFromItem: 즉시 적용에서 showImportFieldSelector(src) → applyImportFields(src, fieldsSet) 2단계로 분리. 결과 영역(#memo-import-results) 을 필드 체크박스 + 미리보기 + [검색으로/전체토글/적용] 버튼으로 교체. 필드는 event/year/category/material/size/issuer/tags/country_codes 8개. 카테고리 라벨은 state.categories lookup, 국가는 state.countryLabels lookup 으로 사람이 읽기 좋은 미리보기 표시.",
+      "관리자 03.131.00 → 03.132.00 (feature — autocomplete 시각화 + import 필드 선택 UI)."
+    ]
+  },
+  {
     "version": "00.154.04",
     "date": "2026-05-26",
     "released_at": "2026-05-26 17:00:00 KST",

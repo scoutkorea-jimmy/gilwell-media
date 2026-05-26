@@ -971,6 +971,71 @@
     return String(stored);
   }
 
+  // ── Autocomplete (issuer · tag) ────────────────────────────────────────
+  // 사용자는 자유 입력 가능. 입력 중 기존 데이터에 매칭이 있으면 드롭다운으로 추천.
+  // - bindAutocomplete: 단일값 입력 (issuer)
+  // - bindTagAutocomplete: 콤마 구분 다중값 마지막 토큰 자동완성
+  function bindAutocomplete(input, dropdown, type) {
+    if (!input || !dropdown) return;
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+      if (q.length < 1) { dropdown.innerHTML = ''; dropdown.hidden = true; return; }
+      timer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/memorabilia/autocomplete?type=${type}&q=${encodeURIComponent(q)}`, { credentials: 'same-origin' });
+          if (!res.ok) { dropdown.hidden = true; return; }
+          const data = await res.json();
+          const items = (data.items || []).filter((s) => s.toLowerCase() !== q.toLowerCase());
+          if (!items.length) { dropdown.hidden = true; return; }
+          dropdown.innerHTML = items.map((s) => `<div class="memo-autocomplete-item" data-val="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('');
+          dropdown.hidden = false;
+          dropdown.querySelectorAll('.memo-autocomplete-item').forEach((d) => {
+            d.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              input.value = d.getAttribute('data-val');
+              dropdown.hidden = true;
+            });
+          });
+        } catch {}
+      }, 220);
+    });
+    input.addEventListener('blur', () => setTimeout(() => { dropdown.hidden = true; }, 150));
+  }
+
+  function bindTagAutocomplete(input, dropdown) {
+    if (!input || !dropdown) return;
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const parts = input.value.split(',');
+      const last = (parts[parts.length - 1] || '').trim();
+      if (last.length < 1) { dropdown.hidden = true; return; }
+      timer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/memorabilia/autocomplete?type=tag&q=${encodeURIComponent(last)}`, { credentials: 'same-origin' });
+          if (!res.ok) { dropdown.hidden = true; return; }
+          const data = await res.json();
+          const items = (data.items || []).filter((s) => s.toLowerCase() !== last.toLowerCase());
+          if (!items.length) { dropdown.hidden = true; return; }
+          dropdown.innerHTML = items.map((s) => `<div class="memo-autocomplete-item" data-val="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('');
+          dropdown.hidden = false;
+          dropdown.querySelectorAll('.memo-autocomplete-item').forEach((d) => {
+            d.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              parts[parts.length - 1] = ' ' + d.getAttribute('data-val');
+              input.value = parts.join(',') + ', ';
+              dropdown.hidden = true;
+              input.focus();
+            });
+          });
+        } catch {}
+      }, 200);
+    });
+    input.addEventListener('blur', () => setTimeout(() => { dropdown.hidden = true; }, 150));
+  }
+
   function plainToEditorJson(text) {
     const t = String(text || '').trim();
     if (!t) return '';
@@ -1005,6 +1070,11 @@
     $('#memo-image-add')?.addEventListener('click', () => $('#memo-image-input').click());
     $('#memo-image-input')?.addEventListener('change', (e) => editor.onImageInput(e));
     $('#memo-link-add')?.addEventListener('click', () => editor.addLink());
+
+    // 제작기관 · 태그 autocomplete — 사용자는 자유 입력 가능, 기존 값은 드롭다운 추천.
+    bindAutocomplete($('#memo-issuer-en'), $('#memo-issuer-en-suggest'), 'issuer');
+    bindAutocomplete($('#memo-issuer-ko'), $('#memo-issuer-ko-suggest'), 'issuer');
+    bindTagAutocomplete($('#memo-tags'), $('#memo-tags-suggest'));
 
     $('#memo-login-close')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
     $('#memo-login-cancel')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
