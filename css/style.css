@@ -1335,6 +1335,17 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav-group.is-open > .nav-group-trigger {
   color: var(--accent);
 }
+/* WCAG 3.0 APCA 키보드 포커스 인디케이터 — |Lc| 30+ 필수 (CLAUDE.md §2) */
+.nav a:focus-visible,
+.nav-group-trigger:focus-visible,
+.nav-sublink:focus-visible,
+.mobile-nav-sublink:focus-visible,
+.mobile-nav-link:focus-visible,
+.mobile-nav-group-summary:focus-visible {
+  outline: 2px solid var(--color-scouting-purple, #622599);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .nav-group-caret {
   font-size: 0.7em;
   opacity: 0.6;
@@ -1349,7 +1360,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   left: 50%;
   transform: translateX(-50%) translateY(2px);
   min-width: 220px;
-  background: #fff;
+  background: var(--white, #fff);
   border: 1px solid var(--border, #c4c4c4);
   border-radius: 8px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);

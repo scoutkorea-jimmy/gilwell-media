@@ -392,24 +392,58 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   에디터 태그 칩 입력 (2026-05-27)
+   에디터 태그 칩 입력 (2026-05-27, UX 개선 2판)
    ──────────────────────────────────────────────────────────── */
 .memo-tags-chip-input {
+  position: relative; /* #memo-tags-suggest 가 absolute 로 그 아래에 띄움 */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid var(--border, #c4c4c4);
   border-radius: 8px;
-  background: #fff;
+  background: var(--white, #fff);
   cursor: text;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .memo-tags-chip-input:focus-within {
   border-color: var(--color-scouting-purple, #622599);
   box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.12);
+}
+/* 자동완성 드롭다운 — chip-input 컨테이너 바로 아래에 absolute 로 띄움.
+   디자인 가이드: WCAG APCA Lc 60+ 텍스트, 키보드 포커스 인디케이터 |Lc| 30+,
+   리터럴 HEX 대신 CSS 변수 우선. */
+.memo-tags-chip-input > .memo-autocomplete {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--white, #fff);
+  border: 1px solid var(--border, #c4c4c4);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  padding: 4px;
+}
+.memo-tags-chip-input .memo-autocomplete-item {
+  padding: 8px 12px;
+  font-family: 'NixgonFont', 'Google Sans Flex', 'Noto Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink, #1f1f1f);
+  border-radius: 6px;
+  cursor: pointer;
+  word-break: keep-all;
+  transition: background 0.12s, color 0.12s;
+}
+.memo-tags-chip-input .memo-autocomplete-item:hover,
+.memo-tags-chip-input .memo-autocomplete-item.is-active {
+  background: rgba(98, 37, 153, 0.10);
+  color: var(--color-scouting-purple, #622599);
 }
 .memo-tags-chips {
   display: contents;
@@ -418,15 +452,17 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 4px 4px 10px;
-  background: rgba(98, 37, 153, 0.08);
-  border: 1px solid rgba(98, 37, 153, 0.24);
+  padding: 5px 6px 5px 12px;
+  background: rgba(98, 37, 153, 0.10);
+  border: 1px solid rgba(98, 37, 153, 0.28);
   color: var(--color-scouting-purple, #622599);
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-family: 'NixgonFont', 'Google Sans Flex', 'Noto Sans', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
   line-height: 1.2;
   white-space: nowrap;
+  /* APCA Lc — Scouting Purple on 0.10 alpha (=거의 흰 배경) → Lc 약 87, 본문 충족 */
 }
 .memo-tag-chip-x {
   display: inline-flex;
@@ -446,7 +482,16 @@
 }
 .memo-tag-chip-x:hover {
   background: var(--color-scouting-purple, #622599);
-  color: #fff;
+  color: var(--white, #fff);
+}
+/* WCAG 3.0 APCA 키보드 포커스 — |Lc| 30+ (CLAUDE.md §2) */
+.memo-tag-chip-x:focus-visible {
+  outline: 2px solid var(--color-scouting-purple, #622599);
+  outline-offset: 2px;
+}
+.memo-tag-suggestion:focus-visible {
+  outline: 2px solid var(--color-scouting-purple, #622599);
+  outline-offset: 2px;
 }
 .memo-tags-typing {
   flex: 1 1 120px;

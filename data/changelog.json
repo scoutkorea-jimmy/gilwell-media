@@ -1,6 +1,28 @@
 {
   "items": [
   {
+    "version": "00.159.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 06:00:00 KST",
+    "summary": "도감 태그 입력 UX 2판 (한글 IME 콤마 + 드롭다운 위치 + 키보드 네비게이션) + 디자인 가이드 감사 3건 시정.",
+    "for_users": [
+      "도감 태그 입력에서 한글 IME 로 콤마(,)를 입력해도 즉시 칩으로 변환됩니다. Enter, 콤마, Tab 모두 동일하게 동작합니다.",
+      "자동완성 드롭다운이 입력창 바로 아래에 카드 형태로 깔끔하게 떠서, 클릭이나 ↑↓ + Enter 로 빠르게 추가할 수 있습니다 (Esc 로 닫기).",
+      "키보드 Tab 으로 메뉴·태그 칩 X·추천 태그 칩을 돌 때 보라색 포커스 인디케이터가 보입니다 (접근성 보강)."
+    ],
+    "for_developers": [
+      "js/memorabilia.js bindTagChipInput 재작성 — input event 가 value 안에 ',' 가 들어오는 시점에 split 해 split 된 모든 토큰을 칩으로 변환. 한글 IME 가 keydown 'Process' 로 콤마를 가로채는 케이스 회피. compositionend 에도 동일 split 로직 추가.",
+      "키보드 네비게이션: ↑/↓ 로 .memo-autocomplete-item .is-active 토글, Enter 시 활성 항목 선택 (없으면 입력 그대로 칩화), Esc 로 드롭다운 닫음. activeIndex state 로 추적.",
+      "memorabilia.html: <div class='memo-autocomplete' id='memo-tags-suggest'> 를 .memo-tags-chip-input 안 자식으로 이동 (absolute positioning 컨텍스트 확보).",
+      "css/memorabilia.css .memo-tags-chip-input { position: relative } + .memo-tags-chip-input > .memo-autocomplete { position: absolute; top: calc(100% + 4px); … } 로 드롭다운을 입력창 바로 아래에 띄움. .memo-autocomplete-item.is-active 키보드 활성 상태 스타일 추가.",
+      "디자인 가이드 감사 시정 (Explore agent 감사 보고 기반):",
+      "  · css/style.css .nav-group-panel: background: #fff → var(--white, #fff) (CLAUDE.md §2 '리터럴 HEX 금지' 준수)",
+      "  · css/style.css .nav a / .nav-group-trigger / .nav-sublink / .mobile-nav-* :focus-visible 룰 신설 — outline 2px var(--color-scouting-purple) + offset 2px (APCA |Lc| 30+ 키보드 포커스 인디케이터)",
+      "  · css/memorabilia.css .memo-tag-chip-x / .memo-tag-suggestion :focus-visible 룰 신설. .memo-tag-chip-x:hover 의 color: #fff → var(--white, #fff).",
+      "사이트 00.159.00 → 00.159.01 (fix — 태그 UX 2판 + 디자인 가이드 시정 3건)."
+    ]
+  },
+  {
     "version": "03.137.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 05:30:00 KST",

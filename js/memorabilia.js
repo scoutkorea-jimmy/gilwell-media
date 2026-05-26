@@ -1213,36 +1213,41 @@
     const wrap = $('#memo-tags-chip-input');
     const suggest = $('#memo-tags-suggest');
     if (!input) return;
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        if (addTagFromText(input.value)) refreshTagSuggestions();
-        input.value = '';
-        if (suggest) suggest.hidden = true;
-      } else if (e.key === 'Backspace' && !input.value && tagsChipState.tags.length) {
-        tagsChipState.tags.pop();
-        renderTagChips();
-        refreshTagSuggestions();
-      }
-    });
-    input.addEventListener('blur', () => {
-      if (input.value.trim()) {
-        if (addTagFromText(input.value)) refreshTagSuggestions();
-        input.value = '';
-      }
-      if (suggest) setTimeout(() => { suggest.hidden = true; }, 150);
-    });
-    // chip-input 영역 클릭 시 input 으로 포커스 (placeholder 외 영역)
-    if (wrap) wrap.addEventListener('click', (e) => {
-      if (e.target === wrap || e.target.id === 'memo-tags-chips') input.focus();
-    });
+    let activeIndex = -1; // 자동완성 키보드 네비게이션 인덱스
 
-    // 자동완성 — 현재 typing 값 기준 (기존 autocomplete API 재사용)
+    function commitInputAsTag() {
+      const v = input.value;
+      if (!v.trim()) return false;
+      // 콤마가 섞여 들어오면 모두 split. 한글 IME 가 콤마 keydown 을 가로채도
+      // input event 로 value 끝/중간에 ',' 가 들어오는 시점에 잡힌다.
+      const parts = v.split(',').map((s) => s.trim()).filter(Boolean);
+      let added = false;
+      parts.forEach((p) => { if (addTagFromText(p)) added = true; });
+      input.value = '';
+      activeIndex = -1;
+      if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
+      if (added) refreshTagSuggestions();
+      return added;
+    }
+
+    // 한글 IME 친화 — keydown 의 'Process' 케이스에서도 동작하도록 input 이벤트로
+    // 콤마가 들어왔는지 검사하고, 들어왔으면 그 시점에 split 해서 칩으로 변환.
     let acTimer;
     input.addEventListener('input', () => {
+      // 값 안에 콤마가 포함되면 칩으로 즉시 분리 (마지막 토큰만 입력으로 유지)
+      if (input.value.indexOf(',') !== -1) {
+        const parts = input.value.split(',');
+        const tail = parts.pop();
+        parts.forEach((p) => { addTagFromText(p); });
+        input.value = (tail || '').replace(/^\s+/, '');
+        activeIndex = -1;
+        if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
+        refreshTagSuggestions();
+      }
+      // 자동완성 fetch
       clearTimeout(acTimer);
       const q = input.value.trim();
-      if (q.length < 1 || !suggest) { if (suggest) suggest.hidden = true; return; }
+      if (q.length < 1 || !suggest) { if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; } return; }
       acTimer = setTimeout(async () => {
         try {
           const res = await fetch('/api/memorabilia/autocomplete?type=tag&q=' + encodeURIComponent(q), { credentials: 'same-origin' });
@@ -1250,8 +1255,13 @@
           const data = await res.json();
           const existing = new Set(tagsChipState.tags.map((t) => t.toLowerCase()));
           const items = (data.items || []).filter((s) => !existing.has(String(s).toLowerCase()) && s.toLowerCase() !== q.toLowerCase());
-          if (!items.length) { suggest.hidden = true; return; }
-          suggest.innerHTML = items.map((s) => '<div class="memo-autocomplete-item" data-val="' + escapeHtml(s) + '">' + escapeHtml(s) + '</div>').join('');
+          if (!items.length) { suggest.hidden = true; suggest.innerHTML = ''; return; }
+          activeIndex = -1;
+          suggest.innerHTML = items.map((s, i) =>
+            '<div class="memo-autocomplete-item" role="option" data-i="' + i + '" data-val="' + escapeHtml(s) + '">' +
+              escapeHtml(s) +
+            '</div>'
+          ).join('');
           suggest.hidden = false;
           suggest.querySelectorAll('.memo-autocomplete-item').forEach((d) => {
             d.addEventListener('mousedown', (ev) => {
@@ -1259,11 +1269,86 @@
               if (addTagFromText(d.getAttribute('data-val'))) refreshTagSuggestions();
               input.value = '';
               suggest.hidden = true;
+              suggest.innerHTML = '';
               input.focus();
             });
           });
         } catch (_) { suggest.hidden = true; }
       }, 200);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      // Enter 또는 Tab → 칩으로 commit (Tab 은 폼 이동도 막지 않게 활성 자동완성 항목이 없을 때만 default 막음)
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // 자동완성 활성 항목 있으면 그것 선택, 아니면 typing 값 commit
+        if (suggest && !suggest.hidden && activeIndex >= 0) {
+          const items = suggest.querySelectorAll('.memo-autocomplete-item');
+          const picked = items[activeIndex];
+          if (picked) {
+            addTagFromText(picked.getAttribute('data-val'));
+            input.value = '';
+            suggest.hidden = true; suggest.innerHTML = '';
+            refreshTagSuggestions();
+            return;
+          }
+        }
+        commitInputAsTag();
+        return;
+      }
+      if (e.key === ',' || (e.code === 'Comma')) {
+        // 한글 IME 가 'Process' 로 가로채는 경우엔 어차피 input 이벤트에서 처리됨.
+        // 영문/숫자 입력 중일 땐 여기서 즉시 처리.
+        e.preventDefault();
+        commitInputAsTag();
+        return;
+      }
+      if (e.key === 'Backspace' && !input.value && tagsChipState.tags.length) {
+        tagsChipState.tags.pop();
+        renderTagChips();
+        refreshTagSuggestions();
+        return;
+      }
+      // 자동완성 키보드 네비게이션
+      if (suggest && !suggest.hidden) {
+        const items = suggest.querySelectorAll('.memo-autocomplete-item');
+        if (e.key === 'ArrowDown' && items.length) {
+          e.preventDefault();
+          activeIndex = Math.min(items.length - 1, activeIndex + 1);
+          items.forEach((it, i) => it.classList.toggle('is-active', i === activeIndex));
+        } else if (e.key === 'ArrowUp' && items.length) {
+          e.preventDefault();
+          activeIndex = Math.max(-1, activeIndex - 1);
+          items.forEach((it, i) => it.classList.toggle('is-active', i === activeIndex));
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          suggest.hidden = true; suggest.innerHTML = '';
+          activeIndex = -1;
+        }
+      }
+    });
+
+    // IME composition 끝난 직후에도 콤마/엔터 가능성 검사
+    input.addEventListener('compositionend', () => {
+      if (input.value.indexOf(',') !== -1) {
+        const parts = input.value.split(',');
+        const tail = parts.pop();
+        parts.forEach((p) => { addTagFromText(p); });
+        input.value = (tail || '').replace(/^\s+/, '');
+        refreshTagSuggestions();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) {
+        if (addTagFromText(input.value)) refreshTagSuggestions();
+        input.value = '';
+      }
+      if (suggest) setTimeout(() => { suggest.hidden = true; suggest.innerHTML = ''; }, 150);
+    });
+    // chip-input 영역 클릭 시 input 으로 포커스 (placeholder 외 영역)
+    if (wrap) wrap.addEventListener('click', (e) => {
+      if (e.target === wrap || e.target.id === 'memo-tags-chips') input.focus();
     });
   }
 
