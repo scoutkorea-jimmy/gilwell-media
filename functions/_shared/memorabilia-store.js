@@ -336,8 +336,20 @@ export async function updateMemorabilia(db, id, input) {
 
   const isPublishingNow = input.status === 'public' && existing.status !== 'public';
 
-  // event_id 변경 시 usage_count 재계산용
   await maybeHydrateEventName(db, input);
+
+  // event_id 변경 시 events.usage_count 조정 — 이전엔 create/delete 만 ±1 했고
+  // update 에서 누락되어 행사 변경/해제 시 카운트가 드리프트 했음 (2026-05-26 fix).
+  const oldEventId = existing.event_id || null;
+  const newEventId = input.event_id || null;
+  if (oldEventId !== newEventId) {
+    if (oldEventId) {
+      await db.prepare(`UPDATE memorabilia_events SET usage_count = MAX(usage_count - 1, 0) WHERE id = ?`).bind(oldEventId).run();
+    }
+    if (newEventId) {
+      await db.prepare(`UPDATE memorabilia_events SET usage_count = usage_count + 1 WHERE id = ?`).bind(newEventId).run();
+    }
+  }
 
   await db.prepare(`
     UPDATE memorabilia SET

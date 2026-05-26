@@ -134,16 +134,21 @@ export function formatEventPeriodEn(row) {
   return `${s} – ${e}`;
 }
 
+// 참조 카운트는 cached memorabilia_events.usage_count 가 아니라 실시간 서브쿼리로
+// 계산. 이전엔 cached 컬럼이 update/delete 누락으로 drift 했음. cached 컬럼은
+// 호환을 위해 유지하되 응답에서는 항상 실시간 값으로 덮어쓴다 (2026-05-26 fix).
 export async function listEvents(db, { archived = false } = {}) {
   const whereArchived = archived ? '' : 'WHERE archived = 0';
   const { results } = await db.prepare(
-    `SELECT id, slug, name_en, name_ko,
-            start_year, start_month, start_day, end_year, end_month, end_day,
-            description_en, description_ko, usage_count, archived,
-            created_at, updated_at
-       FROM memorabilia_events
+    `SELECT e.id, e.slug, e.name_en, e.name_ko,
+            e.start_year, e.start_month, e.start_day,
+            e.end_year, e.end_month, e.end_day,
+            e.description_en, e.description_ko, e.archived,
+            (SELECT COUNT(*) FROM memorabilia m WHERE m.event_id = e.id) AS usage_count,
+            e.created_at, e.updated_at
+       FROM memorabilia_events e
        ${whereArchived}
-      ORDER BY COALESCE(start_year, 0) DESC, COALESCE(start_month, 0) DESC, COALESCE(start_day, 0) DESC, id DESC`
+      ORDER BY COALESCE(e.start_year, 0) DESC, COALESCE(e.start_month, 0) DESC, COALESCE(e.start_day, 0) DESC, e.id DESC`
   ).all();
   return (results || []).map((row) => ({
     ...row,
@@ -154,11 +159,13 @@ export async function listEvents(db, { archived = false } = {}) {
 
 export async function getEvent(db, id) {
   const row = await db.prepare(
-    `SELECT id, slug, name_en, name_ko,
-            start_year, start_month, start_day, end_year, end_month, end_day,
-            description_en, description_ko, usage_count, archived,
-            created_at, updated_at
-       FROM memorabilia_events WHERE id = ?`
+    `SELECT e.id, e.slug, e.name_en, e.name_ko,
+            e.start_year, e.start_month, e.start_day,
+            e.end_year, e.end_month, e.end_day,
+            e.description_en, e.description_ko, e.archived,
+            (SELECT COUNT(*) FROM memorabilia m WHERE m.event_id = e.id) AS usage_count,
+            e.created_at, e.updated_at
+       FROM memorabilia_events e WHERE e.id = ?`
   ).bind(id).first();
   if (!row) return null;
   return { ...row, period_text: formatEventPeriod(row), period_text_en: formatEventPeriodEn(row) };

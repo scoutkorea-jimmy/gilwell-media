@@ -7459,3 +7459,8 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   background: rgba(98, 37, 153, 0.08);
 }
 
+/* Memorabilia admin list — 행 전체 클릭 affordance */
+.v3-table tr[data-memo-row]:hover {
+  background: rgba(98, 37, 153, 0.05);
+}
+

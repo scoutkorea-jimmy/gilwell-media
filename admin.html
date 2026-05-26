@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526124315">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526124315">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260526125408">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526125408">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.132.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.133.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.155.00</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.132.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.133.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.155.00</span></span></div>
     </div>
 
@@ -2243,13 +2243,37 @@
             <h1 class="v3-page-title">행사 카탈로그</h1>
             <p class="v3-page-desc">기념품 도감에서 사용되는 공통 행사 목록입니다. 한 번 등록한 행사는 여러 도감 항목에서 재사용됩니다. 행사기간은 연·월·일 단위 (일은 선택).</p>
           </div>
-          <div class="v3-page-head-right">
+          <div class="v3-page-head-right" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-tmpl-btn" title="빈 CSV 템플릿 다운로드 (Excel 호환, UTF-8 BOM)">📥 템플릿</button>
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-export-btn" title="모든 행사를 CSV로 내보내기">⬇ 일괄 다운로드</button>
+            <button class="v3-btn v3-btn-outline v3-btn-sm" id="memo-ev-import-btn" title="CSV로 일괄 업로드 — 동일 slug/이름은 기존 행사에 흡수">⬆ 일괄 업로드</button>
+            <input type="file" id="memo-ev-import-input" accept=".csv,text/csv" hidden />
             <button class="v3-btn v3-btn-primary" id="memo-ev-new-btn">+ 새 행사</button>
           </div>
         </div>
         <div class="v3-card">
           <div class="v3-inline-meta" id="memo-ev-meta">불러오는 중…</div>
           <div id="memo-ev-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+        </div>
+
+        <!-- CSV 업로드 결과 모달 -->
+        <div class="v3-modal-backdrop" id="memo-ev-csv-result-modal" hidden>
+          <div class="v3-modal v3-modal-md" role="dialog" aria-labelledby="memo-ev-csv-result-title">
+            <div class="v3-modal-head">
+              <h2 id="memo-ev-csv-result-title">CSV 일괄 업로드 결과</h2>
+              <button class="v3-modal-close" id="memo-ev-csv-result-close" aria-label="닫기">×</button>
+            </div>
+            <div class="v3-modal-body">
+              <div id="memo-ev-csv-result-summary" style="font-size:14px; line-height:1.6; margin-bottom:14px;"></div>
+              <div id="memo-ev-csv-result-errors"></div>
+              <p style="margin-top:14px; font-size:11.5px; color:var(--gray-700,#3f3f3f); line-height:1.5;">
+                Dedup 규칙: <code>slug</code> 가 일치하거나(빈 slug 면 이름 trim 일치하면) 기존 행사를 UPDATE 합니다. 새 slug/이름이면 INSERT.
+              </p>
+            </div>
+            <div class="v3-modal-foot">
+              <button class="v3-btn v3-btn-primary" id="memo-ev-csv-result-ok">확인</button>
+            </div>
+          </div>
         </div>
 
         <!-- 행사 편집 모달 -->
@@ -3009,13 +3033,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260526124315"></script>
-<script src="/js/shared-country-name-ko.js?v=20260526124315"></script>
-<script src="/js/memorabilia-shared.js?v=20260526124315"></script>
-<script src="/js/admin-v3.js?v=20260526124315"></script>
-<script src="/js/admin-account.js?v=20260526124315"></script>
-<script src="/js/admin-memorabilia.js?v=20260526124315"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260526124315"></script>
+<script src="/js/main.js?v=20260526125408"></script>
+<script src="/js/shared-country-name-ko.js?v=20260526125408"></script>
+<script src="/js/memorabilia-shared.js?v=20260526125408"></script>
+<script src="/js/admin-v3.js?v=20260526125408"></script>
+<script src="/js/admin-account.js?v=20260526125408"></script>
+<script src="/js/admin-memorabilia.js?v=20260526125408"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260526125408"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

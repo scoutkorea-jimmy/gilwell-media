@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.133.00",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 19:15:00 KST",
+    "summary": "관리자 기념품 도감 — 목록 행 전체 클릭으로 모달 진입 + 행사 카탈로그 참조 카운트 정합성 수정 + CSV 일괄 업로드/다운로드.",
+    "for_users": [
+      "관리자 → 스카우트 백과 → 기념품 도감 목록에서 행 어디든 클릭하면 해당 항목의 정보 모달이 열립니다 (이전엔 작은 '편집' 버튼만 활성). hover 시 옅은 보라색 강조로 클릭 가능을 시각적으로 표시.",
+      "행사 카탈로그의 참조 건수가 항상 실제 도감 참조 수와 일치하도록 보정되었습니다. 이전엔 행사 변경/해제 시 카운트가 동기화되지 않아 부풀거나 0으로 머무르는 경우가 있었습니다.",
+      "행사 카탈로그 상단에 'CSV 일괄 처리' 기능 추가: '📥 템플릿'으로 빈 양식 다운로드, '⬇ 일괄 다운로드'로 전체 행사 CSV 내보내기, '⬆ 일괄 업로드'로 CSV 파일을 직접 업로드할 수 있습니다. 동일 slug/이름의 행사는 INSERT 대신 기존 행사에 흡수(UPDATE)되므로 중복 위험 없이 일괄 동기화 가능."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js renderList: tr 에 data-memo-row=${id} + cursor:pointer + 행 클릭 시 openEditor(it). 편집 버튼은 e.stopPropagation() 으로 중복 호출 방지. css/admin.css 에 tr[data-memo-row]:hover { background: rgba(98,37,153,0.05) } 추가.",
+      "functions/_shared/memorabilia-store.js updateMemorabilia: existing.event_id vs input.event_id 비교 후 변경 시 old -1 / new +1 USAGE_COUNT 조정 (이전엔 create/delete 만 처리되어 update path 누락이 카운트 drift 원인). functions/_shared/memorabilia-events.js listEvents/getEvent: cached usage_count 컬럼 대신 (SELECT COUNT(*) FROM memorabilia WHERE event_id = e.id) 서브쿼리로 응답 — 영구적으로 정확. cached 컬럼은 호환을 위해 유지.",
+      "functions/api/memorabilia/events/csv.js (신규): GET (?template=1 또는 전체 export) + POST (text/csv 또는 application/json {csv}). RFC 4180 lite 파서로 quoted/embedded 콤마·개행 처리, UTF-8 BOM 출력으로 Excel 한글 호환. Dedup: slug 매칭 우선, 없으면 (name_en, name_ko) trim lower-case 매칭 → UPDATE / 없으면 INSERT (slug 자동 생성 + 중복 회피). 응답: {inserted, updated, skipped, errors:[{line, errors:[]}]}.",
+      "admin.html panel-memorabilia-events 헤더에 [📥 템플릿 / ⬇ 일괄 다운로드 / ⬆ 일괄 업로드] 버튼 + 숨김 file input + #memo-ev-csv-result-modal 결과 표시 모달. js/admin-memorabilia.js wireEventsPanelOnce 에 wire — downloadEventsCsv(isTemplate) anchor 클릭 다운로드 / onCsvImport(file→text→POST) / showCsvResult(data) (v3-badge 로 inserted/updated/skipped/errors 요약 + 오류 라인 상세 리스트).",
+      "관리자 03.132.00 → 03.133.00 (feature — bulk CSV import/export + row-click UX + usage_count integrity)."
+    ]
+  },
+  {
     "version": "00.155.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 18:00:00 KST",

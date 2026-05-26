@@ -479,14 +479,26 @@
       const statusBadge = it.status === 'public'
         ? '<span class="v3-badge v3-badge-success">공개</span>'
         : '<span class="v3-badge v3-badge-muted">초안</span>';
-      html.push(`<tr><td>${thumb}</td><td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
+      // 행 전체가 클릭 타깃 — 어디를 눌러도 정보 모달(편집 모달과 동일) 열림.
+      // 편집 버튼은 명시적 affordance 로 유지하되 stopPropagation 으로 중복 호출 방지.
+      html.push(`<tr data-memo-row="${it.id}" style="cursor:pointer"><td>${thumb}</td><td><strong>${escapeHtml(title)}</strong>${sub}</td>`,
         `<td>${eventCell}</td><td>${it.year || '—'}</td><td>${escapeHtml(cat)}</td><td>${statusBadge}</td>`,
         `<td><button class="v3-btn v3-btn-outline v3-btn-sm" data-memo-edit="${it.id}">편집</button></td></tr>`);
     }
     html.push('</tbody></table>');
     wrap.innerHTML = html.join('');
+    // 행 클릭 → openEditor. 편집 버튼은 그 자체로도 동작하되, 행 핸들러 중복 호출
+    // 방지를 위해 stopPropagation.
+    $$('tr[data-memo-row]', wrap).forEach((row) => {
+      row.addEventListener('click', () => {
+        const id = parseInt(row.getAttribute('data-memo-row'), 10);
+        const it = state.items.find((x) => x.id === id);
+        if (it) openEditor(it);
+      });
+    });
     $$('button[data-memo-edit]', wrap).forEach((b) => {
-      b.addEventListener('click', () => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = parseInt(b.getAttribute('data-memo-edit'), 10);
         const it = state.items.find((x) => x.id === id);
         if (it) openEditor(it);
@@ -1204,6 +1216,121 @@
     if (deleteBtn) deleteBtn.addEventListener('click', deleteEventRow);
     const backdrop = $('#memo-ev-edit-modal');
     if (backdrop) backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeEventEditor(); });
+
+    // CSV 일괄 처리
+    const tmplBtn   = $('#memo-ev-tmpl-btn');
+    const exportBtn = $('#memo-ev-export-btn');
+    const importBtn = $('#memo-ev-import-btn');
+    const fileInput = $('#memo-ev-import-input');
+    if (tmplBtn)   tmplBtn.addEventListener('click', () => downloadEventsCsv(true));
+    if (exportBtn) exportBtn.addEventListener('click', () => downloadEventsCsv(false));
+    if (importBtn && fileInput) {
+      importBtn.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', onCsvImport);
+    }
+    const resultClose = $('#memo-ev-csv-result-close');
+    const resultOk    = $('#memo-ev-csv-result-ok');
+    const resultModal = $('#memo-ev-csv-result-modal');
+    if (resultClose) resultClose.addEventListener('click', closeCsvResultModal);
+    if (resultOk)    resultOk.addEventListener('click', closeCsvResultModal);
+    if (resultModal) resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeCsvResultModal(); });
+  }
+
+  // ── CSV 일괄 처리 ───────────────────────────────────────────────────────
+  function downloadEventsCsv(isTemplate) {
+    const url = '/api/memorabilia/events/csv' + (isTemplate ? '?template=1' : '');
+    // anchor 클릭으로 다운로드 — fetch 후 blob 으로 처리할 수도 있으나
+    // 단순 GET + Content-Disposition 으로 충분.
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = ''; // 서버 헤더가 우선
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function onCsvImport(e) {
+    const file = e.target.files && e.target.files[0];
+    try { e.target.value = ''; } catch {}
+    if (!file) return;
+    if (!/\.csv$/i.test(file.name) && !file.type.includes('csv')) {
+      toast('CSV 파일만 업로드 가능합니다.', 'error');
+      return;
+    }
+    let text;
+    try {
+      text = await file.text();
+    } catch (err) {
+      toast('파일 읽기 실패: ' + err.message, 'error');
+      return;
+    }
+    if (!text.trim()) { toast('빈 파일입니다.', 'error'); return; }
+
+    try {
+      const res = await fetch('/api/memorabilia/events/csv', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'text/csv; charset=utf-8' },
+        body: text,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast(`업로드 실패: ${data.detail || data.error || ('HTTP ' + res.status)}`, 'error');
+        return;
+      }
+      showCsvResult(data);
+      // 카탈로그 캐시 + 목록 갱신
+      if (eventsMod && typeof eventsMod.load === 'function') {
+        try { await eventsMod.load(true); } catch {}
+      }
+      await loadEventsList();
+    } catch (err) {
+      toast('네트워크 오류: ' + err.message, 'error');
+    }
+  }
+
+  function showCsvResult(data) {
+    const modal   = $('#memo-ev-csv-result-modal');
+    const summary = $('#memo-ev-csv-result-summary');
+    const errors  = $('#memo-ev-csv-result-errors');
+    if (!modal || !summary || !errors) return;
+
+    const inserted = data.inserted || 0;
+    const updated  = data.updated  || 0;
+    const skipped  = data.skipped  || 0;
+    const errList  = Array.isArray(data.errors) ? data.errors : [];
+
+    summary.innerHTML = `
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="v3-badge v3-badge-success">신규 ${inserted}건</span>
+        <span class="v3-badge" style="background:rgba(98,37,153,0.12); color:var(--color-scouting-purple,#622599);">업데이트 ${updated}건</span>
+        ${skipped ? `<span class="v3-badge v3-badge-muted">스킵 ${skipped}건</span>` : ''}
+        ${errList.length ? `<span class="v3-badge" style="background:rgba(255,86,85,0.15); color:#c33;">오류 ${errList.length}건</span>` : ''}
+      </div>
+    `;
+
+    if (errList.length) {
+      errors.innerHTML = `
+        <h4 style="margin:14px 0 6px; font-size:13px;">오류 상세</h4>
+        <div style="max-height:240px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px; padding:8px 12px; background:#fff; font-size:12.5px;">
+          ${errList.map((er) => `
+            <div style="padding:4px 0; border-bottom:1px solid var(--gray-100,#f0f0f0);">
+              <strong>라인 ${er.line}:</strong> ${(er.errors || []).map(escapeHtmlLocal).join(' · ')}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      errors.innerHTML = '';
+    }
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCsvResultModal() {
+    const modal = $('#memo-ev-csv-result-modal');
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = '';
   }
 
   async function loadEventsList() {
