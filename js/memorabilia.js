@@ -358,7 +358,7 @@
       : '';
 
     const linksHtml = (item.related_links || []).length
-      ? `<div class="memo-related-links"><h3>관련 링크</h3>${item.related_links.map((l) => {
+      ? `<div class="memo-related-links"><h3 class="memo-bilingual"><span class="lang-en" lang="en">Related Links</span><span class="lang-ko" lang="ko">관련 링크</span></h3>${item.related_links.map((l) => {
           const label = l.label_en || l.label_ko || l.url;
           const labelKo = (l.label_en && l.label_ko) ? ` <span style="opacity:0.6">/ ${escapeHtml(l.label_ko)}</span>` : '';
           return `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(label)}${labelKo}</a>`;
@@ -1115,24 +1115,35 @@
     const id = _engagementState.memorabiliaId;
     if (!id) return;
     const list = document.getElementById('memo-comment-list');
-    const countEl = document.getElementById('memo-comments-count');
+    // 두 개의 카운트 표기(EN/KO 병기) 모두 갱신
+    const countEls = document.querySelectorAll('[data-comments-count]');
     if (!list) return;
     try {
       const res = await fetch(`/api/memorabilia/${id}/comments?limit=50`, { credentials: 'same-origin' });
       if (!res.ok) {
-        list.innerHTML = '<div class="memo-comment-empty">댓글을 불러오지 못했습니다.</div>';
+        list.innerHTML = `<div class="memo-comment-empty memo-bilingual">
+          <span class="lang-en" lang="en">Failed to load comments.</span>
+          <span class="lang-ko" lang="ko">댓글을 불러오지 못했습니다.</span>
+        </div>`;
         return;
       }
       const data = await res.json();
       const items = data.items || [];
-      if (countEl) countEl.textContent = String(data.total || 0);
+      const total = String(data.total || 0);
+      countEls.forEach((el) => { el.textContent = total; });
       if (!items.length) {
-        list.innerHTML = '<div class="memo-comment-empty">아직 댓글이 없습니다. 첫 댓글을 남겨주세요.</div>';
+        list.innerHTML = `<div class="memo-comment-empty memo-bilingual">
+          <span class="lang-en" lang="en">No comments yet. Be the first to leave one.</span>
+          <span class="lang-ko" lang="ko">아직 댓글이 없습니다. 첫 댓글을 남겨주세요.</span>
+        </div>`;
         return;
       }
       list.innerHTML = items.map(renderCommentItem).join('');
     } catch (_) {
-      list.innerHTML = '<div class="memo-comment-empty">댓글을 불러오지 못했습니다.</div>';
+      list.innerHTML = `<div class="memo-comment-empty memo-bilingual">
+        <span class="lang-en" lang="en">Failed to load comments.</span>
+        <span class="lang-ko" lang="ko">댓글을 불러오지 못했습니다.</span>
+      </div>`;
     }
   }
 
@@ -1147,8 +1158,9 @@
         </div>
         <div class="memo-comment-content">${escapeHtml(c.content)}</div>
         <div class="memo-comment-actions">
-          <button type="button" class="memo-comment-delete-btn" data-action="delete-comment" data-comment-id="${c.id}">
-            🔒 비밀번호로 삭제
+          <button type="button" class="memo-comment-delete-btn memo-bilingual" data-action="delete-comment" data-comment-id="${c.id}">
+            <span class="lang-en" lang="en">🔒 Delete with password</span>
+            <span class="lang-ko" lang="ko">🔒 비밀번호로 삭제</span>
           </button>
         </div>
       </article>

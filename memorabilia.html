@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="/img/logo.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
   <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
-  <link rel="stylesheet" href="/css/style.css?v=20260526065757">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526065757">
+  <link rel="stylesheet" href="/css/style.css?v=20260526070624">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260526070624">
   <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
 </head>
 <body class="memorabilia-page">
@@ -100,52 +100,71 @@
             <div class="loading-state"><div class="loading-dots"><span></span><span></span><span></span></div></div>
           </div>
 
-          <!-- Likes + Comments (도감 전용) -->
+          <!-- Likes + Comments (도감 전용) — 라벨·버튼·안내문 EN+KO 병기 (섹션 제목 제외) -->
           <div id="memo-engagement" class="memo-engagement" hidden>
             <div class="memo-engagement-actions">
               <button type="button" class="memo-like-btn" id="memo-like-btn" aria-pressed="false">
                 <span class="memo-like-icon" aria-hidden="true">♡</span>
-                <span class="memo-like-label">좋아요</span>
+                <span class="memo-like-label memo-bilingual">
+                  <span class="lang-en" lang="en">Like</span>
+                  <span class="lang-ko" lang="ko">좋아요</span>
+                </span>
                 <span class="memo-like-count" id="memo-like-count">0</span>
               </button>
             </div>
 
             <section class="memo-comments" aria-labelledby="memo-comments-title">
-              <h3 id="memo-comments-title" class="memo-comments-title">
-                댓글 <span class="memo-comments-count" id="memo-comments-count">0</span>
+              <h3 id="memo-comments-title" class="memo-comments-title memo-bilingual">
+                <span class="lang-en" lang="en">Comments <span class="memo-comments-count" data-comments-count>0</span></span>
+                <span class="lang-ko" lang="ko">댓글 <span class="memo-comments-count" data-comments-count>0</span></span>
               </h3>
-              <p class="memo-comments-help">
-                누구나 작성할 수 있습니다. 관리자 검토 후 게시됩니다.
-                작성자 본인은 비밀번호로 직접 삭제할 수 있습니다.
+              <p class="memo-comments-help memo-bilingual">
+                <span class="lang-en" lang="en">Anyone may post. Comments appear after admin review. Authors can delete their own comment with the password.</span>
+                <span class="lang-ko" lang="ko">누구나 작성할 수 있습니다. 관리자 검토 후 게시됩니다. 작성자 본인은 비밀번호로 직접 삭제할 수 있습니다.</span>
               </p>
 
               <form class="memo-comment-form" id="memo-comment-form" autocomplete="off" novalidate>
                 <div class="memo-comment-row">
                   <label class="memo-field">
-                    <span class="memo-field-label">이름 *</span>
+                    <span class="memo-field-label memo-bilingual">
+                      <span class="lang-en" lang="en">Name *</span>
+                      <span class="lang-ko" lang="ko">이름 *</span>
+                    </span>
                     <input type="text" id="memo-c-name" maxlength="40" required>
                   </label>
                   <label class="memo-field">
-                    <span class="memo-field-label">소속연맹 *</span>
+                    <span class="memo-field-label memo-bilingual">
+                      <span class="lang-en" lang="en">Affiliation *</span>
+                      <span class="lang-ko" lang="ko">소속연맹 *</span>
+                    </span>
                     <input type="text" id="memo-c-affiliation" maxlength="80" required
-                           placeholder="예: 한국스카우트연맹">
+                           placeholder="e.g. Korea Scout Association · 예: 한국스카우트연맹">
                   </label>
                   <label class="memo-field">
-                    <span class="memo-field-label">비밀번호 * (6자 이상)</span>
+                    <span class="memo-field-label memo-bilingual">
+                      <span class="lang-en" lang="en">Password * (6+ chars)</span>
+                      <span class="lang-ko" lang="ko">비밀번호 * (6자 이상)</span>
+                    </span>
                     <input type="password" id="memo-c-password" minlength="6" maxlength="128" required
                            autocomplete="new-password">
                   </label>
                 </div>
                 <label class="memo-field memo-field-block">
-                  <span class="memo-field-label">내용 * (1000자 이하)</span>
+                  <span class="memo-field-label memo-bilingual">
+                    <span class="lang-en" lang="en">Comment * (max 1000 chars)</span>
+                    <span class="lang-ko" lang="ko">내용 * (1000자 이하)</span>
+                  </span>
                   <textarea id="memo-c-content" rows="3" maxlength="1000" required></textarea>
                 </label>
                 <div class="memo-comment-form-foot">
-                  <p class="memo-comment-privacy">
-                    댓글 작성 시 IP 주소가 90일간 저장됩니다 (스팸·악성 댓글 방지).
-                    자세한 내용은 <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>을 참고하세요.
+                  <p class="memo-comment-privacy memo-bilingual">
+                    <span class="lang-en" lang="en">Your IP address is retained for 90 days (spam protection). See the <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a> for details.</span>
+                    <span class="lang-ko" lang="ko">댓글 작성 시 IP 주소가 90일간 저장됩니다 (스팸·악성 댓글 방지). 자세한 내용은 <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a>을 참고하세요.</span>
                   </p>
-                  <button type="submit" class="memo-btn memo-btn-primary" id="memo-comment-submit">댓글 등록</button>
+                  <button type="submit" class="memo-btn memo-btn-primary memo-bilingual" id="memo-comment-submit">
+                    <span class="lang-en" lang="en">Post Comment</span>
+                    <span class="lang-ko" lang="ko">댓글 등록</span>
+                  </button>
                 </div>
               </form>
 
@@ -370,7 +389,7 @@
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.154.01</span> · Admin <span class="admin-build-version">V03.131.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.154.02</span> · Admin <span class="admin-build-version">V03.131.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 BP미디어 · bpmedia.net</p>
@@ -382,9 +401,9 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260526065757"></script>
-  <script src="/js/site-chrome.js?v=20260526065757"></script>
-  <script src="/js/memorabilia-shared.js?v=20260526065757"></script>
-  <script src="/js/memorabilia.js?v=20260526065757"></script>
+  <script src="/js/main.js?v=20260526070624"></script>
+  <script src="/js/site-chrome.js?v=20260526070624"></script>
+  <script src="/js/memorabilia-shared.js?v=20260526070624"></script>
+  <script src="/js/memorabilia.js?v=20260526070624"></script>
 </body>
 </html>

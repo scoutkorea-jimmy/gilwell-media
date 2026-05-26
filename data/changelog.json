@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.154.02",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 17:10:00 KST",
+    "summary": "기념품 도감 상세 — 좋아요·댓글 영역과 섹션 헤딩까지 EN/KO 병기 확장 (도감 페이지 전 영역 이중표기 통일).",
+    "for_users": [
+      "기념품 도감 상세의 좋아요 버튼·댓글 섹션 헤딩·도움말·폼 라벨·개인정보 안내문·등록/삭제 버튼·빈 상태 메시지·관련 링크 헤딩까지 모두 영문·국문이 함께 표기됩니다.",
+      "도감 페이지에서는 상단 사이트 nav 와 사이드바 통계를 제외한 본문·인터랙션 영역 전체가 항상 EN+KO 병기 원칙으로 통일되었습니다."
+    ],
+    "for_developers": [
+      "memorabilia.html: memo-engagement 내부의 like 버튼 라벨, 댓글 헤딩(h3), 도움말, 폼 라벨(이름/소속연맹/비밀번호/내용), 개인정보 안내문, 제출 버튼 모두 .memo-bilingual + .lang-en/.lang-ko span 패턴으로 통일.",
+      "댓글 카운트 갱신: ID 기반 → [data-comments-count] 속성 기반 querySelectorAll 로 변경 — EN/KO 두 헤딩에서 동시 갱신.",
+      "js/memorabilia.js refreshCommentsempty/error 상태 메시지 + renderCommentItem 삭제 버튼 + renderDetail 의 '관련 링크' h3 모두 bilingual 패턴 적용.",
+      "placeholder: '예: 한국스카우트연맹' → 'e.g. Korea Scout Association · 예: 한국스카우트연맹' 단일 라인 합성 (input 내부 stack 불가).",
+      "사이트 00.154.01 → 00.154.02 (hotfix)."
+    ]
+  },
+  {
     "version": "00.154.01",
     "date": "2026-05-26",
     "released_at": "2026-05-26 16:30:00 KST",
