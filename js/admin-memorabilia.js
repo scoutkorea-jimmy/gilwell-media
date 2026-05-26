@@ -148,11 +148,11 @@
     bindAutocomplete($('#memo-issuer-ko'), $('#memo-issuer-ko-suggest'), 'issuer');
     // Tag chip input (신 UI) — 한글 IME 친화 콤마 처리 + 키보드 네비게이션
     bindTagChipInput();
-    // 행사 변경 시 추천 태그 자동 갱신
+    // 행사 변경 시 추천 태그 자동 갱신 (변수명 중복 회피: hasEventChk)
     const eventRow = $('#memo-event-row');
     if (eventRow) eventRow.addEventListener('change', refreshTagSuggestions, true);
-    const hasEvent = $('#memo-has-event');
-    if (hasEvent) hasEvent.addEventListener('change', refreshTagSuggestions);
+    const hasEventChk = $('#memo-has-event');
+    if (hasEventChk) hasEventChk.addEventListener('change', refreshTagSuggestions);
 
     // Bulk find/replace 일괄 수정 도구
     wireBulkReplaceOnce();
@@ -1527,7 +1527,8 @@
 
     let acTimer;
     input.addEventListener('input', (e) => {
-      if (e && e.isComposing) return; // IME composition 중이면 무시
+      // 콤마는 IME composition 중이어도 split 처리 — 한국어 IME 가 ',' 를
+      // 자모로 다루지 않으므로 value 에 콤마가 들어오면 무조건 토큰화 가능.
       if (input.value.indexOf(',') !== -1) {
         const parts = input.value.split(',');
         const tail = parts.pop();
@@ -1536,7 +1537,10 @@
         activeIndex = -1;
         if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
         refreshTagSuggestions();
+        return;
       }
+      // 자동완성만 IME composition 중이면 skip
+      if (e && e.isComposing) return;
       clearTimeout(acTimer);
       const q = input.value.trim();
       if (q.length < 1 || !suggest) { if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; } return; }

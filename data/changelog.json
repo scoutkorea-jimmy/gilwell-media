@@ -1,6 +1,34 @@
 {
   "items": [
   {
+    "version": "03.137.03",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 07:00:00 KST",
+    "summary": "관리자 도감 모달 JS 핫픽스 — 'hasEvent' 변수 중복 선언으로 페이지 전체 스크립트 실행 실패하던 문제 해결 + 콤마 1회 입력 처리.",
+    "for_users": [
+      "관리자 페이지에서 도감 목록이 로드되지 않고 '새 항목' 버튼도 동작하지 않던 문제가 해결되었습니다.",
+      "관리자 도감 입력 모달에서도 한글로 태그 입력 후 콤마를 한 번 누르면 즉시 칩으로 변환됩니다 (두 번 누를 필요 없음)."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js wireMemoEvents: 새로 추가한 'const hasEvent = $(#memo-has-event)' 가 같은 함수 앞쪽(라인 123)에 이미 선언된 'hasEvent' 와 SyntaxError: Identifier 'hasEvent' has already been declared 충돌 → 'hasEventChk' 로 변수명 분리.",
+      "js/admin-memorabilia.js bindTagChipInput input handler: e.isComposing 가드를 콤마 split 분기 뒤로 옮김 — IME composition 중에도 콤마가 value 에 들어오면 즉시 split. 자동완성만 IME 중 skip. (memorabilia.js 동일 수정과 짝)",
+      "Admin 03.137.02 → 03.137.03 (fix — SyntaxError 회귀 핫픽스 + 콤마 1회 입력)."
+    ]
+  },
+  {
+    "version": "00.159.03",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 07:00:00 KST",
+    "summary": "공개 도감 태그 입력: 한글 입력 후 콤마를 두 번 눌러야 칩화되던 문제 핫픽스.",
+    "for_users": [
+      "한글로 태그를 입력한 뒤 콤마(,)를 한 번 누르면 즉시 칩으로 변환됩니다. 이전엔 두 번 눌러야 처리되던 케이스가 사라졌습니다."
+    ],
+    "for_developers": [
+      "js/memorabilia.js bindTagChipInput input handler: e.isComposing 가드를 콤마 split 분기 뒤로 이동. IME composition 중에도 콤마가 value 에 들어오면 무조건 split (한국어 IME 가 ',' 를 자모로 다루지 않아 항상 composition 종료 + insert 패턴이므로 안전). 자동완성 fetch 만 IME 중 skip.",
+      "사이트 00.159.02 → 00.159.03 (fix — 한글 IME 콤마 1회 입력)."
+    ]
+  },
+  {
     "version": "03.137.02",
     "date": "2026-05-27",
     "released_at": "2026-05-27 06:30:00 KST",

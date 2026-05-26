@@ -1235,10 +1235,9 @@
     // compositionend 직후에도 input event 가 따로 발생하므로 별도 핸들러 없음.
     let acTimer;
     input.addEventListener('input', (e) => {
-      // IME 가 한글 음절 조립 중이면 input event 무시 — composition end 후의
-      // input event 가 다시 한 번 발생하므로 그때 처리.
-      if (e && e.isComposing) return;
-      // 값 안에 콤마가 포함되면 칩으로 즉시 분리 (마지막 토큰만 입력으로 유지)
+      // 콤마가 value 에 들어왔으면 항상 split — IME composition 중이어도 처리.
+      // (한국어 IME 는 ',' 를 자모로 다루지 않아 항상 composition 종료 + ',' insert.)
+      // 콤마 split 은 e.isComposing 무관, 자동완성만 IME 중이면 skip.
       if (input.value.indexOf(',') !== -1) {
         const parts = input.value.split(',');
         const tail = parts.pop();
@@ -1247,7 +1246,10 @@
         activeIndex = -1;
         if (suggest) { suggest.hidden = true; suggest.innerHTML = ''; }
         refreshTagSuggestions();
+        return;
       }
+      // 자동완성은 IME composition 중일 때만 skip (조립 중 fetch 가 의미 없음)
+      if (e && e.isComposing) return;
       // 자동완성 fetch
       clearTimeout(acTimer);
       const q = input.value.trim();
