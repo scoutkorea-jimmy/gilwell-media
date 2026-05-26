@@ -58,7 +58,39 @@
       });
     }
 
+    var _normalizeWarned = {};
+    function _warnOnce(key, msg) {
+      if (_normalizeWarned[key]) return;
+      _normalizeWarned[key] = true;
+      try { console.warn('[GW home-data]', msg); } catch (_) {}
+    }
+
+    function normalizeHomeData(raw) {
+      if (!raw || typeof raw !== 'object') {
+        _warnOnce('shape', 'home data missing/invalid; using empty fallback');
+        return {};
+      }
+      var d = raw;
+      if (d.hero && typeof d.hero !== 'object') {
+        _warnOnce('hero', 'data.hero invalid type, falling back to {}');
+        d.hero = {};
+      }
+      if (d.ticker && typeof d.ticker !== 'object') {
+        _warnOnce('ticker', 'data.ticker invalid, dropping');
+        d.ticker = null;
+      }
+      if (d.ticker && d.ticker.items && !Array.isArray(d.ticker.items)) {
+        _warnOnce('ticker-items', 'data.ticker.items not array, dropping');
+        d.ticker.items = [];
+      }
+      if (d.analytics && typeof d.analytics !== 'object') d.analytics = {};
+      if (d.lead && typeof d.lead !== 'object') d.lead = null;
+      if (d.stats && typeof d.stats !== 'object') d.stats = null;
+      return d;
+    }
+
     function applyData(data, options) {
+      data = normalizeHomeData(data);
       var opts = options || {};
       var issues = helpers.getHomeIssueMap(data);
       latestIssueKeys = helpers.getActiveHomeIssueKeys(issues);
@@ -315,6 +347,10 @@
         if (homeRefreshTimer !== null) {
           clearInterval(homeRefreshTimer);
           homeRefreshTimer = null;
+        }
+        if (freshnessTickTimer !== null) {
+          clearInterval(freshnessTickTimer);
+          freshnessTickTimer = null;
         }
       });
     }

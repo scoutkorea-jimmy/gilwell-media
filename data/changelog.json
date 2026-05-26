@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.153.01",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 14:55:00 KST",
+    "summary": "홈페이지 핫픽스 — 백그라운드 메모리 누수 2건 + API 응답 타입 가드 추가로 장기 체류·비정상 응답 환경에서의 안정성 강화.",
+    "for_users": [
+      "홈페이지를 오래 켜두거나 다른 탭과 자주 오갈 때 발생할 수 있는 백그라운드 자원 낭비를 줄였습니다 — 화면을 떠난 뒤에는 갱신 타이머가 즉시 멈춥니다.",
+      "메인 슬라이드의 일시정지 버튼이 빠른 새로고침 후에도 항상 정확히 동작하도록 정리 로직을 보강했습니다.",
+      "보이는 동작 변화는 없습니다 — 내부 안정성 가드만 추가."
+    ],
+    "for_developers": [
+      "js/home-runtime.js pagehide 핸들러: freshnessTickTimer(30초 주기) clearInterval 추가 — 기존엔 homeRefreshTimer 만 정리되어 페이지 이탈 후에도 freshness 타이머가 영구 실행되던 leak 해결.",
+      "js/home-hero.js GW._homeHeroState.destroy: #hero-pause-btn onclick = null 추가 — renderHero 재호출 시 stale 핸들러가 DOM 에 잔존하던 문제 차단.",
+      "js/home-runtime.js applyData 진입부: normalizeHomeData() 신설 — data.hero / data.ticker / data.ticker.items / data.analytics / data.lead / data.stats 타입 가드. 비정상 타입은 안전 기본값으로 강제하고 _warnOnce 로 콘솔 1회 경고(30초 폴링 스팸 방지).",
+      "사이트 00.153.00 → 00.153.01 (hotfix)."
+    ]
+  },
+  {
     "version": "03.130.00",
     "date": "2026-05-26",
     "released_at": "2026-05-26 00:08:11 KST",

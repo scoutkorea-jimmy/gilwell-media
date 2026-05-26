@@ -295,6 +295,8 @@
             slider.removeEventListener('touchmove', GW._homeHeroState.touch.move);
             slider.removeEventListener('touchend', GW._homeHeroState.touch.end);
           }
+          var pauseBtn = document.getElementById('hero-pause-btn');
+          if (pauseBtn) pauseBtn.onclick = null;
           slider.querySelectorAll('.site-hero-slide[data-post-id]').forEach(function (node) {
             node.remove();
           });
