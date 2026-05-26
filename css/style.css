@@ -1264,12 +1264,23 @@ body[data-home-bootstrap] .lang-btn:hover {
   text-transform: uppercase;
   color:          var(--muted);
   text-decoration: none;
-  padding:        var(--gap-element) 20px;
+  /* 짧은 라벨(홈/캘린더/용어집)이 너무 좁아져 긴 라벨과 리듬이 깨지는 문제 보정.
+     min-width 와 좌우 패딩 동일화로 탭 간 폭 편차를 줄인다 (라벨 자체는 그대로). */
+  padding:        var(--gap-element) 16px;
+  min-width:      88px;
   white-space:    nowrap;
   flex:           0 0 auto;
+  text-align:     center;
   transition:     color 0.15s;
   background:     none;
   border:         none;
+  box-sizing:     border-box;
+}
+
+/* 좁은 화면(태블릿/모바일)에서는 min-width 가 가로 스크롤을 과도하게 늘릴 수
+   있어 해제 — 좌우 스크롤이 자연스럽게 동작하도록. */
+@media (max-width: 768px) {
+  .nav a { min-width: 0; padding: var(--gap-element) 14px; }
 }
 
 .nav a:hover,

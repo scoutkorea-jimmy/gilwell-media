@@ -267,7 +267,9 @@
       ? src.country_codes.map((c) => (state.countryLabels[c]?.ko) || c).join(', ')
       : '—';
 
+    const titlePreview = [src.title_en, src.title_ko].filter(Boolean).join(' · ') || '—';
     const fields = [
+      { key: 'title',         label: '제목 (영문·국문)', preview: titlePreview },
       { key: 'event',         label: '행사 정보',  preview: eventLabel },
       { key: 'year',          label: '연도',       preview: src.year ? String(src.year) : '—' },
       { key: 'category',      label: '분류',       preview: catLabel || '—' },
@@ -322,6 +324,10 @@
   }
 
   function applyImportFields(src, fieldsSet) {
+    if (fieldsSet.has('title')) {
+      $('#memo-title-en').value = src.title_en || '';
+      $('#memo-title-ko').value = src.title_ko || '';
+    }
     if (fieldsSet.has('event')) {
       $('#memo-has-event').checked = !!src.has_event;
       $('#memo-event-row').hidden = !src.has_event;

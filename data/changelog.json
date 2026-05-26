@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "00.155.01",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 23:30:00 KST",
+    "summary": "공개 사이트 — 상단 네비게이션 탭 폭 편차 보정 (min-width 88px + 패딩 통일).",
+    "for_users": [
+      "상단 메뉴에서 '홈/캘린더/용어집' 처럼 짧은 라벨이 너무 좁아져 '아시아·태평양 스카우트 소식' 같은 긴 라벨과 리듬이 어긋나 보이던 문제를 보정했습니다. 라벨 자체는 그대로 유지되고, 각 탭이 최소 폭을 확보해 시각적 균형이 잡힙니다."
+    ],
+    "for_developers": [
+      "css/style.css .nav a: padding 0 20px → 0 16px, min-width: 88px 추가, text-align: center, box-sizing: border-box. 모바일(<=768px) 에서는 min-width:0 + padding 14px 로 해제해 가로 스크롤 과도 확장 방지.",
+      "사이트 00.155.00 → 00.155.01 (fix — nav 폭 균형)."
+    ]
+  },
+  {
+    "version": "03.136.02",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 23:30:00 KST",
+    "summary": "관리자 도감 — '다른 도감에서 불러오기' 필드 선택에 '제목 (영문·국문)' 추가.",
+    "for_users": [
+      "도감 항목을 만들 때 다른 항목에서 메타를 불러올 경우, 필드 선택 목록에 '제목 (영문·국문)' 이 추가되어 제목까지 한 번에 가져올 수 있습니다. 기본 체크되어 있으니 원하지 않으면 해제하면 됩니다.",
+      "본문·이미지·관련 링크는 여전히 그대로 유지(불러오지 않음) — 각 항목의 고유성 보호."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js showImportFieldSelector: fields 배열 맨 앞에 { key:'title', label:'제목 (영문·국문)', preview: title_en + ' · ' + title_ko } 추가. applyImportFields: fieldsSet.has('title') 일 때 #memo-title-en / #memo-title-ko 채움.",
+      "관리자 03.136.01 → 03.136.02 (fix — import 필드 옵션 확장)."
+    ]
+  },
+  {
     "version": "03.136.01",
     "date": "2026-05-26",
     "released_at": "2026-05-26 22:50:00 KST",
