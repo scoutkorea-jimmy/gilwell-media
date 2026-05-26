@@ -415,9 +415,8 @@
           return '<div class="nav-group" data-nav-group="' + GW.escapeHtml(groupSlug) + '">' +
               '<button type="button" class="' + triggerCls + '" ' +
                 'data-nav-group-trigger="' + GW.escapeHtml(groupSlug) + '" ' +
-                'aria-haspopup="true" aria-expanded="false" ' +
-                'data-i18n="' + GW.escapeHtml(item.key) + '">' +
-                GW.escapeHtml(label) +
+                'aria-haspopup="true" aria-expanded="false">' +
+                '<span data-i18n="' + GW.escapeHtml(item.key) + '">' + GW.escapeHtml(label) + '</span>' +
                 '<span class="nav-group-caret" aria-hidden="true">▾</span>' +
               '</button>' +
               '<div class="nav-group-panel" role="menu" aria-label="' + GW.escapeHtml(label) + '">' +

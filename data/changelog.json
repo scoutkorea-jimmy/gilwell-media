@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.157.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 02:30:00 KST",
+    "summary": "PC 상단 메뉴 드롭다운이 보이지 않던 문제 + 모바일에서 메뉴 자체가 사라진 문제 핫픽스.",
+    "for_users": [
+      "PC에서 '스카우트 소식', '스카우트 자료실' 메뉴에 호버/클릭하면 서브 메뉴가 정상적으로 펼쳐집니다.",
+      "모바일에서도 상단 가로 메뉴가 다시 보이도록 복구되었습니다 (햄버거 메뉴와 함께 노출).",
+      "1차 그룹 메뉴의 ▾ 화살표가 다국어 토글 후에도 사라지지 않습니다."
+    ],
+    "for_developers": [
+      "css/style.css: .nav.nav-grouped 에 overflow: visible 추가. 부모 .nav 가 overflow-x: auto 라 다른 축(overflow-y)도 visible 아닌 상태가 되며 자식 .nav-group-panel(position: absolute, top: 100%) 이 잘려서 보이지 않던 원인 해결.",
+      "css/style.css: @media (max-width: 900px) { .nav { display: none } } 제거. 모바일에서도 .nav 노출하되 padding/font-size 축소(.nav-group-trigger 10px 12px / 12px, .nav-link 동일). .nav-group-panel 은 모바일에서 min-width 180px / max-width: calc(100vw - 24px) 로 viewport 밖 이탈 방지.",
+      "js/site-chrome.js renderManagedNav: 그룹 트리거 button 에서 data-i18n 을 inner span 으로 이동. 기존엔 button 자체에 data-i18n 이 있어 applyLang 의 textContent 덮어쓰기로 .nav-group-caret span 이 함께 제거되던 부수 문제 해결.",
+      "사이트 00.157.00 → 00.157.01 (fix — PC 드롭다운 클립 + 모바일 nav 숨김 + caret 소실 핫픽스)."
+    ]
+  },
+  {
     "version": "00.157.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 01:30:00 KST",
