@@ -7,8 +7,8 @@
 
   const GW = window.GW = {};
   GW.APP_VERSION = '00.155.00';
-  GW.ADMIN_VERSION = '03.136.00';
-  GW.ASSET_VERSION = '20260526134442';
+  GW.ADMIN_VERSION = '03.136.01';
+  GW.ASSET_VERSION = '20260526135505';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',

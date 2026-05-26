@@ -36,6 +36,7 @@
     eventCatsLoadedOnce: false,
     selectedEventIds: new Set(),
     eventCategoryFilter: '', // '' = 전체, '__none__' = 미분류, '<id>' = 특정 카테고리
+    eventSearchQuery: '',    // 실시간 검색어 (소문자 정규화)
   };
 
   // 공유 모듈 hooks
@@ -1785,6 +1786,18 @@
       renderEventsList();
     });
 
+    // 실시간 검색 — input 이벤트로 매 키 입력마다 즉시 필터링.
+    // 데이터셋이 작아 클라이언트 측 필터로 충분. (수백 건 이내 행사 카탈로그)
+    const searchInput = $('#memo-ev-search');
+    if (searchInput) {
+      const onSearch = () => {
+        state.eventSearchQuery = String(searchInput.value || '').trim().toLowerCase();
+        renderEventsList();
+      };
+      searchInput.addEventListener('input',  onSearch);
+      searchInput.addEventListener('search', onSearch); // 'x' 클리어 버튼 클릭 시
+    }
+
     // 행사 일괄 수정 모달
     const bulkClose  = $('#memo-ev-bulk-close');
     const bulkCancel = $('#memo-ev-bulk-cancel');
@@ -1916,22 +1929,52 @@
     if (!wrap) return;
 
     const all = state.events || [];
-    // 필터링
-    const filter = state.eventCategoryFilter || '';
-    const items = !filter ? all
-      : filter === '__none__' ? all.filter((e) => !e.category_id)
-      : all.filter((e) => String(e.category_id) === String(filter));
+    // 1차 필터링: 카테고리
+    const catFilter = state.eventCategoryFilter || '';
+    let items = !catFilter ? all
+      : catFilter === '__none__' ? all.filter((e) => !e.category_id)
+      : all.filter((e) => String(e.category_id) === String(catFilter));
+
+    // 2차 필터링: 검색어 — 행사명(영/국문), 카테고리 라벨, 기간 텍스트(국/영), 설명, 슬러그
+    // 공백 구분 토큰 AND 매칭 — 모든 토큰이 어떤 필드에든 나타나면 통과.
+    const q = state.eventSearchQuery || '';
+    if (q) {
+      const tokens = q.split(/\s+/).filter(Boolean);
+      items = items.filter((e) => {
+        const haystack = [
+          e.name_en, e.name_ko,
+          e.category_label_en, e.category_label_ko, e.category_slug,
+          e.period_text, e.period_text_en,
+          e.description_en, e.description_ko,
+          e.slug,
+        ].map((s) => String(s || '').toLowerCase()).join('  ');
+        return tokens.every((t) => haystack.includes(t));
+      });
+    }
 
     if (meta) {
-      const filterTag = filter === '__none__' ? ' · 미분류 필터'
-        : filter ? ` · 카테고리 필터` : '';
-      meta.textContent = `${all.length}건 (아카이브 포함)${filterTag}`;
+      const tags = [];
+      if (catFilter === '__none__') tags.push('미분류 필터');
+      else if (catFilter) tags.push('카테고리 필터');
+      if (q) tags.push(`검색 "${q}"`);
+      const tagPart = tags.length ? ' · ' + tags.join(' · ') : '';
+      const visibleN = items.length;
+      meta.textContent = q || catFilter
+        ? `${visibleN}건 표시 (전체 ${all.length}건 중)${tagPart}`
+        : `${all.length}건 (아카이브 포함)`;
     }
 
     if (!items.length) {
-      wrap.innerHTML = filter
-        ? '<div class="v3-empty">해당 카테고리에 등록된 행사가 없습니다.</div>'
-        : '<div class="v3-empty">아직 등록된 행사가 없습니다. <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-empty-new">첫 행사 추가</button></div>';
+      const emptyMsg = q
+        ? `검색어 "${escapeHtml(q)}" 와 일치하는 행사가 없습니다.`
+        : catFilter
+        ? '해당 카테고리에 등록된 행사가 없습니다.'
+        : '아직 등록된 행사가 없습니다.';
+      wrap.innerHTML = `<div class="v3-empty">${emptyMsg}${
+        !q && !catFilter
+          ? ' <button class="v3-btn v3-btn-primary v3-btn-sm" id="memo-ev-empty-new">첫 행사 추가</button>'
+          : ''
+      }</div>`;
       const b = $('#memo-ev-empty-new'); if (b) b.addEventListener('click', () => openEventEditor(null));
       renderEventsBulkToolbar();
       return;
