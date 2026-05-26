@@ -223,6 +223,24 @@
   margin-top: 2px;
 }
 
+/* Inline bilingual — 짧은 라벨/버튼/헤딩/문장 한 줄용.
+   stacked(.memo-bilingual)은 메타박스 같은 tabular 영역에만 유지하고
+   인터랙션 영역(폼·버튼·헤딩) 은 인라인 'EN · KO' 패턴으로 정리 */
+.memo-bilingual-inline { line-height: 1.45; }
+.memo-bilingual-inline .lang-en,
+.memo-bilingual-inline .lang-ko { display: inline; }
+.memo-bilingual-inline .lang-ko {
+  font-size: 0.92em;
+  opacity: 0.7;
+  font-weight: inherit;
+}
+.memo-bilingual-inline .lang-en + .lang-ko::before {
+  content: ' · ';
+  margin: 0 4px 0 6px;
+  opacity: 0.5;
+  font-weight: normal;
+}
+
 .memo-detail h1.memo-detail-title {
   margin: 0 0 4px;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -915,6 +933,14 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--gray-700, #3f3f3f);
+}
+.memo-field-required { color: var(--color-fire-red, #ff5655); margin-left: 4px; font-weight: 700; }
+.memo-field-hint {
+  display: inline;
+  margin-left: 6px;
+  font-size: 0.85em;
+  font-weight: 400;
+  opacity: 0.7;
 }
 .memo-field input,
 .memo-field textarea {

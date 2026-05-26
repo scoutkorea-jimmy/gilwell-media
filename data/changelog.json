@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.154.03",
+    "date": "2026-05-26",
+    "released_at": "2026-05-26 17:25:00 KST",
+    "summary": "기념품 도감 좋아요·댓글 영역 — 두 줄 stacked 병기를 한 줄 인라인('EN · KO')로 변경하여 가독성 개선.",
+    "for_users": [
+      "기념품 도감 상세의 좋아요 버튼·댓글 헤딩·폼 라벨·도움말·버튼 등이 한 줄에 'EN · KO' 형태로 표시되어 화면이 한결 정돈됩니다.",
+      "메타박스(행사명·국가 등)는 기존 위아래 스택 표기 유지 — 표 형식에서는 그대로가 자연스럽습니다.",
+      "필수 표시(*)는 빨강 별표로, 길이 제한·자릿수 안내는 회색 작은 글씨로 분리해 시각적 군더더기를 줄였습니다."
+    ],
+    "for_developers": [
+      "css/memorabilia.css: .memo-bilingual-inline 신규 — .lang-en + .lang-ko { display: inline }, ::before 'separator(·)' content, KO 0.92em + 0.7 opacity. 기존 .memo-bilingual(stacked) 은 메타박스용으로 유지.",
+      "memorabilia.html memo-engagement: 모든 .memo-bilingual → .memo-bilingual-inline 교체. 댓글 헤딩의 카운트는 EN/KO 각각 표시 → 끝에 한 번만 표시 (data-comments-count). 폼 라벨의 '*' 와 '(6+ chars · 6자 이상)' 등 부가정보를 .memo-field-required / .memo-field-hint span 으로 분리.",
+      "js/memorabilia.js: refreshComments empty/error 메시지, renderCommentItem 삭제 버튼, renderDetail '관련 링크' h3 모두 .memo-bilingual-inline 으로 교체. 삭제 버튼 라벨 단축 ('🔒 Delete · 비밀번호로 삭제').",
+      "사이트 00.154.02 → 00.154.03 (UI polish hotfix)."
+    ]
+  },
+  {
     "version": "00.154.02",
     "date": "2026-05-26",
     "released_at": "2026-05-26 17:10:00 KST",
