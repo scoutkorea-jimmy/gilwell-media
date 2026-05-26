@@ -21,5 +21,6 @@ CF_ANALYTICS_API_TOKEN=replace-with-a-cloudflare-api-token
 # Dreampath project board
 DREAMPATH_PASSWORD=change-me-to-a-strong-password
 DREAMPATH_SECRET=replace-with-a-random-64-char-hex-string
-# Initial admin password for jimmy (used only on first login if hash is null)
-JIMMY_PASSWORD=***REMOVED***
+# Initial admin password for jimmy (used only on first login if hash is null).
+# DO NOT put a real password here — copy this file to .dev.vars and set it there.
+JIMMY_PASSWORD=change-me-to-a-strong-password

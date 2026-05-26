@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.159.05",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 08:00:00 KST",
+    "summary": "보안 강화 — 도감 검색 rate limit + 이미지 업로드 magic byte 검증 + 예시 비밀번호 노출 정리.",
+    "for_users": [
+      "사이트 보안이 한층 강화되었습니다 (이용자 화면 변화 없음). 백엔드에서 검색 남용 차단, 위장 파일 업로드 차단을 추가 적용.",
+      "관리자: 노출된 예시 비밀번호가 .dev.vars.example 에서 제거됐습니다. 운영 환경 비밀번호도 변경 권장."
+    ],
+    "for_developers": [
+      "functions/api/memorabilia/search.js: 비인증 호출에 30회/IP/분 rate limit 적용. loadAdminSession 으로 admin 식별 후 비인증만 enforceRateLimit. 메시지: '검색 요청이 너무 많습니다.'",
+      "functions/_shared/image-storage.js decodeDataImage: ALLOWED_IMAGE_MIMES 화이트리스트 검증 후 detectImageMagic(bytes) 으로 실제 파일 매직 바이트 재검증. JPEG(FF D8 FF) / PNG(89 50 4E 47 0D 0A 1A 0A) / GIF(GIF87a/GIF89a) / WebP(RIFF…WEBP) 시그니처와 declared MIME 불일치 시 거부. data:image/jpeg 라벨로 GIF/PNG 위장 업로드 차단.",
+      ".dev.vars.example: JIMMY_PASSWORD=***REMOVED*** (실제 운영 비밀번호) → change-me placeholder 로 교체. ⚠️ git history 에는 이미 노출됐을 가능성 있어 운영 환경 비밀번호 변경 필수.",
+      "CSP 'unsafe-inline' 검토 — functions/_middleware.js 가 매 요청 nonce 생성 + HTMLRewriter 로 <script>에 stamp + 헤더 nonce 기반 덮어쓰기 적용 중. _headers 의 정적 'unsafe-inline' 은 fallback 으로 실제 응답에서는 무력화. 추가 강화 불필요.",
+      "안전 확인된 영역: HMAC 쿠키(constant-time + httpOnly + SameSite=Lax), D1 prepared statement 일관성, CSRF(Origin/Referer + 화이트리스트), gateMenuAccess(32 endpoint), DOMPurify, Owner-only 게이팅, login rate limit, owner password hash.",
+      "사이트 00.159.04 → 00.159.05 (fix — 위협 모델링 기반 보안 강화 3건)."
+    ]
+  },
+  {
     "version": "00.159.04",
     "date": "2026-05-27",
     "released_at": "2026-05-27 07:30:00 KST",

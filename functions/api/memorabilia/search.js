@@ -15,6 +15,8 @@
  */
 
 import { COUNTRY_CODE_LABELS_KO } from '../../_shared/country-code-labels.js';
+import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
+import { loadAdminSession } from '../../_shared/admin-permissions.js';
 import {
   buildSearchQuery,
   findGlossaryAliases,
@@ -27,6 +29,19 @@ const MAX_PAGE_SIZE = 60;
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const q = String(url.searchParams.get('q') || '').trim();
+
+  // Search-heavy workload rate limit (non-admins only). 30 searches/IP/min —
+  // 사람에겐 넉넉, 스크래퍼·DoS 시도에는 즉시 제동.
+  const session = await loadAdminSession(request, env).catch(() => null);
+  if (!session) {
+    const rl = await enforceRateLimit(env, {
+      route: 'memorabilia-search',
+      identity: getClientIp(request),
+      limit: 30,
+      windowSeconds: 60,
+    });
+    if (!rl.ok) return rateLimitResponse(rl, '검색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+  }
   const countryParam = String(url.searchParams.get('country') || '').trim();
   const categoryParam = String(url.searchParams.get('category') || '').trim();
   const eventParam = String(url.searchParams.get('event') || '').trim();
