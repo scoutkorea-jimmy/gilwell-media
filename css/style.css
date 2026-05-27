@@ -88,16 +88,28 @@ strong, b,
   --admin-fs-meta: 12px;
   --admin-fs-micro: 11px;
   /* ─── Radius scale (Site + Admin 통일 7-step) ─────────────────────────────
-     모든 새 작업은 이 토큰을 사용. 기존 --v3-radius-*, --bw-radius-* 는 이 스케일
-     로 재지정됨(별도 정의 위치). 정렬: pill > 2xl > xl > lg > md > sm > tight.
-     - pill   : 둥근 칩 / 가로 캡슐 / 슬라이더 트랙
-     - 2xl    : 모달 시트, 풀-블리드 hero 상단 (20~28 통합)
-     - xl     : 대형 카드, 패널 (14~18 통합)
-     - lg     : 표준 카드 (10~13 통합)
-     - md     : 컨트롤 (인풋·버튼·드롭다운) (7~9 통합)
-     - sm     : 칩, 작은 배지 (5~6 통합)
-     - tight  : 진행바 세그먼트, 미세 UI (2~4 통합)
-     - sharp/circle 은 시맨틱이 명확해 별도 토큰 없이 0 / 50% 직접 사용.
+     ★ 컴포넌트별 매핑 규칙 (반드시 준수 — 임의로 다른 토큰 쓰지 말 것):
+
+       구분                         | 사용 토큰          | 예시 클래스
+       ─────────────────────────────┼─────────────────────┼──────────────────────
+       카드 표면 (surface)          | --radius-lg  (12)   | .memo-card, .post-card
+       대형 hero / feature 카드     | --radius-xl  (16)   | .hero-main, .modal panel
+       모달 (데스크톱)              | --radius-xl  (16)   | .v3-modal, .modal-card
+       모바일 바텀 시트             | --radius-2xl (22)   | .share-modal-card@mobile
+       버튼 (사각, 모든 사이즈)     | --radius-md  (8)    | .memo-btn, .v3-btn 등
+       인풋 / 검색 박스 / 셀렉트    | --radius-md  (8)    | input, select, .memo-search-bar
+       태그 칩 / 필터 칩 / 상태 칩  | --radius-pill (999) | .memo-tag-chip, .post-page-tag
+       카테고리 라벨 (KOREA/APR…)   | --radius-tight (4)  | .category-tag, .post-kicker
+       코드 / 모노 인라인           | --radius-tight (4)  | code, kbd
+       원형 (아바타, dot, 진행 점)  | 50% (literal)       | .avatar, .v3-spin
+       의도적 sharp (full-bleed)    | 0  (literal)        | .modal@mobile, .hero-bleed
+
+     수직 컨테이너에 컨트롤이 내포되는 경우(예: 검색바 input+button):
+     컨테이너·내부 컨트롤 모두 --radius-md, padding 없이 매끄럽게 정렬한다.
+
+     ─ 스케일 자체 (px 통합 매핑) ────────────────────────────────────────────
+     pill (999), 2xl (22←20·24·28), xl (16←14·15·18), lg (12←10·11·13),
+     md (8←7·9), sm (6←5), tight (4←2·3). 기존 --v3-*, --bw-* 는 자동 재지정.
   */
   --radius-pill:  999px;
   --radius-2xl:    22px;
@@ -1629,6 +1641,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   min-height: 40px;
   padding: 0 14px;
   border: 1px solid rgba(17,17,17,0.12);
+  border-radius: var(--radius-md);    /* 버튼 통일 곡률 */
   background: var(--white);
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -1680,6 +1693,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:    600;
   line-height:    1;
   white-space:    nowrap;
+  border-radius:  var(--radius-tight);   /* 카테고리 라벨 통일 곡률 (4px) */
 }
 
 /* 카테고리 태그 — 채움 */
@@ -1694,7 +1708,6 @@ body[data-home-bootstrap] .lang-btn:hover {
   border:         1px solid var(--kicker-default);
   color:          var(--kicker-default);
   background:     transparent;
-  border-radius:  0;
 }
 .post-kicker-new {
   background:    var(--fire-red);
@@ -3045,7 +3058,9 @@ body[data-home-bootstrap] .lang-btn:hover {
 .post-card {
   background:  var(--card-bg);
   border:      1px solid var(--border);
+  border-radius: var(--radius-lg);    /* 카드 surface 통일 곡률 (.memo-card 와 동일) */
   cursor:      pointer;
+  overflow:    hidden;                /* 내부 thumb 가 카드 곡률 밖으로 비치지 않도록 */
   transition:  border-color 0.15s, background 0.15s;
   animation:   fadeUp 0.4s ease both;
   display:     flex;
@@ -7736,6 +7751,7 @@ footer a:hover { color: var(--white); }
   color:          var(--ink);
   padding:        3px var(--gap-tight);
   border:         1px solid var(--border);
+  border-radius:  var(--radius-pill);   /* 태그 칩 통일 (memo-tag-chip 과 동일) */
   line-height:    1;
   min-height:     20px;
 }
@@ -8335,6 +8351,7 @@ footer a:hover { color: var(--white); }
   flex:        1;
   padding:     9px 14px;
   border:      1px solid var(--border);
+  border-radius: var(--radius-md);    /* 인풋 통일 곡률 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   14px;
   outline:     none;
@@ -8347,6 +8364,7 @@ footer a:hover { color: var(--white); }
   background:     var(--accent);
   color:          var(--white);
   border:         none;
+  border-radius:  var(--radius-md);   /* 버튼 통일 곡률 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:      11px;
   letter-spacing: 0.1em;
@@ -8407,6 +8425,7 @@ footer a:hover { color: var(--white); }
   width:       100%;
   padding:     9px 36px 9px 14px;
   border:      1px solid var(--border);
+  border-radius: var(--radius-md);    /* 인풋 통일 곡률 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size:   14px;
   outline:     none;
@@ -8857,6 +8876,7 @@ footer a:hover { color: var(--white); }
   background: none; cursor: pointer;
   color: var(--muted);
   min-width: 44px; min-height: 44px;
+  border-radius: var(--radius-md);   /* 사각 아이콘 버튼 통일 곡률 */
   display: flex; align-items: center; justify-content: center;
   transition: color 0.15s;
 }

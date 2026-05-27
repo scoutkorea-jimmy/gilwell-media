@@ -53,7 +53,7 @@
   display: flex; gap: 6px;
   background: #fff;
   border: 1.5px solid var(--gray-300, #c4c4c4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);    /* 인풋 통일 곡률 (사이트 검색바와 일관) */
   padding: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
@@ -242,7 +242,7 @@
   padding: 6px 12px;
   border: 1px solid var(--gray-300, #c4c4c4);
   background: #fff;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);    /* 버튼 통일 곡률 */
   cursor: pointer;
   min-width: 36px;
 }
@@ -637,7 +637,7 @@
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);    /* 버튼 통일 곡률 (사이트 규칙) */
   background: #fff;
   color: var(--ink, #1f1f1f);
   font-family: inherit;
