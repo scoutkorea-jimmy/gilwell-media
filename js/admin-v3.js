@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.00
+ * Version: 03.142.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -172,6 +172,7 @@
   var _draftSaveInflight = false; // POST/PUT 중복 발사 방지
   var _draftSavePending = false;  // inflight 중에 다시 변경 → 끝나면 다시 한번 저장
   var _editorOptionsCache = null; // GET /api/settings/editors 캐시 (작성자 dropdown용)
+  var _editorAssignmentsCache = null;
   var _writeStatsTimer = null;
   var _metaTagPool   = null;
   var _metaTagPoolLoading = false;
@@ -2947,16 +2948,17 @@
     var defaultCode = (window.AccountAdmin && window.AccountAdmin.currentEditorCode)
       ? window.AccountAdmin.currentEditorCode() || ''
       : '';
-    // 캐시 활용 — 매번 호출하면 dropdown 깜빡임.
     var p = _editorOptionsCache
-      ? Promise.resolve(_editorOptionsCache)
+      ? Promise.resolve({ editors: _editorOptionsCache, assignments: _editorAssignmentsCache || {} })
       : _apiFetch('/api/settings/editors').then(function (data) {
           _editorOptionsCache = (data && data.editors) || {};
-          return _editorOptionsCache;
-        }).catch(function () { return {}; });
-    return p.then(function (editors) {
+          _editorAssignmentsCache = (data && data.assignments) || {};
+          return { editors: _editorOptionsCache, assignments: _editorAssignmentsCache };
+        }).catch(function () { return { editors: {}, assignments: {} }; });
+    return p.then(function (res) {
+      var editors = res.editors;
+      var assignments = res.assignments;
       var letters = Object.keys(editors || {}).sort();
-      // 빈 이름은 미등록 — A/B/C 잠금만 표시, D~Z는 이름 있을 때만 노출.
       var REQUIRED = { A: true, B: true, C: true };
       var keep = letters.filter(function (l) {
         return REQUIRED[l] || (editors[l] && editors[l].trim());
@@ -2965,10 +2967,13 @@
       var currentValue = sel.value || defaultCode || ('Editor.' + keep[0]);
       sel.innerHTML = keep.map(function (l) {
         var code = 'Editor.' + l;
-        var name = editors[l] ? ' — ' + editors[l] : '';
-        return '<option value="' + GW.escapeHtml(code) + '">' + GW.escapeHtml(code + name) + '</option>';
+        var user = assignments[code] || '';
+        var label = code;
+        if (user) label += ' — ' + user;
+        else if (editors[l]) label += ' — ' + editors[l];
+        if (code === defaultCode) label += ' (나)';
+        return '<option value="' + GW.escapeHtml(code) + '">' + GW.escapeHtml(label) + '</option>';
       }).join('');
-      // 기본값: 세션 본인 editor_code → 없으면 첫 옵션
       var preferred = defaultCode && keep.indexOf(defaultCode.replace(/^Editor\./, '')) >= 0
         ? defaultCode
         : currentValue;

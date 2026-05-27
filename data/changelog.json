@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.142.01",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "에디터 드롭다운에 실제 배정된 사용자 이름 표시 — 누가 어떤 에디터인지 한눈에 확인.",
+    "for_users": [
+      "게시글 작성/수정 시 에디터 선택 드롭다운에 각 에디터 코드에 배정된 사용자 이름이 함께 표시됩니다.",
+      "본인 에디터 코드 옆에는 '(나)' 표시가 붙어 쉽게 구별됩니다."
+    ],
+    "for_developers": [
+      "GET /api/settings/editors 응답에 assignments 필드 추가 — admin_users 테이블에서 활성 사용자의 editor_code → display_name 매핑 반환.",
+      "_loadAuthorOptions() 가 assignments 를 활용해 'Editor.A — 사용자명' 형태로 드롭다운 표시. 본인 코드에 '(나)' 접미사.",
+      "관리자 03.142.00 → 03.142.01."
+    ]
+  },
+  {
     "version": "03.142.00",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
