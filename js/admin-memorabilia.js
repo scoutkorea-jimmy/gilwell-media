@@ -1129,9 +1129,14 @@
       idPrefix: 'memo-ep',
       onChange: (id, ev) => {
         state.selectedEventId = id;
-        // event 가 선택되면 cache 갱신용으로 이름도 기록
-        if (ev) {
-          // 저장 시 normalizeMemorabiliaInput 가 event_id 기반으로 cache 갱신.
+        // 행사 선택 시 연도가 비어 있으면 행사의 가장 빠른 연도 (start_year) 로
+        // 자동 입력. 이미 값이 있으면 사용자 입력을 존중하고 덮어쓰지 않음.
+        // 일부 행사는 2년 걸침 (start_year != end_year) → 시작 연도 사용.
+        if (ev && ev.start_year) {
+          const yearInput = $('#memo-year');
+          if (yearInput && !yearInput.value) {
+            yearInput.value = String(ev.start_year);
+          }
         }
       },
     });

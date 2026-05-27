@@ -158,8 +158,10 @@ export function normalizeMemorabiliaInput(body) {
       material_en:   trimStr(body.material_en, FIELD_LIMITS.material),
       material_ko:   trimStr(body.material_ko, FIELD_LIMITS.material),
       size_text:     trimStr(body.size_text, FIELD_LIMITS.size),
-      issuer_en:     trimStr(body.issuer_en, FIELD_LIMITS.issuer),
-      issuer_ko:     trimStr(body.issuer_ko, FIELD_LIMITS.issuer),
+      // 제작기관 미입력 시 기본값 — 영문 "Unknown" / 국문 "미상".
+      // 신규 저장 시점에만 적용. 기존 빈 레코드는 편집/저장 직전까지 그대로.
+      issuer_en:     trimStr(body.issuer_en, FIELD_LIMITS.issuer) || 'Unknown',
+      issuer_ko:     trimStr(body.issuer_ko, FIELD_LIMITS.issuer) || '미상',
       description_en: trimEditorJson(body.description_en),
       description_ko: trimEditorJson(body.description_ko),
       related_links: normalizeLinks(body.related_links),

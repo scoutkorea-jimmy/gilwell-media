@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.138.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 08:30:00 KST",
+    "summary": "기념품 도감 입력 UX 개선 — 제작기관 미입력 시 'Unknown'/'미상' 자동 채움 + 행사 선택 시 해당 행사의 가장 빠른 연도 자동 입력.",
+    "for_users": [
+      "기념품 도감에 새 항목을 추가할 때 제작기관을 비워두면 영문은 'Unknown', 국문은 '미상'으로 자동 저장됩니다. 기존에 입력해둔 항목은 그대로 유지됩니다.",
+      "특정 행사를 선택하면 일반 정보의 연도가 그 행사의 시작 연도로 자동 채워집니다 (2년에 걸친 행사라도 시작 연도 사용). 이미 연도를 직접 입력해둔 경우는 덮어쓰지 않습니다."
+    ],
+    "for_developers": [
+      "functions/_shared/memorabilia-store.js normalizeMemorabiliaInput: issuer_en trim 후 빈 문자열이면 'Unknown' 으로, issuer_ko trim 후 빈 문자열이면 '미상' 으로 폴백. 단일 POST/PATCH (관리자 모달, autocomplete import 포함) 전 경로에 적용.",
+      "functions/api/memorabilia/bulk-update.js normalizeUpdates: 동일 규칙을 issuer_en/issuer_ko 토글 케이스에도 적용. 사용자가 토글 켜고 비워서 보낸 경우도 'Unknown'/'미상' 저장.",
+      "기존 DB 레코드에 대한 마이그레이션은 수행하지 않음. 비어 있던 issuer 컬럼은 다음 편집·저장 시점에만 기본값이 채워짐 (기존 데이터 보존).",
+      "js/admin-memorabilia.js ensureEventPicker onChange: 선택된 행사의 ev.start_year 가 있고 #memo-year 가 비어 있을 때만 yearInput.value = String(ev.start_year). 기존 입력 보존을 위해 덮어쓰지 않음.",
+      "ev.start_year 는 /api/memorabilia/events GET 응답이 제공하는 memorabilia_events.start_year (행사가 2년 걸칠 경우 end_year 와 다름). 사용자 요구사항 '가장 빠른 연도' 와 일치.",
+      "관리자 03.137.03 → 03.138.00 (feature — 도감 입력 UX 자동화 2건)."
+    ]
+  },
+  {
     "version": "00.159.05",
     "date": "2026-05-27",
     "released_at": "2026-05-27 08:00:00 KST",

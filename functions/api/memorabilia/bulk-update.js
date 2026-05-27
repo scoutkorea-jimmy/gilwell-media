@@ -137,6 +137,10 @@ function normalizeUpdates(updates) {
   for (const key of ['issuer_en', 'issuer_ko', 'material_en', 'material_ko', 'size_text']) {
     if (updates[key] !== undefined) u[key] = String(updates[key] || '').slice(0, 200);
   }
+  // 제작기관 미입력 시 기본값 — normalizeMemorabiliaInput 와 동일 규칙.
+  // 토글 켜고 비워둔 경우도 'Unknown'/'미상' 로 채움.
+  if (u.issuer_en !== undefined && !u.issuer_en.trim()) u.issuer_en = 'Unknown';
+  if (u.issuer_ko !== undefined && !u.issuer_ko.trim()) u.issuer_ko = '미상';
 
   // 태그
   if (Array.isArray(updates.add_tags))    u.add_tags    = cleanLabels(updates.add_tags);
