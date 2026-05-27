@@ -48,7 +48,7 @@
   max-width: 380px;
   padding: 36px 32px;
   border: 1px solid var(--kms-border);
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   background: var(--kms-surface);
   box-shadow: 0 24px 56px rgba(20, 15, 12, 0.10);
   display: flex;
@@ -84,7 +84,7 @@
   width: 100%;
   padding: 11px 14px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface2);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 14px;
@@ -102,7 +102,7 @@
   min-height: 40px;
   padding: 0 16px;
   border: 1px solid rgba(92, 42, 157, 0.24);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-accent-bg);
   color: var(--kms-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -114,7 +114,7 @@
 
 .kms-login-error {
   padding: 10px 13px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: rgba(203, 36, 49, 0.08);
   color: #cb2431;
   font-size: 13px;
@@ -167,7 +167,7 @@
   width: 36px;
   height: 36px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   color: var(--kms-ink);
   cursor: pointer;
@@ -177,7 +177,7 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-accent-bg);
   color: var(--kms-accent);
   font-size: 11px;
@@ -210,7 +210,7 @@
   min-height: 34px;
   padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--kms-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -257,7 +257,7 @@
   margin-left: auto;
   padding: 4px 8px;
   border: 1px solid rgba(92,42,157,0.18);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255,255,255,0.75);
   font-size: 11px;
   color: #5c2a9d;
@@ -268,7 +268,7 @@
   display: flex;
   padding: 3px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface2);
 }
 
@@ -276,7 +276,7 @@
   min-height: 30px;
   padding: 0 12px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--kms-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -294,7 +294,7 @@
   min-height: 34px;
   padding: 0 16px;
   border: 1px solid rgba(92,42,157,.24);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-accent-bg);
   color: var(--kms-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -311,7 +311,7 @@
   min-height: 34px;
   padding: 0 12px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   color: var(--kms-muted);
   font-size: 12px;
@@ -375,7 +375,7 @@
   width: 100%;
   padding: 8px 10px 8px 30px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-surface2);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
@@ -397,7 +397,7 @@
   gap: 4px;
   align-items: center;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
   font-size: 11px;
@@ -417,7 +417,7 @@
   padding: 7px 10px;
   border-left: 2px solid var(--kms-accent);
   background: var(--kms-accent-bg);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 11px;
   color: var(--kms-accent);
   line-height: 1.5;
@@ -444,7 +444,7 @@
   width: 100%;
   padding: 7px 10px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -472,7 +472,7 @@
   gap: 6px;
   padding: 10px 14px;
   border: 1px solid rgba(77, 0, 110, .2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #fff;
   color: var(--kms-accent, #4D006E);
   font-family: inherit;
@@ -499,14 +499,14 @@
   padding: 12px 14px;
   background: #fff;
   border: 1px solid var(--kms-border, #e5e5ea);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 .kms-cl-filters-search {
   flex: 1 1 240px;
   min-width: 200px;
   padding: 8px 12px;
   border: 1px solid var(--kms-border, #e5e5ea);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 13px;
   background: #fff;
@@ -533,7 +533,7 @@
 .kms-cl-filters-date input[type="date"] {
   padding: 6px 8px;
   border: 1px solid var(--kms-border, #e5e5ea);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 12px;
   background: #fff;
@@ -549,7 +549,7 @@
 .kms-cl-filters-pagesize select {
   padding: 6px 8px;
   border: 1px solid var(--kms-border, #e5e5ea);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-family: inherit;
   font-size: 12px;
   background: #fff;
@@ -580,7 +580,7 @@
   min-width: 34px;
   padding: 6px 10px;
   border: 1px solid var(--kms-border, #e5e5ea);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: #fff;
   color: var(--kms-ink, #1f1f1f);
   font-family: inherit;
@@ -682,7 +682,7 @@
 .kms-panel-header code {
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   padding: 1px 5px;
   font-size: var(--fs-caption);
 }
@@ -705,7 +705,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
   font-size: 11px;
@@ -737,7 +737,7 @@
   justify-content: space-between;
   gap: var(--gap-element);
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
   font-size: var(--fs-meta);
@@ -758,7 +758,7 @@
 /* 편집 컨트롤 사이즈 축소 (헤더 대비 콤팩트) */
 .kms-panel-header-actions .kms-mode-switch {
   padding: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .kms-panel-header-actions .kms-mode-btn {
   padding: 4px 10px;
@@ -777,7 +777,7 @@
   gap: 12px;
   margin-bottom: 16px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-accent-bg);
   border: 1px solid rgba(92, 42, 157, 0.18);
   font-size: 13px;
@@ -788,7 +788,7 @@
   min-height: 30px;
   padding: 0 12px;
   border: 1px solid rgba(92, 42, 157, 0.2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   color: var(--kms-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -798,7 +798,7 @@
 
 mark.kms-highlight {
   background: rgba(255, 220, 60, 0.6);
-  border-radius: 2px;
+  border-radius: var(--radius-tight);
   padding: 0 1px;
 }
 
@@ -807,7 +807,7 @@ mark.kms-highlight {
   margin-bottom: 20px;
   padding: 16px 18px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -833,7 +833,7 @@ mark.kms-highlight {
 .kms-doc-card {
   background: var(--kms-surface);        /* Canvas White */
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: var(--gap-section-out) var(--gap-section-out) calc(var(--gap-section-out) + var(--gap-tight));
 }
 
@@ -904,7 +904,7 @@ mark.kms-highlight {
   margin: var(--gap-section) 0 var(--gap-element);
   padding: var(--gap-micro) var(--gap-tight);
   background: var(--kms-accent-bg);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   font-size: var(--fs-meta);               /* 11px 토큰 */
   font-weight: 700;
   color: var(--kms-accent);
@@ -997,7 +997,7 @@ mark.kms-highlight {
 .kms-link:focus-visible {
   outline: 2px solid var(--kms-accent);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-tight);
 }
 .kms-quote {
   margin: 0 0 var(--gap-card);
@@ -1007,7 +1007,7 @@ mark.kms-highlight {
   color: var(--kms-ink);
   font-size: var(--fs-body);
   line-height: 1.75;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 .kms-quote > strong:first-child {
   color: var(--kms-accent-strong);
@@ -1020,7 +1020,7 @@ mark.kms-highlight {
 
 .kms-inline-code {
   padding: 2px var(--gap-micro);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   background: var(--kms-surface2);       /* gray-100 tint */
   border: 1px solid var(--kms-border);
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -1044,7 +1044,7 @@ mark.kms-highlight {
 .kms-code-wrap {
   margin: var(--gap-element) 0 var(--gap-card);
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: #030303;                   /* --black */
 }
@@ -1076,7 +1076,7 @@ mark.kms-highlight {
   margin: var(--gap-element) 0 var(--gap-card);
   overflow-x: auto;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 .kms-table {
   width: 100%;
@@ -1117,7 +1117,7 @@ mark.kms-highlight {
 .kms-editor-panel {
   margin-top: 20px;
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -1138,7 +1138,7 @@ mark.kms-highlight {
 .kms-editor-hint code {
   background: var(--kms-surface);
   border: 1px solid var(--kms-border);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   padding: 0 4px;
   font-size: 11px;
   color: var(--kms-accent);
@@ -1165,7 +1165,7 @@ mark.kms-highlight {
   margin-bottom: 28px;
   padding: 16px 20px;
   border: 1px solid rgba(92, 42, 157, 0.18);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-accent-bg);
   font-size: 13px;
   line-height: 1.75;
@@ -1187,7 +1187,7 @@ mark.kms-highlight {
 
 .kms-api-auth-box code {
   background: rgba(92,42,157,.12);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   padding: 1px 5px;
   font-size: 12px;
   color: var(--kms-accent);
@@ -1201,7 +1201,7 @@ mark.kms-highlight {
 
 .kms-api-group {
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--kms-surface);
 }
@@ -1247,7 +1247,7 @@ mark.kms-highlight {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   color: #fff;
   font-size: 11px;
   font-weight: bold;
@@ -1266,7 +1266,7 @@ mark.kms-highlight {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 10px;
   letter-spacing: .06em;
   border: 1px solid currentColor;
@@ -1315,7 +1315,7 @@ mark.kms-highlight {
 .kms-api-table code {
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   padding: 1px 5px;
   font-size: 12px;
   color: var(--kms-accent);
@@ -1325,7 +1325,7 @@ mark.kms-highlight {
   margin: 0 0 4px;
   padding: 12px 14px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: #1e1e2e;
   overflow-x: auto;
 }
@@ -1342,7 +1342,7 @@ mark.kms-highlight {
   gap: 8px;
   margin-top: 8px;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: rgba(176, 136, 0, 0.07);
   border: 1px solid rgba(176, 136, 0, 0.2);
   font-size: 12px;
@@ -1363,7 +1363,7 @@ mark.kms-highlight {
 .kms-chip {
   padding: 5px 13px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   color: var(--kms-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -1384,7 +1384,7 @@ mark.kms-highlight {
 .kms-cl-item {
   padding: 18px 20px;
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -1415,7 +1415,7 @@ mark.kms-highlight {
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   color: #fff;
   font-size: 11px;
   font-weight: bold;
@@ -1423,7 +1423,7 @@ mark.kms-highlight {
 
 .kms-cl-scope {
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   background: var(--kms-surface2);
   border: 1px solid var(--kms-border);
   font-size: 11px;
@@ -1472,7 +1472,7 @@ mark.kms-highlight {
   margin: 0 0 12px;
   padding: 10px 12px;
   border: 1px solid rgba(190, 24, 93, 0.12);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 241, 242, 0.92);
 }
 .kms-cl-issues-title {
@@ -1494,7 +1494,7 @@ mark.kms-highlight {
 .kms-cl-section {
   margin: 0 0 10px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: rgba(248, 250, 252, 0.7);
   border: 1px solid rgba(98, 37, 153, 0.08);
 }
@@ -1549,7 +1549,7 @@ mark.kms-highlight {
   .kms-panel-header-meta { flex-direction: row; flex-wrap: wrap; }
   .kms-panel-header-side--chips .kms-cl-filter { justify-content: flex-start; }
   .kms-tab-panel { padding: 16px 14px 40px; }
-  .kms-doc-card { padding: var(--gap-section) var(--gap-card) calc(var(--gap-section) + var(--gap-tight)); border-radius: 10px; }
+  .kms-doc-card { padding: var(--gap-section) var(--gap-card) calc(var(--gap-section) + var(--gap-tight)); border-radius: var(--radius-lg); }
 }
 
 @media (max-width: 600px) {
@@ -1565,7 +1565,7 @@ mark.kms-highlight {
   gap: 14px;
   padding: 16px 18px;
   border: 1px solid rgba(22, 17, 12, 0.1);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 10px 22px rgba(20, 15, 12, 0.05);
 }
@@ -2054,7 +2054,7 @@ mark.kms-highlight {
 .footer-editor-preview {
   padding: 16px 18px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(135deg, rgba(97, 36, 153, 0.08), rgba(97, 36, 153, 0.02));
 }
 
@@ -2341,7 +2341,7 @@ mark.kms-highlight {
 .analytics-graph-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 .analytics-graph-toggle button {
@@ -2519,7 +2519,7 @@ mark.kms-highlight {
   width: 10px;
   height: 10px;
   margin-top: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   flex: 0 0 auto;
 }
 .analytics-pie-legend-item strong {
@@ -2773,7 +2773,7 @@ body.admin-page #marketing-transitions.analytics-list {
 .marketing-scatter-legend i {
   width: 10px;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   display: inline-block;
 }
 .marketing-axis {
@@ -2928,7 +2928,7 @@ body.marketing-fullscreen-open {
 }
 .admin-media-toggle {
   border: 1px solid var(--admin-stroke);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: rgba(250, 248, 245, 0.96);
   overflow: hidden;
 }
@@ -3069,7 +3069,7 @@ body.admin-page textarea {
   min-height: 46px;
   padding: 12px 14px !important;
   border: 1px solid var(--admin-stroke) !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
   background: #fcfbf8 !important;
   color: var(--admin-ink) !important;
   font-size: 14px !important;
@@ -3099,7 +3099,7 @@ body.admin-page .login-screen {
 body.admin-page .login-box {
   width: min(420px, 100%);
   border: 1px solid var(--admin-stroke);
-  border-radius: 28px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,242,235,0.96));
   box-shadow: var(--admin-shadow);
 }
@@ -3125,7 +3125,7 @@ body.admin-page .admin-header-controls {
   min-height: 0 !important;
   padding: 18px 20px !important;
   border: 1px solid var(--admin-stroke) !important;
-  border-radius: 24px !important;
+  border-radius: var(--radius-2xl) !important;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,243,236,0.94)) !important;
   box-shadow: var(--admin-shadow);
 }
@@ -3153,7 +3153,7 @@ body.admin-page .admin-brand .badge {
   width: fit-content;
   min-height: 30px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255,255,255,0.16);
   color: #fff !important;
   font-size: 12px !important;
@@ -3237,7 +3237,7 @@ body.admin-page .admin-inline-danger {
   gap: 8px;
   min-height: 44px !important;
   padding: 0 16px !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-pill) !important;
   border: 1px solid var(--admin-stroke) !important;
   background: var(--admin-surface-soft) !important;
   color: var(--admin-ink) !important;
@@ -3311,7 +3311,7 @@ body.admin-page .admin-sidebar-group {
   gap: 10px;
   padding: 16px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   background: var(--admin-surface);
   box-shadow: var(--admin-shadow);
 }
@@ -3321,7 +3321,7 @@ body.admin-page .admin-sidebar-btn {
   width: 100%;
   padding: 14px 16px !important;
   border: 1px solid var(--admin-stroke) !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-pill) !important;
   background: transparent !important;
   text-align: left;
 }
@@ -3358,7 +3358,7 @@ body.admin-page .mkt-preset-btn,
 body.admin-page .mkt-apply-btn,
 body.admin-page .v3-page-btn,
 body.admin-page .v3-more-btn {
-  border-radius: 999px !important;
+  border-radius: var(--radius-pill) !important;
 }
 
 body.admin-page .v3-modal-close {
@@ -3386,7 +3386,7 @@ body.admin-page .v3-more-btn {
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--admin-surface-soft);
   color: var(--admin-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3430,7 +3430,7 @@ body.admin-page .panel {
   margin: 0 !important;
   overflow: hidden;
   border: 1px solid var(--admin-stroke) !important;
-  border-radius: 24px !important;
+  border-radius: var(--radius-2xl) !important;
   background: var(--admin-surface) !important;
   box-shadow: var(--admin-shadow);
 }
@@ -3480,7 +3480,7 @@ body.admin-page .dash-stat-card {
   min-height: 132px;
   padding: 20px 16px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, #fff, #faf6f0);
   box-shadow: 0 10px 20px rgba(24, 20, 17, 0.05);
 }
@@ -3507,7 +3507,7 @@ body.admin-page .dash-action-btn {
   min-height: 108px !important;
   padding: 18px !important;
   flex-direction: column;
-  border-radius: 22px !important;
+  border-radius: var(--radius-2xl) !important;
 }
 
 body.admin-page .dash-action-icon {
@@ -3549,13 +3549,13 @@ body.admin-page .tag-admin-panel,
 body.admin-page .tag-admin-lane,
 body.admin-page .post-history-card,
 body.admin-page .admin-settings-block {
-  border-radius: 20px !important;
+  border-radius: var(--radius-2xl) !important;
   border: 1px solid var(--admin-stroke) !important;
   background: #fff !important;
 }
 
 body.admin-page .analytics-table-scroll {
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--admin-stroke);
   overflow: auto;
 }
@@ -3606,7 +3606,7 @@ body.admin-page .admin-list-stats .stat-item {
   min-height: 104px;
   padding: 16px;
   border: 1px solid rgba(98, 37, 153, 0.10);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(255,255,255,0.86);
 }
 
@@ -3636,7 +3636,7 @@ body.admin-page .admin-list-tabs button {
   min-height: 46px;
   padding: 0 12px !important;
   border: 1px solid transparent !important;
-  border-radius: 16px 16px 0 0 !important;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
   background: transparent !important;
   color: var(--admin-muted) !important;
   font-size: 14px !important;
@@ -3652,7 +3652,7 @@ body.admin-page .article-list {
 body.admin-page .list-empty {
   padding: 18px;
   border: 1px dashed rgba(98, 37, 153, 0.20);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(98, 37, 153, 0.04);
   color: var(--admin-muted) !important;
   font-size: 14px !important;
@@ -3664,7 +3664,7 @@ body.admin-page .article-item {
   gap: 16px;
   padding: 20px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 22px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, #fff, #faf7f0);
   box-shadow: 0 8px 18px rgba(24, 20, 17, 0.05);
 }
@@ -3691,7 +3691,7 @@ body.admin-page .admin-inline-ghost {
   height: 34px;
   padding: 0 10px;
   border: 1px solid rgba(24, 20, 17, 0.12);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: #fff;
   color: var(--ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3725,7 +3725,7 @@ body.admin-page .admin-status-pill {
   align-items: center;
   min-height: 30px;
   padding: 0 12px !important;
-  border-radius: 999px !important;
+  border-radius: var(--radius-pill) !important;
   border: 1px solid rgba(24, 20, 17, 0.12) !important;
   background: #fff !important;
   color: var(--admin-ink) !important;
@@ -3777,7 +3777,7 @@ body.admin-page .item-meta-chip {
   gap: 6px;
   padding: 12px 14px !important;
   border: 1px solid rgba(98, 37, 153, 0.10) !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
   background: rgba(98, 37, 153, 0.04) !important;
   color: var(--admin-ink) !important;
   font-size: 13px !important;
@@ -3835,7 +3835,7 @@ body.admin-page .version-history-pagination .admin-page-number {
   min-height: 36px;
   padding: 0 10px;
   border: 1px solid rgba(24, 20, 17, 0.12);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: #fff;
   color: var(--admin-ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3907,7 +3907,7 @@ body.admin-page .admin-inline-unit {
 body.admin-page .admin-search-panel {
   padding: 18px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   background: #fff;
 }
 
@@ -3932,7 +3932,7 @@ body.admin-page .hero-result-item {
   gap: 10px;
   padding: 12px 14px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: #fff;
   cursor: pointer;
 }
@@ -3971,7 +3971,7 @@ body.admin-page .contributors-admin-item {
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: #fff;
 }
 
@@ -3996,7 +3996,7 @@ body.admin-page .btn-delete-soft {
 body.admin-page .admin-selected-post-card {
   padding: 18px;
   border: 1px solid var(--admin-stroke-strong);
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, rgba(98, 37, 153, 0.05), rgba(255,255,255,0.96));
 }
 
@@ -4033,7 +4033,7 @@ body.admin-page .admin-media-preview-frame {
   overflow: hidden;
   isolation: isolate;
   border: 1px solid var(--admin-stroke);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(98, 37, 153, 0.06);
 }
 
@@ -4178,7 +4178,7 @@ body.admin-page .admin-home-lead-control {
   gap: 8px;
   padding: 14px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.94);
 }
 
@@ -4231,7 +4231,7 @@ body.admin-page .admin-media-device-card {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.96);
 }
 
@@ -4297,7 +4297,7 @@ body.admin-page .admin-settings-actions {
   margin: 0 0 18px;
   padding: 14px 16px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(250, 248, 245, 0.98);
 }
 
@@ -4342,7 +4342,7 @@ body.admin-page .admin-editor-row-label {
 body.admin-page .admin-copy-card {
   padding: 16px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: #fff;
 }
 
@@ -4610,7 +4610,7 @@ body.admin-page .hero-slot-item,
 body.admin-page .contributors-admin-item,
 body.admin-page .admin-settings-block {
   border: 1px solid rgba(37, 29, 22, 0.08) !important;
-  border-radius: 18px !important;
+  border-radius: var(--radius-xl) !important;
   box-shadow: 0 12px 30px rgba(84, 62, 47, 0.06) !important;
 }
 
@@ -4663,7 +4663,7 @@ body.admin-page .admin-login-build {
 body.admin-page .admin-header-box,
 body.admin-page .admin-control-card {
   padding: 8px !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
   background: linear-gradient(180deg, rgba(247, 239, 251, 0.92), rgba(252, 248, 244, 0.96)) !important;
   border: 1px solid rgba(98, 37, 153, 0.10) !important;
 }
@@ -4701,7 +4701,7 @@ body.admin-page #reorder-save-btn,
 body.admin-page .admin-list-tabs button {
   min-height: 40px !important;
   padding: 0 11px !important;
-  border-radius: 13px !important;
+  border-radius: var(--radius-lg) !important;
   font-size: 12px !important;
   line-height: 1.2 !important;
   letter-spacing: 0 !important;
@@ -4766,7 +4766,7 @@ body.admin-page .admin-sidebar-btn {
   width: 100% !important;
   min-height: 68px !important;
   padding: 11px !important;
-  border-radius: 15px !important;
+  border-radius: var(--radius-xl) !important;
   text-align: left !important;
   background: rgba(255, 255, 255, 0.92) !important;
   border: 1px solid rgba(98, 37, 153, 0.10) !important;
@@ -4800,7 +4800,7 @@ body.admin-page .admin-write-tag-tools input {
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid rgba(98, 37, 153, 0.14);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.92);
   color: var(--admin-ink);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -4812,7 +4812,7 @@ body.admin-page .admin-inline-tag-add {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(98, 37, 153, 0.16);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   background: linear-gradient(135deg, rgba(98, 37, 153, 0.10), rgba(130, 68, 193, 0.16));
   color: var(--admin-accent);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -4880,7 +4880,7 @@ body.admin-page {
 }
 
 body.admin-page .panel {
-  border-radius: 20px !important;
+  border-radius: var(--radius-2xl) !important;
 }
 
 body.admin-page .panel-header,
@@ -5016,7 +5016,7 @@ body.admin-page .dash-stat-card,
 body.admin-page .admin-list-stats .stat-item {
   min-height: 0 !important;
   padding: 12px !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
 }
 
 body.admin-page .dash-stat-num,
@@ -5045,7 +5045,7 @@ body.admin-page .dash-action-btn {
   gap: 8px !important;
   min-height: 52px !important;
   padding: 12px 13px !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
   background: rgba(255, 255, 255, 0.94) !important;
   color: var(--admin-ink) !important;
 }
@@ -5118,7 +5118,7 @@ body.admin-page .article-list-toolbar > .count {
   min-height: 40px !important;
   padding: 0 12px !important;
   border: 1px solid rgba(37, 29, 22, 0.10) !important;
-  border-radius: 13px !important;
+  border-radius: var(--radius-lg) !important;
   background: rgba(255, 255, 255, 0.78) !important;
   font-size: 11px !important;
 }
@@ -5144,7 +5144,7 @@ body.admin-page .article-item {
   align-items: stretch !important;
   gap: 10px !important;
   padding: 14px !important;
-  border-radius: 16px !important;
+  border-radius: var(--radius-xl) !important;
 }
 
 body.admin-page .article-item-top {
@@ -5360,7 +5360,7 @@ body.admin-page .v3-more-btn {
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid var(--admin-stroke);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--admin-surface-soft);
   color: var(--admin-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -5533,7 +5533,7 @@ body.admin-page select,
 body.admin-page textarea {
   min-height: 40px !important;
   padding: 10px 11px !important;
-  border-radius: 13px !important;
+  border-radius: var(--radius-lg) !important;
   font-size: 13px !important;
   line-height: 1.42 !important;
 }
@@ -5678,7 +5678,7 @@ body.admin-page .admin-context-rail {
 
 body.admin-page .admin-context-card {
   border: 1px solid var(--admin-stroke);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, rgba(255, 252, 249, 0.98), rgba(246, 240, 248, 0.95));
   box-shadow: var(--admin-shadow);
   padding: 18px;
@@ -5717,7 +5717,7 @@ body.admin-page .admin-context-feature-link {
   gap: 8px;
   padding: 14px;
   border: 1px solid rgba(98, 37, 153, 0.14);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.9);
   color: inherit;
   text-decoration: none;
@@ -5749,7 +5749,7 @@ body.admin-page .admin-context-recent-btn {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(98, 37, 153, 0.12);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.9);
   text-align: left;
   cursor: pointer;
@@ -5972,7 +5972,7 @@ body.admin-page .admin-v2-header {
   margin: 0 auto 24px;
   padding: 24px 28px;
   border: 1px solid rgba(29, 21, 17, 0.08);
-  border-radius: 28px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 243, 238, 0.96));
   box-shadow: 0 20px 44px rgba(25, 18, 15, 0.08);
 }
@@ -5996,7 +5996,7 @@ body.admin-page .admin-v2-kicker {
   align-items: center;
   min-height: 28px;
   padding: 0 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(116, 54, 188, 0.12);
   color: #652bb2;
   font-size: 11px;
@@ -6036,7 +6036,7 @@ body.admin-page .admin-v2-logout {
   min-height: 46px;
   padding: 0 18px;
   border: 1px solid rgba(29, 21, 17, 0.12);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.94);
   color: #17120f;
   text-decoration: none;
@@ -6064,7 +6064,7 @@ body.admin-page .admin-v2-groups {
 body.admin-page .admin-v2-groups .admin-group-btn {
   min-height: 52px;
   padding: 0 20px;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   border: 1px solid rgba(29, 21, 17, 0.1);
   background: rgba(255, 255, 255, 0.88);
   color: #463d35;
@@ -6110,7 +6110,7 @@ body.admin-page .admin-v2-sidebar .admin-sidebar-group {
   gap: 10px !important;
   padding: 18px !important;
   border: 1px solid rgba(29, 21, 17, 0.09) !important;
-  border-radius: 24px !important;
+  border-radius: var(--radius-2xl) !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: 0 12px 28px rgba(25, 18, 15, 0.05) !important;
 }
@@ -6131,7 +6131,7 @@ body.admin-page .admin-v2-sidebar .admin-sidebar-tree-head span {
 body.admin-page .admin-v2-sidebar .admin-sidebar-btn {
   min-height: 74px !important;
   padding: 14px 16px !important;
-  border-radius: 18px !important;
+  border-radius: var(--radius-xl) !important;
   border: 1px solid rgba(29, 21, 17, 0.08) !important;
   background: rgba(248, 245, 240, 0.92) !important;
   text-align: left !important;
@@ -6174,7 +6174,7 @@ body.admin-page .admin-v2-rail {
 
 body.admin-page .admin-v2-rail .admin-context-card {
   padding: 18px !important;
-  border-radius: 24px !important;
+  border-radius: var(--radius-2xl) !important;
   border: 1px solid rgba(29, 21, 17, 0.09) !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow: 0 12px 28px rgba(25, 18, 15, 0.05) !important;
@@ -6220,7 +6220,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   padding: 12px 16px;
   background: var(--ink);
   color: #fff;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
 .kms-ds-layer-header strong {
@@ -6292,7 +6292,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-surface);
 }
 .kms-ds-table {
@@ -6397,7 +6397,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   width: 100%;
   min-width: 0;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: #232334;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   text-align: left;
@@ -6420,12 +6420,12 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-width: 0;
   padding: 16px;
   border: 1px solid rgba(31,31,31,0.08);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,244,239,0.92));
 }
 .kms-ds-preview .glossary-table-wrap {
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--kms-surface);
 }
@@ -6491,7 +6491,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-section {
   padding: 20px 20px 22px;
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -6538,7 +6538,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-module {
   padding: 16px;
   border: 1px solid var(--kms-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface2);
 }
 
@@ -6570,7 +6570,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   gap: 10px;
   margin: 6px 2px -10px;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--ink);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
 }
@@ -6607,7 +6607,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   margin-bottom: 0;
   padding: 12px 14px;
   border: 1px solid rgba(92, 42, 157, 0.18);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-accent-bg);
 }
 
@@ -6676,7 +6676,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-height: 28px;
   padding: 5px 10px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -6715,7 +6715,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-height: 30px;
   padding: 0 13px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   color: var(--kms-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -6751,7 +6751,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-surface-card {
   padding: 14px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -6769,7 +6769,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   padding: 16px 18px;
   box-sizing: border-box;
   border: 1px solid rgba(31,31,31,0.08);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: #171822;
   color: #d7def8;
   font-family: 'JetBrains Mono', monospace;
@@ -6797,7 +6797,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-height: 32px;
   padding: 0 14px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface);
   color: var(--kms-muted);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -6831,7 +6831,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   min-height: 220px;
   padding: 18px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: #fcfbf8;
   overflow: auto;
   color: #1f1f1f;
@@ -6863,7 +6863,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   gap: 6px;
   padding: 12px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -6871,7 +6871,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: block;
   width: 100%;
   height: 38px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
 }
 
 .kms-ds-token-chip-light {
@@ -6935,7 +6935,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-contract-card {
   padding: 16px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -6974,7 +6974,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-contract-meta span {
   padding: 6px 10px;
   border: 1px solid var(--kms-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--kms-surface2);
   font-size: 12px;
   color: #4f463e;
@@ -7013,7 +7013,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
   font-size: 12px;
   color: #5b544c;
@@ -7021,7 +7021,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ds-shell-hero {
   padding: 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #622599 0%, #2a103f 100%);
   color: #fff;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
@@ -7056,7 +7056,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   gap: 10px;
   padding: 14px;
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface);
 }
 
@@ -7097,7 +7097,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   gap: 8px;
   padding: 10px;
   border: 1px solid var(--kms-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--kms-surface2);
 }
 
@@ -7117,7 +7117,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 .kms-ds-mobile-note {
   padding: 10px 12px;
   border: 1px dashed rgba(31,31,31,0.2);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--kms-surface2);
   line-height: 1.6;
 }
@@ -7191,7 +7191,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ed-section {
   border: 1px solid var(--kms-border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 22px 24px;
   margin-bottom: 16px;
   background: var(--kms-surface);
@@ -7218,7 +7218,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   font-size: 10px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-ocean-blue, #0094B4);
   color: #fff;
   letter-spacing: 0;
@@ -7246,7 +7246,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   align-items: center;
   gap: 10px;
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 10px 14px;
   font-size: 12px;
   color: var(--kms-text);
@@ -7305,7 +7305,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ed-rule-col {
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
 }
 
@@ -7369,7 +7369,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   margin-top: 14px;
   padding: 10px 14px;
   background: rgba(98, 37, 153, 0.06);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   color: var(--color-scouting-purple, #622599);
   font-weight: 500;
@@ -7387,7 +7387,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   display: flex;
   gap: 12px;
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 12px 14px;
 }
 
@@ -7421,7 +7421,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 
 .kms-ed-rule-box {
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 12px 16px;
   font-size: 12px;
   color: var(--kms-text);
@@ -7449,7 +7449,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   color: var(--kms-text);
   padding: 8px 14px;
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
 }
 
 .kms-ed-notation-label {
@@ -7476,7 +7476,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   color: var(--kms-text);
   padding: 8px 14px;
   background: var(--kms-surface2);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
 }
 
 .kms-ed-check {
@@ -7496,7 +7496,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   font-weight: 500;
   border-left: 3px solid var(--color-scouting-purple, #622599);
   background: rgba(98, 37, 153, 0.04);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 @media (max-width: 700px) {
@@ -7517,7 +7517,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   z-index: 100;
   background: #fff;
   border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
   max-height: 240px;
   overflow-y: auto;
@@ -7557,7 +7557,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   padding: 1px 7px;
   background: var(--gray-100, #ebebeb);
   color: var(--ink, #1f1f1f);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 11px;
   line-height: 1.5;
   white-space: nowrap;
@@ -7576,7 +7576,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   margin: 8px 0;
   background: rgba(98, 37, 153, 0.06);
   border: 1px solid rgba(98, 37, 153, 0.25);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 .memo-bulk-toolbar strong {
@@ -7589,7 +7589,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   margin-bottom: 10px;
   background: #fff;
   border: 1px solid var(--gray-300, #c4c4c4);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .memo-bulkedit-toggle {
   display: flex; align-items: center; gap: 8px;
@@ -7631,7 +7631,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
   padding: 8px 12px;
   background: rgba(98, 37, 153, 0.08);
   border: 1px solid rgba(98, 37, 153, 0.2);
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   font-size: 13px;
 }
 .memo-ev-group-label {
@@ -7645,7 +7645,7 @@ body.admin-page .admin-v2-rail .admin-context-recent-btn strong {
 }
 .memo-ev-group .v3-table {
   margin-top: 0;
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
 .v3-table tr[data-ev-row]:hover {
   background: rgba(98, 37, 153, 0.05);

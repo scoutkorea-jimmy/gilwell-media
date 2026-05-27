@@ -295,7 +295,7 @@
         </div>
         <div id="memo-import-field-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
           ${fields.map((f) => `
-            <label style="display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; background: #fff; border: 1px solid var(--gray-300, #c4c4c4); border-radius: 6px; cursor: pointer;">
+            <label style="display: flex; gap: 8px; align-items: flex-start; padding: 7px 10px; background: #fff; border: 1px solid var(--gray-300, #c4c4c4); border-radius: var(--radius-sm); cursor: pointer;">
               <input type="checkbox" data-import-field="${f.key}" checked style="margin-top: 3px; accent-color: var(--color-scouting-purple, #622599);" />
               <div style="flex: 1; font-size: 12.5px;">
                 <strong>${escapeHtmlLocal(f.label)}</strong>
@@ -763,7 +763,7 @@
     if (rows.length) {
       detail.innerHTML = `
         <h4 style="margin:14px 0 6px; font-size:13px;">상세</h4>
-        <div style="max-height:300px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px; background:#fff;">
+        <div style="max-height:300px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:var(--radius-sm); background:#fff;">
           <table class="v3-table" style="margin:0; font-size:12px;">
             <thead><tr><th style="width:22%">테이블 · 필드</th><th style="width:30%">찾기</th><th style="width:30%">바꾸기</th><th style="width:18%">${isDry ? '매칭' : '변경'}</th></tr></thead>
             <tbody>
@@ -908,8 +908,8 @@
       '</tr></thead><tbody>'];
     for (const it of items) {
       const thumb = it.primary_image_url
-        ? `<img src="${escapeHtml(it.primary_image_url)}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:4px"/>`
-        : '<div style="width:48px;height:48px;background:var(--gray-100);border-radius:4px"></div>';
+        ? `<img src="${escapeHtml(it.primary_image_url)}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:var(--radius-tight)"/>`
+        : '<div style="width:48px;height:48px;background:var(--gray-100);border-radius:var(--radius-tight)"></div>';
       const title = it.title_en || it.title_ko || '(제목 없음)';
       const sub = it.title_en && it.title_ko ? `<div style="font-size:.85em;opacity:.7">${escapeHtml(it.title_ko)}</div>` : '';
       // 행사명 — EN+KO 둘 다 있으면 두 줄, 하나만 있으면 한 줄, 행사 아님이면 —
@@ -2100,7 +2100,7 @@
     if (errList.length) {
       errors.innerHTML = `
         <h4 style="margin:14px 0 6px; font-size:13px;">오류 상세</h4>
-        <div style="max-height:240px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px; padding:8px 12px; background:#fff; font-size:12.5px;">
+        <div style="max-height:240px; overflow-y:auto; border:1px solid var(--gray-300,#c4c4c4); border-radius:var(--radius-sm); padding:8px 12px; background:#fff; font-size:12.5px;">
           ${errList.map((er) => `
             <div style="padding:4px 0; border-bottom:1px solid var(--gray-100,#f0f0f0);">
               <strong>라인 ${er.line}:</strong> ${(er.errors || []).map(escapeHtmlLocal).join(' · ')}

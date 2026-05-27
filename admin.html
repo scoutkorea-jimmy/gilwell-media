@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260527020545">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260527020545">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260527043158">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260527043158">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,9 +94,9 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.139.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.140.00</span>
       &nbsp;·&nbsp;
-      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.160.00</span>
+      Site <span class="v3-ver-str v3-ver-site site-build-version">V00.161.00</span>
     </div>
   </div>
 </div>
@@ -109,8 +109,8 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.139.00</span></div>
-      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.160.00</span></span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.140.00</span></div>
+      <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.161.00</span></span></div>
     </div>
 
     <!-- ── 세션 타이머 ── -->
@@ -2128,7 +2128,7 @@
             </p>
 
             <!-- 자동 프리셋 -->
-            <div style="margin-bottom: 16px; padding: 10px 12px; background: var(--gray-100,#ebebeb); border-radius: 6px;">
+            <div style="margin-bottom: 16px; padding: 10px 12px; background: var(--gray-100,#ebebeb); border-radius: var(--radius-sm);">
               <strong style="font-size:13px;">자동 프리셋</strong>
               <p style="margin: 4px 0 8px; font-size: 11.5px; color: var(--gray-700,#3f3f3f);">
                 국가 카탈로그에 등록된 모든 국가에 대해 "<code>{국가명} 대표단</code>" → "<code>{국가명}대표단</code>" 일괄 적용 (한글 컬럼 전체).
@@ -2185,14 +2185,14 @@
             </div>
             <div class="v3-modal-body">
               <!-- 불러오기 검색 패널 (불러오기 버튼 누르면 노출) -->
-              <div id="memo-import-panel" hidden style="margin-bottom: 16px; padding: 12px; background: var(--gray-100,#ebebeb); border-radius: 8px;">
+              <div id="memo-import-panel" hidden style="margin-bottom: 16px; padding: 12px; background: var(--gray-100,#ebebeb); border-radius: var(--radius-md);">
                 <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
                   <strong style="font-size:13px;">불러올 도감 항목 검색</strong>
                   <button type="button" class="v3-modal-close" id="memo-import-close" aria-label="닫기" style="margin-left:auto;">×</button>
                 </div>
                 <input type="text" class="v3-input" id="memo-import-search"
                        placeholder="제목·키워드로 검색 (EN/KO)" style="width:100%; margin-bottom:8px;">
-                <div id="memo-import-results" style="max-height: 240px; overflow-y:auto; background:#fff; border:1px solid var(--gray-300,#c4c4c4); border-radius:6px;"></div>
+                <div id="memo-import-results" style="max-height: 240px; overflow-y:auto; background:#fff; border:1px solid var(--gray-300,#c4c4c4); border-radius:var(--radius-sm);"></div>
                 <p style="margin-top:8px; font-size:11px; color:var(--gray-700,#3f3f3f);">
                   불러오는 항목: 카테고리 · 국가 · 연도 · 재질 · 크기 · 발행처 · 행사 · 태그
                   <br>제외 항목: 제목 · 본문 · 이미지 · 관련링크 (각 항목 고유성 유지)
@@ -3289,13 +3289,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260527020545"></script>
-<script src="/js/shared-country-name-ko.js?v=20260527020545"></script>
-<script src="/js/memorabilia-shared.js?v=20260527020545"></script>
-<script src="/js/admin-v3.js?v=20260527020545"></script>
-<script src="/js/admin-account.js?v=20260527020545"></script>
-<script src="/js/admin-memorabilia.js?v=20260527020545"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260527020545"></script>
+<script src="/js/main.js?v=20260527043158"></script>
+<script src="/js/shared-country-name-ko.js?v=20260527043158"></script>
+<script src="/js/memorabilia-shared.js?v=20260527043158"></script>
+<script src="/js/admin-v3.js?v=20260527043158"></script>
+<script src="/js/admin-account.js?v=20260527043158"></script>
+<script src="/js/admin-memorabilia.js?v=20260527043158"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260527043158"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

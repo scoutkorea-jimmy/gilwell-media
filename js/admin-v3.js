@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.139.00
+ * Version: 03.140.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -2485,7 +2485,7 @@
               GW.escapeHtml(_formatDateTimeCompact(post.publish_at || post.created_at || '')) +
             '</div>' +
             (post.subtitle ? '<div class="v3-selected-post-subtitle" style="margin-top:8px;">' + GW.escapeHtml(post.subtitle) + '</div>' : '') +
-            (previewImageUrl ? '<img src="' + GW.escapeHtml(previewImageUrl) + '" alt="" style="width:100%;max-height:320px;object-fit:' + (previewImageIsPlaceholder ? 'contain' : 'cover') + ';background:var(--v3-surface);border-radius:16px;border:1px solid var(--v3-border);margin-top:14px;padding:' + (previewImageIsPlaceholder ? '18px' : '0') + ';">' : '') +
+            (previewImageUrl ? '<img src="' + GW.escapeHtml(previewImageUrl) + '" alt="" style="width:100%;max-height:320px;object-fit:' + (previewImageIsPlaceholder ? 'contain' : 'cover') + ';background:var(--v3-surface);border-radius:var(--radius-xl);border:1px solid var(--v3-border);margin-top:14px;padding:' + (previewImageIsPlaceholder ? '18px' : '0') + ';">' : '') +
             '<div style="margin-top:16px;line-height:1.8;color:var(--v3-text);">' + contentHtml + '</div>' +
             galleryHtml +
           '</div>';
@@ -5771,7 +5771,7 @@
     overlay.className = 'v3-ti-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:10010;display:flex;align-items:center;justify-content:center;padding:24px;';
     overlay.innerHTML =
-      '<div class="v3-modal-panel" style="background:var(--v3-surface);border-radius:14px;max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;">' +
+      '<div class="v3-modal-panel" style="background:var(--v3-surface);border-radius:var(--radius-xl);max-width:820px;width:100%;max-height:90vh;display:flex;flex-direction:column;">' +
         '<div class="v3-modal-head" style="padding:var(--v3-gap-lg) var(--gap-section);border-bottom:1px solid var(--v3-border);display:flex;justify-content:space-between;align-items:center;">' +
           '<h2 class="v3-modal-title" style="margin:0;font-size:var(--fs-title);">' + GW.escapeHtml(title) + '</h2>' +
           '<button class="v3-btn v3-btn-ghost v3-btn-xs" type="button" id="v3-ti-modal-close">닫기</button>' +
@@ -8084,7 +8084,7 @@
       }).join('');
       var actor = String(row.actor || '').trim();
       var actorHtml = actor
-        ? '<span class="v3-ai-score-actor" style="font-size:12px;color:var(--v3-text-d,#1f1f1f);background:rgba(98,37,153,0.08);border:1px solid rgba(98,37,153,0.18);padding:2px 8px;border-radius:999px;white-space:nowrap;" title="채점 실행자">' + GW.escapeHtml(actor) + '</span>'
+        ? '<span class="v3-ai-score-actor" style="font-size:12px;color:var(--v3-text-d,#1f1f1f);background:rgba(98,37,153,0.08);border:1px solid rgba(98,37,153,0.18);padding:2px 8px;border-radius:var(--radius-pill);white-space:nowrap;" title="채점 실행자">' + GW.escapeHtml(actor) + '</span>'
         : '<span class="v3-ai-score-actor" style="font-size:12px;color:var(--v3-muted);" title="실행자 미기록 (legacy 기록)">—</span>';
       var tokens = Number(row.total_tokens || 0);
       var tokensHtml = tokens > 0

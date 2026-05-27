@@ -1,6 +1,39 @@
 {
   "items": [
   {
+    "version": "00.161.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 09:30:00 KST",
+    "summary": "디자인 시스템 — 7단 radius 토큰 도입, 사이트 전체 곡률 통일 (px 리터럴 398개 일괄 교체).",
+    "for_users": [
+      "사이트 전반에 걸쳐 카드·버튼·칩·모달의 모서리 둥글기가 한 가지 디자인 언어로 통일됐습니다. 일부 영역(주로 10px 였던 카드)이 12px 로 살짝 둥글어지고, 매우 큰 모달 상단(20·24·28px)은 22px 로 정렬되는 등 미세한 시각 변화가 있습니다.",
+      "공개 사이트 / 관리자 / KMS / 도감 모두 동일 곡률 체계를 따릅니다."
+    ],
+    "for_developers": [
+      "css/style.css :root 에 7단 radius 토큰 신설 — pill(999) / 2xl(22) / xl(16) / lg(12) / md(8) / sm(6) / tight(4). circle(50%) 과 sharp(0) 은 시맨틱 명확해 별도 토큰 없음.",
+      "기존 토큰 재지정 — admin-v3.css { --v3-radius → --radius-md, --v3-radius-s → --radius-sm, --v3-radius-l → --radius-lg, --v3-chip-radius → --radius-pill }. style.css { --bw-radius → --radius-xl, --bw-radius-s → --radius-md }. 자동 마이그레이션.",
+      "단일 px 리터럴 일괄 sed 치환 (4 CSS 파일 × ~12 매핑 규칙): 999/100→pill, 28/24/22/20→2xl, 18/16/15/14→xl, 13/12/11/10→lg, 9/8/7→md, 6/5→sm, 4/3/2→tight. !important 변형도 함께 처리.",
+      "복합값 (4-corner) 수동 매핑 11개: '0 6px 6px 0', '16px 16px 0 0 !important', '999px 0 0 999px' 등 → 각 px 위치를 동일 토큰으로 교체. 시각 차이 없음.",
+      "admin.html / privacy.html inline style + js/admin-memorabilia.js / js/admin-v3.js 의 inline border-radius 도 var(--radius-*) 로 정리.",
+      "검증: grep 으로 잔존 px 리터럴 0건 확인. 신규 토큰 사용 총 398회 (pill 98, lg 67, sm 60, md 59, xl 51, tight 43, 2xl 20).",
+      "사이트 00.160.00 → 00.161.00 (feature — 디자인 토큰 도입 + 곡률 통일)."
+    ]
+  },
+  {
+    "version": "03.140.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 09:30:00 KST",
+    "summary": "관리자 — radius 토큰 도입에 따른 곡률 통일 (admin v3 패널 + KMS + 도감 모달).",
+    "for_users": [
+      "관리자 콘솔 전반의 카드·인풋·버튼·칩 모서리가 사이트와 동일한 곡률 체계를 따릅니다. 일부 5px 컨트롤이 6px 로 살짝 둥글어지고, 16px 모달 상단 등은 그대로 유지."
+    ],
+    "for_developers": [
+      "admin-v3.css :root 의 --v3-radius* 4개를 css/style.css 의 --radius-* 7단 스케일로 자동 재지정. 기존 var(--v3-radius) 사용처 전부 자동 마이그레이션.",
+      "admin.css 복합 border-radius 6개 (KMS quote, 카테고리 탭 등) 수동 매핑 — 시각 차이 없음.",
+      "관리자 03.139.00 → 03.140.00 (feature — radius 토큰 통일)."
+    ]
+  },
+  {
     "version": "00.160.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 09:00:00 KST",

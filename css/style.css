@@ -87,6 +87,25 @@ strong, b,
   --admin-fs-body: 14px;
   --admin-fs-meta: 12px;
   --admin-fs-micro: 11px;
+  /* ─── Radius scale (Site + Admin 통일 7-step) ─────────────────────────────
+     모든 새 작업은 이 토큰을 사용. 기존 --v3-radius-*, --bw-radius-* 는 이 스케일
+     로 재지정됨(별도 정의 위치). 정렬: pill > 2xl > xl > lg > md > sm > tight.
+     - pill   : 둥근 칩 / 가로 캡슐 / 슬라이더 트랙
+     - 2xl    : 모달 시트, 풀-블리드 hero 상단 (20~28 통합)
+     - xl     : 대형 카드, 패널 (14~18 통합)
+     - lg     : 표준 카드 (10~13 통합)
+     - md     : 컨트롤 (인풋·버튼·드롭다운) (7~9 통합)
+     - sm     : 칩, 작은 배지 (5~6 통합)
+     - tight  : 진행바 세그먼트, 미세 UI (2~4 통합)
+     - sharp/circle 은 시맨틱이 명확해 별도 토큰 없이 0 / 50% 직접 사용.
+  */
+  --radius-pill:  999px;
+  --radius-2xl:    22px;
+  --radius-xl:     16px;
+  --radius-lg:     12px;
+  --radius-md:      8px;
+  --radius-sm:      6px;
+  --radius-tight:   4px;
 }
 
 .section-header {
@@ -1344,7 +1363,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .mobile-nav-group-summary:focus-visible {
   outline: 2px solid var(--color-scouting-purple, #622599);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
 }
 .nav-group-caret {
   font-size: 0.7em;
@@ -1362,7 +1381,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   min-width: 220px;
   background: var(--white, #fff);
   border: 1px solid var(--border, #c4c4c4);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   padding: 6px;
   z-index: 100;
@@ -1386,7 +1405,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   letter-spacing: 0.02em;
   color: var(--gray-700, #3f3f3f);
   text-decoration: none;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   text-transform: none;
   position: relative;
@@ -1536,7 +1555,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid rgba(255,255,255,0.28);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255,255,255,0.08);
   color: var(--white);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -2024,7 +2043,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   position: static;
   padding: var(--gap-tight) var(--gap-element);
   background: rgba(0,0,0,0.26);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .hero-pause-btn {
@@ -2034,7 +2053,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid rgba(255,255,255,0.26);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(0,0,0,0.26);
   color: var(--white);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -3352,7 +3371,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   position: relative;
   min-height: 0;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: var(--bg);
 }
 
@@ -3402,7 +3421,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   align-items: center;
   gap: 10px;
   padding: var(--gap-tight) var(--gap-element);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(17,17,17,0.62);
   backdrop-filter: blur(10px);
   z-index: 3;
@@ -3433,7 +3452,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
   color: var(--white);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px var(--gap-element);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
@@ -4859,7 +4878,7 @@ footer a:hover { color: var(--white); }
 .calendar-week-bar.is-finished { opacity: .62; }
 
 .calendar-week-bar.is-start {
-  border-radius: 999px 0 0 999px;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
 }
 
 .calendar-week-bar.is-middle {
@@ -4867,11 +4886,11 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-week-bar.is-end {
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
 }
 
 .calendar-week-bar.is-single {
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 
 .calendar-week-bar.is-middle .calendar-week-bar-copy,
@@ -4988,7 +5007,7 @@ footer a:hover { color: var(--white); }
 .calendar-region-group-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: currentColor;
 }
 
@@ -5549,7 +5568,7 @@ footer a:hover { color: var(--white); }
   min-width: 26px;
   height: 26px;
   padding: 0 var(--gap-tight);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 2px solid rgba(255,255,255,0.95);
   box-shadow: 0 4px 10px rgba(0,0,0,0.14);
   color: var(--white);
@@ -6525,7 +6544,7 @@ footer a:hover { color: var(--white); }
   .modal-header       { padding: 28px var(--gap-section) 0; }
   .modal-body         { padding: var(--gap-section) var(--gap-section) var(--gap-section-out); }
   .share-modal        { align-items: flex-end; padding: 0; }
-  .share-modal-card   { width: 100%; max-width: 100%; border-radius: 20px 20px 0 0; }
+  .share-modal-card   { width: 100%; max-width: 100%; border-radius: var(--radius-2xl) var(--radius-2xl) 0 0; }
 
   .footer-inner       { padding: var(--gap-section-out) var(--gap-section) var(--gap-section); gap: var(--gap-card); }
   .footer-admin       { margin-left: 0; align-items: flex-start; text-align: left; }
@@ -7168,7 +7187,7 @@ footer a:hover { color: var(--white); }
 .board-sort-toggle {
   display: inline-flex;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
   background: var(--bg);
 }
@@ -7221,7 +7240,7 @@ footer a:hover { color: var(--white); }
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .board-period-btn.active,
@@ -7260,7 +7279,7 @@ footer a:hover { color: var(--white); }
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .board-days-btn.active,
@@ -7375,7 +7394,7 @@ footer a:hover { color: var(--white); }
   position:    relative;
   transform:   translateY(20px);
   transition:  transform 0.25s ease;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .board-write-overlay.open .board-write-box { transform: translateY(0); }
 
@@ -7386,7 +7405,7 @@ footer a:hover { color: var(--white); }
   max-height:   none;
   overflow-y:   visible;
   padding:      0;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -7563,7 +7582,7 @@ footer a:hover { color: var(--white); }
   font-size: 14px;
   line-height: 1.7;
   color: var(--gray-700, #3f3f3f);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
 }
 .post-page-body .post-citation cite {
   font-style: normal;
@@ -7617,7 +7636,7 @@ footer a:hover { color: var(--white); }
 .static-page-section code {
   background: var(--gray-100, #ebebeb);
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-tight);
   font-size: 13px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
@@ -7741,7 +7760,7 @@ footer a:hover { color: var(--white); }
 .post-related-surface {
   background: rgba(17, 17, 17, 0.035);
   border: 1px solid rgba(17, 17, 17, 0.06);
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   padding: 18px 18px var(--gap-card);
 }
 
@@ -7951,7 +7970,7 @@ footer a:hover { color: var(--white); }
   padding: var(--gap-element) 14px;
   border: 1px solid rgba(217, 74, 58, 0.14);
   background: rgba(217, 74, 58, 0.04);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
 }
 
 @media (min-width: 769px) {
@@ -7966,7 +7985,7 @@ footer a:hover { color: var(--white); }
   .post-like-btn {
     min-height: 34px;
     padding: 7px var(--gap-element);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     box-shadow: none;
   }
   .post-like-help {
@@ -9012,7 +9031,7 @@ footer a:hover { color: var(--white); }
   justify-content: center;
   min-height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(34, 27, 40, 0.1);
   background: rgba(36, 27, 40, 0.04);
   color: var(--muted);
@@ -9871,7 +9890,7 @@ footer a:hover { color: var(--white); }
     border: 1px solid var(--border);
     background: var(--white);
     box-shadow: 0 6px 14px rgba(0,0,0,0.04);
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
   }
   .glossary-term-row:first-child {
@@ -10167,7 +10186,7 @@ body.admin-page .admin-sidebar-btn {
 }
 
 body.admin-page .admin-group-btn {
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
 }
 
 body.admin-page .admin-sidebar-btn {
@@ -10349,7 +10368,7 @@ body.wosm-members-page #main-content {
   color: var(--midnight-purple);
   min-height: 38px;
   padding: var(--gap-tight) var(--gap-element);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   line-height: 1.2;
@@ -10497,7 +10516,7 @@ body.wosm-members-page #main-content {
   justify-content: center;
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(0,0,0,0.08);
   background: rgba(255,255,255,0.72);
   color: var(--ink);
@@ -10591,7 +10610,7 @@ body.wosm-members-page #main-content {
   border: 1px solid rgba(77, 0, 110, 0.16);
   background: rgba(77, 0, 110, 0.04);
   color: var(--midnight-purple);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   line-height: 1.2;
@@ -10644,7 +10663,7 @@ body.wosm-members-page #main-content {
   padding: var(--gap-element) 14px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   text-align: left;
 }
 .members-card-section-head strong {
@@ -10689,7 +10708,7 @@ body.wosm-members-page #main-content {
   border: 1px solid var(--border);
   background: var(--white);
   padding: 18px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 6px 14px rgba(0,0,0,0.04);
 }
 .member-country-card.is-representative {
@@ -10739,7 +10758,7 @@ body.wosm-members-page #main-content {
   padding: var(--gap-element) 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: rgba(17, 17, 17, 0.018);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .member-country-child-card strong {
   display: block;
@@ -10754,7 +10773,7 @@ body.wosm-members-page #main-content {
   justify-content: center;
   min-height: 30px;
   padding: var(--gap-micro) 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(31,31,31,0.12);
   background: rgba(31,31,31,0.04);
   color: var(--ink);
@@ -10776,7 +10795,7 @@ body.wosm-members-page #main-content {
   width: 56px;
   height: 56px;
   border: 1px solid rgba(0,0,0,0.14);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255,252,247,0.94);
   color: var(--ink);
   box-shadow: 0 14px 28px rgba(0,0,0,0.14);
@@ -10899,7 +10918,7 @@ body.wosm-members-page #main-content {
   overflow-y: auto;
   background: var(--bg, #fff);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   z-index: 210;
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -10931,7 +10950,7 @@ body.wosm-members-page #main-content {
   padding: 16px;
   background: rgba(98,37,153,0.03);
   border: 1px solid rgba(98,37,153,0.18);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
 }
 .board-write-assist-row {
@@ -10968,7 +10987,7 @@ body.wosm-members-page #main-content {
   padding: 10px 12px;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .board-write-seo-label {
   font-size: 10px;
@@ -11030,7 +11049,7 @@ body.wosm-members-page #main-content {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -11041,10 +11060,10 @@ body.wosm-members-page #main-content {
   padding: 12px;
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .board-scorer-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 14px; }
-.board-scorer-error   { font-size: 12px; color: #b0393a; padding: 10px; background: rgba(255,86,85,0.06); border-radius: 6px; }
+.board-scorer-error   { font-size: 12px; color: #b0393a; padding: 10px; background: rgba(255,86,85,0.06); border-radius: var(--radius-sm); }
 .board-scorer-head {
   display: flex;
   align-items: center;
@@ -11056,11 +11075,11 @@ body.wosm-members-page #main-content {
   font-size: 14px;
   font-weight: 700;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid;
 }
 .board-scorer-summary { font-size: 12px; line-height: 1.6; color: var(--ink); margin-bottom: 8px; }
-.board-scorer-bar { height: 5px; background: rgba(0,0,0,0.06); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+.board-scorer-bar { height: 5px; background: rgba(0,0,0,0.06); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: 10px; }
 .board-scorer-bar-fill { height: 100%; transition: width 0.3s ease; }
 .board-scorer-cats {
   display: grid;
@@ -11070,7 +11089,7 @@ body.wosm-members-page #main-content {
 .board-scorer-cat {
   padding: 7px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 11px;
 }
 .board-scorer-cat-head {
@@ -11088,7 +11107,7 @@ body.wosm-members-page #main-content {
   padding: 10px;
   background: rgba(98,37,153,0.06);
   border-left: 3px solid var(--scouting-purple, #622599);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 12px;
   line-height: 1.6;
 }
@@ -11129,8 +11148,8 @@ body.wosm-members-page #main-content {
   --bw-primary-tint: #f6f0ff;
   --bw-shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
   --bw-shadow-lg:  0 10px 40px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.10);
-  --bw-radius:     16px;
-  --bw-radius-s:   8px;
+  --bw-radius:     var(--radius-xl);   /* 16px — 통일 스케일 재지정 (2026-05-27) */
+  --bw-radius-s:   var(--radius-md);   /* 8px */
   --bw-gap-xs:     6px;
   --bw-gap-sm:     10px;
   --bw-gap-md:     16px;
@@ -11152,7 +11171,7 @@ body.wosm-members-page #main-content {
 /* Dialog box — 카드형 */
 .bw-box {
   background: var(--bw-canvas) !important;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   box-shadow: var(--bw-shadow-lg);
   overflow: hidden;
   font-family: var(--bw-font);
@@ -11177,7 +11196,7 @@ body.wosm-members-page #main-content {
   display: inline-flex;
   align-items: center;
   padding: 3px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   color: #fff;
   font-size: 10px;
   letter-spacing: 0.14em;
@@ -11275,7 +11294,7 @@ body.wosm-members-page #main-content {
   font-size: 12px;
   color: var(--muted, #636363);
   border: 1px dashed var(--bw-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .bw-draft-item {
   display: flex;
@@ -11284,7 +11303,7 @@ body.wosm-members-page #main-content {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--bw-border);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--bw-surface);
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
@@ -11327,7 +11346,7 @@ body.wosm-members-page #main-content {
   width: 22px;
   height: 22px;
   padding: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
@@ -11433,7 +11452,7 @@ body.wosm-members-page #main-content {
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--bw-font);
   font-size: 12px;
   font-weight: 600;
@@ -11499,7 +11518,7 @@ body.wosm-members-page #main-content {
   font-size: 11px;
   font-family: var(--bw-font);
   cursor: pointer;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   transition: all 0.15s;
   min-height: auto;
   letter-spacing: 0.02em;
@@ -11638,7 +11657,7 @@ body.wosm-members-page #main-content {
   flex-direction: column;
   padding: 8px 10px;
   background: var(--bw-canvas);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 .bw-stat-label {
   font-size: 9.5px;
@@ -11676,7 +11695,7 @@ body.wosm-members-page #main-content {
   margin-top: 4px;
   padding: 10px 12px;
   background: var(--bw-canvas);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--bw-border);
 }
 .bw-seo-url {
@@ -11803,7 +11822,7 @@ body.wosm-members-page #main-content {
 }
 @media (max-width: 760px) {
   .bw-overlay { padding: 12px; }
-  .bw-box { border-radius: 14px; }
+  .bw-box { border-radius: var(--radius-xl); }
   .bw-header { padding: var(--bw-gap-lg) 20px var(--bw-gap-md); }
   .bw-title { font-size: 18px; }
   .bw-layout {
@@ -11811,7 +11830,7 @@ body.wosm-members-page #main-content {
     gap: var(--bw-gap-md);
     max-height: none;
   }
-  .bw-card { padding: var(--bw-gap-md); border-radius: 12px; }
+  .bw-card { padding: var(--bw-gap-md); border-radius: var(--radius-lg); }
   .bw-card-collapsible .bw-card-head-summary { padding: var(--bw-gap-md); }
   .bw-card-body { padding: 0 var(--bw-gap-md) var(--bw-gap-md); }
   .bw-form-2col,
@@ -12001,7 +12020,7 @@ body.wosm-members-page #main-content {
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--gray-100, #ebebeb);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: #fff;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
@@ -12134,7 +12153,7 @@ body.wosm-members-page #main-content {
   color: var(--ink);
   border: 1px solid var(--gray-300);
   border-left: 4px solid var(--scouting-purple);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 13px;
@@ -12160,7 +12179,7 @@ body.wosm-members-page #main-content {
   padding: 0 8px;
   background: var(--scouting-purple);
   color: var(--white);
-  border-radius: 4px;
+  border-radius: var(--radius-tight);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   font-weight: 700;
@@ -12177,7 +12196,7 @@ body.wosm-members-page #main-content {
   background: var(--scouting-purple);
   color: var(--white);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
