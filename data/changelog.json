@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "00.163.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 11:30:00 KST",
+    "summary": "캘린더 + 기사 사이드바 누락 surface 추가 통일 — region group / status head / category badge / 사이드바 핑크 라벨.",
+    "for_users": [
+      "캘린더의 'KOR 3개' 같은 지역 그룹 wrapper, '진행중·개최예정·행사종료' 상태 헤더, 이벤트 카드 안의 'KOR·개최예정·행사·훈련' 라벨, '2026년 05월 기준 상태별 일정' 패널이 모두 둥글어집니다.",
+      "기사 페이지 사이드바 '섹션' 아래 큰 핑크 박스(.pps-category)와 뒤로가기 옆 카테고리 칩도 통일됩니다.",
+      "홈페이지 컬럼 헤더(검은색 바)도 같은 곡률로 정렬됩니다."
+    ],
+    "for_developers": [
+      ".calendar-panel (lg), .calendar-region-group (lg), .calendar-status-head (md), .calendar-category-badge + .calendar-status-badge (tight, 이벤트 카드 내부 KOR/개최예정 라벨).",
+      ".pps-category (tight) — post page sidebar pink category link, 기존 no-radius 였음.",
+      "functions/post/[id].js post-page-back-link 내부 inline-styled <span> 에 border-radius:var(--radius-tight) 추가.",
+      ".home-col-header (md) — 홈 컬럼 검정 헤더 바.",
+      ".admin-header-box (lg), .board-editorjs-wrap (md) — 관리자/에디터 영역.",
+      "사이트 00.163.00 → 00.163.01 (fix — 캘린더/사이드바 surface 누락 추가)."
+    ]
+  },
+  {
     "version": "00.163.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 11:00:00 KST",

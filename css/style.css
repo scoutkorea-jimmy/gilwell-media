@@ -803,6 +803,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   gap: 10px;
   padding: 14px;
   border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-lg);   /* 관리자 헤더 박스 통일 */
   background: rgba(255,255,255,0.04);
 }
 
@@ -2884,6 +2885,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   justify-content: space-between;
   padding: 13px 18px;
   border: none;
+  border-radius: var(--radius-md);   /* 홈 컬럼 헤더 통일 곡률 */
   background: linear-gradient(90deg, rgba(0,0,0,0.82), rgba(44,44,44,0.76));
   margin: 0 0 var(--home-title-gap, 14px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.14);
@@ -4264,6 +4266,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-panel {
   border: 1px solid var(--border);
+  border-radius: var(--radius-lg);   /* 캘린더 메인 패널 통일 */
   background: var(--bg);
   padding: 20px;
 }
@@ -4996,6 +4999,7 @@ footer a:hover { color: var(--white); }
 
 .calendar-region-group {
   border: 1px solid var(--border);
+  border-radius: var(--radius-lg);   /* 그룹 카드 통일 곡률 */
   background: var(--bg);
 }
 
@@ -5062,6 +5066,7 @@ footer a:hover { color: var(--white); }
   letter-spacing: .12em;
   text-transform: uppercase;
   border: 1px solid var(--border);
+  border-radius: var(--radius-md);   /* 상태 헤더 라벨 통일 */
 }
 
 .calendar-status-head.is-ongoing {
@@ -5146,6 +5151,7 @@ footer a:hover { color: var(--white); }
   min-height: var(--chip-height);
   padding: 0 10px;
   border: 1px solid currentColor;
+  border-radius: var(--radius-tight);   /* 카테고리/상태 라벨 통일 곡률 */
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   letter-spacing: .1em;
@@ -7346,6 +7352,7 @@ footer a:hover { color: var(--white); }
    ════════════════════════════════════════════════════════════ */
 .board-editorjs-wrap {
   border:      1px solid var(--border);
+  border-radius: var(--radius-md);    /* 에디터 영역 통일 곡률 */
   min-height:  260px;
   background:  var(--white);
   position:    relative;
@@ -7506,6 +7513,7 @@ footer a:hover { color: var(--white); }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding:        5px 14px;
+  border-radius:  var(--radius-tight);   /* 카테고리 라벨 통일 (.category-tag 와 동일) */
   text-decoration: none;
   transition:     opacity 0.15s;
 }
