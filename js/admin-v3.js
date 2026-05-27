@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.141.00
+ * Version: 03.142.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3364,8 +3364,7 @@
     _metaTags     = [];
     _relatedPosts = [];
 
-    // 작성자 dropdown + 임시저장 목록 (병렬 — post fetch와 독립)
-    _loadAuthorOptions();
+    var _authorReady = _loadAuthorOptions();
     _refreshDraftListCache().catch(function () {});
 
     _apiFetch('/api/posts/' + id)
@@ -3379,7 +3378,9 @@
         document.getElementById('w-cat').value         = p.category || 'korea';
         _selectedWriteTags = p.tag ? p.tag.split(',').map(function(t){ return t.trim(); }).filter(Boolean) : [];
         _renderWriteTagPills(p.category || 'korea');
-        document.getElementById('w-author').value      = p.author || '';
+        _authorReady.then(function () {
+          document.getElementById('w-author').value = p.author || '';
+        });
         document.getElementById('w-youtube').value     = p.youtube_url || '';
         document.getElementById('w-cover-caption').value = p.image_caption || '';
         document.getElementById('w-location-name').value = p.location_name || '';

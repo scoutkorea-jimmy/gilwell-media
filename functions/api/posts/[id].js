@@ -241,9 +241,6 @@ export async function onRequestPut({ params, request, env }) {
   if (hasField('meta_tags')) { fields.push('meta_tags = ?'); values.push(safeMetaTagsInput.value); }
   if (hasField('tag')) { fields.push('tag = ?'); values.push(safeTagInput.value); }
   if (hasField('special_feature')) { fields.push('special_feature = ?'); values.push(sanitizeSpecialFeature(special_feature)); }
-  // Phase 5: byline is strictly derived from the authoring user's editor_code.
-  // Owners can reassign author by changing body.author_user_id; the byline is
-  // then recomputed from that user. display_name is never exposed publicly.
   if (hasField('author_user_id') && session.isOwner) {
     const nextAuthorUid = Number(body.author_user_id);
     if (Number.isFinite(nextAuthorUid) && nextAuthorUid > 0) {
@@ -259,9 +256,21 @@ export async function onRequestPut({ params, request, env }) {
       fields.push('author_user_id = ?');
       values.push(null);
     }
+  } else if (hasField('author') && safeAuthorInput.provided && safeAuthorInput.value) {
+    const editorMatch = safeAuthorInput.value.match(/^Editor\.([A-Z])$/);
+    if (editorMatch) {
+      try {
+        const editorsRow = await env.DB.prepare(`SELECT value FROM settings WHERE key = 'editors'`).first();
+        const editors = editorsRow ? JSON.parse(editorsRow.value) : {};
+        const letter = editorMatch[1];
+        const REQUIRED = { A: true, B: true, C: true };
+        if (REQUIRED[letter] || (editors[letter] && editors[letter].trim())) {
+          fields.push('author = ?');
+          values.push(safeAuthorInput.value);
+        }
+      } catch { /* ignore — keep existing author */ }
+    }
   }
-  // Legacy free-text body.author is ignored for non-owner (prevents
-  // impersonation) and for owner (byline comes from author_user_id).
   if (hasField('ai_assisted')) { fields.push('ai_assisted = ?'); values.push(safeAiAssistedInput.value); }
   if (hasField('sort_order')) { fields.push('sort_order = ?'); values.push(safeSortOrderInput.value); }
   if (hasField('manual_related_posts', 'related_posts_json')) {

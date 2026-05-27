@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.142.00",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "게시글 작성/수정 시 에디터(저자) 선택 기능 활성화 — 드롭다운에서 등록된 다른 에디터로 변경 가능.",
+    "for_users": [
+      "게시글을 올릴 때 본인에게 배정된 에디터 코드가 기본값으로 표시되지만, 드롭다운에서 다른 등록 에디터를 선택해 대신 게재할 수 있습니다.",
+      "기사 수정 시에도 에디터를 변경할 수 있습니다."
+    ],
+    "for_developers": [
+      "POST /api/posts — body.author 가 유효한 Editor.[A-Z] 코드이고 settings 테이블에 등록되어 있으면 해당 코드를 byline으로 사용. 미제공 시 세션 사용자의 editor_code 기본값 유지.",
+      "PUT /api/posts/[id] — author_user_id 변경이 아닌 경우에도 body.author 로 에디터 코드 변경 가능. 동일 검증 로직 적용.",
+      "js/admin-v3.js editPost — _loadAuthorOptions() 완료 후 기존 에디터 값을 설정하도록 타이밍 보정.",
+      "관리자 03.141.00 → 03.142.00."
+    ]
+  },
+  {
     "version": "00.163.05",
     "date": "2026-05-27",
     "released_at": "2026-05-27 13:30:00 KST",
