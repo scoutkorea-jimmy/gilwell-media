@@ -1210,6 +1210,7 @@ body:not(.admin-session-loaded) [data-owner-only="1"] {
 }
 .v3-tag-chip-btn {
   border: none;
+  border-radius: var(--radius-pill);    /* radius 통일 자동 주입 R5 */
   background: transparent;
   color: var(--v3-text-m);
   font-size: var(--fs-meta);
@@ -2110,6 +2111,7 @@ body[data-chart-spacing="l"] {
 }
 .v3-tag-related-pill {
   border: none;
+  border-radius: var(--radius-pill);    /* radius 통일 자동 주입 R5 */
   cursor: pointer;
 }
 .v3-tag-article-list {
@@ -2656,6 +2658,7 @@ body[data-chart-spacing="l"] {
   padding: 0;
   background: transparent;
   border: 0;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R5 */
   font: inherit;
   color: inherit;
   text-align: left;
@@ -4811,6 +4814,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-ai-usage-card {
   background: linear-gradient(135deg, #fdfbff 0%, #f3edff 100%);
   border: 1px solid rgba(98,37,153,0.22);
+  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R5 */
   margin-bottom: var(--v3-gap-lg);
 }
 .v3-ai-usage-head {
@@ -5058,6 +5062,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
 .v3-rubric-card {
   background: linear-gradient(180deg, #ffffff 0%, #fafaff 100%);
   border: 1px solid var(--v3-border);
+  border-radius: var(--radius-lg);    /* radius 통일 자동 주입 R5 */
   padding: 0;
   margin-top: var(--v3-gap-md);
   margin-bottom: var(--v3-gap-lg);
@@ -5472,6 +5477,7 @@ body.marketing-fullscreen-open { overflow: hidden; }
   background: #dc2626;
   color: #fff;
   border: 1px solid #b91c1c;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R5 */
 }
 .v3-btn-danger:hover { background: #b91c1c; }
 

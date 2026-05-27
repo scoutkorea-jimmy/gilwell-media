@@ -172,6 +172,7 @@
   color: var(--gray-700, #3f3f3f);
   background: transparent;
   border: 0;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
   cursor: pointer;
   padding: 4px 6px;
   text-decoration: underline;
@@ -1346,6 +1347,7 @@
   color: var(--gray-700, #3f3f3f);
   background: transparent;
   border: 0;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R3 */
   cursor: pointer;
   padding: 4px 6px;
 }

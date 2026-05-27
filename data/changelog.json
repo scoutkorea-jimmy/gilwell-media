@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "00.163.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 11:00:00 KST",
+    "summary": "전수 감사 + 60+ surface 통일 — 히어로 CTA · 글쓰기 버튼 · 컨트리뷰터 카드 · 필터 칩 · 캘린더 칩 · 용어집 인풋 · 드롭다운 발사선 제거.",
+    "for_users": [
+      "이전 통일 패치에서 누락됐던 사각형 surface를 전수 감사 후 60곳 이상 한 번에 정리했습니다. 화면에서 '카드인데 사각', '버튼인데 사각'으로 보이던 게 모두 둥글어집니다.",
+      "주요 변화: 홈 히어로 '소식 읽기 / 공유하기' 버튼, 게시판 '글쓰기' 버튼, 도움주신 분들 카드, 카테고리 보드의 태그 필터(전체/ISGF/...), 캘린더의 모든 칩·이벤트 카드·필터 셀렉트, 용어집의 검색·입력·로그인 박스, 분석 패널의 토글·인풋·인사이트 카드.",
+      "상단 메뉴 드롭다운(스카우트 소식 / 리소스)에 있던 좌측 보라색 발사점(•)이 사라져 더 깔끔합니다."
+    ],
+    "for_developers": [
+      "감사 방법: awk 로 (btn|chip|card|input|tab|tag|cta|pill|fab|toggle|action|select|textarea) 패턴 클래스 전수 추출 → border 있지만 border-radius 없는 위반 식별. style/admin/admin-v3/memorabilia 4개 CSS 모두 처리.",
+      "주요 직접 수정 — .site-hero-cta/.site-hero-share-btn (md), .write-btn (md), .post-action-btn/.post-share-btn (md), .contributor-card (lg), .calendar-filter-chip/.calendar-filter-select/.calendar-tag-preset (border-radius:0 → pill), .calendar-manage-btn (md), .calendar-event-card (lg), .calendar-tag-chip/.calendar-related-post-pill (md row), .glossary-inline-input/-btn (md), .global-search-input/-btn, .board-search-input (md), .filter-btn/.tag-filter-btn (pill).",
+      "자동 주입 (perl 스크립트 R1~R5): border: 라인 직후 적절한 token 삽입. 총 70+ 위치. 클래스명별 token 매핑: btn→md, card→lg, chip/pill/toggle wrapper→pill, modal-card→xl/2xl.",
+      "잔존 누락은 의도적 케이스만: border:0/none (인풋 안의 sub-input, .mh-search-input underline-style, .memo-tags-typing 등), parent overflow:hidden pill clip (.board-sort-btn, .analytics-view-toggle button, .calendar-related-post-pill button).",
+      "드롭다운 dot — .nav-sublink::before pseudo-element(4×4 회색 dot) 제거, padding 좌우 12px 균등화. 액티브 표시는 background+color 만으로.",
+      "토큰 사용 통계: md 129, pill 109, lg 84, sm 58, xl 53, tight 44, 2xl 20 (총 497 declarations).",
+      "사이트 00.162.01 → 00.163.00 (feature — 디자인 시스템 전수 적용)."
+    ]
+  },
+  {
+    "version": "03.141.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 11:00:00 KST",
+    "summary": "관리자 — admin/admin-v3 전수 감사 + 라디우스 누락 일괄 통일.",
+    "for_users": [
+      "관리자 콘솔에서 누락됐던 사각 버튼/카드/인풋이 모두 사이트 규칙대로 둥글어집니다 (로그인 박스, 태그 관리, 마케팅 패널, 분석 토글 등)."
+    ],
+    "for_developers": [
+      "admin.css 수정 — .tag-admin-toolbar input/select, .login-box input, .analytics-toolbar-group input[type=date] (md), .analytics-view-toggle (pill+overflow), .analytics-insight-card/.marketing-fullscreen-card (lg), .marketing-zoom-btn (md).",
+      "admin-v3.css 자동 주입 — .v3-metatag-rm (border:none, false positive), .v3-tag-chip-btn/.v3-tag-related-pill (pill), .v3-refsite-sort-btn/.v3-btn-danger (md), .v3-ai-usage-card/.v3-rubric-card (lg).",
+      "관리자 03.140.00 → 03.141.00 (feature — admin radius 누락 통일)."
+    ]
+  },
+  {
     "version": "00.162.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 10:30:00 KST",
