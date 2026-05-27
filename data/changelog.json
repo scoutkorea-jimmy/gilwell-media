@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.162.01",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 10:30:00 KST",
+    "summary": "기사 / 피처 페이지 상단 메뉴 그룹화 누락 핫픽스 — 11개 평면 링크 → 다른 페이지와 동일한 '스카우트 소식 / 리소스' 그룹 메뉴.",
+    "for_users": [
+      "기사 상세 페이지나 피처 페이지로 이동했을 때 상단 메뉴가 다른 페이지와 다르게 11개 항목이 평면으로 나열되던 문제를 해결했습니다. 이제 모든 페이지에서 동일하게 '스카우트 소식 / 리소스' 그룹 드롭다운으로 통일됩니다."
+    ],
+    "for_developers": [
+      "원인: functions/post/[id].js 와 functions/feature/[category]/[slug].js 의 <nav class='nav'> 가 data-managed-nav 속성을 갖지 않아 js/site-chrome.js 의 renderManagedNav() 가 NAV_STRUCTURE 기반 재구성을 건너뜀. 결과적으로 SSR 의 11개 평면 anchor 가 그대로 노출되어 다른 페이지(2 그룹 + 4 단일 = 6 entry)와 시각 불일치.",
+      "수정: 두 SSR 라우트에 (1) <nav class='nav' data-managed-nav> 속성 추가, (2) data-fallback-label/aria-label 보강(JS 미실행 시 폴백), (3) <head> 에 index.html 과 동일한 inline visibility:hidden 스타일 + noscript 폴백 주입.",
+      "이제 site-chrome.js renderManagedNav 가 동일하게 동작 — '스카우트 소식'(Korea/APR/WOSM/People) + '리소스'(WOSM Members/Glossary/Calendar) 두 그룹 + 단일 링크 (Home/Latest/Memorabilia/Contributors).",
+      "사이트 00.162.00 → 00.162.01 (fix — 기사·피처 SSR 메뉴 그룹화 누락)."
+    ]
+  },
+  {
     "version": "00.162.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 10:00:00 KST",

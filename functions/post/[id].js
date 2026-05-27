@@ -193,6 +193,8 @@ export async function onRequestGet({ params, env, request }) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>.nav[data-managed-nav]{visibility:hidden;opacity:0}</style>
+  <noscript><style>.nav[data-managed-nav]{visibility:visible!important;opacity:1!important}.nav[data-managed-nav] a{font-size:0!important}.nav[data-managed-nav] a::before{content:attr(data-fallback-label);font-size:12px}</style></noscript>
   <title>${title} — BP미디어</title>
   <meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>
   <meta name="robots" content="index,follow,max-image-preview:large"/>
@@ -229,7 +231,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260527044631">
+  <link rel="stylesheet" href="/css/style.css?v=20260527045552">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -280,18 +282,20 @@ export async function onRequestGet({ params, env, request }) {
         </div>
       </div>
     </div>
-    <nav class="nav">
-      <a href="/contributors" data-i18n="nav.contributors">${escapeHtml(navContributors)}</a>
-      <a href="/" data-i18n="nav.home">${escapeHtml(navHome)}</a>
-      <a href="/latest" data-i18n="nav.latest">${escapeHtml(navLatest)}</a>
-      <a href="/korea" data-i18n="nav.korea">${escapeHtml(navKorea)}</a>
-      <a href="/apr" data-i18n="nav.apr">${escapeHtml(navApr)}</a>
-      <a href="/wosm" data-i18n="nav.wosm">${escapeHtml(navWosm)}</a>
-      <a href="/wosm-members" data-i18n="nav.wosm_members">${escapeHtml(navWosmMembers)}</a>
-      <a href="/people" data-i18n="nav.people">${escapeHtml(navPeople)}</a>
-      <a href="/calendar" data-i18n="nav.calendar">${escapeHtml(navCalendar)}</a>
-      <a href="/glossary" data-i18n="nav.glossary">${escapeHtml(navGlossary)}</a>
-      <a href="/memorabilia" data-i18n="nav.memorabilia">${escapeHtml(navMemorabilia)}</a>
+    <!-- site-chrome.js 가 NAV_STRUCTURE 기반으로 그룹화된 메뉴(스카우트 소식/리소스)로
+         교체. data-fallback-label 은 JS 미실행 시(noscript) 노출용. -->
+    <nav class="nav" data-managed-nav>
+      <a href="/contributors" data-i18n="nav.contributors" data-fallback-label="${escapeHtml(navContributors)}" aria-label="${escapeHtml(navContributors)}"></a>
+      <a href="/" data-i18n="nav.home" data-fallback-label="${escapeHtml(navHome)}" aria-label="${escapeHtml(navHome)}"></a>
+      <a href="/latest" data-i18n="nav.latest" data-fallback-label="${escapeHtml(navLatest)}" aria-label="${escapeHtml(navLatest)}"></a>
+      <a href="/korea" data-i18n="nav.korea" data-fallback-label="${escapeHtml(navKorea)}" aria-label="Korea"></a>
+      <a href="/apr" data-i18n="nav.apr" data-fallback-label="${escapeHtml(navApr)}" aria-label="APR"></a>
+      <a href="/wosm" data-i18n="nav.wosm" data-fallback-label="${escapeHtml(navWosm)}" aria-label="World"></a>
+      <a href="/wosm-members" data-i18n="nav.wosm_members" data-fallback-label="${escapeHtml(navWosmMembers)}" aria-label="${escapeHtml(navWosmMembers)}"></a>
+      <a href="/people" data-i18n="nav.people" data-fallback-label="${escapeHtml(navPeople)}" aria-label="${escapeHtml(navPeople)}"></a>
+      <a href="/calendar" data-i18n="nav.calendar" data-fallback-label="${escapeHtml(navCalendar)}" aria-label="${escapeHtml(navCalendar)}"></a>
+      <a href="/glossary" data-i18n="nav.glossary" data-fallback-label="${escapeHtml(navGlossary)}" aria-label="${escapeHtml(navGlossary)}"></a>
+      <a href="/memorabilia" data-i18n="nav.memorabilia" data-fallback-label="${escapeHtml(navMemorabilia)}"></a>
     </nav>
   </header>
 
@@ -411,7 +415,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.162.00</span> · Admin <span class="admin-build-version">V03.140.00</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.162.01</span> · Admin <span class="admin-build-version">V03.140.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -623,9 +627,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260527044631"></script>
-  <script src="/js/site-chrome.js?v=20260527044631"></script>
-  <script src="/js/post-page.js?v=20260527044631"></script>
+  <script src="/js/main.js?v=20260527045552"></script>
+  <script src="/js/site-chrome.js?v=20260527045552"></script>
+  <script src="/js/post-page.js?v=20260527045552"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
