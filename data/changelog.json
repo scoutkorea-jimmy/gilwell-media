@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "00.163.03",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 12:30:00 KST",
+    "summary": "홈 모든 섹션 리스트를 .home-rail-card 로 래핑 — 인기/에디터/4컬럼(한국·APR·WOSM·인물) 카드 박스화 + 곡률 통일.",
+    "for_users": [
+      "'인기 소식·에디터 추천' 그리고 4컬럼(한국스카우트·APR·세계·스카우트인물) 리스트가 각각 둥근 카드 박스 안에 들어가도록 통일했습니다. 이전엔 '최신 소식'만 박스로 감싸져 있고 다른 곳은 헤더 아래로 평면 리스트가 깔려있어 시각 일관성이 떨어졌습니다.",
+      "여백·곡률·배경 그라데이션이 모두 동일해 모든 섹션이 같은 카드 패턴으로 보입니다."
+    ],
+    "for_developers": [
+      "index.html — 총 8곳의 <div class='mini-list'> 를 <div class='home-rail-card'><div class='mini-list'>…</div></div> 로 래핑.",
+      "  · home-mobile-stack: picks-list-mobile / popular-list-mobile (2)",
+      "  · home-2col: popular-list / picks-list (2)",
+      "  · home-3col: col-korea / col-apr / col-wosm / col-people (4)",
+      ".home-rail-card 는 이미 --radius-lg + linear-gradient 배경 + 1px border + 18px padding 적용됨 (기존 .home-priority-latest 와 동일 패턴).",
+      "마크업 변경만, CSS 추가/수정 없음.",
+      "사이트 00.163.02 → 00.163.03 (feature — 홈 섹션 리스트 카드화 통일)."
+    ]
+  },
+  {
     "version": "00.163.02",
     "date": "2026-05-27",
     "released_at": "2026-05-27 12:00:00 KST",
