@@ -544,10 +544,10 @@ function _populatePostEditForm() {
   document.getElementById('post-edit-youtube').value = _postEditSeed.youtube_url || '';
   document.getElementById('post-edit-location-name').value = _postEditSeed.location_name || '';
   document.getElementById('post-edit-location-address').value = _postEditSeed.location_address || '';
-  var locationToggle = document.getElementById('post-location-toggle');
-  if (locationToggle) locationToggle.open = !!(_postEditSeed.location_name || _postEditSeed.location_address);
   document.getElementById('post-edit-image-caption').value = _postEditSeed.image_caption || '';
   document.getElementById('post-edit-metatags-input').value = _postEditSeed.meta_tags || '';
+  document.getElementById('post-edit-published').checked = _postEditSeed.published !== undefined ? !!_postEditSeed.published : true;
+  document.getElementById('post-edit-featured').checked = !!_postEditSeed.featured;
   document.getElementById('post-edit-ai-assisted').checked = !!_postEditSeed.ai_assisted;
   _postEditState.coverImage = _postEditSeed.image_url || null;
   _postEditState.galleryImages = _parsePostGallerySeed(_postEditSeed.gallery_images);
@@ -783,6 +783,8 @@ window._postSaveEdit = function() {
   var imageCaption = (document.getElementById('post-edit-image-caption').value || '').trim();
   var metaTags = (document.getElementById('post-edit-metatags-input').value || '').trim();
   var author = (document.getElementById('post-edit-author').value || '').trim();
+  var published = !!document.getElementById('post-edit-published').checked;
+  var featured = published && !!document.getElementById('post-edit-featured').checked;
   var aiAssisted = !!document.getElementById('post-edit-ai-assisted').checked;
 
   if (!title) {
@@ -826,6 +828,8 @@ window._postSaveEdit = function() {
         meta_tags: metaTags || null,
         manual_related_posts: _postEditState.manualRelatedPosts || [],
         author: author || null,
+        published: published,
+        featured: featured,
         ai_assisted: aiAssisted,
         publish_at: publishDate ? GW.normalizePublishAtValue(publishDate) : undefined
       };

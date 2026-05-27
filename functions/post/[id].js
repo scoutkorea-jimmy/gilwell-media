@@ -146,6 +146,8 @@ export async function onRequestGet({ params, env, request }) {
     special_feature: post.special_feature || '',
     manual_related_posts: manualRelatedPosts || [],
     author: post.author || 'Editor.A',
+    published: !!post.published,
+    featured: !!post.featured,
     ai_assisted: !!post.ai_assisted,
     publish_at: String(publicDateValue || '').replace(' ', 'T').slice(0, 16),
     publish_date: String(publicDateValue || '').slice(0, 10),
@@ -231,7 +233,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260527153527">
+  <link rel="stylesheet" href="/css/style.css?v=20260527154117">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -415,7 +417,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.163.06</span> · Admin <span class="admin-build-version">V03.142.03</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.164.00</span> · Admin <span class="admin-build-version">V03.142.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -460,9 +462,8 @@ export async function onRequestGet({ params, env, request }) {
       <div class="bw-layout">
         <div class="bw-main">
 
-          <!-- 기본 정보 -->
+          <!-- 기본 정보 (카테고리 + 태그 + 제목 + 부제) -->
           <section class="bw-card">
-            <header class="bw-card-head"><h2 class="bw-card-title">기본 정보</h2></header>
             <div class="bw-form-grid bw-form-2col">
               <div class="bw-form-group">
                 <label class="bw-label" for="post-edit-category">카테고리</label>
@@ -471,131 +472,119 @@ export async function onRequestGet({ params, env, request }) {
                 </select>
               </div>
               <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-author">작성자 <span class="bw-label-opt">편집자 코드 선택</span></label>
-                <select class="bw-input" id="post-edit-author">
-                  <option value="Editor.A">Editor.A</option>
-                </select>
-                <div class="bw-field-hint">기본값은 본인 편집자 코드입니다. 다른 편집자로도 게재할 수 있습니다.</div>
+                <label class="bw-label">글머리 태그 <span class="bw-label-opt">복수 선택</span></label>
+                <div id="post-tag-selector" class="bw-tag-pills"><span class="bw-field-hint">불러오는 중…</span></div>
+                <div class="bw-inline-row bw-inline-row-compact">
+                  <input class="bw-input bw-input-sm" type="text" id="post-tag-new-input" maxlength="30" placeholder="새 태그 추가" />
+                  <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-tag-new-btn">추가</button>
+                </div>
               </div>
             </div>
             <div class="bw-form-group">
-              <label class="bw-label" for="post-edit-title-input">제목 <span class="bw-label-req">*</span></label>
-              <input class="bw-input" type="text" id="post-edit-title-input" maxlength="200" />
+              <label class="bw-label" for="post-edit-title-input">제목</label>
+              <input class="bw-input" type="text" id="post-edit-title-input" maxlength="200" placeholder="기사 제목을 입력하세요" />
             </div>
             <div class="bw-form-group">
               <label class="bw-label" for="post-edit-subtitle-input">부제목 <span class="bw-label-opt">선택</span></label>
-              <textarea class="bw-textarea" id="post-edit-subtitle-input" rows="3" maxlength="300"></textarea>
-            </div>
-            <div class="bw-form-group">
-              <label class="bw-label" for="post-edit-special-feature">특집 기사 묶음 <span class="bw-label-opt">선택</span></label>
-              <input class="bw-input" type="text" id="post-edit-special-feature" maxlength="120" placeholder="예: 세계잼버리 리더십 특집" />
-            </div>
-          </section>
-
-          <!-- 게시 시각 · 유튜브 -->
-          <section class="bw-card">
-            <header class="bw-card-head"><h2 class="bw-card-title">게시 시각 · 링크</h2></header>
-            <div class="bw-form-grid bw-form-2col">
-              <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-date">퍼블리싱 시각</label>
-                <input class="bw-input" type="datetime-local" id="post-edit-date" />
-              </div>
-              <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-youtube">YouTube 링크 <span class="bw-label-opt">선택</span></label>
-                <input class="bw-input" type="url" id="post-edit-youtube" placeholder="https://youtu.be/..." />
-              </div>
-            </div>
-          </section>
-
-          <!-- 글머리 태그 -->
-          <section class="bw-card">
-            <header class="bw-card-head"><h2 class="bw-card-title">글머리 태그 <span class="bw-label-opt">복수 선택</span></h2></header>
-            <div id="post-tag-selector" class="bw-tag-pills"><span class="bw-field-hint">불러오는 중…</span></div>
-            <div class="bw-inline-row bw-inline-row-compact">
-              <input class="bw-input bw-input-sm" type="text" id="post-tag-new-input" maxlength="30" placeholder="현재 카테고리에 새 태그 추가" />
-              <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-tag-new-btn">추가</button>
-            </div>
-          </section>
-
-          <!-- 대표 이미지 · 캡션 · SEO -->
-          <section class="bw-card">
-            <header class="bw-card-head">
-              <h2 class="bw-card-title">대표 이미지 · SEO</h2>
-              <button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="post-cover-btn">📷 이미지 선택</button>
-            </header>
-            <div class="bw-cover-wrap">
-              <div id="post-cover-preview"></div>
-            </div>
-            <p class="bw-field-hint">대표 이미지는 유지하거나 새 이미지로 교체할 수 있습니다.</p>
-            <div class="bw-form-grid bw-form-2col">
-              <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-image-caption">이미지 캡션</label>
-                <input class="bw-input" type="text" id="post-edit-image-caption" maxlength="300" />
-              </div>
-              <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-metatags-input">SEO 해시태그</label>
-                <input class="bw-input" type="text" id="post-edit-metatags-input" placeholder="쉼표로 구분" maxlength="500" />
-              </div>
+              <input class="bw-input" type="text" id="post-edit-subtitle-input" maxlength="300" placeholder="부제목 또는 요약 문장" />
             </div>
           </section>
 
           <!-- 본문 에디터 -->
           <section class="bw-card bw-card-editor">
-            <header class="bw-card-head"><h2 class="bw-card-title">본문 <span class="bw-label-req">*</span></h2></header>
+            <header class="bw-card-head"><h2 class="bw-card-title">본문</h2></header>
             <div id="post-edit-editorjs" class="board-editorjs-wrap post-edit-editor-holder"></div>
           </section>
 
-          <!-- 슬라이드 -->
+          <!-- 메타 태그 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">메타 태그 <span class="bw-label-opt">검색·분류용 키워드</span></h2></header>
+            <div class="bw-form-group">
+              <input class="bw-input" type="text" id="post-edit-metatags-input" placeholder="쉼표로 구분 (예: 잼버리, 세계연맹, 리더십)" maxlength="500" />
+            </div>
+          </section>
+
+          <!-- 대표 이미지 -->
           <section class="bw-card">
             <header class="bw-card-head">
-              <h2 class="bw-card-title">슬라이드 이미지 <span class="bw-label-opt" id="post-gallery-count">0/10</span></h2>
-              <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-gallery-btn">🖼 이미지 추가</button>
+              <h2 class="bw-card-title">대표 이미지</h2>
+              <button class="bw-btn bw-btn-outline bw-btn-sm" type="button" id="post-cover-btn">이미지 선택</button>
+            </header>
+            <div class="bw-cover-wrap">
+              <div id="post-cover-preview"></div>
+            </div>
+            <div class="bw-form-group" style="margin-top:12px;">
+              <label class="bw-label" for="post-edit-image-caption">이미지 캡션 <span class="bw-label-opt">선택</span></label>
+              <input class="bw-input" type="text" id="post-edit-image-caption" maxlength="300" placeholder="이미지 설명 또는 출처" />
+            </div>
+            <div class="bw-form-group" style="margin-top:12px;">
+              <label class="bw-label" for="post-edit-youtube">YouTube URL <span class="bw-label-opt">선택</span></label>
+              <input class="bw-input" type="url" id="post-edit-youtube" placeholder="https://www.youtube.com/watch?v=..." />
+            </div>
+          </section>
+
+          <!-- 갤러리 슬라이드 -->
+          <section class="bw-card">
+            <header class="bw-card-head">
+              <h2 class="bw-card-title">갤러리 슬라이드 <span class="bw-label-opt" id="post-gallery-count">최대 10장</span></h2>
+              <button type="button" class="bw-btn bw-btn-outline bw-btn-sm" id="post-gallery-btn">이미지 추가</button>
             </header>
             <div id="post-gallery-preview" class="bw-gallery-preview gallery-upload-preview">
               <p class="gallery-upload-empty">슬라이드 전용 이미지를 올리면 기사 하단에 별도 슬라이드로 노출됩니다.</p>
             </div>
-            <p class="bw-field-hint">2장 이상일 때만 슬라이드가 활성화됩니다.</p>
           </section>
 
-          <!-- 위치 (collapsible) -->
-          <section class="bw-card bw-card-collapsible">
-            <details class="bw-details" id="post-location-toggle">
-              <summary class="bw-card-head bw-card-head-summary">
-                <h2 class="bw-card-title">위치 정보 <span class="bw-label-opt">선택 · OpenStreetMap</span></h2>
-                <span class="bw-chevron" aria-hidden="true">▾</span>
-              </summary>
-              <div class="bw-card-body">
-                <div class="bw-form-grid bw-form-2col">
-                  <div class="bw-form-group">
-                    <label class="bw-label" for="post-edit-location-name">위치 이름</label>
-                    <input class="bw-input" type="text" id="post-edit-location-name" maxlength="120" placeholder="예: 강원특별자치도 세계잼버리수련장" />
-                  </div>
-                  <div class="bw-form-group">
-                    <label class="bw-label" for="post-edit-location-address">주소</label>
-                    <input class="bw-input" type="text" id="post-edit-location-address" maxlength="300" placeholder="예: 강원특별자치도 고성군 토성면 ..." />
-                  </div>
-                </div>
-                <p class="bw-field-hint">기사 하단에 접힘형 지도 섹션으로 노출됩니다. 비워두면 표시되지 않습니다.</p>
-              </div>
-            </details>
-          </section>
-
-          <!-- 유관기사 + AI 고지 -->
+          <!-- 위치 / 특집 -->
           <section class="bw-card">
-            <header class="bw-card-head"><h2 class="bw-card-title">유관기사 · 옵션</h2></header>
+            <header class="bw-card-head"><h2 class="bw-card-title">위치 / 특집 <span class="bw-label-opt">선택</span></h2></header>
+            <div class="bw-form-grid bw-form-2col">
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-location-name">장소명</label>
+                <input class="bw-input" type="text" id="post-edit-location-name" maxlength="120" placeholder="서울 잠실체육관" />
+              </div>
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-location-address">주소 <span class="bw-label-opt">OpenStreetMap</span></label>
+                <input class="bw-input" type="text" id="post-edit-location-address" maxlength="300" placeholder="서울특별시 송파구…" />
+              </div>
+            </div>
+            <div class="bw-form-group" style="margin-top:12px;">
+              <label class="bw-label" for="post-edit-special-feature">특집 그룹 <span class="bw-label-opt">선택</span></label>
+              <input class="bw-input" type="text" id="post-edit-special-feature" maxlength="120" placeholder="특집 시리즈 이름 (예: 잼버리 2023)" />
+            </div>
+          </section>
+
+          <!-- 관련 기사 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">관련 기사 <span class="bw-label-opt">선택</span></h2></header>
             <div class="bw-form-group post-edit-related-group">
-              <label class="bw-label" for="post-edit-related-search">유관기사 직접 설정 <span class="bw-label-opt">최대 5개</span></label>
               <div id="post-edit-related-selected" class="calendar-related-post-selected"></div>
               <div class="bw-inline-row">
-                <input class="bw-input" type="text" id="post-edit-related-search" placeholder="기사 제목으로 검색…" />
+                <input class="bw-input" type="text" id="post-edit-related-search" placeholder="기사 제목 검색…" />
               </div>
               <div id="post-edit-related-results" class="calendar-related-post-results"></div>
-              <p class="bw-field-hint">직접 연결한 기사 수만큼 우선 노출되고, 부족한 수는 자동 추천으로 채워집니다.</p>
             </div>
-            <label class="bw-check-row">
-              <input type="checkbox" id="post-edit-ai-assisted" />
-              <span>AI 지원으로 작성했습니다 (기사 하단에 자동 고지)</span>
-            </label>
+          </section>
+
+          <!-- 게시 설정 -->
+          <section class="bw-card">
+            <header class="bw-card-head"><h2 class="bw-card-title">게시 설정</h2></header>
+            <div class="bw-form-grid bw-form-grid-compact">
+              <label class="bw-check-row"><input type="checkbox" id="post-edit-published" checked /><span>공개</span></label>
+              <label class="bw-check-row"><input type="checkbox" id="post-edit-featured" /><span>특집 (홈 노출)</span></label>
+              <label class="bw-check-row"><input type="checkbox" id="post-edit-ai-assisted" /><span>AI 도움 사용</span></label>
+            </div>
+            <div class="bw-form-grid bw-form-2col" style="margin-top:12px;">
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-date">게시 날짜</label>
+                <input class="bw-input" type="datetime-local" id="post-edit-date" />
+              </div>
+              <div class="bw-form-group">
+                <label class="bw-label" for="post-edit-author">저자 <span class="bw-label-opt">편집자 코드 선택</span></label>
+                <select class="bw-input" id="post-edit-author">
+                  <option value="Editor.A">Editor.A</option>
+                </select>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -629,9 +618,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260527153527"></script>
-  <script src="/js/site-chrome.js?v=20260527153527"></script>
-  <script src="/js/post-page.js?v=20260527153527"></script>
+  <script src="/js/main.js?v=20260527154117"></script>
+  <script src="/js/site-chrome.js?v=20260527154117"></script>
+  <script src="/js/post-page.js?v=20260527154117"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;
