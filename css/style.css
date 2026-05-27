@@ -2528,6 +2528,11 @@ body[data-home-bootstrap] .lang-btn:hover {
   border-radius: var(--radius-lg);    /* radius 통일 자동 주입 */
   background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(244,241,236,0.96));
   padding: var(--gap-card) 18px;
+  /* height:100% 는 .home-priority-latest 컨텍스트(flex:1 부모) 에서만 필요.
+     home-2col/home-3col 의 일반 grid 컬럼에서는 부모 stretch + 100% 가
+     무한 stretch 와 컬럼간 정렬 불일치를 일으켜 layout 깨짐 → 컨텍스트 한정. */
+}
+.home-priority-latest .home-rail-card {
   height: 100%;
 }
 

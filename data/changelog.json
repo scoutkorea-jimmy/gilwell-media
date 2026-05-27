@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.163.05",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 13:30:00 KST",
+    "summary": "홈 섹션 layout 회귀 핫픽스 — .home-rail-card height:100% 가 home-2col/home-3col grid 컬럼과 충돌해 인접 섹션과 겹침/순서 깨짐.",
+    "for_users": [
+      "이전 패치에서 인기/에디터/4컬럼 리스트를 카드로 감싼 뒤, 빈 리스트(로딩 전)에서 카드가 비정상적으로 늘어나 헤더 위치가 어긋나고 다음 섹션(메모라빌리아)과 겹치던 회귀 해결."
+    ],
+    "for_developers": [
+      ".home-rail-card { height: 100% } 가 .home-priority-latest 컨텍스트(flex:1 부모) 에서만 의도된 것이었으나, home-2col/home-3col 의 일반 grid 컬럼 자식으로도 적용되어 컬럼 stretch + 100% 가 부모 높이 stretch 무한 루프 + 인접 섹션 침범 유발.",
+      "수정 — 전역 .home-rail-card 에서 height:100% 제거, .home-priority-latest .home-rail-card 만 height:100% 유지. 일반 컬럼 카드는 콘텐츠 높이 따라감.",
+      "사이트 00.163.04 → 00.163.05 (fix — rail-card height 회귀)."
+    ]
+  },
+  {
     "version": "00.163.04",
     "date": "2026-05-27",
     "released_at": "2026-05-27 13:00:00 KST",
