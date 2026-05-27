@@ -41,19 +41,10 @@ export async function onRequestGet({ request, env }) {
       `SELECT value FROM settings WHERE key = 'editors'`
     ).first();
     const stored = row ? JSON.parse(row.value) : {};
-    const assignments = {};
-    try {
-      const { results } = await env.DB.prepare(
-        `SELECT editor_code, display_name FROM admin_users WHERE status != 'deleted' AND editor_code IS NOT NULL AND editor_code != ''`
-      ).all();
-      for (const r of (results || [])) {
-        assignments[r.editor_code] = r.display_name || '';
-      }
-    } catch { /* non-critical */ }
-    return json({ editors: normalizeEditors(stored), assignments });
+    return json({ editors: normalizeEditors(stored) });
   } catch (err) {
     console.error('GET /api/settings/editors error:', err);
-    return json({ editors: normalizeEditors(null), assignments: {} });
+    return json({ editors: normalizeEditors(null) });
   }
 }
 

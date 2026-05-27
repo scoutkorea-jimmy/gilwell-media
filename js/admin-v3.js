@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.01
+ * Version: 03.142.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -172,7 +172,6 @@
   var _draftSaveInflight = false; // POST/PUT 중복 발사 방지
   var _draftSavePending = false;  // inflight 중에 다시 변경 → 끝나면 다시 한번 저장
   var _editorOptionsCache = null; // GET /api/settings/editors 캐시 (작성자 dropdown용)
-  var _editorAssignmentsCache = null;
   var _writeStatsTimer = null;
   var _metaTagPool   = null;
   var _metaTagPoolLoading = false;
@@ -2949,15 +2948,12 @@
       ? window.AccountAdmin.currentEditorCode() || ''
       : '';
     var p = _editorOptionsCache
-      ? Promise.resolve({ editors: _editorOptionsCache, assignments: _editorAssignmentsCache || {} })
+      ? Promise.resolve(_editorOptionsCache)
       : _apiFetch('/api/settings/editors').then(function (data) {
           _editorOptionsCache = (data && data.editors) || {};
-          _editorAssignmentsCache = (data && data.assignments) || {};
-          return { editors: _editorOptionsCache, assignments: _editorAssignmentsCache };
-        }).catch(function () { return { editors: {}, assignments: {} }; });
-    return p.then(function (res) {
-      var editors = res.editors;
-      var assignments = res.assignments;
+          return _editorOptionsCache;
+        }).catch(function () { return {}; });
+    return p.then(function (editors) {
       var letters = Object.keys(editors || {}).sort();
       var REQUIRED = { A: true, B: true, C: true };
       var keep = letters.filter(function (l) {
@@ -2967,10 +2963,7 @@
       var currentValue = sel.value || defaultCode || ('Editor.' + keep[0]);
       sel.innerHTML = keep.map(function (l) {
         var code = 'Editor.' + l;
-        var user = assignments[code] || '';
         var label = code;
-        if (user) label += ' — ' + user;
-        else if (editors[l]) label += ' — ' + editors[l];
         if (code === defaultCode) label += ' (나)';
         return '<option value="' + GW.escapeHtml(code) + '">' + GW.escapeHtml(label) + '</option>';
       }).join('');

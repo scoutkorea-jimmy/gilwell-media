@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.142.02",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "에디터 드롭다운에서 사용자 실명 제거 — 익명 에디터 코드 체계 유지, 본인 표시 '(나)'만 남김.",
+    "for_users": [
+      "에디터 드롭다운에 코드명만 표시됩니다 (Editor.A, Editor.B …). 본인 코드 옆에만 '(나)'가 붙습니다."
+    ],
+    "for_developers": [
+      "GET /api/settings/editors 에서 assignments 필드 제거 (admin_users display_name 미노출).",
+      "_loadAuthorOptions() 에서 사용자 이름 표시 로직 제거, 코드명 + '(나)' 표시만 유지.",
+      "관리자 03.142.01 → 03.142.02."
+    ]
+  },
+  {
     "version": "03.142.01",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
