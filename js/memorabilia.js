@@ -14,6 +14,15 @@
   // 단일 소스에서 fetch. 로컬 캐시는 memorabilia-shared.js GW.MemorabiliaCountries 가 관리.
   let COUNTRY_LABELS = {}; // {code: {ko, en}} — populateCountryOptions() 에서 채움
 
+  // 영문 제목 내 국가명(Korea, Japan ...) 을 대문자(KOREA, JAPAN)로 표시.
+  // GW.MemorabiliaTitle 가 /api/memorabilia/countries 의 name_en 사전을 사용.
+  // 캐시 미준비 시 원본 반환 — populateCountryOptions() 이후 호출이면 안전.
+  function uppercaseCountriesIn(text) {
+    if (!text) return '';
+    const t = (window.GW && GW.MemorabiliaTitle) ? GW.MemorabiliaTitle.uppercaseSync(text) : text;
+    return t || text;
+  }
+
   // 업로드 에러 → 한국어 사유 (서버 응답 매핑은 memorabilia-shared.js GW.MemorabiliaUpload.describeError)
   const upload = (window.GW && window.GW.MemorabiliaUpload) ? window.GW.MemorabiliaUpload : null;
 
@@ -373,7 +382,7 @@
       <span class="lang-ko" lang="ko">총 ${total}건${q ? ` · "${qSafe}" 검색` : ''}</span>
     </span>`;
     grid.innerHTML = items.map((it) => {
-      const titleEn = it.title_en || it.title_ko || '';
+      const titleEn = uppercaseCountriesIn(it.title_en || it.title_ko || '');
       const titleKo = (it.title_en && it.title_ko && it.title_en !== it.title_ko) ? it.title_ko : '';
       const thumb = it.primary_image_url
         ? `<div class="memo-card-thumb"><img src="${escapeHtml(it.primary_image_url)}" alt="" loading="lazy"/></div>`
@@ -427,7 +436,7 @@
       const data = await res.json();
       const item = data.item;
       window.__memoDetailItem = item;
-      document.title = `${item.title_en || item.title_ko} — 스카우트 기념품 도감 — BP미디어`;
+      document.title = `${uppercaseCountriesIn(item.title_en || '') || item.title_ko} — 스카우트 기념품 도감 — BP미디어`;
       // detail 페이지 직접 진입(/memorabilia/:slug) 시에도 국가 라벨 EN/KO 캐시 필요.
       // populateCountryOptions() 가 캐시를 채우므로 렌더 전에 한 번 실행.
       if (!Object.keys(COUNTRY_LABELS).length) {
@@ -448,7 +457,8 @@
   }
 
   function renderDetail(item) {
-    const titleEn = item.title_en || '';
+    // 영문 제목 내 국가명만 대문자 (Korea → KOREA). 한글 제목은 변형 없음.
+    const titleEn = uppercaseCountriesIn(item.title_en || '');
     const titleKo = item.title_ko || '';
     const primary = (item.images || []).find((i) => i.is_primary) || (item.images || [])[0];
     const others = (item.images || []).filter((i) => i !== primary);
@@ -534,9 +544,10 @@
           <div class="memo-primary-img" id="memo-detail-primary">
             <img src="${escapeHtml(primary.url)}" alt="${escapeHtml(titleEn || titleKo)}"/>
           </div>
+          <div class="memo-image-credit" id="memo-detail-credit"${primary.credit ? '' : ' hidden'}>${primary.credit ? escapeHtml(primary.credit) : ''}</div>
           ${others.length ? `<div class="memo-thumb-row">
-            <img src="${escapeHtml(primary.url)}" class="active" data-img="${escapeHtml(primary.url)}" alt=""/>
-            ${others.map((img) => `<img src="${escapeHtml(img.url)}" data-img="${escapeHtml(img.url)}" alt=""/>`).join('')}
+            <img src="${escapeHtml(primary.url)}" class="active" data-img="${escapeHtml(primary.url)}" data-credit="${escapeHtml(primary.credit || '')}" alt=""/>
+            ${others.map((img) => `<img src="${escapeHtml(img.url)}" data-img="${escapeHtml(img.url)}" data-credit="${escapeHtml(img.credit || '')}" alt=""/>`).join('')}
           </div>` : ''}
         </div>
       ` : ''}
@@ -590,11 +601,19 @@
   function wireDetailEvents(wrap) {
     const thumbs = wrap.querySelectorAll('.memo-thumb-row img');
     const primary = wrap.querySelector('#memo-detail-primary img');
+    const creditEl = wrap.querySelector('#memo-detail-credit');
     thumbs.forEach((t) => t.addEventListener('click', () => {
       const url = t.getAttribute('data-img');
       if (primary && url) {
         primary.src = url;
         thumbs.forEach((x) => x.classList.toggle('active', x === t));
+      }
+      // 활성 이미지 변경 시 출처도 같이 전환. 빈 값이면 hidden 처리해
+      // 빈 박스가 레이아웃을 차지하지 않도록 함.
+      if (creditEl) {
+        const credit = t.getAttribute('data-credit') || '';
+        creditEl.textContent = credit;
+        creditEl.hidden = !credit;
       }
     }));
   }

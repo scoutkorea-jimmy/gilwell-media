@@ -290,6 +290,40 @@
     attach: attachCountryPicker,
   };
 
+  // ── 도감 제목 내 영문 국가명 대문자화 ────────────────────────────────────────
+  // 운영자가 'Korea Jamboree 1991' 처럼 입력해도 화면에는 'KOREA Jamboree 1991'
+  // 로 표시. 기준 사전은 /api/memorabilia/countries 의 name_en. 캐시 미준비 시
+  // 원본 그대로 반환 → preload() 를 한 번 호출해두면 이후 sync 호출 안전.
+  let _ucCountryNames = null;
+  function _rebuildUcNames() {
+    if (!_countryCache) { _ucCountryNames = null; return; }
+    _ucCountryNames = _countryCache
+      .map((c) => c.name_en || '')
+      .filter((n) => n && /^[\x20-\x7E]+$/.test(n)) // ASCII 만 — 한국어 라벨 오인 방지
+      .sort((a, b) => b.length - a.length); // 긴 이름 우선 (e.g. 'United States' 먼저)
+  }
+  function uppercaseTitleSync(title) {
+    if (!title) return '';
+    if (!_ucCountryNames) _rebuildUcNames();
+    if (!_ucCountryNames || !_ucCountryNames.length) return title;
+    let out = title;
+    for (const name of _ucCountryNames) {
+      if (name === name.toUpperCase()) continue; // 이미 대문자면 skip
+      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp('\\b' + esc + '\\b', 'gi'), name.toUpperCase());
+    }
+    return out;
+  }
+  async function uppercaseTitleAsync(title) {
+    if (!_countryCache) { try { await loadCountries(); _rebuildUcNames(); } catch {} }
+    return uppercaseTitleSync(title);
+  }
+  GW.MemorabiliaTitle = {
+    preload: () => loadCountries().then(_rebuildUcNames).catch(() => {}),
+    uppercaseSync: uppercaseTitleSync,
+    uppercase: uppercaseTitleAsync,
+  };
+
   // ── Events picker ───────────────────────────────────────────────────────────
   // 행사 카탈로그(memorabilia_events) 에서 검색·선택. 없으면 "신규 등록" 으로 생성.
   // opts.host         — 컨테이너

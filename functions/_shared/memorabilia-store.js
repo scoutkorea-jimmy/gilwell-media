@@ -26,6 +26,7 @@ const FIELD_LIMITS = {
   link_label: 120,
   link_url:  500,
   alt:       200,
+  credit:    300,
   tag_label:  60,
 };
 
@@ -108,6 +109,7 @@ function normalizeImages(value) {
       url,
       alt_en: trimStr(raw.alt_en, FIELD_LIMITS.alt),
       alt_ko: trimStr(raw.alt_ko, FIELD_LIMITS.alt),
+      credit: trimStr(raw.credit, FIELD_LIMITS.credit),
       is_primary: isPrimary ? 1 : 0,
       sort_order: Number.isFinite(Number(raw.sort_order)) ? parseInt(raw.sort_order, 10) : i,
     });
@@ -216,7 +218,7 @@ export async function getMemorabiliaBySlug(db, slug, { includeDrafts = false } =
 async function hydrateOne(db, row) {
   const [imagesRes, countriesRes, tagsRes, eventRow] = await Promise.all([
     db.prepare(`
-      SELECT id, url, alt_en, alt_ko, is_primary, sort_order
+      SELECT id, url, alt_en, alt_ko, credit, is_primary, sort_order
         FROM memorabilia_images
        WHERE memorabilia_id = ?
        ORDER BY is_primary DESC, sort_order ASC, id ASC
@@ -456,9 +458,9 @@ async function syncRelations(db, id, input) {
   await db.prepare(`DELETE FROM memorabilia_images WHERE memorabilia_id = ?`).bind(id).run();
   for (const img of input.images) {
     await db.prepare(`
-      INSERT INTO memorabilia_images (memorabilia_id, url, alt_en, alt_ko, is_primary, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(id, img.url, img.alt_en, img.alt_ko, img.is_primary, img.sort_order).run();
+      INSERT INTO memorabilia_images (memorabilia_id, url, alt_en, alt_ko, credit, is_primary, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(id, img.url, img.alt_en, img.alt_ko, img.credit || '', img.is_primary, img.sort_order).run();
   }
 }
 

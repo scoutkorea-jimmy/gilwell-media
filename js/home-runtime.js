@@ -415,23 +415,57 @@
       });
     }
 
+    // 도감 제목 내 영문 국가명 대문자 표기 — 홈은 memorabilia-shared.js 를
+    // 로드하지 않으므로 /api/memorabilia/countries 를 직접 1회 fetch.
+    var _hrCountryNames = null;
+    function _hrLoadCountries() {
+      if (_hrCountryNames) return Promise.resolve(_hrCountryNames);
+      return fetch('/api/memorabilia/countries', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : { items: [] }; })
+        .then(function (data) {
+          var items = (data && data.items) || [];
+          _hrCountryNames = items
+            .map(function (c) { return c.name_en || ''; })
+            .filter(function (n) { return n && /^[\x20-\x7E]+$/.test(n); })
+            .sort(function (a, b) { return b.length - a.length; });
+          return _hrCountryNames;
+        })
+        .catch(function () { _hrCountryNames = []; return _hrCountryNames; });
+    }
+    function _hrUppercaseTitle(title) {
+      if (!title || !_hrCountryNames || !_hrCountryNames.length) return title || '';
+      var out = title;
+      for (var i = 0; i < _hrCountryNames.length; i++) {
+        var name = _hrCountryNames[i];
+        if (name === name.toUpperCase()) continue;
+        var esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        out = out.replace(new RegExp('\\b' + esc + '\\b', 'gi'), name.toUpperCase());
+      }
+      return out;
+    }
+
     function loadMemorabiliaRail() {
       var grid = document.getElementById('home-memorabilia-grid');
       if (!grid) return;
       // PC 6개 fetch — 모바일은 CSS 로 처음 2개만 노출.
       // random=1 + cache-bust 로 매 페이지 진입마다 다른 항목 노출.
-      GW.apiFetch('/api/memorabilia?random=1&limit=6&_=' + Date.now(), { cache: 'no-store' })
-        .then(function (data) {
+      Promise.all([
+        GW.apiFetch('/api/memorabilia?random=1&limit=6&_=' + Date.now(), { cache: 'no-store' }),
+        _hrLoadCountries(),
+      ])
+        .then(function (results) {
+          var data = results[0];
           var items = (data && data.items) || [];
           if (!items.length) {
             grid.innerHTML = '<div class="home-memorabilia-empty">아직 등록된 도감 항목이 없습니다.</div>';
             return;
           }
+          var uc = _hrUppercaseTitle;
           grid.innerHTML = items.map(function (item) {
             var slug = item.slug || ('m-' + item.id);
             var href = '/memorabilia/' + GW.escapeHtml(slug);
             var titleKo = GW.escapeHtml(item.title_ko || '');
-            var titleEn = GW.escapeHtml(item.title_en || '');
+            var titleEn = GW.escapeHtml(uc(item.title_en || ''));
             var thumb = item.primary_image_url
               ? '<img src="' + GW.escapeHtml(item.primary_image_url) + '" alt="' + titleKo + '" loading="lazy" decoding="async">'
               : '<div class="home-memo-card-noimg" aria-hidden="true">📦</div>';

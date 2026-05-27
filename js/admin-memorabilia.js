@@ -1055,6 +1055,7 @@
 
     state.images = (item?.images || []).map((img) => ({
       url: img.url, alt_en: img.alt_en || '', alt_ko: img.alt_ko || '',
+      credit: img.credit || '',
       is_primary: !!img.is_primary, sort_order: img.sort_order || 0,
     }));
     state.links = (item?.related_links || []).map((l) => ({
@@ -1206,6 +1207,9 @@
             <label><input type="radio" name="memo-primary" ${img.is_primary ? 'checked' : ''} ${img.uploading ? 'disabled' : ''} data-primary-i="${i}"/> 대표</label>
             <button type="button" class="memo-btn memo-btn-sm memo-btn-danger" data-img-del="${i}" ${img.uploading ? 'disabled' : ''}>삭제</button>
           </div>
+          <input type="text" class="memo-image-credit-input" data-credit-i="${i}"
+                 placeholder="이미지 출처 (선택)" maxlength="300"
+                 value="${escapeHtml(img.credit || '')}" ${img.uploading ? 'disabled' : ''}/>
         </div>
       `;
     }).join('');
@@ -1225,6 +1229,14 @@
           state.images[0].is_primary = true;
         }
         renderImages();
+      });
+    });
+    // credit 입력은 input 이벤트로 state 즉시 반영 — renderImages 호출은 하지 않아
+    // 포커스 손실 방지 (사용자가 타이핑 중일 때 grid 재렌더되면 IME/커서 깨짐).
+    $$('input[data-credit-i]', grid).forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const i = parseInt(inp.getAttribute('data-credit-i'), 10);
+        if (state.images[i]) state.images[i].credit = inp.value.slice(0, 300);
       });
     });
   }
@@ -1264,7 +1276,7 @@
       placeholders.push({
         url: '',
         previewDataUrl,
-        alt_en: '', alt_ko: '',
+        alt_en: '', alt_ko: '', credit: '',
         is_primary: false,
         sort_order: state.images.length + placeholders.length,
         uploading: true,

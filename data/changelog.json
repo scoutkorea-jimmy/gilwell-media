@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "00.160.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 09:00:00 KST",
+    "summary": "기념품 도감 디테일 — 이미지별 출처(credit) 표시 + 영문 제목 국가명 대문자 표기.",
+    "for_users": [
+      "도감 상세에서 각 이미지마다 출처를 입력해두면 대표 이미지 바로 아래에 작게 표시됩니다 (썸네일 전환 시 출처도 같이 바뀜). 비워두면 노출되지 않습니다.",
+      "영문 제목에 등장하는 국가명은 자동으로 대문자로 표시됩니다 (예: 'Korea Jamboree 1991' → 'KOREA Jamboree 1991'). 한글 제목은 변경되지 않습니다."
+    ],
+    "for_developers": [
+      "css/memorabilia.css .memo-image-credit: max-width 600px, font 12px, color var(--gray-700), text-align right. [hidden] 속성으로 빈값 시 미노출.",
+      "js/memorabilia.js renderDetail: <div class='memo-image-credit' id='memo-detail-credit' [hidden]> 를 .memo-primary-img 직후 삽입. data-credit 속성을 thumbnail 에 추가 → wireDetailEvents 가 클릭 시 textContent + hidden 토글.",
+      "js/memorabilia-shared.js GW.MemorabiliaTitle: { preload, uppercaseSync, uppercase }. _countryCache 의 name_en (ASCII 만, 길이 desc 정렬) 으로 정규식 \\b…\\b 매치. 'United States' 같은 다어절 우선.",
+      "js/memorabilia.js uppercaseCountriesIn(text): detail/card title 렌더 + document.title 에 일괄 적용.",
+      "js/home-runtime.js: memorabilia-shared.js 가 index.html 에 로드되지 않으므로 _hrLoadCountries / _hrUppercaseTitle 인라인 헬퍼 추가. Promise.all 로 fetch + countries preload 병렬화.",
+      "사이트 00.159.05 → 00.160.00 (feature — 도감 디테일 UX 2건)."
+    ]
+  },
+  {
+    "version": "03.139.00",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 09:00:00 KST",
+    "summary": "관리자 도감 이미지 타일에 출처(credit) 입력 필드 추가 — 공개 디테일과 연동.",
+    "for_users": [
+      "도감 항목 편집 시 각 이미지 타일 하단에 '이미지 출처 (선택)' 입력란이 생겼습니다. 채워두면 공개 디테일 페이지에서 해당 이미지 아래에 표시됩니다."
+    ],
+    "for_developers": [
+      "db/migration_075.sql: ALTER TABLE memorabilia_images ADD COLUMN credit TEXT NOT NULL DEFAULT '' (remote D1 적용 완료).",
+      "functions/_shared/memorabilia-store.js: FIELD_LIMITS.credit = 300. normalizeImages 가 raw.credit 을 trim/limit. hydrateOne SELECT 와 syncRelations INSERT 양쪽에 credit 컬럼 반영.",
+      "js/admin-memorabilia.js renderImages: 타일 내부에 <input class='memo-image-credit-input' data-credit-i='N' maxlength='300'> 추가. input 이벤트로 state.images[i].credit 동기화 (렌더 재호출 없음 → IME/포커스 유지). addFiles placeholder 와 _loadOne 매핑에 credit 필드 포함.",
+      "css/memorabilia.css .memo-image-credit-input: 11px, full-width, 포커스 시 brand purple 강조.",
+      "관리자 03.138.00 → 03.139.00 (feature — 이미지 출처 입력)."
+    ]
+  },
+  {
     "version": "03.138.00",
     "date": "2026-05-27",
     "released_at": "2026-05-27 08:30:00 KST",

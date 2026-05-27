@@ -310,6 +310,17 @@
 .memo-detail-gallery .memo-thumb-row img.active {
   border-color: var(--color-scouting-purple, #622599);
 }
+/* 이미지 출처 — 대표 이미지 바로 아래, 입력 시에만 노출 (없으면 [hidden]). */
+.memo-detail-gallery .memo-image-credit {
+  max-width: 600px;
+  margin: -4px auto 0;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gray-700, #3f3f3f);
+  text-align: right;
+  word-break: keep-all;
+}
 
 .memo-bilingual { line-height: 1.4; }
 .memo-bilingual .lang-en { display: block; }
@@ -853,6 +864,23 @@
   font-size: 13px;
   color: var(--color-scouting-purple, #622599);
   font-weight: 600;
+}
+/* 이미지 출처(credit) 입력 — 타일 하단, 가는 인풋. 비워두면 공개 디테일에서 미노출. */
+.memo-image-tile .memo-image-credit-input {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--gray-900, #030303);
+  background: #fff;
+  border: 1px solid var(--gray-300, #c4c4c4);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.memo-image-tile .memo-image-credit-input:focus {
+  outline: none;
+  border-color: var(--color-scouting-purple, #622599);
+  box-shadow: 0 0 0 2px rgba(98,37,153,0.15);
 }
 .memo-images-actions {
   display: flex; gap: 8px; align-items: center;
