@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.163.04",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 13:00:00 KST",
+    "summary": "홈 컬럼 부모 박스의 사각 잔영 제거 — border/background/shadow 를 .home-rail-card 와 중복 → 부모는 레이아웃만.",
+    "for_users": [
+      "각 섹션 컬러 헤더 뒤에 살짝 보이던 사각형 윤곽이 사라집니다. 이전엔 둥근 .home-rail-card 위에 사각 부모 박스가 겹쳐서 사각 잔영이 보였습니다."
+    ],
+    "for_developers": [
+      "css/style.css .home-2col > div, .home-mobile-stack > div, .home-3col > div — 기존 1px border + 그라데이션 배경 + box-shadow + overflow:hidden 적용되어 있었으나 border-radius 없었음. 자식 .home-rail-card 가 동일 시각 컨테이너 역할(둥근 보더/배경/패딩)을 하므로 부모 시각 스타일 모두 제거. 부모는 레이아웃 컨테이너만.",
+      "동일 패턴의 @media (max-width 모바일 override) 도 정리 — padding 룰 제거 (rail-card 가 처리).",
+      ".home-2col > div > .mini-list 등 18px padding override 도 제거 (rail-card 가 18px 패딩 제공, 이중 패딩 방지).",
+      "사이트 00.163.03 → 00.163.04 (fix — 홈 컬럼 부모 박스 사각 잔영 핫픽스)."
+    ]
+  },
+  {
     "version": "00.163.03",
     "date": "2026-05-27",
     "released_at": "2026-05-27 12:30:00 KST",
