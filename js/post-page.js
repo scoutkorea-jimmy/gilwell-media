@@ -197,22 +197,47 @@ function _initPostEditor(callback) {
   });
 }
 
-// Phase 5 byline parity: homepage edit modal uses the same readonly author
-// input as the admin console (see admin.html #w-author). The input is populated
-// from the session user's editor_code via /api/admin/users/me — never from
-// `_postEditSeed.author`, so re-edits always reflect the current signer.
+var _postEditorOptionsCache = null;
 function _fillPostAuthorOptions() {
-  var input = document.getElementById('post-edit-author');
-  if (!input) return;
-  // Optimistic default while the session call is in flight.
-  input.value = _postEditSeed.author || 'Editor.A';
+  var sel = document.getElementById('post-edit-author');
+  if (!sel) return;
+  var seedAuthor = _postEditSeed.author || 'Editor.A';
+  sel.value = seedAuthor;
   if (!GW || !GW.apiFetch) return;
-  GW.apiFetch('/api/admin/users/me')
-    .then(function (data) {
-      var code = data && data.user && data.user.editor_code;
-      if (code) input.value = code;
-    })
-    .catch(function () { /* keep fallback */ });
+
+  var mePromise = GW.apiFetch('/api/admin/users/me').then(function (data) {
+    return (data && data.user && data.user.editor_code) || '';
+  }).catch(function () { return ''; });
+
+  var editorsPromise = _postEditorOptionsCache
+    ? Promise.resolve(_postEditorOptionsCache)
+    : GW.apiFetch('/api/settings/editors').then(function (data) {
+        _postEditorOptionsCache = (data && data.editors) || {};
+        return _postEditorOptionsCache;
+      }).catch(function () { return {}; });
+
+  Promise.all([mePromise, editorsPromise]).then(function (results) {
+    var myCode = results[0];
+    var editors = results[1];
+    var letters = Object.keys(editors || {}).sort();
+    var REQUIRED = { A: true, B: true, C: true };
+    var keep = letters.filter(function (l) {
+      return REQUIRED[l] || (editors[l] && editors[l].trim());
+    });
+    if (!keep.length) keep = ['A'];
+    sel.innerHTML = keep.map(function (l) {
+      var code = 'Editor.' + l;
+      var label = code;
+      if (code === myCode) label += ' (나)';
+      return '<option value="' + GW.escapeHtml(code) + '">' + GW.escapeHtml(label) + '</option>';
+    }).join('');
+    var preferred = seedAuthor;
+    if (Array.prototype.some.call(sel.options, function (o) { return o.value === preferred; })) {
+      sel.value = preferred;
+    } else if (myCode) {
+      sel.value = myCode;
+    }
+  });
 }
 
 function _syncPostCategoryChip(category) {

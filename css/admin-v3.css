@@ -36,6 +36,14 @@
   --fs-document:      24px;
   --fs-display:       32px;
 
+  --radius-pill:  999px;
+  --radius-2xl:    22px;
+  --radius-xl:     16px;
+  --radius-lg:     12px;
+  --radius-md:      8px;
+  --radius-sm:      6px;
+  --radius-tight:   4px;
+
   --gw-scouting-purple: #622599;
   --gw-canvas-white: #ffffff;
   --gw-midnight-purple: #4d006e;

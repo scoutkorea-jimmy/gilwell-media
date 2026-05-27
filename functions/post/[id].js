@@ -231,7 +231,7 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260527153001">
+  <link rel="stylesheet" href="/css/style.css?v=20260527153527">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -415,7 +415,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.163.05</span> · Admin <span class="admin-build-version">V03.142.02</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.163.06</span> · Admin <span class="admin-build-version">V03.142.03</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -471,9 +471,11 @@ export async function onRequestGet({ params, env, request }) {
                 </select>
               </div>
               <div class="bw-form-group">
-                <label class="bw-label" for="post-edit-author">작성자 <span class="bw-label-opt">편집자 코드 자동 적용</span></label>
-                <input class="bw-input" type="text" id="post-edit-author" placeholder="Editor.A" readonly tabindex="-1" style="background:#f5f5f7;color:#666;cursor:not-allowed;" />
-                <div class="bw-field-hint">본인 편집자 코드로만 공개됩니다. 오너가 사용자 관리에서 코드를 변경하면 반영됩니다.</div>
+                <label class="bw-label" for="post-edit-author">작성자 <span class="bw-label-opt">편집자 코드 선택</span></label>
+                <select class="bw-input" id="post-edit-author">
+                  <option value="Editor.A">Editor.A</option>
+                </select>
+                <div class="bw-field-hint">기본값은 본인 편집자 코드입니다. 다른 편집자로도 게재할 수 있습니다.</div>
               </div>
             </div>
             <div class="bw-form-group">
@@ -627,9 +629,9 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260527153001"></script>
-  <script src="/js/site-chrome.js?v=20260527153001"></script>
-  <script src="/js/post-page.js?v=20260527153001"></script>
+  <script src="/js/main.js?v=20260527153527"></script>
+  <script src="/js/site-chrome.js?v=20260527153527"></script>
+  <script src="/js/post-page.js?v=20260527153527"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

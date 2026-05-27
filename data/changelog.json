@@ -1,17 +1,33 @@
 {
   "items": [
   {
-    "version": "03.142.02",
+    "version": "00.163.06",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
-    "summary": "에디터 드롭다운에서 사용자 실명 제거 — 익명 에디터 코드 체계 유지, 본인 표시 '(나)'만 남김.",
+    "summary": "공개 기사 수정 모달의 저자 필드를 관리자와 동일한 에디터 선택 드롭다운으로 통일.",
     "for_users": [
+      "기사 상세 페이지에서 수정할 때도 에디터 드롭다운에서 다른 에디터를 선택할 수 있습니다. 관리자 글쓰기 화면과 동일하게 동작합니다."
+    ],
+    "for_developers": [
+      "functions/post/[id].js — 저자 필드를 readonly input → select 드롭다운으로 변경.",
+      "js/post-page.js _fillPostAuthorOptions() — /api/settings/editors + /api/admin/users/me 병렬 fetch 후 드롭다운 구성. 기존 글의 에디터 코드를 기본 선택, 본인 코드에 '(나)' 표시.",
+      "사이트 00.163.05 → 00.163.06."
+    ]
+  },
+  {
+    "version": "03.142.03",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "관리자 페이지 라운드(border-radius) 회귀 핫픽스 + 에디터 드롭다운 실명 제거.",
+    "for_users": [
+      "관리자 페이지 카드·입력 필드·버튼 등 모든 요소의 둥근 모서리가 복원되었습니다.",
       "에디터 드롭다운에 코드명만 표시됩니다 (Editor.A, Editor.B …). 본인 코드 옆에만 '(나)'가 붙습니다."
     ],
     "for_developers": [
-      "GET /api/settings/editors 에서 assignments 필드 제거 (admin_users display_name 미노출).",
-      "_loadAuthorOptions() 에서 사용자 이름 표시 로직 제거, 코드명 + '(나)' 표시만 유지.",
-      "관리자 03.142.01 → 03.142.02."
+      "css/admin-v3.css :root 에 --radius-pill/2xl/xl/lg/md/sm/tight 직접 정의 — admin.html 이 style.css 를 로드하지 않아 변수 미정의 회귀 발생.",
+      "GET /api/settings/editors 에서 assignments 필드 제거 (익명 체계 유지).",
+      "_loadAuthorOptions() 에서 사용자 이름 표시 로직 제거, 코드명 + '(나)' 표시만.",
+      "관리자 03.142.00 → 03.142.03 (02 changelog 병합)."
     ]
   },
   {
