@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.163.02",
+    "date": "2026-05-27",
+    "released_at": "2026-05-27 12:00:00 KST",
+    "summary": "홈 섹션 타이틀 곡률 누락 + 메모라빌리아 타이틀 시각 통일.",
+    "for_users": [
+      "'메인 스토리·최신 소식·인기 소식·에디터 추천' 4개 섹션 타이틀이 완전히 사각형이던 문제 해결. 모두 다른 타이틀 바와 동일한 8px 둥근 모서리.",
+      "도감 섹션 타이틀('스카우트 기념품 도감')도 다른 컬러 헤더 바(보라/주황/녹색…)와 같은 형태로 통일. 보라 그라디언트 + 흰 텍스트 + 더보기 화살표 패턴."
+    ],
+    "for_developers": [
+      ".home-section-title — border-radius: var(--radius-md) 누락. .home-col-header 와 동일한 컬러 헤더 패턴인데 곡률이 빠져있었음.",
+      ".home-section-title-memorabilia 신규 그라디언트 variant — linear-gradient(90deg, --scouting-purple, #4a1c75, #38155c).",
+      "index.html .home-memorabilia-rail 마크업 교체 — .home-memorabilia-rail-head + .home-memorabilia-rail-title 구조 (border-bottom 라인 + 두 줄 텍스트) → .home-section-title.home-section-title-memorabilia (단일 컬러 바 + 더보기 링크). 다른 섹션 타이틀과 시각 정렬.",
+      "사이트 00.163.01 → 00.163.02 (fix — 홈 섹션 타이틀 곡률 + 메모라빌리아 타이틀 통일)."
+    ]
+  },
+  {
     "version": "00.163.01",
     "date": "2026-05-27",
     "released_at": "2026-05-27 11:30:00 KST",

@@ -2654,6 +2654,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   text-transform: uppercase;
   padding:        13px 18px;
   border:         none;
+  border-radius:  var(--radius-md);   /* 섹션 타이틀 바 통일 곡률 (.home-col-header 와 동일) */
   background-size: 100% 100%;
   margin:         0 0 var(--home-title-gap, 14px);
   display:        flex;
@@ -2683,6 +2684,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .home-section-title-picks {
   background-image: linear-gradient(90deg, #0d6c57 0%, #0c5e4c 52%, #0a4f40 100%);
+}
+
+.home-section-title-memorabilia {
+  background-image: linear-gradient(90deg, var(--scouting-purple) 0%, #4a1c75 52%, #38155c 100%);
 }
 
 .home-section-more {
