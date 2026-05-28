@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.166.02",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "용어 챗봇 추천어를 하드코딩 풀이 아닌 실제 용어집 데이터에서 랜덤 추출하도록 변경.",
+    "for_users": [
+      "추천 질문 칩이 실제로 용어집에 등록된 용어 중에서만 뽑혀서, 클릭했을 때 '못 찾았어요' 답변이 나오던 어색함이 사라졌어요.",
+      "용어집에 새 단어가 등록되면 추천 칩에도 자연스럽게 반영됩니다."
+    ],
+    "for_developers": [
+      "js/chatbot.js — 하드코딩 CHIP_POOL(24종) 제거, pickChipsFromGlossary(n) 로 state.items 에서 term_ko (없으면 term_en/term_fr) 무작위 추출.",
+      "pushBotIntro 를 pushGreetingOnce + refreshChips 로 분리. openPanel 에서 데이터 캐시되어 있으면 즉시 chips 표시, 없으면 인사만 먼저 보여주고 loadData 완료 후 chips 추가/갱신.",
+      "refreshChips 는 사용자 메시지가 하나라도 있으면 no-op — 대화 중간에 추천이 바뀌지 않도록 보호.",
+      "사이트 00.166.01 → 00.166.02."
+    ]
+  },
+  {
     "version": "00.166.01",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",

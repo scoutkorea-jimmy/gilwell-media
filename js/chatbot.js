@@ -14,16 +14,7 @@
   var RELATED = 2;       // additional related cards
   var TYPING_MS = 320;   // bot "typing" delay
   var DEBOUNCE_MS = 0;   // send is explicit (button / Enter), no debounce
-  var CHIP_COUNT = 5;    // suggested chips shown at greeting
-
-  // Curated pool of common Scouting terms; CHIP_COUNT items chosen at random per open
-  var CHIP_POOL = [
-    '잼버리', '스카우트', 'WOSM', '간부훈련', '대원',
-    '비버', '늑대', '보이', '가이드', '로버',
-    '우드뱃지', '야영', '단복', '봉사활동', '신호법',
-    '모토', '월드스카우팅', '봉화', '대장', '연맹',
-    '훈련소', '캠프', '서약', '명예'
-  ];
+  var CHIP_COUNT = 5;    // suggested chips shown at greeting (sampled from live glossary)
 
   // Korean particles/endings stripped from user query so "잼버리가 뭐야?" ≒ "잼버리"
   var KO_PARTICLES = /(이|가|은|는|을|를|의|에|에서|에게|한테|로|으로|와|과|도|만|이나|나|랑|이랑|보다|까지|부터|마저|이라도|라도)$/;
@@ -163,43 +154,48 @@
   }
 
   // ---------- message factory ----------
-  function pickChips(n) {
-    var pool = CHIP_POOL.slice();
+  // Pick N random terms from the loaded glossary (term_ko preferred, then en/fr)
+  function pickChipsFromGlossary(n) {
+    if (!state.items || !state.items.length) return [];
+    var pool = [];
+    for (var i = 0; i < state.items.length; i++) {
+      var it = state.items[i];
+      var label = (it.term_ko || it.term_en || it.term_fr || '').toString().trim();
+      if (label) pool.push(label);
+    }
     var picked = [];
     var limit = Math.min(n, pool.length);
-    for (var i = 0; i < limit; i++) {
+    for (var j = 0; j < limit; j++) {
       var idx = Math.floor(Math.random() * pool.length);
       picked.push(pool.splice(idx, 1)[0]);
     }
     return picked;
   }
 
-  function pushBotIntro() {
-    if (state.greeted) {
-      // Refresh chip selection on re-open if user hasn't chatted yet
-      var hasUserMsg = false;
-      for (var i = 0; i < state.messages.length; i++) {
-        if (state.messages[i].kind === 'user') { hasUserMsg = true; break; }
-      }
-      if (!hasUserMsg) {
-        for (var j = state.messages.length - 1; j >= 0; j--) {
-          if (state.messages[j].kind === 'chips') {
-            state.messages[j].chips = pickChips(CHIP_COUNT);
-            break;
-          }
-        }
-      }
-      return;
-    }
+  function pushGreetingOnce() {
+    if (state.greeted) return;
     state.greeted = true;
     state.messages.push({
       kind: 'bot',
       html: '안녕하세요! 스카우트 용어가 궁금하면 무엇이든 물어보세요. 한글·영어·불어 모두 검색할 수 있어요. 😊'
     });
-    state.messages.push({
-      kind: 'chips',
-      chips: pickChips(CHIP_COUNT)
-    });
+  }
+
+  // Set or refresh the chips message using live glossary data. No-op if user has
+  // already started chatting (we don't want to surprise them mid-conversation).
+  function refreshChips() {
+    if (!state.items) return;
+    for (var i = 0; i < state.messages.length; i++) {
+      if (state.messages[i].kind === 'user') return;
+    }
+    var chips = pickChipsFromGlossary(CHIP_COUNT);
+    if (!chips.length) return;
+    var existing = -1;
+    for (var j = 0; j < state.messages.length; j++) {
+      if (state.messages[j].kind === 'chips') { existing = j; break; }
+    }
+    if (existing !== -1) state.messages[existing].chips = chips;
+    else state.messages.push({ kind: 'chips', chips: chips });
   }
 
   function pushUser(text) {
@@ -359,9 +355,15 @@
     state.open = true;
     els.root.classList.add('is-open');
     els.fab.setAttribute('aria-expanded', 'true');
-    pushBotIntro();
+    pushGreetingOnce();
+    if (state.items) refreshChips();
     renderMessages();
-    loadData(); // preload silently
+    loadData().then(function () {
+      if (state.open) {
+        refreshChips();
+        renderMessages();
+      }
+    });
     setTimeout(function () { if (els.input) els.input.focus(); }, 50);
   }
 
