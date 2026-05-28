@@ -14,6 +14,16 @@
   var RELATED = 2;       // additional related cards
   var TYPING_MS = 320;   // bot "typing" delay
   var DEBOUNCE_MS = 0;   // send is explicit (button / Enter), no debounce
+  var CHIP_COUNT = 5;    // suggested chips shown at greeting
+
+  // Curated pool of common Scouting terms; CHIP_COUNT items chosen at random per open
+  var CHIP_POOL = [
+    '잼버리', '스카우트', 'WOSM', '간부훈련', '대원',
+    '비버', '늑대', '보이', '가이드', '로버',
+    '우드뱃지', '야영', '단복', '봉사활동', '신호법',
+    '모토', '월드스카우팅', '봉화', '대장', '연맹',
+    '훈련소', '캠프', '서약', '명예'
+  ];
 
   // Korean particles/endings stripped from user query so "잼버리가 뭐야?" ≒ "잼버리"
   var KO_PARTICLES = /(이|가|은|는|을|를|의|에|에서|에게|한테|로|으로|와|과|도|만|이나|나|랑|이랑|보다|까지|부터|마저|이라도|라도)$/;
@@ -31,6 +41,8 @@
     messages: [],   // {kind: 'bot'|'user'|'typing', html?, term?, related?, text?}
     greeted: false,
     expanded: {},   // id → true (per-card expand state)
+    imeComposing: false,
+    sendInFlight: false,
   };
 
   var els = {};
@@ -151,8 +163,34 @@
   }
 
   // ---------- message factory ----------
+  function pickChips(n) {
+    var pool = CHIP_POOL.slice();
+    var picked = [];
+    var limit = Math.min(n, pool.length);
+    for (var i = 0; i < limit; i++) {
+      var idx = Math.floor(Math.random() * pool.length);
+      picked.push(pool.splice(idx, 1)[0]);
+    }
+    return picked;
+  }
+
   function pushBotIntro() {
-    if (state.greeted) return;
+    if (state.greeted) {
+      // Refresh chip selection on re-open if user hasn't chatted yet
+      var hasUserMsg = false;
+      for (var i = 0; i < state.messages.length; i++) {
+        if (state.messages[i].kind === 'user') { hasUserMsg = true; break; }
+      }
+      if (!hasUserMsg) {
+        for (var j = state.messages.length - 1; j >= 0; j--) {
+          if (state.messages[j].kind === 'chips') {
+            state.messages[j].chips = pickChips(CHIP_COUNT);
+            break;
+          }
+        }
+      }
+      return;
+    }
     state.greeted = true;
     state.messages.push({
       kind: 'bot',
@@ -160,7 +198,7 @@
     });
     state.messages.push({
       kind: 'chips',
-      chips: ['잼버리', '스카우트', 'WOSM', '간부훈련', '대원']
+      chips: pickChips(CHIP_COUNT)
     });
   }
 
@@ -286,9 +324,11 @@
 
   // ---------- send flow ----------
   function handleSend(rawText) {
+    if (state.sendInFlight) return;
     var text = (rawText == null ? els.input.value : rawText) || '';
     text = String(text).trim();
     if (!text) return;
+    state.sendInFlight = true;
     els.input.value = '';
     pushUser(text);
     renderMessages();
@@ -298,6 +338,7 @@
           kind: 'bot',
           html: '용어집을 불러오는 데 실패했어요. 잠시 후 다시 시도해주세요.<br><small>' + esc(state.error) + '</small>'
         });
+        state.sendInFlight = false;
         renderMessages();
         return;
       }
@@ -307,6 +348,7 @@
         popTyping(tIdx);
         var results = search(text);
         pushBotResult(text, results);
+        state.sendInFlight = false;
         renderMessages();
       }, TYPING_MS);
     });
@@ -339,10 +381,13 @@
   }
 
   function onInputKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    // Ignore Enter while an IME (Korean / Japanese / Chinese) is composing —
+    // committing the composition would otherwise fire a duplicate send and
+    // leave the trailing syllable in the input after we clear it.
+    if (e.isComposing || state.imeComposing || e.keyCode === 229) return;
+    e.preventDefault();
+    handleSend();
   }
 
   function build() {
@@ -393,8 +438,11 @@
     if (closeBtn) closeBtn.addEventListener('click', closePanel);
     els.form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (state.imeComposing) return;
       handleSend();
     });
+    els.input.addEventListener('compositionstart', function () { state.imeComposing = true; });
+    els.input.addEventListener('compositionend', function () { state.imeComposing = false; });
     els.input.addEventListener('keydown', onInputKeydown);
     document.addEventListener('keydown', onKeydown);
   }

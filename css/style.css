@@ -6860,8 +6860,8 @@ footer a:hover { color: var(--white); }
   .nav a              { padding: var(--gap-tight) 10px; font-size: clamp(10px, 2.7vw, 11px); letter-spacing: 0.06em; }
 
   .global-scroll-top-btn {
-    right: 14px;
-    bottom: 14px;
+    right: 16px;
+    bottom: 80px;
     width: 50px;
     height: 50px;
   }
@@ -10869,8 +10869,8 @@ body.wosm-members-page #main-content {
 
 .global-scroll-top-btn {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  right: 24px;
+  bottom: 96px;
   z-index: 260;
   width: 56px;
   height: 56px;

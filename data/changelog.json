@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.166.01",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "용어 챗봇 핫픽스 — 한글 IME 마지막 글자 중복·답변 중복 수정, TOP↔챗봇 버튼 겹침 해제, 추천어 매회 랜덤 노출.",
+    "for_users": [
+      "한글 입력 중 엔터를 칠 때 마지막 글자가 한 번 더 보이거나, 같은 답변이 두 번 뜨던 문제가 해결됐어요.",
+      "TOP(맨 위로) 버튼과 챗봇 버튼이 겹치지 않고 위아래로 정렬됩니다.",
+      "챗봇을 열 때마다 추천 질문 칩이 매번 다른 조합으로 보여서 둘러보기 좋아졌어요."
+    ],
+    "for_developers": [
+      "js/chatbot.js — input 에 compositionstart/end 리스너 추가, state.imeComposing 플래그 유지. onInputKeydown 과 form submit 모두 e.isComposing / imeComposing / keyCode 229 체크 후 처리.",
+      "state.sendInFlight 가드 추가 — handleSend 재진입 차단. typing 인디케이터 popTyping 시점에서 해제.",
+      "CHIP_POOL 24종 큐레이션 + pickChips(n) 무작위 추출. 첫 인사 시 5개 선택, 사용자 메시지 없는 상태에서 재오픈 시 chips 재추출.",
+      "css/style.css — .global-scroll-top-btn 위치 bottom 18→96px / mobile 14→80px, right 18→24px / mobile 14→16px 로 변경해 chatbot FAB 위에 16px gap 으로 stacking.",
+      "사이트 00.166.00 → 00.166.01."
+    ]
+  },
+  {
     "version": "00.166.00",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
