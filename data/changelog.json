@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.166.00",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "용어 챗봇을 검색창 형태에서 대화형 UX로 전환하고, 노출 범위를 모든 공개 페이지로 확장.",
+    "for_users": [
+      "용어 도우미가 진짜 챗봇처럼 인사하고, 추천 질문 칩을 눌러 바로 물어볼 수 있어요.",
+      "'잼버리가 뭐야?', '간부훈련 알려줘' 처럼 자연스럽게 질문해도 알아듣고, 답변을 카드와 함께 풀어서 보여줍니다.",
+      "기사 상세 페이지, 404 페이지, 정보 공개 페이지 등 모든 공개 화면에서 동일하게 우하단에서 챗봇을 열 수 있어요."
+    ],
+    "for_developers": [
+      "js/chatbot.js 전면 재작성 — message thread 모델(user/bot/typing/card/chips)로 전환. 질문 파싱 시 한국어 조사(이/가/은/는/을/를/의/에/...)와 의문어미(뭐야/뭔지/알려줘/...) 제거 후 스코어링.",
+      "타이핑 인디케이터 320ms 지연 + 점 3개 애니메이션. 초기 인사 메시지 + 5개 추천 칩(잼버리/스카우트/WOSM/간부훈련/대원) 자동 표시.",
+      "css/chatbot.css — 채팅 말풍선(user purple right / bot white left), 헤더 그라디언트 + 온라인 인디케이터, 라운드 입력창 + send 버튼 UI로 전면 개편.",
+      "노출 범위 확장 — 기존 11개 + 404.html, contributors.html, editorial-policy.html, privacy.html, kms.html 5개 + SSR 템플릿 functions/post/[id].js, functions/feature/[category]/[slug].js. 총 16개 공개 페이지 + 2개 SSR.",
+      "scripts/sync_versions.sh — kms.html 룰에 chatbot 자산 추가, CHATBOT_EXTRA 배열로 404/editorial-policy/privacy 페이지 별도 처리.",
+      "500.html 은 의도적으로 제외 (서버 오류 페이지에서 API 의존 위젯 로드 부적절).",
+      "사이트 00.165.00 → 00.166.00."
+    ]
+  },
+  {
     "version": "00.165.00",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
