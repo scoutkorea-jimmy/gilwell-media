@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.165.00",
+    "date": "2026-05-28",
+    "released_at": "2026-05-28 00:00:00 KST",
+    "summary": "공개 페이지 우하단에 스카우트 용어 검색 챗봇(키워드 점수 기반, LLM 없음) 위젯 추가.",
+    "for_users": [
+      "모든 공개 페이지 우하단에 보라색 말풍선 버튼이 떠 있어, 어디서든 한글·영어·불어로 스카우트 용어를 즉시 찾을 수 있습니다.",
+      "검색 결과 카드를 클릭하면 챗봇 패널 안에서 바로 설명이 펼쳐지고, '용어집에서 자세히 보기' 링크로 전체 페이지로 이동할 수도 있습니다.",
+      "용어집을 따로 열지 않아도 기사·홈 등 작업 흐름을 끊지 않고 모르는 용어를 확인할 수 있습니다."
+    ],
+    "for_developers": [
+      "신규 위젯 — js/chatbot.js (IIFE) + css/chatbot.css. document.body 에 .gw-chatbot-root 를 주입하고, 첫 패널 오픈 시 /api/glossary/bot?format=json 한 번만 fetch 후 메모리에 캐싱.",
+      "스코어링 — 토큰별로 term_ko/term_en/term_fr 완전일치 100 / prefix 60 / substring 30, description_ko 단어경계 15 / substring 8 합산. 0점 토큰이 하나라도 있으면 결과 제외. 상위 5개 노출.",
+      "데이터 소스 재사용 — 기존 functions/api/glossary/bot.js (5분 edge cache + SWR) 그대로 활용. 신규 API/D1 스키마 없음, LLM 호출 없음 → 추가 비용 0원.",
+      "노출 페이지 — index/korea/apr/wosm/people/wosm-members/glossary/search/calendar/latest/memorabilia 11개. site-chrome.js 다음에 defer 로딩.",
+      "scripts/sync_versions.sh — SITE_FILES 루프에 /css/chatbot.css 와 /js/chatbot.js 버전 토큰 치환 규칙 추가.",
+      "접근성 — FAB aria-label/aria-expanded, 패널 role=dialog, ESC 닫기, 포커스 복귀, prefers-reduced-motion 대응.",
+      "사이트 00.164.00 → 00.165.00."
+    ]
+  },
+  {
     "version": "00.164.00",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",
