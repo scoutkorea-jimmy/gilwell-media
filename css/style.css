@@ -909,7 +909,7 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --white:      #ffffff;
   --ink:        #1f1f1f;   /* 본문 텍스트용 soft black (eye-friendly near-black) */
 
-  /* Grayscale (5단계, #030303 기반) — Canvas White 배경 APCA Lc (WCAG 3.0) */
+  /* Grayscale (5단계, var(--black) 기반) — Canvas White 배경 APCA Lc (WCAG 3.0) */
   --gray-900:   #030303;   /* = --black, APCA Lc 107.7 · 모든 텍스트 OK */
   --gray-700:   #3f3f3f;   /* Lc 96.2 · 본문·보조 텍스트 OK */
   --gray-500:   #8f8f8f;   /* Lc 61.3 · 콘텐츠 텍스트(14px+ medium) / UI */
@@ -1304,7 +1304,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight:    700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color:          var(--ink, #1f1f1f);
+  color:          var(--ink, var(--ink));
   text-decoration: none;
   /* 짧은 라벨(홈/캘린더/용어집)이 너무 좁아져 긴 라벨과 리듬이 깨지는 문제 보정.
      min-width 와 좌우 패딩 동일화로 탭 간 폭 편차를 줄인다 (라벨 자체는 그대로). */
@@ -1354,7 +1354,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink, #1f1f1f);
+  color: var(--ink, var(--ink));
   background: none;
   border: 0;
   padding: var(--gap-element) 16px;
@@ -1380,7 +1380,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .mobile-nav-sublink:focus-visible,
 .mobile-nav-link:focus-visible,
 .mobile-nav-group-summary:focus-visible {
-  outline: 2px solid var(--color-scouting-purple, #622599);
+  outline: 2px solid var(--color-scouting-purple, var(--gw-scouting-purple));
   outline-offset: 2px;
   border-radius: var(--radius-tight);
 }
@@ -1398,8 +1398,8 @@ body[data-home-bootstrap] .lang-btn:hover {
   left: 50%;
   transform: translateX(-50%) translateY(2px);
   min-width: 220px;
-  background: var(--white, #fff);
-  border: 1px solid var(--border, #c4c4c4);
+  background: var(--white, var(--gw-canvas-white));
+  border: 1px solid var(--border, var(--gray-300));
   border-radius: var(--radius-md);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   padding: 6px;
@@ -1423,7 +1423,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--gray-700, var(--gray-700));
   text-decoration: none;
   border-radius: var(--radius-sm);
   white-space: nowrap;
@@ -1432,7 +1432,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .nav-sublink:hover,
 .nav-sublink.active {
   background: rgba(98, 37, 153, 0.08);
-  color: var(--accent, #622599);
+  color: var(--accent, var(--gw-scouting-purple));
 }
 
 /* nav-link 는 .nav a 스타일을 그대로 상속 */
@@ -1447,14 +1447,14 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 /* 모바일 햄버거 drawer accordion — 1차/2차 계층 차이 강화 (2026-05-27) */
 .mobile-nav-group {
-  border-bottom: 1px solid var(--gray-100, #ebebeb);
+  border-bottom: 1px solid var(--gray-100, var(--gray-100));
 }
 .mobile-nav-group-summary {
   /* 1차: 굵게(700) + 진한 ink + 살짝 큰 폰트 + uppercase 톤은 안 줌 (한글 가독성) */
   padding: 14px 16px;
   font-weight: 700;
   font-size: 15px;
-  color: var(--ink, #1f1f1f);
+  color: var(--ink, var(--ink));
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -1476,7 +1476,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 4px 0 8px;
   display: flex;
   flex-direction: column;
-  background: var(--gray-100, #ebebeb);
+  background: var(--gray-100, var(--gray-100));
   background: rgba(0, 0, 0, 0.025);
 }
 .mobile-nav-sublink {
@@ -1485,7 +1485,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 9px 16px 9px 36px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--gray-700, var(--gray-700));
   text-decoration: none;
 }
 .mobile-nav-sublink::before {
@@ -1497,15 +1497,15 @@ body[data-home-bootstrap] .lang-btn:hover {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--gray-300, #c4c4c4);
+  background: var(--gray-300, var(--gray-300));
 }
 .mobile-nav-sublink.active,
 .mobile-nav-link.active {
-  color: var(--color-scouting-purple, #622599);
+  color: var(--color-scouting-purple, var(--gw-scouting-purple));
   font-weight: 700;
 }
 .mobile-nav-sublink.active::before {
-  background: var(--color-scouting-purple, #622599);
+  background: var(--color-scouting-purple, var(--gw-scouting-purple));
 }
 .mobile-nav-link {
   /* 1차 단독 링크: 그룹 summary 와 동일한 톤 */
@@ -1513,9 +1513,9 @@ body[data-home-bootstrap] .lang-btn:hover {
   padding: 14px 16px;
   font-weight: 700;
   font-size: 15px;
-  color: var(--ink, #1f1f1f);
+  color: var(--ink, var(--ink));
   text-decoration: none;
-  border-bottom: 1px solid var(--gray-100, #ebebeb);
+  border-bottom: 1px solid var(--gray-100, var(--gray-100));
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -3391,7 +3391,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 10px;
   line-height: 1.5;
-  color: #8f8f8f;
+  color: var(--gray-500);
   text-align: center;
 }
 
@@ -3566,7 +3566,7 @@ body[data-home-bootstrap] .lang-btn:hover {
 .board-banner-note {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
-  color: #8f8f8f;
+  color: var(--gray-500);
   line-height: 1.7;
   margin-top: 10px;
   max-width: 760px;
@@ -6361,8 +6361,8 @@ footer a:hover { color: var(--white); }
   background:       var(--white);
   font-family:      system-ui, -apple-system, sans-serif !important;
   font-size:        14px;
-  color:            #1f1f1f;
-  -webkit-text-fill-color: #1f1f1f;
+  color:            var(--ink);
+  -webkit-text-fill-color: var(--ink);
   outline:          none;
   transition:       border 0.15s;
   box-sizing:       border-box;
@@ -6380,11 +6380,11 @@ footer a:hover { color: var(--white); }
   border:     none;
   cursor:     pointer;
   padding:    4px;
-  color:      #8f8f8f;
+  color:      var(--gray-500);
   line-height: 0;
   transition: color 0.15s;
 }
-.board-pw-eye:hover { color: #1f1f1f; }
+.board-pw-eye:hover { color: var(--ink); }
 
 .board-pw-error {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
@@ -7271,7 +7271,7 @@ footer a:hover { color: var(--white); }
 .board-sort-btn + .board-sort-btn { border-left: 1px solid var(--border); }
 .board-sort-btn.active { background: var(--black); color: var(--white); }
 .board-sort-btn:hover:not(.active) { color: var(--ink); }
-.board-sort-btn:focus-visible { outline: 2px solid var(--scouting-purple, #622599); outline-offset: 2px; }
+.board-sort-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 
 .board-period-bar {
   display: inline-flex;
@@ -7310,7 +7310,7 @@ footer a:hover { color: var(--white); }
   color: var(--white);
   border-color: var(--black);
 }
-.board-period-btn:focus-visible { outline: 2px solid var(--scouting-purple, #622599); outline-offset: 2px; }
+.board-period-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 
 /* latest 전용 publish-date 필터 (전체/하루/일주일/30일). 정렬·인기 윈도우와 분리. */
 .board-days-bar {
@@ -7349,7 +7349,7 @@ footer a:hover { color: var(--white); }
   color: var(--white);
   border-color: var(--black);
 }
-.board-days-btn:focus-visible { outline: 2px solid var(--scouting-purple, #622599); outline-offset: 2px; }
+.board-days-btn:focus-visible { outline: 2px solid var(--scouting-purple, var(--gw-scouting-purple)); outline-offset: 2px; }
 
 @media (max-width: 900px) { .board-sort-bar { padding: 10px var(--gap-section); gap: 10px 14px; } }
 @media (max-width: 480px) {
@@ -7641,11 +7641,11 @@ footer a:hover { color: var(--white); }
 .post-page-body .post-citation {
   margin: 28px 0 18px;
   padding: 12px 16px;
-  border-left: 3px solid var(--gray-300, #c4c4c4);
-  background: var(--gray-100, #ebebeb);
+  border-left: 3px solid var(--gray-300, var(--gray-300));
+  background: var(--gray-100, var(--gray-100));
   font-size: 14px;
   line-height: 1.7;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--gray-700, var(--gray-700));
   border-radius: var(--radius-tight);
 }
 .post-page-body .post-citation cite {
@@ -7677,7 +7677,7 @@ footer a:hover { color: var(--white); }
 }
 .static-page-lead {
   font-size: 16px;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--gray-700, var(--gray-700));
   margin: 0 0 24px;
 }
 .static-page-section {
@@ -7698,7 +7698,7 @@ footer a:hover { color: var(--white); }
   margin: 8px 0;
 }
 .static-page-section code {
-  background: var(--gray-100, #ebebeb);
+  background: var(--gray-100, var(--gray-100));
   padding: 1px 6px;
   border-radius: var(--radius-tight);
   font-size: 13px;
@@ -7707,9 +7707,9 @@ footer a:hover { color: var(--white); }
 .static-page-foot {
   margin-top: 40px;
   padding-top: 20px;
-  border-top: 1px solid var(--gray-300, #c4c4c4);
+  border-top: 1px solid var(--gray-300, var(--gray-300));
   font-size: 13px;
-  color: var(--gray-700, #3f3f3f);
+  color: var(--gray-700, var(--gray-700));
 }
 .post-page-body h2,
 .post-page-body h3,
@@ -7761,7 +7761,7 @@ footer a:hover { color: var(--white); }
 .post-page-body li > ol li > ol { list-style-type: lower-roman; }
 /* 마커: Scouting Purple로 시각 강조 (APCA Lc 92.4 대비 Canvas White) */
 .post-page-body li::marker {
-  color: var(--scouting-purple, #622599);
+  color: var(--scouting-purple, var(--gw-scouting-purple));
   font-weight: 700;
 }
 /* 한 li 안에 <br>/inline 포맷이 섞여도 hanging indent 유지 */
@@ -11010,7 +11010,7 @@ body.wosm-members-page #main-content {
   right: 0;
   max-height: 220px;
   overflow-y: auto;
-  background: var(--bg, #fff);
+  background: var(--bg, var(--gw-canvas-white));
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -11072,14 +11072,14 @@ body.wosm-members-page #main-content {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.board-write-draft-status.is-saving { color: #0094B4; }
-.board-write-draft-status.is-saved  { color: #248737; }
+.board-write-draft-status.is-saving { color: var(--gw-ocean-blue); }
+.board-write-draft-status.is-saved  { color: var(--gw-forest-green); }
 .board-write-draft-status.is-dirty  { color: #b0393a; }
 
 .board-write-seo {
   margin-top: 12px;
   padding: 10px 12px;
-  background: #fff;
+  background: var(--gw-canvas-white);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
@@ -11093,7 +11093,7 @@ body.wosm-members-page #main-content {
 }
 .board-write-seo-url {
   font-size: 11px;
-  color: #0094B4;
+  color: var(--gw-ocean-blue);
   word-break: break-all;
   margin-bottom: 3px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -11101,7 +11101,7 @@ body.wosm-members-page #main-content {
 .board-write-seo-title {
   font-size: 14px;
   font-weight: 700;
-  color: var(--midnight-purple, #4d006e);
+  color: var(--midnight-purple, var(--gw-midnight-purple));
   line-height: 1.35;
   margin-bottom: 3px;
   display: -webkit-box;
@@ -11137,9 +11137,9 @@ body.wosm-members-page #main-content {
 }
 .board-write-scorer-btn {
   padding: 8px 14px;
-  border: 1px solid var(--scouting-purple, #622599);
-  background: var(--scouting-purple, #622599);
-  color: #fff;
+  border: 1px solid var(--scouting-purple, var(--gw-scouting-purple));
+  background: var(--scouting-purple, var(--gw-scouting-purple));
+  color: var(--gw-canvas-white);
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 12px;
   font-weight: 700;
@@ -11152,7 +11152,7 @@ body.wosm-members-page #main-content {
 .board-write-scorer-result[hidden] { display: none !important; }
 .board-write-scorer-result {
   padding: 12px;
-  background: #fff;
+  background: var(--gw-canvas-white);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
 }
@@ -11194,18 +11194,18 @@ body.wosm-members-page #main-content {
 }
 .board-scorer-list { margin: 3px 0 0; padding-left: 1.1em; color: var(--muted); font-size: 11px; }
 .board-scorer-list li { margin: 2px 0; }
-.board-scorer-list.is-strength li { color: #248737; }
+.board-scorer-list.is-strength li { color: var(--gw-forest-green); }
 .board-scorer-list.is-issue    li { color: #b0393a; }
 .board-scorer-improvement {
   margin-top: 10px;
   padding: 10px;
   background: rgba(98,37,153,0.06);
-  border-left: 3px solid var(--scouting-purple, #622599);
+  border-left: 3px solid var(--scouting-purple, var(--gw-scouting-purple));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 12px;
   line-height: 1.6;
 }
-.board-scorer-improvement strong { display: block; margin-bottom: 4px; color: var(--midnight-purple, #4d006e); }
+.board-scorer-improvement strong { display: block; margin-bottom: 4px; color: var(--midnight-purple, var(--gw-midnight-purple)); }
 
 .board-write-hint {
   margin-top: 10px;
@@ -11276,7 +11276,7 @@ body.wosm-members-page #main-content {
 .bw-header {
   position: relative;
   padding: var(--bw-gap-xl) 36px var(--bw-gap-lg);
-  background: linear-gradient(135deg, #ffffff 0%, #fafaff 100%);
+  background: linear-gradient(135deg, var(--gw-canvas-white) 0%, #fafaff 100%);
   border-bottom: 1px solid var(--bw-border);
 }
 .bw-header-meta {
@@ -11291,7 +11291,7 @@ body.wosm-members-page #main-content {
   align-items: center;
   padding: 3px 12px;
   border-radius: var(--radius-pill);
-  color: #fff;
+  color: var(--gw-canvas-white);
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -11320,7 +11320,7 @@ body.wosm-members-page #main-content {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--bw-border);
-  background: #fff;
+  background: var(--gw-canvas-white);
   border-radius: 50%;
   color: var(--bw-text-m);
   cursor: pointer;
@@ -11402,13 +11402,13 @@ body.wosm-members-page #main-content {
   cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
 }
-.bw-draft-item:hover { border-color: #622599; background: #f7f3fc; }
-.bw-draft-item.is-current { border-color: #622599; }
+.bw-draft-item:hover { border-color: var(--gw-scouting-purple); background: #f7f3fc; }
+.bw-draft-item.is-current { border-color: var(--gw-scouting-purple); }
 .bw-draft-item-body { flex: 1; min-width: 0; }
 .bw-draft-item-title {
   font-weight: 600;
   font-size: 13px;
-  color: #1f1f1f;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -11508,7 +11508,7 @@ body.wosm-members-page #main-content {
   padding: 10px 12px;
   border: 1.5px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
-  background: #fff;
+  background: var(--gw-canvas-white);
   color: var(--bw-text);
   font-family: var(--bw-font);
   font-size: 13px;
@@ -11559,7 +11559,7 @@ body.wosm-members-page #main-content {
 .bw-btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .bw-btn-primary {
   background: var(--bw-primary);
-  color: #fff;
+  color: var(--gw-canvas-white);
   border-color: var(--bw-primary);
 }
 .bw-btn-primary:hover:not(:disabled) {
@@ -11567,7 +11567,7 @@ body.wosm-members-page #main-content {
   border-color: var(--bw-primary-h);
 }
 .bw-btn-outline {
-  background: #fff;
+  background: var(--gw-canvas-white);
   color: var(--bw-text-s);
   border-color: var(--bw-border);
 }
@@ -11620,7 +11620,7 @@ body.wosm-members-page #main-content {
 .bw-tag-pills .tag-pill.active,
 .bw-tag-pills .v3-tag-pill.active {
   background: var(--bw-primary);
-  color: #fff;
+  color: var(--gw-canvas-white);
   border-color: var(--bw-primary);
 }
 .bw-tag-pills .tag-pill:hover:not(.active) {
@@ -11666,7 +11666,7 @@ body.wosm-members-page #main-content {
 .bw-gallery-preview:has(.gallery-upload-item) {
   border-style: solid;
   border-color: var(--bw-border);
-  background: #fff;
+  background: var(--gw-canvas-white);
 }
 .bw-gallery-preview .gallery-upload-empty {
   margin: 0;
@@ -11720,7 +11720,7 @@ body.wosm-members-page #main-content {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #fff;
+  background: var(--gw-canvas-white);
   border: 1px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
   box-shadow: 0 4px 12px rgba(0,0,0,.08);
@@ -11739,7 +11739,7 @@ body.wosm-members-page #main-content {
 .bw-sf-dropdown .sf-dropdown-item:hover { background: var(--bw-primary-tint); }
 
 /* ── Stats side card ── */
-.bw-card-stats { background: linear-gradient(180deg, #ffffff 0%, #fdfbff 100%); }
+.bw-card-stats { background: linear-gradient(180deg, var(--gw-canvas-white) 0%, #fdfbff 100%); }
 .bw-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -11780,8 +11780,8 @@ body.wosm-members-page #main-content {
   padding-top: 6px;
   border-top: 1px dashed var(--bw-border);
 }
-.bw-draft-line.is-saving { color: #0094B4; }
-.bw-draft-line.is-saved  { color: #248737; }
+.bw-draft-line.is-saving { color: var(--gw-ocean-blue); }
+.bw-draft-line.is-saved  { color: var(--gw-forest-green); }
 .bw-draft-line.is-dirty  { color: #b0393a; }
 
 /* ── SEO preview side card ── */
@@ -11794,7 +11794,7 @@ body.wosm-members-page #main-content {
 }
 .bw-seo-url {
   font-size: 10.5px;
-  color: #0094B4;
+  color: var(--gw-ocean-blue);
   word-break: break-all;
   margin-bottom: 4px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -11822,7 +11822,7 @@ body.wosm-members-page #main-content {
 
 /* ── Scorer side card ── */
 .bw-card-scorer {
-  background: linear-gradient(135deg, #fdfbff 0%, #f6f0ff 100%);
+  background: linear-gradient(135deg, #fdfbff 0%, var(--bw-primary-tint) 100%);
   border-color: rgba(98,37,153,0.22);
 }
 .bw-scorer-head {
@@ -11836,7 +11836,7 @@ body.wosm-members-page #main-content {
 .bw-scorer-result {
   margin-top: 10px;
   padding: 10px;
-  background: #fff;
+  background: var(--gw-canvas-white);
   border: 1px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
 }
@@ -11883,7 +11883,7 @@ body.wosm-members-page #main-content {
 .bw-card-editor .board-editorjs-wrap {
   border: 1.5px solid var(--bw-border);
   border-radius: var(--bw-radius-s);
-  background: #fff;
+  background: var(--gw-canvas-white);
   min-height: 280px;
   transition: border-color 0.15s;
 }
@@ -12073,7 +12073,7 @@ body.wosm-members-page #main-content {
   justify-content: space-between;
   gap: var(--gap-element);
   margin-bottom: 14px;
-  border-bottom: 1px solid var(--border, #c4c4c4);
+  border-bottom: 1px solid var(--border, var(--gray-300));
   padding-bottom: 8px;
 }
 .home-memorabilia-rail-title {
@@ -12088,10 +12088,10 @@ body.wosm-members-page #main-content {
 }
 .home-memorabilia-rail-title > span:first-child {
   text-transform: uppercase;
-  color: var(--color-scouting-purple, #622599);
+  color: var(--color-scouting-purple, var(--gw-scouting-purple));
 }
 .home-memorabilia-rail-title > span:last-child {
-  color: var(--ink, #1f1f1f);
+  color: var(--ink, var(--ink));
   font-size: 14px;
   font-weight: 500;
 }
@@ -12113,20 +12113,20 @@ body.wosm-members-page #main-content {
   flex-direction: column;
   text-decoration: none;
   color: inherit;
-  border: 1px solid var(--gray-100, #ebebeb);
+  border: 1px solid var(--gray-100, var(--gray-100));
   border-radius: var(--radius-sm);
   overflow: hidden;
-  background: #fff;
+  background: var(--gw-canvas-white);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .home-memo-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  border-color: var(--color-scouting-purple, #622599);
+  border-color: var(--color-scouting-purple, var(--gw-scouting-purple));
 }
 .home-memo-card-thumb {
   aspect-ratio: 1 / 1;
-  background: var(--gray-100, #ebebeb);
+  background: var(--gray-100, var(--gray-100));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12152,7 +12152,7 @@ body.wosm-members-page #main-content {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 11px;
   letter-spacing: 0.04em;
-  color: var(--muted, #8f8f8f);
+  color: var(--muted, var(--gray-500));
   text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -12162,7 +12162,7 @@ body.wosm-members-page #main-content {
   font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: var(--ink, #1f1f1f);
+  color: var(--ink, var(--ink));
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -12329,7 +12329,7 @@ body.wosm-members-page #main-content {
 .post-date { font: inherit; color: inherit; cursor: default; }
 .post-date.is-relative {
   font-weight: 600;
-  color: var(--color-scouting-purple, #622599);
+  color: var(--color-scouting-purple, var(--gw-scouting-purple));
 }
 
 /* ── Home freshness bar ─────────────────────────────────────────────
@@ -12353,7 +12353,7 @@ body.wosm-members-page #main-content {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--color-forest-green, #248737);
+  background: var(--color-forest-green, var(--gw-forest-green));
   box-shadow: 0 0 0 0 rgba(36, 135, 55, 0.5);
   animation: gwFreshnessPulse 2.4s ease-out infinite;
   flex: 0 0 auto;
@@ -12367,10 +12367,10 @@ body.wosm-members-page #main-content {
   .home-freshness-bar .home-freshness-dot { animation: none; }
 }
 .home-freshness-bar .home-freshness-sep {
-  color: var(--gray-300, #C4C4C4);
+  color: var(--gray-300, var(--gray-300));
 }
 .home-freshness-bar .home-freshness-since {
-  color: var(--color-scouting-purple, #622599);
+  color: var(--color-scouting-purple, var(--gw-scouting-purple));
   font-weight: 600;
 }
 .home-freshness-bar .home-freshness-since[hidden] { display: none; }

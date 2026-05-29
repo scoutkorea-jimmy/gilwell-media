@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.167.03",
+    "date": "2026-05-29",
+    "released_at": "2026-05-30 00:20:00 KST",
+    "summary": "디자인 시스템 정리 1단계 — 공개 스타일의 리터럴 HEX를 기존 토큰으로 치환(화면 변화 없음).",
+    "for_users": [
+      "화면에 보이는 색·디자인은 그대로이며, 내부적으로 색을 표준 토큰으로 정리해 향후 색상 일관성 관리가 쉬워졌습니다."
+    ],
+    "for_developers": [
+      "css/style.css — :root 토큰과 값이 정확히 일치하는 standalone 리터럴 HEX 79곳을 var() 로 치환(--ink/--black/--gray-*/--gw-scouting-purple/--gw-ocean-blue/--gw-forest-green/--gw-midnight-purple/--gw-canvas-white/--bw-primary-tint). computed 값 동일 → 시각 변화 0. :root 정의부는 제외해 순환참조 없음(검증: circular 0, 미정의 토큰 참조 0, 중괄호 균형 불변).",
+      "잔여(시각 검증 필요): 토큰 없는 65종(그라데이션 음영·상태색)→시맨틱 신규 토큰화, css/memorabilia.css·chatbot.css HEX, bw- Tailwind-slate 스케일 재매핑, admin/board-write 스타일의 공개 시트 분리.",
+      "사이트 00.167.02 → 00.167.03 (디자인 토큰 정리 1/N)."
+    ]
+  },
+  {
     "version": "00.167.02",
     "date": "2026-05-29",
     "released_at": "2026-05-29 23:55:00 KST",
