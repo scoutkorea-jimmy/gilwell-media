@@ -5093,7 +5093,7 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-status-head.is-ongoing {
-  color: #1e9b60;
+  color: var(--success);
   border-color: rgba(30, 155, 96, 0.35);
   background: rgba(30, 155, 96, 0.08);
 }
@@ -5195,7 +5195,7 @@ footer a:hover { color: var(--white); }
 }
 
 .calendar-status-badge.is-ongoing {
-  color: #1e9b60;
+  color: var(--success);
 }
 
 .calendar-status-badge.is-finished {
@@ -9644,8 +9644,8 @@ footer a:hover { color: var(--white); }
   cursor: pointer;
 }
 .glossary-admin-inline-btn.delete {
-  border-color: #cc4444;
-  color: #cc4444;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 .glossary-login-modal {
   position: fixed;
@@ -11076,7 +11076,7 @@ body.wosm-members-page #main-content {
 }
 .board-write-draft-status.is-saving { color: var(--gw-ocean-blue); }
 .board-write-draft-status.is-saved  { color: var(--gw-forest-green); }
-.board-write-draft-status.is-dirty  { color: #b0393a; }
+.board-write-draft-status.is-dirty  { color: var(--danger); }
 
 .board-write-seo {
   margin-top: 12px;
@@ -11159,7 +11159,7 @@ body.wosm-members-page #main-content {
   border-radius: var(--radius-md);
 }
 .board-scorer-loading { font-size: 12px; color: var(--muted); text-align: center; padding: 14px; }
-.board-scorer-error   { font-size: 12px; color: #b0393a; padding: 10px; background: rgba(255,86,85,0.06); border-radius: var(--radius-sm); }
+.board-scorer-error   { font-size: 12px; color: var(--danger); padding: 10px; background: rgba(255,86,85,0.06); border-radius: var(--radius-sm); }
 .board-scorer-head {
   display: flex;
   align-items: center;
@@ -11197,7 +11197,7 @@ body.wosm-members-page #main-content {
 .board-scorer-list { margin: 3px 0 0; padding-left: 1.1em; color: var(--muted); font-size: 11px; }
 .board-scorer-list li { margin: 2px 0; }
 .board-scorer-list.is-strength li { color: var(--gw-forest-green); }
-.board-scorer-list.is-issue    li { color: #b0393a; }
+.board-scorer-list.is-issue    li { color: var(--danger); }
 .board-scorer-improvement {
   margin-top: 10px;
   padding: 10px;
@@ -11447,7 +11447,7 @@ body.wosm-members-page #main-content {
   font-size: 14px;
   line-height: 1;
 }
-.bw-draft-item-rm:hover { color: #c0392b; border-color: #c0392b; }
+.bw-draft-item-rm:hover { color: var(--danger); border-color: var(--danger); }
 .bw-card-tight { padding: var(--bw-gap-md); }
 .bw-card-editor { padding: var(--bw-gap-md) var(--bw-gap-md) var(--bw-gap-lg); }
 .bw-card-head {
@@ -11784,7 +11784,7 @@ body.wosm-members-page #main-content {
 }
 .bw-draft-line.is-saving { color: var(--gw-ocean-blue); }
 .bw-draft-line.is-saved  { color: var(--gw-forest-green); }
-.bw-draft-line.is-dirty  { color: #b0393a; }
+.bw-draft-line.is-dirty  { color: var(--danger); }
 
 /* ── SEO preview side card ── */
 .bw-card-seo .bw-seo-preview {
