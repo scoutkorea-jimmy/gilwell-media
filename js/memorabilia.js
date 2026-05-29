@@ -36,7 +36,9 @@
 
   function purify(html) {
     if (window.DOMPurify) return window.DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
-    return html;
+    // Fail-closed: DOMPurify(CDN)가 로드되지 않았으면 raw HTML 통과 대신 텍스트로 강등.
+    // CDN 장애·차단 시에도 미살균 마크업이 innerHTML 로 주입되지 않도록 (00.166.04).
+    return escapeHtml(html);
   }
 
   function getSlugFromPath() {

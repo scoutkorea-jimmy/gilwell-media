@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.166.03';
+  GW.APP_VERSION = '00.166.04';
   GW.ADMIN_VERSION = '03.142.03';
-  GW.ASSET_VERSION = '20260529035822';
+  GW.ASSET_VERSION = '20260529132415';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -29,13 +29,17 @@
   GW.TAG_CATEGORIES = ['korea', 'apr', 'wosm', 'people'];
 
   // ── Category metadata ─────────────────────────────────────
+  // ⚠ 색상 단일 원본: 아래 color 값은 서버 SSR `functions/_shared/category-meta.mjs`
+  // 의 CATEGORY_META 및 CSS `:root --tag-*` 토큰과 반드시 일치해야 한다 (빌드 단계가
+  // 없어 import 공유 불가). 배지 글자는 흰색이므로 어두운 브랜드색만 사용 — glossary 는
+  // riverBlue(흰글자 대비 실패)에서 midnightPurple 로 교정 (00.166.04).
   GW.CATEGORIES = {
     latest:{ label: 'Latest', tagClass: 'tag-latest', color: GW.PALETTE.midnightPurple },
     korea: { label: 'Korea', tagClass: 'tag-korea', color: GW.PALETTE.oceanBlue },
     apr:   { label: 'APR',   tagClass: 'tag-apr',   color: GW.PALETTE.fireRed },
     wosm:  { label: 'WOSM',  tagClass: 'tag-wosm',  color: GW.PALETTE.forestGreen },
     people:{ label: 'Scout People', tagClass: 'tag-people', color: GW.PALETTE.scoutingPurple },
-    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: GW.PALETTE.riverBlue },
+    glossary:{ label: 'Glossary', tagClass: 'tag-glossary', color: GW.PALETTE.midnightPurple },
   };
   GW.SITE_META_PAGE_KEYS = ['home', 'latest', 'korea', 'apr', 'wosm', 'wosm_members', 'people', 'glossary', 'contributors', 'search', 'ai_guide'];
   GW.SITE_META_PAGE_LABELS = {

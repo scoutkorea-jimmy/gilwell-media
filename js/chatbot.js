@@ -454,8 +454,9 @@
     renderMessages();
 
     loadData().then(function () {
-      // 진행 중 닫혔으면 후속 작업 중단 (zombie state mutation 방지)
-      if (!state.open && !state.greeted) {
+      // 진행 중 닫혔으면 후속 작업 중단 (zombie state mutation 방지).
+      // greeted 는 첫 오픈 후 영구 true 라 가드에서 제외 — state.open 단독 판정 (00.166.04).
+      if (!state.open) {
         state.sendInFlight = false;
         setInputDisabled(false);
         return;
@@ -470,13 +471,15 @@
       var tIdx = pushTyping();
       renderMessages();
       trackTimer(setTimeout(function () {
+        // 타이핑 대기 중 닫혔을 수 있음 — 상태/답변은 기록하되 렌더·포커스는 열려있을 때만.
         popTyping(tIdx);
         var results = search(text);
         pushBotResult(text, results);
         state.sendInFlight = false;
         setInputDisabled(false);
+        if (!state.open) return;
         renderMessages();
-        if (els.input && state.open) els.input.focus();
+        if (els.input) els.input.focus();
       }, TYPING_MS));
     });
   }
