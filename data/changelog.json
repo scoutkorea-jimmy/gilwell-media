@@ -1,6 +1,33 @@
 {
   "items": [
   {
+    "version": "00.167.09",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 02:50:00 KST",
+    "summary": "글작성 에디터 구조 통합 3단계 — EditorJS 설정을 공통 빌더로.",
+    "for_users": [
+      "글 작성 에디터(문단·제목·목록·인용·이미지) 동작은 그대로이며, 공개·관리자가 같은 설정을 공유하도록 정리했습니다."
+    ],
+    "for_developers": [
+      "js/main.js — GW.buildEditorConfig({holder,placeholder,includeImage,onChange}) 신설. board-write/post-page/admin 에 동일 복제된 EditorJS tools 설정을 통합.",
+      "js/board-write.js·js/post-page.js → buildEditorConfig 사용(이미지 블록 포함). js/admin-v3.js → includeImage:false + onChange(draft/stats) 유지(기존 동작 보존, 권한/필드 변경 없음).",
+      "사이트 00.167.08 → 00.167.09 (글작성 에디터 통합 3/N)."
+    ]
+  },
+  {
+    "version": "03.142.09",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 02:50:00 KST",
+    "summary": "관리자 글작성 EditorJS 설정을 공개 사이트와 동일한 공통 빌더로 통합.",
+    "for_users": [
+      "관리자 글 작성 에디터 동작은 동일하며, 공개 사이트와 같은 설정 코드로 일원화했습니다."
+    ],
+    "for_developers": [
+      "js/admin-v3.js — EditorJS 초기화를 GW.buildEditorConfig 로 전환. 이미지 블록 미포함·onChange 안전망 그대로 유지.",
+      "관리자 03.142.08 → 03.142.09 (글작성 에디터 통합 3/N)."
+    ]
+  },
+  {
     "version": "00.167.08",
     "date": "2026-05-30",
     "released_at": "2026-05-30 02:30:00 KST",

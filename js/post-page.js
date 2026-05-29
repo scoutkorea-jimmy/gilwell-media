@@ -163,31 +163,10 @@ function _initPostEditor(callback) {
       return;
     }
     if (!_postEditState.editor) {
-      _postEditState.editor = new window.EditorJS({
+      _postEditState.editor = new window.EditorJS(GW.buildEditorConfig({
         holder: 'post-edit-editorjs',
         placeholder: '내용을 수정하세요...',
-        tools: {
-          paragraph: {
-            inlineToolbar: true,
-            config: { preserveBlank: true }
-          },
-          header: {
-            class: window.Header,
-            config: { levels: [2, 3, 4], defaultLevel: 2 }
-          },
-          list: {
-            class: window.List,
-            inlineToolbar: true
-          },
-          quote: {
-            class: window.Quote,
-            inlineToolbar: true
-          },
-          image: {
-            class: GW.makeEditorImageTool()
-          }
-        }
-      });
+      }));
     }
     _postEditState.editor.isReady
       .then(function () { callback(); })

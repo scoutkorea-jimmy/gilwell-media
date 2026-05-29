@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.08
+ * Version: 03.142.09
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1675,22 +1675,17 @@
 
   function _initEditor() {
     if (_editor) return;
-    _editor = new window.EditorJS({
+    // admin 은 이미지 블록 미포함(includeImage:false) + onChange(draft/stats) — 기존 동작 보존.
+    // MutationObserver만으로는 IME 합성·블록 type 전환 등 일부 변경 패턴이 누락되어 onChange 안전망 유지.
+    _editor = new window.EditorJS(GW.buildEditorConfig({
       holder: 'v3-editorjs',
       placeholder: '내용을 작성하세요…',
-      tools: {
-        paragraph: { inlineToolbar: true, config: { preserveBlank: true } },
-        header: { class: window.Header, config: { levels: [2, 3, 4], defaultLevel: 2 } },
-        list:   { class: window.List,   inlineToolbar: true },
-        quote:  { class: window.Quote,  inlineToolbar: true },
-      },
-      // MutationObserver만으로는 IME 합성·블록 type 전환·이미지 삽입 등 일부
-      // 변경 패턴이 누락된다. Editor.js 공식 onChange를 함께 등록해 안전망 강화.
+      includeImage: false,
       onChange: function () {
         if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
         if (typeof _updateWriteStats === 'function') _updateWriteStats();
       },
-    });
+    }));
   }
 
   function _editorSetData(data) {

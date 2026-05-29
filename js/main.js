@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.08';
-  GW.ADMIN_VERSION = '03.142.08';
-  GW.ASSET_VERSION = '20260529152146';
+  GW.APP_VERSION = '00.167.09';
+  GW.ADMIN_VERSION = '03.142.09';
+  GW.ASSET_VERSION = '20260529152454';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -632,6 +632,30 @@
     if (eOrInput.keyCode === 229) return true;
     var el = eOrInput.target || eOrInput;
     return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // ── Editor.js 설정 빌더 (단일 원본) ─────────────────────────
+  // board-write/post-page/admin 이 동일하게 쓰던 EditorJS tools 설정을 통합.
+  // holder/placeholder 만 화면별로 다르고, admin 은 이미지 블록 미포함(includeImage:false) +
+  // onChange(draft/stats) 사용 — 기존 동작을 그대로 보존(구조만 통합, 권한/기능 변경 없음).
+  GW.buildEditorConfig = function (opts) {
+    opts = opts || {};
+    var tools = {
+      paragraph: { inlineToolbar: true, config: { preserveBlank: true } },
+      header: { class: window.Header, config: { levels: [2, 3, 4], defaultLevel: 2 } },
+      list:   { class: window.List,   inlineToolbar: true },
+      quote:  { class: window.Quote,  inlineToolbar: true },
+    };
+    if (opts.includeImage !== false && GW.makeEditorImageTool) {
+      tools.image = { class: GW.makeEditorImageTool() };
+    }
+    var cfg = {
+      holder: opts.holder,
+      placeholder: opts.placeholder || '내용을 작성하세요...',
+      tools: tools,
+    };
+    if (typeof opts.onChange === 'function') cfg.onChange = opts.onChange;
+    return cfg;
   };
 
   // ── 이미지 선택+최적화 (단일 원본) ──────────────────────────
