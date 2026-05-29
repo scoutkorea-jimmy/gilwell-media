@@ -940,10 +940,11 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
   --region-iar:  #d44f94;
   --region-wosm: var(--forest-green);
 
-  /* Post kicker accent colours (outlined tag style; AA compliant on white) */
-  --kicker-default:  #3f3f3f;
-  --kicker-people:   #8A5A2B;
-  --kicker-glossary: #5D6F2B;
+  /* 카테고리 칩(글머리 태그) 아웃라인 색 — 각 카테고리 브랜드색과 일치시켜 채움 태그(.tag-*)와 통일.
+     White APCA Lc 45+ (UI 라벨 기준). people/glossary 가 과거 오프팔레트(갈색/올리브)였던 것을 교정. */
+  --kicker-default:  var(--gray-700);
+  --kicker-people:   var(--scouting-purple);
+  --kicker-glossary: var(--midnight-purple);
 
   /* Surface tints */
   --bg-cream:   #fbf8f3;
@@ -2428,6 +2429,7 @@ body[data-home-bootstrap] .lang-btn:hover {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  border-radius: var(--radius-tight);   /* 카테고리 라벨 통일 곡률 (4px) — 칩 boundary 규칙 일치 */
 }
 
 .home-lead-body h3 {

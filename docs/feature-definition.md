@@ -392,6 +392,21 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - **아웃라인형 kicker의 border-color와 color는 항상 같은 색 사용** — 시각 일관성 우선. 1~2자 장식 라벨은 본문 읽기 텍스트가 아닌 UI 라벨이므로 APCA 기준은 `3.4`의 '본문 Lc 75+' 대신 **'UI 라벨 Lc 45+'** 기준을 적용한다.
 - 행 내 여러 칩은 `gap: var(--gap-tight)`(8px) 간격 유지.
 
+**카테고리별 칩 색 매핑** (채움 배지 `.tag-*` 와 아웃라인 kicker `.tag-*-kicker` 는 **같은 브랜드색**을 공유한다 — 2026-05-30 등록)
+
+| 카테고리 | 채움 배지 / 아웃라인 kicker | 색 토큰 | HEX | White Lc |
+|---|---|---|---|---|
+| Korea (소식) | `.tag-korea` / `.tag-korea-kicker` | `--ocean-blue` | `#0094B4` | 64.3 |
+| APR | `.tag-apr` / `.tag-apr-kicker` | `--fire-red` | `#FF5655` | 58.9 |
+| WOSM | `.tag-wosm` / `.tag-wosm-kicker` | `--forest-green` | `#248737` | 73.0 |
+| Scout People (인물) | `.tag-people` / `.tag-people-kicker` | `--scouting-purple` | `#622599` | 92.4 |
+| Glossary | `.tag-glossary` / `.tag-glossary-kicker` | `--midnight-purple` | `#4D006E` | 100.2 |
+| Latest | `.tag-latest` (배지=Midnight) / `.tag-latest-kicker` (=Black) | `--midnight-purple` / `--black` | `#4D006E` / `#030303` | 100.2 / 107.7 |
+| 기본 kicker (카테고리 외) | `--kicker-default` | `--gray-700` | `#3F3F3F` | 96.2 |
+
+- **카테고리 kicker는 반드시 같은 카테고리 채움 배지와 동일 브랜드색을 쓴다.** 2026-05-30 정정: `--kicker-people` 갈색(`#8A5A2B`)→Scouting Purple, `--kicker-glossary` 올리브(`#5D6F2B`)→Midnight Purple 로 교체해 브랜드 팔레트 밖 색을 제거했다. (예: "스카우트 인물" 채움 배지와 "소식"·"인물" 글머리 태그가 모두 Scouting Purple 계열로 통일)
+- 홈 "메인 스토리" 라벨(`.home-lead-kicker`)은 검정 채움 + 흰 텍스트이며, 칩 공통 4px 라운딩(`--radius-tight`)을 적용해 옆 카테고리 배지와 boundary 를 맞춘다.
+
 #### 각주
 - 통합 배경: 이전에는 페이지별로 `.category-tag`와 `.post-kicker`의 크기·letter-spacing이 미묘하게 달라 같은 범주인데도 밀도가 달라 보였다. 공통 규격 기준 하나로 전 영역을 맞추면 시각 언어가 안정된다.
 - 관리자 V3의 `.v3-badge`는 공개 `.category-tag`와 **같은 벡터**(pill 정도, 작은 폰트, tight padding)를 따른다. 관리자→공개 이동 시 체감 격차 최소화.

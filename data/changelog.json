@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.167.07",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 02:00:00 KST",
+    "summary": "홈 '메인 스토리' 칩 모서리 규칙 복구 + 카테고리 글머리 태그 색을 브랜드색으로 통일.",
+    "for_users": [
+      "홈 '메인 스토리' 칩이 옆 카테고리 배지와 같은 둥근 모서리로 맞춰졌습니다(혼자 각져 보이던 문제 해결).",
+      "스카우트 인물 등 카테고리의 '소식'·'인물' 글머리 태그 색이 해당 카테고리 색과 어긋나던 것을 통일했습니다(스카우트 인물=보라색 계열)."
+    ],
+    "for_developers": [
+      "css/style.css — .home-lead-kicker 에 border-radius: var(--radius-tight)(4px) 추가. 칩 공통 boundary 규칙(.category-tag/.post-kicker)과 일치.",
+      "css/style.css — --kicker-people #8A5A2B(갈색)→var(--scouting-purple), --kicker-glossary #5D6F2B(올리브)→var(--midnight-purple), --kicker-default #3f3f3f→var(--gray-700). 카테고리 kicker 가 채움 배지와 동일 브랜드색을 쓰도록 통일(korea/apr/wosm 방식과 일치), 오프팔레트 색 제거.",
+      "사이트 00.167.06 → 00.167.07 (칩 boundary + kicker 색 통일)."
+    ]
+  },
+  {
+    "version": "03.142.08",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 02:00:00 KST",
+    "summary": "KMS에 카테고리 칩 색 매핑 표 등록(운영 원본 D1 반영).",
+    "for_users": [
+      "카테고리별 칩 색 기준을 운영 문서(KMS)에 등록해, 앞으로 칩 색이 임의로 달라지지 않도록 했습니다."
+    ],
+    "for_developers": [
+      "KMS §3.3.1(칩·배지 패밀리)에 '카테고리별 칩 색 매핑' 표 추가 — 채움 .tag-* 와 아웃라인 .tag-*-kicker 가 같은 브랜드색을 공유함을 명문화(Korea=Ocean/APR=Fire/WOSM=Forest/People=Scouting/Glossary=Midnight/Latest=Black, 기본 kicker=Gray-700).",
+      "D1 settings.feature_definition 갱신(청크 append 로 SQLITE_TOOBIG 회피, 라운드트립 무결성 확인) 후 scripts/sync_kms_snapshot.mjs 로 docs/feature-definition.md·feature-definition-default.js 동기화.",
+      "관리자 03.142.07 → 03.142.08 (KMS 칩 색 매핑 등록)."
+    ]
+  },
+  {
     "version": "00.167.06",
     "date": "2026-05-30",
     "released_at": "2026-05-30 01:30:00 KST",
