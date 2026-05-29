@@ -1,6 +1,40 @@
 {
   "items": [
   {
+    "version": "00.167.01",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 23:05:00 KST",
+    "summary": "한글 IME 마지막 글자 반복 버그 차단 + 기념품 등록 폼 공개·관리자 구현 단일화.",
+    "for_users": [
+      "글 작성 모달의 태그·메타태그 입력, 기념품 등록의 국가·행사·자동완성 입력에서 한글을 칠 때 마지막 글자가 중복되던 문제가 사라졌습니다.",
+      "기념품 등록 화면이 공개 페이지와 관리자 페이지에서 동일하게 동작하도록 내부 처리를 통일했습니다."
+    ],
+    "for_developers": [
+      "js/main.js — GW.bindImeSafeEnter(input, onCommit, opts) + GW.isImeComposing(eventOrInput) 신설. chatbot.js 의 compositionstart/end + isComposing + keyCode 229 가드 패턴을 단일 헬퍼로 추출.",
+      "js/board-write.js — 태그 입력 Enter 를 bindImeSafeEnter 로 교체, 메타태그 자동완성 Enter 분기에 isImeComposing 가드.",
+      "js/memorabilia-shared.js — 국가/코드·행사 picker 의 input(조합 중 skip)·Enter(조합 확정 시 추가 금지) 가드. 공개+관리자 양쪽 동시 적용.",
+      "js/memorabilia.js — issuer/tag 자동완성 input 핸들러에 e.isComposing early-return.",
+      "js/memorabilia-shared.js — GW.MemorabiliaDesc.toEditorJson 신설, 공개(plainToEditorJson)·관리자(descToEditorJson) 복제 제거.",
+      "사이트 00.167.00 → 00.167.01 (fix — IME + 기념품 dedup)."
+    ]
+  },
+  {
+    "version": "03.142.04",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 23:05:00 KST",
+    "summary": "관리자 IME 마지막 글자 반복 차단 + KMS 편집 권한 게이트 보안 교정.",
+    "for_users": [
+      "관리자 글 작성·태그 편집에서 한글 입력 시 마지막 글자가 중복되던 문제가 사라졌습니다.",
+      "운영 기준 원본(KMS) 편집은 쓰기 권한이 있는 운영자만 가능하도록 보안이 강화되었습니다."
+    ],
+    "for_developers": [
+      "js/admin-v3.js — 메타태그 자동완성 Enter, write-tag 입력(bindImeSafeEnter), 태그 인라인 수정·tags-add Enter 핸들러에 IME 가드. (파일 내 composition 가드 0개였음)",
+      "js/admin-memorabilia.js — descToEditorJson 제거, GW.MemorabiliaDesc.toEditorJson 공유 사용.",
+      "functions/api/settings/feature-definition.js — PUT 핸들러 권한 게이트 'view'→'write' 교정. 보기 권한만 있는 멤버가 KMS 원본을 수정할 수 있던 결함 차단(C4). write 액션 분당 60회 rate-limit 적용.",
+      "관리자 03.142.03 → 03.142.04 (fix — IME + KMS 권한)."
+    ]
+  },
+  {
     "version": "00.167.00",
     "date": "2026-05-29",
     "released_at": "2026-05-29 22:40:00 KST",

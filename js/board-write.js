@@ -310,12 +310,8 @@
     document.getElementById('board-cover-btn').addEventListener('click', function () { self._uploadCoverImage(); });
     document.getElementById('board-gallery-btn').addEventListener('click', function () { self._uploadGalleryImages(); });
     document.getElementById('board-tag-new-btn').addEventListener('click', function () { self._addWriteTag(); });
-    document.getElementById('board-tag-new-input').addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        self._addWriteTag();
-      }
-    });
+    // IME-안전 Enter: 한글 조합 확정 Enter 에서 태그가 중복 추가/마지막 글자 반복되지 않도록.
+    GW.bindImeSafeEnter(document.getElementById('board-tag-new-input'), function () { self._addWriteTag(); });
 
     var sfInput = document.getElementById('board-write-special-feature');
     var sfDropdown = document.getElementById('board-sf-dropdown');
@@ -1237,7 +1233,8 @@
         var open = box && !box.hidden;
         if (e.key === 'ArrowDown' && open) { e.preventDefault(); self._moveBoardMetaActive(1); }
         else if (e.key === 'ArrowUp' && open) { e.preventDefault(); self._moveBoardMetaActive(-1); }
-        else if (e.key === 'Enter' && open && self._boardMetaSuggestIdx >= 0) {
+        else if (e.key === 'Enter' && open && self._boardMetaSuggestIdx >= 0 && !GW.isImeComposing(e)) {
+          // IME 조합 확정 Enter 가 아닐 때만 추천 적용 (마지막 글자 반복 방지)
           e.preventDefault();
           var items = box.querySelectorAll('.board-metatag-suggestion');
           var active = items[self._boardMetaSuggestIdx];

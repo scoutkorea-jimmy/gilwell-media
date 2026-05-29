@@ -20,7 +20,9 @@ export async function onRequestGet({ env }) {
 }
 
 export async function onRequestPut({ request, env }) {
-  const __gate = await gateMenuAccess(request, env, 'kms', 'view'); if (__gate) return __gate
+  // 보안: 운영 원본(KMS) 편집은 write 권한 필수. 과거 'view' 로 게이팅돼 보기 권한만 있는
+  // 멤버가 KMS 를 수정할 수 있었던 결함 교정. write 액션은 분당 60회 rate-limit 도 함께 적용된다.
+  const __gate = await gateMenuAccess(request, env, 'kms', 'write'); if (__gate) return __gate
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
   const content = normalizeFeatureDefinitionContent(body && body.content || '').trim();

@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.00';
-  GW.ADMIN_VERSION = '03.142.03';
-  GW.ASSET_VERSION = '20260529133735';
+  GW.APP_VERSION = '00.167.01';
+  GW.ADMIN_VERSION = '03.142.04';
+  GW.ASSET_VERSION = '20260529140424';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -616,6 +616,40 @@
     var text = typeof value === 'string' ? value.trim() : '';
     if (!text) return '';
     return '<p class="post-image-caption">' + GW.escapeHtml(text) + '</p>';
+  };
+
+  // ── IME-safe 입력 헬퍼 ───────────────────────────────────────
+  // 한글 IME 조합 중 Enter/쉼표 키는 "조합 중인 마지막 음절을 확정"하는 키스트로크다.
+  // 핸들러가 그 Enter 에서 preventDefault+동작하거나, autocomplete 가 조합 중 .value 를
+  // 다시 쓰면 확정된 마지막 음절이 한 번 더 반영되어 "마지막 글자 반복" 버그가 난다.
+  // chatbot.js 의 검증된 패턴(compositionstart/end + isComposing + keyCode 229)을 단일화.
+
+  // 입력 요소가 현재 IME 조합 중인지 (이벤트 또는 요소 기준). autocomplete 의 input 핸들러가
+  // 조합 중 value 재기록/네트워크 요청을 건너뛰도록 early-return 용도.
+  GW.isImeComposing = function (eOrInput) {
+    if (!eOrInput) return false;
+    if (typeof eOrInput.isComposing === 'boolean' && eOrInput.isComposing) return true;
+    if (eOrInput.keyCode === 229) return true;
+    var el = eOrInput.target || eOrInput;
+    return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // input 요소의 Enter(확정)에 IME-안전 가드를 건다. onCommit 은 조합이 끝난 진짜 Enter 에서만 실행.
+  // opts.allowShiftNewline=true 면 Shift+Enter 는 통과(줄바꿈). opts.commitKeys 로 추가 확정키(예: ',') 지정.
+  GW.bindImeSafeEnter = function (input, onCommit, opts) {
+    if (!input || typeof onCommit !== 'function') return;
+    opts = opts || {};
+    var commitKeys = opts.commitKeys || ['Enter'];
+    input.addEventListener('compositionstart', function () { input.dataset.imeComposing = '1'; });
+    input.addEventListener('compositionend', function () { input.dataset.imeComposing = ''; });
+    input.addEventListener('keydown', function (e) {
+      if (commitKeys.indexOf(e.key) === -1) return;
+      if (e.key === 'Enter' && opts.allowShiftNewline && e.shiftKey) return;
+      // 조합 중이면(=마지막 음절 확정 키) 핸들러를 실행하지 않는다.
+      if (e.isComposing || e.keyCode === 229 || input.dataset.imeComposing === '1') return;
+      e.preventDefault();
+      onCommit(e);
+    });
   };
 
   GW.syncBuildVersion = function () {

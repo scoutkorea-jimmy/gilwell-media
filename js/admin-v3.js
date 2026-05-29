@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.03
+ * Version: 03.142.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3252,7 +3252,8 @@
     // 메타태그 자동완성 이벤트
     var metaInput = _el('w-metatag-input');
     if (metaInput) {
-      metaInput.addEventListener('input', function () {
+      metaInput.addEventListener('input', function (e) {
+        if (e && e.isComposing) return; // IME 조합 중 자동완성 보류
         _ensureMetaTagPool();
         _renderMetaTagSuggestions(this.value);
       });
@@ -3269,7 +3270,8 @@
         var open = box && !box.hidden;
         if (e.key === 'ArrowDown' && open) { e.preventDefault(); _moveMetaSuggestActive(1); }
         else if (e.key === 'ArrowUp' && open) { e.preventDefault(); _moveMetaSuggestActive(-1); }
-        else if (e.key === 'Enter' && open && _metaSuggestActiveIdx >= 0) {
+        else if (e.key === 'Enter' && open && _metaSuggestActiveIdx >= 0 && !GW.isImeComposing(e)) {
+          // IME 조합 확정 Enter 가 아닐 때만 추천 적용 (마지막 글자 반복 방지)
           e.preventDefault();
           var items = box.querySelectorAll('.v3-metatag-suggestion');
           var active = items[_metaSuggestActiveIdx];
@@ -3828,9 +3830,8 @@
       newBtn.dataset.tagsBound = '1';
     }
     if (newInput && newInput.dataset.tagsBound !== '1') {
-      newInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); _addWriteTagFromInput(); }
-      });
+      // IME-안전 Enter: 한글 조합 확정 Enter 에서 태그 중복/마지막 글자 반복 방지
+      GW.bindImeSafeEnter(newInput, function () { _addWriteTagFromInput(); });
       newInput.dataset.tagsBound = '1';
     }
   }
@@ -9831,7 +9832,7 @@
           input.focus();
           input.select();
           input.addEventListener('keydown', function (event) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !GW.isImeComposing(event)) {
               event.preventDefault();
               _commitTagEdit(_tagInlineEdit.scope, _tagInlineEdit.original);
             } else if (event.key === 'Escape') {
@@ -9861,7 +9862,7 @@
     });
     wrap.querySelectorAll('.v3-tag-add-input').forEach(function (input) {
       input.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !GW.isImeComposing(event)) {
           event.preventDefault();
           var scope = (input.id || '').replace('tags-add-', '');
           _addTagToScope(scope);

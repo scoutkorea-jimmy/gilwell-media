@@ -1153,8 +1153,8 @@
         size_text: $('#memo-size').value,
         issuer_en: $('#memo-issuer-en').value,
         issuer_ko: $('#memo-issuer-ko').value,
-        description_en: plainToEditorJson($('#memo-desc-en').value),
-        description_ko: plainToEditorJson($('#memo-desc-ko').value),
+        description_en: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-en').value),
+        description_ko: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-ko').value),
         related_links: this.links.filter((l) => l.url),
         country_codes,
         tags,
@@ -1487,7 +1487,8 @@
   function bindAutocomplete(input, dropdown, type) {
     if (!input || !dropdown) return;
     let timer;
-    input.addEventListener('input', () => {
+    input.addEventListener('input', (e) => {
+      if (e && e.isComposing) return; // IME 조합 중 자동완성 조회 보류
       clearTimeout(timer);
       const q = input.value.trim();
       if (q.length < 1) { dropdown.innerHTML = ''; dropdown.hidden = true; return; }
@@ -1516,7 +1517,8 @@
   function bindTagAutocomplete(input, dropdown) {
     if (!input || !dropdown) return;
     let timer;
-    input.addEventListener('input', () => {
+    input.addEventListener('input', (e) => {
+      if (e && e.isComposing) return; // IME 조합 중 자동완성 조회 보류
       clearTimeout(timer);
       const parts = input.value.split(',');
       const last = (parts[parts.length - 1] || '').trim();
@@ -1543,16 +1545,6 @@
       }, 200);
     });
     input.addEventListener('blur', () => setTimeout(() => { dropdown.hidden = true; }, 150));
-  }
-
-  function plainToEditorJson(text) {
-    const t = String(text || '').trim();
-    if (!t) return '';
-    const blocks = t.split(/\n{2,}/).map((p) => ({
-      type: 'paragraph',
-      data: { text: escapeHtml(p).replace(/\n/g, '<br>') },
-    }));
-    return JSON.stringify({ blocks });
   }
 
   function wireEditorEvents() {

@@ -225,8 +225,12 @@
       removeCode(btn.getAttribute('data-remove'));
     });
 
-    // 입력 — 드롭다운 갱신
-    inputEl.addEventListener('input', () => { activeIdx = -1; renderDropdown(); });
+    // 입력 — 드롭다운 갱신 (IME 조합 중에는 건너뛰어 마지막 글자 반복/조기 매칭 방지)
+    inputEl.addEventListener('input', (e) => {
+      if (e && e.isComposing) return;
+      activeIdx = -1;
+      renderDropdown();
+    });
     inputEl.addEventListener('focus', () => { if (inputEl.value.trim()) renderDropdown(); });
     inputEl.addEventListener('blur', () => setTimeout(closeDropdown, 150));
     inputEl.addEventListener('keydown', (e) => {
@@ -240,6 +244,8 @@
         activeIdx = Math.max(activeIdx - 1, 0);
         renderDropdown();
       } else if (e.key === 'Enter') {
+        // IME 조합 확정 Enter 면 코드 추가 안 함 (마지막 글자 반복 방지)
+        if (GW.isImeComposing(e)) return;
         if (activeIdx >= 0 && matches[activeIdx]) {
           e.preventDefault();
           addCode(matches[activeIdx].getAttribute('data-code'));
@@ -491,7 +497,11 @@
       }
     });
 
-    inputEl.addEventListener('input', () => { activeIdx = -1; renderDropdown(); });
+    inputEl.addEventListener('input', (e) => {
+      if (e && e.isComposing) return;
+      activeIdx = -1;
+      renderDropdown();
+    });
     inputEl.addEventListener('focus', () => { if (inputEl.value.trim()) renderDropdown(); });
     inputEl.addEventListener('blur', () => setTimeout(closeDropdown, 200));
     inputEl.addEventListener('keydown', (e) => {
@@ -593,5 +603,18 @@
   GW.MemorabiliaEvents = {
     load: loadEvents,
     attach: attachEventPicker,
+  };
+
+  // 단순 텍스트 → Editor.js paragraph 블록 JSON. 공개(memorabilia.js)·관리자(admin-memorabilia.js)
+  // 등록 폼이 각자 복제하던 plainToEditorJson/descToEditorJson 을 단일화 (동일 구현 보장).
+  GW.MemorabiliaDesc = {
+    toEditorJson: function (text) {
+      var t = String(text == null ? '' : text).trim();
+      if (!t) return '';
+      var blocks = t.split(/\n{2,}/).map(function (p) {
+        return { type: 'paragraph', data: { text: GW.escapeHtml(p).replace(/\n/g, '<br>') } };
+      });
+      return JSON.stringify({ blocks: blocks });
+    },
   };
 })();

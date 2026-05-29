@@ -1093,17 +1093,6 @@
     return String(s).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function descToEditorJson(text) {
-    // 단순 텍스트 → Editor.js paragraph 블록으로 래핑
-    const t = String(text || '').trim();
-    if (!t) return '';
-    const blocks = t.split(/\n{2,}/).map((p) => ({
-      type: 'paragraph',
-      data: { text: escapeHtml(p).replace(/\n/g, '<br>') },
-    }));
-    return JSON.stringify({ blocks });
-  }
-
   function populateCategorySelect() {
     const sel = $('#memo-category');
     if (!sel) return;
@@ -1704,8 +1693,8 @@
       size_text: $('#memo-size').value || '',
       issuer_en: $('#memo-issuer-en').value || '',
       issuer_ko: $('#memo-issuer-ko').value || '',
-      description_en: descToEditorJson($('#memo-desc-en').value),
-      description_ko: descToEditorJson($('#memo-desc-ko').value),
+      description_en: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-en').value),
+      description_ko: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-ko').value),
       related_links: state.links.filter((l) => l.url),
       country_codes,
       tags,
