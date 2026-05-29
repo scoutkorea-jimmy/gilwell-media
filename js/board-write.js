@@ -652,51 +652,35 @@
 
   Board.prototype._uploadCoverImage = function () {
     var self = this;
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = function () {
-      var file = input.files[0];
-      if (!file) return;
-      GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 })
-        .then(function (result) {
-          self._coverImage = result.dataUrl;
-          self._renderCoverPreview();
-        })
-        .catch(function (err) {
-          GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
-        });
-    };
-    input.click();
+    GW.pickAndOptimizeImages({ maxW: 1600, maxH: 1600, quality: 0.82 })
+      .then(function (urls) {
+        if (!urls.length) return;
+        self._coverImage = urls[0];
+        self._renderCoverPreview();
+      })
+      .catch(function (err) {
+        GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
+      });
   };
 
   Board.prototype._uploadGalleryImages = function () {
     var self = this;
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.onchange = function () {
-      var files = Array.prototype.slice.call(input.files || []);
-      var remaining = Math.max(0, 10 - self._galleryImages.length);
-      if (!files.length) return;
-      if (!remaining) {
-        GW.showToast('슬라이드 이미지는 최대 10장까지 추가할 수 있습니다', 'error');
-        return;
-      }
-      files.slice(0, remaining).reduce(function (chain, file) {
-        return chain.then(function () {
-          return GW.optimizeImageFile(file, { maxW: 1800, maxH: 1800, quality: 0.84 }).then(function (result) {
-            self._galleryImages.push({ url: result.dataUrl, caption: '' });
-          });
+    var remaining = Math.max(0, 10 - self._galleryImages.length);
+    if (!remaining) {
+      GW.showToast('슬라이드 이미지는 최대 10장까지 추가할 수 있습니다', 'error');
+      return;
+    }
+    GW.pickAndOptimizeImages({ multiple: true, maxW: 1800, maxH: 1800, quality: 0.84 })
+      .then(function (urls) {
+        if (!urls.length) return;
+        urls.slice(0, remaining).forEach(function (url) {
+          self._galleryImages.push({ url: url, caption: '' });
         });
-      }, Promise.resolve()).then(function () {
         self._renderGalleryPreview();
-      }).catch(function (err) {
+      })
+      .catch(function (err) {
         GW.showToast(err && err.message ? err.message : '이미지 최적화 실패', 'error');
       });
-    };
-    input.click();
   };
 
   Board.prototype._showWriteForm = function () {

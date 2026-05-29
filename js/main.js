@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.04';
-  GW.ADMIN_VERSION = '03.142.06';
-  GW.ASSET_VERSION = '20260529144546';
+  GW.APP_VERSION = '00.167.05';
+  GW.ADMIN_VERSION = '03.142.07';
+  GW.ASSET_VERSION = '20260529145308';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -632,6 +632,41 @@
     if (eOrInput.keyCode === 229) return true;
     var el = eOrInput.target || eOrInput;
     return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // ── 이미지 선택+최적화 (단일 원본) ──────────────────────────
+  // 파일 인풋 생성 → 최적화(GW.optimizeImageFile, 없으면 FileReader 폴백) → dataUrl 배열.
+  // board-write/post-page/admin 의 커버·갤러리 업로드 보일러플레이트를 통합. 선택 취소 시 [] 반환.
+  GW.pickAndOptimizeImages = function (opts) {
+    opts = opts || {};
+    var optOpts = { maxW: opts.maxW || 1600, maxH: opts.maxH || 1600, quality: opts.quality || 0.82 };
+    function toDataUrl(file) {
+      if (GW.optimizeImageFile) {
+        return GW.optimizeImageFile(file, optOpts).then(function (r) { return r.dataUrl; });
+      }
+      return new Promise(function (res, rej) {
+        var rd = new FileReader();
+        rd.onload = function () { res(rd.result); };
+        rd.onerror = function () { rej(new Error('이미지 읽기 실패')); };
+        rd.readAsDataURL(file);
+      });
+    }
+    return new Promise(function (resolve, reject) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      if (opts.multiple) input.multiple = true;
+      input.onchange = function () {
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) { resolve([]); return; }
+        files.reduce(function (chain, file) {
+          return chain.then(function (acc) {
+            return toDataUrl(file).then(function (u) { acc.push(u); return acc; });
+          });
+        }, Promise.resolve([])).then(resolve, reject);
+      };
+      input.click();
+    });
   };
 
   // ── OSM 지오코딩 (단일 원본) ─────────────────────────────────

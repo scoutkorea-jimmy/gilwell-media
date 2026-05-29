@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.167.05",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 01:15:00 KST",
+    "summary": "글작성 에디터 구조 통합 2단계 — 커버·갤러리 이미지 업로드 중복 코드를 공통 함수로.",
+    "for_users": [
+      "글 작성의 대표 이미지·슬라이드 업로드 동작은 그대로이며, 공개·관리자가 같은 코드를 쓰도록 정리했습니다.",
+      "이미지 최적화 라이브러리가 일시적으로 로드되지 않아도 공개 글작성에서 이미지가 업로드되도록 보강했습니다."
+    ],
+    "for_developers": [
+      "js/main.js — GW.pickAndOptimizeImages({multiple,maxW,maxH,quality}) 신설(파일 인풋→최적화→dataUrl[], optimizeImageFile 없으면 FileReader 폴백, 선택취소 시 []).",
+      "js/board-write.js·js/post-page.js·js/admin-v3.js 의 커버/갤러리 업로드를 공통 함수로 통합. 각 화면의 10장 cap 동작(board/admin=remaining slice, post-page=배치 전체 거부)은 그대로 유지.",
+      "board-write/post-page 가 FileReader 폴백을 획득(기존 admin 만 보유). 공개 모달 권한/필드 변경 없음(구조만 통합).",
+      "사이트 00.167.04 → 00.167.05 (글작성 에디터 통합 2/N)."
+    ]
+  },
+  {
+    "version": "03.142.07",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 01:15:00 KST",
+    "summary": "관리자 글작성 커버·갤러리 업로드를 공개 사이트와 동일한 공통 함수로 통합.",
+    "for_users": [
+      "관리자 글 작성의 이미지 업로드 동작은 동일하며, 공개 사이트와 같은 코드로 일원화했습니다."
+    ],
+    "for_developers": [
+      "js/admin-v3.js _pickCover/_pickGallery → GW.pickAndOptimizeImages 사용. 인라인 FileReader 폴백 분기 제거(헬퍼가 흡수), 10장 remaining-slice 동작 유지.",
+      "관리자 03.142.06 → 03.142.07 (글작성 에디터 통합 2/N)."
+    ]
+  },
+  {
     "version": "00.167.04",
     "date": "2026-05-30",
     "released_at": "2026-05-30 00:50:00 KST",

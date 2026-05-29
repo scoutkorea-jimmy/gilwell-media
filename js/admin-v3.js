@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.06
+ * Version: 03.142.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3646,21 +3646,12 @@
 
   /* ── Cover image ── */
   function _pickCover() {
-    var input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = function () {
-      var file = input.files[0]; if (!file) return;
-      if (GW.optimizeImageFile) {
-        GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 }).then(function (r) {
-          _coverDataUrl = r.dataUrl; _renderCoverPreview();
-        }).catch(function (e) { GW.showToast(e.message || '이미지 처리 실패', 'error'); });
-      } else {
-        var reader = new FileReader();
-        reader.onload = function () { _coverDataUrl = reader.result; _renderCoverPreview(); };
-        reader.readAsDataURL(file);
-      }
-    };
-    input.click();
+    GW.pickAndOptimizeImages({ maxW: 1600, maxH: 1600, quality: 0.82 })
+      .then(function (urls) {
+        if (!urls.length) return;
+        _coverDataUrl = urls[0]; _renderCoverPreview();
+      })
+      .catch(function (e) { GW.showToast((e && e.message) || '이미지 처리 실패', 'error'); });
   }
 
   function _renderCoverPreview() {
@@ -3687,20 +3678,14 @@
   /* ── Gallery ── */
   function _pickGallery() {
     if (_galleryImages.length >= 10) { GW.showToast('최대 10장까지 추가할 수 있습니다', 'error'); return; }
-    var input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
-    input.onchange = function () {
-      var files = Array.prototype.slice.call(input.files || []);
-      var remaining = Math.max(0, 10 - _galleryImages.length);
-      var toProcess = files.slice(0, remaining);
-      var process = GW.optimizeImageFile
-        ? function (f) { return GW.optimizeImageFile(f, { maxW: 1800, maxH: 1800, quality: 0.84 }).then(function (r) { return r.dataUrl; }); }
-        : function (f) { return new Promise(function (res) { var rd = new FileReader(); rd.onload = function () { res(rd.result); }; rd.readAsDataURL(f); }); };
-      toProcess.reduce(function (chain, f) {
-        return chain.then(function () { return process(f).then(function (url) { _galleryImages.push({ url: url, caption: '' }); }); });
-      }, Promise.resolve()).then(function () { _renderGallery(); });
-    };
-    input.click();
+    var remaining = Math.max(0, 10 - _galleryImages.length);
+    GW.pickAndOptimizeImages({ multiple: true, maxW: 1800, maxH: 1800, quality: 0.84 })
+      .then(function (urls) {
+        if (!urls.length) return;
+        urls.slice(0, remaining).forEach(function (url) { _galleryImages.push({ url: url, caption: '' }); });
+        _renderGallery();
+      })
+      .catch(function (e) { GW.showToast((e && e.message) || '이미지 처리 실패', 'error'); });
   }
 
   function _renderGallery() {

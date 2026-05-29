@@ -489,50 +489,34 @@ function _renderPostGalleryPreview() {
 }
 
 window._postUploadCover = function () {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.addEventListener('change', function () {
-    var file = input.files && input.files[0];
-    if (!file) return;
-    GW.optimizeImageFile(file, { maxW: 1600, maxH: 1600, quality: 0.82 })
-      .then(function (result) {
-        _postEditState.coverImage = result.dataUrl;
-        _renderPostCoverPreview();
-      })
-      .catch(function (err) {
-        GW.showToast((err && err.message) || '대표 이미지 처리에 실패했습니다', 'error');
-      });
-  });
-  input.click();
+  GW.pickAndOptimizeImages({ maxW: 1600, maxH: 1600, quality: 0.82 })
+    .then(function (urls) {
+      if (!urls.length) return;
+      _postEditState.coverImage = urls[0];
+      _renderPostCoverPreview();
+    })
+    .catch(function (err) {
+      GW.showToast((err && err.message) || '대표 이미지 처리에 실패했습니다', 'error');
+    });
 };
 
 window._postUploadGallery = function () {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.multiple = true;
-  input.addEventListener('change', function () {
-    var files = Array.prototype.slice.call((input.files || []));
-    if (!files.length) return;
-    if ((_postEditState.galleryImages.length + files.length) > 10) {
-      GW.showToast('슬라이드 이미지는 최대 10장까지 등록할 수 있습니다', 'error');
-      return;
-    }
-    Promise.all(files.map(function (file) {
-      return GW.optimizeImageFile(file, { maxW: 1800, maxH: 1800, quality: 0.84 });
-    }))
-      .then(function (results) {
-        results.forEach(function (result) {
-          _postEditState.galleryImages.push({ url: result.dataUrl, caption: '' });
-        });
-        _renderPostGalleryPreview();
-      })
-      .catch(function (err) {
-        GW.showToast((err && err.message) || '슬라이드 이미지 처리에 실패했습니다', 'error');
+  GW.pickAndOptimizeImages({ multiple: true, maxW: 1800, maxH: 1800, quality: 0.84 })
+    .then(function (urls) {
+      if (!urls.length) return;
+      // post-page 고유 동작 유지: 총합 10 초과면 배치 전체 거부
+      if ((_postEditState.galleryImages.length + urls.length) > 10) {
+        GW.showToast('슬라이드 이미지는 최대 10장까지 등록할 수 있습니다', 'error');
+        return;
+      }
+      urls.forEach(function (url) {
+        _postEditState.galleryImages.push({ url: url, caption: '' });
       });
-  });
-  input.click();
+      _renderPostGalleryPreview();
+    })
+    .catch(function (err) {
+      GW.showToast((err && err.message) || '슬라이드 이미지 처리에 실패했습니다', 'error');
+    });
 };
 
 function _populatePostEditForm() {
