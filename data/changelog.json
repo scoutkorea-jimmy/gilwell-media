@@ -1,6 +1,25 @@
 {
   "items": [
   {
+    "version": "00.167.02",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 23:55:00 KST",
+    "summary": "접근성 마감 — 키보드 포커스 가시화, 게시판 카드 링크화, 모달 포커스 가둠, 갤러리 썸네일 키보드 조작.",
+    "for_users": [
+      "검색창·게시판 제목을 키보드(Tab)로 이동할 때 어디에 포커스가 있는지 또렷한 보라색 링으로 보입니다.",
+      "게시판 카드 제목이 실제 링크가 되어 키보드만으로도 기사를 열 수 있고, 검색엔진도 더 잘 인식합니다.",
+      "글 작성 모달이 열리면 Tab 이동이 모달 안에 머물고, 닫으면 직전 위치로 포커스가 돌아옵니다.",
+      "기념품 상세의 썸네일을 키보드(Enter/Space)로도 전환할 수 있습니다."
+    ],
+    "for_developers": [
+      "css/style.css — :root 에 --focus-ring-color 토큰 추가, 색상만 바뀌던 .global/.board/.glossary-search-input:focus 3곳에 box-shadow 가시 링 적용(|Lc| 30+).",
+      "js/board.js — 카드 제목을 <a class=post-card-title-link href=/post/:id> 로 래핑(키보드/SEO), 카드 click 핸들러에 링크 클릭 제외. css 에 :focus-visible 링.",
+      "js/main.js — GW.createFocusTrap(modalEl) 신설(Tab 가둠 + aria-modal + 직전 포커스 복귀). board-write 모달 _showWriteForm/_closeWriteForm 에서 activate/release.",
+      "js/memorabilia.js — 상세 썸네일에 tabindex/role=button/aria-pressed/aria-label + Enter·Space 핸들러.",
+      "사이트 00.167.01 → 00.167.02 (fix — 접근성)."
+    ]
+  },
+  {
     "version": "03.142.05",
     "date": "2026-05-29",
     "released_at": "2026-05-29 23:30:00 KST",

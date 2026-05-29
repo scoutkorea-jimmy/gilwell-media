@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.01';
+  GW.APP_VERSION = '00.167.02';
   GW.ADMIN_VERSION = '03.142.05';
-  GW.ASSET_VERSION = '20260529141028';
+  GW.ASSET_VERSION = '20260529141727';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -632,6 +632,46 @@
     if (eOrInput.keyCode === 229) return true;
     var el = eOrInput.target || eOrInput;
     return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // ── 모달 포커스 트랩 ─────────────────────────────────────────
+  // 열린 모달 안에서 Tab/Shift+Tab 이 배경으로 새지 않도록 가두고, 닫을 때 직전 포커스로 복귀.
+  // 사용: var trap = GW.createFocusTrap(modalEl); trap.activate(); ... trap.release();
+  GW.createFocusTrap = function (modalEl) {
+    if (!modalEl) return { activate: function () {}, release: function () {} };
+    var prevFocus = null;
+    var SEL = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    function focusables() {
+      return Array.prototype.filter.call(modalEl.querySelectorAll(SEL), function (el) {
+        return el.offsetParent !== null || el === document.activeElement;
+      });
+    }
+    function onKey(e) {
+      if (e.key !== 'Tab') return;
+      var list = focusables();
+      if (!list.length) return;
+      var first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+    return {
+      activate: function () {
+        prevFocus = document.activeElement;
+        modalEl.setAttribute('aria-modal', 'true');
+        if (!modalEl.getAttribute('role')) modalEl.setAttribute('role', 'dialog');
+        modalEl.addEventListener('keydown', onKey);
+        var list = focusables();
+        if (list.length) list[0].focus();
+      },
+      release: function () {
+        modalEl.removeEventListener('keydown', onKey);
+        modalEl.removeAttribute('aria-modal');
+        if (prevFocus && typeof prevFocus.focus === 'function') {
+          try { prevFocus.focus(); } catch (_) {}
+        }
+        prevFocus = null;
+      },
+    };
   };
 
   // input 요소의 Enter(확정)에 IME-안전 가드를 건다. onCommit 은 조합이 끝난 진짜 Enter 에서만 실행.

@@ -332,7 +332,8 @@
       '<div class="post-card-body">' +
         '<div class="post-card-head">' +
           '<div class="post-card-labels">' + labelsHtml + '</div>' +
-          '<h3>' + GW.escapeHtml(post.title) + '</h3>' +
+          // 제목을 실제 <a> 로 — 키보드 포커스/Enter 이동 + 크롤러용 진짜 링크. 카드 전체 클릭은 점진 향상.
+          '<h3><a class="post-card-title-link" href="/post/' + post.id + '">' + GW.escapeHtml(post.title) + '</a></h3>' +
         '</div>' +
         subtitleHtml +
         '<p class="post-card-excerpt">' + GW.escapeHtml(GW.truncate(post.content || '', 140)) + '</p>' +
@@ -359,6 +360,7 @@
     card.addEventListener('click', function (e) {
       if (e.target.classList.contains('post-permalink')) return;
       if (e.target.classList.contains('post-card-share-btn')) return;
+      if (e.target.closest('.post-card-title-link')) return; // 제목 링크가 직접 이동 처리
       window.location.href = '/post/' + post.id;
     });
     var shareBtn = card.querySelector('.post-card-share-btn');

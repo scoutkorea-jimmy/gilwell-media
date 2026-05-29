@@ -713,6 +713,10 @@
     if (!overlay) return;
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+    // 접근성: 모달 안에 Tab 가두고 aria-modal 설정, 닫을 때 직전 포커스 복귀
+    if (this._writeTrap) this._writeTrap.release();
+    this._writeTrap = GW.createFocusTrap(overlay);
+    this._writeTrap.activate();
 
     self._selectedTags = [];
     self._coverImage = null;
@@ -806,6 +810,7 @@
 
   Board.prototype._closeWriteForm = function () {
     this._stopDraftAutosave();
+    if (this._writeTrap) { this._writeTrap.release(); this._writeTrap = null; }
     var overlay = document.getElementById('board-write-overlay');
     if (overlay) overlay.classList.remove('open');
     document.body.style.overflow = '';

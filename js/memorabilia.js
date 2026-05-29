@@ -604,11 +604,15 @@
     const thumbs = wrap.querySelectorAll('.memo-thumb-row img');
     const primary = wrap.querySelector('#memo-detail-primary img');
     const creditEl = wrap.querySelector('#memo-detail-credit');
-    thumbs.forEach((t) => t.addEventListener('click', () => {
+    function activate(t) {
       const url = t.getAttribute('data-img');
       if (primary && url) {
         primary.src = url;
-        thumbs.forEach((x) => x.classList.toggle('active', x === t));
+        thumbs.forEach((x) => {
+          const on = x === t;
+          x.classList.toggle('active', on);
+          x.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
       }
       // 활성 이미지 변경 시 출처도 같이 전환. 빈 값이면 hidden 처리해
       // 빈 박스가 레이아웃을 차지하지 않도록 함.
@@ -617,7 +621,21 @@
         creditEl.textContent = credit;
         creditEl.hidden = !credit;
       }
-    }));
+    }
+    thumbs.forEach((t, i) => {
+      // 접근성: 클릭 전용 <img> 를 키보드로 조작 가능한 버튼처럼 노출
+      t.setAttribute('tabindex', '0');
+      t.setAttribute('role', 'button');
+      t.setAttribute('aria-pressed', t.classList.contains('active') ? 'true' : 'false');
+      if (!t.getAttribute('aria-label')) t.setAttribute('aria-label', (i + 1) + '번 이미지 보기');
+      t.addEventListener('click', () => activate(t));
+      t.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          activate(t);
+        }
+      });
+    });
   }
 
   // ── Editor (모달 등록·편집) ─────────────────────────────────────────────

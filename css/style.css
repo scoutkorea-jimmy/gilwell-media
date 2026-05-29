@@ -918,6 +918,8 @@ body *:not(svg):not(path):not(circle):not(line):not(polyline):not(polygon):not(r
 
   --muted:      rgba(31, 31, 31, 0.58);
   --accent:     var(--scouting-purple);
+  /* 키보드 포커스 링 — Scouting Purple 기반, 배경과 |Lc| 30+ 확보용 가시 링 */
+  --focus-ring-color: rgba(98, 37, 153, 0.45);
   --border:     rgba(31, 31, 31, 0.12);
   --bg:         #ffffff;
   --card-bg:    #ffffff;
@@ -3133,6 +3135,18 @@ body[data-home-bootstrap] .lang-btn:hover {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+/* 카드 제목 링크 — 헤딩 스타일 상속, 키보드 포커스 시 가시 링 */
+.post-card-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.post-card-title-link:hover { text-decoration: underline; }
+.post-card-title-link:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  box-shadow: 0 0 0 3px var(--focus-ring-color);
+  border-radius: 3px;
 }
 
 .post-card-subtitle {
@@ -8396,7 +8410,7 @@ footer a:hover { color: var(--white); }
   color:       var(--ink);
   transition:  border-color 0.15s;
 }
-.global-search-input:focus { border-color: var(--accent); }
+.global-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .global-search-btn {
   padding:        9px 20px;
   background:     var(--accent);
@@ -8471,7 +8485,7 @@ footer a:hover { color: var(--white); }
   background:  var(--white);
   transition:  border-color 0.15s;
 }
-.board-search-input:focus { border-color: var(--accent); }
+.board-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .board-search-clear {
   position:   absolute;
   right:      10px;
@@ -9389,7 +9403,7 @@ footer a:hover { color: var(--white); }
   color: var(--ink);
   outline: none;
 }
-.glossary-search-input:focus { border-color: var(--accent); }
+.glossary-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus-ring-color); }
 .glossary-search-help {
   margin: 10px 0 0;
   font-size: 12px;
