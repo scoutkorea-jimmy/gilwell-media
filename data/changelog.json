@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.142.05",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 23:30:00 KST",
+    "summary": "KMS 스냅샷 드리프트 방지 — D1 원본→저장소 사본 자동 동기화 + stale fallback 현행화.",
+    "for_users": [
+      "운영 기준 문서(KMS)의 저장소 사본이 항상 최신 원본과 일치하도록 자동 동기화 장치를 도입해, 문서 불일치로 인한 혼선을 예방합니다."
+    ],
+    "for_developers": [
+      "scripts/sync_kms_snapshot.mjs 신설 — D1 settings.feature_definition(운영 원본)을 읽어 docs/feature-definition.md 와 functions/_shared/feature-definition-default.js 를 재생성. --check 모드로 드리프트 감지 가능.",
+      "functions/_shared/feature-definition-default.js 신설(자동 생성) — 기존 feature-definition.js 에 인라인돼 있던 ~1140줄 fallback literal 이 D1 과 드리프트(폰트 규칙 2세대 stale, §15~17 누락)했던 것을 현행 D1 콘텐츠(84KB, 1748줄)로 교체.",
+      "functions/_shared/feature-definition.js — 인라인 literal 제거하고 default 파일을 import + re-export. 드리프트 원천 차단.",
+      "잔여(오너 작업): 카테고리→색 매핑 표(korea=Ocean/apr=Fire/wosm=Forest/people=Scouting/glossary=Midnight/latest=Black)와 region/kicker spot 토큰을 KMS §3.3.1/§3.4 에 추가 — CLAUDE.md §4 에 따라 관리자 KMS 편집기에서 작성.",
+      "관리자 03.142.04 → 03.142.05 (KMS 스냅샷 동기화 인프라)."
+    ]
+  },
+  {
     "version": "00.167.01",
     "date": "2026-05-29",
     "released_at": "2026-05-29 23:05:00 KST",
