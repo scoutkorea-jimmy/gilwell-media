@@ -1,9 +1,8 @@
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-
-const MISC_BUCKET = '기타';
-const UNMATCHED_BUCKET = '국문 미확정 용어';
-const BUCKETS = ['가', '나', '다', '라', '마', '바', '사', '아', '자', '차', '카', '타', '파', '하', MISC_BUCKET, UNMATCHED_BUCKET];
-const CHOSEONG_BUCKETS = ['가', '가', '나', '다', '다', '라', '마', '바', '바', '사', '사', '아', '자', '자', '차', '카', '타', '파', '하'];
+import {
+  MISC_BUCKET, UNMATCHED_BUCKET, BUCKETS,
+  normalizeTermValue, isMiscTerm, isUnmatchedTerm, inferBucket,
+} from '../../_shared/glossary-buckets.mjs';
 
 export async function onRequestPut({ request, env, params }) {
   const __gate = await gateMenuAccess(request, env, 'glossary', 'write'); if (__gate) return __gate
@@ -64,36 +63,6 @@ function normalizeGlossaryInput(body) {
   if (!BUCKETS.includes(bucket)) return { error: '올바른 분류를 선택해주세요' };
   if (!term_ko && !term_en && !term_fr) return { error: '한국어, 영어, 프랑스어 중 하나 이상 입력해주세요' };
   return { bucket, term_ko, term_en, term_fr, description_ko, sort_order };
-}
-
-function isNumericStart(value) {
-  const first = normalizeTermValue(value, 200).charAt(0);
-  return first >= '0' && first <= '9';
-}
-
-function isMiscTerm(termKo, termEn, termFr) {
-  return isNumericStart(termKo) || isNumericStart(termEn) || isNumericStart(termFr);
-}
-
-function isUnmatchedTerm(termKo, termEn, termFr) {
-  return !normalizeTermValue(termKo, 200) && (!!normalizeTermValue(termEn, 200) || !!normalizeTermValue(termFr, 200));
-}
-
-function inferBucket(termKo) {
-  const normalized = normalizeTermValue(termKo, 200);
-  if (!normalized) return '';
-  const first = normalized.charAt(0);
-  if (!first) return '';
-  const code = first.charCodeAt(0);
-  if (code < 0xac00 || code > 0xd7a3) return '';
-  const choseongIndex = Math.floor((code - 0xac00) / 588);
-  return CHOSEONG_BUCKETS[choseongIndex] || '';
-}
-
-function normalizeTermValue(value, limit) {
-  const raw = String(value || '').trim();
-  const normalized = (raw === '-' || raw === '—') ? '' : raw;
-  return normalized.slice(0, limit);
 }
 
 function json(data, status = 200) {

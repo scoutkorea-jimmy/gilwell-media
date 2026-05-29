@@ -25,6 +25,10 @@ import {
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 60;
+// FTS 후보 상한 — bm25 관련도 상위 N개만 IN(...)/CASE 에 펼친다. 무제한일 때
+// 광범위 검색어가 전체 공개 id 를 거대 SQL(IN + per-id CASE)로 만들던 문제를 차단.
+// 동시에 ORDER BY bm25 를 적용해 후보가 관련도순으로 들어오도록 교정 (기존엔 rowid 순).
+const FTS_CANDIDATE_CAP = 500;
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
@@ -75,7 +79,9 @@ export async function onRequestGet({ request, env }) {
           SELECT memorabilia_id, bm25(memorabilia_fts) AS score
             FROM memorabilia_fts
            WHERE memorabilia_fts MATCH ?
-        `).bind(expanded).all();
+           ORDER BY score ASC
+           LIMIT ?
+        `).bind(expanded, FTS_CANDIDATE_CAP).all();
         candidateIds = (results || []).map((r) => ({ id: r.memorabilia_id, score: r.score }));
       } catch (err) {
         console.warn('FTS search error, falling back to no-q:', err?.message);

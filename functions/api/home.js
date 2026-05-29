@@ -38,6 +38,12 @@ const DEFAULT_HERO_MEDIA = {
 const MAX_MANUAL_HERO_POSTS = 2;
 const AUTO_HERO_POST_COUNT = 3;
 const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
+
+// 카드용 게시글 컬럼 단일 정의 — loadHomeLead/loadHomePicks/loadPostList/loadLatestPosts
+// 가 동일한 SELECT 목록을 4곳에 복제하던 것을 통합. 컬럼 추가/변경을 한 곳에서만 한다.
+// (loadPopular 는 CTE 기반 별도 컬럼셋이라 제외)
+const POST_CARD_COLUMNS = `id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
 
 const HOME_SECTION_ISSUE_DEFS = {
@@ -240,26 +246,25 @@ async function loadStats(env) {
 }
 
 async function loadFooterAnalytics(env) {
-  const [todayUnique, todayViews, totalUnique, totalViews] = await Promise.all([
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')
-                    AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
-    scalar(env, `SELECT COUNT(*) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')
-                    AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`),
-    scalar(env, `SELECT COUNT(DISTINCT viewer_key) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')`),
-    scalar(env, `SELECT COUNT(*) AS count
-                   FROM site_visits
-                  WHERE path NOT LIKE '/api/%'
-                    AND path NOT IN ('/admin', '/admin.html')`),
+  // 4개의 full-table 스캔(today unique/views + total unique/views)을 동일 WHERE 별로
+  // COUNT(DISTINCT)+COUNT(*) 를 한 SELECT 에 묶어 2 스캔으로 축소. 결과값은 동일.
+  // /api/home 은 no-store 라 매 방문 이 비용을 치르므로 스캔 횟수 절감이 직접 이득 (00.166.x).
+  const PUBLIC_WHERE = `path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html')`;
+  const [todayRow, totalRow] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
+                      FROM site_visits
+                     WHERE ${PUBLIC_WHERE}
+                       AND datetime(visited_at, '+9 hours') >= datetime(date('now', '+9 hours'))`)
+      .first().catch(() => null),
+    env.DB.prepare(`SELECT COUNT(DISTINCT viewer_key) AS u, COUNT(*) AS v
+                      FROM site_visits
+                     WHERE ${PUBLIC_WHERE}`)
+      .first().catch(() => null),
   ]);
+  const todayUnique = todayRow ? (todayRow.u || 0) : 0;
+  const todayViews  = todayRow ? (todayRow.v || 0) : 0;
+  const totalUnique = totalRow ? (totalRow.u || 0) : 0;
+  const totalViews  = totalRow ? (totalRow.v || 0) : 0;
   return {
     provider: 'site_visits',
     provider_label: '공개 페이지 전체 방문 집계',
@@ -349,8 +354,7 @@ async function loadHomeLead(env, origin) {
   const media = normalizeHomeLeadMedia(parseJsonValue(mediaRow && mediaRow.value));
   if (!postId) return { post: null, media };
   const post = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+    `SELECT ${POST_CARD_COLUMNS}
        FROM posts
       WHERE id = ? AND published = 1`
   ).bind(postId).first();
@@ -361,8 +365,7 @@ async function loadHomePicks(env, origin, limit) {
   const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
   const [postsRes, orderRow] = await Promise.all([
     env.DB.prepare(
-      `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
-              (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+      `SELECT ${POST_CARD_COLUMNS}
          FROM posts
         WHERE published = 1 AND featured = 1
         ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC`
@@ -404,8 +407,7 @@ async function loadPostList(env, origin, opts = {}) {
   }
   const limit = Math.max(1, Math.min(10, parseInt(opts.limit || 4, 10)));
   const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+    `SELECT ${POST_CARD_COLUMNS}
        FROM posts
       WHERE ${conditions.join(' AND ')}
       ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
@@ -417,8 +419,7 @@ async function loadPostList(env, origin, opts = {}) {
 async function loadLatestPosts(env, origin, limit) {
   const safeLimit = Math.max(1, Math.min(10, parseInt(limit || 4, 10)));
   const { results } = await env.DB.prepare(
-    `SELECT id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes
+    `SELECT ${POST_CARD_COLUMNS}
        FROM posts
       WHERE published = 1
       ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC

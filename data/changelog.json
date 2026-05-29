@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.167.00",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 22:40:00 KST",
+    "summary": "코드 리뷰 후속 성능·구조 개선 — 공개 읽기 경로 DB 부담 경감, 중복 코드 단일 원본화.",
+    "for_users": [
+      "캘린더·용어집·도감 검색이 서버에서 더 가볍게 처리되어 트래픽이 늘어도 응답이 안정적입니다.",
+      "용어집 검색 결과가 관련도 높은 순서대로 더 정확하게 정렬됩니다.",
+      "표시되는 내용 자체는 동일하며, 내부적으로 같은 정보를 한 곳에서 관리하도록 정리해 향후 오류 가능성을 줄였습니다."
+    ],
+    "for_developers": [
+      "functions/_shared/calendar.js — ensureCalendarTable 을 모듈 레벨 once-flag(_calendarSchemaReady)로 가드. 매 공개 GET 마다 돌던 CREATE+PRAGMA/ALTER 12회를 isolate당 1회로 축소.",
+      "functions/api/memorabilia/search.js — FTS MATCH 후보에 ORDER BY bm25 ASC LIMIT 500 적용. 무제한 후보가 IN(...)+per-id CASE 를 거대 SQL로 만들던 문제 차단 + 관련도 정렬이 rowid순→bm25순으로 교정(잠재 버그).",
+      "functions/api/home.js — loadFooterAnalytics 의 site_visits full-scan 4회를 COUNT(DISTINCT)+COUNT(*) 묶음 2회로 축소(결과 동일). no-store 엔드포인트 비용 절감.",
+      "functions/api/home.js — loadHomeLead/loadHomePicks/loadPostList/loadLatestPosts 의 동일 SELECT 컬럼 목록 4곳을 POST_CARD_COLUMNS 상수로 통합.",
+      "functions/_shared/glossary-buckets.mjs 신설 — glossary/index.js(POST)·[id].js(PUT)가 복제하던 BUCKETS/inferBucket/isMiscTerm/isUnmatchedTerm/normalizeTermValue 를 import 공유. 두 쓰기 경로 검증 드리프트 제거(bot.js 는 의도적 별도 유지).",
+      "js/main.js · functions/post/[id].js — normalizeInlineHref/sanitizeEditorInlineHtml/decodeHtmlEntitiesOnce 의 SSR/CSR byte-identical 미러 요구를 양쪽 주석으로 명문화.",
+      "보류: 인기 정렬 site_visits 서브쿼리 롤업 테이블(현 규모 조기 최적화), ensureDuePostsPublished waitUntil 전환(예약 공개 가시성 동작 변화). 실측 신호 시 재검토.",
+      "사이트 00.166.04 → 00.167.00 (구조 리팩터 + 성능 — 코드 리뷰 후속)."
+    ]
+  },
+  {
     "version": "00.166.04",
     "date": "2026-05-29",
     "released_at": "2026-05-29 22:23:00 KST",

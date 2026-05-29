@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.166.04';
+  GW.APP_VERSION = '00.167.00';
   GW.ADMIN_VERSION = '03.142.03';
-  GW.ASSET_VERSION = '20260529132415';
+  GW.ASSET_VERSION = '20260529133735';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -962,6 +962,10 @@
     return GW.renderTextWithMedia(str).html;
   };
 
+  // ⚠ SSR 미러 (XSS 패리티 필수): GW.normalizeInlineHref / sanitizeEditorInlineHtml /
+  // decodeHtmlEntitiesOnce 는 서버 functions/post/[id].js 의 동명 함수와 반드시 byte-identical
+  // 해야 한다. 한쪽만 고치면 SSR 본문과 클라 본문의 살균 결과가 갈려 XSS·렌더 불일치가 생긴다.
+  // (빌드 단계가 없어 import 공유 불가 — 둘을 동시에 수정할 것.)
   GW.normalizeInlineHref = function (value) {
     var raw = String(value || '').trim();
     if (!raw) return '';

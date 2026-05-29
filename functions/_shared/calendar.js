@@ -1,4 +1,10 @@
+// isolate당 1회만 스키마 보장 — 매 공개 GET 마다 CREATE + PRAGMA/ALTER 12회를
+// 돌리던 낭비 제거. 스키마는 첫 실행 후 안정적이므로 성공 시에만 플래그를 세워
+// 마이그레이션 실패 시 다음 호출에서 재시도 (00.166.x 성능 개선).
+let _calendarSchemaReady = false;
+
 export async function ensureCalendarTable(env) {
+  if (_calendarSchemaReady) return;
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS calendar_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +40,7 @@ export async function ensureCalendarTable(env) {
   await ensureCalendarColumn(env, 'start_has_time', 'INTEGER DEFAULT 0');
   await ensureCalendarColumn(env, 'end_has_time', 'INTEGER DEFAULT 0');
   await ensureCalendarColumn(env, 'target_groups', 'TEXT');
+  _calendarSchemaReady = true;
 }
 
 export function normalizeCalendarInput(body) {
