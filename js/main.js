@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.09';
-  GW.ADMIN_VERSION = '03.142.09';
-  GW.ASSET_VERSION = '20260529152454';
+  GW.APP_VERSION = '00.167.10';
+  GW.ADMIN_VERSION = '03.142.10';
+  GW.ASSET_VERSION = '20260529153413';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -656,6 +656,54 @@
     };
     if (typeof opts.onChange === 'function') cfg.onChange = opts.onChange;
     return cfg;
+  };
+
+  // ── 태그 pill 다중선택 (단일 원본, 무상태) ──────────────────
+  // '없음' + 카테고리 태그 pill 을 렌더하고 클릭을 바인딩한다. 선택 상태는 호출자가 소유하며
+  // (board-write/post-page/admin 각자 변수), 헬퍼는 isActive()/onToggle() 로만 통신 → desync 없음.
+  // opts: { tags:[string|{label,value}], pillClass, isActive(value)->bool, onToggle(value) } (value '' = 없음)
+  GW.renderTagPills = function (container, opts) {
+    if (!container) return;
+    opts = opts || {};
+    var cls = opts.pillClass || 'tag-pill';
+    var tags = opts.tags || [];
+    var isActive = typeof opts.isActive === 'function' ? opts.isActive : function () { return false; };
+    function btn(value, label, active) {
+      return '<button type="button" class="' + cls + (active ? ' active' : '') +
+        '" data-tag="' + GW.escapeHtml(value) + '">' + GW.escapeHtml(label) + '</button>';
+    }
+    var anyActive = false;
+    var body = '';
+    tags.forEach(function (t) {
+      var label = typeof t === 'string' ? t : (t.label || t.value || '');
+      var value = typeof t === 'string' ? t : (t.value || t.label || '');
+      var on = isActive(value);
+      if (on) anyActive = true;
+      body += btn(value, label, on);
+    });
+    container.innerHTML = btn('', '없음', !anyActive) + body;
+    container.querySelectorAll('.' + cls).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (typeof opts.onToggle === 'function') opts.onToggle(b.dataset.tag || '');
+      });
+    });
+  };
+
+  // 렌더된 pill 의 active 클래스만 현재 선택에 맞춰 갱신(재렌더 없이). isActive(value)->bool.
+  GW.syncTagPillsActive = function (container, pillClass, isActive) {
+    if (!container) return;
+    var cls = pillClass || 'tag-pill';
+    isActive = typeof isActive === 'function' ? isActive : function () { return false; };
+    var anyActive = false;
+    var pills = container.querySelectorAll('.' + cls);
+    pills.forEach(function (b) {
+      var t = b.dataset.tag || '';
+      if (t !== '' && isActive(t)) anyActive = true;
+    });
+    pills.forEach(function (b) {
+      var t = b.dataset.tag || '';
+      b.classList.toggle('active', t === '' ? !anyActive : isActive(t));
+    });
   };
 
   // ── 이미지 선택+최적화 (단일 원본) ──────────────────────────

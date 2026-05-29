@@ -229,33 +229,20 @@ function _syncPostCategoryChip(category) {
 
 function _syncPostTagPills(selectedTags) {
   var selector = document.getElementById('post-tag-selector');
-  if (!selector) return;
-  selector.querySelectorAll('.tag-pill').forEach(function (pill) {
-    var value = pill.getAttribute('data-tag') || '';
-    if (!value) {
-      pill.classList.toggle('active', selectedTags.length === 0);
-      return;
-    }
-    pill.classList.toggle('active', selectedTags.indexOf(value) >= 0);
-  });
+  GW.syncTagPillsActive(selector, 'tag-pill', function (v) { return selectedTags.indexOf(v) >= 0; });
 }
 
 function _renderPostTagSelector(items) {
   var selector = document.getElementById('post-tag-selector');
   if (!selector) return;
-  var selected = _postEditState.selectedTags.filter(function (tag) {
+  _postEditState.selectedTags = _postEditState.selectedTags.filter(function (tag) {
     return items.indexOf(tag) >= 0;
   });
-  _postEditState.selectedTags = selected;
-  var html = '<button type="button" class="tag-pill' + (!selected.length ? ' active' : '') + '" data-tag="">없음</button>';
-  items.forEach(function (tag) {
-    var active = selected.indexOf(tag) >= 0 ? ' active' : '';
-    html += '<button type="button" class="tag-pill' + active + '" data-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
-  });
-  selector.innerHTML = html;
-  selector.querySelectorAll('.tag-pill').forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      var value = pill.getAttribute('data-tag') || '';
+  GW.renderTagPills(selector, {
+    tags: items,
+    pillClass: 'tag-pill',
+    isActive: function (v) { return _postEditState.selectedTags.indexOf(v) >= 0; },
+    onToggle: function (value) {
       if (!value) {
         _postEditState.selectedTags = [];
       } else {
@@ -264,9 +251,8 @@ function _renderPostTagSelector(items) {
         else _postEditState.selectedTags.push(value);
       }
       _syncPostTagPills(_postEditState.selectedTags);
-    });
+    },
   });
-  _syncPostTagPills(_postEditState.selectedTags);
 }
 
 function _loadPostTagOptions(category) {

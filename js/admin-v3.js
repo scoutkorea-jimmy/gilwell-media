@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.09
+ * Version: 03.142.10
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3815,17 +3815,11 @@
     var tags = _getCategoryTags(_tagSettings, cat);
     // Preserve only selected tags that still exist in the new category
     _selectedWriteTags = _selectedWriteTags.filter(function (t) { return tags.indexOf(t) >= 0; });
-    var html = '<button type="button" class="v3-tag-pill' + (!_selectedWriteTags.length ? ' active' : '') + '" data-tag="">없음</button>';
-    tags.forEach(function (t) {
-      var label = typeof t === 'string' ? t : (t.label || t.value || '');
-      var value = typeof t === 'string' ? t : (t.value || t.label || '');
-      var active = _selectedWriteTags.indexOf(value) >= 0 ? ' active' : '';
-      html += '<button type="button" class="v3-tag-pill' + active + '" data-tag="' + GW.escapeHtml(value) + '">' + GW.escapeHtml(label) + '</button>';
-    });
-    container.innerHTML = html;
-    container.querySelectorAll('.v3-tag-pill').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var val = btn.dataset.tag || '';
+    GW.renderTagPills(container, {
+      tags: tags,
+      pillClass: 'v3-tag-pill',
+      isActive: function (v) { return _selectedWriteTags.indexOf(v) >= 0; },
+      onToggle: function (val) {
         if (val === '') {
           _selectedWriteTags = [];
         } else {
@@ -3834,17 +3828,13 @@
           else _selectedWriteTags.push(val);
         }
         _syncWriteTagPills();
-      });
+      },
     });
   }
 
   function _syncWriteTagPills() {
-    var container = document.getElementById('w-tag-pills');
-    if (!container) return;
-    container.querySelectorAll('.v3-tag-pill').forEach(function (btn) {
-      var t = btn.dataset.tag || '';
-      btn.classList.toggle('active', t === '' ? _selectedWriteTags.length === 0 : _selectedWriteTags.indexOf(t) >= 0);
-    });
+    GW.syncTagPillsActive(document.getElementById('w-tag-pills'), 'v3-tag-pill',
+      function (v) { return _selectedWriteTags.indexOf(v) >= 0; });
   }
 
   function _addWriteTagFromInput() {

@@ -7,14 +7,7 @@
   var Board = GW.Board;
 
   function syncBoardTagPills(sel, selectedTags) {
-    sel.querySelectorAll('.tag-pill').forEach(function (b) {
-      var t = b.dataset.tag || '';
-      if (t === '') {
-        b.classList.toggle('active', selectedTags.length === 0);
-      } else {
-        b.classList.toggle('active', selectedTags.indexOf(t) >= 0);
-      }
-    });
+    GW.syncTagPillsActive(sel, 'tag-pill', function (v) { return selectedTags.indexOf(v) >= 0; });
   }
 
   Board.prototype._setupWriteFeature = function () {
@@ -375,19 +368,14 @@
     var self = this;
     var sel = document.getElementById('board-tag-selector');
     if (!sel) return;
-    var selected = (self._selectedTags || []).filter(function (tag) {
+    self._selectedTags = (self._selectedTags || []).filter(function (tag) {
       return tags.indexOf(tag) >= 0;
     });
-    self._selectedTags = selected;
-    var html = '<button type="button" class="tag-pill' + (!selected.length ? ' active' : '') + '" data-tag="">없음</button>';
-    tags.forEach(function (tag) {
-      var active = selected.indexOf(tag) >= 0 ? ' active' : '';
-      html += '<button type="button" class="tag-pill' + active + '" data-tag="' + GW.escapeHtml(tag) + '">' + GW.escapeHtml(tag) + '</button>';
-    });
-    sel.innerHTML = html;
-    sel.querySelectorAll('.tag-pill').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var tagVal = btn.dataset.tag || '';
+    GW.renderTagPills(sel, {
+      tags: tags,
+      pillClass: 'tag-pill',
+      isActive: function (v) { return self._selectedTags.indexOf(v) >= 0; },
+      onToggle: function (tagVal) {
         if (tagVal === '') {
           self._selectedTags = [];
         } else {
@@ -396,9 +384,8 @@
           else self._selectedTags.push(tagVal);
         }
         syncBoardTagPills(sel, self._selectedTags);
-      });
+      },
     });
-    syncBoardTagPills(sel, self._selectedTags);
   };
 
   Board.prototype._loadWriteTagOptions = function () {
