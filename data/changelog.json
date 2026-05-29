@@ -1,6 +1,32 @@
 {
   "items": [
   {
+    "version": "00.166.03",
+    "date": "2026-05-29",
+    "released_at": "2026-05-29 00:00:00 KST",
+    "summary": "스카우트 용어 챗봇 안정성 강화 — 응답 지연 차단, 메모리 누수 방지, 카드 펼침 끊김 제거, 실패 시 재시도.",
+    "for_users": [
+      "챗봇 응답이 12초 넘게 지연되면 자동으로 중단하고 '다시 시도' 버튼을 보여줍니다.",
+      "챗봇을 닫는 동안 진행 중이던 요청도 함께 정리되어 다음에 열었을 때 불안정한 상태가 남지 않습니다.",
+      "용어 카드 펼치기·접기가 깜빡임 없이 부드러워졌습니다.",
+      "전송 중에는 입력창과 보내기 버튼이 비활성화되어 같은 질문이 중복 발송되지 않습니다.",
+      "대화가 길어져도 위쪽 메시지를 읽고 있을 때 자동으로 아래로 끌려가지 않습니다."
+    ],
+    "for_developers": [
+      "js/chatbot.js — loadData() 에 AbortController + 12초 타임아웃 추가. 같은 요청을 중복 fetch 하지 않도록 loadPromise 캐시.",
+      "closePanel() 에서 pendingTimers 전체 clearTimeout + fetchAbort.abort() — 닫힌 패널에서의 background mutation 차단.",
+      "MAX_MESSAGES=80 으로 state.messages 캡, greeting + chips 헤드 2개만 보존하고 tail trim. 장시간 대화 메모리/렌더 부담 방지.",
+      "카드 expand 처리를 renderMessages() 재호출 → classList.toggle + aria-expanded 직접 갱신으로 변경 (DOM race 제거).",
+      "renderMessages() 가 스크롤 위치 보존 — isNearBottom() (80px threshold) 인 경우에만 bottom 으로 snap.",
+      "handleSend() 진입 시 setInputDisabled(true), 완료/실패/패널 닫힘 모두에서 해제. 동시 요청 차단.",
+      "에러 메시지를 별도 kind: 'error' 로 분리하고 '다시 시도' 버튼 렌더 — 직전 사용자 질의가 있으면 재실행, 없으면 데이터 재로드.",
+      "API 응답에서 term_ko/en/fr 가 모두 없는 항목 필터링 — 노이즈 카드/링크 방지.",
+      "pagehide 이벤트에서 timers/fetch 정리 — bfcache·SPA 라우팅 대비.",
+      "css/chatbot.css — .gw-chatbot-retry, input/send :disabled 스타일.",
+      "사이트 00.166.02 → 00.166.03 (fix — 챗봇 안정성)."
+    ]
+  },
+  {
     "version": "00.166.02",
     "date": "2026-05-28",
     "released_at": "2026-05-28 00:00:00 KST",

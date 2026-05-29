@@ -371,6 +371,30 @@
   .gw-chatbot-card { width: 88%; max-width: 88%; }
 }
 
+/* ---------- Retry button + disabled input states ---------- */
+.gw-chatbot-retry {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gw-scouting-purple, #622599);
+  background: rgba(98, 37, 153, 0.08);
+  border: 1px solid rgba(98, 37, 153, 0.25);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.gw-chatbot-retry:hover { background: rgba(98, 37, 153, 0.16); }
+.gw-chatbot-retry:focus-visible { outline: 2px solid var(--gw-scouting-purple, #622599); outline-offset: 2px; }
+
+.gw-chatbot-input:disabled,
+.gw-chatbot-send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .gw-chatbot-fab,

@@ -10,13 +10,14 @@
   'use strict';
 
   var ENDPOINT = '/api/glossary/bot?format=json';
-  var PRIMARY = 1;       // top match shown as primary card
-  var RELATED = 2;       // additional related cards
-  var TYPING_MS = 320;   // bot "typing" delay
-  var DEBOUNCE_MS = 0;   // send is explicit (button / Enter), no debounce
-  var CHIP_COUNT = 5;    // suggested chips shown at greeting (sampled from live glossary)
+  var PRIMARY = 1;
+  var RELATED = 2;
+  var TYPING_MS = 320;
+  var CHIP_COUNT = 5;
+  var FETCH_TIMEOUT_MS = 12000;   // 한 번에 끊고 사용자에게 재시도 기회
+  var MAX_MESSAGES = 80;          // 장시간 대화 시 메모리·렌더 부담 방지
+  var SCROLL_BOTTOM_THRESHOLD = 80; // user 가 위쪽 메시지 읽고 있으면 자동 스크롤 보류
 
-  // Korean particles/endings stripped from user query so "잼버리가 뭐야?" ≒ "잼버리"
   var KO_PARTICLES = /(이|가|은|는|을|를|의|에|에서|에게|한테|로|으로|와|과|도|만|이나|나|랑|이랑|보다|까지|부터|마저|이라도|라도)$/;
   var KO_QUESTION_WORDS = [
     '무엇인가요','무엇인지','무엇이','무엇','뭐인가요','뭐인지','뭐예요','뭐야','뭐지','뭔지','뭔가요','뭔가',
@@ -29,14 +30,37 @@
     loading: false,
     error: null,
     open: false,
-    messages: [],   // {kind: 'bot'|'user'|'typing', html?, term?, related?, text?}
+    messages: [],
     greeted: false,
-    expanded: {},   // id → true (per-card expand state)
+    expanded: {},
     imeComposing: false,
     sendInFlight: false,
   };
 
   var els = {};
+  // 진행 중 비동기 작업 — closePanel / build cleanup 시 정리
+  var fetchAbort = null;
+  var pendingTimers = [];
+  var loadPromise = null;
+
+  function trackTimer(id) {
+    pendingTimers.push(id);
+    return id;
+  }
+
+  function clearPendingTimers() {
+    for (var i = 0; i < pendingTimers.length; i++) {
+      clearTimeout(pendingTimers[i]);
+    }
+    pendingTimers = [];
+  }
+
+  function abortInFlightFetch() {
+    if (fetchAbort) {
+      try { fetchAbort.abort(); } catch (e) { /* noop */ }
+      fetchAbort = null;
+    }
+  }
 
   // ---------- normalization ----------
   function norm(str) {
@@ -48,15 +72,11 @@
   function stripQuery(raw) {
     var q = norm(raw);
     if (!q) return '';
-    // Strip trailing punctuation
     q = q.replace(/[?？!！.…。·,，\s]+$/g, '').trim();
-    // Strip question/explain words anywhere
     for (var i = 0; i < KO_QUESTION_WORDS.length; i++) {
-      var w = KO_QUESTION_WORDS[i];
-      q = q.split(w).join(' ');
+      q = q.split(KO_QUESTION_WORDS[i]).join(' ');
     }
     q = q.replace(/\s+/g, ' ').trim();
-    // Strip particle on last token
     var parts = q.split(' ');
     var last = parts[parts.length - 1];
     if (last) {
@@ -134,27 +154,56 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // ---------- data loading (timeout + abort + retry-friendly) ----------
   function loadData() {
-    if (state.items || state.loading) return Promise.resolve();
+    if (state.items) return Promise.resolve();
+    if (loadPromise) return loadPromise; // 중복 호출 합치기
     state.loading = true;
     state.error = null;
-    return fetch(ENDPOINT, { credentials: 'omit', cache: 'default' })
+    abortInFlightFetch();
+    var ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    fetchAbort = ac;
+    var timeoutId = ac ? trackTimer(setTimeout(function () {
+      try { ac.abort(); } catch (e) {}
+    }, FETCH_TIMEOUT_MS)) : null;
+
+    var opts = { credentials: 'omit', cache: 'default' };
+    if (ac) opts.signal = ac.signal;
+
+    loadPromise = fetch(ENDPOINT, opts)
       .then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       })
       .then(function (data) {
-        state.items = (data && Array.isArray(data.items)) ? data.items : [];
+        var items = (data && Array.isArray(data.items)) ? data.items : [];
+        // 최소 필드 검증 — 결과 노이즈 / null term 렌더 방지
+        state.items = items.filter(function (it) {
+          return it && (it.term_ko || it.term_en || it.term_fr);
+        });
         state.loading = false;
       })
       .catch(function (err) {
         state.loading = false;
-        state.error = (err && err.message) ? err.message : '데이터 로드 실패';
+        if (err && err.name === 'AbortError') {
+          state.error = '응답이 지연되어 중단되었습니다';
+        } else {
+          state.error = (err && err.message) ? err.message : '데이터 로드 실패';
+        }
+      })
+      .then(function () {
+        if (timeoutId != null) {
+          clearTimeout(timeoutId);
+          var pos = pendingTimers.indexOf(timeoutId);
+          if (pos !== -1) pendingTimers.splice(pos, 1);
+        }
+        if (fetchAbort === ac) fetchAbort = null;
+        loadPromise = null;
       });
+    return loadPromise;
   }
 
   // ---------- message factory ----------
-  // Pick N random terms from the loaded glossary (term_ko preferred, then en/fr)
   function pickChipsFromGlossary(n) {
     if (!state.items || !state.items.length) return [];
     var pool = [];
@@ -181,8 +230,6 @@
     });
   }
 
-  // Set or refresh the chips message using live glossary data. No-op if user has
-  // already started chatting (we don't want to surprise them mid-conversation).
   function refreshChips() {
     if (!state.items) return;
     for (var i = 0; i < state.messages.length; i++) {
@@ -243,6 +290,22 @@
     }
   }
 
+  // 오래된 메시지 잘라내기 — 메모리·렌더 비용 무한 증가 방지.
+  // 첫 greeting + 첫 chips 메시지는 컨텍스트로 보존.
+  function capMessages() {
+    if (state.messages.length <= MAX_MESSAGES) return;
+    var keepHead = [];
+    var seenGreeting = false;
+    var seenChips = false;
+    for (var i = 0; i < state.messages.length && keepHead.length < 2; i++) {
+      var m = state.messages[i];
+      if (!seenGreeting && m.kind === 'bot') { keepHead.push(m); seenGreeting = true; continue; }
+      if (!seenChips && m.kind === 'chips') { keepHead.push(m); seenChips = true; continue; }
+    }
+    var tail = state.messages.slice(state.messages.length - (MAX_MESSAGES - keepHead.length));
+    state.messages = keepHead.concat(tail);
+  }
+
   // ---------- render ----------
   function renderCard(term) {
     var id = String(term.id);
@@ -270,17 +333,29 @@
     return html;
   }
 
+  function isNearBottom() {
+    if (!els.thread) return true;
+    var diff = els.thread.scrollHeight - els.thread.scrollTop - els.thread.clientHeight;
+    return diff <= SCROLL_BOTTOM_THRESHOLD;
+  }
+
   function renderMessages() {
     if (!els.thread) return;
+    capMessages();
+    var stickBottom = isNearBottom();
+    var prevScroll = els.thread.scrollTop;
+    var prevHeight = els.thread.scrollHeight;
+
     var html = '';
     for (var i = 0; i < state.messages.length; i++) {
       var m = state.messages[i];
       if (m.kind === 'user') {
         html += '<div class="gw-chatbot-msg gw-chatbot-msg-user"><div class="gw-chatbot-bubble">' + esc(m.text) + '</div></div>';
       } else if (m.kind === 'bot') {
+        // m.html 은 코드 내부에서 구성되며 사용자 입력은 esc() 처리됨. 외부 source X.
         html += '<div class="gw-chatbot-msg gw-chatbot-msg-bot"><div class="gw-chatbot-bubble">' + m.html + '</div></div>';
       } else if (m.kind === 'typing') {
-        html += '<div class="gw-chatbot-msg gw-chatbot-msg-bot"><div class="gw-chatbot-bubble gw-chatbot-typing"><span></span><span></span><span></span></div></div>';
+        html += '<div class="gw-chatbot-msg gw-chatbot-msg-bot"><div class="gw-chatbot-bubble gw-chatbot-typing" aria-label="응답을 작성 중입니다"><span></span><span></span><span></span></div></div>';
       } else if (m.kind === 'card') {
         html += '<div class="gw-chatbot-msg gw-chatbot-msg-bot gw-chatbot-msg-card">' + renderCard(m.term) + '</div>';
       } else if (m.kind === 'chips') {
@@ -289,10 +364,16 @@
           html += '<button type="button" class="gw-chatbot-chip" data-chip="' + esc(m.chips[j]) + '">' + esc(m.chips[j]) + '</button>';
         }
         html += '</div>';
+      } else if (m.kind === 'error') {
+        html += '<div class="gw-chatbot-msg gw-chatbot-msg-bot"><div class="gw-chatbot-bubble">';
+        html += m.html;
+        html += ' <button type="button" class="gw-chatbot-retry" data-action="retry">다시 시도</button>';
+        html += '</div></div>';
       }
     }
     els.thread.innerHTML = html;
-    // wire card/chip handlers
+
+    // 카드 expand 는 전체 re-render 대신 클래스 토글로 — DOM race / 핸들러 손실 회피
     var cards = els.thread.querySelectorAll('.gw-chatbot-card');
     for (var k = 0; k < cards.length; k++) {
       (function (card) {
@@ -300,9 +381,10 @@
         if (!btn) return;
         btn.addEventListener('click', function () {
           var id = card.getAttribute('data-id');
-          state.expanded[id] = !state.expanded[id];
-          renderMessages();
-          // Don't scroll on expand
+          var nowExpanded = !state.expanded[id];
+          state.expanded[id] = nowExpanded;
+          card.classList.toggle('is-expanded', nowExpanded);
+          btn.setAttribute('aria-expanded', nowExpanded ? 'true' : 'false');
         });
       })(cards[k]);
     }
@@ -314,39 +396,88 @@
         });
       })(chips[c]);
     }
-    // scroll to bottom
-    els.thread.scrollTop = els.thread.scrollHeight;
+    var retryBtns = els.thread.querySelectorAll('.gw-chatbot-retry');
+    for (var r = 0; r < retryBtns.length; r++) {
+      retryBtns[r].addEventListener('click', function () {
+        // 직전 사용자 질의 재시도. 없으면 단순히 데이터 재로딩.
+        var lastUser = null;
+        for (var x = state.messages.length - 1; x >= 0; x--) {
+          if (state.messages[x].kind === 'user') { lastUser = state.messages[x].text; break; }
+        }
+        // 에러 메시지 제거 후 재시도
+        state.messages = state.messages.filter(function (mm) { return mm.kind !== 'error'; });
+        renderMessages();
+        if (lastUser) handleSend(lastUser);
+        else {
+          loadData().then(function () {
+            if (!state.error) { refreshChips(); renderMessages(); }
+            else { pushErrorMessage(); renderMessages(); }
+          });
+        }
+      });
+    }
+
+    // 스크롤 — 사용자가 아래쪽에 있을 때만 최신으로. 위에서 읽고 있으면 위치 보존.
+    if (stickBottom) {
+      els.thread.scrollTop = els.thread.scrollHeight;
+    } else {
+      els.thread.scrollTop = prevScroll + (els.thread.scrollHeight - prevHeight);
+    }
+  }
+
+  function pushErrorMessage() {
+    // 같은 에러 메시지 중복 추가 방지
+    var last = state.messages[state.messages.length - 1];
+    if (last && last.kind === 'error') return;
+    state.messages.push({
+      kind: 'error',
+      html: '용어집을 불러오는 데 실패했어요. <small>' + esc(state.error || '알 수 없는 오류') + '</small>'
+    });
   }
 
   // ---------- send flow ----------
+  function setInputDisabled(disabled) {
+    if (els.input) els.input.disabled = disabled;
+    var sendBtn = els.form ? els.form.querySelector('.gw-chatbot-send') : null;
+    if (sendBtn) sendBtn.disabled = disabled;
+  }
+
   function handleSend(rawText) {
     if (state.sendInFlight) return;
-    var text = (rawText == null ? els.input.value : rawText) || '';
+    var text = (rawText == null ? (els.input ? els.input.value : '') : rawText) || '';
     text = String(text).trim();
     if (!text) return;
     state.sendInFlight = true;
-    els.input.value = '';
+    setInputDisabled(true);
+    if (els.input) els.input.value = '';
     pushUser(text);
     renderMessages();
+
     loadData().then(function () {
-      if (state.error) {
-        state.messages.push({
-          kind: 'bot',
-          html: '용어집을 불러오는 데 실패했어요. 잠시 후 다시 시도해주세요.<br><small>' + esc(state.error) + '</small>'
-        });
+      // 진행 중 닫혔으면 후속 작업 중단 (zombie state mutation 방지)
+      if (!state.open && !state.greeted) {
         state.sendInFlight = false;
+        setInputDisabled(false);
+        return;
+      }
+      if (state.error) {
+        pushErrorMessage();
+        state.sendInFlight = false;
+        setInputDisabled(false);
         renderMessages();
         return;
       }
       var tIdx = pushTyping();
       renderMessages();
-      setTimeout(function () {
+      trackTimer(setTimeout(function () {
         popTyping(tIdx);
         var results = search(text);
         pushBotResult(text, results);
         state.sendInFlight = false;
+        setInputDisabled(false);
         renderMessages();
-      }, TYPING_MS);
+        if (els.input && state.open) els.input.focus();
+      }, TYPING_MS));
     });
   }
 
@@ -359,17 +490,28 @@
     if (state.items) refreshChips();
     renderMessages();
     loadData().then(function () {
-      if (state.open) {
+      if (!state.open) return;
+      if (state.error) {
+        pushErrorMessage();
+      } else {
         refreshChips();
-        renderMessages();
       }
+      renderMessages();
     });
-    setTimeout(function () { if (els.input) els.input.focus(); }, 50);
+    trackTimer(setTimeout(function () {
+      if (els.input && state.open) els.input.focus();
+    }, 50));
   }
 
   function closePanel() {
     if (!state.open) return;
     state.open = false;
+    // 미완료 작업 정리 — 닫힌 패널에서의 background mutation / 누수 방지
+    clearPendingTimers();
+    abortInFlightFetch();
+    // 진행 중 send 가 있었으면 입력 잠금 해제
+    state.sendInFlight = false;
+    setInputDisabled(false);
     els.root.classList.remove('is-open');
     els.fab.setAttribute('aria-expanded', 'false');
     els.fab.focus();
@@ -384,9 +526,6 @@
 
   function onInputKeydown(e) {
     if (e.key !== 'Enter' || e.shiftKey) return;
-    // Ignore Enter while an IME (Korean / Japanese / Chinese) is composing —
-    // committing the composition would otherwise fire a duplicate send and
-    // leave the trailing syllable in the input after we clear it.
     if (e.isComposing || state.imeComposing || e.keyCode === 229) return;
     e.preventDefault();
     handleSend();
@@ -447,6 +586,12 @@
     els.input.addEventListener('compositionend', function () { state.imeComposing = false; });
     els.input.addEventListener('keydown', onInputKeydown);
     document.addEventListener('keydown', onKeydown);
+
+    // 페이지 이탈 시 in-flight 작업 정리 (mobile bfcache · SPA 라우팅 대비)
+    window.addEventListener('pagehide', function () {
+      clearPendingTimers();
+      abortInFlightFetch();
+    });
   }
 
   function init() {
