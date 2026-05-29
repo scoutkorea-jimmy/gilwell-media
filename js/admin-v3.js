@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.142.05
+ * Version: 03.142.06
  *
  * Versioning:
  *   V3.aaa.bb
@@ -3748,22 +3748,15 @@
     _setButtonBusy(btn, '검색 중…');
     status.textContent = '';
     prev.style.display = 'none';
-    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
-      headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (results) {
-        if (!results || !results.length) {
+    GW.geocodeOsm(addr)
+      .then(function (geo) {
+        if (!geo) {
           _clearButtonBusy(btn);
           GW.showToast('주소를 지도에서 찾을 수 없습니다. 다른 주소로 시도해보세요.', 'error');
           return;
         }
-        var loc = results[0];
-        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
-        var d = 0.01;
-        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
-        frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
-        status.textContent = '✓ ' + (loc.display_name || addr);
+        frame.src = geo.embedSrc;
+        status.textContent = '✓ ' + geo.displayName;
         prev.style.display = 'block';
         _clearButtonBusy(btn, '완료');
       })

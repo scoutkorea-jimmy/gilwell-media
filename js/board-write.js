@@ -452,24 +452,16 @@
     btn.disabled = true;
     btn.textContent = '검색 중…';
     prev.style.display = 'none';
-    fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(addr) + '&format=json&limit=1', {
-      headers: { 'Accept-Language': 'ko,en', 'User-Agent': 'GilwellMedia/1.0' }
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (results) {
+    GW.geocodeOsm(addr)
+      .then(function (geo) {
         btn.disabled = false;
         btn.textContent = '지도 확인';
-        if (!results || !results.length) {
+        if (!geo) {
           GW.showToast('주소를 지도에서 찾을 수 없습니다. 다른 주소를 사용해보세요.', 'error');
           return;
         }
-        var loc = results[0];
-        var lat = parseFloat(loc.lat);
-        var lon = parseFloat(loc.lon);
-        var d = 0.01;
-        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
-        frame.src = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon;
-        status.textContent = '✓ ' + (loc.display_name || addr);
+        frame.src = geo.embedSrc;
+        status.textContent = '✓ ' + geo.displayName;
         prev.style.display = 'block';
       })
       .catch(function () {

@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.167.03';
-  GW.ADMIN_VERSION = '03.142.05';
-  GW.ASSET_VERSION = '20260529142633';
+  GW.APP_VERSION = '00.167.04';
+  GW.ADMIN_VERSION = '03.142.06';
+  GW.ASSET_VERSION = '20260529144546';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -632,6 +632,32 @@
     if (eOrInput.keyCode === 229) return true;
     var el = eOrInput.target || eOrInput;
     return !!(el && el.dataset && el.dataset.imeComposing === '1');
+  };
+
+  // ── OSM 지오코딩 (단일 원본) ─────────────────────────────────
+  // Nominatim 검색 → {lat, lon, bbox, embedSrc, displayName} | null.
+  // board-write/post-page/admin 의 3중 복제(지오코딩+bbox+embed URL)를 통합.
+  // 브라우저는 User-Agent 를 forbidden header 로 무시·차단하므로 보내지 않는다(기존엔 무의미하게 설정).
+  GW.geocodeOsm = function (addr) {
+    var q = String(addr == null ? '' : addr).trim();
+    if (!q) return Promise.resolve(null);
+    return fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q) + '&format=json&limit=1', {
+      headers: { 'Accept-Language': 'ko,en' }
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (results) {
+        if (!results || !results.length) return null;
+        var loc = results[0];
+        var lat = parseFloat(loc.lat), lon = parseFloat(loc.lon);
+        if (!isFinite(lat) || !isFinite(lon)) return null;
+        var d = 0.01;
+        var bbox = (lon - d) + ',' + (lat - d) + ',' + (lon + d) + ',' + (lat + d);
+        return {
+          lat: lat, lon: lon, bbox: bbox,
+          embedSrc: 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + ',' + lon,
+          displayName: loc.display_name || q
+        };
+      });
   };
 
   // ── 모달 포커스 트랩 ─────────────────────────────────────────
