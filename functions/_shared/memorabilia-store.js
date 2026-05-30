@@ -278,14 +278,21 @@ async function hydrateOne(db, row) {
   if (relatedIds.length) {
     const ph = relatedIds.map(() => '?').join(',');
     const { results } = await db.prepare(`
-      SELECT m.id, m.slug, m.title_en, m.title_ko, m.year,
+      SELECT m.id, m.slug, m.title_en, m.title_ko, m.year, m.category_id,
+             c.label_ko AS category_label_ko, c.label_en AS category_label_en,
+             (SELECT country_code FROM memorabilia_countries WHERE memorabilia_id = m.id
+               ORDER BY country_code LIMIT 1) AS country_code,
              (SELECT url FROM memorabilia_images WHERE memorabilia_id = m.id
                ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS image_url
         FROM memorabilia m
+        LEFT JOIN memorabilia_categories c ON c.id = m.category_id
        WHERE m.id IN (${ph}) AND m.status = 'public'
     `).bind(...relatedIds).all();
     const byId = new Map((results || []).map((r) => [r.id, r]));
-    related_memorabilia = relatedIds.map((id) => byId.get(id)).filter(Boolean);
+    related_memorabilia = relatedIds.map((id) => byId.get(id)).filter(Boolean).map((r) => ({
+      ...r,
+      country_label_ko: r.country_code ? (COUNTRY_CODE_LABELS_KO[r.country_code] || r.country_code) : '',
+    }));
   }
   return {
     ...row,
@@ -368,6 +375,7 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
   await db.prepare(`UPDATE memorabilia SET slug = ? WHERE id = ?`).bind(finalSlug, id).run();
 
   await syncRelations(db, id, input);
+  await syncMutualRelated(db, id, input.related_memorabilia);
   await syncFtsForId(db, id);
   return id;
 }
@@ -432,6 +440,7 @@ export async function updateMemorabilia(db, id, input) {
   ).run();
 
   await syncRelations(db, id, input);
+  await syncMutualRelated(db, id, input.related_memorabilia);
   await syncFtsForId(db, id);
   return id;
 }
@@ -462,6 +471,23 @@ async function maybeHydrateEventName(db, input) {
   }
   input.event_name_en = row.name_en || input.event_name_en || '';
   input.event_name_ko = row.name_ko || input.event_name_ko || '';
+}
+
+// 관련 기념품 상호등록 — A 가 B 를 관련으로 선택하면 B 의 관련 목록에도 A 를 추가(additive·idempotent).
+// 공개/비공개 무관하게 대상 행이 존재하면 추가(표시는 hydrate 에서 공개만 필터). 최대 12개 유지.
+async function syncMutualRelated(db, itemId, relatedIds) {
+  const ids = (relatedIds || []).map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x) && x !== itemId);
+  for (const bid of ids) {
+    const row = await db.prepare(`SELECT related_memorabilia_json FROM memorabilia WHERE id = ?`).bind(bid).first();
+    if (!row) continue;
+    let list = safeParseJson(row.related_memorabilia_json) || [];
+    if (!Array.isArray(list)) list = [];
+    const norm = list.map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x));
+    if (norm.includes(itemId)) continue;          // 이미 상호등록됨
+    norm.push(itemId);
+    await db.prepare(`UPDATE memorabilia SET related_memorabilia_json = ? WHERE id = ?`)
+      .bind(JSON.stringify(norm.slice(0, 12)), bid).run();
+  }
 }
 
 async function syncRelations(db, id, input) {

@@ -426,10 +426,13 @@
   }
 
   // ── Detail ──────────────────────────────────────────────────────────────
-  async function loadDetail(slug) {
+  // fresh=true → 캐시 우회(저장 직후 편집 결과를 즉시 반영). 상세는 CDN max-age=300 이라
+  // 쿼리 cache-bust + no-store 로 edge/브라우저 캐시를 모두 건너뛴다.
+  async function loadDetail(slug, fresh) {
     const wrap = $('#memo-detail-content');
     try {
-      const res = await fetch('/api/memorabilia/slug/' + encodeURIComponent(slug), { credentials: 'same-origin' });
+      const url = '/api/memorabilia/slug/' + encodeURIComponent(slug) + (fresh ? '?_=' + Date.now() : '');
+      const res = await fetch(url, { credentials: 'same-origin', cache: fresh ? 'no-store' : 'default' });
       if (!res.ok) {
         wrap.innerHTML = '<div class="memo-empty"><h3>찾을 수 없는 항목</h3><p>요청한 도감 항목이 존재하지 않거나 비공개입니다.</p></div>';
         document.title = '도감 — BP미디어';
@@ -533,17 +536,27 @@
       : '';
 
     // 관련 기념품 — 서버에서 공개 항목만, 저장 순서로 전달됨. 없으면 영역 자체를 렌더하지 않음.
+    // 카드: 이름(크게) + 국가·분류(작게). 배경 패널 + 중앙 정렬.
     const relatedHtml = (item.related_memorabilia || []).length
-      ? `<div class="memo-related-items"><h3 class="memo-bilingual-inline"><span class="lang-en" lang="en">Related Memorabilia</span><span class="lang-ko" lang="ko">관련 기념품</span></h3>` +
-        `<div class="memo-related-grid">${item.related_memorabilia.map((r) => {
-          const rtitle = r.title_ko || r.title_en || '';
-          const href = r.slug ? `/memorabilia/${encodeURIComponent(r.slug)}` : '/memorabilia';
-          return `<a class="memo-related-card" href="${href}">` +
-            (r.image_url ? `<img class="memo-related-thumb" src="${escapeHtml(r.image_url)}" alt="" loading="lazy">` : `<span class="memo-related-thumb memo-related-thumb-empty"></span>`) +
-            `<span class="memo-related-card-title">${escapeHtml(rtitle)}</span>` +
-            (r.year ? `<span class="memo-related-card-year">${escapeHtml(String(r.year))}</span>` : '') +
-          `</a>`;
-        }).join('')}</div></div>`
+      ? `<section class="memo-related-items">` +
+          `<h3 class="memo-related-heading"><span class="memo-related-heading-ko">관련 기념품</span><span class="memo-related-heading-en">Related Memorabilia</span></h3>` +
+          `<div class="memo-related-grid">${item.related_memorabilia.map((r) => {
+            const rtitle = r.title_ko || r.title_en || '';
+            const href = r.slug ? `/memorabilia/${encodeURIComponent(r.slug)}` : '/memorabilia';
+            const subParts = [];
+            if (r.country_label_ko) subParts.push(escapeHtml(r.country_label_ko));
+            const cat = r.category_label_ko || r.category_label_en;
+            if (cat) subParts.push(escapeHtml(cat));
+            const sub = subParts.join(' · ');
+            return `<a class="memo-related-card" href="${href}">` +
+              (r.image_url ? `<img class="memo-related-thumb" src="${escapeHtml(r.image_url)}" alt="" loading="lazy">` : `<span class="memo-related-thumb memo-related-thumb-empty"></span>`) +
+              `<span class="memo-related-card-body">` +
+                `<span class="memo-related-card-title">${escapeHtml(rtitle)}</span>` +
+                (sub ? `<span class="memo-related-card-sub">${sub}</span>` : '') +
+              `</span>` +
+            `</a>`;
+          }).join('')}</div>` +
+        `</section>`
       : '';
 
     const linksHtml = (item.related_links || []).length
@@ -1238,8 +1251,8 @@
         if (!this.editing && this.clearDraft) this.clearDraft();
         this.closeModal();
         if (location.pathname.startsWith('/memorabilia/')) {
-          // detail view — reload current
-          loadDetail(getSlugFromPath());
+          // detail view — 저장 직후 캐시 우회로 즉시 갱신 (관련 기념품 등 반영)
+          loadDetail(getSlugFromPath(), true);
         } else {
           state.page = 1;
           runSearch();

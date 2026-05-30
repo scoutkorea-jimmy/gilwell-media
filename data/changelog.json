@@ -1,6 +1,39 @@
 {
   "items": [
   {
+    "version": "00.168.02",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 06:20:00 KST",
+    "summary": "관련 기념품 UX 개선 — 저장 즉시 반영, 상호 등록, 중앙 정렬·국가/분류 표시, 구분선·배경 패널, 하단 돌아가기 버튼.",
+    "for_users": [
+      "관련 기념품을 등록·수정하면 저장 직후 상세에 바로 반영됩니다(이전엔 잠시 지연).",
+      "A에 B를 관련 기념품으로 추가하면 B에도 A가 자동으로 등록됩니다(상호 연결).",
+      "관련 기념품 카드가 가운데 정렬되고, 이름과 함께 국가·분류가 (이름보다 작게) 표시됩니다.",
+      "한국어 설명 아래 구분선과 배경 패널로 '관련 기념품' 영역이 또렷하게 구분되고 제목이 커졌습니다.",
+      "기념품 상세 맨 아래 좋아요 버튼 옆에도 '도감으로 돌아가기' 버튼이 생겼습니다."
+    ],
+    "for_developers": [
+      "js/memorabilia.js — loadDetail(slug, fresh): 저장 직후 cache-bust(?_=ts + no-store)로 CDN max-age=300 우회해 즉시 반영. save() 성공 시 loadDetail(slug,true).",
+      "functions/_shared/memorabilia-store.js — syncMutualRelated(): A 저장 시 관련 id 각각의 목록에 A 를 additive·idempotent 추가(상호 등록, 최대 12). create/update 양쪽 호출. hydrateOne 관련 query 에 category_label + 첫 country_code + country_label_ko 추가.",
+      "js/memorabilia.js 상세 렌더 — 카드에 이름(크게)+국가·분류(작게, memo-related-card-sub), <section class=memo-related-items> 패널화. css/memorabilia.css — border-top 구분선 + 배경 패널 + 중앙정렬(flex justify-center) + 헤딩 강조 + 하단 memo-engagement-actions 한 줄 배치.",
+      "memorabilia.html — 좋아요 버튼 옆 .memo-back-link-foot 추가.",
+      "사이트 00.168.01 → 00.168.02 (관련 기념품 UX)."
+    ]
+  },
+  {
+    "version": "03.143.02",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 06:20:00 KST",
+    "summary": "관리자 기념품 저장 시 관련 기념품 상호 등록 + 관련 항목 국가/분류 하이드레이트(공유 백엔드).",
+    "for_users": [
+      "관리자에서 관련 기념품을 추가해도 상대 항목에 자동으로 상호 등록됩니다."
+    ],
+    "for_developers": [
+      "functions/_shared/memorabilia-store.js 공유 변경(syncMutualRelated, hydrate country/category)은 관리자 저장·조회에도 동일 적용.",
+      "관리자 03.143.01 → 03.143.02 (관련 기념품 상호등록/하이드레이트)."
+    ]
+  },
+  {
     "version": "00.168.01",
     "date": "2026-05-30",
     "released_at": "2026-05-30 05:40:00 KST",

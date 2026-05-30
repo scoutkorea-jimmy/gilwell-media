@@ -1379,29 +1379,59 @@
 /* ── 관련 기념품 (상세 표시 + 작성폼 picker) ─────────────────────────────
    공개(style.css)·관리자(admin-v3.css) 양쪽 토큰 정의됨. 공유 컴포넌트. */
 
-/* 상세: 한국어 설명 아래·태그 위 카드 그리드 */
-.memo-related-items { margin: 22px 0 4px; }
+/* 상세: 한국어 설명 아래 구분선 + 배경 패널 + 중앙 정렬 카드 그리드 */
+.memo-related-items {
+  margin: 26px 0 6px;
+  padding: 22px 18px 20px;
+  border-top: 2px solid var(--gray-300);   /* 국문 설명 아래 구분선 */
+  background: var(--gray-100);              /* 카드 뒤 배경 패널 */
+  border-radius: var(--radius-md, 14px);
+}
+.memo-related-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;          /* 타이틀 중앙 */
+  gap: 2px;
+  margin: 0 0 16px;
+  text-align: center;
+}
+.memo-related-heading-ko {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.memo-related-heading-en {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
 .memo-related-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: 12px;
-  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;      /* 중앙 정렬 */
+  gap: 14px;
 }
 .memo-related-card {
   display: flex;
   flex-direction: column;
+  width: 150px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 10px);
   overflow: hidden;
   text-decoration: none;
   color: var(--ink);
   background: var(--white);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   transition: border-color .15s, box-shadow .15s, transform .15s;
 }
 .memo-related-card:hover {
   border-color: var(--gw-scouting-purple);
-  box-shadow: 0 2px 10px rgba(98, 37, 153, 0.14);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(98, 37, 153, 0.18);
+  transform: translateY(-2px);
 }
 .memo-related-card:focus-visible {
   outline: none;
@@ -1411,24 +1441,44 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  background: var(--gray-100);
+  background: var(--white);
   display: block;
 }
 .memo-related-thumb-empty { background: var(--gray-100); }
+.memo-related-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px 11px;
+}
 .memo-related-card-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 700;
   line-height: 1.35;
-  padding: 8px 10px 0;
+  color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.memo-related-card-year {
-  font-size: 11px;
+.memo-related-card-sub {
+  font-size: 11px;            /* 이름보다 작게 */
+  font-weight: 500;
   color: var(--gray-500);
-  padding: 2px 10px 9px;
+  line-height: 1.3;
+}
+
+/* 상세 하단 — Like 버튼 + 도감으로 돌아가기 한 줄 배치 */
+.memo-engagement-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.memo-back-link-foot {
+  margin-left: auto;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 /* 작성폼 picker (검색 + 칩) */
