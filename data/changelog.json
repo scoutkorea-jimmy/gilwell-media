@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "00.168.04",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 07:10:00 KST",
+    "summary": "관련 기념품 카드 미세 조정 — 이미지를 더 작게, 텍스트 공간을 더 넓게.",
+    "for_users": [
+      "관련 기념품 카드의 이미지가 조금 작아지고, 제목 등 텍스트가 더 많이 보이도록 공간을 넓혔습니다. 전체 구성은 그대로입니다."
+    ],
+    "for_developers": [
+      "css/memorabilia.css — .memo-related-thumb aspect-ratio 4/3 → 16/9(이미지 높이 축소), .memo-related-card-title line-clamp 2 → 4, .memo-related-card-sub 2줄 clamp 추가. 카드 폭·그리드 중앙정렬 등 구성은 유지.",
+      "사이트 00.168.03 → 00.168.04 (관련 기념품 카드 비율 조정)."
+    ]
+  },
+  {
     "version": "00.168.03",
     "date": "2026-05-30",
     "released_at": "2026-05-30 06:50:00 KST",

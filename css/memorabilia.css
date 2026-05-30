@@ -1439,7 +1439,7 @@
 }
 .memo-related-thumb {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;   /* 이미지 더 작게(낮게) — 텍스트 공간 확보 */
   object-fit: cover;
   background: var(--white);
   display: block;
@@ -1457,7 +1457,7 @@
   line-height: 1.35;
   color: var(--ink);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;     /* 더 많은 텍스트 노출 (2→4줄) */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1466,6 +1466,10 @@
   font-weight: 500;
   color: var(--gray-500);
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* 상세 하단 — Like 버튼 + 도감으로 돌아가기 한 줄 배치 */
