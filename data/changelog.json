@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.169.00",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 14:30:00 KST",
+    "summary": "스카우트 기념품 도감에 조회수를 추가해 어떤 기념품이 많이 보였는지 한눈에 알 수 있습니다.",
+    "for_users": [
+      "기념품 상세 페이지 제목 아래에 👁 조회수가 표시됩니다. 같은 방문자·12시간 기준으로 중복은 한 번만 세어 실제 관심도를 보여줍니다.",
+      "기념품 도감 목록 카드에도 조회수가 0보다 크면 👁로 함께 표시됩니다."
+    ],
+    "for_developers": [
+      "DB: 마이그레이션 076 — memorabilia.view_count 컬럼 + memorabilia_views(memorabilia_id, viewer_key, viewed_bucket) 테이블, 12시간 버킷 UNIQUE 인덱스로 중복 차단 (posts.views/post_views 패턴 미러).",
+      "API: functions/_shared/engagement.js recordUniqueMemorabiliaView() 추가. 신규 비캐시 엔드포인트 GET /api/memorabilia/:id/view 가 조회 기록 + 현재 조회수 반환 (Cache-Control: no-store). 상세 slug 응답이 CDN 5분 캐시(s-maxage=300)라 카운트 누락 방지를 위해 별도 엔드포인트로 분리.",
+      "Store: getMemorabiliaBySlug→hydrateOne 이 {...row} 스프레드라 컬럼 추가만으로 상세 응답에 view_count 자동 포함. 카드용은 functions/api/memorabilia/search.js 메인 SELECT 에 m.view_count 추가.",
+      "Frontend: js/memorabilia.js — 카드 템플릿 .memo-card-views 뱃지(>0), renderDetail 제목 아래 .memo-detail-views(👁 [data-role=view-count]), 상세 로드 시 view 엔드포인트 핑 후 DOM 갱신. css/memorabilia.css .memo-detail-views/.memo-card-views 추가.",
+      "봇/프리페치는 isLikelyNonHumanRequest 로 카운트 제외. 사이트 버전 00.168.04 → 00.169.00."
+    ]
+  },
+  {
     "version": "00.168.04",
     "date": "2026-05-30",
     "released_at": "2026-05-30 07:10:00 KST",
