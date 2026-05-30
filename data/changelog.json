@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.143.04",
+    "date": "2026-05-31",
+    "released_at": "2026-05-31 09:30:00 KST",
+    "summary": "KMS에 기념품 조회수 배포 케이스 스터디(13.1.7, 실패 사유·재발 방지)와 개발자 체크리스트 항목을 기록.",
+    "for_users": [
+      "운영 기준 문서(KMS)에 이번 작업에서 배운 점(배포 실패 원인과 예방 규칙)이 학습용으로 정리됐습니다."
+    ],
+    "for_developers": [
+      "KMS(settings.feature_definition, D1 원본)에 섹션 13.1.7 '기념품 조회수 배포 케이스 스터디' 추가 — 배포 실패 5대 원인(탐색 환각 의존 / changelog.json 2-space 들여쓰기 불일치로 엔트리 누락→preflight 차단 / 의존 단계 병렬 실행 / 출력 오독 오진 / KMS 기록 시 100KB SQL 한계 무시) + 재발 방지 7규칙.",
+      "섹션 14.1·14.2 체크리스트에 항목 추가: 실제 파일 읽고 복사, changelog 들여쓰기 일치, 엔트리 추가 후 검증, 라이브 검증, 순서 의존 단계 순차 실행.",
+      "D1 갱신은 13.1.1 100KB 한계 회피책(값 분할 INSERT + UPDATE value||'...', settings_history는 서브쿼리 스냅샷)으로 적용. scripts/sync_kms_snapshot.mjs 로 docs/feature-definition.md·functions/_shared/feature-definition-default.js 재생성(드리프트 0). 관리자 버전 03.143.03 → 03.143.04."
+    ]
+  },
+  {
     "version": "00.169.00",
     "date": "2026-05-30",
     "released_at": "2026-05-30 14:30:00 KST",

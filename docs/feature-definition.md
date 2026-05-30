@@ -1552,6 +1552,35 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 페이지 이동 시 자연스러운 전환 (00.146.06): 사용자가 닫지 않고 메뉴 클릭으로 다른 페이지 이동 → 새 페이지는 최신 자산으로 로드되며 배너는 새 페이지에서 다시 평가.
 - 운영 메모: production 배포 직후 운영자가 관리자 콘솔을 열어두고 있으면 자동 갱신되지 않아 회귀 디버깅이 어려운 경우가 잦았다. 이 배너로 "현재 보는 자산이 최신인지" 즉시 확인 가능.
 
+### 13.1.7 기념품 조회수 배포 케이스 스터디 (2026-05-30~31)
+
+#### 기능 세부 설명
+
+기념품 도감 조회수(Site 00.169.00)는 기사 조회수 패턴을 그대로 옮긴 단순 기능이었다. 구현은 `memorabilia.view_count` 컬럼 + `memorabilia_views(memorabilia_id, viewer_key, viewed_bucket)` 테이블(migration_076, 12시간 버킷 UNIQUE 중복 차단), 비캐시 엔드포인트 `GET /api/memorabilia/:id/view`(상세 slug 응답이 CDN 5분 캐시라 카운트 누락 방지용으로 분리), 상세·카드 표시가 전부였다. 그런데 **배포가 여러 차례 실패**한 뒤에야 라이브에 반영됐다. 코드가 아니라 작업 절차에서 깨졌으므로 학습용으로 남긴다.
+
+**증상**: 코드·DB는 정상인데 `deploy_production.sh`가 매번 preflight에서 `Missing changelog entry for site version 00.169.00`으로 차단. 라이브 `VERSION`은 계속 00.168.04(미배포). 작업 도중 인터리빙된 터미널 출력이 "라이브=00.169.00", "changelog 807개로 손상" 등으로 잘못 보여 상황을 오판.
+
+**원인 A — 코드 구조 추정 의존(탐색 환각)**. 첫 구현 때 실제 파일을 읽지 않고 탐색 결과의 추정 구조(`renderDetail`의 stat 블록, store `mapRow`, 카드 `likeBadge` 등)를 믿고 Edit을 작성 → 다수가 "string not found"로 실패. 실제 코드엔 그런 구조가 없었음(상세 좋아요·댓글은 별도 `#memo-engagement` 패널, 카드엔 좋아요 뱃지 없음, `getMemorabiliaBySlug`는 `{...row}` 스프레드라 컬럼 추가만으로 자동 노출).
+
+**원인 B — changelog.json 들여쓰기 불일치(근본 원인)**. `data/changelog.json`의 `items[]` 요소는 **2-space**(`  {`), 필드는 **4-space**(`    "version"`) 들여쓰기다. Edit old_string을 4/6-space로 써서 매칭이 조용히 실패 → 00.169.00 엔트리가 한 번도 추가되지 않음 → `verify_release_metadata.sh`가 모든 배포를 차단. `JSON.parse`는 통과(파일은 유효)라 누락을 못 알아챔.
+
+**원인 C — 의존 단계의 병렬 실행**. 원격 D1 마이그레이션 → commit → push → deploy를 한 메시지에서 병렬 호출. 마이그레이션이 권한 게이트에 거부되자 뒤따르는 의존 단계가 모두 취소. 순서 의존 작업의 병렬화 금지.
+
+**원인 D — 출력 오독 오진**. 인터리빙된 터미널 출력(중복·뒤섞임)을 보고 "changelog가 807개로 손상"이라 오판. 실제로는 807개가 정상 누적 이력(git baseline 동일). baseline 대조 후 바로잡음.
+
+**원인 E — KMS 기록 작업에서 동일 실수 재발**. 이 케이스 스터디를 KMS에 남기는 작업에서도 (1) 글리치로 잘못된 178줄 스냅샷을 보고 엉뚱한 섹션에 편집, (2) `node sync_kms_snapshot.mjs`가 D1→md로 재생성하며 D1 미반영 상태의 md 편집을 되돌림, (3) 전체 블롭을 단일 SQL로 D1에 넣어 `SQLITE_TOOBIG` 발생(13.1.1에 이미 명문화된 100KB 한계). 즉 13.1.1 회피책(값 분할 `UPDATE value||'...'` 또는 PUT API)을 처음부터 따랐어야 했다.
+
+**재발 방지 규칙**
+1. 파일 편집 전 반드시 **실제 파일을 직접 읽어** old_string을 그 내용에서 복사한다. 탐색·추정 구조로 Edit을 작성하지 않는다.
+2. `data/changelog.json` 엔트리 추가 시 기존 항목과 **들여쓰기를 정확히 일치**(items 요소 2-space)시키고, 추가 후 버전 문자열이 실제로 들어갔는지 `grep`/JSON 카운트로 확인한다. `JSON.parse` 통과 ≠ 엔트리 추가됨.
+3. 배포 전 **`./scripts/verify_release_metadata.sh`를 단독 실행**해 메타데이터 게이트를 먼저 통과시킨다.
+4. 마이그레이션·commit·push·deploy 등 **순서 의존 단계는 순차 실행**한다. 병렬 배치 금지.
+5. 배포 "성공"은 출력 텍스트가 아니라 **라이브 검증**(`curl .../VERSION`, 대상 엔드포인트 응답)으로 판단한다.
+6. 데이터가 "손상된 듯" 보여도 단정하지 말고 **git baseline과 대조**해 사실을 확정한 뒤 조치한다.
+7. KMS(`settings.feature_definition`) CLI 갱신은 **13.1.1 규칙**을 따른다 — 100KB 초과 블롭은 단일 SQL 금지, 관리자 PUT API(파라미터 바인딩) 또는 값 분할 `UPDATE value||'...'` 사용. 그리고 D1을 먼저 갱신한 뒤 `sync_kms_snapshot.mjs`로 md·default.js를 재생성한다(md 직접 편집은 다음 sync에 덮인다).
+
+**검증**: 라이브 `VERSION`=00.169.00, `GET /api/memorabilia/:id/view`가 `{"views":N}` + 동일 IP 재호출 시 dedup, `search` 응답 항목에 `view_count` 포함, post-deploy 감사 0 issues. KMS 본 섹션은 D1 반영 후 `node scripts/sync_kms_snapshot.mjs --check` 통과로 검증.
+
 ### 13.2 스모크 체크 기준
 
 #### 기능 세부 설명
@@ -1578,6 +1607,8 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 날짜/정렬/권한 규칙이 이미 정의돼 있는가
 - **공개 페이지에 새 버튼/컨트롤을 추가한다면 inline `onclick=`·`onchange=` 등의 이벤트 속성을 쓰고 있지 않은가** (7.5.1) — 공개 CSP는 `'unsafe-inline'` 미허용. ID만 부여하고 nonce가 붙은 `.js`에서 `addEventListener`로 바인딩해야 한다.
 - **PUT/PATCH 엔드포인트의 conditional SET이 입력 검증 헬퍼의 `.provided` 플래그에 의존한다면, 호출하는 모든 헬퍼(`requireNonEmptyString` · `optionalTrimmedString` · `optionalIntegerOrNull` · `optionalBooleanFlag` 등)가 성공 시 `provided: true`를 일관되게 돌려주는지 확인** (7.5.1). 한 엔드포인트 안에서 `.provided` 검사와 `body.field !== undefined` 직접 검사를 섞지 말 것.
+- **파일을 편집하기 전 실제 파일을 읽고 old_string을 그 내용에서 복사했는가** (13.1.7) — 탐색·추정 구조로 Edit을 작성하면 조용히 실패한다.
+- **`data/changelog.json` 엔트리를 추가한다면 기존 항목과 들여쓰기(items 요소 2-space)를 정확히 맞췄는가** (13.1.7) — 불일치 시 Edit이 조용히 실패해 preflight가 모든 배포를 차단한다.
 
 ### 14.2 구현 후 체크
 
@@ -1588,6 +1619,9 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 예외 흐름(권한 없음, 저장 실패, 삭제 차단)이 문서대로 작동하는가
 - **공개 페이지에 CSP 위반 로그가 없는가** — DevTools Console에서 해당 페이지를 열었을 때 `violates the following Content Security Policy directive` 에러 0건이어야 함.
 - **PUT/PATCH로 필드별 부분 업데이트를 한다면 각 필드를 개별적으로 바꿔보고 D1 컬럼이 실제로 반영되는지 확인** — 200 OK 응답 = 업데이트 성공이 아니다 (7.5.1 회귀 사례가 바로 이 시나리오).
+- **changelog 엔트리 추가 후 버전 문자열이 실제로 들어갔는지 확인** — `JSON.parse` 통과 ≠ 엔트리 추가됨. `grep`/JSON 카운트로 검증 (13.1.7).
+- **배포 "성공"은 출력이 아니라 라이브로 검증** — `curl .../VERSION` + 대상 엔드포인트 응답으로 확인 (13.1.7).
+- **순서 의존 단계(D1 마이그레이션 → commit → push → deploy)는 순차 실행** — 병렬 배치 시 앞 단계 실패가 뒤를 취소시킨다 (13.1.7).
 
 ### 14.3 각주
 
