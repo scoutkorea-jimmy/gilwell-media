@@ -158,7 +158,7 @@ export async function onRequestGet({ request, env }) {
 
   const sql = `
     SELECT m.id, m.slug, m.title_en, m.title_ko, m.event_name_en, m.event_name_ko,
-           m.year, m.has_event,
+           m.year, m.has_event, m.view_count,
            c.slug AS category_slug, c.label_en AS category_label_en, c.label_ko AS category_label_ko,
            (SELECT url FROM memorabilia_images
              WHERE memorabilia_id = m.id ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS primary_image_url
