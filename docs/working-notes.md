@@ -11,6 +11,16 @@ scope: site-admin
 >
 > 이 노트는 매 턴마다 컨텍스트에 자동 로드되지는 않습니다. CLAUDE.md에서 포인터만 유지하고, AI는 회귀 디버깅·신규 기능 착수 시 직접 읽도록 합니다.
 
+## 13 배포·문서 작업 함정 (changelog 들여쓰기 · 순차 배포 · KMS 100KB)
+
+기념품 조회수(00.169.00) 배포가 여러 번 막힌 케이스. 상세·재발 방지는 KMS 13.1.7.
+
+- **changelog.json 들여쓰기**: `items[]` 요소 2-space(`  {`), 필드 4-space. Edit을 다른 들여쓰기로 쓰면 조용히 실패 → 엔트리 누락 → `verify_release_metadata.sh`가 전 배포 차단. 추가 후 `grep`/JSON 카운트로 실제 삽입 확인. `JSON.parse` 통과 ≠ 추가됨.
+- **순차 배포**: D1 마이그레이션 → commit → push → deploy를 병렬 호출 금지. 앞 단계 차단 시 뒤 단계 전부 취소됨.
+- **라이브 검증**: 배포 성공 판단은 출력이 아니라 `curl .../VERSION` + 엔드포인트 응답으로.
+- **KMS D1 CLI 100KB 한계**: `settings.feature_definition` 전체 블롭 단일 SQL은 `SQLITE_TOOBIG`. 값 분할 `INSERT + UPDATE value||'...'`(history는 서브쿼리 스냅샷) 또는 관리자 PUT API. D1 먼저 갱신 → `sync_kms_snapshot.mjs` 재생성(md 직접 편집은 다음 sync에 덮임).
+- **편집 전 실제 파일 읽기**: 탐색/추정 구조로 Edit `old_string`을 쓰면 "string not found"로 실패. 항상 실제 내용에서 복사.
+
 ## 1 Enum / 카탈로그 변경은 "원본 1곳 → 동기화 N곳"
 
 backend 상수 한 줄을 바꾸면 항상 **검증·렌더·CSS** 사본까지 함께 확인해야 한다. grep으로 모든 사본을 찾기 전엔 커밋하지 말 것.
