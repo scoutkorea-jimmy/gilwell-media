@@ -278,6 +278,7 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 3. **버전 bump 둘 다면 엔트리도 둘** — 사이트·관리자 각각 독립된 엔트리 (같은 `released_at` 공유 OK)
 4. **최신이 맨 위** — `items[]` 에 prepend. 기존 순서 보존
 5. **legacy 엔트리는 그대로** — 03.117.00 이전 `changes[]` / `items[]` 엔트리는 수정하지 않음. 렌더러가 자동 fallback 처리
+6. **들여쓰기 정확히 일치 + 추가 검증** — `items[]` 요소는 **2-space**(`  {`), 필드는 **4-space**(`    "version"`). Edit `old_string`을 다른 들여쓰기로 쓰면 매칭이 조용히 실패해 엔트리가 안 들어가고, `verify_release_metadata.sh`가 `Missing changelog entry`로 **모든 배포를 차단**한다. 추가 후 반드시 버전 문자열이 실제로 들어갔는지 확인(`grep` 또는 JSON 카운트). `JSON.parse` 통과 ≠ 엔트리 추가됨. (KMS 13.1.7 케이스)
 
 **렌더러 위치:**
 - 관리자 KMS 뷰: [js/admin-v3.js](js/admin-v3.js) `_renderReleases`
@@ -309,6 +310,12 @@ git log --oneline HEAD..origin/main   # 원격에만 있는 커밋 (behind)
 | `post_deploy_check.sh` | 라이브 사이트의 VERSION 일치 확인 |
 
 **환경:** wrangler 호출 전 `export PATH="/opt/homebrew/bin:$PATH"`
+
+> [!warning] 흔한 배포 실패 & 방지 (KMS 13.1.7 케이스)
+> - **순서 의존 단계는 순차 실행** — D1 마이그레이션 → commit → push → deploy를 한 번에 병렬 호출하지 말 것. 앞 단계가 권한 게이트·오류로 막히면 뒤따르는 단계가 모두 취소된다.
+> - **배포 전 메타데이터 게이트 먼저** — 전체 `deploy_production.sh`를 돌리기 전에 `./scripts/verify_release_metadata.sh`를 단독 실행해 통과시킨다(특히 changelog 엔트리 누락 조기 발견).
+> - **배포 "성공"은 라이브로 검증** — 스크립트 출력 텍스트가 아니라 `curl .../VERSION` + 대상 엔드포인트 응답으로 확정한다.
+> - **KMS(`settings.feature_definition`) CLI 갱신은 100KB 한계 주의** — 전체 블롭 단일 SQL은 `SQLITE_TOOBIG`. 관리자 PUT API(파라미터 바인딩) 또는 값 분할 `INSERT + UPDATE value||'...'` 사용. D1을 먼저 갱신한 뒤 `sync_kms_snapshot.mjs`로 md·default.js 재생성(md 직접 편집은 다음 sync에 덮인다).
 
 ### AI Deployment Protocol (Target별)
 
