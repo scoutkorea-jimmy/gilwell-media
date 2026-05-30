@@ -394,6 +394,7 @@
         <div class="memo-card-body">
           <div class="memo-card-title">${escapeHtml(titleEn)}</div>
           ${titleKo ? `<div class="memo-card-title-ko">${escapeHtml(titleKo)}</div>` : ''}
+          ${Number(it.view_count || 0) > 0 ? `<div class="memo-card-views" aria-label="조회수">👁 ${Number(it.view_count)}</div>` : ''}
         </div>
       </a>`;
     }).join('');
@@ -456,6 +457,15 @@
       });
       // 좋아요 + 댓글 패널 초기화 (공개 항목 한정)
       try { initEngagement(item); } catch (e) { console.warn('[memo-engagement] init failed:', e); }
+      // 조회수 기록 + 갱신 — slug 상세 응답은 CDN 5분 캐시라, 비캐시 view 엔드포인트로 핑한다.
+      fetch(`/api/memorabilia/${item.id}/view`, { credentials: 'same-origin', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d) return;
+          const el = wrap.querySelector('[data-role="view-count"]');
+          if (el) el.textContent = String(Number(d.views || 0));
+        })
+        .catch(() => {});
     } catch (err) {
       wrap.innerHTML = '<div class="memo-empty"><h3>로드 실패</h3><p>잠시 후 다시 시도해주세요.</p></div>';
     }
@@ -582,6 +592,7 @@
       ` : ''}
       <h1 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h1>
       ${titleKo && titleKo !== titleEn ? `<div class="memo-detail-title-ko" lang="ko">${escapeHtml(titleKo)}</div>` : ''}
+      <div class="memo-detail-views" aria-label="조회수">👁 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>
       ${meta.length ? `<div class="memo-detail-meta">${meta.join('')}</div>` : ''}
       ${(descEn || descKo) ? `<div class="memo-detail-body">
         ${descEn ? `<div class="lang-en" lang="en">${descEn}</div>` : ''}

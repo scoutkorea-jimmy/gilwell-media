@@ -26,6 +26,21 @@ export async function recordUniqueView(env, postId, viewerKey) {
   return true;
 }
 
+// 기념품(memorabilia) 조회수 — posts.views 패턴 동일. 같은 뷰어는 12시간 버킷당 1회만.
+export async function recordUniqueMemorabiliaView(env, memorabiliaId, viewerKey) {
+  if (!viewerKey) return false;
+  const viewBucket = String(Math.floor(Date.now() / (12 * 60 * 60 * 1000)));
+  const insert = await env.DB.prepare(
+    `INSERT OR IGNORE INTO memorabilia_views (memorabilia_id, viewer_key, viewed_bucket)
+     VALUES (?, ?, ?)`
+  ).bind(memorabiliaId, viewerKey, viewBucket).run();
+
+  if (!insert.meta?.changes) return false;
+
+  await env.DB.prepare(`UPDATE memorabilia SET view_count = view_count + 1 WHERE id = ?`).bind(memorabiliaId).run();
+  return true;
+}
+
 export async function getLikeStats(env, postId, viewerKey) {
   const [countRow, likedRow] = await Promise.all([
     env.DB.prepare(`SELECT COUNT(*) AS count FROM post_likes WHERE post_id = ?`).bind(postId).first(),
