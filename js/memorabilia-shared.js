@@ -616,6 +616,36 @@
       });
       return JSON.stringify({ blocks: blocks });
     },
+    // toEditorJson 의 역변환 — 저장된 Editor.js JSON(또는 평문)을 편집 textarea 용 평문으로.
+    // <br>→줄바꿈, 태그 제거, HTML 엔티티 디코드. 이 디코드 누락이 편집-저장 왕복 시
+    // 이중 이스케이프(&#39; → &amp;#39;)를 유발했으므로 반드시 여기서 단일 처리. (2026-05-30)
+    toPlainText: function (stored) {
+      if (!stored) return '';
+      var s = String(stored);
+      var text = s;
+      if (s.trim().charAt(0) === '{') {
+        try {
+          var j = JSON.parse(s);
+          if (j && Array.isArray(j.blocks)) {
+            text = j.blocks.map(function (b) {
+              var d = (b && b.data) || {};
+              if (Array.isArray(d.items)) {
+                return d.items.map(function (i) { return typeof i === 'string' ? i : (i.content || i.text || ''); }).join('\n');
+              }
+              return d.text || d.caption || d.title || '';
+            }).filter(Boolean).join('\n\n');
+          }
+        } catch (e) { /* 평문 취급 */ }
+      }
+      text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '');
+      // 엔티티 디코드 (textarea 트릭 — 안전: 값만 읽고 DOM 삽입 안 함)
+      if (typeof document !== 'undefined') {
+        var ta = document.createElement('textarea');
+        ta.innerHTML = text;
+        text = ta.value;
+      }
+      return text;
+    },
   };
 
   // ── 관련 기념품 picker (공개·관리자 작성폼 공통) ───────────────────────────

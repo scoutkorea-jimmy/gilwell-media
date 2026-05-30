@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.168.03",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 06:50:00 KST",
+    "summary": "기념품 설명 이중 이스케이프(&#39; 등 깨짐) 원인 제거 + 손상 데이터 복구.",
+    "for_users": [
+      "기념품 설명에서 작은따옴표 등이 '&#39;' 처럼 깨져 보이던 문제를 해결했습니다. 기존에 깨진 항목도 바로잡았습니다.",
+      "앞으로 항목을 다시 저장해도 특수문자가 깨지지 않습니다."
+    ],
+    "for_developers": [
+      "원인: 설명 저장 시 escapeHtml(' → &#39;, \\n → <br>)로 인코딩되는데, 편집 폼이 저장값을 textarea 로 읽을 때(readPlain/readDescPlain) 태그만 제거하고 HTML 엔티티를 디코드하지 않아, 재저장 시 &가 또 escape 되어 &amp;#39; 로 이중 인코딩됨(+<br> 제거로 줄바꿈 손실).",
+      "예방: js/memorabilia-shared.js 에 GW.MemorabiliaDesc.toPlainText(stored) 신설 — toEditorJson 의 역변환(<br>→줄바꿈, 태그 제거, textarea 트릭으로 엔티티 디코드). js/memorabilia.js readPlain + js/admin-memorabilia.js readDescPlain 이 이를 공유 사용(단일 원본).",
+      "데이터 복구: D1 memorabilia 2건(id 21,22)의 description_en/ko/plain 에서 over-escape 를 collapse(&amp;#39;→&#39; 등, 다중 레벨 안전)로 정규화. 잔존 0 확인.",
+      "사이트 00.168.02 → 00.168.03 (이중 이스케이프 수정)."
+    ]
+  },
+  {
+    "version": "03.143.03",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 06:50:00 KST",
+    "summary": "관리자 기념품 편집 폼의 설명 이중 이스케이프 원인 제거(공유 역변환).",
+    "for_users": [
+      "관리자에서 기념품 설명을 편집·저장해도 특수문자가 깨지지 않습니다."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js readDescPlain → GW.MemorabiliaDesc.toPlainText 공유 사용(엔티티 디코드 포함). 편집 폼 textarea 채울 때 이중 이스케이프 방지.",
+      "관리자 03.143.02 → 03.143.03 (이중 이스케이프 수정)."
+    ]
+  },
+  {
     "version": "00.168.02",
     "date": "2026-05-30",
     "released_at": "2026-05-30 06:20:00 KST",

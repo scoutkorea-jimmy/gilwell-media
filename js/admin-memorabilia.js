@@ -1078,18 +1078,11 @@
   }
 
   function readDescPlain(stored) {
-    // 저장은 JSON 가능하지만 v1 에선 plain text 로 처리. JSON 이면 plaintext 추출.
-    if (!stored) return '';
-    if (typeof stored === 'string' && stored.trim().startsWith('{')) {
-      try {
-        const j = JSON.parse(stored);
-        if (Array.isArray(j.blocks)) {
-          return j.blocks.map((b) => (b.data && (b.data.text || b.data.caption || b.data.title)) || '')
-            .filter(Boolean).map(stripHtml).join('\n\n');
-        }
-      } catch {}
+    // 공유 역변환 사용 — <br>→줄바꿈 + 엔티티 디코드로 편집-저장 왕복 이중 이스케이프 방지.
+    if (window.GW && GW.MemorabiliaDesc && GW.MemorabiliaDesc.toPlainText) {
+      return GW.MemorabiliaDesc.toPlainText(stored);
     }
-    return String(stored);
+    return String(stored || '');
   }
 
   function stripHtml(s) {
