@@ -55,6 +55,20 @@
   --gw-forest-green: #248737;
   --gw-leaf-green: #9fed8f;
 
+  /* 그레이스케일 + 잉크/화이트/보더 — style.css :root 와 동일 값.
+     admin 은 style.css 를 로드하지 않으므로, 공유 시트(memorabilia.css)가 참조하는
+     이 토큰들을 여기서도 정의해야 색이 정상 해석된다. (관련 기념품 등 공유 컴포넌트 포함) */
+  --black:    #030303;
+  --white:    #ffffff;
+  --ink:      #1f1f1f;
+  --gray-900: #030303;
+  --gray-700: #3f3f3f;
+  --gray-500: #8f8f8f;
+  --gray-300: #c4c4c4;
+  --gray-100: #ebebeb;
+  --muted:    rgba(31, 31, 31, 0.58);
+  --border:   rgba(31, 31, 31, 0.12);
+
   --v3-sidebar-bg:    var(--gw-midnight-purple);
   --v3-sidebar-w:     248px;
   --v3-topbar-h:      52px;

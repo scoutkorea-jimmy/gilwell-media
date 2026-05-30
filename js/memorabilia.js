@@ -532,6 +532,20 @@
       ? `<div class="memo-tags">${item.tags.map((t) => `<a class="memo-tag-chip" href="/memorabilia?q=${encodeURIComponent(t)}">${escapeHtml(t)}</a>`).join('')}</div>`
       : '';
 
+    // 관련 기념품 — 서버에서 공개 항목만, 저장 순서로 전달됨. 없으면 영역 자체를 렌더하지 않음.
+    const relatedHtml = (item.related_memorabilia || []).length
+      ? `<div class="memo-related-items"><h3 class="memo-bilingual-inline"><span class="lang-en" lang="en">Related Memorabilia</span><span class="lang-ko" lang="ko">관련 기념품</span></h3>` +
+        `<div class="memo-related-grid">${item.related_memorabilia.map((r) => {
+          const rtitle = r.title_ko || r.title_en || '';
+          const href = r.slug ? `/memorabilia/${encodeURIComponent(r.slug)}` : '/memorabilia';
+          return `<a class="memo-related-card" href="${href}">` +
+            (r.image_url ? `<img class="memo-related-thumb" src="${escapeHtml(r.image_url)}" alt="" loading="lazy">` : `<span class="memo-related-thumb memo-related-thumb-empty"></span>`) +
+            `<span class="memo-related-card-title">${escapeHtml(rtitle)}</span>` +
+            (r.year ? `<span class="memo-related-card-year">${escapeHtml(String(r.year))}</span>` : '') +
+          `</a>`;
+        }).join('')}</div></div>`
+      : '';
+
     const linksHtml = (item.related_links || []).length
       ? `<div class="memo-related-links"><h3 class="memo-bilingual-inline"><span class="lang-en" lang="en">Related Links</span><span class="lang-ko" lang="ko">관련 링크</span></h3>${item.related_links.map((l) => {
           const label = l.label_en || l.label_ko || l.url;
@@ -560,6 +574,7 @@
         ${descEn ? `<div class="lang-en" lang="en">${descEn}</div>` : ''}
         ${descKo ? `<div class="lang-ko" lang="ko">${descKo}</div>` : ''}
       </div>` : ''}
+      ${relatedHtml}
       ${tagsHtml}
       ${linksHtml}
     `;
@@ -707,6 +722,20 @@
       return this.eventPicker;
     },
 
+    ensureRelatedPicker(initial, excludeId) {
+      const host = $('#memo-related-picker');
+      if (!host) return null;
+      if (!window.GW || !window.GW.MemorabiliaRelated) return null;
+      // 매 항목 편집마다 새로 attach (host innerHTML 교체).
+      this.relatedPicker = window.GW.MemorabiliaRelated.attach({
+        host,
+        initial: initial || [],
+        excludeId: excludeId || null,
+        idPrefix: 'memo-mr',
+      });
+      return this.relatedPicker;
+    },
+
     populateCategorySelect() {
       const sel = $('#memo-category');
       if (!sel) return;
@@ -723,6 +752,7 @@
       await this.ensureCategories();
       this.ensureCountryPicker([]);
       this.ensureEventPicker(null, null);
+      this.ensureRelatedPicker([], null);
       this.populateCategorySelect();
       this.editing = null;
       this.images = [];
@@ -792,6 +822,8 @@
       $('#memo-event-row').hidden = !item.has_event;
       // event picker — 카탈로그 참조(event_id) 우선; legacy event_name 만 있으면 picker 빈 상태
       this.ensureEventPicker(item.event_id || null, item.event || null);
+      // 관련 기념품 picker — 자기 자신 제외, 공개 관련 항목 prefill
+      this.ensureRelatedPicker(item.related_memorabilia || [], item.id);
       $('#memo-year').value = item.year || '';
       $('#memo-category').value = item.category_id || '';
       $('#memo-material-en').value = item.material_en || '';
@@ -1174,6 +1206,7 @@
         description_en: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-en').value),
         description_ko: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-ko').value),
         related_links: this.links.filter((l) => l.url),
+        related_memorabilia: this.relatedPicker ? this.relatedPicker.getIds() : [],
         country_codes,
         tags,
         images: this.images,

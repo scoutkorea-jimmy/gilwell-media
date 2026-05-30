@@ -119,6 +119,21 @@ function normalizeImages(value) {
   return out.slice(0, 20);
 }
 
+// 관련 기념품 id 배열 정규화 — 양의 정수만, 중복 제거, 최대 12개. (자기참조·비공개 필터는 hydrate 시점)
+function normalizeRelatedMemorabilia(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of value) {
+    const id = parseInt(raw && typeof raw === 'object' ? raw.id : raw, 10);
+    if (!Number.isFinite(id) || id <= 0 || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
 function generateSlug(title_en, title_ko, id) {
   const base = (title_en || title_ko || '').toLowerCase()
     .replace(/[^a-z0-9가-힣\s-]/g, '')
@@ -167,6 +182,7 @@ export function normalizeMemorabiliaInput(body) {
       description_en: trimEditorJson(body.description_en),
       description_ko: trimEditorJson(body.description_ko),
       related_links: normalizeLinks(body.related_links),
+      related_memorabilia: normalizeRelatedMemorabilia(body.related_memorabilia),
       country_codes: normalizeCountryCodes(body.country_codes),
       tags:          normalizeTagLabels(body.tags),
       images:        normalizeImages(body.images),
@@ -253,10 +269,30 @@ async function hydrateOne(db, row) {
       period_text_en: formatEventPeriodEn(eventRow),
     };
   }
+  // 관련 기념품 — 저장 순서 보존, 자기 자신 제외, 공개(public) 항목만 노출.
+  // 비공개/draft 누출 방지를 위해 어디서나 status='public' 만 하이드레이트한다
+  // (관련 항목은 공개 기념품끼리 연결하는 용도; draft 가 섞이면 표시에서 자동 제외).
+  const relatedIds = (safeParseJson(row.related_memorabilia_json) || [])
+    .map((x) => parseInt(x, 10)).filter((x) => Number.isFinite(x) && x !== row.id);
+  let related_memorabilia = [];
+  if (relatedIds.length) {
+    const ph = relatedIds.map(() => '?').join(',');
+    const { results } = await db.prepare(`
+      SELECT m.id, m.slug, m.title_en, m.title_ko, m.year,
+             (SELECT url FROM memorabilia_images WHERE memorabilia_id = m.id
+               ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1) AS image_url
+        FROM memorabilia m
+       WHERE m.id IN (${ph}) AND m.status = 'public'
+    `).bind(...relatedIds).all();
+    const byId = new Map((results || []).map((r) => [r.id, r]));
+    related_memorabilia = relatedIds.map((id) => byId.get(id)).filter(Boolean);
+  }
   return {
     ...row,
     event,                                 // 카탈로그 참조 (없으면 null)
     related_links: safeParseJson(row.related_links_json) || [],
+    related_memorabilia,                   // [{id,slug,title_en,title_ko,year,image_url}] 공개·저장순
+    related_memorabilia_ids: related_memorabilia.map((r) => r.id),  // 편집 폼 prefill (공개 id)
     images:        imagesRes.results || [],
     country_codes: (countriesRes.results || []).map((r) => r.country_code),
     country_labels_ko: (countriesRes.results || []).map((r) => COUNTRY_CODE_LABELS_KO[r.country_code] || r.country_code),
@@ -295,10 +331,11 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
       description_en, description_ko,
       description_plain_en, description_plain_ko,
       related_links_json,
+      related_memorabilia_json,
       status,
       created_by, created_at, updated_at, published_at
     ) VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
       datetime('now'), datetime('now'),
       CASE WHEN ? = 'public' THEN datetime('now') ELSE NULL END
     )
@@ -315,6 +352,7 @@ export async function createMemorabilia(db, input, { createdBy = null } = {}) {
     extractEditorJsPlain(input.description_en),
     extractEditorJsPlain(input.description_ko),
     JSON.stringify(input.related_links || []),
+    JSON.stringify(input.related_memorabilia || []),
     input.status,
     createdBy,
     input.status,
@@ -366,6 +404,7 @@ export async function updateMemorabilia(db, id, input) {
       description_en = ?, description_ko = ?,
       description_plain_en = ?, description_plain_ko = ?,
       related_links_json = ?,
+      related_memorabilia_json = ?,
       status = ?,
       updated_at = datetime('now'),
       published_at = CASE
@@ -385,6 +424,7 @@ export async function updateMemorabilia(db, id, input) {
     extractEditorJsPlain(input.description_en),
     extractEditorJsPlain(input.description_ko),
     JSON.stringify(input.related_links || []),
+    JSON.stringify(input.related_memorabilia || []),
     input.status,
     input.status,
     input.status,

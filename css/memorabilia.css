@@ -1375,3 +1375,118 @@
   .memo-modal { max-height: 100vh; border-radius: 0; }
   .memo-comment-row { grid-template-columns: 1fr; }
 }
+
+/* ── 관련 기념품 (상세 표시 + 작성폼 picker) ─────────────────────────────
+   공개(style.css)·관리자(admin-v3.css) 양쪽 토큰 정의됨. 공유 컴포넌트. */
+
+/* 상세: 한국어 설명 아래·태그 위 카드 그리드 */
+.memo-related-items { margin: 22px 0 4px; }
+.memo-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.memo-related-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 10px);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--white);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.memo-related-card:hover {
+  border-color: var(--gw-scouting-purple);
+  box-shadow: 0 2px 10px rgba(98, 37, 153, 0.14);
+  transform: translateY(-1px);
+}
+.memo-related-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.45);
+}
+.memo-related-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--gray-100);
+  display: block;
+}
+.memo-related-thumb-empty { background: var(--gray-100); }
+.memo-related-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  padding: 8px 10px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.memo-related-card-year {
+  font-size: 11px;
+  color: var(--gray-500);
+  padding: 2px 10px 9px;
+}
+
+/* 작성폼 picker (검색 + 칩) */
+.gw-mr-picker { display: flex; flex-direction: column; gap: 8px; }
+.gw-mr-selected { display: flex; flex-wrap: wrap; gap: 6px; }
+.gw-mr-empty { font-size: 12px; color: var(--gray-500); }
+.gw-mr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--gray-100);
+  font-size: 12px;
+  max-width: 240px;
+}
+.gw-mr-chip-thumb { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.gw-mr-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gw-mr-chip-x {
+  border: 0; background: transparent; cursor: pointer;
+  font-size: 15px; line-height: 1; color: var(--gray-700); padding: 0 2px; flex: 0 0 auto;
+}
+.gw-mr-chip-x:hover { color: var(--gw-fire-red); }
+.gw-mr-input-wrap { position: relative; }
+.gw-mr-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 13px;
+}
+.gw-mr-input:focus { outline: none; border-color: var(--gw-scouting-purple); box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.18); }
+.gw-mr-dropdown {
+  position: absolute;
+  z-index: 30;
+  left: 0; right: 0; top: calc(100% + 4px);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.gw-mr-dd-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+}
+.gw-mr-dd-item:hover { background: var(--gray-100); }
+.gw-mr-dd-thumb { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; }
+.gw-mr-dd-thumb-empty { background: var(--gray-100); display: inline-block; }
+.gw-mr-dd-title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gw-mr-dd-year { color: var(--gray-500); font-size: 11px; flex: 0 0 auto; }

@@ -44,6 +44,7 @@
   const countries = (window.GW && window.GW.MemorabiliaCountries) ? window.GW.MemorabiliaCountries : null;
   const eventsMod = (window.GW && window.GW.MemorabiliaEvents) ? window.GW.MemorabiliaEvents : null;
   let eventPickerHandle = null;
+  let relatedPickerHandle = null;
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -1061,6 +1062,8 @@
     state.links = (item?.related_links || []).map((l) => ({
       label_en: l.label_en || '', label_ko: l.label_ko || '', url: l.url || ''
     }));
+    // 관련 기념품 picker — 자기 자신 제외, 공개 관련 항목 prefill
+    ensureRelatedPicker(item?.related_memorabilia || [], item?.id || null);
     renderImages();
     renderLinks();
 
@@ -1129,6 +1132,18 @@
           }
         }
       },
+    });
+  }
+
+  // Related memorabilia picker — GW.MemorabiliaRelated (공개 검색·칩). 공개 폼과 동일 컴포넌트.
+  function ensureRelatedPicker(initial, excludeId) {
+    const host = $('#memo-related-picker');
+    if (!host || !window.GW || !window.GW.MemorabiliaRelated) return;
+    relatedPickerHandle = window.GW.MemorabiliaRelated.attach({
+      host,
+      initial: initial || [],
+      excludeId: excludeId || null,
+      idPrefix: 'memo-mr',
     });
   }
 
@@ -1696,6 +1711,7 @@
       description_en: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-en').value),
       description_ko: GW.MemorabiliaDesc.toEditorJson($('#memo-desc-ko').value),
       related_links: state.links.filter((l) => l.url),
+      related_memorabilia: relatedPickerHandle ? relatedPickerHandle.getIds() : [],
       country_codes,
       tags,
       images: state.images,

@@ -617,4 +617,104 @@
       return JSON.stringify({ blocks: blocks });
     },
   };
+
+  // ── 관련 기념품 picker (공개·관리자 작성폼 공통) ───────────────────────────
+  // 공개 기념품을 검색해 칩으로 선택. /api/memorabilia/search(공개 항목만) 사용 → draft 누출 없음.
+  // opts: { host, initial:[{id,title_ko,title_en,image_url,slug}], excludeId, idPrefix }
+  // 반환: { getIds():[id], getItems():[...] }
+  function attachRelatedMemorabilia(opts) {
+    var host = opts.host;
+    if (!host) throw new Error('attachRelatedMemorabilia: host required');
+    var prefix = opts.idPrefix || 'mr';
+    var excludeId = opts.excludeId != null ? parseInt(opts.excludeId, 10) : null;
+    var MAX = 12;
+    var selected = [];
+    (opts.initial || []).forEach(function (it) {
+      if (it && it.id != null && !selected.some(function (s) { return s.id === it.id; })) {
+        selected.push({ id: it.id, title: it.title_ko || it.title_en || ('#' + it.id), image_url: it.image_url || '', slug: it.slug || '' });
+      }
+    });
+    var results = [];
+    var timer = null;
+
+    function esc(s) { return GW.escapeHtml ? GW.escapeHtml(s) : String(s == null ? '' : s); }
+
+    host.classList.add('gw-mr-picker');
+    host.innerHTML =
+      '<div class="gw-mr-selected" id="' + prefix + '-selected"></div>' +
+      '<div class="gw-mr-input-wrap">' +
+        '<input type="search" class="gw-mr-input" id="' + prefix + '-input" placeholder="기념품 제목 검색 후 클릭으로 추가" autocomplete="off" spellcheck="false" />' +
+        '<div class="gw-mr-dropdown" id="' + prefix + '-dropdown" role="listbox" hidden></div>' +
+      '</div>';
+    var selEl = host.querySelector('#' + prefix + '-selected');
+    var inputEl = host.querySelector('#' + prefix + '-input');
+    var dropEl = host.querySelector('#' + prefix + '-dropdown');
+
+    function renderSelected() {
+      if (!selected.length) { selEl.innerHTML = '<span class="gw-mr-empty">선택된 관련 기념품 없음</span>'; return; }
+      selEl.innerHTML = selected.map(function (it) {
+        return '<span class="gw-mr-chip" data-id="' + it.id + '">' +
+          (it.image_url ? '<img class="gw-mr-chip-thumb" src="' + esc(it.image_url) + '" alt="">' : '') +
+          '<span class="gw-mr-chip-title">' + esc(it.title) + '</span>' +
+          '<button type="button" class="gw-mr-chip-x" data-remove="' + it.id + '" aria-label="' + esc(it.title) + ' 제거">×</button>' +
+        '</span>';
+      }).join('');
+    }
+    function closeDropdown() { dropEl.hidden = true; dropEl.innerHTML = ''; }
+    function renderDropdown() {
+      var list = results.filter(function (r) {
+        return r.id !== excludeId && !selected.some(function (s) { return s.id === r.id; });
+      });
+      if (!list.length) { closeDropdown(); return; }
+      dropEl.innerHTML = list.map(function (r) {
+        return '<button type="button" class="gw-mr-dd-item" data-id="' + r.id + '" role="option">' +
+          (r.primary_image_url ? '<img class="gw-mr-dd-thumb" src="' + esc(r.primary_image_url) + '" alt="">' : '<span class="gw-mr-dd-thumb gw-mr-dd-thumb-empty"></span>') +
+          '<span class="gw-mr-dd-title">' + esc(r.title_ko || r.title_en || ('#' + r.id)) + '</span>' +
+          (r.year ? '<span class="gw-mr-dd-year">' + esc(r.year) + '</span>' : '') +
+        '</button>';
+      }).join('');
+      dropEl.hidden = false;
+    }
+    function doSearch(q) {
+      if (!q) { results = []; closeDropdown(); return; }
+      fetch('/api/memorabilia/search?limit=8&q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : { results: [] }; })
+        .then(function (data) { results = data.results || data.items || []; renderDropdown(); })
+        .catch(function () { results = []; closeDropdown(); });
+    }
+    function addItem(r) {
+      if (selected.length >= MAX) { if (GW.showToast) GW.showToast('관련 기념품은 최대 ' + MAX + '개까지 추가할 수 있습니다', 'error'); return; }
+      if (r.id === excludeId || selected.some(function (s) { return s.id === r.id; })) return;
+      selected.push({ id: r.id, title: r.title_ko || r.title_en || ('#' + r.id), image_url: r.primary_image_url || '', slug: r.slug || '' });
+      inputEl.value = ''; results = []; closeDropdown(); renderSelected();
+    }
+
+    inputEl.addEventListener('input', function (e) {
+      if (e && e.isComposing) return; // IME 조합 중 검색 보류
+      clearTimeout(timer);
+      var q = inputEl.value.trim();
+      timer = setTimeout(function () { doSearch(q); }, 220);
+    });
+    inputEl.addEventListener('blur', function () { setTimeout(closeDropdown, 180); });
+    dropEl.addEventListener('mousedown', function (e) {
+      var btn = e.target.closest('[data-id]'); if (!btn) return;
+      e.preventDefault();
+      var r = results.find(function (x) { return String(x.id) === btn.getAttribute('data-id'); });
+      if (r) addItem(r);
+    });
+    selEl.addEventListener('click', function (e) {
+      var x = e.target.closest('[data-remove]'); if (!x) return;
+      var id = parseInt(x.getAttribute('data-remove'), 10);
+      selected = selected.filter(function (s) { return s.id !== id; });
+      renderSelected();
+    });
+
+    renderSelected();
+    return {
+      getIds: function () { return selected.map(function (s) { return s.id; }); },
+      getItems: function () { return selected.slice(); },
+    };
+  }
+
+  GW.MemorabiliaRelated = { attach: attachRelatedMemorabilia };
 })();

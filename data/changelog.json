@@ -1,6 +1,38 @@
 {
   "items": [
   {
+    "version": "00.168.00",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 05:00:00 KST",
+    "summary": "기념품 도감 '관련 기념품' 연결 기능 — 작성 시 다른 공개 기념품을 연결하고 상세에서 카드로 노출.",
+    "for_users": [
+      "기념품 상세 페이지에서 한국어 설명 아래·태그 위에 '관련 기념품'을 썸네일 카드로 볼 수 있습니다. 연결된 항목이 없으면 영역이 표시되지 않습니다.",
+      "기념품 작성/편집 시 제목 검색으로 관련 기념품을 골라 연결할 수 있습니다(공개 항목, 최대 12개).",
+      "공개 페이지와 관리자 페이지의 작성 폼이 동일한 연결 UI를 사용합니다."
+    ],
+    "for_developers": [
+      "DB: memorabilia 테이블에 related_memorabilia_json 컬럼 추가(ADD COLUMN).",
+      "functions/_shared/memorabilia-store.js: normalizeRelatedMemorabilia(양의정수·중복제거·최대12) + INSERT/UPDATE 반영 + hydrateOne 이 공개(status='public') 관련 항목만 최소정보(id/slug/제목/대표이미지)로 하이드레이트(비공개 누출 차단, 자기참조 제외).",
+      "js/memorabilia-shared.js: GW.MemorabiliaRelated.attach({host,initial,excludeId}) 공유 picker — /api/memorabilia/search(공개만) 검색, IME 안전, 칩 선택. 공개·관리자 폼 공통.",
+      "js/memorabilia.js: 상세 렌더에 relatedHtml(설명 본문과 태그 사이) + ensureRelatedPicker + 저장 페이로드 related_memorabilia. css/memorabilia.css 에 .memo-related-* / .gw-mr-* 스타일.",
+      "사이트 00.167.12 → 00.168.00 (관련 기념품 기능)."
+    ]
+  },
+  {
+    "version": "03.143.00",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 05:00:00 KST",
+    "summary": "관리자 기념품 작성에 '관련 기념품' 연결 UI 추가 + 공유 시트 토큰 회귀 수정.",
+    "for_users": [
+      "관리자 기념품 작성/편집에서 공개 사이트와 동일하게 관련 기념품을 검색·연결할 수 있습니다."
+    ],
+    "for_developers": [
+      "js/admin-memorabilia.js: ensureRelatedPicker(GW.MemorabiliaRelated 공유) + 저장 페이로드 related_memorabilia + admin.html 폼에 #memo-related-picker host.",
+      "css/admin-v3.css: :root 에 --gray-100/300/500/700/900·--ink·--black·--white·--muted·--border 정의 추가. admin 은 style.css 를 로드하지 않아, 공유 시트(memorabilia.css)가 참조하는 이 토큰들이 미해석되던 회귀(00.167.06 의 memorabilia.css 토큰화 부작용) 수정.",
+      "관리자 03.142.10 → 03.143.00 (관련 기념품 + 토큰 회귀 수정)."
+    ]
+  },
+  {
     "version": "00.167.12",
     "date": "2026-05-30",
     "released_at": "2026-05-30 04:00:00 KST",
