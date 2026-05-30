@@ -1,6 +1,35 @@
 {
   "items": [
   {
+    "version": "00.168.01",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 05:40:00 KST",
+    "summary": "관련 기념품 검색 한글 입력 정상화 + 기념품 페이지 내 직접 로그인(관리자 페이지로 넘기지 않음).",
+    "for_users": [
+      "관련 기념품 검색창에서 한글을 입력해도 즉시 비슷한 제목이 뜹니다(이전엔 한글 조합 중 검색이 멈춰 결과가 안 나왔습니다). 영문·국문 모두, 일부만 입력해도 검색됩니다.",
+      "기념품 작성/편집 시 로그인이 안 되어 있으면 기념품 페이지에서 바로 로그인할 수 있는 창이 뜹니다(관리자 페이지로 이동하지 않습니다).",
+      "'도감 추가' 버튼이 항상 보이며, 로그인이 필요하면 로그인 창이 표시됩니다."
+    ],
+    "for_developers": [
+      "js/memorabilia-shared.js — GW.MemorabiliaRelated picker 검색 input 의 IME 조합 중 skip(if e.isComposing return) 제거. 타이프어헤드는 commit 이 아니라 라이브 조회라 조합 중에도 현재 값으로 검색해야 한글이 검색됨. compositionend 에도 트리거 추가.",
+      "js/memorabilia.js + memorabilia.html — #memo-login-overlay 를 '/admin 링크 안내'에서 실제 로그인 폼(아이디/비번 → POST /api/admin/login, credentials 쿠키)으로 교체. 성공 시 openCreate 진입. '도감 추가' 버튼 항상 노출(비로그인 클릭 → 로그인 모달). empty-state 의 /admin 링크 제거.",
+      "사이트 00.168.00 → 00.168.01 (관련 기념품 검색 + 페이지 내 로그인)."
+    ]
+  },
+  {
+    "version": "03.143.01",
+    "date": "2026-05-30",
+    "released_at": "2026-05-30 05:40:00 KST",
+    "summary": "관리자 관련 기념품 검색 한글 입력 정상화(공유 picker 수정).",
+    "for_users": [
+      "관리자 기념품 작성의 관련 기념품 검색에서도 한글 입력이 즉시 검색됩니다."
+    ],
+    "for_developers": [
+      "js/memorabilia-shared.js 공유 picker 검색의 IME skip 제거 — admin 기념품 폼의 관련 기념품 검색에도 동일 적용.",
+      "관리자 03.143.00 → 03.143.01 (공유 picker 한글 검색 수정)."
+    ]
+  },
+  {
     "version": "00.168.00",
     "date": "2026-05-30",
     "released_at": "2026-05-30 05:00:00 KST",

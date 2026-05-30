@@ -689,12 +689,16 @@
       inputEl.value = ''; results = []; closeDropdown(); renderSelected();
     }
 
-    inputEl.addEventListener('input', function (e) {
-      if (e && e.isComposing) return; // IME 조합 중 검색 보류
+    // 타이프어헤드 검색은 commit 액션이 아니라 라이브 조회 → 한글 조합 중에도 현재 값으로 검색해야
+    // 한다(조합 중 스킵하면 한글이 사실상 검색 안 됨). debounce 로 과도한 호출만 억제.
+    // compositionend 에서도 한 번 더 트리거해 마지막 음절 확정 직후 결과를 갱신.
+    function scheduleSearch() {
       clearTimeout(timer);
       var q = inputEl.value.trim();
-      timer = setTimeout(function () { doSearch(q); }, 220);
-    });
+      timer = setTimeout(function () { doSearch(q); }, 200);
+    }
+    inputEl.addEventListener('input', scheduleSearch);
+    inputEl.addEventListener('compositionend', scheduleSearch);
     inputEl.addEventListener('blur', function () { setTimeout(closeDropdown, 180); });
     dropEl.addEventListener('mousedown', function (e) {
       var btn = e.target.closest('[data-id]'); if (!btn) return;

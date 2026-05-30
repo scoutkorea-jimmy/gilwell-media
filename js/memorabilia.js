@@ -362,8 +362,8 @@
         : `<span class="memo-bilingual-inline"><span class="lang-en" lang="en">No memorabilia registered yet</span><span class="lang-ko" lang="ko">아직 등록된 기념품이 없습니다.</span></span>`;
       const adminHint = !q
         ? `<p style="margin-top:12px;font-size:.9em;opacity:.7" class="memo-bilingual-inline">
-             <span class="lang-en" lang="en">If you are an admin, add items in the <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">admin → Scout Memorabilia</a> panel.</span>
-             <span class="lang-ko" lang="ko">관리자라면 <a href="/admin#memorabilia" style="color:var(--color-scouting-purple);text-decoration:underline">관리자 페이지의 '스카우트 백과 → 기념품 도감'</a>에서 항목을 추가할 수 있습니다.</span>
+             <span class="lang-en" lang="en">Admins can add items with the <strong>＋ Add Item</strong> button above (sign-in prompt will appear).</span>
+             <span class="lang-ko" lang="ko">관리자는 위의 <strong>'도감 추가'</strong> 버튼으로 추가할 수 있습니다(로그인 창이 표시됩니다).</span>
            </p>`
         : '';
       const titleHtml = q
@@ -1645,6 +1645,38 @@
     if (eventRow) eventRow.addEventListener('change', refreshTagSuggestions, true);
     $('#memo-has-event')?.addEventListener('change', refreshTagSuggestions);
 
+    // 페이지 내 로그인 — 관리자 페이지로 보내지 않고 모달에서 직접 로그인.
+    // 로그인 성공(HMAC 쿠키 설정) 후 작성 폼으로 바로 진입.
+    async function memoModalLogin() {
+      const uEl = $('#memo-login-username'), pEl = $('#memo-login-password');
+      const errEl = $('#memo-login-error'), btn = $('#memo-login-submit');
+      const u = (uEl?.value || '').trim().toLowerCase();
+      const p = (pEl?.value || '').trim();
+      const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.hidden = false; } };
+      if (!u) { showErr('아이디를 입력해주세요'); uEl?.focus(); return; }
+      if (!p) { showErr('비밀번호를 입력해주세요'); pEl?.focus(); return; }
+      if (btn) btn.disabled = true;
+      if (errEl) errEl.hidden = true;
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p }),
+        });
+        if (!res.ok) { showErr('아이디 또는 비밀번호가 올바르지 않습니다'); if (btn) btn.disabled = false; return; }
+        // 쿠키 세션 설정됨 → 작성 폼으로. openCreate 가 checkSession 재확인.
+        $('#memo-login-overlay').hidden = true;
+        if (pEl) pEl.value = '';
+        if (btn) btn.disabled = false;
+        editor.openCreate();
+      } catch (e) {
+        showErr('로그인 중 오류가 발생했습니다'); if (btn) btn.disabled = false;
+      }
+    }
+    $('#memo-login-submit')?.addEventListener('click', memoModalLogin);
+    $('#memo-login-password')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !(window.GW && GW.isImeComposing && GW.isImeComposing(e))) { e.preventDefault(); memoModalLogin(); }
+    });
     $('#memo-login-close')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
     $('#memo-login-cancel')?.addEventListener('click', () => { $('#memo-login-overlay').hidden = true; });
     $('#memo-login-overlay')?.addEventListener('click', (e) => {
@@ -1659,11 +1691,12 @@
     }
     wireEditorEvents();
     route();
-    // 비동기로 세션 체크 — 쓰기 권한 보유자(owner OR write:memorabilia) 만 추가/수정 UI 노출
+    // '도감 추가' 버튼은 항상 노출 — 비로그인 클릭 시 openCreate 가 로그인 모달(#memo-login-overlay)을
+    // 띄운다(관리자 페이지로 넘기지 않음). 실제 추가/수정 권한은 openCreate/openEdit 의 checkSession 이 게이팅.
+    { const addBtn = $('#memo-add-btn'); if (addBtn) addBtn.hidden = false; }
+    // 수정/삭제 admin-bar 는 쓰기 권한 보유자만 노출 (상세 뷰)
     editor.checkSession().then(() => {
       if (editor.canWriteMemo) {
-        const addBtn = $('#memo-add-btn');
-        if (addBtn) addBtn.hidden = false;
         const bar = $('#memo-detail-admin-bar');
         if (bar && !$('#memo-detail-view').hidden) bar.hidden = false;
       }

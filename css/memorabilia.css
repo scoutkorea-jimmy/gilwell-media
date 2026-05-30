@@ -1490,3 +1490,15 @@
 .gw-mr-dd-thumb-empty { background: var(--gray-100); display: inline-block; }
 .gw-mr-dd-title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gw-mr-dd-year { color: var(--gray-500); font-size: 11px; flex: 0 0 auto; }
+
+/* 페이지 내 로그인 모달 필드 (관리자 페이지로 보내지 않고 직접 로그인) */
+.memo-login-field {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 8px);
+  font-size: 14px;
+}
+.memo-login-field:focus { outline: none; border-color: var(--gw-scouting-purple); box-shadow: 0 0 0 3px rgba(98, 37, 153, 0.18); }
+.memo-login-error { margin-top: 6px; font-size: 13px; color: var(--gw-fire-red); }
