@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.143.07",
+    "date": "2026-06-03",
+    "released_at": "2026-06-03 23:10:00 KST",
+    "summary": "KMS 유지보수 일괄 — 스냅샷 drift 배포 게이트, changelog 렌더러 단일화, 케이스 스터디 아카이브로 콘텐츠 경량화.",
+    "for_users": [
+      "운영 기준 문서(KMS)와 버전기록 도구의 내부 정리 작업입니다. 화면 동작 변화는 없으며, 문서가 한계 용량에 가까워지던 문제를 줄여 앞으로의 안정적 유지보수를 준비했습니다."
+    ],
+    "for_developers": [
+      "drift 게이트: scripts/release_preflight.sh 에 sync_kms_snapshot.mjs --check 추가. D1(KMS 원본) ↔ docs/feature-definition.md / feature-definition-default.js 스냅샷 드리프트 시 배포 차단(13.1.7 sync 누락 사고 클래스 방지). D1/네트워크 미가용 시엔 경고만(오프라인 preflight 잠금 방지).",
+      "changelog 렌더러 통합: 공개 KMS(js/kms.js)와 관리자 버전기록(js/admin-v3.js)에 복제돼 있던 scope 추론·scope 라벨·날짜 ISO 추출 3개 헬퍼를 js/main.js GW.inferReleaseScope / GW.releaseScopeLabel / GW.releaseDateIso 로 단일화. 로컬 함수는 GW 위임 래퍼로 축소(호출부·동작 무변경). type 추론·필터 술어는 surface 별 의미 차이로 각자 유지.",
+      "KMS 콘텐츠 아카이브: 케이스 스터디 13.1.7·13.1.8 의 상세 서사를 docs/working-notes.md §13·§14 로 이관하고 KMS 에는 요약+포인터만 유지, 17.4 3차 안정성 패키지를 요약화. settings.feature_definition 91,613 → 86,790 bytes(-4.8KB, 100KB 한계의 86.8%). §13.1 에 '케이스 스터디 보관 규약'(포스트모템 상세는 working-notes, KMS 는 색인) 명문화. D1 갱신은 history 서브쿼리 스냅샷 + value 청크 append, sync_kms_snapshot.mjs 로 스냅샷 재생성(드리프트 0).",
+      "관리자 버전 03.143.06 → 03.143.07. 공개 사이트 동작 변경 없음(VERSION 00.170.01 유지)."
+    ]
+  },
+  {
     "version": "03.143.06",
     "date": "2026-06-03",
     "released_at": "2026-06-03 22:25:00 KST",

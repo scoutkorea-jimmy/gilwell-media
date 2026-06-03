@@ -1479,6 +1479,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - production 배포는 \`main\`의 깨끗한 워크트리에서만 진행한다.
 - \`wrangler pages deploy . --project-name gilwell-media --branch main\`를 직접 사용하는 예외 상황에서도 preflight 없이 production 배포하지 않는다.
 - 선택 사항: \`CF_ZONE_ID\`, \`CF_PURGE_API_TOKEN\` 이 설정돼 있으면 게시글 생성/수정/삭제 시 관련 공개 경로 캐시를 자동 퍼지한다.
+- **케이스 스터디 보관 규약**: 회귀 포스트모템의 _상세 서사_는 \`docs/working-notes.md\` 에 둔다(KMS D1 100KB 한계 보호). KMS 13.1.x 에는 **요약 1문단 + working-notes 포인터**만 남기고, 재발 방지 규칙은 **14장 체크리스트**로 승격한다.
 
 ### 13.1.1 D1 운영 메모 (2026-04-24 추가)
 
@@ -1558,55 +1559,16 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 ### 13.1.7 기념품 조회수 배포 케이스 스터디 (2026-05-30~31)
 
 #### 기능 세부 설명
+기념품 조회수(00.169.00) 배포가 코드가 아니라 **작업 절차**에서 반복 실패한 케이스. 5대 원인 — ① 코드 구조 추정 의존(탐색 환각)으로 Edit "string not found" ② \`data/changelog.json\` 들여쓰기 불일치(items 2-space)로 엔트리 누락 → \`verify_release_metadata.sh\`가 전 배포 차단(근본 원인) ③ 의존 단계(D1 마이그레이션→commit→push→deploy) 병렬 실행 ④ 인터리빙 출력 오독 오진 ⑤ KMS CLI 갱신 100KB 한계 무시. 재발 방지 규칙은 **14장 체크리스트**에 승격됨.
 
-기념품 도감 조회수(Site 00.169.00)는 기사 조회수 패턴을 그대로 옮긴 단순 기능이었다. 구현은 \`memorabilia.view_count\` 컬럼 + \`memorabilia_views(memorabilia_id, viewer_key, viewed_bucket)\` 테이블(migration_076, 12시간 버킷 UNIQUE 중복 차단), 비캐시 엔드포인트 \`GET /api/memorabilia/:id/view\`(상세 slug 응답이 CDN 5분 캐시라 카운트 누락 방지용으로 분리), 상세·카드 표시가 전부였다. 그런데 **배포가 여러 차례 실패**한 뒤에야 라이브에 반영됐다. 코드가 아니라 작업 절차에서 깨졌으므로 학습용으로 남긴다.
-
-**증상**: 코드·DB는 정상인데 \`deploy_production.sh\`가 매번 preflight에서 \`Missing changelog entry for site version 00.169.00\`으로 차단. 라이브 \`VERSION\`은 계속 00.168.04(미배포). 작업 도중 인터리빙된 터미널 출력이 "라이브=00.169.00", "changelog 807개로 손상" 등으로 잘못 보여 상황을 오판.
-
-**원인 A — 코드 구조 추정 의존(탐색 환각)**. 첫 구현 때 실제 파일을 읽지 않고 탐색 결과의 추정 구조(\`renderDetail\`의 stat 블록, store \`mapRow\`, 카드 \`likeBadge\` 등)를 믿고 Edit을 작성 → 다수가 "string not found"로 실패. 실제 코드엔 그런 구조가 없었음(상세 좋아요·댓글은 별도 \`#memo-engagement\` 패널, 카드엔 좋아요 뱃지 없음, \`getMemorabiliaBySlug\`는 \`{...row}\` 스프레드라 컬럼 추가만으로 자동 노출).
-
-**원인 B — changelog.json 들여쓰기 불일치(근본 원인)**. \`data/changelog.json\`의 \`items[]\` 요소는 **2-space**(\`  {\`), 필드는 **4-space**(\`    "version"\`) 들여쓰기다. Edit old_string을 4/6-space로 써서 매칭이 조용히 실패 → 00.169.00 엔트리가 한 번도 추가되지 않음 → \`verify_release_metadata.sh\`가 모든 배포를 차단. \`JSON.parse\`는 통과(파일은 유효)라 누락을 못 알아챔.
-
-**원인 C — 의존 단계의 병렬 실행**. 원격 D1 마이그레이션 → commit → push → deploy를 한 메시지에서 병렬 호출. 마이그레이션이 권한 게이트에 거부되자 뒤따르는 의존 단계가 모두 취소. 순서 의존 작업의 병렬화 금지.
-
-**원인 D — 출력 오독 오진**. 인터리빙된 터미널 출력(중복·뒤섞임)을 보고 "changelog가 807개로 손상"이라 오판. 실제로는 807개가 정상 누적 이력(git baseline 동일). baseline 대조 후 바로잡음.
-
-**원인 E — KMS 기록 작업에서 동일 실수 재발**. 이 케이스 스터디를 KMS에 남기는 작업에서도 (1) 글리치로 잘못된 178줄 스냅샷을 보고 엉뚱한 섹션에 편집, (2) \`node sync_kms_snapshot.mjs\`가 D1→md로 재생성하며 D1 미반영 상태의 md 편집을 되돌림, (3) 전체 블롭을 단일 SQL로 D1에 넣어 \`SQLITE_TOOBIG\` 발생(13.1.1에 이미 명문화된 100KB 한계). 즉 13.1.1 회피책(값 분할 \`UPDATE value||'...'\` 또는 PUT API)을 처음부터 따랐어야 했다.
-
-**재발 방지 규칙**
-1. 파일 편집 전 반드시 **실제 파일을 직접 읽어** old_string을 그 내용에서 복사한다. 탐색·추정 구조로 Edit을 작성하지 않는다.
-2. \`data/changelog.json\` 엔트리 추가 시 기존 항목과 **들여쓰기를 정확히 일치**(items 요소 2-space)시키고, 추가 후 버전 문자열이 실제로 들어갔는지 \`grep\`/JSON 카운트로 확인한다. \`JSON.parse\` 통과 ≠ 엔트리 추가됨.
-3. 배포 전 **\`./scripts/verify_release_metadata.sh\`를 단독 실행**해 메타데이터 게이트를 먼저 통과시킨다.
-4. 마이그레이션·commit·push·deploy 등 **순서 의존 단계는 순차 실행**한다. 병렬 배치 금지.
-5. 배포 "성공"은 출력 텍스트가 아니라 **라이브 검증**(\`curl .../VERSION\`, 대상 엔드포인트 응답)으로 판단한다.
-6. 데이터가 "손상된 듯" 보여도 단정하지 말고 **git baseline과 대조**해 사실을 확정한 뒤 조치한다.
-7. KMS(\`settings.feature_definition\`) CLI 갱신은 **13.1.1 규칙**을 따른다 — 100KB 초과 블롭은 단일 SQL 금지, 관리자 PUT API(파라미터 바인딩) 또는 값 분할 \`UPDATE value||'...'\` 사용. 그리고 D1을 먼저 갱신한 뒤 \`sync_kms_snapshot.mjs\`로 md·default.js를 재생성한다(md 직접 편집은 다음 sync에 덮인다).
-
-**검증**: 라이브 \`VERSION\`=00.169.00, \`GET /api/memorabilia/:id/view\`가 \`{"views":N}\` + 동일 IP 재호출 시 dedup, \`search\` 응답 항목에 \`view_count\` 포함, post-deploy 감사 0 issues. KMS 본 섹션은 D1 반영 후 \`node scripts/sync_kms_snapshot.mjs --check\` 통과로 검증.
+**상세 포스트모템**: \`docs/working-notes.md\` §13 (배포·문서 작업 함정).
 
 ### 13.1.8 publish_at KST/UTC 시간대 단일원인 버그 (2026-06-03, 00.170.00 / 03.143.05)
 
 #### 기능 세부 설명
+홈 'NEW' 배지 소실(Site)과 분석 '글 작성 시간대' 히트맵 9시간 밀림(Admin)이 **같은 원인**: \`publish_at\`은 타임존 없는 KST 벽시계로 저장되는데(\`normalizePublishAtInput\`) 일부 코드가 UTC로 보고 +9h를 더했다. 해결 — client \`GW.getPostPublicDate\`가 미표기 publish_at에 \`+09:00\` 태깅, \`functions/api/admin/analytics.js\`는 \`POST_KST_EXPR\`(서버 \`PUBLIC_DATE_EXPR\`과 동일 로직)로 교체. 부수 발견: 클린 라우트(\`/\`) CSP는 \`_headers\`가 아니라 \`functions/_middleware.js\` \`buildCsp\`. 규칙은 **14.2 체크리스트**에 승격됨.
 
-홈 'NEW' 배지가 당일 글에도 사라지고(Site), 관리자 분석 '글 작성 시간대' 히트맵이 9시간 밀려 표시된(Admin) 두 버그가 **같은 단일 원인**에서 나왔다. 새 기능이 아니라, 게시글 공개시각의 타임존 규칙을 일부 코드가 잘못 가정한 회귀였다.
-
-**근본 원인 — \`publish_at\` 저장 규칙 불일치**. \`publish_at\`은 관리자가 입력한 KST 시각을 **타임존 표기 없이 그대로** 저장한다(\`functions/_shared/post-input.js\` \`normalizePublishAtInput\`, 예: \`2026-06-03 21:05:00\` = KST). 반면 \`created_at\`은 UTC. 서버 표준식 \`functions/_shared/post-public-date.js\` \`PUBLIC_DATE_EXPR\`은 이를 정확히 처리한다 — \`publish_at\`에 타임존(Z/\`+\`)이 있으면 UTC로 보고 +9h, **없으면 이미 KST라 변형 없음**, \`created_at\`은 항상 +9h. 그러나 이 규칙을 따르지 않고 "타임존 없는 문자열 = UTC"로 가정해 무조건 +9h를 더한 코드가 두 곳 있었다.
-
-**증상 A — NEW 배지(Site)**. 클라이언트 \`GW.isPostNew\` → \`GW.isTodayKst(GW.getPostPublicDate(post))\`. \`getPostPublicDate\`가 raw \`publish_at\` 문자열을 그대로 반환했고, \`_getKstDateParts\`는 타임존 미표기 문자열에 \`+00:00\`(UTC)을 가정해 +9h를 더했다. 그 결과 KST 21:05 발행 글이 다음날 06:05로 밀려 \`isTodayKst=false\` → 당일 글에 NEW가 안 붙었다. NEW 로직·CSS는 멀쩡했고 "제거"된 적 없는, 순수 날짜 계산 버그.
-
-**증상 B — 히트맵(Admin)**. \`functions/api/admin/analytics.js\`의 publish 히트맵·태그 인사이트 쿼리가 \`datetime(COALESCE(NULLIF(p.publish_at,''),p.created_at), '+9 hours')\`로 \`publish_at\`(이미 KST)에도 +9h를 더해 **이중 변환** → 시간대가 9시간 밀렸다.
-
-**해결**
-1. Site: \`GW.getPostPublicDate\`가 타임존 없는 \`publish_at\`에 \`+09:00\`을 부여해 반환하도록 수정(\`js/main.js\`). 이후 모든 클라 날짜 헬퍼가 올바른 KST로 해석. \`created_at\`(UTC)은 변형 없음.
-2. Admin: \`analytics.js\`에 \`POST_KST_EXPR\`(서버 \`PUBLIC_DATE_EXPR\`과 동일 로직, alias \`p.\`) 신설 후 6개 occurrence 교체.
-3. AdSense 부수 작업에서 발견된 함정: 클린 라우트(\`/\`)의 CSP는 \`_headers\`가 아니라 \`functions/_middleware.js\` \`buildCsp\`(nonce+strict-dynamic)가 적용된다. \`_headers\`만 고치면 메인 라우트에서 광고 비콘·iframe이 차단되므로 \`buildCsp\`의 connect-src/frame-src도 함께 열어야 했다(00.170.00 → 00.170.01 보강 배포).
-
-**재발 방지 규칙**
-1. 게시글 시각을 KST로 다룰 때 SQL은 반드시 \`PUBLIC_DATE_EXPR\`(또는 동형 식)을, 클라이언트는 \`GW.getPostPublicDate\`를 거친다. raw \`publish_at\`에 \`+9h\`/\`+00:00\`을 직접 가정하지 않는다.
-2. \`publish_at\`(미표기=KST)과 \`created_at\`(UTC)의 타임존 규칙이 다름을 기억한다. 새 쿼리·표시 코드 추가 시 둘을 동일 취급하지 않는다.
-3. CSP는 정적 경로(\`_headers\`)와 클린 라우트(\`_middleware.js buildCsp\`) **두 곳**에 존재한다. 외부 스크립트/광고 도메인 허용은 양쪽을 함께 갱신하고, strict-dynamic 하에서는 script-src 호스트가 아니라 nonce가 실행을 통제함을 인지한다.
-
-**검증**: 라이브 \`VERSION\`=00.170.01, \`curl /\`의 CSP에 \`pagead2.googlesyndication.com\`/\`googleads.g.doubleclick.net\`/\`tpc.googlesyndication.com\` 포함 + AdSense 스크립트에 \`nonce\` 스탬프 확인, post-deploy 감사 0 issues. KMS 본 섹션은 D1 반영 후 \`node scripts/sync_kms_snapshot.mjs --check\` 통과로 검증.
+**상세 포스트모템**: \`docs/working-notes.md\` §14 (publish_at KST/UTC).
 
 ### 13.2 스모크 체크 기준
 
@@ -1787,23 +1749,10 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 ### 17.4 3차 (2026-05-26, 00.153.00 / 03.130.00)
 
 #### 기능 세부 설명
-이번 세션에서 잡힌 다섯 종류의 회귀를 **자동 검출 + 가드**로 묶었다.
-
-**Frontend reference audit** (\`scripts/audit_frontend_refs.mjs\`):
-1. **자산 캐시 토큰 드리프트** — HTML 의 \`<script src>\` / \`<link href>\` 의 \`?v=\` 토큰이 \`scripts/sync_versions.sh\` 의 perl 치환에서 누락되면 배포 후 stale 캐시로 회귀가 묻힌다. 회귀 사례: \`memorabilia-shared.js\` (03.128.00 에서 추가), \`admin-account.js\` (03.130.00 에서 추가).
-2. **CSS 클래스 정의 누락** — HTML 이 class 를 쓰는데 CSS 어디에도 정의가 없으면 의도된 스타일 적용 안 됨. 회귀 사례: \`.v3-modal-backdrop\` (03.127.02 — 모달이 인라인 블록으로 렌더).
-3. **JS 가 참조하는 DOM id 가 HTML 에서 사라진 경우** — null \`.value\` / null \`.click()\` 으로 TypeError. 회귀 사례: \`#memo-event-en/ko\` (03.125.01 hotfix).
-
-가드는 \`scripts/release_preflight.sh\` 에서 \`--strict\` 모드로 실행. critical(자산 캐시 드리프트)만 차단, CSS/DOM 경고는 warn-only (false positive 다수).
-
-**도감 동시 편집 보호** (메모라빌리아 7.8 패턴 이식):
-- \`PATCH /api/memorabilia/:id\` 가 \`expected_updated_at\` 을 받아 현재 row 의 \`updated_at\` 과 비교, 다르면 \`409 + version_mismatch + reason\` 반환.
-- 누락 시 잠금 비활성 (구버전 클라이언트 호환).
-- admin·공개 양쪽 모달 save 가 \`editing.updated_at\` 을 그대로 동봉. 409 응답 시 사용자 친화 알림 + 모달 유지 (저장 버튼만 재활성).
-
-**입력 라이프사이클 회귀** (03.129.00 에서 잡힘):
-- \`onImageInput\` 이 \`e.target.files\` 참조를 받자마자 \`e.target.value = ''\` 로 input 을 리셋해서 FileList 가 invalidate, \`addFiles\` 가 0개로 읽던 버그.
-- 룰: 비동기로 FileList 를 다루는 모든 핸들러는 \`Array.from(e.target.files || [])\` 로 **즉시 스냅샷** 후 value 리셋. 14.1 체크리스트에 포함.
+세 종류 회귀를 자동 검출+가드로 묶었다(상세 규칙은 각 원본에 있어 요약만 둔다).
+- **Frontend reference audit** (\`scripts/audit_frontend_refs.mjs\`, preflight \`--strict\`): 자산 캐시 \`?v=\` 토큰 드리프트는 critical 차단, CSS 클래스/DOM id 누락은 warn. 회귀 사례 — memorabilia-shared.js·admin-account.js(토큰), \`.v3-modal-backdrop\`(CSS), \`#memo-event-en/ko\`(DOM).
+- **도감 동시 편집 보호**: \`PATCH /api/memorabilia/:id\` 가 \`expected_updated_at\` 비교로 \`409 version_mismatch\` 반환 (기사 7.8 패턴 이식, 누락 시 잠금 비활성).
+- **입력 라이프사이클 룰**: 비동기 FileList 핸들러는 \`Array.from(e.target.files||[])\` 로 즉시 스냅샷 후 value 리셋 (14.1 체크리스트 포함).
 
 ### 17.5 검증 명령
 

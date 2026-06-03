@@ -7,8 +7,8 @@
 
   const GW = window.GW = {};
   GW.APP_VERSION = '00.170.01';
-  GW.ADMIN_VERSION = '03.143.06';
-  GW.ASSET_VERSION = '20260603132215';
+  GW.ADMIN_VERSION = '03.143.07';
+  GW.ASSET_VERSION = '20260603142941';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -370,6 +370,27 @@
 
   GW.hasRealPostImage = function (post) {
     return !!(post && (post.image_has_real_asset || (!post.image_is_placeholder && post.image_url)));
+  };
+
+  // ── Changelog/release 분류 (공개 KMS 뷰어 js/kms.js · 관리자 버전기록 js/admin-v3.js 공용) ──
+  // scope 추론 / scope 라벨 / 날짜 ISO 추출은 양쪽 surface 가 동일 로직을 썼다(과거 복제).
+  // 단일 원본으로 합쳐 분류 규칙 변경 시 한 곳만 고치면 되게 한다. type 추론·필터 술어는
+  // surface 별 의미(관리자 Hotfix 휴리스틱, scope='all' vs 'both' 등)가 달라 각자 유지한다.
+  GW.inferReleaseScope = function (item) {
+    var raw = String(item && item.scope || '').trim().toLowerCase();
+    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
+    var version = String(item && item.version || '').trim();
+    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
+    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
+    return 'both';
+  };
+  GW.releaseScopeLabel = function (scope) {
+    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
+  };
+  GW.releaseDateIso = function (item) {
+    var raw = String(item && (item.released_at || item.date) || '');
+    var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : '';
   };
 
   GW.buildEditorOptions = function (editors) {

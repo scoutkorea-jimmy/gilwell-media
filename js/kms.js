@@ -1355,14 +1355,8 @@
       });
   }
 
-  function inferChangelogScope(item) {
-    var raw = String(item && item.scope || '').trim().toLowerCase();
-    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
-    var version = String(item && item.version || '').trim();
-    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
-    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
-    return 'both';
-  }
+  // scope 추론 / 라벨은 GW 공용(js/main.js)에 단일화됨. 여기선 위임 래퍼만 둔다.
+  function inferChangelogScope(item) { return GW.inferReleaseScope(item); }
 
   function inferChangelogType(item) {
     var raw = String(item && item.type || '').trim();
@@ -1370,9 +1364,7 @@
     return 'Update';
   }
 
-  function changelogScopeLabel(scope) {
-    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
-  }
+  function changelogScopeLabel(scope) { return GW.releaseScopeLabel(scope); }
 
   function renderChangelog(items, scope) {
     var container = document.getElementById('kms-changelog');
@@ -1385,11 +1377,6 @@
     var q  = String(_state.changelogQuery || '').trim().toLowerCase();
     var from = String(_state.changelogFrom || '');
     var to   = String(_state.changelogTo   || '');
-    function isoOf(item) {
-      var raw = String(item && (item.released_at || item.date) || '');
-      var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
-      return m ? m[1] : '';
-    }
     var filtered = items.filter(function (item) {
       // scope
       var s = inferChangelogScope(item);
@@ -1397,7 +1384,7 @@
       if (scope === 'site' && !(s === 'site' || s === 'both')) return false;
       if (scope === 'admin' && !(s === 'admin' || s === 'both')) return false;
       // 기간 필터
-      var iso = isoOf(item);
+      var iso = GW.releaseDateIso(item);
       if (from && iso && iso < from) return false;
       if (to && iso && iso > to) return false;
       if ((from || to) && !iso) return false;

@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.143.06
+ * Version: 03.143.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7037,14 +7037,8 @@
   var _releasesPage  = 1;
   var _releasesPageSize = 50; // 사용자가 select 로 변경 (10/30/50/100)
 
-  function _inferReleaseScope(item) {
-    var raw = String(item && item.scope || '').trim().toLowerCase();
-    if (raw === 'site' || raw === 'admin' || raw === 'both') return raw;
-    var version = String(item && item.version || '').trim();
-    if (/^03\./.test(version) || /^3\./.test(version)) return 'admin';
-    if (/^00\./.test(version) || /^0\./.test(version)) return 'site';
-    return 'both';
-  }
+  // scope 추론 / 라벨은 GW 공용(js/main.js)에 단일화됨. 여기선 위임 래퍼만 둔다.
+  function _inferReleaseScope(item) { return GW.inferReleaseScope(item); }
 
   function _inferReleaseType(item) {
     var raw = String(item && item.type || '').trim();
@@ -7057,9 +7051,7 @@
     return 'Update';
   }
 
-  function _getReleaseScopeLabel(scope) {
-    return scope === 'site' ? 'Site' : scope === 'admin' ? 'Admin' : 'Site + Admin';
-  }
+  function _getReleaseScopeLabel(scope) { return GW.releaseScopeLabel(scope); }
 
   function _loadReleases() {
     var el = document.getElementById('releases-list');
@@ -7079,12 +7071,8 @@
       });
   }
 
-  function _releaseDateIso(item) {
-    // released_at("YYYY-MM-DD HH:MM:SS KST") 또는 date("YYYY-MM-DD") 의 앞 10글자 사용.
-    var raw = String(item && (item.released_at || item.date) || '');
-    var m = raw.match(/(\d{4}-\d{2}-\d{2})/);
-    return m ? m[1] : '';
-  }
+  // released_at("YYYY-MM-DD HH:MM:SS KST") 또는 date 의 앞 10글자 — GW 공용에 단일화.
+  function _releaseDateIso(item) { return GW.releaseDateIso(item); }
 
   function _filterReleases(items, scope, query, from, to) {
     var q = String(query || '').trim().toLowerCase();

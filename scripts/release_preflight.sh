@@ -15,6 +15,24 @@ if [[ -f "$ROOT_DIR/scripts/audit_frontend_refs.mjs" ]]; then
   node "$ROOT_DIR/scripts/audit_frontend_refs.mjs" --strict
 fi
 
+# KMS 스냅샷 드리프트 게이트 — D1(운영 원본) ↔ docs/feature-definition.md / default.js 정합성.
+# md 를 직접 편집·커밋한 뒤 sync 를 누락(13.1.7 유형)하거나, 반대로 D1 만 바뀌고 스냅샷이
+# 뒤처진 채 배포되는 것을 차단한다. 해소법: `node scripts/sync_kms_snapshot.mjs` 실행 후 커밋.
+# D1/네트워크/wrangler 미가용 시엔 차단하지 않고 경고만 한다 (오프라인 preflight 잠금 방지 —
+# 실제 배포는 wrangler 가 필요하므로 보통 D1 에 도달 가능).
+if [[ -f "$ROOT_DIR/scripts/sync_kms_snapshot.mjs" ]] && command -v wrangler >/dev/null 2>&1; then
+  if KMS_CHECK_OUT="$(node "$ROOT_DIR/scripts/sync_kms_snapshot.mjs" --check 2>&1)"; then
+    echo "KMS 스냅샷 동기화 상태 OK."
+  elif printf '%s' "$KMS_CHECK_OUT" | grep -q "드리프트 감지"; then
+    echo "Production preflight failed: KMS 스냅샷 드리프트 (sync 누락)."
+    echo "$KMS_CHECK_OUT"
+    exit 1
+  else
+    echo "Release preflight note: KMS 드리프트 점검 생략 (D1/네트워크 미가용)."
+    echo "$KMS_CHECK_OUT"
+  fi
+fi
+
 CURRENT_BRANCH="$(git branch --show-current 2>/dev/null || true)"
 if [[ "${CURRENT_BRANCH}" != "main" ]]; then
   echo "Production preflight failed: main branch required."
