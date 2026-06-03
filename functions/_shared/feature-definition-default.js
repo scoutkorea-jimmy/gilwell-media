@@ -1584,6 +1584,30 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 
 **검증**: 라이브 \`VERSION\`=00.169.00, \`GET /api/memorabilia/:id/view\`가 \`{"views":N}\` + 동일 IP 재호출 시 dedup, \`search\` 응답 항목에 \`view_count\` 포함, post-deploy 감사 0 issues. KMS 본 섹션은 D1 반영 후 \`node scripts/sync_kms_snapshot.mjs --check\` 통과로 검증.
 
+### 13.1.8 publish_at KST/UTC 시간대 단일원인 버그 (2026-06-03, 00.170.00 / 03.143.05)
+
+#### 기능 세부 설명
+
+홈 'NEW' 배지가 당일 글에도 사라지고(Site), 관리자 분석 '글 작성 시간대' 히트맵이 9시간 밀려 표시된(Admin) 두 버그가 **같은 단일 원인**에서 나왔다. 새 기능이 아니라, 게시글 공개시각의 타임존 규칙을 일부 코드가 잘못 가정한 회귀였다.
+
+**근본 원인 — \`publish_at\` 저장 규칙 불일치**. \`publish_at\`은 관리자가 입력한 KST 시각을 **타임존 표기 없이 그대로** 저장한다(\`functions/_shared/post-input.js\` \`normalizePublishAtInput\`, 예: \`2026-06-03 21:05:00\` = KST). 반면 \`created_at\`은 UTC. 서버 표준식 \`functions/_shared/post-public-date.js\` \`PUBLIC_DATE_EXPR\`은 이를 정확히 처리한다 — \`publish_at\`에 타임존(Z/\`+\`)이 있으면 UTC로 보고 +9h, **없으면 이미 KST라 변형 없음**, \`created_at\`은 항상 +9h. 그러나 이 규칙을 따르지 않고 "타임존 없는 문자열 = UTC"로 가정해 무조건 +9h를 더한 코드가 두 곳 있었다.
+
+**증상 A — NEW 배지(Site)**. 클라이언트 \`GW.isPostNew\` → \`GW.isTodayKst(GW.getPostPublicDate(post))\`. \`getPostPublicDate\`가 raw \`publish_at\` 문자열을 그대로 반환했고, \`_getKstDateParts\`는 타임존 미표기 문자열에 \`+00:00\`(UTC)을 가정해 +9h를 더했다. 그 결과 KST 21:05 발행 글이 다음날 06:05로 밀려 \`isTodayKst=false\` → 당일 글에 NEW가 안 붙었다. NEW 로직·CSS는 멀쩡했고 "제거"된 적 없는, 순수 날짜 계산 버그.
+
+**증상 B — 히트맵(Admin)**. \`functions/api/admin/analytics.js\`의 publish 히트맵·태그 인사이트 쿼리가 \`datetime(COALESCE(NULLIF(p.publish_at,''),p.created_at), '+9 hours')\`로 \`publish_at\`(이미 KST)에도 +9h를 더해 **이중 변환** → 시간대가 9시간 밀렸다.
+
+**해결**
+1. Site: \`GW.getPostPublicDate\`가 타임존 없는 \`publish_at\`에 \`+09:00\`을 부여해 반환하도록 수정(\`js/main.js\`). 이후 모든 클라 날짜 헬퍼가 올바른 KST로 해석. \`created_at\`(UTC)은 변형 없음.
+2. Admin: \`analytics.js\`에 \`POST_KST_EXPR\`(서버 \`PUBLIC_DATE_EXPR\`과 동일 로직, alias \`p.\`) 신설 후 6개 occurrence 교체.
+3. AdSense 부수 작업에서 발견된 함정: 클린 라우트(\`/\`)의 CSP는 \`_headers\`가 아니라 \`functions/_middleware.js\` \`buildCsp\`(nonce+strict-dynamic)가 적용된다. \`_headers\`만 고치면 메인 라우트에서 광고 비콘·iframe이 차단되므로 \`buildCsp\`의 connect-src/frame-src도 함께 열어야 했다(00.170.00 → 00.170.01 보강 배포).
+
+**재발 방지 규칙**
+1. 게시글 시각을 KST로 다룰 때 SQL은 반드시 \`PUBLIC_DATE_EXPR\`(또는 동형 식)을, 클라이언트는 \`GW.getPostPublicDate\`를 거친다. raw \`publish_at\`에 \`+9h\`/\`+00:00\`을 직접 가정하지 않는다.
+2. \`publish_at\`(미표기=KST)과 \`created_at\`(UTC)의 타임존 규칙이 다름을 기억한다. 새 쿼리·표시 코드 추가 시 둘을 동일 취급하지 않는다.
+3. CSP는 정적 경로(\`_headers\`)와 클린 라우트(\`_middleware.js buildCsp\`) **두 곳**에 존재한다. 외부 스크립트/광고 도메인 허용은 양쪽을 함께 갱신하고, strict-dynamic 하에서는 script-src 호스트가 아니라 nonce가 실행을 통제함을 인지한다.
+
+**검증**: 라이브 \`VERSION\`=00.170.01, \`curl /\`의 CSP에 \`pagead2.googlesyndication.com\`/\`googleads.g.doubleclick.net\`/\`tpc.googlesyndication.com\` 포함 + AdSense 스크립트에 \`nonce\` 스탬프 확인, post-deploy 감사 0 issues. KMS 본 섹션은 D1 반영 후 \`node scripts/sync_kms_snapshot.mjs --check\` 통과로 검증.
+
 ### 13.2 스모크 체크 기준
 
 #### 기능 세부 설명
@@ -1625,6 +1649,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - **changelog 엔트리 추가 후 버전 문자열이 실제로 들어갔는지 확인** — \`JSON.parse\` 통과 ≠ 엔트리 추가됨. \`grep\`/JSON 카운트로 검증 (13.1.7).
 - **배포 "성공"은 출력이 아니라 라이브로 검증** — \`curl .../VERSION\` + 대상 엔드포인트 응답으로 확인 (13.1.7).
 - **순서 의존 단계(D1 마이그레이션 → commit → push → deploy)는 순차 실행** — 병렬 배치 시 앞 단계 실패가 뒤를 취소시킨다 (13.1.7).
+- **게시글 시각을 KST로 표시·집계한다면 \`publish_at\`(타임존 없으면 KST)과 \`created_at\`(UTC)을 같은 규칙으로 취급하지 않았는가** (13.1.8) — SQL은 \`PUBLIC_DATE_EXPR\`, 클라는 \`GW.getPostPublicDate\`를 거친다. raw \`publish_at\`에 \`+9h\`/\`+00:00\` 가정 금지. CSP 변경은 \`_headers\`와 \`_middleware.js buildCsp\` 두 곳을 함께 확인.
 
 ### 14.3 각주
 
