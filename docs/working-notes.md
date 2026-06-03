@@ -11,6 +11,17 @@ scope: site-admin
 >
 > 이 노트는 매 턴마다 컨텍스트에 자동 로드되지는 않습니다. CLAUDE.md에서 포인터만 유지하고, AI는 회귀 디버깅·신규 기능 착수 시 직접 읽도록 합니다.
 
+## 14 `publish_at` 은 타임존 없는 **KST 벽시계**, `created_at` 은 **UTC** — 시간대 버그의 단일 원인
+
+00.170.00 에서 **NEW 배지 사라짐**(Site)과 **접속 시간 히트맵 9시간 밀림**(Admin) 두 버그가 같은 원인이었다.
+
+- **저장 규칙**: `normalizePublishAtInput`(`functions/_shared/post-input.js`)은 관리자가 입력한 KST 시각을 타임존 표기 없이 그대로 저장한다(예: `2026-06-03 21:05:00` = KST). 반면 `created_at` 은 UTC.
+- **정답 규칙(서버 표준)**: `functions/_shared/post-public-date.js` `PUBLIC_DATE_EXPR` — `publish_at` 에 타임존(Z/`+`)이 **있으면 UTC→+9h**, **없으면 이미 KST(변형 없음)**. `created_at` 은 항상 +9h. SQL 에서 게시글 KST 시각이 필요하면 **반드시 이 식을 쓴다.**
+- **함정**: 타임존 없는 문자열을 무조건 UTC 로 보고 `+9h` 더하는 코드가 곳곳에 있었다 →
+  - 클라이언트 `GW._getKstDateParts`/`getPostDateMillis` 는 미표기 문자열에 `+00:00` 가정. `getPostPublicDate` 가 raw 를 그대로 넘겨 당일 글이 +9h 밀려 `isPostNew=false`. → `getPostPublicDate` 가 미표기 `publish_at` 에 `+09:00` 부여하도록 수정([js/main.js](../js/main.js)).
+  - `functions/api/admin/analytics.js` 히트맵·태그 인사이트가 `datetime(COALESCE(publish_at,created_at),'+9 hours')` 로 publish_at 에도 +9h → 이중 변환. `POST_KST_EXPR`(PUBLIC_DATE_EXPR 동일 로직, alias `p.`) 신설 후 교체.
+- **체크**: 게시글 시각을 KST 로 다룰 땐 (1) SQL → `PUBLIC_DATE_EXPR`/동형 식, (2) 클라 → `GW.getPostPublicDate`(이제 타임존 태깅됨)를 거칠 것. raw `publish_at` 에 `+9h`/`+00:00` 가정 금지.
+
 ## 13 배포·문서 작업 함정 (changelog 들여쓰기 · 순차 배포 · KMS 100KB)
 
 기념품 조회수(00.169.00) 배포가 여러 번 막힌 케이스. 상세·재발 방지는 KMS 13.1.7.
