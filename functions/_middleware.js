@@ -110,7 +110,7 @@ function buildCsp(request, nonce) {
   //     admin.html is migrated.
   const scriptSrc = legacy
     ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com`;
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`;
 
   // Style policy is left as-is — inline `style="..."` attributes are sprinkled
   // throughout the markup (both admin and public) and tightening style-src
@@ -130,9 +130,11 @@ function buildCsp(request, nonce) {
     // cdn.jsdelivr.net 은 DOMPurify sourcemap(.map) 요청 때문에 필요. script-src에는
     // 이미 있지만 sourcemap은 brower devtools가 fetch로 가져와 connect-src 적용을 받는다.
     // unpkg.com 도 동일 이유 (leaflet.js.map). leaflet 자체는 script-src 로 통과.
-    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net",
-    // Kakao ad iframes are served from t1.kakaocdn.net.
-    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net",
+    // Google AdSense beacons/config: pagead2 + googleads doubleclick + csi.gstatic.
+    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com",
+    // Kakao ad iframes are served from t1.kakaocdn.net. AdSense ad iframes from
+    // googleads.g.doubleclick.net / tpc.googlesyndication.com / www.google.com.
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",
     "media-src 'self' data: https:",
     "object-src 'none'",
     "base-uri 'self'",

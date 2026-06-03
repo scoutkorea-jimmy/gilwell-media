@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.170.01",
+    "date": "2026-06-03",
+    "released_at": "2026-06-03 22:05:00 KST",
+    "summary": "메인 라우트에서도 구글 애드센스가 동작하도록 동적 CSP(미들웨어)에 광고 도메인 허용 추가.",
+    "for_users": [
+      "홈 등 모든 공개 페이지에서 광고(구글 애드센스)가 정상적으로 로드되도록 보안 정책을 보완했습니다."
+    ],
+    "for_developers": [
+      "00.170.00 에서 _headers CSP 에만 애드센스 도메인을 추가했으나, 정적 파일 경로(/index.html)가 아닌 클린 라우트(/, /korea 등)는 functions/_middleware.js buildCsp() 의 nonce+strict-dynamic CSP 를 사용한다(_headers 를 덮어씀). strict-dynamic 으로 script 는 nonce 스탬프로 통과하지만 connect-src·frame-src 는 호스트 허용목록을 따르므로 광고 비콘·iframe 이 차단됐다.",
+      "buildCsp(): script-src(구형 브라우저 fallback)에 pagead2/partner.googleadservices/tpc/googletagservices/adservice, connect-src 에 pagead2/googleads.g.doubleclick/csi.gstatic, frame-src 에 googleads.g.doubleclick/tpc.googlesyndication/www.google 추가. 허용목록 추가만 — isLegacyInlinePath 등 Dreampath 영향 경로는 불변.",
+      "사이트 버전 00.170.00 → 00.170.01."
+    ]
+  },
+  {
     "version": "00.170.00",
     "date": "2026-06-03",
     "released_at": "2026-06-03 21:40:00 KST",
