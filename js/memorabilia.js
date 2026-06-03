@@ -592,7 +592,12 @@
       ` : ''}
       <h1 class="memo-detail-title" lang="en">${escapeHtml(titleEn)}</h1>
       ${titleKo && titleKo !== titleEn ? `<div class="memo-detail-title-ko" lang="ko">${escapeHtml(titleKo)}</div>` : ''}
-      <div class="memo-detail-views" aria-label="조회수">👁 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>
+      <div class="memo-detail-actions">
+        <div class="memo-detail-views" aria-label="조회수">👁 <span data-role="view-count">${Number(item.view_count || 0)}</span></div>
+        <button type="button" class="memo-btn memo-btn-outline memo-btn-sm memo-detail-share-btn" id="memo-detail-share-btn">
+          <span aria-hidden="true">🔗</span> 공유하기
+        </button>
+      </div>
       ${meta.length ? `<div class="memo-detail-meta">${meta.join('')}</div>` : ''}
       ${(descEn || descKo) ? `<div class="memo-detail-body">
         ${descEn ? `<div class="lang-en" lang="en">${descEn}</div>` : ''}
@@ -640,6 +645,25 @@
   }
 
   function wireDetailEvents(wrap) {
+    // 공유하기 — post-page 와 동일한 GW.sharePostLink 공유 모달 재사용.
+    const shareBtn = wrap.querySelector('#memo-detail-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        const item = window.__memoDetailItem || {};
+        const slug = item.slug || getSlugFromPath() || '';
+        const titleEn = uppercaseCountriesIn(item.title_en || '');
+        const title = item.title_ko || titleEn || (document.title || '').replace(/ — BP미디어$/, '');
+        const url = slug
+          ? location.origin + '/memorabilia/' + encodeURIComponent(slug)
+          : location.href;
+        if (GW && typeof GW.sharePostLink === 'function') {
+          GW.sharePostLink({ url, title, text: title }).catch((err) => {
+            GW.showToast((err && err.message) || '링크 공유에 실패했습니다', 'error');
+          });
+        }
+      });
+    }
+
     const thumbs = wrap.querySelectorAll('.memo-thumb-row img');
     const primary = wrap.querySelector('#memo-detail-primary img');
     const creditEl = wrap.querySelector('#memo-detail-credit');

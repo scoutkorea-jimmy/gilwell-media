@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.169.00';
-  GW.ADMIN_VERSION = '03.143.04';
-  GW.ASSET_VERSION = '20260530154327';
+  GW.APP_VERSION = '00.170.00';
+  GW.ADMIN_VERSION = '03.143.05';
+  GW.ASSET_VERSION = '20260603124222';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -281,7 +281,18 @@
 
   GW.getPostPublicDate = function (post) {
     if (!post || typeof post !== 'object') return '';
-    return post.publish_at || post.created_at || '';
+    var pub = post.publish_at ? String(post.publish_at).trim() : '';
+    if (pub) {
+      // 서버 규칙(functions/_shared/post-public-date.js): 타임존 표기가 없는
+      // publish_at 은 이미 KST 벽시계 값으로 저장된다. 클라이언트 날짜 헬퍼는
+      // 타임존 없는 문자열을 UTC(+00:00)로 가정하므로, 그대로 두면 +9h 밀려
+      // "오늘" 글이 NEW 로 잡히지 않고 표시 날짜도 하루 어긋난다.
+      // → 타임존이 없으면 +09:00 을 명시해 KST 임을 알린다. created_at(UTC)은 변형 없음.
+      var iso = pub.replace(' ', 'T');
+      if (!/Z$|[+-]\d{2}:\d{2}$/.test(iso)) return iso + '+09:00';
+      return pub;
+    }
+    return post.created_at || '';
   };
 
   GW.formatPostDate = function (post) {

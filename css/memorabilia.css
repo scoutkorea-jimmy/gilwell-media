@@ -364,14 +364,30 @@
   word-break: keep-all;
 }
 
-/* 상세 조회수 — 제목 아래, 메타 박스 위. 장식 톤. */
+/* 상세 액션 줄 — 조회수 + 공유하기. 제목 아래, 메타 박스 위. */
+.memo-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+/* 상세 조회수 — 장식 톤. (액션 줄 안에서 좌측 정렬) */
 .memo-detail-views {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 0 0 18px;
+  margin: 0;
   font-size: 14px;
   color: var(--gray-700);
+}
+
+.memo-detail-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* 카탈로그 카드 조회수 뱃지 — 0이면 JS에서 렌더 생략. */

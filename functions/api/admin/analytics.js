@@ -5,6 +5,18 @@ import { logApiError } from '../../_shared/ops-log.js';
 
 const VISIT_SCOPE_SQL = "(path NOT LIKE '/api/%' AND path NOT IN ('/admin', '/admin.html'))";
 
+// 게시글 공개시각의 KST 표현식 (alias p. 적용).
+// publish_at 은 타임존 표기가 없으면 이미 KST 벽시계 값으로 저장된다(저장 규칙:
+// functions/_shared/post-input.js normalizePublishAtInput). 따라서 무조건 '+9 hours'
+// 를 더하면 9시간 밀린다(히트맵 "글 작성 시간대"가 어긋나는 원인). created_at(UTC)
+// 에만 +9h 를 적용한다. functions/_shared/post-public-date.js PUBLIC_DATE_EXPR 과 동일 로직.
+const POST_KST_EXPR =
+  "CASE WHEN p.publish_at IS NOT NULL AND trim(p.publish_at) <> '' " +
+  "THEN CASE WHEN instr(p.publish_at, 'Z') > 0 OR instr(substr(p.publish_at, 11), '+') > 0 " +
+  "THEN datetime(replace(p.publish_at, 'T', ' '), '+9 hours') " +
+  "ELSE datetime(replace(p.publish_at, 'T', ' ')) END " +
+  "ELSE datetime(replace(p.created_at, 'T', ' '), '+9 hours') END";
+
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'analytics-visits', 'view'); if (__gate) return __gate
 
@@ -280,8 +292,8 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
          ) v ON v.post_id = p.id
         WHERE (p.tag IS NOT NULL OR p.meta_tags IS NOT NULL)
           AND (trim(COALESCE(p.tag, '')) <> '' OR trim(COALESCE(p.meta_tags, '')) <> '')
-          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
-          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)`
+          AND (${POST_KST_EXPR}) >= datetime(?)
+          AND (${POST_KST_EXPR}) < datetime(?)`
     ).bind(chosenTags.start, chosenTags.endExclusive, chosenTags.start, chosenTags.endExclusive).all(),
     env.DB.prepare(
       `SELECT CAST(strftime('%w', datetime(visited_at, '+9 hours')) AS INTEGER) AS weekday,
@@ -296,13 +308,13 @@ async function getInternalMetrics(env, range, tagRange, heatmapRange) {
         ORDER BY weekday ASC, visit_hour ASC`
     ).bind(chosenHeatmap.start, chosenHeatmap.endExclusive).all(),
     env.DB.prepare(
-      `SELECT CAST(strftime('%w', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS INTEGER) AS weekday,
-              strftime('%H', datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours')) AS publish_hour,
+      `SELECT CAST(strftime('%w', (${POST_KST_EXPR})) AS INTEGER) AS weekday,
+              strftime('%H', (${POST_KST_EXPR})) AS publish_hour,
               COUNT(*) AS publish_count
          FROM posts p
         WHERE p.published = 1
-          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') >= datetime(?)
-          AND datetime(COALESCE(NULLIF(p.publish_at, ''), p.created_at), '+9 hours') < datetime(?)
+          AND (${POST_KST_EXPR}) >= datetime(?)
+          AND (${POST_KST_EXPR}) < datetime(?)
         GROUP BY weekday, publish_hour
         ORDER BY weekday ASC, publish_hour ASC`
     ).bind(chosenHeatmap.start, chosenHeatmap.endExclusive).all(),

@@ -1,6 +1,36 @@
 {
   "items": [
   {
+    "version": "00.170.00",
+    "date": "2026-06-03",
+    "released_at": "2026-06-03 21:40:00 KST",
+    "summary": "기념품 도감 상세에 공유하기 추가, 홈 'NEW' 배지가 오늘 글에 다시 표시되도록 날짜 처리 수정, 전 페이지에 구글 애드센스 로더 적용.",
+    "for_users": [
+      "기념품 도감 상세 페이지에서 '공유하기' 버튼으로 기사와 동일하게 링크를 공유할 수 있습니다 (카카오톡·페이스북·링크 복사).",
+      "오늘 올라온 글에 빨간 'NEW' 배지가 다시 정상 표시됩니다. 그동안 발행 시각 처리 오류로 당일 글에도 배지가 사라져 있었습니다.",
+      "사이트 전반에 광고(구글 애드센스)가 노출될 수 있도록 준비됐습니다."
+    ],
+    "for_developers": [
+      "기념품 공유: js/memorabilia.js renderDetail 에 #memo-detail-share-btn 추가, wireDetailEvents 에서 GW.sharePostLink({url,title,text}) 호출(공용 공유 모달 재사용). url 은 location.origin + '/memorabilia/' + slug. css/memorabilia.css 에 .memo-detail-actions(조회수+공유 flex 줄) 추가.",
+      "NEW 배지/날짜 버그: publish_at 은 타임존 없는 KST 벽시계로 저장되는데(normalizePublishAtInput) 클라이언트 GW.getPostPublicDate 가 raw 문자열을 그대로 반환→_getKstDateParts 가 UTC(+00:00)로 가정해 +9h 밀려 당일 글이 isPostNew=false 가 됐다. getPostPublicDate 가 타임존 없는 publish_at 에 '+09:00' 을 부여하도록 수정(서버 PUBLIC_DATE_EXPR 과 동일 규칙). created_at(UTC)은 변형 없음.",
+      "애드센스: functions/_shared/site-meta.js buildShareMetaBlock 에 adsbygoogle.js 로더 + preconnect 추가(client=ca-pub-9517793409283448). _headers CSP 에 pagead2.googlesyndication.com / partner.googleadservices.com / tpc.googlesyndication.com / googleads.g.doubleclick.net 등 script-src·connect-src·frame-src 허용.",
+      "사이트 버전 00.169.00 → 00.170.00."
+    ]
+  },
+  {
+    "version": "03.143.05",
+    "date": "2026-06-03",
+    "released_at": "2026-06-03 21:40:00 KST",
+    "summary": "관리자 분석의 '글 작성 시간대' 히트맵이 9시간 밀려 표시되던 문제 수정 (publish_at KST 이중 변환).",
+    "for_users": [
+      "관리자 분석 화면의 주간 '게시글 작성 시간대' 히트맵이 실제 발행 시각과 맞게 표시됩니다. 이전에는 시간대가 9시간 어긋나 있었습니다."
+    ],
+    "for_developers": [
+      "functions/api/admin/analytics.js: publish 히트맵·태그 인사이트 쿼리가 datetime(COALESCE(NULLIF(p.publish_at,''),p.created_at),'+9 hours') 로 publish_at(이미 KST)에도 +9h 를 더해 이중 변환됐다. POST_KST_EXPR(타임존 없으면 publish_at 그대로, created_at 만 +9h — post-public-date.js PUBLIC_DATE_EXPR 과 동일) 신설 후 6개 occurrence 교체.",
+      "관리자 버전 03.143.04 → 03.143.05."
+    ]
+  },
+  {
     "version": "03.143.04",
     "date": "2026-05-31",
     "released_at": "2026-05-31 09:30:00 KST",

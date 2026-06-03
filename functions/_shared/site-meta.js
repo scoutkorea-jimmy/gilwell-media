@@ -170,6 +170,10 @@ export function buildShareMetaBlock({ pageKey, title, description, url, imageUrl
 
   return [
     `<meta name="google-adsense-account" content="${ADSENSE_ACCOUNT}"/>`,
+    // Google AdSense 로더 — 자동 광고 + 사이트 인증. ADSENSE_ACCOUNT 와 동일 client.
+    // CSP(script-src/frame-src/connect-src)에 googlesyndication / doubleclick 허용 필요 (_headers).
+    `<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin/>`,
+    `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ACCOUNT}" crossorigin="anonymous"></script>`,
     robots,
     `<meta name="description" content="${safeDesc}"/>`,
     `<meta name="keywords" content="${escapeHtml(getPageKeywords(pageKey))}"/>`,
