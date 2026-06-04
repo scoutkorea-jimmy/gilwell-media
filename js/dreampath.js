@@ -7348,7 +7348,7 @@ const DP = (() => {
         <div class="dp-wiki-card-main">
           <div class="dp-wiki-card-title">${esc(p.title)}</div>
           <div class="dp-wiki-card-meta">
-            <span class="dp-tag neutral">v${Number(p.current_version)}</span>
+            <span class="dp-tag neutral">${esc(p.latest_version_label || ('v' + Number(p.current_version)))}</span>
             <span class="dp-wiki-srctag">${_wikiSrcLabel(p.latest_source_type)}</span>
             ${Number(p.version_count) > 1 ? `<span>· ${Number(p.version_count)}개 버전</span>` : ''}
             ${p.category ? `<span>· ${esc(p.category)}</span>` : ''}
@@ -7376,7 +7376,8 @@ const DP = (() => {
   function _wikiIsVerMarker(tok) {
     return /^v\d+(\.\d+)*(draft|final|rev\d*)?$/i.test(tok)
         || /^\d+(\.\d+)+$/.test(tok)
-        || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok);
+        || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok)
+        || /^(신구대조표|신구대조|대조표|원안|개정안|개정|초안|시안|검토안|수정안|최종안|최종|버전|버젼)$/.test(tok);
   }
   function _wikiClientSlug(title) {
     const toks = String(title || '').trim().split(/[\s_\-]+/).filter(Boolean);
@@ -7399,7 +7400,7 @@ const DP = (() => {
     const slug = _wikiClientSlug(title);
     const match = _wikiPages.find(p => p.slug === slug);
     if (match) {
-      hint.textContent = `→ 기존 “${match.title}”의 새 버전으로 기록됩니다 (v${Number(match.current_version) + 1})`;
+      hint.textContent = `→ 기존 “${match.title}”의 새 버전으로 기록됩니다`;
       hint.style.color = 'var(--accent)';
     } else {
       hint.textContent = '→ 새 문서로 생성됩니다';
@@ -7771,7 +7772,7 @@ const DP = (() => {
     const canWrite = _hasPerm('write:wiki');
 
     const diffCtl = versions.length > 1 ? (() => {
-      const opts = (sel) => versions.map(v => `<option value="${Number(v.id)}"${v.id === sel ? ' selected' : ''}>v${v.version_no}${v.version_no === page.current_version ? ' (현재)' : ''}</option>`).join('');
+      const opts = (sel) => versions.map(v => `<option value="${Number(v.id)}"${v.id === sel ? ' selected' : ''}>${esc(v.version_label || ('v' + v.version_no))}${v.version_no === page.current_version ? ' (현재)' : ''}</option>`).join('');
       const toId = versions[0].id;            // current (DESC ordered)
       const fromId = (versions[1] || versions[0]).id;  // previous
       return `
@@ -7788,7 +7789,7 @@ const DP = (() => {
     const timeline = versions.map(v => `
       <div class="dp-wiki-ver">
         <div class="dp-wiki-ver-head">
-          <span class="dp-tag ${Number(v.version_no) === Number(page.current_version) ? 'ok' : 'neutral'}">v${v.version_no}${Number(v.version_no) === Number(page.current_version) ? ' · 현재' : ''}</span>
+          <span class="dp-tag ${Number(v.version_no) === Number(page.current_version) ? 'ok' : 'neutral'}">${esc(v.version_label || ('v' + v.version_no))}${Number(v.version_no) === Number(page.current_version) ? ' · 현재' : ''}</span>
           <span class="mono">${esc(fmtTime(v.created_at))}</span>
           <span>${esc(v.uploaded_by_name || '')}</span>
           <span class="dp-wiki-srctag">${_wikiSrcLabel(v.source_type)}</span>
@@ -7804,7 +7805,7 @@ const DP = (() => {
       page.title || '(제목 없음)',
       `
       <div class="dp-post-meta-bar">
-        <span class="dp-tag neutral">v${Number(page.current_version)} · 현재</span>
+        <span class="dp-tag neutral">${esc((current && current.version_label) || ('v' + Number(page.current_version)))} · 현재</span>
         <span class="dp-wiki-srctag">${_wikiSrcLabel(current && current.source_type)}</span>
         ${current ? `<span>by <strong style="color:var(--text-2)">${esc(current.uploaded_by_name || '')}</strong></span><span>·</span><span class="mono">${esc(fmtTime(current.created_at))}</span>` : ''}
         ${current && current.source_file_url ? `<a class="dp-btn dp-btn-secondary dp-btn-sm" style="margin-left:auto;text-decoration:none;padding:0 10px" href="${esc(current.source_file_url)}" target="_blank" rel="noopener" download="${esc(current.source_file_name || '')}">원본 다운로드</a>` : ''}
@@ -7896,7 +7897,7 @@ const DP = (() => {
     const diffHtml = _wordDiff(_htmlToPlain(va.content), _htmlToPlain(vb.content));
     host.innerHTML = `
       <div class="dp-wiki-diff-head">
-        <span>v${va.version_no} → v${vb.version_no}</span>
+        <span>${esc(va.version_label || ('v' + va.version_no))} → ${esc(vb.version_label || ('v' + vb.version_no))}</span>
         <span class="dp-wiki-diff-legend"><ins class="dp-wiki-ins">＋ 추가</ins> <del class="dp-wiki-del">－ 삭제</del></span>
       </div>
       ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}

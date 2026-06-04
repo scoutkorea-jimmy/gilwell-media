@@ -51,7 +51,23 @@ const SLUG_STRIP = /["'<>`\\/]/g;
 function _isVersionMarker(tok) {
   return /^v\d+(\.\d+)*(draft|final|rev\d*)?$/i.test(tok)         // v1, v1.2, v2final
       || /^\d+(\.\d+)+$/.test(tok)                                // 1.2, 1.0 (dotted)
-      || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok); // words
+      || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok) // EN words
+      // Korean doc-type / draft descriptors — "X 신구대조표", "X 원안", "X 개정안"
+      // all belong to document "X". These trail the real title, so dropping
+      // them groups the change-table / draft with its parent document.
+      || /^(신구대조표|신구대조|대조표|원안|개정안|개정|초안|시안|검토안|수정안|최종안|최종|버전|버젼)$/.test(tok);
+}
+
+// Extract the document's REAL version label from its filename (e.g. "v1.2",
+// "v1.0"), so the UI shows the actual version instead of our internal upload
+// counter. Returns null when the filename has no version token.
+// [CASE STUDY 2026-06-04 — show real version, not upload order]
+//   Internal version_no (1,2,3…) was surfacing as "v2" for a v1.2 document,
+//   which read like we renumbered the doc. We now store + display version_label.
+function _versionLabel(title) {
+  const m = String(title || '').match(/v\s*\.?\s*(\d+(?:\.\d+)*)/i)
+        || String(title || '').match(/(?:^|[\s_\-(])(\d+\.\d+)(?=[\s_\-)]|$)/);
+  return m ? ('v' + m[1]) : null;
 }
 
 // Split a title on separators and drop trailing version/draft markers. Always
@@ -95,6 +111,7 @@ async function _ensureTables(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       page_id INTEGER NOT NULL,
       version_no INTEGER NOT NULL,
+      version_label TEXT,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       source_type TEXT,
@@ -148,7 +165,7 @@ export async function onRequestGet({ request, env, data }) {
   // Single version (for diff) — content included.
   if (versionId) {
     const v = await env.DB.prepare(
-      `SELECT id, page_id, version_no, title, content, source_type, source_file_url,
+      `SELECT id, page_id, version_no, version_label, title, content, source_type, source_file_url,
               source_file_name, change_context, char_count, created_at, uploaded_by_name
          FROM dp_wiki_versions WHERE id = ?`
     ).bind(versionId).first();
@@ -163,6 +180,7 @@ export async function onRequestGet({ request, env, data }) {
               p.created_by_name,
               (SELECT COUNT(*) FROM dp_wiki_versions v WHERE v.page_id = p.id) AS version_count,
               (SELECT source_type FROM dp_wiki_versions v WHERE v.page_id = p.id ORDER BY v.version_no DESC LIMIT 1) AS latest_source_type,
+              (SELECT version_label FROM dp_wiki_versions v WHERE v.page_id = p.id ORDER BY v.version_no DESC LIMIT 1) AS latest_version_label,
               (SELECT uploaded_by_name FROM dp_wiki_versions v WHERE v.page_id = p.id ORDER BY v.version_no DESC LIMIT 1) AS latest_editor
          FROM dp_wiki_pages p
         ORDER BY p.updated_at DESC`
@@ -183,7 +201,7 @@ export async function onRequestGet({ request, env, data }) {
 
   // Version timeline (metadata only — no content blobs in the list).
   const versions = (await env.DB.prepare(
-    `SELECT id, version_no, title, source_type, source_file_url, source_file_name,
+    `SELECT id, version_no, version_label, title, source_type, source_file_url, source_file_name,
             change_context, char_count, created_at, uploaded_by_name,
             (SELECT COUNT(*) FROM dp_wiki_followups f WHERE f.version_id = dp_wiki_versions.id) AS follower_count
        FROM dp_wiki_versions
@@ -193,7 +211,7 @@ export async function onRequestGet({ request, env, data }) {
 
   // Current version with content.
   const current = await env.DB.prepare(
-    `SELECT id, version_no, title, content, source_type, source_file_url, source_file_name,
+    `SELECT id, version_no, version_label, title, content, source_type, source_file_url, source_file_name,
             change_context, char_count, created_at, uploaded_by_name
        FROM dp_wiki_versions WHERE page_id = ? AND version_no = ?`
   ).bind(page.id, page.current_version).first();
@@ -255,6 +273,8 @@ export async function onRequestPost({ request, env, data }) {
 
   const slug = _slug(title);
   const baseTitle = _baseTitle(title);
+  // Prefer a caller-supplied label, else parse from the filename/title.
+  const versionLabel = (body.version_label && String(body.version_label).trim()) || _versionLabel(title);
   const sourceType = ['pdf', 'docx', 'manual'].includes(body.source_type) ? body.source_type : 'manual';
   const sourceFile = body.source_file || {};
   const sourceUrl = sourceFile.url ? String(sourceFile.url) : null;
@@ -282,10 +302,10 @@ export async function onRequestPost({ request, env, data }) {
     // timeline shows where each version came from; page.title stays the base.
     const ins = await env.DB.prepare(
       `INSERT INTO dp_wiki_versions
-         (page_id, version_no, title, content, source_type, source_file_url, source_file_name,
+         (page_id, version_no, version_label, title, content, source_type, source_file_url, source_file_name,
           change_context, char_count, uploaded_by_id, uploaded_by_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(existing.id, nextVer, title, content, sourceType, sourceUrl, sourceName,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(existing.id, nextVer, versionLabel, title, content, sourceType, sourceUrl, sourceName,
            changeContext, charCount, uid, uname).run();
     await env.DB.prepare(
       `UPDATE dp_wiki_pages SET current_version = ?, category = COALESCE(?, category),
@@ -301,10 +321,10 @@ export async function onRequestPost({ request, env, data }) {
   const pageId = pageIns.meta.last_row_id;
   const verIns = await env.DB.prepare(
     `INSERT INTO dp_wiki_versions
-       (page_id, version_no, title, content, source_type, source_file_url, source_file_name,
+       (page_id, version_no, version_label, title, content, source_type, source_file_url, source_file_name,
         change_context, char_count, uploaded_by_id, uploaded_by_name)
-     VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(pageId, title, content, sourceType, sourceUrl, sourceName, changeContext, charCount, uid, uname).run();
+     VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(pageId, versionLabel, title, content, sourceType, sourceUrl, sourceName, changeContext, charCount, uid, uname).run();
   return json({ ok: true, page_id: pageId, version_id: verIns.meta.last_row_id, version_no: 1, is_new_page: true });
 }
 
@@ -331,10 +351,14 @@ export async function onRequestPut({ request, env, data }) {
   if (!title) return json({ error: 'Title cannot be empty.' }, 400);
   if (!content) return json({ error: 'Content cannot be empty.' }, 400);
   const charCount = content.replace(/<[^>]*>/g, '').length;
+  // Allow explicit version_label override; else keep existing, else parse title.
+  const versionLabel = body.version_label !== undefined
+    ? (body.version_label ? String(body.version_label).trim() : null)
+    : (v.version_label || _versionLabel(title));
 
   await env.DB.prepare(
-    `UPDATE dp_wiki_versions SET title = ?, content = ?, change_context = ?, char_count = ? WHERE id = ?`
-  ).bind(title, content, changeContext, charCount, versionId).run();
+    `UPDATE dp_wiki_versions SET title = ?, version_label = ?, content = ?, change_context = ?, char_count = ? WHERE id = ?`
+  ).bind(title, versionLabel, content, changeContext, charCount, versionId).run();
 
   // If this is the page's current version, keep page title/updated_at in sync.
   const page = await env.DB.prepare(`SELECT * FROM dp_wiki_pages WHERE id = ?`).bind(v.page_id).first();
