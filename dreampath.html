@@ -1872,7 +1872,15 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   border: var(--bd); background: var(--g-100); color: var(--text-2);
   font-size: var(--fs-10); font-weight: 700; letter-spacing: 0.03em;
 }
-.dp-wiki-content { margin-top: 14px; }
+.dp-wiki-content { margin-top: 14px; font-size: var(--fs-14); line-height: 1.85; color: var(--text); }
+.dp-wiki-content p { margin: 0 0 0.7em; }
+.dp-wiki-content h1, .dp-wiki-content h2, .dp-wiki-content h3, .dp-wiki-content h4 { line-height: 1.4; margin: 1.3em 0 0.5em; font-weight: 700; }
+.dp-wiki-content h2 { font-size: var(--fs-16); }
+.dp-wiki-content h3 { font-size: var(--fs-15); }
+.dp-wiki-content ul, .dp-wiki-content ol { margin: 0 0 0.7em; padding-left: 1.4em; }
+.dp-wiki-content li { margin: 0.2em 0; }
+.dp-wiki-content table { border-collapse: collapse; margin: 0.7em 0; font-size: var(--fs-13); }
+.dp-wiki-content td, .dp-wiki-content th { border: 1px solid var(--g-200); padding: 5px 9px; }
 .dp-wiki-ver-ctx {
   font-size: var(--fs-12); color: var(--text-2); background: var(--info-bg);
   border: 1px solid var(--accent); border-radius: var(--r-sm); padding: 8px 12px;
@@ -1901,9 +1909,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-wiki-diff-legend { display: inline-flex; gap: 10px; }
 .dp-wiki-diff-ctx { margin: 8px 0; font-size: var(--fs-12); color: var(--text-2); }
 .dp-wiki-diff-body {
-  margin-top: 8px; padding: 12px 14px; border: var(--bd); border-radius: var(--r-sm);
-  background: var(--surface); white-space: pre-wrap; line-height: 1.7;
-  font-size: var(--fs-13); color: var(--text); max-height: 460px; overflow: auto;
+  margin-top: 6px; background: var(--surface); color: var(--text);
+  max-height: 540px; overflow: auto; border-radius: var(--r-sm);
 }
 /* ins/del are semantic — color is a secondary cue (＋/－ markers + underline/strike) */
 ins.dp-wiki-ins {
@@ -1921,10 +1928,10 @@ del.dp-wiki-del {
 .dp-wiki-diff-stat { display: inline-flex; gap: 10px; align-items: center; }
 .dp-wiki-mod-tag { color: var(--accent); font-weight: 700; }
 .dp-wiki-diff-toggle { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; font-size: var(--fs-11); color: var(--text-2); cursor: pointer; }
-.dp-diff-row { padding: 7px 10px; border-radius: var(--r-sm); margin: 4px 0; font-size: var(--fs-13); line-height: 1.7; white-space: pre-wrap; }
+.dp-diff-row { padding: 8px 12px; border-radius: var(--r-sm); margin: 4px 0; font-size: var(--fs-14); line-height: 1.8; white-space: pre-wrap; }
 .dp-diff-ins { background: var(--ok-bg); border-left: 3px solid var(--ok); }
 .dp-diff-del { background: var(--alert-bg); border-left: 3px solid var(--alert); }
-.dp-diff-mod { background: var(--surface-2); border-left: 3px solid var(--accent); }
+.dp-diff-mod { background: transparent; border-left: 3px solid var(--accent); padding-left: 9px; }
 .dp-diff-eq { color: var(--text-3); border-left: 3px solid transparent; }
 .dp-diff-ins ins { color: var(--ok); text-decoration: none; }
 .dp-diff-del del { color: var(--alert); text-decoration: line-through; }
@@ -1940,24 +1947,32 @@ del.dp-wiki-del {
 .dp-wiki-diff-splithdr span { flex: 1; padding: 4px 10px; }
 .dp-wiki-diff-splithdr span:first-child { color: var(--alert); }
 .dp-wiki-diff-splithdr span:last-child { color: var(--ok); }
-.dp-diff-split { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
-.dp-diff-split td { vertical-align: top; padding: 7px 10px; border: 1px solid var(--g-150); white-space: pre-wrap; line-height: 1.7; font-size: var(--fs-13); color: var(--text); word-break: break-word; }
-.dp-diff-split thead th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 6px 10px; border: 1px solid var(--g-150); font-size: var(--fs-11); font-weight: 700; background: var(--surface-2); }
+.dp-diff-split { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
+.dp-diff-split td { vertical-align: top; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--g-150); white-space: pre-wrap; line-height: 1.8; font-size: var(--fs-14); color: var(--text); word-break: break-word; }
+.dp-diff-split td + td { border-left: 1px solid var(--g-150); }
+.dp-diff-split thead th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 8px 12px; border: 0; border-bottom: 2px solid var(--g-200); font-size: var(--fs-12); font-weight: 700; background: var(--surface-2); }
+.dp-diff-split thead th + th { border-left: 1px solid var(--g-150); }
 .dp-diff-split thead th:nth-child(1) { color: var(--alert); }
 .dp-diff-split thead th:nth-child(2) { color: var(--ok); }
 .dp-diff-split thead th:nth-child(3) { color: var(--text-2); }
-.dp-sx-old { background: var(--alert-bg); border-left: 3px solid var(--alert) !important; }
-.dp-sx-new { background: var(--ok-bg); border-left: 3px solid var(--ok) !important; }
-.dp-sx-empty { background: var(--g-050); }
-.dp-sx-reason { background: var(--surface); }
+/* whole paragraph added / removed → tint the cell. modified rows tint NOTHING
+   (the inline word highlights carry the change, so no muddy double background). */
+.dp-sx-del .dp-sx-old { background: var(--alert-bg); border-left: 3px solid var(--alert); }
+.dp-sx-ins .dp-sx-new { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+.dp-sx-mod .dp-sx-old { border-left: 3px solid var(--g-300); }
+.dp-sx-mod .dp-sx-new { border-left: 3px solid var(--accent); }
+.dp-sx-empty { background: transparent; }
+.dp-sx-reason { background: transparent; vertical-align: middle; }
 .dp-sx-eq td { color: var(--text-3); }
 .dp-sx-eqc td { text-align: center; color: var(--text-3); font-size: var(--fs-11); padding: 6px; background: var(--surface-2); }
 /* per-change 변경 사유 memo rows */
 .dp-sx-noterow td { padding: 4px 10px 8px; border-top: 0; background: var(--surface); }
 .dp-diff-noterow { margin: 2px 0 8px; }
 .dp-diff-note { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-12); }
-.dp-diff-note.has { background: var(--warn-bg); border-left: 3px solid var(--warn); border-radius: var(--r-sm); padding: 5px 10px; }
-.dp-diff-note-text { color: var(--text); white-space: pre-wrap; }
+.dp-diff-note.has { background: var(--warn-bg); border-left: 3px solid var(--warn); border-radius: var(--r-sm); padding: 6px 10px; }
+.dp-diff-note:not(.has) .dp-btn { color: var(--text-3); opacity: 0.7; font-size: var(--fs-11); }
+.dp-diff-note:not(.has) .dp-btn:hover { opacity: 1; }
+.dp-diff-note-text { color: var(--text); white-space: pre-wrap; font-size: var(--fs-13); }
 .dp-diff-note-meta { color: var(--text-3); font-size: var(--fs-11); margin-left: auto; }
 /* 신구대조표 (old/new comparison table) */
 .dp-wiki-cmp-cols { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 12px 0; font-size: var(--fs-12); color: var(--text-2); }
