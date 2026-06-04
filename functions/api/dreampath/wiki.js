@@ -162,6 +162,20 @@ async function _ensureTables(env) {
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(from_version_id, to_version_id, row_key)
     )`),
+    // Sign-off on a version: read-acknowledgement ('ack') or approval.
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS dp_wiki_signoffs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_id INTEGER NOT NULL,
+      version_id INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      assignee_name TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      note TEXT,
+      requested_by_name TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      acted_at TEXT,
+      UNIQUE(version_id, kind, assignee_name)
+    )`),
   ]);
 }
 
@@ -179,6 +193,34 @@ export async function onRequestGet({ request, env, data }) {
   const pageId = parseInt(url.searchParams.get('page_id') || '', 10);
   const slug = url.searchParams.get('slug');
   const versionId = parseInt(url.searchParams.get('version_id') || '', 10);
+
+  // Sign-offs for a specific version.
+  if (url.searchParams.get('signoffs')) {
+    const vid = parseInt(url.searchParams.get('version_id') || '', 10);
+    if (!vid) return json({ error: 'version_id is required.' }, 400);
+    const rows = (await env.DB.prepare(
+      `SELECT id, version_id, kind, assignee_name, status, note, requested_by_name, created_at, acted_at
+         FROM dp_wiki_signoffs WHERE version_id = ? ORDER BY kind DESC, assignee_name`
+    ).bind(vid).all()).results || [];
+    return json({ signoffs: rows });
+  }
+
+  // My pending sign-offs across all docs (for home / badges).
+  if (url.searchParams.get('my_signoffs')) {
+    const names = [
+      String((data.dpUser && data.dpUser.name) || '').toLowerCase(),
+      String((data.dpUser && data.dpUser.username) || '').toLowerCase(),
+    ].filter(Boolean);
+    if (!names.length) return json({ signoffs: [] });
+    const ph = names.map(() => '?').join(',');
+    const rows = (await env.DB.prepare(
+      `SELECT s.id, s.page_id, s.version_id, s.kind, s.assignee_name, p.title
+         FROM dp_wiki_signoffs s JOIN dp_wiki_pages p ON p.id = s.page_id
+        WHERE s.status = 'pending' AND LOWER(s.assignee_name) IN (${ph})
+        ORDER BY s.created_at DESC`
+    ).bind(...names).all()).results || [];
+    return json({ signoffs: rows });
+  }
 
   // Per-change memos for a version pair.
   if (url.searchParams.get('diff_notes')) {
@@ -256,7 +298,13 @@ export async function onRequestGet({ request, env, data }) {
     fr.forEach(f => { myFollowups[f.version_id] = { status: f.status, note: f.note }; });
   }
 
-  return json({ page, versions, current, my_followups: myFollowups });
+  // Sign-offs for the current version (read-ack + approval).
+  const signoffs = current ? ((await env.DB.prepare(
+    `SELECT id, version_id, kind, assignee_name, status, note, requested_by_name, created_at, acted_at
+       FROM dp_wiki_signoffs WHERE version_id = ? ORDER BY kind DESC, assignee_name`
+  ).bind(current.id).all()).results || []) : [];
+
+  return json({ page, versions, current, my_followups: myFollowups, signoffs });
 }
 
 export async function onRequestPost({ request, env, data }) {
@@ -291,6 +339,50 @@ export async function onRequestPost({ request, env, data }) {
            body.old_excerpt ? String(body.old_excerpt).slice(0, 400) : null,
            body.new_excerpt ? String(body.new_excerpt).slice(0, 400) : null,
            note, uid, _uploaderName(data.dpUser)).run();
+    return json({ ok: true });
+  }
+
+  // Request sign-offs on a version (write:wiki): assign people for ack/approval.
+  if (url.searchParams.get('signoff_request')) {
+    const denied = requirePerm(data, 'write:wiki');
+    if (denied) return denied;
+    const body = await request.json().catch(() => ({}));
+    const versionId = parseInt(body.version_id, 10);
+    const pageId = parseInt(body.page_id, 10);
+    const kind = body.kind === 'approval' ? 'approval' : 'ack';
+    const assignees = Array.isArray(body.assignees)
+      ? [...new Set(body.assignees.map(a => String(a || '').trim()).filter(Boolean))] : [];
+    if (!versionId || !pageId || !assignees.length) return json({ error: 'version_id, page_id, assignees are required.' }, 400);
+    const uname = _uploaderName(data.dpUser);
+    await env.DB.batch(assignees.map(a => env.DB.prepare(
+      `INSERT INTO dp_wiki_signoffs (page_id, version_id, kind, assignee_name, status, requested_by_name)
+       VALUES (?, ?, ?, ?, 'pending', ?)
+       ON CONFLICT(version_id, kind, assignee_name) DO NOTHING`
+    ).bind(pageId, versionId, kind, a, uname)));
+    return json({ ok: true, count: assignees.length });
+  }
+
+  // Act on a sign-off assigned to me (view:wiki): done / rejected. Admin bypass.
+  if (url.searchParams.get('signoff_act')) {
+    const denied = requirePerm(data, 'view:wiki');
+    if (denied) return denied;
+    const body = await request.json().catch(() => ({}));
+    const id = parseInt(body.signoff_id, 10);
+    const action = body.action === 'rejected' ? 'rejected' : 'done';
+    if (!id) return json({ error: 'signoff_id is required.' }, 400);
+    const row = await env.DB.prepare(`SELECT * FROM dp_wiki_signoffs WHERE id = ?`).bind(id).first();
+    if (!row) return json({ error: 'Sign-off not found.' }, 404);
+    const isAdmin = data.dpUser && data.dpUser.role === 'admin';
+    const names = [
+      String((data.dpUser && data.dpUser.name) || '').toLowerCase(),
+      String((data.dpUser && data.dpUser.username) || '').toLowerCase(),
+    ].filter(Boolean);
+    if (!isAdmin && names.indexOf(String(row.assignee_name || '').toLowerCase()) < 0) {
+      return json({ error: '본인에게 지정된 사인오프만 처리할 수 있습니다.' }, 403);
+    }
+    const note = body.note != null ? String(body.note).slice(0, 1000) : null;
+    await env.DB.prepare(`UPDATE dp_wiki_signoffs SET status = ?, note = ?, acted_at = datetime('now') WHERE id = ?`)
+      .bind(action, note, id).run();
     return json({ ok: true });
   }
 
@@ -455,6 +547,7 @@ export async function onRequestDelete({ request, env, data }) {
   await env.DB.batch([
     env.DB.prepare(`DELETE FROM dp_wiki_followups WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_diff_notes WHERE page_id = ?`).bind(pageId),
+    env.DB.prepare(`DELETE FROM dp_wiki_signoffs WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_comments WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_versions WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_pages WHERE id = ?`).bind(pageId),

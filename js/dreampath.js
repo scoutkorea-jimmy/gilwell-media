@@ -7836,6 +7836,101 @@ const DP = (() => {
     toast(data.review_due ? '검토일이 설정되었습니다' : '검토일이 해제되었습니다', 'ok');
   }
 
+  // ---- Sign-off (read-ack + version approval) ----
+  function _renderWikiSignoffPanel() {
+    const host = $('#dp-wiki-signoff');
+    if (!host) return;
+    const cur = _wikiView.current;
+    const canWrite = _hasPerm('write:wiki');
+    const list = (_wikiView.signoffs || []).filter(s => !cur || Number(s.version_id) === Number(cur.id));
+    const apps = list.filter(s => s.kind === 'approval');
+    const acks = list.filter(s => s.kind === 'ack');
+    const mine = _myLowerNames();
+    const isMine = (nm) => mine.indexOf(String(nm || '').toLowerCase()) >= 0;
+    const item = (s) => {
+      const tone = s.status === 'done' ? 'ok' : s.status === 'rejected' ? 'alert' : 'warn';
+      const label = s.status === 'done' ? (s.kind === 'approval' ? '승인' : '읽음') : s.status === 'rejected' ? '반려' : '대기';
+      const canAct = isMine(s.assignee_name) && s.status === 'pending';
+      const acts = canAct ? (s.kind === 'approval'
+        ? `<button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._wikiSignoffAct(${Number(s.id)},'done')">승인</button>
+           <button class="dp-btn dp-btn-danger dp-btn-sm" onclick="DP._wikiSignoffAct(${Number(s.id)},'rejected')">반려</button>`
+        : `<button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._wikiSignoffAct(${Number(s.id)},'done')">읽음 확인</button>`) : '';
+      return `<div class="dp-wiki-so-item">
+        <span class="dp-wiki-so-name">${esc(s.assignee_name)}${isMine(s.assignee_name) ? ' (나)' : ''}</span>
+        <span class="dp-tag ${tone}">${label}</span>
+        ${s.note ? `<span class="dp-wiki-so-note">“${esc(s.note)}”</span>` : ''}
+        <span class="dp-wiki-so-acts">${acts}</span>
+      </div>`;
+    };
+    const sec = (title, arr) => arr.length
+      ? `<div class="dp-wiki-so-sec"><div class="dp-wiki-so-h">${title} <span>${arr.filter(s => s.status === 'done').length}/${arr.length}</span></div>${arr.map(item).join('')}</div>`
+      : '';
+    const body = (apps.length || acks.length)
+      ? sec('승인', apps) + sec('읽음 확인', acks)
+      : '<span style="color:var(--text-3);font-size:var(--fs-12)">요청된 사인오프가 없습니다.</span>';
+    host.innerHTML = `
+      <div class="dp-wiki-so-head">
+        <strong>사인오프 · 현재 버전</strong>
+        ${canWrite ? `<button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.openWikiSignoffRequest()">사인오프 요청</button>` : ''}
+      </div>
+      ${body}`;
+  }
+
+  async function _reloadWikiSignoffs() {
+    const cur = _wikiView.current;
+    if (!cur) return;
+    const d = await api('GET', 'wiki?signoffs=1&version_id=' + Number(cur.id));
+    if (d) { _wikiView.signoffs = d.signoffs || []; _renderWikiSignoffPanel(); }
+  }
+
+  async function openWikiSignoffRequest() {
+    const cur = _wikiView.current;
+    if (!cur) { toast('현재 버전을 찾을 수 없습니다', 'err'); return; }
+    let roster = [];
+    const d = await api('GET', 'contacts');
+    if (d) roster = (d.team || []).map(t => t.name).filter(Boolean);
+    const opts = roster.length
+      ? roster.map(n => `<label class="dp-so-pick"><input type="checkbox" value="${esc(n)}"> ${esc(n)}</label>`).join('')
+      : '<span style="color:var(--text-3)">활성 사용자가 없습니다.</span>';
+    _openModal('사인오프 요청 — ' + (_wikiView.page.title || ''), `
+      <div class="dp-field">
+        <label>유형</label>
+        <div style="display:flex;gap:16px;font-size:var(--fs-13)">
+          <label style="display:inline-flex;gap:5px;align-items:center"><input type="radio" name="dp-so-kind" value="approval" checked> 승인 (승인/반려 투표)</label>
+          <label style="display:inline-flex;gap:5px;align-items:center"><input type="radio" name="dp-so-kind" value="ack"> 읽음 확인</label>
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label>대상자 <span style="color:var(--text-3);font-weight:400">— 현재 버전(v${esc((cur.version_label) || cur.version_no)}) 기준</span></label>
+        <div class="dp-so-picklist">${opts}</div>
+      </div>
+    `,
+    `<button class="dp-btn dp-btn-secondary" onclick="DP.viewWikiPage(${Number(_wikiView.page.id)})">취소</button>
+     <button class="dp-btn dp-btn-primary" onclick="DP._submitWikiSignoffRequest()">요청</button>`,
+    {});
+  }
+
+  async function _submitWikiSignoffRequest() {
+    const kindEl = document.querySelector('input[name="dp-so-kind"]:checked');
+    const kind = kindEl ? kindEl.value : 'approval';
+    const assignees = $$('.dp-so-picklist input:checked').map(c => c.value);
+    if (!assignees.length) { toast('대상자를 한 명 이상 선택하세요', 'err'); return; }
+    const cur = _wikiView.current;
+    const data = await api('POST', 'wiki?signoff_request', { version_id: Number(cur.id), page_id: Number(_wikiView.page.id), kind, assignees });
+    if (!data) return;
+    toast('사인오프를 요청했습니다', 'ok');
+    viewWikiPage(Number(_wikiView.page.id));
+  }
+
+  async function _wikiSignoffAct(id, action) {
+    let note = null;
+    if (action === 'rejected') { note = prompt('반려 사유 (선택)', '') || null; }
+    const data = await api('POST', 'wiki?signoff_act', { signoff_id: Number(id), action, note });
+    if (!data) return;
+    toast(action === 'rejected' ? '반려했습니다' : '처리했습니다', 'ok');
+    _reloadWikiSignoffs();
+  }
+
   function _wikiFollowCtlHtml(v) {
     const f = (_wikiView.my_followups || {})[v.id];
     const following = !!f;
@@ -7893,6 +7988,7 @@ const DP = (() => {
         ${current && current.source_file_url ? `<a class="dp-btn dp-btn-secondary dp-btn-sm" style="margin-left:auto;text-decoration:none;padding:0 10px" href="${esc(current.source_file_url)}" target="_blank" rel="noopener" download="${esc(current.source_file_name || '')}">원본 다운로드</a>` : ''}
       </div>
       <div id="dp-wiki-review-row" class="dp-wiki-review-row"></div>
+      <div id="dp-wiki-signoff" class="dp-wiki-signoff"></div>
       ${modeSeg}
       <div id="dp-wiki-main"></div>
 
@@ -7918,6 +8014,7 @@ const DP = (() => {
     );
 
     _renderWikiReviewRow();
+    _renderWikiSignoffPanel();
     _renderWikiMain();
     _wikiLoadComments(Number(page.id));
   }
@@ -8480,6 +8577,7 @@ const DP = (() => {
     _wikiEditDiffNote, _wikiSaveDiffNote, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
     _wikiEditReview, _wikiSaveReview, _renderWikiReviewRow,
+    openWikiSignoffRequest, _submitWikiSignoffRequest, _wikiSignoffAct,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
 })();
