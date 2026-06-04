@@ -7697,7 +7697,7 @@ const DP = (() => {
       `<option value="${i}"${i === selected ? ' selected' : ''}>${esc(headers[i] || ('열 ' + (i + 1)))}</option>`).join('');
     let changed = 0;
     const bodyRows = rows.slice(1).map((r, idx) => {
-      const oldC = r[oldCol] || '', newC = r[newCol] || '';
+      const oldC = _normText(r[oldCol] || ''), newC = _normText(r[newCol] || '');
       const same = oldC.trim() === newC.trim();
       if (!same) changed++;
       const diff = same ? '<span style="color:var(--text-3)">(변경 없음)</span>' : _wordDiff(oldC, newC);
@@ -8184,13 +8184,27 @@ const DP = (() => {
     return String(text || '').split('\n').map(s => s.trim()).filter(Boolean);
   }
 
+  // [CASE STUDY 2026-06-04 — invisible char diffs created phantom changes]
+  // PDF/DOCX extraction sprinkles non-breaking spaces ( ), zero-width
+  // chars, soft hyphens and non-NFC forms. Two visually identical lines then
+  // diffed as "changed" (e.g. "Hankuk" struck AND re-added). We normalize text
+  // before any comparison so only REAL differences surface.
+  function _normText(s) {
+    let t = String(s || '');
+    try { t = t.normalize('NFC'); } catch (_) {}
+    return t
+      .replace(/[\u200B-\u200D\uFEFF\u00AD]/g, '')                 // zero-width + soft hyphen
+      .replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ')  // unicode spaces -> plain space
+      .replace(/[ \t]+/g, ' ');
+  }
+
   function _htmlToPlain(html) {
     const s = String(html || '')
       .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n')
       .replace(/<br\s*\/?>/gi, '\n');
     const tmp = document.createElement('div');
     tmp.innerHTML = s;
-    return (tmp.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    return _normText(tmp.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
   }
 
   function _wikiTokenize(text) {
