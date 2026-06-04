@@ -1885,6 +1885,19 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-wiki-so-acts { margin-left: auto; display: inline-flex; gap: 4px; }
 .dp-so-picklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 240px; overflow: auto; border: var(--bd); border-radius: var(--r-sm); padding: 10px; }
 .dp-so-pick { display: inline-flex; gap: 6px; align-items: center; font-size: var(--fs-13); }
+.dp-wiki-links { margin: 10px 0 4px; padding: 10px 12px; border: var(--bd); border-radius: var(--r-sm); }
+.dp-wiki-lk-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.dp-wiki-lk-head strong { font-size: var(--fs-13); }
+.dp-wiki-lk-chip { display: inline-flex; align-items: center; gap: 6px; margin: 3px 6px 3px 0; padding: 2px 4px 2px 8px; border: var(--bd); border-radius: 999px; background: var(--surface); font-size: var(--fs-12); }
+.dp-wiki-lk-chip.missing { opacity: 0.5; }
+.dp-wiki-lk-type { color: var(--accent); font-weight: 700; font-size: var(--fs-11); }
+.dp-wiki-lk-open { background: none; border: 0; color: var(--text); cursor: pointer; padding: 0; }
+.dp-wiki-lk-open:hover { text-decoration: underline; }
+.dp-wiki-lk-x { background: none; border: 0; color: var(--text-3); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
+.dp-wiki-lk-x:hover { color: var(--alert); }
+.dp-lk-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow: auto; margin-top: 4px; }
+.dp-lk-item { text-align: left; background: var(--surface-2); border: var(--bd); border-radius: var(--r-sm); padding: 7px 10px; cursor: pointer; font-size: var(--fs-13); color: var(--text); }
+.dp-lk-item:hover { border-color: var(--accent); }
 .dp-wiki-content { margin-top: 14px; font-size: var(--fs-14); line-height: 1.85; color: var(--text); }
 .dp-wiki-content p { margin: 0 0 0.7em; }
 .dp-wiki-content h1, .dp-wiki-content h2, .dp-wiki-content h3, .dp-wiki-content h4 { line-height: 1.4; margin: 1.3em 0 0.5em; font-weight: 700; }

@@ -7931,6 +7931,96 @@ const DP = (() => {
     _reloadWikiSignoffs();
   }
 
+  // ---- Traceability links ----
+  const _LINK_LABELS = { wiki: '문서', decision: '결정', risk: '리스크', note: '이슈', task: '태스크', post: '게시글' };
+  let _wikiLinkItems = [];
+  let _wikiLinkType = 'decision';
+
+  async function _renderWikiLinksPanel() {
+    const host = $('#dp-wiki-links');
+    if (!host) return;
+    host.innerHTML = `
+      <div class="dp-wiki-lk-head">
+        <strong>연결된 항목 · 추적성</strong>
+        <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.openWikiLinkAdd()">+ 연결 추가</button>
+      </div>
+      <div id="dp-wiki-lk-list" style="color:var(--text-3);font-size:var(--fs-12)">불러오는 중…</div>`;
+    const d = await api('GET', 'links?type=wiki&id=' + Number(_wikiView.page.id));
+    const lh = $('#dp-wiki-lk-list');
+    if (!lh) return;
+    const list = (d && d.links) || [];
+    if (!list.length) { lh.innerHTML = '<span style="color:var(--text-3);font-size:var(--fs-12)">아직 연결된 항목이 없습니다.</span>'; return; }
+    lh.innerHTML = list.map(l => `
+      <span class="dp-wiki-lk-chip${l.missing ? ' missing' : ''}">
+        <span class="dp-wiki-lk-type">${esc(_LINK_LABELS[l.type] || l.type)}</span>
+        <button type="button" class="dp-wiki-lk-open" ${l.missing ? 'disabled' : `onclick="DP._wikiOpenLinked('${esc(l.type)}', ${Number(l.id)}, ${l.board ? `'${esc(l.board)}'` : 'null'})"`}>${esc(l.title)}</button>
+        <button type="button" class="dp-wiki-lk-x" aria-label="연결 해제" onclick="DP._wikiLinkRemove(${Number(l.link_id)})">×</button>
+      </span>`).join('');
+  }
+
+  function _wikiOpenLinked(type, id, board) {
+    _closeModal();
+    if (type === 'wiki') viewWikiPage(id);
+    else if (type === 'decision') viewDecision(id);
+    else if (type === 'risk') viewRisk(id);
+    else if (type === 'note') viewNote(id);
+    else if (type === 'task') viewTask(id);
+    else if (type === 'post') viewPost(board || 'documents', id);
+  }
+
+  function openWikiLinkAdd() {
+    const types = [['decision', '결정'], ['risk', '리스크'], ['note', '이슈/노트'], ['task', '태스크'], ['post', '게시글/회의록'], ['wiki', '다른 문서']];
+    _openModal('연결 추가 — ' + (_wikiView.page.title || ''), `
+      <div class="dp-field">
+        <label>연결할 유형</label>
+        <select class="dp-input" id="dp-lk-type" onchange="DP._wikiLinkPick(this.value)">
+          ${types.map(t => `<option value="${t[0]}">${t[1]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="dp-field">
+        <input class="dp-input dp-input-sm" id="dp-lk-q" placeholder="검색…" oninput="DP._wikiLinkFilter(this.value)">
+      </div>
+      <div id="dp-lk-list" class="dp-lk-list" style="color:var(--text-3)">불러오는 중…</div>
+    `,
+    `<button class="dp-btn dp-btn-secondary" onclick="DP.viewWikiPage(${Number(_wikiView.page.id)})">닫기</button>`,
+    {});
+    _wikiLinkPick('decision');
+  }
+
+  async function _wikiLinkPick(type) {
+    const map = { wiki: ['wiki?list=1', 'pages'], decision: ['decisions', 'decisions'], risk: ['risks', 'risks'], note: ['notes', 'notes'], task: ['tasks', 'tasks'], post: ['posts?limit=80', 'posts'] };
+    const cfg = map[type] || ['', ''];
+    _wikiLinkType = type;
+    const lh = $('#dp-lk-list'); if (lh) lh.innerHTML = '불러오는 중…';
+    const d = await api('GET', cfg[0]);
+    let arr = (d && (d[cfg[1]] || Object.values(d || {}).find(v => Array.isArray(v)))) || [];
+    _wikiLinkItems = arr.map(x => ({ id: x.id, title: x.title || x.name || ('#' + x.id), board: x.board }));
+    _renderWikiLinkItems('');
+  }
+
+  function _wikiLinkFilter(q) { _renderWikiLinkItems(q); }
+
+  function _renderWikiLinkItems(q) {
+    const lh = $('#dp-lk-list'); if (!lh) return;
+    const s = String(q || '').toLowerCase().trim();
+    const items = _wikiLinkItems.filter(i => !s || String(i.title).toLowerCase().includes(s)).slice(0, 100);
+    if (!items.length) { lh.innerHTML = '<span style="color:var(--text-3)">항목이 없습니다.</span>'; return; }
+    lh.innerHTML = items.map(i => `<button type="button" class="dp-lk-item" onclick="DP._wikiLinkCreate(${Number(i.id)})">${esc(i.title)}</button>`).join('');
+  }
+
+  async function _wikiLinkCreate(id) {
+    if (_wikiLinkType === 'wiki' && Number(id) === Number(_wikiView.page.id)) { toast('자기 자신과는 연결할 수 없습니다', 'err'); return; }
+    const data = await api('POST', 'links', { a_type: 'wiki', a_id: Number(_wikiView.page.id), b_type: _wikiLinkType, b_id: Number(id) });
+    if (!data) return;
+    toast('연결되었습니다', 'ok');
+    viewWikiPage(Number(_wikiView.page.id));
+  }
+
+  async function _wikiLinkRemove(linkId) {
+    const data = await api('DELETE', 'links?id=' + Number(linkId));
+    if (data) _renderWikiLinksPanel();
+  }
+
   function _wikiFollowCtlHtml(v) {
     const f = (_wikiView.my_followups || {})[v.id];
     const following = !!f;
@@ -7989,6 +8079,7 @@ const DP = (() => {
       </div>
       <div id="dp-wiki-review-row" class="dp-wiki-review-row"></div>
       <div id="dp-wiki-signoff" class="dp-wiki-signoff"></div>
+      <div id="dp-wiki-links" class="dp-wiki-links"></div>
       ${modeSeg}
       <div id="dp-wiki-main"></div>
 
@@ -8015,6 +8106,7 @@ const DP = (() => {
 
     _renderWikiReviewRow();
     _renderWikiSignoffPanel();
+    _renderWikiLinksPanel();
     _renderWikiMain();
     _wikiLoadComments(Number(page.id));
   }
@@ -8578,6 +8670,7 @@ const DP = (() => {
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
     _wikiEditReview, _wikiSaveReview, _renderWikiReviewRow,
     openWikiSignoffRequest, _submitWikiSignoffRequest, _wikiSignoffAct,
+    _renderWikiLinksPanel, openWikiLinkAdd, _wikiLinkPick, _wikiLinkFilter, _wikiLinkCreate, _wikiLinkRemove, _wikiOpenLinked,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
 })();
