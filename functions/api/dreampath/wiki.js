@@ -144,6 +144,23 @@ async function _ensureTables(env) {
       content TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`),
+    // Per-change "변경 사유" memos, keyed to a specific (from,to) version pair
+    // and a stable row_key (hash of the changed text). One memo per change.
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS dp_wiki_diff_notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_id INTEGER NOT NULL,
+      from_version_id INTEGER NOT NULL,
+      to_version_id INTEGER NOT NULL,
+      row_key TEXT NOT NULL,
+      old_excerpt TEXT,
+      new_excerpt TEXT,
+      note TEXT NOT NULL,
+      author_id INTEGER,
+      author_name TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(from_version_id, to_version_id, row_key)
+    )`),
   ]);
 }
 
@@ -161,6 +178,18 @@ export async function onRequestGet({ request, env, data }) {
   const pageId = parseInt(url.searchParams.get('page_id') || '', 10);
   const slug = url.searchParams.get('slug');
   const versionId = parseInt(url.searchParams.get('version_id') || '', 10);
+
+  // Per-change memos for a version pair.
+  if (url.searchParams.get('diff_notes')) {
+    const from = parseInt(url.searchParams.get('from') || '', 10);
+    const to = parseInt(url.searchParams.get('to') || '', 10);
+    if (!from || !to) return json({ error: 'from and to are required.' }, 400);
+    const rows = (await env.DB.prepare(
+      `SELECT row_key, old_excerpt, new_excerpt, note, author_name, updated_at
+         FROM dp_wiki_diff_notes WHERE from_version_id = ? AND to_version_id = ?`
+    ).bind(from, to).all()).results || [];
+    return json({ notes: rows });
+  }
 
   // Single version (for diff) — content included.
   if (versionId) {
@@ -232,6 +261,37 @@ export async function onRequestGet({ request, env, data }) {
 export async function onRequestPost({ request, env, data }) {
   const url = new URL(request.url);
   await _ensureTables(env);
+
+  // Per-change "변경 사유" memo upsert (view:wiki). Empty note → delete.
+  if (url.searchParams.get('diff_note')) {
+    const denied = requirePerm(data, 'view:wiki');
+    if (denied) return denied;
+    const body = await request.json().catch(() => ({}));
+    const from = parseInt(body.from_version_id, 10);
+    const to = parseInt(body.to_version_id, 10);
+    const pageId = parseInt(body.page_id, 10);
+    const rowKey = String(body.row_key || '').slice(0, 80);
+    if (!from || !to || !pageId || !rowKey) return json({ error: 'from_version_id, to_version_id, page_id, row_key are required.' }, 400);
+    const note = body.note != null ? String(body.note).slice(0, 2000) : '';
+    const uid = data.dpUser && data.dpUser.uid;
+    if (!note.trim()) {
+      await env.DB.prepare(`DELETE FROM dp_wiki_diff_notes WHERE from_version_id = ? AND to_version_id = ? AND row_key = ?`)
+        .bind(from, to, rowKey).run();
+      return json({ ok: true, cleared: true });
+    }
+    await env.DB.prepare(
+      `INSERT INTO dp_wiki_diff_notes
+         (page_id, from_version_id, to_version_id, row_key, old_excerpt, new_excerpt, note, author_id, author_name, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(from_version_id, to_version_id, row_key)
+       DO UPDATE SET note = excluded.note, old_excerpt = excluded.old_excerpt, new_excerpt = excluded.new_excerpt,
+                     author_id = excluded.author_id, author_name = excluded.author_name, updated_at = datetime('now')`
+    ).bind(pageId, from, to, rowKey,
+           body.old_excerpt ? String(body.old_excerpt).slice(0, 400) : null,
+           body.new_excerpt ? String(body.new_excerpt).slice(0, 400) : null,
+           note, uid, _uploaderName(data.dpUser)).run();
+    return json({ ok: true });
+  }
 
   // Follow-up / personal memo upsert — only needs view:wiki (you can follow
   // anything you can read).
@@ -378,6 +438,7 @@ export async function onRequestDelete({ request, env, data }) {
   if (!pageId) return json({ error: 'page_id is required.' }, 400);
   await env.DB.batch([
     env.DB.prepare(`DELETE FROM dp_wiki_followups WHERE page_id = ?`).bind(pageId),
+    env.DB.prepare(`DELETE FROM dp_wiki_diff_notes WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_comments WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_versions WHERE page_id = ?`).bind(pageId),
     env.DB.prepare(`DELETE FROM dp_wiki_pages WHERE id = ?`).bind(pageId),

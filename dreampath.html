@@ -1947,6 +1947,13 @@ del.dp-wiki-del {
 .dp-sx-empty { background: var(--g-050); }
 .dp-sx-eq td { color: var(--text-3); }
 .dp-sx-eqc td { text-align: center; color: var(--text-3); font-size: var(--fs-11); padding: 6px; background: var(--surface-2); }
+/* per-change 변경 사유 memo rows */
+.dp-sx-noterow td { padding: 4px 10px 8px; border-top: 0; background: var(--surface); }
+.dp-diff-noterow { margin: 2px 0 8px; }
+.dp-diff-note { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: var(--fs-12); }
+.dp-diff-note.has { background: var(--warn-bg); border-left: 3px solid var(--warn); border-radius: var(--r-sm); padding: 5px 10px; }
+.dp-diff-note-text { color: var(--text); white-space: pre-wrap; }
+.dp-diff-note-meta { color: var(--text-3); font-size: var(--fs-11); margin-left: auto; }
 /* 신구대조표 (old/new comparison table) */
 .dp-wiki-cmp-cols { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 12px 0; font-size: var(--fs-12); color: var(--text-2); }
 .dp-wiki-cmp-cols label { display: inline-flex; gap: 6px; align-items: center; }

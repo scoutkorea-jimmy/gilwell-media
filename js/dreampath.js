@@ -7301,6 +7301,9 @@ const DP = (() => {
   let _wikiPages = [];
   let _wikiView = null;             // { page, versions, current, my_followups }
   let _wikiUpload = { file: null, sourceType: 'manual' };
+  let _wikiDetailMode = 'content';  // 'content' (최신 본문) | 'diff' (변경 보기)
+  let _wikiDiffNotes = {};          // { rowKey: { note, author_name, updated_at } }
+  let _wikiDiffRowMap = {};         // { rowKey: { old, new } } — for memo save excerpts
 
   async function _renderWiki(root) {
     root.innerHTML = '';
@@ -7775,6 +7778,7 @@ const DP = (() => {
       return;
     }
     _wikiView = res.data;
+    _wikiDetailMode = 'content';   // always open on the latest body
     _renderWikiDetail();
   }
 
@@ -7804,20 +7808,11 @@ const DP = (() => {
     const isAdmin = state.user && state.user.role === 'admin';
     const canWrite = _hasPerm('write:wiki');
 
-    const diffCtl = versions.length > 1 ? (() => {
-      const opts = (sel) => versions.map(v => `<option value="${Number(v.id)}"${v.id === sel ? ' selected' : ''}>${esc(v.version_label || ('v' + v.version_no))}${v.version_no === page.current_version ? ' (현재)' : ''}</option>`).join('');
-      const toId = versions[0].id;            // current (DESC ordered)
-      const fromId = (versions[1] || versions[0]).id;  // previous
-      return `
-        <div class="dp-wiki-diff-ctl">
-          <strong>버전 비교</strong>
-          <select class="dp-input dp-input-sm" id="dp-wiki-diff-from" aria-label="이전 버전">${opts(fromId)}</select>
-          <span aria-hidden="true">→</span>
-          <select class="dp-input dp-input-sm" id="dp-wiki-diff-to" aria-label="이후 버전">${opts(toId)}</select>
-          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.showWikiDiff()">변경점 보기</button>
-        </div>
-        <div id="dp-wiki-diff-host"></div>`;
-    })() : '';
+    const modeSeg = versions.length > 1 ? `
+      <div class="dp-diff-segwrap dp-wiki-mode" style="margin:12px 0">
+        <button type="button" class="dp-diff-seg" data-mode="content" onclick="DP._wikiSetDetailMode('content')">최신 본문</button>
+        <button type="button" class="dp-diff-seg" data-mode="diff" onclick="DP._wikiSetDetailMode('diff')">변경 보기</button>
+      </div>` : '';
 
     const timeline = versions.map(v => `
       <div class="dp-wiki-ver">
@@ -7843,10 +7838,8 @@ const DP = (() => {
         ${current ? `<span>by <strong style="color:var(--text-2)">${esc(current.uploaded_by_name || '')}</strong></span><span>·</span><span class="mono">${esc(fmtTime(current.created_at))}</span>` : ''}
         ${current && current.source_file_url ? `<a class="dp-btn dp-btn-secondary dp-btn-sm" style="margin-left:auto;text-decoration:none;padding:0 10px" href="${esc(current.source_file_url)}" target="_blank" rel="noopener" download="${esc(current.source_file_name || '')}">원본 다운로드</a>` : ''}
       </div>
-      ${current && current.change_context ? `<div class="dp-wiki-ver-ctx" style="margin-top:10px"><span aria-hidden="true">✎</span> <strong>이번 버전 변경 맥락:</strong> ${esc(current.change_context)}</div>` : ''}
-      <div class="dp-wiki-content">${_sanitize((current && current.content) || '')}</div>
-
-      ${diffCtl}
+      ${modeSeg}
+      <div id="dp-wiki-main"></div>
 
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--g-150)">
         <div class="dp-h2" style="margin-bottom:10px">버전 이력 · 팔로업</div>
@@ -7869,7 +7862,40 @@ const DP = (() => {
       { wide: true, bodyClass: 'dp-post-view' }
     );
 
+    _renderWikiMain();
     _wikiLoadComments(Number(page.id));
+  }
+
+  function _wikiSetDetailMode(m) {
+    _wikiDetailMode = (m === 'diff' ? 'diff' : 'content');
+    _renderWikiMain();
+  }
+
+  // Fills the main body area: latest content (default) or the diff comparison.
+  function _renderWikiMain() {
+    const host = $('#dp-wiki-main');
+    if (!host) return;
+    const page = _wikiView.page, current = _wikiView.current, versions = _wikiView.versions || [];
+    $$('.dp-wiki-mode .dp-diff-seg').forEach(b => b.classList.toggle('on', b.dataset.mode === _wikiDetailMode));
+    if (_wikiDetailMode === 'diff' && versions.length > 1) {
+      const opts = (sel) => versions.map(v => `<option value="${Number(v.id)}"${v.id === sel ? ' selected' : ''}>${esc(v.version_label || ('v' + v.version_no))}${v.version_no === page.current_version ? ' (현재)' : ''}</option>`).join('');
+      const toId = versions[0].id;            // current (DESC ordered)
+      const fromId = (versions[1] || versions[0]).id;  // previous
+      host.innerHTML = `
+        <div class="dp-wiki-diff-ctl">
+          <strong>버전 비교</strong>
+          <select class="dp-input dp-input-sm" id="dp-wiki-diff-from" aria-label="이전 버전">${opts(fromId)}</select>
+          <span aria-hidden="true">→</span>
+          <select class="dp-input dp-input-sm" id="dp-wiki-diff-to" aria-label="이후 버전">${opts(toId)}</select>
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.showWikiDiff()">비교</button>
+        </div>
+        <div id="dp-wiki-diff-host"><div style="color:var(--text-3);font-size:12px;padding:8px 0">비교 중…</div></div>`;
+      showWikiDiff();
+    } else {
+      host.innerHTML = `
+        ${current && current.change_context ? `<div class="dp-wiki-ver-ctx" style="margin-bottom:10px"><span aria-hidden="true">✎</span> <strong>이번 버전 변경 맥락:</strong> ${esc(current.change_context)}</div>` : ''}
+        <div class="dp-wiki-content">${_sanitize((current && current.content) || '')}</div>`;
+    }
   }
 
   async function toggleWikiFollow(versionId) {
@@ -7933,7 +7959,70 @@ const DP = (() => {
     }
     const va = a.data.version, vb = b.data.version;
     _wikiDiffCache = { aText: _htmlToPlain(va.content), bText: _htmlToPlain(vb.content), va, vb };
+    // Load per-change memos for this version pair.
+    _wikiDiffNotes = {};
+    const nr = await _rawApi('GET', `wiki?diff_notes=1&from=${fromId}&to=${toId}`);
+    if (nr && nr.ok && nr.data && Array.isArray(nr.data.notes)) {
+      nr.data.notes.forEach(n => { _wikiDiffNotes[n.row_key] = n; });
+    }
     _renderWikiDiff();
+  }
+
+  // Stable key for a changed row = hash of old+new text (robust to reordering).
+  function _wikiRowKey(oldT, newT) {
+    const s = String(oldT || '') + '' + String(newT || '');
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+    return 'r' + h.toString(36);
+  }
+
+  // Memo affordance under a changed diff row — shows the saved 변경 사유, or a
+  // button to add one. Editing is inline (see _wikiEditDiffNote).
+  function _diffNoteHtml(rowKey, oldT, newT) {
+    _wikiDiffRowMap[rowKey] = { old: oldT || '', new: newT || '' };
+    const n = _wikiDiffNotes[rowKey];
+    if (n && n.note) {
+      return `<div class="dp-diff-note has" id="dp-dn-${rowKey}">
+        <span class="dp-diff-note-label" aria-hidden="true">📝</span>
+        <span class="dp-diff-note-text">${esc(n.note)}</span>
+        ${n.author_name ? `<span class="dp-diff-note-meta">${esc(n.author_name)}</span>` : ''}
+        <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._wikiEditDiffNote('${rowKey}')">수정</button>
+      </div>`;
+    }
+    return `<div class="dp-diff-note" id="dp-dn-${rowKey}">
+      <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._wikiEditDiffNote('${rowKey}')">+ 변경 사유</button>
+    </div>`;
+  }
+
+  function _wikiEditDiffNote(rowKey) {
+    const host = document.getElementById('dp-dn-' + rowKey);
+    if (!host) return;
+    const n = _wikiDiffNotes[rowKey];
+    host.innerHTML = `
+      <input class="dp-input dp-input-sm" id="dp-dn-input-${rowKey}" value="${esc((n && n.note) || '')}"
+             placeholder="이 변경의 사유를 적어주세요…" maxlength="2000" style="flex:1"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();DP._wikiSaveDiffNote('${rowKey}');}">
+      <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._wikiSaveDiffNote('${rowKey}')">저장</button>`;
+    const i = document.getElementById('dp-dn-input-' + rowKey);
+    if (i) i.focus();
+  }
+
+  async function _wikiSaveDiffNote(rowKey) {
+    const i = document.getElementById('dp-dn-input-' + rowKey);
+    const note = (i && i.value || '').trim();
+    const rm = _wikiDiffRowMap[rowKey] || {};
+    const c = _wikiDiffCache;
+    if (!c || !_wikiView) return;
+    const data = await api('POST', 'wiki?diff_note=1', {
+      page_id: Number(_wikiView.page.id), from_version_id: Number(c.va.id), to_version_id: Number(c.vb.id),
+      row_key: rowKey, old_excerpt: (rm.old || '').slice(0, 400), new_excerpt: (rm.new || '').slice(0, 400), note,
+    });
+    if (!data) return;
+    if (note) _wikiDiffNotes[rowKey] = { note, author_name: _displayName(), updated_at: '' };
+    else delete _wikiDiffNotes[rowKey];
+    const host = document.getElementById('dp-dn-' + rowKey);
+    if (host) host.outerHTML = _diffNoteHtml(rowKey, rm.old, rm.new);
+    toast(note ? '변경 사유 저장됨' : '변경 사유 삭제됨', 'ok');
   }
 
   function _wikiToggleDiffMode() {
@@ -7945,6 +8034,7 @@ const DP = (() => {
     const host = $('#dp-wiki-diff-host');
     if (!host || !_wikiDiffCache) return;
     const { aText, bText, va, vb } = _wikiDiffCache;
+    _wikiDiffRowMap = {};   // rebuilt by the renderer as it emits memo blocks
     const d = _docDiffRows(aText, bText);
     const body = _wikiDiffView === 'inline'
       ? _renderDiffInline(d.rows, _wikiDiffChangesOnly)
@@ -8019,9 +8109,11 @@ const DP = (() => {
     rows.forEach(r => {
       if (r.t === 'eq') { eqRun.push(r.text); return; }
       flush();
+      const key = _wikiRowKey(r.a || '', r.b || '');
       if (r.t === 'mod') out.push(`<div class="dp-diff-row dp-diff-mod">${_wordDiff(r.a, r.b)}</div>`);
       else if (r.t === 'del') out.push(`<div class="dp-diff-row dp-diff-del"><del>${esc(r.a)}</del></div>`);
       else out.push(`<div class="dp-diff-row dp-diff-ins"><ins>${esc(r.b)}</ins></div>`);
+      out.push(`<div class="dp-diff-noterow">${_diffNoteHtml(key, r.a || '', r.b || '')}</div>`);
     });
     flush();
     return out.join('') || '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
@@ -8040,6 +8132,7 @@ const DP = (() => {
     rows.forEach(r => {
       if (r.t === 'eq') { eqRun.push(r.text); return; }
       flush();
+      const key = _wikiRowKey(r.a || '', r.b || '');
       if (r.t === 'mod') {
         const s = _wordDiffSides(r.a, r.b);
         out.push(`<tr class="dp-sx-mod"><td class="dp-sx-old">${s.left}</td><td class="dp-sx-new">${s.right}</td></tr>`);
@@ -8048,6 +8141,7 @@ const DP = (() => {
       } else {
         out.push(`<tr class="dp-sx-ins"><td class="dp-sx-empty"></td><td class="dp-sx-new">${esc(r.b)}</td></tr>`);
       }
+      out.push(`<tr class="dp-sx-noterow"><td colspan="2">${_diffNoteHtml(key, r.a || '', r.b || '')}</td></tr>`);
     });
     flush();
     if (!out.length) return '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
@@ -8305,7 +8399,8 @@ const DP = (() => {
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,
     openWikiUpload, openWikiNewVersion, _wikiDropFile, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
-    showWikiDiff, _wikiToggleDiffMode, _wikiSetDiffView, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
+    showWikiDiff, _wikiToggleDiffMode, _wikiSetDiffView, _wikiSetDetailMode,
+    _wikiEditDiffNote, _wikiSaveDiffNote, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
