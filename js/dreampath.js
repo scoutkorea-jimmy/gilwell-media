@@ -7879,6 +7879,9 @@ const DP = (() => {
     if (ctl && v) ctl.innerHTML = _wikiFollowCtlHtml(v);
   }
 
+  let _wikiDiffCache = null;        // { aText, bText, va, vb }
+  let _wikiDiffChangesOnly = true;  // hide unchanged paragraphs by default
+
   async function showWikiDiff() {
     const fromSel = $('#dp-wiki-diff-from'), toSel = $('#dp-wiki-diff-to'), host = $('#dp-wiki-diff-host');
     if (!fromSel || !toSel || !host) return;
@@ -7894,14 +7897,95 @@ const DP = (() => {
       return;
     }
     const va = a.data.version, vb = b.data.version;
-    const diffHtml = _wordDiff(_htmlToPlain(va.content), _htmlToPlain(vb.content));
+    _wikiDiffCache = { aText: _htmlToPlain(va.content), bText: _htmlToPlain(vb.content), va, vb };
+    _renderWikiDiff();
+  }
+
+  function _wikiToggleDiffMode() {
+    _wikiDiffChangesOnly = !_wikiDiffChangesOnly;
+    _renderWikiDiff();
+  }
+
+  function _renderWikiDiff() {
+    const host = $('#dp-wiki-diff-host');
+    if (!host || !_wikiDiffCache) return;
+    const { aText, bText, va, vb } = _wikiDiffCache;
+    const r = _docDiffRender(aText, bText, _wikiDiffChangesOnly);
     host.innerHTML = `
       <div class="dp-wiki-diff-head">
         <span>${esc(va.version_label || ('v' + va.version_no))} → ${esc(vb.version_label || ('v' + vb.version_no))}</span>
-        <span class="dp-wiki-diff-legend"><ins class="dp-wiki-ins">＋ 추가</ins> <del class="dp-wiki-del">－ 삭제</del></span>
+        <span class="dp-wiki-diff-stat">
+          <ins class="dp-wiki-ins">+${r.added} 추가</ins>
+          <del class="dp-wiki-del">-${r.removed} 삭제</del>
+          <span class="dp-wiki-mod-tag">~${r.modified} 수정</span>
+        </span>
+        <label class="dp-wiki-diff-toggle"><input type="checkbox" ${_wikiDiffChangesOnly ? 'checked' : ''} onchange="DP._wikiToggleDiffMode()"> 변경된 부분만</label>
       </div>
       ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}
-      <div class="dp-wiki-diff-body">${diffHtml}</div>`;
+      <div class="dp-wiki-diff-body">${r.html}</div>`;
+  }
+
+  // Paragraph-level diff: align blocks by LCS, then word-highlight only inside
+  // CHANGED paragraphs. Far more readable than a whole-document word soup, and
+  // O(lines²) is cheap (no size fallback for normal docs). Adjacent del+ins
+  // runs are paired 1:1 into "modified" rows so edits show inline word diffs.
+  function _docDiffRender(aText, bText, changesOnly) {
+    const A = _splitBlocks(aText), B = _splitBlocks(bText);
+    const m = A.length, n = B.length;
+    if ((m + 1) * (n + 1) > 16000000) {
+      // Extremely large — degrade to a plain added/removed set summary.
+      const setB = new Set(B), setA = new Set(A);
+      const out = [];
+      A.forEach(t => { if (!setB.has(t)) out.push(`<div class="dp-diff-row dp-diff-del"><del>${esc(t)}</del></div>`); });
+      B.forEach(t => { if (!setA.has(t)) out.push(`<div class="dp-diff-row dp-diff-ins"><ins>${esc(t)}</ins></div>`); });
+      return { html: out.join('') || '<div class="dp-diff-none">차이가 없습니다.</div>', added: 0, removed: 0, modified: 0 };
+    }
+    const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+    for (let i = m - 1; i >= 0; i--)
+      for (let j = n - 1; j >= 0; j--)
+        dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const ops = []; let i = 0, j = 0;
+    while (i < m && j < n) {
+      if (A[i] === B[j]) { ops.push({ t: 'eq', b: B[j] }); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { ops.push({ t: 'del', a: A[i] }); i++; }
+      else { ops.push({ t: 'ins', b: B[j] }); j++; }
+    }
+    while (i < m) ops.push({ t: 'del', a: A[i++] });
+    while (j < n) ops.push({ t: 'ins', b: B[j++] });
+
+    const rows = []; let added = 0, removed = 0, modified = 0;
+    for (let k = 0; k < ops.length;) {
+      if (ops[k].t === 'eq') { rows.push({ t: 'eq', text: ops[k].b }); k++; continue; }
+      const dels = [], inss = [];
+      while (k < ops.length && ops[k].t === 'del') { dels.push(ops[k].a); k++; }
+      while (k < ops.length && ops[k].t === 'ins') { inss.push(ops[k].b); k++; }
+      const pairs = Math.min(dels.length, inss.length);
+      for (let p = 0; p < pairs; p++) { rows.push({ t: 'mod', a: dels[p], b: inss[p] }); modified++; }
+      for (let p = pairs; p < dels.length; p++) { rows.push({ t: 'del', a: dels[p] }); removed++; }
+      for (let p = pairs; p < inss.length; p++) { rows.push({ t: 'ins', b: inss[p] }); added++; }
+    }
+
+    const out = []; let eqRun = [];
+    const flushEq = () => {
+      if (!eqRun.length) return;
+      if (changesOnly) out.push(`<div class="dp-diff-eq-collapsed">⋯ 동일 ${eqRun.length}문단 ⋯</div>`);
+      else eqRun.forEach(t => out.push(`<div class="dp-diff-row dp-diff-eq">${esc(t)}</div>`));
+      eqRun = [];
+    };
+    rows.forEach(r => {
+      if (r.t === 'eq') { eqRun.push(r.text); return; }
+      flushEq();
+      if (r.t === 'mod') out.push(`<div class="dp-diff-row dp-diff-mod">${_wordDiff(r.a, r.b)}</div>`);
+      else if (r.t === 'del') out.push(`<div class="dp-diff-row dp-diff-del"><del>${esc(r.a)}</del></div>`);
+      else out.push(`<div class="dp-diff-row dp-diff-ins"><ins>${esc(r.b)}</ins></div>`);
+    });
+    flushEq();
+    if (!added && !removed && !modified) return { html: '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>', added, removed, modified };
+    return { html: out.join(''), added, removed, modified };
+  }
+
+  function _splitBlocks(text) {
+    return String(text || '').split('\n').map(s => s.trim()).filter(Boolean);
   }
 
   function _htmlToPlain(html) {
@@ -8126,7 +8210,7 @@ const DP = (() => {
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,
     openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
-    showWikiDiff, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
+    showWikiDiff, _wikiToggleDiffMode, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };

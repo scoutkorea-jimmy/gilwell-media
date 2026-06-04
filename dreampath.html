@@ -1911,6 +1911,19 @@ del.dp-wiki-del {
 .dp-wiki-diff-fallback { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .dp-wiki-diff-col { border: var(--bd); border-radius: var(--r-sm); padding: 10px 12px; background: var(--surface); white-space: pre-wrap; font-size: var(--fs-12); max-height: 420px; overflow: auto; }
 .dp-wiki-diff-coltitle { font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+/* paragraph-level diff rows (single column, change-focused) */
+.dp-wiki-diff-stat { display: inline-flex; gap: 10px; align-items: center; }
+.dp-wiki-mod-tag { color: var(--accent); font-weight: 700; }
+.dp-wiki-diff-toggle { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; font-size: var(--fs-11); color: var(--text-2); cursor: pointer; }
+.dp-diff-row { padding: 7px 10px; border-radius: var(--r-sm); margin: 4px 0; font-size: var(--fs-13); line-height: 1.7; white-space: pre-wrap; }
+.dp-diff-ins { background: var(--ok-bg); border-left: 3px solid var(--ok); }
+.dp-diff-del { background: var(--alert-bg); border-left: 3px solid var(--alert); }
+.dp-diff-mod { background: var(--surface-2); border-left: 3px solid var(--accent); }
+.dp-diff-eq { color: var(--text-3); border-left: 3px solid transparent; }
+.dp-diff-ins ins { color: var(--ok); text-decoration: none; }
+.dp-diff-del del { color: var(--alert); text-decoration: line-through; }
+.dp-diff-eq-collapsed { color: var(--text-3); font-size: var(--fs-11); text-align: center; padding: 6px 0; border-top: 1px dashed var(--g-150); border-bottom: 1px dashed var(--g-150); margin: 4px 0; }
+.dp-diff-none { color: var(--text-3); padding: 12px; text-align: center; }
 /* 신구대조표 (old/new comparison table) */
 .dp-wiki-cmp-cols { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 12px 0; font-size: var(--fs-12); color: var(--text-2); }
 .dp-wiki-cmp-cols label { display: inline-flex; gap: 6px; align-items: center; }
@@ -2032,7 +2045,7 @@ del.dp-wiki-del {
   to the SAME value and the browser never refetches. To ship v2 edits quickly,
   prefer ./deploy.sh fix (bumps cc). Ref: DREAMPATH-HISTORY.md 2026-04-24 · G.
 -->
-<script src="/js/dreampath.js?v=20260603142941"></script>
+<script src="/js/dreampath.js?v=01.060.01"></script>
 
 </body>
 </html>
