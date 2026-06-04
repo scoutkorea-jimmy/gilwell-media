@@ -1911,6 +1911,21 @@ del.dp-wiki-del {
 .dp-wiki-diff-fallback { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .dp-wiki-diff-col { border: var(--bd); border-radius: var(--r-sm); padding: 10px 12px; background: var(--surface); white-space: pre-wrap; font-size: var(--fs-12); max-height: 420px; overflow: auto; }
 .dp-wiki-diff-coltitle { font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+/* 신구대조표 (old/new comparison table) */
+.dp-wiki-cmp-cols { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 12px 0; font-size: var(--fs-12); color: var(--text-2); }
+.dp-wiki-cmp-cols label { display: inline-flex; gap: 6px; align-items: center; }
+.dp-wiki-cmp-summary { margin-left: auto; font-weight: 700; color: var(--accent); }
+.dp-wiki-cmp-scroll { max-height: 520px; overflow: auto; border: var(--bd); border-radius: var(--r-sm); }
+.dp-wiki-cmp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-12); }
+.dp-wiki-cmp-table th, .dp-wiki-cmp-table td { border: 1px solid var(--g-150); padding: 8px 10px; vertical-align: top; text-align: left; }
+.dp-wiki-cmp-table thead th { position: sticky; top: 0; background: var(--surface-2); color: var(--text-2); font-weight: 700; z-index: 1; }
+.dp-wiki-cmp-table td { white-space: pre-wrap; line-height: 1.6; color: var(--text); }
+.dp-wiki-cmp-label { font-weight: 700; color: var(--text-2); white-space: nowrap; }
+.dp-wiki-cmp-num { color: var(--text-3); text-align: center; }
+.dp-wiki-cmp-reason { color: var(--text-2); background: var(--surface-2); }
+.dp-wiki-cmp-diff { background: var(--g-050); }
+.dp-wiki-cmp-save { margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dp-wiki-cmp-save .dp-input { flex: 1; min-width: 220px; }
 @media (max-width: 640px) {
   .dp-wiki-card { flex-direction: column; align-items: flex-start; gap: 6px; }
   .dp-wiki-card-side { text-align: left; flex-direction: row; gap: 8px; }

@@ -7307,12 +7307,15 @@ const DP = (() => {
     const canWrite = _hasPerm('write:wiki');
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, 'Knowledge Base'),
-      h('div', {}, canWrite ? [
-        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => openWikiUpload('') }, [
+      h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, [
+        h('button', { className: 'dp-btn dp-btn-secondary', onclick: () => openWikiCompareTable() }, [
+          h('span', {}, '신구대조표 비교'),
+        ]),
+        canWrite && h('button', { className: 'dp-btn dp-btn-primary', onclick: () => openWikiUpload('') }, [
           h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
           h('span', {}, ' 새 문서 / 버전'),
         ]),
-      ] : []),
+      ]),
     ]));
     const searchWrap = h('div', { className: 'dp-wiki-search' });
     searchWrap.innerHTML = `<input type="search" class="dp-input dp-input-sm" id="dp-wiki-q"
@@ -7546,6 +7549,182 @@ const DP = (() => {
     if (btn) { btn.disabled = false; btn.textContent = '저장'; }
     if (!data) return;
     toast(data.is_new_page ? '새 문서가 생성되었습니다' : `새 버전(v${data.version_no})이 추가되었습니다`, 'ok');
+    _closeModal();
+    if (state.page === 'wiki') navigate('wiki');
+    viewWikiPage(data.page_id);
+  }
+
+  // ---- 신구대조표 (old/new comparison table) ----
+  // A 신구대조표 is a table with 현행(old) | 개정(new) [| 비고] columns. We parse
+  // the DOCX table (mammoth gives a real <table>), auto-detect the two columns
+  // by header keywords, and run the word diff per row to surface what changed.
+  // PDF tables don't survive text extraction → DOCX only.
+  let _wikiCompare = { rows: [], headers: [], oldCol: null, newCol: null, fileName: '' };
+
+  function openWikiCompareTable() {
+    _wikiCompare = { rows: [], headers: [], oldCol: null, newCol: null, fileName: '' };
+    _openModal('신구대조표 비교', `
+      <p style="color:var(--text-2);font-size:var(--fs-12);margin:0 0 12px;line-height:1.6">
+        현행/개정 2열(또는 비고 포함)로 된 <strong>신구대조표</strong> 파일을 올리면, 두 열을 자동으로 인식해
+        각 항목의 <strong>변경 내용</strong>을 만들어 드립니다. <strong>DOCX 권장</strong>(표 구조가 보존됨) — PDF는 표가 깨져 정확도가 낮습니다.
+      </p>
+      <div class="dp-field">
+        <div class="dp-file-picker">
+          <input type="file" id="dp-wiki-cmp-file"
+                 accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                 style="display:none" onchange="DP._wikiCompareExtract(this)">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-wiki-cmp-file').click()">
+            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span><span>신구대조표 파일 선택</span>
+          </button>
+          <span id="dp-wiki-cmp-status" aria-live="polite" style="margin-left:10px;color:var(--text-3);font-size:12px"></span>
+        </div>
+      </div>
+      <div id="dp-wiki-cmp-host"></div>
+    `,
+    `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">닫기</button>`,
+    { wide: true });
+  }
+
+  async function _wikiCompareExtract(input) {
+    const f = (input.files || [])[0];
+    if (!f) return;
+    input.value = '';
+    const status = $('#dp-wiki-cmp-status');
+    if (!(f.name || '').toLowerCase().endsWith('.docx')) {
+      if (status) status.textContent = '신구대조표는 DOCX 파일을 권장합니다 (표 인식 가능).';
+      toast('DOCX 신구대조표를 선택하세요', 'err');
+      return;
+    }
+    if (status) status.textContent = '표 분석 중…';
+    try {
+      const buf = await f.arrayBuffer();
+      const html = await _wikiDocxToHtml(buf);
+      const div = document.createElement('div');
+      div.innerHTML = _sanitize(html);
+      const tables = Array.from(div.querySelectorAll('table'));
+      if (!tables.length) {
+        if (status) status.textContent = '표를 찾지 못했습니다. 신구대조표(표 형식)인지 확인하세요.';
+        const host = $('#dp-wiki-cmp-host'); if (host) host.innerHTML = '';
+        return;
+      }
+      const table = tables.sort((a, b) => b.rows.length - a.rows.length)[0];
+      const rows = Array.from(table.rows).map(r => Array.from(r.cells).map(c => (c.textContent || '').trim()));
+      if (rows.length < 2) { if (status) status.textContent = '표에 데이터 행이 없습니다.'; return; }
+      _wikiCompare.rows = rows;
+      _wikiCompare.headers = rows[0];
+      _wikiCompare.fileName = f.name || '';
+      _wikiCompare.oldCol = null; _wikiCompare.newCol = null;
+      if (status) status.textContent = `표 인식 완료 — 데이터 ${rows.length - 1}개 행`;
+      _wikiCompareRender(true);
+    } catch (err) {
+      console.warn('[wiki] compare extract failed', err);
+      if (status) status.textContent = '분석 실패: ' + (err && err.message || err);
+      toast('신구대조표 분석에 실패했습니다', 'err');
+    }
+  }
+
+  // Auto-detect the meaningful columns of a 신구대조표:
+  //   label(구분/조항) · old(현행) · new(개정안) · remarks(개정 사유/비고).
+  // Real tables are often 4-col (구분 | 현행 | 개정안 | 개정 사유) — we keep the
+  // label + remarks columns in the view so the result mirrors the source doc.
+  function _wikiCompareDetect(headers, colCount) {
+    const find = (re) => headers.findIndex(hh => re.test(hh || ''));
+    const labelCol = find(/구분|조항|항목|구간|조문|순번|연번|장|절/i);
+    const remarksCol = find(/사유|비고|근거|remark/i);
+    let oldCol = find(/현행|구\s*조문|기존|종전|이전|현\s*행|원안|old/i);
+    let newCol = find(/개정안|개정\s*안|개정|신\s*조문|변경|신설|이후|수정|제안|proposed|new/i);
+    if (oldCol < 0) oldCol = labelCol === 0 ? 1 : 0;
+    if (newCol < 0 || newCol === oldCol) newCol = Math.min(oldCol + 1, colCount - 1);
+    // "개정 사유" can mis-match newCol; if so, pick a distinct 개정/변경 column.
+    if (newCol === remarksCol) {
+      const alt = headers.findIndex((hh, i) => i !== oldCol && i !== remarksCol && /개정안|변경|신|proposed|new/i.test(hh || ''));
+      newCol = alt >= 0 ? alt : Math.min(oldCol + 1, colCount - 1);
+    }
+    return { labelCol, remarksCol, oldCol, newCol };
+  }
+
+  function _wikiCompareRender(autoDetect) {
+    const host = $('#dp-wiki-cmp-host');
+    if (!host) return;
+    const rows = _wikiCompare.rows;
+    if (!rows || !rows.length) return;
+    const headers = _wikiCompare.headers || [];
+    const colCount = rows.reduce((m, r) => Math.max(m, r.length), 0);
+    if (autoDetect || _wikiCompare.oldCol == null) {
+      const d = _wikiCompareDetect(headers, colCount);
+      _wikiCompare.labelCol = d.labelCol; _wikiCompare.remarksCol = d.remarksCol;
+      _wikiCompare.oldCol = d.oldCol; _wikiCompare.newCol = d.newCol;
+    }
+    const { oldCol, newCol, labelCol, remarksCol } = _wikiCompare;
+    const colOpts = (selected) => Array.from({ length: colCount }, (_, i) =>
+      `<option value="${i}"${i === selected ? ' selected' : ''}>${esc(headers[i] || ('열 ' + (i + 1)))}</option>`).join('');
+    let changed = 0;
+    const bodyRows = rows.slice(1).map((r, idx) => {
+      const oldC = r[oldCol] || '', newC = r[newCol] || '';
+      const same = oldC.trim() === newC.trim();
+      if (!same) changed++;
+      const diff = same ? '<span style="color:var(--text-3)">(변경 없음)</span>' : _wordDiff(oldC, newC);
+      return `<tr>
+        ${labelCol >= 0 ? `<td class="dp-wiki-cmp-label">${esc(r[labelCol] || '')}</td>` : `<td class="dp-wiki-cmp-num">${idx + 1}</td>`}
+        <td>${oldC ? esc(oldC) : '<span style="color:var(--text-3)">(없음 · 신설)</span>'}</td>
+        <td>${newC ? esc(newC) : '<span style="color:var(--text-3)">(없음 · 삭제)</span>'}</td>
+        <td class="dp-wiki-cmp-diff">${diff}</td>
+        ${remarksCol >= 0 ? `<td class="dp-wiki-cmp-reason">${esc(r[remarksCol] || '')}</td>` : ''}
+      </tr>`;
+    }).join('');
+    const canWrite = _hasPerm('write:wiki');
+    host.innerHTML = `
+      <div class="dp-wiki-cmp-cols">
+        <label>현행(이전) 열 <select class="dp-input dp-input-sm" id="dp-wiki-cmp-old" onchange="DP._wikiCompareCols()">${colOpts(oldCol)}</select></label>
+        <label>개정(이후) 열 <select class="dp-input dp-input-sm" id="dp-wiki-cmp-new" onchange="DP._wikiCompareCols()">${colOpts(newCol)}</select></label>
+        <span class="dp-wiki-cmp-summary">${changed}개 항목 변경 / 전체 ${rows.length - 1}개</span>
+      </div>
+      <div class="dp-wiki-cmp-scroll">
+        <table class="dp-wiki-cmp-table">
+          <thead><tr>
+            <th>${labelCol >= 0 ? esc(headers[labelCol] || '구분') : '#'}</th>
+            <th>현행</th><th>개정안</th><th>변경 내용 (자동)</th>
+            ${remarksCol >= 0 ? `<th>${esc(headers[remarksCol] || '사유')}</th>` : ''}
+          </tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+      ${canWrite ? `
+      <div class="dp-wiki-cmp-save">
+        <input class="dp-input" id="dp-wiki-cmp-title" placeholder="저장할 문서 제목"
+               value="${esc((_wikiCompare.fileName || '').replace(/\.docx$/i, ''))}">
+        <button class="dp-btn dp-btn-primary" onclick="DP._wikiSaveCompareAsVersion()">개정안을 위키 버전으로 저장</button>
+      </div>` : ''}
+    `;
+  }
+
+  function _wikiCompareCols() {
+    const o = $('#dp-wiki-cmp-old'), n = $('#dp-wiki-cmp-new');
+    if (o) _wikiCompare.oldCol = Number(o.value);
+    if (n) _wikiCompare.newCol = Number(n.value);
+    _wikiCompareRender(false);
+  }
+
+  async function _wikiSaveCompareAsVersion() {
+    const title = ($('#dp-wiki-cmp-title') && $('#dp-wiki-cmp-title').value || '').trim();
+    if (!title) { toast('제목을 입력하세요', 'err'); return; }
+    const rows = _wikiCompare.rows || [];
+    const { newCol, oldCol, labelCol } = _wikiCompare;
+    // Saved content = the 개정안(new) column, prefixed by the 구분 label as a
+    // heading so the stored revision reads as a structured document.
+    const parts = rows.slice(1).map(r => {
+      const nt = (r[newCol] || '').trim();
+      if (!nt) return '';
+      const lab = labelCol >= 0 ? (r[labelCol] || '').trim() : '';
+      return (lab ? `<h4>${esc(lab)}</h4>` : '') + `<p>${esc(nt)}</p>`;
+    }).filter(Boolean).join('');
+    if (!parts) { toast('개정(이후) 열에 내용이 없습니다', 'err'); return; }
+    let changed = 0;
+    rows.slice(1).forEach(r => { if ((r[oldCol] || '').trim() !== (r[newCol] || '').trim()) changed++; });
+    const payload = { title, content: _sanitize(parts), source_type: 'docx', change_context: `신구대조표 반영 — ${changed}개 항목 변경` };
+    const data = await api('POST', 'wiki', payload);
+    if (!data) return;
+    toast(data.is_new_page ? '개정안을 새 문서로 저장했습니다' : `개정안을 새 버전(v${data.version_no})으로 저장했습니다`, 'ok');
     _closeModal();
     if (state.page === 'wiki') navigate('wiki');
     viewWikiPage(data.page_id);
@@ -7948,6 +8127,7 @@ const DP = (() => {
     openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
     showWikiDiff, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
+    openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
 })();
 
