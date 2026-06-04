@@ -7408,7 +7408,10 @@ const DP = (() => {
     }
   }
 
-  async function openWikiUpload(prefill) {
+  // attachTo (optional) = { id, title } → pre-bind this upload as a NEW VERSION
+  // of an existing page (title prefilled, attach picker preselected). This is
+  // the one-step "새 버전 올리기" path from a document's detail view.
+  async function openWikiUpload(prefill, attachTo) {
     _wikiUpload = { file: null, sourceType: 'manual' };
     if (!_wikiPages.length) {
       const d = await api('GET', 'wiki?list=1');
@@ -7416,51 +7419,81 @@ const DP = (() => {
     }
     const toolbar = _renderTiptapToolbar();
     const attachOpts = `<option value="">자동 (제목으로 판단)</option>` +
-      _wikiPages.map(p => `<option value="${Number(p.id)}">${esc(p.title)} (현재 v${Number(p.current_version)})</option>`).join('');
-    _openModal('새 문서 추가 / 새 버전 업로드', `
+      _wikiPages.map(p => `<option value="${Number(p.id)}"${attachTo && Number(attachTo.id) === Number(p.id) ? ' selected' : ''}>${esc(p.title)} (현재 ${esc(p.latest_version_label || ('v' + p.current_version))})</option>`).join('');
+    const titleVal = attachTo ? (attachTo.title || '') : (prefill || '');
+    const heading = attachTo ? ('새 버전 올리기 — ' + (attachTo.title || '')) : '새 문서 추가 / 새 버전 업로드';
+    _openModal(heading, `
+      ${attachTo ? `<div class="dp-wiki-attach-banner">이 문서의 <strong>새 버전</strong>으로 올립니다. 파일만 고르고 저장하면 됩니다.</div>` : ''}
       <div class="dp-field">
-        <label>문서 파일 (PDF 또는 DOCX) <span style="color:var(--text-3);font-weight:400">— 선택하면 자동으로 본문을 추출합니다</span></label>
-        <div class="dp-file-picker">
+        <label>문서 파일 (PDF 또는 DOCX) <span style="color:var(--text-3);font-weight:400">— 선택하거나 끌어다 놓으면 자동 추출</span></label>
+        <div class="dp-wiki-dropzone" id="dp-wiki-dropzone"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="DP._wikiDropFile(event)">
           <input type="file" id="dp-wiki-file"
                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                  style="display:none" onchange="DP._wikiExtractFile(this)">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-wiki-file').click()">
             <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span><span>파일 선택</span>
           </button>
-          <span id="dp-wiki-extract-status" aria-live="polite" style="margin-left:10px;color:var(--text-3);font-size:12px"></span>
+          <span class="dp-wiki-drop-hint" aria-hidden="true">또는 여기로 드래그</span>
+          <span id="dp-wiki-extract-status" aria-live="polite" style="color:var(--text-3);font-size:12px"></span>
         </div>
       </div>
       <div class="dp-field">
         <label for="dp-wiki-title">제목 <span style="color:var(--text-3);font-weight:400">— 파일명 뒤 버전(v1.2·DRAFT 등)은 자동으로 같은 문서로 묶입니다</span></label>
-        <input class="dp-input" id="dp-wiki-title" value="${esc(prefill || '')}" placeholder="문서 제목" oninput="DP._wikiAttachHint()">
+        <input class="dp-input" id="dp-wiki-title" value="${esc(titleVal)}" placeholder="문서 제목" oninput="DP._wikiAttachHint()">
       </div>
       <div class="dp-field">
         <label for="dp-wiki-attach">기존 문서에 연결 <span style="color:var(--text-3);font-weight:400">— 자동 판단이 안 맞으면 직접 고르세요</span></label>
         <select class="dp-input" id="dp-wiki-attach" onchange="DP._wikiAttachHint()">${attachOpts}</select>
         <div id="dp-wiki-attach-hint" aria-live="polite" style="margin-top:6px;font-size:12px;color:var(--text-3)"></div>
       </div>
-      <div class="dp-field">
-        <label>내용 <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
-        <div class="dp-te-wrapper dp-te-resize">
-          <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
-          <div class="dp-te-editor" id="dp-tt-wiki"></div>
+      <details class="dp-wiki-adv"${attachTo ? '' : ' open'}>
+        <summary>내용 다듬기 / 변경 맥락 (선택)</summary>
+        <div class="dp-field" style="margin-top:10px">
+          <label>내용 <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
+          <div class="dp-te-wrapper dp-te-resize">
+            <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
+            <div class="dp-te-editor" id="dp-tt-wiki"></div>
+          </div>
         </div>
-      </div>
-      <div class="dp-field" style="margin-bottom:0">
-        <label for="dp-wiki-context">변경 맥락 메모 <span style="color:var(--text-3);font-weight:400">— 무엇이 / 왜 바뀌었는지 (선택)</span></label>
-        <input class="dp-input" id="dp-wiki-context" placeholder="예: 4장 예산 표 갱신, 승인 절차 문구 수정" maxlength="500">
-      </div>
+        <div class="dp-field" style="margin-bottom:0">
+          <label for="dp-wiki-context">변경 맥락 메모 <span style="color:var(--text-3);font-weight:400">— 무엇이 / 왜 바뀌었는지</span></label>
+          <input class="dp-input" id="dp-wiki-context" placeholder="예: 4장 예산 표 갱신, 승인 절차 문구 수정" maxlength="500">
+        </div>
+      </details>
     `,
     `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">취소</button>
      <button class="dp-btn dp-btn-primary" id="dp-wiki-save-btn" onclick="DP.saveWiki()">저장</button>`,
     { wide: true });
     _waitForTiptap(() => _initTiptap('dp-tt-wiki', ''));
+    setTimeout(_wikiAttachHint, 0);
   }
 
-  async function _wikiExtractFile(input) {
+  // One-step entry from a document's detail view: upload a new version of THIS
+  // page (pre-attached). Just pick a file → save.
+  function openWikiNewVersion() {
+    if (!_wikiView || !_wikiView.page) return;
+    const p = _wikiView.page;
+    openWikiUpload(p.title, { id: p.id, title: p.title });
+  }
+
+  function _wikiDropFile(e) {
+    e.preventDefault();
+    const dz = $('#dp-wiki-dropzone'); if (dz) dz.classList.remove('drag');
+    const f = (e.dataTransfer && e.dataTransfer.files || [])[0];
+    if (f) _wikiExtractDoc(f);
+  }
+
+  function _wikiExtractFile(input) {
     const f = (input.files || [])[0];
-    if (!f) return;
     input.value = '';
+    if (f) _wikiExtractDoc(f);
+  }
+
+  async function _wikiExtractDoc(f) {
+    if (!f) return;
     const name = f.name || '';
     const lower = name.toLowerCase();
     const isDocx = lower.endsWith('.docx') || (f.type || '').includes('wordprocessingml');
@@ -7478,7 +7511,7 @@ const DP = (() => {
       const html = isDocx ? await _wikiDocxToHtml(buf) : await _wikiPdfToHtml(buf);
       const apply = () => { if (_tiptapEditor) _tiptapEditor.commands.setContent(html || '<p></p>'); };
       if (_tiptapEditor) apply(); else _waitForTiptap(apply);
-      if (statusEl) statusEl.textContent = '추출 완료 — 아래 편집기에서 정리한 뒤 저장하세요.';
+      if (statusEl) statusEl.textContent = '추출 완료 — 바로 저장하거나 “내용 다듬기”에서 편집하세요.';
     } catch (err) {
       console.warn('[wiki] extract failed', err);
       if (statusEl) statusEl.textContent = '추출 실패: ' + (err && err.message || err);
@@ -7830,7 +7863,8 @@ const DP = (() => {
       </div>
       `,
       `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">닫기</button>
-       ${canWrite ? `<button class="dp-btn dp-btn-secondary" onclick="DP.editWikiCurrent()">편집 / 새 버전</button>` : ''}
+       ${canWrite ? `<button class="dp-btn dp-btn-primary" onclick="DP.openWikiNewVersion()">새 버전 올리기</button>` : ''}
+       ${canWrite ? `<button class="dp-btn dp-btn-secondary" onclick="DP.editWikiCurrent()">편집</button>` : ''}
        ${isAdmin ? `<button class="dp-btn dp-btn-danger" onclick="DP.deleteWikiPage(${Number(page.id)})">삭제</button>` : ''}`,
       { wide: true, bodyClass: 'dp-post-view' }
     );
@@ -7881,6 +7915,7 @@ const DP = (() => {
 
   let _wikiDiffCache = null;        // { aText, bText, va, vb }
   let _wikiDiffChangesOnly = true;  // hide unchanged paragraphs by default
+  let _wikiDiffView = 'split';      // 'split' (현행|개정 좌우) | 'inline'
 
   async function showWikiDiff() {
     const fromSel = $('#dp-wiki-diff-from'), toSel = $('#dp-wiki-diff-to'), host = $('#dp-wiki-diff-host');
@@ -7910,35 +7945,42 @@ const DP = (() => {
     const host = $('#dp-wiki-diff-host');
     if (!host || !_wikiDiffCache) return;
     const { aText, bText, va, vb } = _wikiDiffCache;
-    const r = _docDiffRender(aText, bText, _wikiDiffChangesOnly);
+    const d = _docDiffRows(aText, bText);
+    const body = _wikiDiffView === 'inline'
+      ? _renderDiffInline(d.rows, _wikiDiffChangesOnly)
+      : _renderDiffSplit(d.rows, _wikiDiffChangesOnly);
+    const seg = (v, label) => `<button type="button" class="dp-diff-seg${_wikiDiffView === v ? ' on' : ''}" onclick="DP._wikiSetDiffView('${v}')">${label}</button>`;
+    const labA = esc(va.version_label || ('v' + va.version_no));
+    const labB = esc(vb.version_label || ('v' + vb.version_no));
     host.innerHTML = `
       <div class="dp-wiki-diff-head">
-        <span>${esc(va.version_label || ('v' + va.version_no))} → ${esc(vb.version_label || ('v' + vb.version_no))}</span>
+        <span>${labA} → ${labB}</span>
         <span class="dp-wiki-diff-stat">
-          <ins class="dp-wiki-ins">+${r.added} 추가</ins>
-          <del class="dp-wiki-del">-${r.removed} 삭제</del>
-          <span class="dp-wiki-mod-tag">~${r.modified} 수정</span>
+          <ins class="dp-wiki-ins">+${d.added}</ins>
+          <del class="dp-wiki-del">-${d.removed}</del>
+          <span class="dp-wiki-mod-tag">~${d.modified} 수정</span>
         </span>
+        <span class="dp-diff-segwrap">${seg('split', '좌우 비교')}${seg('inline', '인라인')}</span>
         <label class="dp-wiki-diff-toggle"><input type="checkbox" ${_wikiDiffChangesOnly ? 'checked' : ''} onchange="DP._wikiToggleDiffMode()"> 변경된 부분만</label>
       </div>
       ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}
-      <div class="dp-wiki-diff-body">${r.html}</div>`;
+      ${_wikiDiffView === 'split' ? `<div class="dp-wiki-diff-splithdr"><span>현행 · ${labA}</span><span>개정 · ${labB}</span></div>` : ''}
+      <div class="dp-wiki-diff-body">${body}</div>`;
   }
 
-  // Paragraph-level diff: align blocks by LCS, then word-highlight only inside
-  // CHANGED paragraphs. Far more readable than a whole-document word soup, and
-  // O(lines²) is cheap (no size fallback for normal docs). Adjacent del+ins
-  // runs are paired 1:1 into "modified" rows so edits show inline word diffs.
-  function _docDiffRender(aText, bText, changesOnly) {
+  function _wikiSetDiffView(v) { _wikiDiffView = (v === 'inline' ? 'inline' : 'split'); _renderWikiDiff(); }
+
+  // Paragraph-level alignment → row list (no HTML). Adjacent del+ins runs pair
+  // 1:1 into 'mod' rows so old↔new can sit side by side. O(lines²), cheap.
+  function _docDiffRows(aText, bText) {
     const A = _splitBlocks(aText), B = _splitBlocks(bText);
     const m = A.length, n = B.length;
     if ((m + 1) * (n + 1) > 16000000) {
-      // Extremely large — degrade to a plain added/removed set summary.
       const setB = new Set(B), setA = new Set(A);
-      const out = [];
-      A.forEach(t => { if (!setB.has(t)) out.push(`<div class="dp-diff-row dp-diff-del"><del>${esc(t)}</del></div>`); });
-      B.forEach(t => { if (!setA.has(t)) out.push(`<div class="dp-diff-row dp-diff-ins"><ins>${esc(t)}</ins></div>`); });
-      return { html: out.join('') || '<div class="dp-diff-none">차이가 없습니다.</div>', added: 0, removed: 0, modified: 0 };
+      const rows = [];
+      A.forEach(t => { if (!setB.has(t)) rows.push({ t: 'del', a: t }); });
+      B.forEach(t => { if (!setA.has(t)) rows.push({ t: 'ins', b: t }); });
+      return { rows, added: rows.filter(r => r.t === 'ins').length, removed: rows.filter(r => r.t === 'del').length, modified: 0 };
     }
     const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
     for (let i = m - 1; i >= 0; i--)
@@ -7952,7 +7994,6 @@ const DP = (() => {
     }
     while (i < m) ops.push({ t: 'del', a: A[i++] });
     while (j < n) ops.push({ t: 'ins', b: B[j++] });
-
     const rows = []; let added = 0, removed = 0, modified = 0;
     for (let k = 0; k < ops.length;) {
       if (ops[k].t === 'eq') { rows.push({ t: 'eq', text: ops[k].b }); k++; continue; }
@@ -7964,9 +8005,12 @@ const DP = (() => {
       for (let p = pairs; p < dels.length; p++) { rows.push({ t: 'del', a: dels[p] }); removed++; }
       for (let p = pairs; p < inss.length; p++) { rows.push({ t: 'ins', b: inss[p] }); added++; }
     }
+    return { rows, added, removed, modified };
+  }
 
+  function _renderDiffInline(rows, changesOnly) {
     const out = []; let eqRun = [];
-    const flushEq = () => {
+    const flush = () => {
       if (!eqRun.length) return;
       if (changesOnly) out.push(`<div class="dp-diff-eq-collapsed">⋯ 동일 ${eqRun.length}문단 ⋯</div>`);
       else eqRun.forEach(t => out.push(`<div class="dp-diff-row dp-diff-eq">${esc(t)}</div>`));
@@ -7974,14 +8018,65 @@ const DP = (() => {
     };
     rows.forEach(r => {
       if (r.t === 'eq') { eqRun.push(r.text); return; }
-      flushEq();
+      flush();
       if (r.t === 'mod') out.push(`<div class="dp-diff-row dp-diff-mod">${_wordDiff(r.a, r.b)}</div>`);
       else if (r.t === 'del') out.push(`<div class="dp-diff-row dp-diff-del"><del>${esc(r.a)}</del></div>`);
       else out.push(`<div class="dp-diff-row dp-diff-ins"><ins>${esc(r.b)}</ins></div>`);
     });
-    flushEq();
-    if (!added && !removed && !modified) return { html: '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>', added, removed, modified };
-    return { html: out.join(''), added, removed, modified };
+    flush();
+    return out.join('') || '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
+  }
+
+  // Side-by-side (현행 | 개정). Aligns old↔new per row; changed words are marked
+  // within each cell (deletions left, additions right) — clean, like a 신구대조표.
+  function _renderDiffSplit(rows, changesOnly) {
+    const out = []; let eqRun = [];
+    const flush = () => {
+      if (!eqRun.length) return;
+      if (changesOnly) out.push(`<tr class="dp-sx-eqc"><td colspan="2">⋯ 동일 ${eqRun.length}문단 ⋯</td></tr>`);
+      else eqRun.forEach(t => out.push(`<tr class="dp-sx-eq"><td>${esc(t)}</td><td>${esc(t)}</td></tr>`));
+      eqRun = [];
+    };
+    rows.forEach(r => {
+      if (r.t === 'eq') { eqRun.push(r.text); return; }
+      flush();
+      if (r.t === 'mod') {
+        const s = _wordDiffSides(r.a, r.b);
+        out.push(`<tr class="dp-sx-mod"><td class="dp-sx-old">${s.left}</td><td class="dp-sx-new">${s.right}</td></tr>`);
+      } else if (r.t === 'del') {
+        out.push(`<tr class="dp-sx-del"><td class="dp-sx-old">${esc(r.a)}</td><td class="dp-sx-empty"></td></tr>`);
+      } else {
+        out.push(`<tr class="dp-sx-ins"><td class="dp-sx-empty"></td><td class="dp-sx-new">${esc(r.b)}</td></tr>`);
+      }
+    });
+    flush();
+    if (!out.length) return '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
+    return `<table class="dp-diff-split"><tbody>${out.join('')}</tbody></table>`;
+  }
+
+  // Word LCS → separate left(old, deletions marked) / right(new, additions
+  // marked) HTML, so each split cell highlights only its own changes.
+  function _wordDiffSides(aText, bText) {
+    const a = _wikiTokenize(aText), b = _wikiTokenize(bText), m = a.length, n = b.length;
+    if (m * n > 4000000) return { left: esc(aText), right: esc(bText) };
+    const dp = Array.from({ length: m + 1 }, () => new Uint32Array(n + 1));
+    for (let i = m - 1; i >= 0; i--)
+      for (let j = n - 1; j >= 0; j--)
+        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    let i = 0, j = 0; const L = [], R = [];
+    const pL = (t, w) => { const x = L[L.length - 1]; if (x && x.t === t) x.w += w; else L.push({ t, w }); };
+    const pR = (t, w) => { const x = R[R.length - 1]; if (x && x.t === t) x.w += w; else R.push({ t, w }); };
+    while (i < m && j < n) {
+      if (a[i] === b[j]) { pL('eq', b[j]); pR('eq', b[j]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { pL('del', a[i]); i++; }
+      else { pR('ins', b[j]); j++; }
+    }
+    while (i < m) pL('del', a[i++]);
+    while (j < n) pR('ins', b[j++]);
+    return {
+      left: L.map(o => o.t === 'del' ? `<del class="dp-wiki-del">${esc(o.w)}</del>` : esc(o.w)).join(''),
+      right: R.map(o => o.t === 'ins' ? `<ins class="dp-wiki-ins">${esc(o.w)}</ins>` : esc(o.w)).join(''),
+    };
   }
 
   function _splitBlocks(text) {
@@ -8209,8 +8304,8 @@ const DP = (() => {
     _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,
-    openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
-    showWikiDiff, _wikiToggleDiffMode, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
+    openWikiUpload, openWikiNewVersion, _wikiDropFile, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
+    showWikiDiff, _wikiToggleDiffMode, _wikiSetDiffView, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
