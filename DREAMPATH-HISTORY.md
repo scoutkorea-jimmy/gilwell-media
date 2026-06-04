@@ -25,11 +25,60 @@ sibling: DREAMPATH.md
 
 날짜 역순.
 
+- [2026-06-04 · Knowledge Base](#2026-06-04--knowledge-base) · 문서 위키 신기능 — PDF/DOCX 위키화 + 버전 diff + 팔로업/메모
 - [2026-04-24 · V2](#2026-04-24--v2) · **/dreampath-v2 마이그레이션 전수 케이스 박제** (P0 10건 · 설계 근거)
 - [2026-04-24 · D](#2026-04-24--d) · v01.040.00 — 홈 전면 개편 + 모바일 접근성 + 새 로고 + B1~B5
 - [2026-04-24 · C](#2026-04-24--c) · 디자인 시스템 도입 + 문서 완전 분리
 - [2026-04-24 · B](#2026-04-24--b) · Dreampath 홈 UX · 접근성 검토 (계획)
 - [2026-04-24 · A](#2026-04-24--a) · CSP 회귀 · 사이드바 전체 마비 (P0)
+
+---
+
+## 2026-06-04 · Knowledge Base
+
+### 문서 위키 신기능 (Document Wiki) — PDF/DOCX 위키화 + 버전 추적 + 팔로업
+
+**국문 요약**
+PMO가 다루는 운영 문서(PDF·DOCX 혼합)를 Dreampath 안에서 위키화하는 신기능.
+문서를 올리면 브라우저에서 본문을 추출(DOCX→mammoth.js, PDF→pdf.js)해 Tiptap
+편집기로 정리한 뒤 위키 페이지로 저장한다. **같은 제목**으로 다시 올리면 새
+버전으로 기록되어, 두 버전을 단어 단위로 비교(diff 하이라이트)하고 "무엇이/왜
+바뀌었는지" 변경 맥락 메모를 함께 남길 수 있다. PMO 구성원은 각 버전을
+팔로업하고 개인 메모를 적거나 페이지에 댓글을 달 수 있다. 사이드바 Overview
+그룹에 **Knowledge Base** 메뉴로 진입.
+
+**English Summary**
+New feature: turn PMO operating documents (mixed PDF/DOCX) into a versioned
+wiki inside Dreampath. Files are extracted IN THE BROWSER (DOCX via mammoth.js,
+PDF via pdf.js), cleaned up in Tiptap, then stored as a wiki page. Re-uploading
+a document under the SAME title appends a new version, enabling a word-level
+diff and a "what/why changed" context note per version. PMO members can follow
+versions, keep a personal memo, and comment on the page. Entry point: sidebar
+**Knowledge Base** under the Overview group.
+
+**구현 / Implementation**
+- 백엔드: `functions/api/dreampath/wiki.js` (페이지/버전/팔로업), `functions/api/dreampath/wiki-comments.js` (댓글, `comments.js` 미러). 권한 스코프 `view:wiki` / `write:wiki` (admin 자동 통과). 응답은 JSON + `Cache-Control: no-store`.
+- DB: `dp_wiki_pages` / `dp_wiki_versions` / `dp_wiki_followups` / `dp_wiki_comments` 신규 (모두 `dp_` 접두사, additive only). 마이그레이션 `migrations/dp_wiki_2026-06-04.sql` + 각 API에 `CREATE TABLE IF NOT EXISTS` 자가치유 가드.
+- 정체성: 페이지는 `slug`(제목 정규화) 유니크. 같은 slug 재업로드 = `version_no = current_version + 1` 새 버전 + `pages.current_version` 갱신.
+- 프론트: `js/dreampath.js` IIFE 내부에 위키 모듈 추가 — nav(Overview), 라우트, 목록/상세/업로드/diff/팔로업/댓글, 단어 LCS diff 헬퍼(`_wordDiff`). 모든 인라인 핸들러 `DP.*` 유지.
+- diff: 외부 라이브러리 없이 단어 단위 LCS(`_wordDiff`)로 `<ins>`/`<del>` 시맨틱 마킹(색+밑줄/취소선+＋/－ 기호 3중 표기, 색각이상 대응). 3M 토큰곱 초과 시 좌우 비교 fallback.
+- 변환 라이브러리: `dreampath.html`에 mammoth(cdnjs) + pdf.js(jsdelivr, 3.11.174) 추가. DOMPurify는 기존 로드분 재사용.
+
+**code_refs (재발 방지 주석 위치)**
+- `dreampath.html` mammoth/pdf.js 로더 — **pdf.js worker는 same-origin self-host 필수** (`/js/vendor/pdf.worker.min.js`). 아래 케이스 1 참조.
+- `functions/api/dreampath/wiki.js` `_slug()` + 버전 append 분기 — slug=페이지 정체성 계약.
+- `js/dreampath.js` 위키 모듈 상단 — Tiptap 재사용(신규 extension 아님, §4.3 4-spot 비해당).
+- `js/dreampath.js` `_wikiPdfToHtml` — cMap은 jsdelivr(connect-src 허용), 워커는 same-origin.
+
+**케이스 1 — pdf.js 워커는 반드시 same-origin (CSP)**
+- 증상(예상 회귀): PDF 업로드 시 워커 로드가 CSP에 막혀 추출이 조용히 실패.
+- 원인: 사이트 CSP(`functions/_middleware.js`)에 `worker-src` 지시어가 없어 `default-src 'self'`로 폴백 → CDN(cdnjs/jsdelivr)에서 받은 워커 차단. `script-src`는 CDN을 허용하지만 워커는 별도.
+- 해결: 워커 파일을 레포에 self-host(`js/vendor/pdf.worker.min.js`), `pdfjsLib.GlobalWorkerOptions.workerSrc='/js/vendor/pdf.worker.min.js'`. 메인 lib·cMap은 CDN 유지(cMap은 connect-src가 jsdelivr 허용). 결과적으로 `_middleware.js` 미변경 → 전체가 Dreampath `./deploy.sh` 단일 경로.
+- 교훈: pdf.js 버전을 올릴 때 워커 파일도 같은 버전으로 교체. 워커를 CDN으로 되돌리지 말 것 — 즉시 차단된다.
+
+**케이스 2 — 같은 제목 = 같은 페이지 (slug 정체성)**
+- 비자명 결정: 위키 페이지의 정체성은 `slug`(정규화 제목)다. 같은 제목 재업로드는 새 페이지가 아니라 새 버전이 된다 — 이것이 "버전 추적" 기능의 전제.
+- 교훈: `_slug()` 정규화 규칙을 바꾸면 기존 문서가 두 페이지로 쪼개질 수 있다. 변경 전 기존 행과 대조 검증 필수.
 
 ---
 

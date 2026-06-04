@@ -78,6 +78,7 @@ const DP = (() => {
         { id: 'home',          label: 'Home',             icon: 'home',      perm: 'view:home' },
         { id: 'announcements', label: 'Announcements',    icon: 'megaphone', perm: 'view:announcements' },
         { id: 'calendar',      label: 'Calendar',         icon: 'calendar',  perm: 'view:calendar' },
+        { id: 'wiki',          label: 'Knowledge Base',   icon: 'book',      perm: 'view:wiki' },
       ])},
       { title: 'Work', items: guard([
         { id: 'documents',     label: 'Documents',        icon: 'book',      perm: 'view:documents' },
@@ -926,7 +927,7 @@ const DP = (() => {
   function _installKeyDelegation() {
     const LEGACY = [
       'dp-nav-item', 'dp-post-item', 'dp-audit-row', 'dp-stat', 'dp-cmd-item',
-      'dp-schedule-row',
+      'dp-schedule-row', 'dp-wiki-card', 'dp-wiki-ver-row',
     ];
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -1238,6 +1239,7 @@ const DP = (() => {
       announcements: () => { _renderBoard(pageEl, 'announcements', 'Announcements'); label = 'Announcements'; },
       documents:     () => { _renderBoard(pageEl, 'documents', 'Documents');  label = 'Documents'; },
       minutes:       () => { _renderBoard(pageEl, 'minutes', 'Meeting Minutes'); label = 'Meeting Minutes'; },
+      wiki:          () => { _renderWiki(pageEl);          label = 'Knowledge Base'; },
       tasks:         () => { _renderTasks(pageEl);         label = 'Tasks'; },
       notes:         () => { _renderNotes(pageEl);         label = 'Notes / Issues'; },
       decisions:     () => { _renderDecisions(pageEl);     label = 'Decision Log'; },
@@ -7283,6 +7285,573 @@ const DP = (() => {
     else navigate(state.page);
   }
 
+  // -------------------------- Knowledge Base (Document Wiki) --------------------------
+  //
+  // PMO operating documents (PDF/DOCX) are extracted IN THE BROWSER (mammoth
+  // for DOCX, pdf.js for PDF), cleaned up in Tiptap, then stored as a wiki
+  // page. Re-uploading a doc with the SAME title appends a new version, so we
+  // can diff "what changed, in what context" and let people follow up + memo.
+  //
+  // [CASE STUDY 2026-06-04 — Tiptap reuse only, no new extension]
+  //   The wiki editor mounts the SAME extension stack as posts/notes via
+  //   _initTiptap(). No new extension is introduced here, so the DREAMPATH.md
+  //   §4.3 "4-spot rule" (createPost/editPost/createNote/editNote) does NOT
+  //   need touching. If you ever add a NEW Tiptap extension, you must update
+  //   those 4 spots AND this mount together.
+  let _wikiPages = [];
+  let _wikiView = null;             // { page, versions, current, my_followups }
+  let _wikiUpload = { file: null, sourceType: 'manual' };
+
+  async function _renderWiki(root) {
+    root.innerHTML = '';
+    const canWrite = _hasPerm('write:wiki');
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, 'Knowledge Base'),
+      h('div', {}, canWrite ? [
+        h('button', { className: 'dp-btn dp-btn-primary', onclick: () => openWikiUpload('') }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/plus.svg')" } }),
+          h('span', {}, ' 새 문서 / 버전'),
+        ]),
+      ] : []),
+    ]));
+    const searchWrap = h('div', { className: 'dp-wiki-search' });
+    searchWrap.innerHTML = `<input type="search" class="dp-input dp-input-sm" id="dp-wiki-q"
+      placeholder="문서 검색…" aria-label="문서 검색" oninput="DP._wikiFilter(this.value)">`;
+    root.appendChild(searchWrap);
+    const panel = h('div', { className: 'dp-panel', id: 'dp-wiki-list' });
+    panel.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">불러오는 중…</div>`;
+    root.appendChild(panel);
+
+    const data = await api('GET', 'wiki?list=1');
+    if (!data) return;
+    _wikiPages = data.pages || [];
+    _renderWikiList(_wikiPages);
+  }
+
+  function _wikiSrcLabel(t) {
+    return t === 'pdf' ? 'PDF' : t === 'docx' ? 'DOCX' : '편집';
+  }
+
+  function _renderWikiList(pages) {
+    const host = $('#dp-wiki-list');
+    if (!host) return;
+    if (!pages.length) {
+      host.innerHTML = `<div class="dp-panel-body pad" style="color:var(--text-3)">아직 등록된 문서가 없습니다.${_hasPerm('write:wiki') ? ' 우측 상단 “새 문서 / 버전”으로 첫 문서를 추가하세요.' : ''}</div>`;
+      return;
+    }
+    host.innerHTML = pages.map(p => `
+      <div class="dp-wiki-card" role="button" tabindex="0" aria-label="${esc(p.title)} 열기"
+           onclick="DP.viewWikiPage(${Number(p.id)})">
+        <div class="dp-wiki-card-main">
+          <div class="dp-wiki-card-title">${esc(p.title)}</div>
+          <div class="dp-wiki-card-meta">
+            <span class="dp-tag neutral">v${Number(p.current_version)}</span>
+            <span class="dp-wiki-srctag">${_wikiSrcLabel(p.latest_source_type)}</span>
+            ${Number(p.version_count) > 1 ? `<span>· ${Number(p.version_count)}개 버전</span>` : ''}
+            ${p.category ? `<span>· ${esc(p.category)}</span>` : ''}
+          </div>
+        </div>
+        <div class="dp-wiki-card-side">
+          <span class="mono">${esc(fmtDate(p.updated_at))}</span>
+          ${p.latest_editor ? `<span>${esc(p.latest_editor)}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function _wikiFilter(q) {
+    const s = String(q || '').toLowerCase().trim();
+    const filtered = !s ? _wikiPages
+      : _wikiPages.filter(p => String(p.title || '').toLowerCase().includes(s)
+        || String(p.category || '').toLowerCase().includes(s));
+    _renderWikiList(filtered);
+  }
+
+  // ---- Upload + browser-side extraction ----
+  function openWikiUpload(prefill) {
+    _wikiUpload = { file: null, sourceType: 'manual' };
+    const toolbar = _renderTiptapToolbar();
+    _openModal('새 문서 추가 / 새 버전 업로드', `
+      <div class="dp-field">
+        <label>문서 파일 (PDF 또는 DOCX) <span style="color:var(--text-3);font-weight:400">— 선택하면 자동으로 본문을 추출합니다</span></label>
+        <div class="dp-file-picker">
+          <input type="file" id="dp-wiki-file"
+                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                 style="display:none" onchange="DP._wikiExtractFile(this)">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="document.getElementById('dp-wiki-file').click()">
+            <span class="dp-btn-ico" style="--dp-icon:url('/img/dreampath/icons/plus.svg')"></span><span>파일 선택</span>
+          </button>
+          <span id="dp-wiki-extract-status" aria-live="polite" style="margin-left:10px;color:var(--text-3);font-size:12px"></span>
+        </div>
+      </div>
+      <div class="dp-field">
+        <label for="dp-wiki-title">제목 <span style="color:var(--text-3);font-weight:400">— 같은 제목으로 올리면 새 버전으로 기록됩니다</span></label>
+        <input class="dp-input" id="dp-wiki-title" value="${esc(prefill || '')}" placeholder="문서 제목">
+      </div>
+      <div class="dp-field">
+        <label>내용 <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
+        <div class="dp-te-wrapper dp-te-resize">
+          <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
+          <div class="dp-te-editor" id="dp-tt-wiki"></div>
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label for="dp-wiki-context">변경 맥락 메모 <span style="color:var(--text-3);font-weight:400">— 무엇이 / 왜 바뀌었는지 (선택)</span></label>
+        <input class="dp-input" id="dp-wiki-context" placeholder="예: 4장 예산 표 갱신, 승인 절차 문구 수정" maxlength="500">
+      </div>
+    `,
+    `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">취소</button>
+     <button class="dp-btn dp-btn-primary" id="dp-wiki-save-btn" onclick="DP.saveWiki()">저장</button>`,
+    { wide: true });
+    _waitForTiptap(() => _initTiptap('dp-tt-wiki', ''));
+  }
+
+  async function _wikiExtractFile(input) {
+    const f = (input.files || [])[0];
+    if (!f) return;
+    input.value = '';
+    const name = f.name || '';
+    const lower = name.toLowerCase();
+    const isDocx = lower.endsWith('.docx') || (f.type || '').includes('wordprocessingml');
+    const isPdf  = lower.endsWith('.pdf')  || f.type === 'application/pdf';
+    if (!isDocx && !isPdf) { toast('PDF 또는 DOCX 파일만 지원합니다', 'err'); return; }
+    _wikiUpload.file = f;
+    _wikiUpload.sourceType = isDocx ? 'docx' : 'pdf';
+    const titleEl = $('#dp-wiki-title');
+    if (titleEl && !titleEl.value.trim()) titleEl.value = name.replace(/\.(docx|pdf)$/i, '');
+    const statusEl = $('#dp-wiki-extract-status');
+    if (statusEl) statusEl.textContent = '추출 중… (' + name + ')';
+    try {
+      const buf = await f.arrayBuffer();
+      const html = isDocx ? await _wikiDocxToHtml(buf) : await _wikiPdfToHtml(buf);
+      const apply = () => { if (_tiptapEditor) _tiptapEditor.commands.setContent(html || '<p></p>'); };
+      if (_tiptapEditor) apply(); else _waitForTiptap(apply);
+      if (statusEl) statusEl.textContent = '추출 완료 — 아래 편집기에서 정리한 뒤 저장하세요.';
+    } catch (err) {
+      console.warn('[wiki] extract failed', err);
+      if (statusEl) statusEl.textContent = '추출 실패: ' + (err && err.message || err);
+      toast('문서 추출에 실패했습니다', 'err');
+    }
+  }
+
+  async function _wikiDocxToHtml(buf) {
+    if (!window.mammoth) throw new Error('DOCX 변환기(mammoth)가 로드되지 않았습니다');
+    const r = await window.mammoth.convertToHtml({ arrayBuffer: buf });
+    return r && r.value ? r.value : '';
+  }
+
+  // [CASE STUDY 2026-06-04 — pdf.js cMap from jsdelivr, worker from same-origin]
+  // workerSrc is set in dreampath.html to /js/vendor/pdf.worker.min.js (CSP
+  // worker-src falls back to 'self'). cMapUrl points at jsdelivr because
+  // connect-src allows it — without packed cMaps, Korean glyphs extract as
+  // garbage. Keep the version (3.11.174) in lock-step with the worker + lib.
+  async function _wikiPdfToHtml(buf) {
+    if (!window.pdfjsLib) throw new Error('PDF 변환기(pdf.js)가 로드되지 않았습니다');
+    const task = window.pdfjsLib.getDocument({
+      data: new Uint8Array(buf),
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+    });
+    const pdf = await task.promise;
+    const parts = [];
+    for (let pno = 1; pno <= pdf.numPages; pno++) {
+      const page = await pdf.getPage(pno);
+      const tc = await page.getTextContent();
+      const lines = [];
+      let cur = '', lastY = null;
+      tc.items.forEach(it => {
+        const y = it.transform ? it.transform[5] : null;
+        if (lastY !== null && y !== null && Math.abs(y - lastY) > 3 && cur) { lines.push(cur); cur = ''; }
+        cur += (it.str || '');
+        if (it.hasEOL) { lines.push(cur); cur = ''; }
+        lastY = y;
+      });
+      if (cur) lines.push(cur);
+      const body = lines.map(l => l.trim()).filter(Boolean).map(l => `<p>${esc(l)}</p>`).join('');
+      parts.push(`<h3>${pno} 페이지</h3>${body || '<p></p>'}`);
+    }
+    return parts.join('');
+  }
+
+  async function saveWiki() {
+    const title = ($('#dp-wiki-title') && $('#dp-wiki-title').value || '').trim();
+    const changeContext = ($('#dp-wiki-context') && $('#dp-wiki-context').value || '').trim();
+    const content = _getTiptapHTML();
+    if (!title) { toast('제목을 입력하세요', 'err'); return; }
+    if (!content) { toast('내용이 비어 있습니다', 'err'); return; }
+    const btn = $('#dp-wiki-save-btn'); if (btn) { btn.disabled = true; btn.textContent = '저장 중…'; }
+    let sourceFile = null;
+    const sourceType = _wikiUpload.sourceType || 'manual';
+    if (_wikiUpload.file) {
+      const fd = new FormData(); fd.append('file', _wikiUpload.file);
+      try {
+        const r = await fetch('/api/dreampath/upload', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const d = await r.json();
+        if (r.ok && d.url) sourceFile = { url: d.url, name: d.name || _wikiUpload.file.name };
+      } catch (_) { /* original-file upload is best-effort; content already captured */ }
+    }
+    const payload = { title, content: _sanitize(content), source_type: sourceType, change_context: changeContext || null };
+    if (sourceFile) payload.source_file = sourceFile;
+    const data = await api('POST', 'wiki', payload);
+    if (btn) { btn.disabled = false; btn.textContent = '저장'; }
+    if (!data) return;
+    toast(data.is_new_page ? '새 문서가 생성되었습니다' : `새 버전(v${data.version_no})이 추가되었습니다`, 'ok');
+    _closeModal();
+    if (state.page === 'wiki') navigate('wiki');
+    viewWikiPage(data.page_id);
+  }
+
+  // ---- Detail view ----
+  async function viewWikiPage(pageId) {
+    _openModal('Loading…', '<div style="color:var(--text-3);padding:40px 0;text-align:center">불러오는 중…</div>',
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">닫기</button>`, { wide: true });
+    const res = await _rawApi('GET', 'wiki?page_id=' + Number(pageId));
+    if (res.status === 401) { _renderLogin(); return; }
+    if (!res.ok || !res.data || !res.data.page) {
+      _renderPostError('문서를 불러올 수 없음', 'HTTP ' + res.status + (res.error ? ' — ' + res.error : ''));
+      return;
+    }
+    _wikiView = res.data;
+    _renderWikiDetail();
+  }
+
+  function _wikiFollowCtlHtml(v) {
+    const f = (_wikiView.my_followups || {})[v.id];
+    const following = !!f;
+    const note = (f && f.note) || '';
+    return `
+      <div class="dp-wiki-follow">
+        <button type="button" class="dp-btn dp-btn-sm ${following ? 'dp-btn-primary' : 'dp-btn-secondary'}"
+                onclick="DP.toggleWikiFollow(${Number(v.id)})">
+          ${following ? '✓ 팔로우 중' : '+ 팔로우'}
+        </button>
+        ${Number(v.follower_count) ? `<span class="dp-wiki-follow-count">${Number(v.follower_count)}명 팔로우</span>` : ''}
+        <span class="dp-wiki-note-wrap">
+          <input class="dp-input dp-input-sm" id="dp-wiki-note-${Number(v.id)}" placeholder="개인 메모…"
+                 value="${esc(note)}" maxlength="500" aria-label="이 버전에 대한 개인 메모">
+          <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP.saveWikiNote(${Number(v.id)})">메모 저장</button>
+        </span>
+      </div>`;
+  }
+
+  function _renderWikiDetail() {
+    const page = _wikiView.page;
+    const versions = _wikiView.versions || [];
+    const current = _wikiView.current;
+    const isAdmin = state.user && state.user.role === 'admin';
+    const canWrite = _hasPerm('write:wiki');
+
+    const diffCtl = versions.length > 1 ? (() => {
+      const opts = (sel) => versions.map(v => `<option value="${Number(v.id)}"${v.id === sel ? ' selected' : ''}>v${v.version_no}${v.version_no === page.current_version ? ' (현재)' : ''}</option>`).join('');
+      const toId = versions[0].id;            // current (DESC ordered)
+      const fromId = (versions[1] || versions[0]).id;  // previous
+      return `
+        <div class="dp-wiki-diff-ctl">
+          <strong>버전 비교</strong>
+          <select class="dp-input dp-input-sm" id="dp-wiki-diff-from" aria-label="이전 버전">${opts(fromId)}</select>
+          <span aria-hidden="true">→</span>
+          <select class="dp-input dp-input-sm" id="dp-wiki-diff-to" aria-label="이후 버전">${opts(toId)}</select>
+          <button class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP.showWikiDiff()">변경점 보기</button>
+        </div>
+        <div id="dp-wiki-diff-host"></div>`;
+    })() : '';
+
+    const timeline = versions.map(v => `
+      <div class="dp-wiki-ver">
+        <div class="dp-wiki-ver-head">
+          <span class="dp-tag ${Number(v.version_no) === Number(page.current_version) ? 'ok' : 'neutral'}">v${v.version_no}${Number(v.version_no) === Number(page.current_version) ? ' · 현재' : ''}</span>
+          <span class="mono">${esc(fmtTime(v.created_at))}</span>
+          <span>${esc(v.uploaded_by_name || '')}</span>
+          <span class="dp-wiki-srctag">${_wikiSrcLabel(v.source_type)}</span>
+          ${v.source_file_url ? `<a class="dp-btn dp-btn-ghost dp-btn-sm" href="${esc(v.source_file_url)}" target="_blank" rel="noopener" download="${esc(v.source_file_name || '')}">원본</a>` : ''}
+        </div>
+        ${v.change_context ? `<div class="dp-wiki-ver-ctx"><span aria-hidden="true">✎</span> ${esc(v.change_context)}</div>` : ''}
+        <div id="dp-wiki-follow-ctl-${Number(v.id)}">${_wikiFollowCtlHtml(v)}</div>
+      </div>
+    `).join('');
+
+    _openModal(
+      page.title || '(제목 없음)',
+      `
+      <div class="dp-post-meta-bar">
+        <span class="dp-tag neutral">v${Number(page.current_version)} · 현재</span>
+        <span class="dp-wiki-srctag">${_wikiSrcLabel(current && current.source_type)}</span>
+        ${current ? `<span>by <strong style="color:var(--text-2)">${esc(current.uploaded_by_name || '')}</strong></span><span>·</span><span class="mono">${esc(fmtTime(current.created_at))}</span>` : ''}
+        ${current && current.source_file_url ? `<a class="dp-btn dp-btn-secondary dp-btn-sm" style="margin-left:auto;text-decoration:none;padding:0 10px" href="${esc(current.source_file_url)}" target="_blank" rel="noopener" download="${esc(current.source_file_name || '')}">원본 다운로드</a>` : ''}
+      </div>
+      ${current && current.change_context ? `<div class="dp-wiki-ver-ctx" style="margin-top:10px"><span aria-hidden="true">✎</span> <strong>이번 버전 변경 맥락:</strong> ${esc(current.change_context)}</div>` : ''}
+      <div class="dp-wiki-content">${_sanitize((current && current.content) || '')}</div>
+
+      ${diffCtl}
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:10px">버전 이력 · 팔로업</div>
+        ${timeline}
+      </div>
+
+      <div id="dp-wiki-comments-section" style="margin-top:24px;padding-top:18px;border-top:1px solid var(--g-150)">
+        <div class="dp-h2" style="margin-bottom:12px">댓글</div>
+        <div id="dp-wiki-comments-list" style="color:var(--text-3);font-size:12px">댓글을 불러오는 중…</div>
+        <div style="margin-top:14px;display:flex;gap:8px;align-items:flex-end">
+          <textarea class="dp-textarea" id="dp-wiki-comment-input" placeholder="댓글을 남기세요…" style="min-height:70px;flex:1"></textarea>
+          <button class="dp-btn dp-btn-primary" onclick="DP.addWikiComment(${Number(page.id)})">등록</button>
+        </div>
+      </div>
+      `,
+      `<button class="dp-btn dp-btn-secondary" onclick="DP._closeModal()">닫기</button>
+       ${canWrite ? `<button class="dp-btn dp-btn-secondary" onclick="DP.editWikiCurrent()">편집 / 새 버전</button>` : ''}
+       ${isAdmin ? `<button class="dp-btn dp-btn-danger" onclick="DP.deleteWikiPage(${Number(page.id)})">삭제</button>` : ''}`,
+      { wide: true, bodyClass: 'dp-post-view' }
+    );
+
+    _wikiLoadComments(Number(page.id));
+  }
+
+  async function toggleWikiFollow(versionId) {
+    const cur = (_wikiView.my_followups || {})[versionId];
+    const following = !!cur;
+    const body = { version_id: Number(versionId), page_id: Number(_wikiView.page.id) };
+    if (following) body.clear = true; else body.status = 'following';
+    const noteEl = $('#dp-wiki-note-' + versionId);
+    if (!following && noteEl && noteEl.value.trim()) body.note = noteEl.value.trim();
+    const data = await api('POST', 'wiki?followup=1', body);
+    if (!data) return;
+    if (!_wikiView.my_followups) _wikiView.my_followups = {};
+    const v = (_wikiView.versions || []).find(x => Number(x.id) === Number(versionId));
+    if (following) {
+      delete _wikiView.my_followups[versionId];
+      if (v) v.follower_count = Math.max(0, Number(v.follower_count || 1) - 1);
+    } else {
+      _wikiView.my_followups[versionId] = { status: 'following', note: body.note || '' };
+      if (v) v.follower_count = Number(v.follower_count || 0) + 1;
+    }
+    const ctl = $('#dp-wiki-follow-ctl-' + versionId);
+    if (ctl && v) ctl.innerHTML = _wikiFollowCtlHtml(v);
+  }
+
+  async function saveWikiNote(versionId) {
+    const noteEl = $('#dp-wiki-note-' + versionId);
+    const note = (noteEl && noteEl.value || '').trim();
+    const prev = (_wikiView.my_followups || {})[versionId] || {};
+    const data = await api('POST', 'wiki?followup=1', {
+      version_id: Number(versionId), page_id: Number(_wikiView.page.id),
+      status: prev.status || 'following', note,
+    });
+    if (!data) return;
+    toast('메모가 저장되었습니다', 'ok');
+    if (!_wikiView.my_followups) _wikiView.my_followups = {};
+    const wasFollowing = !!_wikiView.my_followups[versionId];
+    _wikiView.my_followups[versionId] = { status: prev.status || 'following', note };
+    const v = (_wikiView.versions || []).find(x => Number(x.id) === Number(versionId));
+    if (v && !wasFollowing) v.follower_count = Number(v.follower_count || 0) + 1;
+    const ctl = $('#dp-wiki-follow-ctl-' + versionId);
+    if (ctl && v) ctl.innerHTML = _wikiFollowCtlHtml(v);
+  }
+
+  async function showWikiDiff() {
+    const fromSel = $('#dp-wiki-diff-from'), toSel = $('#dp-wiki-diff-to'), host = $('#dp-wiki-diff-host');
+    if (!fromSel || !toSel || !host) return;
+    const fromId = Number(fromSel.value), toId = Number(toSel.value);
+    if (fromId === toId) { host.innerHTML = '<div style="color:var(--text-3);font-size:12px;padding:8px 0">같은 버전입니다. 서로 다른 두 버전을 선택하세요.</div>'; return; }
+    host.innerHTML = '<div style="color:var(--text-3);font-size:12px;padding:8px 0">비교 중…</div>';
+    const [a, b] = await Promise.all([
+      _rawApi('GET', 'wiki?version_id=' + fromId),
+      _rawApi('GET', 'wiki?version_id=' + toId),
+    ]);
+    if (!a.ok || !b.ok || !a.data.version || !b.data.version) {
+      host.innerHTML = '<div style="color:var(--alert);font-size:12px;padding:8px 0">버전 내용을 불러오지 못했습니다.</div>';
+      return;
+    }
+    const va = a.data.version, vb = b.data.version;
+    const diffHtml = _wordDiff(_htmlToPlain(va.content), _htmlToPlain(vb.content));
+    host.innerHTML = `
+      <div class="dp-wiki-diff-head">
+        <span>v${va.version_no} → v${vb.version_no}</span>
+        <span class="dp-wiki-diff-legend"><ins class="dp-wiki-ins">＋ 추가</ins> <del class="dp-wiki-del">－ 삭제</del></span>
+      </div>
+      ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}
+      <div class="dp-wiki-diff-body">${diffHtml}</div>`;
+  }
+
+  function _htmlToPlain(html) {
+    const s = String(html || '')
+      .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n');
+    const tmp = document.createElement('div');
+    tmp.innerHTML = s;
+    return (tmp.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  function _wikiTokenize(text) {
+    return String(text || '').split(/(\s+)/).filter(x => x !== '');
+  }
+
+  // Word-level LCS diff → ins/del markup. ins/del are semantic elements so the
+  // change is conveyed beyond color (colorblind / SR safe). Guarded against
+  // pathological size with a fallback to side-by-side text.
+  function _wordDiff(aText, bText) {
+    const a = _wikiTokenize(aText), b = _wikiTokenize(bText);
+    const m = a.length, n = b.length;
+    if (m * n > 3000000) {
+      return `<div class="dp-wiki-diff-fallback">
+        <div class="dp-wiki-diff-col"><div class="dp-wiki-diff-coltitle">이전</div><div>${esc(aText).replace(/\n/g, '<br>')}</div></div>
+        <div class="dp-wiki-diff-col"><div class="dp-wiki-diff-coltitle">현재</div><div>${esc(bText).replace(/\n/g, '<br>')}</div></div>
+      </div><div style="color:var(--text-3);font-size:11px;margin-top:6px">문서가 커서 단어별 하이라이트 대신 좌우 비교로 표시합니다.</div>`;
+    }
+    const dp = Array.from({ length: m + 1 }, () => new Uint32Array(n + 1));
+    for (let i = m - 1; i >= 0; i--) {
+      for (let j = n - 1; j >= 0; j--) {
+        dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+    let i = 0, j = 0; const ops = [];
+    const push = (t, w) => { const last = ops[ops.length - 1]; if (last && last.t === t) last.w += w; else ops.push({ t, w }); };
+    while (i < m && j < n) {
+      if (a[i] === b[j]) { push('eq', b[j]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { push('del', a[i]); i++; }
+      else { push('ins', b[j]); j++; }
+    }
+    while (i < m) push('del', a[i++]);
+    while (j < n) push('ins', b[j++]);
+    return ops.map(o => {
+      const html = esc(o.w).replace(/\n/g, '<br>');
+      if (o.t === 'ins') return `<ins class="dp-wiki-ins">${html}</ins>`;
+      if (o.t === 'del') return `<del class="dp-wiki-del">${html}</del>`;
+      return html;
+    }).join('');
+  }
+
+  // ---- Edit current version / new version ----
+  function editWikiCurrent() {
+    const cur = _wikiView.current, page = _wikiView.page;
+    if (!cur) { toast('현재 버전을 찾을 수 없습니다', 'err'); return; }
+    _wikiUpload = { file: null, sourceType: 'manual' };
+    const toolbar = _renderTiptapToolbar();
+    _openModal('문서 편집 — ' + (page.title || ''), `
+      <div class="dp-field">
+        <label for="dp-wiki-title">제목</label>
+        <input class="dp-input" id="dp-wiki-title" value="${esc(cur.title || page.title || '')}">
+      </div>
+      <div class="dp-field">
+        <label>내용 <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
+        <div class="dp-te-wrapper dp-te-resize">
+          <div class="dp-te-toolbar" role="toolbar" aria-label="Editor">${toolbar}</div>
+          <div class="dp-te-editor" id="dp-tt-wiki"></div>
+        </div>
+      </div>
+      <div class="dp-field" style="margin-bottom:0">
+        <label for="dp-wiki-context">변경 맥락 메모</label>
+        <input class="dp-input" id="dp-wiki-context" value="${esc(cur.change_context || '')}" maxlength="500" placeholder="무엇이 / 왜 바뀌었는지">
+      </div>
+    `,
+    `<button class="dp-btn dp-btn-secondary" onclick="DP.viewWikiPage(${Number(page.id)})">취소</button>
+     <button class="dp-btn dp-btn-secondary" id="dp-wiki-save-btn" onclick="DP.saveWiki()">새 버전으로 저장</button>
+     <button class="dp-btn dp-btn-primary" onclick="DP._saveWikiEdit(${Number(cur.id)}, ${Number(page.id)})">현재 버전 수정</button>`,
+    { wide: true });
+    _waitForTiptap(() => _initTiptap('dp-tt-wiki', cur.content || ''));
+  }
+
+  async function _saveWikiEdit(versionId, pageId) {
+    const title = ($('#dp-wiki-title') && $('#dp-wiki-title').value || '').trim();
+    const changeContext = ($('#dp-wiki-context') && $('#dp-wiki-context').value || '').trim();
+    const content = _getTiptapHTML();
+    if (!title) { toast('제목을 입력하세요', 'err'); return; }
+    if (!content) { toast('내용이 비어 있습니다', 'err'); return; }
+    const data = await api('PUT', 'wiki?version_id=' + Number(versionId), {
+      title, content: _sanitize(content), change_context: changeContext || null,
+    });
+    if (!data) return;
+    toast('현재 버전이 수정되었습니다', 'ok');
+    viewWikiPage(pageId);
+  }
+
+  async function deleteWikiPage(pageId) {
+    if (!confirm('이 문서와 모든 버전·팔로업·댓글이 삭제됩니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+    const data = await api('DELETE', 'wiki?page_id=' + Number(pageId));
+    if (!data) return;
+    toast('문서가 삭제되었습니다', 'ok');
+    _closeModal();
+    if (state.page === 'wiki') navigate('wiki');
+  }
+
+  // ---- Comments (mirror of post comments, keyed by page_id) ----
+  async function _wikiLoadComments(pageId) {
+    const host = $('#dp-wiki-comments-list');
+    if (!host) return;
+    const data = await api('GET', 'wiki-comments?page_id=' + Number(pageId));
+    if (!data) return;
+    const comments = data.comments || [];
+    if (!comments.length) { host.innerHTML = '<div style="color:var(--text-3);font-size:12px">아직 댓글이 없습니다.</div>'; return; }
+    const isAdmin = state.user && state.user.role === 'admin';
+    const byParent = new Map();
+    comments.forEach(c => { const pid = Number(c.parent_id || 0); if (!byParent.has(pid)) byParent.set(pid, []); byParent.get(pid).push(c); });
+    const known = new Set(comments.map(c => Number(c.id)));
+    const roots = comments.filter(c => { const pid = Number(c.parent_id || 0); return !pid || !known.has(pid); });
+    const render = (c, depth) => {
+      const mine = c.author_id === (state.user && state.user.uid);
+      const canDel = isAdmin || mine;
+      const children = byParent.get(Number(c.id)) || [];
+      const d = Math.min(Number(depth || 0), 4);
+      const inset = d ? `margin-left:${Math.min(d * 18, 72)}px;border-left:2px solid var(--g-150);padding-left:10px;` : '';
+      return `
+        <div style="${inset}margin-bottom:6px">
+          <div style="padding:10px 12px;border:var(--bd);border-radius:var(--r-sm);background:var(--g-050)">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-size:11px;color:var(--text-3);margin-bottom:4px">
+              <span><strong style="color:var(--text-2);font-weight:500">${esc(c.author_name || 'Anon')}</strong>
+                    <span class="mono" style="margin-left:6px">${esc(fmtTime(c.created_at))}</span></span>
+              <span style="display:inline-flex;gap:4px">
+                <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px" onclick="DP._wikiShowReply(${Number(pageId)}, ${Number(c.id)})">답글</button>
+                ${canDel ? `<button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" style="padding:0 6px;font-size:11px" onclick="DP._wikiDeleteComment(${Number(c.id)}, ${Number(pageId)})">삭제</button>` : ''}
+              </span>
+            </div>
+            <div style="font-size:var(--fs-13);color:var(--text);white-space:pre-wrap">${esc(c.content || '')}</div>
+            <div id="dp-wiki-reply-slot-${Number(c.id)}"></div>
+          </div>
+          ${children.map(ch => render(ch, d + 1)).join('')}
+        </div>`;
+    };
+    host.innerHTML = roots.map(c => render(c, 0)).join('');
+  }
+
+  function _wikiShowReply(pageId, parentId) {
+    const slot = $('#dp-wiki-reply-slot-' + Number(parentId));
+    if (!slot) return;
+    slot.innerHTML = `
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end">
+        <textarea class="dp-textarea" id="dp-wiki-reply-input-${Number(parentId)}" placeholder="답글…" style="min-height:58px;flex:1"></textarea>
+        <button class="dp-btn dp-btn-primary" onclick="DP.addWikiComment(${Number(pageId)}, ${Number(parentId)})">답글</button>
+        <button class="dp-btn dp-btn-ghost" onclick="DP._wikiCancelReply(${Number(parentId)})">취소</button>
+      </div>`;
+    const inp = $('#dp-wiki-reply-input-' + Number(parentId));
+    if (inp) inp.focus();
+  }
+
+  function _wikiCancelReply(parentId) {
+    const slot = $('#dp-wiki-reply-slot-' + Number(parentId));
+    if (slot) slot.innerHTML = '';
+  }
+
+  async function addWikiComment(pageId, parentId) {
+    const pid = Number(parentId || 0);
+    const input = pid ? $('#dp-wiki-reply-input-' + pid) : $('#dp-wiki-comment-input');
+    const content = (input && input.value || '').trim();
+    if (!content) { toast('댓글을 입력하세요', 'err'); return; }
+    const payload = { page_id: Number(pageId), content };
+    if (pid) payload.parent_id = pid;
+    const data = await api('POST', 'wiki-comments', payload);
+    if (data) {
+      if (input) input.value = '';
+      if (pid) _wikiCancelReply(pid);
+      _wikiLoadComments(Number(pageId));
+    }
+  }
+
+  async function _wikiDeleteComment(id, pageId) {
+    if (!confirm('이 댓글을 삭제할까요?')) return;
+    const data = await api('DELETE', 'wiki-comments?id=' + Number(id));
+    if (data) _wikiLoadComments(Number(pageId));
+  }
+
   // -------------------------- Public API --------------------------
   return {
     init, login, logout, navigate, toggleSide,
@@ -7325,6 +7894,9 @@ const DP = (() => {
     _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,
+    openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter,
+    showWikiDiff, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
+    deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
   };
 })();
 
