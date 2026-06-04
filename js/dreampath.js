@@ -7355,6 +7355,7 @@ const DP = (() => {
             <span class="dp-wiki-srctag">${_wikiSrcLabel(p.latest_source_type)}</span>
             ${Number(p.version_count) > 1 ? `<span>· ${Number(p.version_count)}개 버전</span>` : ''}
             ${p.category ? `<span>· ${esc(p.category)}</span>` : ''}
+            ${(() => { const b = _wikiReviewBadge(p.review_due); return b ? `<span class="dp-tag ${b.cls}">${esc(b.text)}</span>` : ''; })()}
           </div>
         </div>
         <div class="dp-wiki-card-side">
@@ -7461,9 +7462,13 @@ const DP = (() => {
             <div class="dp-te-editor" id="dp-tt-wiki"></div>
           </div>
         </div>
-        <div class="dp-field" style="margin-bottom:0">
+        <div class="dp-field">
           <label for="dp-wiki-context">변경 맥락 메모 <span style="color:var(--text-3);font-weight:400">— 무엇이 / 왜 바뀌었는지</span></label>
           <input class="dp-input" id="dp-wiki-context" placeholder="예: 4장 예산 표 갱신, 승인 절차 문구 수정" maxlength="500">
+        </div>
+        <div class="dp-field" style="margin-bottom:0">
+          <label for="dp-wiki-review">다음 검토일 <span style="color:var(--text-3);font-weight:400">— 주기적 갱신이 필요한 문서면 지정 (선택)</span></label>
+          <input type="date" class="dp-input" id="dp-wiki-review" style="width:auto">
         </div>
       </details>
     `,
@@ -7582,6 +7587,8 @@ const DP = (() => {
     if (sourceFile) payload.source_file = sourceFile;
     const attachSel = $('#dp-wiki-attach');
     if (attachSel && attachSel.value) payload.attach_page_id = Number(attachSel.value);
+    const reviewEl = $('#dp-wiki-review');
+    if (reviewEl && reviewEl.value) payload.review_due = reviewEl.value;
     const data = await api('POST', 'wiki', payload);
     if (btn) { btn.disabled = false; btn.textContent = '저장'; }
     if (!data) return;
@@ -7782,6 +7789,53 @@ const DP = (() => {
     _renderWikiDetail();
   }
 
+  // Review-cycle badge from a page's next-review date (YYYY-MM-DD). ISO strings
+  // compare lexicographically, so string compare with today is safe.
+  function _wikiReviewBadge(due) {
+    if (!due) return null;
+    const today = todayISO();
+    if (due < today) return { cls: 'alert', text: '검토 기한 초과 · ' + due };
+    const d = _toDate(due), now = _toDate(today);
+    const days = (d && now) ? Math.round((d - now) / 86400000) : 999;
+    if (days <= 14) return { cls: 'warn', text: '검토 임박 · ' + due + ' (D-' + days + ')' };
+    return { cls: 'neutral', text: '검토 예정 · ' + due };
+  }
+
+  function _renderWikiReviewRow() {
+    const host = $('#dp-wiki-review-row');
+    if (!host) return;
+    const page = _wikiView.page;
+    const canWrite = _hasPerm('write:wiki');
+    const b = _wikiReviewBadge(page.review_due);
+    const badge = b
+      ? `<span class="dp-tag ${b.cls}">${esc(b.text)}</span>`
+      : `<span style="color:var(--text-3);font-size:var(--fs-12)">검토일 미설정</span>`;
+    host.innerHTML = `<span style="font-size:var(--fs-12);color:var(--text-3)">📅 검토주기</span>
+      ${badge}
+      ${canWrite ? `<button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._wikiEditReview()">${page.review_due ? '변경' : '설정'}</button>` : ''}`;
+  }
+
+  function _wikiEditReview() {
+    const host = $('#dp-wiki-review-row');
+    if (!host) return;
+    const cur = _wikiView.page.review_due || '';
+    host.innerHTML = `<span style="font-size:var(--fs-12);color:var(--text-3)">📅 다음 검토일</span>
+      <input type="date" class="dp-input dp-input-sm" id="dp-wiki-review-input" value="${esc(cur)}" style="width:auto">
+      <button class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._wikiSaveReview(false)">저장</button>
+      ${cur ? `<button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._wikiSaveReview(true)">해제</button>` : ''}
+      <button class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._renderWikiReviewRow()">취소</button>`;
+  }
+
+  async function _wikiSaveReview(clear) {
+    const input = $('#dp-wiki-review-input');
+    const val = clear ? '' : (input && input.value || '');
+    const data = await api('POST', 'wiki?set_review=1', { page_id: Number(_wikiView.page.id), review_due: val || null });
+    if (!data) return;
+    _wikiView.page.review_due = data.review_due || null;
+    _renderWikiReviewRow();
+    toast(data.review_due ? '검토일이 설정되었습니다' : '검토일이 해제되었습니다', 'ok');
+  }
+
   function _wikiFollowCtlHtml(v) {
     const f = (_wikiView.my_followups || {})[v.id];
     const following = !!f;
@@ -7838,6 +7892,7 @@ const DP = (() => {
         ${current ? `<span>by <strong style="color:var(--text-2)">${esc(current.uploaded_by_name || '')}</strong></span><span>·</span><span class="mono">${esc(fmtTime(current.created_at))}</span>` : ''}
         ${current && current.source_file_url ? `<a class="dp-btn dp-btn-secondary dp-btn-sm" style="margin-left:auto;text-decoration:none;padding:0 10px" href="${esc(current.source_file_url)}" target="_blank" rel="noopener" download="${esc(current.source_file_name || '')}">원본 다운로드</a>` : ''}
       </div>
+      <div id="dp-wiki-review-row" class="dp-wiki-review-row"></div>
       ${modeSeg}
       <div id="dp-wiki-main"></div>
 
@@ -7862,6 +7917,7 @@ const DP = (() => {
       { wide: true, bodyClass: 'dp-post-view' }
     );
 
+    _renderWikiReviewRow();
     _renderWikiMain();
     _wikiLoadComments(Number(page.id));
   }
@@ -8423,6 +8479,7 @@ const DP = (() => {
     showWikiDiff, _wikiToggleDiffMode, _wikiSetDiffView, _wikiSetDetailMode,
     _wikiEditDiffNote, _wikiSaveDiffNote, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
+    _wikiEditReview, _wikiSaveReview, _renderWikiReviewRow,
     openWikiCompareTable, _wikiCompareExtract, _wikiCompareCols, _wikiSaveCompareAsVersion,
   };
 })();

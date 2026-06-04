@@ -102,6 +102,7 @@ async function _ensureTables(env) {
       title TEXT NOT NULL,
       category TEXT,
       current_version INTEGER NOT NULL DEFAULT 1,
+      review_due TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       created_by_id INTEGER,
@@ -205,7 +206,7 @@ export async function onRequestGet({ request, env, data }) {
   // Page list — latest-version metadata, no content bodies.
   if (list) {
     const rows = await env.DB.prepare(
-      `SELECT p.id, p.slug, p.title, p.category, p.current_version, p.created_at, p.updated_at,
+      `SELECT p.id, p.slug, p.title, p.category, p.current_version, p.review_due, p.created_at, p.updated_at,
               p.created_by_name,
               (SELECT COUNT(*) FROM dp_wiki_versions v WHERE v.page_id = p.id) AS version_count,
               (SELECT source_type FROM dp_wiki_versions v WHERE v.page_id = p.id ORDER BY v.version_no DESC LIMIT 1) AS latest_source_type,
@@ -293,6 +294,20 @@ export async function onRequestPost({ request, env, data }) {
     return json({ ok: true });
   }
 
+  // Set/clear a page's next-review date (write:wiki). Standalone so the date
+  // can be changed without uploading a new version.
+  if (url.searchParams.get('set_review')) {
+    const denied = requirePerm(data, 'write:wiki');
+    if (denied) return denied;
+    const body = await request.json().catch(() => ({}));
+    const pageId = parseInt(body.page_id, 10);
+    if (!pageId) return json({ error: 'page_id is required.' }, 400);
+    const reviewDue = body.review_due ? String(body.review_due).slice(0, 10) : null;
+    await env.DB.prepare(`UPDATE dp_wiki_pages SET review_due = ?, updated_at = datetime('now') WHERE id = ?`)
+      .bind(reviewDue, pageId).run();
+    return json({ ok: true, review_due: reviewDue });
+  }
+
   // Follow-up / personal memo upsert — only needs view:wiki (you can follow
   // anything you can read).
   if (url.searchParams.get('followup')) {
@@ -341,6 +356,7 @@ export async function onRequestPost({ request, env, data }) {
   const sourceName = sourceFile.name ? String(sourceFile.name) : null;
   const changeContext = body.change_context != null ? String(body.change_context).slice(0, 4000) : null;
   const category = body.category != null ? String(body.category).slice(0, 120) : null;
+  const reviewDue = body.review_due ? String(body.review_due).slice(0, 10) : null;
   const charCount = content.replace(/<[^>]*>/g, '').length;
   const uid = data.dpUser && data.dpUser.uid;
   const uname = _uploaderName(data.dpUser);
@@ -369,15 +385,15 @@ export async function onRequestPost({ request, env, data }) {
            changeContext, charCount, uid, uname).run();
     await env.DB.prepare(
       `UPDATE dp_wiki_pages SET current_version = ?, category = COALESCE(?, category),
-              updated_at = datetime('now') WHERE id = ?`
-    ).bind(nextVer, category, existing.id).run();
+              review_due = COALESCE(?, review_due), updated_at = datetime('now') WHERE id = ?`
+    ).bind(nextVer, category, reviewDue, existing.id).run();
     return json({ ok: true, page_id: existing.id, version_id: ins.meta.last_row_id, version_no: nextVer, is_new_page: false, attached_to: existing.title });
   }
 
   const pageIns = await env.DB.prepare(
-    `INSERT INTO dp_wiki_pages (slug, title, category, current_version, created_by_id, created_by_name)
-     VALUES (?, ?, ?, 1, ?, ?)`
-  ).bind(slug, baseTitle, category, uid, uname).run();
+    `INSERT INTO dp_wiki_pages (slug, title, category, current_version, review_due, created_by_id, created_by_name)
+     VALUES (?, ?, ?, 1, ?, ?, ?)`
+  ).bind(slug, baseTitle, category, reviewDue, uid, uname).run();
   const pageId = pageIns.meta.last_row_id;
   const verIns = await env.DB.prepare(
     `INSERT INTO dp_wiki_versions
