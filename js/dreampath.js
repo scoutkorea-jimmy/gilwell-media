@@ -7368,9 +7368,51 @@ const DP = (() => {
   }
 
   // ---- Upload + browser-side extraction ----
-  function openWikiUpload(prefill) {
+  // Client mirror of the server's base-title logic (wiki.js _baseTokens/_slug)
+  // so we can show, before upload, which page a file will attach to.
+  function _wikiIsVerMarker(tok) {
+    return /^v\d+(\.\d+)*(draft|final|rev\d*)?$/i.test(tok)
+        || /^\d+(\.\d+)+$/.test(tok)
+        || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok);
+  }
+  function _wikiClientSlug(title) {
+    const toks = String(title || '').trim().split(/[\s_\-]+/).filter(Boolean);
+    let end = toks.length;
+    while (end > 1 && _wikiIsVerMarker(toks[end - 1])) end--;
+    return toks.slice(0, end).join('-').toLowerCase().replace(/["'<>`\\/]/g, '').slice(0, 200);
+  }
+  function _wikiAttachHint() {
+    const hint = $('#dp-wiki-attach-hint');
+    if (!hint) return;
+    const sel = $('#dp-wiki-attach');
+    if (sel && sel.value) {
+      const p = _wikiPages.find(x => Number(x.id) === Number(sel.value));
+      hint.textContent = p ? `→ “${p.title}” 문서에 새 버전으로 연결됩니다` : '';
+      hint.style.color = 'var(--accent)';
+      return;
+    }
+    const title = ($('#dp-wiki-title') && $('#dp-wiki-title').value || '').trim();
+    if (!title) { hint.textContent = ''; return; }
+    const slug = _wikiClientSlug(title);
+    const match = _wikiPages.find(p => p.slug === slug);
+    if (match) {
+      hint.textContent = `→ 기존 “${match.title}”의 새 버전으로 기록됩니다 (v${Number(match.current_version) + 1})`;
+      hint.style.color = 'var(--accent)';
+    } else {
+      hint.textContent = '→ 새 문서로 생성됩니다';
+      hint.style.color = 'var(--text-3)';
+    }
+  }
+
+  async function openWikiUpload(prefill) {
     _wikiUpload = { file: null, sourceType: 'manual' };
+    if (!_wikiPages.length) {
+      const d = await api('GET', 'wiki?list=1');
+      if (d) _wikiPages = d.pages || [];
+    }
     const toolbar = _renderTiptapToolbar();
+    const attachOpts = `<option value="">자동 (제목으로 판단)</option>` +
+      _wikiPages.map(p => `<option value="${Number(p.id)}">${esc(p.title)} (현재 v${Number(p.current_version)})</option>`).join('');
     _openModal('새 문서 추가 / 새 버전 업로드', `
       <div class="dp-field">
         <label>문서 파일 (PDF 또는 DOCX) <span style="color:var(--text-3);font-weight:400">— 선택하면 자동으로 본문을 추출합니다</span></label>
@@ -7385,8 +7427,13 @@ const DP = (() => {
         </div>
       </div>
       <div class="dp-field">
-        <label for="dp-wiki-title">제목 <span style="color:var(--text-3);font-weight:400">— 같은 제목으로 올리면 새 버전으로 기록됩니다</span></label>
-        <input class="dp-input" id="dp-wiki-title" value="${esc(prefill || '')}" placeholder="문서 제목">
+        <label for="dp-wiki-title">제목 <span style="color:var(--text-3);font-weight:400">— 파일명 뒤 버전(v1.2·DRAFT 등)은 자동으로 같은 문서로 묶입니다</span></label>
+        <input class="dp-input" id="dp-wiki-title" value="${esc(prefill || '')}" placeholder="문서 제목" oninput="DP._wikiAttachHint()">
+      </div>
+      <div class="dp-field">
+        <label for="dp-wiki-attach">기존 문서에 연결 <span style="color:var(--text-3);font-weight:400">— 자동 판단이 안 맞으면 직접 고르세요</span></label>
+        <select class="dp-input" id="dp-wiki-attach" onchange="DP._wikiAttachHint()">${attachOpts}</select>
+        <div id="dp-wiki-attach-hint" aria-live="polite" style="margin-top:6px;font-size:12px;color:var(--text-3)"></div>
       </div>
       <div class="dp-field">
         <label>내용 <span id="dp-te-charcount" class="mono" style="float:right;font-size:11px;color:var(--text-3)">0 / 50,000</span></label>
@@ -7419,6 +7466,7 @@ const DP = (() => {
     _wikiUpload.sourceType = isDocx ? 'docx' : 'pdf';
     const titleEl = $('#dp-wiki-title');
     if (titleEl && !titleEl.value.trim()) titleEl.value = name.replace(/\.(docx|pdf)$/i, '');
+    _wikiAttachHint();
     const statusEl = $('#dp-wiki-extract-status');
     if (statusEl) statusEl.textContent = '추출 중… (' + name + ')';
     try {
@@ -7492,6 +7540,8 @@ const DP = (() => {
     }
     const payload = { title, content: _sanitize(content), source_type: sourceType, change_context: changeContext || null };
     if (sourceFile) payload.source_file = sourceFile;
+    const attachSel = $('#dp-wiki-attach');
+    if (attachSel && attachSel.value) payload.attach_page_id = Number(attachSel.value);
     const data = await api('POST', 'wiki', payload);
     if (btn) { btn.disabled = false; btn.textContent = '저장'; }
     if (!data) return;
@@ -7565,6 +7615,7 @@ const DP = (() => {
           <span class="dp-wiki-srctag">${_wikiSrcLabel(v.source_type)}</span>
           ${v.source_file_url ? `<a class="dp-btn dp-btn-ghost dp-btn-sm" href="${esc(v.source_file_url)}" target="_blank" rel="noopener" download="${esc(v.source_file_name || '')}">원본</a>` : ''}
         </div>
+        ${v.title && v.title !== page.title ? `<div class="dp-wiki-ver-name" title="이 버전의 원본 제목">📄 ${esc(v.title)}</div>` : ''}
         ${v.change_context ? `<div class="dp-wiki-ver-ctx"><span aria-hidden="true">✎</span> ${esc(v.change_context)}</div>` : ''}
         <div id="dp-wiki-follow-ctl-${Number(v.id)}">${_wikiFollowCtlHtml(v)}</div>
       </div>
@@ -7894,7 +7945,7 @@ const DP = (() => {
     _openBoardManager, _openBoardEditor, _saveNewBoard, _deleteBoard,
     _openDepartmentEditor, _saveDepartment, _deleteDepartment,
     _scrollToRule, _scrollToAnchor,
-    openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter,
+    openWikiUpload, _wikiExtractFile, saveWiki, viewWikiPage, _wikiFilter, _wikiAttachHint,
     showWikiDiff, toggleWikiFollow, saveWikiNote, editWikiCurrent, _saveWikiEdit,
     deleteWikiPage, addWikiComment, _wikiShowReply, _wikiCancelReply, _wikiDeleteComment,
   };

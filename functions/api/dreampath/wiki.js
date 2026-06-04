@@ -39,16 +39,40 @@ function json(data, status = 200) {
 // digits, hyphens and Korean syllables are preserved.
 const SLUG_STRIP = /["'<>`\\/]/g;
 
-// Normalize a title into a stable identity slug. Lowercase + collapse
-// whitespace to single hyphens. Unicode (incl. Korean) is preserved — Korean
-// has no case folding so this is stable for mixed KO/EN titles.
+// [CASE STUDY 2026-06-04 — version suffixes split one document into many]
+//   "CUFS_..._v1.2_DRAFT" and "CUFS_..._v1.0_DRAFT" were creating two separate
+//   wiki pages because the slug kept the version/draft suffix. The fix: a page
+//   is identified by its BASE title — trailing version/draft markers are
+//   stripped before slugging, so v1.0 / v1.2 / final / rev3 of the same doc
+//   all map to one page. Only TRAILING markers are removed (so "Budget 2026"
+//   vs "Budget 2025" stay distinct — a bare year is NOT a marker). A bare
+//   integer is also kept; only dotted numbers (1.2) and v-prefixed tokens are
+//   treated as versions. Ref: DREAMPATH-HISTORY.md 2026-06-04 case 3.
+function _isVersionMarker(tok) {
+  return /^v\d+(\.\d+)*(draft|final|rev\d*)?$/i.test(tok)         // v1, v1.2, v2final
+      || /^\d+(\.\d+)+$/.test(tok)                                // 1.2, 1.0 (dotted)
+      || /^(v|ver|version|draft|final|fin|copy|wip|rev\d*|r\d+)$/i.test(tok); // words
+}
+
+// Split a title on separators and drop trailing version/draft markers. Always
+// keeps at least the first token so a doc literally named "v1.2" survives.
+function _baseTokens(title) {
+  const toks = String(title || '').trim().split(/[\s_\-]+/).filter(Boolean);
+  let end = toks.length;
+  while (end > 1 && _isVersionMarker(toks[end - 1])) end--;
+  return toks.slice(0, end);
+}
+
+// Human-readable base title (display) — markers stripped, spaces between tokens.
+function _baseTitle(title) {
+  const t = _baseTokens(title);
+  return t.length ? t.join(' ') : String(title || '').trim();
+}
+
+// Stable identity slug = base tokens, lowercased + hyphen-joined. Same base →
+// same slug → same page (new version), regardless of version suffix.
 function _slug(title) {
-  return String(title || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(SLUG_STRIP, '')
-    .slice(0, 200);
+  return (_baseTokens(title).join('-').toLowerCase().replace(SLUG_STRIP, '').slice(0, 200)) || 'doc';
 }
 
 // CREATE TABLE IF NOT EXISTS guard (auth.js pattern). The canonical schema is
@@ -230,6 +254,7 @@ export async function onRequestPost({ request, env, data }) {
   if (!content) return json({ error: 'Content is empty — nothing to save.' }, 400);
 
   const slug = _slug(title);
+  const baseTitle = _baseTitle(title);
   const sourceType = ['pdf', 'docx', 'manual'].includes(body.source_type) ? body.source_type : 'manual';
   const sourceFile = body.source_file || {};
   const sourceUrl = sourceFile.url ? String(sourceFile.url) : null;
@@ -240,10 +265,21 @@ export async function onRequestPost({ request, env, data }) {
   const uid = data.dpUser && data.dpUser.uid;
   const uname = _uploaderName(data.dpUser);
 
-  const existing = await env.DB.prepare(`SELECT * FROM dp_wiki_pages WHERE slug = ?`).bind(slug).first();
+  // Identity resolution: an explicit attach_page_id wins (manual "this is a new
+  // version of X"); otherwise group by base slug (version suffix stripped).
+  const attachId = parseInt(body.attach_page_id, 10);
+  let existing = null;
+  if (attachId) {
+    existing = await env.DB.prepare(`SELECT * FROM dp_wiki_pages WHERE id = ?`).bind(attachId).first();
+    if (!existing) return json({ error: '연결할 문서를 찾을 수 없습니다.' }, 404);
+  } else {
+    existing = await env.DB.prepare(`SELECT * FROM dp_wiki_pages WHERE slug = ?`).bind(slug).first();
+  }
 
   if (existing) {
     const nextVer = Number(existing.current_version || 0) + 1;
+    // version.title keeps the FULL uploaded name (e.g. "..._v1.2_DRAFT") so the
+    // timeline shows where each version came from; page.title stays the base.
     const ins = await env.DB.prepare(
       `INSERT INTO dp_wiki_versions
          (page_id, version_no, title, content, source_type, source_file_url, source_file_name,
@@ -252,16 +288,16 @@ export async function onRequestPost({ request, env, data }) {
     ).bind(existing.id, nextVer, title, content, sourceType, sourceUrl, sourceName,
            changeContext, charCount, uid, uname).run();
     await env.DB.prepare(
-      `UPDATE dp_wiki_pages SET current_version = ?, title = ?, category = COALESCE(?, category),
+      `UPDATE dp_wiki_pages SET current_version = ?, category = COALESCE(?, category),
               updated_at = datetime('now') WHERE id = ?`
-    ).bind(nextVer, title, category, existing.id).run();
-    return json({ ok: true, page_id: existing.id, version_id: ins.meta.last_row_id, version_no: nextVer, is_new_page: false });
+    ).bind(nextVer, category, existing.id).run();
+    return json({ ok: true, page_id: existing.id, version_id: ins.meta.last_row_id, version_no: nextVer, is_new_page: false, attached_to: existing.title });
   }
 
   const pageIns = await env.DB.prepare(
     `INSERT INTO dp_wiki_pages (slug, title, category, current_version, created_by_id, created_by_name)
      VALUES (?, ?, ?, 1, ?, ?)`
-  ).bind(slug, title, category, uid, uname).run();
+  ).bind(slug, baseTitle, category, uid, uname).run();
   const pageId = pageIns.meta.last_row_id;
   const verIns = await env.DB.prepare(
     `INSERT INTO dp_wiki_versions
