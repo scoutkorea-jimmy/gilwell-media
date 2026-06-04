@@ -1940,11 +1940,16 @@ del.dp-wiki-del {
 .dp-wiki-diff-splithdr span { flex: 1; padding: 4px 10px; }
 .dp-wiki-diff-splithdr span:first-child { color: var(--alert); }
 .dp-wiki-diff-splithdr span:last-child { color: var(--ok); }
-.dp-diff-split { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.dp-diff-split td { width: 50%; vertical-align: top; padding: 7px 10px; border: 1px solid var(--g-150); white-space: pre-wrap; line-height: 1.7; font-size: var(--fs-13); color: var(--text); word-break: break-word; }
+.dp-diff-split { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 10px; }
+.dp-diff-split td { vertical-align: top; padding: 7px 10px; border: 1px solid var(--g-150); white-space: pre-wrap; line-height: 1.7; font-size: var(--fs-13); color: var(--text); word-break: break-word; }
+.dp-diff-split thead th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 6px 10px; border: 1px solid var(--g-150); font-size: var(--fs-11); font-weight: 700; background: var(--surface-2); }
+.dp-diff-split thead th:nth-child(1) { color: var(--alert); }
+.dp-diff-split thead th:nth-child(2) { color: var(--ok); }
+.dp-diff-split thead th:nth-child(3) { color: var(--text-2); }
 .dp-sx-old { background: var(--alert-bg); border-left: 3px solid var(--alert) !important; }
 .dp-sx-new { background: var(--ok-bg); border-left: 3px solid var(--ok) !important; }
 .dp-sx-empty { background: var(--g-050); }
+.dp-sx-reason { background: var(--surface); }
 .dp-sx-eq td { color: var(--text-3); }
 .dp-sx-eqc td { text-align: center; color: var(--text-3); font-size: var(--fs-11); padding: 6px; background: var(--surface-2); }
 /* per-change 변경 사유 memo rows */

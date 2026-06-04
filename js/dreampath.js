@@ -8036,12 +8036,12 @@ const DP = (() => {
     const { aText, bText, va, vb } = _wikiDiffCache;
     _wikiDiffRowMap = {};   // rebuilt by the renderer as it emits memo blocks
     const d = _docDiffRows(aText, bText);
-    const body = _wikiDiffView === 'inline'
-      ? _renderDiffInline(d.rows, _wikiDiffChangesOnly)
-      : _renderDiffSplit(d.rows, _wikiDiffChangesOnly);
     const seg = (v, label) => `<button type="button" class="dp-diff-seg${_wikiDiffView === v ? ' on' : ''}" onclick="DP._wikiSetDiffView('${v}')">${label}</button>`;
     const labA = esc(va.version_label || ('v' + va.version_no));
     const labB = esc(vb.version_label || ('v' + vb.version_no));
+    const body = _wikiDiffView === 'inline'
+      ? _renderDiffInline(d.rows, _wikiDiffChangesOnly)
+      : _renderDiffSplit(d.rows, _wikiDiffChangesOnly, labA, labB);
     host.innerHTML = `
       <div class="dp-wiki-diff-head">
         <span>${labA} → ${labB}</span>
@@ -8053,8 +8053,7 @@ const DP = (() => {
         <span class="dp-diff-segwrap">${seg('split', '좌우 비교')}${seg('inline', '인라인')}</span>
         <label class="dp-wiki-diff-toggle"><input type="checkbox" ${_wikiDiffChangesOnly ? 'checked' : ''} onchange="DP._wikiToggleDiffMode()"> 변경된 부분만</label>
       </div>
-      ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}
-      ${_wikiDiffView === 'split' ? `<div class="dp-wiki-diff-splithdr"><span>현행 · ${labA}</span><span>개정 · ${labB}</span></div>` : ''}
+      ${vb.change_context ? `<div class="dp-wiki-diff-ctx"><strong>버전 변경 맥락:</strong> ${esc(vb.change_context)}</div>` : ''}
       <div class="dp-wiki-diff-body">${body}</div>`;
   }
 
@@ -8119,33 +8118,41 @@ const DP = (() => {
     return out.join('') || '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
   }
 
-  // Side-by-side (현행 | 개정). Aligns old↔new per row; changed words are marked
-  // within each cell (deletions left, additions right) — clean, like a 신구대조표.
-  function _renderDiffSplit(rows, changesOnly) {
+  // 3-column 신구대조표 layout: 기존 | 변경 | 변경 사유. Old↔new aligned per row,
+  // changed words marked within each cell; the per-change memo lives in the 3rd
+  // column of the SAME row (not a separate row underneath).
+  function _renderDiffSplit(rows, changesOnly, labA, labB) {
     const out = []; let eqRun = [];
     const flush = () => {
       if (!eqRun.length) return;
-      if (changesOnly) out.push(`<tr class="dp-sx-eqc"><td colspan="2">⋯ 동일 ${eqRun.length}문단 ⋯</td></tr>`);
-      else eqRun.forEach(t => out.push(`<tr class="dp-sx-eq"><td>${esc(t)}</td><td>${esc(t)}</td></tr>`));
+      if (changesOnly) out.push(`<tr class="dp-sx-eqc"><td colspan="3">⋯ 동일 ${eqRun.length}문단 ⋯</td></tr>`);
+      else eqRun.forEach(t => out.push(`<tr class="dp-sx-eq"><td>${esc(t)}</td><td>${esc(t)}</td><td></td></tr>`));
       eqRun = [];
     };
     rows.forEach(r => {
       if (r.t === 'eq') { eqRun.push(r.text); return; }
       flush();
       const key = _wikiRowKey(r.a || '', r.b || '');
+      let oldCell, newCell;
       if (r.t === 'mod') {
         const s = _wordDiffSides(r.a, r.b);
-        out.push(`<tr class="dp-sx-mod"><td class="dp-sx-old">${s.left}</td><td class="dp-sx-new">${s.right}</td></tr>`);
+        oldCell = `<td class="dp-sx-old">${s.left}</td>`;
+        newCell = `<td class="dp-sx-new">${s.right}</td>`;
       } else if (r.t === 'del') {
-        out.push(`<tr class="dp-sx-del"><td class="dp-sx-old">${esc(r.a)}</td><td class="dp-sx-empty"></td></tr>`);
+        oldCell = `<td class="dp-sx-old">${esc(r.a)}</td>`;
+        newCell = `<td class="dp-sx-empty"></td>`;
       } else {
-        out.push(`<tr class="dp-sx-ins"><td class="dp-sx-empty"></td><td class="dp-sx-new">${esc(r.b)}</td></tr>`);
+        oldCell = `<td class="dp-sx-empty"></td>`;
+        newCell = `<td class="dp-sx-new">${esc(r.b)}</td>`;
       }
-      out.push(`<tr class="dp-sx-noterow"><td colspan="2">${_diffNoteHtml(key, r.a || '', r.b || '')}</td></tr>`);
+      out.push(`<tr class="dp-sx-${r.t}">${oldCell}${newCell}<td class="dp-sx-reason">${_diffNoteHtml(key, r.a || '', r.b || '')}</td></tr>`);
     });
     flush();
     if (!out.length) return '<div class="dp-diff-none">두 버전의 텍스트 차이가 없습니다.</div>';
-    return `<table class="dp-diff-split"><tbody>${out.join('')}</tbody></table>`;
+    return `<table class="dp-diff-split">
+      <colgroup><col style="width:37%"><col style="width:37%"><col style="width:26%"></colgroup>
+      <thead><tr><th>기존 · ${labA || ''}</th><th>변경 · ${labB || ''}</th><th>변경 사유</th></tr></thead>
+      <tbody>${out.join('')}</tbody></table>`;
   }
 
   // Word LCS → separate left(old, deletions marked) / right(new, additions
