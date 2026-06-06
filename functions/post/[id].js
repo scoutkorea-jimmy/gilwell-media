@@ -233,15 +233,15 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260603142941">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260603142941">
+  <link rel="stylesheet" href="/css/style.css?v=20260606024952">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260606024952">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
 
   <div class="post-mobile-header" aria-label="기사 페이지 모바일 상단">
     <div class="post-mobile-header-bar">
-      <a href="javascript:history.back()" class="post-mobile-back" aria-label="뒤로가기">←</a>
+      <a href="/${post.category}" data-action="history-back" class="post-mobile-back" aria-label="뒤로가기">←</a>
       <a href="/" class="post-mobile-brand" aria-label="BP미디어 홈으로 이동">
         <img src="/img/logo.svg" alt="" class="post-mobile-brand-mark" aria-hidden="true">
         <span class="post-mobile-brand-text">BP미디어</span>
@@ -320,7 +320,7 @@ export async function onRequestGet({ params, env, request }) {
       <div class="post-page-main">
 
         <div class="post-page-back">
-          <a href="javascript:history.back()" class="post-page-back-link">← 뒤로가기</a>
+          <a href="/${post.category}" data-action="history-back" class="post-page-back-link">← 뒤로가기</a>
           <a href="/${post.category}" class="post-page-back-link" style="margin-left:16px;">
             <span style="display:inline-block;background:${cat.color};color:#fff;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border-radius:var(--radius-tight);font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;">${cat.label}</span>
           </a>
@@ -418,7 +418,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.170.01</span> · Admin <span class="admin-build-version">V03.143.07</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.170.02</span> · Admin <span class="admin-build-version">V03.143.07</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -619,10 +619,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260603142941"></script>
-  <script src="/js/site-chrome.js?v=20260603142941"></script>
-  <script src="/js/chatbot.js?v=20260603142941" defer></script>
-  <script src="/js/post-page.js?v=20260603142941"></script>
+  <script src="/js/main.js?v=20260606024952"></script>
+  <script src="/js/site-chrome.js?v=20260606024952"></script>
+  <script src="/js/chatbot.js?v=20260606024952" defer></script>
+  <script src="/js/post-page.js?v=20260606024952"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

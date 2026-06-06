@@ -448,6 +448,16 @@
     }
     GW._navDropdownsBound = true;
 
+    // ≤900px 에서 드롭다운이 열리면 부모 .nav 의 overflow 클리핑 때문에 패널이
+    // 박스 안에 갇혀 스크롤해야 보인다. 열린 그룹 유무에 따라 is-panel-open 을
+    // 토글해 CSS 에서 overflow:visible 로 풀어준다.
+    function syncNavPanelState() {
+      var anyOpen = !!document.querySelector('.nav-group.is-open');
+      document.querySelectorAll('.nav.nav-grouped').forEach(function (nav) {
+        nav.classList.toggle('is-panel-open', anyOpen);
+      });
+    }
+
     function closeAllExcept(skipGroup) {
       document.querySelectorAll('.nav-group.is-open').forEach(function (g) {
         if (g === skipGroup) return;
@@ -455,6 +465,7 @@
         var trig = g.querySelector('.nav-group-trigger');
         if (trig) trig.setAttribute('aria-expanded', 'false');
       });
+      syncNavPanelState();
     }
 
     // 클릭 토글
@@ -469,6 +480,7 @@
         closeAllExcept(willOpen ? group : null);
         group.classList.toggle('is-open', willOpen);
         trig.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        syncNavPanelState();
         return;
       }
       // outside click → 모두 닫기
@@ -493,6 +505,7 @@
             group.classList.add('is-open');
             var trig = group.querySelector('.nav-group-trigger');
             if (trig) trig.setAttribute('aria-expanded', 'true');
+            syncNavPanelState();
           }
         }
       });
@@ -505,6 +518,7 @@
               g.classList.remove('is-open');
               var trig = g.querySelector('.nav-group-trigger');
               if (trig) trig.setAttribute('aria-expanded', 'false');
+              syncNavPanelState();
             }
           }, 150);
         });
@@ -926,6 +940,20 @@
         event.preventDefault();
         var lang = String(langBtn.getAttribute('data-lang-toggle') || '').trim();
         if (lang === 'ko' || lang === 'en') GW.setLang(lang);
+        return;
+      }
+      // 뒤로가기 — 기존 href="javascript:history.back()" 는 CSP strict-dynamic
+      // (unsafe-inline 없음) 에서 차단되어 동작하지 않는다. 같은 사이트에서 들어온
+      // 경우에만 history.back(), 외부/직접 진입이면 href(카테고리 보드)로 폴백.
+      var backBtn = target.closest('[data-action="history-back"]');
+      if (backBtn) {
+        var sameOriginRef = !!document.referrer &&
+          document.referrer.indexOf(window.location.origin + '/') === 0;
+        if (window.history.length > 1 && sameOriginRef) {
+          event.preventDefault();
+          window.history.back();
+        }
+        // else: 기본 동작(href 카테고리 보드 이동) 허용
         return;
       }
     });

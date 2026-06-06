@@ -40,10 +40,24 @@ export async function onRequest(context) {
 
   const headers = new Headers(rewritten.headers);
   headers.set('Content-Security-Policy', buildCsp(request, nonce));
-  // Keep the request-specific Cache-Control — CSP must not be cached by shared
-  // caches because nonce is unique per response.
   headers.set('Vary', appendVary(headers.get('Vary'), 'Cookie'));
-  headers.set('Cache-Control', 'no-store');
+
+  // Cache-Control:
+  //   - Admin/KMS/Dreampath (인증 표면): 'no-store' 유지 — 강제 재로그인/세션 보안상
+  //     캐시·bfcache 모두 금지해야 한다(CLAUDE.md §3 Admin 권한 게이팅).
+  //   - 공개 사이트: 'private, no-cache' — 공유(CDN) 캐시는 막아 per-request nonce
+  //     누출을 방지하되, 'no-store' 가 아니므로 브라우저 bfcache(뒤로/앞으로 즉시
+  //     복원)는 살아난다. bfcache 는 사용자가 이미 받은 페이지 인스턴스(이미 실행된
+  //     스크립트 + 일치하는 nonce)를 그대로 복원하므로 nonce 불일치 위험이 없다.
+  //     'no-cache' 라 실제 네비게이션 시에는 매번 Worker 재실행(새 nonce) 후 응답.
+  //     [2026-06-06] 전 HTML 'no-store' 가 bfcache 를 죽여 전반적 반응성/뒤로가기
+  //     체감 저하를 유발하던 회귀를 교정 (00.128.00 도입분).
+  let cachePathname = '/';
+  try { cachePathname = new URL(request.url).pathname; } catch {}
+  headers.set(
+    'Cache-Control',
+    isLegacyInlinePath(cachePathname) ? 'no-store' : 'private, no-cache'
+  );
 
   return new Response(rewritten.body, {
     status: rewritten.status,

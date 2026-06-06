@@ -964,6 +964,11 @@ body[data-home-bootstrap] .lang-btn:hover {
 @media (min-width: 901px) {
   .nav.nav-grouped { overflow: visible; }
 }
+/* 태블릿/모바일(≤900px): 평소엔 overflow-x:auto 로 가로 슬라이드를 유지하되,
+   드롭다운이 열린 동안에는 overflow:visible 로 풀어 패널이 .nav 박스 안에
+   세로로 갇혀 "스크롤해야 메뉴가 보이는" 문제를 막는다. is-panel-open 은
+   site-chrome.js 가 그룹 열림/닫힘에 맞춰 토글한다. */
+.nav.nav-grouped.is-panel-open { overflow: visible; }
 .nav-group {
   position: relative;
   display: inline-flex;
