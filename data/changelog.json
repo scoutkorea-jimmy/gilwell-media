@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.170.06",
+    "date": "2026-06-06",
+    "released_at": "2026-06-06 13:30:00 KST",
+    "summary": "홈 API의 간헐적 수초 지연(예약 공개 보정 동기 실행) 제거 — 메인 로딩 꼬리지연 완화.",
+    "for_users": [
+      "홈이 가끔 평소보다 한참 늦게 뜨던 현상을 줄였습니다. 예약된 글을 공개 처리하는 작업이 화면을 막지 않도록 뒤로 돌려, 홈이 더 일관되게 빠르게 열립니다.",
+      "예약 글은 백그라운드 또는 5분 주기 자동 작업으로 공개되며, 노출이 몇 분 늦어질 수 있으나 홈 응답 속도를 우선했습니다."
+    ],
+    "for_developers": [
+      "functions/api/home.js onRequestGet: 시그니처를 ({env,request}) → (context) 로 바꾸고 ensureDuePostsPublished 를 await 에서 context.waitUntil(...) 로 이관. due 글 존재 시 UPDATE posts + purgeContentCache(네트워크 퍼지)까지 동기로 기다리며 /api/home TTFB 가 수초(관측 8.5s) 튀던 원인 제거. 동일 작업은 wrangler.publish-due.toml 5분 cron(gilwell-media-publish-due) 이 담당하므로 정합성 유지, 예약글 즉시성만 양보(운영자 승인). KMS feature-definition 의 inline 호출 제거 트리거 도달.",
+      "나머지 공개 GET([[path]].js·post/[id].js·rss·sitemap)의 동일 inline 호출은 이번 범위에서 제외(홈이 측정된 병목). 첫 방문/추가 평탄화를 위한 /api/home 엣지 캐시는 무효화 설계 후 별도 검토(현재 caches.default 전례 없음).",
+      "사이트 버전 00.170.05 → 00.170.06."
+    ]
+  },
+  {
     "version": "00.170.05",
     "date": "2026-06-06",
     "released_at": "2026-06-06 13:10:00 KST",

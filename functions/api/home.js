@@ -64,12 +64,22 @@ const HOME_SECTION_ISSUE_DEFS = {
   people: { title: '홈 Scout People 섹션 로드 실패', severity: 'medium', area: 'homepage', source_path: '/api/home' },
 };
 
-export async function onRequestGet({ env, request }) {
+export async function onRequestGet(context) {
+  const { env, request } = context;
   try {
     const origin = new URL(request.url).origin;
-    await ensureDuePostsPublished(env, origin).catch((err) => {
-      console.error('GET /api/home auto publish error:', err);
-    });
+    // 예약 공개 보정을 응답 경로에서 분리 — due 글이 있을 때 UPDATE + purgeContentCache
+    // (네트워크 퍼지)까지 동기로 기다리며 홈 응답이 수초 튀던 원인(8s 스파이크). 동일
+    // 작업을 5분 주기 publish-due cron(wrangler.publish-due.toml)이 이미 담당하므로
+    // 즉시성은 약간 양보(예약글 최대 ~수분 지연, 운영자 승인). waitUntil 로 응답 후
+    // 백그라운드 실행해 opportunistic 하게 계속 처리. (KMS feature-definition 의
+    // "트래픽/지연 증가 시 inline 호출 제거" 트리거 도달분)
+    const runDuePublish = () =>
+      ensureDuePostsPublished(env, origin).catch((err) => {
+        console.error('GET /api/home auto publish error (bg):', err);
+      });
+    if (context.waitUntil) context.waitUntil(runDuePublish());
+    else runDuePublish();
 
     const issues = {};
     const resolveSection = (key, loader, fallback) =>
