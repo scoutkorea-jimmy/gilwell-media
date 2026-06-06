@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.170.03",
+    "date": "2026-06-06",
+    "released_at": "2026-06-06 12:30:00 KST",
+    "summary": "JS·CSS 정적 자산을 immutable 캐싱으로 전환 — 반복 방문·페이지 이동 시 재검증 왕복 제거로 로딩 체감 개선.",
+    "for_users": [
+      "한 번 방문한 뒤에는 메뉴·디자인·스크립트 파일을 다시 내려받지 않아 페이지가 더 빠르게 뜹니다. 앞서 적용한 뒤로가기 즉시 복원과 함께 전반적인 반응성을 끌어올렸습니다."
+    ],
+    "for_developers": [
+      "_headers: /js/* · /css/* 의 Cache-Control 을 'no-cache, must-revalidate'(실효 max-age=14400+must-revalidate, 자산마다 재검증 왕복 + 엣지 cf-cache MISS) → 'public, max-age=31536000, immutable' 로 변경. 모든 HTML 참조가 ?v=ASSET_VERSION 으로 버전 버스트되어(grep 검증: 미버전 /js·/css 참조 0건) 배포 시 URL 이 바뀌므로 구버전 고착 위험 없음. HTML 은 private,no-cache 라 항상 최신 토큰을 받아 새 자산을 페치.",
+      "효과: 반복 방문/네비게이션 시 main·site-chrome·home-* 등 ~8개 JS + style.css(브로틀리 54KB) 재검증 왕복 0, 엣지에서 자산 서빙(cf-cache HIT 기대).",
+      "사이트 버전 00.170.02 → 00.170.03. ADMIN_VERSION 미변경(/admin·/admin.html 은 기존 no-store 유지)."
+    ]
+  },
+  {
     "version": "00.170.02",
     "date": "2026-06-06",
     "released_at": "2026-06-06 12:00:00 KST",
