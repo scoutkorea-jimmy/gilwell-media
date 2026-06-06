@@ -88,7 +88,9 @@ export async function onRequestGet(context) {
         .catch(async (err) => {
           issues[key] = true;
           console.error(`GET /api/home section "${key}" failed:`, err);
-          await recordHomeSectionIssue(env, key, err);
+          // 이슈 기록 자체가 실패해도(예: DB 쓰기 오류) resolveSection 이 reject 되어
+          // Promise.all → 홈 API 전체 500 으로 번지지 않도록 swallow. (안정성 검토 00.170.07)
+          await recordHomeSectionIssue(env, key, err).catch(() => {});
           return fallback;
         });
 

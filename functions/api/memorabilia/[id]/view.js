@@ -15,7 +15,7 @@ export async function onRequestGet({ env, params, request }) {
 
   // 봇/프리페치는 카운트하지 않음. 카운트 실패가 응답을 막지 않도록 swallow.
   if (!isLikelyNonHumanRequest(request)) {
-    const viewerKey = await getViewerKey(request, env);
+    const viewerKey = await getViewerKey(request, env).catch(() => null);
     await recordUniqueMemorabiliaView(env, id, viewerKey).catch(() => false);
   }
 

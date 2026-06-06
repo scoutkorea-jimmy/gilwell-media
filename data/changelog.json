@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "00.170.07",
+    "date": "2026-06-06",
+    "released_at": "2026-06-06 14:00:00 KST",
+    "summary": "전면 안정성 코드리뷰 후속 — 예약발행 캐시 정합성·홈 API 복원력·삭제 정리·SSR 방어 등 저위험 보강 7건.",
+    "for_users": [
+      "겉으로 보이는 화면은 그대로지만, 드물게 발생할 수 있는 오류 상황에서도 홈과 기사 페이지가 더 안정적으로 열리도록 내부 방어를 강화했습니다.",
+      "예약된 글이 공개될 때 목록·홈에 더 빠르고 정확하게 반영되도록 캐시 갱신 경로를 바로잡았습니다.",
+      "글을 삭제하면 그 글을 가리키던 캘린더 일정의 끊어진 링크도 함께 정리됩니다."
+    ],
+    "for_developers": [
+      "functions/api/stats.js: ensureDuePostsPublished(env) → (env, origin) + context.waitUntil 로 이관. origin 누락으로 예약발행 시 purgeContentCache 가 조용히 스킵되던 정합성 결함 해소(home.js·[[path]].js 와 패턴 일치).",
+      "functions/api/home.js resolveSection: recordHomeSectionIssue 를 .catch(()=>{}) 로 감싸 로깅 실패가 Promise.all reject → 홈 API 전체 500 으로 번지던 경로 차단.",
+      "functions/api/posts/[id].js DELETE 캐스케이드: UPDATE calendar_events SET related_post_id = NULL 추가. 죽은 글을 가리키는 캘린더 LEFT JOIN 링크(404) 잔존 제거(이벤트 자체는 독립 엔티티라 삭제 아닌 NULL).",
+      "functions/post/[id].js & functions/api/memorabilia/[id]/view.js: getViewerKey(...).catch(()=>null) 로 뷰어키 산출 예외 시 SSR/조회 엔드포인트 500 방지(하위 통계는 이미 null/catch 처리).",
+      "functions/api/posts/index.js: page 파라미터 Number.isFinite 가드 + 상한 100000 클램프. Math.max(1, NaN)=NaN → offset NaN 쿼리 파손 및 비정상 거대 OFFSET 성능 저하 차단.",
+      "검토 중 기각한 오탐: post-public-date.js created_at +9h(=UTC→KST 정상, DB 실데이터 확인), board/post-page XSS(escapeHtml+sanitizeHtml 방어됨), [[path]] Promise.all(로더 내부 try-catch), hero 리스너 누적(destroy 패턴), cache-purge(호출부 이미 로깅). 변경 없음.",
+      "사이트 버전 00.170.06 → 00.170.07."
+    ]
+  },
+  {
     "version": "00.170.06",
     "date": "2026-06-06",
     "released_at": "2026-06-06 13:30:00 KST",

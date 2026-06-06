@@ -33,7 +33,10 @@ export async function onRequestGet({ request, env }) {
     console.error('GET /api/posts auto publish error:', err);
   });
   const category     = normalizeCategory(url.searchParams.get('category') || null);
-  const page         = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+  // parseInt 가 NaN 이면 Math.max(1, NaN)=NaN → offset NaN 으로 쿼리가 깨지므로 isFinite 가드.
+  // 상한(100000)으로 비정상 ?page=999999999 의 거대한 OFFSET 성능 저하도 차단. (안정성 검토 00.170.07)
+  const rawPage      = parseInt(url.searchParams.get('page') || '1', 10);
+  const page         = Math.min(100000, Math.max(1, Number.isFinite(rawPage) ? rawPage : 1));
   const requestedLimit = parseInt(url.searchParams.get('limit') || String(PAGE_SIZE), 10);
   const pageSize     = Math.min(100, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : PAGE_SIZE));
   const offset       = (page - 1) * pageSize;

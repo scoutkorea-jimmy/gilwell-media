@@ -533,6 +533,9 @@ export async function onRequestDelete({ params, request, env }) {
       env.DB.prepare(`DELETE FROM post_history WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM post_engagement WHERE post_id = ?`).bind(id).run().catch(() => {}),
       env.DB.prepare(`DELETE FROM site_visits WHERE path = ?`).bind('/post/' + id).run().catch(() => {}),
+      // 캘린더 이벤트는 독립 엔티티이므로 삭제하지 않고 끊어진 글 링크만 정리(NULL).
+      // 미정리 시 calendar 의 LEFT JOIN 이 죽은 글을 가리켜 404 링크가 남는다. (안정성 검토 00.170.07)
+      env.DB.prepare(`UPDATE calendar_events SET related_post_id = NULL WHERE related_post_id = ?`).bind(id).run().catch(() => {}),
     ]);
     const imageUrls = collectStoredImageUrls(existing, origin);
     await Promise.all(imageUrls.map(function (value) {
