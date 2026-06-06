@@ -32,6 +32,15 @@
     // is on the page; the new "current visit" is committed back to storage
     // immediately so refreshes don't keep re-showing the same delta.
     var LAST_VISIT_KEY = 'gw_home_last_visit_at';
+
+    // Stale-while-revalidate 캐시(즉시 첫 페인트용). ASSET_VERSION 으로 키를 버전
+    // 버스트해 배포 시 구조가 바뀌어도 옛 페이로드를 잘못 쓰지 않는다. TTL 은
+    // 넉넉히 — 어차피 매 로드에서 fresh 가 즉시 뒤따라 덮어쓰므로 stale 노출은 찰나.
+    var HOME_CACHE_TTL_MS = 1000 * 60 * 30;
+    function homeCacheKey() {
+      return GW.getVersionedCacheKey('gw_cache_home', 'v1_' + (GW.ASSET_VERSION || '0'));
+    }
+
     var previousVisitMs = readPreviousVisit();
     var freshnessLatestPublishMs = 0;
     var freshnessTickTimer = null;
@@ -501,12 +510,30 @@
       syncResponsiveSectionVisibility();
 
       lastHomeRequestAt = Date.now();
+
+      // Stale-while-revalidate — /api/home 은 no-store 라 HTTP 캐시가 안 돼 매 방문이
+      // 네트워크 대기였고, /api/home 이 가끔 수초까지 튀면 빈 홈을 응시하게 된다.
+      // 직전 페이로드를 localStorage 에서 즉시 렌더해 첫 페인트를 채우고, 곧 도착하는
+      // fresh 응답으로 덮어쓴다. (fresh 가 항상 뒤따르므로 잠깐의 staleness 는 허용)
+      var renderedFromCache = false;
+      if (typeof GW.readCachedPayload === 'function' && typeof GW.getVersionedCacheKey === 'function') {
+        try {
+          var cachedHome = GW.readCachedPayload(homeCacheKey(), HOME_CACHE_TTL_MS);
+          if (cachedHome) {
+            applyData(cachedHome, { background: true });
+            renderedFromCache = true;
+          }
+        } catch (_) {}
+      }
+
       homeRefreshPromise = fetchHomeData({ fresh: true })
         .then(function (data) {
           applyData(data);
+          try { if (typeof GW.writeCachedPayload === 'function') GW.writeCachedPayload(homeCacheKey(), data); } catch (_) {}
         })
         .catch(function (err) {
-          renderLoadFailure();
+          // 캐시로 이미 콘텐츠를 그렸다면 네트워크 실패해도 빈 화면 대신 stale 유지.
+          if (!renderedFromCache) renderLoadFailure();
           helpers.reportHomepageIssue('home_initial_fetch_failed', {
             message: (err && err.message) || 'initial home fetch failed',
             path: '/api/home'

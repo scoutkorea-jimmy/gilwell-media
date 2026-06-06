@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.170.05",
+    "date": "2026-06-06",
+    "released_at": "2026-06-06 13:10:00 KST",
+    "summary": "홈 첫 화면을 직전 방문 캐시로 즉시 그려 '빈 화면 응시'를 제거 — /api/home 응답을 기다리는 동안의 체감 지연 해소.",
+    "for_users": [
+      "홈에 다시 들어오면 메인 스토리·최신 소식 등이 즉시 떠 있고, 백그라운드에서 최신 내용으로 조용히 갱신됩니다. 그동안 콘텐츠가 채워질 때까지 빈 화면을 보며 기다리던 답답함을 없앴습니다.",
+      "네트워크가 잠깐 느리거나 끊겨도 직전 내용이 그대로 보여, 빈 화면 대신 읽을거리가 유지됩니다."
+    ],
+    "for_developers": [
+      "js/home-runtime.js init(): /api/home 은 /api/* no-store 라 HTTP 캐시가 안 돼 매 방문이 네트워크 대기였고, 간헐적 수초 스파이크 시 빈 홈을 응시하게 됨. stale-while-revalidate 도입 — 직전 페이로드를 localStorage(GW.readCachedPayload, ASSET_VERSION 버전 버스트 키 gw_cache_home, TTL 30분)에서 즉시 applyData(cached,{background:true})로 첫 페인트를 채우고, fetchHomeData({fresh:true}) 성공 시 applyData(data)로 덮어쓰며 GW.writeCachedPayload 갱신. fresh 실패 시 캐시 렌더가 있으면 renderLoadFailure 생략(stale 유지).",
+      "applyData 는 캐시 경로에서 background:true 로 호출되지만 첫 페인트엔 _lastHeroSignature 가 비어 hero 포함 전 섹션이 렌더됨(idempotent). first-visit/꼬리지연(/api/home 8s 스파이크) 자체는 서버측 후속 과제(엣지 캐시 또는 ensureDuePostsPublished hot-path 분리)로 남김.",
+      "사이트 버전 00.170.04 → 00.170.05."
+    ]
+  },
+  {
     "version": "00.170.04",
     "date": "2026-06-06",
     "released_at": "2026-06-06 12:50:00 KST",
