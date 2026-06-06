@@ -203,10 +203,14 @@
     if (!opts.hideCategoryChip) {
       labels.push('<span class="category-tag ' + cat.tagClass + '">' + GW.escapeHtml(categoryLabel) + '</span>');
     }
+    // NEW 는 카테고리 칩 바로 뒤에 둔다 — 맨 뒤에 두면 카테고리명이 긴 항목
+    // (예: "세계의 스카우트 소식")에서 flex-wrap 시 NEW 만 둘째 줄로 고아가 되어
+    // 레일 항목마다 배지 위치가 들쭉날쭉해진다. 줄바꿈은 우선순위 낮은 서브태그가
+    // 맡고 NEW 는 항상 첫 줄 같은 자리에 오도록 한다.
+    if (GW.isPostNew(post)) labels.push('<span class="post-kicker post-kicker-new">NEW</span>');
     getSortedPostTags(post).forEach(function (tag) {
       labels.push('<span class="post-kicker tag-' + GW.escapeHtml(post.category) + '-kicker">' + GW.escapeHtml(tag) + '</span>');
     });
-    if (GW.isPostNew(post)) labels.push('<span class="post-kicker post-kicker-new">NEW</span>');
     return labels.join('');
   }
 
