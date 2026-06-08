@@ -1857,6 +1857,11 @@ const DP = (() => {
           <h3>${esc(title)}</h3>
         </div>
         <div class="dp-template-frame-wrap">
+          <div class="dp-template-canvasbar">
+            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._templateAddParagraph()">Add paragraph</button>
+            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddBullet()">Add bullet</button>
+            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddSection()">Add section</button>
+          </div>
           <iframe class="dp-template-frame"
                   id="dp-template-frame"
                   title="${esc(title)}"
@@ -1869,14 +1874,10 @@ const DP = (() => {
           <div class="dp-template-editor-head">
             <div>
               <h4>Document controls</h4>
-              <span id="dp-template-field-count">Loading fields…</span>
+              <span id="dp-template-field-count">Canvas editing</span>
             </div>
-            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._refreshTemplateFields()">Refresh</button>
           </div>
           ${_templateTweaksHtml()}
-          <div class="dp-template-field-list" id="dp-template-field-list">
-            <div class="dp-template-empty">Loading editable fields…</div>
-          </div>
         </aside>
       </section>
     `);
@@ -1960,9 +1961,6 @@ const DP = (() => {
           <label><input type="checkbox" ${t.showFooter ? 'checked' : ''} onchange="DP._templateTweak('showFooter', this.checked)"> Footer</label>
         </div>
         <div class="dp-template-actions">
-          <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._templateAddParagraph()">Add paragraph</button>
-          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddBullet()">Add bullet</button>
-          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddSection()">Add section</button>
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateNewDocNumbers()">New doc no.</button>
           <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._templateReload()">Reset</button>
         </div>
@@ -1982,10 +1980,55 @@ const DP = (() => {
         style.id = 'dp-parent-template-editor-style';
         style.textContent = `
           [contenteditable="true"] { outline-offset: 2px; }
+          .dp-template-edit-block {
+            position: relative;
+            outline-offset: 2px;
+          }
+          .dp-template-edit-block::before {
+            content: "↕";
+            position: absolute;
+            left: -22px;
+            top: 0.15em;
+            width: 16px;
+            height: 16px;
+            display: grid;
+            place-items: center;
+            border-radius: 3px;
+            background: #FFFFFF;
+            border: 1px solid rgba(31,31,31,0.18);
+            color: var(--purple);
+            font: 700 10px/1 var(--font);
+            cursor: grab;
+            opacity: 0;
+            box-shadow: 0 2px 8px rgba(31,31,31,0.12);
+          }
+          .dp-template-edit-block:hover::before,
+          .dp-template-edit-block.dp-template-edit-target::before,
+          .dp-template-edit-block.dp-template-dragging::before {
+            opacity: 1;
+          }
           .dp-template-edit-target {
             outline: 2px solid var(--blue) !important;
             box-shadow: 0 0 0 4px rgba(10,92,158,0.18) !important;
             border-radius: 2px;
+          }
+          .dp-template-dragging {
+            opacity: 0.45;
+          }
+          .dp-template-drop-before {
+            box-shadow: 0 -3px 0 var(--blue) !important;
+          }
+          .dp-template-drop-after {
+            box-shadow: 0 3px 0 var(--blue) !important;
+          }
+          @media print {
+            .dp-template-edit-block::before { display: none !important; }
+            .dp-template-edit-target,
+            .dp-template-drop-before,
+            .dp-template-drop-after {
+              outline: none !important;
+              box-shadow: none !important;
+            }
           }
         `;
         doc.head.appendChild(style);
@@ -2003,6 +2046,7 @@ const DP = (() => {
     _refreshTemplateFields();
     _applyTemplateTweaks();
     _autofillTemplateMeta();
+    _installTemplateCanvasEditor();
   }
 
   function _activeTemplateDocument() {
@@ -2058,29 +2102,85 @@ const DP = (() => {
   }
 
   function _refreshTemplateFields() {
-    const list = document.getElementById('dp-template-field-list');
     const count = document.getElementById('dp-template-field-count');
-    if (!list) return;
     const fields = _templateEditableFields();
-    if (count) count.textContent = fields.length ? (fields.length + ' fields') : 'No fields';
-    if (!fields.length) {
-      list.innerHTML = '<div class="dp-template-empty">No editable fields found.</div>';
-      return;
-    }
-    list.innerHTML = fields.map(field => `
-      <div class="dp-template-field" data-field-id="${esc(field.id)}">
-        <div class="dp-template-field-top">
-          <span>${esc(field.label)}</span>
-          <div>
-            <button type="button" onclick="DP._templateClearField('${esc(field.id)}')">Clear</button>
-            <button type="button" onclick="DP._templateHideField('${esc(field.id)}')">Hide</button>
-          </div>
-        </div>
-        <textarea rows="${field.value.length > 140 ? 5 : 3}"
-                  onfocus="DP._focusTemplateField('${esc(field.id)}')"
-                  oninput="DP._templateFieldInput('${esc(field.id)}', this.value)">${esc(field.value)}</textarea>
-      </div>
-    `).join('');
+    if (count) count.textContent = fields.length ? (fields.length + ' editable items') : 'No editable items';
+    _installTemplateCanvasEditor();
+  }
+
+  function _templateMovableBlocks() {
+    const frame = _templateActiveFrame();
+    if (!frame) return [];
+    const blocks = [];
+    const add = (nodes) => nodes.forEach(node => {
+      if (!node || node.closest('[data-dp-template-hidden="1"]')) return;
+      if (!blocks.includes(node)) blocks.push(node);
+    });
+    const letterBody = frame.querySelector('.letter-body');
+    if (letterBody) add(Array.from(letterBody.children).filter(node => {
+      return node.matches('.sal, .body, .body-list, .sec, .sign, .encl');
+    }));
+    add(Array.from(frame.querySelectorAll('.letter-body .body-list > li')));
+    add(Array.from(frame.querySelectorAll('.pad > .sec, .pad > .dtitle, .pad > .mgrid')));
+    return blocks;
+  }
+
+  function _installTemplateCanvasEditor() {
+    const doc = _activeTemplateDocument();
+    const frame = _templateActiveFrame();
+    if (!doc || !frame) return;
+    const blocks = _templateMovableBlocks();
+    blocks.forEach((block, index) => {
+      const id = block.getAttribute('data-dp-block-id') || ('block-' + Date.now().toString(36) + '-' + index);
+      block.setAttribute('data-dp-block-id', id);
+      block.setAttribute('draggable', 'true');
+      block.classList.add('dp-template-edit-block');
+    });
+    if (doc.__DP_BLOCK_DND_BOUND) return;
+    doc.__DP_BLOCK_DND_BOUND = true;
+    doc.addEventListener('dragstart', (event) => {
+      const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+      if (!block) return;
+      block.classList.add('dp-template-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', block.getAttribute('data-dp-block-id') || '');
+    });
+    doc.addEventListener('dragover', (event) => {
+      const target = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+      if (!target) return;
+      event.preventDefault();
+      _clearTemplateDropMarks(doc);
+      const where = _templateDropPosition(target, event.clientY);
+      target.classList.add(where === 'before' ? 'dp-template-drop-before' : 'dp-template-drop-after');
+    });
+    doc.addEventListener('drop', (event) => {
+      const target = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+      const id = event.dataTransfer && event.dataTransfer.getData('text/plain');
+      const source = id && doc.querySelector('[data-dp-block-id="' + id.replace(/"/g, '\\"') + '"]');
+      if (!target || !source || target === source || !target.parentNode || source.parentNode !== target.parentNode) return;
+      event.preventDefault();
+      const where = _templateDropPosition(target, event.clientY);
+      if (where === 'before') target.parentNode.insertBefore(source, target);
+      else target.parentNode.insertBefore(source, target.nextSibling);
+      _clearTemplateDropMarks(doc);
+      source.classList.remove('dp-template-dragging');
+      _refreshTemplateFields();
+    });
+    doc.addEventListener('dragend', () => {
+      _clearTemplateDropMarks(doc);
+      doc.querySelectorAll('.dp-template-dragging').forEach(node => node.classList.remove('dp-template-dragging'));
+    });
+  }
+
+  function _templateDropPosition(target, y) {
+    const rect = target.getBoundingClientRect();
+    return y < rect.top + rect.height / 2 ? 'before' : 'after';
+  }
+
+  function _clearTemplateDropMarks(doc) {
+    doc.querySelectorAll('.dp-template-drop-before, .dp-template-drop-after').forEach(node => {
+      node.classList.remove('dp-template-drop-before', 'dp-template-drop-after');
+    });
   }
 
   function _templateFieldById(id) {
