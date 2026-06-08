@@ -2022,6 +2022,7 @@ const DP = (() => {
     return Array.from(frame.querySelectorAll('[contenteditable="true"]'))
       .filter(el => !el.closest('template'))
       .filter(el => !el.closest('[data-dp-template-hidden="1"]'))
+      .filter(el => !el.closest('.doc-foot, .docref'))
       .map((el, index) => {
         const id = el.getAttribute('data-dp-edit-id') || ('tpl-' + Date.now().toString(36) + '-' + index);
         el.setAttribute('data-dp-edit-id', id);
@@ -2034,12 +2035,18 @@ const DP = (() => {
   }
 
   function _templateFieldLabel(el, index) {
+    if (el.closest('.to')) return 'Recipient';
+    if (el.closest('.docref')) return 'Document no.';
     const labelled = el.closest('.m, .r, .cm, .subjline, .req-grid, .sig-row, .env-from, .env-to');
     const label = labelled && labelled.querySelector('.label, .k');
     if (label && label.textContent.trim()) return label.textContent.trim();
     if (el.matches('h1')) return 'Title';
     if (el.matches('h2,h3,h4')) return 'Heading';
-    if (el.classList.contains('body') || el.closest('.letter-body')) return 'Body ' + (index + 1);
+    if (el.classList.contains('sal')) return 'Greeting';
+    if (el.classList.contains('cl')) return 'Closing';
+    if (el.classList.contains('encl')) return 'Enclosure';
+    if (el.matches('li')) return 'Bullet';
+    if (el.classList.contains('body') || el.closest('.letter-body')) return 'Body';
     if (el.classList.contains('nm')) return 'Name';
     if (el.classList.contains('ti')) return 'Title / role';
     if (el.classList.contains('addr')) return 'Address';
@@ -2242,6 +2249,14 @@ const DP = (() => {
     return frame.querySelector('.letter-body') || frame.querySelector('.sec:last-of-type') || _templatePrimaryPad();
   }
 
+  function _templateBodyInsertBefore(host) {
+    if (!host) return null;
+    if (host.classList && host.classList.contains('letter-body')) {
+      return host.querySelector('.sign, .encl');
+    }
+    return null;
+  }
+
   function _templateAddParagraph() {
     const host = _templateContentContainer();
     if (!host) return;
@@ -2249,8 +2264,8 @@ const DP = (() => {
     const p = doc.createElement('p');
     p.className = 'body';
     p.setAttribute('contenteditable', 'true');
-    p.textContent = '새 문단을 입력하세요.';
-    host.appendChild(p);
+    p.textContent = 'Type your paragraph here.';
+    host.insertBefore(p, _templateBodyInsertBefore(host));
     _refreshTemplateFields();
     setTimeout(() => _focusTemplateField(p.getAttribute('data-dp-edit-id')), 0);
   }
@@ -2259,28 +2274,33 @@ const DP = (() => {
     const frame = _templateActiveFrame();
     const doc = _activeTemplateDocument();
     if (!frame || !doc) return;
-    let list = frame.querySelector('.sec:last-of-type ul, .sec:last-of-type ol, ul, ol');
+    const body = frame.querySelector('.letter-body');
+    let list = body ? body.querySelector('ul, ol') : frame.querySelector('.sec:last-of-type ul, .sec:last-of-type ol, ul, ol');
     if (!list) {
-      const sec = _templateCreateSection('New bullet list');
-      if (!sec) return;
       list = doc.createElement('ul');
-      sec.appendChild(list);
+      list.className = 'body-list';
+      if (body) body.insertBefore(list, _templateBodyInsertBefore(body));
+      else {
+        const sec = _templateCreateSection('Bullet list');
+        if (!sec) return;
+        sec.appendChild(list);
+      }
     }
     const li = doc.createElement('li');
     li.setAttribute('contenteditable', 'true');
-    li.textContent = '새 불릿을 입력하세요.';
+    li.textContent = 'Type a bullet point.';
     list.appendChild(li);
     _refreshTemplateFields();
     setTimeout(() => _focusTemplateField(li.getAttribute('data-dp-edit-id')), 0);
   }
 
   function _templateAddSection() {
-    const sec = _templateCreateSection('New section');
+    const sec = _templateCreateSection('Section title');
     if (!sec) return;
     const p = _activeTemplateDocument().createElement('p');
     p.className = 'body';
     p.setAttribute('contenteditable', 'true');
-    p.textContent = '새 섹션 내용을 입력하세요.';
+    p.textContent = 'Type section content here.';
     sec.appendChild(p);
     _refreshTemplateFields();
     setTimeout(() => _focusTemplateField(p.getAttribute('data-dp-edit-id')), 0);
@@ -2296,7 +2316,9 @@ const DP = (() => {
     h3.setAttribute('contenteditable', 'true');
     h3.textContent = title || 'New section';
     sec.appendChild(h3);
-    pad.appendChild(sec);
+    const body = _templateActiveFrame() && _templateActiveFrame().querySelector('.letter-body');
+    if (body) body.insertBefore(sec, _templateBodyInsertBefore(body));
+    else pad.appendChild(sec);
     return sec;
   }
 
@@ -2326,6 +2348,10 @@ const DP = (() => {
       const label = (row.querySelector('.label') && row.querySelector('.label').textContent || '').trim().toLowerCase();
       const value = row.querySelector('.v');
       if (!value) return;
+      if (label === 'our ref') {
+        const no = frame.querySelector('.docref b');
+        if (no) value.textContent = no.textContent;
+      }
       if (label === 'author' || label === 'owner' || label === 'recorder') value.textContent = meta.author;
       if (label === 'department' || label === 'team') value.textContent = meta.department;
       if (label === 'date') value.textContent = meta.date;

@@ -62,13 +62,21 @@
   function assignDocNumbers(){
     DOC_TARGETS.forEach(function(tg){
       var slot=document.querySelector('.frame[data-target="'+tg+'"] .docref b');
-      if(slot) slot.textContent=docNo();
+      if(slot) {
+        slot.textContent=docNo();
+        var ref=document.querySelector('.frame[data-target="'+tg+'"] .r .label');
+        if(ref && /our ref/i.test(ref.textContent||'')){
+          var v=ref.parentNode.querySelector('.v');
+          if(v) v.textContent=slot.textContent;
+        }
+      }
     });
   }
   DOC_TARGETS.forEach(function(tg){
     var hr=document.querySelector('.frame[data-target="'+tg+'"] .head-r');
     if(hr && !hr.querySelector('.docref')){ var d=document.createElement('div'); d.className='docref'; d.innerHTML='No. <b contenteditable="true">'+docNo()+'</b>'; var chip=hr.querySelector('.chip-slot'); if(chip) hr.insertBefore(d, chip); else hr.appendChild(d); }
   });
+  assignDocNumbers();
   window.DPTemplateNewDocNumbers = assignDocNumbers;
 
   // wrap footer content + inject centered page numbers (paper documents)
