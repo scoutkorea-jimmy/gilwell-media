@@ -872,7 +872,11 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-tab .dp-tab-s { font-size: var(--fs-11); color: var(--text-3); }
 .dp-tab.dp-tab-on .dp-tab-s { color: var(--navy-600); }
 .dp-doc-tabs { margin-top: calc(var(--s-3) * -1); }
-.dp-template-panel { overflow: hidden; }
+.dp-template-panel {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
 .dp-template-head { align-items: center; }
 .dp-template-switch { display: flex; gap: 6px; align-items: center; }
 .dp-template-frame-wrap {
@@ -887,6 +891,77 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   height: 100%;
   border: 0;
   background: var(--surface);
+}
+.dp-template-panel > .dp-template-head { grid-column: 1 / -1; }
+.dp-template-editor {
+  border-left: var(--bd);
+  background: var(--surface);
+  min-height: 620px;
+  max-height: min(78vh, 920px);
+  display: flex;
+  flex-direction: column;
+}
+.dp-template-editor-head {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: var(--bd);
+  border-bottom: var(--bd);
+}
+.dp-template-editor-head h4 { margin: 0; font-size: var(--fs-13); color: var(--text); }
+.dp-template-editor-head span { display: block; margin-top: 2px; font-size: var(--fs-11); color: var(--text-3); }
+.dp-template-field-list {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+.dp-template-field {
+  display: block;
+  padding: 8px;
+  border: var(--bd);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  margin-bottom: 8px;
+}
+.dp-template-field.on {
+  border-color: var(--navy-600);
+  box-shadow: 0 0 0 1px var(--navy-600);
+}
+.dp-template-field > span {
+  display: block;
+  font-size: var(--fs-11);
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 5px;
+}
+.dp-template-field textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border: var(--bd);
+  border-radius: var(--r-sm);
+  padding: 7px 8px;
+  font: 500 var(--fs-13) / 1.5 var(--font);
+  color: var(--text);
+  background: var(--surface-2);
+}
+.dp-template-field textarea:focus { outline: none; box-shadow: var(--focus-ring); border-color: var(--navy-600); }
+.dp-template-empty {
+  padding: 14px;
+  color: var(--text-3);
+  font-size: var(--fs-12);
+}
+@media (max-width: 1100px) {
+  .dp-template-panel { grid-template-columns: 1fr; }
+  .dp-template-editor {
+    border-left: 0;
+    border-top: var(--bd);
+    min-height: 320px;
+    max-height: none;
+  }
 }
 
 /* Design Guide swatches + token grid */

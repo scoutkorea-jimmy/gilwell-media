@@ -1866,11 +1866,25 @@ const DP = (() => {
         </div>
         <div class="dp-template-frame-wrap">
           <iframe class="dp-template-frame"
+                  id="dp-template-frame"
                   title="${esc(title)}"
                   src="${esc(src)}"
                   loading="lazy"
-                  referrerpolicy="same-origin"></iframe>
+                  referrerpolicy="same-origin"
+                  onload="DP._templateFrameReady()"></iframe>
         </div>
+        <aside class="dp-template-editor" aria-label="Template content editor">
+          <div class="dp-template-editor-head">
+            <div>
+              <h4>Editable content</h4>
+              <span id="dp-template-field-count">Loading…</span>
+            </div>
+            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._refreshTemplateFields()">Refresh</button>
+          </div>
+          <div class="dp-template-field-list" id="dp-template-field-list">
+            <div class="dp-template-empty">Loading editable fields…</div>
+          </div>
+        </aside>
       </section>
     `);
   }
@@ -1879,6 +1893,141 @@ const DP = (() => {
     state.documentTemplateKind = kind === 'deck' ? 'deck' : 'document';
     state.documentsTab = 'templates';
     navigate('documents');
+  }
+
+  function _templateFrameReady() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow || !iframe.contentDocument) return;
+    const win = iframe.contentWindow;
+    const doc = iframe.contentDocument;
+    if (!win.__DP_TEMPLATE_EDITOR_BOUND) {
+      win.__DP_TEMPLATE_EDITOR_BOUND = true;
+      if (!doc.getElementById('dp-parent-template-editor-style')) {
+        const style = doc.createElement('style');
+        style.id = 'dp-parent-template-editor-style';
+        style.textContent = `
+          [contenteditable="true"] { outline-offset: 2px; }
+          .dp-template-edit-target {
+            outline: 2px solid #0A5C9E !important;
+            box-shadow: 0 0 0 4px rgba(10,92,158,0.18) !important;
+            border-radius: 2px;
+          }
+        `;
+        doc.head.appendChild(style);
+      }
+      win.addEventListener('tplchange', () => setTimeout(_refreshTemplateFields, 80));
+      doc.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest && event.target.closest('[contenteditable="true"]');
+        if (target) _selectTemplateField(target.getAttribute('data-dp-edit-id') || '');
+      }, true);
+      doc.addEventListener('input', (event) => {
+        const target = event.target && event.target.closest && event.target.closest('[contenteditable="true"]');
+        if (target) _syncTemplateFieldValue(target);
+      }, true);
+    }
+    _refreshTemplateFields();
+  }
+
+  function _activeTemplateDocument() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentDocument) return null;
+    return iframe.contentDocument;
+  }
+
+  function _activeTemplateFrame(doc) {
+    return doc && doc.querySelector('.frame.on');
+  }
+
+  function _templateEditableFields() {
+    const doc = _activeTemplateDocument();
+    const frame = _activeTemplateFrame(doc);
+    if (!doc || !frame) return [];
+    return Array.from(frame.querySelectorAll('[contenteditable="true"]'))
+      .filter(el => !el.closest('template'))
+      .map((el, index) => {
+        const id = el.getAttribute('data-dp-edit-id') || ('tpl-' + Date.now().toString(36) + '-' + index);
+        el.setAttribute('data-dp-edit-id', id);
+        return { id, el, label: _templateFieldLabel(el, index), value: _templateFieldText(el) };
+      });
+  }
+
+  function _templateFieldText(el) {
+    return String(el && el.innerText || '').replace(/\u00a0/g, ' ').trim();
+  }
+
+  function _templateFieldLabel(el, index) {
+    const labelled = el.closest('.m, .r, .cm, .subjline, .req-grid, .sig-row, .env-from, .env-to');
+    const label = labelled && labelled.querySelector('.label, .k');
+    if (label && label.textContent.trim()) return label.textContent.trim();
+    if (el.matches('h1')) return 'Title';
+    if (el.matches('h2,h3,h4')) return 'Heading';
+    if (el.classList.contains('body') || el.closest('.letter-body')) return 'Body ' + (index + 1);
+    if (el.classList.contains('nm')) return 'Name';
+    if (el.classList.contains('ti')) return 'Title / role';
+    if (el.classList.contains('addr')) return 'Address';
+    if (el.classList.contains('pageno')) return 'Page number';
+    if (el.classList.contains('fr')) return 'Footer';
+    if (el.classList.contains('sentby')) return 'Sender';
+    const tag = String(el.tagName || 'FIELD').toLowerCase();
+    return tag.toUpperCase() + ' ' + (index + 1);
+  }
+
+  function _refreshTemplateFields() {
+    const list = document.getElementById('dp-template-field-list');
+    const count = document.getElementById('dp-template-field-count');
+    if (!list) return;
+    const fields = _templateEditableFields();
+    if (count) count.textContent = fields.length ? (fields.length + ' fields') : 'No fields';
+    if (!fields.length) {
+      list.innerHTML = '<div class="dp-template-empty">No editable fields found.</div>';
+      return;
+    }
+    list.innerHTML = fields.map(field => `
+      <label class="dp-template-field" data-field-id="${esc(field.id)}">
+        <span>${esc(field.label)}</span>
+        <textarea rows="${field.value.length > 140 ? 5 : 3}"
+                  onfocus="DP._focusTemplateField('${esc(field.id)}')"
+                  oninput="DP._templateFieldInput('${esc(field.id)}', this.value)">${esc(field.value)}</textarea>
+      </label>
+    `).join('');
+  }
+
+  function _templateFieldById(id) {
+    const doc = _activeTemplateDocument();
+    if (!doc || !id) return null;
+    return doc.querySelector('[data-dp-edit-id="' + String(id).replace(/"/g, '\\"') + '"]');
+  }
+
+  function _focusTemplateField(id) {
+    const el = _templateFieldById(id);
+    if (!el) return;
+    _selectTemplateField(id);
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function _selectTemplateField(id) {
+    document.querySelectorAll('.dp-template-field').forEach(row => {
+      row.classList.toggle('on', row.getAttribute('data-field-id') === id);
+    });
+    const el = _templateFieldById(id);
+    if (!el) return;
+    const doc = _activeTemplateDocument();
+    if (doc) doc.querySelectorAll('.dp-template-edit-target').forEach(node => node.classList.remove('dp-template-edit-target'));
+    el.classList.add('dp-template-edit-target');
+  }
+
+  function _templateFieldInput(id, value) {
+    const el = _templateFieldById(id);
+    if (!el) return;
+    el.innerText = String(value || '');
+    _selectTemplateField(id);
+  }
+
+  function _syncTemplateFieldValue(el) {
+    const id = el && el.getAttribute('data-dp-edit-id');
+    if (!id) return;
+    const row = document.querySelector('.dp-template-field[data-field-id="' + id + '"] textarea');
+    if (row) row.value = _templateFieldText(el);
   }
 
   async function _renderBoard(root, key, label, opts = {}) {
@@ -8727,6 +8876,7 @@ const DP = (() => {
     _newPostAddTab,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
     _setDocumentsTab, _setDocumentTemplateKind,
+    _templateFrameReady, _refreshTemplateFields, _focusTemplateField, _templateFieldInput,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,
