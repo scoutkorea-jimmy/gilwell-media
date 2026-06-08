@@ -58,6 +58,16 @@ Document Templates(사이드바 → Documents → Templates)에서 (1) 본문을
 `js/dreampath.js` `_templateFillSample/_templateClearSample` + 컨트롤 패널 버튼).
 헤드리스 테스트 19종 통과(빈 필드 전체폭·샘플 채우기/비우기 포함).
 
+**후속 (01.068.00)**: (a) 떠 있는 캔버스 편집 도구(↕/+ 블록툴, B/H 포맷바, 삽입메뉴)를
+마지막 상호작용 후 **5초 뒤 디졸브**(opacity transition)로 숨김 — 도구에 호버하면 일시정지
+(`js/dreampath.js` `_templateArmToolFade/_templateClearToolFade` + 주입 CSS `.dp-tool-dissolve`).
+(b) 문서번호 규칙을 `DP-DOC-YYYY-AAA1234` → **`DP-DOC-YYYYMMDD-{작성자 이름 첫자}{랜덤 영문 2}{랜덤 숫자 4}`**
+로 변경(`templates-app.js` `docNo`, 부모가 `__DP_AUTHOR_INITIAL` 주입 후 1회 재생성;
+`js/dreampath.js` `_templateDocNumber`/추출 regex). (c) **Notion식 마크다운**: 본문/섹션
+블록에서 `# `/`## `/`### `→제목(표준: #가 가장 큼), `- `/`* `→불릿, `1. `→번호, **Tab/Shift+Tab
+들여쓰기**(`templates-app.js` 입력·keydown 핸들러, `templates.css` `.md-*`/`[data-indent]`).
+WebKit+Playwright 14종 통과(placeholder 전체폭 WebKit 확정 포함).
+
 **English Summary**
 Fixed Document Templates so (1) body edits register without the caret jumping,
 and (2) overflowing text splits cleanly onto the next page instead of the sheet

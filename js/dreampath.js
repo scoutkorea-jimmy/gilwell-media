@@ -2057,6 +2057,17 @@ const DP = (() => {
             position: fixed;
             z-index: 99999;
             font-family: var(--font);
+            opacity: 1;
+            transition: opacity 0.5s ease;
+          }
+          .dp-tool-dissolve {
+            opacity: 0 !important;
+            pointer-events: none;
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .dp-template-block-ui,
+            .dp-template-formatbar,
+            .dp-template-insert-menu { transition: none; }
           }
           .dp-template-block-ui {
             display: flex;
@@ -2193,6 +2204,17 @@ const DP = (() => {
     _applyTemplateTweaks();
     _autofillTemplateMeta();
     _installTemplateCanvasEditor();
+    // Seed the author initial used by auto doc numbers, then regenerate once so
+    // the numbers carry the real initial instead of the load-time random fallback.
+    try {
+      const meta = _templateUserMeta();
+      win.__DP_AUTHOR_INITIAL = (meta.author || '').trim().charAt(0) || '';
+      if (win.__DP_AUTHOR_INITIAL && !win.__DP_DOCNO_AUTHORED && typeof win.DPTemplateNewDocNumbers === 'function') {
+        win.__DP_DOCNO_AUTHORED = true;
+        win.DPTemplateNewDocNumbers();
+        _autofillTemplateMeta();
+      }
+    } catch (_) {}
   }
 
   function _activeTemplateDocument() {
@@ -2392,12 +2414,50 @@ const DP = (() => {
         _templateHideBlockTools(doc);
       }
     }, true);
+    // Hovering a tool pauses the auto-dissolve; leaving re-arms the 5s timer.
+    [blockUi, menu, formatbar].forEach(el => {
+      el.addEventListener('mouseenter', () => _templateClearToolFade(doc));
+      el.addEventListener('mouseleave', () => _templateArmToolFade(doc));
+    });
   }
 
   function _templateNearestBlock(doc) {
     const active = doc && doc.activeElement;
     if (active && active.closest) return active.closest('.dp-template-edit-block');
     return null;
+  }
+
+  // ---- canvas tool auto-dissolve (block-ui / formatbar / insert-menu) ----
+  // The floating ↕/+ and B/H tools used to linger on screen. Fade them out
+  // ~5s after the last interaction so they don't clutter the page. Hovering a
+  // tool pauses the fade; showing/repositioning re-arms it.
+  let _templateToolFadeTimer = null;
+  let _templateToolFadeKill = null;
+  function _templateToolEls(doc) {
+    if (!doc) return [];
+    return [
+      doc.querySelector('.dp-template-block-ui'),
+      doc.querySelector('.dp-template-formatbar'),
+      doc.querySelector('.dp-template-insert-menu'),
+    ].filter(Boolean);
+  }
+  function _templateClearToolFade(doc) {
+    clearTimeout(_templateToolFadeTimer);
+    clearTimeout(_templateToolFadeKill);
+    _templateToolEls(doc || _activeTemplateDocument()).forEach(el => el.classList.remove('dp-tool-dissolve'));
+  }
+  function _templateArmToolFade(doc) {
+    doc = doc || _activeTemplateDocument();
+    if (!doc) return;
+    _templateClearToolFade(doc);
+    _templateToolFadeTimer = setTimeout(() => {
+      const els = _templateToolEls(doc).filter(el => !el.hidden);
+      if (!els.length) return;
+      els.forEach(el => el.classList.add('dp-tool-dissolve'));
+      _templateToolFadeKill = setTimeout(() => {
+        els.forEach(el => { el.hidden = true; el.classList.remove('dp-tool-dissolve'); });
+      }, 520);
+    }, 5000);
   }
 
   function _templateShowBlockTools(block) {
@@ -2410,6 +2470,7 @@ const DP = (() => {
     ui.hidden = false;
     _templatePositionBlockTools();
     _templatePositionFormatbar();
+    _templateArmToolFade(doc);
   }
 
   function _templateHideBlockTools(doc) {
@@ -2417,6 +2478,7 @@ const DP = (() => {
     const bar = doc && doc.querySelector('.dp-template-formatbar');
     if (ui) ui.hidden = true;
     if (bar) bar.hidden = true;
+    _templateClearToolFade(doc);
   }
 
   function _templatePositionBlockTools() {
@@ -2443,6 +2505,7 @@ const DP = (() => {
     if (plus) plus.setAttribute('aria-expanded', 'true');
     menu.style.left = Math.max(6, rect.left - 2) + 'px';
     menu.style.top = Math.max(6, rect.top + Math.min(30, rect.height)) + 'px';
+    _templateArmToolFade(doc);
   }
 
   function _templatePositionFormatbar() {
@@ -2460,6 +2523,7 @@ const DP = (() => {
     bar.hidden = false;
     bar.style.left = Math.max(6, rect.left) + 'px';
     bar.style.top = Math.max(6, rect.top - 34) + 'px';
+    _templateArmToolFade(doc);
   }
 
   function _templateInsertBlock(kind, reference) {
@@ -2699,17 +2763,18 @@ const DP = (() => {
     _templateMarkDirty();
   }
 
+  // DP-DOC-YYYYMMDD-{author initial}{2 random letters}{4 random digits}
   function _templateDocNumber() {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const digits = '0123456789'.split('');
-    let alpha = '';
-    for (let i = 0; i < 3; i++) alpha += letters.charAt(Math.floor(Math.random() * letters.length));
+    const rl = () => letters.charAt(Math.floor(Math.random() * letters.length));
+    const meta = _templateUserMeta();
+    const initial = (meta.author || '').trim().charAt(0).toUpperCase() || rl();
     let nums = '';
-    for (let i = 0; i < 4; i++) {
-      const n = Math.floor(Math.random() * digits.length);
-      nums += digits.splice(n, 1)[0];
-    }
-    return 'DP-DOC-' + new Date().getFullYear() + '-' + alpha + nums;
+    for (let i = 0; i < 4; i++) nums += String(Math.floor(Math.random() * 10));
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    const ymd = '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate());
+    return 'DP-DOC-' + ymd + '-' + initial + rl() + rl() + nums;
   }
 
   function _templateReload() {
@@ -2764,7 +2829,8 @@ const DP = (() => {
   function _templateExtractDocNumber(frame) {
     const ref = frame && (frame.querySelector('.docref b') || frame.querySelector('.docref') || frame.querySelector('.refrow .r .v'));
     let text = String(ref && ref.textContent || '').trim();
-    const match = text.match(/DP-DOC-\d{4}-[A-Z]{3}\d{4}/i);
+    // new: DP-DOC-YYYYMMDD-{initial}{2 letters}{4 digits}; old: DP-DOC-YYYY-AAA1234
+    const match = text.match(/DP-DOC-(?:\d{8}-[A-Za-z0-9가-힣][A-Za-z]{2}|\d{4}-[A-Za-z]{3})\d{4}/i);
     if (match) return match[0].toUpperCase();
     text = _templateDocNumber();
     const slot = frame && (frame.querySelector('.docref b') || frame.querySelector('.docref'));

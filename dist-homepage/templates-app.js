@@ -28,7 +28,7 @@
   document.querySelectorAll('.star').forEach(function(s){ if(!s.querySelector('svg')) s.appendChild(starTpl.content.cloneNode(true)); });
 
   // record an automatically generated document number in each numbered header
-  // Rule: DP-DOC-YYYY-AAA1234. The four digits are unique within the number.
+  // Rule: DP-DOC-YYYYMMDD-{author initial}{2 random letters}{4 random digits}
   var DOC_TARGETS=['letterhead','press','general','weekly','brief','minutes'];
   function rand(max){
     if(window.crypto && crypto.getRandomValues){
@@ -36,25 +36,23 @@
     }
     return Math.floor(Math.random()*max);
   }
-  function letters(){
-    var out='', abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    for(var i=0;i<3;i++) out += abc.charAt(rand(abc.length));
-    return out;
-  }
-  function uniqueDigits(){
-    var pool='0123456789'.split(''), out='';
-    for(var i=0;i<4;i++){
-      var n=rand(pool.length);
-      out += pool.splice(n,1)[0];
-    }
-    return out;
+  var ABC='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  function letters(n){ var out=''; for(var i=0;i<n;i++) out+=ABC.charAt(rand(26)); return out; }
+  function digits(n){ var out=''; for(var i=0;i<n;i++) out+=String(rand(10)); return out; }
+  function ymd(){ var d=new Date(), p=function(x){return (x<10?'0':'')+x;}; return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate()); }
+  // First character of the document author's name. The parent app sets
+  // window.__DP_AUTHOR_INITIAL after the frame loads; until then (or when
+  // unknown) we fall back to a random letter so the number is still valid.
+  function authorChar(){
+    var a=(window.__DP_AUTHOR_INITIAL||'').toString().trim();
+    if(a) return a.charAt(0).toUpperCase();
+    return ABC.charAt(rand(26));
   }
   function docNo(){
-    var year=(new Date()).getFullYear();
     var used={};
     try{ used=JSON.parse(localStorage.getItem('dp_template_doc_numbers')||'{}')||{}; }catch(e){}
-    var no;
-    do { no='DP-DOC-'+year+'-'+letters()+uniqueDigits(); } while(used[no]);
+    var no, guard=0;
+    do { no='DP-DOC-'+ymd()+'-'+authorChar()+letters(2)+digits(4); } while(used[no] && ++guard<50);
     used[no]=Date.now();
     try{ localStorage.setItem('dp_template_doc_numbers', JSON.stringify(used)); }catch(e){}
     return no;
@@ -614,6 +612,52 @@
     [].slice.call(fr.querySelectorAll('[data-sample]')).forEach(function(el){ el.textContent=''; });
     syncAutoPages();
   };
+
+  // ---- Notion-style markdown shortcuts + Tab/Shift+Tab indent ----
+  // Only inside content areas (.letter-body / .pr-body / .sec); meta fields,
+  // titles and the doc number keep plain Tab/typing behaviour.
+  function _mdBlock(){
+    var sel=document.getSelection&&document.getSelection();
+    if(!sel||!sel.rangeCount) return null;
+    var n=sel.anchorNode, el=n&&(n.nodeType===1?n:n.parentNode);
+    el=el&&el.closest&&el.closest('[contenteditable="true"]');
+    if(!el || el.matches('h1,h2,h3,th')) return null;
+    return el.closest('.letter-body, .pr-body, .sec') ? el : null;
+  }
+  function _mdCaretStart(el){
+    var sel=document.getSelection(), r=document.createRange();
+    r.selectNodeContents(el); r.collapse(true);
+    sel.removeAllRanges(); sel.addRange(r);
+  }
+  document.addEventListener('input', function(){
+    var el=_mdBlock(); if(!el) return;
+    var txt=el.textContent||'', m;
+    // # / ## / ### -> heading (more hashes = smaller, standard markdown/Notion)
+    if((m=txt.match(/^(#{1,3})[\s ]/))){
+      el.classList.remove('md-h1','md-h2','md-h3','md-bullet','md-num');
+      el.classList.add('md-h'+m[1].length);
+      el.textContent=txt.slice(m[0].length); _mdCaretStart(el);
+    } else if((m=txt.match(/^[-*][\s ]/))){
+      el.classList.remove('md-h1','md-h2','md-h3','md-num');
+      el.classList.add('md-bullet');
+      el.textContent=txt.slice(m[0].length); _mdCaretStart(el);
+    } else if((m=txt.match(/^\d+\.[\s ]/))){
+      el.classList.remove('md-h1','md-h2','md-h3','md-bullet');
+      el.classList.add('md-num');
+      el.textContent=txt.slice(m[0].length); _mdCaretStart(el);
+    }
+  }, true);
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Tab') return;
+    var el=_mdBlock(); if(!el) return;
+    e.preventDefault();
+    var lvl=parseInt(el.getAttribute('data-indent')||'0',10);
+    lvl = e.shiftKey ? Math.max(0,lvl-1) : Math.min(5,lvl+1);
+    if(lvl) el.setAttribute('data-indent',String(lvl)); else el.removeAttribute('data-indent');
+    scheduleAutoPages();
+  }, true);
+  // expose for tests
+  window.DPTemplateMdBlock = _mdBlock;
 
   window.addEventListener('resize', function(){ fit(); scheduleAutoPages(); });
 
