@@ -454,6 +454,7 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-btn-ico {
   width: 14px; height: 14px;
   background-color: currentColor;
+  -webkit-mask-image: var(--dp-icon); mask-image: var(--dp-icon);
   -webkit-mask-size: 14px 14px; mask-size: 14px 14px;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-position: center; mask-position: center;
@@ -918,8 +919,8 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
 .dp-template-save-status {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 9px;
+  height: var(--row-default);
+  padding: 0 10px;
   border: var(--bd);
   border-radius: var(--r-sm);
   background: var(--surface);
@@ -935,11 +936,12 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: 8px;
   padding: 10px;
   border-bottom: var(--bd);
   background: var(--surface);
 }
+.dp-template-savebox .dp-btn { width: 100%; }
 .dp-template-savebox span {
   color: var(--text-3);
   font-size: var(--fs-11);
