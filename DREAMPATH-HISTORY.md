@@ -66,18 +66,25 @@ reflow per keystroke. The Official Letter took the brunt because of its
   대부분의 타이핑이 여기 해당, 캐럿 파괴 제거.
 - (b) reflow가 실제 일어날 때만 `captureCaret()→reflow→restoreCaret()`로 캐럿 보존
   (`data-dp-edit-id` + 문자 오프셋 기준).
-- (c) 분할된 문단 tail에 `data-auto-split="1"` 표시 → 다음 reflow에서 **머지**해
-  편집 반복 시 영구 분절 방지.
-- (d) 한 페이지보다 큰 단일 문단이 더 못 쪼개질 때 다음 페이지로 무한 이동하지 않도록
-  **과다 페이지 가드**.
+- (c) **순서 보존 페이지네이션**: 분할은 "넘치는 첫 노드(+이후 전부)"를 통째로 다음
+  장으로 밀고(`paginateBox`), 분할 tail은 `data-split-of`↔`data-split-src` source-id로
+  재결합(`restoreFlowToFirst`)해 매 reflow마다 1페이지로 정규화 후 재분할. 인접 기반
+  머지를 쓰던 초판은 `sal→body→sign→encl` 구조에서 body tail이 enclosure에 잘못 붙어
+  내용이 어긋나고 페이지가 폭주(헤드리스 테스트로 15·398장 검출)했다.
+- (d) 한 페이지보다 큰 **단일 분할불가 노드**(예: 거대 `.sec` div)는 다음 장으로
+  무한 이동하지 않고 그 자리에 두어(클립) **과다 페이지 폭주 차단**.
 - (e) 부모 키 입력 핸들러의 **이중 sync 제거**(구조 편집 경로는 유지).
 - (f) iframe src에 앱 배포 토큰 `?v=` 부여 — iframe HTML 문서 자체는 캐시버스트가
   없었음(deploy.sh는 HTML *내부* 토큰만 치환).
 
 **구현 / Implementation**
 - `dist-homepage/templates-app.js`: `captureCaret()`/`restoreCaret()` 추가,
-  `syncAutoPages()` fast-path + 캐럿 보존 + 가드, `cloneForOverflow()` tail 마킹,
-  `restoreFlowToFirst()` 머지, 디바운스 80→130ms.
+  `syncAutoPages()` fast-path + 캐럿 보존, 순서보존 `paginateBox()`(기존
+  `moveLastFlowToNext`/`splitLastFlowToNext` 대체), source-id 재결합
+  `restoreFlowToFirst()` + `splitSrcId()`/`makeSplitTail()`, 디바운스 80→130ms.
+- **검증**: 헤드리스 Chrome(CDP) 자동 테스트 15종 — placeholder·오버플로 분할(2장)·
+  내용 무손실·페이지번호·프래그먼트 비누적·shrink 1장 복귀·커서 보존(빠른/reflow 경로)·
+  general 다중섹션 순서보존 전부 통과(errors=0).
 - `js/dreampath.js`: 템플릿 input 핸들러에서 `_templateRequestFlowSync()` 제거,
   `_renderDocumentTemplates()`에서 dreampath.js 스크립트 태그의 `?v=`를 읽어 iframe src에 부여.
 - `dist-homepage/DreamPath - Document Templates.html`: 공식 서한·보도자료·일반문서·

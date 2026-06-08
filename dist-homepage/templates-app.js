@@ -264,28 +264,36 @@
     });
     return out;
   }
-  function restoreFlowToFirst(fr, nodes){
+  // Generate / fetch a stable id used to reunite a split tail with its source.
+  var __splitSeq=0;
+  function splitSrcId(node){
+    var id=node.getAttribute('data-split-src');
+    if(!id){ id='s'+(++__splitSeq); node.setAttribute('data-split-src', id); }
+    return id;
+  }
+  // [CASE STUDY 2026-06-09 — order-preserving reflow]
+  // 증상(초판): 본문 tail 이 다른 문단(enclosure)에 잘못 병합 + 페이지 폭주(15·398장).
+  // 원인: 트레일링 노드를 먼저 다음 장으로 옮겨 순서가 깨지고, 인접 기반 머지가 오작동.
+  // 교훈: tail 은 source-id(data-split-of↔data-split-src)로 재결합하고, 분할은
+  //       "넘치는 첫 노드 + 그 이후 전부"를 통째로 다음 장으로 밀어 문서 순서를 보존한다.
+  //       인접 가정 금지. 참고: DREAMPATH-HISTORY.md 2026-06-09.
+  // Reunite every split tail with its source node, then pull the canonical
+  // ordered flow back onto page 1 and drop continuation pages.
+  function restoreFlowToFirst(fr){
     var first=fr.querySelector('.docbox');
     var body=pageBody(first);
     if(!body) return;
+    [].slice.call(fr.querySelectorAll('[data-split-of]')).forEach(function(t){
+      var srcId=t.getAttribute('data-split-of');
+      var sel='[data-split-src="'+((window.CSS&&CSS.escape)?CSS.escape(srcId):srcId)+'"]';
+      var src=fr.querySelector(sel);
+      if(src) src.textContent=String(src.textContent||'')+String(t.textContent||'');
+      if(t.parentNode) t.parentNode.removeChild(t);
+    });
     [].slice.call(body.children).forEach(function(n){
       if(n.hasAttribute && n.hasAttribute('data-auto-flow-anchor') && !String(n.textContent||'').trim()) n.remove();
     });
-    // Merge auto-split tails back into their head node (same tag, plain text)
-    // so editing a paragraph that previously overflowed does not accumulate
-    // more and more fragments on every keystroke.
-    var merged=[];
-    nodes.forEach(function(n){
-      var prev=merged[merged.length-1];
-      if(prev && n.getAttribute && n.getAttribute('data-auto-split')==='1' &&
-         prev.tagName===n.tagName && !hasRichInline(prev) && !hasRichInline(n)){
-        prev.textContent=String(prev.textContent||'')+String(n.textContent||'');
-        if(n.parentNode) n.parentNode.removeChild(n);
-      } else {
-        merged.push(n);
-      }
-    });
-    merged.forEach(function(n){ if(n.removeAttribute) n.removeAttribute('data-auto-split'); body.appendChild(n); });
+    collectFlowNodes(fr).forEach(function(n){ body.appendChild(n); });
     [].slice.call(fr.querySelectorAll('.docbox.cont')).forEach(function(c){ c.remove(); });
   }
   function ensureEditableStart(fr){
@@ -370,30 +378,24 @@
     var pr=pad.getBoundingClientRect();
     return (nr.bottom - pr.top);
   }
-  function splitLastFlowToNext(fr, box, node){
-    if(!canSplitNode(node)) return false;
-    if(hasRichInline(node)) return false;
+  // Split a plain-text node at the page boundary; returns the tail node (NOT yet
+  // inserted) carrying data-split-of so a later reflow can reunite it, or null
+  // if the node cannot be usefully split at this position.
+  function makeSplitTail(box, node){
+    if(!canSplitNode(node) || hasRichInline(node)) return null;
     var original=String(node.textContent||'');
     var units=splitUnits(original);
-    if(units.length<9) return false;
+    if(units.length<2) return null;
     var idx=fitSplitIndex(box, node, units);
-    if(idx<1) idx=Math.max(1, Math.floor(units.length/2));
-    if(idx>=units.length) return false;
+    if(idx<1 || idx>=units.length) return null;
     var head=units.slice(0, idx).join('');
     var tail=units.slice(idx).join('');
-    if(!head || !tail || head+tail!==original) return false;
-    var next=ensureNextBox(fr, box);
-    var nextBody=pageBody(next);
-    if(!nextBody) return false;
+    if(!head || !tail || head+tail!==original) return null;
     var overflow=cloneForOverflow(node);
+    overflow.setAttribute('data-split-of', splitSrcId(node));
     node.textContent=head;
     overflow.textContent=tail;
-    if((node.textContent||'') + (overflow.textContent||'') !== original){
-      node.textContent=original;
-      return false;
-    }
-    nextBody.insertBefore(overflow, nextBody.firstChild);
-    return true;
+    return overflow;
   }
   function ensureNextBox(fr, currentBox){
     var next=currentBox && currentBox.nextElementSibling;
@@ -404,21 +406,29 @@
     if(next && parent) parent.appendChild(next);
     return next;
   }
-  function moveLastFlowToNext(fr, box){
+  // Push the first node that crosses the page boundary (split if it is plain
+  // text) together with every node after it onto the next page, preserving
+  // document order. Returns true if anything moved.
+  function paginateBox(fr, box){
+    var doc=box.querySelector('.doc');
+    if(!doc) return false;
+    var limit=overflowLimit(doc);
     var nodes=box.classList.contains('cont') ? contFlowNodes(box) : firstFlowNodes(box);
     if(!nodes.length) return false;
-    var doc=box.querySelector('.doc');
-    var limit=doc ? overflowLimit(doc) : 0;
-    var splittable=null;
-    for(var i=nodes.length-1;i>=0;i--){
-      if(canSplitNode(nodes[i]) && (!limit || nodeBottomInPage(box, nodes[i]) > limit)){ splittable=nodes[i]; break; }
+    var breakIdx=-1;
+    for(var i=0;i<nodes.length;i++){
+      if(nodeBottomInPage(box, nodes[i])>limit){ breakIdx=i; break; }
     }
-    if(splittable && splitLastFlowToNext(fr, box, splittable)) return true;
-    var last=nodes[nodes.length-1];
+    if(breakIdx<0) return false;
     var next=ensureNextBox(fr, box);
     var nextBody=pageBody(next);
     if(!nextBody) return false;
-    nextBody.insertBefore(last, nextBody.firstChild);
+    var ref=nextBody.firstChild;
+    var moveFrom=breakIdx;
+    var tail=makeSplitTail(box, nodes[breakIdx]);
+    if(tail){ nextBody.insertBefore(tail, ref); moveFrom=breakIdx+1; }
+    else if(breakIdx===0){ return false; }  // single oversized node we can't split → leave (clip) rather than spawn endless pages
+    for(var j=moveFrom;j<nodes.length;j++){ nextBody.insertBefore(nodes[j], ref); }
     return true;
   }
   function updatePageNumbers(fr){
@@ -504,22 +514,14 @@
       return;
     }
     var caret=captureCaret();
-    var nodes=collectFlowNodes(fr);
-    restoreFlowToFirst(fr, nodes);
+    restoreFlowToFirst(fr);
+    // Each page fills maximally, then pushes its remainder forward, so one pass
+    // per page in order is enough. guard is a backstop, not the mechanism.
     var guard=0;
     var boxes=[].slice.call(fr.querySelectorAll('.docbox'));
-    for(var i=0;i<boxes.length && guard<400;i++){
-      var box=boxes[i];
-      while(boxOverflow(box)>0 && guard<400){
-        var flowNodes=box.classList.contains('cont')?contFlowNodes(box):firstFlowNodes(box);
-        // Runaway guard: a single flow node taller than one page can't shrink
-        // unless it is splittable. Moving it to a fresh page would just
-        // overflow again → endless pages. Leave it (clip) instead.
-        if(flowNodes.length<=1 && !(flowNodes.length===1 && canSplitNode(flowNodes[0]) && !hasRichInline(flowNodes[0]))) break;
-        if(!moveLastFlowToNext(fr, box)) break;
-        guard++;
-        boxes=[].slice.call(fr.querySelectorAll('.docbox'));
-      }
+    for(var i=0;i<boxes.length && guard<80;i++){
+      if(paginateBox(fr, boxes[i])) guard++;
+      boxes=[].slice.call(fr.querySelectorAll('.docbox'));
     }
     var last;
     while((last=fr.querySelector('.docbox.cont:last-child'))){
