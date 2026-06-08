@@ -273,6 +273,44 @@
     if(!doc) return 0;
     return pageContentHeight(box) - overflowLimit(doc);
   }
+  function canSplitNode(node){
+    return !!(node && node.matches && node.matches('p.body, li, .sal, .encl') && String(node.textContent||'').trim().split(/\s+/).length > 8);
+  }
+  function cloneForOverflow(node){
+    var clone=node.cloneNode(false);
+    clone.removeAttribute('data-dp-edit-id');
+    clone.removeAttribute('data-dp-block-id');
+    clone.setAttribute('contenteditable','true');
+    return clone;
+  }
+  function fitSplitIndex(box, node, words){
+    var original=node.textContent || '';
+    var low=1, high=words.length-1, best=0;
+    while(low<=high){
+      var mid=Math.floor((low+high)/2);
+      node.textContent=words.slice(0, mid).join(' ');
+      if(boxOverflow(box)<=0){ best=mid; low=mid+1; }
+      else high=mid-1;
+    }
+    node.textContent=original;
+    return best;
+  }
+  function splitLastFlowToNext(fr, box, node){
+    if(!canSplitNode(node)) return false;
+    var words=String(node.textContent||'').trim().split(/\s+/).filter(Boolean);
+    if(words.length<9) return false;
+    var idx=fitSplitIndex(box, node, words);
+    if(idx<1) idx=1;
+    if(idx>=words.length) return false;
+    var next=ensureNextBox(fr, box);
+    var nextBody=pageBody(next);
+    if(!nextBody) return false;
+    var overflow=cloneForOverflow(node);
+    node.textContent=words.slice(0, idx).join(' ');
+    overflow.textContent=words.slice(idx).join(' ');
+    nextBody.insertBefore(overflow, nextBody.firstChild);
+    return true;
+  }
   function ensureNextBox(fr, currentBox){
     var next=currentBox && currentBox.nextElementSibling;
     if(next && next.classList.contains('docbox')) return next;
@@ -285,10 +323,12 @@
   function moveLastFlowToNext(fr, box){
     var nodes=box.classList.contains('cont') ? contFlowNodes(box) : firstFlowNodes(box);
     if(!nodes.length) return false;
+    var last=nodes[nodes.length-1];
+    if(nodes.length===1 && splitLastFlowToNext(fr, box, last)) return true;
     var next=ensureNextBox(fr, box);
     var nextBody=pageBody(next);
     if(!nextBody) return false;
-    nextBody.insertBefore(nodes[nodes.length-1], nextBody.firstChild);
+    nextBody.insertBefore(last, nextBody.firstChild);
     return true;
   }
   function updatePageNumbers(fr){
