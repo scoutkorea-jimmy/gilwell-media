@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.170.09",
+    "date": "2026-06-09",
+    "released_at": "2026-06-09 00:19:31 KST",
+    "summary": "Dreampath 문서 제작기에서 긴 본문 입력 시 텍스트가 사라지지 않도록 자동 페이지 분할과 CSP를 보정했습니다.",
+    "for_users": [
+      "문서 본문을 길게 입력해도 자동 페이지 처리 과정에서 입력한 텍스트가 유실되지 않도록 수정했습니다.",
+      "문서 템플릿 iframe에서 Cloudflare Insights 스크립트가 CSP에 막혀 콘솔 오류가 나던 문제를 바로잡았습니다."
+    ],
+    "for_developers": [
+      "dist-homepage/templates-app.js: fitSplitIndex가 실제 contenteditable node.textContent를 반복 변경하던 방식을 제거하고, 숨김 clone 측정 + 최종 1회 split + head/tail 보존 검증으로 교체.",
+      "dist-homepage/templates-app.js: rich inline이 있는 블록은 자동 plain-text split 대상에서 제외해 볼드 등 inline 구조를 임의로 파괴하지 않도록 처리.",
+      "functions/_middleware.js: /dist-homepage/* template CSP에 https://static.cloudflareinsights.com 및 template/legacy용 script-src-elem을 명시해 Cloudflare beacon script element 로드를 허용.",
+      "사이트 버전 00.170.08 → 00.170.09."
+    ]
+  },
+  {
     "version": "00.170.08",
     "date": "2026-06-08",
     "released_at": "2026-06-08 22:38:24 KST",

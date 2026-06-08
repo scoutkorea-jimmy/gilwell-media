@@ -131,10 +131,15 @@ function buildCsp(request, nonce) {
   //   - Admin/KMS: legacy 'unsafe-inline' until every inline handler in
   //     admin.html is migrated.
   const scriptSrc = template
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com"
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com https://static.cloudflareinsights.com"
     : legacy
     ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
     : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`;
+  const scriptSrcElem = template
+    ? "script-src-elem 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com https://static.cloudflareinsights.com"
+    : legacy
+    ? "script-src-elem 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
+    : "";
 
   // Style policy is left as-is — inline `style="..."` attributes are sprinkled
   // throughout the markup (both admin and public) and tightening style-src
@@ -145,6 +150,7 @@ function buildCsp(request, nonce) {
   return [
     "default-src 'self'",
     scriptSrc,
+    scriptSrcElem,
     styleSrc,
     "img-src 'self' data: https:",
     // fonts.gstatic.com is where Google Fonts actually serves .woff2 files.
@@ -164,7 +170,7 @@ function buildCsp(request, nonce) {
     "base-uri 'self'",
     "form-action 'self'",
     template ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
-  ].join('; ');
+  ].filter(Boolean).join('; ');
 }
 
 function getPathname(request) {

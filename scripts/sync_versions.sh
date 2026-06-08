@@ -62,6 +62,7 @@ perl -0pi -e "s#/css/memorabilia\\.css\\?v=[0-9A-Za-z.-]+#/css/memorabilia.css?v
 perl -0pi -e "s#/js/admin-memorabilia\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-memorabilia.js?v=${ASSET_VERSION}#g; s#/js/admin-memorabilia-comments\\.js\\?v=[0-9A-Za-z.-]+#/js/admin-memorabilia-comments.js?v=${ASSET_VERSION}#g; s#/js/memorabilia-shared\\.js\\?v=[0-9A-Za-z.-]+#/js/memorabilia-shared.js?v=${ASSET_VERSION}#g; s#/css/memorabilia\\.css\\?v=[0-9A-Za-z.-]+#/css/memorabilia.css?v=${ASSET_VERSION}#g" admin.html
 
 perl -0pi -e "s/\\/js\\/dreampath\\.js\\?v=[0-9A-Za-z.-]+/\\/js\\/dreampath.js?v=${ASSET_VERSION}/g" dreampath.html
+perl -0pi -e "s#dp-assets\\.js\\?v=[0-9A-Za-z.-]+#dp-assets.js?v=${ASSET_VERSION}#g; s#templates-export\\.js\\?v=[0-9A-Za-z.-]+#templates-export.js?v=${ASSET_VERSION}#g; s#templates-app\\.js\\?v=[0-9A-Za-z.-]+#templates-app.js?v=${ASSET_VERSION}#g" "dist-homepage/DreamPath - Document Templates.html"
 
 perl -0pi -e "s/GW\\.APP_VERSION = '[0-9.]+'/GW.APP_VERSION = '${SITE_VERSION}'/g; s/GW\\.ADMIN_VERSION = '[0-9.]+'/GW.ADMIN_VERSION = '${ADMIN_VERSION}'/g; s/GW\\.ASSET_VERSION = '[^']+'/GW.ASSET_VERSION = '${ASSET_VERSION}'/g" js/main.js
 perl -0pi -e "s/Version: [0-9.]+/Version: ${ADMIN_VERSION}/g" js/admin-v3.js
