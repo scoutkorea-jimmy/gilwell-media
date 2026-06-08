@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DreamPath — Document Templates</title>
+<link rel="stylesheet" href="templates.css">
+<style id="pagesize">@page{size:210mm 297mm;margin:0;}</style>
+</head>
+<body data-importance="standard" data-density="comfortable" data-paper="white">
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <rect width="400" height="400" rx="72" fill="#1E1654"></rect>
+  <g transform="translate(46,86) scale(0.34)">
+    <polygon fill="#FFFFFF" points="190.41 106.22 549.95 163.24 549.95 338.44 512.1 349.86 512.1 205.25 239.07 161.95 239.07 643.17 190.41 660.29 190.41 106.22"></polygon>
+    <path fill="#F4B72E" d="M754.31,285.71l25.52,3.92c2.52.39,2.52,4.02,0,4.4l-25.52,3.92c-12.26,1.88-21.88,11.51-23.77,23.77l-3.92,25.52c-.39,2.52-4.02,2.52-4.4,0l-3.92-25.52c-1.88-12.26-11.51-21.88-23.77-23.77l-25.52-3.92c-2.52-.39-2.52-4.02,0-4.4l25.52-3.92c12.26-1.88,21.88-11.51,23.77-23.77l3.92-25.51c.39-2.52,4.02-2.52,4.4,0l3.92,25.51c1.88,12.26,11.51,21.88,23.77,23.77Z"></path>
+    <path fill="#9D6BE0" d="M683.76,336.12s-91.16,22.9-131.86,51.44c-40.7,28.54-6.16,45.81,13.07,55.72,19.22,9.91,104.98,41.75,129.76,67.73,24.78,25.98,28.69,45.06,18.77,80.65-9.91,35.59-82.45,89.36-82.45,89.36H241.32s184.28-58.12,211.99-66.91c27.71-8.79,116.24-37.85,116.24-72.99s-62.18-60.82-80.42-71.19c-18.25-10.36-44.6-20.27-44.6-44.6s45.06-42.88,87.41-56.24c42.35-13.37,136.37-30.64,151.84-32.97Z"></path>
+  </g>
+  <text x="200" y="332" text-anchor="middle" font-family="Pretendard, system-ui, sans-serif" font-weight="700" font-size="44" fill="#FFFFFF">Dream Path</text>
+  <text x="200" y="362" text-anchor="middle" font-family="Pretendard, system-ui, sans-serif" font-weight="500" font-size="18" letter-spacing="1" fill="#C9A8F0">Document Templates</text>
+</svg>
+</template>
+<div id="app">
+
+  <!-- ============ RAIL ============ -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <span class="mk"></span>
+      <span class="t"><b>Dream Path</b><span>Document Templates</span></span>
+    </div>
+
+    <div class="rail-grp">Overview</div>
+    <button class="rail-btn on" data-target="guide">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M13 3v5h5M8 13h7M8 16h5"></path></svg>
+      Format Guide <span class="or">A4 ↕</span>
+    </button>
+
+    <div class="rail-grp">Correspondence</div>
+    <button class="rail-btn" data-target="letterhead">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"></path><path d="M4 8h16"></path><path d="M8 13h8M8 16h5"></path></svg>
+      Official Letter <span class="or">A4 ↕</span>
+    </button>
+    <button class="rail-btn" data-target="press">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"></path><path d="M17 8h2a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2"></path><path d="M7 8h7M7 11h7M7 14h4"></path></svg>
+      Press Release <span class="or">A4 ↕</span>
+    </button>
+
+    <div class="rail-grp">Internal / 업무</div>
+    <button class="rail-btn" data-target="general">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 12h7M9 16h7M9 8h2"></path></svg>
+      General Document <span class="or">A4 ↕</span>
+    </button>
+    <button class="rail-btn" data-target="weekly">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"></rect><path d="M4 9h16M8 3v4M16 3v4M8 13h3M8 17h3M14 13h2M14 17h2"></path></svg>
+      Weekly Report <span class="or">A4 ↕</span>
+    </button>
+    <button class="rail-btn" data-target="brief">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>
+      Project Brief <span class="or">A4 ↕</span>
+    </button>
+
+    <div class="rail-grp">Records</div>
+    <button class="rail-btn" data-target="minutes">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M9 4a2 2 0 0 0-2 2M15 4a2 2 0 0 1 2 2"></path><rect x="5" y="6" width="14" height="15" rx="2"></rect><path d="M9 11h6M9 15h4"></path></svg>
+      Meeting Minutes <span class="or">A4 ↕</span>
+    </button>
+
+    <div class="rail-grp">Covers</div>
+    <button class="rail-btn" data-target="cover-p">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="1.5"></rect><path d="M9 8h6"></path></svg>
+      Cover — Portrait <span class="or">A4 ↕</span>
+    </button>
+    <button class="rail-btn" data-target="cover-l">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="1.5"></rect><path d="M7 11h7"></path></svg>
+      Cover — Landscape <span class="or">A4 ↔</span>
+    </button>
+
+    <div class="rail-grp">Mailing</div>
+    <button class="rail-btn" data-target="envelope">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>
+      Envelope <span class="or">DL</span>
+    </button>
+
+    <div class="rail-grp">Identity</div>
+    <button class="rail-btn" data-target="card">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 14h4M14 11h4M14 14h3"></path><circle cx="8.5" cy="10.5" r="1.5"></circle></svg>
+      Business Card <span class="or">90×50</span>
+    </button>
+    <button class="rail-btn" data-target="sig">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9 6 9-6"></path><rect x="3" y="5" width="18" height="14" rx="2"></rect></svg>
+      Email Signature <span class="or">HTML</span>
+    </button>
+
+    <div class="rail-foot">
+      <p>Click any field to edit. Save as <b>PDF</b> or <b>Word</b> — open in Google Docs, Word, or Hancom.<br><a href="https://koreadreampath.com">koreadreampath.com</a></p>
+    </div>
+  </aside>
+
+  <!-- ============ STAGE ============ -->
+  <main id="stage">
+
+    <!-- ===== FORMAT GUIDE ===== -->
+    <div class="frame on" data-orient="portrait" data-target="guide">
+      <div class="tpl-cap"><h2>Format Guide</h2><span>A4 portrait · 3 pages · how the document system works</span></div>
+      <div class="sheet-wrap">
+
+        <div class="docbox"><div class="doc a4p guide">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Format Guide</div><div class="chip-slot"></div></div>
+          </div>
+          <div class="guide-title">
+            <p class="kick">Document System · Quick reference</p>
+            <h1 contenteditable="true">One template family,<br>three levels of importance.</h1>
+            <p contenteditable="true">Every Korea Dream Path document shares the same header, footer, and four-point star. Edit any field directly on the page, then save as PDF or Word — ready for Google Docs, Word, or Hancom.</p>
+          </div>
+          <div class="guide-grid">
+            <div class="g-card">
+              <h4>Importance — 3 levels</h4>
+              <div class="lvl-list">
+                <div class="lvl-item"><span class="lvl-chip s1"><span class="star"></span></span><div class="lx"><b>Standard <span class="hex">· Deep Indigo #1E1654</span></b><span class="use">Routine, day-to-day documents</span></div></div>
+                <div class="lvl-item"><span class="lvl-chip s2"><span class="star"></span><span class="star"></span></span><div class="lx"><b>Important <span class="hex">· Vivid Purple #6B2DBE</span></b><span class="use">Confidential or decision-bearing</span></div></div>
+                <div class="lvl-item"><span class="lvl-chip s3"><span class="star"></span><span class="star"></span><span class="star"></span></span><div class="lx"><b>Priority <span class="hex">· Star Gold #F4B72E</span></b><span class="use">Action required, time-critical</span></div></div>
+              </div>
+            </div>
+            <div class="g-card">
+              <h4>Brand palette — 3 tones only</h4>
+              <div class="g-pal">
+                <div class="g-sw"><div class="fill" style="background:#F4B72E"></div><div class="meta"><b>Star Gold</b><span class="hex">#F4B72E</span></div></div>
+                <div class="g-sw"><div class="fill" style="background:#6B2DBE"></div><div class="meta"><b>Vivid Purple</b><span class="hex">#6B2DBE</span></div></div>
+                <div class="g-sw"><div class="fill" style="background:#1E1654"></div><div class="meta"><b>Deep Indigo</b><span class="hex">#1E1654</span></div></div>
+              </div>
+              <p class="body" style="font-size:10.5px;margin-top:13px;">To keep the star meaningful, it appears only in these three tones. No other colour is used for it.</p>
+            </div>
+            <div class="g-card full">
+              <h4>Page anatomy</h4>
+              <div class="g-anat">
+                <div class="ln"><span class="n">1</span><span class="tx"><b>Header</b> — logo lockup + EDUCATION INITIATIVE descriptor, document type, and the importance star chip.</span></div>
+                <div class="ln"><span class="n">2</span><span class="tx"><b>Accent bar</b> — a top rule in the importance colour.</span></div>
+                <div class="ln"><span class="n">3</span><span class="tx"><b>Footer</b> — sender name, full postal address, and koreadreampath.com.</span></div>
+                <div class="ln"><span class="n">4</span><span class="tx"><b>Page number</b> — centred at the foot of every page. For multi-page documents use <b>Page X of Y</b> (as on this guide).</span></div>
+              </div>
+            </div>
+            <div class="g-card full">
+              <h4>Don'ts</h4>
+              <div class="donts">
+                <div class="dont"><span class="x">×</span><span>Don't recolour the star — only the <b>three brand tones</b>.</span></div>
+                <div class="dont"><span class="x">×</span><span>Don't invent extra levels — there are <b>exactly three</b>.</span></div>
+                <div class="dont"><span class="x">×</span><span>Don't stretch, rotate, or recolour the <b>logo</b>.</span></div>
+                <div class="dont"><span class="x">×</span><span>Don't mix two importance colours in <b>one document</b>.</span></div>
+                <div class="dont"><span class="x">×</span><span>Don't set body text on the <b>Deep Indigo</b> bar.</span></div>
+                <div class="dont"><span class="x">×</span><span>Don't use emoji — use the <b>star</b> and line icons.</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Korea Dream Path</span><span contenteditable="true">120-48, Mokhyo-ro, Yongjin-eup, Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <span class="pageno" contenteditable="true">Page 1 of 3</span>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+        </div></div>
+
+        <div class="docbox"><div class="doc a4p guide">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Format Guide</div><div class="chip-slot"></div></div>
+          </div>
+          <div class="guide-title">
+            <p class="kick">Typography</p>
+            <h1 contenteditable="true">Typeface, sizes &amp; downloads.</h1>
+          </div>
+          <div class="guide-grid">
+            <div class="g-card full">
+              <h4>Typeface — Pretendard</h4>
+              <div class="ty-weights">
+                <span style="font-weight:300;">Aa 가<small>Light 300</small></span>
+                <span style="font-weight:400;">Aa 가<small>Regular 400</small></span>
+                <span style="font-weight:500;">Aa 가<small>Medium 500</small></span>
+                <span style="font-weight:700;">Aa 가<small>Bold 700</small></span>
+              </div>
+              <p class="body" style="font-size:10.5px;margin-top:10px;">One family for Latin and Hangul. Headings in Deep Indigo at 700; body at 400; eyebrow labels in uppercase with wide tracking. Links and accents in Vivid Purple.</p>
+              <a class="dl-btn" href="https://github.com/orioncactus/pretendard/releases/download/v1.3.9/Pretendard-1.3.9.zip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7 11l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                Download Pretendard 1.3.9 (.zip)
+              </a>
+              <p class="dl-sub">Source &amp; web fonts: <a href="https://github.com/orioncactus/pretendard">github.com/orioncactus/pretendard</a> · In Word: install the .ttf files, then set the font to <b>Pretendard</b>.</p>
+            </div>
+            <div class="g-card full">
+              <h4>Type scale</h4>
+              <div class="ty-scale">
+                <div class="tr"><span class="u">Document title</span><span class="sz">22 pt</span><span class="wt">Bold · 700</span></div>
+                <div class="tr"><span class="u">Cover headline</span><span class="sz">30–34 pt</span><span class="wt">Bold · 700</span></div>
+                <div class="tr"><span class="u">Section heading</span><span class="sz">11 pt</span><span class="wt">Bold · 700</span></div>
+                <div class="tr"><span class="u">Body text</span><span class="sz">10.5–11 pt</span><span class="wt">Regular · 400</span></div>
+                <div class="tr"><span class="u">Eyebrow / label</span><span class="sz">8 pt</span><span class="wt">Bold · 700 · UPPERCASE</span></div>
+                <div class="tr"><span class="u">Footer &amp; caption</span><span class="sz">7.5 pt</span><span class="wt">Medium · 500</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Korea Dream Path</span><span contenteditable="true">120-48, Mokhyo-ro, Yongjin-eup, Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <span class="pageno" contenteditable="true">Page 2 of 3</span>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+        </div></div>
+
+        <div class="docbox"><div class="doc a4p guide">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Format Guide</div><div class="chip-slot"></div></div>
+          </div>
+          <div class="guide-title">
+            <p class="kick">Spacing, layout &amp; export</p>
+            <h1 contenteditable="true">Margins, line spacing &amp; how to save.</h1>
+          </div>
+          <div class="guide-grid">
+            <div class="g-card full">
+              <h4>Spacing &amp; layout — Word values</h4>
+              <div class="ty-scale">
+                <div class="tr"><span class="u">Page size</span><span class="sz">A4 portrait</span><span class="wt">210 × 297 mm · Layout › Size</span></div>
+                <div class="tr"><span class="u">Margins (all sides)</span><span class="sz">2.2 cm</span><span class="wt">Layout › Margins › Custom</span></div>
+                <div class="tr"><span class="u">Body line spacing</span><span class="sz">1.5 lines</span><span class="wt">Paragraph › Line spacing</span></div>
+                <div class="tr"><span class="u">Heading line spacing</span><span class="sz">1.1–1.25</span><span class="wt">Paragraph › Line spacing</span></div>
+                <div class="tr"><span class="u">Space after paragraph</span><span class="sz">9 pt</span><span class="wt">Paragraph › Spacing › After</span></div>
+                <div class="tr"><span class="u">List item spacing</span><span class="sz">4 pt</span><span class="wt">Paragraph › Spacing › After</span></div>
+                <div class="tr"><span class="u">Landscape (covers)</span><span class="sz">297 × 210 mm</span><span class="wt">Layout › Orientation</span></div>
+              </div>
+            </div>
+            <div class="g-card full">
+              <h4>Templates in this set</h4>
+              <div class="g-index">
+                <div class="gi"><i></i><b>General Document</b> — internal review</div>
+                <div class="gi"><i></i><b>Official Letter</b> — global correspondence</div>
+                <div class="gi"><i></i><b>Press Release</b> — immediate or embargoed</div>
+                <div class="gi"><i></i><b>Weekly Report</b> — internal status</div>
+                <div class="gi"><i></i><b>Project Brief</b> — one-pager</div>
+                <div class="gi"><i></i><b>Meeting Minutes</b> — actions</div>
+                <div class="gi"><i></i><b>Cover</b> — portrait &amp; landscape</div>
+                <div class="gi"><i></i><b>Envelope</b> — DL / C5 / C4</div>
+                <div class="gi"><i></i><b>Business Card</b> — front &amp; back</div>
+                <div class="gi"><i></i><b>Email Signature</b> — copy-paste</div>
+                <div class="gi"><i></i><b>Presentation</b> — see deck templates</div>
+              </div>
+            </div>
+            <div class="g-card full">
+              <h4>Editing &amp; export</h4>
+              <div class="g-steps">
+                <div class="st"><b>1.</b> Click any field on the page and type — every value is editable.</div>
+                <div class="st"><b>2.</b> Open <b>Tweaks</b> to set importance, status, and per-document options (e.g. embargo, envelope size).</div>
+                <div class="st"><b>3.</b> <b>Save as PDF</b> for an exact copy, or <b>Save as Word</b> to edit in Google Docs, Word, or Hancom.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Korea Dream Path</span><span contenteditable="true">120-48, Mokhyo-ro, Yongjin-eup, Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <span class="pageno" contenteditable="true">Page 3 of 3</span>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+        </div></div>
+
+      </div>
+    </div>
+
+    <!-- ===== OFFICIAL LETTER ===== -->
+    <div class="frame" data-orient="portrait" data-target="letterhead">
+      <div class="tpl-cap"><h2>Official Letter</h2><span>A4 portrait · global correspondence format</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Official Letter</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="refrow">
+            <div class="to">
+              <p class="label">To</p>
+              <div class="line" contenteditable="true">Dr. Min-jun Park<br>Director of Admissions<br>Cyber Hankuk University of Foreign Studies<br>107 Imun-ro, Dongdaemun-gu, Seoul 02450</div>
+            </div>
+            <div class="meta">
+              <div class="r"><p class="label">Our ref</p><div class="v" contenteditable="true">DP-2026-0142</div></div>
+              <div class="r"><p class="label">Date</p><div class="v" contenteditable="true">8 June 2026</div></div>
+              <div class="r deliv"><p class="label">Delivery</p><div class="v deliv-v" contenteditable="true">By email</div></div>
+            </div>
+          </div>
+
+          <div class="subjline"><span class="k">Subject</span><span class="v" contenteditable="true">Confirmation of the 2026 micro-degree cohort partnership</span></div>
+
+          <div class="letter-body">
+            <p class="sal" contenteditable="true">Dear Dr. Park,</p>
+            <p class="body" contenteditable="true">On behalf of the Korea Dream Path, thank you for the constructive discussions over the past weeks. We are pleased to confirm our intent to proceed with the 2026 micro-degree cohort, connecting scouting youth across the World Organization of the Scout Movement (WOSM) network to Cyber Hankuk University of Foreign Studies (CUFS).</p>
+            <p class="body" contenteditable="true">As agreed, the first cohort will open in September 2026 with two programmes delivered fully online, in English and Korean. DreamPath will manage recruitment through existing scout channels in 12 partner countries, while CUFS will oversee academic delivery, assessment, and certification. A detailed operating plan and recruitment timeline are enclosed for your review.</p>
+            <p class="body" contenteditable="true">We look forward to formalising the agreement and to building a learning path that an already-trusted global network can walk together. Please do not hesitate to contact us should you require any further information.</p>
+            <div class="sign">
+              <div class="cl" contenteditable="true">Yours sincerely,</div>
+              <div class="nm" contenteditable="true">Soo-yeon Lim</div>
+              <div class="ti" contenteditable="true">Programme Lead · Korea Dream Path</div>
+            </div>
+            <p class="encl" contenteditable="true">Enc. Operating plan; recruitment timeline (2 documents)</p>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span contenteditable="true">Korea Dream Path · 120-48, Mokhyo-ro, Yongjin-eup, Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== PRESS RELEASE ===== -->
+    <div class="frame" data-orient="portrait" data-target="press">
+      <div class="tpl-cap"><h2>Press Release</h2><span>A4 portrait · 210 × 297 mm</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype muted">Press</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="pr-top">
+            <div class="pr-flag" contenteditable="true">For immediate release</div>
+            <div class="pr-contact">
+              <b>Media contact</b>
+              <div contenteditable="true">Soo-yeon Lim<br>hello@koreadreampath.com</div>
+            </div>
+          </div>
+
+          <div class="pr-head">
+            <h1 contenteditable="true">DreamPath partners with CUFS to open Korean higher education to 170 countries of scouts</h1>
+            <p class="sub" contenteditable="true">First micro-degree cohort opens September 2026, delivered fully online in English and Korean.</p>
+          </div>
+
+          <div class="pr-body">
+            <p class="body lead" contenteditable="true"><span class="dl">WANJU, Republic of Korea — 8 June 2026 —</span> DreamPath, an independent initiative connecting global scouting youth to Korean higher education, today confirmed its first partnership with Cyber Hankuk University of Foreign Studies (CUFS) to deliver online micro-degree programmes to learners across the World Organization of the Scout Movement (WOSM) network of 170+ countries.</p>
+            <p class="body" contenteditable="true">The inaugural cohort opens in September 2026 with two programmes taught fully online, removing the cost and relocation barriers that keep many young people from international study. Recruitment runs through scouting channels already active in 12 partner countries — a pipeline of learners and leaders who are, in effect, already connected.</p>
+            <p class="body" contenteditable="true">"We are not building a new network — we are walking a path that already exists," said Soo-yeon Lim, Programme Lead at DreamPath. "Scouts learn by doing, together. This brings accredited Korean higher education within reach of that same community."</p>
+            <div class="pr-about">
+              <p class="label">About DreamPath</p>
+              <p class="body" contenteditable="true">DreamPath is an independent initiative that links global scouting youth to Korean higher education through online and micro-degree programmes. Built on the trust of an existing 170-country network, DreamPath designs recruitment, partner communications, and operations for affordable, remote-first study. Learn more at koreadreampath.com.</p>
+            </div>
+            <div class="pr-end" contenteditable="true">###</div>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Sent by Soo-yeon Lim · Programme Lead</span><span contenteditable="true">Korea Dream Path · 120-48, Mokhyo-ro, Yongjin-eup, Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== GENERAL DOCUMENT (internal review) ===== -->
+    <div class="frame" data-orient="portrait" data-target="general">
+      <div class="tpl-cap"><h2>General Document</h2><span>A4 portrait · internal review</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Document</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="dtitle"><p class="kick">Internal · For review</p><h1 contenteditable="true">Internal review document</h1></div>
+
+          <div class="mgrid">
+            <div class="m"><p class="label">Author</p><div class="v" contenteditable="true">Soo-yeon Lim</div></div>
+            <div class="m"><p class="label">Department</p><div class="v" contenteditable="true">Operations</div></div>
+            <div class="m"><p class="label">Date</p><div class="v" contenteditable="true">8 June 2026</div></div>
+            <div class="m"><p class="label">Reviewers</p><div class="v" contenteditable="true">R. Okafor, M. Tan</div></div>
+            <div class="m"><p class="label">Status</p><div class="v" contenteditable="true"><span class="pill blue gn-status"><span class="dot"></span>In review</span></div></div>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Purpose</h3>
+            <p class="body" contenteditable="true">State the purpose of this document in one or two sentences — what it covers and why it is being circulated for review.</p>
+          </div>
+          <div class="sec">
+            <h3 contenteditable="true">Details</h3>
+            <ul>
+              <li contenteditable="true">Summarise the key points, decisions, or findings.</li>
+              <li contenteditable="true">Use short, specific bullets — figures, dates, and owners.</li>
+              <li contenteditable="true">Reference or attach any supporting material.</li>
+            </ul>
+          </div>
+          <div class="sec">
+            <h3 contenteditable="true">Review notes</h3>
+            <p class="body" contenteditable="true">Reviewer comments: _______________________________________________</p>
+            <p class="body" contenteditable="true">______________________________________________________________________</p>
+            <p class="body" contenteditable="true">______________________________________________________________________</p>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Prepared by Soo-yeon Lim · Operations</span><span contenteditable="true">Korea Dream Path · Internal review document</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== WEEKLY REPORT ===== -->
+    <div class="frame" data-orient="portrait" data-target="weekly">
+      <div class="tpl-cap"><h2>Weekly Report</h2><span>A4 portrait · internal status report</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Weekly Report</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="dtitle"><p class="kick">Internal · Status report</p><h1 contenteditable="true">Weekly report — Week 24</h1></div>
+
+          <div class="mgrid">
+            <div class="m"><p class="label">Period</p><div class="v" contenteditable="true">2 – 8 June 2026</div></div>
+            <div class="m"><p class="label">Author</p><div class="v" contenteditable="true">Ji-woo Han</div></div>
+            <div class="m"><p class="label">Team</p><div class="v" contenteditable="true">Recruitment &amp; Operations</div></div>
+            <div class="m"><p class="label">Overall</p><div class="v" contenteditable="true"><span class="pill green wk-overall"><span class="dot"></span>On track</span></div></div>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Summary</h3>
+            <p class="body" contenteditable="true">CUFS partnership confirmed and the confirmation letter approved for dispatch. Country briefs are drafted; portal QA for English and Korean flows is underway. No blockers this week — focus shifts to regional district confirmations.</p>
+          </div>
+
+          <div class="wk-cols">
+            <div class="sec">
+              <h3 contenteditable="true">Done this week</h3>
+              <ul>
+                <li contenteditable="true">Finalised CUFS partnership terms &amp; confirmation letter.</li>
+                <li contenteditable="true">Drafted country briefs for all 12 partner regions.</li>
+                <li contenteditable="true">Built English &amp; Korean application portal flows.</li>
+              </ul>
+            </div>
+            <div class="sec">
+              <h3 contenteditable="true">Planned next week</h3>
+              <ul>
+                <li contenteditable="true">Send confirmation letter to CUFS (9 June).</li>
+                <li contenteditable="true">Distribute country briefs &amp; localised links (12 June).</li>
+                <li contenteditable="true">Complete portal QA and open staging (20 June).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Risks &amp; blockers</h3>
+            <ul>
+              <li contenteditable="true">Additional language packs deferred to cohort two — confirm scope by 14 June.</li>
+              <li contenteditable="true">Two regions yet to confirm priority districts; following up directly.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Reported by Ji-woo Han · Operations</span><span contenteditable="true">Korea Dream Path · Internal status report</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== PROJECT BRIEF ===== -->
+    <div class="frame" data-orient="portrait" data-target="brief">
+      <div class="tpl-cap"><h2>Project Brief</h2><span>A4 portrait · one-page project summary</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Project Brief</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="dtitle"><p class="kick">Internal · One-pager</p><h1 contenteditable="true">2026 cohort recruitment</h1></div>
+
+          <div class="mgrid">
+            <div class="m"><p class="label">Owner</p><div class="v" contenteditable="true">Soo-yeon Lim</div></div>
+            <div class="m"><p class="label">Status</p><div class="v" contenteditable="true"><span class="pill blue bf-status"><span class="dot"></span>In progress</span></div></div>
+            <div class="m"><p class="label">Start</p><div class="v" contenteditable="true">June 2026</div></div>
+            <div class="m"><p class="label">Target</p><div class="v" contenteditable="true">Cohort opens Sept 2026</div></div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi"><div class="kn" contenteditable="true">12</div><div class="kl" contenteditable="true">Partner countries</div></div>
+            <div class="kpi"><div class="kn" contenteditable="true">2</div><div class="kl" contenteditable="true">Online programmes</div></div>
+            <div class="kpi"><div class="kn" contenteditable="true">170+</div><div class="kl" contenteditable="true">WOSM network reach</div></div>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Objective</h3>
+            <p class="body" contenteditable="true">Open the first DreamPath × CUFS micro-degree cohort by recruiting global scouting youth through existing scout channels — affordable, fully online, English and Korean.</p>
+          </div>
+          <div class="sec">
+            <h3 contenteditable="true">Scope</h3>
+            <ul>
+              <li contenteditable="true">Recruitment across 12 partner countries via scout-leader networks.</li>
+              <li contenteditable="true">Bilingual application portal and applicant communications.</li>
+              <li contenteditable="true">Partner coordination with CUFS for delivery and certification.</li>
+            </ul>
+          </div>
+          <div class="sec">
+            <h3 contenteditable="true">Milestones</h3>
+            <ul>
+              <li contenteditable="true">Partnership confirmed — June. Applications open 1 July, close 15 August.</li>
+              <li contenteditable="true">Offers issued late August; cohort opens September 2026.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Owner Soo-yeon Lim · Programme Lead</span><span contenteditable="true">Korea Dream Path · Internal project brief</span><span contenteditable="true">hello@koreadreampath.com</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== MEETING MINUTES ===== -->
+    <div class="frame" data-orient="portrait" data-target="minutes">
+      <div class="tpl-cap"><h2>Meeting Minutes</h2><span>A4 portrait · 210 × 297 mm</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p">
+        <div class="pad">
+          <div class="lh-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="head-r"><div class="doctype">Minutes</div><div class="chip-slot"></div></div>
+          </div>
+
+          <div class="dtitle" style="display:flex;justify-content:space-between;align-items:flex-end;"><div><p class="kick">Korea Dream Path · Weekly sync</p><h1 contenteditable="true">Meeting minutes</h1></div><div class="mins-stamp" id="minsStamp" style="display:none;">Draft</div></div>
+
+          <div class="mgrid">
+            <div class="m"><p class="label">Meeting</p><div class="v" contenteditable="true">2026 Cohort — Weekly Sync #14</div></div>
+            <div class="m"><p class="label">Date</p><div class="v" contenteditable="true">8 June 2026</div></div>
+            <div class="m"><p class="label">Time</p><div class="v" contenteditable="true">15:00 – 15:45 KST</div></div>
+            <div class="m"><p class="label">Location</p><div class="v" contenteditable="true">Online · Video call</div></div>
+            <div class="m"><p class="label">Recorder</p><div class="v" contenteditable="true">Ji-woo Han</div></div>
+            <div class="m"><p class="label">Attendees</p><div class="v" contenteditable="true">S. Lim, J. Han, R. Okafor, M. Tan (4)</div></div>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Agenda</h3>
+            <ol>
+              <li contenteditable="true">CUFS partnership — confirmation status and next steps</li>
+              <li contenteditable="true">Recruitment timeline across the 12 partner countries</li>
+              <li contenteditable="true">Application portal readiness and localisation</li>
+            </ol>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Discussion &amp; decisions</h3>
+            <ul>
+              <li contenteditable="true"><b style="color:var(--ink)">Partnership.</b> Confirmation letter approved; to be sent to CUFS by 9 June. Cohort opens September 2026.</li>
+              <li contenteditable="true"><b style="color:var(--ink)">Timeline.</b> Applications open 1 July, close 15 August. Regions to confirm priority districts by 14 June.</li>
+              <li contenteditable="true"><b style="color:var(--ink)">Portal.</b> English and Korean flows ready for QA; remaining language packs deferred to cohort two.</li>
+            </ul>
+          </div>
+
+          <div class="sec">
+            <h3 contenteditable="true">Action items</h3>
+            <table class="atable">
+              <thead><tr><th style="width:42%">Action</th><th style="width:28%">Owner</th><th>Due</th></tr></thead>
+              <tbody>
+                <tr><td contenteditable="true">Send confirmation letter to CUFS</td><td class="owner" contenteditable="true">S. Lim</td><td class="due" contenteditable="true">9 Jun</td></tr>
+                <tr><td contenteditable="true">Distribute country briefs &amp; application links</td><td class="owner" contenteditable="true">J. Han</td><td class="due" contenteditable="true">12 Jun</td></tr>
+                <tr><td contenteditable="true">Confirm priority scout districts</td><td class="owner" contenteditable="true">R. Okafor</td><td class="due" contenteditable="true">14 Jun</td></tr>
+                <tr><td contenteditable="true">Complete portal QA (EN / KO)</td><td class="owner" contenteditable="true">M. Tan</td><td class="due" contenteditable="true">20 Jun</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="doc-foot">
+          <div class="fl"><span class="sentby" contenteditable="true">Recorded by Ji-woo Han</span><span contenteditable="true">Next meeting: 15 June 2026, 15:00 KST</span><span contenteditable="true">Minutes approved by: ______________</span></div>
+          <div class="fr" contenteditable="true">koreadreampath.com</div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== COVER — PORTRAIT ===== -->
+    <div class="frame" data-orient="portrait" data-target="cover-p">
+      <div class="tpl-cap"><h2>Cover Page — Portrait</h2><span>A4 portrait · proposals &amp; reports</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4p cover-p on-navy">
+        <div class="cover-pad">
+          <div class="cover-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="cover-head-r"><div class="ck" contenteditable="true">Confidential · 2026</div><div class="chip-slot"></div></div>
+          </div>
+          <div class="cover-mid">
+            <div class="rule"></div>
+            <p class="typ" contenteditable="true">Partnership Proposal</p>
+            <h1 contenteditable="true">One learning path,<br>170 countries of<br>young leaders.</h1>
+            <p class="sub" contenteditable="true">Dream Path connects young leaders worldwide to Korean higher education — online, affordable, and built on a trusted global youth-education network.</p>
+            <div class="cover-meta">
+              <div class="cm"><p class="label">Prepared for</p><div class="v" contenteditable="true">CUFS Office of Admissions</div></div>
+              <div class="cm"><p class="label">Prepared by</p><div class="v" contenteditable="true">Korea Dream Path</div></div>
+              <div class="cm"><p class="label">Date</p><div class="v" contenteditable="true">June 2026</div></div>
+            </div>
+          </div>
+          <div class="cover-foot"><span contenteditable="true">Korea Dream Path · Wanju, Republic of Korea</span><span contenteditable="true">koreadreampath.com</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== COVER — LANDSCAPE ===== -->
+    <div class="frame" data-orient="landscape" data-target="cover-l">
+      <div class="tpl-cap"><h2>Cover Page — Landscape</h2><span>A4 landscape · decks &amp; briefs</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc a4l cover-l on-navy">
+        <div class="cover-pad">
+          <div class="cover-head">
+            <div class="lockh"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="cover-head-r"><div class="ck" contenteditable="true">Confidential · 2026</div><div class="chip-slot"></div></div>
+          </div>
+          <div class="cover-mid">
+            <div class="rule"></div>
+            <p class="typ" contenteditable="true">Program Brief</p>
+            <h1 contenteditable="true">One learning path,<br>170 countries of young leaders.</h1>
+            <p class="sub" contenteditable="true">Dream Path connects young leaders worldwide to Korean higher education — online, affordable, and built on a trusted global youth-education network.</p>
+            <div class="cover-meta">
+              <div class="cm"><p class="label">Prepared by</p><div class="v" contenteditable="true">Korea Dream Path</div></div>
+              <div class="cm"><p class="label">Partner</p><div class="v" contenteditable="true">Cyber Hankuk University of Foreign Studies</div></div>
+              <div class="cm"><p class="label">Date</p><div class="v" contenteditable="true">June 2026</div></div>
+            </div>
+          </div>
+          <div class="cover-foot"><span contenteditable="true">Korea Dream Path · Wanju, Republic of Korea</span><span contenteditable="true">koreadreampath.com</span></div>
+        </div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== ENVELOPE ===== -->
+    <div class="frame" data-orient="envelope" data-target="envelope">
+      <div class="tpl-cap"><h2>Envelope</h2><span id="envCap">DL · 220 × 110 mm</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc env dl" id="envDoc">
+        <div class="env-stripe"></div>
+        <div class="env-return">
+          <div class="env-lock"><span class="mk"></span><b>Dream Path</b></div>
+          <div class="who" contenteditable="true">Soo-yeon Lim · Programme Lead</div>
+          <div class="addr" contenteditable="true">120-48, Mokhyo-ro, Yongjin-eup,<br>Wanju-gun, Jeonbuk-do 55353<br>Republic of Korea</div>
+        </div>
+        <div class="env-postage" contenteditable="true">Postage</div>
+        <div class="env-to" id="envTo">
+          <p class="label">To</p>
+          <div class="nm" contenteditable="true">Dr. Min-jun Park</div>
+          <div class="addr" contenteditable="true">Cyber Hankuk University of Foreign Studies<br>107 Imun-ro, Dongdaemun-gu<br>Seoul 02450, Republic of Korea</div>
+        </div>
+        <div class="env-foot" contenteditable="true">koreadreampath.com</div>
+      </div></div></div>
+    </div>
+
+    <!-- ===== BUSINESS CARD ===== -->
+    <div class="frame" data-orient="card" data-target="card">
+      <div class="tpl-cap"><h2>Business Card</h2><span>90 × 50 mm · front &amp; back</span></div>
+      <div class="sheet-wrap">
+        <div class="docbox"><div class="doc card front on-navy">
+          <div class="cpad">
+            <span class="mk"></span>
+            <div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div>
+            <div class="crule"></div>
+          </div>
+        </div></div>
+        <div class="docbox"><div class="doc card back">
+          <div class="cpad">
+            <div class="ctop">
+              <div><div class="nm" contenteditable="true">Soo-yeon Lim</div><div class="ti" contenteditable="true">Programme Lead · Korea Dream Path</div></div>
+              <span class="mk"></span>
+            </div>
+            <div class="cinfo">
+              <div class="ln"><svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg><span contenteditable="true">hello@koreadreampath.com</span></div>
+              <div class="ln"><svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg><span contenteditable="true">Wanju-gun, Jeonbuk-do 55353, Republic of Korea</span></div>
+              <div class="ln"><svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg><span contenteditable="true">koreadreampath.com</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div class="card-flip" style="margin-top:6px;">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>
+        Front (navy) and back (white) — printed double-sided.
+      </div>
+    </div>
+
+    <!-- ===== EMAIL SIGNATURE ===== -->
+    <div class="frame" data-orient="portrait" data-target="sig">
+      <div class="tpl-cap"><h2>Email Signature</h2><span>HTML block · copy &amp; paste into your mail client</span></div>
+      <div class="sheet-wrap"><div class="docbox"><div class="doc sig" id="sigCard">
+        <div class="spad">
+          <div class="sig-row">
+            <div class="bar"></div>
+            <div class="sg-mark"><span class="mk"></span><div class="wm"><b>Dream Path</b><span>Education Initiatives</span></div></div>
+            <div class="sg-info">
+              <div class="nm" contenteditable="true">Soo-yeon Lim</div>
+              <div class="ti" contenteditable="true">Programme Lead · Korea Dream Path</div>
+              <div class="ln" contenteditable="true">hello@koreadreampath.com</div>
+              <div class="ln"><a href="https://koreadreampath.com" contenteditable="true">koreadreampath.com</a></div>
+            </div>
+          </div>
+          <div class="sig-note">Tip: click <b>Copy signature</b> below, then paste into Gmail, Outlook, or Apple Mail. Edit the name and title first.</div>
+        </div>
+      </div></div></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============ TOOLBAR ============ -->
+<div class="toolbar">
+  <button class="tb-btn tb-ghost" id="copyBtn" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
+    Copy signature
+  </button>
+  <button class="tb-btn tb-ghost" id="wordBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3h16v18H4z"></path><path d="M8 8l2 8 2-6 2 6 2-8"></path></svg>
+    Save as Word
+  </button>
+  <button class="tb-btn tb-pdf" id="pdfBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+    Save as PDF
+  </button>
+</div>
+<div class="toast" id="toast">Copied</div>
+
+<!-- React mount for the Tweaks panel -->
+<div id="tweaks-root"></div>
+
+<!-- mark template -->
+<template id="markTpl">
+  <svg class="dpmark" viewBox="184 100 600 566" xmlns="http://www.w3.org/2000/svg" aria-label="DreamPath mark">
+    <polygon class="door" points="190.41 106.22 549.95 163.24 549.95 338.44 512.1 349.86 512.1 205.25 239.07 161.95 239.07 643.17 190.41 660.29 190.41 106.22"></polygon>
+    <path class="star" d="M754.31,285.71l25.52,3.92c2.52.39,2.52,4.02,0,4.4l-25.52,3.92c-12.26,1.88-21.88,11.51-23.77,23.77l-3.92,25.52c-.39,2.52-4.02,2.52-4.4,0l-3.92-25.52c-1.88-12.26-11.51-21.88-23.77-23.77l-25.52-3.92c-2.52-.39-2.52-4.02,0-4.4l25.52-3.92c12.26-1.88,21.88-11.51,23.77-23.77l3.92-25.51c.39-2.52,4.02-2.52,4.4,0l3.92,25.51c1.88,12.26,11.51,21.88,23.77,23.77Z"></path>
+    <path class="swoosh" d="M683.76,336.12s-91.16,22.9-131.86,51.44c-40.7,28.54-6.16,45.81,13.07,55.72,19.22,9.91,104.98,41.75,129.76,67.73,24.78,25.98,28.69,45.06,18.77,80.65-9.91,35.59-82.45,89.36-82.45,89.36H241.32s184.28-58.12,211.99-66.91c27.71-8.79,116.24-37.85,116.24-72.99s-62.18-60.82-80.42-71.19c-18.25-10.36-44.6-20.27-44.6-44.6s45.06-42.88,87.41-56.24c42.35-13.37,136.37-30.64,151.84-32.97Z"></path>
+  </svg>
+</template>
+<!-- star sparkle template (importance) -->
+<template id="starTpl">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0.6 C12.7 6.4 17.6 11.3 23.4 12 C17.6 12.7 12.7 17.6 12 23.4 C11.3 17.6 6.4 12.7 0.6 12 C6.4 11.3 11.3 6.4 12 0.6 Z"></path></svg>
+</template>
+
+<script src="dp-assets.js"></script>
+<script src="templates-export.js"></script>
+<script src="templates-app.js"></script>
+
+<!-- Tweaks panel (React island) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="templates-tweaks.jsx"></script>
+</body>
+</html>

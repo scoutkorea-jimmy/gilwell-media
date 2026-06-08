@@ -82,6 +82,7 @@ const DP = (() => {
       ])},
       { title: 'Work', items: guard([
         { id: 'documents',     label: 'Documents',        icon: 'book',      perm: 'view:documents' },
+        { id: 'document_templates', label: 'Document Templates', icon: 'file-text', perm: 'view:documents' },
         { id: 'minutes',       label: 'Meeting Minutes',  icon: 'note',      perm: 'view:minutes' },
         { id: 'tasks',         label: 'Tasks',            icon: 'check',     perm: 'view:tasks' },
         { id: 'notes',         label: 'Notes / Issues',   icon: 'clipboard', perm: 'view:notes' },
@@ -1237,7 +1238,8 @@ const DP = (() => {
     const r = {
       home:          () => { _renderHome(pageEl);         label = 'Home'; },
       announcements: () => { _renderBoard(pageEl, 'announcements', 'Announcements'); label = 'Announcements'; },
-      documents:     () => { _renderBoard(pageEl, 'documents', 'Documents');  label = 'Documents'; },
+      documents:     () => { _renderDocuments(pageEl);  label = 'Documents'; },
+      document_templates: () => { _renderDocumentTemplates(pageEl); label = 'Document Templates'; },
       minutes:       () => { _renderBoard(pageEl, 'minutes', 'Meeting Minutes'); label = 'Meeting Minutes'; },
       wiki:          () => { _renderWiki(pageEl);          label = 'Knowledge Base'; },
       tasks:         () => { _renderTasks(pageEl);         label = 'Tasks'; },
@@ -1791,7 +1793,95 @@ const DP = (() => {
   // =========================================================
   // BOARDS — wired to GET /api/dreampath/posts?board=X
   // =========================================================
-  async function _renderBoard(root, key, label) {
+  function _documentsTabsHtml(active) {
+    const tab = active || state.documentsTab || 'archive';
+    const onArchive = tab === 'archive';
+    const onTemplates = tab === 'templates';
+    return `
+      <div class="dp-tabs dp-doc-tabs" role="tablist" aria-label="Documents sections">
+        <button type="button" class="dp-tab${onArchive ? ' dp-tab-on' : ''}" role="tab"
+                aria-selected="${onArchive ? 'true' : 'false'}"
+                onclick="DP._setDocumentsTab('archive')">
+          <span class="dp-tab-t">Archive</span>
+          <span class="dp-tab-s">Posts and shared files</span>
+        </button>
+        <button type="button" class="dp-tab${onTemplates ? ' dp-tab-on' : ''}" role="tab"
+                aria-selected="${onTemplates ? 'true' : 'false'}"
+                onclick="DP._setDocumentsTab('templates')">
+          <span class="dp-tab-t">Templates</span>
+          <span class="dp-tab-s">Create PDF / Word documents</span>
+        </button>
+      </div>
+    `;
+  }
+
+  function _renderDocuments(root) {
+    if (!state.documentsTab) state.documentsTab = 'archive';
+    if (state.documentsTab === 'templates') {
+      _renderDocumentTemplates(root);
+      return;
+    }
+    _renderBoard(root, 'documents', 'Documents', {
+      afterHeaderHtml: _documentsTabsHtml('archive'),
+    });
+  }
+
+  function _setDocumentsTab(tab) {
+    state.documentsTab = (tab === 'templates') ? 'templates' : 'archive';
+    navigate('documents');
+  }
+
+  function _renderDocumentTemplates(root) {
+    const docUrl = '/dist-homepage/DreamPath%20-%20Document%20Templates';
+    const deckUrl = '/dist-homepage/DreamPath%20-%20Presentation%20Templates';
+    const current = state.documentTemplateKind === 'deck' ? 'deck' : 'document';
+    const src = current === 'deck' ? deckUrl : docUrl;
+    const title = current === 'deck' ? 'Presentation Templates' : 'Document Templates';
+    root.innerHTML = '';
+    root.appendChild(h('div', { className: 'dp-page-head' }, [
+      h('h1', {}, state.page === 'document_templates' ? 'Document Templates' : 'Documents'),
+      h('div', {}, [
+        h('a', {
+          className: 'dp-btn dp-btn-secondary',
+          href: src,
+          target: '_blank',
+          rel: 'noopener',
+        }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/file-text.svg')" } }),
+          h('span', {}, 'Open full screen'),
+        ]),
+      ]),
+    ]));
+    root.insertAdjacentHTML('beforeend', _documentsTabsHtml('templates'));
+    root.insertAdjacentHTML('beforeend', `
+      <section class="dp-panel dp-template-panel" aria-label="Document template maker">
+        <div class="dp-panel-head dp-template-head">
+          <h3>${esc(title)}</h3>
+          <div class="dp-template-switch" role="group" aria-label="Template type">
+            <button type="button" class="dp-btn dp-btn-sm ${current === 'document' ? 'dp-btn-primary' : 'dp-btn-secondary'}"
+                    onclick="DP._setDocumentTemplateKind('document')">Documents</button>
+            <button type="button" class="dp-btn dp-btn-sm ${current === 'deck' ? 'dp-btn-primary' : 'dp-btn-secondary'}"
+                    onclick="DP._setDocumentTemplateKind('deck')">Presentations</button>
+          </div>
+        </div>
+        <div class="dp-template-frame-wrap">
+          <iframe class="dp-template-frame"
+                  title="${esc(title)}"
+                  src="${esc(src)}"
+                  loading="lazy"
+                  referrerpolicy="same-origin"></iframe>
+        </div>
+      </section>
+    `);
+  }
+
+  function _setDocumentTemplateKind(kind) {
+    state.documentTemplateKind = kind === 'deck' ? 'deck' : 'document';
+    state.documentsTab = 'templates';
+    navigate('documents');
+  }
+
+  async function _renderBoard(root, key, label, opts = {}) {
     // Skeleton header + loading placeholder.
     root.innerHTML = '';
     const isAdminUser = state.user && state.user.role === 'admin';
@@ -1809,6 +1899,7 @@ const DP = (() => {
         ]),
       ]),
     ]));
+    if (opts.afterHeaderHtml) root.insertAdjacentHTML('beforeend', opts.afterHeaderHtml);
 
     // Tab bar — always rendered for tab-supporting boards (Default pill is
     // always visible so the user knows where "unfiled" posts live). Admin
@@ -8635,6 +8726,7 @@ const DP = (() => {
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
     _newPostAddTab,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
+    _setDocumentsTab, _setDocumentTemplateKind,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,

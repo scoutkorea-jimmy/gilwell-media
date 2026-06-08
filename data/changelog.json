@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.170.08",
+    "date": "2026-06-08",
+    "released_at": "2026-06-08 22:38:24 KST",
+    "summary": "Dreampath PMO의 Work 메뉴에 문서 양식 제작기를 추가해 문서·발표자료 템플릿을 바로 만들 수 있게 했습니다.",
+    "for_users": [
+      "Dreampath PMO 좌측 Work 메뉴의 Documents 아래에 Document Templates 메뉴가 추가되었습니다.",
+      "문서 양식과 프레젠테이션 양식을 PMO 안에서 열어 편집하고 PDF 또는 Word로 저장할 수 있습니다."
+    ],
+    "for_developers": [
+      "js/dreampath.js: Work nav에 document_templates 항목을 추가하고 /dist-homepage 기반 Document/Presentation template iframe 렌더러를 연결.",
+      "dreampath.html: .dp-template-* 스타일을 추가해 PMO 본문 안에서 제작기 iframe이 고정 높이로 안정적으로 렌더되도록 구성.",
+      "functions/_middleware.js: /dist-homepage/* HTML에 한정해 X-Frame-Options SAMEORIGIN 및 CSP frame-ancestors 'self' 예외를 적용하고, 제작기 React/Babel 보조 스크립트를 위해 좁은 script-src legacy 정책을 분기.",
+      "dist-homepage/: DreamPath 문서·프레젠테이션 템플릿 정적 번들을 배포 대상에 포함.",
+      "사이트 버전 00.170.07 → 00.170.08."
+    ]
+  },
+  {
     "version": "00.170.07",
     "date": "2026-06-06",
     "released_at": "2026-06-06 14:00:00 KST",

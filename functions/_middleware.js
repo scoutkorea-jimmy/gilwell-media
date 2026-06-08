@@ -22,6 +22,7 @@
 export async function onRequest(context) {
   const { request, next } = context;
   const response = await next();
+  const pathname = getPathname(request);
 
   const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
   if (!contentType.includes('text/html')) {
@@ -40,6 +41,9 @@ export async function onRequest(context) {
 
   const headers = new Headers(rewritten.headers);
   headers.set('Content-Security-Policy', buildCsp(request, nonce));
+  if (isDreampathTemplatePath(pathname)) {
+    headers.set('X-Frame-Options', 'SAMEORIGIN');
+  }
   headers.set('Vary', appendVary(headers.get('Vary'), 'Cookie'));
 
   // Cache-Control:
@@ -108,11 +112,15 @@ function isLegacyInlinePath(pathname) {
   return false;
 }
 
+function isDreampathTemplatePath(pathname) {
+  return String(pathname || '').startsWith('/dist-homepage/');
+}
+
 function buildCsp(request, nonce) {
-  let pathname = '/';
-  try { pathname = new URL(request.url).pathname; } catch {}
+  const pathname = getPathname(request);
 
   const legacy = isLegacyInlinePath(pathname);
+  const template = isDreampathTemplatePath(pathname);
 
   // Script policy:
   //   - Public site: nonce + strict-dynamic. 'unsafe-inline' omitted — CSP3
@@ -122,7 +130,9 @@ function buildCsp(request, nonce) {
   //     understand 'strict-dynamic'.
   //   - Admin/KMS: legacy 'unsafe-inline' until every inline handler in
   //     admin.html is migrated.
-  const scriptSrc = legacy
+  const scriptSrc = template
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://esm.sh https://cdnjs.cloudflare.com"
+    : legacy
     ? "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com"
     : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://t1.kakaocdn.net https://t1.daumcdn.net https://static.cloudflareinsights.com https://pagead2.googlesyndication.com https://partner.googleadservices.com https://tpc.googlesyndication.com https://www.googletagservices.com https://adservice.google.com`;
 
@@ -153,8 +163,13 @@ function buildCsp(request, nonce) {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    template ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
   ].join('; ');
+}
+
+function getPathname(request) {
+  try { return new URL(request.url).pathname; } catch {}
+  return '/';
 }
 
 function appendVary(existing, extra) {
