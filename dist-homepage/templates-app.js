@@ -295,6 +295,13 @@
     node.textContent=original;
     return best;
   }
+  function nodeBottomInPage(box, node){
+    var pad=box && box.querySelector('.pad');
+    if(!pad || !node) return 0;
+    var nr=node.getBoundingClientRect();
+    var pr=pad.getBoundingClientRect();
+    return (nr.bottom - pr.top);
+  }
   function splitLastFlowToNext(fr, box, node){
     if(!canSplitNode(node)) return false;
     var words=String(node.textContent||'').trim().split(/\s+/).filter(Boolean);
@@ -323,8 +330,14 @@
   function moveLastFlowToNext(fr, box){
     var nodes=box.classList.contains('cont') ? contFlowNodes(box) : firstFlowNodes(box);
     if(!nodes.length) return false;
+    var doc=box.querySelector('.doc');
+    var limit=doc ? overflowLimit(doc) : 0;
+    var splittable=null;
+    for(var i=nodes.length-1;i>=0;i--){
+      if(canSplitNode(nodes[i]) && (!limit || nodeBottomInPage(box, nodes[i]) > limit)){ splittable=nodes[i]; break; }
+    }
+    if(splittable && splitLastFlowToNext(fr, box, splittable)) return true;
     var last=nodes[nodes.length-1];
-    if(nodes.length===1 && splitLastFlowToNext(fr, box, last)) return true;
     var next=ensureNextBox(fr, box);
     var nextBody=pageBody(next);
     if(!nextBody) return false;

@@ -2146,6 +2146,7 @@ const DP = (() => {
         if (target) {
           _syncTemplateFieldValue(target);
           _templateMarkDirty();
+          _templateRequestFlowSync();
         }
       }, true);
       doc.addEventListener('mouseover', (event) => {
