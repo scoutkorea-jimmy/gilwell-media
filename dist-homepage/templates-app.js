@@ -596,6 +596,25 @@
 
   document.addEventListener('input', scheduleAutoPages, true);
   window.DPTemplateSyncPages = syncAutoPages;
+
+  // ---- sample content (per-field data-sample) ----
+  // Fill the active document with its built-in example so a user can see how to
+  // write it; Clear empties every field back to its data-ph prompt.
+  window.DPTemplateFillSample = function(){
+    var fr=activeFrame(); if(!fr) return;
+    restoreFlowToFirst(fr);  // collapse any prior split state to single source nodes
+    [].slice.call(fr.querySelectorAll('[data-sample]')).forEach(function(el){
+      el.textContent=el.getAttribute('data-sample')||'';
+    });
+    syncAutoPages();
+  };
+  window.DPTemplateClearSample = function(){
+    var fr=activeFrame(); if(!fr) return;
+    restoreFlowToFirst(fr);  // pull any continuation tails back first so nothing lingers
+    [].slice.call(fr.querySelectorAll('[data-sample]')).forEach(function(el){ el.textContent=''; });
+    syncAutoPages();
+  };
+
   window.addEventListener('resize', function(){ fit(); scheduleAutoPages(); });
 
   // init

@@ -1970,6 +1970,10 @@ const DP = (() => {
           <label><input type="checkbox" ${t.showFooter ? 'checked' : ''} onchange="DP._templateTweak('showFooter', this.checked)"> Footer</label>
         </div>
         <div class="dp-template-actions">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateFillSample()" title="이 템플릿을 예시 내용으로 채워 어떻게 쓰는지 봅니다">Sample</button>
+          <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._templateClearSample()" title="예시/입력 내용을 비우고 안내문으로 되돌립니다">Clear</button>
+        </div>
+        <div class="dp-template-actions">
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateNewDocNumbers()">New doc no.</button>
           <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._templateReload()">Reset</button>
         </div>
@@ -2713,6 +2717,25 @@ const DP = (() => {
     if (!iframe) return;
     iframe.contentWindow.location.reload();
     _templateSetSaveStatus('Not saved', '');
+  }
+
+  // Fill the active template with its built-in sample content (each field's
+  // data-sample) so a user unsure how to write it can see an example.
+  function _templateFillSample() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow || typeof iframe.contentWindow.DPTemplateFillSample !== 'function') return;
+    try { iframe.contentWindow.DPTemplateFillSample(); } catch (_) {}
+    _templateMarkDirty();
+    setTimeout(_refreshTemplateFields, 80);
+  }
+
+  // Empty the active template back to its blank "Edit text here" prompts.
+  function _templateClearSample() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow || typeof iframe.contentWindow.DPTemplateClearSample !== 'function') return;
+    try { iframe.contentWindow.DPTemplateClearSample(); } catch (_) {}
+    _templateMarkDirty();
+    setTimeout(_refreshTemplateFields, 80);
   }
 
   function _templateRequestFlowSync() {
@@ -9822,6 +9845,7 @@ const DP = (() => {
     _setDocumentsTab,
     _templateFrameReady, _refreshTemplateFields, _focusTemplateField, _templateFieldInput,
     _templateClearField, _templateHideField, _templateTweak, _templateNewDocNumbers, _templateReload,
+    _templateFillSample, _templateClearSample,
     _templateAddParagraph, _templateAddBullet, _templateAddSection, _templateSaveDocument,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,

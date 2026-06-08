@@ -123,6 +123,15 @@ body{font-family:var(--font);color:var(--ink);background:#E7E6E2;
 .doc [contenteditable]:hover{box-shadow:inset 0 0 0 1px rgba(107,45,190,0.3);background:rgba(107,45,190,0.05);}
 .doc [contenteditable]:focus{box-shadow:inset 0 0 0 1.5px rgba(107,45,190,0.55);background:rgba(107,45,190,0.07);}
 [contenteditable]:empty::before{content:attr(data-ph);color:var(--muted);opacity:0.55;}
+/* [fix 2026-06-09] A blank field is a flex item in a column (.letter-body,
+   .sec ol/ul). Some engines collapse an empty block flex-item to min-content,
+   squashing the data-ph prompt into a thin vertical strip. Pin the cross size
+   so blank fields render on a normal full-width line. */
+.letter-body>[contenteditable],
+.letter-body .body-list>[contenteditable],
+.sec ol>[contenteditable],
+.sec ul>[contenteditable]{width:100%;}
+.pad [contenteditable]:empty{min-height:1.35em;}
 
 /* ---------- shared document chrome ---------- */
 .pad{position:absolute;inset:64px 60px;display:flex;flex-direction:column;}
