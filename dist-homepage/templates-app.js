@@ -213,30 +213,139 @@
   var CT = { completion:'Completion', participation:'Participation', achievement:'Achievement' };
   var DEC = { approved:0, conditional:1, rejected:2 };
 
-  // ---- multi-page (1 page / 2 pages) ----
+  // ---- auto continuation pages ----
   function activePaper(){ var f=activeFrame(); var tg=f&&f.getAttribute('data-target'); return (['letterhead','press','weekly','brief','minutes','general'].indexOf(tg)>=0)?f:null; }
-  function setPages(n){
-    document.querySelectorAll('.docbox.cont').forEach(function(c){ c.remove(); });
-    document.querySelectorAll('.frame:not([data-target="guide"]) .doc-foot .pageno').forEach(function(p){ p.textContent='Page 1 of 1'; });
-    if(n!=='2'){ fit(); return; }
-    var fr=activePaper(); if(!fr){ fit(); return; }
-    var firstBox=fr.querySelector('.docbox'); var firstDoc=firstBox.querySelector('.doc');
-    var p1=firstDoc.querySelector('.doc-foot .pageno'); if(p1) p1.textContent='Page 1 of 2';
-    var head=firstDoc.querySelector('.lh-head').cloneNode(true);
-    var fl=firstDoc.querySelector('.doc-foot .fl').cloneNode(true);
+  function makeContinuationPage(fr, number){
+    var firstDoc=fr.querySelector('.docbox .doc');
+    if(!firstDoc) return null;
+    var head=firstDoc.querySelector('.lh-head');
+    var fl=firstDoc.querySelector('.doc-foot .fl');
     var cont=document.createElement('div'); cont.className='docbox cont';
+    cont.setAttribute('data-auto-page', String(number || 2));
     cont.innerHTML='<div class="doc a4p"><div class="pad"></div>'+
-      '<div class="doc-foot"><div class="foot-main"></div><span class="pageno" contenteditable="true">Page 2 of 2</span><div class="fr" contenteditable="true">koreadreampath.com</div></div></div>';
+      '<div class="doc-foot"><div class="foot-main"></div><span class="pageno">Page '+(number||2)+'</span><div class="fr">koreadreampath.com</div></div></div>';
     var pad=cont.querySelector('.pad');
-    pad.appendChild(head);
+    if(head) pad.appendChild(head.cloneNode(true));
     var ti=document.createElement('div'); ti.className='dtitle'; ti.innerHTML='<p class="kick">Continued</p>'; pad.appendChild(ti);
     var body=document.createElement('div'); body.className='letter-body'; body.style.marginTop='18px';
-    body.innerHTML='<p class="body" contenteditable="true">…continued from page 1. Type or paste additional content here — it flows onto this second page.</p><p class="body" contenteditable="true">Add further paragraphs, tables, or a sign-off as needed.</p>';
+    body.innerHTML='<p class="body" contenteditable="true" data-auto-flow-anchor="1"></p>';
     pad.appendChild(body);
     var main=cont.querySelector('.foot-main'); var frEl=cont.querySelector('.doc-foot > .fr');
-    main.appendChild(fl); main.appendChild(frEl);
-    firstBox.parentNode.appendChild(cont);
+    if(fl) main.appendChild(fl.cloneNode(true));
+    main.appendChild(frEl);
+    return cont;
+  }
+  function pageBody(box){
+    if(!box) return null;
+    return box.querySelector('.letter-body') || box.querySelector('.pad');
+  }
+  function firstFlowNodes(box){
+    var pad=box && box.querySelector('.pad');
+    if(!pad) return [];
+    var lb=pad.querySelector('.letter-body');
+    if(lb) return [].slice.call(lb.children).filter(function(n){ return !n.hasAttribute('data-auto-flow-anchor'); });
+    return [].slice.call(pad.children).filter(function(n){
+      return n.matches && n.matches('.sec, .body, .body-list, h3');
+    });
+  }
+  function contFlowNodes(box){
+    var body=pageBody(box);
+    if(!body) return [];
+    return [].slice.call(body.children).filter(function(n){ return !n.hasAttribute('data-auto-flow-anchor'); });
+  }
+  function collectFlowNodes(fr){
+    var boxes=[].slice.call(fr.querySelectorAll('.docbox'));
+    var out=[];
+    boxes.forEach(function(box,i){
+      out=out.concat(i===0 ? firstFlowNodes(box) : contFlowNodes(box));
+    });
+    return out;
+  }
+  function restoreFlowToFirst(fr, nodes){
+    var first=fr.querySelector('.docbox');
+    var body=pageBody(first);
+    if(!body) return;
+    nodes.forEach(function(n){ body.appendChild(n); });
+    [].slice.call(fr.querySelectorAll('.docbox.cont')).forEach(function(c){ c.remove(); });
+  }
+  function boxOverflow(box){
+    var doc=box && box.querySelector('.doc');
+    if(!doc) return 0;
+    return pageContentHeight(box) - overflowLimit(doc);
+  }
+  function ensureNextBox(fr, currentBox){
+    var next=currentBox && currentBox.nextElementSibling;
+    if(next && next.classList.contains('docbox')) return next;
+    var parent=fr.querySelector('.docbox') && fr.querySelector('.docbox').parentNode;
+    var count=fr.querySelectorAll('.docbox').length;
+    next=makeContinuationPage(fr, count+1);
+    if(next && parent) parent.appendChild(next);
+    return next;
+  }
+  function moveLastFlowToNext(fr, box){
+    var nodes=box.classList.contains('cont') ? contFlowNodes(box) : firstFlowNodes(box);
+    if(!nodes.length) return false;
+    var next=ensureNextBox(fr, box);
+    var nextBody=pageBody(next);
+    if(!nextBody) return false;
+    nextBody.insertBefore(nodes[nodes.length-1], nextBody.firstChild);
+    return true;
+  }
+  function updatePageNumbers(fr){
+    var pages=[].slice.call(fr.querySelectorAll('.docbox'));
+    var total=pages.length || 1;
+    pages.forEach(function(box,i){
+      var p=box.querySelector('.doc-foot .pageno');
+      if(p) p.textContent='Page '+(i+1)+' of '+total;
+    });
+  }
+  function overflowLimit(doc){
+    var foot=doc.querySelector('.doc-foot');
+    var pad=doc.querySelector('.pad');
+    if(!pad) return doc.clientHeight - 60;
+    var footTop = foot ? foot.offsetTop : doc.clientHeight - 30;
+    return Math.max(120, footTop - pad.offsetTop - 18);
+  }
+  function pageContentHeight(box){
+    var pad=box.querySelector('.pad');
+    if(!pad) return 0;
+    var max=0;
+    [].slice.call(pad.children).forEach(function(ch){
+      var bottom=ch.offsetTop + ch.scrollHeight;
+      if(bottom>max) max=bottom;
+    });
+    return max;
+  }
+  function syncAutoPages(){
+    var fr=activePaper();
+    if(!fr){ fit(); return; }
+    var first=fr.querySelector('.docbox');
+    if(!first){ fit(); return; }
+    var nodes=collectFlowNodes(fr);
+    restoreFlowToFirst(fr, nodes);
+    var guard=0;
+    var boxes=[].slice.call(fr.querySelectorAll('.docbox'));
+    for(var i=0;i<boxes.length && guard<400;i++){
+      var box=boxes[i];
+      while(boxOverflow(box)>0 && guard<400){
+        if(!moveLastFlowToNext(fr, box)) break;
+        guard++;
+        boxes=[].slice.call(fr.querySelectorAll('.docbox'));
+      }
+    }
+    var last;
+    while((last=fr.querySelector('.docbox.cont:last-child'))){
+      if(contFlowNodes(last).length) break;
+      last.remove();
+    }
+    updatePageNumbers(fr);
     fit();
+    window.dispatchEvent(new CustomEvent('tplchange', { detail: activeTarget() }));
+  }
+  var autoTimer=null;
+  function scheduleAutoPages(){
+    clearTimeout(autoTimer);
+    autoTimer=setTimeout(syncAutoPages, 80);
   }
 
   window.applyTweaks = function(t){
@@ -249,7 +358,7 @@
     if(t.showStar!==undefined) b.classList.toggle('hide-star', t.showStar===false);
     if(t.showFooter!==undefined) b.classList.toggle('hide-foot', t.showFooter===false);
     updateChips();
-    if(t.pages!==undefined) setPages(t.pages);
+    scheduleAutoPages();
 
     // per-document options
     var dv=document.querySelector('.deliv-v'); if(dv && t.letterDelivery) dv.textContent=t.letterDelivery;
@@ -292,12 +401,14 @@
     }
   };
 
-  window.addEventListener('resize', fit);
+  document.addEventListener('input', scheduleAutoPages, true);
+  window.DPTemplateSyncPages = syncAutoPages;
+  window.addEventListener('resize', function(){ fit(); scheduleAutoPages(); });
 
   // init
   var initial = location.hash.slice(1);
   var valid = btns.some(function(b){ return b.getAttribute('data-target')===initial; });
   select(valid ? initial : 'guide');
   if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
-  setTimeout(fit, 350);
+  setTimeout(function(){ fit(); syncAutoPages(); }, 350);
 })();

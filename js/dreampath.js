@@ -1898,7 +1898,6 @@ const DP = (() => {
       status: 'inreview',
       density: 'comfortable',
       paper: 'white',
-      pages: '1',
       showStar: true,
       showFooter: true,
     }, state.templateTweaks || {});
@@ -1955,13 +1954,6 @@ const DP = (() => {
           <select class="dp-select dp-select-sm" onchange="DP._templateTweak('paper', this.value)">
             ${option('white', 'White', t.paper)}
             ${option('warm', 'Warm', t.paper)}
-          </select>
-        </label>
-        <label>
-          <span>Pages</span>
-          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('pages', this.value)">
-            ${option('1', '1 page', t.pages)}
-            ${option('2', '2 pages', t.pages)}
           </select>
         </label>
         <div class="dp-template-checks">
@@ -2291,6 +2283,7 @@ const DP = (() => {
       _clearTemplateDropMarks(doc);
       source.classList.remove('dp-template-dragging');
       _templateMarkDirty();
+      _templateRequestFlowSync();
       _refreshTemplateFields();
     });
     doc.addEventListener('dragend', () => {
@@ -2456,6 +2449,7 @@ const DP = (() => {
       list.appendChild(li);
       _templateInsertAfter(parent, list, insertAfter);
       _refreshTemplateFields();
+      _templateRequestFlowSync();
       setTimeout(() => _focusTemplateField(li.getAttribute('data-dp-edit-id')), 0);
       return;
     }
@@ -2475,6 +2469,7 @@ const DP = (() => {
     }
     _templateInsertAfter(parent, node, insertAfter);
     _refreshTemplateFields();
+    _templateRequestFlowSync();
     const focusTarget = node.matches && node.matches('[contenteditable="true"]') ? node : node.querySelector('[contenteditable="true"]');
     setTimeout(() => {
       if (focusTarget) _focusTemplateField(focusTarget.getAttribute('data-dp-edit-id'));
@@ -2521,6 +2516,7 @@ const DP = (() => {
     editable.replaceWith(next);
     _templateMarkDirty();
     _refreshTemplateFields();
+    _templateRequestFlowSync();
     setTimeout(() => {
       next.focus();
       _templateShowBlockTools(next.closest('.dp-template-edit-block') || next);
@@ -2629,7 +2625,6 @@ const DP = (() => {
       importance: 'standard',
       density: 'comfortable',
       paper: 'white',
-      pages: '1',
       showStar: true,
       showFooter: true,
       status: 'inreview',
@@ -2645,7 +2640,6 @@ const DP = (() => {
         generalStatus: _templateGeneralStatus(t.status),
         density: t.density,
         paper: t.paper,
-        pages: t.pages,
         showStar: t.showStar,
         showFooter: t.showFooter,
       });
@@ -2690,6 +2684,14 @@ const DP = (() => {
     if (!iframe) return;
     iframe.contentWindow.location.reload();
     _templateSetSaveStatus('Not saved', '');
+  }
+
+  function _templateRequestFlowSync() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow || typeof iframe.contentWindow.DPTemplateSyncPages !== 'function') return;
+    setTimeout(() => {
+      try { iframe.contentWindow.DPTemplateSyncPages(); } catch (_) {}
+    }, 80);
   }
 
   function _templateSetSaveStatus(text, tone) {
