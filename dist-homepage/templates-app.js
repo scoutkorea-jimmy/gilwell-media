@@ -28,22 +28,46 @@
   document.querySelectorAll('.star').forEach(function(s){ if(!s.querySelector('svg')) s.appendChild(starTpl.content.cloneNode(true)); });
 
   // record an automatically generated document number in each numbered header
-  var DOCPREFIX={ letterhead:'DP-LET', press:'DP-PR', general:'DP-DOC', weekly:'DP-WR', brief:'DP-BRF', minutes:'DP-MIN' };
-  function pad(n){ return String(n).padStart(2, '0'); }
-  function docStamp(){
-    var d=new Date();
-    return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes());
+  // Rule: DP-DOC-YYYY-AAA1234. The four digits are unique within the number.
+  var DOC_TARGETS=['letterhead','press','general','weekly','brief','minutes'];
+  function rand(max){
+    if(window.crypto && crypto.getRandomValues){
+      var a=new Uint32Array(1); crypto.getRandomValues(a); return a[0] % max;
+    }
+    return Math.floor(Math.random()*max);
   }
-  function docNo(tg, i){ return (DOCPREFIX[tg]||'DP-DOC')+'-'+docStamp()+'-'+pad(i+1); }
+  function letters(){
+    var out='', abc='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for(var i=0;i<3;i++) out += abc.charAt(rand(abc.length));
+    return out;
+  }
+  function uniqueDigits(){
+    var pool='0123456789'.split(''), out='';
+    for(var i=0;i<4;i++){
+      var n=rand(pool.length);
+      out += pool.splice(n,1)[0];
+    }
+    return out;
+  }
+  function docNo(){
+    var year=(new Date()).getFullYear();
+    var used={};
+    try{ used=JSON.parse(localStorage.getItem('dp_template_doc_numbers')||'{}')||{}; }catch(e){}
+    var no;
+    do { no='DP-DOC-'+year+'-'+letters()+uniqueDigits(); } while(used[no]);
+    used[no]=Date.now();
+    try{ localStorage.setItem('dp_template_doc_numbers', JSON.stringify(used)); }catch(e){}
+    return no;
+  }
   function assignDocNumbers(){
-    Object.keys(DOCPREFIX).forEach(function(tg, i){
+    DOC_TARGETS.forEach(function(tg){
       var slot=document.querySelector('.frame[data-target="'+tg+'"] .docref b');
-      if(slot) slot.textContent=docNo(tg, i);
+      if(slot) slot.textContent=docNo();
     });
   }
-  Object.keys(DOCPREFIX).forEach(function(tg, i){
+  DOC_TARGETS.forEach(function(tg){
     var hr=document.querySelector('.frame[data-target="'+tg+'"] .head-r');
-    if(hr && !hr.querySelector('.docref')){ var d=document.createElement('div'); d.className='docref'; d.innerHTML='No. <b contenteditable="true">'+docNo(tg, i)+'</b>'; var chip=hr.querySelector('.chip-slot'); if(chip) hr.insertBefore(d, chip); else hr.appendChild(d); }
+    if(hr && !hr.querySelector('.docref')){ var d=document.createElement('div'); d.className='docref'; d.innerHTML='No. <b contenteditable="true">'+docNo()+'</b>'; var chip=hr.querySelector('.chip-slot'); if(chip) hr.insertBefore(d, chip); else hr.appendChild(d); }
   });
   window.DPTemplateNewDocNumbers = assignDocNumbers;
 

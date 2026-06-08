@@ -1886,6 +1886,7 @@ const DP = (() => {
     const t = Object.assign({
       target: 'letterhead',
       importance: 'standard',
+      status: 'inreview',
       density: 'comfortable',
       paper: 'white',
       pages: '1',
@@ -1914,11 +1915,22 @@ const DP = (() => {
           </select>
         </label>
         <label>
-          <span>Importance</span>
+          <span>Priority</span>
           <select class="dp-select dp-select-sm" onchange="DP._templateTweak('importance', this.value)">
             ${option('standard', 'Standard', t.importance)}
             ${option('important', 'Important', t.importance)}
             ${option('priority', 'Priority', t.importance)}
+          </select>
+        </label>
+        <label>
+          <span>Status</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('status', this.value)">
+            ${option('draft', 'Draft', t.status)}
+            ${option('inreview', 'In review', t.status)}
+            ${option('approved', 'Approved', t.status)}
+            ${option('ontrack', 'On track', t.status)}
+            ${option('atrisk', 'At risk', t.status)}
+            ${option('delayed', 'Delayed', t.status)}
           </select>
         </label>
         <label>
@@ -1948,6 +1960,9 @@ const DP = (() => {
           <label><input type="checkbox" ${t.showFooter ? 'checked' : ''} onchange="DP._templateTweak('showFooter', this.checked)"> Footer</label>
         </div>
         <div class="dp-template-actions">
+          <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._templateAddParagraph()">Add paragraph</button>
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddBullet()">Add bullet</button>
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddSection()">Add section</button>
           <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateNewDocNumbers()">New doc no.</button>
           <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._templateReload()">Reset</button>
         </div>
@@ -1987,6 +2002,7 @@ const DP = (() => {
     }
     _refreshTemplateFields();
     _applyTemplateTweaks();
+    _autofillTemplateMeta();
   }
 
   function _activeTemplateDocument() {
@@ -2005,6 +2021,7 @@ const DP = (() => {
     if (!doc || !frame) return [];
     return Array.from(frame.querySelectorAll('[contenteditable="true"]'))
       .filter(el => !el.closest('template'))
+      .filter(el => !el.closest('[data-dp-template-hidden="1"]'))
       .map((el, index) => {
         const id = el.getAttribute('data-dp-edit-id') || ('tpl-' + Date.now().toString(36) + '-' + index);
         el.setAttribute('data-dp-edit-id', id);
@@ -2121,6 +2138,26 @@ const DP = (() => {
     _applyTemplateTweaks();
   }
 
+  function _templateWeeklyStatus(status) {
+    if (status === 'approved' || status === 'ontrack') return 'ontrack';
+    if (status === 'atrisk' || status === 'inreview') return 'atrisk';
+    if (status === 'delayed') return 'delayed';
+    return 'ontrack';
+  }
+
+  function _templateBriefStatus(status) {
+    if (status === 'approved' || status === 'ontrack') return 'complete';
+    if (status === 'draft') return 'planned';
+    return 'inprogress';
+  }
+
+  function _templateGeneralStatus(status) {
+    if (status === 'approved' || status === 'ontrack') return 'approved';
+    if (status === 'draft') return 'draft';
+    if (status === 'delayed') return 'reviewed';
+    return 'inreview';
+  }
+
   function _applyTemplateTweaks() {
     const iframe = document.getElementById('dp-template-frame');
     if (!iframe || !iframe.contentWindow || !iframe.contentDocument) return;
@@ -2132,6 +2169,7 @@ const DP = (() => {
       pages: '1',
       showStar: true,
       showFooter: true,
+      status: 'inreview',
     }, state.templateTweaks || {});
     const doc = iframe.contentDocument;
     const btn = doc.querySelector('.rail-btn[data-target="' + String(t.target).replace(/"/g, '\\"') + '"]');
@@ -2139,6 +2177,9 @@ const DP = (() => {
     if (iframe.contentWindow.applyTweaks) {
       iframe.contentWindow.applyTweaks({
         importance: t.importance,
+        weeklyStatus: _templateWeeklyStatus(t.status),
+        briefStatus: _templateBriefStatus(t.status),
+        generalStatus: _templateGeneralStatus(t.status),
         density: t.density,
         paper: t.paper,
         pages: t.pages,
@@ -2152,6 +2193,7 @@ const DP = (() => {
       doc.body.classList.toggle('hide-star', t.showStar === false);
       doc.body.classList.toggle('hide-foot', t.showFooter === false);
     }
+    _autofillTemplateMeta();
     setTimeout(_refreshTemplateFields, 80);
   }
 
@@ -2161,21 +2203,141 @@ const DP = (() => {
     if (iframe.contentWindow.DPTemplateNewDocNumbers) iframe.contentWindow.DPTemplateNewDocNumbers();
     else {
       const doc = iframe.contentDocument;
-      if (doc) doc.querySelectorAll('.docref b').forEach((el, index) => { el.textContent = 'DP-' + _dateStampCompact() + '-' + String(index + 1).padStart(2, '0'); });
+      if (doc) doc.querySelectorAll('.docref b').forEach(el => { el.textContent = _templateDocNumber(); });
     }
     _refreshTemplateFields();
   }
 
-  function _dateStampCompact() {
-    const d = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes());
+  function _templateDocNumber() {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digits = '0123456789'.split('');
+    let alpha = '';
+    for (let i = 0; i < 3; i++) alpha += letters.charAt(Math.floor(Math.random() * letters.length));
+    let nums = '';
+    for (let i = 0; i < 4; i++) {
+      const n = Math.floor(Math.random() * digits.length);
+      nums += digits.splice(n, 1)[0];
+    }
+    return 'DP-DOC-' + new Date().getFullYear() + '-' + alpha + nums;
   }
 
   function _templateReload() {
     const iframe = document.getElementById('dp-template-frame');
     if (!iframe) return;
     iframe.contentWindow.location.reload();
+  }
+
+  function _templateActiveFrame() {
+    return _activeTemplateFrame(_activeTemplateDocument());
+  }
+
+  function _templatePrimaryPad() {
+    const frame = _templateActiveFrame();
+    return frame && (frame.querySelector('.doc.a4p .pad, .doc.a4l .pad, .doc .pad') || frame.querySelector('.doc'));
+  }
+
+  function _templateContentContainer() {
+    const frame = _templateActiveFrame();
+    if (!frame) return null;
+    return frame.querySelector('.letter-body') || frame.querySelector('.sec:last-of-type') || _templatePrimaryPad();
+  }
+
+  function _templateAddParagraph() {
+    const host = _templateContentContainer();
+    if (!host) return;
+    const doc = _activeTemplateDocument();
+    const p = doc.createElement('p');
+    p.className = 'body';
+    p.setAttribute('contenteditable', 'true');
+    p.textContent = '새 문단을 입력하세요.';
+    host.appendChild(p);
+    _refreshTemplateFields();
+    setTimeout(() => _focusTemplateField(p.getAttribute('data-dp-edit-id')), 0);
+  }
+
+  function _templateAddBullet() {
+    const frame = _templateActiveFrame();
+    const doc = _activeTemplateDocument();
+    if (!frame || !doc) return;
+    let list = frame.querySelector('.sec:last-of-type ul, .sec:last-of-type ol, ul, ol');
+    if (!list) {
+      const sec = _templateCreateSection('New bullet list');
+      if (!sec) return;
+      list = doc.createElement('ul');
+      sec.appendChild(list);
+    }
+    const li = doc.createElement('li');
+    li.setAttribute('contenteditable', 'true');
+    li.textContent = '새 불릿을 입력하세요.';
+    list.appendChild(li);
+    _refreshTemplateFields();
+    setTimeout(() => _focusTemplateField(li.getAttribute('data-dp-edit-id')), 0);
+  }
+
+  function _templateAddSection() {
+    const sec = _templateCreateSection('New section');
+    if (!sec) return;
+    const p = _activeTemplateDocument().createElement('p');
+    p.className = 'body';
+    p.setAttribute('contenteditable', 'true');
+    p.textContent = '새 섹션 내용을 입력하세요.';
+    sec.appendChild(p);
+    _refreshTemplateFields();
+    setTimeout(() => _focusTemplateField(p.getAttribute('data-dp-edit-id')), 0);
+  }
+
+  function _templateCreateSection(title) {
+    const doc = _activeTemplateDocument();
+    const pad = _templatePrimaryPad();
+    if (!doc || !pad) return null;
+    const sec = doc.createElement('div');
+    sec.className = 'sec';
+    const h3 = doc.createElement('h3');
+    h3.setAttribute('contenteditable', 'true');
+    h3.textContent = title || 'New section';
+    sec.appendChild(h3);
+    pad.appendChild(sec);
+    return sec;
+  }
+
+  function _templateUserMeta() {
+    const user = state.user || {};
+    return {
+      author: user.name || user.display_name || user.username || 'Dreampath User',
+      department: user.department || user.team || 'Dreampath PMO',
+      date: _templateLongDate(new Date()),
+    };
+  }
+
+  function _templateLongDate(date) {
+    try {
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      const pad = n => String(n).padStart(2, '0');
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+    }
+  }
+
+  function _autofillTemplateMeta() {
+    const frame = _templateActiveFrame();
+    if (!frame) return;
+    const meta = _templateUserMeta();
+    frame.querySelectorAll('.m, .r, .cm').forEach(row => {
+      const label = (row.querySelector('.label') && row.querySelector('.label').textContent || '').trim().toLowerCase();
+      const value = row.querySelector('.v');
+      if (!value) return;
+      if (label === 'author' || label === 'owner' || label === 'recorder') value.textContent = meta.author;
+      if (label === 'department' || label === 'team') value.textContent = meta.department;
+      if (label === 'date') value.textContent = meta.date;
+      if (label === 'prepared by') value.textContent = meta.author;
+    });
+    frame.querySelectorAll('.sentby').forEach(el => {
+      const text = el.textContent || '';
+      if (/Prepared by|Reported by|Owner\b|Recorded by/i.test(text)) {
+        const prefix = text.match(/^(Prepared by|Reported by|Owner|Recorded by)/i);
+        el.textContent = (prefix ? prefix[1] : 'Prepared by') + ' ' + meta.author + ' · ' + meta.department;
+      }
+    });
   }
 
   async function _renderBoard(root, key, label, opts = {}) {
@@ -9026,6 +9188,7 @@ const DP = (() => {
     _setDocumentsTab,
     _templateFrameReady, _refreshTemplateFields, _focusTemplateField, _templateFieldInput,
     _templateClearField, _templateHideField, _templateTweak, _templateNewDocNumbers, _templateReload,
+    _templateAddParagraph, _templateAddBullet, _templateAddSection,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,
