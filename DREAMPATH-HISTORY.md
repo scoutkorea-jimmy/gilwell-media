@@ -25,12 +25,74 @@ sibling: DREAMPATH.md
 
 날짜 역순.
 
+- [2026-06-09 · Document Templates](#2026-06-09--document-templates) · 본문 입력 반영 안 됨 + 페이지 무한 증식 수정 + "Edit text here" 기본본문
 - [2026-06-04 · Knowledge Base](#2026-06-04--knowledge-base) · 문서 위키 신기능 — PDF/DOCX 위키화 + 버전 diff + 팔로업/메모
 - [2026-04-24 · V2](#2026-04-24--v2) · **/dreampath-v2 마이그레이션 전수 케이스 박제** (P0 10건 · 설계 근거)
 - [2026-04-24 · D](#2026-04-24--d) · v01.040.00 — 홈 전면 개편 + 모바일 접근성 + 새 로고 + B1~B5
 - [2026-04-24 · C](#2026-04-24--c) · 디자인 시스템 도입 + 문서 완전 분리
 - [2026-04-24 · B](#2026-04-24--b) · Dreampath 홈 UX · 접근성 검토 (계획)
 - [2026-04-24 · A](#2026-04-24--a) · CSP 회귀 · 사이드바 전체 마비 (P0)
+
+---
+
+## 2026-06-09 · Document Templates
+
+### 본문 입력 반영 안 됨 + 페이지 무한 증식 수정 + "Edit text here" 기본본문
+
+**국문 요약**
+Document Templates(사이드바 → Documents → Templates)에서 (1) 본문을 입력해도
+반영되지 않고 커서가 튀던 문제, (2) 긴 텍스트가 다음 페이지로 깔끔히 나뉘지 않고
+페이지가 무식하게 늘어/어긋나던 문제를 수정. 근본 원인은 `templates-app.js`의
+`syncAutoPages()`가 **매 키 입력마다** `restoreFlowToFirst()`로 모든 문단 노드를
+`appendChild` 재배치 → 포커스 노드의 캐럿이 파괴된 것. 게다가 iframe 자체 input
+리스너와 부모 `js/dreampath.js`의 `_templateRequestFlowSync()`가 키 입력마다 페이지
+재계산을 **이중 호출**했다. Official Letter는 `.letter-body` flex flow 구조라 직격탄.
+함께, 6개 본문 템플릿을 CUFS 샘플 산문 대신 빈 **"Edit text here" 안내문(`data-ph`)**
+으로 시작하도록 변경.
+
+**English Summary**
+Fixed Document Templates so (1) body edits register without the caret jumping,
+and (2) overflowing text splits cleanly onto the next page instead of the sheet
+ballooning / misstacking. Root cause: `templates-app.js` `syncAutoPages()`
+re-appended every paragraph node via `restoreFlowToFirst()` on EVERY keystroke,
+detaching the focused node and destroying the caret; additionally the iframe's
+own input listener and the parent's `_templateRequestFlowSync()` both fired a
+reflow per keystroke. The Official Letter took the brunt because of its
+`.letter-body` flex flow. Also: the six body templates now start blank with grey
+**"Edit text here" prompts (`data-ph`)** instead of CUFS sample prose.
+
+**수정 / Fixes**
+- (a) 단일 페이지가 오버플로하지 않으면 노드를 **전혀 옮기지 않는 fast path** —
+  대부분의 타이핑이 여기 해당, 캐럿 파괴 제거.
+- (b) reflow가 실제 일어날 때만 `captureCaret()→reflow→restoreCaret()`로 캐럿 보존
+  (`data-dp-edit-id` + 문자 오프셋 기준).
+- (c) 분할된 문단 tail에 `data-auto-split="1"` 표시 → 다음 reflow에서 **머지**해
+  편집 반복 시 영구 분절 방지.
+- (d) 한 페이지보다 큰 단일 문단이 더 못 쪼개질 때 다음 페이지로 무한 이동하지 않도록
+  **과다 페이지 가드**.
+- (e) 부모 키 입력 핸들러의 **이중 sync 제거**(구조 편집 경로는 유지).
+- (f) iframe src에 앱 배포 토큰 `?v=` 부여 — iframe HTML 문서 자체는 캐시버스트가
+  없었음(deploy.sh는 HTML *내부* 토큰만 치환).
+
+**구현 / Implementation**
+- `dist-homepage/templates-app.js`: `captureCaret()`/`restoreCaret()` 추가,
+  `syncAutoPages()` fast-path + 캐럿 보존 + 가드, `cloneForOverflow()` tail 마킹,
+  `restoreFlowToFirst()` 머지, 디바운스 80→130ms.
+- `js/dreampath.js`: 템플릿 input 핸들러에서 `_templateRequestFlowSync()` 제거,
+  `_renderDocumentTemplates()`에서 dreampath.js 스크립트 태그의 `?v=`를 읽어 iframe src에 부여.
+- `dist-homepage/DreamPath - Document Templates.html`: 공식 서한·보도자료·일반문서·
+  주간보고·프로젝트 브리프·회의록의 제목/본문/목록/메타/푸터 sender를 빈 `data-ph`로 교체.
+  브랜드 로고·주소·이메일·웹사이트·상태 pill·자동 문서번호·디자인 쇼케이스(cover/cert/card/sig)는 유지.
+
+**교훈 / Lessons**
+- contenteditable 캔버스에서 **매 입력마다 DOM 노드를 옮기면 캐럿이 파괴된다.**
+  reflow는 (1) 꼭 필요할 때만, (2) 캐럿을 캡처·복원하며 수행.
+- 같은 이벤트에 iframe과 부모가 **이중으로 sync를 걸지 않는다.**
+- iframe HTML 문서 자체는 `?v=`가 없으면 브라우저 캐시된다.
+
+**code_refs**
+- `dist-homepage/templates-app.js` → `syncAutoPages` / `restoreFlowToFirst` / `cloneForOverflow` (CASE STUDY 2026-06-09 — Document Templates reflow caret loss)
+- `js/dreampath.js` → 템플릿 input 핸들러 (CASE STUDY 2026-06-09 — Document Templates double flow-sync), `_renderDocumentTemplates` (CASE STUDY 2026-06-09 — Document Templates iframe cache-bust)
 
 ---
 

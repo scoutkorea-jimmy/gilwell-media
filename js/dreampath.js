@@ -1833,7 +1833,16 @@ const DP = (() => {
 
   function _renderDocumentTemplates(root) {
     const docUrl = '/dist-homepage/DreamPath%20-%20Document%20Templates';
-    const src = docUrl;
+    // [CASE STUDY 2026-06-09 — Document Templates iframe cache-bust]
+    // The iframe HTML document itself carries no ?v=, so a browser can serve a
+    // stale copy (and stale templates-app.js with it) after a deploy. deploy.sh
+    // only rewrites ?v= tokens INSIDE the HTML, not the iframe request URL.
+    // Reuse the app's own deploy token (read off the dreampath.js script tag,
+    // which deploy.sh rewrites each release) so the iframe busts with the app.
+    const _scriptEl = document.querySelector('script[src*="dreampath.js"]');
+    const _verMatch = _scriptEl && (_scriptEl.getAttribute('src') || '').match(/[?&]v=([^&]+)/);
+    const _ver = _verMatch ? _verMatch[1] : '';
+    const src = _ver ? (docUrl + '?v=' + encodeURIComponent(_ver)) : docUrl;
     const title = 'Document Templates';
     root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [
@@ -2155,7 +2164,13 @@ const DP = (() => {
         if (target) {
           _syncTemplateFieldValue(target);
           _templateMarkDirty();
-          _templateRequestFlowSync();
+          // [CASE STUDY 2026-06-09 — Document Templates double flow-sync]
+          // Do NOT call _templateRequestFlowSync() here. The iframe's own
+          // 'input' listener (templates-app.js) already schedules a debounced
+          // DPTemplateSyncPages(); triggering a second sync per keystroke
+          // raced the first and amplified the caret-loss reflow. Structural
+          // edits (insert/drag/add) still call _templateRequestFlowSync()
+          // explicitly because those are not iframe input events.
         }
       }, true);
       doc.addEventListener('mouseover', (event) => {

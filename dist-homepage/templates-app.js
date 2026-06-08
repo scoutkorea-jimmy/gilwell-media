@@ -271,7 +271,21 @@
     [].slice.call(body.children).forEach(function(n){
       if(n.hasAttribute && n.hasAttribute('data-auto-flow-anchor') && !String(n.textContent||'').trim()) n.remove();
     });
-    nodes.forEach(function(n){ body.appendChild(n); });
+    // Merge auto-split tails back into their head node (same tag, plain text)
+    // so editing a paragraph that previously overflowed does not accumulate
+    // more and more fragments on every keystroke.
+    var merged=[];
+    nodes.forEach(function(n){
+      var prev=merged[merged.length-1];
+      if(prev && n.getAttribute && n.getAttribute('data-auto-split')==='1' &&
+         prev.tagName===n.tagName && !hasRichInline(prev) && !hasRichInline(n)){
+        prev.textContent=String(prev.textContent||'')+String(n.textContent||'');
+        if(n.parentNode) n.parentNode.removeChild(n);
+      } else {
+        merged.push(n);
+      }
+    });
+    merged.forEach(function(n){ if(n.removeAttribute) n.removeAttribute('data-auto-split'); body.appendChild(n); });
     [].slice.call(fr.querySelectorAll('.docbox.cont')).forEach(function(c){ c.remove(); });
   }
   function ensureEditableStart(fr){
@@ -305,6 +319,9 @@
     clone.removeAttribute('data-dp-edit-id');
     clone.removeAttribute('data-dp-block-id');
     clone.setAttribute('contenteditable','true');
+    // mark the spilled tail so the next reflow can merge it back into its
+    // head node instead of leaving a paragraph permanently fractured.
+    clone.setAttribute('data-auto-split','1');
     return clone;
   }
   function splitUnits(text){
@@ -429,11 +446,64 @@
     });
     return max;
   }
+  // Record where the caret sits inside the currently-focused editable field,
+  // as a plain character offset keyed by the parent-assigned data-dp-edit-id.
+  function captureCaret(){
+    var sel=document.getSelection && document.getSelection();
+    if(!sel || !sel.rangeCount || !sel.anchorNode) return null;
+    var node=sel.anchorNode;
+    var host=node.nodeType===1 ? node : node.parentNode;
+    host=host && host.closest && host.closest('[contenteditable="true"]');
+    if(!host) return null;
+    var id=host.getAttribute('data-dp-edit-id');
+    if(!id) return null;
+    var range=document.createRange();
+    range.selectNodeContents(host);
+    try { range.setEnd(sel.anchorNode, sel.anchorOffset); }
+    catch(e){ return { id:id, offset:0 }; }
+    return { id:id, offset:range.toString().length };
+  }
+  function restoreCaret(snap){
+    if(!snap || !snap.id) return;
+    var key=(window.CSS && CSS.escape) ? CSS.escape(snap.id) : snap.id;
+    var host=document.querySelector('[data-dp-edit-id="'+key+'"]');
+    if(!host) return;
+    var walker=document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null);
+    var range=document.createRange(), walked=0, placed=false, tn;
+    while((tn=walker.nextNode())){
+      var len=tn.nodeValue.length;
+      if(walked+len>=snap.offset){ range.setStart(tn, Math.max(0, snap.offset-walked)); placed=true; break; }
+      walked+=len;
+    }
+    if(!placed){ range.selectNodeContents(host); range.collapse(false); }
+    else { range.collapse(true); }
+    try { host.focus({ preventScroll:true }); } catch(e){ try { host.focus(); } catch(_){} }
+    var sel=document.getSelection();
+    if(sel){ sel.removeAllRanges(); sel.addRange(range); }
+  }
+
+  // [CASE STUDY 2026-06-09 — Document Templates reflow caret loss]
+  // 증상: Official Letter 등에서 본문을 입력하면 글자가 반영 안 되고 커서가 튐.
+  // 원인: 이 함수가 매 입력마다 restoreFlowToFirst 로 모든 문단 노드를 appendChild
+  //       재배치 → 포커스 노드가 DOM 에서 분리·재부착되며 캐럿이 파괴됨.
+  // 교훈: (1) 오버플로가 없으면 노드를 절대 옮기지 말 것(아래 fast path),
+  //       (2) 옮겨야 할 때는 captureCaret→reflow→restoreCaret 로 캐럿 보존.
+  // 참고: DREAMPATH-HISTORY.md 2026-06-09, dist-homepage/templates-app.js.
   function syncAutoPages(){
     var fr=activePaper();
     if(!fr){ fit(); return; }
     var first=fr.querySelector('.docbox');
     if(!first){ fit(); return; }
+    // Fast path: a single page that does not overflow needs no node movement.
+    // Skipping the reflow here keeps the caret intact for the common case.
+    if(fr.querySelectorAll('.docbox').length===1 && boxOverflow(first)<=0){
+      ensureEditableStart(fr);
+      updatePageNumbers(fr);
+      fit();
+      window.dispatchEvent(new CustomEvent('tplchange', { detail: activeTarget() }));
+      return;
+    }
+    var caret=captureCaret();
     var nodes=collectFlowNodes(fr);
     restoreFlowToFirst(fr, nodes);
     var guard=0;
@@ -441,6 +511,11 @@
     for(var i=0;i<boxes.length && guard<400;i++){
       var box=boxes[i];
       while(boxOverflow(box)>0 && guard<400){
+        var flowNodes=box.classList.contains('cont')?contFlowNodes(box):firstFlowNodes(box);
+        // Runaway guard: a single flow node taller than one page can't shrink
+        // unless it is splittable. Moving it to a fresh page would just
+        // overflow again → endless pages. Leave it (clip) instead.
+        if(flowNodes.length<=1 && !(flowNodes.length===1 && canSplitNode(flowNodes[0]) && !hasRichInline(flowNodes[0]))) break;
         if(!moveLastFlowToNext(fr, box)) break;
         guard++;
         boxes=[].slice.call(fr.querySelectorAll('.docbox'));
@@ -454,12 +529,14 @@
     ensureEditableStart(fr);
     updatePageNumbers(fr);
     fit();
+    restoreCaret(caret);
     window.dispatchEvent(new CustomEvent('tplchange', { detail: activeTarget() }));
   }
   var autoTimer=null;
   function scheduleAutoPages(){
     clearTimeout(autoTimer);
-    autoTimer=setTimeout(syncAutoPages, 80);
+    // slightly longer debounce reduces reflow churn during fast typing.
+    autoTimer=setTimeout(syncAutoPages, 130);
   }
 
   window.applyTweaks = function(t){
