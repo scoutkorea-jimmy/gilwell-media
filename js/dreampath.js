@@ -1838,7 +1838,16 @@ const DP = (() => {
     root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, state.page === 'document_templates' ? 'Document Templates' : 'Documents'),
-      h('div', {}, [
+      h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' } }, [
+        h('span', { id: 'dp-template-save-status', className: 'dp-template-save-status', 'aria-live': 'polite' }, 'Not saved'),
+        h('button', {
+          className: 'dp-btn dp-btn-primary',
+          id: 'dp-template-save-btn',
+          onclick: () => _templateSaveDocument(),
+        }, [
+          h('span', { className: 'dp-btn-ico', style: { '--dp-icon': "url('/img/dreampath/icons/check.svg')" } }),
+          h('span', {}, 'Save to Documents'),
+        ]),
         h('a', {
           className: 'dp-btn dp-btn-secondary',
           href: src,
@@ -1871,6 +1880,10 @@ const DP = (() => {
               <h4>Document controls</h4>
               <span id="dp-template-field-count">Canvas editing</span>
             </div>
+          </div>
+          <div class="dp-template-savebox">
+            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" id="dp-template-save-side" onclick="DP._templateSaveDocument()">Save to Documents</button>
+            <span id="dp-template-save-hint">Title format: document no. / file title</span>
           </div>
           ${_templateTweaksHtml()}
         </aside>
@@ -2138,7 +2151,10 @@ const DP = (() => {
       }, true);
       doc.addEventListener('input', (event) => {
         const target = event.target && event.target.closest && event.target.closest('[contenteditable="true"]');
-        if (target) _syncTemplateFieldValue(target);
+        if (target) {
+          _syncTemplateFieldValue(target);
+          _templateMarkDirty();
+        }
       }, true);
       doc.addEventListener('mouseover', (event) => {
         const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
@@ -2274,6 +2290,7 @@ const DP = (() => {
       else target.parentNode.insertBefore(source, target.nextSibling);
       _clearTemplateDropMarks(doc);
       source.classList.remove('dp-template-dragging');
+      _templateMarkDirty();
       _refreshTemplateFields();
     });
     doc.addEventListener('dragend', () => {
@@ -2289,24 +2306,28 @@ const DP = (() => {
     blockUi.className = 'dp-template-block-ui';
     blockUi.setAttribute('data-dp-ui', '1');
     blockUi.hidden = true;
-    blockUi.innerHTML = '<button type="button" class="dp-template-plus" aria-label="Add block">+</button>';
+    blockUi.innerHTML = '<button type="button" class="dp-template-plus" aria-label="Add block" aria-haspopup="menu" aria-expanded="false">+</button>';
     doc.body.appendChild(blockUi);
 
     const menu = doc.createElement('div');
     menu.className = 'dp-template-insert-menu';
     menu.setAttribute('data-dp-ui', '1');
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', 'Insert block');
     menu.hidden = true;
     menu.innerHTML = [
       ['paragraph', 'Paragraph', 'Text'],
       ['heading', 'Heading', 'Title'],
       ['bullet', 'Bullet', 'List'],
       ['section', 'Section', 'Block'],
-    ].map(item => '<button type="button" data-kind="' + item[0] + '">' + item[1] + '<span>' + item[2] + '</span></button>').join('');
+    ].map(item => '<button type="button" role="menuitem" data-kind="' + item[0] + '">' + item[1] + '<span>' + item[2] + '</span></button>').join('');
     doc.body.appendChild(menu);
 
     const formatbar = doc.createElement('div');
     formatbar.className = 'dp-template-formatbar';
     formatbar.setAttribute('data-dp-ui', '1');
+    formatbar.setAttribute('role', 'toolbar');
+    formatbar.setAttribute('aria-label', 'Text formatting');
     formatbar.hidden = true;
     formatbar.innerHTML = '<button type="button" data-format="bold" aria-label="Bold">B</button><button type="button" data-format="heading" aria-label="Toggle heading">H</button>';
     doc.body.appendChild(formatbar);
@@ -2324,6 +2345,8 @@ const DP = (() => {
       event.stopPropagation();
       _templateInsertBlock(btn.getAttribute('data-kind'), doc.__DP_INSERT_REF || doc.__DP_SELECTED_BLOCK);
       menu.hidden = true;
+      const plus = doc.querySelector('.dp-template-plus');
+      if (plus) plus.setAttribute('aria-expanded', 'false');
     });
     formatbar.addEventListener('click', (event) => {
       const btn = event.target && event.target.closest && event.target.closest('button[data-format]');
@@ -2338,6 +2361,8 @@ const DP = (() => {
       if (block) _templateShowBlockTools(block);
       else {
         menu.hidden = true;
+        const plus = doc.querySelector('.dp-template-plus');
+        if (plus) plus.setAttribute('aria-expanded', 'false');
         _templateHideBlockTools(doc);
       }
     }, true);
@@ -2388,6 +2413,8 @@ const DP = (() => {
     doc.__DP_INSERT_REF = reference;
     const rect = reference.getBoundingClientRect();
     menu.hidden = false;
+    const plus = doc.querySelector('.dp-template-plus');
+    if (plus) plus.setAttribute('aria-expanded', 'true');
     menu.style.left = Math.max(6, rect.left - 2) + 'px';
     menu.style.top = Math.max(6, rect.top + Math.min(30, rect.height)) + 'px';
   }
@@ -2413,6 +2440,7 @@ const DP = (() => {
     const doc = _activeTemplateDocument();
     const frame = _templateActiveFrame();
     if (!doc || !frame) return;
+    _templateMarkDirty();
     const ref = reference && reference.ownerDocument === doc ? reference : (doc.__DP_SELECTED_BLOCK || null);
     let parent = ref && ref.parentNode;
     let insertAfter = ref;
@@ -2473,6 +2501,7 @@ const DP = (() => {
     if (!doc) return;
     if (format === 'bold') {
       doc.execCommand('bold', false, null);
+      _templateMarkDirty();
       _refreshTemplateFields();
       return;
     }
@@ -2490,6 +2519,7 @@ const DP = (() => {
       : _templateCreateEditable(doc, 'h3', '', editable.innerHTML ? '' : editable.textContent);
     next.innerHTML = editable.innerHTML;
     editable.replaceWith(next);
+    _templateMarkDirty();
     _refreshTemplateFields();
     setTimeout(() => {
       next.focus();
@@ -2567,6 +2597,7 @@ const DP = (() => {
   function _templateTweak(key, value) {
     state.templateTweaks = Object.assign({}, state.templateTweaks || {});
     state.templateTweaks[key] = value;
+    _templateMarkDirty();
     _applyTemplateTweaks();
   }
 
@@ -2638,6 +2669,7 @@ const DP = (() => {
       if (doc) doc.querySelectorAll('.docref b').forEach(el => { el.textContent = _templateDocNumber(); });
     }
     _refreshTemplateFields();
+    _templateMarkDirty();
   }
 
   function _templateDocNumber() {
@@ -2657,6 +2689,126 @@ const DP = (() => {
     const iframe = document.getElementById('dp-template-frame');
     if (!iframe) return;
     iframe.contentWindow.location.reload();
+    _templateSetSaveStatus('Not saved', '');
+  }
+
+  function _templateSetSaveStatus(text, tone) {
+    const status = document.getElementById('dp-template-save-status');
+    const hint = document.getElementById('dp-template-save-hint');
+    [status, hint].forEach(el => {
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove('ok', 'err', 'busy', 'dirty');
+      if (tone) el.classList.add(tone);
+    });
+  }
+
+  function _templateMarkDirty() {
+    _templateSetSaveStatus('Unsaved changes', 'dirty');
+  }
+
+  function _templateExtractDocNumber(frame) {
+    const ref = frame && (frame.querySelector('.docref b') || frame.querySelector('.docref') || frame.querySelector('.refrow .r .v'));
+    let text = String(ref && ref.textContent || '').trim();
+    const match = text.match(/DP-DOC-\d{4}-[A-Z]{3}\d{4}/i);
+    if (match) return match[0].toUpperCase();
+    text = _templateDocNumber();
+    const slot = frame && (frame.querySelector('.docref b') || frame.querySelector('.docref'));
+    if (slot) slot.textContent = text;
+    return text;
+  }
+
+  function _templateExtractTitle(frame) {
+    const candidates = [
+      '.subjline .v',
+      '.dtitle h1',
+      '.cover-title h1',
+      '.pr-body h1',
+      'h1[contenteditable="true"]',
+      'h1',
+      '.typ',
+    ];
+    for (const sel of candidates) {
+      const el = frame && frame.querySelector(sel);
+      const text = _templatePlainText(el && el.textContent);
+      if (text) return text;
+    }
+    return 'Untitled document';
+  }
+
+  function _templatePlainText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function _templateCleanSavedHtml(frame) {
+    if (!frame) return '';
+    const clone = frame.cloneNode(true);
+    clone.querySelectorAll('[data-dp-ui="1"], script, style').forEach(node => node.remove());
+    clone.querySelectorAll('[data-dp-template-hidden="1"]').forEach(node => node.remove());
+    clone.querySelectorAll('*').forEach(node => {
+      node.removeAttribute('contenteditable');
+      node.removeAttribute('draggable');
+      node.removeAttribute('data-dp-edit-id');
+      node.removeAttribute('data-dp-block-id');
+      node.removeAttribute('spellcheck');
+      node.classList.remove('dp-template-edit-block', 'dp-template-edit-target', 'dp-template-dragging', 'dp-template-drop-before', 'dp-template-drop-after');
+      if (!node.getAttribute('class')) node.removeAttribute('class');
+    });
+    return clone.innerHTML.trim();
+  }
+
+  function _templateBuildSavedContent(docNo, fileTitle, frame) {
+    const t = Object.assign({}, state.templateTweaks || {});
+    const bodyHtml = _templateCleanSavedHtml(frame);
+    const meta = [
+      ['Document no.', docNo],
+      ['File title', fileTitle],
+      ['Template', t.target || 'letterhead'],
+      ['Status', t.status || 'inreview'],
+      ['Priority', t.importance || 'standard'],
+      ['Saved at', _templateLongDate(new Date())],
+    ];
+    return `
+      <section class="dp-saved-template-doc">
+        <h2>${esc(fileTitle)}</h2>
+        <table>
+          <tbody>${meta.map(row => `<tr><th>${esc(row[0])}</th><td>${esc(row[1])}</td></tr>`).join('')}</tbody>
+        </table>
+        <hr>
+        <div class="dp-saved-template-body">${bodyHtml}</div>
+      </section>
+    `;
+  }
+
+  async function _templateSaveDocument() {
+    const btns = [document.getElementById('dp-template-save-btn'), document.getElementById('dp-template-save-side')].filter(Boolean);
+    const doc = _activeTemplateDocument();
+    const frame = _templateActiveFrame(doc);
+    if (!doc || !frame) { toast('Document is still loading', 'err'); return; }
+    if (!_hasPerm('write:documents')) { toast('You do not have permission to save Documents.', 'err'); return; }
+    const docNo = _templateExtractDocNumber(frame);
+    const fileTitle = _templateExtractTitle(frame);
+    const postTitle = docNo + ' / ' + fileTitle;
+    const content = _sanitize(_templateBuildSavedContent(docNo, fileTitle, frame));
+    if (!content) { toast('Nothing to save', 'err'); return; }
+    btns.forEach(btn => { btn.disabled = true; btn.dataset.originalText = btn.textContent; btn.textContent = 'Saving...'; });
+    _templateSetSaveStatus('Saving...', 'busy');
+    const data = await api('POST', 'posts', {
+      board: 'documents',
+      title: postTitle,
+      content,
+      files: [],
+    });
+    btns.forEach(btn => {
+      btn.disabled = false;
+      btn.textContent = btn.dataset.originalText || 'Save to Documents';
+    });
+    if (!data || !data.id) {
+      _templateSetSaveStatus('Save failed', 'err');
+      return;
+    }
+    _templateSetSaveStatus('Saved: ' + postTitle, 'ok');
+    toast('Saved to Documents', 'ok');
   }
 
   function _templateActiveFrame() {
@@ -9639,7 +9791,7 @@ const DP = (() => {
     _setDocumentsTab,
     _templateFrameReady, _refreshTemplateFields, _focusTemplateField, _templateFieldInput,
     _templateClearField, _templateHideField, _templateTweak, _templateNewDocNumbers, _templateReload,
-    _templateAddParagraph, _templateAddBullet, _templateAddSection,
+    _templateAddParagraph, _templateAddBullet, _templateAddSection, _templateSaveDocument,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,
