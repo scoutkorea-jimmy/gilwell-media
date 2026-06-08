@@ -2050,6 +2050,7 @@ const DP = (() => {
             gap: 4px;
             align-items: center;
           }
+          .dp-template-drag,
           .dp-template-plus {
             width: 22px;
             height: 22px;
@@ -2063,6 +2064,14 @@ const DP = (() => {
             cursor: pointer;
             box-shadow: 0 4px 14px rgba(31,31,31,0.14);
           }
+          .dp-template-drag {
+            cursor: grab;
+            font-size: 12px;
+          }
+          .dp-template-drag:active {
+            cursor: grabbing;
+          }
+          .dp-template-drag:hover,
           .dp-template-plus:hover {
             background: rgba(107,45,190,0.08);
             border-color: rgba(107,45,190,0.35);
@@ -2251,14 +2260,15 @@ const DP = (() => {
     blocks.forEach((block, index) => {
       const id = block.getAttribute('data-dp-block-id') || ('block-' + Date.now().toString(36) + '-' + index);
       block.setAttribute('data-dp-block-id', id);
-      block.setAttribute('draggable', 'true');
+      block.removeAttribute('draggable');
       block.classList.add('dp-template-edit-block');
     });
     _templateEnsureCanvasTools(doc);
     if (doc.__DP_BLOCK_DND_BOUND) return;
     doc.__DP_BLOCK_DND_BOUND = true;
     doc.addEventListener('dragstart', (event) => {
-      const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+      const handle = event.target && event.target.closest && event.target.closest('.dp-template-drag');
+      const block = handle ? doc.__DP_SELECTED_BLOCK : null;
       if (!block) return;
       block.classList.add('dp-template-dragging');
       event.dataTransfer.effectAllowed = 'move';
@@ -2300,7 +2310,7 @@ const DP = (() => {
     blockUi.className = 'dp-template-block-ui';
     blockUi.setAttribute('data-dp-ui', '1');
     blockUi.hidden = true;
-    blockUi.innerHTML = '<button type="button" class="dp-template-plus" aria-label="Add block" aria-haspopup="menu" aria-expanded="false">+</button>';
+    blockUi.innerHTML = '<button type="button" class="dp-template-drag" draggable="true" aria-label="Move block">↕</button><button type="button" class="dp-template-plus" aria-label="Add block" aria-haspopup="menu" aria-expanded="false">+</button>';
     doc.body.appendChild(blockUi);
 
     const menu = doc.createElement('div');
@@ -2326,6 +2336,9 @@ const DP = (() => {
     formatbar.innerHTML = '<button type="button" data-format="bold" aria-label="Bold">B</button><button type="button" data-format="heading" aria-label="Toggle heading">H</button>';
     doc.body.appendChild(formatbar);
 
+    blockUi.querySelector('.dp-template-drag').addEventListener('mousedown', (event) => {
+      event.stopPropagation();
+    });
     blockUi.querySelector('.dp-template-plus').addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();

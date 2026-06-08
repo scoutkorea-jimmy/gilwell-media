@@ -243,7 +243,7 @@
     var pad=box && box.querySelector('.pad');
     if(!pad) return [];
     var lb=pad.querySelector('.letter-body');
-    if(lb) return [].slice.call(lb.children).filter(function(n){ return !n.hasAttribute('data-auto-flow-anchor'); });
+    if(lb) return [].slice.call(lb.children).filter(flowNodeFilter);
     return [].slice.call(pad.children).filter(function(n){
       return n.matches && n.matches('.sec, .body, .body-list, h3');
     });
@@ -251,7 +251,10 @@
   function contFlowNodes(box){
     var body=pageBody(box);
     if(!body) return [];
-    return [].slice.call(body.children).filter(function(n){ return !n.hasAttribute('data-auto-flow-anchor'); });
+    return [].slice.call(body.children).filter(flowNodeFilter);
+  }
+  function flowNodeFilter(n){
+    return !(n && n.hasAttribute && n.hasAttribute('data-auto-flow-anchor') && !String(n.textContent||'').trim());
   }
   function collectFlowNodes(fr){
     var boxes=[].slice.call(fr.querySelectorAll('.docbox'));
@@ -265,8 +268,23 @@
     var first=fr.querySelector('.docbox');
     var body=pageBody(first);
     if(!body) return;
+    [].slice.call(body.children).forEach(function(n){
+      if(n.hasAttribute && n.hasAttribute('data-auto-flow-anchor') && !String(n.textContent||'').trim()) n.remove();
+    });
     nodes.forEach(function(n){ body.appendChild(n); });
     [].slice.call(fr.querySelectorAll('.docbox.cont')).forEach(function(c){ c.remove(); });
+  }
+  function ensureEditableStart(fr){
+    var first=fr && fr.querySelector('.docbox');
+    var body=pageBody(first);
+    if(!body || !body.classList || !body.classList.contains('letter-body')) return;
+    if(firstFlowNodes(first).length) return;
+    var p=document.createElement('p');
+    p.className='body';
+    p.setAttribute('contenteditable','true');
+    p.setAttribute('data-auto-flow-anchor','1');
+    p.setAttribute('data-ph','Type here.');
+    body.appendChild(p);
   }
   function boxOverflow(box){
     var doc=box && box.querySelector('.doc');
@@ -433,6 +451,7 @@
       if(contFlowNodes(last).length) break;
       last.remove();
     }
+    ensureEditableStart(fr);
     updatePageNumbers(fr);
     fit();
     window.dispatchEvent(new CustomEvent('tplchange', { detail: activeTarget() }));
