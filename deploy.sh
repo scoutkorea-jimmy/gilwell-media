@@ -106,9 +106,12 @@ echo "🔄 Cache-busting: updating ?v= to ${VERSION}..."
 # Dreampath deploy only needs to cache-bust the Dreampath entrypoint. Public
 # Site/Admin HTML files use the main release flow and must not receive a
 # Dreampath semver token during this Pages deploy.
-HTML_FILES="./dreampath.html"
+HTML_FILES=(
+  "./dreampath.html"
+  "./dist-homepage/DreamPath - Document Templates.html"
+)
 declare -a PREV_TOKENS
-for f in $HTML_FILES; do
+for f in "${HTML_FILES[@]}"; do
   # 가장 먼저 등장하는 ?v= 토큰 하나를 저장. sync_versions.sh may leave a
   # timestamp token (YYYYMMDDHHMMSS), while Dreampath deploy uses aa.bbb.cc.
   PREV=$(grep -oE '\?v=[0-9A-Za-z.-]+' "$f" 2>/dev/null | head -1 || true)
@@ -144,11 +147,11 @@ fi
 COMMIT_RANGE="origin/main..HEAD"
 COMMIT_BULLETS=$(git log "$COMMIT_RANGE" --reverse --no-merges \
   --format='%s' -- \
-  dreampath.html js/dreampath.js functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+  dreampath.html js/dreampath.js dist-homepage functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
   2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' | head -12 || true)
 if [[ -z "$COMMIT_BULLETS" ]]; then
   COMMIT_BULLETS=$(git log -1 --no-merges --format='%s' -- \
-    dreampath.html js/dreampath.js functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
+    dreampath.html js/dreampath.js dist-homepage functions/api/dreampath DREAMPATH.md DREAMPATH-HISTORY.md docs/dreampath db/migration_*.sql deploy.sh \
     2>/dev/null | grep -Ei 'dreampath|dp_|calendar|version|session|pmo|risk|decision|comment|task|note|board|event|deploy' || true)
 fi
 
