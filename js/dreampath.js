@@ -1857,11 +1857,6 @@ const DP = (() => {
           <h3>${esc(title)}</h3>
         </div>
         <div class="dp-template-frame-wrap">
-          <div class="dp-template-canvasbar">
-            <button type="button" class="dp-btn dp-btn-primary dp-btn-sm" onclick="DP._templateAddParagraph()">Add paragraph</button>
-            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddBullet()">Add bullet</button>
-            <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateAddSection()">Add section</button>
-          </div>
           <iframe class="dp-template-frame"
                   id="dp-template-frame"
                   title="${esc(title)}"
@@ -2021,8 +2016,111 @@ const DP = (() => {
           .dp-template-drop-after {
             box-shadow: 0 3px 0 var(--blue) !important;
           }
+          .letter-body > h3 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--navy);
+          }
+          .letter-body > h3::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            display: inline-block;
+            margin-right: 9px;
+            border-radius: 50%;
+            background: var(--purple);
+            vertical-align: 1px;
+          }
+          .dp-template-block-ui,
+          .dp-template-formatbar,
+          .dp-template-insert-menu {
+            position: fixed;
+            z-index: 99999;
+            font-family: var(--font);
+          }
+          .dp-template-block-ui {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+          }
+          .dp-template-plus {
+            width: 22px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            border-radius: 4px;
+            border: 1px solid rgba(31,31,31,0.14);
+            background: #FFFFFF;
+            color: var(--purple);
+            font: 800 17px/1 var(--font);
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(31,31,31,0.14);
+          }
+          .dp-template-plus:hover {
+            background: rgba(107,45,190,0.08);
+            border-color: rgba(107,45,190,0.35);
+          }
+          .dp-template-formatbar {
+            display: flex;
+            gap: 3px;
+            padding: 3px;
+            border: 1px solid rgba(31,31,31,0.13);
+            border-radius: 5px;
+            background: #FFFFFF;
+            box-shadow: 0 8px 24px rgba(31,31,31,0.16);
+          }
+          .dp-template-formatbar button,
+          .dp-template-insert-menu button {
+            border: 0;
+            background: transparent;
+            color: var(--ink);
+            font: 700 11px/1 var(--font);
+            cursor: pointer;
+          }
+          .dp-template-formatbar button {
+            min-width: 24px;
+            height: 24px;
+            border-radius: 4px;
+          }
+          .dp-template-formatbar button:hover {
+            background: rgba(107,45,190,0.1);
+            color: var(--purple);
+          }
+          .dp-template-insert-menu {
+            width: 168px;
+            padding: 5px;
+            border: 1px solid rgba(31,31,31,0.14);
+            border-radius: 6px;
+            background: #FFFFFF;
+            box-shadow: 0 12px 30px rgba(31,31,31,0.18);
+          }
+          .dp-template-insert-menu button {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 30px;
+            padding: 0 8px;
+            border-radius: 4px;
+            text-align: left;
+            font-weight: 650;
+          }
+          .dp-template-insert-menu button span {
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+          }
+          .dp-template-insert-menu button:hover {
+            background: rgba(107,45,190,0.09);
+            color: var(--purple);
+          }
           @media print {
-            .dp-template-edit-block::before { display: none !important; }
+            .dp-template-edit-block::before,
+            .dp-template-block-ui,
+            .dp-template-formatbar,
+            .dp-template-insert-menu { display: none !important; }
             .dp-template-edit-target,
             .dp-template-drop-before,
             .dp-template-drop-after {
@@ -2042,6 +2140,17 @@ const DP = (() => {
         const target = event.target && event.target.closest && event.target.closest('[contenteditable="true"]');
         if (target) _syncTemplateFieldValue(target);
       }, true);
+      doc.addEventListener('mouseover', (event) => {
+        const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+        if (block) _templateShowBlockTools(block);
+      }, true);
+      doc.addEventListener('focusin', (event) => {
+        const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+        if (block) _templateShowBlockTools(block);
+      }, true);
+      doc.addEventListener('selectionchange', () => _templatePositionFormatbar());
+      doc.addEventListener('scroll', () => _templatePositionBlockTools(), true);
+      win.addEventListener('resize', () => _templatePositionBlockTools());
     }
     _refreshTemplateFields();
     _applyTemplateTweaks();
@@ -2118,7 +2227,7 @@ const DP = (() => {
     });
     const letterBody = frame.querySelector('.letter-body');
     if (letterBody) add(Array.from(letterBody.children).filter(node => {
-      return node.matches('.sal, .body, .body-list, .sec, .sign, .encl');
+      return node.matches('h3, .sal, .body, .body-list, .sec, .sign, .encl');
     }));
     add(Array.from(frame.querySelectorAll('.letter-body .body-list > li')));
     add(Array.from(frame.querySelectorAll('.pad > .sec, .pad > .dtitle, .pad > .mgrid')));
@@ -2136,6 +2245,7 @@ const DP = (() => {
       block.setAttribute('draggable', 'true');
       block.classList.add('dp-template-edit-block');
     });
+    _templateEnsureCanvasTools(doc);
     if (doc.__DP_BLOCK_DND_BOUND) return;
     doc.__DP_BLOCK_DND_BOUND = true;
     doc.addEventListener('dragstart', (event) => {
@@ -2170,6 +2280,221 @@ const DP = (() => {
       _clearTemplateDropMarks(doc);
       doc.querySelectorAll('.dp-template-dragging').forEach(node => node.classList.remove('dp-template-dragging'));
     });
+  }
+
+  function _templateEnsureCanvasTools(doc) {
+    if (!doc || doc.__DP_CANVAS_TOOLS_READY) return;
+    doc.__DP_CANVAS_TOOLS_READY = true;
+    const blockUi = doc.createElement('div');
+    blockUi.className = 'dp-template-block-ui';
+    blockUi.setAttribute('data-dp-ui', '1');
+    blockUi.hidden = true;
+    blockUi.innerHTML = '<button type="button" class="dp-template-plus" aria-label="Add block">+</button>';
+    doc.body.appendChild(blockUi);
+
+    const menu = doc.createElement('div');
+    menu.className = 'dp-template-insert-menu';
+    menu.setAttribute('data-dp-ui', '1');
+    menu.hidden = true;
+    menu.innerHTML = [
+      ['paragraph', 'Paragraph', 'Text'],
+      ['heading', 'Heading', 'Title'],
+      ['bullet', 'Bullet', 'List'],
+      ['section', 'Section', 'Block'],
+    ].map(item => '<button type="button" data-kind="' + item[0] + '">' + item[1] + '<span>' + item[2] + '</span></button>').join('');
+    doc.body.appendChild(menu);
+
+    const formatbar = doc.createElement('div');
+    formatbar.className = 'dp-template-formatbar';
+    formatbar.setAttribute('data-dp-ui', '1');
+    formatbar.hidden = true;
+    formatbar.innerHTML = '<button type="button" data-format="bold" aria-label="Bold">B</button><button type="button" data-format="heading" aria-label="Toggle heading">H</button>';
+    doc.body.appendChild(formatbar);
+
+    blockUi.querySelector('.dp-template-plus').addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const ref = doc.__DP_SELECTED_BLOCK || _templateNearestBlock(doc);
+      if (ref) _templateShowInsertMenu(ref);
+    });
+    menu.addEventListener('click', (event) => {
+      const btn = event.target && event.target.closest && event.target.closest('button[data-kind]');
+      if (!btn) return;
+      event.preventDefault();
+      event.stopPropagation();
+      _templateInsertBlock(btn.getAttribute('data-kind'), doc.__DP_INSERT_REF || doc.__DP_SELECTED_BLOCK);
+      menu.hidden = true;
+    });
+    formatbar.addEventListener('click', (event) => {
+      const btn = event.target && event.target.closest && event.target.closest('button[data-format]');
+      if (!btn) return;
+      event.preventDefault();
+      event.stopPropagation();
+      _templateApplyInlineFormat(btn.getAttribute('data-format'));
+    });
+    doc.addEventListener('click', (event) => {
+      if (event.target && event.target.closest && event.target.closest('[data-dp-ui="1"]')) return;
+      const block = event.target && event.target.closest && event.target.closest('.dp-template-edit-block');
+      if (block) _templateShowBlockTools(block);
+      else {
+        menu.hidden = true;
+        _templateHideBlockTools(doc);
+      }
+    }, true);
+  }
+
+  function _templateNearestBlock(doc) {
+    const active = doc && doc.activeElement;
+    if (active && active.closest) return active.closest('.dp-template-edit-block');
+    return null;
+  }
+
+  function _templateShowBlockTools(block) {
+    const doc = block && block.ownerDocument;
+    if (!doc) return;
+    _templateEnsureCanvasTools(doc);
+    doc.__DP_SELECTED_BLOCK = block;
+    const ui = doc.querySelector('.dp-template-block-ui');
+    if (!ui) return;
+    ui.hidden = false;
+    _templatePositionBlockTools();
+    _templatePositionFormatbar();
+  }
+
+  function _templateHideBlockTools(doc) {
+    const ui = doc && doc.querySelector('.dp-template-block-ui');
+    const bar = doc && doc.querySelector('.dp-template-formatbar');
+    if (ui) ui.hidden = true;
+    if (bar) bar.hidden = true;
+  }
+
+  function _templatePositionBlockTools() {
+    const doc = _activeTemplateDocument();
+    const block = doc && doc.__DP_SELECTED_BLOCK;
+    const ui = doc && doc.querySelector('.dp-template-block-ui');
+    if (!doc || !block || !ui || ui.hidden) return;
+    const rect = block.getBoundingClientRect();
+    if (!rect.width && !rect.height) return;
+    ui.style.left = Math.max(6, rect.left - 30) + 'px';
+    ui.style.top = Math.max(6, rect.top - 1) + 'px';
+    const menu = doc.querySelector('.dp-template-insert-menu');
+    if (menu && !menu.hidden) _templateShowInsertMenu(block);
+  }
+
+  function _templateShowInsertMenu(reference) {
+    const doc = reference && reference.ownerDocument;
+    const menu = doc && doc.querySelector('.dp-template-insert-menu');
+    if (!doc || !menu) return;
+    doc.__DP_INSERT_REF = reference;
+    const rect = reference.getBoundingClientRect();
+    menu.hidden = false;
+    menu.style.left = Math.max(6, rect.left - 2) + 'px';
+    menu.style.top = Math.max(6, rect.top + Math.min(30, rect.height)) + 'px';
+  }
+
+  function _templatePositionFormatbar() {
+    const doc = _activeTemplateDocument();
+    const bar = doc && doc.querySelector('.dp-template-formatbar');
+    const block = doc && doc.__DP_SELECTED_BLOCK;
+    if (!doc || !bar || !block) return;
+    const selection = doc.getSelection && doc.getSelection();
+    const hasSelection = selection && !selection.isCollapsed && selection.rangeCount;
+    const rect = hasSelection ? selection.getRangeAt(0).getBoundingClientRect() : block.getBoundingClientRect();
+    if (!rect.width && !rect.height) {
+      bar.hidden = true;
+      return;
+    }
+    bar.hidden = false;
+    bar.style.left = Math.max(6, rect.left) + 'px';
+    bar.style.top = Math.max(6, rect.top - 34) + 'px';
+  }
+
+  function _templateInsertBlock(kind, reference) {
+    const doc = _activeTemplateDocument();
+    const frame = _templateActiveFrame();
+    if (!doc || !frame) return;
+    const ref = reference && reference.ownerDocument === doc ? reference : (doc.__DP_SELECTED_BLOCK || null);
+    let parent = ref && ref.parentNode;
+    let insertAfter = ref;
+    if (kind === 'bullet' && ref && ref.matches && ref.matches('li')) {
+      parent = ref.parentNode;
+    } else if (ref && ref.matches && ref.matches('li')) {
+      insertAfter = ref.parentNode;
+      parent = insertAfter && insertAfter.parentNode;
+    } else if (kind === 'bullet') {
+      const list = doc.createElement('ul');
+      list.className = 'body-list';
+      const li = _templateCreateEditable(doc, 'li', '', 'Type a bullet point.');
+      list.appendChild(li);
+      _templateInsertAfter(parent, list, insertAfter);
+      _refreshTemplateFields();
+      setTimeout(() => _focusTemplateField(li.getAttribute('data-dp-edit-id')), 0);
+      return;
+    }
+    let node;
+    if (kind === 'heading') node = _templateCreateEditable(doc, 'h3', '', 'New heading');
+    else if (kind === 'section') {
+      node = doc.createElement('div');
+      node.className = 'sec';
+      node.appendChild(_templateCreateEditable(doc, 'h3', '', 'Section title'));
+      node.appendChild(_templateCreateEditable(doc, 'p', 'body', 'Type section content here.'));
+    } else if (kind === 'bullet') node = _templateCreateEditable(doc, 'li', '', 'Type a bullet point.');
+    else node = _templateCreateEditable(doc, 'p', 'body', 'Type your paragraph here.');
+
+    if (!parent || (parent.nodeType !== 1)) {
+      parent = _templateContentContainer();
+      insertAfter = null;
+    }
+    _templateInsertAfter(parent, node, insertAfter);
+    _refreshTemplateFields();
+    const focusTarget = node.matches && node.matches('[contenteditable="true"]') ? node : node.querySelector('[contenteditable="true"]');
+    setTimeout(() => {
+      if (focusTarget) _focusTemplateField(focusTarget.getAttribute('data-dp-edit-id'));
+      _templateShowBlockTools(node);
+    }, 0);
+  }
+
+  function _templateCreateEditable(doc, tag, className, text) {
+    const node = doc.createElement(tag);
+    if (className) node.className = className;
+    node.setAttribute('contenteditable', 'true');
+    node.textContent = text || '';
+    return node;
+  }
+
+  function _templateInsertAfter(parent, node, reference) {
+    if (!parent) return;
+    if (reference && reference.parentNode === parent) parent.insertBefore(node, reference.nextSibling);
+    else parent.appendChild(node);
+  }
+
+  function _templateApplyInlineFormat(format) {
+    const doc = _activeTemplateDocument();
+    if (!doc) return;
+    if (format === 'bold') {
+      doc.execCommand('bold', false, null);
+      _refreshTemplateFields();
+      return;
+    }
+    if (format === 'heading') _templateToggleHeading();
+  }
+
+  function _templateToggleHeading() {
+    const doc = _activeTemplateDocument();
+    const block = doc && doc.__DP_SELECTED_BLOCK;
+    if (!doc || !block) return;
+    const editable = block.matches('[contenteditable="true"]') ? block : block.querySelector('[contenteditable="true"]');
+    if (!editable) return;
+    const next = editable.matches('h1,h2,h3,h4')
+      ? _templateCreateEditable(doc, 'p', 'body', editable.innerHTML ? '' : editable.textContent)
+      : _templateCreateEditable(doc, 'h3', '', editable.innerHTML ? '' : editable.textContent);
+    next.innerHTML = editable.innerHTML;
+    editable.replaceWith(next);
+    _refreshTemplateFields();
+    setTimeout(() => {
+      next.focus();
+      _templateShowBlockTools(next.closest('.dp-template-edit-block') || next);
+    }, 0);
   }
 
   function _templateDropPosition(target, y) {
