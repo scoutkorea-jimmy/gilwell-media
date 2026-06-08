@@ -878,7 +878,6 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   grid-template-columns: minmax(0, 1fr) 340px;
 }
 .dp-template-head { align-items: center; }
-.dp-template-switch { display: flex; gap: 6px; align-items: center; }
 .dp-template-frame-wrap {
   height: min(78vh, 920px);
   min-height: 620px;
@@ -918,8 +917,43 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   overflow: auto;
   padding: 10px;
 }
-.dp-template-field {
+.dp-template-tweaks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: var(--bd);
+  background: var(--surface-2);
+}
+.dp-template-tweaks label > span {
   display: block;
+  font-size: var(--fs-10);
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.dp-template-tweaks .dp-select { width: 100%; }
+.dp-template-checks {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: var(--fs-12);
+  color: var(--text-2);
+}
+.dp-template-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dp-template-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+}
+.dp-template-field {
   padding: 8px;
   border: var(--bd);
   border-radius: var(--r-sm);
@@ -930,12 +964,33 @@ html[data-theme="system"] .dp-btn-danger { border-color: rgba(242,104,104,0.45);
   border-color: var(--navy-600);
   box-shadow: 0 0 0 1px var(--navy-600);
 }
-.dp-template-field > span {
-  display: block;
+.dp-template-field-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.dp-template-field-top > span {
   font-size: var(--fs-11);
   font-weight: 700;
   color: var(--text-2);
-  margin-bottom: 5px;
+}
+.dp-template-field-top div {
+  display: flex;
+  gap: 4px;
+}
+.dp-template-field-top button {
+  border: var(--bd);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font: 700 var(--fs-10) / 1 var(--font);
+  min-height: 24px;
+  padding: 0 7px;
+  cursor: pointer;
+}
+.dp-template-field-top button:hover { border-color: var(--navy-600); color: var(--navy-600); }
 }
 .dp-template-field textarea {
   width: 100%;

@@ -27,12 +27,25 @@
   // standalone stars (guide level chips, etc.)
   document.querySelectorAll('.star').forEach(function(s){ if(!s.querySelector('svg')) s.appendChild(starTpl.content.cloneNode(true)); });
 
-  // record a document number in the header of each numbered document
-  var DOCNO={ letterhead:'DP-2026-0142', press:'DP-PR-2026-014', general:'DP-DOC-2026-001', weekly:'DP-WR-2026-024', brief:'DP-BRF-2026-007', minutes:'DP-MIN-2026-014' };
-  Object.keys(DOCNO).forEach(function(tg){
+  // record an automatically generated document number in each numbered header
+  var DOCPREFIX={ letterhead:'DP-LET', press:'DP-PR', general:'DP-DOC', weekly:'DP-WR', brief:'DP-BRF', minutes:'DP-MIN' };
+  function pad(n){ return String(n).padStart(2, '0'); }
+  function docStamp(){
+    var d=new Date();
+    return d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes());
+  }
+  function docNo(tg, i){ return (DOCPREFIX[tg]||'DP-DOC')+'-'+docStamp()+'-'+pad(i+1); }
+  function assignDocNumbers(){
+    Object.keys(DOCPREFIX).forEach(function(tg, i){
+      var slot=document.querySelector('.frame[data-target="'+tg+'"] .docref b');
+      if(slot) slot.textContent=docNo(tg, i);
+    });
+  }
+  Object.keys(DOCPREFIX).forEach(function(tg, i){
     var hr=document.querySelector('.frame[data-target="'+tg+'"] .head-r');
-    if(hr && !hr.querySelector('.docref')){ var d=document.createElement('div'); d.className='docref'; d.innerHTML='No. <b contenteditable="true">'+DOCNO[tg]+'</b>'; var chip=hr.querySelector('.chip-slot'); if(chip) hr.insertBefore(d, chip); else hr.appendChild(d); }
+    if(hr && !hr.querySelector('.docref')){ var d=document.createElement('div'); d.className='docref'; d.innerHTML='No. <b contenteditable="true">'+docNo(tg, i)+'</b>'; var chip=hr.querySelector('.chip-slot'); if(chip) hr.insertBefore(d, chip); else hr.appendChild(d); }
   });
+  window.DPTemplateNewDocNumbers = assignDocNumbers;
 
   // wrap footer content + inject centered page numbers (paper documents)
   document.querySelectorAll('.doc-foot').forEach(function(f){

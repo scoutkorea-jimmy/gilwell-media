@@ -1833,10 +1833,8 @@ const DP = (() => {
 
   function _renderDocumentTemplates(root) {
     const docUrl = '/dist-homepage/DreamPath%20-%20Document%20Templates';
-    const deckUrl = '/dist-homepage/DreamPath%20-%20Presentation%20Templates';
-    const current = state.documentTemplateKind === 'deck' ? 'deck' : 'document';
-    const src = current === 'deck' ? deckUrl : docUrl;
-    const title = current === 'deck' ? 'Presentation Templates' : 'Document Templates';
+    const src = docUrl;
+    const title = 'Document Templates';
     root.innerHTML = '';
     root.appendChild(h('div', { className: 'dp-page-head' }, [
       h('h1', {}, state.page === 'document_templates' ? 'Document Templates' : 'Documents'),
@@ -1857,12 +1855,6 @@ const DP = (() => {
       <section class="dp-panel dp-template-panel" aria-label="Document template maker">
         <div class="dp-panel-head dp-template-head">
           <h3>${esc(title)}</h3>
-          <div class="dp-template-switch" role="group" aria-label="Template type">
-            <button type="button" class="dp-btn dp-btn-sm ${current === 'document' ? 'dp-btn-primary' : 'dp-btn-secondary'}"
-                    onclick="DP._setDocumentTemplateKind('document')">Documents</button>
-            <button type="button" class="dp-btn dp-btn-sm ${current === 'deck' ? 'dp-btn-primary' : 'dp-btn-secondary'}"
-                    onclick="DP._setDocumentTemplateKind('deck')">Presentations</button>
-          </div>
         </div>
         <div class="dp-template-frame-wrap">
           <iframe class="dp-template-frame"
@@ -1876,11 +1868,12 @@ const DP = (() => {
         <aside class="dp-template-editor" aria-label="Template content editor">
           <div class="dp-template-editor-head">
             <div>
-              <h4>Editable content</h4>
-              <span id="dp-template-field-count">Loading…</span>
+              <h4>Document controls</h4>
+              <span id="dp-template-field-count">Loading fields…</span>
             </div>
             <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._refreshTemplateFields()">Refresh</button>
           </div>
+          ${_templateTweaksHtml()}
           <div class="dp-template-field-list" id="dp-template-field-list">
             <div class="dp-template-empty">Loading editable fields…</div>
           </div>
@@ -1889,10 +1882,77 @@ const DP = (() => {
     `);
   }
 
-  function _setDocumentTemplateKind(kind) {
-    state.documentTemplateKind = kind === 'deck' ? 'deck' : 'document';
-    state.documentsTab = 'templates';
-    navigate('documents');
+  function _templateTweaksHtml() {
+    const t = Object.assign({
+      target: 'letterhead',
+      importance: 'standard',
+      density: 'comfortable',
+      paper: 'white',
+      pages: '1',
+      showStar: true,
+      showFooter: true,
+    }, state.templateTweaks || {});
+    const option = (value, label, selected) => `<option value="${esc(value)}" ${selected === value ? 'selected' : ''}>${esc(label)}</option>`;
+    return `
+      <div class="dp-template-tweaks">
+        <label>
+          <span>Template</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('target', this.value)">
+            ${[
+              ['letterhead', 'Official Letter'],
+              ['press', 'Press Release'],
+              ['general', 'General Document'],
+              ['weekly', 'Weekly Report'],
+              ['brief', 'Project Brief'],
+              ['minutes', 'Meeting Minutes'],
+              ['cover-p', 'Cover - Portrait'],
+              ['cover-l', 'Cover - Landscape'],
+              ['envelope', 'Envelope'],
+              ['card', 'Business Card'],
+              ['sig', 'Email Signature'],
+            ].map(item => option(item[0], item[1], t.target)).join('')}
+          </select>
+        </label>
+        <label>
+          <span>Importance</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('importance', this.value)">
+            ${option('standard', 'Standard', t.importance)}
+            ${option('important', 'Important', t.importance)}
+            ${option('priority', 'Priority', t.importance)}
+          </select>
+        </label>
+        <label>
+          <span>Density</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('density', this.value)">
+            ${option('compact', 'Compact', t.density)}
+            ${option('comfortable', 'Comfortable', t.density)}
+            ${option('spacious', 'Spacious', t.density)}
+          </select>
+        </label>
+        <label>
+          <span>Paper</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('paper', this.value)">
+            ${option('white', 'White', t.paper)}
+            ${option('warm', 'Warm', t.paper)}
+          </select>
+        </label>
+        <label>
+          <span>Pages</span>
+          <select class="dp-select dp-select-sm" onchange="DP._templateTweak('pages', this.value)">
+            ${option('1', '1 page', t.pages)}
+            ${option('2', '2 pages', t.pages)}
+          </select>
+        </label>
+        <div class="dp-template-checks">
+          <label><input type="checkbox" ${t.showStar ? 'checked' : ''} onchange="DP._templateTweak('showStar', this.checked)"> Star</label>
+          <label><input type="checkbox" ${t.showFooter ? 'checked' : ''} onchange="DP._templateTweak('showFooter', this.checked)"> Footer</label>
+        </div>
+        <div class="dp-template-actions">
+          <button type="button" class="dp-btn dp-btn-secondary dp-btn-sm" onclick="DP._templateNewDocNumbers()">New doc no.</button>
+          <button type="button" class="dp-btn dp-btn-ghost dp-btn-sm" onclick="DP._templateReload()">Reset</button>
+        </div>
+      </div>
+    `;
   }
 
   function _templateFrameReady() {
@@ -1908,7 +1968,7 @@ const DP = (() => {
         style.textContent = `
           [contenteditable="true"] { outline-offset: 2px; }
           .dp-template-edit-target {
-            outline: 2px solid #0A5C9E !important;
+            outline: 2px solid var(--blue) !important;
             box-shadow: 0 0 0 4px rgba(10,92,158,0.18) !important;
             border-radius: 2px;
           }
@@ -1926,6 +1986,7 @@ const DP = (() => {
       }, true);
     }
     _refreshTemplateFields();
+    _applyTemplateTweaks();
   }
 
   function _activeTemplateDocument() {
@@ -1983,12 +2044,18 @@ const DP = (() => {
       return;
     }
     list.innerHTML = fields.map(field => `
-      <label class="dp-template-field" data-field-id="${esc(field.id)}">
-        <span>${esc(field.label)}</span>
+      <div class="dp-template-field" data-field-id="${esc(field.id)}">
+        <div class="dp-template-field-top">
+          <span>${esc(field.label)}</span>
+          <div>
+            <button type="button" onclick="DP._templateClearField('${esc(field.id)}')">Clear</button>
+            <button type="button" onclick="DP._templateHideField('${esc(field.id)}')">Hide</button>
+          </div>
+        </div>
         <textarea rows="${field.value.length > 140 ? 5 : 3}"
                   onfocus="DP._focusTemplateField('${esc(field.id)}')"
                   oninput="DP._templateFieldInput('${esc(field.id)}', this.value)">${esc(field.value)}</textarea>
-      </label>
+      </div>
     `).join('');
   }
 
@@ -2023,11 +2090,92 @@ const DP = (() => {
     _selectTemplateField(id);
   }
 
+  function _templateClearField(id) {
+    const el = _templateFieldById(id);
+    if (!el) return;
+    el.innerText = '';
+    const row = document.querySelector('.dp-template-field[data-field-id="' + id + '"] textarea');
+    if (row) row.value = '';
+    _selectTemplateField(id);
+  }
+
+  function _templateHideField(id) {
+    const el = _templateFieldById(id);
+    if (!el) return;
+    const removable = el.closest('li, tr, .body, .sec, .m, .r, .cm, .subjline, .kpi, .sign, .encl, .fl span, .fr') || el;
+    removable.setAttribute('data-dp-template-hidden', '1');
+    removable.style.display = 'none';
+    _refreshTemplateFields();
+  }
+
   function _syncTemplateFieldValue(el) {
     const id = el && el.getAttribute('data-dp-edit-id');
     if (!id) return;
     const row = document.querySelector('.dp-template-field[data-field-id="' + id + '"] textarea');
     if (row) row.value = _templateFieldText(el);
+  }
+
+  function _templateTweak(key, value) {
+    state.templateTweaks = Object.assign({}, state.templateTweaks || {});
+    state.templateTweaks[key] = value;
+    _applyTemplateTweaks();
+  }
+
+  function _applyTemplateTweaks() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow || !iframe.contentDocument) return;
+    const t = Object.assign({
+      target: 'letterhead',
+      importance: 'standard',
+      density: 'comfortable',
+      paper: 'white',
+      pages: '1',
+      showStar: true,
+      showFooter: true,
+    }, state.templateTweaks || {});
+    const doc = iframe.contentDocument;
+    const btn = doc.querySelector('.rail-btn[data-target="' + String(t.target).replace(/"/g, '\\"') + '"]');
+    if (btn && !btn.classList.contains('on')) btn.click();
+    if (iframe.contentWindow.applyTweaks) {
+      iframe.contentWindow.applyTweaks({
+        importance: t.importance,
+        density: t.density,
+        paper: t.paper,
+        pages: t.pages,
+        showStar: t.showStar,
+        showFooter: t.showFooter,
+      });
+    } else {
+      doc.body.setAttribute('data-importance', t.importance);
+      doc.body.setAttribute('data-density', t.density);
+      doc.body.setAttribute('data-paper', t.paper);
+      doc.body.classList.toggle('hide-star', t.showStar === false);
+      doc.body.classList.toggle('hide-foot', t.showFooter === false);
+    }
+    setTimeout(_refreshTemplateFields, 80);
+  }
+
+  function _templateNewDocNumbers() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe || !iframe.contentWindow) return;
+    if (iframe.contentWindow.DPTemplateNewDocNumbers) iframe.contentWindow.DPTemplateNewDocNumbers();
+    else {
+      const doc = iframe.contentDocument;
+      if (doc) doc.querySelectorAll('.docref b').forEach((el, index) => { el.textContent = 'DP-' + _dateStampCompact() + '-' + String(index + 1).padStart(2, '0'); });
+    }
+    _refreshTemplateFields();
+  }
+
+  function _dateStampCompact() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes());
+  }
+
+  function _templateReload() {
+    const iframe = document.getElementById('dp-template-frame');
+    if (!iframe) return;
+    iframe.contentWindow.location.reload();
   }
 
   async function _renderBoard(root, key, label, opts = {}) {
@@ -8875,8 +9023,9 @@ const DP = (() => {
     _approverFilter, _approverPick, _approverRemove, _approverKeydown,
     _newPostAddTab,
     _setBoardTab, _openTabManager, _openTabEditor, _saveTab, _deleteTab,
-    _setDocumentsTab, _setDocumentTemplateKind,
+    _setDocumentsTab,
     _templateFrameReady, _refreshTemplateFields, _focusTemplateField, _templateFieldInput,
+    _templateClearField, _templateHideField, _templateTweak, _templateNewDocNumbers, _templateReload,
     _setTabEditorMode, _tabAllowedFilter, _tabAllowedPick, _tabAllowedRemove, _tabAllowedKeydown,
     _tabDragStart, _tabDragOver, _tabDragLeave, _tabDrop,
     _togglePostHidden, _openMovePostMenu, _movePostConfirm,

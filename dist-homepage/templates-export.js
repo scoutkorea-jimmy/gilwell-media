@@ -250,7 +250,7 @@
     }
     function sw(name,hex){ return '<td width="33%" style="padding:4pt"><div bgcolor="'+hex+'" style="background:'+hex+';height:32pt">&nbsp;</div>'+
       '<div style="font-size:9.5pt;font-weight:bold;margin-top:4pt">'+name+'</div><div style="font-size:8.5pt;color:#8A8A93">'+hex+'</div></td>'; }
-    var idx=['Official Letter','Press Release','Weekly Report','Project Brief','Meeting Minutes','Cover (portrait &amp; landscape)','Envelope (DL / C5 / C4)','Business Card','Email Signature','Presentation (deck templates)']
+    var idx=['Official Letter','Press Release','Weekly Report','Project Brief','Meeting Minutes','Cover (portrait &amp; landscape)','Envelope (DL / C5 / C4)','Business Card','Email Signature']
       .map(function(x){return '<li style="margin-bottom:3pt">'+x+'</li>';}).join('');
     function scaleRow(u,sz,wt){ return '<tr><td style="padding:5pt 0;border-bottom:0.5pt solid #EEEEEE;font-size:10.5pt;color:#55555c">'+u+'</td>'+
       '<td width="90" style="padding:5pt 0;border-bottom:0.5pt solid #EEEEEE;font-size:10.5pt;font-weight:bold;color:#1E1654">'+sz+'</td>'+
