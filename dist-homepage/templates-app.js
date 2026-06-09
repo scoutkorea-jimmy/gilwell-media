@@ -698,13 +698,20 @@
     if(!sel||!sel.rangeCount) return null;
     var n=sel.anchorNode, el=n&&(n.nodeType===1?n:n.parentNode);
     el=el&&el.closest&&el.closest('[contenteditable="true"]');
-    if(!el || el.matches('h1,h2,h3,th')) return null;
+    if(!el || el.matches('h1,h2,h3,th,td')) return null;
     return el.closest('.letter-body, .pr-body, .sec') ? el : null;
   }
   function _mdCaretStart(el){
+    if(el && el.focus) try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); }
     var sel=document.getSelection(), r=document.createRange();
     r.selectNodeContents(el); r.collapse(true);
     sel.removeAllRanges(); sel.addRange(r);
+  }
+  function _tableCell(){
+    var sel=document.getSelection&&document.getSelection();
+    if(!sel||!sel.rangeCount) return null;
+    var n=sel.anchorNode, el=n&&(n.nodeType===1?n:n.parentNode);
+    return el&&el.closest ? el.closest('td,th') : null;
   }
   document.addEventListener('input', function(){
     var el=_mdBlock(); if(!el) return;
@@ -726,6 +733,26 @@
   }, true);
   document.addEventListener('keydown', function(e){
     if(e.key!=='Tab') return;
+    // table cell navigation: Tab → next cell, Tab in last cell → add a row,
+    // Shift+Tab → previous cell.
+    var cell=_tableCell();
+    if(cell){
+      e.preventDefault();
+      var table=cell.closest('table');
+      var cells=[].slice.call(table.querySelectorAll('td,th'));
+      var idx=cells.indexOf(cell);
+      if(e.shiftKey){ if(cells[idx-1]) _mdCaretStart(cells[idx-1]); return; }
+      if(cells[idx+1]){ _mdCaretStart(cells[idx+1]); return; }
+      // last cell: append a new row matching the column count
+      var tr=cell.closest('tr'), cols=tr.children.length;
+      var ntr=document.createElement('tr');
+      for(var c=0;c<cols;c++){ var td=document.createElement('td'); td.setAttribute('contenteditable','true'); ntr.appendChild(td); }
+      tr.parentNode.appendChild(ntr);
+      _mdCaretStart(ntr.firstChild);
+      ntr.firstChild.dispatchEvent(new Event('input',{bubbles:true}));
+      scheduleAutoPages();
+      return;
+    }
     var el=_mdBlock(); if(!el) return;
     e.preventDefault();
     var lvl=parseInt(el.getAttribute('data-indent')||'0',10);

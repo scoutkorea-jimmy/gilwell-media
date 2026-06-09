@@ -93,6 +93,13 @@ WebKit+Playwright 14종 통과(placeholder 전체폭 WebKit 확정 포함).
 붕괴. `.letter-body`/`.pr-body`를 **flex→block**(gap→margin-top)으로 전환해 원천 차단.
 WebKit 8/8 통과(내용 있을 때도 전체폭·간격13px·페이지네이션 무회귀) + 한글 렌더 스크린샷 확인.
 
+**후속 (01.070.00)**: **표 삽입** 기능 추가. 캔버스 `+` 메뉴에 **Table** 항목 →
+3열×3행 편집 가능한 표(헤더행 + 본문 2행, `.tpl-table` 테두리 그리드) 삽입. 셀에서
+**Tab=다음 셀, Shift+Tab=이전 셀, 마지막 셀에서 Tab=행 추가**. `td/th`는 마크다운/들여쓰기
+스코프에서 제외(셀 안 `#`은 제목 안 됨). 파일: `js/dreampath.js`(`_templateInsertBlock`
+table case + 메뉴), `dist-homepage/templates-app.js`(`_tableCell` + keydown 셀 네비),
+`templates.css`(`.tpl-table`). 헤드리스 5/5 통과 + 스크린샷 확인.
+
 **English Summary**
 Fixed Document Templates so (1) body edits register without the caret jumping,
 and (2) overflowing text splits cleanly onto the next page instead of the sheet

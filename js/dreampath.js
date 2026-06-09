@@ -2364,6 +2364,7 @@ const DP = (() => {
       ['paragraph', 'Paragraph', 'Text'],
       ['heading', 'Heading', 'Title'],
       ['bullet', 'Bullet', 'List'],
+      ['table', 'Table', 'Grid'],
       ['section', 'Section', 'Block'],
     ].map(item => '<button type="button" role="menuitem" data-kind="' + item[0] + '">' + item[1] + '<span>' + item[2] + '</span></button>').join('');
     doc.body.appendChild(menu);
@@ -2553,6 +2554,24 @@ const DP = (() => {
     }
     let node;
     if (kind === 'heading') node = _templateCreateEditable(doc, 'h3', '', 'New heading');
+    else if (kind === 'table') {
+      // 3-col × 3-row editable table (header row + 2 body rows). Tab moves
+      // between cells; Tab in the last cell adds a row (templates-app.js).
+      node = doc.createElement('table');
+      node.className = 'tpl-table';
+      const tbody = doc.createElement('tbody');
+      for (let r = 0; r < 3; r++) {
+        const tr = doc.createElement('tr');
+        for (let c = 0; c < 3; c++) {
+          const cell = doc.createElement(r === 0 ? 'th' : 'td');
+          cell.setAttribute('contenteditable', 'true');
+          if (r === 0) cell.setAttribute('data-ph', 'Header ' + (c + 1));
+          tr.appendChild(cell);
+        }
+        tbody.appendChild(tr);
+      }
+      node.appendChild(tbody);
+    }
     else if (kind === 'section') {
       node = doc.createElement('div');
       node.className = 'sec';
