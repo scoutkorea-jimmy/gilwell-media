@@ -85,6 +85,14 @@ WebKit+Playwright 14종 통과(placeholder 전체폭 WebKit 확정 포함).
 나눠 환산(`nodeBottomInPage`/`fitSplitIndex`/`measureHeight`). 헤드리스 6종 + scale<1
 재현 통과(행 손실 0·순서 보존·shrink 재결합).
 
+**후속 (01.069.01)**: Official Letter 깨짐 2건 수정. (a) **한글이 □(tofu)로** 나오던 문제 —
+폰트가 `unicode-range` 없는 라틴 서브셋 Pretendard(projectnoonnu)라 모든 코드포인트를
+차지해 한글이 폴백 못 하고 .notdef. **한글 포함 정식 Pretendard 가변폰트**
+(`npm/pretendard@1.3.9` variable woff2)로 교체. (b) **빈 placeholder(`.sal`/`.encl`)가
+세로로 쭈그러들던** 문제 — `width:100%`로도 특정 WebKit에서 빈 flex-column 자식이 cross-axis
+붕괴. `.letter-body`/`.pr-body`를 **flex→block**(gap→margin-top)으로 전환해 원천 차단.
+WebKit 8/8 통과(내용 있을 때도 전체폭·간격13px·페이지네이션 무회귀) + 한글 렌더 스크린샷 확인.
+
 **English Summary**
 Fixed Document Templates so (1) body edits register without the caret jumping,
 and (2) overflowing text splits cleanly onto the next page instead of the sheet

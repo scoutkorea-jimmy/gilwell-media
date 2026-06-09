@@ -2,59 +2,16 @@
    DreamPath — Document Templates (stationery set)
    Companion to the Logo Guidelines. Same palette + chrome.
    ============================================================ */
+/* [fix 2026-06-09] The old projectnoonnu Pretendard files were a LATIN subset
+   with no unicode-range, so they claimed all codepoints and Hangul rendered as
+   .notdef tofu (□). Use the official full Pretendard variable font (includes
+   Hangul) so Korean text renders. */
 @font-face {
   font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
-  font-weight: 100;
+  font-weight: 100 900;
+  font-style: normal;
   font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraLight.woff2') format('woff2');
-  font-weight: 200;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Pretendard';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Black.woff2') format('woff2');
-  font-weight: 900;
-  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2-variations');
 }
 
 :root{
@@ -175,7 +132,12 @@ body{font-family:var(--font);color:var(--ink);background:#E7E6E2;
   display:flex;gap:10px;align-items:baseline;}
 .subjline .k{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--purple);flex:none;}
 .subjline .v{font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;}
-.letter-body{margin-top:22px;display:flex;flex-direction:column;gap:13px;flex:1;}
+/* [fix 2026-06-09] Block, not flex: an empty flex-column child collapsed to a
+   thin strip in some WebKit builds, squashing blank placeholder lines. Block
+   children are always full width. gap -> margin-top rhythm. */
+.letter-body{margin-top:22px;}
+.letter-body>*{margin-top:13px;}
+.letter-body>*:first-child{margin-top:0;}
 .letter-body .sal{font-size:12.5px;font-weight:600;color:var(--ink);}
 .letter-body .body-list{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;}
 .letter-body .body-list li{font-size:12px;line-height:1.68;color:var(--soft);font-weight:450;}
@@ -230,7 +192,9 @@ body{font-family:var(--font);color:var(--ink);background:#E7E6E2;
 .pr-head{margin-top:30px;}
 .pr-head h1{font-size:27px;font-weight:700;letter-spacing:-0.03em;line-height:1.12;color:var(--navy);margin:0;}
 .pr-head .sub{font-size:13px;font-weight:500;color:var(--soft);margin-top:11px;line-height:1.5;}
-.pr-body{margin-top:22px;display:flex;flex-direction:column;gap:12px;flex:1;}
+.pr-body{margin-top:22px;}
+.pr-body>*{margin-top:12px;}
+.pr-body>*:first-child{margin-top:0;}
 .pr-body .lead .dl{font-weight:700;color:var(--ink);}
 .pr-about{margin-top:18px;padding-top:14px;border-top:1px solid var(--line-soft);}
 .pr-about .label{margin-bottom:6px;}
