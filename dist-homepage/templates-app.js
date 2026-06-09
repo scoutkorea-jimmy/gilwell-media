@@ -281,6 +281,19 @@
     var first=fr.querySelector('.docbox');
     var body=pageBody(first);
     if(!body) return;
+    // reunite continuation-section rows back into their source section's list
+    // (document order = page order = row order), then drop the continuation sec.
+    [].slice.call(fr.querySelectorAll('.sec[data-cont-of]')).forEach(function(cs){
+      var sid=cs.getAttribute('data-cont-of');
+      var sel='[data-sec-id="'+((window.CSS&&CSS.escape)?CSS.escape(sid):sid)+'"]';
+      var src=fr.querySelector(sel);
+      var srcList=src && src.querySelector('ul, ol');
+      var csList=cs.querySelector('ul, ol');
+      if(srcList && csList){
+        [].slice.call(csList.children).forEach(function(li){ if(li.tagName==='LI') srcList.appendChild(li); });
+      }
+      if(cs.parentNode) cs.parentNode.removeChild(cs);
+    });
     [].slice.call(fr.querySelectorAll('[data-split-of]')).forEach(function(t){
       var srcId=t.getAttribute('data-split-of');
       var sel='[data-split-src="'+((window.CSS&&CSS.escape)?CSS.escape(srcId):srcId)+'"]';
@@ -336,15 +349,25 @@
     if(wordUnits.length>1) return wordUnits;
     return Array.from(text);
   }
+  // [CASE STUDY 2026-06-09 — scale-aware measurement]
+  // 증상: 좁은 화면에서 .doc 가 transform:scale(s<1) 되면 페이지네이션이 과소 작동(분할 안 됨).
+  // 원인: getBoundingClientRect 는 스케일 반영(화면 px), offsetTop/overflowLimit 은 미반영(레이아웃 px).
+  //       둘을 직접 비교해 좌표계 불일치. 교훈: rect 기반 거리는 모두 docScale 로 나눠 레이아웃 px 로 환산.
+  function docScale(box){
+    var doc=box && box.querySelector('.doc');
+    if(!doc) return 1;
+    var w=doc.offsetWidth, r=doc.getBoundingClientRect();
+    return (w && r.width) ? (r.width / w) : 1;
+  }
   function measureHeight(node, text){
-    var rect=node.getBoundingClientRect();
     var clone=cloneForOverflow(node);
     clone.style.position='absolute';
     clone.style.visibility='hidden';
     clone.style.pointerEvents='none';
     clone.style.left='-10000px';
     clone.style.top='0';
-    clone.style.width=Math.max(1, rect.width || node.offsetWidth || 320)+'px';
+    // unscaled layout width (offsetWidth), NOT the scaled getBoundingClientRect width
+    clone.style.width=Math.max(1, node.offsetWidth || 320)+'px';
     clone.textContent=text;
     document.body.appendChild(clone);
     var height=clone.scrollHeight || clone.offsetHeight || 0;
@@ -355,9 +378,10 @@
     var doc=box && box.querySelector('.doc');
     var pad=box && box.querySelector('.pad');
     if(!doc || !pad || !node || units.length<2) return 0;
+    var s=docScale(box) || 1;
     var nr=node.getBoundingClientRect();
     var pr=pad.getBoundingClientRect();
-    var top=nr.top - pr.top;
+    var top=(nr.top - pr.top) / s;
     var available=overflowLimit(doc) - top;
     if(available<24) return 0;
     var low=1, high=units.length-1, best=0;
@@ -372,9 +396,10 @@
   function nodeBottomInPage(box, node){
     var pad=box && box.querySelector('.pad');
     if(!pad || !node) return 0;
+    var s=docScale(box) || 1;
     var nr=node.getBoundingClientRect();
     var pr=pad.getBoundingClientRect();
-    return (nr.bottom - pr.top);
+    return (nr.bottom - pr.top) / s;  // → layout px, matches overflowLimit
   }
   // Split a plain-text node at the page boundary; returns the tail node (NOT yet
   // inserted) carrying data-split-of so a later reflow can reunite it, or null
@@ -404,6 +429,51 @@
     if(next && parent) parent.appendChild(next);
     return next;
   }
+  function secId(sec){
+    var id=sec.getAttribute('data-sec-id');
+    if(!id){ id='sec'+(++__splitSeq); sec.setAttribute('data-sec-id', id); }
+    return id;
+  }
+  // [CASE STUDY 2026-06-09 — row-level section flow]
+  // 증상: 리스트가 긴 섹션이 통째로 다음 장으로 넘어가 앞 장이 비어 보임.
+  // 교훈: 섹션은 못 쪼개도 그 안의 <li> 행은 경계에서 분할한다. 넘치는 행만 다음 장의
+  //       "연속 섹션"(머리글 복제 + 빈 리스트)으로 옮기고, 모든 연속 섹션은 data-cont-of로
+  //       항상 "원본" 섹션을 가리켜(다단계여도) restore에서 순서대로 재결합한다.
+  // Split a section's list at the page boundary: keep the rows that fit, move the
+  // overflowing <li> into a continuation section on the next page. Returns the
+  // continuation section, or null if the list can't be usefully split here.
+  function splitSectionRows(box, sec, next, limit){
+    if(!sec || !sec.matches || !sec.matches('.sec')) return null;
+    var list=sec.querySelector('ul, ol');
+    if(!list) return null;
+    var rows=[].slice.call(list.children).filter(function(n){ return n.tagName==='LI'; });
+    if(rows.length<2) return null;
+    var breakI=-1;
+    for(var i=0;i<rows.length;i++){ if(nodeBottomInPage(box, rows[i])>limit){ breakI=i; break; } }
+    if(breakI<1) return null;  // 0 rows fit (nothing gained) or all rows fit
+    var nextBody=pageBody(next);
+    if(!nextBody) return null;
+    // continuation sections always point back to the ORIGINAL source (even when
+    // splitting an already-continued section) so multi-page lists reunite safely.
+    var sid=sec.getAttribute('data-cont-of') || secId(sec);
+    var key=(window.CSS&&CSS.escape)?CSS.escape(sid):sid;
+    var contSec=nextBody.querySelector('.sec[data-cont-of="'+key+'"]');
+    if(!contSec){
+      contSec=document.createElement('div');
+      contSec.className=(sec.getAttribute('class')||'sec').replace(/\bdp-template-edit-block\b/g,'').replace(/\s+/g,' ').trim() || 'sec';
+      contSec.setAttribute('data-cont-of', sid);
+      var h3=sec.querySelector('h3');
+      if(h3){ var hc=h3.cloneNode(true); hc.removeAttribute('data-dp-edit-id'); hc.removeAttribute('data-dp-block-id'); hc.removeAttribute('contenteditable'); contSec.appendChild(hc); }
+      var nl=document.createElement(list.tagName);
+      var lc=list.getAttribute('class'); if(lc) nl.className=lc;
+      contSec.appendChild(nl);
+      nextBody.insertBefore(contSec, nextBody.firstChild);
+    }
+    var contList=contSec.querySelector('ul, ol');
+    var cref=contList.firstChild;
+    for(var j=breakI;j<rows.length;j++){ contList.insertBefore(rows[j], cref); }
+    return contSec;
+  }
   // Push the first node that crosses the page boundary (split if it is plain
   // text) together with every node after it onto the next page, preserving
   // document order. Returns true if anything moved.
@@ -423,9 +493,16 @@
     if(!nextBody) return false;
     var ref=nextBody.firstChild;
     var moveFrom=breakIdx;
-    var tail=makeSplitTail(box, nodes[breakIdx]);
-    if(tail){ nextBody.insertBefore(tail, ref); moveFrom=breakIdx+1; }
-    else if(breakIdx===0){ return false; }  // single oversized node we can't split → leave (clip) rather than spawn endless pages
+    var breaker=nodes[breakIdx];
+    var tail=makeSplitTail(box, breaker);
+    if(tail){
+      nextBody.insertBefore(tail, ref); moveFrom=breakIdx+1;
+    } else if(splitSectionRows(box, breaker, next, limit)){
+      // section's list flowed row-by-row; the section keeps the rows that fit.
+      moveFrom=breakIdx+1;
+    } else if(breakIdx===0){
+      return false;  // single oversized node we can't split → leave (clip) rather than spawn endless pages
+    }
     for(var j=moveFrom;j<nodes.length;j++){ nextBody.insertBefore(nodes[j], ref); }
     return true;
   }

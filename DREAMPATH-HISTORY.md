@@ -75,6 +75,16 @@ WebKit+Playwright 14종 통과(placeholder 전체폭 WebKit 확정 포함).
 (c) **Ctrl+V 평문 붙여넣기** — 멀티라인 클립보드가 중첩 `<ul>/<li>`·들여쓰기를 만들어
 하위 레벨로 빠지던 버그를 paste 인터셉트(plain text, 줄바꿈→`<br>`)로 수정.
 
+**후속 (01.069.00)**: (a) **행 단위 섹션 플로우** — 리스트가 긴 섹션이 통째로 넘어가
+앞 장이 비던 문제를, 섹션 안 `<li>` 행을 경계에서 분할하도록 개선. 들어가는 행은 그 장에
+남기고 넘치는 행만 다음 장의 "연속 섹션"(머리글 복제 + 빈 리스트)으로 이동. 연속 섹션은
+`data-cont-of`로 항상 원본을 가리켜 다단계여도 순서대로 재결합(`splitSectionRows`,
+`secId`, `restoreFlowToFirst` 보강). (b) **스케일 측정 버그 수정** — 좁은 화면에서
+`.doc`가 `transform:scale(s<1)`일 때 `getBoundingClientRect`(화면px) vs `offsetTop`
+(레이아웃px) 좌표계 불일치로 페이지네이션이 과소 작동하던 것을, rect 거리를 `docScale`로
+나눠 환산(`nodeBottomInPage`/`fitSplitIndex`/`measureHeight`). 헤드리스 6종 + scale<1
+재현 통과(행 손실 0·순서 보존·shrink 재결합).
+
 **English Summary**
 Fixed Document Templates so (1) body edits register without the caret jumping,
 and (2) overflowing text splits cleanly onto the next page instead of the sheet
