@@ -68,6 +68,13 @@ Document Templates(사이드바 → Documents → Templates)에서 (1) 본문을
 들여쓰기**(`templates-app.js` 입력·keydown 핸들러, `templates.css` `.md-*`/`[data-indent]`).
 WebKit+Playwright 14종 통과(placeholder 전체폭 WebKit 확정 포함).
 
+**후속 (01.068.01)**: (a) 떠 있는 도구가 여전히 상시 보이던 문제 — B/H 포맷바가
+**커서만 있어도 매 selectionchange마다 다시 표시**되던 것을 **실제 텍스트 선택 시에만**
+표시하도록 바꾸고, 자동 페이드를 **3초**로 단축(타이핑으로 리셋 안 됨). (b) 회의록 등
+`.kick`(예: "Korea Dream Path · Weekly sync") **편집 가능**하게(`contenteditable`).
+(c) **Ctrl+V 평문 붙여넣기** — 멀티라인 클립보드가 중첩 `<ul>/<li>`·들여쓰기를 만들어
+하위 레벨로 빠지던 버그를 paste 인터셉트(plain text, 줄바꿈→`<br>`)로 수정.
+
 **English Summary**
 Fixed Document Templates so (1) body edits register without the caret jumping,
 and (2) overflowing text splits cleanly onto the next page instead of the sheet

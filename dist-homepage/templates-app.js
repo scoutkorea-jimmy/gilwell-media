@@ -659,6 +659,28 @@
   // expose for tests
   window.DPTemplateMdBlock = _mdBlock;
 
+  // Force plain-text paste. Rich/multi-line clipboard HTML used to inject nested
+  // <ul>/<li> or indentation, so Ctrl+V dropped the caret into a sub-level. We
+  // insert plain text (newlines -> <br>) inside the same field instead.
+  document.addEventListener('paste', function(e){
+    var n=document.getSelection&&document.getSelection().anchorNode;
+    var el=n&&(n.nodeType===1?n:n.parentNode);
+    el=el&&el.closest&&el.closest('[contenteditable="true"]');
+    if(!el || !e.clipboardData) return;
+    e.preventDefault();
+    var text=e.clipboardData.getData('text/plain')||'';
+    var sel=document.getSelection();
+    if(!(sel&&sel.rangeCount)){ return; }
+    var r=sel.getRangeAt(0); r.deleteContents();
+    var parts=text.split(/\r\n|\r|\n/);
+    var frag=document.createDocumentFragment();
+    parts.forEach(function(p,i){ if(i) frag.appendChild(document.createElement('br')); frag.appendChild(document.createTextNode(p)); });
+    var last=frag.lastChild;
+    r.insertNode(frag);
+    if(last){ r.setStartAfter(last); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  }, true);
+
   window.addEventListener('resize', function(){ fit(); scheduleAutoPages(); });
 
   // init

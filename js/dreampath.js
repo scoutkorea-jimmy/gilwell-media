@@ -2428,9 +2428,10 @@ const DP = (() => {
   }
 
   // ---- canvas tool auto-dissolve (block-ui / formatbar / insert-menu) ----
-  // The floating ↕/+ and B/H tools used to linger on screen. Fade them out
-  // ~5s after the last interaction so they don't clutter the page. Hovering a
-  // tool pauses the fade; showing/repositioning re-arms it.
+  // The floating ↕/+ and B/H tools used to linger on screen. Fade them out ~3s
+  // after they are shown so they don't clutter the page. The timer is NOT reset
+  // by typing (selectionchange) — only by actually showing the tools (hovering a
+  // block) or hovering a tool — so editing text doesn't keep them alive.
   let _templateToolFadeTimer = null;
   let _templateToolFadeKill = null;
   function _templateToolEls(doc) {
@@ -2457,7 +2458,7 @@ const DP = (() => {
       _templateToolFadeKill = setTimeout(() => {
         els.forEach(el => { el.hidden = true; el.classList.remove('dp-tool-dissolve'); });
       }, 520);
-    }, 5000);
+    }, 3000);
   }
 
   function _templateShowBlockTools(block) {
@@ -2514,12 +2515,12 @@ const DP = (() => {
     const block = doc && doc.__DP_SELECTED_BLOCK;
     if (!doc || !bar || !block) return;
     const selection = doc.getSelection && doc.getSelection();
+    // Only show the B/H bar when text is actually selected — a bare caret used
+    // to re-show it on every keystroke, so it felt permanently on screen.
     const hasSelection = selection && !selection.isCollapsed && selection.rangeCount;
-    const rect = hasSelection ? selection.getRangeAt(0).getBoundingClientRect() : block.getBoundingClientRect();
-    if (!rect.width && !rect.height) {
-      bar.hidden = true;
-      return;
-    }
+    if (!hasSelection) { bar.hidden = true; return; }
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    if (!rect.width && !rect.height) { bar.hidden = true; return; }
     bar.hidden = false;
     bar.style.left = Math.max(6, rect.left) + 'px';
     bar.style.top = Math.max(6, rect.top - 34) + 'px';
