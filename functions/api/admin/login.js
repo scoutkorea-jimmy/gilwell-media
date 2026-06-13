@@ -166,7 +166,11 @@ export async function onRequestPost({ request, env }) {
         details: { attempt_count: rl.count, retry_after_seconds: retryAfter },
       });
       return json(
-        { error: '잠시 후 다시 시도해주세요.', code: 'throttled', retry_after: retryAfter },
+        {
+          error: '비밀번호를 여러 번 잘못 입력해 보안을 위해 로그인이 일시 제한되었습니다. 잠시 후 다시 시도해주세요.',
+          code: 'throttled',
+          retry_after: retryAfter,
+        },
         429,
         { 'Retry-After': String(retryAfter) }
       );

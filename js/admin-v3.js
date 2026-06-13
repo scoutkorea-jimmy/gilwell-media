@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.143.07
+ * Version: 03.143.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1099,12 +1099,17 @@
       return s + '초';
     }
     function paint() {
-      var label = '잠시 후 다시 시도해주세요. ' + fmt(remaining) + ' 남음';
+      // Explain *why* the wait exists — a blind "잠시 후 다시 시도" reads like a
+      // server glitch. This lockout is the brute-force backoff: it fires after
+      // repeated wrong passwords and is keyed by IP, so we name the cause and
+      // the (finite, counting-down) wait so the operator isn't left guessing.
+      var label = '비밀번호를 여러 번 잘못 입력해 보안을 위해 로그인이 일시 제한되었습니다. '
+        + fmt(remaining) + ' 후 다시 시도할 수 있습니다.';
       if (errEl) { errEl.textContent = label; errEl.style.display = 'block'; }
       if (btn) {
         btn.disabled = true;
         btn.setAttribute('aria-disabled', 'true');
-        btn.textContent = '대기 ' + fmt(remaining) + ' 남음';
+        btn.textContent = '잠금 해제까지 ' + fmt(remaining) + ' 남음';
       }
       if (pwEl) pwEl.disabled = true;
       if (userEl) userEl.disabled = true;
