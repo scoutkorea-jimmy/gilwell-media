@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.143.09",
+    "date": "2026-06-14",
+    "released_at": "2026-06-14 02:32:54 KST",
+    "summary": "기사 작성 직후 미리보기·목록이 간혹 안 불러지던 일시 오류를 자동 재시도로 흡수했습니다.",
+    "for_users": [
+      "글을 쓴 뒤 미리보기나 목록이 가끔 '불러오지 못했습니다'로 뜨던 문제를 줄였습니다. 일시적인 네트워크 끊김은 자동으로 다시 시도해 조용히 복구됩니다.",
+      "그래도 실패하면 미리보기 창에 '다시 시도' 버튼이 떠서 창을 닫지 않고 한 번에 재시도할 수 있습니다."
+    ],
+    "for_developers": [
+      "원인: js/admin-v3.js _apiFetch 가 재시도 없는 단발 fetch 라, GET 한 번이 네트워크 블립(FETCH_FAILED)이나 5xx 로 실패하면 즉시 에러 표면화 + homepage_issues 자동 보고('관리자 API 요청 실패'). DB 쓰기는 정상(operational_events 의 post_created/updated 는 모두 성공)이라 읽기 측 일시 실패가 증상의 정체.",
+      "_apiFetch: 멱등 요청(GET/HEAD, body 없음)에 한해 최대 2회(총 3회) 백오프 재시도(350ms·700ms). 재시도 대상은 fetch reject(네트워크) 및 5xx 뿐. 401/403/404/422/429 등 4xx 는 일시적이지 않으므로 즉시 표면화하고 재시도하지 않음(쓰기 POST/PUT/DELETE 도 중복 위험으로 재시도 제외).",
+      "보고 노이즈 감소: admin_client_api_error 는 재시도가 모두 소진된 뒤에만 보고 — 재시도로 복구되는 일시 블립은 더 이상 homepage_issues 에 기록되지 않음.",
+      "js/admin-v3.js openPostPreview: 최종 실패 시 미리보기 모달 본문에 '다시 시도'(V3.openPostPreview(id)) 버튼 추가.",
+      "관리자 버전 03.143.08 → 03.143.09."
+    ]
+  },
+  {
     "version": "03.143.08",
     "date": "2026-06-14",
     "released_at": "2026-06-14 01:19:21 KST",

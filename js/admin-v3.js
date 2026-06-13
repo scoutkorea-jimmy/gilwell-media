@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.143.08
+ * Version: 03.143.09
  *
  * Versioning:
  *   V3.aaa.bb
@@ -281,68 +281,88 @@
     if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
     opts.headers = headers;
     opts.credentials = 'same-origin';
-    return fetch(url, opts).then(function (response) {
-      return response.text().then(function (text) {
-        var data = {};
-        if (text) {
-          try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
-        }
-        if (!response.ok) {
-          var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
-          // 자동 보고 제외 status:
-          //  401 = re-login flow (정상 만료/탈취 방지 안내)
-          //  403 = legitimate permission denial (버그 아님)
-          //  429 = rate limit (사용자 영향 아님 + self-report 루프 위험 — homepage_issues #27 케이스)
-          // 또한 /api/homepage-issues/report 호출 자체가 실패할 때는 어떤 status여도 절대 다시 보고 안 함.
-          // 그 보고가 또 실패하면 자기 자신을 재귀 보고하는 폭주가 시작됨.
-          var isSelfReportEndpoint = String(url || '').indexOf('/api/homepage-issues/report') === 0;
-          if (response.status !== 401 && response.status !== 403 && response.status !== 429 && !isSelfReportEndpoint) {
-            _reportSiteIssue('admin_client_api_error', {
-              message: message,
-              path: _issuePathFromUrl(url),
-              section: _panel || 'admin',
-              code: 'HTTP_' + String(response.status || 0),
-              source: '/js/admin-v3.js',
-              method: String(opts.method || 'GET').toUpperCase(),
-              status: String(response.status || ''),
-            });
-          }
-          var err = new Error(message);
-          err.status = response.status;
-          err.data = data;
-          if (response.status === 401) {
-            if (GW.clearToken) GW.clearToken();
-            document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
-              detail: { message: message, status: response.status }
-            }));
-          } else if (response.status === 403) {
-            // Surface the server's Korean permission message (gateMenuAccess
-            // returns "이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요.")
-            // via toast so members see WHY the action failed rather than a
-            // silent panel.
-            if (GW.showToast) GW.showToast(message, 'error', 6000);
-          }
-          throw err;
-        }
-        return data;
+
+    var method = String(opts.method || 'GET').toUpperCase();
+    // 멱등(GET/HEAD) 읽기만 재시도한다. POST/PUT/DELETE 를 재시도하면 글이
+    // 중복 생성되거나 중복 삭제될 수 있으므로 절대 재시도하지 않는다.
+    // 재시도 대상: (1) fetch 자체 실패(네트워크 블립) (2) 5xx 일시 서버 오류.
+    // 4xx(401/403/404/422/429 등)는 일시적이지 않으므로 즉시 표면화.
+    // 이 재시도가 "기사 쓰고 나면 간혹 안 불러짐"(단발 네트워크 실패로 미리보기/
+    // 목록 fetch 가 한 번에 죽던 증상)을 흡수한다. (admin_client_api_error 회귀)
+    var canRetry = (method === 'GET' || method === 'HEAD') && !opts.body;
+    var MAX_RETRIES = canRetry ? 2 : 0; // 총 최대 3회 시도
+    var RETRY_BASE_MS = 350;
+    var isSelfReportEndpoint = String(url || '').indexOf('/api/homepage-issues/report') === 0;
+
+    function _wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function _retryDelay(retriesLeft) { return RETRY_BASE_MS * (MAX_RETRIES - retriesLeft + 1); }
+    function _report(message, code, status) {
+      // self-report endpoint 호출 자체가 실패할 때는 어떤 경우에도 다시 보고하지
+      // 않는다. 그 보고가 또 실패하면 자기 자신을 재귀 보고하는 폭주가 시작됨.
+      if (isSelfReportEndpoint) return;
+      _reportSiteIssue('admin_client_api_error', {
+        message: message,
+        path: _issuePathFromUrl(url),
+        section: _panel || 'admin',
+        code: code,
+        source: '/js/admin-v3.js',
+        method: method,
+        status: status == null ? '' : String(status),
       });
-    }).catch(function (error) {
-      if (error && typeof error.status === 'number') throw error;
-      // self-report endpoint 호출 자체가 네트워크 실패한 경우는 또 보고하지 않음 (루프 방지).
-      var isSelfReportEndpoint = String(url || '').indexOf('/api/homepage-issues/report') === 0;
-      if (!isSelfReportEndpoint) {
-        _reportSiteIssue('admin_client_api_error', {
-          message: error && error.message ? String(error.message) : '관리자 API 요청 실패',
-          path: _issuePathFromUrl(url),
-          section: _panel || 'admin',
-          code: 'FETCH_FAILED',
-          source: '/js/admin-v3.js',
-          method: String(opts.method || 'GET').toUpperCase(),
-          status: '',
+    }
+
+    function attempt(retriesLeft) {
+      return fetch(url, opts).then(function (response) {
+        return response.text().then(function (text) {
+          var data = {};
+          if (text) {
+            try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
+          }
+          if (!response.ok) {
+            // 5xx 는 일시적일 수 있으므로 멱등 요청에 한해 백오프 후 재시도.
+            if (response.status >= 500 && retriesLeft > 0) {
+              return _wait(_retryDelay(retriesLeft)).then(function () { return attempt(retriesLeft - 1); });
+            }
+            var message = (data && (data.error || data.message)) || 'API 오류가 발생했습니다';
+            // 자동 보고 제외 status:
+            //  401 = re-login flow (정상 만료/탈취 방지 안내)
+            //  403 = legitimate permission denial (버그 아님)
+            //  429 = rate limit (사용자 영향 아님 + self-report 루프 위험 — homepage_issues #27 케이스)
+            if (response.status !== 401 && response.status !== 403 && response.status !== 429) {
+              _report(message, 'HTTP_' + String(response.status || 0), response.status || '');
+            }
+            var err = new Error(message);
+            err.status = response.status;
+            err.data = data;
+            if (response.status === 401) {
+              if (GW.clearToken) GW.clearToken();
+              document.dispatchEvent(new CustomEvent('gw:admin-auth-required', {
+                detail: { message: message, status: response.status }
+              }));
+            } else if (response.status === 403) {
+              // Surface the server's Korean permission message (gateMenuAccess
+              // returns "이 메뉴의 보기 권한이 없습니다. 오너에게 요청하세요.")
+              // via toast so members see WHY the action failed rather than a
+              // silent panel.
+              if (GW.showToast) GW.showToast(message, 'error', 6000);
+            }
+            throw err;
+          }
+          return data;
         });
-      }
-      throw error;
-    });
+      }).catch(function (error) {
+        // 위에서 만든 HTTP 에러(상태코드 보유)는 그대로 전파 — 이미 처리/보고됨.
+        if (error && typeof error.status === 'number') throw error;
+        // 네트워크 실패(fetch reject) — 멱등 요청이면 백오프 후 재시도.
+        if (retriesLeft > 0) {
+          return _wait(_retryDelay(retriesLeft)).then(function () { return attempt(retriesLeft - 1); });
+        }
+        _report(error && error.message ? String(error.message) : '관리자 API 요청 실패', 'FETCH_FAILED', '');
+        throw error;
+      });
+    }
+
+    return attempt(MAX_RETRIES);
   }
 
   function _reportSiteIssue(code, detail) {
@@ -2492,7 +2512,13 @@
         if (GW && typeof GW.initContentGalleries === 'function') GW.initContentGalleries(bodyEl);
       })
       .catch(function (e) {
-        bodyEl.innerHTML = '<div class="v3-empty"><div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '게시글을 불러오지 못했습니다.') + '</div></div>';
+        // _apiFetch 가 이미 멱등 GET 을 2회 재시도한 뒤의 최종 실패다. 그래도
+        // 모달이 죽은 채로 남지 않도록 한 번에 재시도할 수 있는 버튼을 제공한다.
+        bodyEl.innerHTML =
+          '<div class="v3-empty">' +
+            '<div class="v3-empty-text">' + GW.escapeHtml((e && e.message) || '게시글을 불러오지 못했습니다.') + '</div>' +
+            '<button type="button" class="v3-btn v3-btn-ghost v3-btn-xs" style="margin-top:10px;" onclick="V3.openPostPreview(' + Number(id) + ')">다시 시도</button>' +
+          '</div>';
       });
   };
 
