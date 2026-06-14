@@ -29,13 +29,12 @@ const CSP = [
   "frame-ancestors 'self'",
 ].join('; ');
 
-// 인라인 <script> 안에 JSON 을 안전하게 박기 위한 직렬화(</script>·<!-- 차단).
+// 인라인 <script> 안에 JSON 을 안전하게 박기 위한 직렬화. </script> 조기종료를
+// 막도록 < > 만 유니코드 이스케이프(JSON.stringify 결과는 ES2019+ 에서 그대로 유효).
 function serializeForScript(value) {
   return JSON.stringify(value)
     .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/ /g, '\\u2028')
-    .replace(/ /g, '\\u2029');
+    .replace(/>/g, '\\u003e');
 }
 
 function escapeHtml(s) {
