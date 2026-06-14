@@ -40,6 +40,7 @@ export const ADMIN_MENUS = Object.freeze([
     { slug: 'ai-score-history',  label: 'AI 채점기록',  actions: ['view'] },
     { slug: 'wosm-members',      label: '세계연맹 회원국', actions: ['view', 'write'] },
     { slug: 'reference-sites',   label: '기사 참고 사이트', actions: ['view', 'write'] },
+    { slug: 'card-news',         label: '카드뉴스',      actions: ['view', 'write'] },
   ]},
   { group: '스카우트 백과', items: [
     { slug: 'memorabilia',            label: '기념품 도감',     actions: ['view', 'write'] },

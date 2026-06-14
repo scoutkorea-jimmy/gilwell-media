@@ -24,6 +24,13 @@ export async function onRequest(context) {
   const response = await next();
   const pathname = getPathname(request);
 
+  // [card-news] /card-news/:id 는 "자체 포함형 단일 HTML 앱"(인라인 unpacker +
+  // Blob + 문서 전체 교체)을 R2 에서 서빙한다. 라우트가 직접 완화 CSP +
+  // X-Frame-Options 를 설정하므로 여기서 손대면(HTMLRewriter nonce 주입 + strict
+  // CSP 재적용) 앱이 깨진다. 24MB 본문에 HTMLRewriter 스트리밍을 태우는 비용도
+  // 피한다. 새 경로라 기존 라우트와 겹치지 않음(dist-homepage 템플릿과 동일 취지).
+  if (pathname.startsWith('/card-news/')) return response;
+
   const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
   if (!contentType.includes('text/html')) {
     return response;

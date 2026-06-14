@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.143.10
+ * Version: 03.144.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1252,6 +1252,7 @@
     releases:  '버전기록',
     'article-scorer': '기사 채점',
     'ai-score-history': 'AI 채점기록',
+    'card-news': '카드뉴스',
     'account-me': '내 계정',
     'account-users': '사용자 관리',
     'account-presets': '프리셋 관리',

@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.144.00",
+    "date": "2026-06-14",
+    "released_at": "2026-06-14 04:10:00 KST",
+    "summary": "관리자에 '카드뉴스' 탭을 신설해 카드뉴스 HTML을 업로드·보관·미리보기할 수 있게 했습니다.",
+    "for_users": [
+      "관리자 콘텐츠 메뉴에 '카드뉴스' 탭이 생겼습니다. 카드뉴스 도구에서 내보낸 단일 HTML 파일을 올리면 목록에 쌓이고, '보기'로 전체 미리보기를 볼 수 있습니다.",
+      "매주 만드는 카드뉴스를 한곳에 모아 보관·관리하는 용도입니다. 지금은 관리자 전용이며, 공개 홈페이지 노출은 다음 단계로 분리했습니다."
+    ],
+    "for_developers": [
+      "신규 패널 'card-news'(콘텐츠 그룹). functions/_shared/admin-users.js ADMIN_MENUS 에 슬러그 추가(view/write), admin.html 사이드바 버튼 + #panel-card-news(업로드/미리보기 모달) + js/admin-cardnews.js(목록/업로드/iframe 미리보기/삭제) 신설. PANEL_LABELS 에 '카드뉴스' 추가.",
+      "저장: 카드뉴스는 24MB 안팎의 자체 포함형 단일 HTML 앱(gzip+base64 번들). D1 card_news 테이블엔 메타(id/title/slug/r2_key/size_bytes/published/created_at)만, 본문은 R2(POST_IMAGES) card-news/<slug>.html 에 저장.",
+      "API: GET/POST /api/admin/card-news (목록 + raw-body 업로드, ?title=, gateMenuAccess view/write, 30MB 한도), DELETE /api/admin/card-news/:id (R2+D1 동시 정리). 업로드는 multipart 대신 raw arrayBuffer 로 24MB 버퍼링 오버헤드 회피.",
+      "본문 서빙: functions/card-news/[id].js 가 R2 HTML 을 완화 CSP(unsafe-inline/unsafe-eval/blob:)+X-Frame-Options SAMEORIGIN 으로 서빙. 인라인 unpacker+Blob+문서교체로 동작하는 번들 앱은 사이트 strict CSP 에서 실행 불가하기 때문. functions/_middleware.js 에 /card-news/ 우회 추가(HTMLRewriter nonce 주입 + strict CSP 재적용 방지, 24MB 스트리밍 비용 회피). dist-homepage 템플릿과 동일 취지.",
+      "관리자 버전 03.143.10 → 03.144.00."
+    ]
+  },
+  {
     "version": "03.143.10",
     "date": "2026-06-14",
     "released_at": "2026-06-14 03:30:00 KST",

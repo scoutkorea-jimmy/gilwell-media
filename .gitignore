@@ -7,6 +7,10 @@
 # Node (if you ever run npm install)
 node_modules/
 
+# Card-news source HTML (24MB 자체 포함형 앱) — R2 에 저장, 저장소 커밋 금지
+BP미디어 카드뉴스*.html
+*.cardnews.html
+
 # Wrangler cache
 .wrangler/
 
