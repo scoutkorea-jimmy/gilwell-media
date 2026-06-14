@@ -1,26 +1,26 @@
 /**
  * GET /api/admin/card-news/articles  — 카드뉴스용 발행 기사 조회 (관리자 전용)
  *
- * 조건(특정 조건의 기사 자동 불러오기)으로 발행 기사를 정렬·필터해 카드용 데이터로 반환.
- *   ?sort=likes|recent|views   (기본 likes — '주간 좋아요 N개' 컨셉)
- *   ?days=7|30|0               (최근 N일, 0=전체. 기본 7)
- *   ?start=YYYY-MM-DD&end=...   (직접 기간 — days 보다 우선)
- *   ?category=korea|apr|wosm|people|...  (빈값=전체)
- *   ?limit=30                  (1..60, 기본 30)
+ * 년·월·일·시 기준 기간(KST)으로 발행 기사를 조회하고, 조회수·좋아요는 그 기간 내
+ * 발생분만 집계한다("최근 7일 조회수"면 7일 내 조회만).
+ *   ?start=YYYY-MM-DDTHH:MM  ?end=YYYY-MM-DDTHH:MM   (KST, 시 단위. 생략 시 최근 7일)
+ *   ?sort=likes|views|recent  (기본 likes — 기간 좋아요순)
+ *   ?category=korea|apr|wosm|people|...   (빈값=전체)
+ *   ?limit=30   (1..100, 기본 30)
+ *
+ * 타임존: viewed_at/liked_at/created_at 은 UTC, publish_at 은 KST 벽시계.
+ *   - 기간 집계(views/likes): 사용자 KST 범위를 UTC(−9h)로 변환해 비교.
+ *   - 발행 필터: publish_at(KST) 또는 created_at+9h(=KST)를 KST 범위와 비교.
  *
  * 반환 item: { id, title, subtitle, excerpt, image_url(대표이미지만), image_caption,
- *             category, author, publish_at, likes, views, url }
- * 카드 매핑은 클라이언트가 수행하며 NSO/Region 은 비워 둔다(서버에 적정 데이터 없음 → 수동 입력).
+ *             category, author, publish_at, likes(기간), views(기간), url }
  */
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
 
 const CATEGORIES = new Set(['korea', 'apr', 'wosm', 'people', 'help', 'notice', 'column']);
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-  });
+  return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
 }
 
 function stripHtml(s) {
@@ -30,7 +30,6 @@ function stripHtml(s) {
     .replace(/\s+/g, ' ').trim();
 }
 
-// Editor.js JSON 본문 → plain text 발췌. JSON 이 아니면 HTML strip.
 function contentToExcerpt(content, max) {
   max = max || 280;
   const raw = String(content || '').trim();
@@ -53,12 +52,23 @@ function contentToExcerpt(content, max) {
       }
       text = parts.join('\n\n');
     } catch (_) { text = stripHtml(raw); }
-  } else {
-    text = stripHtml(raw);
-  }
+  } else { text = stripHtml(raw); }
   text = text.replace(/[ \t]+/g, ' ').trim();
   if (text.length > max) text = text.slice(0, max).trim() + '…';
   return text;
+}
+
+// 'YYYY-MM-DDTHH:MM' / 'YYYY-MM-DD HH:MM[:SS]' → SQLite 'YYYY-MM-DD HH:MM:SS' (KST 벽시계 그대로).
+function normKstDt(s, fallbackSecs) {
+  let v = String(s || '').trim().replace('T', ' ');
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})[ ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6] || fallbackSecs || '00'}`;
+}
+// KST now / now-7d 를 'YYYY-MM-DD HH:MM:SS' 문자열로(시 단위 충분, 분·초 포함).
+function kstString(offsetMs) {
+  const d = new Date(Date.now() + 9 * 3600 * 1000 + (offsetMs || 0));
+  return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 export async function onRequestGet({ request, env }) {
@@ -68,38 +78,38 @@ export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const sort = String(url.searchParams.get('sort') || 'likes').toLowerCase();
   const category = String(url.searchParams.get('category') || '').toLowerCase();
-  const start = String(url.searchParams.get('start') || '').trim();
-  const end = String(url.searchParams.get('end') || '').trim();
-  let days = parseInt(url.searchParams.get('days'), 10);
-  if (isNaN(days)) days = 7;
   let limit = parseInt(url.searchParams.get('limit'), 10);
   if (isNaN(limit) || limit < 1) limit = 30;
-  if (limit > 60) limit = 60;
+  if (limit > 100) limit = 100;
 
+  // 기간(KST). 생략 시 최근 7일.
+  const startKst = normKstDt(url.searchParams.get('start'), '00') || kstString(-7 * 24 * 3600 * 1000);
+  const endKst = normKstDt(url.searchParams.get('end'), '59') || kstString(0);
+
+  // 기간 집계용 UTC 경계(−9h).
   const where = ['p.published = 1'];
   const binds = [];
+  // SELECT 의 서브쿼리(views, likes)가 먼저 → 바인드 순서: views(start,end), likes(start,end)
+  binds.push(startKst, endKst, startKst, endKst);
   if (category && CATEGORIES.has(category)) { where.push('p.category = ?'); binds.push(category); }
-
-  // 날짜 필드: publish_at 우선, 없으면 created_at. (publish_at 은 KST 벽시계 — 픽커 용도라 date 단위로 충분)
-  const dateExpr = "date(COALESCE(p.publish_at, p.created_at))";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(start) || /^\d{4}-\d{2}-\d{2}$/.test(end)) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(start)) { where.push(`${dateExpr} >= ?`); binds.push(start); }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(end)) { where.push(`${dateExpr} <= ?`); binds.push(end); }
-  } else if (days > 0) {
-    where.push(`${dateExpr} >= date('now', ?)`);
-    binds.push(`-${days} days`);
-  }
+  // 발행 필터: KST 발행시각이 기간 내. (publish_at=KST, created_at=UTC→+9h)
+  const pubKst = "COALESCE(p.publish_at, datetime(p.created_at, '+9 hours'))";
+  where.push(`${pubKst} >= ?`); binds.push(startKst);
+  where.push(`${pubKst} <= ?`); binds.push(endKst);
 
   const orderBy = sort === 'recent'
-    ? 'COALESCE(p.publish_at, p.created_at) DESC, p.id DESC'
+    ? `${pubKst} DESC, p.id DESC`
     : sort === 'views'
-    ? 'p.views DESC, COALESCE(p.publish_at, p.created_at) DESC'
-    : 'likes DESC, COALESCE(p.publish_at, p.created_at) DESC';
+    ? 'views DESC, likes DESC, p.id DESC'
+    : 'likes DESC, views DESC, p.id DESC';
 
   const sql =
     `SELECT p.id, p.title, p.subtitle, p.category, p.author, p.publish_at, p.created_at,
-            p.views, p.image_url, p.image_caption, p.content,
-            (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likes
+            p.image_url, p.image_caption, p.content,
+            (SELECT COUNT(*) FROM post_views v WHERE v.post_id = p.id
+               AND v.viewed_at >= datetime(?, '-9 hours') AND v.viewed_at <= datetime(?, '-9 hours')) AS views,
+            (SELECT COUNT(*) FROM post_likes l WHERE l.post_id = p.id
+               AND l.liked_at >= datetime(?, '-9 hours') AND l.liked_at <= datetime(?, '-9 hours')) AS likes
        FROM posts p
       WHERE ${where.join(' AND ')}
       ORDER BY ${orderBy}
@@ -123,7 +133,7 @@ export async function onRequestGet({ request, env }) {
         url: `/post/${r.id}`,
       };
     });
-    return json({ items, count: items.length, sort, days, category: category || null });
+    return json({ items, count: items.length, sort, start: startKst, end: endKst, category: category || null, period_scoped: true });
   } catch (err) {
     console.error('GET /api/admin/card-news/articles error:', err);
     return json({ error: 'db_error', reason: '기사를 불러오지 못했습니다.' }, 500);

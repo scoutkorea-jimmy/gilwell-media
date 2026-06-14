@@ -533,7 +533,7 @@ function Carousel({ tweaks, active, setActive, embed = false }) {
 function TweaksUI({ tweaks, setTweak, active, setActive }) {
   // editing index: tweaks.editing maps to article index (0..articles.length-1)
   const articleIdx = Math.max(0, Math.min(tweaks.articles.length - 1, tweaks.editing || 0));
-  const article = tweaks.articles[articleIdx];
+  const article = tweaks.articles[articleIdx] || {}; // 빈 articles 방어 (크래시 방지)
   const isEn = tweaks.lang === 'en';
   const suffix = isEn ? 'En' : '';
   /* Read a language-aware text field (falls back to KR if EN empty). */
@@ -893,9 +893,19 @@ function articleToCard(a) {
   };
 }
 
+// datetime-local 값(YYYY-MM-DDTHH:MM, 사용자 로컬=KST)
+function toDtLocal(d) {
+  const p = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function dtPreset(daysBack) {
+  return { start: toDtLocal(new Date(Date.now() - daysBack * 86400000)), end: toDtLocal(new Date()) };
+}
+
 function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
   const [sort, setSort] = useState('likes');
-  const [days, setDays] = useState(7);
+  const [start, setStart] = useState(() => toDtLocal(new Date(Date.now() - 7 * 86400000)));
+  const [end, setEnd] = useState(() => toDtLocal(new Date()));
   const [category, setCategory] = useState('');
   const [limit, setLimit] = useState(20);
   const [loading, setLoading] = useState(false);
@@ -905,7 +915,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
 
   const fetchArticles = useCallback(() => {
     setLoading(true); setError('');
-    const qs = new URLSearchParams({ sort: sort, days: String(days), category: category, limit: String(limit) });
+    const qs = new URLSearchParams({ sort: sort, start: start, end: end, category: category, limit: String(limit) });
     fetch('/api/admin/card-news/articles?' + qs.toString(), { credentials: 'same-origin' })
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
       .then(({ ok, j }) => {
@@ -919,7 +929,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
       })
       .catch((e) => setError(e && e.message ? e.message : '불러오기 실패'))
       .then(() => setLoading(false));
-  }, [sort, days, category, limit]);
+  }, [sort, start, end, category, limit]);
 
   useEffect(() => { if (open) fetchArticles(); }, [open]); // 열 때 1회 자동 조회
 
@@ -957,13 +967,13 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
             <option value="recent">최신순</option>
             <option value="views">조회순</option>
           </select>
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))} style={ctrl}>
-            <option value={7}>최근 7일</option>
-            <option value={14}>최근 14일</option>
-            <option value={30}>최근 30일</option>
-            <option value={90}>최근 90일</option>
-            <option value={0}>전체 기간</option>
-          </select>
+          <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} style={{ ...ctrl, width: 178 }} title="시작 (KST)" />
+          <span style={{ color: '#999', fontSize: 12 }}>~</span>
+          <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} style={{ ...ctrl, width: 178 }} title="종료 (KST)" />
+          {[['7일', 7], ['30일', 30], ['90일', 90]].map(([lbl, n]) => (
+            <button key={lbl} onClick={() => { const p = dtPreset(n); setStart(p.start); setEnd(p.end); }}
+              style={{ ...btnGhost, height: 30, padding: '0 10px', fontSize: 12 }}>{lbl}</button>
+          ))}
           <select value={category} onChange={(e) => setCategory(e.target.value)} style={ctrl}>
             {CN_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.label}</option>)}
           </select>

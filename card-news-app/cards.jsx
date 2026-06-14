@@ -70,6 +70,7 @@ function BPWordmark({ color = 'var(--color-ink)', size = 'var(--fs-xs)', mono = 
    icon + text).                                                                 */
 function RegionChip({ region, lang }) {
   const p = REGION_MAP[region];
+  if (!p) return null; // region 미입력/미지정이면 칩 생략 (수동 입력 전 빈 상태)
   const label = (lang === 'en' && p.labelEn) ? p.labelEn : p.label;
   return (
     <span style={{
@@ -92,6 +93,7 @@ function RegionChip({ region, lang }) {
 }
 
 function NSOChip({ label }) {
+  if (!label) return null; // NSO 미입력이면 칩 생략
   return (
     <span style={{
       display:'inline-flex', alignItems:'center', gap: 'var(--gap-micro)',
@@ -118,7 +120,7 @@ function NSOChip({ label }) {
    image-slot's neutral chrome (dashed ring + “Drop an image”) for clear
    affordance. Each slot needs a stable, unique id (article position).         */
 function ImageSlot({ region, hint, slotId, height, src }) {
-  const p = REGION_MAP[region];
+  const p = REGION_MAP[region] || REGION_MAP.WOSM; // 미지정 region 은 중립(WOSM 회색) 스타일
   return (
     <div style={{
       position:'relative',
@@ -396,7 +398,7 @@ function CoverCard({ idx, total, tweaks }) {
 
 /* ─────────────────────────── Article ─────────────────────────── */
 function ArticleCard({ article, rank, idx, total, tweaks }) {
-  const p = REGION_MAP[article.region];
+  const p = REGION_MAP[article.region] || REGION_MAP.WOSM; // 미지정 region 은 중립 스타일
   /* Per-item knobs */
   const sRank   = tweaks.artScaleRank   ?? 1;
   const sChips  = tweaks.artScaleChips  ?? 1;

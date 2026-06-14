@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.144.05",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 03:00:00 KST",
+    "summary": "카드뉴스: 새로 만들 때 빈 화면 버그 수정 + 표지 자동계산 생성 모달 + 복사 + 기간(년월일시)·기간내 조회수 집계.",
+    "for_users": [
+      "새 카드뉴스를 만들면 빈 화면이 되던 문제를 고쳤습니다. 이제 '새 카드뉴스'는 발행일을 고르면 표지의 주차 라벨·발행 번호·제목이 자동 계산되는 모달로 열립니다(이상한 팝업 대신).",
+      "기존 카드뉴스를 '복사'해 새로 시작할 수 있습니다. 기사 불러오기의 기간을 7/30일이 아니라 시작·종료 날짜와 시각으로 직접 지정할 수 있고, '최근 7일 조회수'는 그 7일 내 조회만 집계합니다(누계 아님). NSO·Region 미입력 카드도 깨지지 않습니다."
+    ],
+    "for_developers": [
+      "크래시 수정: 새 카드뉴스 articles=[] → TweaksUI 가 articles[0].region 읽다 TypeError. (1) DEFAULT_DATA 에 시작 카드 1장, (2) TweaksUI article = articles[idx] || {} 가드, (3) cards.jsx RegionChip/NSOChip 빈값이면 null, ImageSlot/ArticleCard 는 REGION_MAP[region] || REGION_MAP.WOSM fallback (region 수동입력=빈값 설계 대응).",
+      "기간 집계: /api/admin/card-news/articles 재작성 — start/end(KST datetime) 파라미터, 조회수=post_views(viewed_at)·좋아요=post_likes(liked_at) 를 기간 내로 카운트(KST→UTC −9h 변환), 발행 필터는 publish_at(KST)/created_at+9h. app.jsx ArticleImportModal: days 드롭다운→datetime-local start/end + 프리셋(7/30/90일).",
+      "생성 모달: admin.html #cardnews-new-modal(발행일→표지 자동계산: ISO 연주차 issueNo, 월중주차 weekLabel, 제목) + js/admin-cardnews.js coverFromDate/openNewModal/submitNew. window.prompt 제거. POST body {title, cover:{...}} 또는 {from:id} 복제.",
+      "복사: POST /api/admin/card-news {from:<id>} → 원본 data 통째 복제(새 행). 목록에 '복사' 버튼.",
+      "관리자 버전 03.144.04 → 03.144.05."
+    ]
+  },
+  {
     "version": "03.144.04",
     "date": "2026-06-15",
     "released_at": "2026-06-15 02:05:00 KST",

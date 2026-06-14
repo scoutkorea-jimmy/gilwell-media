@@ -41,7 +41,12 @@ const DEFAULT_DATA = {
   contactStory: 'story@bpmedia.net', contactStoryEn: 'story@bpmedia.net',
   contactInfo: 'info@bpmedia.net', contactInfoEn: 'info@bpmedia.net',
   editing: 0,
-  articles: [],
+  // 시작 카드 1장(빈 articles 면 편집기가 크래시) — '기사 불러오기'로 채우거나 직접 편집.
+  articles: [{
+    name: '', nameEn: '', region: '', nso: '', nsoEn: '', date: '',
+    title: '', titleEn: '', summary: '', summaryEn: '',
+    likes: 0, hint: '', hintEn: '', imgHeight: 24, image: '',
+  }],
 };
 
 function json(data, status = 200) {
@@ -94,20 +99,42 @@ export async function onRequestPost({ request, env }) {
   if (gate) return gate;
 
   const url = new URL(request.url);
-  let title = String(url.searchParams.get('title') || '').trim();
-  // body 로도 title 허용(JSON)
-  if (!title) {
-    try { const b = await request.json(); if (b && typeof b.title === 'string') title = b.title.trim(); } catch (_) {}
+  let body = {};
+  try { body = await request.json(); } catch (_) { body = {}; }
+  if (!body || typeof body !== 'object') body = {};
+
+  let title = String(body.title || url.searchParams.get('title') || '').trim();
+
+  // 복사(clone): ?from=<id> 또는 body.from — 기존 카드뉴스 data 를 통째로 복제.
+  const fromId = parseInt(body.from || url.searchParams.get('from'), 10);
+  let data;
+  if (fromId && fromId > 0) {
+    try {
+      const src = await env.DB.prepare(`SELECT title, data FROM card_news WHERE id = ?`).bind(fromId).first();
+      if (!src) return json({ error: 'not_found', reason: '복사할 카드뉴스를 찾을 수 없습니다.' }, 404);
+      try { data = JSON.parse(src.data || '{}'); } catch (_) { data = { ...DEFAULT_DATA }; }
+      if (!data || typeof data !== 'object') data = { ...DEFAULT_DATA };
+      if (!Array.isArray(data.articles) || !data.articles.length) data.articles = DEFAULT_DATA.articles.map((a) => ({ ...a }));
+      if (!title) title = (src.title || '카드뉴스') + ' (사본)';
+    } catch (err) {
+      console.error('card-news clone error:', err);
+      return json({ error: 'db_error', reason: '복사 중 오류가 발생했습니다.' }, 500);
+    }
+  } else {
+    data = { ...DEFAULT_DATA, articles: DEFAULT_DATA.articles.map((a) => ({ ...a })) };
+    // 표지 자동 계산값(클라이언트가 발행일로 계산해 전달) 반영.
+    const cover = (body.cover && typeof body.cover === 'object') ? body.cover : {};
+    ['weekLabel', 'weekLabelEn', 'issueNo', 'issueDate'].forEach((k) => {
+      if (typeof cover[k] === 'string' && cover[k].trim()) data[k] = cover[k].trim();
+    });
+    if (!data.issueNo && title) data.issueNo = title;
   }
   if (!title) {
-    // 기본 제목 — 생성 시각(KST) 기반
     const now = new Date(Date.now() + 9 * 3600 * 1000);
-    const ymd = now.toISOString().slice(0, 10);
-    title = `새 카드뉴스 (${ymd})`;
+    title = `새 카드뉴스 (${now.toISOString().slice(0, 10)})`;
   }
 
   const slug = makeSlug(title);
-  const data = { ...DEFAULT_DATA, issueNo: title };
   const serialized = JSON.stringify(data);
 
   try {
