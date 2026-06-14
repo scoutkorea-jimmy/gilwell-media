@@ -1009,6 +1009,19 @@ h1, h2, h3, h4, h5, h6, strong, b {
 - 우선순위: 게시글 cover_image > `home_lead.share_image` > `site_meta.og_image` > `/img/og-default.png`.
 - 캐시 자동 차단: 공개 게시글 감사 스크립트(`scripts/audit_public_posts.sh`)가 canonical og:url 정책 준수도 검증 (00.146.04 — 공유 URL이 canonical 일치 + share_ref 쿼리 제외).
 
+### 7.6.1 카카오톡 공유 CSP form-action 회귀 사례 (2026-06-14 케이스 스터디, 00.170.10)
+
+#### 기능 세부 설명
+**증상**: 기사 공유 모달에서 `카카오톡`을 눌러도 공유 창이 빈 화면(about:blank)으로 뜨고 정작 카카오 공유 화면이 표시되지 않았다. 그런데 `'카카오톡 공유 창을 열었습니다'` 성공 토스트는 떠서 "되는 듯 안 되는" 증상이었다.
+
+**원인 — CSP `form-action 'self'`**. 카카오 Share SDK(`Kakao.Share.sendScrap`/`sendDefault`)는 내부적으로 숨김 `<form method="POST" action="https://sharer.kakao.com/talk/friends/picker/link" target="팝업">`을 생성해 `form.submit()`으로 공유 팝업을 띄운다(SDK `kakao.min.js` 2.8.0 에서 `createElement("form")` + `method:"POST"` + `https://sharer.kakao.com` 확인). 사이트 CSP가 `form-action 'self'` 였기 때문에 브라우저가 이 제출을 차단(`Refused to send form data … violates … form-action 'self'`)하고 팝업은 `about:blank`로 남았다. `sendScrap()`은 예외를 던지지 않아 `js/main.js` `shareViaKakao`의 성공 토스트만 표시되고 `.catch` 폴백(navigator.share/링크 복사)도 발동하지 않았다.
+
+**오진 방지**: `kakao_js_key`(D1 `settings.public_runtime`) · SDK URL(`t1.kakaocdn.net/.../2.8.0/kakao.min.js` HTTP 200) · `script-src`·`connect-src`의 카카오 도메인 허용은 **모두 정상**이었다. 키 재발급·SDK 교체로 시간을 낭비하지 말 것 — 단일 원인은 `form-action`이었다.
+
+**해결 (00.170.10)**: CSP `form-action`을 `'self'` → `'self' https://sharer.kakao.com`으로 확장. **두 곳을 함께** 수정 — 클린 라우트 HTML 응답은 `functions/_middleware.js` `buildCsp`, 정적 자산 fallback은 `_headers`(13.1.8 부수 발견과 동일 원칙). PC·모바일(`sendScrap` → `kakaotalk://` 리다이렉트도 동일 form POST 경유) 공유 모두 복구.
+
+**일반 규칙**: 외부 공유·결제·SNS SDK는 흔히 자사 도메인으로 **form POST(팝업)** 또는 **iframe**을 띄운다. 새 SDK 도입 시 `script-src`/`connect-src`만 보지 말고 **`form-action`(form 제출)·`frame-src`(iframe)** 도 함께 점검한다(14.1 체크리스트 승격). 카카오 디벨로퍼스 콘솔의 Web 플랫폼 사이트 도메인 등록(`https://bpmedia.net`)도 별개 전제 — 미등록 시 팝업은 뜨되 `KOE006`(앱 정보 불일치) 에러가 표시된다.
+
 ### 7.7 마크다운 미러 `/post/:id.md` (2026-05-22, 00.142.01)
 
 #### 기능 세부 설명
@@ -1592,6 +1605,7 @@ GW.apiFetch('/api/posts/42', { method: 'DELETE' });
 - 문구/버튼/상태명이 기존 규칙과 충돌하지 않는가
 - 날짜/정렬/권한 규칙이 이미 정의돼 있는가
 - **공개 페이지에 새 버튼/컨트롤을 추가한다면 inline `onclick=`·`onchange=` 등의 이벤트 속성을 쓰고 있지 않은가** (7.5.1) — 공개 CSP는 `'unsafe-inline'` 미허용. ID만 부여하고 nonce가 붙은 `.js`에서 `addEventListener`로 바인딩해야 한다.
+- **외부 공유·SNS·결제 SDK(카카오 공유 등)를 새로 붙인다면 CSP `form-action`·`frame-src`도 함께 점검했는가** (7.6.1) — `script-src`/`connect-src`만 허용하면 SDK는 로드되지만, 자사 도메인으로 form POST(팝업)·iframe을 띄우는 SDK는 `form-action 'self'`·`frame-src 'self'`에 막혀 빈 창으로 조용히 실패한다(예외 없이 성공 토스트만 뜰 수 있음). CSP는 `_headers` + `functions/_middleware.js buildCsp` 두 곳.
 - **PUT/PATCH 엔드포인트의 conditional SET이 입력 검증 헬퍼의 `.provided` 플래그에 의존한다면, 호출하는 모든 헬퍼(`requireNonEmptyString` · `optionalTrimmedString` · `optionalIntegerOrNull` · `optionalBooleanFlag` 등)가 성공 시 `provided: true`를 일관되게 돌려주는지 확인** (7.5.1). 한 엔드포인트 안에서 `.provided` 검사와 `body.field !== undefined` 직접 검사를 섞지 말 것.
 - **파일을 편집하기 전 실제 파일을 읽고 old_string을 그 내용에서 복사했는가** (13.1.7) — 탐색·추정 구조로 Edit을 작성하면 조용히 실패한다.
 - **`data/changelog.json` 엔트리를 추가한다면 기존 항목과 들여쓰기(items 요소 2-space)를 정확히 맞췄는가** (13.1.7) — 불일치 시 Edit이 조용히 실패해 preflight가 모든 배포를 차단한다.
