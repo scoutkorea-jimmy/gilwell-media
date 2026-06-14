@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.144.06",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 03:40:00 KST",
+    "summary": "카드뉴스 기사 불러오기 개선 — 본문 350자·조회수·Region(카테고리) 자동, 기간으로 표지 자동 동기화.",
+    "for_users": [
+      "기사를 불러오면 부제 대신 본문 앞 350자가 들어오고, Tweaks 요약 칸에서 직접 다듬을 수 있습니다. 카드에 조회수가 표시되고, Region 태그(WOSM·KOREA·APR)는 기사 카테고리에서 자동으로 붙습니다(NSO 연맹명만 직접 입력).",
+      "기사 불러오기에서 '이 기간으로 표지 맞추기'를 켜두면, 선택한 기간에 맞춰 표지의 주차 라벨·발행 번호·발행일이 자동으로 갱신됩니다."
+    ],
+    "for_developers": [
+      "articleToCard: summary=excerpt(본문)→subtitle 폴백(부제 우선 제거), views=기간 조회수 추가, region=catToRegion(category) 자동(korea/apr/wosm→KOREA/APR/WOSM, 그 외 빈값). articles.js 발췌 280→350자.",
+      "cards.jsx ArticleCard: eye(조회수) 아이콘 옆 표시를 article.likes → (article.views ?? article.likes ?? 0) 로 교정(조회수 미표시 버그). RegionChip 은 REGION_MAP 키일 때만 렌더(빈값=칩 생략) — imported 카드가 category 매핑으로 region 채워져 WOSM 태그 정상 표출.",
+      "app.jsx ArticleImportModal: '이 기간으로 표지 맞추기' 체크박스 + coverFromYmd(기간 시작일 기준)로 addSelected 시 weekLabel/weekLabelEn/issueNo/issueDate setTweak. 요약은 TweakTextarea(멀티라인)라 본문 편집 가능.",
+      "관리자 버전 03.144.05 → 03.144.06."
+    ]
+  },
+  {
     "version": "03.144.05",
     "date": "2026-06-15",
     "released_at": "2026-06-15 03:00:00 KST",

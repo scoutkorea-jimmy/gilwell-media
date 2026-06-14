@@ -449,7 +449,7 @@ function ArticleCard({ article, rank, idx, total, tweaks }) {
               <path d="M12 5C7 5 3 8.5 1 12c2 3.5 6 7 11 7s9-3.5 11-7c-2-3.5-6-7-11-7z" fill="none" stroke="currentColor" strokeWidth="2"/>
               <circle cx="12" cy="12" r="3" fill="currentColor"/>
             </svg>
-            {article.likes.toLocaleString()}
+            {(article.views != null ? article.views : (article.likes || 0)).toLocaleString()}
           </div>
         </div>
 

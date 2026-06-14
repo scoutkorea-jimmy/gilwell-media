@@ -870,21 +870,29 @@ const CN_CATEGORIES = [
   { v: 'people', label: '스카우트 피플' },
 ];
 
-// 발행 기사 → 카드 객체. 대표이미지만 사용. NSO/Region 은 비워 수동 입력.
+// 게시글 카테고리 → 카드 Region. (NSO 연맹명은 데이터가 없어 수동, Region 은 category 로 자동)
+function catToRegion(cat) {
+  const m = { korea: 'KOREA', apr: 'APR', wosm: 'WOSM' };
+  return m[String(cat || '').toLowerCase()] || '';
+}
+
+// 발행 기사 → 카드 객체. 본문(350자 발췌)·대표이미지·기간 조회수/좋아요를 가져온다.
+// Region 은 category 자동, NSO 연맹명만 수동. 원본 게시글은 불변(postId 참조만).
 function articleToCard(a) {
   const dateStr = String(a.publish_at || '').slice(0, 10).replace(/-/g, '.');
   return {
     name: a.title || '',
     nameEn: '',
-    region: '',   // 수동 입력
-    nso: '',      // 수동 입력
+    region: catToRegion(a.category),  // category 자동 (wosm→WOSM 등)
+    nso: '',      // 연맹명 — 수동 입력
     nsoEn: '',
     date: dateStr,
     title: a.title || '',
     titleEn: '',
-    summary: a.subtitle || a.excerpt || '',
+    summary: a.excerpt || a.subtitle || '',  // 본문 발췌(350자) 우선
     summaryEn: '',
-    likes: a.likes || 0,
+    likes: a.likes || 0,   // 기간 좋아요
+    views: a.views || 0,   // 기간 조회수 (카드 표시)
     hint: a.image_caption || (a.author ? ('자료출처: ' + a.author) : ''),
     hintEn: '',
     imgHeight: a.image_url ? 24 : 0,
@@ -902,6 +910,31 @@ function dtPreset(daysBack) {
   return { start: toDtLocal(new Date(Date.now() - daysBack * 86400000)), end: toDtLocal(new Date()) };
 }
 
+// 발행일(YYYY-MM-DD) → 표지값. (연 주차 = ISO, 월중 주차 = ceil(일/7)) admin coverFromDate 와 동일.
+const CN_EN_MONTH = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function cnIsoWeek(d) {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dn = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dn + 3);
+  const ft = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const fd = (ft.getUTCDay() + 6) % 7;
+  ft.setUTCDate(ft.getUTCDate() - fd + 3);
+  return 1 + Math.round((date - ft) / (7 * 24 * 3600 * 1000));
+}
+function coverFromYmd(ymd) {
+  const d = new Date(ymd + 'T00:00:00');
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+  const wom = Math.ceil(day / 7);
+  const pad = (x) => String(x).padStart(2, '0');
+  return {
+    issueDate: y + '.' + pad(m) + '.' + pad(day),
+    weekLabel: m + '월 ' + wom + '주차',
+    weekLabelEn: 'Week ' + wom + ' · ' + CN_EN_MONTH[m - 1],
+    issueNo: y + '년 ' + cnIsoWeek(d) + '주차 BP 미디어 소식',
+  };
+}
+
 function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
   const [sort, setSort] = useState('likes');
   const [start, setStart] = useState(() => toDtLocal(new Date(Date.now() - 7 * 86400000)));
@@ -912,6 +945,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
   const [picked, setPicked] = useState({}); // {id: true}
+  const [syncCover, setSyncCover] = useState(true); // 기간으로 표지(주차/발행번호) 맞추기
 
   const fetchArticles = useCallback(() => {
     setLoading(true); setError('');
@@ -944,6 +978,16 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
     const next = [...(tweaks.articles || []), ...cards];
     setTweak('articles', next);
     setTweak('editing', Math.max(0, next.length - cards.length)); // 첫 추가 카드로 이동
+    // 기간으로 표지(주차 라벨·발행 번호·발행일) 동기화
+    if (syncCover) {
+      const c = coverFromYmd(String(start).slice(0, 10));
+      if (c) {
+        setTweak('weekLabel', c.weekLabel);
+        setTweak('weekLabelEn', c.weekLabelEn);
+        setTweak('issueNo', c.issueNo);
+        setTweak('issueDate', c.issueDate);
+      }
+    }
     onClose();
   };
 
@@ -1004,7 +1048,13 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
 
         {/* 액션 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #eee' }}>
-          <span style={{ fontSize: 12.5, color: '#777' }}>{pickedIds.length}개 선택 · 대표이미지만 가져옵니다 · NSO·Region 은 카드에서 직접 입력</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--color-ink)', cursor: 'pointer' }}>
+              <input type="checkbox" checked={syncCover} onChange={(e) => setSyncCover(e.target.checked)} />
+              이 기간으로 표지(주차·발행번호) 맞추기
+            </label>
+            <span style={{ fontSize: 11.5, color: '#999' }}>{pickedIds.length}개 선택 · 본문 350자·대표이미지·기간 조회수 자동 · Region=카테고리, NSO 연맹명은 수동</span>
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={btnGhost}>취소</button>
             <button onClick={addSelected} style={btn} disabled={!pickedIds.length}>선택 {pickedIds.length}개 카드로 추가</button>

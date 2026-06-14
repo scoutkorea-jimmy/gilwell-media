@@ -31,7 +31,7 @@ function stripHtml(s) {
 }
 
 function contentToExcerpt(content, max) {
-  max = max || 280;
+  max = max || 350; // 본문 발췌 기본 350자
   const raw = String(content || '').trim();
   let text = '';
   if (raw.charAt(0) === '{') {
