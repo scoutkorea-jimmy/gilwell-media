@@ -112,8 +112,33 @@ async function exportCardPng({ fileNameBase }) {
 function ExportButtons({ tweaks, active, setActive }) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(null);
+  const [saving, setSaving] = useState(false);
   const total = tweaks.articles.length + 2;
   const isEn = tweaks.lang === 'en';
+
+  // 서버 저장 — 현재 tweaks(편집 상태) 전체를 D1 card_news.data 에 PUT.
+  // 원본 기사는 건드리지 않는다(카드뉴스 데이터만 갱신).
+  const saveToServer = async () => {
+    if (saving) return;
+    const id = window.CARD_NEWS_ID;
+    if (!id) { alert('저장 대상이 없습니다 (CARD_NEWS_ID 누락).'); return; }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/card-news/' + id, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: tweaks }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.reason || j.error || ('HTTP ' + res.status));
+      try { window.parent.postMessage({ type: '__card_news_saved', id: id }, '*'); } catch (_) {}
+      alert(isEn ? 'Saved to server.' : '서버에 저장했습니다.');
+    } catch (e) {
+      alert((isEn ? 'Save failed: ' : '저장 실패: ') + (e && e.message ? e.message : e));
+    }
+    setSaving(false);
+  };
 
   const fileBaseFor = (i) => {
     const issue = (tweaks.weekLabel || '').replace(/\s+/g, '');
@@ -200,6 +225,16 @@ function ExportButtons({ tweaks, active, setActive }) {
       display:'flex', alignItems:'center', gap:'var(--gap-tight)',
       flexWrap:'wrap',
     }}>
+      <button type="button"
+        style={{ ...btnPrimary, background:'var(--color-forest)', borderColor:'var(--color-forest)', opacity: saving ? .65 : 1, cursor: saving ? 'progress' : 'pointer' }}
+        onClick={saveToServer} disabled={saving}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        {saving ? (isEn ? 'Saving…' : '저장 중…') : (isEn ? 'Save to server' : '서버 저장')}
+      </button>
       <button type="button" style={btnBase} onClick={downloadCurrent} disabled={busy}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>

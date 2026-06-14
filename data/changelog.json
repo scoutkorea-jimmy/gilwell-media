@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.144.02",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 01:00:00 KST",
+    "summary": "카드뉴스 '편집' 기능 — admin 안에서 바로 편집기를 열고(새 탭 아님) 카드 내용을 수정·저장.",
+    "for_users": [
+      "카드뉴스 탭에서 '편집'을 누르면 같은 화면에서 바로 편집기가 열립니다(새 탭 아님). 우측 하단 Tweaks 패널로 카드 제목·요약·순서 등을 고치고 상단 '서버 저장'으로 저장합니다.",
+      "'+ 새 카드뉴스'로 빈 카드뉴스를 만들 수 있습니다. 카드 내용을 바꿔도 원본 기사는 그대로입니다(다음 단계에서 발행 기사 자동 불러오기 추가)."
+    ],
+    "for_developers": [
+      "저장 모델 전환: 업로드(R2 HTML) → 편집(D1 card_news.data tweaks JSON). PUT /api/admin/card-news/:id (data 저장, 2MB 한도, settings_history 기록), GET (data 조회), POST 는 업로드 대신 기본 데이터로 새 행 생성. DELETE 유지(legacy r2_key 도 정리).",
+      "card-news-app/app.jsx ExportButtons 에 '서버 저장' 버튼 추가 — 현재 tweaks 전체를 PUT 하고 부모창에 __card_news_saved postMessage. 원본 posts 는 미변경.",
+      "admin.html #panel-card-news 재구성: 목록 뷰 ↔ 편집기 뷰(인라인 iframe /card-news/:id?edit=1, 82vh). 업로드/미리보기 모달 제거. js/admin-cardnews.js 전면 재작성(목록·새로 만들기·인라인 편집·미리보기·삭제 + 저장 알림 수신).",
+      "관리자 버전 03.144.01 → 03.144.02. 다음: 발행 기사 picker + 카드 자동 시드(NSO/Region 은 수동)."
+    ]
+  },
+  {
     "version": "03.144.01",
     "date": "2026-06-14",
     "released_at": "2026-06-14 05:10:00 KST",

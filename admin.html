@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260614145302">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260614145302">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260614150405">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260614150405">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.144.01</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.144.02</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.170.10</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.144.01</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.144.02</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.170.10</span></span></div>
     </div>
 
@@ -2009,62 +2009,47 @@
 
       <!-- ════════════════════ MEMORABILIA (기념품 도감) ════════════════════ -->
       <div class="v3-panel" id="panel-card-news">
-        <div class="v3-page-head">
-          <div class="v3-page-head-left">
-            <h1 class="v3-page-title">카드뉴스</h1>
-            <p class="v3-page-desc">카드뉴스(자체 포함형 HTML)를 업로드해 보관·미리보기합니다. 매주 내보낸 <code>.html</code> 파일을 올리면 목록에 쌓입니다. 현재 관리자 전용입니다.</p>
-          </div>
-          <div class="v3-page-head-right">
-            <button class="v3-btn v3-btn-primary" id="cardnews-upload-btn">+ 카드뉴스 업로드</button>
-          </div>
-        </div>
-        <div class="v3-card">
-          <div class="v3-card-head">
-            <div>
-              <h2 class="v3-card-title">카드뉴스 목록</h2>
-              <p class="v3-card-desc">최신 업로드가 위에 표시됩니다. <strong>보기</strong>를 누르면 전체 미리보기가 열립니다.</p>
+        <!-- ── 목록 뷰 ─────────────────────────────────────────── -->
+        <div id="cardnews-list-view">
+          <div class="v3-page-head">
+            <div class="v3-page-head-left">
+              <h1 class="v3-page-title">카드뉴스</h1>
+              <p class="v3-page-desc">발행 기사를 바탕으로 주간 카드뉴스를 만들고 편집합니다. 카드 내용은 카드뉴스에서만 수정되며 <strong>원본 기사는 바뀌지 않습니다</strong>. 관리자 전용.</p>
+            </div>
+            <div class="v3-page-head-right">
+              <button class="v3-btn v3-btn-primary" id="cardnews-new-btn">+ 새 카드뉴스</button>
             </div>
           </div>
-          <div class="v3-inline-meta" id="cardnews-list-meta">불러오는 중…</div>
-          <div id="cardnews-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
-        </div>
-
-        <!-- 업로드 모달 -->
-        <div class="v3-modal-backdrop" id="cardnews-upload-modal" hidden role="dialog" aria-labelledby="cardnews-upload-title">
-          <div class="v3-modal v3-modal-lg">
-            <div class="v3-modal-head">
-              <h2 class="v3-modal-title" id="cardnews-upload-title">카드뉴스 업로드</h2>
-              <button class="v3-modal-close" id="cardnews-upload-close" type="button" aria-label="닫기">×</button>
-            </div>
-            <div class="v3-modal-body">
-              <label style="display:block; font-size:12.5px; font-weight:600; color:var(--gray-700,#3f3f3f); margin-bottom:6px;" for="cardnews-title-input">제목</label>
-              <input class="v3-input" type="text" id="cardnews-title-input" placeholder="예: BP미디어 카드뉴스 — 2026.05 3주차" maxlength="200" autocomplete="off" />
-              <label style="display:block; font-size:12.5px; font-weight:600; color:var(--gray-700,#3f3f3f); margin:14px 0 6px;" for="cardnews-file-input">HTML 파일 (.html · 최대 30MB)</label>
-              <input class="v3-input" type="file" id="cardnews-file-input" accept=".html,text/html" />
-              <p class="v3-input-hint" style="margin-top:6px;">카드뉴스 도구에서 내보낸 단일 <code>.html</code> 파일을 선택하세요. 제목을 비워두면 파일명이 제목으로 사용됩니다.</p>
-              <div class="v3-inline-meta" id="cardnews-upload-status" aria-live="polite" style="margin-top:10px;"></div>
-            </div>
-            <div class="v3-modal-foot">
-              <button class="v3-btn v3-btn-outline" type="button" id="cardnews-upload-cancel">취소</button>
-              <button class="v3-btn v3-btn-primary" type="button" id="cardnews-upload-submit">업로드</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 미리보기 모달 (iframe) -->
-        <div class="v3-modal-backdrop" id="cardnews-view-modal" hidden role="dialog" aria-labelledby="cardnews-view-title">
-          <div class="v3-modal v3-modal-xl">
-            <div class="v3-modal-head">
-              <h2 class="v3-modal-title" id="cardnews-view-title">미리보기</h2>
-              <div class="v3-flex" style="gap:8px; align-items:center;">
-                <a class="v3-btn v3-btn-outline v3-btn-sm" id="cardnews-view-newtab" href="#" target="_blank" rel="noopener">새 탭에서 열기 ↗</a>
-                <button class="v3-modal-close" id="cardnews-view-close" type="button" aria-label="닫기">×</button>
+          <div class="v3-card">
+            <div class="v3-card-head">
+              <div>
+                <h2 class="v3-card-title">카드뉴스 목록</h2>
+                <p class="v3-card-desc">최신 항목이 위에 표시됩니다. <strong>편집</strong>을 누르면 이 화면에서 바로 편집기가 열립니다.</p>
               </div>
             </div>
-            <div class="v3-modal-body" style="padding:0;">
-              <iframe id="cardnews-view-frame" title="카드뉴스 미리보기" referrerpolicy="same-origin" style="width:100%; height:78vh; border:0; display:block; background:#EBEBEB;"></iframe>
+            <div class="v3-inline-meta" id="cardnews-list-meta">불러오는 중…</div>
+            <div id="cardnews-list-wrap"><div class="v3-loading"><div class="v3-spinner"></div>로딩 중…</div></div>
+          </div>
+        </div>
+
+        <!-- ── 편집기 뷰 (인라인 임베드) ───────────────────────── -->
+        <div id="cardnews-editor-view" hidden>
+          <div class="v3-page-head" style="align-items:center;">
+            <div class="v3-page-head-left" style="display:flex; align-items:center; gap:12px;">
+              <button class="v3-btn v3-btn-outline v3-btn-sm" id="cardnews-editor-back" type="button">← 목록</button>
+              <h1 class="v3-page-title" id="cardnews-editor-title" style="margin:0;">카드뉴스 편집</h1>
+            </div>
+            <div class="v3-page-head-right" style="display:flex; gap:8px; align-items:center;">
+              <span class="v3-inline-meta" id="cardnews-editor-status" aria-live="polite"></span>
+              <a class="v3-btn v3-btn-ghost v3-btn-sm" id="cardnews-editor-preview" href="#" target="_blank" rel="noopener">미리보기 ↗</a>
+              <button class="v3-btn v3-btn-outline v3-btn-sm" id="cardnews-editor-reload" type="button">새로고침</button>
             </div>
           </div>
+          <div class="v3-card" style="padding:0; overflow:hidden;">
+            <iframe id="cardnews-editor-frame" title="카드뉴스 편집기" referrerpolicy="same-origin"
+              style="width:100%; height:82vh; border:0; display:block; background:#EBEBEB;"></iframe>
+          </div>
+          <p class="v3-input-hint" style="margin-top:10px;">우측 하단 <strong>Tweaks</strong> 패널에서 카드 내용을 편집하고, 상단의 <strong>서버 저장</strong> 버튼으로 저장하세요. 카드 이미지·내용을 바꿔도 원본 기사에는 영향이 없습니다.</p>
         </div>
       </div>
 
@@ -3358,14 +3343,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260614145302"></script>
-<script src="/js/shared-country-name-ko.js?v=20260614145302"></script>
-<script src="/js/memorabilia-shared.js?v=20260614145302"></script>
-<script src="/js/admin-v3.js?v=20260614145302"></script>
-<script src="/js/admin-account.js?v=20260614145302"></script>
-<script src="/js/admin-memorabilia.js?v=20260614145302"></script>
-<script src="/js/admin-cardnews.js?v=20260614145302"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260614145302"></script>
+<script src="/js/main.js?v=20260614150405"></script>
+<script src="/js/shared-country-name-ko.js?v=20260614150405"></script>
+<script src="/js/memorabilia-shared.js?v=20260614150405"></script>
+<script src="/js/admin-v3.js?v=20260614150405"></script>
+<script src="/js/admin-account.js?v=20260614150405"></script>
+<script src="/js/admin-memorabilia.js?v=20260614150405"></script>
+<script src="/js/admin-cardnews.js?v=20260614150405"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260614150405"></script>
 <script>
   (function () {
     function toggleReveal(visible) {
