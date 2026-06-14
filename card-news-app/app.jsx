@@ -627,6 +627,14 @@ function TweaksUI({ tweaks, setTweak, active, setActive }) {
                      }))}
                      onChange={pickArticle} />
 
+        {/* 발행 기사에서 카드 자동 생성 (제목·요약·날짜·좋아요·대표이미지). NSO/Region 은 수동 */}
+        <button type="button" className="twk-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('cn-open-import'))}
+          style={{ width: '100%', justifyContent: 'center', background: 'var(--color-midnight)', color: '#fff', fontWeight: 600, marginBottom: 6 }}
+          title={isEn ? 'Import from published articles' : '발행 기사에서 불러오기'}>
+          ⤓ {isEn ? 'Import articles' : '기사 불러오기'}
+        </button>
+
         {/* Card management row — add / move / duplicate / delete */}
         <div className="twk-row twk-row-h" style={{ gap: 6 }}>
           <div className="twk-lbl"><span>{isEn ? 'Manage' : '카드 관리'}</span></div>
@@ -1020,6 +1028,13 @@ function App() {
     document.body.classList.toggle('is-embed', embed);
     return () => document.body.classList.remove('is-embed');
   }, [embed]);
+
+  // Tweaks 패널의 '기사 불러오기' 버튼이 보내는 이벤트로도 모달을 연다(발견성).
+  useEffect(() => {
+    const h = () => setImportOpen(true);
+    window.addEventListener('cn-open-import', h);
+    return () => window.removeEventListener('cn-open-import', h);
+  }, []);
 
   return (
     <div className="page" style={{ '--radius-card': cardRadius }}>

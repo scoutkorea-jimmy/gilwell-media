@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.144.04",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 02:05:00 KST",
+    "summary": "카드뉴스 편집기 Tweaks 패널 '카드 관리' 위에 '기사 불러오기' 버튼 추가(발견성).",
+    "for_users": [
+      "기사 불러오기를 좌측 하단 버튼뿐 아니라 우측 Tweaks 패널의 '카드 관리' 바로 위에서도 누를 수 있게 했습니다. 카드 추가/이동을 다루던 그 자리에서 바로 발행 기사를 불러올 수 있습니다."
+    ],
+    "for_developers": [
+      "card-news-app/app.jsx: TweaksUI 카드 관리 행 위에 '기사 불러오기' 버튼 추가 → window CustomEvent('cn-open-import') 디스패치. App 에 해당 이벤트 리스너 추가해 ArticleImportModal 오픈(setImportOpen). TweaksUI→App 프롭 드릴링 없이 발견성 개선.",
+      "관리자 버전 03.144.03 → 03.144.04."
+    ]
+  },
+  {
     "version": "03.144.03",
     "date": "2026-06-15",
     "released_at": "2026-06-15 01:40:00 KST",
