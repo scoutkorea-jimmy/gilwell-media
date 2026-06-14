@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "03.144.01",
+    "date": "2026-06-14",
+    "released_at": "2026-06-14 05:10:00 KST",
+    "summary": "카드뉴스를 '업로드'에서 '편집'으로 전환하는 작업 1단계 — 24MB 번들을 네이티브 React 에디터로 재구성한 렌더 파이프라인.",
+    "for_users": [
+      "카드뉴스를 admin 안에서 직접 편집할 수 있도록 바꾸는 작업의 첫 단계입니다. 이번 배포는 렌더링 엔진 교체로, 화면 검증용입니다(편집 UI·기사 자동 시드는 다음 단계)."
+    ],
+    "for_developers": [
+      "원본 24MB 자체포함 번들을 디컴파일해 앱 소스(card-news-app/app.jsx·cards.jsx·tweaks-panel.jsx·data.jsx·image-slot.js·styles.css)를 추출. 라이브러리(React/ReactDOM/Babel-standalone/html-to-image/JSZip)와 폰트(Pretendard·Space Grotesk·JetBrains Mono·Archivo Black)는 CDN으로 외부화 → 24MB→~130KB.",
+      "functions/card-news/[id].js 재작성: D1 card_news.data(tweaks JSON)를 window.TWEAK_DEFAULTS로 주입해 CDN 라이브러리로 셸 조립. ?embed=1=클린 미리보기, ?edit=1=Tweaks 자동 오픈(호스트 프로토콜 셀프 트리거). 완화 CSP 직접 설정(_middleware /card-news/ 우회).",
+      "card_news 에 data TEXT 컬럼 추가. 기존 id=1 을 베이크된 TWEAK_DEFAULTS(5607B, 5카드)로 마이그레이션(이미지는 sidecar 기반이라 제외).",
+      "cards.jsx ImageSlot: src={article.image} 추가 — 카드 이미지를 기사 커버 URL 로 연결(드래그 sidecar 대신).",
+      "관리자 버전 03.144.00 → 03.144.01. 다음 단계: 로드/저장 API, admin 탭 재구성(새로 만들기/편집), 기사 자동 시드."
+    ]
+  },
+  {
     "version": "03.144.00",
     "date": "2026-06-14",
     "released_at": "2026-06-14 04:10:00 KST",
