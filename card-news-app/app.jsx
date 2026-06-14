@@ -870,10 +870,9 @@ const CN_CATEGORIES = [
   { v: 'people', label: '스카우트 피플' },
 ];
 
-// 게시글 카테고리 → 카드 Region. (NSO 연맹명은 데이터가 없어 수동, Region 은 category 로 자동)
+// 사용자 요청: 자동 태그 안 함 — 불러온 카드는 전부 기본 'WOSM', 직접 보고 수동 변경.
 function catToRegion(cat) {
-  const m = { korea: 'KOREA', apr: 'APR', wosm: 'WOSM' };
-  return m[String(cat || '').toLowerCase()] || '';
+  return 'WOSM';
 }
 
 // 발행 기사 → 카드 객체. 본문(350자 발췌)·대표이미지·기간 조회수/좋아요를 가져온다.
@@ -936,7 +935,7 @@ function coverFromYmd(ymd) {
 }
 
 function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
-  const [sort, setSort] = useState('likes');
+  const [sort, setSort] = useState('views');
   const [start, setStart] = useState(() => toDtLocal(new Date(Date.now() - 7 * 86400000)));
   const [end, setEnd] = useState(() => toDtLocal(new Date()));
   const [category, setCategory] = useState('');
@@ -1007,9 +1006,9 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
         {/* 조건 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid #f0f0f0' }}>
           <select value={sort} onChange={(e) => setSort(e.target.value)} style={ctrl}>
-            <option value="likes">좋아요순</option>
-            <option value="recent">최신순</option>
             <option value="views">조회순</option>
+            <option value="recent">최신순</option>
+            <option value="likes">좋아요순</option>
           </select>
           <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} style={{ ...ctrl, width: 178 }} title="시작 (KST)" />
           <span style={{ color: '#999', fontSize: 12 }}>~</span>
@@ -1053,7 +1052,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
               <input type="checkbox" checked={syncCover} onChange={(e) => setSyncCover(e.target.checked)} />
               이 기간으로 표지(주차·발행번호) 맞추기
             </label>
-            <span style={{ fontSize: 11.5, color: '#999' }}>{pickedIds.length}개 선택 · 본문 350자·대표이미지·기간 조회수 자동 · Region=카테고리, NSO 연맹명은 수동</span>
+            <span style={{ fontSize: 11.5, color: '#999' }}>{pickedIds.length}개 선택 · 본문 400자·대표이미지·기간 조회수 자동 · 태그는 기본 WOSM(직접 변경)</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={btnGhost}>취소</button>

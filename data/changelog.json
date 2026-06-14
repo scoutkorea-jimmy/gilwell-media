@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.144.07",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 04:20:00 KST",
+    "summary": "카드뉴스: 조회수 중심 전환 + 본문 400자 + 태그 기본 WOSM + 제목 자동 파생.",
+    "for_users": [
+      "기사 불러오기 기본 정렬이 '조회순'이 되고, 표지 문구도 '주간 조회수 TOP'으로 바뀌었습니다. 본문은 400자까지 불러옵니다.",
+      "불러온 카드의 지역 태그는 자동 판별 없이 전부 기본 'WOSM'으로 들어갑니다(보고 직접 바꾸세요). 카드뉴스 제목은 표지의 발행일·주차에 맞춰 자동으로 설정됩니다."
+    ],
+    "for_developers": [
+      "조회수 전환: ArticleImportModal 기본 sort=views(+옵션 순서 조회순 우선), articles.js 기본 sort=views. cards.jsx coverSubtitle 폴백 '주간 좋아요 TOP'→'주간 조회수 TOP'. 카드 표시는 이미 views(03.144.06).",
+      "본문 400자: articles.js contentToExcerpt 기본 350→400.",
+      "태그 기본 WOSM: catToRegion() 이 category 무관 'WOSM' 반환(자동 매핑 제거). 수동 변경 전제.",
+      "제목 자동: index.js deriveCardNewsTitle(발행일 YYYY.MM + weekLabel W주차 → 'BP미디어 카드뉴스 — YYYY.MM W주차'). POST 새 생성 시 표지로 제목 파생, PUT 저장 시에도 동일 규칙으로 목록 제목을 표지에 맞춰 자동 갱신.",
+      "관리자 버전 03.144.06 → 03.144.07. (빈 표지 카드뉴스 데이터 보정은 별도 D1 업데이트로 처리)"
+    ]
+  },
+  {
     "version": "03.144.06",
     "date": "2026-06-15",
     "released_at": "2026-06-15 03:40:00 KST",

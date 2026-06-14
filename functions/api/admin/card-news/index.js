@@ -67,6 +67,15 @@ function makeSlug(title) {
   return (base ? base + '-' : 'card-news-') + suffix;
 }
 
+// 표지(발행일+주차)로 카드뉴스 제목 자동 파생 → "BP미디어 카드뉴스 — YYYY.MM W주차".
+// (PUT 에서도 동일 규칙으로 제목을 표지에 맞춰 자동 갱신)
+export function deriveCardNewsTitle(data) {
+  const ym = String((data && data.issueDate) || '').match(/^(\d{4})\.(\d{2})/);
+  const wk = String((data && data.weekLabel) || '').match(/(\d+)\s*주차/);
+  if (ym && wk) return `BP미디어 카드뉴스 — ${ym[1]}.${ym[2]} ${wk[1]}주차`;
+  return null;
+}
+
 export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'card-news', 'view');
   if (gate) return gate;
@@ -127,6 +136,9 @@ export async function onRequestPost({ request, env }) {
     ['weekLabel', 'weekLabelEn', 'issueNo', 'issueDate'].forEach((k) => {
       if (typeof cover[k] === 'string' && cover[k].trim()) data[k] = cover[k].trim();
     });
+    // 제목 자동: 표지(발행일+주차)로 파생. 클라이언트가 보낸 title 보다 우선(자동화).
+    const derived = deriveCardNewsTitle(data);
+    if (derived) title = derived;
     if (!data.issueNo && title) data.issueNo = title;
   }
   if (!title) {

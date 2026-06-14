@@ -31,7 +31,7 @@ function stripHtml(s) {
 }
 
 function contentToExcerpt(content, max) {
-  max = max || 350; // 본문 발췌 기본 350자
+  max = max || 400; // 본문 발췌 기본 400자
   const raw = String(content || '').trim();
   let text = '';
   if (raw.charAt(0) === '{') {
@@ -76,7 +76,7 @@ export async function onRequestGet({ request, env }) {
   if (gate) return gate;
 
   const url = new URL(request.url);
-  const sort = String(url.searchParams.get('sort') || 'likes').toLowerCase();
+  const sort = String(url.searchParams.get('sort') || 'views').toLowerCase();
   const category = String(url.searchParams.get('category') || '').toLowerCase();
   let limit = parseInt(url.searchParams.get('limit'), 10);
   if (isNaN(limit) || limit < 1) limit = 30;

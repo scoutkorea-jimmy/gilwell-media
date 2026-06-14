@@ -61,10 +61,14 @@ export async function onRequestPut({ request, env, params }) {
     return json({ error: 'too_large', reason: '카드뉴스 데이터가 너무 큽니다. 이미지는 업로드 URL 로 참조하세요.' }, 413);
   }
 
-  // 선택적으로 제목을 데이터에서 동기화(issueNo/weekLabel 변경 반영) — 비어있지 않을 때만.
-  const titleFromData = typeof body.title === 'string' && body.title.trim()
-    ? body.title.trim()
-    : (typeof data.issueNo === 'string' && data.issueNo.trim() ? data.issueNo.trim() : null);
+  // 제목 자동 동기화: 표지(발행일+주차)로 파생 → "BP미디어 카드뉴스 — YYYY.MM W주차".
+  // 표지를 바꾸면 목록 제목도 자동으로 따라온다. (index.js deriveCardNewsTitle 과 동일 규칙)
+  const ymM = String(data.issueDate || '').match(/^(\d{4})\.(\d{2})/);
+  const wkM = String(data.weekLabel || '').match(/(\d+)\s*주차/);
+  const titleFromData = (ymM && wkM)
+    ? `BP미디어 카드뉴스 — ${ymM[1]}.${ymM[2]} ${wkM[1]}주차`
+    : (typeof body.title === 'string' && body.title.trim() ? body.title.trim()
+      : (typeof data.issueNo === 'string' && data.issueNo.trim() ? data.issueNo.trim() : null));
 
   try {
     const exists = await env.DB.prepare(`SELECT id FROM card_news WHERE id = ?`).bind(id).first();

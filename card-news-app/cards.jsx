@@ -344,7 +344,7 @@ function CoverCard({ idx, total, tweaks }) {
             textAlign: align('Subtitle'),
             marginInline: align('Subtitle') === 'center' ? 'auto' : (align('Subtitle') === 'right' ? '0 0 0 auto' : '0'),
           }}>
-            {(pickLang(tweaks, 'coverSubtitle') ?? '주간 좋아요 TOP {n} 기사 · 전세계 스카우트 소식')
+            {(pickLang(tweaks, 'coverSubtitle') ?? '주간 조회수 TOP {n} 기사 · 전세계 스카우트 소식')
               .split(/(\{n\})/)
               .map((part, i) => part === '{n}'
                 ? <b key={i} style={{ fontWeight: 800, color:'var(--color-white)' }}>TOP {articleCount}</b>
