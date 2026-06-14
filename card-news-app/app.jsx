@@ -853,10 +853,155 @@ function TweaksUI({ tweaks, setTweak, active, setActive }) {
   );
 }
 
+/* ─────────────── 기사 불러오기 (발행 기사 → 카드 자동 주입) ─────────────── */
+const CN_CATEGORIES = [
+  { v: '', label: '전체' },
+  { v: 'korea', label: '한국' },
+  { v: 'apr', label: '아태(APR)' },
+  { v: 'wosm', label: '세계(WOSM)' },
+  { v: 'people', label: '스카우트 피플' },
+];
+
+// 발행 기사 → 카드 객체. 대표이미지만 사용. NSO/Region 은 비워 수동 입력.
+function articleToCard(a) {
+  const dateStr = String(a.publish_at || '').slice(0, 10).replace(/-/g, '.');
+  return {
+    name: a.title || '',
+    nameEn: '',
+    region: '',   // 수동 입력
+    nso: '',      // 수동 입력
+    nsoEn: '',
+    date: dateStr,
+    title: a.title || '',
+    titleEn: '',
+    summary: a.subtitle || a.excerpt || '',
+    summaryEn: '',
+    likes: a.likes || 0,
+    hint: a.image_caption || (a.author ? ('자료출처: ' + a.author) : ''),
+    hintEn: '',
+    imgHeight: a.image_url ? 24 : 0,
+    image: a.image_url || '',  // 대표이미지만
+    postId: a.id,              // 원본 기사 참조 (원본은 불변)
+  };
+}
+
+function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
+  const [sort, setSort] = useState('likes');
+  const [days, setDays] = useState(7);
+  const [category, setCategory] = useState('');
+  const [limit, setLimit] = useState(20);
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState([]);
+  const [error, setError] = useState('');
+  const [picked, setPicked] = useState({}); // {id: true}
+
+  const fetchArticles = useCallback(() => {
+    setLoading(true); setError('');
+    const qs = new URLSearchParams({ sort: sort, days: String(days), category: category, limit: String(limit) });
+    fetch('/api/admin/card-news/articles?' + qs.toString(), { credentials: 'same-origin' })
+      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => {
+        if (!ok) throw new Error((j && (j.reason || j.error)) || 'load failed');
+        const list = (j && j.items) || [];
+        setItems(list);
+        // 기본: 상위 6개 자동 선택 ('주간 좋아요 6개' 컨셉)
+        const pre = {};
+        list.slice(0, 6).forEach((a) => { pre[a.id] = true; });
+        setPicked(pre);
+      })
+      .catch((e) => setError(e && e.message ? e.message : '불러오기 실패'))
+      .then(() => setLoading(false));
+  }, [sort, days, category, limit]);
+
+  useEffect(() => { if (open) fetchArticles(); }, [open]); // 열 때 1회 자동 조회
+
+  if (!open) return null;
+
+  const pickedIds = items.filter((a) => picked[a.id]);
+  const toggle = (id) => setPicked((p) => ({ ...p, [id]: !p[id] }));
+
+  const addSelected = () => {
+    if (!pickedIds.length) { alert('추가할 기사를 선택하세요.'); return; }
+    const cards = pickedIds.map(articleToCard);
+    const next = [...(tweaks.articles || []), ...cards];
+    setTweak('articles', next);
+    setTweak('editing', Math.max(0, next.length - cards.length)); // 첫 추가 카드로 이동
+    onClose();
+  };
+
+  const ctrl = { height: 30, padding: '0 8px', borderRadius: 8, border: '1px solid rgba(0,0,0,.15)', background: '#fff', font: 'inherit', fontSize: 13, color: 'var(--color-ink)' };
+  const btn = { height: 32, padding: '0 14px', borderRadius: 8, border: '1px solid var(--color-midnight)', background: 'var(--color-midnight)', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' };
+  const btnGhost = { ...btn, background: '#fff', color: 'var(--color-ink)', border: '1px solid rgba(0,0,0,.18)' };
+
+  return (
+    <div onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2147483647, background: 'rgba(0,0,0,.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: 'min(820px, 96vw)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.3)', fontFamily: "'Pretendard', system-ui, sans-serif" }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #eee' }}>
+          <strong style={{ fontSize: 16, color: 'var(--color-ink)' }}>기사 불러오기</strong>
+          <button onClick={onClose} style={{ border: 0, background: 'transparent', fontSize: 20, cursor: 'pointer', color: '#888' }}>×</button>
+        </div>
+
+        {/* 조건 */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid #f0f0f0' }}>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={ctrl}>
+            <option value="likes">좋아요순</option>
+            <option value="recent">최신순</option>
+            <option value="views">조회순</option>
+          </select>
+          <select value={days} onChange={(e) => setDays(Number(e.target.value))} style={ctrl}>
+            <option value={7}>최근 7일</option>
+            <option value={14}>최근 14일</option>
+            <option value={30}>최근 30일</option>
+            <option value={90}>최근 90일</option>
+            <option value={0}>전체 기간</option>
+          </select>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} style={ctrl}>
+            {CN_CATEGORIES.map((c) => <option key={c.v} value={c.v}>{c.label}</option>)}
+          </select>
+          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} style={ctrl}>
+            <option value={10}>10개</option>
+            <option value={20}>20개</option>
+            <option value={40}>40개</option>
+            <option value={60}>60개</option>
+          </select>
+          <button onClick={fetchArticles} style={btnGhost} disabled={loading}>{loading ? '불러오는 중…' : '조회'}</button>
+        </div>
+
+        {/* 목록 */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', minHeight: 200 }}>
+          {error && <div style={{ padding: 20, color: 'var(--color-fire)', fontSize: 13 }}>불러오기 실패: {error}</div>}
+          {!error && !loading && !items.length && <div style={{ padding: 30, textAlign: 'center', color: '#999', fontSize: 13 }}>조건에 맞는 기사가 없습니다.</div>}
+          {items.map((a) => (
+            <label key={a.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '8px 8px', borderRadius: 10, cursor: 'pointer', background: picked[a.id] ? 'rgba(77,0,110,.06)' : 'transparent' }}>
+              <input type="checkbox" checked={!!picked[a.id]} onChange={() => toggle(a.id)} style={{ width: 16, height: 16, flexShrink: 0 }} />
+              <div style={{ width: 64, height: 48, flexShrink: 0, borderRadius: 8, overflow: 'hidden', background: '#eee', backgroundImage: a.image_url ? `url("${a.image_url}")` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#aaa' }}>{a.image_url ? '' : '이미지 없음'}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</div>
+                <div style={{ fontSize: 11.5, color: '#999', marginTop: 2 }}>{(a.category || '').toUpperCase()} · ♥ {a.likes} · 👁 {a.views} · {String(a.publish_at).slice(0, 10)}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+
+        {/* 액션 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderTop: '1px solid #eee' }}>
+          <span style={{ fontSize: 12.5, color: '#777' }}>{pickedIds.length}개 선택 · 대표이미지만 가져옵니다 · NSO·Region 은 카드에서 직접 입력</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={btnGhost}>취소</button>
+            <button onClick={addSelected} style={btn} disabled={!pickedIds.length}>선택 {pickedIds.length}개 카드로 추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────────────── App root ─────────────────────────── */
 function App() {
   const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
   const [active, setActive] = useState(0);
+  const [importOpen, setImportOpen] = useState(false);
 
   /* Embed mode — for porting into the homepage via <iframe ?embed=1>.
      Strips the preview chrome (header, export buttons, thumbnail rail,
@@ -879,8 +1024,19 @@ function App() {
   return (
     <div className="page" style={{ '--radius-card': cardRadius }}>
       {!embed && <PageHeader tweaks={t} active={active} setActive={setActive}/>}
+      {!embed && (
+        <button type="button" onClick={() => setImportOpen(true)}
+          style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 2147483646,
+            height: 40, padding: '0 18px', borderRadius: 999,
+            border: '1px solid var(--color-midnight)', background: 'var(--color-midnight)', color: '#fff',
+            fontWeight: 700, fontSize: 13.5, cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,.22)',
+            fontFamily: "'Pretendard', system-ui, sans-serif" }}>
+          + 기사 불러오기
+        </button>
+      )}
       <Carousel tweaks={t} active={active} setActive={setActive} embed={embed}/>
       <TweaksUI tweaks={t} setTweak={setTweak} active={active} setActive={setActive}/>
+      <ArticleImportModal open={importOpen} onClose={() => setImportOpen(false)} tweaks={t} setTweak={setTweak}/>
     </div>
   );
 }
