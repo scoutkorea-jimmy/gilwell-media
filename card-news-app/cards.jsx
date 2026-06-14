@@ -5,7 +5,9 @@
    ─ Fire Red & Ocean Blue used only ≥18px bold (heading/button/icon/border).
    ─ Pastels never as text; pastel bg → Midnight or Black text only.            */
 
-const { useState, useRef, useEffect } = React;
+/* var (not const): 모듈들이 같은 전역 스코프를 공유하므로 React 구조분해를
+   const 로 하면 모듈 간 재선언 충돌('useState already declared')이 난다. */
+var { useState, useRef, useEffect } = React;
 
 /* ─────────────────────────── BP wordmark / icon ─────────────────────────── */
 function BPLogo({ size = 28, mono = false, color = 'var(--color-ink)' }) {

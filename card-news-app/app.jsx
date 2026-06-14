@@ -1,6 +1,8 @@
 /* app.jsx — carousel preview + Tweaks (visual + content editor) */
 
-const { useState, useMemo, useEffect, useCallback } = React;
+/* var (not const): 전역 스코프 공유 — cards.jsx 와 React 구조분해가 겹쳐
+   const 면 'useState already declared' 충돌. */
+var { useState, useMemo, useEffect, useCallback } = React;
 
 /* ──────── PNG export helpers ──────── */
 /* Capture the live center card at the carousel's CURRENT size and scale up
