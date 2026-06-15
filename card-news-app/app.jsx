@@ -386,10 +386,25 @@ function NavButton({ dir, onClick, disabled }) {
   );
 }
 
-function Carousel({ tweaks, active, setActive, embed = false }) {
+function Carousel({ tweaks, active, setActive, setTweak, embed = false }) {
   const total = tweaks.articles.length + 2;
   const aspectW = tweaks.aspect === '4:5' ? 4 : tweaks.aspect === '9:16' ? 9 : 1;
   const aspectH = tweaks.aspect === '4:5' ? 5 : tweaks.aspect === '9:16' ? 16 : 1;
+
+  // 썸네일 레일 드래그앤드롭 순서 변경 (기사 카드만 — 표지/엔딩은 고정).
+  // dragArt/overArt 는 articles 배열 인덱스(0-based). 카드 i(레일) ↔ article i-1.
+  const [dragArt, setDragArt] = useState(null);
+  const [overArt, setOverArt] = useState(null);
+  const reorderArticles = useCallback((from, to) => {
+    if (from == null || to == null || from === to) return;
+    const list = [...tweaks.articles];
+    if (from < 0 || from >= list.length || to < 0 || to >= list.length) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    setTweak && setTweak('articles', list);
+    setTweak && setTweak('editing', to);
+    setActive(to + 1); // 표지(0) 다음이 첫 기사
+  }, [tweaks.articles, setTweak, setActive]);
 
   const go = useCallback((delta) => {
     setActive(a => Math.max(0, Math.min(total - 1, a + delta)));
@@ -454,8 +469,9 @@ function Carousel({ tweaks, active, setActive, embed = false }) {
         </div>
       </div>
 
-      {/* Thumbnails */}
+      {/* Thumbnails — 기사 카드는 드래그해서 순서 변경 가능 */}
       {!embed && (
+      <>
       <div style={{
         marginTop:'var(--gap-section)',
         display:'flex', gap:'var(--gap-element)',
@@ -464,21 +480,48 @@ function Carousel({ tweaks, active, setActive, embed = false }) {
       }}>
         {Array.from({ length: total }, (_, i) => {
           const isActive = i === active;
+          // 기사 카드만 드래그 대상 (표지 i=0, 엔딩 i=total-1 은 고정)
+          const artIdx = i - 1;
+          const isArticle = i >= 1 && i <= total - 2;
+          const isDragging = isArticle && dragArt === artIdx;
+          const isDropTarget = isArticle && overArt === artIdx && dragArt != null && dragArt !== artIdx;
           return (
-            <button key={i} onClick={() => setActive(i)} aria-label={`${i+1}번 카드`} style={{
+            <button key={i} onClick={() => setActive(i)} aria-label={`${i+1}번 카드`}
+              draggable={isArticle}
+              onDragStart={isArticle ? (e) => {
+                setDragArt(artIdx);
+                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(artIdx)); } catch (_) {}
+              } : undefined}
+              onDragOver={isArticle ? (e) => {
+                if (dragArt == null) return;
+                e.preventDefault();
+                try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+                if (overArt !== artIdx) setOverArt(artIdx);
+              } : undefined}
+              onDrop={isArticle ? (e) => {
+                e.preventDefault();
+                reorderArticles(dragArt, artIdx);
+                setDragArt(null); setOverArt(null);
+              } : undefined}
+              onDragEnd={isArticle ? () => { setDragArt(null); setOverArt(null); } : undefined}
+              style={{
               flex:'0 0 auto',
               width: 96, aspectRatio:`${aspectW} / ${aspectH}`,
               borderRadius: 'var(--radius-element)',
               overflow:'hidden',
-              padding: 0, border:'none', cursor:'pointer',
-              outline: isActive ? '2px solid var(--color-midnight)' : '1px solid var(--color-gray-300)',
-              outlineOffset: isActive ? 2 : 0,
+              padding: 0, border:'none',
+              cursor: isArticle ? 'grab' : 'pointer',
+              outline: isDropTarget
+                ? '2px dashed var(--color-ocean)'
+                : isActive ? '2px solid var(--color-midnight)' : '1px solid var(--color-gray-300)',
+              outlineOffset: (isActive || isDropTarget) ? 2 : 0,
               background:'var(--color-white)',
               boxShadow: isActive
                 ? '0 12px 24px -12px color-mix(in oklab, var(--color-midnight) 40%, transparent)'
                 : 'none',
               transform: isActive ? 'translateY(-2px)' : 'none',
-              transition: 'transform .2s, box-shadow .2s, outline-color .2s',
+              opacity: isDragging ? .45 : 1,
+              transition: 'transform .2s, box-shadow .2s, outline-color .2s, opacity .15s',
               position:'relative',
             }}>
               <div style={{
@@ -502,6 +545,11 @@ function Carousel({ tweaks, active, setActive, embed = false }) {
           );
         })}
       </div>
+      <div style={{
+        marginTop: 2, fontFamily:'"JetBrains Mono", ui-monospace, monospace',
+        fontSize: 11, letterSpacing:'.06em', color:'var(--color-gray-500)',
+      }}>↔ 기사 카드를 드래그해 순서를 바꿀 수 있어요 (표지·엔딩은 고정)</div>
+      </>
       )}
 
       <div style={{
@@ -569,9 +617,9 @@ function TweaksUI({ tweaks, setTweak, active, setActive }) {
       title: isEn ? 'Title' : '제목',
       titleEn: 'Title',
       summary: '', summaryEn: '',
-      likes: 0,
+      likes: 0, views: 0,
       hint: '', hintEn: '',
-      imgHeight: 22,
+      imgHeight: 22, imgView: { s: 1, x: 0, y: 0 }, image: '',
     };
     const newIdx = tweaks.articles.length;
     setTweak('articles', [...tweaks.articles, next]);
@@ -674,8 +722,8 @@ function TweaksUI({ tweaks, setTweak, active, setActive }) {
                        placeholder={isEn ? 'Press Enter for line break' : '엔터로 줄바꿈'}
                        rows={5}
                        onChange={(v) => setArtTx('summary', v)} />
-        <TweakNumber label={isEn ? 'Views' : '조회수'}     value={article.likes} min={0} step={1}
-                     onChange={(v) => setArticleField('likes', v)} />
+        <TweakNumber label={isEn ? 'Views' : '조회수'}     value={article.views ?? article.likes ?? 0} min={0} step={1}
+                     onChange={(v) => setArticleField('views', v)} />
         <TweakText   label={isEn ? 'Image caption' : '이미지 캡션'} value={artTxVal('hint')}
                      onChange={(v) => setArtTx('hint', v)} />
         {tweaks.showImage && (
@@ -875,7 +923,7 @@ function catToRegion(cat) {
   return 'WOSM';
 }
 
-// 발행 기사 → 카드 객체. 본문(350자 발췌)·대표이미지·기간 조회수/좋아요를 가져온다.
+// 발행 기사 → 카드 객체. 본문(400자 발췌)·대표이미지·전체 조회수/좋아요를 가져온다.
 // Region 은 category 자동, NSO 연맹명만 수동. 원본 게시글은 불변(postId 참조만).
 function articleToCard(a) {
   const dateStr = String(a.publish_at || '').slice(0, 10).replace(/-/g, '.');
@@ -888,16 +936,25 @@ function articleToCard(a) {
     date: dateStr,
     title: a.title || '',
     titleEn: '',
-    summary: a.excerpt || a.subtitle || '',  // 본문 발췌(350자) 우선
+    summary: a.excerpt || a.subtitle || '',  // 본문 발췌(400자) 우선
     summaryEn: '',
-    likes: a.likes || 0,   // 기간 좋아요
-    views: a.views || 0,   // 기간 조회수 (카드 표시)
+    likes: a.likes || 0,   // 전체 좋아요
+    views: a.views || 0,   // 전체 조회수 (카드 표시)
     hint: a.image_caption || (a.author ? ('자료출처: ' + a.author) : ''),
     hintEn: '',
     imgHeight: a.image_url ? 24 : 0,
+    imgView: { s: 1, x: 0, y: 0 },  // 이미지 크롭 위치 (더블클릭 reframe 으로 상하 이동)
     image: a.image_url || '',  // 대표이미지만
     postId: a.id,              // 원본 기사 참조 (원본은 불변)
   };
+}
+
+// "내용이 비어있는" 카드인지(=새 카드뉴스의 시작용 빈 카드/추가 직후 빈 카드).
+// 제목·이름·요약·이미지·NSO 가 모두 비면 placeholder 로 보고 불러오기로 덮어쓴다.
+function isBlankCard(a) {
+  if (!a) return true;
+  const has = (v) => !!(v && String(v).trim());
+  return !(has(a.title) || has(a.name) || has(a.summary) || has(a.image) || has(a.nso));
 }
 
 // datetime-local 값(YYYY-MM-DDTHH:MM, 사용자 로컬=KST)
@@ -934,7 +991,7 @@ function coverFromYmd(ymd) {
   };
 }
 
-function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
+function ArticleImportModal({ open, onClose, tweaks, setTweak, setActive }) {
   const [sort, setSort] = useState('views');
   const [start, setStart] = useState(() => toDtLocal(new Date(Date.now() - 7 * 86400000)));
   const [end, setEnd] = useState(() => toDtLocal(new Date()));
@@ -974,9 +1031,14 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
   const addSelected = () => {
     if (!pickedIds.length) { alert('추가할 기사를 선택하세요.'); return; }
     const cards = pickedIds.map(articleToCard);
-    const next = [...(tweaks.articles || []), ...cards];
+    // 비어있는 시작용 카드(빈 페이지)는 버리고 불러온 기사로 채운다 —
+    // 새 카드뉴스의 첫 빈 카드를 남겨둔 채 뒤에만 붙는 문제 방지.
+    const kept = (tweaks.articles || []).filter((a) => !isBlankCard(a));
+    const startIdx = kept.length;          // 불러온 첫 카드가 들어갈 위치
+    const next = [...kept, ...cards];
     setTweak('articles', next);
-    setTweak('editing', Math.max(0, next.length - cards.length)); // 첫 추가 카드로 이동
+    setTweak('editing', Math.max(0, startIdx)); // 불러온 첫 카드로 이동
+    if (typeof setActive === 'function') setActive(startIdx + 1); // 표지(0) 다음이 첫 기사
     // 기간으로 표지(주차 라벨·발행 번호·발행일) 동기화
     if (syncCover) {
       const c = coverFromYmd(String(start).slice(0, 10));
@@ -1005,10 +1067,10 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
 
         {/* 조건 */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid #f0f0f0' }}>
-          <select value={sort} onChange={(e) => setSort(e.target.value)} style={ctrl}>
-            <option value="views">조회순</option>
-            <option value="recent">최신순</option>
-            <option value="likes">좋아요순</option>
+          <select value={sort} onChange={(e) => setSort(e.target.value)} style={ctrl} title="정렬 기준">
+            <option value="views">조회수 높은순</option>
+            <option value="likes">좋아요 많은순</option>
+            <option value="recent">최신 발행순</option>
           </select>
           <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} style={{ ...ctrl, width: 178 }} title="시작 (KST)" />
           <span style={{ color: '#999', fontSize: 12 }}>~</span>
@@ -1052,7 +1114,7 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak }) {
               <input type="checkbox" checked={syncCover} onChange={(e) => setSyncCover(e.target.checked)} />
               이 기간으로 표지(주차·발행번호) 맞추기
             </label>
-            <span style={{ fontSize: 11.5, color: '#999' }}>{pickedIds.length}개 선택 · 본문 400자·대표이미지·기간 조회수 자동 · 태그는 기본 WOSM(직접 변경)</span>
+            <span style={{ fontSize: 11.5, color: '#999' }}>{pickedIds.length}개 선택 · 본문 400자·대표이미지·전체 조회수 자동 · 빈 카드는 덮어쓰기 · 태그 기본 WOSM</span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={btnGhost}>취소</button>
@@ -1095,6 +1157,29 @@ function App() {
     return () => window.removeEventListener('cn-open-import', h);
   }, []);
 
+  /* 이미지 reframe(더블클릭 후 드래그) 결과를 article.imgView 에 영속화.
+     <image-slot> 이 'imageslotcommit' 을 bubbles+composed 로 올려주고, 여기서
+     id(article-<rank>)로 해당 기사를 찾아 위치를 저장한다 → '서버 저장' 시 D1 반영.
+     tRef 로 최신 tweaks 를 참조해 stale-closure 를 피한다. */
+  const tRef = React.useRef(t);
+  tRef.current = t;
+  useEffect(() => {
+    const onCommit = (e) => {
+      const d = (e && e.detail) || {};
+      const m = String(d.id || '').match(/^article-(\d+)$/);
+      if (!m) return;
+      const idx = parseInt(m[1], 10) - 1; // rank(1-based) → articles index
+      const arts = (tRef.current && tRef.current.articles) || [];
+      if (idx < 0 || idx >= arts.length) return;
+      const v = d.view || { s: 1, x: 0, y: 0 };
+      const cur = arts[idx].imgView || {};
+      if (cur.s === v.s && cur.x === v.x && cur.y === v.y) return; // 변화 없으면 skip
+      setTweak('articles', arts.map((a, i) => i === idx ? { ...a, imgView: v } : a));
+    };
+    window.addEventListener('imageslotcommit', onCommit);
+    return () => window.removeEventListener('imageslotcommit', onCommit);
+  }, [setTweak]);
+
   return (
     <div className="page" style={{ '--radius-card': cardRadius }}>
       {!embed && <PageHeader tweaks={t} active={active} setActive={setActive}/>}
@@ -1108,9 +1193,9 @@ function App() {
           + 기사 불러오기
         </button>
       )}
-      <Carousel tweaks={t} active={active} setActive={setActive} embed={embed}/>
+      <Carousel tweaks={t} active={active} setActive={setActive} setTweak={setTweak} embed={embed}/>
       <TweaksUI tweaks={t} setTweak={setTweak} active={active} setActive={setActive}/>
-      <ArticleImportModal open={importOpen} onClose={() => setImportOpen(false)} tweaks={t} setTweak={setTweak}/>
+      <ArticleImportModal open={importOpen} onClose={() => setImportOpen(false)} tweaks={t} setTweak={setTweak} setActive={setActive}/>
     </div>
   );
 }

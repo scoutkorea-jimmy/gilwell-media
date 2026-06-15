@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "03.145.00",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 21:15:00 KST",
+    "summary": "카드뉴스: 기사 불러오기 정상화(전체 조회수순·빈 카드 채움) + 썸네일 드래그 순서 변경 + 이미지 더블클릭 상하 위치 조절.",
+    "for_users": [
+      "기사 불러오기가 '전체 누적 조회수가 높은 순'으로 자동 정렬됩니다. (이전엔 기간 내 조회만 세어 대부분 0으로 나와 순서가 뒤죽박죽이었어요.)",
+      "불러오면 비어 있던 첫 카드(빈 페이지)부터 바로 채워집니다. 빈 카드를 남겨둔 채 뒤에만 붙던 문제를 고쳤습니다.",
+      "화면 하단 카드 썸네일을 드래그해서 기사 순서를 바꿀 수 있습니다(표지·엔딩은 고정).",
+      "카드 이미지를 더블클릭하면 위치 조절 모드가 켜져 위·아래로 끌어 보이는 영역을 맞출 수 있고, 그대로 저장됩니다."
+    ],
+    "for_developers": [
+      "전체 조회수 정렬: functions/api/admin/card-news/articles.js — 기간 서브쿼리(post_views/post_likes 기간 집계) 제거, COALESCE(p.views,0)=전체 누적 조회수 + post_likes 전체 개수로 교체. 기간은 발행일 필터로만 사용. 기본 sort=views(조회수 DESC), likes/recent 옵션 유지. 응답 period_scoped→scope:'total'.",
+      "빈 카드 채움: app.jsx isBlankCard()(title/name/summary/image/nso 모두 공란) 도입, ArticleImportModal.addSelected 가 blank 카드를 filter 후 prepend 위치(kept.length)에 불러온 카드 삽입 + setActive(startIdx+1). DEFAULT_DATA 의 시작용 빈 카드가 자동 대체됨.",
+      "조회수 입력 버그: TweaksUI '조회수' 필드가 article.likes 를 쓰던 것을 article.views 로 수정(카드 표시는 views 우선이라 기존엔 편집이 반영 안 됨). value 폴백 views ?? likes ?? 0.",
+      "썸네일 드래그앤드롭: Carousel 에 setTweak 전달 + dragArt/overArt 상태 + reorderArticles(splice). 기사 카드(i:1..total-2)만 draggable, 표지/엔딩 고정. drop 시 editing/active 동기화.",
+      "이미지 reframe: image-slot.js 에 editable 속성 게이트(omelette 없이도 reframe 허용) + view 속성 시드 + commit 시 'imageslotcommit'(bubbles/composed) 디스패치. 컨트롤(Replace/Remove)·browse 힌트는 data-haswrite(omelette)일 때만 노출. cards.jsx ImageSlot 가 view=JSON.stringify(article.imgView)·editable 전달. app.jsx App 이 imageslotcommit 수신→article.imgView 영속화(tRef 로 stale-closure 회피). 사이드카 없는 환경에선 load() 가 fetch 생략(.image-slots.state.json 400 제거).",
+      "관리자 버전 03.144.07 → 03.145.00."
+    ]
+  },
+  {
     "version": "03.144.07",
     "date": "2026-06-15",
     "released_at": "2026-06-15 04:20:00 KST",

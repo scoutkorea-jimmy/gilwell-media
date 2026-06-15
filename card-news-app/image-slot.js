@@ -73,6 +73,15 @@
 
   function load() {
     if (loadP) return loadP;
+    // No sidecar host (card-news embeds <image-slot> without window.omelette) →
+    // there is no .image-slots.state.json to read, and fetching it just 400s on
+    // the page route. Skip straight to "loaded" so slots render from src=/view=.
+    if (!(window.omelette && window.omelette.writeFile)) {
+      loaded = true;
+      loadP = Promise.resolve();
+      subs.forEach((fn) => fn());
+      return loadP;
+    }
     loadP = fetch(STATE_FILE)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
@@ -207,7 +216,7 @@
     '.ctl{position:absolute;top:100%;left:50%;transform:translateX(-50%);padding-top:8px;' +
     '  display:flex;gap:6px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:2;' +
     '  white-space:nowrap}' +
-    ':host([data-filled][data-editable]:hover) .ctl,:host([data-reframe]) .ctl' +
+    ':host([data-filled][data-haswrite]:hover) .ctl,:host([data-reframe][data-haswrite]) .ctl' +
     '  {opacity:1;pointer-events:auto}' +
     '.ctl button{appearance:none;border:0;border-radius:6px;padding:5px 10px;cursor:pointer;' +
     '  background:rgba(0,0,0,.65);color:#fff;font:11px/1 system-ui,-apple-system,sans-serif;' +
@@ -224,7 +233,7 @@
 
   class ImageSlot extends HTMLElement {
     static get observedAttributes() {
-      return ['shape', 'radius', 'mask', 'fit', 'position', 'placeholder', 'src', 'id'];
+      return ['shape', 'radius', 'mask', 'fit', 'position', 'placeholder', 'src', 'id', 'view', 'editable'];
     }
 
     constructor() {
@@ -569,6 +578,13 @@
       // crop; clearing the sidecar still falls through to src=.
       if (this.id) setSlot(this.id, v);
       else { this._local = v; }
+      // Host bridge: setSlot's sidecar write is a no-op without window.omelette
+      // (card-news), so this event is the persistence path there — the host
+      // listens and stores the crop into its own data model (tweaks/article).
+      this.dispatchEvent(new CustomEvent('imageslotcommit', {
+        bubbles: true, composed: true,
+        detail: { id: this.id || null, view: { s: v.s, x: v.x, y: v.y } },
+      }));
     }
 
     _render() {
@@ -590,10 +606,19 @@
       this._ring.style.borderRadius = mask ? '' : radius;
       this._ring.style.display = mask ? 'none' : '';
 
-      // Controls and reframe entry gate on this so share links stay read-only.
-      const editable = !!(window.omelette && window.omelette.writeFile);
+      // Two capabilities, gated separately:
+      //  · haswrite — a sidecar persistence host (omelette) exists, so drop /
+      //    Replace / Remove can actually save. Drives the .ctl buttons + the
+      //    "browse files" sub-hint.
+      //  · editable — reframe (double-click reposition) is allowed. True with a
+      //    write host OR when the embedder opts in via the `editable` attribute
+      //    (card-news: the crop view persists through the `imageslotcommit`
+      //    event into the app's own data model, not the sidecar).
+      const haswrite = !!(window.omelette && window.omelette.writeFile);
+      const editable = haswrite || this.hasAttribute('editable');
       this.toggleAttribute('data-editable', editable);
-      this._sub.style.display = editable ? '' : 'none';
+      this.toggleAttribute('data-haswrite', haswrite);
+      this._sub.style.display = haswrite ? '' : 'none';
 
       // Content. The sidecar is also writable by the agent's write_file
       // tool, so its value isn't guaranteed canvas-originated — only accept
@@ -604,12 +629,20 @@
       const srcAttr = this.getAttribute('src') || '';
       this._userUrl = (stored && stored.u) || null;
       const url = this._userUrl || srcAttr;
+      // Embedder-supplied crop view (card-news stores it per-article in tweaks
+      // and passes it down as the `view` attribute). Used as the seed when no
+      // sidecar/drop entry carries one — so a saved reposition survives reload.
+      let attrView = null;
+      const va = this.getAttribute('view');
+      if (va) { try { const j = JSON.parse(va); if (j && typeof j === 'object') attrView = j; } catch (_) {} }
+      const seedHas = (o) => o && (Number.isFinite(o.s) || Number.isFinite(o.x) || Number.isFinite(o.y));
+      const seed = seedHas(stored) ? stored : attrView;
       // Don't clobber an in-flight reframe with a store-triggered re-render.
       if (!this.hasAttribute('data-reframe')) {
         this._view = {
-          s: stored && Number.isFinite(stored.s) ? clampS(stored.s) : 1,
-          x: stored && Number.isFinite(stored.x) ? stored.x : 0,
-          y: stored && Number.isFinite(stored.y) ? stored.y : 0,
+          s: seed && Number.isFinite(seed.s) ? clampS(seed.s) : 1,
+          x: seed && Number.isFinite(seed.x) ? seed.x : 0,
+          y: seed && Number.isFinite(seed.y) ? seed.y : 0,
         };
       }
       this._cap.textContent = this.getAttribute('placeholder') || 'Drop an image';

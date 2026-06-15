@@ -119,8 +119,11 @@ function NSOChip({ label }) {
    sits ABOVE the slot as a brand-aligned caption strip — slot itself uses
    image-slot's neutral chrome (dashed ring + “Drop an image”) for clear
    affordance. Each slot needs a stable, unique id (article position).         */
-function ImageSlot({ region, hint, slotId, height, src }) {
+function ImageSlot({ region, hint, slotId, height, src, view }) {
   const p = REGION_MAP[region] || REGION_MAP.WOSM; // 미지정 region 은 중립(WOSM 회색) 스타일
+  /* editable="" → 이미지를 더블클릭하면 reframe 모드(상하/좌우 드래그·확대)로
+     크롭 위치를 조절할 수 있다. 위치(view {s,x,y})는 'imageslotcommit' 이벤트로
+     앱(tweaks.articles[].imgView)에 영속화된다 (사이드카 미사용). */
   return (
     <div style={{
       position:'relative',
@@ -135,6 +138,8 @@ function ImageSlot({ region, hint, slotId, height, src }) {
       <image-slot
         id={`article-${slotId}`}
         src={src || undefined}
+        view={JSON.stringify(view || { s: 1, x: 0, y: 0 })}
+        editable=""
         placeholder={hint || '사진을 드래그해서 채우기'}
         shape="rounded"
         radius="0"
@@ -470,6 +475,7 @@ function ArticleCard({ article, rank, idx, total, tweaks }) {
           <ImageSlot region={article.region} hint={pickArticleLang(article, 'hint', tweaks.lang)}
             slotId={rank}
             src={article.image}
+            view={article.imgView}
             height={(article.imgHeight ?? 22) + 'cqw'} />
         )}
 
