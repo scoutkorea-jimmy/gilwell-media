@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.147.00",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 22:35:00 KST",
+    "summary": "카드뉴스: 하단 도크 가운데 정렬 + 펼치면 미리보기 자동 축소 + Tweaks 패널·도크 썸네일 크기 조절.",
+    "for_users": [
+      "하단 카드 순서 도크를 화면 가운데로 정렬했습니다.",
+      "도크를 펼치면 위쪽 미리보기가 그만큼 자동으로 작아져 도크가 본문을 가리지 않습니다(접으면 다시 커짐).",
+      "오른쪽 Tweaks 패널은 좌상단 모서리를 드래그해 크기를 조절할 수 있어요(더블클릭하면 기본 크기로). 하단 도크는 '크기' −/+ 버튼으로 썸네일을 키우거나 줄일 수 있고, 둘 다 설정이 기억됩니다."
+    ],
+    "for_developers": [
+      "도크 가운데 정렬: ThumbnailDock 을 left:50%/translateX(-50%) 로 변경, width min(960px, 100vw-600px)·minWidth 로 좌우 대칭 여백 확보(우측 Tweaks 패널과 비충돌).",
+      "미리보기 축소: App 이 previewMaxH=calc(80vh - dockReserve px) 를 Carousel 에 전달(프리뷰 박스 maxHeight). dockReserve 는 접힘/펼침·aspect·썸네일 크기(railThumbW)에서 계산되어 펼치면 자동으로 작아짐. embed 모드는 76vh 고정.",
+      "도크 썸네일 크기: App railThumbW state(localStorage 'cn.railThumbW', 60~160) + ThumbnailDock 헤더 '크기' −/+ 버튼(onThumbW, step 12). scale=thumbW/1080, dockReserve/previewMaxH 동기 반영.",
+      "Tweaks 패널 리사이즈: tweaks-panel.jsx 에 좌상단 모서리 핸들(.twk-resize) 추가. 우하단 고정이라 좌·상으로 키운다(width/height state, localStorage 'cn.twkSize', W 220~620·H 200~vh-32, 더블클릭 리셋 280/auto). .twk-body flex:1 1 auto 로 높이 지정 시 스크롤.",
+      "관리자 버전 03.146.00 → 03.147.00."
+    ]
+  },
+  {
     "version": "03.146.00",
     "date": "2026-06-15",
     "released_at": "2026-06-15 21:35:00 KST",

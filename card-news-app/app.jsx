@@ -386,7 +386,7 @@ function NavButton({ dir, onClick, disabled }) {
   );
 }
 
-function Carousel({ tweaks, active, setActive, embed = false }) {
+function Carousel({ tweaks, active, setActive, embed = false, previewMaxH = '76vh' }) {
   const total = tweaks.articles.length + 2;
   const aspectW = tweaks.aspect === '4:5' ? 4 : tweaks.aspect === '9:16' ? 9 : 1;
   const aspectH = tweaks.aspect === '4:5' ? 5 : tweaks.aspect === '9:16' ? 16 : 1;
@@ -420,7 +420,7 @@ function Carousel({ tweaks, active, setActive, embed = false }) {
           position:'relative',
           maxWidth: 1080, margin:'0 auto',
           aspectRatio: `${aspectW} / ${aspectH}`,
-          maxHeight: '76vh',
+          maxHeight: previewMaxH,
         }}>
           <div style={{
             position:'absolute', inset:0,
@@ -1034,11 +1034,12 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak, setActive }) {
    화면 하단 왼쪽에 고정. 헤더(항상 보임): 접기 토글 + '카드 순서(N장)' + 기사 불러오기.
    펼침: 썸네일 레일에서 기사 카드를 드래그해 순서 변경(표지·엔딩 고정).
    우측에는 Tweaks 패널(width 280, bottom-right)을 위한 여백을 남긴다.            */
-function ThumbnailDock({ tweaks, setTweak, active, setActive, collapsed, onToggle, thumbW = 92 }) {
+function ThumbnailDock({ tweaks, setTweak, active, setActive, collapsed, onToggle, thumbW = 92, onThumbW }) {
   const total = tweaks.articles.length + 2;
   const aspectW = tweaks.aspect === '4:5' ? 4 : tweaks.aspect === '9:16' ? 9 : 1;
   const aspectH = tweaks.aspect === '4:5' ? 5 : tweaks.aspect === '9:16' ? 16 : 1;
   const scale = thumbW / 1080;
+  const TW_MIN = 60, TW_MAX = 160, TW_STEP = 12;
 
   const [dragArt, setDragArt] = useState(null);
   const [overArt, setOverArt] = useState(null);
@@ -1062,9 +1063,9 @@ function ThumbnailDock({ tweaks, setTweak, active, setActive, collapsed, onToggl
 
   return (
     <div style={{
-      position: 'fixed', left: 16, bottom: 16, zIndex: 2147483640,
-      width: 'min(1080px, calc(100vw - 344px))',
-      maxWidth: 'calc(100vw - 32px)',
+      // 가운데 정렬. 좌우 600px 여백으로 우측 Tweaks 패널과 겹치지 않게(대칭).
+      position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 16, zIndex: 2147483640,
+      width: 'min(960px, calc(100vw - 600px))', minWidth: 'min(420px, calc(100vw - 32px))',
       background: 'var(--color-white)',
       border: '1px solid var(--color-gray-300)',
       borderRadius: 14,
@@ -1093,6 +1094,27 @@ function ThumbnailDock({ tweaks, setTweak, active, setActive, collapsed, onToggl
           <span style={{ fontSize: 11.5, color: 'var(--color-gray-500)' }}>펼쳐서 드래그로 순서 변경</span>
         )}
         <div style={{ flex: 1 }} />
+        {/* 썸네일 크기 조절 (펼쳤을 때만) */}
+        {!collapsed && onThumbW && (() => {
+          const sizeBtn = (label, delta, disabled, title) => (
+            <button type="button" title={title} disabled={disabled}
+              onClick={() => onThumbW(Math.max(TW_MIN, Math.min(TW_MAX, thumbW + delta)))}
+              style={{
+                width: 26, height: 26, borderRadius: 7, lineHeight: 1,
+                border: '1px solid var(--color-gray-300)', background: 'var(--color-white)',
+                color: 'var(--color-ink)', cursor: disabled ? 'default' : 'pointer',
+                opacity: disabled ? .4 : 1, fontWeight: 700, fontSize: 14,
+              }}>{label}</button>
+          );
+          return (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 4 }}
+                 title="썸네일 크기">
+              <span style={{ fontSize: 11, color: 'var(--color-gray-500)', marginRight: 2 }}>크기</span>
+              {sizeBtn('−', -TW_STEP, thumbW <= TW_MIN, '작게')}
+              {sizeBtn('+', TW_STEP, thumbW >= TW_MAX, '크게')}
+            </div>
+          );
+        })()}
         <button type="button"
           onClick={() => window.dispatchEvent(new CustomEvent('cn-open-import'))}
           title="발행 기사에서 불러오기"
@@ -1191,7 +1213,7 @@ function App() {
   const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
   const [active, setActive] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
-  // 하단 카드 순서 도크 접힘 상태 (localStorage 로 유지).
+  // 하단 카드 순서 도크 접힘 상태 + 썸네일 크기 (localStorage 로 유지).
   const [railCollapsed, setRailCollapsed] = useState(() => {
     try { return localStorage.getItem('cn.railCollapsed') === '1'; } catch (_) { return false; }
   });
@@ -1201,6 +1223,14 @@ function App() {
       try { localStorage.setItem('cn.railCollapsed', next ? '1' : '0'); } catch (_) {}
       return next;
     });
+  }, []);
+  const [railThumbW, setRailThumbW] = useState(() => {
+    let v = 92; try { v = parseInt(localStorage.getItem('cn.railThumbW'), 10); } catch (_) {}
+    return (Number.isFinite(v) && v >= 60 && v <= 160) ? v : 92;
+  });
+  const setRailThumbWPersist = useCallback((w) => {
+    setRailThumbW(w);
+    try { localStorage.setItem('cn.railThumbW', String(w)); } catch (_) {}
   }, []);
 
   /* Embed mode — for porting into the homepage via <iframe ?embed=1>.
@@ -1264,20 +1294,23 @@ function App() {
     return () => window.removeEventListener('imageslotcommit', onCommit);
   }, [setTweak]);
 
-  // 하단 고정 도크가 가리지 않도록 페이지 하단 여백 확보(접힘/펼침·비율에 맞춰).
+  // 하단 고정 도크가 가리지 않도록 페이지 하단 여백 확보(접힘/펼침·비율·썸네일 크기에 맞춰).
   const dockAspectW = t.aspect === '4:5' ? 4 : t.aspect === '9:16' ? 9 : 1;
   const dockAspectH = t.aspect === '4:5' ? 5 : t.aspect === '9:16' ? 16 : 1;
-  const dockThumbH = Math.round(92 * dockAspectH / dockAspectW);
+  const dockThumbH = Math.round(railThumbW * dockAspectH / dockAspectW);
   const dockReserve = embed ? undefined : (railCollapsed ? 84 : (dockThumbH + 120));
+  // 도크가 펼쳐지면 미리보기를 그만큼 줄여 본문이 가려지지 않게.
+  const previewMaxH = embed ? '76vh' : `calc(80vh - ${dockReserve}px)`;
 
   return (
     <div className="page" style={{ '--radius-card': cardRadius, paddingBottom: dockReserve }}>
       {!embed && <PageHeader tweaks={t} active={active} setActive={setActive}/>}
-      <Carousel tweaks={t} active={active} setActive={setActive} embed={embed}/>
+      <Carousel tweaks={t} active={active} setActive={setActive} embed={embed} previewMaxH={previewMaxH}/>
       <TweaksUI tweaks={t} setTweak={setTweak} active={active} setActive={setActive}/>
       {!embed && (
         <ThumbnailDock tweaks={t} setTweak={setTweak} active={active} setActive={setActive}
-          collapsed={railCollapsed} onToggle={toggleRail}/>
+          collapsed={railCollapsed} onToggle={toggleRail}
+          thumbW={railThumbW} onThumbW={setRailThumbWPersist}/>
       )}
       <ArticleImportModal open={importOpen} onClose={() => setImportOpen(false)} tweaks={t} setTweak={setTweak} setActive={setActive}/>
     </div>

@@ -61,7 +61,14 @@ const __TWEAKS_STYLE = `
   .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
     width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
   .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
-  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+  /* 좌상단 모서리 리사이즈 핸들(패널은 우하단 고정 → 좌·상으로 키운다) */
+  .twk-resize{position:absolute;left:0;top:0;width:18px;height:18px;cursor:nwse-resize;z-index:3;
+    border-top-left-radius:14px}
+  .twk-resize::before{content:"";position:absolute;left:5px;top:5px;width:7px;height:7px;
+    border-left:2px solid rgba(41,38,27,.35);border-top:2px solid rgba(41,38,27,.35);
+    border-top-left-radius:3px}
+  .twk-resize:hover::before{border-color:rgba(41,38,27,.75)}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;flex:1 1 auto;
     overflow-y:auto;overflow-x:hidden;min-height:0;
     scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
   .twk-body::-webkit-scrollbar{width:8px}
@@ -222,6 +229,46 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
   const offsetRef = React.useRef({ x: 16, y: 16 });
   const PAD = 16;
 
+  // 패널 크기 조절 (좌상단 모서리 드래그). 우하단 고정이라 좌·상으로 키운다.
+  // h:0 = 내용 높이 자동. localStorage 로 유지.
+  const W_MIN = 220, W_MAX = 620, H_MIN = 200;
+  const [size, setSize] = React.useState(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('cn.twkSize') || 'null');
+      if (raw && typeof raw === 'object') {
+        const w = Math.min(W_MAX, Math.max(W_MIN, Number(raw.w) || 280));
+        const h = Number(raw.h) > 0 ? Number(raw.h) : 0;
+        return { w, h };
+      }
+    } catch (_) {}
+    return { w: 280, h: 0 };
+  });
+  const persistSize = (s) => { try { localStorage.setItem('cn.twkSize', JSON.stringify(s)); } catch (_) {} };
+  const onResizeStart = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const panel = dragRef.current;
+    const startX = e.clientX, startY = e.clientY;
+    const startW = panel ? panel.offsetWidth : size.w;
+    const startH = panel ? panel.offsetHeight : 400;
+    const hMax = () => Math.max(H_MIN, window.innerHeight - 32);
+    let last = { w: startW, h: startH };
+    const move = (ev) => {
+      last = {
+        w: Math.min(W_MAX, Math.max(W_MIN, startW + (startX - ev.clientX))),
+        h: Math.min(hMax(), Math.max(H_MIN, startH + (startY - ev.clientY))),
+      };
+      setSize(last);
+    };
+    const up = () => {
+      window.removeEventListener('mousemove', move);
+      window.removeEventListener('mouseup', up);
+      persistSize(last);
+    };
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+  };
+  const resetSize = (e) => { e.stopPropagation(); const s = { w: 280, h: 0 }; setSize(s); persistSize(s); };
+
   const clampToViewport = React.useCallback(() => {
     const panel = dragRef.current;
     if (!panel) return;
@@ -291,7 +338,10 @@ function TweaksPanel({ title = 'Tweaks', noDeckControls = false, children }) {
     <>
       <style>{__TWEAKS_STYLE}</style>
       <div ref={dragRef} className="twk-panel" data-noncommentable=""
-           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y,
+                    width: size.w, height: size.h || undefined }}>
+        <div className="twk-resize" title="크기 조절 (더블클릭: 기본 크기)"
+             onMouseDown={onResizeStart} onDoubleClick={resetSize}/>
         <div className="twk-hd" onMouseDown={onDragStart}>
           <b>{title}</b>
           <button className="twk-x" aria-label="Close tweaks"
