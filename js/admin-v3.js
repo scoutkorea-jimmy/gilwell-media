@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.03
+ * Version: 03.149.04
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1612,6 +1612,7 @@
   // 개인정보 처리방침) 진입 시 등록된 계정에 한해 매번 6자리 OTP 를 확인한다.
   var _otpState = { loaded: false, enrolled: false };
   var _otpJustPassed = false; // 모달 통과 직후 onOk→showPanel 재진입 1회 허용용
+  var _otpLastPass = 0;       // 마지막 OTP 통과 시각 — 직후 도착하는 stale 401 무시용
   var _OTP_SENSITIVE_PANELS = {
     'account-users': 1, 'account-presets': 1, 'site-history': 1,
     'homepage-issues': 1, 'memorabilia-comments': 1,
@@ -1693,6 +1694,7 @@
       GW.apiFetch('/api/admin/totp/verify', { method: 'POST', body: JSON.stringify({ code: code }) })
         .then(function (d) {
           close();
+          _otpLastPass = Date.now();
           if (d && d.used_backup && GW.showToast) GW.showToast('백업코드로 인증했습니다. 남은 코드를 잘 보관하세요.', 'success', 5000);
           onVerified();
         })
@@ -1825,6 +1827,7 @@
   // otp_required 응답(직접 호출·미들웨어 차단 등) → 모달 후 현재 메뉴 재진입(재로드).
   document.addEventListener('gw:admin-otp-required', function () {
     if (document.getElementById('otp-verify-overlay')) return; // 이미 모달 떠 있으면 중복 방지
+    if (Date.now() - _otpLastPass < 5000) return;              // 방금 통과 직후 도착한 stale 401 무시
     _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(_panel, _settingsSection); });
   });
 

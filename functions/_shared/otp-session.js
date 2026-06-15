@@ -55,11 +55,14 @@ export async function readOtpToken(token, secret, expectUid) {
   return p;
 }
 
+// admin_token(로그인 쿠키)과 동일한 속성으로 맞춘다(SameSite=Lax + encode).
+// SameSite=Strict 는 일부 same-origin fetch 맥락에서 전송 누락이 보고됨 → 검증된
+// 로그인 쿠키와 동일하게 Lax 사용(여전히 같은 사이트 한정).
 export function buildOtpCookie(token, maxAgeSec = OTP_TTL_SEC) {
-  return `${OTP_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSec}`;
+  return `${OTP_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAgeSec}`;
 }
 export function clearOtpCookie() {
-  return `${OTP_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+  return `${OTP_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 }
 
 /**

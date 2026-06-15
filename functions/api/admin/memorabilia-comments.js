@@ -16,12 +16,14 @@ const MAX_PAGE_SIZE = 100;
 export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'memorabilia-comments', 'view');
   if (gate) return gate;
-  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   const url = new URL(request.url);
+  const isCounts = url.searchParams.get('counts') === '1';
+  // 사이드바 대기 뱃지(counts)는 단순 개수라 OTP 미적용 — 댓글 본문/목록만 OTP 게이트.
+  if (!isCounts) { const __otp = await requireOtp(request, env); if (__otp) return __otp; }
 
   // counts subroute via ?counts=1 (사이드바 뱃지에서 호출)
-  if (url.searchParams.get('counts') === '1') {
+  if (isCounts) {
     const rows = await env.DB.prepare(
       `SELECT status, COUNT(*) AS count FROM memorabilia_comments GROUP BY status`
     ).all();

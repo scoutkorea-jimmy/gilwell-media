@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.149.04",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 01:20:00 KST",
+    "summary": "핫픽스: OTP 인증해도 모달이 계속 다시 뜨던 무한 루프 수정(쿠키 전송 문제).",
+    "for_users": [
+      "OTP를 통과하면 모달이 정상적으로 닫히고 메뉴가 열립니다. 인증 후에도 계속 다시 묻던 문제를 고쳤습니다.",
+      "도감 댓글 승인의 사이드바 '대기' 개수 배지가 다시 보입니다(개수만, OTP 없이)."
+    ],
+    "for_developers": [
+      "원인: admin_otp 마커 쿠키를 SameSite=Strict 로 설정 → 일부 same-origin fetch 에서 전송 누락 → verify 로 쿠키를 발급해도 다음 요청에서 requireOtp 가 못 읽어 otp_required 무한 반복. (토큰 로직 자체는 정상 — Node 라운드트립 검증)",
+      "수정: buildOtpCookie/clearOtpCookie 를 검증된 로그인 쿠키와 동일하게 SameSite=Lax + encodeURIComponent 로 변경(functions/_shared/otp-session.js).",
+      "counts 언게이트: memorabilia-comments.js GET ?counts=1(사이드바 뱃지)은 단순 개수라 requireOtp 제외 → 401 콘솔 스팸 제거 + 배지 복구. 댓글 목록/본문은 계속 OTP.",
+      "stale 401 가드: admin-v3.js _otpLastPass(통과 시각) 도입 — 통과 직후 5초 내 도착하는 in-flight otp_required(패널 자체 로더가 인증 전 보낸 요청)는 모달 재오픈 안 함.",
+      "관리자 버전 03.149.03 → 03.149.04."
+    ]
+  },
+  {
     "version": "03.149.03",
     "date": "2026-06-16",
     "released_at": "2026-06-16 00:55:00 KST",
