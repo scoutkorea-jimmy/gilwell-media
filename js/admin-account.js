@@ -41,6 +41,8 @@
     opts = opts || {};
     var headers = new Headers(opts.headers || {});
     if (opts.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    // 2단계 인증 토큰 헤더(쿠키 백업) — 사용자 관리 등 OTP 게이트 통과용.
+    try { var _otpTok = sessionStorage.getItem('gw_admin_otp'); if (_otpTok && !headers.has('X-Admin-Otp')) headers.set('X-Admin-Otp', _otpTok); } catch (_) {}
     return fetch(path, { method: opts.method || 'GET', headers: headers, body: opts.body, credentials: 'same-origin' })
       .then(function (res) {
         return res.json().catch(function () { return null; }).then(function (data) {

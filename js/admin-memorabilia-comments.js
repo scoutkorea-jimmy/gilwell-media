@@ -21,6 +21,13 @@
 
   const $ = (sel) => document.querySelector(sel);
 
+  // 2단계 인증 토큰 헤더(쿠키 백업) — OTP 게이트가 걸린 도감 댓글 API 통과용.
+  function _otpHeaders(extra) {
+    const h = Object.assign({}, extra || {});
+    try { const t = sessionStorage.getItem('gw_admin_otp'); if (t) h['X-Admin-Otp'] = t; } catch (_) {}
+    return h;
+  }
+
   function init() {
     if (state.initialized) return;
     state.initialized = true;
@@ -68,7 +75,7 @@
 
     try {
       const url = `/api/admin/memorabilia-comments?status=${encodeURIComponent(state.status)}&page=${state.page}&pageSize=${state.pageSize}`;
-      const res = await fetch(url, { credentials: 'same-origin' });
+      const res = await fetch(url, { credentials: 'same-origin', headers: _otpHeaders() });
       if (!res.ok) {
         // 2단계 인증 필요 — OTP 모달 트리거(admin-v3 수신, 통과 후 재진입 로드).
         if (res.status === 401) {
@@ -191,7 +198,7 @@
       const res = await fetch(`/api/admin/memorabilia-comments/${id}`, {
         method: 'PATCH',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _otpHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: nextStatus, rejection_reason: reason || undefined }),
       });
       if (!res.ok) {

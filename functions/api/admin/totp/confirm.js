@@ -50,5 +50,5 @@ export async function onRequestPost({ request, env }) {
   ).bind(JSON.stringify(hashes), session.uid).run();
 
   const token = await issueOtpToken(env.ADMIN_SECRET, session.uid);
-  return json({ ok: true, backup_codes: backupCodes }, 200, { 'Set-Cookie': buildOtpCookie(token) });
+  return json({ ok: true, backup_codes: backupCodes, otp_token: token }, 200, { 'Set-Cookie': buildOtpCookie(token) });
 }

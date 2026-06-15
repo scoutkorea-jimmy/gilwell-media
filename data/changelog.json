@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.149.07",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 02:35:00 KST",
+    "summary": "OTP 무한 모달 근본 수정: 인증 토큰을 쿠키 대신(백업으로 유지) 명시적 헤더로 전송 + 잠복 버그 제거.",
+    "for_users": [
+      "이제 OTP 6자리를 입력하면 모달이 닫히고 메뉴가 정상으로 열립니다. 인증이 계속 반복되던 문제를 해결했습니다."
+    ],
+    "for_developers": [
+      "근본 원인 진단: admin_otp 마커가 쿠키로만 전달됐는데, 쿠키 속성을 로그인 쿠키와 동일(SameSite=Lax·Secure·encode·Headers.set emit)하게 맞췄음에도 일부 브라우저 컨텍스트에서 다음 요청에 실리지 않아 requireOtp 가 매번 otp_required 반복(모달 무한). 토큰 로직·미들웨어 Set-Cookie 보존은 정상 확인됨.",
+      "근본 수정(쿠키 의존 제거): verify/confirm 이 otp_token 을 JSON 으로도 반환 → 프론트가 sessionStorage('gw_admin_otp')에 저장 → 모든 민감 API 요청에 X-Admin-Otp 헤더로 첨부(admin-v3 _apiFetch, admin-account _api, admin-memorabilia-comments fetch). requireOtp 는 헤더 우선 + 쿠키 백업으로 검증. same-origin 이라 CORS preflight 없음. _purgeAdminClientState 의 sessionStorage.clear 로 로그아웃 시 토큰 폐기.",
+      "잠복 버그 제거: requireOtp 차단 경로에 import 안 된 logOperationalEvent 호출이 남아 ReferenceError(try/catch 로 삼켜짐). 코드 제거.",
+      "관리자 버전 03.149.06 → 03.149.07."
+    ]
+  },
+  {
     "version": "03.149.06",
     "date": "2026-06-16",
     "released_at": "2026-06-16 02:05:00 KST",

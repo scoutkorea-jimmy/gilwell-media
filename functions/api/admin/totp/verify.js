@@ -58,5 +58,6 @@ export async function onRequestPost({ request, env }) {
   if (!ok) return json({ error: 'bad_code', reason: '코드가 올바르지 않습니다.' }, 401);
 
   const token = await issueOtpToken(env.ADMIN_SECRET, session.uid);
-  return json({ ok: true, used_backup: usedBackup }, 200, { 'Set-Cookie': buildOtpCookie(token) });
+  // otp_token: 프론트가 sessionStorage 에 저장 후 X-Admin-Otp 헤더로 재전송(쿠키 백업).
+  return json({ ok: true, used_backup: usedBackup, otp_token: token }, 200, { 'Set-Cookie': buildOtpCookie(token) });
 }

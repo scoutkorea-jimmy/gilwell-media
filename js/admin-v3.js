@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.06
+ * Version: 03.149.07
  *
  * Versioning:
  *   V3.aaa.bb
@@ -279,6 +279,8 @@
     var opts = options ? Object.assign({}, options) : {};
     var headers = Object.assign({}, opts.headers || {});
     if (opts.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    // 2단계 인증 토큰을 헤더로도 실어 보낸다(쿠키 백업) — 민감 메뉴 API 통과용.
+    try { var _otpTok = sessionStorage.getItem('gw_admin_otp'); if (_otpTok && !headers['X-Admin-Otp']) headers['X-Admin-Otp'] = _otpTok; } catch (_) {}
     opts.headers = headers;
     opts.credentials = 'same-origin';
 
@@ -1695,6 +1697,7 @@
         .then(function (d) {
           close();
           _otpLastPass = Date.now();
+          if (d && d.otp_token) { try { sessionStorage.setItem('gw_admin_otp', d.otp_token); } catch (_) {} }
           if (d && d.used_backup && GW.showToast) GW.showToast('백업코드로 인증했습니다. 남은 코드를 잘 보관하세요.', 'success', 5000);
           onVerified();
         })
@@ -1799,6 +1802,7 @@
       GW.apiFetch('/api/admin/totp/confirm', { method: 'POST', body: JSON.stringify({ code: code }) })
         .then(function (r) {
           _otpState.enrolled = true; _otpJustPassed = false;
+          if (r && r.otp_token) { try { sessionStorage.setItem('gw_admin_otp', r.otp_token); } catch (_) {} }
           _otpRenderBackupCodes(body, (r && r.backup_codes) || []);
         })
         .catch(function (err) { cbtn.disabled = false; cerr.textContent = (err && err.data && err.data.reason) || '코드가 올바르지 않습니다.'; cinput.select(); });
