@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.149.03",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 00:55:00 KST",
+    "summary": "핫픽스: 관리자 첫 화면(대시보드) 진입 시 OTP가 잘못 뜨던 문제 수정.",
+    "for_users": [
+      "관리자에 처음 들어갈 때(대시보드)는 OTP를 묻지 않습니다. OTP는 6개 민감 메뉴에 들어갈 때만 뜹니다.",
+      "대시보드의 배포 이력 위젯이 사이트 히스토리와 같은 데이터를 쓰면서 OTP가 잘못 트리거되던 문제였습니다."
+    ],
+    "for_developers": [
+      "원인: 대시보드 _loadDashboard 가 /api/admin/operations(배포·릴리스 이력)를 호출하는데, 이 엔드포인트에 site-history 슬러그로 requireOtp 를 걸어 첫 로드에서 otp_required→모달이 떴음.",
+      "수정: functions/api/admin/operations.js 에서 requireOtp 제거. operations 데이터(배포 이력)는 대시보드에서 전 관리자에게 이미 노출되는 비민감 정보. 사이트 히스토리 메뉴 보호는 프론트 진입 게이트 + /api/admin/site-history(민감 운영 이벤트/이슈) 로 유지.",
+      "관리자 버전 03.149.02 → 03.149.03."
+    ]
+  },
+  {
     "version": "03.149.02",
     "date": "2026-06-15",
     "released_at": "2026-06-16 00:30:00 KST",

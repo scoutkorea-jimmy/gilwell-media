@@ -1,12 +1,13 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
-import { requireOtp } from '../../_shared/otp-session.js';
 import { fetchReleaseDeployments, fetchReleaseSnapshots } from '../../_shared/release-history.js';
 import { ensureOperationalEventsTable } from '../../_shared/ops-log.js';
 
+// 주의: /api/admin/operations(배포·릴리스 이력)는 대시보드 첫 화면에서도 호출하므로
+// OTP 게이트를 걸지 않는다. 사이트 히스토리 메뉴 보호는 프론트 진입 게이트 +
+// /api/admin/site-history(민감 운영 이벤트) 에서 담당. (대시보드 OTP 오탐 방지)
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'site-history', 'view'); if (__gate) return __gate
-  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   try {
     await ensureOperationalEventsTable(env);
