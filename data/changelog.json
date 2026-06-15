@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.149.01",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 23:55:00 KST",
+    "summary": "2단계 인증(OTP) 설정을 '내 계정' 패널에도 노출 — 사이트 설정 하위에 묻혀 안 보이던 문제 보완.",
+    "for_users": [
+      "이제 사이드바 '내 계정'에서 바로 2단계 인증(OTP)을 켜고 끌 수 있습니다. (기존 '사이트 설정 → 계정 보안' 위치도 그대로 유지)"
+    ],
+    "for_developers": [
+      "admin.html account-me 패널에 OTP 카드(#account-otp-body-me) 추가. admin-v3.js _renderOtpCard(body) 가 대상 컨테이너를 받도록 리팩터(미지정 시 account-otp-body), V3.showPanel routing 에 panel==='account-me' → _renderOtpCard(account-otp-body-me) 트리거. cancel/backup-done 재렌더도 동일 body 로 전달.",
+      "관리자 버전 03.149.00 → 03.149.01."
+    ]
+  },
+  {
     "version": "03.149.00",
     "date": "2026-06-15",
     "released_at": "2026-06-15 23:30:00 KST",

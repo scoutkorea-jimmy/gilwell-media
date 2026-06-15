@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.00
+ * Version: 03.149.01
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1366,6 +1366,9 @@
       var sec = settingsSection || _settingsSection;
       _showSettingsSection(sec);
     }
+    else if (panel === 'account-me') {
+      try { _renderOtpCard(document.getElementById('account-otp-body-me')); } catch (_) {}
+    }
   };
 
   function _sectionLabel(s) {
@@ -1698,9 +1701,9 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
   }
 
-  // 계정 보안 섹션의 2단계 인증 카드 렌더.
-  function _renderOtpCard() {
-    var body = document.getElementById('account-otp-body');
+  // 2단계 인증 카드 렌더. body 미지정 시 계정 보안 섹션 컨테이너.
+  function _renderOtpCard(body) {
+    if (!body || !body.nodeType) body = document.getElementById('account-otp-body');
     if (!body) return;
     body.innerHTML = '<div class="v3-inline-meta">불러오는 중…</div>';
     GW.apiFetch('/api/admin/totp')
@@ -1779,7 +1782,7 @@
       var raw = String(grouped).replace(/\s+/g, '');
       try { navigator.clipboard.writeText(raw); if (GW.showToast) GW.showToast('설정 키를 복사했습니다.', 'success'); } catch (_) {}
     });
-    body.querySelector('#otp-cancel-setup').addEventListener('click', function () { _renderOtpCard(); });
+    body.querySelector('#otp-cancel-setup').addEventListener('click', function () { _renderOtpCard(body); });
     var cinput = body.querySelector('#otp-confirm-input');
     var cerr = body.querySelector('#otp-confirm-err');
     var cbtn = body.querySelector('#otp-confirm-btn');
@@ -1813,7 +1816,7 @@
     if (copyAll) copyAll.addEventListener('click', function () {
       try { navigator.clipboard.writeText((codes || []).join('\n')); if (GW.showToast) GW.showToast('백업코드를 복사했습니다.', 'success'); } catch (_) {}
     });
-    body.querySelector('#otp-backup-done').addEventListener('click', function () { _renderOtpCard(); });
+    body.querySelector('#otp-backup-done').addEventListener('click', function () { _renderOtpCard(body); });
   }
 
   // otp_required 응답(쿠키 만료 등) → 현재 패널 기준으로 모달 재요청.
