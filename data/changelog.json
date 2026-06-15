@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "03.146.00",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 21:35:00 KST",
+    "summary": "카드뉴스: 좌우 화살표·썸네일 이동 시 Tweaks 편집 카드 동기화 + 카드 순서 도크를 하단 상시 노출(접기 가능).",
+    "for_users": [
+      "캐러셀 좌우 화살표(또는 키보드 ←→, 도트)로 가운데 카드를 옮기면 우측 Tweaks 편집 대상도 그 기사로 같이 따라갑니다. 이제 보고 있는 카드를 바로 편집할 수 있어요.",
+      "카드 순서 변경 줄을 화면 하단에 항상 보이는 도크로 옮겼습니다. 필요 없을 땐 '카드 순서' 버튼으로 접고, 다시 펼칠 수 있어요(상태 기억).",
+      "'기사 불러오기' 버튼을 이 하단 도크 안으로 옮겨 항상 같은 자리에서 누를 수 있습니다."
+    ],
+    "for_developers": [
+      "양방향 네비 동기화: app.jsx App 에 active→editing useEffect 추가. 가운데 카드가 기사(1..total-2)면 setTweak('editing', active-1)(tRef 가드로 중복/loop 방지). 좌우 화살표·키보드·도트·썸네일 등 setActive 경로 전부 커버. 표지/엔딩에선 마지막 기사 컨텍스트 유지.",
+      "하단 도크: 새 ThumbnailDock 컴포넌트(fixed, left:16/bottom:16, width:min(1080px, 100vw-344px), z 2147483640<Tweaks 2147483646). 드래그 상태(dragArt/overArt)·reorder 를 Carousel 에서 이 컴포넌트로 이관, Carousel 인라인 레일 제거. 헤더(상시): 접기 토글(chevron 회전)+'카드 순서 N장'+기사 불러오기. 펼침: 썸네일 레일(thumbW 92, scale=92/1080).",
+      "접힘 상태: App railCollapsed(localStorage 'cn.railCollapsed') + toggleRail. .page paddingBottom 을 접힘/펼침·aspect(dockThumbH)에 맞춰 동적 확보해 도크가 콘텐츠를 가리지 않게 함. embed 모드에선 도크/여백 모두 미적용.",
+      "기존 좌하단 플로팅 '기사 불러오기' 버튼 제거(도크 헤더로 이동, Tweaks 패널 버튼도 유지). import 는 cn-open-import 이벤트로 통일.",
+      "관리자 버전 03.145.00 → 03.146.00."
+    ]
+  },
+  {
     "version": "03.145.00",
     "date": "2026-06-15",
     "released_at": "2026-06-15 21:15:00 KST",

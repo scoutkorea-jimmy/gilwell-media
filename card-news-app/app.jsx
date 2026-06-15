@@ -386,25 +386,10 @@ function NavButton({ dir, onClick, disabled }) {
   );
 }
 
-function Carousel({ tweaks, active, setActive, setTweak, embed = false }) {
+function Carousel({ tweaks, active, setActive, embed = false }) {
   const total = tweaks.articles.length + 2;
   const aspectW = tweaks.aspect === '4:5' ? 4 : tweaks.aspect === '9:16' ? 9 : 1;
   const aspectH = tweaks.aspect === '4:5' ? 5 : tweaks.aspect === '9:16' ? 16 : 1;
-
-  // 썸네일 레일 드래그앤드롭 순서 변경 (기사 카드만 — 표지/엔딩은 고정).
-  // dragArt/overArt 는 articles 배열 인덱스(0-based). 카드 i(레일) ↔ article i-1.
-  const [dragArt, setDragArt] = useState(null);
-  const [overArt, setOverArt] = useState(null);
-  const reorderArticles = useCallback((from, to) => {
-    if (from == null || to == null || from === to) return;
-    const list = [...tweaks.articles];
-    if (from < 0 || from >= list.length || to < 0 || to >= list.length) return;
-    const [moved] = list.splice(from, 1);
-    list.splice(to, 0, moved);
-    setTweak && setTweak('articles', list);
-    setTweak && setTweak('editing', to);
-    setActive(to + 1); // 표지(0) 다음이 첫 기사
-  }, [tweaks.articles, setTweak, setActive]);
 
   const go = useCallback((delta) => {
     setActive(a => Math.max(0, Math.min(total - 1, a + delta)));
@@ -469,88 +454,7 @@ function Carousel({ tweaks, active, setActive, setTweak, embed = false }) {
         </div>
       </div>
 
-      {/* Thumbnails — 기사 카드는 드래그해서 순서 변경 가능 */}
-      {!embed && (
-      <>
-      <div style={{
-        marginTop:'var(--gap-section)',
-        display:'flex', gap:'var(--gap-element)',
-        overflowX:'auto', paddingBottom: 'var(--gap-element)',
-        scrollbarWidth:'thin',
-      }}>
-        {Array.from({ length: total }, (_, i) => {
-          const isActive = i === active;
-          // 기사 카드만 드래그 대상 (표지 i=0, 엔딩 i=total-1 은 고정)
-          const artIdx = i - 1;
-          const isArticle = i >= 1 && i <= total - 2;
-          const isDragging = isArticle && dragArt === artIdx;
-          const isDropTarget = isArticle && overArt === artIdx && dragArt != null && dragArt !== artIdx;
-          return (
-            <button key={i} onClick={() => setActive(i)} aria-label={`${i+1}번 카드`}
-              draggable={isArticle}
-              onDragStart={isArticle ? (e) => {
-                setDragArt(artIdx);
-                try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(artIdx)); } catch (_) {}
-              } : undefined}
-              onDragOver={isArticle ? (e) => {
-                if (dragArt == null) return;
-                e.preventDefault();
-                try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
-                if (overArt !== artIdx) setOverArt(artIdx);
-              } : undefined}
-              onDrop={isArticle ? (e) => {
-                e.preventDefault();
-                reorderArticles(dragArt, artIdx);
-                setDragArt(null); setOverArt(null);
-              } : undefined}
-              onDragEnd={isArticle ? () => { setDragArt(null); setOverArt(null); } : undefined}
-              style={{
-              flex:'0 0 auto',
-              width: 96, aspectRatio:`${aspectW} / ${aspectH}`,
-              borderRadius: 'var(--radius-element)',
-              overflow:'hidden',
-              padding: 0, border:'none',
-              cursor: isArticle ? 'grab' : 'pointer',
-              outline: isDropTarget
-                ? '2px dashed var(--color-ocean)'
-                : isActive ? '2px solid var(--color-midnight)' : '1px solid var(--color-gray-300)',
-              outlineOffset: (isActive || isDropTarget) ? 2 : 0,
-              background:'var(--color-white)',
-              boxShadow: isActive
-                ? '0 12px 24px -12px color-mix(in oklab, var(--color-midnight) 40%, transparent)'
-                : 'none',
-              transform: isActive ? 'translateY(-2px)' : 'none',
-              opacity: isDragging ? .45 : 1,
-              transition: 'transform .2s, box-shadow .2s, outline-color .2s, opacity .15s',
-              position:'relative',
-            }}>
-              <div style={{
-                position:'absolute', inset:0,
-                transform:'scale(.0889)',
-                transformOrigin:'top left',
-                width: 1080, height: 1080,
-                pointerEvents:'none',
-              }}>
-                <CardForIndex i={i} total={total} tweaks={tweaks} />
-              </div>
-              <div style={{
-                position:'absolute', left: 6, bottom: 5,
-                fontFamily:'"JetBrains Mono", ui-monospace, monospace',
-                fontSize: 10, fontWeight: 700,
-                padding:'2px 6px', borderRadius: 4,
-                background:'color-mix(in oklab, white 85%, transparent)',
-                color:'var(--color-ink)',
-              }}>{String(i+1).padStart(2,'0')}</div>
-            </button>
-          );
-        })}
-      </div>
-      <div style={{
-        marginTop: 2, fontFamily:'"JetBrains Mono", ui-monospace, monospace',
-        fontSize: 11, letterSpacing:'.06em', color:'var(--color-gray-500)',
-      }}>↔ 기사 카드를 드래그해 순서를 바꿀 수 있어요 (표지·엔딩은 고정)</div>
-      </>
-      )}
+      {/* 카드 순서 변경(썸네일 드래그)은 화면 하단 고정 도크(ThumbnailDock)로 분리됨 */}
 
       <div style={{
         display:'flex', alignItems:'center',
@@ -1126,11 +1030,178 @@ function ArticleImportModal({ open, onClose, tweaks, setTweak, setActive }) {
   );
 }
 
+/* ─────────────── 하단 고정 카드 순서 도크 (상시 노출 + 접기) ───────────────
+   화면 하단 왼쪽에 고정. 헤더(항상 보임): 접기 토글 + '카드 순서(N장)' + 기사 불러오기.
+   펼침: 썸네일 레일에서 기사 카드를 드래그해 순서 변경(표지·엔딩 고정).
+   우측에는 Tweaks 패널(width 280, bottom-right)을 위한 여백을 남긴다.            */
+function ThumbnailDock({ tweaks, setTweak, active, setActive, collapsed, onToggle, thumbW = 92 }) {
+  const total = tweaks.articles.length + 2;
+  const aspectW = tweaks.aspect === '4:5' ? 4 : tweaks.aspect === '9:16' ? 9 : 1;
+  const aspectH = tweaks.aspect === '4:5' ? 5 : tweaks.aspect === '9:16' ? 16 : 1;
+  const scale = thumbW / 1080;
+
+  const [dragArt, setDragArt] = useState(null);
+  const [overArt, setOverArt] = useState(null);
+  const reorder = (from, to) => {
+    if (from == null || to == null || from === to) return;
+    const list = [...tweaks.articles];
+    if (from < 0 || from >= list.length || to < 0 || to >= list.length) return;
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    setTweak('articles', list);
+    setTweak('editing', to);
+    setActive(to + 1); // 표지(0) 다음이 첫 기사
+  };
+
+  const chevron = (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"
+      style={{ transition: 'transform .2s', transform: collapsed ? 'rotate(180deg)' : 'none' }}>
+      <path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+
+  return (
+    <div style={{
+      position: 'fixed', left: 16, bottom: 16, zIndex: 2147483640,
+      width: 'min(1080px, calc(100vw - 344px))',
+      maxWidth: 'calc(100vw - 32px)',
+      background: 'var(--color-white)',
+      border: '1px solid var(--color-gray-300)',
+      borderRadius: 14,
+      boxShadow: '0 12px 32px -12px color-mix(in oklab, var(--color-ink) 38%, transparent)',
+      fontFamily: "'Pretendard', system-ui, sans-serif",
+      overflow: 'hidden',
+    }}>
+      {/* 헤더 — 항상 보임 */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 10px 8px 8px',
+      }}>
+        <button type="button" onClick={onToggle}
+          title={collapsed ? '카드 순서 펼치기' : '접기'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            height: 30, padding: '0 10px', borderRadius: 8,
+            border: '1px solid var(--color-gray-300)', background: 'var(--color-white)',
+            color: 'var(--color-ink)', cursor: 'pointer', fontWeight: 700, fontSize: 12.5,
+          }}>
+          {chevron}
+          <span>카드 순서</span>
+          <span style={{ color: 'var(--color-gray-500)', fontWeight: 600 }}>{tweaks.articles.length}장</span>
+        </button>
+        {collapsed && (
+          <span style={{ fontSize: 11.5, color: 'var(--color-gray-500)' }}>펼쳐서 드래그로 순서 변경</span>
+        )}
+        <div style={{ flex: 1 }} />
+        <button type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('cn-open-import'))}
+          title="발행 기사에서 불러오기"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            height: 30, padding: '0 14px', borderRadius: 8,
+            border: '1px solid var(--color-midnight)', background: 'var(--color-midnight)',
+            color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12.5,
+          }}>
+          ⤓ 기사 불러오기
+        </button>
+      </div>
+
+      {/* 레일 — 펼쳤을 때만 */}
+      {!collapsed && (
+        <div style={{ padding: '2px 10px 10px' }}>
+          <div style={{
+            display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 6,
+            scrollbarWidth: 'thin',
+          }}>
+            {Array.from({ length: total }, (_, i) => {
+              const isActive = i === active;
+              const artIdx = i - 1;
+              const isArticle = i >= 1 && i <= total - 2;
+              const isDragging = isArticle && dragArt === artIdx;
+              const isDropTarget = isArticle && overArt === artIdx && dragArt != null && dragArt !== artIdx;
+              return (
+                <button key={i} onClick={() => setActive(i)} aria-label={`${i+1}번 카드`}
+                  draggable={isArticle}
+                  onDragStart={isArticle ? (e) => {
+                    setDragArt(artIdx);
+                    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(artIdx)); } catch (_) {}
+                  } : undefined}
+                  onDragOver={isArticle ? (e) => {
+                    if (dragArt == null) return;
+                    e.preventDefault();
+                    try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+                    if (overArt !== artIdx) setOverArt(artIdx);
+                  } : undefined}
+                  onDrop={isArticle ? (e) => {
+                    e.preventDefault();
+                    reorder(dragArt, artIdx);
+                    setDragArt(null); setOverArt(null);
+                  } : undefined}
+                  onDragEnd={isArticle ? () => { setDragArt(null); setOverArt(null); } : undefined}
+                  style={{
+                    flex: '0 0 auto',
+                    width: thumbW, aspectRatio: `${aspectW} / ${aspectH}`,
+                    borderRadius: 10, overflow: 'hidden',
+                    padding: 0, border: 'none',
+                    cursor: isArticle ? 'grab' : 'pointer',
+                    outline: isDropTarget
+                      ? '2px dashed var(--color-ocean)'
+                      : isActive ? '2px solid var(--color-midnight)' : '1px solid var(--color-gray-300)',
+                    outlineOffset: (isActive || isDropTarget) ? 2 : 0,
+                    background: 'var(--color-white)',
+                    boxShadow: isActive
+                      ? '0 10px 20px -12px color-mix(in oklab, var(--color-midnight) 40%, transparent)'
+                      : 'none',
+                    transform: isActive ? 'translateY(-2px)' : 'none',
+                    opacity: isDragging ? .45 : 1,
+                    transition: 'transform .2s, box-shadow .2s, outline-color .2s, opacity .15s',
+                    position: 'relative',
+                  }}>
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    transform: `scale(${scale})`, transformOrigin: 'top left',
+                    width: 1080, height: 1080, pointerEvents: 'none',
+                  }}>
+                    <CardForIndex i={i} total={total} tweaks={tweaks} />
+                  </div>
+                  <div style={{
+                    position: 'absolute', left: 5, bottom: 4,
+                    fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                    fontSize: 9.5, fontWeight: 700,
+                    padding: '1px 5px', borderRadius: 4,
+                    background: 'color-mix(in oklab, white 85%, transparent)',
+                    color: 'var(--color-ink)',
+                  }}>{String(i+1).padStart(2,'0')}</div>
+                </button>
+              );
+            })}
+          </div>
+          <div style={{
+            marginTop: 2, fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+            fontSize: 10.5, letterSpacing: '.04em', color: 'var(--color-gray-500)',
+          }}>↔ 기사 카드를 드래그해 순서 변경 · 표지·엔딩은 고정</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─────────────────────────── App root ─────────────────────────── */
 function App() {
   const [t, setTweak] = useTweaks(window.TWEAK_DEFAULTS);
   const [active, setActive] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
+  // 하단 카드 순서 도크 접힘 상태 (localStorage 로 유지).
+  const [railCollapsed, setRailCollapsed] = useState(() => {
+    try { return localStorage.getItem('cn.railCollapsed') === '1'; } catch (_) { return false; }
+  });
+  const toggleRail = useCallback(() => {
+    setRailCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem('cn.railCollapsed', next ? '1' : '0'); } catch (_) {}
+      return next;
+    });
+  }, []);
 
   /* Embed mode — for porting into the homepage via <iframe ?embed=1>.
      Strips the preview chrome (header, export buttons, thumbnail rail,
@@ -1163,6 +1234,19 @@ function App() {
      tRef 로 최신 tweaks 를 참조해 stale-closure 를 피한다. */
   const tRef = React.useRef(t);
   tRef.current = t;
+
+  // 캐러셀 가운데 카드 ↔ Tweaks '기사 편집' 양방향 동기화. 좌우 화살표·키보드·썸네일·
+  // 도트로 가운데 카드를 옮기면 Tweaks 편집 대상도 그 기사로 따라간다(기사 카드일 때).
+  // 표지(0)/엔딩(total-1)에선 마지막 기사 편집 컨텍스트를 유지한다.
+  useEffect(() => {
+    const arts = (tRef.current && tRef.current.articles) || [];
+    const totalCards = arts.length + 2;
+    if (active >= 1 && active <= totalCards - 2) {
+      const idx = active - 1;
+      if ((tRef.current.editing ?? 0) !== idx) setTweak('editing', idx);
+    }
+  }, [active, setTweak]);
+
   useEffect(() => {
     const onCommit = (e) => {
       const d = (e && e.detail) || {};
@@ -1180,21 +1264,21 @@ function App() {
     return () => window.removeEventListener('imageslotcommit', onCommit);
   }, [setTweak]);
 
+  // 하단 고정 도크가 가리지 않도록 페이지 하단 여백 확보(접힘/펼침·비율에 맞춰).
+  const dockAspectW = t.aspect === '4:5' ? 4 : t.aspect === '9:16' ? 9 : 1;
+  const dockAspectH = t.aspect === '4:5' ? 5 : t.aspect === '9:16' ? 16 : 1;
+  const dockThumbH = Math.round(92 * dockAspectH / dockAspectW);
+  const dockReserve = embed ? undefined : (railCollapsed ? 84 : (dockThumbH + 120));
+
   return (
-    <div className="page" style={{ '--radius-card': cardRadius }}>
+    <div className="page" style={{ '--radius-card': cardRadius, paddingBottom: dockReserve }}>
       {!embed && <PageHeader tweaks={t} active={active} setActive={setActive}/>}
-      {!embed && (
-        <button type="button" onClick={() => setImportOpen(true)}
-          style={{ position: 'fixed', left: 16, bottom: 16, zIndex: 2147483646,
-            height: 40, padding: '0 18px', borderRadius: 999,
-            border: '1px solid var(--color-midnight)', background: 'var(--color-midnight)', color: '#fff',
-            fontWeight: 700, fontSize: 13.5, cursor: 'pointer', boxShadow: '0 6px 20px rgba(0,0,0,.22)',
-            fontFamily: "'Pretendard', system-ui, sans-serif" }}>
-          + 기사 불러오기
-        </button>
-      )}
-      <Carousel tweaks={t} active={active} setActive={setActive} setTweak={setTweak} embed={embed}/>
+      <Carousel tweaks={t} active={active} setActive={setActive} embed={embed}/>
       <TweaksUI tweaks={t} setTweak={setTweak} active={active} setActive={setActive}/>
+      {!embed && (
+        <ThumbnailDock tweaks={t} setTweak={setTweak} active={active} setActive={setActive}
+          collapsed={railCollapsed} onToggle={toggleRail}/>
+      )}
       <ArticleImportModal open={importOpen} onClose={() => setImportOpen(false)} tweaks={t} setTweak={setTweak} setActive={setActive}/>
     </div>
   );
