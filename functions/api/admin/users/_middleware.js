@@ -7,6 +7,12 @@
 import { requireOtp } from '../../../_shared/otp-session.js';
 
 export async function onRequest(context) {
+  // 본인 프로필/자기 설정(/api/admin/users/me, /users/me/username 등)은 매 페이지
+  // 로드에서 사이드바 권한·세션을 채우는 데 필요하므로 OTP 게이트에서 제외한다.
+  // '사용자 관리'(전체 목록·타 계정 CRUD: /users, /users/:id ...)만 OTP 적용.
+  let path = '';
+  try { path = new URL(context.request.url).pathname; } catch (_) {}
+  if (/\/users\/me(?:\/|$)/.test(path)) return context.next();
   const otp = await requireOtp(context.request, context.env);
   if (otp) return otp;
   return context.next();

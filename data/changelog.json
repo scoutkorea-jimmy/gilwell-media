@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "03.149.05",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 01:45:00 KST",
+    "summary": "핫픽스: 로그인 직후 OTP 모달이 뜨고 사이드바 메뉴가 깨지던 문제 수정(본인 프로필 /users/me 가 OTP에 막혀서).",
+    "for_users": [
+      "로그인하면 이제 OTP를 묻지 않고 사이드바 메뉴가 정상적으로 모두 나옵니다.",
+      "OTP는 '사용자 관리'(다른 계정 관리)에 들어갈 때만 뜨고, '내 계정'(본인 정보)은 OTP 없이 그대로 됩니다."
+    ],
+    "for_developers": [
+      "원인: functions/api/admin/users/_middleware.js 가 /api/admin/users/ 전체에 requireOtp 를 적용 → 매 페이지 로드에서 사이드바 권한을 채우는 본인 프로필 /api/admin/users/me(refreshMe) 까지 401 otp_required. 결과: (1) admin-account _api 가 gw:admin-otp-required 디스패치 → 로그인 직후 OTP 모달, (2) refreshMe 실패로 _syncPermissionNav 미실행 → 권한 메뉴 미표시(사이드바 깨짐).",
+      "수정: 미들웨어에서 /users/me, /users/me/* 경로(본인 프로필·자기 username 변경)는 OTP 제외. '사용자 관리'(목록 /users, 타 계정 /users/:id 및 하위)만 OTP 유지.",
+      "관리자 버전 03.149.04 → 03.149.05."
+    ]
+  },
+  {
     "version": "03.149.04",
     "date": "2026-06-16",
     "released_at": "2026-06-16 01:20:00 KST",
