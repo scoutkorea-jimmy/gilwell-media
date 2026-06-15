@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "03.149.06",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 02:05:00 KST",
+    "summary": "핫픽스: OTP 인증해도 모달이 계속 다시 뜨던 문제 — verify/confirm 의 Set-Cookie emit 방식을 로그인과 동일하게 교정.",
+    "for_users": [
+      "이제 OTP 6자리를 입력하면 모달이 닫히고 다시 묻지 않습니다."
+    ],
+    "for_developers": [
+      "원인 후보: totp/verify·confirm 의 json() 이 Set-Cookie 를 plain-object headers 로 넣어, admin_otp 쿠키가 일부 환경에서 응답에 실리지 않아 다음 요청에서 requireOtp 가 못 읽음(매 요청 otp_required 반복). (토큰 로직·미들웨어 Set-Cookie 보존은 정상 확인)",
+      "수정: login.js 와 동일하게 new Headers() 인스턴스 + set/append 로 Set-Cookie emit. 이전 SameSite Strict→Lax(03.149.04)도 유지.",
+      "관리자 버전 03.149.05 → 03.149.06."
+    ]
+  },
+  {
     "version": "03.149.05",
     "date": "2026-06-16",
     "released_at": "2026-06-16 01:45:00 KST",

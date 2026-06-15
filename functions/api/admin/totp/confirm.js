@@ -10,11 +10,14 @@ import { verifyTotp, generateBackupCodes, hashBackupCode } from '../../../_share
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../../_shared/rate-limit.js';
 import { issueOtpToken, buildOtpCookie } from '../../../_shared/otp-session.js';
 
+// 로그인(login.js)과 동일한 Set-Cookie emit 패턴: Headers 인스턴스 + append.
 function json(data, status = 200, extraHeaders) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: Object.assign({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, extraHeaders || {}),
-  });
+  const headers = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  for (const [k, v] of Object.entries(extraHeaders || {})) {
+    if (Array.isArray(v)) v.forEach((item) => headers.append(k, item));
+    else headers.set(k, v);
+  }
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
 export async function onRequestPost({ request, env }) {
