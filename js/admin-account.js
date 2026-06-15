@@ -45,9 +45,14 @@
       .then(function (res) {
         return res.json().catch(function () { return null; }).then(function (data) {
           if (!res.ok) {
+            // 2단계 인증 필요 — 재로그인 아님. OTP 모달 트리거(admin-v3 가 수신).
+            if (data && data.error === 'otp_required') {
+              try { document.dispatchEvent(new CustomEvent('gw:admin-otp-required')); } catch (_) {}
+            }
             var err = new Error((data && data.error) || ('HTTP ' + res.status));
             err.status = res.status;
             err.data = data;
+            err.otpRequired = !!(data && data.error === 'otp_required');
             throw err;
           }
           return data;

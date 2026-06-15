@@ -13,6 +13,7 @@
  * because the owner may legitimately want inline tags.
  */
 import { requireOwner } from '../../_shared/admin-permissions.js';
+import { requireOtp } from '../../_shared/otp-session.js';
 import {
   DEFAULT_PRIVACY_POLICY_HTML,
   PRIVACY_POLICY_MAX_CHARS,
@@ -39,6 +40,7 @@ export async function onRequestGet({ env }) {
 export async function onRequestPut({ request, env }) {
   const { session, error } = await requireOwner(request, env);
   if (error) return error;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   let body;
   try { body = await request.json(); } catch {
@@ -84,6 +86,7 @@ export async function onRequestPut({ request, env }) {
 export async function onRequestDelete({ request, env }) {
   const { session, error } = await requireOwner(request, env);
   if (error) return error;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
   try {
     await env.DB.batch([
       env.DB.prepare(`DELETE FROM settings WHERE key = ?`).bind(PRIVACY_SETTINGS_KEY),

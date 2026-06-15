@@ -10,6 +10,7 @@
  * /api/admin/presets/:id.
  */
 import { requireOwner } from '../../_shared/admin-permissions.js';
+import { requireOtp } from '../../_shared/otp-session.js';
 import { validatePermissions } from '../../_shared/admin-user-validation.js';
 import { logOperationalEvent } from '../../_shared/ops-log.js';
 
@@ -21,6 +22,7 @@ export async function onRequestGet({ request, env }) {
   // owner-only to prevent members from enumerating escalation targets.
   const { error } = await requireOwner(request, env);
   if (error) return error;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   const { results } = await env.DB.prepare(
     `SELECT id, slug, name, description, permissions, is_builtin, created_at, updated_at
@@ -35,6 +37,7 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const { session, error } = await requireOwner(request, env);
   if (error) return error;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   let body;
   try { body = await request.json(); } catch {

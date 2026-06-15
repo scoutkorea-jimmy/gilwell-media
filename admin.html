@@ -10,8 +10,8 @@
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
   <link rel="shortcut icon" href="/img/favicon-48.png">
-  <link rel="stylesheet" href="/css/admin-v3.css?v=20260615135028">
-  <link rel="stylesheet" href="/css/memorabilia.css?v=20260615135028">
+  <link rel="stylesheet" href="/css/admin-v3.css?v=20260615142356">
+  <link rel="stylesheet" href="/css/memorabilia.css?v=20260615142356">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     #v3-login[style*="display: none"] { pointer-events: none !important; }
@@ -94,7 +94,7 @@
     <button class="v3-login-btn" id="v3-login-btn" type="button" onclick="window.__gwAdminFallbackLogin && window.__gwAdminFallbackLogin(event)">관리자 입장</button>
     <div class="v3-login-err" id="v3-login-err"></div>
     <div class="v3-login-ver">
-      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.148.00</span>
+      Admin <span class="v3-ver-str v3-ver-admin admin-build-version">V03.149.00</span>
       &nbsp;·&nbsp;
       Site <span class="v3-ver-str v3-ver-site site-build-version">V00.170.10</span>
     </div>
@@ -109,7 +109,7 @@
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside id="v3-sidebar">
     <div id="v3-sidebar-logo">
-      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.148.00</span></div>
+      <div class="v3-logo-mark">BP미디어 <span class="v3-logo-version v3-ver-str v3-ver-admin admin-build-version">V03.149.00</span></div>
       <div class="v3-logo-sub">운영 콘솔 &nbsp;<span class="v3-logo-sub-site">Site <span class="v3-ver-site site-build-version">V00.170.10</span></span></div>
     </div>
 
@@ -1833,6 +1833,19 @@
                   </div>
                 </form>
               </div>
+
+              <div class="v3-card" id="account-otp-card" style="margin-top:16px;">
+                <div class="v3-card-head">
+                  <div>
+                    <h2 class="v3-card-title">2단계 인증 (OTP)</h2>
+                    <p class="v3-card-desc">
+                      Google Authenticator 같은 인증 앱으로 <strong>사이트 히스토리 · 사용자 관리 · 프리셋 관리 · 개인정보 처리방침</strong>
+                      메뉴에 들어갈 때 6자리 코드를 추가로 확인합니다. 등록한 계정에만 적용되며, 한 번 통과하면 10분간 재확인을 생략합니다.
+                    </p>
+                  </div>
+                </div>
+                <div id="account-otp-body"><div class="v3-inline-meta">불러오는 중…</div></div>
+              </div>
             </div>
 
           </div><!-- /settings-sections -->
@@ -3379,14 +3392,14 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="/js/main.js?v=20260615135028"></script>
-<script src="/js/shared-country-name-ko.js?v=20260615135028"></script>
-<script src="/js/memorabilia-shared.js?v=20260615135028"></script>
-<script src="/js/admin-v3.js?v=20260615135028"></script>
-<script src="/js/admin-account.js?v=20260615135028"></script>
-<script src="/js/admin-memorabilia.js?v=20260615135028"></script>
-<script src="/js/admin-cardnews.js?v=20260615135028"></script>
-<script src="/js/admin-memorabilia-comments.js?v=20260615135028"></script>
+<script src="/js/main.js?v=20260615142356"></script>
+<script src="/js/shared-country-name-ko.js?v=20260615142356"></script>
+<script src="/js/memorabilia-shared.js?v=20260615142356"></script>
+<script src="/js/admin-v3.js?v=20260615142356"></script>
+<script src="/js/admin-account.js?v=20260615142356"></script>
+<script src="/js/admin-memorabilia.js?v=20260615142356"></script>
+<script src="/js/admin-cardnews.js?v=20260615142356"></script>
+<script src="/js/admin-memorabilia-comments.js?v=20260615142356"></script>
 <script>
   (function () {
     function toggleReveal(visible) {

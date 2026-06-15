@@ -1,6 +1,26 @@
 {
   "items": [
   {
+    "version": "03.149.00",
+    "date": "2026-06-15",
+    "released_at": "2026-06-15 23:30:00 KST",
+    "summary": "관리자 2단계 인증(OTP) 도입 — 사이트 히스토리·사용자 관리·프리셋 관리·개인정보 처리방침 메뉴 진입 시 인증 앱 6자리 확인.",
+    "for_users": [
+      "계정 보안에서 'Google Authenticator 같은 인증 앱'을 등록하면, 위 4개 민감 메뉴에 들어갈 때 6자리 코드를 한 번 더 확인합니다. 한 번 통과하면 10분간 다시 묻지 않습니다.",
+      "등록은 '설정 키 입력' 방식(키 복사 후 인증 앱에 입력)이며, 분실 대비 일회용 백업코드 8개를 발급합니다. 등록한 계정에만 적용되고, 등록 전에는 동작이 전혀 바뀌지 않습니다.",
+      "참고: QR 스캔 등록은 곧 추가 예정(현재는 설정 키 입력으로 100% 동일하게 등록 가능)."
+    ],
+    "for_developers": [
+      "TOTP 코어: functions/_shared/totp.js (RFC 6238 SHA-1·30s·6자리, Web Crypto). RFC 테스트벡터 6/6 검증(scripts/test-totp.mjs). base32·HOTP·verify(±1 window)·otpauth URI·백업코드 생성/해시(SHA-256)/매칭.",
+      "세션 마커: functions/_shared/otp-session.js — admin_otp 단명 서명쿠키(HMAC-SHA256·env.ADMIN_SECRET·10분·uid 바인딩) + requireOtp(미등록/레거시 세션은 통과 → 점진 도입·락아웃 0).",
+      "스키마: admin_users 추가형 컬럼 totp_secret/totp_enabled/totp_backup_codes/totp_enrolled_at (migrations/admin_users_totp_2026-06-15.sql).",
+      "API: /api/admin/totp (GET 상태·POST 등록시작·DELETE 해제) · /confirm(첫 코드→활성화+백업코드 1회 반환+쿠키) · /verify(코드/백업→쿠키, 백업 일회용 소비). verify/confirm rate-limit 10/분.",
+      "게이팅: users/_middleware.js·presets/_middleware.js + site-history.js·operations.js·presets.js·settings/privacy-policy.js(PUT/DELETE) 에 requireOtp. otp_required 는 401+{error:'otp_required'} 로 재로그인과 구분.",
+      "프론트(admin-v3.js): _otpGate 를 V3.showPanel 에 연결(민감 패널 진입 모달) + 계정보안 등록/해제 UI(_renderOtpCard) + _apiFetch·admin-account _api 에 otp_required→gw:admin-otp-required 인터셉터. 분실 비상복구: D1 UPDATE admin_users SET totp_enabled=0, totp_secret=NULL.",
+      "관리자 버전 03.148.00 → 03.149.00."
+    ]
+  },
+  {
     "version": "03.148.00",
     "date": "2026-06-15",
     "released_at": "2026-06-15 23:10:00 KST",

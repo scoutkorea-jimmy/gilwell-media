@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.148.00
+ * Version: 03.149.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -319,6 +319,13 @@
             try { data = JSON.parse(text); } catch (e) { data = { error: text }; }
           }
           if (!response.ok) {
+            // 2단계 인증 필요 — 재로그인 아님. OTP 모달 트리거 + 전용 에러로 표면화.
+            if (data && data.error === 'otp_required') {
+              document.dispatchEvent(new CustomEvent('gw:admin-otp-required'));
+              var _oe = new Error((data && data.reason) || '2단계 인증이 필요합니다.');
+              _oe.status = response.status; _oe.otpRequired = true; _oe.data = data;
+              throw _oe;
+            }
             // 5xx 는 일시적일 수 있으므로 멱등 요청에 한해 백오프 후 재시도.
             if (response.status >= 500 && retriesLeft > 0) {
               return _wait(_retryDelay(retriesLeft)).then(function () { return attempt(retriesLeft - 1); });
@@ -1196,6 +1203,8 @@
     // Show dashboard
     V3.showPanel('dashboard');
     _sessionStart();
+    // 2단계 인증 상태 선조회 — 민감 메뉴 진입 게이트가 즉시 동작하도록.
+    try { _fetchOtpState(); } catch (_) {}
   }
 
   V3.refreshDashboard = function () { _loadDashboard(_el('dash-refresh-btn')); };
@@ -1306,6 +1315,9 @@
         return;
       }
     }
+
+    // 2단계 인증 게이트 (민감 메뉴) — 등록 계정이고 OTP 미통과면 모달 후 재진입.
+    if (!_otpGate(panel, settingsSection, function () { V3.showPanel(panel, settingsSection); })) return;
 
     if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
@@ -1592,8 +1604,227 @@
      ACCOUNT SECURITY — 관리자 비밀번호 변경
   ══════════════════════════════════════════════════════════ */
   var _accountPasswordBound = false;
+  // ── 2단계 인증 (OTP / TOTP) ──────────────────────────────────────────────
+  // 민감 메뉴(사이트 히스토리·사용자 관리·프리셋 관리·개인정보 처리방침) 진입 시
+  // 등록된 계정에 한해 6자리 OTP 를 확인. 통과하면 10분(서버 admin_otp 쿠키)간 생략.
+  var _otpState = { loaded: false, enrolled: false, otpActive: false };
+  var _otpActiveTimer = null;
+  var _OTP_SENSITIVE_PANELS = { 'site-history': 1, 'account-users': 1, 'account-presets': 1 };
+  var _OTP_SENSITIVE_SECTIONS = { 'privacy-policy': 1 };
+
+  function _otpIsSensitive(panel, section) {
+    if (panel === 'settings' && section && _OTP_SENSITIVE_SECTIONS[section]) return true;
+    return !!_OTP_SENSITIVE_PANELS[panel];
+  }
+  function _otpMarkActive() {
+    _otpState.otpActive = true;
+    if (_otpActiveTimer) clearTimeout(_otpActiveTimer);
+    // 서버 쿠키 10분 — 9분 후 클라 캐시를 만료시켜 재진입 시 다시 확인.
+    _otpActiveTimer = setTimeout(function () { _otpState.otpActive = false; }, 9 * 60 * 1000);
+  }
+  function _fetchOtpState() {
+    return GW.apiFetch('/api/admin/totp').then(function (d) {
+      _otpState.loaded = true;
+      _otpState.enrolled = !!(d && d.enrolled);
+      _otpState.otpActive = !!(d && d.otp_active);
+      if (_otpState.otpActive) _otpMarkActive();
+      return _otpState;
+    }).catch(function () { _otpState.loaded = true; return _otpState; });
+  }
+
+  // 민감 메뉴 진입 게이트 — 모달 통과 후 onOk() 호출. 반환 true = 즉시 통과.
+  function _otpGate(panel, section, onOk) {
+    if (!_otpIsSensitive(panel, section)) return true;
+    if (!_otpState.enrolled || _otpState.otpActive) return true;
+    _otpPromptModal(function () { _otpMarkActive(); onOk(); });
+    return false;
+  }
+
+  // OTP 입력 모달 (TOTP 6자리 또는 백업코드). 성공 시 onVerified().
+  function _otpPromptModal(onVerified) {
+    var existing = document.getElementById('otp-verify-overlay');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = 'otp-verify-overlay';
+    ov.setAttribute('style', 'position:fixed;inset:0;z-index:2147483600;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:24px;');
+    ov.innerHTML =
+      '<div role="dialog" aria-modal="true" style="width:min(380px,94vw);background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:22px 22px 18px;font-family:inherit;">' +
+        '<h2 style="margin:0 0 6px;font-size:17px;color:var(--ink,#1f1f1f);">2단계 인증</h2>' +
+        '<p style="margin:0 0 14px;font-size:13px;color:#666;line-height:1.5;">인증 앱의 6자리 코드를 입력하세요. <button type="button" id="otp-use-backup" style="border:0;background:transparent;color:var(--color-midnight,#4d006e);cursor:pointer;font-size:12.5px;text-decoration:underline;padding:0;">백업코드 사용</button></p>' +
+        '<input id="otp-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="14" placeholder="000000" style="width:100%;box-sizing:border-box;height:44px;font-size:20px;letter-spacing:.3em;text-align:center;border:1px solid #ccc;border-radius:10px;font-family:ui-monospace,monospace;" />' +
+        '<div id="otp-verify-err" style="min-height:16px;margin:8px 2px 0;font-size:12px;color:var(--color-fire,#d11);"></div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">' +
+          '<button type="button" id="otp-cancel-btn" style="height:38px;padding:0 14px;border-radius:9px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:600;">취소</button>' +
+          '<button type="button" id="otp-verify-btn" style="height:38px;padding:0 18px;border-radius:9px;border:1px solid var(--color-midnight,#4d006e);background:var(--color-midnight,#4d006e);color:#fff;cursor:pointer;font-weight:700;">확인</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var input = ov.querySelector('#otp-code-input');
+    var errEl = ov.querySelector('#otp-verify-err');
+    var verifyBtn = ov.querySelector('#otp-verify-btn');
+    var backupMode = false;
+    setTimeout(function () { input.focus(); }, 30);
+    function close() { ov.remove(); }
+    ov.querySelector('#otp-cancel-btn').addEventListener('click', function () {
+      close();
+      // 취소 시 안전한 패널로 — 권한 화면 노출 방지.
+      if (_otpIsSensitive(_panel, _settingsSection)) V3.showPanel('dashboard');
+    });
+    ov.addEventListener('click', function (e) { if (e.target === ov) { /* 모달 밖 클릭은 무시(인증 강제) */ } });
+    ov.querySelector('#otp-use-backup').addEventListener('click', function () {
+      backupMode = !backupMode;
+      input.placeholder = backupMode ? 'XXXX-XXXX' : '000000';
+      input.value = ''; input.style.letterSpacing = backupMode ? '.1em' : '.3em';
+      this.textContent = backupMode ? '6자리 코드 사용' : '백업코드 사용';
+      input.focus();
+    });
+    function submit() {
+      var code = String(input.value || '').trim();
+      if (!code) { input.focus(); return; }
+      verifyBtn.disabled = true; errEl.textContent = '';
+      GW.apiFetch('/api/admin/totp/verify', { method: 'POST', body: JSON.stringify({ code: code }) })
+        .then(function (d) {
+          close();
+          if (d && d.used_backup && GW.showToast) GW.showToast('백업코드로 인증했습니다. 남은 코드를 잘 보관하세요.', 'success', 5000);
+          onVerified();
+        })
+        .catch(function (err) {
+          verifyBtn.disabled = false;
+          errEl.textContent = (err && err.data && err.data.reason) || (err && err.message) || '코드가 올바르지 않습니다.';
+          input.select();
+        });
+    }
+    verifyBtn.addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  }
+
+  // 계정 보안 섹션의 2단계 인증 카드 렌더.
+  function _renderOtpCard() {
+    var body = document.getElementById('account-otp-body');
+    if (!body) return;
+    body.innerHTML = '<div class="v3-inline-meta">불러오는 중…</div>';
+    GW.apiFetch('/api/admin/totp')
+      .then(function (d) {
+        _otpState.loaded = true;
+        _otpState.enrolled = !!(d && d.enrolled);
+        _otpState.otpActive = !!(d && d.otp_active);
+        if (_otpState.otpActive) _otpMarkActive();
+        if (_otpState.enrolled) _otpRenderEnabled(body);
+        else _otpRenderSetupStart(body);
+      })
+      .catch(function (err) {
+        if (err && err.status === 400) body.innerHTML = '<div class="v3-inline-meta">개인 계정으로 로그인해야 2단계 인증을 설정할 수 있습니다.</div>';
+        else body.innerHTML = '<div class="v3-inline-meta" style="color:var(--color-fire,#d11);">상태를 불러오지 못했습니다.</div>';
+      });
+  }
+  function _otpRenderEnabled(body) {
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<span class="v3-badge v3-badge-green">사용 중</span>' +
+        '<span class="v3-inline-meta">이 계정은 2단계 인증이 켜져 있습니다.</span>' +
+        '<button class="v3-btn v3-btn-sm v3-btn-danger" id="otp-disable-btn" type="button" style="margin-left:auto;">2단계 인증 끄기</button>' +
+      '</div>';
+    body.querySelector('#otp-disable-btn').addEventListener('click', function () {
+      _otpPromptForDisable(body);
+    });
+  }
+  function _otpPromptForDisable(body) {
+    var code = window.prompt('해제하려면 현재 인증 앱의 6자리 코드(또는 백업코드)를 입력하세요:');
+    if (code == null) return;
+    GW.apiFetch('/api/admin/totp', { method: 'DELETE', body: JSON.stringify({ code: String(code).trim() }) })
+      .then(function () {
+        _otpState.enrolled = false; _otpState.otpActive = false;
+        if (GW.showToast) GW.showToast('2단계 인증을 해제했습니다.', 'success');
+        _otpRenderSetupStart(body);
+      })
+      .catch(function (err) { if (GW.showToast) GW.showToast((err && err.data && err.data.reason) || '해제 실패: 코드를 확인하세요.', 'error'); });
+  }
+  function _otpRenderSetupStart(body) {
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+        '<span class="v3-badge v3-badge-gray">꺼짐</span>' +
+        '<span class="v3-inline-meta">인증 앱을 등록하면 민감 메뉴에 OTP 확인이 추가됩니다.</span>' +
+        '<button class="v3-btn v3-btn-sm v3-btn-primary" id="otp-setup-btn" type="button" style="margin-left:auto;">2단계 인증 켜기</button>' +
+      '</div>';
+    body.querySelector('#otp-setup-btn').addEventListener('click', function () {
+      var btn = this; btn.disabled = true;
+      GW.apiFetch('/api/admin/totp', { method: 'POST' })
+        .then(function (d) { _otpRenderSetupConfirm(body, d); })
+        .catch(function (err) { btn.disabled = false; if (GW.showToast) GW.showToast((err && err.data && err.data.reason) || '시작 실패', 'error'); });
+    });
+  }
+  function _otpRenderSetupConfirm(body, d) {
+    var otpauth = (d && d.otpauth) || '';
+    var grouped = (d && d.secret_grouped) || (d && d.secret) || '';
+    body.innerHTML =
+      '<ol style="margin:0 0 12px;padding-left:20px;font-size:13px;color:#444;line-height:1.7;">' +
+        '<li>인증 앱(Google Authenticator 등)에서 <strong>“설정 키 입력 / Enter a setup key”</strong>를 선택합니다.</li>' +
+        '<li>계정 이름은 자유, 키에는 아래 <strong>설정 키</strong>를 입력하고 종류는 <strong>시간 기반</strong>으로 둡니다.</li>' +
+        '<li>앱에 표시된 6자리 코드를 아래에 입력하고 <strong>확인</strong>을 누릅니다.</li>' +
+      '</ol>' +
+      '<div style="margin:0 0 6px;font-size:12px;color:#666;">설정 키</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">' +
+        '<code id="otp-secret-text" style="font-family:ui-monospace,monospace;font-size:15px;letter-spacing:.12em;background:var(--gray-100,#ebebeb);padding:8px 12px;border-radius:8px;user-select:all;">' + GW.escapeHtml(grouped) + '</code>' +
+        '<button class="v3-btn v3-btn-sm" id="otp-copy-secret" type="button">복사</button>' +
+        (otpauth ? '<a class="v3-btn v3-btn-sm" href="' + GW.escapeHtml(otpauth) + '">앱으로 열기</a>' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<input id="otp-confirm-input" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6자리 코드" style="width:140px;height:38px;text-align:center;font-size:16px;letter-spacing:.25em;border:1px solid #ccc;border-radius:9px;font-family:ui-monospace,monospace;" />' +
+        '<button class="v3-btn v3-btn-sm v3-btn-primary" id="otp-confirm-btn" type="button">확인하고 켜기</button>' +
+        '<button class="v3-btn v3-btn-sm" id="otp-cancel-setup" type="button">취소</button>' +
+        '<span id="otp-confirm-err" style="font-size:12px;color:var(--color-fire,#d11);"></span>' +
+      '</div>';
+    var copyBtn = body.querySelector('#otp-copy-secret');
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      var raw = String(grouped).replace(/\s+/g, '');
+      try { navigator.clipboard.writeText(raw); if (GW.showToast) GW.showToast('설정 키를 복사했습니다.', 'success'); } catch (_) {}
+    });
+    body.querySelector('#otp-cancel-setup').addEventListener('click', function () { _renderOtpCard(); });
+    var cinput = body.querySelector('#otp-confirm-input');
+    var cerr = body.querySelector('#otp-confirm-err');
+    var cbtn = body.querySelector('#otp-confirm-btn');
+    setTimeout(function () { cinput.focus(); }, 30);
+    function confirmCode() {
+      var code = String(cinput.value || '').trim();
+      if (!/^\d{6}$/.test(code)) { cerr.textContent = '6자리 숫자를 입력하세요.'; cinput.focus(); return; }
+      cbtn.disabled = true; cerr.textContent = '';
+      GW.apiFetch('/api/admin/totp/confirm', { method: 'POST', body: JSON.stringify({ code: code }) })
+        .then(function (r) {
+          _otpState.enrolled = true; _otpMarkActive();
+          _otpRenderBackupCodes(body, (r && r.backup_codes) || []);
+        })
+        .catch(function (err) { cbtn.disabled = false; cerr.textContent = (err && err.data && err.data.reason) || '코드가 올바르지 않습니다.'; cinput.select(); });
+    }
+    cbtn.addEventListener('click', confirmCode);
+    cinput.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); confirmCode(); } });
+  }
+  function _otpRenderBackupCodes(body, codes) {
+    var list = (codes || []).map(function (c) { return '<code style="font-family:ui-monospace,monospace;font-size:14px;letter-spacing:.08em;">' + GW.escapeHtml(c) + '</code>'; }).join('');
+    body.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span class="v3-badge v3-badge-green">켜짐</span><span class="v3-inline-meta">2단계 인증이 활성화되었습니다.</span></div>' +
+      '<div style="border:1px solid var(--color-ember,#ffae80);background:color-mix(in oklab,var(--color-ember,#ffae80) 14%,#fff);border-radius:10px;padding:12px 14px;">' +
+        '<div style="font-weight:700;font-size:13px;margin-bottom:6px;">백업코드 (지금만 표시됩니다 — 안전한 곳에 보관)</div>' +
+        '<div style="font-size:12px;color:#555;margin-bottom:8px;">인증 기기를 분실했을 때 각 코드를 1회 사용해 로그인할 수 있습니다.</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-bottom:10px;">' + list + '</div>' +
+        '<button class="v3-btn v3-btn-sm" id="otp-copy-backup" type="button">전체 복사</button> ' +
+        '<button class="v3-btn v3-btn-sm v3-btn-primary" id="otp-backup-done" type="button">저장했습니다</button>' +
+      '</div>';
+    var copyAll = body.querySelector('#otp-copy-backup');
+    if (copyAll) copyAll.addEventListener('click', function () {
+      try { navigator.clipboard.writeText((codes || []).join('\n')); if (GW.showToast) GW.showToast('백업코드를 복사했습니다.', 'success'); } catch (_) {}
+    });
+    body.querySelector('#otp-backup-done').addEventListener('click', function () { _renderOtpCard(); });
+  }
+
+  // otp_required 응답(쿠키 만료 등) → 현재 패널 기준으로 모달 재요청.
+  document.addEventListener('gw:admin-otp-required', function () {
+    _otpState.otpActive = false;
+    _otpPromptModal(function () { _otpMarkActive(); V3.showPanel(_panel, _settingsSection); });
+  });
+
   function _loadAccountSecurityUI() {
     var form = document.getElementById('account-password-form');
+    _renderOtpCard();
     if (!form) return;
     _setAccountPasswordStatus('', '');
     // Reset fields whenever the section is reopened.

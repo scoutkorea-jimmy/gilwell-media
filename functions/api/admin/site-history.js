@@ -1,5 +1,6 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
+import { requireOtp } from '../../_shared/otp-session.js';
 import { ensureHomepageIssuesTable, normalizeHomepageIssue } from '../../_shared/homepage-issues.js';
 import { ensureOperationalEventsTable } from '../../_shared/ops-log.js';
 
@@ -8,6 +9,7 @@ const MAX_LIMIT = 500;
 
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'site-history', 'view'); if (__gate) return __gate
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   try {
     await Promise.all([
