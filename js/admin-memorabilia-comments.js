@@ -70,6 +70,10 @@
       const url = `/api/admin/memorabilia-comments?status=${encodeURIComponent(state.status)}&page=${state.page}&pageSize=${state.pageSize}`;
       const res = await fetch(url, { credentials: 'same-origin' });
       if (!res.ok) {
+        // 2단계 인증 필요 — OTP 모달 트리거(admin-v3 수신, 통과 후 재진입 로드).
+        if (res.status === 401) {
+          try { const j = await res.clone().json(); if (j && j.error === 'otp_required') { document.dispatchEvent(new CustomEvent('gw:admin-otp-required')); wrap.innerHTML = '<div style="padding:24px; text-align:center; color:var(--gray-500,#8f8f8f);">2단계 인증이 필요합니다…</div>'; return; } } catch (_) {}
+        }
         wrap.innerHTML = `<div style="padding:24px; text-align:center; color:var(--color-fire-red,#ff5655);">불러오기 실패 (${res.status})</div>`;
         return;
       }

@@ -1,10 +1,12 @@
 import { extractToken, verifyTokenRole } from '../../_shared/auth.js';
 import { gateMenuAccess } from '../../_shared/admin-permissions.js';
+import { requireOtp } from '../../_shared/otp-session.js';
 import { ensureHomepageIssuesTable, normalizeHomepageIssue } from '../../_shared/homepage-issues.js';
 import { deriveIp, logOperationalEvent } from '../../_shared/ops-log.js';
 
 export async function onRequestGet({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'homepage-issues', 'view'); if (__gate) return __gate
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   try {
     await ensureHomepageIssuesTable(env);
@@ -55,6 +57,7 @@ export async function onRequestGet({ request, env }) {
 
 export async function onRequestPost({ request, env }) {
   const __gate = await gateMenuAccess(request, env, 'homepage-issues', 'write'); if (__gate) return __gate
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
   await logOperationalEvent(env, {
     channel: 'admin',
     type: 'homepage_issue_manual_blocked',

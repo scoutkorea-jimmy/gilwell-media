@@ -7,6 +7,7 @@
  */
 
 import { gateMenuAccess, loadAdminSession } from '../../_shared/admin-permissions.js';
+import { requireOtp } from '../../_shared/otp-session.js';
 import { serializeCommentAdmin } from '../../_shared/memorabilia-comments.js';
 
 const ALLOWED_STATUSES = new Set(['pending', 'approved', 'rejected', 'deleted', 'all']);
@@ -15,6 +16,7 @@ const MAX_PAGE_SIZE = 100;
 export async function onRequestGet({ request, env }) {
   const gate = await gateMenuAccess(request, env, 'memorabilia-comments', 'view');
   if (gate) return gate;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   const url = new URL(request.url);
 

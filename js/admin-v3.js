@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.01
+ * Version: 03.149.02
  *
  * Versioning:
  *   V3.aaa.bb
@@ -1317,7 +1317,7 @@
     }
 
     // 2단계 인증 게이트 (민감 메뉴) — 등록 계정이고 OTP 미통과면 모달 후 재진입.
-    if (!_otpGate(panel, settingsSection, function () { V3.showPanel(panel, settingsSection); })) return;
+    if (!_otpGate(panel, settingsSection)) return;
 
     if (_panel === 'write' && panel !== 'write') _stopDraftTimer();
     _panel = panel;
@@ -1608,39 +1608,44 @@
   ══════════════════════════════════════════════════════════ */
   var _accountPasswordBound = false;
   // ── 2단계 인증 (OTP / TOTP) ──────────────────────────────────────────────
-  // 민감 메뉴(사이트 히스토리·사용자 관리·프리셋 관리·개인정보 처리방침) 진입 시
-  // 등록된 계정에 한해 6자리 OTP 를 확인. 통과하면 10분(서버 admin_otp 쿠키)간 생략.
-  var _otpState = { loaded: false, enrolled: false, otpActive: false };
-  var _otpActiveTimer = null;
-  var _OTP_SENSITIVE_PANELS = { 'site-history': 1, 'account-users': 1, 'account-presets': 1 };
+  // 민감 메뉴(사용자 관리·프리셋 관리·사이트 히스토리·오류/이슈 기록·도감 댓글 승인·
+  // 개인정보 처리방침) 진입 시 등록된 계정에 한해 매번 6자리 OTP 를 확인한다.
+  var _otpState = { loaded: false, enrolled: false };
+  var _otpJustPassed = false; // 모달 통과 직후 onOk→showPanel 재진입 1회 허용용
+  var _OTP_SENSITIVE_PANELS = {
+    'account-users': 1, 'account-presets': 1, 'site-history': 1,
+    'homepage-issues': 1, 'memorabilia-comments': 1,
+  };
   var _OTP_SENSITIVE_SECTIONS = { 'privacy-policy': 1 };
 
   function _otpIsSensitive(panel, section) {
     if (panel === 'settings' && section && _OTP_SENSITIVE_SECTIONS[section]) return true;
     return !!_OTP_SENSITIVE_PANELS[panel];
   }
-  function _otpMarkActive() {
-    _otpState.otpActive = true;
-    if (_otpActiveTimer) clearTimeout(_otpActiveTimer);
-    // 서버 쿠키 10분 — 9분 후 클라 캐시를 만료시켜 재진입 시 다시 확인.
-    _otpActiveTimer = setTimeout(function () { _otpState.otpActive = false; }, 9 * 60 * 1000);
-  }
   function _fetchOtpState() {
     return GW.apiFetch('/api/admin/totp').then(function (d) {
       _otpState.loaded = true;
       _otpState.enrolled = !!(d && d.enrolled);
-      _otpState.otpActive = !!(d && d.otp_active);
-      if (_otpState.otpActive) _otpMarkActive();
       return _otpState;
     }).catch(function () { _otpState.loaded = true; return _otpState; });
   }
 
-  // 민감 메뉴 진입 게이트 — 모달 통과 후 onOk() 호출. 반환 true = 즉시 통과.
-  function _otpGate(panel, section, onOk) {
+  // 민감 메뉴 진입 게이트 — 등록 계정은 진입할 때마다 OTP 확인('매번').
+  // 통과 시 _otpJustPassed 로 재진입 1회만 통과시키고, 해당 메뉴를 다시 눌러
+  // (showPanel + 패널 자체 로더까지) 데이터를 새로 불러온다.
+  function _otpGate(panel, section) {
     if (!_otpIsSensitive(panel, section)) return true;
-    if (!_otpState.enrolled || _otpState.otpActive) return true;
-    _otpPromptModal(function () { _otpMarkActive(); onOk(); });
+    if (!_otpState.enrolled) return true;
+    if (_otpJustPassed) { _otpJustPassed = false; return true; }
+    _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(panel, section); });
     return false;
+  }
+  // OTP 통과 후 해당 메뉴 재진입 — nav 버튼을 다시 클릭해 모든 로더를 재실행.
+  function _otpReenter(panel, section) {
+    var sel = '#v3-nav .v3-nav-item[data-panel="' + panel + '"]';
+    if (panel === 'settings' && section) sel += '[data-settings-section="' + section + '"]';
+    var btn = document.querySelector(sel);
+    if (btn) btn.click(); else V3.showPanel(panel, section);
   }
 
   // OTP 입력 모달 (TOTP 6자리 또는 백업코드). 성공 시 onVerified().
@@ -1710,8 +1715,6 @@
       .then(function (d) {
         _otpState.loaded = true;
         _otpState.enrolled = !!(d && d.enrolled);
-        _otpState.otpActive = !!(d && d.otp_active);
-        if (_otpState.otpActive) _otpMarkActive();
         if (_otpState.enrolled) _otpRenderEnabled(body);
         else _otpRenderSetupStart(body);
       })
@@ -1736,7 +1739,7 @@
     if (code == null) return;
     GW.apiFetch('/api/admin/totp', { method: 'DELETE', body: JSON.stringify({ code: String(code).trim() }) })
       .then(function () {
-        _otpState.enrolled = false; _otpState.otpActive = false;
+        _otpState.enrolled = false;
         if (GW.showToast) GW.showToast('2단계 인증을 해제했습니다.', 'success');
         _otpRenderSetupStart(body);
       })
@@ -1793,7 +1796,7 @@
       cbtn.disabled = true; cerr.textContent = '';
       GW.apiFetch('/api/admin/totp/confirm', { method: 'POST', body: JSON.stringify({ code: code }) })
         .then(function (r) {
-          _otpState.enrolled = true; _otpMarkActive();
+          _otpState.enrolled = true; _otpJustPassed = false;
           _otpRenderBackupCodes(body, (r && r.backup_codes) || []);
         })
         .catch(function (err) { cbtn.disabled = false; cerr.textContent = (err && err.data && err.data.reason) || '코드가 올바르지 않습니다.'; cinput.select(); });
@@ -1819,10 +1822,10 @@
     body.querySelector('#otp-backup-done').addEventListener('click', function () { _renderOtpCard(body); });
   }
 
-  // otp_required 응답(쿠키 만료 등) → 현재 패널 기준으로 모달 재요청.
+  // otp_required 응답(직접 호출·미들웨어 차단 등) → 모달 후 현재 메뉴 재진입(재로드).
   document.addEventListener('gw:admin-otp-required', function () {
-    _otpState.otpActive = false;
-    _otpPromptModal(function () { _otpMarkActive(); V3.showPanel(_panel, _settingsSection); });
+    if (document.getElementById('otp-verify-overlay')) return; // 이미 모달 떠 있으면 중복 방지
+    _otpPromptModal(function () { _otpJustPassed = true; _otpReenter(_panel, _settingsSection); });
   });
 
   function _loadAccountSecurityUI() {

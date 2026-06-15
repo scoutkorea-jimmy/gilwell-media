@@ -79,6 +79,18 @@ export async function requireOtp(request, env) {
   if (!row || !Number(row.totp_enabled)) return null; // 미등록 → 게이트 미적용(점진 도입)
   const cookie = readCookie(request, OTP_COOKIE);
   if (cookie && await readOtpToken(cookie, env.ADMIN_SECRET, session.uid)) return null;
+  // 차단 — 민감 메뉴 접근이 OTP 미통과로 막혔음을 감사 로그에 기록(사이트 히스토리).
+  let path = '';
+  try { path = new URL(request.url).pathname; } catch (_) {}
+  try {
+    await logOperationalEvent(env, {
+      channel: 'admin', type: 'otp_blocked', level: 'warn',
+      actor: session.username || ('uid:' + session.uid),
+      path,
+      message: '2단계 인증 미통과로 민감 메뉴 접근이 차단되었습니다.',
+      details: { uid: session.uid, username: session.username || null },
+    });
+  } catch (_) {}
   return new Response(
     JSON.stringify({ error: 'otp_required', reason: '2단계 인증(OTP)이 필요합니다.' }),
     { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }

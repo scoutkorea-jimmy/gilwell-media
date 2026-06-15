@@ -10,12 +10,14 @@
  */
 
 import { gateMenuAccess, loadAdminSession } from '../../../_shared/admin-permissions.js';
+import { requireOtp } from '../../../_shared/otp-session.js';
 
 const ALLOWED_STATUSES = new Set(['approved', 'rejected', 'deleted']);
 
 export async function onRequestPatch({ request, env, params }) {
   const gate = await gateMenuAccess(request, env, 'memorabilia-comments', 'write');
   if (gate) return gate;
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   const session = await loadAdminSession(request, env);
   const reviewerLabel = session && (session.username || `user#${session.uid}`);

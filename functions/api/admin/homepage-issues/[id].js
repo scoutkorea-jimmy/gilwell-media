@@ -1,10 +1,12 @@
 import { extractToken, verifyTokenRole } from '../../../_shared/auth.js';
 import { gateMenuAccess } from '../../../_shared/admin-permissions.js';
+import { requireOtp } from '../../../_shared/otp-session.js';
 import { ensureHomepageIssuesTable, normalizeHomepageIssue, HOMEPAGE_ISSUE_STATUS_OPTIONS } from '../../../_shared/homepage-issues.js';
 import { deriveIp, logOperationalEvent } from '../../../_shared/ops-log.js';
 
 export async function onRequestPatch({ request, env, params }) {
   const __gate = await gateMenuAccess(request, env, 'homepage-issues', 'write'); if (__gate) return __gate
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
   const id = parseId(params && params.id);
   if (!id) return json({ error: '유효하지 않은 이슈 ID입니다.' }, 400);
   await ensureHomepageIssuesTable(env);
@@ -57,6 +59,7 @@ export async function onRequestPatch({ request, env, params }) {
 
 export async function onRequestDelete({ request, env, params }) {
   const __gate = await gateMenuAccess(request, env, 'homepage-issues', 'write'); if (__gate) return __gate
+  const __otp = await requireOtp(request, env); if (__otp) return __otp;
 
   const id = parseId(params && params.id);
   if (!id) return json({ error: '유효하지 않은 이슈 ID입니다.' }, 400);

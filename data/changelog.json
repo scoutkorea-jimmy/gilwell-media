@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "03.149.02",
+    "date": "2026-06-15",
+    "released_at": "2026-06-16 00:30:00 KST",
+    "summary": "OTP 적용 메뉴에 오류/이슈 기록·도감 댓글 승인 추가, 그리고 '진입할 때마다(매번)' 확인으로 변경.",
+    "for_users": [
+      "2단계 인증(OTP) 대상 메뉴가 6개가 되었습니다: 사용자 관리 · 프리셋 관리 · 사이트 히스토리 · 오류/이슈 기록 · 도감 댓글 승인 · 개인정보 처리방침.",
+      "이전엔 한 번 통과하면 10분간 생략했지만, 이제 이 메뉴들에 들어갈 때마다 매번 6자리를 확인합니다.",
+      "참고: 개인정보 처리방침은 이전 요청대로 그대로 포함했습니다. 빼고 싶으시면 말씀해 주세요."
+    ],
+    "for_developers": [
+      "게이팅 추가: functions/api/admin/homepage-issues.js(GET view·POST write)·homepage-issues/[id].js(PATCH·DELETE), memorabilia-comments.js(GET view)·memorabilia-comments/[id].js(PATCH write) 에 requireOtp. 공개 엔드포인트(/api/homepage-issues/report, /api/memorabilia/*)는 불변.",
+      "프론트(admin-v3.js): _OTP_SENSITIVE_PANELS 에 homepage-issues·memorabilia-comments 추가. '매번' 적용 — otpActive/10분 grace 제거, _otpGate 는 등록 계정이면 진입마다 모달, 통과 시 _otpJustPassed 1회 + _otpReenter(해당 nav 재클릭)로 showPanel+패널 자체 로더까지 재실행. gw:admin-otp-required 핸들러도 _otpReenter 사용(중복 모달 가드).",
+      "admin-memorabilia-comments.js: 독자 nav 리스너+raw fetch 라, 목록 fetch 401 otp_required 시 gw:admin-otp-required 디스패치(부팅 직후 enrolled 미로딩 레이스 백스톱).",
+      "카드 설명/표현 '10분간 재확인 생략' → '진입할 때마다 다시 확인'. 관리자 버전 03.149.01 → 03.149.02."
+    ]
+  },
+  {
     "version": "03.149.01",
     "date": "2026-06-15",
     "released_at": "2026-06-15 23:55:00 KST",
