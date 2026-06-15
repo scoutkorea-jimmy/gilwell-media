@@ -1378,6 +1378,8 @@
     var from = String(_state.changelogFrom || '');
     var to   = String(_state.changelogTo   || '');
     var filtered = items.filter(function (item) {
+      // Dreampath 전용 엔트리는 공개 BP미디어 버전기록에서 제외(드림패스 자체 기록으로 분리)
+      if (item && item.target === 'dreampath') return false;
       // scope
       var s = inferChangelogScope(item);
       if (scope === 'both' && s !== 'both') return false;

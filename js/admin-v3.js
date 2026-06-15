@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.147.00
+ * Version: 03.148.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -7109,6 +7109,8 @@
   function _filterReleases(items, scope, query, from, to) {
     var q = String(query || '').trim().toLowerCase();
     return items.filter(function (item) {
+      // Dreampath 전용 엔트리는 BP미디어 버전기록에서 제외(드림패스 자체 Versions 로 분리)
+      if (item && item.target === 'dreampath') return false;
       // scope 필터
       var s = _inferReleaseScope(item);
       if (scope !== 'all' && s !== scope && s !== 'both') return false;
