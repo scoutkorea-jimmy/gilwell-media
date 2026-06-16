@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.07
+ * Version: 03.149.08
  *
  * Versioning:
  *   V3.aaa.bb
@@ -323,6 +323,7 @@
           if (!response.ok) {
             // 2단계 인증 필요 — 재로그인 아님. OTP 모달 트리거 + 전용 에러로 표면화.
             if (data && data.error === 'otp_required') {
+              if (data._dbg) { try { console.warn('[otp_dbg]', JSON.stringify(data._dbg), 'url=' + url); } catch (_) {} try { if (!window.__otpDbgShown && window.GW && GW.showToast) { window.__otpDbgShown = 1; setTimeout(function(){ window.__otpDbgShown = 0; }, 6000); GW.showToast('OTP진단: ' + JSON.stringify(data._dbg), 'error', 10000); } } catch (_) {} }
               document.dispatchEvent(new CustomEvent('gw:admin-otp-required'));
               var _oe = new Error((data && data.reason) || '2단계 인증이 필요합니다.');
               _oe.status = response.status; _oe.otpRequired = true; _oe.data = data;

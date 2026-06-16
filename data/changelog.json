@@ -1,6 +1,19 @@
 {
   "items": [
   {
+    "version": "03.149.08",
+    "date": "2026-06-16",
+    "released_at": "2026-06-16 09:10:00 KST",
+    "summary": "임시 진단 빌드 — OTP 차단 시점의 헤더/쿠키 상태를 응답·토스트로 노출해 원인을 확정한다.",
+    "for_users": [
+      "임시 진단 빌드입니다. 민감 메뉴에 들어갈 때 뜨는 빨간 'OTP진단' 토스트의 내용을 알려주시면 원인을 정확히 잡아 바로 고칩니다."
+    ],
+    "for_developers": [
+      "requireOtp 401 응답에 _dbg{ hdr, hdrLen, hdrValid, ck, ckValid, uid, secret } 추가. admin-v3 _apiFetch·admin-account _api 인터셉터가 console.warn('[otp_dbg]') + 토스트 1회 노출. 원인 확인 후 다음 빌드에서 제거.",
+      "관리자 버전 03.149.07 → 03.149.08."
+    ]
+  },
+  {
     "version": "03.149.07",
     "date": "2026-06-16",
     "released_at": "2026-06-16 02:35:00 KST",

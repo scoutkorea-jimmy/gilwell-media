@@ -83,11 +83,17 @@ export async function requireOtp(request, env) {
   // 토큰 전송: 헤더(X-Admin-Otp) 우선 + 쿠키(admin_otp) 백업. 둘 중 하나라도 유효하면 통과.
   // 헤더 경로는 프론트가 sessionStorage 토큰을 직접 실어 보내므로 쿠키 저장/전송 이슈를 우회한다.
   const headerTok = request.headers.get('X-Admin-Otp') || '';
-  if (headerTok && await readOtpToken(headerTok, env.ADMIN_SECRET, session.uid)) return null;
+  const headerValid = headerTok ? !!(await readOtpToken(headerTok, env.ADMIN_SECRET, session.uid)) : false;
+  if (headerValid) return null;
   const cookieTok = readCookie(request, OTP_COOKIE) || '';
-  if (cookieTok && await readOtpToken(cookieTok, env.ADMIN_SECRET, session.uid)) return null;
+  const cookieValid = cookieTok ? !!(await readOtpToken(cookieTok, env.ADMIN_SECRET, session.uid)) : false;
+  if (cookieValid) return null;
+  // 진단(_dbg): 차단 시점에 헤더/쿠키가 왔는지·유효한지. (원인 확정용 — 확인 후 제거)
   return new Response(
-    JSON.stringify({ error: 'otp_required', reason: '2단계 인증(OTP)이 필요합니다.' }),
+    JSON.stringify({
+      error: 'otp_required', reason: '2단계 인증(OTP)이 필요합니다.',
+      _dbg: { hdr: !!headerTok, hdrLen: headerTok.length, hdrValid: headerValid, ck: !!cookieTok, ckValid: cookieValid, uid: session.uid, secret: !!env.ADMIN_SECRET },
+    }),
     { status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' } }
   );
 }

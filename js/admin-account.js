@@ -49,6 +49,7 @@
           if (!res.ok) {
             // 2단계 인증 필요 — 재로그인 아님. OTP 모달 트리거(admin-v3 가 수신).
             if (data && data.error === 'otp_required') {
+              if (data._dbg) { try { console.warn('[otp_dbg]', JSON.stringify(data._dbg), 'url=' + path); } catch (_) {} try { if (!window.__otpDbgShown && GW.showToast) { window.__otpDbgShown = 1; setTimeout(function(){ window.__otpDbgShown = 0; }, 6000); GW.showToast('OTP진단: ' + JSON.stringify(data._dbg), 'error', 10000); } } catch (_) {} }
               try { document.dispatchEvent(new CustomEvent('gw:admin-otp-required')); } catch (_) {}
             }
             var err = new Error((data && data.error) || ('HTTP ' + res.status));
