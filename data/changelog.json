@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.171.01",
+    "date": "2026-06-19",
+    "released_at": "2026-06-19 01:00:00 KST",
+    "summary": "운영 주체(/about) 페이지의 상단 메뉴(GNB) 미표시 버그를 고치고, 운영 주체·관리 책임 등 실제 정보로 내용을 갱신하며 가독성을 높였다. 푸터 'About us' 바로가기를 개인정보 처리방침 위로 배치했다.",
+    "for_users": [
+      "운영 주체 페이지에서 사라져 있던 상단 메뉴(GNB)가 정상적으로 표시됩니다.",
+      "운영 주체(한국스카우트연맹 경기남부연맹 제4124대 백룡동우회)와 관리 책임(박지민 대장), 연락처 등 실제 정보로 내용을 갱신했고, '한눈에 보기' 요약 카드·섹션 번호·큰 글씨로 더 읽기 쉽게 바꿨습니다.",
+      "모든 페이지 하단의 'About us' 바로가기를 '개인정보 처리방침' 바로 위로 옮겨 함께 묶었습니다."
+    ],
+    "for_developers": [
+      "GNB 버그 원인: about.html 이 GW.bootstrapStandardPage() 를 호출하지 않았고 홈 전용 모듈 로더 속성(data-gw-script-module/data-gw-script-primary)을 쓰고 있었음. contributors.html 패턴(평범한 main.js+site-chrome.js 로드 + 인라인 GW.bootstrapStandardPage())으로 교체 → renderManagedNav 가 실행되어 .nav[data-managed-nav] 가 노출됨. 인라인 스크립트는 _middleware.js 의 HTMLRewriter nonce 주입으로 strict-dynamic CSP 하에서 정상 실행.",
+      "내용: 운영 주체/관리 책임/전화(tel:)/필진 익명 허용/이미지 이용 범위/2FA 고지 등 갱신. JSON-LD NewsMediaOrganization 에 parentOrganization(백룡동우회) + contactPoint(관리 책임 telephone) 반영.",
+      "가독성 CSS(css/style.css): .about-page lead 17px·본문 16px, .about-sec-num 배지(흰 글자 on --scouting-purple Lc92.4), .about-summary 키/값 카드(--gray-100), 섹션 h2 하단 보더. 모두 토큰·APCA 준수.",
+      "푸터: 11개 풀푸터 페이지 + about.html 의 .footer-about-link 를 .footer-privacy-link 위로 이동 + 라벨 '운영 주체 안내'→'About us'. 인접 셀렉터로 간격 조정.",
+      "참고: editorial-policy.html 도 동일하게 GNB 미부트스트랩(빈 #site-footer) 상태 — 이번 범위 밖, 별도 정리 필요. 사이트 버전 00.171.00 → 00.171.01."
+    ]
+  },
+  {
     "version": "00.171.00",
     "date": "2026-06-18",
     "released_at": "2026-06-18 21:11:00 KST",

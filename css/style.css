@@ -3519,7 +3519,11 @@ footer::before {
 .footer-brand .footer-privacy-link {
   margin-top: var(--gap-element); /* 12px token — 연락처 그룹과 시각적으로 분리 */
 }
+/* About us 가 연락처 그룹과 분리되고, 바로 뒤 개인정보 링크는 붙여 한 묶음으로. */
 .footer-brand .footer-about-link {
+  margin-top: var(--gap-element);
+}
+.footer-brand .footer-about-link + .footer-privacy-link {
   margin-top: 4px;
 }
 .footer-brand .footer-privacy-link a,
@@ -7356,6 +7360,103 @@ footer a:hover { color: var(--white); }
   font-size: 13px;
   color: var(--gray-700, var(--gray-700));
 }
+
+/* ── /about 운영주체 페이지 — 가독성 강화 ───────────────────────────── */
+.about-page .static-page-lead {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.about-page .static-page-section {
+  margin: 40px 0;
+}
+.about-page .static-page-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  line-height: 1.35;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--gray-100);
+}
+.about-page .static-page-section p,
+.about-page .static-page-section li {
+  font-size: 16px;
+  line-height: 1.75;
+}
+.about-page .static-page-section li {
+  margin: 8px 0;
+}
+.about-head-en {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+/* 섹션 번호 배지 — 흰 글자 on Scouting Purple(Lc 92.4) → 고대비 */
+.about-sec-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--scouting-purple);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+}
+/* 한눈에 보기 — 키/값 요약 카드 */
+.about-glance h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.about-summary {
+  margin: 12px 0 0;
+  padding: 8px 20px;
+  background: var(--gray-100);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-300);
+}
+.about-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-300);
+}
+.about-summary-row:last-child {
+  border-bottom: none;
+}
+.about-summary-row dt {
+  flex: 0 0 96px;
+  font-weight: 700;
+  color: var(--scouting-purple);
+  font-size: 15px;
+}
+.about-summary-row dd {
+  flex: 1 1 60%;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.about-summary-sub {
+  margin-left: 6px;
+  font-size: 13px;
+  color: var(--gray-700);
+}
+.about-summary-tel {
+  margin-left: 8px;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .about-summary-row dt { flex-basis: 100%; }
+}
+
 .post-page-body h2,
 .post-page-body h3,
 .post-page-body h4 {
