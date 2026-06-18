@@ -7372,12 +7372,12 @@ footer a:hover { color: var(--white); }
 }
 .about-page .static-page-section h2 {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  line-height: 1.35;
-  padding-bottom: 10px;
-  border-bottom: 2px solid var(--gray-100);
+  align-items: baseline;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
 }
 .about-page .static-page-section p,
 .about-page .static-page-section li {
@@ -7394,24 +7394,28 @@ footer a:hover { color: var(--white); }
   font-weight: 500;
   color: var(--gray-700);
 }
-/* 섹션 번호 배지 — 흰 글자 on Scouting Purple(Lc 92.4) → 고대비 */
+/* 섹션 번호 — 차분한 회색 텍스트(배지·테두리 없음, gray-700 Lc 96.2) */
 .about-sec-num {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--scouting-purple);
-  color: var(--white);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
+  color: var(--gray-700);
 }
-/* 한눈에 보기 — 키/값 요약 카드 */
-.about-glance h2 {
-  border-bottom: none;
-  padding-bottom: 0;
+/* GNB ↔ 본문 사이 가로 배너 — 전체 폭, 반응형 높이. 이미지 전달 전엔
+   중립 플레이스홀더(gray-100). 이미지는 background-image 또는 .about-hero-img 로. */
+.about-hero {
+  width: 100%;
+  margin: 0;
+  line-height: 0;                 /* inline-img 하단 여백 제거 */
+  background-color: var(--gray-100);
+}
+.about-hero-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 440px;              /* 큰 화면에선 너무 높아지지 않게 캡 */
+  object-fit: cover;
+  object-position: center;
 }
 .about-summary {
   margin: 12px 0 0;

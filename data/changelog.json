@@ -1,6 +1,22 @@
 {
   "items": [
   {
+    "version": "00.171.02",
+    "date": "2026-06-19",
+    "released_at": "2026-06-19 01:16:00 KST",
+    "summary": "운영 주체(/about) 페이지의 섹션 제목을 차분하게 다듬고, 상단 메뉴와 본문 사이에 가로 배너(서울 전경+스카우트 지면 합성 이미지)를 추가했다.",
+    "for_users": [
+      "운영 주체 페이지 섹션 제목의 강한 번호 배지·굵은 밑줄을 덜어내 차분하게 바꿨습니다.",
+      "상단 메뉴와 본문 사이에 BP미디어 배너 이미지(서울 도심 전경과 스카우트 지면 합성)를 가로로 넣었습니다."
+    ],
+    "for_developers": [
+      "섹션 제목 톤다운: .about-sec-num 을 채운 보라 원형 배지 → gray-700 일반 번호, h2 의 2px 하단 보더 제거·19px 로 축소(css/style.css).",
+      "배너: about.html 의 </header> 와 <main> 사이에 .about-hero + .about-hero-img(/img/about-banner.jpg) 삽입. 전체 폭 full-bleed, height auto + max-height 440px + object-fit cover(큰 화면 캡, 작은 화면 전체 표시).",
+      "이미지 자산: 원본 2.3MB PNG(1717x916)를 sips 로 JPEG q82(417KB, 81%↓) 변환해 img/about-banner.jpg 로 저장, 원본 'About us.png'(공백 파일명) 제거.",
+      "사이트 버전 00.171.01 → 00.171.02."
+    ]
+  },
+  {
     "version": "00.171.01",
     "date": "2026-06-19",
     "released_at": "2026-06-19 01:00:00 KST",
