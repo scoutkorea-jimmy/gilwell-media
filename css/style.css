@@ -7359,7 +7359,9 @@ footer a:hover { color: var(--white); }
   border-top: 1px solid var(--gray-300, var(--gray-300));
   font-size: 13px;
   color: var(--gray-700, var(--gray-700));
+  background: none;   /* 전역 footer{보라 그라데이션} 상속 차단 (footer 태그로 쓰여도 안전) */
 }
+.static-page-foot::before { content: none; }
 
 /* ── /about 운영주체 페이지 — 가독성 강화 ───────────────────────────── */
 .about-page .static-page-lead {

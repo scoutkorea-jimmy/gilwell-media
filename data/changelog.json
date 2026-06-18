@@ -1,6 +1,20 @@
 {
   "items": [
   {
+    "version": "00.171.03",
+    "date": "2026-06-19",
+    "released_at": "2026-06-19 01:26:00 KST",
+    "summary": "정적 페이지(운영 주체·편집 정책) 맨 아래 안내문이 보라색 박스로 동떨어져 보이던 문제를 고쳤다.",
+    "for_users": [
+      "운영 주체·편집 정책 페이지 맨 아래의 작은 안내 문구가 어색한 보라색 박스로 따로 떠 보이던 것을 일반 텍스트로 정리했습니다."
+    ],
+    "for_developers": [
+      "원인: 페이지 하단 안내문을 <footer class=\"static-page-foot\"> 로 마크업해 전역 footer{ background:var(--gradient-purple-deep) } + footer::before + footer p/a 컬러를 상속받음. about.html·editorial-policy.html 의 해당 요소를 <footer>→<div> 로 교체.",
+      "재발 방지: .static-page-foot 에 background:none + .static-page-foot::before{content:none} 추가(footer 태그로 다시 쓰여도 안전).",
+      "사이트 버전 00.171.02 → 00.171.03."
+    ]
+  },
+  {
     "version": "00.171.02",
     "date": "2026-06-19",
     "released_at": "2026-06-19 01:16:00 KST",
