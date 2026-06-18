@@ -2141,7 +2141,10 @@ body[data-home-bootstrap] .lang-btn:hover {
 
 .home-priority-main,
 .home-priority-side {
-  height: var(--home-priority-height);
+  /* 고정 height 대신 min-height 바닥값만 — 최신 소식 제목이 2줄로 늘어나면
+     영역이 콘텐츠에 맞춰 자연스럽게 커지고, 부모 grid 의 align-items:stretch 가
+     메인 스토리를 같은 높이로 늘려 맞춘다. (이전 height:640px 는 콘텐츠가
+     넘칠 때 하단 RSS/검색 버튼이 오버플로우했다.) */
   min-height: var(--home-priority-height);
 }
 

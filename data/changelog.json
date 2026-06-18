@@ -1,6 +1,21 @@
 {
   "items": [
   {
+    "version": "00.170.11",
+    "date": "2026-06-18",
+    "released_at": "2026-06-18 19:38:00 KST",
+    "summary": "홈 상단 '최신 소식' 제목이 2줄로 길어질 때 하단(RSS·검색 버튼)이 잘리던 오버플로우를 고치고, 영역이 콘텐츠에 맞춰 자연스럽게 늘어나도록 했다.",
+    "for_users": [
+      "홈 화면 오른쪽 '최신 소식'의 기사 제목이 두 줄로 길어져도 아래쪽 'RSS 구독'·'사이트 검색' 버튼이 잘리지 않습니다.",
+      "내용 길이에 맞춰 '최신 소식' 칸이 자연스럽게 늘어나고, 왼쪽 '메인 스토리'도 같은 높이로 함께 늘어나 좌우 균형이 유지됩니다."
+    ],
+    "for_developers": [
+      ".home-priority-main / .home-priority-side 의 고정 height:640px(--home-priority-height) 를 제거하고 min-height 바닥값만 유지. 부모 .home-priority grid 의 align-items:stretch 가 두 컬럼 높이를 자동 동기화 → 짧은 쪽(메인 스토리)이 긴 쪽(최신 소식)에 맞춰 stretch. 콘텐츠가 640px 를 넘으면 박스가 고정 높이에 갇혀 하단이 overflow 되던 문제 해소.",
+      "css/style.css 2142-2146 라인. 모바일(max-width:900px) override(height:auto/min-height:0)는 영향 없음.",
+      "사이트 버전 00.170.10 → 00.170.11."
+    ]
+  },
+  {
     "version": "03.149.08",
     "date": "2026-06-16",
     "released_at": "2026-06-16 09:10:00 KST",
