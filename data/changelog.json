@@ -1,6 +1,23 @@
 {
   "items": [
   {
+    "version": "00.171.00",
+    "date": "2026-06-18",
+    "released_at": "2026-06-18 21:11:00 KST",
+    "summary": "'운영 주체(About)' 페이지를 신설하고 모든 페이지 푸터에 링크를 달아, 누가·어떻게 매체를 운영하는지와 공식 연맹과의 비공식 관계를 투명하게 공개한다 (검색·광고 정책 신뢰 신호 강화).",
+    "for_users": [
+      "사이트 하단(푸터)에 '운영 주체 안내' 링크가 생겼습니다. 클릭하면 BP미디어가 누구이고, 한국스카우트연맹·세계스카우트연맹의 공식 채널이 아닌 독립 매체라는 점, 기사를 어떻게 취재·재가공하는지, 운영·재정은 어떻게 되는지를 한 페이지에서 확인할 수 있습니다.",
+      "이 페이지는 우리가 보도자료를 그대로 옮기는 곳이 아니라 1차 자료에 맥락·해설을 더해 다시 쓰는 '편집 매체'임을 분명히 하여, 검색·광고 심사에서 콘텐츠 독창성·신뢰도를 더 잘 인정받도록 돕습니다."
+    ],
+    "for_developers": [
+      "신규 정적 페이지 about.html (editorial-policy.html 템플릿 기반, 풀 푸터 사용). AboutPage + NewsMediaOrganization JSON-LD(publishingPrinciples/ethicsPolicy/ownershipFundingInfo/contactPoint) 포함.",
+      "백엔드 등록: site-structure.mjs SITE_PAGE_KEY_BY_PATH('/about'→'about') + SITE_PATH_TITLE_FALLBACKS('/about','/about.html'='운영 주체'), site-meta.js DEFAULT_SITE_META.pages.about(title/description). [[path]].js 메타 주입·canonical 자동 적용(normalizePagePath 가 /about.html→/about).",
+      "노출/라우팅: functions/sitemap.xml staticPages 에 /about(priority 0.5) 추가, _redirects 에 '/about.html /about 301'. 11개 풀푸터 페이지(index·korea·apr·wosm·people·latest·glossary·calendar·contributors·search·privacy) footer-brand 에 .footer-about-link 삽입.",
+      "CSS: css/style.css 에 .static-page-callout(--scouting-purple 좌측 보더 + --gray-100 배경 + --ink, APCA |Lc| 90+) 및 .footer-about-link(=privacy-link 스타일 공유) 추가.",
+      "사이트 버전 00.170.11 → 00.171.00."
+    ]
+  },
+  {
     "version": "00.170.11",
     "date": "2026-06-18",
     "released_at": "2026-06-18 19:38:00 KST",

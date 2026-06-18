@@ -78,6 +78,10 @@ const DEFAULT_SITE_META = {
       title: '편집 정책 · BP미디어',
       description: 'BP미디어의 편집 원칙, 출처 검증 절차, 정정 정책, AI 사용 범위, 그리고 AI 크롤러·LLM 인용 정책을 공개합니다.',
     },
+    about: {
+      title: '운영 주체 · BP미디어',
+      description: 'BP미디어(길웰미디어)의 운영 주체, 공식 스카우트 연맹과의 관계, 뉴스 편집·재가공 방식, 저작권·출처 정책, 운영·재정 투명성을 안내합니다.',
+    },
   },
   footer: {
     raw_text: '',

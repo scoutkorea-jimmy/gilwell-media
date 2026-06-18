@@ -69,6 +69,7 @@ export const SITE_PAGE_KEY_BY_PATH = Object.freeze({
   '/memorabilia': 'memorabilia',
   '/search': 'search',
   '/editorial-policy': 'editorial_policy',
+  '/about': 'about',
 });
 
 export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
@@ -94,6 +95,8 @@ export const SITE_PATH_TITLE_FALLBACKS = Object.freeze({
   '/memorabilia.html': DEFAULT_NAV_LABELS['nav.memorabilia'].ko,
   '/contributors': DEFAULT_NAV_LABELS['nav.contributors'].ko,
   '/contributors.html': DEFAULT_NAV_LABELS['nav.contributors'].ko,
+  '/about': '운영 주체',
+  '/about.html': '운영 주체',
   '/dreampath': 'Dreampath',
   '/dreampath.html': 'Dreampath',
   '/search': '검색',

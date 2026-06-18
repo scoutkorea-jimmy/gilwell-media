@@ -28,6 +28,7 @@ SITE_FILES=(
   people.html
   glossary.html
   contributors.html
+  about.html
   search.html
   calendar.html
   memorabilia.html

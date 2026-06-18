@@ -3519,12 +3519,17 @@ footer::before {
 .footer-brand .footer-privacy-link {
   margin-top: var(--gap-element); /* 12px token — 연락처 그룹과 시각적으로 분리 */
 }
-.footer-brand .footer-privacy-link a {
+.footer-brand .footer-about-link {
+  margin-top: 4px;
+}
+.footer-brand .footer-privacy-link a,
+.footer-brand .footer-about-link a {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.footer-brand .footer-privacy-link a:hover {
+.footer-brand .footer-privacy-link a:hover,
+.footer-brand .footer-about-link a:hover {
   opacity: .75;
 }
 
@@ -7333,6 +7338,16 @@ footer a:hover { color: var(--white); }
   border-radius: var(--radius-tight);
   font-size: 13px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+.static-page-callout {
+  margin: 14px 0;
+  padding: 14px 18px;
+  background: var(--gray-100);
+  border-left: 4px solid var(--scouting-purple);
+  border-radius: var(--radius-tight);
+  color: var(--ink);           /* ink on gray-100 → APCA |Lc| 90+ (본문 가독) */
+  font-size: 15px;
+  line-height: 1.6;
 }
 .static-page-foot {
   margin-top: 40px;
