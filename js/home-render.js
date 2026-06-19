@@ -15,8 +15,9 @@
   ];
 
   function buildMiniItem(post, options) {
+    var miniFrameStyle = post.image_is_placeholder ? '' : GW.thumbFrameStyle(post);
     var thumb = post.image_url
-      ? '<img class="mini-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '" loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
+      ? '<img class="mini-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url) + '"' + (miniFrameStyle ? ' style="' + miniFrameStyle + '"' : '') + ' loading="lazy" alt="' + GW.escapeHtml(post.title || '') + '">'
       : '';
     // 카드 전체 영역 클릭 → 기사 이동. tabindex=-1 + aria-hidden으로 키보드/SR에는 기존 title anchor만 노출(중복 링크 회피).
     var overlayHref = '/post/' + post.id;

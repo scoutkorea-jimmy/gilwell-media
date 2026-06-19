@@ -1,6 +1,41 @@
 {
   "items": [
   {
+    "version": "00.172.00",
+    "date": "2026-06-20",
+    "released_at": "2026-06-20 14:30:00 KST",
+    "summary": "기사 대표 이미지의 '미리보기 위치'를 글마다 조정할 수 있게 했다 — 목차/홈 썸네일과 카카오·페북 공유(OG) 이미지에서 보여줄 부분을 좌우/상하로 옮긴다.",
+    "for_users": [
+      "기사 목록·홈의 썸네일과 카카오톡·페이스북 공유 카드에서, 대표 이미지의 어느 부분이 보일지 글마다 가로/세로로 맞출 수 있습니다(예: 인물 얼굴이 잘리지 않게).",
+      "위치를 따로 지정하지 않은 기존 글은 지금까지처럼 가운데 기준으로 그대로 보입니다."
+    ],
+    "for_developers": [
+      "posts.image_frame TEXT 컬럼 신설(JSON {\"x\":0-100,\"y\":0-100}, 중앙 50/50 은 NULL). db/migration_077_post_image_frame.sql · schema.sql 반영.",
+      "단일 원본 functions/_shared/image-frame.js (normalizeImageFrame / serializeImageFrameForStore). serializePostImage 가 정규화 객체로 노출, home.js·posts/index.js·posts/[id].js SELECT 에 image_frame 추가.",
+      "목차/리스트 썸네일: js/main.js GW.thumbFrameStyle → board.js .post-card-thumb, home-render.js .mini-thumb 에 object-position inline(비중앙일 때만).",
+      "OG: functions/api/og-image/[id].js 신설 — fetch(src,{cf:{image:{fit:'cover',gravity:{x,y},width:1200,height:630}}}) 로 초점 크롭. 변환 미활성 시 원본 그대로 반환하는 자가복구 구조(/api 미들웨어 헤더 set 대비 302 는 immutable Response.redirect 대신 일반 Response).",
+      "functions/post/[id].js 가 초점 지정 글의 og:image·twitter:image·JSON-LD image 를 /api/og-image/:id 로 전환(미지정 글은 기존 원본 경로 유지).",
+      "⚠ OG 초점 크롭 실제 적용에는 Cloudflare Image Transformations 활성화 필요(현재 zone 비활성, /cdn-cgi/image 404 확인). 활성화 전까지 og:image 는 원본 그대로 노출(자가복구).",
+      "사이트 버전 00.171.03 → 00.172.00."
+    ]
+  },
+  {
+    "version": "03.150.00",
+    "date": "2026-06-20",
+    "released_at": "2026-06-20 14:30:00 KST",
+    "summary": "관리자 글쓰기/수정 화면 '대표 이미지'에 미리보기 위치(가로·세로) 슬라이더를 추가해, 목차 썸네일·공유 이미지의 초점을 16:9 미리보기로 즉시 맞춘다.",
+    "for_users": [
+      "관리자 글쓰기·수정 화면의 '대표 이미지' 아래에 가로/세로 위치 슬라이더와 16:9 미리보기가 생겼습니다. 슬라이더를 움직이면 목차 썸네일·공유 카드에 보일 부분이 실시간으로 바뀝니다.",
+      "'가운데로 초기화' 버튼으로 언제든 기본(가운데)으로 되돌릴 수 있습니다."
+    ],
+    "for_developers": [
+      "admin.html 대표 이미지 카드에 #w-cover-frame-block 추가(16:9 #w-cover-frame-preview + #w-frame-x/#w-frame-y range + #w-frame-reset). 실제 대표 이미지가 있을 때만 노출.",
+      "js/admin-v3.js: _coverFrame 상태 + _renderCoverFrameControls/_onCoverFrameInput, _savePost body 에 image_frame:{x,y} 동봉, 수정 진입 시 p.image_frame 복원. 드래프트는 프레이밍 미보존(중앙 초기화).",
+      "PUT/POST /api/posts 가 image_frame 수용(serializeImageFrameForStore 클램프·정규화). 공개 편집 모달은 image_frame 미전송 → hasField 로 기존 값 보존.",
+      "관리자 버전 03.149.08 → 03.150.00."
+    ]
+  },
+  {
     "version": "00.171.03",
     "date": "2026-06-19",
     "released_at": "2026-06-19 01:26:00 KST",

@@ -313,8 +313,10 @@
     if (post.image_url) {
       // Markup only — the onerror fallback is attached below via addEventListener
       // instead of an inline handler so that CSP can eventually drop 'unsafe-inline'.
+      var thumbFrameStyle = post.image_is_placeholder ? '' : GW.thumbFrameStyle(post);
       thumb = '<img class="post-card-thumb' + (post.image_is_placeholder ? ' is-placeholder' : '') + '" src="' + GW.escapeHtml(post.image_url)
-            + '" alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
+            + '"' + (thumbFrameStyle ? ' style="' + thumbFrameStyle + '"' : '')
+            + ' alt="' + GW.escapeHtml(post.title || '') + '" loading="lazy">';
     }
 
     var isNew = GW.isPostNew(post);

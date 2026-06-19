@@ -9,6 +9,7 @@ import { getNavLabel, loadNavLabels } from '../_shared/nav-labels.js';
 import { getCategoryMeta, listEditablePostCategories } from '../_shared/category-meta.mjs';
 import { SITE_BRAND_NAME, SITE_DOMAIN_LABEL, DEFAULT_CONTACT_EMAILS } from '../_shared/site-copy.mjs';
 import { buildPostMarkdownResponse, buildMarkdownErrorResponse } from '../_shared/post-markdown.js';
+import { normalizeImageFrame } from '../_shared/image-frame.js';
 
 /**
  * Gilwell Media · Individual Post Page
@@ -113,7 +114,13 @@ export async function onRequestGet({ params, env, request }) {
         ? escapeHtml(post.image_url)
         : `${siteUrl}/api/posts/${id}/image`)
     : '';
-  const ogImage = coverImage || escapeHtml(getResolvedShareImage(siteMeta, siteUrl));
+  // ogImage: 운영자가 초점(image_frame)을 지정한 글은 1200×630 초점-크롭 엔드포인트로
+  // 보내 카카오/페북 카드가 의도한 부분을 보여주게 한다. 초점 미지정이면 기존처럼 원본/기본 OG.
+  // (Cloudflare 변환 미활성 시 엔드포인트가 원본을 그대로 반환 — 자가 복구.)
+  const ogFrame = normalizeImageFrame(post.image_frame);
+  const ogImage = (coverImage && ogFrame)
+    ? `${siteUrl}/api/og-image/${id}`
+    : (coverImage || escapeHtml(getResolvedShareImage(siteMeta, siteUrl)));
   const dateStr  = formatDate(publicDateValue);
   const renderedContent = renderContent(post.content || '');
   const bodyHtml = renderedContent.html;
@@ -233,8 +240,8 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260618162631">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260618162631">
+  <link rel="stylesheet" href="/css/style.css?v=20260619163253">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260619163253">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -418,7 +425,7 @@ export async function onRequestGet({ params, env, request }) {
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.171.03</span> · Admin <span class="admin-build-version">V03.149.08</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.172.00</span> · Admin <span class="admin-build-version">V03.150.00</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -619,10 +626,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260618162631"></script>
-  <script src="/js/site-chrome.js?v=20260618162631"></script>
-  <script src="/js/chatbot.js?v=20260618162631" defer></script>
-  <script src="/js/post-page.js?v=20260618162631"></script>
+  <script src="/js/main.js?v=20260619163253"></script>
+  <script src="/js/site-chrome.js?v=20260619163253"></script>
+  <script src="/js/chatbot.js?v=20260619163253" defer></script>
+  <script src="/js/post-page.js?v=20260619163253"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

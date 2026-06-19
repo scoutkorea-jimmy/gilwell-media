@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS posts (
   views        INTEGER NOT NULL DEFAULT 0,
   author       TEXT    NOT NULL DEFAULT 'Editor.A',
   ai_assisted  INTEGER NOT NULL DEFAULT 0,
-  sort_order   INTEGER DEFAULT NULL
+  sort_order   INTEGER DEFAULT NULL,
+  image_frame  TEXT DEFAULT NULL   -- 대표 이미지 초점 프레이밍 JSON {"x":0-100,"y":0-100} (목차 썸네일 + OG 크롭 공용, NULL=중앙)
 );
 
 CREATE TABLE IF NOT EXISTS settings (

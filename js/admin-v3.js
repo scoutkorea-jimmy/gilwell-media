@@ -1,6 +1,6 @@
 /**
  * Gilwell Media · Admin Console V3
- * Version: 03.149.08
+ * Version: 03.150.00
  *
  * Versioning:
  *   V3.aaa.bb
@@ -155,6 +155,7 @@
   var _editingId     = null;
   var _editor        = null;
   var _coverDataUrl  = null;
+  var _coverFrame    = { x: 50, y: 50 }; // 대표 이미지 초점(목차 썸네일 + OG 공용). 50/50 = 중앙
   var _galleryImages = [];
   var _metaTags      = [];
   var _relatedPosts  = [];
@@ -678,6 +679,15 @@
     _bindEl('w-published', 'change', _syncWriteFeaturedState);
     _bindEl('w-cover-btn', 'click', _pickCover);
     _bindEl('w-gallery-btn', 'click', _pickGallery);
+
+    // 대표 이미지 프레이밍(초점) 슬라이더 — 목차 썸네일 + OG 공유 이미지 공용.
+    _bindEl('w-frame-x', 'input', _onCoverFrameInput);
+    _bindEl('w-frame-y', 'input', _onCoverFrameInput);
+    _bindEl('w-frame-reset', 'click', function () {
+      _coverFrame = { x: 50, y: 50 };
+      if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
+      _renderCoverFrameControls();
+    });
 
     // Meta tags
     _bindEl('w-metatag-add-btn', 'click', _addMetaTag);
@@ -2784,6 +2794,7 @@
   function _resetWrite() {
     _editingId    = null;
     _coverDataUrl = null;
+    _coverFrame   = { x: 50, y: 50 };
     _galleryImages = [];
     _metaTags     = [];
     _relatedPosts = [];
@@ -3177,7 +3188,8 @@
       if (_el('w-published'))       _el('w-published').checked     = draft.published_flag !== false;
       if (_el('w-featured'))        _el('w-featured').checked      = !!draft.featured_flag;
       if (_el('w-ai'))              _el('w-ai').checked            = !!draft.ai_assisted;
-      // Cover image
+      // Cover image — 드래프트는 프레이밍을 보존하지 않으므로 초점은 중앙으로 초기화.
+      _coverFrame = { x: 50, y: 50 };
       if (draft.image_url) {
         _coverDataUrl = draft.image_url;
         _renderCoverPreview();
@@ -3673,7 +3685,9 @@
           document.getElementById('w-date').value = _toDatetimeLocal(dt);
         }
 
-        // Cover
+        // Cover + 프레이밍(초점) 복원
+        var loadedFrame = GW.normalizeImageFrame && GW.normalizeImageFrame(p.image_frame);
+        _coverFrame = loadedFrame ? { x: loadedFrame.x, y: loadedFrame.y } : { x: 50, y: 50 };
         if (p.image_url) {
           _coverDataUrl = p.image_url;
           _renderCoverPreview();
@@ -3747,6 +3761,8 @@
         meta_tags:        _metaTags.join(','),
         publish_at:       dateVal || undefined,
         related_posts_json: JSON.stringify(_relatedPosts),
+        // 대표 이미지 초점(목차 썸네일 + OG 공유 이미지). 서버가 중앙/무효값은 NULL 로 정규화.
+        image_frame:      { x: _clampFramePct(_coverFrame && _coverFrame.x), y: _clampFramePct(_coverFrame && _coverFrame.y) },
       };
       if (_coverDataUrl && _coverDataUrl.startsWith('data:')) {
         body.image_data = _coverDataUrl;
@@ -3939,8 +3955,56 @@
           : '<button class="v3-btn v3-btn-outline v3-btn-xs" onclick="V3._removeCover()">대표 이미지 삭제</button>') +
       '</div>' +
     '</div>';
+    _renderCoverFrameControls();
   }
-  V3._removeCover = function () { _coverDataUrl = null; _renderCoverPreview(); };
+  V3._removeCover = function () { _coverDataUrl = null; _coverFrame = { x: 50, y: 50 }; _renderCoverPreview(); };
+
+  // 대표 이미지 프레이밍 컨트롤(가로/세로 슬라이더 + 16:9 초점 미리보기) 동기화.
+  // 실제 대표 이미지가 있을 때만 노출 — placeholder 로고는 프레이밍 의미 없음.
+  function _renderCoverFrameControls() {
+    var block = document.getElementById('w-cover-frame-block');
+    if (!block) return;
+    var hasCover = !!_coverDataUrl;
+    block.hidden = !hasCover;
+    if (!hasCover) return;
+
+    var fx = _clampFramePct(_coverFrame && _coverFrame.x);
+    var fy = _clampFramePct(_coverFrame && _coverFrame.y);
+    _coverFrame = { x: fx, y: fy };
+
+    var xEl = document.getElementById('w-frame-x');
+    var yEl = document.getElementById('w-frame-y');
+    var xVal = document.getElementById('w-frame-x-value');
+    var yVal = document.getElementById('w-frame-y-value');
+    if (xEl) xEl.value = String(fx);
+    if (yEl) yEl.value = String(fy);
+    if (xVal) xVal.textContent = fx + '%';
+    if (yVal) yVal.textContent = fy + '%';
+
+    var frame = document.getElementById('w-cover-frame-preview');
+    if (frame) {
+      var url = _coverDataUrl || _resolvePreviewImageUrl();
+      frame.innerHTML = '<img src="' + GW.escapeHtml(url) + '" alt="프레이밍 미리보기" ' +
+        'style="object-position:' + fx + '% ' + fy + '%;">';
+    }
+  }
+
+  function _onCoverFrameInput() {
+    var xEl = document.getElementById('w-frame-x');
+    var yEl = document.getElementById('w-frame-y');
+    _coverFrame = {
+      x: _clampFramePct(xEl && xEl.value),
+      y: _clampFramePct(yEl && yEl.value),
+    };
+    if (typeof _scheduleDraftSave === 'function') _scheduleDraftSave();
+    _renderCoverFrameControls();
+  }
+
+  function _clampFramePct(value) {
+    var n = Number(value);
+    if (!isFinite(n)) return 50;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
 
   function _resolvePreviewImageUrl(post) {
     if (post && post.image_url) return post.image_url;

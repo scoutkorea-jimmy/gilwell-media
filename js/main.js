@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.171.03';
-  GW.ADMIN_VERSION = '03.149.08';
-  GW.ASSET_VERSION = '20260618162631';
+  GW.APP_VERSION = '00.172.00';
+  GW.ADMIN_VERSION = '03.150.00';
+  GW.ASSET_VERSION = '20260619163253';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -648,6 +648,35 @@
     var text = typeof value === 'string' ? value.trim() : '';
     if (!text) return '';
     return '<p class="post-image-caption">' + GW.escapeHtml(text) + '</p>';
+  };
+
+  // ── 대표 이미지 프레이밍 (목차/리스트 썸네일 초점) ─────────────────
+  // post.image_frame = { x:0-100, y:0-100 } (서버가 정규화). 중앙(50/50)이거나
+  // 없으면 빈 문자열 → 기본 object-position(50% 50%) 유지. 비중앙일 때만 inline
+  // object-position 을 내보내 고정 16:9 썸네일에서 보이는 부분을 옮긴다.
+  // OG 공유 이미지(/api/og-image/:id)와 동일 초점을 사용한다.
+  GW.normalizeImageFrame = function (raw) {
+    var obj = raw;
+    if (typeof raw === 'string') {
+      var t = raw.trim();
+      if (!t) return null;
+      try { obj = JSON.parse(t); } catch (e) { return null; }
+    }
+    if (!obj || typeof obj !== 'object') return null;
+    if (obj.x == null && obj.y == null) return null;
+    function pct(v) {
+      var n = Number(v);
+      if (!isFinite(n)) return 50;
+      return Math.max(0, Math.min(100, Math.round(n)));
+    }
+    return { x: pct(obj.x), y: pct(obj.y) };
+  };
+
+  GW.thumbFrameStyle = function (post) {
+    var frame = post ? GW.normalizeImageFrame(post.image_frame) : null;
+    if (!frame) return '';
+    if (frame.x === 50 && frame.y === 50) return '';
+    return 'object-position:' + frame.x + '% ' + frame.y + '%;';
   };
 
   // ── IME-safe 입력 헬퍼 ───────────────────────────────────────

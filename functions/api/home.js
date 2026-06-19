@@ -42,7 +42,7 @@ const MAX_TOTAL_HERO_POSTS = MAX_MANUAL_HERO_POSTS + AUTO_HERO_POST_COUNT;
 // 카드용 게시글 컬럼 단일 정의 — loadHomeLead/loadHomePicks/loadPostList/loadLatestPosts
 // 가 동일한 SELECT 목록을 4곳에 복제하던 것을 통합. 컬럼 추가/변경을 한 곳에서만 한다.
 // (loadPopular 는 CTE 기반 별도 컬럼셋이라 제외)
-const POST_CARD_COLUMNS = `id, category, title, subtitle, content, image_url, image_caption, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
+const POST_CARD_COLUMNS = `id, category, title, subtitle, content, image_url, image_caption, image_frame, created_at, publish_at, featured, tag, views, author, published, sort_order, youtube_url,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = posts.id) AS likes`;
 const DEFAULT_HERO_MANUAL_POSITION = 'after_auto';
 
@@ -465,6 +465,7 @@ async function loadPopular(env, origin, limit) {
            p.subtitle,
            p.image_url,
            p.image_caption,
+           p.image_frame,
            p.created_at,
            p.publish_at,
            p.tag,

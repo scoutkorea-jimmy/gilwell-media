@@ -2431,6 +2431,14 @@ body[data-chart-spacing="l"] {
 .v3-media-preview-frame.is-home-lead.is-desktop {
   aspect-ratio: 16 / 9;
 }
+.v3-media-preview-frame.is-cover-frame {
+  aspect-ratio: 16 / 9;
+  max-width: 360px;
+}
+.v3-media-preview-frame.is-cover-frame img {
+  object-fit: cover;
+}
+.v3-cover-frame-block .v3-mb-8 { margin-bottom: 8px; }
 .v3-media-preview-frame.is-home-lead.is-mobile {
   max-width: 260px;
   aspect-ratio: 4 / 5;

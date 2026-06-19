@@ -11,6 +11,7 @@ import { verifyTurnstile } from '../../_shared/turnstile.js';
 import { enforceRateLimit, getClientIp, rateLimitResponse } from '../../_shared/rate-limit.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { serializeImageFrameForStore } from '../../_shared/image-frame.js';
 import { storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
 import { normalizePublishAtInput, optionalBooleanFlag, optionalTrimmedString, requireNonEmptyString } from '../../_shared/post-input.js';
@@ -142,7 +143,7 @@ export async function onRequestGet({ request, env }) {
         : (sort === 'oldest' ? ORDER_OLDEST
         : (sort === 'views' ? ORDER_VIEWS
         : ((sort === 'relevance' && q) ? ORDER_RELEVANCE : ORDER_LATEST)))));
-  const COLS  = `id, category, title, subtitle, image_url, image_caption, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
+  const COLS  = `id, category, title, subtitle, image_url, image_caption, image_frame, created_at, publish_at, updated_at, featured, tag, meta_tags, special_feature, views, author, published, sort_order,
     youtube_url,
     ${searchScoreExpr} AS search_score,
     ${popularityScoreExpr} AS popularity_score,
@@ -255,7 +256,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, manual_related_posts, cf_turnstile_response } = body;
+  const { title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, tag, meta_tags, special_feature, ai_assisted, publish_date, publish_at, manual_related_posts, cf_turnstile_response } = body;
   const category = normalizeCategory(body.category);
 
   // Verify Turnstile if a token is present (skipped gracefully if TURNSTILE_SECRET not configured)
@@ -294,6 +295,7 @@ export async function onRequestPost({ request, env }) {
   const storedGalleryImages = await storeGalleryImages(env, gallery_images, origin);
   const safeImageUrl  = storedCover.url;
   const safeImageCaption = sanitizeCaption(image_caption);
+  const safeImageFrame = serializeImageFrameForStore(image_frame);
   const safeYoutubeUrl = sanitizeYouTubeUrl(youtube_url);
   const safeSubtitle  = safeSubtitleInput.value;
   const safeTag       = safeTagInput.value;
@@ -353,9 +355,9 @@ export async function onRequestPost({ request, env }) {
         return json({ error: '에디터 추천은 최대 4개까지만 선택할 수 있습니다.' }, 409);
       }
     }
-    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
-    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, authorUserId, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
+    const sql = `INSERT INTO posts (category, title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, tag, special_feature, meta_tags, manual_related_posts, author, author_user_id, ai_assisted, published, featured, created_at, publish_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))`;
+    const bindings = [category, safeTitleInput.value, safeSubtitle, upgradedContent, safeImageUrl, safeImageCaption, safeImageFrame, serializeGalleryImages(storedGalleryImages), safeYoutubeUrl, safeLocationName, safeLocationAddress, safeTag, safeSpecialFeature, safeMetaTags, safeManualRelatedPosts, safeAuthor, authorUserId, safeAiAssisted, safePublished ? 1 : 0, safeFeatured ? 1 : 0, effectivePublishAt];
     const result = await env.DB.prepare(sql).bind(...bindings).run();
     const insertedId = result && result.meta ? Number(result.meta.last_row_id || result.meta.lastRowId || 0) : 0;
     const insertedPost = insertedId

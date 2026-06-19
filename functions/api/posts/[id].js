@@ -11,6 +11,7 @@ import { hasMenuPermission } from '../../_shared/admin-users.js';
 import { getLikeStats, getViewerKey, isLikelyNonHumanRequest, recordUniqueView } from '../../_shared/engagement.js';
 import { sanitizeYouTubeUrl } from '../../_shared/youtube.js';
 import { serializePostImage } from '../../_shared/images.js';
+import { serializeImageFrameForStore } from '../../_shared/image-frame.js';
 import { deleteStoredImageByUrl, storeDataImage, upgradeEditorContentImages } from '../../_shared/image-storage.js';
 import { findManualRelatedPosts, findRelatedPosts, parseManualRelatedIds } from '../../_shared/related-posts.js';
 import { recordPostHistory } from '../../_shared/post-history.js';
@@ -77,7 +78,7 @@ export async function onRequestGet({ params, env, request }) {
 // side by default, which is the behavior we want.
 const PUBLIC_POST_FIELDS = [
   'id', 'category', 'title', 'subtitle', 'content',
-  'image_url', 'image_caption', 'image_is_placeholder', 'image_has_real_asset',
+  'image_url', 'image_caption', 'image_frame', 'image_is_placeholder', 'image_has_real_asset',
   'gallery_images', 'youtube_url', 'location_name', 'location_address',
   'tag', 'author', 'ai_assisted',
   'created_at', 'publish_at', 'updated_at',
@@ -156,7 +157,7 @@ export async function onRequestPut({ params, request, env }) {
     }
   }
 
-  const { title, subtitle, content, image_url, image_caption, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, manual_related_posts, sort_order } = body;
+  const { title, subtitle, content, image_url, image_caption, image_frame, gallery_images, youtube_url, location_name, location_address, meta_tags, tag, special_feature, author, ai_assisted, publish_date, publish_at, manual_related_posts, sort_order } = body;
   const category = normalizeCategory(body.category);
 
   // KMS 7.5.1 원칙: "한 엔드포인트 안에서 `.provided` 검사와 `field !== undefined` 직접
@@ -235,6 +236,7 @@ export async function onRequestPut({ params, request, env }) {
     oldGalleryToDelete = diffRemovedGalleryUrls(currentPost && currentPost.gallery_images, storedGalleryImages);
   }
   if (hasField('image_caption')) { fields.push('image_caption = ?'); values.push(sanitizeCaption(image_caption)); }
+  if (hasField('image_frame')) { fields.push('image_frame = ?'); values.push(serializeImageFrameForStore(image_frame)); }
   if (hasField('youtube_url')) { fields.push('youtube_url = ?'); values.push(sanitizeYouTubeUrl(youtube_url)); }
   if (hasField('location_name')) { fields.push('location_name = ?'); values.push(sanitizeShortText(location_name, 120)); }
   if (hasField('location_address')) { fields.push('location_address = ?'); values.push(sanitizeShortText(location_address, 300)); }
