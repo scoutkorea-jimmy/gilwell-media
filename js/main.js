@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.172.00';
+  GW.APP_VERSION = '00.173.00';
   GW.ADMIN_VERSION = '03.150.00';
-  GW.ASSET_VERSION = '20260619163253';
+  GW.ASSET_VERSION = '20260707061709';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1760,7 +1760,9 @@
     GW._shareModalState = {
       url: String(options.url || window.location.href || '').trim(),
       title: String(options.title || document.title || '').trim(),
-      text: String(options.text || options.title || document.title || '').trim()
+      text: String(options.text || options.title || document.title || '').trim(),
+      image: String(options.image || GW.readMetaContent('og:image') || '').trim(),
+      description: String(options.description || GW.readMetaContent('og:description') || options.text || '').trim()
     };
     GW.ensureShareModal();
     var overlay = document.getElementById('share-modal');
@@ -1820,15 +1822,39 @@
     return GW._kakaoSdkPromise;
   };
 
+  GW.readMetaContent = function (property) {
+    try {
+      var el = document.querySelector('meta[property="' + property + '"]')
+        || document.querySelector('meta[name="' + property + '"]');
+      return el ? (el.getAttribute('content') || '') : '';
+    } catch (_) {
+      return '';
+    }
+  };
+
   GW.shareViaKakao = function (state) {
     var trackedUrl = GW.buildShareUrl(state.url, 'kakaotalk');
     return GW.loadKakaoSdk()
       .then(function (Kakao) {
-        if (!Kakao || !Kakao.Share || !Kakao.Share.sendScrap) {
+        // sendScrap 은 카카오 서버가 requestUrl 을 실시간 스크랩하는 방식이라
+        // 도메인 등록·OG 스크랩 상태에 매번 의존해 간헐적으로 실패한다.
+        // sendDefault(feed) 로 제목·설명·이미지·링크를 명시 전달해 스크랩 의존을 제거한다.
+        if (!Kakao || !Kakao.Share || !Kakao.Share.sendDefault) {
           throw new Error('kakao-sdk-unavailable');
         }
-        Kakao.Share.sendScrap({
-          requestUrl: trackedUrl
+        var content = {
+          title: state.title || document.title || '',
+          link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
+        };
+        if (state.description) content.description = state.description;
+        if (state.image) content.imageUrl = state.image;
+        Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: content,
+          buttons: [{
+            title: '자세히 보기',
+            link: { mobileWebUrl: trackedUrl, webUrl: trackedUrl }
+          }]
         });
         GW.showToast('카카오톡 공유 창을 열었습니다.', 'success');
       })

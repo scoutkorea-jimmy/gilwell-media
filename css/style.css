@@ -8653,6 +8653,16 @@ footer a:hover { color: var(--white); }
   color:       var(--muted);
   letter-spacing: 0.04em;
 }
+.ai-disclaimer-link {
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--scouting-purple);
+  text-decoration: none;
+}
+.ai-disclaimer-link:hover,
+.ai-disclaimer-link:focus-visible {
+  text-decoration: underline;
+}
 
 /* ── Post byline ───────────────────────────────────────────── */
 .post-byline {

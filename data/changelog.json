@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.173.00",
+    "date": "2026-07-07",
+    "released_at": "2026-07-07 15:16:00 KST",
+    "summary": "AI 보조 기사 고지문을 검수 과정이 드러나게 구체화하고 편집·AI 정책 링크를 달았으며, 카카오톡 공유가 간헐적으로 빈 카드로 나가던 문제를 카드 내용 직접 전달 방식으로 바꿔 해결했다.",
+    "for_users": [
+      "AI 보조 기사 하단 고지문이 '어떻게 만들고 누가 검수했는지'가 드러나는 문장으로 바뀌고, 편집·AI 정책 페이지로 바로 가는 링크가 붙었습니다.",
+      "카카오톡 공유 시 제목·설명·대표 이미지를 직접 담아 보내므로, 미리보기 카드가 비어 보이던 간헐 증상이 사라집니다.",
+      "용어집 챗봇의 '용어집에서 보기' 링크가 구 주소(.html)에서 새 주소로 정리됐습니다."
+    ],
+    "for_developers": [
+      "functions/post/[id].js — ai_disclaimer 기본 문구 교체 + .ai-disclaimer 에 /editorial-policy 링크(.ai-disclaimer-link) 추가, css/style.css 에 링크 스타일 신설.",
+      "js/main.js shareViaKakao — Kakao.Share.sendScrap(실시간 OG 스크랩 의존) → sendDefault(feed) 로 전환, _shareModalState 에 image·description 추가(GW.readMetaContent 로 og:image/og:description 폴백). CSP form-action 확장(00.170.10)과 보완 관계.",
+      "js/chatbot.js — /glossary.html#term- → /glossary#term- 클린 라우트 정리(2곳 중 남은 1곳).",
+      "scripts/audit_thin_content.mjs 신설 — D1 공개글 본문 실텍스트 길이 측정, thin/AI보조/통합 후보 triage 리포트(--min/--csv/--local).",
+      "사이트 버전 00.172.00 → 00.173.00."
+    ]
+  },
+  {
     "version": "00.172.00",
     "date": "2026-06-20",
     "released_at": "2026-06-20 14:30:00 KST",

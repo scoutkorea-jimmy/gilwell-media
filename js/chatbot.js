@@ -265,7 +265,7 @@
     if (!results.length) {
       state.messages.push({
         kind: 'bot',
-        html: '죄송해요, <strong>' + esc(rawQuery) + '</strong>에 해당하는 용어를 찾지 못했어요.<br>철자를 확인해보시거나, <a href="/glossary.html">용어집 전체</a>에서 둘러보실 수 있어요.'
+        html: '죄송해요, <strong>' + esc(rawQuery) + '</strong>에 해당하는 용어를 찾지 못했어요.<br>철자를 확인해보시거나, <a href="/glossary">용어집 전체</a>에서 둘러보실 수 있어요.'
       });
       return;
     }
@@ -328,7 +328,7 @@
     html += '<div class="gw-chatbot-card-detail">';
     if (desc) html += '<div class="gw-chatbot-card-detail-row">' + desc + '</div>';
     else html += '<div class="gw-chatbot-card-detail-row" style="color:var(--gray-500,#8f8f8f)">설명이 등록되어 있지 않습니다.</div>';
-    html += '<a class="gw-chatbot-card-detail-link" href="/glossary.html#term-' + esc(id) + '">용어집에서 보기 →</a>';
+    html += '<a class="gw-chatbot-card-detail-link" href="/glossary#term-' + esc(id) + '">용어집에서 보기 →</a>';
     html += '</div></div>';
     return html;
   }
