@@ -1,0 +1,753 @@
+/* post 전용 스타일 — css/style.css 에서 분리.
+ *
+ * 이 파일의 규칙은 scripts/audit_css_usage.mjs 가 "post 표면에서만 쓰인다"고
+ * 확정한 것들이다. 다른 페이지에서 쓰기 시작하면 style.css 로 되돌려야 한다.
+ * 반드시 style.css **뒤에** 링크할 것 — 동일 명시도 규칙의 순서 의존성 때문.
+ *
+ * 재생성: node scripts/split_css.mjs
+ */
+/* ── Read More link ── */
+.read-more {
+  display:        inline-block;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color:          var(--accent);
+  text-decoration: none;
+  margin-top:     var(--gap-tight);
+  border-bottom:  1px solid var(--accent);
+  padding-bottom: 1px;
+}
+.board-pw-input-wrap {
+  position: relative;
+}
+.board-pw-eye {
+  position:   absolute;
+  right:      10px;
+  top:        50%;
+  transform:  translateY(-50%);
+  z-index:    1;
+  background: none;
+  border:     none;
+  cursor:     pointer;
+  padding:    4px;
+  color:      var(--gray-500);
+  line-height: 0;
+  transition: color 0.15s;
+}
+.board-pw-eye:hover { color: var(--ink); }
+@media (max-width: 900px) {
+  .post-page-wrap     { padding: var(--gap-section-out) var(--pad-page-tablet) 60px; }
+  .post-page-layout   { grid-template-columns: 1fr; gap: var(--gap-section-out); }
+  .post-page-sidebar  { position: static; }
+}
+@media (max-width: 480px) {
+  body.post-page .post-mobile-header {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 140;
+    background: rgba(255, 252, 247, 0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  body.post-page .post-mobile-header-bar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px var(--gap-element) var(--gap-tight);
+  }
+  body.post-page .post-mobile-back,
+  body.post-page .post-mobile-search {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.88);
+    font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+    font-size: 18px;
+    line-height: 1;
+  }
+  body.post-page .post-mobile-brand {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-tight);
+    text-decoration: none;
+    color: var(--accent);
+    justify-self: start;
+  }
+  body.post-page .post-mobile-brand-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  body.post-page .post-mobile-brand-text {
+    font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  body.post-page .post-mobile-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-tight);
+  }
+  body.post-page .post-mobile-section-chip {
+    max-width: 124px;
+    padding: 7px 10px 6px;
+    font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+    font-size: 10px;
+    line-height: 1.1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--white);
+    background: var(--accent);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.post-page .post-mobile-quicknav {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0 var(--gap-tight) var(--gap-tight);
+    scrollbar-width: none;
+  }
+  body.post-page .post-mobile-quicknav::-webkit-scrollbar {
+    display: none;
+  }
+  body.post-page .post-mobile-quicknav a {
+    flex: 0 0 auto;
+    padding: var(--gap-tight) 10px;
+    font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+  }
+  body.post-page .post-page-wrap {
+    padding-top: 18px;
+  }
+  .post-page-wrap     { padding: var(--gap-section) var(--pad-page-mobile) 48px; }
+}
+/* ════════════════════════════════════════════════════════════
+   INDIVIDUAL POST PAGE  (/post/:id)
+   ════════════════════════════════════════════════════════════ */
+.post-page-wrap {
+  max-width: 1366px;
+  margin:    0 auto;
+  padding:   var(--gap-section-out) var(--pad-page-desktop) 80px;
+}
+.post-page-layout {
+  display:               grid;
+  /* 사이드바 200px — Kakao AdFit 세로 광고(160x600)가 사이드바 폭에 거의
+     꽉 차도록(좌우 20px 여유) 좁혔음(2026-04-21 운영자 요청). 기존 280px에서는
+     광고가 사이드바 중앙에 작게 놓여 빈 공간이 양쪽으로 60px씩 남아 어색. */
+  grid-template-columns: 1fr 200px;
+  gap:                   48px;
+  align-items:           start;
+}
+.post-page-main  { min-width: 0; }
+.post-page-sidebar {
+  /* sticky 복귀(2026-04-21) — 사이드바가 기사 스크롤을 따라다니게 한다.
+     top 값은 masthead(stats/logo/search 90px + nav 45px + border 3px ≈ 140px)
+     바로 아래에 사이드바 상단이 오도록 160px로 설정 — masthead와 겹치지 않음. */
+  position: sticky;
+  top:      160px;
+}
+/* Sidebar sections */
+.pps-section {
+  padding:       20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pps-section:first-child { padding-top: 0; }
+.pps-section:last-child  { border-bottom: none; }
+.pps-label {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color:          var(--muted);
+  margin-bottom:  var(--gap-element);
+}
+.pps-category {
+  display:        inline-block;
+  color:          var(--white);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding:        5px 14px;
+  border-radius:  var(--radius-tight);   /* 카테고리 라벨 통일 (.category-tag 와 동일) */
+  text-decoration: none;
+  transition:     opacity 0.15s;
+}
+.pps-category:hover { opacity: 0.85; }
+.pps-row {
+  display:       flex;
+  gap:           var(--gap-tight);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:     11px;
+  margin-bottom: var(--gap-tight);
+  align-items:   baseline;
+}
+.pps-key {
+  color:      var(--muted);
+  min-width:  52px;
+  flex-shrink: 0;
+}
+.pps-val { color: var(--ink); }
+.post-page-back { margin-bottom: 28px; }
+.post-page-back-link {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color:          var(--muted);
+  text-decoration: none;
+  transition:     color 0.15s;
+}
+.post-page-back-link:hover { color: var(--accent); }
+.post-page-title {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:     clamp(22px, 3.5vw, 36px);
+  font-weight:   700;
+  line-height:   1.3;
+  color:         var(--black);
+  margin-bottom: 14px;
+}
+.post-page-subtitle {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:     clamp(14px, 2vw, 18px);
+  color:         var(--muted);
+  line-height:   1.6;
+  margin-bottom: var(--gap-card);
+}
+.post-page-meta {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      11px;
+  color:          var(--muted);
+  letter-spacing: 0.05em;
+  margin-bottom:  0;
+  display:        flex;
+  align-items:    center;
+  gap:            var(--gap-tight);
+  flex-wrap:      wrap;
+}
+.post-page-cover {
+  width:         100%;
+  max-height:    none;
+  height:        auto;
+  object-fit:    contain;
+  display:       block;
+  margin-bottom: 0;
+}
+.post-page-cover-frame {
+  background: var(--bg);
+  margin-bottom: 0;
+}
+.post-page-video {
+  margin-bottom: var(--gap-section-out);
+}
+.post-page-body {
+  position: static;
+  max-width: none;
+  padding:   0;
+  overflow:  visible;
+}
+.post-page-body > *:first-child {
+  margin-top: 0;
+}
+.post-page-body > *:last-child {
+  margin-bottom: 0;
+}
+.post-page-body p,
+.post-page-body li,
+.post-page-body blockquote {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 16px;
+  font-weight: 500;                /* Medium — APCA 본문 |Lc| 75+ 요구를 실제 stroke로 보장 */
+  line-height: 1.85;
+  color: var(--ink);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.post-page-body p {
+  margin: 0 0 18px;
+}
+/* Structured source citation block — paragraphs starting with
+   "자료출처:" / "출처:" / "Source:" render here. Visually understated
+   but clearly distinct so readers (and AI crawlers via <cite>) can tell
+   primary-source attribution apart from body text. */
+.post-page-body .post-citation {
+  margin: 28px 0 18px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--gray-300, var(--gray-300));
+  background: var(--gray-100, var(--gray-100));
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--gray-700, var(--gray-700));
+  border-radius: var(--radius-tight);
+}
+.post-page-body .post-citation cite {
+  font-style: normal;
+  font-weight: 500;
+  word-break: break-all;
+}
+.post-page-body .post-citation a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.post-page-body h2,
+.post-page-body h3,
+.post-page-body h4 {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  color: var(--black);
+  line-height: 1.42;
+  margin: 34px 0 14px;
+  letter-spacing: -0.02em;
+}
+.post-page-body h2 {
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 700;
+}
+.post-page-body h3 {
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 700;
+}
+.post-page-body h4 {
+  font-size: clamp(17px, 1.7vw, 21px);
+  font-weight: 700;
+}
+/* 리스트 — 모달(Editor.js)과 라이브 페이지의 시각적 정합성 확보 (APCA-safe) */
+.post-page-body ul,
+.post-page-body ol {
+  margin: 0 0 22px;
+  padding-inline-start: 1.85em;
+  list-style-position: outside;
+}
+.post-page-body ul { list-style-type: disc; }
+.post-page-body ol { list-style-type: decimal; }
+.post-page-body li {
+  margin: 0;
+  padding-inline-start: 0.35em;
+  line-height: 1.85;
+}
+.post-page-body li + li {
+  margin-top: 8px;
+}
+/* 중첩 리스트: 에디터.js 들여쓰기와 리듬 맞춤 */
+.post-page-body li > ul,
+.post-page-body li > ol {
+  margin: 8px 0 0;
+  padding-inline-start: 1.55em;
+}
+.post-page-body li > ul { list-style-type: circle; }
+.post-page-body li > ol { list-style-type: lower-alpha; }
+.post-page-body li > ul li > ul { list-style-type: square; }
+.post-page-body li > ol li > ol { list-style-type: lower-roman; }
+/* 마커: Scouting Purple로 시각 강조 (APCA Lc 92.4 대비 Canvas White) */
+.post-page-body li::marker {
+  color: var(--scouting-purple, var(--gw-scouting-purple));
+  font-weight: 700;
+}
+/* 한 li 안에 <br>/inline 포맷이 섞여도 hanging indent 유지 */
+.post-page-body li > br { line-height: inherit; }
+.post-page-body li > p { margin: 0; }
+.post-page-body blockquote {
+  margin: var(--gap-section) 0;
+  padding: 14px 0 14px 18px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.02);
+}
+.post-page-tags {
+  margin-top:  var(--gap-section-out);
+  padding-top: 20px;
+  border-top:  1px solid var(--border);
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         var(--gap-tight);
+  align-items: center;
+}
+.post-page-tags-label {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.post-page-tag {
+  display:        inline-flex;
+  align-items:    center;
+  font-family:    'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size:      10px;
+  letter-spacing: 0.1em;
+  background:     var(--bg);
+  color:          var(--ink);
+  padding:        3px var(--gap-tight);
+  border:         1px solid var(--border);
+  border-radius:  var(--radius-pill);   /* 태그 칩 통일 (memo-tag-chip 과 동일) */
+  line-height:    1;
+  min-height:     20px;
+}
+.post-page-tag-btn {
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+.post-page-tag-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--white);
+  transform: translateY(-1px);
+}
+.post-related-surface {
+  background: rgba(17, 17, 17, 0.035);
+  border: 1px solid rgba(17, 17, 17, 0.06);
+  border-radius: var(--radius-xl);
+  padding: 18px 18px var(--gap-card);
+}
+.post-related-posts-mobile {
+  display: none;
+}
+.post-related-posts-desktop {
+  display: block;
+}
+.post-related-surface .post-related-heading {
+  margin-top: 0;
+}
+.post-special-feature-heading-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--gap-card);
+  margin-bottom: 14px;
+}
+.post-special-feature-name {
+  margin: -8px 0 0;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.post-special-feature-page-link,
+.post-special-feature-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
+  background: var(--bg);
+  color: var(--muted);
+  text-decoration: none;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.post-special-feature-page-link:hover,
+.post-special-feature-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.post-special-feature-toggle {
+  margin-top: 14px;
+}
+.post-special-feature-list li.is-collapsed {
+  display: none;
+}
+.post-special-feature-list.expanded li.is-collapsed {
+  display: list-item;
+}
+.post-related-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.post-related-date {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  color: rgba(17,17,17,0.58);
+  white-space: nowrap;
+}
+.post-page-share {
+  margin-top:  var(--gap-tight);
+  margin-bottom: 28px;
+  display:     flex;
+  align-items: center;
+  gap:         var(--gap-tight);
+  flex-wrap:   wrap;
+}
+.post-edit-editor-holder {
+  min-height: 260px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  padding: var(--gap-card);
+}
+.post-edit-note {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.post-like-wrap {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+  padding: var(--gap-element) 14px;
+  border: 1px solid rgba(217, 74, 58, 0.14);
+  background: rgba(217, 74, 58, 0.04);
+  border-radius: var(--radius-xl);
+}
+@media (min-width: 769px) {
+  .post-like-wrap {
+    align-items: center;
+    gap: var(--gap-tight);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    border-radius: 0;
+  }
+  .post-like-btn {
+    min-height: 34px;
+    padding: 7px var(--gap-element);
+    border-radius: var(--radius-pill);
+    box-shadow: none;
+  }
+  .post-like-help {
+    flex: 0 1 auto;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
+.post-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid rgba(217, 74, 58, 0.3);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 */
+  background: var(--shade-tint-9);
+  color: var(--shade-red-4);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
+  flex: 0 0 auto;
+}
+.post-like-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(194, 67, 53, 0.12);
+}
+.post-like-btn:disabled,
+.post-like-btn.liked {
+  cursor: default;
+  background: var(--shade-red-8);
+  color: var(--white);
+  box-shadow: none;
+}
+.post-like-btn.is-busy {
+  opacity: 0.82;
+  pointer-events: none;
+}
+.post-like-help {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.55;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.post-tag-modal {
+  max-width: 760px;
+}
+.post-mobile-header {
+  display: none;
+}
+@media (max-width: 900px) {
+  .post-page-wrap {
+    padding: var(--gap-section-out) var(--gap-section) 60px;
+  }
+  .post-page-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .post-page-main {
+    order: 1;
+  }
+  .post-page-sidebar {
+    order: 2;
+    position: static;
+    top: auto;
+    border-top: 1px solid var(--border);
+    padding-top: var(--gap-tight);
+  }
+  .post-related-posts-desktop {
+    display: none;
+  }
+  .post-page-body p,
+  .post-page-body li,
+  .post-page-body blockquote {
+    font-size: 17px;
+    line-height: 2;
+  }
+  .post-page-body ul,
+  .post-page-body ol {
+    padding-inline-start: 1.55em;
+    margin-bottom: var(--gap-section);
+  }
+  .post-page-body li {
+    padding-inline-start: 0.3em;
+  }
+  .post-page-body li + li {
+    margin-top: var(--gap-element);
+  }
+  .post-page-body li > ul,
+  .post-page-body li > ol {
+    padding-inline-start: 1.35em;
+  }
+  .post-page-body blockquote {
+    padding-left: var(--gap-card);
+  }
+  .post-related-posts-mobile {
+    display: block;
+    order: 2;
+    width: 100%;
+  }
+  .post-special-feature-heading-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .post-related-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+    overflow: hidden;
+    line-height: 1.55;
+  }
+  .post-related-date {
+    font-size: 60%;
+    color: rgba(17,17,17,0.45);
+  }
+  .post-like-wrap {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px var(--gap-element);
+    padding: 14px;
+  }
+  .post-like-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .post-like-help {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .post-page-wrap {
+    padding: var(--gap-section) var(--gap-card) 48px;
+  }
+  .post-page-body p,
+  .post-page-body li,
+  .post-page-body blockquote {
+    font-size: 17px;
+    line-height: 2.02;
+  }
+  .post-page-body ul,
+  .post-page-body ol {
+    padding-inline-start: 1.45em;
+  }
+  .post-page-body li {
+    padding-inline-start: 0.25em;
+  }
+  .post-page-meta > span:not(.category-tag):not(.post-kicker):not(.post-page-action-btns) {
+    display: none;
+  }
+}
+.ai-disclaimer-link {
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--scouting-purple);
+  text-decoration: none;
+}
+.ai-disclaimer-link:hover,
+.ai-disclaimer-link:focus-visible {
+  text-decoration: underline;
+}
+/* ══════════════════════════════════════════════════════════
+   POST PAGE — 헤더 가독성 개선 + 수정 모달 정상화 (00.122)
+   ══════════════════════════════════════════════════════════ */
+
+/* 헤더 meta — 읽기/작성자 사이드로 빼고 카테고리·NEW·날짜만 */
+.post-page-meta {
+  gap: 12px;
+  line-height: 1.5;
+}
+.post-page-date {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+/* Post Edit Modal — .bw-box와 동일한 V3 카드 레이아웃 사용 (2026-04-19 통일).
+   .post-edit-box는 .bw-box의 max-width 1200px/padding 0/transparent를 그대로 상속. */
+.post-edit-box .post-edit-editor-holder {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  min-height: 280px;
+}
+@media (max-width: 760px) {
+  .post-page-meta { gap: 8px; font-size: 12px; }
+  .post-page-date { font-size: 12px; }
+  .post-edit-box {
+    padding: 22px 18px;
+    max-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+@media (max-width: 480px) {
+  .post-page-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .post-page-share { gap: 8px; }
+  .post-action-btn { font-size: 11px; padding: 8px 14px; }
+}
+.kakao-adfit-vertical {
+  /* 세로 광고: 사이드바(200px) 안에서 좌우 auto 마진으로 정확히 중앙 정렬.
+     padding 0 — .kakao-adfit의 0 16px이 상속되면 실제 슬롯이 128px로
+     좁아져 ins가 왼쪽으로 쳐져 보이는 문제 발생. */
+  display: block;
+  width: 160px;
+  min-height: 600px;
+  margin: 40px auto;
+  padding: 0;
+}
+@media (max-width: 900px) {
+  /* 세로 광고는 모바일에서 사이드바 공간 자체가 없으므로 전체 숨김 */
+  .kakao-adfit-vertical { display: none; }
+}

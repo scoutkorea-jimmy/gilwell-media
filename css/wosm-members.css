@@ -1,0 +1,508 @@
+/* wosm_members 전용 스타일 — css/style.css 에서 분리.
+ *
+ * 이 파일의 규칙은 scripts/audit_css_usage.mjs 가 "wosm_members 표면에서만 쓰인다"고
+ * 확정한 것들이다. 다른 페이지에서 쓰기 시작하면 style.css 로 되돌려야 한다.
+ * 반드시 style.css **뒤에** 링크할 것 — 동일 명시도 규칙의 순서 의존성 때문.
+ *
+ * 재생성: node scripts/split_css.mjs
+ */
+/* ── WOSM Members ───────────────────────────────────────── */
+body.wosm-members-page #main-content {
+  min-height: calc(100vh - 280px);
+}
+.members-hero {
+  margin-bottom: var(--gap-section);
+}
+.members-hero-copy {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+.members-hero-copy h2 {
+  margin: 0 0 var(--gap-element);
+}
+.members-hero-copy p {
+  margin: 0;
+  max-width: 52ch;
+}
+.members-search-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.members-view-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+}
+.members-filter-label {
+  margin-top: var(--gap-micro);
+}
+.members-view-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-tight);
+}
+.members-view-chip {
+  appearance: none;
+  border: 1px solid rgba(77, 0, 110, 0.16);
+  background: rgba(77, 0, 110, 0.04);
+  color: var(--midnight-purple);
+  min-height: 38px;
+  padding: var(--gap-tight) var(--gap-element);
+  border-radius: var(--radius-pill);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.members-view-chip:hover {
+  border-color: rgba(77, 0, 110, 0.28);
+  background: rgba(77, 0, 110, 0.08);
+}
+.members-view-chip.active {
+  background: var(--midnight-purple);
+  border-color: var(--midnight-purple);
+  color: var(--white);
+  box-shadow: 0 8px 18px rgba(77, 0, 110, 0.18);
+}
+.members-summary-inline {
+  margin-top: var(--gap-card);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.members-page-wrap {
+  padding-bottom: 72px;
+}
+.members-board-shell {
+  background: transparent;
+}
+.members-results-meta {
+  margin-bottom: var(--gap-element);
+}
+.members-table-wrap {
+  overflow-x: auto;
+}
+.members-table {
+  width: 100%;
+  min-width: 1120px;
+  table-layout: fixed;
+}
+.members-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.members-table th,
+.members-table td {
+  vertical-align: middle;
+  text-align: left;
+}
+.members-table td {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.members-section-row td {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+.members-section-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-element);
+  margin-top: var(--gap-card);
+  padding: var(--gap-element) var(--gap-card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
+  text-align: left;
+}
+.members-section-title-wrap,
+.members-card-section-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-micro);
+}
+.members-section-heading {
+  margin: 0;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.members-section-heading-btn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.members-section-heading-btn:hover {
+  color: var(--accent);
+}
+.members-section-eyebrow {
+  font-style: normal;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(77, 0, 110, 0.72);
+}
+.members-section-bar strong {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.members-section-bar span {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+.members-section-meta-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-element);
+  flex-shrink: 0;
+}
+.members-section-toggle-btn {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.members-section-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.72);
+  color: var(--ink);
+}
+.members-row.is-representative td {
+  background: rgba(36, 135, 55, 0.045);
+}
+.members-row.is-representative td:first-child {
+  box-shadow: inset 3px 0 0 rgba(36, 135, 55, 0.75);
+}
+.members-row.is-representative.is-africa td {
+  background: rgba(171, 80, 39, 0.055);
+}
+.members-row.is-representative.is-africa td:first-child {
+  box-shadow: inset 3px 0 0 rgba(171, 80, 39, 0.8);
+}
+.members-row.is-representative.is-arab td {
+  background: rgba(150, 96, 17, 0.055);
+}
+.members-row.is-representative.is-arab td:first-child {
+  box-shadow: inset 3px 0 0 rgba(150, 96, 17, 0.8);
+}
+.members-row.is-representative.is-asia-pacific td {
+  background: rgba(255, 86, 85, 0.06);
+}
+.members-row.is-representative.is-asia-pacific td:first-child {
+  box-shadow: inset 3px 0 0 rgba(255, 86, 85, 0.82);
+}
+.members-row.is-representative.is-european td {
+  background: rgba(0, 148, 180, 0.06);
+}
+.members-row.is-representative.is-european td:first-child {
+  box-shadow: inset 3px 0 0 rgba(0, 148, 180, 0.82);
+}
+.members-row.is-representative.is-interamerican td {
+  background: rgba(36, 135, 55, 0.055);
+}
+.members-row.is-representative.is-interamerican td:first-child {
+  box-shadow: inset 3px 0 0 rgba(36, 135, 55, 0.8);
+}
+.members-row.is-parent td {
+  border-bottom-color: rgba(0, 0, 0, 0.04);
+}
+.members-row.is-child td {
+  background: rgba(17, 17, 17, 0.018);
+}
+.members-row.is-child td:first-child {
+  box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.08);
+}
+.member-country-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.member-country-names {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-tight);
+  align-items: flex-start;
+}
+.member-country-names strong {
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.member-country-names span {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.member-country-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  min-height: 32px;
+  padding: 6px 11px;
+  border: 1px solid rgba(77, 0, 110, 0.16);
+  background: rgba(77, 0, 110, 0.04);
+  color: var(--midnight-purple);
+  border-radius: var(--radius-pill);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.member-country-toggle:hover {
+  border-color: rgba(77, 0, 110, 0.28);
+  background: rgba(77, 0, 110, 0.08);
+}
+.member-country-toggle-count {
+  color: rgba(77, 0, 110, 0.72);
+}
+.member-country-toggle-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+.member-country-subline {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.member-country-subline strong {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.member-country-subline span {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.members-cards {
+  display: none;
+}
+.members-card-section {
+  display: grid;
+  gap: var(--gap-element);
+}
+.members-card-section + .members-card-section {
+  margin-top: 20px;
+}
+.members-card-section-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-element);
+  padding: var(--gap-element) 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(77, 0, 110, 0.05), rgba(77, 0, 110, 0.02));
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+.members-card-section-head strong {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.members-card-section-head span {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+.members-section-bar.is-africa,
+.members-card-section-head.is-africa {
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.14), rgba(159, 237, 143, 0.10));
+}
+.members-section-bar.is-arab,
+.members-card-section-head.is-arab {
+  background: linear-gradient(180deg, rgba(255, 174, 128, 0.26), rgba(255, 174, 128, 0.08));
+}
+.members-section-bar.is-asia-pacific,
+.members-card-section-head.is-asia-pacific {
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.18), rgba(255, 86, 85, 0.08));
+}
+.members-section-bar.is-european,
+.members-card-section-head.is-european {
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.18), rgba(130, 230, 222, 0.10));
+}
+.members-section-bar.is-interamerican,
+.members-card-section-head.is-interamerican {
+  background: linear-gradient(180deg, rgba(130, 230, 222, 0.28), rgba(130, 230, 222, 0.10));
+}
+.members-section-bar.is-language-english,
+.members-card-section-head.is-language-english {
+  background: linear-gradient(180deg, rgba(77, 0, 110, 0.12), rgba(77, 0, 110, 0.04));
+}
+.members-section-bar.is-language-french,
+.members-card-section-head.is-language-french {
+  background: linear-gradient(180deg, rgba(34, 92, 160, 0.12), rgba(34, 92, 160, 0.04));
+}
+.member-country-card {
+  border: 1px solid var(--border);
+  background: var(--white);
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+}
+.member-country-card.is-representative {
+  border-color: rgba(98, 37, 153, 0.26);
+  background: linear-gradient(180deg, rgba(98, 37, 153, 0.08), var(--white) 28%);
+}
+.member-country-card.is-representative.is-africa {
+  border-color: rgba(36, 135, 55, 0.28);
+  background: linear-gradient(180deg, rgba(36, 135, 55, 0.10), var(--white) 28%);
+}
+.member-country-card.is-representative.is-arab {
+  border-color: rgba(255, 174, 128, 0.42);
+  background: linear-gradient(180deg, rgba(255, 174, 128, 0.16), var(--white) 28%);
+}
+.member-country-card.is-representative.is-asia-pacific {
+  border-color: rgba(255, 86, 85, 0.34);
+  background: linear-gradient(180deg, rgba(255, 86, 85, 0.14), var(--white) 28%);
+}
+.member-country-card.is-representative.is-european {
+  border-color: rgba(0, 148, 180, 0.34);
+  background: linear-gradient(180deg, rgba(0, 148, 180, 0.14), var(--white) 28%);
+}
+.member-country-card.is-representative.is-interamerican {
+  border-color: rgba(130, 230, 222, 0.56);
+  background: linear-gradient(180deg, rgba(130, 230, 222, 0.20), var(--white) 28%);
+}
+.member-country-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-element);
+  margin-top: 14px;
+}
+.member-country-meta-grid > div strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+.member-country-children {
+  display: grid;
+  gap: 10px;
+  margin-top: var(--gap-card);
+  padding-top: 14px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+.member-country-child-card {
+  padding: var(--gap-element) 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(17, 17, 17, 0.018);
+  border-radius: var(--radius-md);
+}
+.member-country-child-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.members-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: var(--gap-micro) 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(31,31,31,0.12);
+  background: rgba(31,31,31,0.04);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.members-pill.is-representative {
+  border-color: rgba(36, 135, 55, 0.28);
+  background: rgba(36, 135, 55, 0.12);
+  color: var(--shade-green-3);
+}
+.member-country-label {
+  display: block;
+  margin-bottom: var(--gap-micro);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.members-empty {
+  padding: 28px 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+@media (max-width: 640px) {
+  .members-page-wrap {
+    padding-bottom: 60px;
+  }
+  .members-search-card {
+    position: sticky;
+    top: 118px;
+    z-index: 70;
+  }
+  .members-table-wrap {
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .members-table {
+    display: none;
+  }
+  .members-cards {
+    display: grid;
+    gap: var(--gap-element);
+  }
+  .member-country-card {
+    padding: var(--gap-section);
+  }
+  .members-view-chips {
+    gap: 6px;
+  }
+  .members-view-chip {
+    min-height: 36px;
+    padding: var(--gap-tight) 10px;
+    font-size: 10px;
+  }
+  .member-country-names strong {
+    font-size: 16px;
+  }
+  .member-country-names span,
+  .member-country-status {
+    font-size: 13px;
+  }
+}

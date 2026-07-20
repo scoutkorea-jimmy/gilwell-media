@@ -102,7 +102,12 @@ function parseRules(css) {
       continue;
     }
     if (ch === '{') {
-      const prelude = css.slice(selStart, i).trim();
+      const rawPrelude = css.slice(selStart, i);
+      // 셀렉터 판정에는 주석을 뺀 텍스트를 쓴다. 주석 안의 ".무언가" 가 클래스로
+      // 오인되면 귀속이 틀어진다(실제로 169개 규칙의 프렐류드에 주석이 붙어 있다).
+      // 다만 추출용 범위(startIdx)는 주석을 포함한 원본 그대로 둬서, 규칙을 옮길 때
+      // 바로 위 설명 주석이 함께 따라가도록 한다.
+      const prelude = stripCssComments(rawPrelude).trim();
       if (prelude.startsWith('@')) {
         // at-rule: media/supports 는 내부를 계속 스캔, 그 외(@font-face/@keyframes)는 통째로 건너뜀
         const nested = /^@(media|supports|layer|container)\b/i.test(prelude);
@@ -118,6 +123,8 @@ function parseRules(css) {
           prelude,
           start: lineAt(selStart),
           end: lineAt(close),
+          startIdx: selStart,
+          endIdx: close + 1,
           bytes: Buffer.byteLength(css.slice(selStart, close + 1), 'utf8'),
           media: atStack.slice(),
         });
@@ -132,6 +139,8 @@ function parseRules(css) {
           selector: prelude.replace(/\s+/g, ' '),
           start: lineAt(selStart),
           end: lineAt(close),
+          startIdx: selStart,
+          endIdx: close + 1,
           bytes: Buffer.byteLength(css.slice(selStart, close + 1), 'utf8'),
           media: atStack.slice(),
         });
@@ -149,6 +158,32 @@ function parseRules(css) {
     i++;
   }
   return rules;
+}
+
+/** 문자열 리터럴을 건드리지 않고 /* *\/ 주석만 제거한다. */
+function stripCssComments(value) {
+  let out = '';
+  let i = 0;
+  const n = value.length;
+  while (i < n) {
+    const ch = value[i];
+    if (ch === '/' && value[i + 1] === '*') {
+      const end = value.indexOf('*/', i + 2);
+      i = end === -1 ? n : end + 2;
+      out += ' ';
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      const q = ch;
+      out += ch; i++;
+      while (i < n && value[i] !== q) { if (value[i] === '\\') { out += value[i]; i++; } out += value[i]; i++; }
+      out += value[i] || ''; i++;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
 }
 
 function matchBrace(css, openIdx) {

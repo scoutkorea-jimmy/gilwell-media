@@ -1,0 +1,490 @@
+/* glossary 전용 스타일 — css/style.css 에서 분리.
+ *
+ * 이 파일의 규칙은 scripts/audit_css_usage.mjs 가 "glossary 표면에서만 쓰인다"고
+ * 확정한 것들이다. 다른 페이지에서 쓰기 시작하면 style.css 로 되돌려야 한다.
+ * 반드시 style.css **뒤에** 링크할 것 — 동일 명시도 규칙의 순서 의존성 때문.
+ *
+ * 재생성: node scripts/split_css.mjs
+ */
+/* ── Glossary Search Scope ────────────────────────────────── */
+.glossary-search-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0 var(--gap-micro);
+}
+.glossary-search-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-tight);
+  padding: var(--gap-tight) var(--gap-element);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.9);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+}
+.glossary-search-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .glossary-admin-form-grid { grid-template-columns: 1fr; }
+}
+.glossary-public-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.glossary-public-admin-top {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+.glossary-admin-toggle-btn {
+  padding: var(--gap-tight) var(--gap-element);
+  border: 1px solid rgba(77, 0, 110, 0.18);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
+  background: rgba(77, 0, 110, 0.04);
+  color: var(--midnight-purple);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.glossary-admin-toggle-btn:hover {
+  border-color: rgba(77, 0, 110, 0.32);
+  background: rgba(77, 0, 110, 0.08);
+}
+.glossary-letter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-tight);
+  margin-bottom: var(--gap-section);
+}
+.glossary-letter-btn {
+  min-width: 42px;
+  padding: var(--gap-tight) 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
+  background: transparent;
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.glossary-letter-btn.active {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+.glossary-section + .glossary-section { margin-top: 26px; }
+.glossary-section-title {
+  margin: 0 0 10px;
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 24px;
+}
+.glossary-unmatched-section {
+  margin-top: var(--gap-section-out);
+}
+.glossary-unmatched-note {
+  margin: 0 0 var(--gap-element);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.glossary-unmatched-note a {
+  color: var(--midnight-purple);
+  text-decoration: underline;
+}
+.glossary-unmatched-label {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.glossary-empty {
+  padding: 28px 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.glossary-admin-toolbar,
+.glossary-admin-form-grid {
+  display: grid;
+  gap: var(--gap-element);
+}
+.glossary-admin-form-grid {
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  align-items: end;
+  margin-bottom: 18px;
+}
+.glossary-description-field {
+  grid-column: 1 / -1;
+}
+.glossary-description-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px var(--gap-element);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* 인풋 통일 */
+  background: var(--white);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  resize: vertical;
+}
+.glossary-login-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.glossary-login-card {
+  width: min(92vw, 360px);
+  background: var(--white);
+  padding: 28px;
+  border-top: 3px solid var(--scouting-purple);
+}
+.glossary-editor-modal-card {
+  width: min(92vw, 860px);
+}
+.glossary-login-card h3 {
+  margin: 0 0 var(--gap-tight);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 22px;
+}
+.glossary-login-card p {
+  margin: 0 0 var(--gap-element);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.glossary-login-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px var(--gap-element);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* 인풋 통일 */
+  margin-bottom: var(--gap-element);
+}
+.glossary-login-actions {
+  display: flex;
+  gap: var(--gap-tight);
+}
+.glossary-modal-form-grid {
+  grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  margin-bottom: var(--gap-card);
+}
+.glossary-modal-form-grid .glossary-description-field {
+  grid-column: 1 / -1;
+}
+.glossary-login-error {
+  color: var(--danger) !important;
+  font-size: 12px !important;
+  margin-top: 10px !important;
+}
+.glossary-term-cell-with-toggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--gap-element);
+}
+.glossary-term-cell-with-toggle > span:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.glossary-term-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap-tight);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.glossary-description-row td {
+  padding-top: 10px;
+  padding-bottom: 14px;
+  background: rgba(98, 37, 153, 0.12);
+}
+.glossary-description-row-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--gap-micro) 0;
+}
+.glossary-description-text {
+  font-size: 14px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+.glossary-inline-edit-row td {
+  background: rgba(77, 0, 110, 0.06);
+  padding-top: var(--gap-element);
+  padding-bottom: var(--gap-card);
+}
+.glossary-inline-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gap-element);
+  margin-bottom: var(--gap-element);
+}
+.glossary-inline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.glossary-inline-field span {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.glossary-inline-field-full {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.glossary-inline-input,
+.glossary-inline-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(98, 37, 153, 0.18);
+  border-radius: var(--radius-md);    /* 인풋 통일 곡률 */
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.glossary-inline-input {
+  min-height: 42px;
+  padding: 10px var(--gap-element);
+}
+.glossary-inline-textarea {
+  min-height: 88px;
+  padding: 10px var(--gap-element);
+  resize: vertical;
+}
+.glossary-inline-input:focus,
+.glossary-inline-textarea:focus {
+  outline: none;
+  border-color: var(--midnight-purple);
+  box-shadow: 0 0 0 2px rgba(98, 37, 153, 0.1);
+}
+.glossary-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gap-tight);
+  margin-top: var(--gap-element);
+}
+.glossary-inline-save-btn,
+.glossary-inline-cancel-btn,
+.glossary-inline-delete-btn {
+  min-height: 34px;
+  padding: 0 var(--gap-element);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* 버튼 통일 곡률 */
+  background: var(--white);
+  color: var(--ink);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.glossary-inline-save-btn {
+  border-color: var(--midnight-purple);
+  background: var(--midnight-purple);
+  color: var(--white);
+}
+.glossary-inline-delete-btn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.glossary-inline-delete-btn:hover {
+  background: var(--danger);
+  color: var(--white);
+}
+.glossary-inline-edit-link {
+  flex-shrink: 0;
+  min-width: 74px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.glossary-description-toggle {
+  min-width: 118px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);    /* radius 통일 자동 주입 R2 */
+  background: var(--white);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.glossary-description-toggle-text {
+  font-family: 'Google Sans Flex', 'Noto Sans', NixgonFont, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: inherit;
+}
+.glossary-description-toggle:hover {
+  color: var(--midnight-purple);
+  border-color: var(--midnight-purple);
+  background: rgba(98, 37, 153, 0.06);
+}
+.glossary-description-toggle.open .glossary-chevron {
+  transform: rotate(180deg);
+}
+.glossary-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transform: rotate(0deg);
+  transform-origin: center center;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.glossary-chevron svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+.glossary-inline-edit-link:hover {
+  color: var(--midnight-purple);
+  border-color: var(--midnight-purple);
+  background: rgba(98, 37, 153, 0.05);
+}
+@media (max-width: 900px) {
+  .glossary-public-admin {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .glossary-admin-toolbar,
+  .glossary-admin-form-grid,
+  .glossary-modal-form-grid,
+  .glossary-admin-row {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .glossary-toolbar-title {
+    font-size: 9px;
+    margin-bottom: var(--gap-tight);
+  }
+  .glossary-letter-bar {
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .glossary-letter-btn {
+    min-width: 38px;
+    padding: 7px var(--gap-tight);
+    font-size: 10px;
+  }
+  .glossary-section + .glossary-section {
+    margin-top: 18px;
+  }
+  .glossary-section-title {
+    font-size: 22px;
+    margin-bottom: var(--gap-tight);
+  }
+  .glossary-term-row,
+  .glossary-description-row {
+    border: 1px solid var(--border);
+    background: var(--white);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.04);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .glossary-term-row:first-child {
+    border-top: 1px solid var(--border);
+  }
+  .glossary-term-row {
+    margin-bottom: 10px;
+  }
+  .glossary-description-row {
+    border-top: none;
+    margin-top: -10px;
+    margin-bottom: 14px;
+  }
+  .glossary-term-row td + td {
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+.glossary-description-row td::before {
+  display: none;
+}
+.glossary-description-row[hidden] {
+  display: none !important;
+}
+.glossary-description-row-inner {
+  flex-direction: column;
+  gap: var(--gap-element);
+}
+  .glossary-term-cell-with-toggle {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .glossary-term-row td[data-label="한국어"],
+  .glossary-term-row td[data-label="English"],
+  .glossary-term-row td[data-label="Français"] {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .glossary-unmatched-label {
+    font-size: 13px;
+  }
+  .glossary-inline-edit-link {
+    min-width: 70px;
+    min-height: 38px;
+    padding: 0 var(--gap-element);
+    font-size: 10px;
+  }
+  .glossary-description-toggle {
+    min-width: 108px;
+    min-height: 38px;
+    padding: 0 var(--gap-element);
+  }
+  .glossary-inline-edit-grid {
+    grid-template-columns: 1fr;
+  }
+  .glossary-inline-edit-row td {
+    border-bottom: 1px solid var(--border);
+  }
+  .glossary-inline-actions {
+    justify-content: flex-start;
+  }
+  .glossary-description-text {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+}

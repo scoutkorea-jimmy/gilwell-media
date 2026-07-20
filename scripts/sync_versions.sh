@@ -45,6 +45,17 @@ done
 # jamboree16.html — 제16회 한국잼버리 특별관 전용 런타임
 perl -0pi -e "s#/js/jamboree16\\.js\\?v=[0-9A-Za-z.-]+#/js/jamboree16.js?v=${ASSET_VERSION}#g" jamboree16.html
 
+# 페이지 전용 CSS (scripts/split_css.mjs 로 style.css 에서 분리한 것들).
+# 해당 시트를 링크하는 모든 표면에서 ?v= 를 함께 갱신한다.
+PAGE_CSS_FILES=(
+  latest.html korea.html apr.html wosm.html people.html
+  calendar.html wosm-members.html glossary.html jamboree16.html
+  functions/post/'[id]'.js functions/feature/'[category]'/'[slug]'.js functions/glossary-raw.js
+)
+for file in "${PAGE_CSS_FILES[@]}"; do
+  perl -0pi -e "s#/css/board\\.css\\?v=[0-9A-Za-z.-]+#/css/board.css?v=${ASSET_VERSION}#g; s#/css/calendar\\.css\\?v=[0-9A-Za-z.-]+#/css/calendar.css?v=${ASSET_VERSION}#g; s#/css/post\\.css\\?v=[0-9A-Za-z.-]+#/css/post.css?v=${ASSET_VERSION}#g; s#/css/wosm-members\\.css\\?v=[0-9A-Za-z.-]+#/css/wosm-members.css?v=${ASSET_VERSION}#g; s#/css/glossary\\.css\\?v=[0-9A-Za-z.-]+#/css/glossary.css?v=${ASSET_VERSION}#g; s#/css/jamboree16\\.css\\?v=[0-9A-Za-z.-]+#/css/jamboree16.css?v=${ASSET_VERSION}#g" "$file"
+done
+
 PUBLIC_HTML_FILES=(
   latest.html
   korea.html
