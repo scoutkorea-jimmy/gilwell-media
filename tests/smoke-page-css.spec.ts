@@ -23,8 +23,9 @@ const CASES: Case[] = [
     expect: { prop: 'padding-top', not: '0px' } },
   { name: '용어집', path: '/glossary', sheet: 'glossary.css', selector: '.glossary-search-options',
     expect: { prop: 'display', not: 'inline' } },
+  // .members-hero 가 이 시트에서 선언하는 건 margin-bottom 하나뿐이다.
   { name: '회원국 현황', path: '/wosm-members', sheet: 'wosm-members.css', selector: '.members-hero',
-    expect: { prop: 'padding-top', not: '0px' } },
+    expect: { prop: 'margin-bottom', not: '0px' } },
   { name: '잼버리 특별관', path: '/jamboree16', sheet: 'jamboree16.css', selector: '.jam16-hero',
     expect: { prop: 'background-image', not: 'none' } },
   { name: '기사 상세', path: '/post/6', sheet: 'post.css', selector: '.post-page-wrap',
@@ -65,6 +66,8 @@ test('홈은 페이지 전용 시트를 로드하지 않는다', async ({ page }
     }
   });
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  // networkidle 은 쓰지 않는다 — 홈은 광고 스크립트와 주기적 폴링 때문에 유휴
+  // 상태에 도달하지 않아 타임아웃한다. 스타일시트는 load 시점에 이미 요청된다.
+  await page.waitForTimeout(3_000);
   expect(pageSheets, '홈이 불필요한 페이지 시트를 받아오면 분리 의미가 없다').toEqual([]);
 });
