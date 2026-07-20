@@ -1,6 +1,27 @@
 {
   "items": [
   {
+    "version": "00.175.01",
+    "date": "2026-07-20",
+    "released_at": "2026-07-20 16:55:00 KST",
+    "summary": "홈이 받아오는 데이터에서 화면에 쓰이지 않는 기사 본문 전문을 걷어내 응답 크기를 크게 줄였다.",
+    "for_users": [
+      "홈을 열 때 내려받는 데이터가 약 131KB에서 대폭 줄어, 특히 모바일·저속 회선에서 첫 화면이 빨라집니다.",
+      "홈에서 쓰이지도 않는 게시판 설명을 매번 요청하던 것을 없앴습니다. 이 요청이 실패하면 홈과 무관한 오류 안내가 뜨던 부작용도 함께 사라집니다.",
+      "탭을 다시 열 때마다 버전 확인 요청이 두 번 나가던 것을 한 번으로 합치고, 숨겨진 탭에서는 확인하지 않도록 했습니다."
+    ],
+    "for_developers": [
+      "근본 원인: /api/home 이 카드 목록 25건의 content 전문(55.4KB, 응답의 42.3%)을 전송했으나 소비처는 home-render.js renderLeadStory 의 420자 발췌 한 곳뿐이었다.",
+      "functions/_shared/post-excerpt.js 신설 — functions/[[path]].js 에만 있던 getPostExcerpt / stripHtml / extractEditorJsText 를 이관하고 toCardPost(post) 를 추가. [[path]].js 는 로컬 사본을 지우고 import 로 전환(중복 구현 제거).",
+      "functions/api/home.js: serializeCardPost = toCardPost(serializePostImage(...)) 를 도입해 lead/picks/latest/popular/columns 5개 경로에 적용. content 를 응답에서 제거하고 excerpt(최대 420자)로 대체. 히어로는 애초에 content 를 SELECT 하지 않아 영향 없음.",
+      "js/home-render.js: post.excerpt 우선, 없으면 기존 GW.truncate(post.content) 로 폴백 — 이 배포 이전에 localStorage 에 저장된 홈 캐시 페이로드와의 호환용.",
+      "js/home-runtime.js: bootstrapStandardPage 에 loadBoardCopy:false 추가. index.html 에 [data-board-copy-key] 요소가 0개라 /api/settings/board-copy 요청이 순수 낭비였고, 실패 시 handlePublicLoadFailure 가 홈에 없는 기능에 대한 토스트를 띄웠다.",
+      "js/main.js: initVersionUpdateBanner 의 /api/version 호출에 30초 최소 간격(_checkVersionThrottled) 적용 — visibilitychange 와 focus 가 동시에 발생해 탭 복귀당 2회 호출되던 문제. 5분 백그라운드 폴링에도 visibilityState 가드 추가.",
+      "SSR↔/api/home 중복 쿼리 정리(site_visits 스캔 방문당 5회)는 변경 폭이 커 이번 배포에서 제외.",
+      "사이트 버전 00.175.00 → 00.175.01."
+    ]
+  },
+  {
     "version": "00.175.00",
     "date": "2026-07-20",
     "released_at": "2026-07-20 16:10:00 KST",

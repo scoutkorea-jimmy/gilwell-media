@@ -2,6 +2,7 @@ import { buildShareMetaBlock, getResolvedShareImage, getSitePageKey, loadSiteMet
 import { serializePostImage } from './_shared/images.js';
 import { loadNavLabels, getNavLabel } from './_shared/nav-labels.js';
 import { ensureDuePostsPublished } from './_shared/publish-due-posts.js';
+import { getPostExcerpt } from './_shared/post-excerpt.js';
 
 const PUBLIC_DATE_EXPR = "CASE WHEN publish_at IS NOT NULL AND trim(publish_at) <> '' THEN CASE WHEN instr(publish_at, 'Z') > 0 OR instr(substr(publish_at, 11), '+') > 0 THEN datetime(replace(publish_at, 'T', ' '), '+9 hours') ELSE datetime(replace(publish_at, 'T', ' ')) END ELSE CASE WHEN created_at IS NOT NULL AND trim(created_at) <> '' THEN datetime(replace(created_at, 'T', ' '), '+9 hours') ELSE NULL END END";
 
@@ -653,49 +654,6 @@ function getSortedPostTags(post) {
     .map((tag) => tag.trim())
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b, 'ko'));
-}
-
-function getPostExcerpt(post, limit) {
-  const subtitle = String(post && post.subtitle || '').trim();
-  const plain = stripHtml(String(post && post.content || '')).replace(/\s+/g, ' ').trim();
-  const base = plain || subtitle;
-  if (!base) return '';
-  const safeLimit = Math.max(80, Math.min(420, parseInt(limit || 220, 10)));
-  return base.length > safeLimit ? `${base.slice(0, safeLimit - 1).trim()}…` : base;
-}
-
-function stripHtml(value) {
-  const raw = String(value || '');
-  const editorText = extractEditorJsText(raw);
-  const source = editorText || raw;
-  return source
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'");
-}
-
-function extractEditorJsText(value) {
-  const raw = String(value || '').trim();
-  if (!raw || raw.charAt(0) !== '{' || raw.indexOf('"blocks"') === -1) return '';
-  try {
-    const parsed = JSON.parse(raw);
-    const blocks = Array.isArray(parsed && parsed.blocks) ? parsed.blocks : [];
-    return blocks.map((block) => {
-      if (!block || typeof block !== 'object') return '';
-      const data = block.data && typeof block.data === 'object' ? block.data : {};
-      if (typeof data.text === 'string') return data.text;
-      if (Array.isArray(data.items)) return data.items.join(' ');
-      return '';
-    }).filter(Boolean).join(' ');
-  } catch {
-    return '';
-  }
 }
 
 function formatPostDate(post) {

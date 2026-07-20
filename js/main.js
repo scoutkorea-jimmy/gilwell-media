@@ -6,9 +6,9 @@
   'use strict';
 
   const GW = window.GW = {};
-  GW.APP_VERSION = '00.175.00';
+  GW.APP_VERSION = '00.175.01';
   GW.ADMIN_VERSION = '03.150.01';
-  GW.ASSET_VERSION = '20260720141805';
+  GW.ASSET_VERSION = '20260720143322';
   GW.PALETTE = {
     scoutingPurple: '#622599',
     canvasWhite: '#FFFFFF',
@@ -1048,15 +1048,30 @@
     GW._versionBannerLoaded = String(loadedVersion);
     _stripVersionRefreshParam();
     _bindVersionRefreshNavigation();
+    // 탭을 다시 선택하면 브라우저가 visibilitychange 와 focus 를 모두 발생시켜
+    // /api/version 이 매번 2회 호출됐다. 최소 간격을 둬 한 번으로 합친다.
+    var VERSION_CHECK_MIN_INTERVAL_MS = 30 * 1000;
+    var lastVersionCheckAt = 0;
+    function _checkVersionThrottled() {
+      var now = Date.now();
+      if (now - lastVersionCheckAt < VERSION_CHECK_MIN_INTERVAL_MS) return;
+      lastVersionCheckAt = now;
+      _checkVersionOnce();
+    }
+
     // Initial probe shortly after load (don't block first paint).
-    setTimeout(_checkVersionOnce, 2500);
+    setTimeout(_checkVersionThrottled, 2500);
     // Re-check whenever the tab becomes visible again.
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible') _checkVersionOnce();
+      if (document.visibilityState === 'visible') _checkVersionThrottled();
     });
-    window.addEventListener('focus', _checkVersionOnce);
+    window.addEventListener('focus', _checkVersionThrottled);
     // Slow background poll as a safety net (5 min).
-    setInterval(_checkVersionOnce, 5 * 60 * 1000);
+    // 숨겨진 탭에서는 건너뛴다 — 어차피 복귀 시 visibilitychange 로 확인한다.
+    setInterval(function () {
+      if (document.visibilityState !== 'visible') return;
+      _checkVersionThrottled();
+    }, 5 * 60 * 1000);
   };
 
   // Public site auto-init. Admin opts in separately after auth.

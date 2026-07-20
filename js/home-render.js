@@ -51,7 +51,9 @@
     var cat = GW.CATEGORIES[post.category] || GW.CATEGORIES.korea;
     var categoryLabel = GW.getCategoryLabel(post.category);
     var subtitle = (post.subtitle || '').trim();
-    var excerpt = GW.truncate(post.content || '', 420);
+    // /api/home 은 이제 content 대신 서버가 만든 excerpt 를 보낸다. content 폴백은
+    // 이 배포 이전에 localStorage 에 저장된 캐시 페이로드를 위해 남겨 둔다.
+    var excerpt = post.excerpt || GW.truncate(post.content || '', 420);
     var tags = helpers.getSortedPostTags(post);
     if (excerpt === subtitle) excerpt = '';
 

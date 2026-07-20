@@ -534,7 +534,11 @@
       GW.bootstrapStandardPage({
         loadTicker: false,
         loadStats: false,
-        loadTranslations: false
+        loadTranslations: false,
+        // index.html 에는 [data-board-copy-key] 요소가 하나도 없다. 요청만 낭비하고,
+        // 실패하면 홈에 없는 기능에 대해 "게시판 설명을 불러오지 못했습니다" 토스트를
+        // 띄우는 부작용까지 있었다.
+        loadBoardCopy: false
       });
       bindRuntimeIssueReporting();
       bindHomeStatusActions();

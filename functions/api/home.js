@@ -6,6 +6,15 @@ import { loadNavLabels } from '../_shared/nav-labels.js';
 import { PUBLIC_DATE_EXPR } from '../_shared/post-public-date.js';
 import { recordHomepageIssue } from '../_shared/homepage-issues.js';
 import { DEFAULT_TICKER_ITEMS } from '../_shared/site-copy.mjs';
+import { toCardPost } from '../_shared/post-excerpt.js';
+
+// 카드 목록(lead/picks/latest/popular/columns)용 직렬화.
+// 홈 렌더러가 본문에서 실제로 쓰는 건 메인 스토리의 420자 발췌 한 곳뿐인데
+// 이전에는 25건의 content 전문(약 55KB, 응답의 42%)을 매번 내려보냈다.
+// 히어로는 애초에 content 를 SELECT 하지 않으므로 이 경로를 타지 않는다.
+function serializeCardPost(post, origin) {
+  return toCardPost(serializePostImage(post, origin));
+}
 
 const DEFAULT_HOME_LEAD_MEDIA = {
   fit: 'cover',
@@ -370,7 +379,7 @@ async function loadHomeLead(env, origin) {
        FROM posts
       WHERE id = ? AND published = 1`
   ).bind(postId).first();
-  return { post: post ? serializePostImage(post, origin) : null, media };
+  return { post: post ? serializeCardPost(post, origin) : null, media };
 }
 
 async function loadHomePicks(env, origin, limit) {
@@ -384,7 +393,7 @@ async function loadHomePicks(env, origin, limit) {
     ).all(),
     env.DB.prepare(`SELECT value FROM settings WHERE key = 'picks_order'`).first(),
   ]);
-  const posts = (postsRes.results || []).map((p) => serializePostImage(p, origin));
+  const posts = (postsRes.results || []).map((p) => serializeCardPost(p, origin));
   const order = orderRow ? safeParsePickOrder(orderRow.value) : [];
   if (!order.length) return posts.slice(0, safeLimit);
   const orderIdx = new Map();
@@ -425,7 +434,7 @@ async function loadPostList(env, origin, opts = {}) {
       ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
       LIMIT ?`
   ).bind(...bindings, limit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
+  return (results || []).map((post) => serializeCardPost(post, origin));
 }
 
 async function loadLatestPosts(env, origin, limit) {
@@ -437,7 +446,7 @@ async function loadLatestPosts(env, origin, limit) {
       ORDER BY ${PUBLIC_DATE_EXPR} DESC, id DESC
       LIMIT ?`
   ).bind(safeLimit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
+  return (results || []).map((post) => serializeCardPost(post, origin));
 }
 
 async function loadPopular(env, origin, limit) {
@@ -487,7 +496,7 @@ async function loadPopular(env, origin, limit) {
        p.id DESC
      LIMIT ?
   `).bind(limit).all();
-  return (results || []).map((post) => serializePostImage(post, origin));
+  return (results || []).map((post) => serializeCardPost(post, origin));
 }
 
 async function scalar(env, sql) {
