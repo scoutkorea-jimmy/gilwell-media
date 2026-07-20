@@ -241,9 +241,9 @@ export async function onRequestGet({ params, env, request }) {
   <link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png"/>
   <link rel="apple-touch-icon" href="/img/logo.png"/>
   <link rel="shortcut icon" href="/img/favicon-48.png"/>
-  <link rel="stylesheet" href="/css/style.css?v=20260720150558">
-  <link rel="stylesheet" href="/css/post.css?v=20260720150558">
-  <link rel="stylesheet" href="/css/chatbot.css?v=20260720150558">
+  <link rel="stylesheet" href="/css/style.css?v=20260720152103">
+  <link rel="stylesheet" href="/css/post.css?v=20260720152103">
+  <link rel="stylesheet" href="/css/chatbot.css?v=20260720152103">
 </head>
 <body class="post-page">
   <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
@@ -368,7 +368,7 @@ export async function onRequestGet({ params, env, request }) {
             <button id="post-like-btn" class="post-like-btn${likeStats.liked ? ' liked' : ''}"${likeStats.liked ? ' disabled' : ''}>❤ 공감 <span id="post-like-count">${likeStats.likes}</span></button>
             <span class="post-like-help">${likeStats.liked ? '이미 공감한 기사입니다' : '한 IP당 1회 공감할 수 있습니다'}</span>
           </span>
-          <span class="post-byline-report">오류제보 <a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a></span>
+          <span class="post-byline-report">오류제보 <!--email_off--><a href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a><!--/email_off--></span>
         </div>
 
         <!-- Kakao AdFit horizontal — 기사 본문 하단, 기사 너비 기준 중앙 정렬.
@@ -421,14 +421,14 @@ export async function onRequestGet({ params, env, request }) {
         <h4 data-footer-role="title">${SITE_BRAND_NAME}</h4>
         <p data-footer-role="description">${SITE_BRAND_NAME}는 스카우트 네트워크의 자발적인 봉사로 운영됩니다.</p>
         <p data-footer-role="domain" style="margin-top:6px;">${SITE_DOMAIN_LABEL}</p>
-        <p>기사제보: <a data-footer-role="tip-email" href="mailto:${DEFAULT_CONTACT_EMAILS.tip}">${DEFAULT_CONTACT_EMAILS.tip}</a></p>
-        <p>문의: <a data-footer-role="contact-email" href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a></p>
+        <p>기사제보: <!--email_off--><a data-footer-role="tip-email" href="mailto:${DEFAULT_CONTACT_EMAILS.tip}">${DEFAULT_CONTACT_EMAILS.tip}</a><!--/email_off--></p>
+        <p>문의: <!--email_off--><a data-footer-role="contact-email" href="mailto:${DEFAULT_CONTACT_EMAILS.contact}">${DEFAULT_CONTACT_EMAILS.contact}</a><!--/email_off--></p>
       </div>
       <div class="footer-admin">
         <h4>관리자</h4>
         <a href="/admin.html">관리자 페이지 →</a>
         <a href="/glossary-raw">용어집 RAW로 보기 →</a>
-        <p class="footer-build">Site <span class="site-build-version">V00.176.00</span> · Admin <span class="admin-build-version">V03.150.01</span></p>
+        <p class="footer-build">Site <span class="site-build-version">V00.176.01</span> · Admin <span class="admin-build-version">V03.150.01</span></p>
       </div>
       <div class="footer-bottom">
         <p data-i18n="footer.copyright">© 2026 ${SITE_BRAND_NAME} · ${SITE_DOMAIN_LABEL}</p>
@@ -629,10 +629,10 @@ export async function onRequestGet({ params, env, request }) {
 
   <script>window.GW_BOOT_RUNTIME=${serializeForScript(publicRuntime)};window.GW_KAKAO_JS_KEY=${serializeForScript(String(publicRuntime.kakao_js_key || ''))};window.GW_POST_BOOT=${serializeForScript({ editPostId: id, sharePostUrl: postUrl, sharePostTitle: titleText, sharePostSubtitle: subtitleText, editSeed: JSON.parse(editSeed), visibleTags })};</script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/js/main.js?v=20260720150558"></script>
-  <script src="/js/site-chrome.js?v=20260720150558"></script>
-  <script src="/js/chatbot.js?v=20260720150558" defer></script>
-  <script src="/js/post-page.js?v=20260720150558"></script>
+  <script src="/js/main.js?v=20260720152103"></script>
+  <script src="/js/site-chrome.js?v=20260720152103"></script>
+  <script src="/js/chatbot.js?v=20260720152103" defer></script>
+  <script src="/js/post-page.js?v=20260720152103"></script>
   <script async type="text/javascript" charset="utf-8" src="https://t1.kakaocdn.net/kas/static/ba.min.js"></script>
 </body>
 </html>`;

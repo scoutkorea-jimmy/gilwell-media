@@ -1,6 +1,24 @@
 {
   "items": [
   {
+    "version": "00.176.01",
+    "date": "2026-07-21",
+    "released_at": "2026-07-21 01:20:00 KST",
+    "summary": "기사 상세 페이지에서 이메일 주소가 '[email protected]' 글자로 깨져 보이던 문제를 고치고, 광고 품질 측정 요청이 차단돼 모든 공개 페이지에 콘솔 오류가 쌓이던 문제를 해소했다.",
+    "for_users": [
+      "기사 상세와 특집 컬렉션 페이지에서 기사제보·문의·오류제보 이메일이 '[email protected]' 이라는 글자로 보이던 문제를 고쳤습니다. 이제 실제 주소가 그대로 표시됩니다.",
+      "공개 페이지마다 광고 관련 요청이 차단되며 브라우저 콘솔에 오류가 남던 것을 없앴습니다. 화면에 보이는 변화는 없지만, 이 오류가 다른 진짜 문제를 가리고 있었습니다."
+    ],
+    "for_developers": [
+      "이메일 깨짐 근본 원인: 정적 HTML 페이지는 모두 mailto 링크를 <!--email_off--> 로 감싸 Cloudflare Email Obfuscation 을 끄고 있었으나 SSR 템플릿만 이 관례를 빠뜨렸다. 그래서 Cloudflare 가 주소를 <span class=\"__cf_email__\" data-cfemail=\"...\">[email protected]</span> 로 치환했고, 이를 되돌리는 /cdn-cgi/scripts/.../email-decode.min.js 는 공개 페이지 CSP 의 script-src 'strict-dynamic' 에 막혀(같은 오리진이어도 nonce 가 없으면 차단) 끝내 실행되지 않았다. 결과적으로 방문자에게 자리표시자 문자열이 그대로 노출.",
+      "수정: functions/post/[id].js 의 mailto 3곳(오류제보·기사제보·문의)과 functions/feature/[category]/[slug].js 의 2곳을 <!--email_off--> 로 감쌌다. CSP 를 푸는 대신 다른 페이지와 같은 관례를 따르는 쪽을 택했다.",
+      "functions/_middleware.js buildCsp() connect-src 에 https://ep1.adtrafficquality.google 추가 — AdSense Sodar(무효 트래픽·광고 품질 측정) 설정 요청지. _headers 의 정적 CSP 에도 동일 반영. 실제 관측된 도메인만 추가했고 ep2 등은 관측 시 추가한다.",
+      "검증 방법: Playwright 로 10개 공개 경로를 돌며 콘솔의 CSP 위반을 수집해 위 두 건만 존재함을 확인한 뒤 수정. tests/smoke-public-pages.spec.ts 의 '콘솔 오류 0건' 단언이 7개 페이지에서 상시 실패하던 상태였고 그것이 회귀 탐지를 가리고 있었다.",
+      "알려진 잔여: _headers 의 connect-src 목록이 미들웨어 목록과 드리프트되어 있다(unpkg.com 등 누락). Functions 응답은 미들웨어가 덮어쓰므로 현재 영향은 없으나 단일 원본화가 필요하다.",
+      "사이트 버전 00.176.00 → 00.176.01."
+    ]
+  },
+  {
     "version": "00.176.00",
     "date": "2026-07-21",
     "released_at": "2026-07-21 00:15:00 KST",

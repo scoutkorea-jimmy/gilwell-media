@@ -168,7 +168,12 @@ function buildCsp(request, nonce) {
     // 이미 있지만 sourcemap은 brower devtools가 fetch로 가져와 connect-src 적용을 받는다.
     // unpkg.com 도 동일 이유 (leaflet.js.map). leaflet 자체는 script-src 로 통과.
     // Google AdSense beacons/config: pagead2 + googleads doubleclick + csi.gstatic.
-    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com",
+    // ep1.adtrafficquality.google 은 AdSense 의 Sodar(무효 트래픽·광고 품질 측정)
+    // 설정 요청지다. 없으면 매 공개 페이지에서 CSP 위반이 콘솔에 쌓여 스모크
+    // 테스트가 상시 실패하고, 진짜 회귀가 그 노이즈에 묻힌다. 광고 표시 자체는
+    // 이것 없이도 되지만 품질 측정 신호가 빠진다. 실제로 관측된 도메인만 넣는다
+    // (ep2 등은 관측되면 그때 추가).
+    "connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://esm.sh https://nominatim.openstreetmap.org https://challenges.cloudflare.com https://cloudflareinsights.com https://display.ad.daum.net https://t1.daumcdn.net https://t1.kakaocdn.net https://serv.ds.kakao.com https://*.onkakao.net https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://csi.gstatic.com https://ep1.adtrafficquality.google",
     // Kakao ad iframes are served from t1.kakaocdn.net. AdSense ad iframes from
     // googleads.g.doubleclick.net / tpc.googlesyndication.com / www.google.com.
     "frame-src 'self' https://www.youtube-nocookie.com https://www.openstreetmap.org https://challenges.cloudflare.com https://t1.daumcdn.net https://display.ad.daum.net https://t1.kakaocdn.net https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://www.google.com",
