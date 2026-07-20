@@ -1,9 +1,9 @@
 /**
  * Gilwell Media · 제16회 한국잼버리 특별관 런타임
  *
- * 두 개의 목록을 채운다.
- *   1) 특별관 소식  — posts.special_feature = SPECIAL_FEATURE (편집자가 글에 지정)
- *   2) 잼버리 관련 소식 — q=잼버리 검색 결과에서 1)에 이미 나온 글을 제외
+ * 기사 목록은 태그 하나로만 정해진다 — JAM16_TAG 가 글머리 태그(posts.tag) 또는
+ * 메타 태그(posts.meta_tags) 에 들어 있는 공개 글만 노출한다. /api/posts?tag= 는
+ * 두 컬럼을 함께 LIKE 매칭하므로 편집자는 둘 중 어디에 넣어도 된다.
  * 카드 마크업은 게시판(.board-grid/.post-card)과 같은 셸을 재사용한다.
  * 목록 API 는 content 를 내려주지 않으므로 발췌는 subtitle 로 대체한다.
  */
@@ -13,11 +13,9 @@
   if (typeof window === 'undefined' || !window.GW) return;
   var GW = window.GW;
 
-  // 편집자가 글 작성/수정 화면의 '특집 기사 묶음' 에 입력하는 값과 정확히 같아야 한다.
-  var SPECIAL_FEATURE = '제16회 한국잼버리';
-  var RELATED_QUERY = '잼버리';
-  var FEATURE_LIMIT = 24;
-  var RELATED_LIMIT = 12;
+  // 편집자가 글에 다는 태그와 정확히 같아야 한다 (띄어쓰기 없음).
+  var JAM16_TAG = '제16회한국잼버리';
+  var POST_LIMIT = 48;
 
   // 개영/폐영 시각은 KST 고정 오프셋으로 파싱한다. 방문자 로컬 타임존과 무관하게
   // 같은 D-day 가 나오도록 하기 위함.
@@ -142,35 +140,18 @@
       .then(function (data) { return (data && data.posts) || []; });
   }
 
-  function loadLists() {
-    var featureGrid = document.getElementById('jam16-grid');
-    var relatedGrid = document.getElementById('jam16-related-grid');
+  function loadPosts() {
+    var grid = document.getElementById('jam16-grid');
     var countEl = document.getElementById('jam16-count');
 
-    fetchPosts({ special_feature: SPECIAL_FEATURE, limit: FEATURE_LIMIT })
+    fetchPosts({ tag: JAM16_TAG, limit: POST_LIMIT })
       .catch(function (err) {
-        console.warn('[jamboree16] 특별관 목록 조회 실패:', (err && err.message) || err);
+        console.warn('[jamboree16] 기사 목록 조회 실패:', (err && err.message) || err);
         return [];
       })
-      .then(function (featurePosts) {
-        if (countEl) countEl.textContent = featurePosts.length ? '총 ' + featurePosts.length + '건' : '';
-        paint(featureGrid, featurePosts, '아직 이 특별관으로 묶인 기사가 없습니다. 아래 관련 소식을 먼저 확인해 주세요.');
-
-        var seen = {};
-        featurePosts.forEach(function (p) { seen[p.id] = true; });
-
-        return fetchPosts({ q: RELATED_QUERY, limit: RELATED_LIMIT })
-          .catch(function (err) {
-            console.warn('[jamboree16] 관련 소식 조회 실패:', (err && err.message) || err);
-            return [];
-          })
-          .then(function (relatedPosts) {
-            paint(
-              relatedGrid,
-              relatedPosts.filter(function (p) { return !seen[p.id]; }),
-              '표시할 관련 소식이 없습니다.'
-            );
-          });
+      .then(function (posts) {
+        if (countEl) countEl.textContent = posts.length ? '총 ' + posts.length + '건' : '';
+        paint(grid, posts, '아직 등록된 기사가 없습니다.');
       });
   }
 
@@ -179,7 +160,7 @@
     renderCountdown();
     // 자정을 넘겨도 D-day 가 갱신되도록 한 시간마다 다시 계산한다.
     setInterval(renderCountdown, 3600000);
-    loadLists();
+    loadPosts();
   }
 
   if (document.readyState === 'loading') {
